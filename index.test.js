@@ -72,6 +72,28 @@ describe('Unit Conversion Tests', () => {
     assert.strictEqual(formatDistance(undefined), '0 m');
     assert.strictEqual(formatDistance(NaN), '0 m');
   });
+
+  test('formatDistance formats imperial distance correctly', () => {
+    const originalGetItem = global.localStorage.getItem;
+    global.localStorage.getItem = () => 'imperial';
+
+    assert.strictEqual(formatDistance(10), '32.8 ft');
+    assert.strictEqual(formatDistance(10, 2), '32.81 ft');
+    assert.strictEqual(formatDistance(0), '0.0 ft');
+
+    global.localStorage.getItem = originalGetItem;
+  });
+
+  test('formatDistance handles null, undefined, and NaN for imperial', () => {
+    const originalGetItem = global.localStorage.getItem;
+    global.localStorage.getItem = () => 'imperial';
+
+    assert.strictEqual(formatDistance(null), '0 ft');
+    assert.strictEqual(formatDistance(undefined), '0 ft');
+    assert.strictEqual(formatDistance(NaN), '0 ft');
+
+    global.localStorage.getItem = originalGetItem;
+  });
 });
 
 describe('parseWPML Tests', () => {
