@@ -5,13 +5,16 @@ const vm = require('node:vm');
 
 // --- Global Stubbing Setup ---
 global.document = {
-  getElementById: (id) => ({
-    classList: { add: () => {}, remove: () => {} },
-    value: '',
-    textContent: '',
-    style: {},
-    closest: () => ({ style: {} })
-  }),
+  getElementById: (id) => {
+    if (id === 'unit-system') return null;
+    return {
+      classList: { add: () => {}, remove: () => {} },
+      value: '',
+      textContent: '',
+      style: {},
+      closest: () => ({ style: {} })
+    };
+  },
   addEventListener: () => {},
   querySelectorAll: () => [],
 };
@@ -216,6 +219,145 @@ describe('searchAddress API Tests', () => {
       global.alert = originalAlert;
       console.error = originalConsoleError;
       global.document.getElementById = originalGetElementById;
+    }
+  });
+});
+
+describe('calculateStats Tests', () => {
+  test('returns null when waypoints length is less than 2', () => {
+    assert.strictEqual(calculateStats([], [], 10, 10, 10, 'hover'), null);
+    assert.strictEqual(calculateStats([{ x: 0, y: 0, z: 0, lat: 0, lon: 0 }], [], 10, 10, 10, 'hover'), null);
+  });
+
+  test('calculates total distance correctly with simple waypoints', () => {
+    const waypoints = [
+      { x: 0, y: 0, z: 0, lat: 0, lon: 0 },
+      { x: 10, y: 0, z: 0, lat: 0.1, lon: 0 },
+      { x: 10, y: 10, z: 0, lat: 0.1, lon: 0.1 }
+    ];
+    // We expect the distance to be 10 + 10 = 20.
+    const stats = calculateStats(waypoints, [], 10, 10, 10, 'hover');
+    assert.strictEqual(stats.distance, 20);
+    assert.strictEqual(stats.waypointsCount, 3);
+  });
+
+  test('detects isolated waypoints when max nearest neighbor distance > 100', () => {
+    // Normal waypoints
+    const waypointsNormal = [
+      { x: 0, y: 0, z: 0, lat: 0, lon: 0 },
+      { x: 10, y: 0, z: 0, lat: 0, lon: 0 }
+    ];
+    const statsNormal = calculateStats(waypointsNormal, [], 10, 10, 10, 'hover');
+    assert.strictEqual(statsNormal.hasIsolatedWaypoint, false);
+
+    // Isolated waypoints (distance > 100)
+    const waypointsIsolated = [
+      { x: 0, y: 0, z: 0, lat: 0, lon: 0 },
+      { x: 101, y: 0, z: 0, lat: 0, lon: 0 }
+    ];
+    const statsIsolated = calculateStats(waypointsIsolated, [], 10, 10, 10, 'hover');
+    assert.strictEqual(statsIsolated.hasIsolatedWaypoint, true);
+    assert.strictEqual(statsIsolated.maxNearestNeighborDist, 101);
+  });
+
+  test('calculates isFarFromTakeoff correctly', () => {
+    const originalLLatLng = global.L.latLng;
+
+    try {
+      vm.runInThisContext('userLocation = { lat: 1, lon: 1 };');
+
+      // Mock L.latLng to support distanceTo
+      global.L.latLng = (lat, lon) => ({
+        lat,
+        lon,
+        distanceTo: (other) => {
+          // simple mock distance: if latitudes differ, return 1000m (far), else 10m (close)
+          if (lat !== other.lat) return 1000;
+          return 10;
+        }
+      });
+
+      // User location is far from takeoff (lat 1 !== lat 0)
+      const waypointsFar = [
+        { x: 0, y: 0, z: 0, lat: 0, lon: 0 },
+        { x: 10, y: 0, z: 0, lat: 0, lon: 0 }
+      ];
+      const statsFar = calculateStats(waypointsFar, [], 10, 10, 10, 'hover');
+      assert.strictEqual(statsFar.isFarFromTakeoff, true);
+      assert.strictEqual(statsFar.userDistanceToTakeoff, 1000);
+
+      // User location is close to takeoff (lat 1 === lat 1)
+      const waypointsClose = [
+        { x: 0, y: 0, z: 0, lat: 1, lon: 1 },
+        { x: 10, y: 0, z: 0, lat: 1, lon: 1 }
+      ];
+      const statsClose = calculateStats(waypointsClose, [], 10, 10, 10, 'hover');
+      assert.strictEqual(statsClose.isFarFromTakeoff, false);
+      assert.strictEqual(statsClose.userDistanceToTakeoff, 10);
+
+    } finally {
+      vm.runInThisContext('userLocation = null;');
+      global.L.latLng = originalLLatLng;
+    }
+  });
+
+  test('calculates flight time and parts count correctly', () => {
+    const originalGetElementById = global.document.getElementById;
+    const originalSplitWaypointsIntoParts = global.splitWaypointsIntoParts;
+
+    try {
+      // Mock max-flight-time element
+      global.document.getElementById = (id) => {
+        if (id === 'max-flight-time') {
+          return { value: '2' }; // 2 minutes = 120 seconds max flight time
+        }
+        return originalGetElementById(id);
+      };
+
+      // Mock splitWaypointsIntoParts
+      global.splitWaypointsIntoParts = () => {
+        return [{}, {}]; // Return 2 parts
+      };
+
+      // Simple waypoints: distance 50 meters
+      const waypoints = [
+        { x: 0, y: 0, z: 0, lat: 0, lon: 0 },
+        { x: 50, y: 0, z: 0, lat: 0, lon: 0 }
+      ];
+
+      const photoLocations = [{}, {}, {}]; // 3 photos
+      const speed = 10; // 50 / 10 = 5 seconds flight time
+
+      // Capture mode 'hover'
+      // Flight time = 5 (distance/speed) + 45 (base) = 50 seconds.
+      // Max flight time = 120 seconds.
+      const statsHover = calculateStats(waypoints, photoLocations, speed, 10, 10, 'hover');
+      assert.strictEqual(statsHover.flightTimeSeconds, 50);
+      assert.strictEqual(statsHover.isOverMaxFlightTime, false);
+      assert.strictEqual(statsHover.partsCount, 1);
+      assert.strictEqual(statsHover.photoCount, 3);
+      assert.strictEqual(statsHover.timeStr, '0m 50s');
+
+      // Capture mode 'stopAndShoot'
+      // Flight time = 5 (distance/speed) + 3*4.5 (photos) + 45 (base) = 50 + 13.5 = 63.5 seconds.
+      const statsStop = calculateStats(waypoints, photoLocations, speed, 10, 10, 'stopAndShoot');
+      assert.strictEqual(statsStop.flightTimeSeconds, 63.5);
+      assert.strictEqual(statsStop.timeStr, '1m 4s'); // 63.5s -> 1m 4s (rounded)
+
+      // Over max flight time scenario
+      // Change distance to 2000m (2000/10 = 200s + 45 = 245s). Max is 120s.
+      const waypointsLong = [
+        { x: 0, y: 0, z: 0, lat: 0, lon: 0 },
+        { x: 2000, y: 0, z: 0, lat: 0, lon: 0 }
+      ];
+      const statsLong = calculateStats(waypointsLong, [], speed, 10, 10, 'hover');
+      assert.strictEqual(statsLong.flightTimeSeconds, 245);
+      assert.strictEqual(statsLong.isOverMaxFlightTime, true);
+      assert.strictEqual(statsLong.partsCount, 2); // since we mocked splitWaypointsIntoParts to return array of length 2
+
+    } finally {
+      global.document.getElementById = originalGetElementById;
+      global.splitWaypointsIntoParts = originalSplitWaypointsIntoParts;
     }
   });
 });
