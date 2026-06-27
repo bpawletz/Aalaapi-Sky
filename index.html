@@ -1712,28 +1712,27 @@ html, body {
         <!-- Section 5: Copier Instructions -->
         <section class="control-section guide-section">
           <button id="show-guide-btn" class="btn-secondary" type="button">Show RC2 Copy Instructions</button>
+          <div style="display: flex; gap: 10px; margin-top: 8px;">
+            <button id="preview-3d-btn" class="btn-secondary" type="button" style="flex: 0 0 auto; width: 110px; padding: 10px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.8rem; margin: 0;">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                <line x1="12" y1="22.08" x2="12" y2="12"/>
+              </svg>
+              3D View
+            </button>
+            <button id="download-btn" class="btn-primary" type="button" style="flex: 1; padding: 10px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.8rem;">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Export KMZ
+            </button>
+          </div>
         </section>
       </div>
 
-      <!-- Action Bottom Bar -->
-      <footer class="sidebar-footer" style="display: flex; gap: 10px;">
-        <button id="preview-3d-btn" class="btn-secondary" type="button" style="flex: 0 0 auto; width: 110px; padding: 10px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.8rem; margin: 0;">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-            <line x1="12" y1="22.08" x2="12" y2="12"/>
-          </svg>
-          3D View
-        </button>
-        <button id="download-btn" class="btn-primary" type="button" style="flex: 1; padding: 10px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.8rem;">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          Export KMZ
-        </button>
-      </footer>
     </aside>
 
     <!-- Main Content Area (Map and Floating Info) -->
