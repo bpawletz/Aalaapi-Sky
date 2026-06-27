@@ -331,12 +331,6 @@ html, body {
   border-radius: 12px;
 }
 
-/* Sidebar Footer */
-.sidebar-footer {
-  padding: 20px;
-  border-top: 1px solid var(--border-color);
-}
-
 /* Main Map container */
 .main-map-container {
   flex: 1;
