@@ -19,9 +19,19 @@ const MPS_TO_MPH = 2.23693629;
 const MPH_TO_MPS = 0.44704;
 
 // Unit conversion helpers
+let cachedUnitSystem = null;
+
 function getUnitSystem() {
-  const el = document.getElementById('unit-system');
-  return el ? el.value : (localStorage.getItem('aalaapi_sky_unit_system') || 'metric');
+  if (cachedUnitSystem) return cachedUnitSystem;
+
+  // Fallback if not initialized (e.g. in tests)
+  const el = typeof document !== 'undefined' ? document.getElementById('unit-system') : null;
+  if (el) {
+    cachedUnitSystem = el.value;
+    return cachedUnitSystem;
+  }
+
+  return (typeof localStorage !== 'undefined' ? localStorage.getItem('aalaapi_sky_unit_system') : null) || 'metric';
 }
 
 function formatDistance(meters, decimalPlaces = 1) {
@@ -181,6 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const unitSystemEl = document.getElementById('unit-system');
   if (unitSystemEl) {
     unitSystemEl.value = savedUnit;
+    cachedUnitSystem = savedUnit;
   }
 
   initMap();
@@ -576,6 +587,7 @@ function initUIEventListeners() {
   if (unitSystemEl) {
     unitSystemEl.addEventListener('change', () => {
       localStorage.setItem('aalaapi_sky_unit_system', unitSystemEl.value);
+      cachedUnitSystem = unitSystemEl.value;
       syncDisplayValues();
       if (getCurrentWaypoints()) {
         redrawCurrentMission();
@@ -1975,6 +1987,7 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
 
           updatePathLinesAndStats(generatedWaypoints, generatedPhotos, centerLat, centerLon, gridWidth, gridHeight, rotationDeg);
 
+          // gimbalPitch is already calculated at the top of the function
           generatedWaypoints.forEach((gwp) => {
             if (gwp.mapMarker) {
               gwp.mapMarker.setLatLng([gwp.lat, gwp.lon]);
@@ -3896,10 +3909,11 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
         recalculateRoadOffsetPath(centerLatLng.lat, centerLatLng.lng);
 
         // Update all drone markers positions and tooltips
+        const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value);
         generatedWaypoints.forEach((gwp) => {
           if (gwp.mapMarker) {
             gwp.mapMarker.setLatLng([gwp.lat, gwp.lon]);
-            const gPitch = gwp.pitch !== undefined && gwp.pitch !== null ? gwp.pitch : parseFloat(document.getElementById('gimbal-pitch').value);
+            const gPitch = gwp.pitch !== undefined && gwp.pitch !== null ? gwp.pitch : defaultGimbalPitch;
             const tooltipContent = `Drone Waypoint ${gwp.idx}<br>Height: ${formatDistance(gwp.alt, 0)}<br>Yaw: ${gwp.heading.toFixed(0)}°<br>Pitch: ${gPitch}°`;
             gwp.mapMarker.setTooltipContent(tooltipContent);
           }
