@@ -1332,12 +1332,19 @@ function updateGrid() {
       
       waypoints = gridData.waypoints.map(pt => {
         const geo = localToGeodetic(pt.x, pt.y, centerLat, centerLon, actualRotation);
+        const alt = pt.alt !== undefined ? pt.alt : altitude;
+        const pitch = pt.pitch !== undefined ? pt.pitch : defaultGimbalPitch;
+
         let finalHeading = pt.heading;
+        if (gridType === 'double' && pitch !== -90) {
+          finalHeading = Math.atan2(-pt.x, -pt.y) * (180.0 / Math.PI);
+          if (finalHeading < 0) finalHeading += 360;
+        }
+
         if (finalHeading !== null && finalHeading !== undefined) {
           finalHeading = (finalHeading + actualRotation) % 360;
         }
-        const alt = pt.alt !== undefined ? pt.alt : altitude;
-        const pitch = pt.pitch !== undefined ? pt.pitch : defaultGimbalPitch;
+
         return {
           ...geo,
           alt: alt,
@@ -1359,12 +1366,19 @@ function updateGrid() {
       
       photoLocations = gridData.photos.map(pt => {
         const geo = localToGeodetic(pt.x, pt.y, centerLat, centerLon, actualRotation);
+        const alt = pt.alt !== undefined ? pt.alt : altitude;
+        const pitch = pt.pitch !== undefined ? pt.pitch : defaultGimbalPitch;
+
         let finalHeading = pt.heading;
+        if (gridType === 'double' && pitch !== -90) {
+          finalHeading = Math.atan2(-pt.x, -pt.y) * (180.0 / Math.PI);
+          if (finalHeading < 0) finalHeading += 360;
+        }
+
         if (finalHeading !== null && finalHeading !== undefined) {
           finalHeading = (finalHeading + actualRotation) % 360;
         }
-        const alt = pt.alt !== undefined ? pt.alt : altitude;
-        const pitch = pt.pitch !== undefined ? pt.pitch : defaultGimbalPitch;
+
         return {
           ...geo,
           alt: alt,
