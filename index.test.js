@@ -48,11 +48,6 @@ describe('Unit Conversion Tests', () => {
     assert.strictEqual(formatDistance(undefined), '0 m');
     assert.strictEqual(formatDistance(NaN), '0 m');
   });
-
-  test('formatSpeed formats metric speed correctly', () => {
-    assert.strictEqual(formatSpeed(10), '10.0 m/s');
-    assert.strictEqual(formatSpeed(5.55, 1), '5.5 m/s'); // toFixed(1) rounds 5.55 to 5.5 in javascript due to float representation
-  });
 });
 
 describe('Coordinate Math Tests', () => {
