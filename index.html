@@ -5053,22 +5053,25 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
   }
 
   // Nearest neighbor calculation for each waypoint
-  let maxNearestNeighborDist = 0;
+  let maxNearestNeighborDistSq = 0;
   for (let i = 0; i < waypoints.length; i++) {
     const p1 = waypoints[i];
-    let minDist = Infinity;
+    let minDistSq = Infinity;
     for (let j = 0; j < waypoints.length; j++) {
       if (i === j) continue;
       const p2 = waypoints[j];
-      const d = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
-      if (d < minDist) {
-        minDist = d;
+      const dx = p2.x - p1.x;
+      const dy = p2.y - p1.y;
+      const dSq = dx * dx + dy * dy;
+      if (dSq < minDistSq) {
+        minDistSq = dSq;
       }
     }
-    if (minDist !== Infinity && minDist > maxNearestNeighborDist) {
-      maxNearestNeighborDist = minDist;
+    if (minDistSq !== Infinity && minDistSq > maxNearestNeighborDistSq) {
+      maxNearestNeighborDistSq = minDistSq;
     }
   }
+  const maxNearestNeighborDist = Math.sqrt(maxNearestNeighborDistSq);
   const hasIsolatedWaypoint = maxNearestNeighborDist > 100.0;
 
   // Geolocation check
