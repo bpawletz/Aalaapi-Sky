@@ -3607,7 +3607,13 @@ function parseWPML(wpmlText) {
 
     toggleUIControlsState(true);
 
-    document.getElementById('import-status-text').innerHTML = `<span style="color: var(--accent-green); font-weight:600;">Active: ${importedFileName}</span>`;
+    const statusTextEl = document.getElementById('import-status-text');
+    statusTextEl.textContent = '';
+    const spanEl = document.createElement('span');
+    spanEl.style.color = 'var(--accent-green)';
+    spanEl.style.fontWeight = '600';
+    spanEl.textContent = `Active: ${importedFileName}`;
+    statusTextEl.appendChild(spanEl);
     document.getElementById('clear-imported-btn').classList.remove('hidden');
 
     updateGrid();
