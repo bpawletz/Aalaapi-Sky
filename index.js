@@ -65,7 +65,6 @@ function initGeolocation() {
             lat: position.coords.latitude,
             lon: position.coords.longitude
           };
-          console.log("User geolocation obtained:", userLocation);
           if (label) label.textContent = '✓ Located';
           btn.style.color = 'var(--accent-green, #10b981)';
           btn.style.borderColor = 'rgba(16, 185, 129, 0.4)';
