@@ -18,9 +18,19 @@ const FT_TO_M = 0.3048;
 const MPS_TO_MPH = 2.23693629;
 
 // Unit conversion helpers
+let cachedUnitSystem = null;
+
 function getUnitSystem() {
-  const el = document.getElementById('unit-system');
-  return el ? el.value : (localStorage.getItem('aalaapi_sky_unit_system') || 'metric');
+  if (cachedUnitSystem) return cachedUnitSystem;
+
+  // Fallback if not initialized (e.g. in tests)
+  const el = typeof document !== 'undefined' ? document.getElementById('unit-system') : null;
+  if (el) {
+    cachedUnitSystem = el.value;
+    return cachedUnitSystem;
+  }
+
+  return (typeof localStorage !== 'undefined' ? localStorage.getItem('aalaapi_sky_unit_system') : null) || 'metric';
 }
 
 function formatDistance(meters, decimalPlaces = 1) {
@@ -170,6 +180,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const unitSystemEl = document.getElementById('unit-system');
   if (unitSystemEl) {
     unitSystemEl.value = savedUnit;
+    cachedUnitSystem = savedUnit;
   }
 
   initMap();
@@ -565,6 +576,7 @@ function initUIEventListeners() {
   if (unitSystemEl) {
     unitSystemEl.addEventListener('change', () => {
       localStorage.setItem('aalaapi_sky_unit_system', unitSystemEl.value);
+      cachedUnitSystem = unitSystemEl.value;
       syncDisplayValues();
       if (getCurrentWaypoints()) {
         redrawCurrentMission();
@@ -1964,6 +1976,7 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
 
           updatePathLinesAndStats(generatedWaypoints, generatedPhotos, centerLat, centerLon, gridWidth, gridHeight, rotationDeg);
 
+          // gimbalPitch is already calculated at the top of the function
           generatedWaypoints.forEach((gwp) => {
             if (gwp.mapMarker) {
               gwp.mapMarker.setLatLng([gwp.lat, gwp.lon]);
