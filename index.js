@@ -3019,6 +3019,10 @@ function buildTemplateKml(finishAction, speed) {
         <wpml:droneEnumValue>68</wpml:droneEnumValue>
         <wpml:droneSubEnumValue>0</wpml:droneSubEnumValue>
       </wpml:droneInfo>
+      <wpml:payloadInfo>
+        <wpml:payloadEnumValue>68</wpml:payloadEnumValue>
+        <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+      </wpml:payloadInfo>
     </wpml:missionConfig>
   </Document>
 </kml>`;
@@ -3097,6 +3101,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
+              <wpml:fileSuffix>photo</wpml:fileSuffix>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
             </wpml:actionActuatorFuncParam>
           </wpml:action>
@@ -3118,6 +3123,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>startRecord</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
+              <wpml:fileSuffix>video</wpml:fileSuffix>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
             </wpml:actionActuatorFuncParam>
           </wpml:action>
@@ -3200,6 +3206,10 @@ ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
         <wpml:droneEnumValue>68</wpml:droneEnumValue>
         <wpml:droneSubEnumValue>0</wpml:droneSubEnumValue>
       </wpml:droneInfo>
+      <wpml:payloadInfo>
+        <wpml:payloadEnumValue>68</wpml:payloadEnumValue>
+        <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+      </wpml:payloadInfo>
     </wpml:missionConfig>
     <Folder>
       <wpml:templateId>0</wpml:templateId>

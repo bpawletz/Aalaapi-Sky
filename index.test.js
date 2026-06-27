@@ -76,10 +76,12 @@ describe('Unit Conversion Tests', () => {
   test('formatDistance formats imperial distance correctly', () => {
     const originalGetItem = global.localStorage.getItem;
     global.localStorage.getItem = () => 'imperial';
+    vm.runInThisContext('cachedUnitSystem = null; getUnitSystem = () => "imperial";');
 
     assert.strictEqual(formatDistance(10), '32.8 ft');
     assert.strictEqual(formatDistance(10, 2), '32.81 ft');
     assert.strictEqual(formatDistance(0), '0.0 ft');
+    vm.runInThisContext('getUnitSystem = function() { if (cachedUnitSystem) return cachedUnitSystem; const el = typeof document !== "undefined" ? document.getElementById("unit-system") : null; if (el) { cachedUnitSystem = el.value; return cachedUnitSystem; } const savedUnit = localStorage.getItem("unitSystem"); if (savedUnit) { cachedUnitSystem = savedUnit; return cachedUnitSystem; } return "metric"; };');
 
     global.localStorage.getItem = originalGetItem;
   });
@@ -87,10 +89,12 @@ describe('Unit Conversion Tests', () => {
   test('formatDistance handles null, undefined, and NaN for imperial', () => {
     const originalGetItem = global.localStorage.getItem;
     global.localStorage.getItem = () => 'imperial';
+    vm.runInThisContext('cachedUnitSystem = null; getUnitSystem = () => "imperial";');
 
     assert.strictEqual(formatDistance(null), '0 ft');
     assert.strictEqual(formatDistance(undefined), '0 ft');
     assert.strictEqual(formatDistance(NaN), '0 ft');
+    vm.runInThisContext('getUnitSystem = function() { if (cachedUnitSystem) return cachedUnitSystem; const el = typeof document !== "undefined" ? document.getElementById("unit-system") : null; if (el) { cachedUnitSystem = el.value; return cachedUnitSystem; } const savedUnit = localStorage.getItem("unitSystem"); if (savedUnit) { cachedUnitSystem = savedUnit; return cachedUnitSystem; } return "metric"; };');
 
     global.localStorage.getItem = originalGetItem;
   });
