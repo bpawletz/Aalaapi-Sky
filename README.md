@@ -23,13 +23,13 @@ A professional-grade waypoint mission generator and editor for drone flight plan
 ## Technologies Used
 
 - **Vanilla HTML / CSS / JS:** No package manager or build system required.
-- **Leaflet (v1.9.4):** Core 2D interactive mapping.
-- **Three.js (r128):** Core 3D engine for flight path visualization.
-- **Esri Leaflet (v3.0.12):** ArcGIS FeatureServer support for live FAA Airspace REST layers.
-- **JSZip:** Client-side generation of KMZ and ZIP archives.
-- **OpenStreetMap Nominatim API:** Geocoding and location search.
-- **OSRM (Open Source Routing Machine):** Road snapping and auto-routing.
-- **NOAA/NWS GeoServer WMS:** Real-time weather overlays.
+- **[Leaflet (v1.9.4)](https://leafletjs.com/):** Core 2D interactive mapping. (License: [BSD 2-Clause](https://github.com/Leaflet/Leaflet/blob/main/LICENSE))
+- **[Three.js (r128)](https://threejs.org/):** Core 3D engine for flight path visualization. (License: [MIT](https://github.com/mrdoob/three.js/blob/master/LICENSE))
+- **[Esri Leaflet (v3.0.12)](https://github.com/Esri/esri-leaflet):** ArcGIS FeatureServer support for live FAA Airspace REST layers. (License: [Apache 2.0](https://github.com/Esri/esri-leaflet/blob/master/LICENSE))
+- **[JSZip](https://stuk.github.io/jszip/):** Client-side generation of KMZ and ZIP archives. (License: [MIT / GPLv3 Dual](https://github.com/Stuk/jszip/blob/main/LICENSE.markdown))
+- **[OpenStreetMap Nominatim API](https://nominatim.org/):** Geocoding and location search. (Data License: [ODbL](https://opendatacommons.org/licenses/odbl/))
+- **[OSRM (Open Source Routing Machine)](http://project-osrm.org/):** Road snapping and auto-routing. (License: [BSD 2-Clause](https://github.com/Project-OSRM/osrm-backend/blob/master/LICENSE.TXT))
+- **[NOAA/NWS GeoServer WMS](https://opengeo.ncep.noaa.gov/):** Real-time weather overlays. (License: Public Domain / U.S. Government Work)
 
 ## Getting Started
 
