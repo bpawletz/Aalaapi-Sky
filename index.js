@@ -3896,10 +3896,11 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
         recalculateRoadOffsetPath(centerLatLng.lat, centerLatLng.lng);
 
         // Update all drone markers positions and tooltips
+        const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value);
         generatedWaypoints.forEach((gwp) => {
           if (gwp.mapMarker) {
             gwp.mapMarker.setLatLng([gwp.lat, gwp.lon]);
-            const gPitch = gwp.pitch !== undefined && gwp.pitch !== null ? gwp.pitch : parseFloat(document.getElementById('gimbal-pitch').value);
+            const gPitch = gwp.pitch !== undefined && gwp.pitch !== null ? gwp.pitch : defaultGimbalPitch;
             const tooltipContent = `Drone Waypoint ${gwp.idx}<br>Height: ${formatDistance(gwp.alt, 0)}<br>Yaw: ${gwp.heading.toFixed(0)}°<br>Pitch: ${gPitch}°`;
             gwp.mapMarker.setTooltipContent(tooltipContent);
           }
