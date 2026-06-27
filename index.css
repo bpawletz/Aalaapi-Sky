@@ -1011,6 +1011,7 @@ html, body {
 
 .map-crosshair {
   cursor: crosshair !important;
+  touch-action: none !important;
 }
 
 #auto-plan-banner {
