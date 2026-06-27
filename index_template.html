@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aalaapi Sky - Drone Waypoint Mission Planner</title>
+  
+  <!-- Modern Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="index.css?v=1.6.0">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Toggle Button (visible at all times) -->
+    <button id="sidebar-toggle" class="sidebar-toggle-btn" type="button" aria-label="Toggle settings">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="3" y1="12" x2="21" y2="12"></line>
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <line x1="3" y1="18" x2="21" y2="18"></line>
+      </svg>
+    </button>
+ 
+    <!-- Sidebar / Panel for Controls -->
+    <aside class="sidebar glass">
+      <header class="app-header">
+        <div class="header-top-row">
+          <div class="logo">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+              <line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
+            <h1>Aalaapi Sky</h1>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" style="padding: 8px; display: inline-flex; align-items: center; justify-content: center; margin: 0; border-radius: 8px; width: 36px; height: 36px;">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+            </button>
+            <button id="about-btn" class="btn-secondary header-about-btn" type="button" style="margin: 0; height: 36px; display: inline-flex; align-items: center; justify-content: center; padding: 0 12px; border-radius: 8px;">About</button>
+          </div>
+        </div>
+        <p class="subtitle">Drone Waypoint Mission Planner</p>
+      </header>
+
+      <div class="scroll-container">
+        <!-- Section 1: Import or Locate -->
+        <section class="control-section">
+          <h3>1. Import or Center Location</h3>
+          
+          <div class="control-group" style="margin-bottom: 12px;">
+            <label>Flight Pattern</label>
+            <!-- Hidden native select for backward compatibility -->
+            <select id="grid-type" class="form-select" style="display: none;">
+              <option value="single">2D Map (Nadir Grid)</option>
+              <option value="double" selected>3D Splat (Double Grid)</option>
+              <option value="orbit">3D Object (Circular Orbit)</option>
+              <option value="multi-orbit">3D Object (Multi-Tiered Orbit)</option>
+              <option value="grid-orbit-combo">2D + 3D Hybrid (Grid + Orbit Combo)</option>
+              <option value="grid-multi-orbit-combo">2D + 3D Hybrid (Grid + Multi-Orbit)</option>
+              <option value="freeform">Freeform Flight Plan (Manual Waypoints)</option>
+              <option value="road-following">Road Following (Offset Path)</option>
+            </select>
+            
+            <!-- Custom visual selector cards -->
+            <div class="pattern-selector-grid">
+              <div class="pattern-card" data-value="single" title="2D Map (Nadir Grid)">
+                <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="2,2"/>
+                  <line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/>
+                  <line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/>
+                </svg>
+                <span>2D Grid</span>
+              </div>
+              <div class="pattern-card active" data-value="double" title="3D Splat (Double Grid)">
+                <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/>
+                  <line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/>
+                </svg>
+                <span>Double Grid</span>
+              </div>
+              <div class="pattern-card" data-value="orbit" title="3D Object (Circular Orbit)">
+                <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="8"/>
+                  <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                  <path d="M12 2l3 3-3 3"/>
+                </svg>
+                <span>Orbit</span>
+              </div>
+              <div class="pattern-card" data-value="multi-orbit" title="3D Object (Multi-Tiered Orbit)">
+                <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="8" stroke-dasharray="2,2"/>
+                  <circle cx="12" cy="12" r="5"/>
+                  <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                </svg>
+                <span>Multi-Orbit</span>
+              </div>
+              <div class="pattern-card" data-value="grid-orbit-combo" title="2D + 3D Hybrid (Grid + Orbit Combo)">
+                <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="3,3" opacity="0.5"/>
+                  <circle cx="12" cy="12" r="6"/>
+                  <line x1="4" y1="12" x2="20" y2="12" stroke-dasharray="3,3" opacity="0.5"/>
+                  <line x1="12" y1="4" x2="12" y2="20" stroke-dasharray="3,3" opacity="0.5"/>
+                </svg>
+                <span>Hybrid Combo</span>
+              </div>
+              <div class="pattern-card" data-value="grid-multi-orbit-combo" title="2D + 3D Hybrid (Grid + Multi-Orbit)">
+                <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="9"/>
+                  <circle cx="12" cy="12" r="5" stroke-dasharray="2,2"/>
+                  <rect x="7" y="7" width="10" height="10" rx="1" stroke-dasharray="2,2"/>
+                </svg>
+                <span>Multi-Hybrid</span>
+              </div>
+              <div class="pattern-card" data-value="road-following" title="Road Following (Offset Path)">
+                <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 22V17C4 13 8 11 12 11C16 11 20 9 20 5V2" stroke-dasharray="3,3"/>
+                  <path d="M8 22V17C8 14 11 13 14 13C17 13 24 11 24 5V2" opacity="0.5"/>
+                </svg>
+                <span>Road Follow</span>
+              </div>
+              <div class="pattern-card" data-value="freeform" title="Freeform Flight Plan (Manual Waypoints)">
+                <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="5" cy="19" r="2" fill="currentColor"/>
+                  <circle cx="12" cy="6" r="2" fill="currentColor"/>
+                  <circle cx="19" cy="15" r="2" fill="currentColor"/>
+                  <path d="M5 19l7-13 7 9" stroke-dasharray="2,2"/>
+                </svg>
+                <span>Freeform</span>
+              </div>
+            </div>
+          </div>
+          
+          <div id="freeform-instructions" class="info-alert hidden" style="margin-bottom: 12px; background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.2); color: #10b981;">
+            <span>ℹ️ Click on the map to add custom waypoints. Drag waypoints to move them. Click a waypoint to delete or edit it.</span>
+          </div>
+
+          <div class="search-box">
+            <input type="text" id="location-input" placeholder="Search address or coordinate..." aria-label="Location search">
+            <button id="search-btn" class="btn-primary" type="button">Search</button>
+          </div>
+          <div style="margin-top: 6px;">
+            <button id="locate-me-btn" class="btn-secondary" type="button" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+                <circle cx="12" cy="12" r="9" opacity="0.3"></circle>
+              </svg>
+              <span id="locate-me-label">Locate Me</span>
+            </button>
+          </div>
+          <div class="import-box" style="display: flex; gap: 8px;">
+            <button id="import-btn" class="btn-secondary" type="button" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              Import KMZ
+            </button>
+            <input type="file" id="import-file-input" accept=".kmz" style="display: none;">
+            <button id="clear-imported-btn" class="btn-secondary hidden" type="button" style="color: var(--accent-red); border-color: rgba(239, 68, 68, 0.3); flex: 0 0 auto; width: auto;">
+              Clear
+            </button>
+          </div>
+          <div style="margin-top: 8px; display: flex; gap: 8px;">
+            <button id="auto-plan-btn" class="btn-primary" type="button" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin: 0;">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="22" y1="12" x2="18" y2="12"></line>
+                <line x1="6" y1="12" x2="2" y2="12"></line>
+                <line x1="12" y1="6" x2="12" y2="2"></line>
+                <line x1="12" y1="22" x2="12" y2="18"></line>
+              </svg>
+              Auto-Plan
+            </button>
+            <button id="clear-mission-btn" class="btn-secondary" type="button" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: var(--accent-red); border-color: rgba(239, 68, 68, 0.3); margin: 0;">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+              </svg>
+              Clear Map
+            </button>
+          </div>
+          <p class="help-text" id="import-status-text">Or click anywhere on the map to place the flight center.</p>
+        </section>
+
+        <!-- Section 2: Grid Geometry -->
+        <section class="control-section" id="grid-geometry-section">
+          <h3 id="grid-geometry-title">2. Grid Geometry</h3>
+          
+          <div class="control-group">
+            <div class="control-label">
+              <span>Grid Width</span>
+              <span class="value-display"><span id="width-val">100</span> <span id="width-unit">m</span></span>
+            </div>
+            <input type="range" id="grid-width" min="20" max="500" value="100" class="slider" aria-label="Grid width">
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              <span>Grid Height</span>
+              <span class="value-display"><span id="height-val">100</span> <span id="height-unit">m</span></span>
+            </div>
+            <input type="range" id="grid-height" min="20" max="500" value="100" class="slider" aria-label="Grid height">
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              <span>Grid Rotation</span>
+              <span class="value-display"><span id="rotation-val">0</span>&deg;</span>
+            </div>
+            <input type="range" id="grid-rotation" min="0" max="359" value="0" class="slider" aria-label="Grid rotation">
+          </div>
+
+          <div id="road-offset-container" class="control-group hidden">
+            <div class="control-label">
+              <span>Road Offset Distance</span>
+              <span class="value-display"><span id="road-offset-val">15</span> <span id="road-offset-unit">m</span></span>
+            </div>
+            <input type="range" id="road-offset" min="-50" max="50" step="1" value="15" class="slider" aria-label="Road Offset Distance">
+            <p class="help-text">Negative offsets fly to the left of the road; positive fly to the right. Camera points at the road.</p>
+          </div>
+
+          <div id="road-snap-container" class="control-group hidden" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px;">
+            <div>
+              <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-main);">Snap to Roads (Auto-Routing)</span>
+              <p class="help-text" style="margin: 2px 0 0 0;">Automatically layout a driving route between clicked waypoints.</p>
+            </div>
+            <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px;">
+              <input type="checkbox" id="road-snap" checked style="opacity: 0; width: 0; height: 0;">
+              <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
+            </label>
+          </div>
+        </section>
+
+        <!-- Section 3: Camera & Overlap -->
+        <section class="control-section">
+          <h3>3. Camera &amp; Overlap</h3>
+          <div class="control-group">
+            <label for="camera-model">Drone &amp; Camera Model</label>
+            <select id="camera-model" class="form-select">
+              <option value="dji_mini_4_pro_std">DJI Mini 4 Pro (Standard 24mm)</option>
+              <option value="dji_mini_4_pro_wide">DJI Mini 4 Pro (Wide Lens 14mm)</option>
+              <option value="skyrover_x1_std">Skyrover X1 (Standard 26mm)</option>
+              <option value="skyrover_x1_wide">Skyrover X1 (Wide Lens 18mm)</option>
+              <option value="custom">Custom Camera...</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              <span>Camera HFOV (Horizontal)</span>
+              <span class="value-display"><span id="camera-hfov-val">69.7</span>&deg;</span>
+            </div>
+            <input type="range" id="camera-hfov" min="30" max="120" step="0.1" value="69.7" class="slider" aria-label="Camera HFOV">
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              <span>Camera VFOV (Vertical)</span>
+              <span class="value-display"><span id="camera-vfov-val">55.2</span>&deg;</span>
+            </div>
+            <input type="range" id="camera-vfov" min="20" max="100" step="0.1" value="55.2" class="slider" aria-label="Camera VFOV">
+          </div>
+
+
+          <div class="control-group">
+            <div class="control-label">
+              <span>Front Overlap (Along-track)</span>
+              <span class="value-display"><span id="front-overlap-val">80</span>%</span>
+            </div>
+            <input type="range" id="front-overlap" min="50" max="95" value="80" class="slider" aria-label="Front overlap percentage">
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              <span>Side Overlap (Across-track)</span>
+              <span class="value-display"><span id="side-overlap-val">75</span>%</span>
+            </div>
+            <input type="range" id="side-overlap" min="50" max="95" value="75" class="slider" aria-label="Side overlap percentage">
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              <span>Camera Gimbal Pitch</span>
+              <span class="value-display"><span id="gimbal-pitch-val">-60</span>&deg;</span>
+            </div>
+            <input type="range" id="gimbal-pitch" min="-90" max="0" value="-60" class="slider" aria-label="Camera gimbal pitch angle">
+            <p class="help-text">-90&deg; is straight down (nadir). -60&deg; to -45&deg; is oblique, ideal for 3D Gaussian Splats.</p>
+          </div>
+        </section>
+
+        <!-- Section 4: Flight Configuration -->
+        <section class="control-section">
+          <h3>4. Flight Configuration</h3>
+          
+          <div class="control-group">
+            <div class="control-label">
+              <span>Flight Altitude (H)</span>
+              <span class="value-display"><span id="altitude-val">50</span> <span id="altitude-unit">m</span></span>
+            </div>
+            <input type="range" id="altitude" min="10" max="120" value="50" class="slider" aria-label="Flight altitude">
+            <p class="help-text">Relative to takeoff location.</p>
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              <span>Flight Speed</span>
+              <span class="value-display"><span id="speed-val">4</span> <span id="speed-unit">m/s</span></span>
+            </div>
+            <input type="range" id="speed" min="1" max="15" value="4" class="slider" aria-label="Flight speed">
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              <span>Max Flight Time</span>
+              <span class="value-display"><span id="max-flight-time-val">20</span> min</span>
+            </div>
+            <input type="range" id="max-flight-time" min="5" max="45" value="20" class="slider" aria-label="Max flight time">
+            <p class="help-text">Missions exceeding this time will be split into multiple waypoint files on export.</p>
+          </div>
+
+          <div class="control-group">
+            <label for="heading-mode">Heading Mode</label>
+            <select id="heading-mode" class="form-select">
+              <option value="followWayline">Follow Flight Path (Forward-facing)</option>
+              <option value="fixed">Fixed Heading (North)</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="finish-action">Finish Action</label>
+            <select id="finish-action" class="form-select">
+              <option value="goHome">Return to Home (RTH)</option>
+              <option value="noAction">Hover in Place</option>
+              <option value="autoLand">Auto Land</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="path-mode">Connection Path Type</label>
+            <select id="path-mode" class="form-select">
+              <option value="curved" selected>Curved Path (Smooth turns, faster)</option>
+              <option value="straight">Straight Lines (Drone stops at points)</option>
+            </select>
+            <p class="help-text">Curved turns trigger photos on-the-fly without pausing. Straight lines force the drone to stop completely at every point (recommended to prevent motion blur).</p>
+          </div>
+
+          <div class="control-group">
+            <label for="capture-mode">Capture Mode</label>
+            <select id="capture-mode" class="form-select">
+              <option value="stopAndShoot">Stop &amp; Shoot at Waypoints (Automated)</option>
+              <option value="continuous">Continuous Flight (Manual Interval / Timed Shot)</option>
+              <option value="video">Video Mode (Record Entire Route)</option>
+            </select>
+            <p class="help-text" id="capture-help-text">Stop &amp; Shoot halts the drone at every coordinate to take a photo. Recommended for sharp, automated maps.</p>
+          </div>
+        </section>
+
+        <!-- Section 5: Copier Instructions -->
+        <section class="control-section guide-section">
+          <button id="show-guide-btn" class="btn-secondary" type="button">Show RC2 Copy Instructions</button>
+        </section>
+      </div>
+
+      <!-- Action Bottom Bar -->
+      <footer class="sidebar-footer" style="display: flex; gap: 10px;">
+        <button id="preview-3d-btn" class="btn-secondary" type="button" style="flex: 0 0 auto; width: 110px; padding: 10px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.8rem; margin: 0;">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+            <line x1="12" y1="22.08" x2="12" y2="12"/>
+          </svg>
+          3D View
+        </button>
+        <button id="download-btn" class="btn-primary" type="button" style="flex: 1; padding: 10px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.8rem;">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Export KMZ
+        </button>
+      </footer>
+    </aside>
+
+    <!-- Main Content Area (Map and Floating Info) -->
+    <main class="main-map-container">
+      <div id="map"></div>
+
+
+
+      <!-- Floating Stats Panel -->
+      <div class="stats-panel glass" id="stats-panel">
+        <div class="stats-panel-header">
+          <h3>Mission Details</h3>
+          <button id="stats-toggle-btn" class="stats-toggle-btn" type="button" aria-label="Toggle stats details">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+        </div>
+        <div class="stats-content">
+          <div id="stats-warnings" class="stats-warnings hidden"></div>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <span class="stat-lbl">Waypoints</span>
+              <span class="stat-val" id="stat-waypoints">-</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-lbl">Photos</span>
+              <span class="stat-val" id="stat-photos">-</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-lbl">Line Spacing</span>
+              <span class="stat-val" id="stat-line-spacing">-</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-lbl">Photo Interval</span>
+              <span class="stat-val" id="stat-photo-interval">-</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-lbl">Total Distance</span>
+              <span class="stat-val" id="stat-distance">-</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-lbl">Est. Flight Time</span>
+              <span class="stat-val" id="stat-flight-time">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- RC2 File Copy Instructions Modal -->
+  <div id="guide-modal" class="modal-overlay hidden">
+    <div class="modal glass">
+      <header class="modal-header">
+        <h2>DJI RC2 Waypoint File Injection Guide</h2>
+        <button id="close-guide-btn" class="close-btn" type="button" aria-label="Close guide">&times;</button>
+      </header>
+      <div class="modal-content">
+        <p>Since the consumer DJI Fly App does not support direct KML/KMZ waypoint imports from its user interface, you must use a directory overwrite workaround to load this custom flight mission:</p>
+        
+        <ol class="guide-steps">
+          <li>
+            <strong>Create a placeholder mission:</strong> On your DJI RC2 controller, open the DJI Fly App, select <strong>Waypoint Flight</strong>, and create a short dummy mission (e.g., place 2 arbitrary waypoints). Name it something memorable and <strong>Save</strong> it.
+          </li>
+          <li>
+            <strong>Connect your RC2 to your PC or Android Phone:</strong> Use a data-capable USB-C cable to connect your RC2 controller to your computer or an Android phone (like a Samsung Galaxy with MTP support).
+          </li>
+          <li>
+            <strong>Locate the Waypoints Directory:</strong> In your computer's file explorer or your phone's file manager app, navigate to the controller's internal storage:
+            <pre>DJI RC 2/Internal Shared Storage/Android/data/dji.go.v5/files/waypoint/</pre>
+            <em>Note: On Android phones, you can use a file manager app (like Samsung "My Files" or "Files by Google") to browse the RC2 storage. On macOS, you will need to use <strong>OpenMTP</strong> or a similar utility.</em>
+          </li>
+          <li>
+            <strong>Identify your dummy mission:</strong> Inside that directory, you will see folders with random names. Look for the most recently updated folder containing a <code>.kmz</code> file.
+          </li>
+          <li>
+            <strong>Inject the generated file:</strong> Rename the grid KMZ file you download from this web generator to match the exact filename of the dummy KMZ (e.g., <code>Waypoint_XXX.kmz</code>), and copy it into that folder, overwriting the original dummy file.
+          </li>
+          <li>
+            <strong>Fly the mission:</strong> Unplug the controller, open the DJI Fly App, go to your saved waypoint missions, and load the placeholder. You will see your newly generated grid pattern ready on the screen!
+          </li>
+        </ol>
+
+        <div class="modal-alert warning">
+          <strong>Safety Warning:</strong> Always verify your path on the RC2 screen prior to takeoff. Make sure the relative waypoint heights do not intersect with any trees, buildings, or powerlines in your actual flight environment. Maintain visual line of sight during automated flights!
+        </div>
+      </div>
+      <footer class="modal-footer">
+        <button id="close-guide-footer-btn" class="btn-primary" type="button">Understood</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- About Modal -->
+  <div id="about-modal" class="modal-overlay hidden">
+    <div class="modal glass">
+      <header class="modal-header">
+        <h2>About Aalaapi Sky</h2>
+        <button id="close-about-btn" class="close-btn" type="button" aria-label="Close about">&times;</button>
+      </header>
+      <div class="modal-content">
+        <div style="display: flex; align-items: center; gap: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
+          <div style="background: var(--primary-gradient); padding: 12px; border-radius: 12px; color: var(--text-inverse); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+              <line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
+          </div>
+          <div>
+            <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
+            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.8.0</span>
+          </div>
+        </div>
+        
+        <p style="color: var(--text-muted); font-size: 0.9rem;">
+          A professional-grade waypoint mission generator and editor for drone flight planning. Designed for high-fidelity 2D mapping and 3D Gaussian Splats.
+        </p>
+
+        <h4 style="font-size: 0.95rem; font-weight: 600; color: var(--text-main); margin-top: 4px;">Key Capabilities:</h4>
+        <ul style="padding-left: 20px; font-size: 0.85rem; line-height: 1.6; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px;">
+          <li>Import existing KMZ files to view, drag, and modify waypoints.</li>
+          <li>Edit individual waypoint height, pitch angle, and custom yaw values.</li>
+          <li>Preserve imported filename and structure on KMZ exports.</li>
+          <li>Procedural flight generation: 2D Nadir Grid, 3D Double Grid, Oblique Orbits, and Multi-Tier Hybrid passes.</li>
+        </ul>
+
+        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.8.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>Added public FAA/government airspace overlays to the map. Toggled via the Layer Control, users can now view live **VFR Sectional Charts** (55% opacity), **Controlled Airspaces (Class B/C/D/E)**, **Restricted/Special Use Airspaces**, and **UAS Facility Maps (LAANC)** grids with altitude ceiling text labels.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.7.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>Added a **Reset** button in the waypoint editor popup: If a waypoint's position, altitude, pitch, or heading has been modified or dragged from its original state, a Reset button displays to easily revert it back to its original settings.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.6.10):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>Fixed pattern-switching: Switching to procedural patterns (Grid, Orbit, combos) now correctly clears old manual/road waypoints and generates clean procedural paths around the center. Waypoints are still preserved when entering editor modes (Freeform/Road).</li>
+              <li>Enabled smooth transition out of Imported KMZ mode into Freeform or Road-following editor modes on pattern selection.</li>
+            </ul>
+          </div>div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.6.9):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>Upgraded the **Flight Pattern** selector from a select dropdown to a grid of visual icon card buttons.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.6.8):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>Brightened **3D Preview**: Increased ground map texture opacity (from 0.65 to 0.95), reduced fog density (from 0.002 to 0.0005) to prevent early blackouts, and boosted scene light intensities.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.6.7):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>Ensured switching between flight patterns preserves existing waypoints; coordinates are only cleared when explicitly clicked via **Clear Map** or when drawing a new **Auto-Plan** bounding box.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.6.6):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>Fixed switching from freeform or grid patterns to **Road Following**: Existing active waypoints are now automatically converted to road waypoints instead of being cleared.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.6.5):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>Relocated **Flight Pattern** selector and instruction banners to Section 1 (Import or Center Location) so the map interaction mode is chosen first.</li>
+              <li>Added dynamic heading title updates for Section 2 (Grid Geometry, Orbit Geometry, Hybrid Geometry, or Road Settings) and hid Section 2 entirely when entering Freeform mode.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.6.4):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>Implemented stable **Lookahead/Lookbehind Tangent Calculation**: Solves drone path backtracking at sharp road corners and intersections by searching up/down the snapped path until a stable 10-meter spatial distance is reached before calculating direction, filtering out localized snapping noise.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.6.3):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>Enhanced **Road Following Waypoints Clickability**: Increased yellow road marker size (from 16px to 24px) with custom cursor and added a glowing border to cyan drone markers, dramatically increasing their interactive click target size.</li>
+              <li>Disabled **Polyline Interactivity**: Flight path and road polylines are now non-interactive to prevent them from intercepting waypoint click events.</li>
+              <li>Fixed **Real-Time Popup Nudges**: Nudging coordinates or changing altitude/pitch inside the editor popup now recalculates the drone's offset path and moves markers on the map in real-time.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.6.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>Implemented automatic **Backtracking Spur Pruning** for snaps in Road Following mode. Symmetrically scans and filters out loop detours down side streets introduced by OSRM snaps while fully preserving all user-clicked markers.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.6.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>Added **Video Mode (Record Entire Route)** option to Capture Mode. Recalculates flight time and automatically injects start/stop recording action groups at the first and last waypoints of the KMZ.</li>
+              <li>Fixed gimbal pitch updates to ensure they are generated at **every** waypoint during **Road Following** missions.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.6.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>Added **Road Following (Offset Path)** flight pattern. Users can click on the map to define the road path, while the drone follows a parallel path offset by a configurable distance via a range slider.</li>
+              <li>Implemented **automatic camera targeting** where heading yaws towards the road and gimbal pitch dynamically adjusts based on altitude and offset distance.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.5.4):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>Replaced symmetric 3D camera cones in the 3D Preview with **rectangular FOV pyramid frustums** that dynamically scale and reshape to visually represent the camera's aspect ratio and active HFOV/VFOV settings.</li>
+              <li>Raised individual coverage footprint ellipse opacity on the ground canvas to make the heatmap much easier to see, particularly for Freeform manual plans.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.5.3):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>Added **Drone &amp; Camera Preset Configurator** with adjustable camera HFOV and VFOV sliders under Section 3. Includes standard and wide-angle lens presets for **DJI Mini 4 Pro** and **Skyrover X1**, plus a fully adjustable **Custom Camera** option that dynamically updates ground-projected footprint calculations.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.5.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>Aligned **3D Floor Map Footprints** (coverage ellipses) with 3D camera cones in the sky. When headings or pitch angles are set to automatic/null (common in Freeform mode), the ground projected ellipse now accurately resolves to matching path-following and gimbal pitch values instead of defaulting to North.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.5.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>Added dynamic **3D Floor Map Zoom Auto-Scaling** to automatically adjust the ground tile zoom level and fetch size-appropriate OpenStreetMap/Satellite imagery based on the physical size of the mission waypoints.</li>
+              <li>Added a global **Clear Map** button in the location section to easily reset the current mission and start fresh.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.5.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>Added **Freeform Flight Plan** mode to build custom flight routes by clicking on the map.</li>
+              <li>Hides procedural generation controls in Freeform mode and provides a clear emerald help banner.</li>
+              <li>Maintains full compatibility for drag-and-drop repositioning, parameter editing, deletion, WGS84 editing, and KMZ/ZIP exports.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.4.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>Added color-coding (Emerald Green) and size highlights for split waypoint starting points on both the Leaflet map and 3D preview.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.4.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>Added structure-aware **Auto-Plan Mission** calculator with height/clearance sliders and real-time path updates.</li>
+              <li>Added live photogrammetry **coverage footprint heatmap** rendering on the 3D ground plane.</li>
+              <li>Added collapsible settings sidebar topics and collapsible map legends.</li>
+              <li>Added global configuration modal with unit selection, accordion mode, and sidebar minimization controls.</li>
+              <li>Added **Max Flight Time** slider, live stats warning, and automated split-mission ZIP/KMZ export.</li>
+              <li>Fixed "Mission Details" panel backdrop blur focus issue and warnings multi-row stacked layout.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.3.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>Added real-time isolated waypoint checks (&gt;100m gap from all other waypoints) and safety export validation prompt.</li>
+              <li>Added pilot geolocation mismatch warning if waypoints are placed &gt;2000 ft away from the browser location.</li>
+              <li>Added Metric/Imperial unit selection options (meters/feet, m/s/mph) stored in local state.</li>
+              <li>Added collapsible mission stats panel to optimize viewing area on small screens.</li>
+              <li>Added graphical D-pad nudge controls with dynamic steps (0.2m/1m/5m in metric, 1ft/5ft/20ft in imperial).</li>
+              <li>Added WGS84 coordinate (Latitude/Longitude) text fields inside waypoint editor.</li>
+              <li>Added color-coded waypoint edit tracking (hot pink marker highlight) with automatic revert on cancellation.</li>
+              <li>Updated imported missions to automatically center on the first waypoint of the path.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.2.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>Added drag-and-drop support for imported KMZ waypoints on the map.</li>
+              <li>Added custom waypoint editor popup to change altitude, gimbal pitch, and heading.</li>
+              <li>Added individual waypoint delete/re-indexing capabilities.</li>
+              <li>Fixed DJI Fly falling back to followWayline by replacing 'custom' with 'smoothTransition'.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <footer class="modal-footer">
+        <button id="close-about-footer-btn" class="btn-primary" type="button">Close</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Configuration Settings Modal -->
+  <div id="config-modal" class="modal-overlay hidden">
+    <div class="modal glass" style="max-width: 450px; width: 90%;">
+      <header class="modal-header">
+        <h2 style="display: flex; align-items: center; gap: 8px; margin: 0; font-size: 1.25rem;">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-cyan);">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          Configuration Settings
+        </h2>
+        <button id="close-config-btn" class="close-btn" type="button" aria-label="Close configuration">&times;</button>
+      </header>
+      <div class="modal-content" style="display: flex; flex-direction: column; gap: 20px; padding: 20px 0 10px 0;">
+        
+        <!-- Unit Selection (Moved from sidebar) -->
+        <div class="control-group">
+          <label for="unit-system" style="font-weight: 600; color: var(--text-main); margin-bottom: 8px; display: block;">Measurement Units</label>
+          <select id="unit-system" class="form-select" style="width: 100%;">
+            <option value="metric" selected>Metric (meters, m/s)</option>
+            <option value="imperial">Imperial (feet, mph)</option>
+          </select>
+          <p class="help-text" style="margin-top: 4px;">Sets map grid measurements and flight inputs to feet or meters.</p>
+        </div>
+
+        <div style="border-top: 1px solid var(--border-color); padding-top: 16px;">
+          <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--text-main); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Menu Minimization Options</h3>
+          
+          <!-- Sidebar Toggle option -->
+          <div class="control-group" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;">
+            <div>
+              <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-main);">Minimize Sidebar Menu</span>
+              <p class="help-text" style="margin: 2px 0 0 0;">Collapse the sidebar to maximize map space.</p>
+            </div>
+            <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px;">
+              <input type="checkbox" id="minimize-sidebar-toggle" style="opacity: 0; width: 0; height: 0;">
+              <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
+            </label>
+          </div>
+
+          <!-- Accordion mode option -->
+          <div class="control-group" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px;">
+            <div>
+              <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-main);">Accordion Mode (Auto-Collapse)</span>
+              <p class="help-text" style="margin: 2px 0 0 0;">Only keep one sidebar topic expanded at a time.</p>
+            </div>
+            <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px;">
+              <input type="checkbox" id="accordion-mode-toggle" style="opacity: 0; width: 0; height: 0;">
+              <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
+            </label>
+          </div>
+
+          <!-- Mass actions -->
+          <div style="display: flex; gap: 10px; margin-top: 12px;">
+            <button id="collapse-all-topics-btn" class="btn-secondary" type="button" style="flex: 1; padding: 8px; font-size: 0.75rem; font-weight: 600;">Collapse All Topics</button>
+            <button id="expand-all-topics-btn" class="btn-secondary" type="button" style="flex: 1; padding: 8px; font-size: 0.75rem; font-weight: 600;">Expand All Topics</button>
+          </div>
+        </div>
+
+      </div>
+      <footer class="modal-footer" style="padding-top: 16px; display: flex; gap: 12px; justify-content: flex-end;">
+        <button id="close-config-footer-btn" class="btn-primary" type="button" style="margin-top: 0;">Save &amp; Close</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- 3D Preview Modal -->
+  <div id="preview-3d-modal" class="modal-overlay hidden">
+    <div class="modal glass" style="max-width: 900px; width: 95%; height: 85vh; display: flex; flex-direction: column;">
+      <header class="modal-header">
+        <h2>3D Flight Path Preview</h2>
+        <button id="close-3d-btn" class="close-btn" type="button" aria-label="Close 3D preview">&times;</button>
+      </header>
+      <div class="modal-content" style="flex: 1; padding: 0; position: relative; overflow: hidden; display: flex;">
+        <!-- Container for Three.js Canvas -->
+        <div id="three-container" style="width: 100%; height: 100%; background: #070a13;"></div>
+        
+        <!-- Floating HUD Overlay Controls -->
+        <div class="hud-controls" style="position: absolute; top: 16px; left: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 10; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); font-size: 0.8rem; pointer-events: auto;">
+          <button id="btn-3d-autorotate" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; text-align: left; display: flex; align-items: center; gap: 6px; width: 130px; justify-content: space-between;">
+            <span>Auto-Rotate</span>
+            <span id="indicator-3d-autorotate" style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444; display: inline-block;"></span>
+          </button>
+          <button id="btn-3d-reset" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; text-align: left;">Reset Camera</button>
+          <button id="btn-3d-toggle-cones" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; text-align: left; display: flex; align-items: center; gap: 6px; width: 130px; justify-content: space-between;">
+            <span>Camera Cones</span>
+            <span id="indicator-3d-cones" style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+          </button>
+        </div>
+
+        <!-- Floating HUD Legend -->
+        <div class="hud-legend" style="position: absolute; bottom: 16px; left: 16px; z-index: 10; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); font-size: 0.75rem; display: flex; flex-direction: column; gap: 6px; pointer-events: none;">
+          <div style="font-weight: bold; color: var(--accent-cyan); margin-bottom: 2px;">Waypoint Colors</div>
+          <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block; border: 1px solid #fff;"></span> Start Point</div>
+          <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444; display: inline-block; border: 1px solid #fff;"></span> End Point</div>
+          <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #ec4899; display: inline-block; border: 1px solid #fff;"></span> Modified Waypoint</div>
+          <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #06b6d4; display: inline-block;"></span> Standard Layer</div>
+          <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #a855f7; display: inline-block;"></span> Orbit Ring 1 (High)</div>
+          <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span> Orbit Ring 3 (Low)</div>
+          <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #3b82f6; display: inline-block;"></span> Combo Grid</div>
+        </div>
+
+        <!-- Helper Instructions -->
+        <div style="position: absolute; top: 16px; right: 16px; z-index: 10; color: var(--text-muted); font-size: 0.75rem; background: rgba(15, 23, 42, 0.6); padding: 6px 10px; border-radius: 6px; pointer-events: none; border: 1px solid rgba(255,255,255,0.04); backdrop-filter: blur(4px);">
+          Left-click & drag: Rotate | Scroll: Zoom | Right-click & drag: Pan
+        </div>
+      </div>
+      <footer class="modal-footer" style="padding: 12px 24px;">
+        <button id="close-3d-footer-btn" class="btn-primary" type="button" style="padding: 8px 16px; font-size: 0.8rem; border-radius: 6px;">Close Preview</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Auto-Plan Modal -->
+  <div id="auto-plan-modal" class="modal-overlay hidden">
+    <div class="modal glass" style="max-width: 450px; width: 90%;">
+      <header class="modal-header">
+        <h2>🎯 Auto-Plan Mission</h2>
+        <button id="close-auto-plan-btn" class="close-btn" type="button" aria-label="Close auto plan">&times;</button>
+      </header>
+      <div class="modal-content" style="padding: 24px;">
+        <div class="ap-stat-grid">
+          <div class="ap-stat-item">
+            <span class="ap-stat-label">Measured Width</span>
+            <span class="ap-stat-val" id="ap-footprint-width">-</span>
+          </div>
+          <div class="ap-stat-item">
+            <span class="ap-stat-label">Measured Depth</span>
+            <span class="ap-stat-val" id="ap-footprint-depth">-</span>
+          </div>
+        </div>
+
+        <div class="ap-input-row">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;">
+            <label for="ap-height" style="margin: 0;">Structure Height</label>
+            <span style="font-size: 0.85rem; font-weight: 600; color: var(--accent-cyan);"><span id="ap-height-val">15</span> <span id="ap-height-unit">m</span></span>
+          </div>
+          <input type="range" id="ap-height" min="1" max="200" value="15" step="1" style="width: 100%; accent-color: var(--accent-cyan); height: 6px; border-radius: 3px; background: rgba(255,255,255,0.1); outline: none;">
+        </div>
+
+        <div class="ap-input-row">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px;">
+            <label for="ap-clearance" style="margin: 0;">Safety Clearance</label>
+            <span style="font-size: 0.85rem; font-weight: 600; color: var(--accent-cyan);"><span id="ap-clearance-val">10</span> <span id="ap-clearance-unit">m</span></span>
+          </div>
+          <input type="range" id="ap-clearance" min="2" max="50" value="10" step="1" style="width: 100%; accent-color: var(--accent-cyan); height: 6px; border-radius: 3px; background: rgba(255,255,255,0.1); outline: none;">
+        </div>
+
+        <div class="ap-recommended">
+          <div class="ap-rec-title">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            Recommended Setup
+          </div>
+          <div style="font-size: 0.85rem; line-height: 1.5; color: var(--text-main); display: flex; flex-direction: column; gap: 4px;">
+            <div>Pattern: <span id="ap-rec-pattern" style="font-weight: 600; color: var(--accent-cyan);">-</span></div>
+            <div>Altitude: <span id="ap-rec-altitude" style="font-weight: 600;">-</span></div>
+            <div>Grid Size/Radius: <span id="ap-rec-size" style="font-weight: 600;">-</span></div>
+            <div>Gimbal Pitch: <span id="ap-rec-pitch" style="font-weight: 600;">-</span></div>
+          </div>
+        </div>
+      </div>
+      <footer class="modal-footer" style="padding: 16px 24px; display: flex; gap: 12px; justify-content: flex-end;">
+        <button id="ap-cancel-btn" class="btn-secondary" type="button" style="margin-top: 0;">Cancel</button>
+        <button id="ap-apply-btn" class="btn-primary" type="button">Apply Mission</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Auto-Plan Banner -->
+  <div id="auto-plan-banner" class="hidden">
+    <div class="banner-pulse"></div>
+    <span style="font-size: 0.85rem; color: var(--text-main); font-weight: 500;">Click & drag on the map to outline the structure</span>
+    <button id="cancel-draw-btn" class="btn-secondary" style="padding: 4px 10px; font-size: 0.7rem; margin: 0; line-height: 1;" type="button">Cancel</button>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- Esri Leaflet (for live FAA Airspace REST Feature Layers) -->
+  <script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
+  
+  <!-- JSZip JS (for creating KMZ files in browser) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <!-- Three.js and OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <!-- Custom Javascript -->
+  <script src="index.js?v=1.6.0"></script>
+</body>
+</html>
