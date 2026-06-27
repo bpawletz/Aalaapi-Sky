@@ -5,12 +5,36 @@ const vm = require('node:vm');
 
 // --- Global Stubbing Setup ---
 global.document = {
-  getElementById: () => null,
+  getElementById: (id) => ({
+    classList: { add: () => {}, remove: () => {} },
+    value: '',
+    textContent: '',
+    style: {},
+    closest: () => ({ style: {} })
+  }),
   addEventListener: () => {},
   querySelectorAll: () => [],
 };
 global.window = {
   addEventListener: () => {}
+};
+global.alert = (msg) => {
+  global.lastAlert = msg;
+};
+global.console.error = () => {}; // suppress expected error logs in tests
+global.console.warn = () => {};
+
+global.DOMParser = class DOMParser {
+  parseFromString(str, type) {
+    return {
+      getElementsByTagName: (tag) => {
+        if (tag === 'Placemark' && str.includes('<Placemark>')) {
+          return [{}]; // Mock element, doesn't need actual content for the empty test
+        }
+        return [];
+      }
+    };
+  }
 };
 global.localStorage = {
   getItem: () => null
@@ -47,6 +71,30 @@ describe('Unit Conversion Tests', () => {
     assert.strictEqual(formatDistance(null), '0 m');
     assert.strictEqual(formatDistance(undefined), '0 m');
     assert.strictEqual(formatDistance(NaN), '0 m');
+  });
+});
+
+describe('parseWPML Tests', () => {
+  test('parseWPML handles missing waypoints gracefully', () => {
+    // Reset alert spy
+    global.lastAlert = null;
+
+    // Provide XML without any <Placemark> elements
+    const emptyMission = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <Folder>
+    </Folder>
+  </Document>
+</kml>`;
+
+    // Should catch error, log it, alert the user, and clear the mission
+    parseWPML(emptyMission);
+
+    assert.strictEqual(global.lastAlert, 'Failed to parse KML: No waypoints found in the mission file.', 'Alert should display the correct error message');
+    assert.strictEqual(importedWaypoints, null, 'importedWaypoints should be cleared');
+    assert.strictEqual(importedPhotos, null, 'importedPhotos should be cleared');
+    assert.strictEqual(importedFileName, null, 'importedFileName should be cleared');
   });
 });
 
