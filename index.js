@@ -2578,65 +2578,64 @@ function removeBacktrackingSpurs(wps) {
   while (changed) {
     changed = false;
     
+    // Precompute cumulative path lengths to avoid O(N^3) nested loop
+    let cumulativePath = new Float64Array(points.length);
+    cumulativePath[0] = 0;
+    for (let k = 1; k < points.length; k++) {
+      const dx = points[k].x - points[k-1].x;
+      const dy = points[k].y - points[k-1].y;
+      cumulativePath[k] = cumulativePath[k-1] + Math.sqrt(dx * dx + dy * dy);
+    }
+
     for (let i = 0; i < points.length - 2; i++) {
       for (let j = points.length - 1; j > i + 1; j--) {
         const dx = points[j].x - points[i].x;
         const dy = points[j].y - points[i].y;
-        const distIJ = Math.sqrt(dx * dx + dy * dy);
+        const distSq = dx * dx + dy * dy;
         
-        // If the start and end of this candidate loop are close (e.g. < 25 meters)
-        if (distIJ < 25.0) {
-          let pathLength = 0;
-          for (let k = i + 1; k <= j; k++) {
-            const dk = Math.sqrt(
-              Math.pow(points[k].x - points[k - 1].x, 2) +
-              Math.pow(points[k].y - points[k - 1].y, 2)
-            );
-            pathLength += dk;
-          }
+        // If the start and end of this candidate loop are close (e.g. < 25 meters, squared is 625)
+        if (distSq < 625.0) {
+          const pathLength = cumulativePath[j] - cumulativePath[i];
           
           // If the path length is significant (at least 25 meters)
           if (pathLength > 25.0) {
             // Find the tip index which is furthest from points[i]
             let tip = i + 1;
-            let maxDistToI = 0;
+            let maxDistToISq = 0;
             for (let k = i + 1; k < j; k++) {
-              const d = Math.sqrt(
-                Math.pow(points[k].x - points[i].x, 2) +
-                Math.pow(points[k].y - points[i].y, 2)
-              );
-              if (d > maxDistToI) {
-                maxDistToI = d;
+              const kdx = points[k].x - points[i].x;
+              const kdy = points[k].y - points[i].y;
+              const dSq = kdx * kdx + kdy * kdy;
+              if (dSq > maxDistToISq) {
+                maxDistToISq = dSq;
                 tip = k;
               }
             }
             
-            let maxWidth = 0;
+            let maxWidthSq = 0;
             // For every point a in Leg 1 (i to tip)
             for (let a = i; a <= tip; a++) {
-              let minDist = Infinity;
+              let minDistSq = Infinity;
               // Find closest point b on Leg 2 (tip to j)
               for (let b = tip; b <= j; b++) {
-                const d = Math.sqrt(
-                  Math.pow(points[b].x - points[a].x, 2) +
-                  Math.pow(points[b].y - points[a].y, 2)
-                );
-                if (d < minDist) minDist = d;
+                const bdx = points[b].x - points[a].x;
+                const bdy = points[b].y - points[a].y;
+                const dSq = bdx * bdx + bdy * bdy;
+                if (dSq < minDistSq) minDistSq = dSq;
               }
-              if (minDist > maxWidth) maxWidth = minDist;
+              if (minDistSq > maxWidthSq) maxWidthSq = minDistSq;
             }
             
             // Also check Leg 2 to Leg 1 to be symmetric
             for (let b = tip; b <= j; b++) {
-              let minDist = Infinity;
+              let minDistSq = Infinity;
               for (let a = i; a <= tip; a++) {
-                const d = Math.sqrt(
-                  Math.pow(points[a].x - points[b].x, 2) +
-                  Math.pow(points[a].y - points[b].y, 2)
-                );
-                if (d < minDist) minDist = d;
+                const adx = points[a].x - points[b].x;
+                const ady = points[a].y - points[b].y;
+                const dSq = adx * adx + ady * ady;
+                if (dSq < minDistSq) minDistSq = dSq;
               }
-              if (minDist > maxWidth) maxWidth = minDist;
+              if (minDistSq > maxWidthSq) maxWidthSq = minDistSq;
             }
             
             // Check if any point inside the loop to be removed is a user-clicked point
@@ -2649,7 +2648,7 @@ function removeBacktrackingSpurs(wps) {
             }
             
             // If it's a very narrow loop and contains no clicked points, it's a backtracking spur!
-            if (!hasClickedPoint && maxWidth < 25.0) {
+            if (!hasClickedPoint && maxWidthSq < 625.0) {
               points.splice(i + 1, j - i - 1);
               changed = true;
               break;
@@ -2668,6 +2667,7 @@ function removeBacktrackingSpurs(wps) {
   
   return points;
 }
+
 
 function addRoadWaypoint(lat, lng) {
   if (!centerMarker) {
@@ -3617,7 +3617,13 @@ function parseWPML(wpmlText) {
 
     toggleUIControlsState(true);
 
-    document.getElementById('import-status-text').innerHTML = `<span style="color: var(--accent-green); font-weight:600;">Active: ${importedFileName}</span>`;
+    const statusTextEl = document.getElementById('import-status-text');
+    statusTextEl.textContent = '';
+    const spanEl = document.createElement('span');
+    spanEl.style.color = 'var(--accent-green)';
+    spanEl.style.fontWeight = '600';
+    spanEl.textContent = `Active: ${importedFileName}`;
+    statusTextEl.appendChild(spanEl);
     document.getElementById('clear-imported-btn').classList.remove('hidden');
 
     updateGrid();
