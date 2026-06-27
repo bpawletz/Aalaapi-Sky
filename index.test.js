@@ -79,6 +79,13 @@ describe('Unit Conversion Tests', () => {
   test('formatDistance formats imperial distance correctly', () => {
     vm.runInThisContext('cachedUnitSystem = null;');
     const originalGetItem = global.localStorage.getItem;
+    global.localStorage.getItem = () => 'imperial';
+    vm.runInThisContext('cachedUnitSystem = null; getUnitSystem = () => "imperial";');
+
+    assert.strictEqual(formatDistance(10), '32.8 ft');
+    assert.strictEqual(formatDistance(10, 2), '32.81 ft');
+    assert.strictEqual(formatDistance(0), '0.0 ft');
+    vm.runInThisContext('getUnitSystem = function() { if (cachedUnitSystem) return cachedUnitSystem; const el = typeof document !== "undefined" ? document.getElementById("unit-system") : null; if (el) { cachedUnitSystem = el.value; return cachedUnitSystem; } const savedUnit = localStorage.getItem("unitSystem"); if (savedUnit) { cachedUnitSystem = savedUnit; return cachedUnitSystem; } return "metric"; };');
     vm.runInThisContext('cachedUnitSystem = null;');
     global.localStorage.getItem = (k) => k === 'aalaapi_sky_unit_system' ? 'imperial' : null;
     vm.runInThisContext('cachedUnitSystem = null;');
@@ -96,6 +103,13 @@ describe('Unit Conversion Tests', () => {
   test('formatDistance handles null, undefined, and NaN for imperial', () => {
     vm.runInThisContext('cachedUnitSystem = null;');
     const originalGetItem = global.localStorage.getItem;
+    global.localStorage.getItem = () => 'imperial';
+    vm.runInThisContext('cachedUnitSystem = null; getUnitSystem = () => "imperial";');
+
+    assert.strictEqual(formatDistance(null), '0 ft');
+    assert.strictEqual(formatDistance(undefined), '0 ft');
+    assert.strictEqual(formatDistance(NaN), '0 ft');
+    vm.runInThisContext('getUnitSystem = function() { if (cachedUnitSystem) return cachedUnitSystem; const el = typeof document !== "undefined" ? document.getElementById("unit-system") : null; if (el) { cachedUnitSystem = el.value; return cachedUnitSystem; } const savedUnit = localStorage.getItem("unitSystem"); if (savedUnit) { cachedUnitSystem = savedUnit; return cachedUnitSystem; } return "metric"; };');
     vm.runInThisContext('cachedUnitSystem = null;');
     global.localStorage.getItem = (k) => k === 'aalaapi_sky_unit_system' ? 'imperial' : null;
     vm.runInThisContext('cachedUnitSystem = null;');
