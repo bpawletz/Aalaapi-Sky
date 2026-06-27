@@ -3720,129 +3720,39 @@ function updatePathLinesAndStats(waypoints, photoLocations, centerLat, centerLon
   updateStatsPanel(stats);
 }
 
-function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
-  const popupContent = document.createElement('div');
-  popupContent.className = 'wp-editor-popup';
-  popupContent.style.width = '210px';
-  popupContent.style.color = '#f8fafc';
-  popupContent.style.fontFamily = 'Outfit, sans-serif';
+function captureWaypointOriginalState(wp, idx) {
+  const state = {
+    lat: wp.lat,
+    lon: wp.lon,
+    x: wp.x,
+    y: wp.y,
+    alt: wp.alt,
+    pitch: wp.pitch,
+    heading: wp.heading,
+    isRingStart: wp.isRingStart,
+    isModified: wp.isModified,
+    origIsRingStart: wp.origIsRingStart,
+    origIsModified: wp.origIsModified,
+    photoLat: null,
+    photoLon: null,
+    photoX: null,
+    photoY: null
+  };
 
-  const headingVal = (wp.heading !== undefined && wp.heading !== null) ? wp.heading.toFixed(0) : '';
-  const pitchVal = (wp.pitch !== undefined && wp.pitch !== null) ? wp.pitch : -45;
-
-  // Track original properties to support revert on cancel
-  const originalLat = wp.lat;
-  const originalLon = wp.lon;
-  const originalX = wp.x;
-  const originalY = wp.y;
-  const originalAlt = wp.alt;
-  const originalPitch = wp.pitch;
-  const originalHeading = wp.heading;
-  const originalIsRingStart = wp.isRingStart;
-  const originalIsModified = wp.isModified;
-  const originalOrigIsRingStart = wp.origIsRingStart;
-  const originalOrigIsModified = wp.origIsModified;
-
-  // Track photo offsets if applicable
-  let originalPhotoLat = null;
-  let originalPhotoLon = null;
-  let originalPhotoX = null;
-  let originalPhotoY = null;
   const activePhotos = getCurrentPhotos();
   const hasPhoto = activePhotos && activePhotos[idx];
   if (hasPhoto) {
-    originalPhotoLat = activePhotos[idx].lat;
-    originalPhotoLon = activePhotos[idx].lon;
-    originalPhotoX = activePhotos[idx].x;
-    originalPhotoY = activePhotos[idx].y;
+    state.photoLat = activePhotos[idx].lat;
+    state.photoLon = activePhotos[idx].lon;
+    state.photoX = activePhotos[idx].x;
+    state.photoY = activePhotos[idx].y;
   }
 
-  const unit = getUnitSystem();
-  const altDisp = unit === 'imperial' ? Math.round(wp.alt * M_TO_FT) : wp.alt.toFixed(0);
-  const altUnitStr = unit === 'imperial' ? 'ft' : 'm';
-  const initialStepLabel = unit === 'imperial' ? '5 ft' : '1m';
+  return state;
+}
 
-  const hasMoved = (
-    (wp.origLat !== undefined && wp.origLat !== null && Math.abs(wp.lat - wp.origLat) > 1e-9) ||
-    (wp.origLon !== undefined && wp.origLon !== null && Math.abs(wp.lon - wp.origLon) > 1e-9) ||
-    (wp.origAlt !== undefined && wp.origAlt !== null && Math.abs(wp.alt - wp.origAlt) > 1e-3) ||
-    (wp.origPitch !== undefined && wp.origPitch !== null && wp.pitch !== wp.origPitch) ||
-    (wp.origHeading !== undefined && wp.origHeading !== null && wp.heading !== wp.origHeading) ||
-    (wp.origHeading === null && wp.heading !== null) ||
-    (wp.origHeading !== null && wp.heading === null)
-  );
 
-  popupContent.innerHTML = `
-    <h4 style="margin: 0 0 12px 0; color: #06b6d4; font-size: 0.95rem; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;">Edit Waypoint ${idx}</h4>
-    <div style="display: flex; flex-direction: column; gap: 12px; font-size: 0.8rem;">
-      
-      <!-- Altitude Slider -->
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #94a3b8; font-weight: 500;">Altitude:</span>
-          <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-alt-val">${altDisp}</span> ${altUnitStr}</span>
-        </div>
-        <input type="range" id="edit-wp-alt" min="5" max="120" value="${wp.alt.toFixed(0)}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
-      </div>
-      
-      <!-- Pitch Slider -->
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #94a3b8; font-weight: 500;">Gimbal Pitch:</span>
-          <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-pitch-val">${pitchVal}</span>&deg;</span>
-        </div>
-        <input type="range" id="edit-wp-pitch" min="-90" max="0" value="${pitchVal}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
-      </div>
- 
-      <!-- Yaw / Heading Slider & Auto Checkbox -->
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #94a3b8; font-weight: 500;">Yaw Heading:</span>
-          <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-heading-val">${headingVal !== '' ? headingVal + '&deg;' : 'Auto'}</span></span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <input type="range" id="edit-wp-heading" min="0" max="359" value="${headingVal !== '' ? headingVal : 0}" ${headingVal === '' ? 'disabled' : ''} style="flex: 1; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer; ${headingVal === '' ? 'opacity: 0.4;' : ''}">
-          <label style="display: inline-flex; align-items: center; gap: 4px; color: #94a3b8; font-size: 0.75rem; cursor: pointer; white-space: nowrap; flex-shrink: 0;">
-            <input type="checkbox" id="edit-wp-heading-auto" ${headingVal === '' ? 'checked' : ''} style="cursor: pointer; accent-color: #06b6d4; margin: 0;">
-            Auto
-          </label>
-        </div>
-      </div>
- 
-      <!-- Position Nudge & Lat/Lon Inputs -->
-      <div style="display: flex; flex-direction: column; gap: 6px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
-        <span style="color: #94a3b8; font-weight: 500;">Position (Nudge):</span>
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <!-- D-Pad -->
-          <div style="display: grid; grid-template-columns: repeat(3, 24px); grid-template-rows: repeat(3, 24px); gap: 2px; justify-content: center; width: 80px;">
-            <div></div>
-            <button id="nudge-n-btn" type="button" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #06b6d4; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; font-weight: bold; width: 24px; height: 24px; padding: 0;">▲</button>
-            <div></div>
-            <button id="nudge-w-btn" type="button" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #06b6d4; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; font-weight: bold; width: 24px; height: 24px; padding: 0;">◀</button>
-            <div id="nudge-step-display" style="display: flex; align-items: center; justify-content: center; font-size: 0.65rem; color: var(--accent-cyan); font-weight: bold; user-select: none;">${initialStepLabel}</div>
-            <button id="nudge-e-btn" type="button" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #06b6d4; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; font-weight: bold; width: 24px; height: 24px; padding: 0;">▶</button>
-            <div></div>
-            <button id="nudge-s-btn" type="button" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #06b6d4; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; font-weight: bold; width: 24px; height: 24px; padding: 0;">▼</button>
-            <div></div>
-          </div>
-          
-          <!-- Lat/Lon inputs -->
-          <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; margin-left: 8px;">
-            <input type="text" id="edit-wp-lat" value="${wp.lat.toFixed(7)}" style="background: rgba(15,23,42,0.6); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 4px; color: #fff; font-size: 0.7rem; width: 100%; text-align: center;" placeholder="Latitude">
-            <input type="text" id="edit-wp-lon" value="${wp.lon.toFixed(7)}" style="background: rgba(15,23,42,0.6); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 4px; color: #fff; font-size: 0.7rem; width: 100%; text-align: center;" placeholder="Longitude">
-          </div>
-        </div>
-      </div>
- 
-      <div style="display: flex; gap: 8px; margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
-        <button id="save-wp-btn" class="btn-primary" style="padding: 6px 12px; font-size: 0.75rem; flex: 1; min-height: 28px; line-height: 1.2;">Save</button>
-        <button id="reset-wp-btn" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; color: #eab308; border-color: rgba(234, 179, 8, 0.3); flex: 1; min-height: 28px; line-height: 1.2; display: ${hasMoved ? 'inline-block' : 'none'};">Reset</button>
-        <button id="delete-wp-btn" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; color: #ef4444; border-color: rgba(239, 68, 68, 0.3); flex: 1; min-height: 28px; line-height: 1.2;">Delete</button>
-      </div>min-height: 28px; line-height: 1.2;">Delete</button>
-      </div>
-    </div>
-  `;
-
+function bindWaypointEditorEvents(popupContent, wp, idx, marker, popupMarker, originalState, unit, M_TO_FT, activePhotos, hasPhoto) {
   // Bind events to the elements directly before they are inserted into the DOM
   const saveBtn = popupContent.querySelector('#save-wp-btn');
   const resetBtn = popupContent.querySelector('#reset-wp-btn');
@@ -4048,27 +3958,27 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     if (isSaved) return;
     
     // Restore original values in the state
-    wp.lat = originalLat;
-    wp.lon = originalLon;
-    wp.x = originalX;
-    wp.y = originalY;
-    wp.alt = originalAlt;
-    wp.pitch = originalPitch;
-    wp.heading = originalHeading;
-    wp.isRingStart = originalIsRingStart;
-    wp.isModified = originalIsModified;
-    wp.origIsRingStart = originalOrigIsRingStart;
-    wp.origIsModified = originalOrigIsModified;
+    wp.lat = originalState.lat;
+    wp.lon = originalState.lon;
+    wp.x = originalState.x;
+    wp.y = originalState.y;
+    wp.alt = originalState.alt;
+    wp.pitch = originalState.pitch;
+    wp.heading = originalState.heading;
+    wp.isRingStart = originalState.isRingStart;
+    wp.isModified = originalState.isModified;
+    wp.origIsRingStart = originalState.origIsRingStart;
+    wp.origIsModified = originalState.origIsModified;
 
     if (hasPhoto) {
-      activePhotos[idx].lat = originalPhotoLat;
-      activePhotos[idx].lon = originalPhotoLon;
-      activePhotos[idx].x = originalPhotoX;
-      activePhotos[idx].y = originalPhotoY;
+      activePhotos[idx].lat = originalState.photoLat;
+      activePhotos[idx].lon = originalState.photoLon;
+      activePhotos[idx].x = originalState.photoX;
+      activePhotos[idx].y = originalState.photoY;
     }
 
     // Revert marker position, icon and tooltip
-    marker.setLatLng([originalLat, originalLon]);
+    marker.setLatLng([originalState.lat, originalState.lon]);
     const gridType = document.getElementById('grid-type')?.value;
     if (gridType !== 'road-following') {
       const originalIcon = getMarkerIcon(wp, idx, getCurrentWaypoints(), parseFloat(document.getElementById('grid-rotation').value));
@@ -4193,8 +4103,46 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     });
   }
 
+
+}
+
+function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
+  const popupContent = document.createElement('div');
+  popupContent.className = 'wp-editor-popup';
+  popupContent.style.width = '210px';
+  popupContent.style.color = '#f8fafc';
+  popupContent.style.fontFamily = 'Outfit, sans-serif';
+
+  const headingVal = (wp.heading !== undefined && wp.heading !== null) ? wp.heading.toFixed(0) : '';
+  const pitchVal = (wp.pitch !== undefined && wp.pitch !== null) ? wp.pitch : -45;
+
+  const activePhotos = getCurrentPhotos();
+  const hasPhoto = activePhotos && activePhotos[idx];
+  const originalState = captureWaypointOriginalState(wp, idx);
+
+  const unit = getUnitSystem();
+  const altDisp = unit === 'imperial' ? Math.round(wp.alt * M_TO_FT) : wp.alt.toFixed(0);
+  const altUnitStr = unit === 'imperial' ? 'ft' : 'm';
+  const initialStepLabel = unit === 'imperial' ? '5 ft' : '1m';
+
+  const hasMoved = (
+    (wp.origLat !== undefined && wp.origLat !== null && Math.abs(wp.lat - wp.origLat) > 1e-9) ||
+    (wp.origLon !== undefined && wp.origLon !== null && Math.abs(wp.lon - wp.origLon) > 1e-9) ||
+    (wp.origAlt !== undefined && wp.origAlt !== null && Math.abs(wp.alt - wp.origAlt) > 1e-3) ||
+    (wp.origPitch !== undefined && wp.origPitch !== null && wp.pitch !== wp.origPitch) ||
+    (wp.origHeading !== undefined && wp.origHeading !== null && wp.heading !== wp.origHeading) ||
+    (wp.origHeading === null && wp.heading !== null) ||
+    (wp.origHeading !== null && wp.heading === null)
+  );
+
+  popupContent.innerHTML = getWaypointEditorHTML(wp, idx, altDisp, altUnitStr, pitchVal, headingVal, initialStepLabel, hasMoved);
+
+  bindWaypointEditorEvents(popupContent, wp, idx, marker, popupMarker, originalState, unit, M_TO_FT, activePhotos, hasPhoto);
+
   return popupContent;
 }
+
+
 
 // Three.js 3D Preview State Variables
 let threeScene, threeCamera, threeRenderer, threeControls, threeAnimationId;
@@ -5385,3 +5333,76 @@ function applyAutoPlan() {
   hideAutoPlanModal(false);
 }
 
+
+function getWaypointEditorHTML(wp, idx, altDisp, altUnitStr, pitchVal, headingVal, initialStepLabel, hasMoved) {
+  return `
+    <h4 style="margin: 0 0 12px 0; color: #06b6d4; font-size: 0.95rem; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;">Edit Waypoint ${idx}</h4>
+    <div style="display: flex; flex-direction: column; gap: 12px; font-size: 0.8rem;">
+
+      <!-- Altitude Slider -->
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: #94a3b8; font-weight: 500;">Altitude:</span>
+          <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-alt-val">${altDisp}</span> ${altUnitStr}</span>
+        </div>
+        <input type="range" id="edit-wp-alt" min="5" max="120" value="${wp.alt.toFixed(0)}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
+      </div>
+
+      <!-- Pitch Slider -->
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: #94a3b8; font-weight: 500;">Gimbal Pitch:</span>
+          <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-pitch-val">${pitchVal}</span>&deg;</span>
+        </div>
+        <input type="range" id="edit-wp-pitch" min="-90" max="0" value="${pitchVal}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
+      </div>
+
+      <!-- Yaw / Heading Slider & Auto Checkbox -->
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: #94a3b8; font-weight: 500;">Yaw Heading:</span>
+          <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-heading-val">${headingVal !== '' ? headingVal + '&deg;' : 'Auto'}</span></span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <input type="range" id="edit-wp-heading" min="0" max="359" value="${headingVal !== '' ? headingVal : 0}" ${headingVal === '' ? 'disabled' : ''} style="flex: 1; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer; ${headingVal === '' ? 'opacity: 0.4;' : ''}">
+          <label style="display: inline-flex; align-items: center; gap: 4px; color: #94a3b8; font-size: 0.75rem; cursor: pointer; white-space: nowrap; flex-shrink: 0;">
+            <input type="checkbox" id="edit-wp-heading-auto" ${headingVal === '' ? 'checked' : ''} style="cursor: pointer; accent-color: #06b6d4; margin: 0;">
+            Auto
+          </label>
+        </div>
+      </div>
+
+      <!-- Position Nudge & Lat/Lon Inputs -->
+      <div style="display: flex; flex-direction: column; gap: 6px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+        <span style="color: #94a3b8; font-weight: 500;">Position (Nudge):</span>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <!-- D-Pad -->
+          <div style="display: grid; grid-template-columns: repeat(3, 24px); grid-template-rows: repeat(3, 24px); gap: 2px; justify-content: center; width: 80px;">
+            <div></div>
+            <button id="nudge-n-btn" type="button" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #06b6d4; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; font-weight: bold; width: 24px; height: 24px; padding: 0;">▲</button>
+            <div></div>
+            <button id="nudge-w-btn" type="button" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #06b6d4; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; font-weight: bold; width: 24px; height: 24px; padding: 0;">◀</button>
+            <div id="nudge-step-display" style="display: flex; align-items: center; justify-content: center; font-size: 0.65rem; color: var(--accent-cyan); font-weight: bold; user-select: none;">${initialStepLabel}</div>
+            <button id="nudge-e-btn" type="button" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #06b6d4; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; font-weight: bold; width: 24px; height: 24px; padding: 0;">▶</button>
+            <div></div>
+            <button id="nudge-s-btn" type="button" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #06b6d4; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; font-weight: bold; width: 24px; height: 24px; padding: 0;">▼</button>
+            <div></div>
+          </div>
+
+          <!-- Lat/Lon inputs -->
+          <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; margin-left: 8px;">
+            <input type="text" id="edit-wp-lat" value="${wp.lat.toFixed(7)}" style="background: rgba(15,23,42,0.6); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 4px; color: #fff; font-size: 0.7rem; width: 100%; text-align: center;" placeholder="Latitude">
+            <input type="text" id="edit-wp-lon" value="${wp.lon.toFixed(7)}" style="background: rgba(15,23,42,0.6); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 4px; color: #fff; font-size: 0.7rem; width: 100%; text-align: center;" placeholder="Longitude">
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+        <button id="save-wp-btn" class="btn-primary" style="padding: 6px 12px; font-size: 0.75rem; flex: 1; min-height: 28px; line-height: 1.2;">Save</button>
+        <button id="reset-wp-btn" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; color: #eab308; border-color: rgba(234, 179, 8, 0.3); flex: 1; min-height: 28px; line-height: 1.2; display: ${hasMoved ? 'inline-block' : 'none'};">Reset</button>
+        <button id="delete-wp-btn" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; color: #ef4444; border-color: rgba(239, 68, 68, 0.3); flex: 1; min-height: 28px; line-height: 1.2;">Delete</button>
+      </div>min-height: 28px; line-height: 1.2;">Delete</button>
+      </div>
+    </div>
+`;
+}

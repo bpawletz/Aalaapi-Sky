@@ -75,25 +75,42 @@ describe('Unit Conversion Tests', () => {
 
   test('formatDistance formats imperial distance correctly', () => {
     const originalGetItem = global.localStorage.getItem;
+    const origGetId1 = global.document.getElementById;
+    global.document.getElementById = (id) => {
+      if (id === 'unit-system') return { value: 'imperial' };
+      return origGetId1.call(global.document, id);
+    };
     global.localStorage.getItem = () => 'imperial';
+    vm.runInThisContext('cachedUnitSystem = null;');
 
     assert.strictEqual(formatDistance(10), '32.8 ft');
     assert.strictEqual(formatDistance(10, 2), '32.81 ft');
     assert.strictEqual(formatDistance(0), '0.0 ft');
 
     global.localStorage.getItem = originalGetItem;
+    global.document.getElementById = origGetId1;
+    vm.runInThisContext('cachedUnitSystem = null;');
   });
 
   test('formatDistance handles null, undefined, and NaN for imperial', () => {
     const originalGetItem = global.localStorage.getItem;
+    const origGetId2 = global.document.getElementById;
+    global.document.getElementById = (id) => {
+      if (id === 'unit-system') return { value: 'imperial' };
+      return origGetId2.call(global.document, id);
+    };
     global.localStorage.getItem = () => 'imperial';
+    vm.runInThisContext('cachedUnitSystem = null;');
 
     assert.strictEqual(formatDistance(null), '0 ft');
     assert.strictEqual(formatDistance(undefined), '0 ft');
     assert.strictEqual(formatDistance(NaN), '0 ft');
 
     global.localStorage.getItem = originalGetItem;
+    global.document.getElementById = origGetId2;
+    vm.runInThisContext('cachedUnitSystem = null;');
   });
+
 });
 
 describe('parseWPML Tests', () => {
