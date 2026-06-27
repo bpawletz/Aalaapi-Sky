@@ -102,3 +102,50 @@ describe('Grid Generation Tests', () => {
     assert.strictEqual(maxY, 50);
   });
 });
+
+describe('searchAddress API Tests', () => {
+  let originalFetch;
+  let originalAlert;
+  let originalConsoleError;
+  const originalGetElementById = global.document.getElementById;
+
+  test('searchAddress handles network failure gracefully', async () => {
+    let alertCalls = [];
+    let consoleErrorCalls = [];
+
+    // Setup mocks
+    originalFetch = global.fetch;
+    originalAlert = global.alert;
+    originalConsoleError = console.error;
+
+    global.fetch = () => Promise.reject(new Error('Network error'));
+    global.alert = (msg) => alertCalls.push(msg);
+    console.error = (msg, err) => consoleErrorCalls.push({ msg, err });
+
+    global.document.getElementById = (id) => {
+      if (id === 'location-input') return { value: 'Test Location' };
+      return originalGetElementById.call(global.document, id);
+    };
+
+    try {
+      // Call the function
+      searchAddress();
+
+      // Wait for the promise chain inside searchAddress to resolve
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Verify assertions
+      assert.strictEqual(alertCalls.length, 1);
+      assert.strictEqual(alertCalls[0], "Error finding location. Check your internet connection.");
+      assert.strictEqual(consoleErrorCalls.length, 1);
+      assert.strictEqual(consoleErrorCalls[0].msg, "Search error:");
+      assert.strictEqual(consoleErrorCalls[0].err.message, "Network error");
+    } finally {
+      // Cleanup mocks
+      global.fetch = originalFetch;
+      global.alert = originalAlert;
+      console.error = originalConsoleError;
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+});
