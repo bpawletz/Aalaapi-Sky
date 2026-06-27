@@ -36,15 +36,6 @@ function formatDistance(meters, decimalPlaces = 1) {
   return `${meters.toFixed(decimalPlaces)} m`;
 }
 
-function formatSpeed(mps, decimalPlaces = 1) {
-  const unit = getUnitSystem();
-  if (unit === 'imperial') {
-    const mph = mps * MPS_TO_MPH;
-    return `${mph.toFixed(decimalPlaces)} mph`;
-  }
-  return `${mps.toFixed(decimalPlaces)} m/s`;
-}
-
 function initGeolocation() {
   const btn = document.getElementById('locate-me-btn');
   const label = document.getElementById('locate-me-label');
