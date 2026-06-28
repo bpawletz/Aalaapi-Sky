@@ -2381,6 +2381,7 @@ let CAMERA_VFOV = 55.2; // Vertical field of view in degrees
 // Standard satellite and street map layers
 let streetLayer;
 let satelliteLayer;
+let topoLayer;
 
 // FAA Airspace Overlay layers
 let vfrSectionalLayer;
@@ -2389,6 +2390,10 @@ let specialUseAirspaceLayer;
 let uasFacilityMapLayer;
 let uasFacilityMapEnabled = false; // tracks layer-control checkbox state
 const LAANC_MIN_ZOOM = 12;         // only load LAANC features at this zoom level or above
+
+let obstaclesLayer;
+let obstaclesEnabled = false; // tracks layer-control checkbox state
+const OBSTACLES_MIN_ZOOM = 12; // only load obstacles at this zoom level or above
 
 // NOAA Weather Overlays
 let weatherRadarLayer;
@@ -2438,6 +2443,11 @@ function initMap() {
     maxZoom: 22,
     maxNativeZoom: 19,
     attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+  });
+
+  topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+    maxZoom: 17,
+    attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
   });
 
   // Default to Satellite View (best for drone planning)
@@ -2510,6 +2520,26 @@ function initMap() {
         }
       }
     });
+
+    obstaclesLayer = L.esri.featureLayer({
+      url: 'https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/arcgis/rest/services/Digital_Obstacle_File/FeatureServer/0',
+      where: '1=0', // Start with impossible clause like LAANC
+      pointToLayer: function (geojson, latlng) {
+        return L.circleMarker(latlng, {
+          radius: 5,
+          fillColor: "#f97316", // orange
+          color: "#fff",
+          weight: 1,
+          opacity: 1,
+          fillOpacity: 0.8
+        });
+      },
+      onEachFeature: function (feature, layer) {
+        const props = feature.properties;
+        const title = `<b>FAA Obstacle</b><br>Type: ${props.Type_Code || 'Unknown'}<br>Height (AGL): <b>${props.AGL || 'N/A'} ft</b><br>Height (AMSL): ${props.AMSL || 'N/A'} ft`;
+        layer.bindPopup(title);
+      }
+    });
   } else {
     console.warn('Esri Leaflet not loaded — FAA FeatureServer airspace layers unavailable. VFR Sectional Chart (tile layer) still available.');
   }
@@ -2534,7 +2564,8 @@ function initMap() {
   // Add Layer Control — include only layers that successfully initialized
   const baseMaps = {
     "Satellite View": satelliteLayer,
-    "Street Map": streetLayer
+    "Street Map": streetLayer,
+    "Topography Map": topoLayer
   };
 
   const overlays = {
@@ -2543,6 +2574,7 @@ function initMap() {
   if (classAirspaceLayer) overlays["Controlled Airspace (Class B/C/D/E)"] = classAirspaceLayer;
   if (specialUseAirspaceLayer) overlays["Restricted & Special Use Airspace"] = specialUseAirspaceLayer;
   if (uasFacilityMapLayer) overlays["UAS Facility Maps (LAANC)"] = uasFacilityMapLayer;
+  if (obstaclesLayer) overlays["Obstacles & Antennas (FAA)"] = obstaclesLayer;
   
   // Weather Overlays
   overlays["Weather Radar (NEXRAD)"] = weatherRadarLayer;
@@ -2562,14 +2594,24 @@ function initMap() {
         uasFacilityMapLayer.setWhere('1=0');
       }
       // When enabled, respect current zoom
-      if (uasFacilityMapEnabled) applyLaancZoomGate();
+      if (uasFacilityMapEnabled) applyZoomGates();
+    }
+
+    // Track Obstacles checkbox state
+    if (obstaclesLayer) {
+      if (e.type === 'overlayadd'    && e.name === 'Obstacles & Antennas (FAA)') obstaclesEnabled = true;
+      if (e.type === 'overlayremove' && e.name === 'Obstacles & Antennas (FAA)') {
+        obstaclesEnabled = false;
+        obstaclesLayer.setWhere('1=0');
+      }
+      if (obstaclesEnabled) applyZoomGates();
     }
     updateAirspaceLegend(e);
   });
 
-  // Zoom-gate: show LAANC only at zoom >= LAANC_MIN_ZOOM
+  // Zoom-gate: show LAANC and Obstacles only at certain zooms
   map.on('zoomend', function() {
-    if (uasFacilityMapEnabled && uasFacilityMapLayer) applyLaancZoomGate();
+    applyZoomGates();
   });
 
   // Layer groups for flight paths and markers
@@ -4551,6 +4593,7 @@ function updateAirspaceLegend(e) {
     'Controlled Airspace (Class B/C/D/E)',
     'Restricted & Special Use Airspace',
     'UAS Facility Maps (LAANC)',
+    'Obstacles & Antennas (FAA)',
     'Weather Radar (NEXRAD)',
     'Weather Warnings (NWS Hazards)'
   ];
@@ -4562,6 +4605,8 @@ function updateAirspaceLegend(e) {
   const currentZoom = map ? map.getZoom() : 99;
   const laancActive = airspaceActiveSet.has('UAS Facility Maps (LAANC)');
   const laancZoomedOut = laancActive && currentZoom < LAANC_MIN_ZOOM;
+  const obstaclesActive = airspaceActiveSet.has('Obstacles & Antennas (FAA)');
+  const obstaclesZoomedOut = obstaclesActive && currentZoom < OBSTACLES_MIN_ZOOM;
 
   let html = `<div class="legend-header" style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;">
     <h4 style="margin:0;line-height:1.2;">Map Overlays</h4>
@@ -4602,6 +4647,18 @@ function updateAirspaceLegend(e) {
     }
   }
 
+  if (obstaclesActive) {
+    html += `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin:6px 0 4px;">Obstacles & Antennas</div>`;
+    if (obstaclesZoomedOut) {
+      html += `<div style="font-size:0.75rem;color:var(--accent-yellow);display:flex;align-items:center;gap:5px;margin-bottom:4px;">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Zoom in to zoom level ${OBSTACLES_MIN_ZOOM}+ to load obstacles
+      </div>`;
+    } else {
+      html += `<div class="legend-item"><span class="legend-color" style="background:#f97316; border-radius: 50%; width: 12px; height: 12px; display: inline-block;"></span> FAA Obstacle/Antenna</div>`;
+    }
+  }
+
   if (airspaceActiveSet.has('Weather Radar (NEXRAD)')) {
     html += `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin:6px 0 4px;">Weather Radar</div>`;
     html += `<div class="legend-item" style="flex-direction: column; align-items: stretch; gap: 4px; width: 100%;">
@@ -4623,19 +4680,28 @@ function updateAirspaceLegend(e) {
   container.innerHTML = html;
 }
 
-// Apply or remove LAANC data based on current zoom level.
+// Apply or remove FeatureServer data based on current zoom level.
 // Uses setWhere('1=0') to suppress all network requests when zoomed out,
 // and setWhere('') to restore normal queries when zoomed in enough.
-function applyLaancZoomGate() {
-  if (!uasFacilityMapLayer) return;
+function applyZoomGates() {
   const zoom = map.getZoom();
-  if (zoom >= LAANC_MIN_ZOOM) {
-    // Enable data fetching (empty where = all features in viewport)
-    uasFacilityMapLayer.setWhere('');
-  } else {
-    // Block all data fetching and clear existing features
-    uasFacilityMapLayer.setWhere('1=0');
+
+  if (uasFacilityMapLayer && uasFacilityMapEnabled) {
+    if (zoom >= LAANC_MIN_ZOOM) {
+      uasFacilityMapLayer.setWhere('');
+    } else {
+      uasFacilityMapLayer.setWhere('1=0');
+    }
   }
+
+  if (obstaclesLayer && obstaclesEnabled) {
+    if (zoom >= OBSTACLES_MIN_ZOOM) {
+      obstaclesLayer.setWhere('');
+    } else {
+      obstaclesLayer.setWhere('1=0');
+    }
+  }
+
   // Refresh the legend to show/hide the zoom notice
   updateAirspaceLegend(null);
 }
