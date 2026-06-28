@@ -3066,6 +3066,9 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
 
 // Update stats panel UI elements
 function updateStatsPanel(stats) {
+  if (centerMarker) {
+    fetchAndProcessWeather(centerMarker.getLatLng().lat, centerMarker.getLatLng().lng);
+  }
   const warningsEl = document.getElementById('stats-warnings');
   if (!stats) {
     document.getElementById('stat-waypoints').textContent = "-";
@@ -5595,3 +5598,146 @@ function applyAutoPlan() {
   hideAutoPlanModal(false);
 }
 
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+let lastWeatherFetchCenter = null;
+
+async function fetchAndProcessWeather(centerLat, centerLon) {
+  try {
+    // Only fetch weather if center changed by > 5km or wasn't fetched yet
+    if (lastWeatherFetchCenter) {
+      const dist = calculateDistance(centerLat, centerLon, lastWeatherFetchCenter.lat, lastWeatherFetchCenter.lon);
+      if (dist < 5) return;
+    }
+
+    lastWeatherFetchCenter = { lat: centerLat, lon: centerLon };
+    updateWeatherPanelUI(null, "Loading...", true);
+
+    const headers = { 'User-Agent': 'AalaapiSkyMissionPlanner/1.0' };
+
+    // 1. Get the gridpoint stations for the center location
+    const pointUrl = `https://api.weather.gov/points/${centerLat.toFixed(4)},${centerLon.toFixed(4)}`;
+    const pointRes = await fetch(pointUrl, { headers });
+    if (!pointRes.ok) throw new Error("Failed to fetch NWS grid points");
+    const pointData = await pointRes.json();
+    const stationsUrl = pointData.properties.observationStations;
+
+    // 2. Fetch the list of observation stations
+    const stationsRes = await fetch(stationsUrl, { headers });
+    if (!stationsRes.ok) throw new Error("Failed to fetch NWS stations");
+    const stationsData = await stationsRes.json();
+
+    const stations = stationsData.features || [];
+
+    // We only need the closest station to avoid API rate limits
+    let closestStation = null;
+    let minD = Infinity;
+
+    stations.forEach(f => {
+      const slon = f.geometry.coordinates[0];
+      const slat = f.geometry.coordinates[1];
+      const d = calculateDistance(centerLat, centerLon, slat, slon);
+      if (d < minD) {
+        minD = d;
+        closestStation = {
+          id: f.properties.stationIdentifier,
+          name: f.properties.name,
+          lat: slat,
+          lon: slon,
+          dist: d
+        };
+      }
+    });
+
+    if (!closestStation) throw new Error("No stations found");
+
+    // 3. Fetch latest observation for the closest station
+    const obsRes = await fetch(`https://api.weather.gov/stations/${closestStation.id}/observations/latest`, { headers });
+    if (!obsRes.ok) throw new Error("Failed to fetch METAR");
+    const obsData = await obsRes.json();
+
+    let directions = null;
+    if (obsData && obsData.properties && obsData.properties.flightCategory) {
+      directions = {
+        closest: {
+           icaoId: closestStation.id,
+           name: closestStation.name,
+           lat: closestStation.lat,
+           lon: closestStation.lon,
+           distance: closestStation.dist,
+           fltCat: obsData.properties.flightCategory,
+           raw: obsData.properties.rawMessage
+        }
+      };
+    }
+
+    updateWeatherPanelUI(directions, null, false);
+
+  } catch (error) {
+    console.error("Error fetching weather data:", error);
+    updateWeatherPanelUI(null, "Error", false);
+  }
+}
+
+
+
+function updateWeatherPanelUI(directions, statusMsg, isLoading) {
+  const windowEl = document.getElementById('stat-weather-window');
+  const dirsEl = document.getElementById('stat-weather-dirs');
+
+  if (!windowEl || !dirsEl) return;
+
+  if (isLoading || statusMsg) {
+    windowEl.textContent = statusMsg || "Loading...";
+    windowEl.style.color = "var(--text-secondary)";
+    dirsEl.innerHTML = "";
+    dirsEl.classList.add("hidden");
+    return;
+  }
+
+  if (!directions || !directions.closest) {
+    windowEl.textContent = "🔴 No Data";
+    windowEl.style.color = "var(--error-color)";
+    dirsEl.innerHTML = "";
+    dirsEl.classList.add("hidden");
+    return;
+  }
+
+  // Evaluate flight condition based on closest station
+  // Part 107 generally requires 3 SM visibility and clear of clouds (VFR)
+  // Marginal VFR (MVFR) might be allowed but risky. IFR/LIFR are definitely blocked.
+  const closest = directions.closest;
+  let isAllowed = false;
+  let statusText = "";
+  let color = "";
+
+  if (closest.fltCat === "VFR") {
+    isAllowed = true;
+    statusText = "🟢 Allowed (VFR)";
+    color = "var(--success-color)";
+  } else if (closest.fltCat === "MVFR") {
+    isAllowed = true;
+    statusText = "🟡 Caution (MVFR)";
+    color = "var(--warning-color)";
+  } else {
+    isAllowed = false;
+    statusText = `🔴 Not Allowed (${closest.fltCat})`;
+    color = "var(--error-color)";
+  }
+
+  windowEl.textContent = statusText;
+  windowEl.style.color = color;
+  windowEl.title = `Closest: ${closest.name} (${closest.distance.toFixed(1)}km)\nRaw: ${closest.raw}`;
+
+  dirsEl.innerHTML = "";
+  dirsEl.classList.add("hidden");
+}
