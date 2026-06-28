@@ -1783,6 +1783,10 @@ html, body {
               <span class="stat-lbl">Est. Flight Time</span>
               <span class="stat-val" id="stat-flight-time">-</span>
             </div>
+            <div class="stat-item" style="grid-column: 1 / -1;">
+              <span class="stat-lbl">Air Traffic</span>
+              <span class="stat-val"><a id="opensky-link" href="https://opensky-network.org/network/explorer" target="_blank" style="color: var(--accent-cyan); text-decoration: none;">OpenSky Explorer ↗</a></span>
+            </div>
             <div class="stat-item weather-window" style="grid-column: 1 / -1; margin-top: 8px;">
               <span class="stat-lbl" style="display:flex; justify-content:space-between; align-items:center;">Weather <button id="btn-refresh-weather" class="btn-sm" style="padding: 2px 6px; font-size: 0.7rem; background: var(--bg-hover); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;">↻ Refresh</button></span>
               <span class="stat-val" id="stat-weather-window">-</span>
@@ -2680,6 +2684,11 @@ function initMap() {
   });
   map.on('popupclose', () => {
     isAnyPopupOpen = false;
+  });
+
+  // Update OpenSky link when map moves
+  map.on('moveend', () => {
+    updateOpenSkyLink();
   });
 
   // Map Click Listener to set/move grid center or add manual waypoints
@@ -8066,6 +8075,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+
+// Helper to update OpenSky link URL based on current map center
+function updateOpenSkyLink() {
+  const linkEl = document.getElementById('opensky-link');
+  if (linkEl && map) {
+    const center = map.getCenter();
+    const zoom = map.getZoom();
+    linkEl.href = `https://opensky-network.org/network/explorer?lat=${center.lat.toFixed(4)}&lon=${center.lng.toFixed(4)}&zoom=${zoom}`;
+  }
+}
 </script>
 </body>
 </html>
