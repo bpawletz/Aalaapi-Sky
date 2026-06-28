@@ -387,3 +387,34 @@ describe('calculateStats Tests', () => {
     }
   });
 });
+
+test('NWS Weather fetching bounds and parsing', async () => {
+  let fetchedUrls = [];
+  const originalFetch = global.fetch;
+
+  global.fetch = async (url, options) => {
+    fetchedUrls.push(url);
+    if (url.includes('/points/')) {
+      return { ok: true, json: async () => ({ properties: { observationStations: 'https://api.weather.gov/stations/mock' } }) };
+    }
+    if (url.includes('/stations/mock')) {
+      return { ok: true, json: async () => ({ features: [
+        { geometry: { coordinates: [-90, 45] }, properties: { stationIdentifier: 'KMOCK', name: 'Mock Station' } },
+        { geometry: { coordinates: [-90, 46] }, properties: { stationIdentifier: 'KNORTH', name: 'North Station' } }
+      ]})};
+    }
+    if (url.includes('/observations/latest')) {
+      return { ok: true, json: async () => ({ properties: { flightCategory: 'VFR', rawMessage: 'METAR MOCK' } }) };
+    }
+    return { ok: false };
+  };
+
+  try {
+    vm.runInThisContext('lastWeatherFetchCenter = null;');
+    await vm.runInThisContext('fetchAndProcessWeather(45.0, -90.0)');
+
+    assert.strictEqual(fetchedUrls.length, 3);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
