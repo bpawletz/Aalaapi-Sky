@@ -2395,6 +2395,10 @@ let obstaclesLayer;
 let obstaclesEnabled = false; // tracks layer-control checkbox state
 const OBSTACLES_MIN_ZOOM = 12; // only load obstacles at this zoom level or above
 
+let powerLinesLayer;
+let powerLinesEnabled = false; // tracks layer-control checkbox state
+const POWER_LINES_MIN_ZOOM = 11; // only load power lines at this zoom level or above
+
 // NOAA Weather Overlays
 let weatherRadarLayer;
 let weatherWarningsLayer;
@@ -2540,6 +2544,27 @@ function initMap() {
         layer.bindPopup(title);
       }
     });
+
+    powerLinesLayer = L.esri.featureLayer({
+      url: 'https://services1.arcgis.com/Hp6G80Pky0om7QvQ/arcgis/rest/services/Electric_Power_Transmission_Lines/FeatureServer/0',
+      where: '1=0', // Start with impossible clause like LAANC
+      style: function (feature) {
+        return {
+          color: "#fde047", // yellow
+          weight: 2,
+          opacity: 0.8
+        };
+      },
+      onEachFeature: function (feature, layer) {
+        const props = feature.properties;
+        let title = '<b>Power Transmission Line</b>';
+        if (props.OWNER) title += '<br>Owner: ' + props.OWNER;
+        if (props.VOLTAGE) title += '<br>Voltage: <b>' + props.VOLTAGE + ' kV</b>';
+        if (props.STATUS) title += '<br>Status: ' + props.STATUS;
+        if (props.TYPE) title += '<br>Type: ' + props.TYPE;
+        layer.bindPopup(title);
+      }
+    });
   } else {
     console.warn('Esri Leaflet not loaded — FAA FeatureServer airspace layers unavailable. VFR Sectional Chart (tile layer) still available.');
   }
@@ -2575,6 +2600,7 @@ function initMap() {
   if (specialUseAirspaceLayer) overlays["Restricted & Special Use Airspace"] = specialUseAirspaceLayer;
   if (uasFacilityMapLayer) overlays["UAS Facility Maps (LAANC)"] = uasFacilityMapLayer;
   if (obstaclesLayer) overlays["Obstacles & Antennas (FAA)"] = obstaclesLayer;
+  if (powerLinesLayer) overlays["Power Lines (HIFLD)"] = powerLinesLayer;
   
   // Weather Overlays
   overlays["Weather Radar (NEXRAD)"] = weatherRadarLayer;
@@ -2605,6 +2631,13 @@ function initMap() {
         obstaclesLayer.setWhere('1=0');
       }
       if (obstaclesEnabled) applyZoomGates();
+
+      if (e.type === 'overlayadd'    && e.name === 'Power Lines (HIFLD)') powerLinesEnabled = true;
+      if (e.type === 'overlayremove' && e.name === 'Power Lines (HIFLD)') {
+        powerLinesEnabled = false;
+        powerLinesLayer.setWhere('1=0');
+      }
+      if (powerLinesEnabled) applyZoomGates();
     }
     updateAirspaceLegend(e);
   });
@@ -4594,6 +4627,7 @@ function updateAirspaceLegend(e) {
     'Restricted & Special Use Airspace',
     'UAS Facility Maps (LAANC)',
     'Obstacles & Antennas (FAA)',
+    'Power Lines (HIFLD)',
     'Weather Radar (NEXRAD)',
     'Weather Warnings (NWS Hazards)'
   ];
@@ -4607,6 +4641,8 @@ function updateAirspaceLegend(e) {
   const laancZoomedOut = laancActive && currentZoom < LAANC_MIN_ZOOM;
   const obstaclesActive = airspaceActiveSet.has('Obstacles & Antennas (FAA)');
   const obstaclesZoomedOut = obstaclesActive && currentZoom < OBSTACLES_MIN_ZOOM;
+  const powerLinesActive = airspaceActiveSet.has('Power Lines (HIFLD)');
+  const powerLinesZoomedOut = powerLinesActive && currentZoom < POWER_LINES_MIN_ZOOM;
 
   let html = `<div class="legend-header" style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;">
     <h4 style="margin:0;line-height:1.2;">Map Overlays</h4>
@@ -4659,6 +4695,18 @@ function updateAirspaceLegend(e) {
     }
   }
 
+  if (powerLinesActive) {
+    html += '<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin:6px 0 4px;">Power Lines</div>';
+    if (powerLinesZoomedOut) {
+      html += `<div style="font-size:0.75rem;color:var(--accent-yellow);display:flex;align-items:center;gap:5px;margin-bottom:4px;">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Zoom in to zoom level ${POWER_LINES_MIN_ZOOM}+ to load power lines
+      </div>`;
+    } else {
+      html += '<div class="legend-item"><span class="legend-color" style="background:#fde047; height: 3px; display: inline-block;"></span> HIFLD Electric Power Transmission Line</div>';
+    }
+  }
+
   if (airspaceActiveSet.has('Weather Radar (NEXRAD)')) {
     html += `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin:6px 0 4px;">Weather Radar</div>`;
     html += `<div class="legend-item" style="flex-direction: column; align-items: stretch; gap: 4px; width: 100%;">
@@ -4699,6 +4747,14 @@ function applyZoomGates() {
       obstaclesLayer.setWhere('');
     } else {
       obstaclesLayer.setWhere('1=0');
+    }
+  }
+
+  if (powerLinesLayer && powerLinesEnabled) {
+    if (zoom >= POWER_LINES_MIN_ZOOM) {
+      powerLinesLayer.setWhere('');
+    } else {
+      powerLinesLayer.setWhere('1=0');
     }
   }
 
