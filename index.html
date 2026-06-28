@@ -2257,9 +2257,19 @@ const FT_TO_M = 0.3048;
 const MPS_TO_MPH = 2.23693629;
 
 // Unit conversion helpers
+let cachedUnitSystem = null;
+
 function getUnitSystem() {
-  const el = document.getElementById('unit-system');
-  return el ? el.value : (localStorage.getItem('aalaapi_sky_unit_system') || 'metric');
+  if (cachedUnitSystem) return cachedUnitSystem;
+
+  // Fallback if not initialized (e.g. in tests)
+  const el = typeof document !== 'undefined' ? document.getElementById('unit-system') : null;
+  if (el) {
+    cachedUnitSystem = el.value;
+    return cachedUnitSystem;
+  }
+
+  return (typeof localStorage !== 'undefined' ? localStorage.getItem('aalaapi_sky_unit_system') : null) || 'metric';
 }
 
 function formatDistance(meters, decimalPlaces = 1) {
@@ -2294,7 +2304,6 @@ function initGeolocation() {
             lat: position.coords.latitude,
             lon: position.coords.longitude
           };
-          console.log("User geolocation obtained:", userLocation);
           if (label) label.textContent = '✓ Located';
           btn.style.color = 'var(--accent-green, #10b981)';
           btn.style.borderColor = 'rgba(16, 185, 129, 0.4)';
@@ -2419,6 +2428,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const unitSystemEl = document.getElementById('unit-system');
   if (unitSystemEl) {
     unitSystemEl.value = savedUnit;
+    cachedUnitSystem = savedUnit;
   }
 
   initMap();
@@ -2890,6 +2900,7 @@ function initUIEventListeners() {
   if (unitSystemEl) {
     unitSystemEl.addEventListener('change', () => {
       localStorage.setItem('aalaapi_sky_unit_system', unitSystemEl.value);
+      cachedUnitSystem = unitSystemEl.value;
       syncDisplayValues();
       if (getCurrentWaypoints()) {
         redrawCurrentMission();
@@ -3653,12 +3664,19 @@ function updateGrid() {
       
       waypoints = gridData.waypoints.map(pt => {
         const geo = localToGeodetic(pt.x, pt.y, centerLat, centerLon, actualRotation);
+        const alt = pt.alt !== undefined ? pt.alt : altitude;
+        const pitch = pt.pitch !== undefined ? pt.pitch : defaultGimbalPitch;
+
         let finalHeading = pt.heading;
+        if (gridType === 'double' && pitch !== -90) {
+          finalHeading = Math.atan2(-pt.x, -pt.y) * (180.0 / Math.PI);
+          if (finalHeading < 0) finalHeading += 360;
+        }
+
         if (finalHeading !== null && finalHeading !== undefined) {
           finalHeading = (finalHeading + actualRotation) % 360;
         }
-        const alt = pt.alt !== undefined ? pt.alt : altitude;
-        const pitch = pt.pitch !== undefined ? pt.pitch : defaultGimbalPitch;
+
         return {
           ...geo,
           alt: alt,
@@ -3680,12 +3698,19 @@ function updateGrid() {
       
       photoLocations = gridData.photos.map(pt => {
         const geo = localToGeodetic(pt.x, pt.y, centerLat, centerLon, actualRotation);
+        const alt = pt.alt !== undefined ? pt.alt : altitude;
+        const pitch = pt.pitch !== undefined ? pt.pitch : defaultGimbalPitch;
+
         let finalHeading = pt.heading;
+        if (gridType === 'double' && pitch !== -90) {
+          finalHeading = Math.atan2(-pt.x, -pt.y) * (180.0 / Math.PI);
+          if (finalHeading < 0) finalHeading += 360;
+        }
+
         if (finalHeading !== null && finalHeading !== undefined) {
           finalHeading = (finalHeading + actualRotation) % 360;
         }
-        const alt = pt.alt !== undefined ? pt.alt : altitude;
-        const pitch = pt.pitch !== undefined ? pt.pitch : defaultGimbalPitch;
+
         return {
           ...geo,
           alt: alt,
@@ -4297,6 +4322,7 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
 
           updatePathLinesAndStats(generatedWaypoints, generatedPhotos, centerLat, centerLon, gridWidth, gridHeight, rotationDeg);
 
+          // gimbalPitch is already calculated at the top of the function
           generatedWaypoints.forEach((gwp) => {
             if (gwp.mapMarker) {
               gwp.mapMarker.setLatLng([gwp.lat, gwp.lon]);
@@ -5279,6 +5305,9 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
 
 // Update stats panel UI elements
 function updateStatsPanel(stats) {
+  if (centerMarker) {
+    fetchAndProcessWeather(centerMarker.getLatLng().lat, centerMarker.getLatLng().lng);
+  }
   const warningsEl = document.getElementById('stats-warnings');
   if (!stats) {
     document.getElementById('stat-waypoints').textContent = "-";
@@ -5984,7 +6013,13 @@ function parseWPML(wpmlText) {
 
     toggleUIControlsState(true);
 
-    document.getElementById('import-status-text').innerHTML = `<span style="color: var(--accent-green); font-weight:600;">Active: ${importedFileName}</span>`;
+    const statusTextEl = document.getElementById('import-status-text');
+    statusTextEl.textContent = '';
+    const spanEl = document.createElement('span');
+    spanEl.style.color = 'var(--accent-green)';
+    spanEl.style.fontWeight = '600';
+    spanEl.textContent = `Active: ${importedFileName}`;
+    statusTextEl.appendChild(spanEl);
     document.getElementById('clear-imported-btn').classList.remove('hidden');
 
     updateGrid();
@@ -6278,10 +6313,11 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
         recalculateRoadOffsetPath(centerLatLng.lat, centerLatLng.lng);
 
         // Update all drone markers positions and tooltips
+        const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value);
         generatedWaypoints.forEach((gwp) => {
           if (gwp.mapMarker) {
             gwp.mapMarker.setLatLng([gwp.lat, gwp.lon]);
-            const gPitch = gwp.pitch !== undefined && gwp.pitch !== null ? gwp.pitch : parseFloat(document.getElementById('gimbal-pitch').value);
+            const gPitch = gwp.pitch !== undefined && gwp.pitch !== null ? gwp.pitch : defaultGimbalPitch;
             const tooltipContent = `Drone Waypoint ${gwp.idx}<br>Height: ${formatDistance(gwp.alt, 0)}<br>Yaw: ${gwp.heading.toFixed(0)}°<br>Pitch: ${gPitch}°`;
             gwp.mapMarker.setTooltipContent(tooltipContent);
           }
@@ -7801,6 +7837,149 @@ function applyAutoPlan() {
   hideAutoPlanModal(false);
 }
 
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+let lastWeatherFetchCenter = null;
+
+async function fetchAndProcessWeather(centerLat, centerLon) {
+  try {
+    // Only fetch weather if center changed by > 5km or wasn't fetched yet
+    if (lastWeatherFetchCenter) {
+      const dist = calculateDistance(centerLat, centerLon, lastWeatherFetchCenter.lat, lastWeatherFetchCenter.lon);
+      if (dist < 5) return;
+    }
+
+    lastWeatherFetchCenter = { lat: centerLat, lon: centerLon };
+    updateWeatherPanelUI(null, "Loading...", true);
+
+    const headers = { 'User-Agent': 'AalaapiSkyMissionPlanner/1.0' };
+
+    // 1. Get the gridpoint stations for the center location
+    const pointUrl = `https://api.weather.gov/points/${centerLat.toFixed(4)},${centerLon.toFixed(4)}`;
+    const pointRes = await fetch(pointUrl, { headers });
+    if (!pointRes.ok) throw new Error("Failed to fetch NWS grid points");
+    const pointData = await pointRes.json();
+    const stationsUrl = pointData.properties.observationStations;
+
+    // 2. Fetch the list of observation stations
+    const stationsRes = await fetch(stationsUrl, { headers });
+    if (!stationsRes.ok) throw new Error("Failed to fetch NWS stations");
+    const stationsData = await stationsRes.json();
+
+    const stations = stationsData.features || [];
+
+    // We only need the closest station to avoid API rate limits
+    let closestStation = null;
+    let minD = Infinity;
+
+    stations.forEach(f => {
+      const slon = f.geometry.coordinates[0];
+      const slat = f.geometry.coordinates[1];
+      const d = calculateDistance(centerLat, centerLon, slat, slon);
+      if (d < minD) {
+        minD = d;
+        closestStation = {
+          id: f.properties.stationIdentifier,
+          name: f.properties.name,
+          lat: slat,
+          lon: slon,
+          dist: d
+        };
+      }
+    });
+
+    if (!closestStation) throw new Error("No stations found");
+
+    // 3. Fetch latest observation for the closest station
+    const obsRes = await fetch(`https://api.weather.gov/stations/${closestStation.id}/observations/latest`, { headers });
+    if (!obsRes.ok) throw new Error("Failed to fetch METAR");
+    const obsData = await obsRes.json();
+
+    let directions = null;
+    if (obsData && obsData.properties && obsData.properties.flightCategory) {
+      directions = {
+        closest: {
+           icaoId: closestStation.id,
+           name: closestStation.name,
+           lat: closestStation.lat,
+           lon: closestStation.lon,
+           distance: closestStation.dist,
+           fltCat: obsData.properties.flightCategory,
+           raw: obsData.properties.rawMessage
+        }
+      };
+    }
+
+    updateWeatherPanelUI(directions, null, false);
+
+  } catch (error) {
+    console.error("Error fetching weather data:", error);
+    updateWeatherPanelUI(null, "Error", false);
+  }
+}
+
+
+
+function updateWeatherPanelUI(directions, statusMsg, isLoading) {
+  const windowEl = document.getElementById('stat-weather-window');
+  const dirsEl = document.getElementById('stat-weather-dirs');
+
+  if (!windowEl || !dirsEl) return;
+
+  if (isLoading || statusMsg) {
+    windowEl.textContent = statusMsg || "Loading...";
+    windowEl.style.color = "var(--text-secondary)";
+    dirsEl.innerHTML = "";
+    dirsEl.classList.add("hidden");
+    return;
+  }
+
+  if (!directions || !directions.closest) {
+    windowEl.textContent = "🔴 No Data";
+    windowEl.style.color = "var(--error-color)";
+    dirsEl.innerHTML = "";
+    dirsEl.classList.add("hidden");
+    return;
+  }
+
+  // Evaluate flight condition based on closest station
+  // Part 107 generally requires 3 SM visibility and clear of clouds (VFR)
+  // Marginal VFR (MVFR) might be allowed but risky. IFR/LIFR are definitely blocked.
+  const closest = directions.closest;
+  let isAllowed = false;
+  let statusText = "";
+  let color = "";
+
+  if (closest.fltCat === "VFR") {
+    isAllowed = true;
+    statusText = "🟢 Allowed (VFR)";
+    color = "var(--success-color)";
+  } else if (closest.fltCat === "MVFR") {
+    isAllowed = true;
+    statusText = "🟡 Caution (MVFR)";
+    color = "var(--warning-color)";
+  } else {
+    isAllowed = false;
+    statusText = `🔴 Not Allowed (${closest.fltCat})`;
+    color = "var(--error-color)";
+  }
+
+  windowEl.textContent = statusText;
+  windowEl.style.color = color;
+  windowEl.title = `Closest: ${closest.name} (${closest.distance.toFixed(1)}km)\nRaw: ${closest.raw}`;
+
+  dirsEl.innerHTML = "";
+  dirsEl.classList.add("hidden");
+}
 
 </script>
 </body>
