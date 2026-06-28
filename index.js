@@ -5842,7 +5842,6 @@ function updateOpenSkyLink() {
   const linkEl = document.getElementById('opensky-link');
   if (linkEl && map) {
     const center = centerMarker ? centerMarker.getLatLng() : map.getCenter();
-    const zoom = map.getZoom();
-    linkEl.href = `https://map.opensky-network.org/?lat=${center.lat.toFixed(4)}&lon=${center.lng.toFixed(4)}&zoom=${zoom}`;
+    linkEl.href = `https://map.opensky-network.org/?lat=${center.lat.toFixed(4)}&lon=${center.lng.toFixed(4)}&zoom=11`;
   }
 }
