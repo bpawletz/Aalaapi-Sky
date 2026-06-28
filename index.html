@@ -7905,18 +7905,56 @@ async function fetchAndProcessWeather(centerLat, centerLon) {
     const obsData = await obsRes.json();
 
     let directions = null;
-    if (obsData && obsData.properties && obsData.properties.flightCategory) {
-      directions = {
-        closest: {
-           icaoId: closestStation.id,
-           name: closestStation.name,
-           lat: closestStation.lat,
-           lon: closestStation.lon,
-           distance: closestStation.dist,
-           fltCat: obsData.properties.flightCategory,
-           raw: obsData.properties.rawMessage
+    if (obsData && obsData.properties) {
+      let fltCat = obsData.properties.flightCategory;
+      if (!fltCat) {
+        let visSM = null;
+        if (obsData.properties.visibility && obsData.properties.visibility.value != null) {
+          visSM = obsData.properties.visibility.value / 1609.34;
         }
-      };
+        let ceilingFt = null;
+        if (Array.isArray(obsData.properties.cloudLayers)) {
+          for (let layer of obsData.properties.cloudLayers) {
+            if (layer.amount === 'OVC' || layer.amount === 'BKN' || layer.amount === 'VV') {
+              if (layer.base && layer.base.value != null) {
+                let baseFt = layer.base.value * 3.28084;
+                if (ceilingFt === null || baseFt < ceilingFt) {
+                  ceilingFt = baseFt;
+                }
+              }
+            }
+          }
+        }
+
+        if (visSM !== null || ceilingFt !== null) {
+          let v = visSM !== null ? visSM : 99;
+          let c = ceilingFt !== null ? ceilingFt : 99999;
+
+          if (v < 1 || c < 500) {
+            fltCat = "LIFR";
+          } else if (v < 3 || c < 1000) {
+            fltCat = "IFR";
+          } else if (v <= 5 || c <= 3000) {
+            fltCat = "MVFR";
+          } else {
+            fltCat = "VFR";
+          }
+        }
+      }
+
+      if (fltCat) {
+        directions = {
+          closest: {
+             icaoId: closestStation.id,
+             name: closestStation.name,
+             lat: closestStation.lat,
+             lon: closestStation.lon,
+             distance: closestStation.dist,
+             fltCat: fltCat,
+             raw: obsData.properties.rawMessage || obsData.properties.textDescription || "No raw METAR"
+          }
+        };
+      }
     }
 
     updateWeatherPanelUI(directions, null, false);
