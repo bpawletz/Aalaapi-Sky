@@ -17,6 +17,8 @@ A professional-grade waypoint mission generator and editor for drone flight plan
   - Restricted/Special Use Airspaces
   - UAS Facility Maps (LAANC grids with altitude ceilings)
 - **NOAA Weather Overlays:** Live weather overlays including NEXRAD Weather Radar and NWS Hazards (warnings, watches, and advisories) with dynamic legends.
+- **Infrastructure Overlays:** Features layers for electrical infrastructure, including:
+  - Power Lines (HIFLD) with popup details.
 - **Auto-Plan Mission Calculator:** Structure-aware calculator with height and clearance sliders to automatically recommend and generate grid patterns.
 - **Mission Splitting:** Automatically splits missions exceeding a user-defined **Max Flight Time** into multiple KMZ files within a ZIP archive on export.
 
