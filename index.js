@@ -443,6 +443,11 @@ function initMap() {
     isAnyPopupOpen = false;
   });
 
+  // Update OpenSky link when map moves
+  map.on('moveend', () => {
+    updateOpenSkyLink();
+  });
+
   // Map Click Listener to set/move grid center or add manual waypoints
   map.on('click', (e) => {
     if (isAnyPopupOpen || autoPlanActive || isRouting) {
@@ -5826,3 +5831,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+
+// Helper to update OpenSky link URL based on current map center
+function updateOpenSkyLink() {
+  const linkEl = document.getElementById('opensky-link');
+  if (linkEl && map) {
+    const center = map.getCenter();
+    const zoom = map.getZoom();
+    linkEl.href = `https://opensky-network.org/network/explorer?lat=${center.lat.toFixed(4)}&lon=${center.lng.toFixed(4)}&zoom=${zoom}`;
+  }
+}
