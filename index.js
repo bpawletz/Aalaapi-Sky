@@ -462,6 +462,9 @@ function initMap() {
       setGridCenter(e.latlng.lat, e.latlng.lng);
     }
   });
+
+  // Initial update
+  updateOpenSkyLink();
 }
 
 // Setup Event Listeners for UI controls
@@ -1182,6 +1185,7 @@ function setGridCenter(lat, lng) {
   }
 
   updateGrid();
+  updateOpenSkyLink();
 }
 
 function recalculateRoadOffsetPath(centerLat, centerLon) {
@@ -5833,11 +5837,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-// Helper to update OpenSky link URL based on current map center
+// Helper to update OpenSky link URL based on current map center or mission center
 function updateOpenSkyLink() {
   const linkEl = document.getElementById('opensky-link');
   if (linkEl && map) {
-    const center = map.getCenter();
+    const center = centerMarker ? centerMarker.getLatLng() : map.getCenter();
     const zoom = map.getZoom();
     linkEl.href = `https://map.opensky-network.org/?lat=${center.lat.toFixed(4)}&lon=${center.lng.toFixed(4)}&zoom=${zoom}`;
   }
