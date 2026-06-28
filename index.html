@@ -7166,6 +7166,13 @@ function enterAutoPlanMode() {
   map.on('mousedown touchstart', onMapMouseDown);
   map.on('mousemove touchmove', onMapMouseMove);
   map.on('mouseup touchend', onMapMouseUp);
+
+  // Bind DOM pointer events for stylus/pen
+  if (mapContainer) {
+    mapContainer.addEventListener('pointerdown', onDomPointerDown, { passive: false });
+    mapContainer.addEventListener('pointermove', onDomPointerMove, { passive: false });
+    mapContainer.addEventListener('pointerup', onDomPointerUp, { passive: false });
+  }
 }
 
 function exitAutoPlanMode() {
@@ -7187,6 +7194,12 @@ function exitAutoPlanMode() {
     map.off('mousemove touchmove', onMapMouseMove);
     map.off('mouseup touchend', onMapMouseUp);
     
+    if (mapContainer) {
+      mapContainer.removeEventListener('pointerdown', onDomPointerDown);
+      mapContainer.removeEventListener('pointermove', onDomPointerMove);
+      mapContainer.removeEventListener('pointerup', onDomPointerUp);
+    }
+
     if (autoPlanRect) {
       map.removeLayer(autoPlanRect);
       autoPlanRect = null;
@@ -7194,6 +7207,27 @@ function exitAutoPlanMode() {
   }
   autoPlanStartLatLng = null;
   lastTouchMoveLatLng = null;
+}
+
+function onDomPointerDown(e) {
+  if (e.pointerType === 'mouse') return; // let mousedown handle it
+  e.preventDefault(); // prevent browser handling
+  const latlng = map.mouseEventToLatLng(e);
+  onMapMouseDown({ latlng: latlng });
+}
+
+function onDomPointerMove(e) {
+  if (e.pointerType === 'mouse') return;
+  e.preventDefault();
+  const latlng = map.mouseEventToLatLng(e);
+  onMapMouseMove({ latlng: latlng });
+}
+
+function onDomPointerUp(e) {
+  if (e.pointerType === 'mouse') return;
+  e.preventDefault();
+  const latlng = map.mouseEventToLatLng(e);
+  onMapMouseUp({ latlng: latlng });
 }
 
 function onMapMouseDown(e) {
@@ -7263,13 +7297,19 @@ function onMapMouseUp(e) {
   map.off('mousemove touchmove', onMapMouseMove);
   map.off('mouseup touchend', onMapMouseUp);
   
+  const mapContainer = document.getElementById('map');
+  if (mapContainer) {
+    mapContainer.removeEventListener('pointerdown', onDomPointerDown);
+    mapContainer.removeEventListener('pointermove', onDomPointerMove);
+    mapContainer.removeEventListener('pointerup', onDomPointerUp);
+  }
+
   // Re-enable map dragging
   map.dragging.enable();
   map.touchZoom.enable();
   map.doubleClickZoom.enable();
   map.boxZoom.enable();
   
-  const mapContainer = document.getElementById('map');
   if (mapContainer) mapContainer.classList.remove('map-crosshair');
   const banner = document.getElementById('auto-plan-banner');
   if (banner) banner.classList.add('hidden');
