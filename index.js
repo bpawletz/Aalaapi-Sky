@@ -561,7 +561,12 @@ function initUIEventListeners() {
   const closeGuideFooterBtn = document.getElementById('close-guide-footer-btn');
   const guideModal = document.getElementById('guide-modal');
 
-  const toggleModal = () => guideModal.classList.toggle('hidden');
+  const toggleModal = () => {
+    guideModal.classList.toggle('hidden');
+    if (!guideModal.classList.contains('hidden') && window.innerWidth <= 768) {
+      document.querySelector('.sidebar').classList.remove('open');
+    }
+  };
 
   showGuideBtn.addEventListener('click', toggleModal);
   closeGuideBtn.addEventListener('click', toggleModal);
@@ -574,7 +579,12 @@ function initUIEventListeners() {
   const aboutModal = document.getElementById('about-modal');
 
   if (showAboutBtn && aboutModal) {
-    const toggleAboutModal = () => aboutModal.classList.toggle('hidden');
+    const toggleAboutModal = () => {
+      aboutModal.classList.toggle('hidden');
+      if (!aboutModal.classList.contains('hidden') && window.innerWidth <= 768) {
+        document.querySelector('.sidebar').classList.remove('open');
+      }
+    };
     showAboutBtn.addEventListener('click', toggleAboutModal);
     if (closeAboutBtn) closeAboutBtn.addEventListener('click', toggleAboutModal);
     if (closeAboutFooterBtn) closeAboutFooterBtn.addEventListener('click', toggleAboutModal);
@@ -668,7 +678,12 @@ function initUIEventListeners() {
   const closeConfigFooterBtn = document.getElementById('close-config-footer-btn');
 
   if (configBtn && configModal) {
-    const toggleConfigModal = () => configModal.classList.toggle('hidden');
+    const toggleConfigModal = () => {
+      configModal.classList.toggle('hidden');
+      if (!configModal.classList.contains('hidden') && window.innerWidth <= 768) {
+        document.querySelector('.sidebar').classList.remove('open');
+      }
+    };
     configBtn.addEventListener('click', toggleConfigModal);
     if (closeConfigBtn) closeConfigBtn.addEventListener('click', toggleConfigModal);
     if (closeConfigFooterBtn) closeConfigFooterBtn.addEventListener('click', toggleConfigModal);
@@ -788,6 +803,9 @@ function initUIEventListeners() {
   if (preview3dBtn && preview3dModal) {
     preview3dBtn.addEventListener('click', () => {
       preview3dModal.classList.remove('hidden');
+      if (window.innerWidth <= 768) {
+        document.querySelector('.sidebar').classList.remove('open');
+      }
       init3DPreview();
     });
   }
