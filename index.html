@@ -384,7 +384,7 @@ html, body {
   top: 24px;
   right: 24px;
   width: 320px;
-  z-index: 5;
+  z-index: 1001;
   border-radius: 16px;
   padding: 20px;
   border: 1px solid var(--border-color);
@@ -806,6 +806,10 @@ html, body {
     top: 0;
     left: 0;
     z-index: 1;
+  }
+
+  .main-map-container .leaflet-bottom {
+    bottom: 65px !important;
   }
 
   /* Sidebar becomes a sliding drawer */
