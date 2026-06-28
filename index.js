@@ -5668,25 +5668,27 @@ async function fetchAndProcessWeather(centerLat, centerLon) {
     let directions = null;
     if (obsData && obsData.properties) {
       let fltCat = obsData.properties.flightCategory;
-      if (!fltCat) {
-        let visSM = null;
-        if (obsData.properties.visibility && obsData.properties.visibility.value != null) {
-          visSM = obsData.properties.visibility.value / 1609.34;
-        }
-        let ceilingFt = null;
-        if (Array.isArray(obsData.properties.cloudLayers)) {
-          for (let layer of obsData.properties.cloudLayers) {
-            if (layer.amount === 'OVC' || layer.amount === 'BKN' || layer.amount === 'VV') {
-              if (layer.base && layer.base.value != null) {
-                let baseFt = layer.base.value * 3.28084;
-                if (ceilingFt === null || baseFt < ceilingFt) {
-                  ceilingFt = baseFt;
-                }
+      let visSM = null;
+      let ceilingFt = null;
+
+      if (obsData.properties.visibility && obsData.properties.visibility.value != null) {
+        visSM = obsData.properties.visibility.value / 1609.34;
+      }
+
+      if (Array.isArray(obsData.properties.cloudLayers)) {
+        for (let layer of obsData.properties.cloudLayers) {
+          if (layer.amount === 'OVC' || layer.amount === 'BKN' || layer.amount === 'VV') {
+            if (layer.base && layer.base.value != null) {
+              let baseFt = layer.base.value * 3.28084;
+              if (ceilingFt === null || baseFt < ceilingFt) {
+                ceilingFt = baseFt;
               }
             }
           }
         }
+      }
 
+      if (!fltCat) {
         if (visSM !== null || ceilingFt !== null) {
           let v = visSM !== null ? visSM : 99;
           let c = ceilingFt !== null ? ceilingFt : 99999;
@@ -5712,6 +5714,9 @@ async function fetchAndProcessWeather(centerLat, centerLon) {
              lon: closestStation.lon,
              distance: closestStation.dist,
              fltCat: fltCat,
+             visibilitySM: visSM,
+             ceilingFt: ceilingFt,
+             timestamp: obsData.properties.timestamp,
              raw: obsData.properties.rawMessage || obsData.properties.textDescription || "No raw METAR"
           }
         };
@@ -5772,10 +5777,52 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     color = "var(--error-color)";
   }
 
-  windowEl.textContent = statusText;
-  windowEl.style.color = color;
+  let timeString = "Unknown";
+  if (closest.timestamp) {
+    const d = new Date(closest.timestamp);
+    if (!isNaN(d.getTime())) {
+      timeString = d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    }
+  }
+
+  windowEl.innerHTML = `<span style="color: ${color}">${statusText}</span><div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">Last Polled: ${timeString}</div>`;
   windowEl.title = `Closest: ${closest.name} (${closest.distance.toFixed(1)}km)\nRaw: ${closest.raw}`;
 
-  dirsEl.innerHTML = "";
-  dirsEl.classList.add("hidden");
+  let detailsHtml = `<div style="font-size: 0.8rem; line-height: 1.4;">`;
+  detailsHtml += `<div style="margin-bottom: 4px; font-weight: bold; color: var(--text-primary)">Flight Conditions Checklist</div>`;
+
+  if (closest.visibilitySM !== null && closest.visibilitySM !== undefined) {
+    let visCheck = closest.visibilitySM >= 3 ? "✅" : "❌";
+    let visColor = closest.visibilitySM >= 3 ? "var(--success-color)" : "var(--error-color)";
+    detailsHtml += `<div style="color: ${visColor}">${visCheck} Visibility: ${closest.visibilitySM.toFixed(1)} SM (Req &ge; 3)</div>`;
+  } else {
+    detailsHtml += `<div style="color: var(--text-secondary)">❓ Visibility: Unknown</div>`;
+  }
+
+  if (closest.ceilingFt !== null && closest.ceilingFt !== undefined) {
+    let ceilCheck = closest.ceilingFt >= 1000 ? "✅" : "❌";
+    let ceilColor = closest.ceilingFt >= 1000 ? "var(--success-color)" : "var(--error-color)";
+    const cStr = closest.ceilingFt >= 99999 ? "Clear" : `${closest.ceilingFt.toFixed(0)} ft`;
+    detailsHtml += `<div style="color: ${ceilColor}">${ceilCheck} Ceiling: ${cStr} (Req &ge; 1000 ft)</div>`;
+  } else {
+    detailsHtml += `<div style="color: var(--text-secondary)">❓ Ceiling: Unknown</div>`;
+  }
+
+  detailsHtml += `</div>`;
+
+  dirsEl.innerHTML = detailsHtml;
+  dirsEl.classList.remove("hidden");
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('btn-refresh-weather');
+  if (btn) {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (centerMarker) {
+        lastWeatherFetchCenter = null;
+        fetchAndProcessWeather(centerMarker.getLatLng().lat, centerMarker.getLatLng().lng);
+      }
+    });
+  }
+});
