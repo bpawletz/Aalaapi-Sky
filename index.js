@@ -5817,14 +5817,19 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     detailsHtml += `<div style="color: var(--text-secondary)">❓ Ceiling: Unknown</div>`;
   }
 
-  detailsHtml += `<div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.75rem; color: var(--text-secondary);">`;
-  detailsHtml += `<div style="font-weight: 600; margin-bottom: 2px;">Flight Categories:</div>`;
-  detailsHtml += `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">`;
-  detailsHtml += `<div><span style="color: var(--success-color)">VFR:</span> Vis >5mi, Ceil >3000ft</div>`;
-  detailsHtml += `<div><span style="color: var(--warning-color)">MVFR:</span> Vis 3-5mi, Ceil 1k-3k ft</div>`;
-  detailsHtml += `<div><span style="color: var(--error-color)">IFR:</span> Vis 1-3mi, Ceil 500-1k ft</div>`;
-  detailsHtml += `<div><span style="color: var(--error-color)">LIFR:</span> Vis <1mi, Ceil <500ft</div>`;
-  detailsHtml += `</div></div>`;
+  const categoryDefinitions = {
+    "VFR": `<span style="color: var(--success-color)">VFR:</span> Vis >5mi, Ceil >3000ft`,
+    "MVFR": `<span style="color: var(--warning-color)">MVFR:</span> Vis 3-5mi, Ceil 1k-3k ft`,
+    "IFR": `<span style="color: var(--error-color)">IFR:</span> Vis 1-3mi, Ceil 500-1k ft`,
+    "LIFR": `<span style="color: var(--error-color)">LIFR:</span> Vis <1mi, Ceil <500ft`
+  };
+
+  if (closest.fltCat && categoryDefinitions[closest.fltCat]) {
+    detailsHtml += `<div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.75rem; color: var(--text-secondary);">`;
+    detailsHtml += `<div style="font-weight: 600; margin-bottom: 2px;">Current Category:</div>`;
+    detailsHtml += `<div>${categoryDefinitions[closest.fltCat]}</div>`;
+    detailsHtml += `</div>`;
+  }
 
   detailsHtml += `</div>`;
 
