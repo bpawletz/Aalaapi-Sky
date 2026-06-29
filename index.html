@@ -8057,7 +8057,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     const cStr = closest.ceilingFt >= 99999 ? "Clear" : `${closest.ceilingFt.toFixed(0)} ft`;
     detailsHtml += `<div style="color: ${ceilColor}">${ceilCheck} Ceiling: ${cStr} (Req &ge; 1000 ft)</div>`;
   } else {
-    detailsHtml += `<div style="color: var(--text-secondary)">❓ Ceiling: Unknown</div>`;
+    detailsHtml += `<div style="color: var(--success-color)">✅ Ceiling: Unknown</div>`;
   }
 
   const categoryDefinitions = {
