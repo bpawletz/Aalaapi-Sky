@@ -1889,6 +1889,7 @@ html, body {
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.9.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>Integrated **Open-Meteo DEM API** to automatically generate realistic 3D map floor elevations in the 3D Preview based on actual real-world terrain data.</li>
               <li>Added **NOAA Weather Overlays**: Added real-time Weather Radar (NEXRAD) and Weather Warnings (NWS Hazards) overlays to the map.</li>
               <li>Added **3D Preview Pan Support**: Added the ability to pan the 3D preview using right-click and drag.</li>
             </ul>
@@ -6896,11 +6897,13 @@ function init3DPreview() {
     }
 
     const groundTexture = new THREE.CanvasTexture(groundCanvas);
-    const groundMaterial = new THREE.MeshBasicMaterial({
+    const groundMaterial = new THREE.MeshStandardMaterial({
       map: groundTexture,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.95
+      opacity: 0.95,
+      roughness: 0.8,
+      metalness: 0.1
     });
 
     const groundMesh = new THREE.Mesh(groundGeom, groundMaterial);
@@ -6940,6 +6943,10 @@ function init3DPreview() {
 
       groundGeom.attributes.position.needsUpdate = true;
       groundGeom.computeVertexNormals();
+
+      // Give ground mesh a flat shading appearance for the "waterfall/mesh" look
+      groundMaterial.flatShading = true;
+      groundMaterial.needsUpdate = true;
     }).catch(err => {
       console.warn("Failed to apply terrain elevation", err);
     });

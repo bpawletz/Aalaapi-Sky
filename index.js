@@ -4643,11 +4643,13 @@ function init3DPreview() {
     }
 
     const groundTexture = new THREE.CanvasTexture(groundCanvas);
-    const groundMaterial = new THREE.MeshBasicMaterial({
+  const groundMaterial = new THREE.MeshStandardMaterial({
       map: groundTexture,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.95
+    opacity: 0.95,
+    roughness: 0.8,
+    metalness: 0.1
     });
 
     const groundMesh = new THREE.Mesh(groundGeom, groundMaterial);
@@ -4687,6 +4689,10 @@ function init3DPreview() {
 
       groundGeom.attributes.position.needsUpdate = true;
       groundGeom.computeVertexNormals();
+
+      // Give ground mesh a flat shading appearance for the "waterfall/mesh" look
+      groundMaterial.flatShading = true;
+      groundMaterial.needsUpdate = true;
     }).catch(err => {
       console.warn("Failed to apply terrain elevation", err);
     });
