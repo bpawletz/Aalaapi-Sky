@@ -5085,6 +5085,11 @@ function initAutoPlan() {
 function enterAutoPlanMode() {
   autoPlanActive = true;
 
+  if (window.innerWidth <= 768) {
+    const sidebar = document.querySelector('.sidebar');
+    if (sidebar) sidebar.classList.remove('open');
+  }
+
   // Clear any existing mission so the user starts fresh
   if (centerMarker) { map.removeLayer(centerMarker); centerMarker = null; }
   importedWaypoints = null;
