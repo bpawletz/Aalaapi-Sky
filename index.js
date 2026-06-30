@@ -4413,6 +4413,35 @@ function createCameraPyramidGeometry(hfov, vfov, height) {
   return geom;
 }
 
+// Helper to fetch batched elevations from Open-Meteo
+async function fetchElevationsBatched(latLngs) {
+  const BATCH_SIZE = 100;
+  const elevations = [];
+
+  for (let i = 0; i < latLngs.length; i += BATCH_SIZE) {
+    const batch = latLngs.slice(i, i + BATCH_SIZE);
+    const latStr = batch.map(p => p.lat.toFixed(6)).join(',');
+    const lonStr = batch.map(p => p.lon.toFixed(6)).join(',');
+
+    try {
+      const url = `https://api.open-meteo.com/v1/elevation?latitude=${latStr}&longitude=${lonStr}`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        console.warn(`Elevation fetch failed: ${response.statusText}`);
+        elevations.push(...new Array(batch.length).fill(0));
+        continue;
+      }
+      const data = await response.json();
+      elevations.push(...(data.elevation || new Array(batch.length).fill(0)));
+    } catch (err) {
+      console.warn("Failed to fetch batch elevations", err);
+      elevations.push(...new Array(batch.length).fill(0));
+    }
+  }
+
+  return elevations;
+}
+
 // Draw photogrammetry coverage heatmap on the ground plane canvas
 function drawCoverageHeatmap(ctx, planeOffsetX, planeOffsetZ, planeSize) {
   const waypoints = getCurrentWaypoints();
@@ -4591,7 +4620,8 @@ function init3DPreview() {
     const planeOffsetX = (1.5 - distX_tiles) * tileWidthMeters;
     const planeOffsetZ = (1.5 - distY_tiles) * tileWidthMeters;
 
-    const groundGeom = new THREE.PlaneGeometry(planeSize, planeSize);
+    const planeSegments = 32;
+    const groundGeom = new THREE.PlaneGeometry(planeSize, planeSize, planeSegments, planeSegments);
     
     // Create temporary canvas to merge the 9 tiles
     const groundCanvas = document.createElement('canvas');
@@ -4624,6 +4654,42 @@ function init3DPreview() {
     groundMesh.rotation.x = -Math.PI / 2; // Lie flat on Y plane
     groundMesh.position.set(planeOffsetX, -0.2, planeOffsetZ); // Position slightly below Y=0 grid
     threeScene.add(groundMesh);
+
+    // Fetch and apply terrain elevation asynchronously
+    const vertices = groundGeom.attributes.position.array;
+    const latLngs = [];
+
+    // Collect Lat/Lon for each vertex
+    for (let i = 0; i < vertices.length; i += 3) {
+      // Vertex X, Y in plane local space
+      const localX = vertices[i];
+      const localY = vertices[i + 1];
+
+      // Convert to world space relative to center marker
+      const worldX = localX + planeOffsetX;
+      const worldZ = -localY + planeOffsetZ; // ThreeJS Plane +Y goes up, map to world Z
+
+      const geo = localToGeodetic(worldX, -worldZ, cLat, cLon, 0);
+      latLngs.push(geo);
+    }
+
+    // We also need the elevation at the exact center (0,0) to normalize
+    latLngs.push({ lat: cLat, lon: cLon });
+
+    fetchElevationsBatched(latLngs).then(elevations => {
+      const centerElevation = elevations.pop() || 0;
+
+      for (let i = 0, vIdx = 0; i < vertices.length; i += 3, vIdx++) {
+        const elev = elevations[vIdx] || 0;
+        // Update Z coordinate of PlaneGeometry (becomes Y/Height after -Math.PI/2 rotation)
+        vertices[i + 2] = elev - centerElevation;
+      }
+
+      groundGeom.attributes.position.needsUpdate = true;
+      groundGeom.computeVertexNormals();
+    }).catch(err => {
+      console.warn("Failed to apply terrain elevation", err);
+    });
 
     // Fetch tiles asynchronously based on Leaflet active layer
     const isSatellite = map.hasLayer(satelliteLayer);
