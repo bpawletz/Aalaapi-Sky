@@ -446,6 +446,7 @@ function initMap() {
   // Update OpenSky link when map moves
   map.on('moveend', () => {
     updateOpenSkyLink();
+  updateNotamLink();
   });
 
   // Map Click Listener to set/move grid center or add manual waypoints
@@ -465,6 +466,7 @@ function initMap() {
 
   // Initial update
   updateOpenSkyLink();
+  updateNotamLink();
 }
 
 // Setup Event Listeners for UI controls
@@ -1186,6 +1188,7 @@ function setGridCenter(lat, lng) {
 
   updateGrid();
   updateOpenSkyLink();
+  updateNotamLink();
 }
 
 function recalculateRoadOffsetPath(centerLat, centerLon) {
@@ -5857,5 +5860,14 @@ function updateOpenSkyLink() {
   if (linkEl && map) {
     const center = centerMarker ? centerMarker.getLatLng() : map.getCenter();
     linkEl.href = `https://map.opensky-network.org/?lat=${center.lat.toFixed(4)}&lon=${center.lng.toFixed(4)}&zoom=11`;
+  }
+}
+
+// Helper to update NOTAM link URL based on current map center or mission center
+function updateNotamLink() {
+  const linkEl = document.getElementById('notam-link');
+  if (linkEl && map) {
+    const center = centerMarker ? centerMarker.getLatLng() : map.getCenter();
+    linkEl.href = `https://skyvector.com/?ll=${center.lat.toFixed(4)},${center.lng.toFixed(4)}`;
   }
 }
