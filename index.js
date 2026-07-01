@@ -166,6 +166,7 @@ let topoLayer;
 let vfrSectionalLayer;
 let classAirspaceLayer;
 let specialUseAirspaceLayer;
+let tfrLayer;
 let uasFacilityMapLayer;
 let uasFacilityMapEnabled = false; // tracks layer-control checkbox state
 const LAANC_MIN_ZOOM = 12;         // only load LAANC features at this zoom level or above
@@ -282,6 +283,18 @@ function initMap() {
       }
     });
 
+    tfrLayer = L.esri.featureLayer({
+      url: 'https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/arcgis/rest/services/National_Defense_Airspace_TFR_Areas/FeatureServer/0',
+      style: function (feature) {
+        return { color: '#dc2626', weight: 2, fillOpacity: 0.3 };
+      },
+      onEachFeature: function (feature, layer) {
+        const props = feature.properties;
+        const title = `<b>Temporary Flight Restriction (TFR)</b><br>Name: ${props.NAME || 'Unknown'}<br>Type: ${props.TYPE_CODE || 'Unknown'}`;
+        layer.bindPopup(title);
+      }
+    });
+
     uasFacilityMapLayer = L.esri.featureLayer({
       url: 'https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/arcgis/rest/services/FAA_UAS_FacilityMap_Data/FeatureServer/0',
       // Start with an impossible where clause so no data loads until the user zooms in
@@ -378,6 +391,7 @@ function initMap() {
   };
   if (classAirspaceLayer) overlays["Controlled Airspace (Class B/C/D/E)"] = classAirspaceLayer;
   if (specialUseAirspaceLayer) overlays["Restricted & Special Use Airspace"] = specialUseAirspaceLayer;
+  if (tfrLayer) overlays["Temporary Flight Restrictions (TFR)"] = tfrLayer;
   if (uasFacilityMapLayer) overlays["UAS Facility Maps (LAANC)"] = uasFacilityMapLayer;
   if (obstaclesLayer) overlays["Obstacles & Antennas (FAA)"] = obstaclesLayer;
   if (powerLinesLayer) overlays["Power Lines (HIFLD)"] = powerLinesLayer;
