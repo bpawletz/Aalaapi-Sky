@@ -4424,6 +4424,10 @@ async function fetchElevationsBatched(latLngs) {
     const lonStr = batch.map(p => p.lon.toFixed(6)).join(',');
 
     try {
+      if (i > 0) {
+        // Sleep to avoid HTTP 429 (Too Many Requests) from Open-Meteo
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
       const url = `https://api.open-meteo.com/v1/elevation?latitude=${latStr}&longitude=${lonStr}`;
       const response = await fetch(url);
       if (!response.ok) {
