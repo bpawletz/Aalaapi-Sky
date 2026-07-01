@@ -4432,14 +4432,14 @@ async function fetchElevationsBatched(latLngs) {
       const response = await fetch(url);
       if (!response.ok) {
         console.warn(`Elevation fetch failed: ${response.statusText}`);
-        elevations.push(...new Array(batch.length).fill(0));
+        elevations.push(...new Array(batch.length).fill(null));
         continue;
       }
       const data = await response.json();
-      elevations.push(...(data.elevation || new Array(batch.length).fill(0)));
+      elevations.push(...(data.elevation || new Array(batch.length).fill(null)));
     } catch (err) {
       console.warn("Failed to fetch batch elevations", err);
-      elevations.push(...new Array(batch.length).fill(0));
+      elevations.push(...new Array(batch.length).fill(null));
     }
   }
 
@@ -4624,7 +4624,7 @@ function init3DPreview() {
     const planeOffsetX = (1.5 - distX_tiles) * tileWidthMeters;
     const planeOffsetZ = (1.5 - distY_tiles) * tileWidthMeters;
 
-    const planeSegments = 32;
+    const planeSegments = 23; // 24x24 vertices = 576 coords (under 600 limit)
     const groundGeom = new THREE.PlaneGeometry(planeSize, planeSize, planeSegments, planeSegments);
     
     // Create temporary canvas to merge the 9 tiles
@@ -4683,12 +4683,14 @@ function init3DPreview() {
     latLngs.push({ lat: cLat, lon: cLon });
 
     fetchElevationsBatched(latLngs).then(elevations => {
-      const centerElevation = elevations.pop() || 0;
+      let centerElevation = elevations.pop();
+      if (centerElevation === null || centerElevation === undefined) centerElevation = 0;
 
       for (let i = 0, vIdx = 0; i < vertices.length; i += 3, vIdx++) {
-        const elev = elevations[vIdx] || 0;
+        const elev = elevations[vIdx];
+        const finalElev = (elev !== null && elev !== undefined) ? elev : centerElevation;
         // Update Z coordinate of PlaneGeometry (becomes Y/Height after -Math.PI/2 rotation)
-        vertices[i + 2] = elev - centerElevation;
+        vertices[i + 2] = finalElev - centerElevation;
       }
 
       groundGeom.attributes.position.needsUpdate = true;
