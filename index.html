@@ -1901,7 +1901,7 @@ html, body {
           </div>
           <div>
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
-            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.10.0</span>
+            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.10.1</span>
           </div>
         </div>
         
@@ -1945,6 +1945,12 @@ html, body {
             <strong style="color: var(--text-main);">Changelog (v1.7.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li>Added a **Reset** button in the waypoint editor popup: If a waypoint's position, altitude, pitch, or heading has been modified or dragged from its original state, a Reset button displays to easily revert it back to its original settings.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.6.11):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>Added a **Useful Links** button to the bottom of the left sidebar that opens a modal with quick access to IACRA, FAADroneZone, METAR, TFR, and NOTAM.</li>
             </ul>
           </div>
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
@@ -2891,25 +2897,6 @@ function initUIEventListeners() {
     showAboutBtn.addEventListener('click', toggleAboutModal);
     if (closeAboutBtn) closeAboutBtn.addEventListener('click', toggleAboutModal);
     if (closeAboutFooterBtn) closeAboutFooterBtn.addEventListener('click', toggleAboutModal);
-  }
-
-
-  // Useful Links Modal controls
-  const showLinksBtn = document.getElementById('useful-links-btn');
-  const closeLinksBtn = document.getElementById('close-links-btn');
-  const closeLinksFooterBtn = document.getElementById('close-links-footer-btn');
-  const linksModal = document.getElementById('links-modal');
-
-  if (showLinksBtn && linksModal) {
-    const toggleLinksModal = () => {
-      linksModal.classList.toggle('hidden');
-      if (!linksModal.classList.contains('hidden') && window.innerWidth <= 768) {
-        document.querySelector('.sidebar').classList.remove('open');
-      }
-    };
-    showLinksBtn.addEventListener('click', toggleLinksModal);
-    if (closeLinksBtn) closeLinksBtn.addEventListener('click', toggleLinksModal);
-    if (closeLinksFooterBtn) closeLinksFooterBtn.addEventListener('click', toggleLinksModal);
   }
 
   // Mobile & Desktop Sidebar Toggle
