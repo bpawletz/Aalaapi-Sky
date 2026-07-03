@@ -599,6 +599,7 @@ function initUIEventListeners() {
   }
 
 
+
   // Useful Links Modal controls
   const showLinksBtn = document.getElementById('useful-links-btn');
   const closeLinksBtn = document.getElementById('close-links-btn');
@@ -606,7 +607,8 @@ function initUIEventListeners() {
   const linksModal = document.getElementById('links-modal');
 
   if (showLinksBtn && linksModal) {
-    const toggleLinksModal = () => {
+    const toggleLinksModal = (e) => {
+      if (e) e.stopPropagation();
       linksModal.classList.toggle('hidden');
       if (!linksModal.classList.contains('hidden') && window.innerWidth <= 768) {
         document.querySelector('.sidebar').classList.remove('open');
@@ -616,6 +618,7 @@ function initUIEventListeners() {
     if (closeLinksBtn) closeLinksBtn.addEventListener('click', toggleLinksModal);
     if (closeLinksFooterBtn) closeLinksFooterBtn.addEventListener('click', toggleLinksModal);
   }
+
 
   // Mobile & Desktop Sidebar Toggle
   const sidebarToggleBtn = document.getElementById('sidebar-toggle');
