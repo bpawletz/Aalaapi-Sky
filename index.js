@@ -5868,6 +5868,25 @@ function updateNotamLink() {
   const linkEl = document.getElementById('notam-link');
   if (linkEl && map) {
     const center = centerMarker ? centerMarker.getLatLng() : map.getCenter();
-    linkEl.href = `https://skyvector.com/?ll=${center.lat.toFixed(4)},${center.lng.toFixed(4)}`;
+    const lat = center.lat;
+    const lon = center.lng;
+
+    function getDms(val) {
+      const absVal = Math.abs(val);
+      let deg = Math.floor(absVal);
+      const minFloat = (absVal - deg) * 60;
+      let min = Math.floor(minFloat);
+      let sec = Math.round((minFloat - min) * 60);
+      if (sec === 60) { sec = 0; min += 1; }
+      if (min === 60) { min = 0; deg += 1; }
+      return { deg, min, sec };
+    }
+
+    const latDms = getDms(lat);
+    const lonDms = getDms(lon);
+    const latDir = lat >= 0 ? 'N' : 'S';
+    const lonDir = lon >= 0 ? 'E' : 'W';
+
+    linkEl.href = `https://notams.aim.faa.gov/notamSearch/nsapp.html#/results?searchType=3&latDegrees=${latDms.deg}&latMinutes=${latDms.min}&latSeconds=${latDms.sec}&latitudeDirection=${latDir}&longDegrees=${lonDms.deg}&longMinutes=${lonDms.min}&longSeconds=${lonDms.sec}&longitudeDirection=${lonDir}&radius=25`;
   }
 }
