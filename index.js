@@ -1644,6 +1644,8 @@ function generateOrbitCoordinates(radius, sPhoto, baseAltitude, defaultGimbalPit
   const circumference = 2 * Math.PI * radius;
   const nPhotos = Math.max(8, Math.round(circumference / sPhoto));
 
+  const dynamicPitch = defaultGimbalPitch === -90 ? -90 : -Math.atan2(baseAltitude, radius) * (180.0 / Math.PI);
+
   for (let i = 0; i <= nPhotos; i++) {
     const theta = (i / nPhotos) * 2 * Math.PI;
     const x = radius * Math.cos(theta);
@@ -1657,7 +1659,7 @@ function generateOrbitCoordinates(radius, sPhoto, baseAltitude, defaultGimbalPit
       x: x,
       y: y,
       alt: baseAltitude,
-      pitch: defaultGimbalPitch,
+      pitch: dynamicPitch,
       heading: heading
     };
 
@@ -1675,15 +1677,16 @@ function generateMultiOrbitCoordinates(radius, sPhoto, baseAltitude, defaultGimb
   
   // High, Medium, Low rings
   const rings = [
-    { alt: baseAltitude * 1.2, pitch: -60, rFactor: 0.9 },
-    { alt: baseAltitude * 1.0, pitch: -45, rFactor: 1.0 },
-    { alt: baseAltitude * 0.8, pitch: -30, rFactor: 1.1 }
+    { alt: baseAltitude * 1.2, rFactor: 0.9 },
+    { alt: baseAltitude * 1.0, rFactor: 1.0 },
+    { alt: baseAltitude * 0.8, rFactor: 1.1 }
   ];
 
   rings.forEach((ring, ringIdx) => {
     const r = radius * ring.rFactor;
     const circumference = 2 * Math.PI * r;
     const nPhotos = Math.max(8, Math.round(circumference / sPhoto));
+    const dynamicPitch = defaultGimbalPitch === -90 ? -90 : -Math.atan2(ring.alt, r) * (180.0 / Math.PI);
     
     for (let i = 0; i <= nPhotos; i++) {
       // Alternate direction per ring
@@ -1701,7 +1704,7 @@ function generateMultiOrbitCoordinates(radius, sPhoto, baseAltitude, defaultGimb
         x: x,
         y: y,
         alt: ring.alt,
-        pitch: ring.pitch,
+        pitch: dynamicPitch,
         heading: heading,
         isRingStart: i === 0,
         ringIndex: ringIdx
@@ -1785,7 +1788,7 @@ function generateGridOrbitComboCoordinates(radius, rotation, captureMode, sLine,
     x: pt.x,
     y: pt.y,
     alt: baseAltitude,
-    pitch: defaultGimbalPitch, // Oblique pitch from slider
+    pitch: pt.pitch, // Dynamically computed oblique pitch
     heading: pt.heading, // Point at center (POI)
     isRingStart: idx === 0, // Set gimbal to oblique at start of orbit
     ringIndex: 0 // Violet (High/Orbit)
@@ -1796,7 +1799,7 @@ function generateGridOrbitComboCoordinates(radius, rotation, captureMode, sLine,
   orbitWaypoints.forEach(wp => waypoints.push(wp));
 
   const gridPhotos = gridData.photos.map(pt => ({ x: pt.x, y: pt.y, alt: baseAltitude, pitch: -90, heading: null }));
-  const orbitPhotos = orbitData.photos.map(pt => ({ x: pt.x, y: pt.y, alt: baseAltitude, pitch: defaultGimbalPitch, heading: pt.heading }));
+  const orbitPhotos = orbitData.photos.map(pt => ({ x: pt.x, y: pt.y, alt: baseAltitude, pitch: pt.pitch, heading: pt.heading }));
   
   gridPhotos.forEach(pt => photos.push(pt));
   orbitPhotos.forEach(pt => photos.push(pt));
@@ -2383,9 +2386,9 @@ function updateMapLegend() {
       title = "Mission Layers";
       itemsHtml = `
         <div class="legend-item"><span class="legend-color" style="background-color: #3b82f6;"></span> 1. Nadir Grid (-90°): ${formatDistance(altitudeVal, 1)}</div>
-        <div class="legend-item"><span class="legend-color" style="background-color: #a855f7;"></span> 2. Orbit (High, -60°): ${formatDistance(altitudeVal * 1.2, 1)}</div>
-        <div class="legend-item"><span class="legend-color" style="background-color: #06b6d4;"></span> 3. Orbit (Mid, -45°): ${formatDistance(altitudeVal * 1.0, 1)}</div>
-        <div class="legend-item"><span class="legend-color" style="background-color: #f59e0b;"></span> 4. Orbit (Low, -30°): ${formatDistance(altitudeVal * 0.8, 1)}</div>
+        <div class="legend-item"><span class="legend-color" style="background-color: #a855f7;"></span> 2. Orbit (High): ${formatDistance(altitudeVal * 1.2, 1)}</div>
+        <div class="legend-item"><span class="legend-color" style="background-color: #06b6d4;"></span> 3. Orbit (Mid): ${formatDistance(altitudeVal * 1.0, 1)}</div>
+        <div class="legend-item"><span class="legend-color" style="background-color: #f59e0b;"></span> 4. Orbit (Low): ${formatDistance(altitudeVal * 0.8, 1)}</div>
       `;
     } else if (gridType === 'freeform') {
       title = "Mission Layers";
