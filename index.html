@@ -1391,6 +1391,7 @@ html, body {
               </svg>
             </button>
             <button id="about-btn" class="btn-secondary header-about-btn" type="button" style="margin: 0; height: 36px; display: inline-flex; align-items: center; justify-content: center; padding: 0 12px; border-radius: 8px;">About</button>
+            <button id="useful-links-btn" class="btn-secondary header-about-btn" type="button" style="margin: 0; height: 36px; display: inline-flex; align-items: center; justify-content: center; padding: 0 12px; border-radius: 8px;">Links</button>
           </div>
         </div>
         <p class="subtitle">Drone Waypoint Mission Planner</p>
@@ -1737,7 +1738,6 @@ html, body {
           </div>
         </section>
       </div>
-
     </aside>
 
     <!-- Main Content Area (Map and Floating Info) -->
@@ -1840,6 +1840,40 @@ html, body {
       </footer>
     </div>
   </div>
+  <!-- Links Modal -->
+  <div id="links-modal" class="modal-overlay hidden">
+    <div class="modal glass">
+      <header class="modal-header">
+        <h2>Useful Links</h2>
+        <button id="close-links-btn" class="close-btn" type="button" aria-label="Close links">&times;</button>
+      </header>
+      <div class="modal-content" style="display: flex; flex-direction: column; gap: 12px;">
+        <a href="https://iacra.faa.gov/IACRA/Default.aspx" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="text-decoration: none; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; flex-direction: column; gap: 2px; text-align: left;"><span>IACRA</span><span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">FAA pilot certification and remote pilot certificate management.</span></div>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </a>
+        <a href="https://faadronezone-access.faa.gov/" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="text-decoration: none; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; flex-direction: column; gap: 2px; text-align: left;"><span>FAADroneZone</span><span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">FAA drone registration, waivers, and airspace authorizations.</span></div>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </a>
+        <a href="https://aviationweather.gov/data/metar/" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="text-decoration: none; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; flex-direction: column; gap: 2px; text-align: left;"><span>METAR</span><span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">Aviation weather reports and current conditions.</span></div>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </a>
+        <a href="https://tfr.faa.gov/" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="text-decoration: none; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; flex-direction: column; gap: 2px; text-align: left;"><span>TFR</span><span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">Temporary Flight Restrictions and airspace closures.</span></div>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </a>
+        <a href="https://notams.aim.faa.gov/notamSearch/nsapp.html#/" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="text-decoration: none; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; flex-direction: column; gap: 2px; text-align: left;"><span>NOTAM</span><span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">Notices to Air Missions regarding temporary hazards.</span></div>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </a>
+      </div>
+      <footer class="modal-footer" style="padding-top: 16px; display: flex; gap: 12px; justify-content: flex-end;">
+        <button id="close-links-footer-btn" class="btn-primary" type="button" style="margin-top: 0;">Close</button>
+      </footer>
+    </div>
+  </div>
 
   <!-- About Modal -->
   <div id="about-modal" class="modal-overlay hidden">
@@ -1859,7 +1893,7 @@ html, body {
           </div>
           <div>
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
-            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.10.0</span>
+            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.10.1</span>
           </div>
         </div>
         
@@ -1903,6 +1937,12 @@ html, body {
             <strong style="color: var(--text-main);">Changelog (v1.7.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li>Added a **Reset** button in the waypoint editor popup: If a waypoint's position, altitude, pitch, or heading has been modified or dragged from its original state, a Reset button displays to easily revert it back to its original settings.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.10.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>Added a **Useful Links** button next to the About button in the header that opens a modal with quick access to IACRA, FAADroneZone, METAR, TFR, and NOTAM.</li>
             </ul>
           </div>
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
@@ -2849,6 +2889,26 @@ function initUIEventListeners() {
     showAboutBtn.addEventListener('click', toggleAboutModal);
     if (closeAboutBtn) closeAboutBtn.addEventListener('click', toggleAboutModal);
     if (closeAboutFooterBtn) closeAboutFooterBtn.addEventListener('click', toggleAboutModal);
+  }
+
+
+  // Useful Links Modal controls
+  const showLinksBtn = document.getElementById('useful-links-btn');
+  const closeLinksBtn = document.getElementById('close-links-btn');
+  const closeLinksFooterBtn = document.getElementById('close-links-footer-btn');
+  const linksModal = document.getElementById('links-modal');
+
+  if (showLinksBtn && linksModal) {
+    const toggleLinksModal = (e) => {
+      if (e) e.stopPropagation();
+      linksModal.classList.toggle('hidden');
+      if (!linksModal.classList.contains('hidden') && window.innerWidth <= 768) {
+        document.querySelector('.sidebar').classList.remove('open');
+      }
+    };
+    showLinksBtn.addEventListener('click', toggleLinksModal);
+    if (closeLinksBtn) closeLinksBtn.addEventListener('click', toggleLinksModal);
+    if (closeLinksFooterBtn) closeLinksFooterBtn.addEventListener('click', toggleLinksModal);
   }
 
   // Mobile & Desktop Sidebar Toggle
