@@ -598,6 +598,28 @@ function initUIEventListeners() {
     if (closeAboutFooterBtn) closeAboutFooterBtn.addEventListener('click', toggleAboutModal);
   }
 
+
+
+  // Useful Links Modal controls
+  const showLinksBtn = document.getElementById('useful-links-btn');
+  const closeLinksBtn = document.getElementById('close-links-btn');
+  const closeLinksFooterBtn = document.getElementById('close-links-footer-btn');
+  const linksModal = document.getElementById('links-modal');
+
+  if (showLinksBtn && linksModal) {
+    const toggleLinksModal = (e) => {
+      if (e) e.stopPropagation();
+      linksModal.classList.toggle('hidden');
+      if (!linksModal.classList.contains('hidden') && window.innerWidth <= 768) {
+        document.querySelector('.sidebar').classList.remove('open');
+      }
+    };
+    showLinksBtn.addEventListener('click', toggleLinksModal);
+    if (closeLinksBtn) closeLinksBtn.addEventListener('click', toggleLinksModal);
+    if (closeLinksFooterBtn) closeLinksFooterBtn.addEventListener('click', toggleLinksModal);
+  }
+
+
   // Mobile & Desktop Sidebar Toggle
   const sidebarToggleBtn = document.getElementById('sidebar-toggle');
   const sidebarElement = document.querySelector('.sidebar');
