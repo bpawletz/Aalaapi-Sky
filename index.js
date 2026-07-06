@@ -5793,6 +5793,17 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
   let statusText = "";
   let color = "";
 
+  // Simple HTML escape function to prevent XSS
+  const escapeHTML = (str) => {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  };
+
   if (closest.fltCat === "VFR") {
     isAllowed = true;
     statusText = "🟢 Allowed (VFR)";
@@ -5803,7 +5814,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     color = "var(--warning-color)";
   } else {
     isAllowed = false;
-    statusText = `🔴 Not Allowed (${closest.fltCat})`;
+    statusText = `🔴 Not Allowed (${escapeHTML(closest.fltCat)})`;
     color = "var(--error-color)";
   }
 
@@ -5815,7 +5826,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     }
   }
 
-  windowEl.innerHTML = `<span style="color: ${color}">${statusText}</span><div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">Last Polled: ${timeString}</div>`;
+  windowEl.innerHTML = `<span style="color: ${color}">${statusText}</span><div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">Last Polled: ${escapeHTML(timeString)}</div>`;
   windowEl.title = `Closest: ${closest.name} (${closest.distance.toFixed(1)}km)\nRaw: ${closest.raw}`;
 
   let detailsHtml = `<div style="font-size: 0.8rem; line-height: 1.4;">`;
@@ -5845,7 +5856,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     "LIFR": `<span style="color: var(--error-color)">LIFR:</span> Vis <1mi, Ceil <500ft`
   };
 
-  if (closest.fltCat && categoryDefinitions[closest.fltCat]) {
+  if (closest.fltCat && Object.prototype.hasOwnProperty.call(categoryDefinitions, closest.fltCat)) {
     detailsHtml += `<div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.75rem; color: var(--text-secondary);">`;
     detailsHtml += `<div style="font-weight: 600; margin-bottom: 2px;">Current Category:</div>`;
     detailsHtml += `<div>${categoryDefinitions[closest.fltCat]}</div>`;
