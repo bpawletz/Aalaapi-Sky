@@ -464,9 +464,14 @@
       <div class="modal-content">
         <p>Since the consumer DJI Fly App does not support direct KML/KMZ waypoint imports from its user interface, you must use a directory overwrite workaround to load this custom flight mission:</p>
         
+        <!-- Multipart Info Callout (New) -->
+        <div class="modal-alert info" style="margin-bottom: 15px; border-left-color: var(--accent-cyan); background: rgba(6, 182, 212, 0.05);">
+          <strong>Using a Split Mission?</strong> If your mission exceeded the flight time limit and downloaded as a <code>.zip</code> file, <strong>unzip the folder first</strong> on your computer or phone to extract the individual part files (e.g., <code>Part1.kmz</code>, <code>Part2.kmz</code>). Each part must be injected as its own separate waypoint folder.
+        </div>
+
         <ol class="guide-steps">
           <li>
-            <strong>Create a placeholder mission:</strong> On your DJI RC2 controller, open the DJI Fly App, select <strong>Waypoint Flight</strong>, and create a short dummy mission (e.g., place 2 arbitrary waypoints). Name it something memorable and <strong>Save</strong> it.
+            <strong>Create placeholder mission(s):</strong> On your DJI RC2 controller, open the DJI Fly App, select <strong>Waypoint Flight</strong>, and create a short dummy mission (e.g., place 2 arbitrary waypoints) for <em>each part</em> of your flight. Name them memorably (e.g., <code>Placeholder Part 1</code>, <code>Placeholder Part 2</code>) and <strong>Save</strong> them.
           </li>
           <li>
             <strong>Connect your RC2 to your PC or Android Phone:</strong> Use a data-capable USB-C cable to connect your RC2 controller to your computer or an Android phone (like a Samsung Galaxy with MTP support).
@@ -477,13 +482,17 @@
             <em>Note: On Android phones, you can use a file manager app (like Samsung "My Files" or "Files by Google") to browse the RC2 storage. On macOS, you will need to use <strong>OpenMTP</strong> or a similar utility.</em>
           </li>
           <li>
-            <strong>Identify your dummy mission:</strong> Inside that directory, you will see folders with random names. Look for the most recently updated folder containing a <code>.kmz</code> file.
+            <strong>Identify your dummy missions:</strong> Inside that directory, you will see folders with random names. Look for the most recently updated folders containing a <code>.kmz</code> file.
           </li>
           <li>
-            <strong>Inject the generated file:</strong> Rename the grid KMZ file you download from this web generator to match the exact filename of the dummy KMZ (e.g., <code>Waypoint_XXX.kmz</code>), and copy it into that folder, overwriting the original dummy file.
+            <strong>Inject the generated files:</strong>
+            <ul>
+              <li>For a <strong>single mission</strong>: Rename the downloaded `.kmz` file to match the exact filename of the dummy `.kmz` (e.g., <code>Waypoint_XXX.kmz</code>), and copy it into that folder, overwriting the original.</li>
+              <li>For a <strong>split mission</strong>: Take each extracted part KMZ file (e.g., <code>Part1.kmz</code>) and overwrite the dummy KMZ in its respective placeholder folder.</li>
+            </ul>
           </li>
           <li>
-            <strong>Fly the mission:</strong> Unplug the controller, open the DJI Fly App, go to your saved waypoint missions, and load the placeholder. You will see your newly generated grid pattern ready on the screen!
+            <strong>Fly the mission:</strong> Unplug the controller, open the DJI Fly App, go to your saved waypoint missions, and load the placeholders. You will see your newly generated grid patterns ready on the screen!
           </li>
         </ol>
 
