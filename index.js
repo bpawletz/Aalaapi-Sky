@@ -3344,7 +3344,6 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     if (wp.heading !== null && wp.heading !== undefined) {
       actualHeadingMode = 'smoothTransition';
       actualHeadingAngle = wp.heading;
-      headingAngleEnable = 1;
     }
 
     const currentAltitude = wp.alt !== undefined ? wp.alt : altitude;
@@ -3372,7 +3371,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
         </wpml:waypointTurnParam>
         <wpml:useStraightLine>${useStraightLine}</wpml:useStraightLine>
 ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
-          <wpml:waypointGimbalPitchAngle>0</wpml:waypointGimbalPitchAngle>
+          <wpml:waypointGimbalPitchAngle>${wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch}</wpml:waypointGimbalPitchAngle>
           <wpml:waypointGimbalYawAngle>0</wpml:waypointGimbalYawAngle>
         </wpml:waypointGimbalHeadingParam>
       </Placemark>\n`;
