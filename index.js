@@ -3158,29 +3158,53 @@ function updateStatsPanel(stats) {
 
   // Warnings display
   if (warningsEl) {
-    let warningHTML = "";
+    warningsEl.textContent = '';
+    let hasWarnings = false;
     
     // Check isolated waypoints
     if (stats.hasIsolatedWaypoint) {
       const formattedGap = formatDistance(stats.maxNearestNeighborDist);
       const limitStr = unit === 'imperial' ? "328 ft" : "100m";
-      warningHTML += `<div>⚠️ <strong>Warning:</strong> Waypoints are isolated (>${limitStr} from any other)! (Max gap: ${formattedGap})</div>`;
+
+      const div = document.createElement('div');
+      const strong = document.createElement('strong');
+      strong.textContent = 'Warning:';
+      div.appendChild(document.createTextNode('⚠️ '));
+      div.appendChild(strong);
+      div.appendChild(document.createTextNode(` Waypoints are isolated (>${limitStr} from any other)! (Max gap: ${formattedGap})`));
+      warningsEl.appendChild(div);
+      hasWarnings = true;
     }
 
     // Check max flight time limit
     if (stats.isOverMaxFlightTime) {
-      warningHTML += `<div>⚠️ <strong>Flight Time Warning:</strong> Mission duration exceeds max flight time (${stats.maxFlightTimeMinutes} min). It will be split into ${stats.partsCount} separate waypoint starts.</div>`;
+      const div = document.createElement('div');
+      const strong = document.createElement('strong');
+      strong.textContent = 'Flight Time Warning:';
+      div.appendChild(document.createTextNode('⚠️ '));
+      div.appendChild(strong);
+      div.appendChild(document.createTextNode(` Mission duration exceeds max flight time (${stats.maxFlightTimeMinutes} min). It will be split into ${stats.partsCount} separate waypoint starts.`));
+      warningsEl.appendChild(div);
+      hasWarnings = true;
     }
 
     // Check geolocation distance
     if (stats.isFarFromTakeoff) {
       const formattedUserDist = formatDistance(stats.userDistanceToTakeoff);
       const limitStr = unit === 'imperial' ? "2000 ft" : "609.6m";
-      warningHTML += `<div style="margin-top: 4px;">⚠️ <strong>Geolocation Warning:</strong> Pilot is far from takeoff location (>${limitStr} away)! (Distance: ${formattedUserDist})</div>`;
+
+      const div = document.createElement('div');
+      div.style.marginTop = '4px';
+      const strong = document.createElement('strong');
+      strong.textContent = 'Geolocation Warning:';
+      div.appendChild(document.createTextNode('⚠️ '));
+      div.appendChild(strong);
+      div.appendChild(document.createTextNode(` Pilot is far from takeoff location (>${limitStr} away)! (Distance: ${formattedUserDist})`));
+      warningsEl.appendChild(div);
+      hasWarnings = true;
     }
 
-    if (warningHTML) {
-      warningsEl.innerHTML = warningHTML;
+    if (hasWarnings) {
       warningsEl.classList.remove('hidden');
     } else {
       warningsEl.classList.add('hidden');
