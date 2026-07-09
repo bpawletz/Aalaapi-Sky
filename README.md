@@ -2,42 +2,73 @@
 
 **Drone Waypoint Mission Planner**
 
-A professional-grade waypoint mission generator and editor for drone flight planning. Designed for high-fidelity 2D mapping and 3D Gaussian Splats.
+A professional-grade waypoint mission generator and editor for drone flight planning. Designed for high-fidelity 2D mapping and 3D Gaussian Splats. It operates entirely in the browser using client-side technologies.
 
-## Features
+---
 
-- **Procedural Flight Generation:** Supports 2D Nadir Grid, 3D Double Grid, Oblique Orbits, Multi-Tier Hybrid passes, and Road Following (Offset Path) flight patterns.
-- **Freeform Flight Plan:** Build custom flight routes manually by clicking on the map.
-- **Import/Export:** Import existing KMZ files to view, drag, and modify waypoints. Export generated flights as KMZ files for injection into controllers like the DJI RC2.
-- **Waypoint Editor:** Comprehensive custom waypoint editor popup to change altitude, gimbal pitch, custom yaw values, and nudge position. Features a **Reset** button to restore modified waypoints to their original state.
-- **3D Preview:** Interactive 3D preview modal of the generated flight path, complete with camera FOV cones and a photogrammetry coverage footprint heatmap. Includes pan, zoom, and auto-rotate controls.
-- **FAA Airspace Overlays:** Live government-sourced airspace layers directly on the map, including:
-  - VFR Sectional Charts
-  - Controlled Airspaces (Class B/C/D/E)
-  - Restricted/Special Use Airspaces
-  - UAS Facility Maps (LAANC grids with altitude ceilings)
-- **NOAA Weather Overlays:** Live weather overlays including NEXRAD Weather Radar and NWS Hazards (warnings, watches, and advisories) with dynamic legends.
-- **Infrastructure Overlays:** Features layers for electrical infrastructure, including:
-  - Power Lines (HIFLD) with popup details.
-- **Auto-Plan Mission Calculator:** Structure-aware calculator with height and clearance sliders to automatically recommend and generate grid patterns.
-- **Mission Splitting:** Automatically splits missions exceeding a user-defined **Max Flight Time** into multiple KMZ files within a ZIP archive on export.
+## Key Features
+
+### 1. Visual Flight Pattern Selector
+An interactive 8-card visual selector maps out flight paths procedurally:
+- **2D Grid (Nadir):** Standard mapping grid with configurable spacing, overlaps, and altitude.
+- **Double Grid:** Crosshatch flight pattern for high-fidelity 3D structure reconstruction.
+- **Orbit:** A single circular oblique pass around a focal structure.
+- **Multi-Orbit:** Multi-tiered circular passes at ascending/descending altitudes and varying camera pitches.
+- **Hybrid Combo:** Grid mapping combined with a single orbit pass.
+- **Multi-Hybrid:** Grid mapping combined with multiple orbital tiers.
+- **Road Follow:** Road-snapping alignment that creates a flight path tracing public roads with adjustable offset and waypoint interval spacing.
+- **Freeform:** Manual waypoint creation by directly clicking anywhere on the map.
+
+### 2. Waypoint Persistence & Advanced Editor
+- **Smart Switch:** Switching patterns (e.g., to Orbit or Multi-Orbit) preserves custom road-following or freeform waypoints instead of clearing them.
+- **Waypoint Details Popup:** Adjust coordinates, altitude, gimbal pitch, custom yaw, and toggle ring starting flags.
+- **Visual Feedback & Nudging:** Selected waypoints highlight, and their positions can be nudged with precision controls.
+- **Interactive Reset:** A **Reset** button appears on modified waypoints, allowing you to instantly restore their original coordinates, altitude, pitch, heading, and configuration.
+
+### 3. Interactive 3D Mission Preview
+- **High-Fidelity Engine:** Rendered using Three.js with full camera FOV (Field of View) cones.
+- **Coverage Heatmap:** Color-coded footprint highlights density of photogrammetry coverage.
+- **Controls:** Fully supports rotation (left-click + drag), zooming (scroll), and panning (right-click + drag) to verify flight clearances.
+
+### 4. Live FAA Airspace Overlays
+Toggleable aviation overlays mapped from official FAA REST endpoints:
+- **VFR Sectional Charts:** High-resolution aeronautical chart raster tiles.
+- **Controlled Airspace:** Color-coded boundaries for Class B (Blue), Class C (Purple), Class D (Pink), and Class E (Green) airspaces.
+- **Special Use Airspace:** Visual boundaries for restricted, prohibited, and military operations areas.
+- **UAS Facility Maps (LAANC):** Local grids showing maximum allowable drone altitudes (from 0 to 400 ft) with permanent labels.
+
+### 5. Real-Time Weather & Infrastructure Layers
+- **NEXRAD Weather Radar:** Composite reflectivity radar showing active precipitation.
+- **NWS Hazards (Weather Warnings):** Active warnings, watches, and advisories.
+- **Dynamic Legend:** Floating map key showing radar intensity scale and active hazard warnings.
+- **Power Transmission Lines:** Electric utility lines sourced from HIFLD, loading dynamically at zoom levels 11 and above with detailed info popups.
+
+### 6. Auto-Plan Calculator & Intelligent Export
+- **Structure-Aware Auto-Plan:** Computes optimal altitude and overlap settings based on target structure height.
+- **Mission Splitting:** Automatically slices large missions exceeding a target **Max Flight Time** into multiple sequenced KMZ files, packaged inside a single ZIP download.
+- **DJI RC2 Support:** Generates controller-compatible KMZ outputs with detailed on-screen setup instructions.
+
+---
 
 ## Technologies Used
 
-- **Vanilla HTML / CSS / JS:** No package manager or build system required.
-- **[Leaflet (v1.9.4)](https://leafletjs.com/):** Core 2D interactive mapping. (License: [BSD 2-Clause](https://github.com/Leaflet/Leaflet/blob/main/LICENSE))
-- **[Three.js (r128)](https://threejs.org/):** Core 3D engine for flight path visualization. (License: [MIT](https://github.com/mrdoob/three.js/blob/master/LICENSE))
-- **[Esri Leaflet (v3.0.12)](https://github.com/Esri/esri-leaflet):** ArcGIS FeatureServer support for live FAA Airspace REST layers. (License: [Apache 2.0](https://github.com/Esri/esri-leaflet/blob/master/LICENSE))
-- **[JSZip](https://stuk.github.io/jszip/):** Client-side generation of KMZ and ZIP archives. (License: [MIT / GPLv3 Dual](https://github.com/Stuk/jszip/blob/main/LICENSE.markdown))
-- **[OpenStreetMap Nominatim API](https://nominatim.org/):** Geocoding and location search. (Data License: [ODbL](https://opendatacommons.org/licenses/odbl/))
-- **[OSRM (Open Source Routing Machine)](http://project-osrm.org/):** Road snapping and auto-routing. (License: [BSD 2-Clause](https://github.com/Project-OSRM/osrm-backend/blob/master/LICENSE.TXT))
-- **[NOAA/NWS GeoServer WMS](https://opengeo.ncep.noaa.gov/):** Real-time weather overlays. (License: Public Domain / U.S. Government Work)
+- **Vanilla HTML5 / CSS3 / ES6+ JavaScript:** Designed to be clean, fast, and dependency-free (no build/bundling step required to run).
+- **[Leaflet (v1.9.4)](https://leafletjs.com/):** Core interactive 2D map engine.
+- **[Three.js (r128)](https://threejs.org/):** GPU-accelerated 3D scene rendering for flight previews.
+- **[Esri Leaflet (v3.0.12)](https://github.com/Esri/esri-leaflet):** Directly consumes ArcGIS REST services for live airspace layers.
+- **[JSZip](https://stuk.github.io/jszip/):** In-browser generation of ZIP archives and KMZ flight packages.
+- **[OpenStreetMap Nominatim](https://nominatim.org/) & [OSRM](http://project-osrm.org/):** Geocoding searches and road-snapping routing engine.
+- **[NOAA/NWS GeoServer WMS](https://opengeo.ncep.noaa.gov/):** Real-time weather radar and warning tile services.
+
+---
 
 ## Getting Started
 
-1. Open `index.html` in a modern web browser. While it can run as a local file (`file://`), running it through a local web server is recommended.
-2. Select your desired **Flight Pattern** from the visual icon grid in the sidebar (e.g., Double Grid, Orbit, Freeform, Road Follow).
-3. Search for a location, click **Locate Me**, import an existing KMZ, or simply click anywhere on the map to set your flight center/waypoints.
-4. Adjust the **Grid Geometry**, **Camera & Overlap**, and **Flight Configuration** parameters as needed.
-5. Use the **3D View** to verify your flight path, altitudes, and camera angles.
-6. Click **Export KMZ** to download your mission file(s). Follow the in-app "Show RC2 Copy Instructions" for details on loading the mission onto your drone controller.
+1. **Host or Open:** Open `index.html` directly in a browser, or run a local server (e.g., `python -m http.server` or via VS Code Live Server).
+2. **Select Flight Mode:** Select your desired pattern from the visual icon grid in the sidebar.
+3. **Configure Targets:** Double-click on the map or search for a location to center the plan.
+4. **Verify Airspace & Weather:** Toggle overlays in the layer control (top-right of the map) to ensure safe flight planning.
+5. **Adjust Parameters:** Fine-tune overlaps, altitude, speed, and gimbal pitches in the sidebar controls.
+6. **Preview in 3D:** Click **3D View** to check camera angles, overlaps, and path trajectory.
+7. **Export:** Export the mission as a KMZ/ZIP package. Click **Show RC2 Copy Instructions** to load it onto your DJI smart controller.
+

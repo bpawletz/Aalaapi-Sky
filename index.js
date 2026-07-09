@@ -3260,10 +3260,10 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     useStraightLine = 0;
   }
 
-  let actionGroupId = 1;
   let actionId = 1;
 
   waypoints.forEach((wp, idx) => {
+    let actionGroupId = 1;
     let actionsForThisPlacemark = '';
     
     // 1. Always set gimbal pitch at start of flight (waypoint index 0), at start of a new ring, OR at every waypoint for road-following
@@ -3313,8 +3313,8 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
-              <wpml:fileSuffix>photo</wpml:fileSuffix>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
             </wpml:actionActuatorFuncParam>
           </wpml:action>
         </wpml:actionGroup>\n`;
@@ -3335,8 +3335,8 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>startRecord</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
-              <wpml:fileSuffix>video</wpml:fileSuffix>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
             </wpml:actionActuatorFuncParam>
           </wpml:action>
         </wpml:actionGroup>\n`;
