@@ -558,14 +558,14 @@
           </div>
           <div>
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
-            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.10.1</span>
+            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.10.2</span>
           </div>
         </div>
         
         <p style="color: var(--text-muted); font-size: 0.9rem;">
           A professional-grade waypoint mission generator and editor for drone flight planning. Designed for high-fidelity 2D mapping and 3D Gaussian Splats.
         </p>
-
+ 
         <h4 style="font-size: 0.95rem; font-weight: 600; color: var(--text-main); margin-top: 4px;">Key Capabilities:</h4>
         <ul style="padding-left: 20px; font-size: 0.85rem; line-height: 1.6; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px;">
           <li>Import existing KMZ files to view, drag, and modify waypoints.</li>
@@ -573,9 +573,15 @@
           <li>Preserve imported filename and structure on KMZ exports.</li>
           <li>Procedural flight generation: 2D Nadir Grid, 3D Double Grid, Oblique Orbits, and Multi-Tier Hybrid passes.</li>
         </ul>
-
+ 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.10.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>**DJI RC2/WPML Compatibility:** Reset action group IDs locally within each waypoint folder and added required `useGlobalPayloadLensIndex` to actions, fixing the DJI waypoint flight execution/import error.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.10.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li>**Map Layers:** Added Topography base map, FAA Obstacles overlay, and HIFLD Power Lines layer.</li>
