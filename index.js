@@ -2313,19 +2313,48 @@ function updateMapLegend() {
         htmlContent += `<div class="legend-item"><span class="legend-color" style="background-color: ${color};"></span> Alt: ${formatDistance(alt, 1)}</div>`;
       });
       
-      div.innerHTML = `
-        <div class="legend-header" style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px;">
-          <h4 style="margin: 0; line-height: 1.2;">Imported Layers</h4>
-          <button class="legend-toggle-btn" type="button" aria-label="Toggle legend details" style="background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 2px; border-radius: 4px;">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.3s ease;">
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
-          </button>
-        </div>
-        <div class="legend-content" style="transition: opacity 0.2s ease;">
-          ${htmlContent}
-        </div>
-      `;
+      const headerDiv = document.createElement('div');
+      headerDiv.className = 'legend-header';
+      headerDiv.style.cssText = 'display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px;';
+
+      const h4 = document.createElement('h4');
+      h4.style.cssText = 'margin: 0; line-height: 1.2;';
+      h4.textContent = "Imported Layers";
+      headerDiv.appendChild(h4);
+
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = 'legend-toggle-btn';
+      toggleBtn.type = 'button';
+      toggleBtn.setAttribute('aria-label', 'Toggle legend details');
+      toggleBtn.style.cssText = 'background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 2px; border-radius: 4px;';
+
+      const svgNS = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(svgNS, "svg");
+      svg.setAttribute("viewBox", "0 0 24 24");
+      svg.setAttribute("width", "14");
+      svg.setAttribute("height", "14");
+      svg.setAttribute("fill", "none");
+      svg.setAttribute("stroke", "currentColor");
+      svg.setAttribute("stroke-width", "2.5");
+      svg.setAttribute("stroke-linecap", "round");
+      svg.setAttribute("stroke-linejoin", "round");
+      svg.style.cssText = "transition: transform 0.3s ease;";
+
+      const polyline = document.createElementNS(svgNS, "polyline");
+      polyline.setAttribute("points", "6 9 12 15 18 9");
+      svg.appendChild(polyline);
+
+      toggleBtn.appendChild(svg);
+      headerDiv.appendChild(toggleBtn);
+
+      div.appendChild(headerDiv);
+
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'legend-content';
+      contentDiv.style.cssText = 'transition: opacity 0.2s ease;';
+      contentDiv.innerHTML = htmlContent;
+
+      div.appendChild(contentDiv);
       
       // Bind toggle listener after inserting content
       setTimeout(() => {
@@ -2407,19 +2436,48 @@ function updateMapLegend() {
       `;
     }
 
-    div.innerHTML = `
-      <div class="legend-header" style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px;">
-        <h4 style="margin: 0; line-height: 1.2;">${title}</h4>
-        <button class="legend-toggle-btn" type="button" aria-label="Toggle legend details" style="background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 2px; border-radius: 4px;">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.3s ease;">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-        </button>
-      </div>
-      <div class="legend-content" style="transition: opacity 0.2s ease;">
-        ${itemsHtml}
-      </div>
-    `;
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'legend-header';
+    headerDiv.style.cssText = 'display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px;';
+
+    const h4 = document.createElement('h4');
+    h4.style.cssText = 'margin: 0; line-height: 1.2;';
+    h4.textContent = title; // Safely set text content
+    headerDiv.appendChild(h4);
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'legend-toggle-btn';
+    toggleBtn.type = 'button';
+    toggleBtn.setAttribute('aria-label', 'Toggle legend details');
+    toggleBtn.style.cssText = 'background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 2px; border-radius: 4px;';
+
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("width", "14");
+    svg.setAttribute("height", "14");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "2.5");
+    svg.setAttribute("stroke-linecap", "round");
+    svg.setAttribute("stroke-linejoin", "round");
+    svg.style.cssText = "transition: transform 0.3s ease;";
+
+    const polyline = document.createElementNS(svgNS, "polyline");
+    polyline.setAttribute("points", "6 9 12 15 18 9");
+    svg.appendChild(polyline);
+
+    toggleBtn.appendChild(svg);
+    headerDiv.appendChild(toggleBtn);
+
+    div.appendChild(headerDiv);
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'legend-content';
+    contentDiv.style.cssText = 'transition: opacity 0.2s ease;';
+    contentDiv.innerHTML = itemsHtml; // itemsHtml contains only internal HTML elements and numbers, so it's safe
+
+    div.appendChild(contentDiv);
 
     // Bind toggle listener after inserting content
     setTimeout(() => {
