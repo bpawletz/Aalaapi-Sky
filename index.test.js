@@ -12,11 +12,21 @@ global.document = {
       value: '',
       textContent: '',
       style: {},
-      closest: () => ({ style: {} })
+      closest: () => ({ style: {} }),
+      innerHTML: '',
+      replaceChildren: () => {},
+      appendChild: () => {}
     };
   },
   addEventListener: () => {},
   querySelectorAll: () => [],
+  createElement: (tag) => ({
+    style: {},
+    appendChild: () => {},
+    textContent: '',
+    innerHTML: ''
+  }),
+  createTextNode: (text) => text
 };
 global.window = {
   addEventListener: () => {}
