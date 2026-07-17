@@ -5846,7 +5846,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
   if (isLoading || statusMsg) {
     windowEl.textContent = statusMsg || "Loading...";
     windowEl.style.color = "var(--text-secondary)";
-    dirsEl.innerHTML = "";
+    dirsEl.replaceChildren();
     dirsEl.classList.add("hidden");
     return;
   }
@@ -5854,7 +5854,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
   if (!directions || !directions.closest) {
     windowEl.textContent = "🔴 No Data";
     windowEl.style.color = "var(--error-color)";
-    dirsEl.innerHTML = "";
+    dirsEl.replaceChildren();
     dirsEl.classList.add("hidden");
     return;
   }
@@ -5867,17 +5867,6 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
   let statusText = "";
   let color = "";
 
-  // Simple HTML escape function to prevent XSS
-  const escapeHTML = (str) => {
-    if (str === null || str === undefined) return '';
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  };
-
   if (closest.fltCat === "VFR") {
     isAllowed = true;
     statusText = "🟢 Allowed (VFR)";
@@ -5888,7 +5877,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     color = "var(--warning-color)";
   } else {
     isAllowed = false;
-    statusText = `🔴 Not Allowed (${escapeHTML(closest.fltCat)})`;
+    statusText = `🔴 Not Allowed (${closest.fltCat || 'Unknown'})`;
     color = "var(--error-color)";
   }
 
@@ -5900,46 +5889,82 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     }
   }
 
-  windowEl.innerHTML = `<span style="color: ${color}">${statusText}</span><div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">Last Polled: ${escapeHTML(timeString)}</div>`;
+  windowEl.replaceChildren();
+  const statusSpan = document.createElement("span");
+  statusSpan.style.color = color;
+  statusSpan.textContent = statusText;
+  windowEl.appendChild(statusSpan);
+
+  const timeDiv = document.createElement("div");
+  timeDiv.style.cssText = "font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;";
+  timeDiv.textContent = `Last Polled: ${timeString}`;
+  windowEl.appendChild(timeDiv);
+
   windowEl.title = `Closest: ${closest.name} (${closest.distance.toFixed(1)}km)\nRaw: ${closest.raw}`;
 
-  let detailsHtml = `<div style="font-size: 0.8rem; line-height: 1.4;">`;
-  detailsHtml += `<div style="margin-bottom: 4px; font-weight: bold; color: var(--text-primary)">Flight Conditions Checklist</div>`;
+  dirsEl.replaceChildren();
+  const container = document.createElement("div");
+  container.style.cssText = "font-size: 0.8rem; line-height: 1.4;";
 
+  const titleDiv = document.createElement("div");
+  titleDiv.style.cssText = "margin-bottom: 4px; font-weight: bold; color: var(--text-primary)";
+  titleDiv.textContent = "Flight Conditions Checklist";
+  container.appendChild(titleDiv);
+
+  const visDiv = document.createElement("div");
   if (closest.visibilitySM !== null && closest.visibilitySM !== undefined) {
     let visCheck = closest.visibilitySM >= 3 ? "✅" : "❌";
     let visColor = closest.visibilitySM >= 3 ? "var(--success-color)" : "var(--error-color)";
-    detailsHtml += `<div style="color: ${visColor}">${visCheck} Visibility: ${closest.visibilitySM.toFixed(1)} SM (Req &ge; 3)</div>`;
+    visDiv.style.color = visColor;
+    visDiv.innerHTML = `${visCheck} Visibility: ${closest.visibilitySM.toFixed(1)} SM (Req &ge; 3)`;
   } else {
-    detailsHtml += `<div style="color: var(--text-secondary)">❓ Visibility: Unknown</div>`;
+    visDiv.style.color = "var(--text-secondary)";
+    visDiv.textContent = "❓ Visibility: Unknown";
   }
+  container.appendChild(visDiv);
 
+  const ceilDiv = document.createElement("div");
   if (closest.ceilingFt !== null && closest.ceilingFt !== undefined) {
     let ceilCheck = closest.ceilingFt >= 1000 ? "✅" : "❌";
     let ceilColor = closest.ceilingFt >= 1000 ? "var(--success-color)" : "var(--error-color)";
     const cStr = closest.ceilingFt >= 99999 ? "Clear" : `${closest.ceilingFt.toFixed(0)} ft`;
-    detailsHtml += `<div style="color: ${ceilColor}">${ceilCheck} Ceiling: ${cStr} (Req &ge; 1000 ft)</div>`;
+    ceilDiv.style.color = ceilColor;
+    ceilDiv.innerHTML = `${ceilCheck} Ceiling: ${cStr} (Req &ge; 1000 ft)`;
   } else {
-    detailsHtml += `<div style="color: var(--success-color)">✅ Ceiling: Unknown</div>`;
+    ceilDiv.style.color = "var(--success-color)";
+    ceilDiv.textContent = "✅ Ceiling: Unknown";
   }
+  container.appendChild(ceilDiv);
 
   const categoryDefinitions = {
-    "VFR": `<span style="color: var(--success-color)">VFR:</span> Vis >5mi, Ceil >3000ft`,
-    "MVFR": `<span style="color: var(--warning-color)">MVFR:</span> Vis 3-5mi, Ceil 1k-3k ft`,
-    "IFR": `<span style="color: var(--error-color)">IFR:</span> Vis 1-3mi, Ceil 500-1k ft`,
-    "LIFR": `<span style="color: var(--error-color)">LIFR:</span> Vis <1mi, Ceil <500ft`
+    "VFR": { name: "VFR", color: "var(--success-color)", desc: "Vis >5mi, Ceil >3000ft" },
+    "MVFR": { name: "MVFR", color: "var(--warning-color)", desc: "Vis 3-5mi, Ceil 1k-3k ft" },
+    "IFR": { name: "IFR", color: "var(--error-color)", desc: "Vis 1-3mi, Ceil 500-1k ft" },
+    "LIFR": { name: "LIFR", color: "var(--error-color)", desc: "Vis <1mi, Ceil <500ft" }
   };
 
   if (closest.fltCat && Object.prototype.hasOwnProperty.call(categoryDefinitions, closest.fltCat)) {
-    detailsHtml += `<div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.75rem; color: var(--text-secondary);">`;
-    detailsHtml += `<div style="font-weight: 600; margin-bottom: 2px;">Current Category:</div>`;
-    detailsHtml += `<div>${categoryDefinitions[closest.fltCat]}</div>`;
-    detailsHtml += `</div>`;
+    const catSection = document.createElement("div");
+    catSection.style.cssText = "margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.75rem; color: var(--text-secondary);";
+
+    const catTitle = document.createElement("div");
+    catTitle.style.cssText = "font-weight: 600; margin-bottom: 2px;";
+    catTitle.textContent = "Current Category:";
+    catSection.appendChild(catTitle);
+
+    const catContent = document.createElement("div");
+    const catDef = categoryDefinitions[closest.fltCat];
+    const catNameSpan = document.createElement("span");
+    catNameSpan.style.color = catDef.color;
+    catNameSpan.textContent = `${catDef.name}:`;
+    catContent.appendChild(catNameSpan);
+    catContent.appendChild(document.createTextNode(` ${catDef.desc}`));
+
+    catSection.appendChild(catContent);
+    container.appendChild(catSection);
   }
 
-  detailsHtml += `</div>`;
-
-  dirsEl.innerHTML = detailsHtml;
+  dirsEl.appendChild(container);
   dirsEl.classList.remove("hidden");
 }
 
