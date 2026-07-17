@@ -2547,88 +2547,165 @@ function updateAirspaceLegend(e) {
   const powerLinesActive = airspaceActiveSet.has('Power Lines (HIFLD)');
   const powerLinesZoomedOut = powerLinesActive && currentZoom < POWER_LINES_MIN_ZOOM;
 
-  let html = `<div class="legend-header" style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;">
-    <h4 style="margin:0;line-height:1.2;">Map Overlays</h4>
-  </div><div class="legend-content">`;
+  container.replaceChildren();
+
+  const headerDiv = document.createElement('div');
+  headerDiv.className = 'legend-header';
+  headerDiv.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;';
+
+  const h4 = document.createElement('h4');
+  h4.style.cssText = 'margin:0;line-height:1.2;';
+  h4.textContent = 'Map Overlays';
+  headerDiv.appendChild(h4);
+
+  container.appendChild(headerDiv);
+
+  const contentDiv = document.createElement('div');
+  contentDiv.className = 'legend-content';
+
+  function createSectionHeader(text) {
+    const div = document.createElement('div');
+    div.style.cssText = 'font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin:6px 0 4px;';
+    div.textContent = text;
+    return div;
+  }
+
+  function createLegendItem(bgStyle, text) {
+    const div = document.createElement('div');
+    div.className = 'legend-item';
+
+    const span = document.createElement('span');
+    span.className = 'legend-color';
+    span.style.cssText = bgStyle;
+
+    div.appendChild(span);
+    div.appendChild(document.createTextNode(' ' + text));
+    return div;
+  }
+
+  function createZoomWarning(minZoom, featureName) {
+    const div = document.createElement('div');
+    div.style.cssText = 'font-size:0.75rem;color:var(--accent-yellow);display:flex;align-items:center;gap:5px;margin-bottom:4px;';
+
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("width", "12");
+    svg.setAttribute("height", "12");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "2.5");
+    svg.setAttribute("stroke-linecap", "round");
+    svg.setAttribute("stroke-linejoin", "round");
+
+    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    circle.setAttribute("cx", "12");
+    circle.setAttribute("cy", "12");
+    circle.setAttribute("r", "10");
+    svg.appendChild(circle);
+
+    const line1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line1.setAttribute("x1", "12");
+    line1.setAttribute("y1", "8");
+    line1.setAttribute("x2", "12");
+    line1.setAttribute("y2", "12");
+    svg.appendChild(line1);
+
+    const line2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line2.setAttribute("x1", "12");
+    line2.setAttribute("y1", "16");
+    line2.setAttribute("x2", "12.01");
+    line2.setAttribute("y2", "16");
+    svg.appendChild(line2);
+
+    div.appendChild(svg);
+    div.appendChild(document.createTextNode(` Zoom in to zoom level ${minZoom}+ to load ${featureName}`));
+
+    return div;
+  }
 
   if (airspaceActiveSet.has('VFR Sectional Chart')) {
-    html += `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin:6px 0 4px;">VFR Chart</div>`;
-    html += `<div class="legend-item"><span class="legend-color" style="background:linear-gradient(135deg,#6eb5ff,#a0c8ff);border:1px solid rgba(255,255,255,0.2);opacity:0.8;"></span> Raster aeronautical chart</div>`;
+    contentDiv.appendChild(createSectionHeader('VFR Chart'));
+    contentDiv.appendChild(createLegendItem('background:linear-gradient(135deg,#6eb5ff,#a0c8ff);border:1px solid rgba(255,255,255,0.2);opacity:0.8;', 'Raster aeronautical chart'));
   }
 
   if (airspaceActiveSet.has('Controlled Airspace (Class B/C/D/E)')) {
-    html += `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin:6px 0 4px;">Controlled Airspace</div>`;
-    html += `<div class="legend-item"><span class="legend-color" style="background:#2563eb;"></span> Class B (Surface–10,000 ft)</div>`;
-    html += `<div class="legend-item"><span class="legend-color" style="background:#a855f7;"></span> Class C (Surface–4,000 ft)</div>`;
-    html += `<div class="legend-item"><span class="legend-color" style="background:#ec4899;"></span> Class D (Surface–2,500 ft)</div>`;
-    html += `<div class="legend-item"><span class="legend-color" style="background:#10b981;"></span> Class E (Varies)</div>`;
+    contentDiv.appendChild(createSectionHeader('Controlled Airspace'));
+    contentDiv.appendChild(createLegendItem('background:#2563eb;', 'Class B (Surface–10,000 ft)'));
+    contentDiv.appendChild(createLegendItem('background:#a855f7;', 'Class C (Surface–4,000 ft)'));
+    contentDiv.appendChild(createLegendItem('background:#ec4899;', 'Class D (Surface–2,500 ft)'));
+    contentDiv.appendChild(createLegendItem('background:#10b981;', 'Class E (Varies)'));
   }
 
   if (airspaceActiveSet.has('Restricted & Special Use Airspace')) {
-    html += `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin:6px 0 4px;">Special Use Airspace</div>`;
-    html += `<div class="legend-item"><span class="legend-color" style="background:#ef4444;"></span> Prohibited / Restricted</div>`;
-    html += `<div class="legend-item"><span class="legend-color" style="background:#f59e0b;"></span> Warning Area / MOA</div>`;
+    contentDiv.appendChild(createSectionHeader('Special Use Airspace'));
+    contentDiv.appendChild(createLegendItem('background:#ef4444;', 'Prohibited / Restricted'));
+    contentDiv.appendChild(createLegendItem('background:#f59e0b;', 'Warning Area / MOA'));
   }
 
   if (laancActive) {
-    html += `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin:6px 0 4px;">LAANC Grid Ceilings</div>`;
+    contentDiv.appendChild(createSectionHeader('LAANC Grid Ceilings'));
     if (laancZoomedOut) {
-      html += `<div style="font-size:0.75rem;color:var(--accent-yellow);display:flex;align-items:center;gap:5px;margin-bottom:4px;">
-        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        Zoom in to zoom level ${LAANC_MIN_ZOOM}+ to load grids
-      </div>`;
+      contentDiv.appendChild(createZoomWarning(LAANC_MIN_ZOOM, 'grids'));
     } else {
-      html += `<div class="legend-item"><span class="legend-color" style="background:#ef4444;"></span> 0 ft (No ops without LAANC auth)</div>`;
-      html += `<div class="legend-item"><span class="legend-color" style="background:#f97316;"></span> ≤100 ft</div>`;
-      html += `<div class="legend-item"><span class="legend-color" style="background:#f59e0b;"></span> ≤200 ft</div>`;
-      html += `<div class="legend-item"><span class="legend-color" style="background:#eab308;"></span> ≤300 ft</div>`;
-      html += `<div class="legend-item"><span class="legend-color" style="background:#10b981;"></span> 400 ft (Standard max)</div>`;
+      contentDiv.appendChild(createLegendItem('background:#ef4444;', '0 ft (No ops without LAANC auth)'));
+      contentDiv.appendChild(createLegendItem('background:#f97316;', '≤100 ft'));
+      contentDiv.appendChild(createLegendItem('background:#f59e0b;', '≤200 ft'));
+      contentDiv.appendChild(createLegendItem('background:#eab308;', '≤300 ft'));
+      contentDiv.appendChild(createLegendItem('background:#10b981;', '400 ft (Standard max)'));
     }
   }
 
   if (obstaclesActive) {
-    html += `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin:6px 0 4px;">Obstacles & Antennas</div>`;
+    contentDiv.appendChild(createSectionHeader('Obstacles & Antennas'));
     if (obstaclesZoomedOut) {
-      html += `<div style="font-size:0.75rem;color:var(--accent-yellow);display:flex;align-items:center;gap:5px;margin-bottom:4px;">
-        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        Zoom in to zoom level ${OBSTACLES_MIN_ZOOM}+ to load obstacles
-      </div>`;
+      contentDiv.appendChild(createZoomWarning(OBSTACLES_MIN_ZOOM, 'obstacles'));
     } else {
-      html += `<div class="legend-item"><span class="legend-color" style="background:#f97316; border-radius: 50%; width: 12px; height: 12px; display: inline-block;"></span> FAA Obstacle/Antenna</div>`;
+      contentDiv.appendChild(createLegendItem('background:#f97316; border-radius: 50%; width: 12px; height: 12px; display: inline-block;', 'FAA Obstacle/Antenna'));
     }
   }
 
   if (powerLinesActive) {
-    html += '<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin:6px 0 4px;">Power Lines</div>';
+    contentDiv.appendChild(createSectionHeader('Power Lines'));
     if (powerLinesZoomedOut) {
-      html += `<div style="font-size:0.75rem;color:var(--accent-yellow);display:flex;align-items:center;gap:5px;margin-bottom:4px;">
-        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        Zoom in to zoom level ${POWER_LINES_MIN_ZOOM}+ to load power lines
-      </div>`;
+      contentDiv.appendChild(createZoomWarning(POWER_LINES_MIN_ZOOM, 'power lines'));
     } else {
-      html += '<div class="legend-item"><span class="legend-color" style="background:#fde047; height: 3px; display: inline-block;"></span> HIFLD Electric Power Transmission Line</div>';
+      contentDiv.appendChild(createLegendItem('background:#fde047; height: 3px; display: inline-block;', 'HIFLD Electric Power Transmission Line'));
     }
   }
 
   if (airspaceActiveSet.has('Weather Radar (NEXRAD)')) {
-    html += `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin:6px 0 4px;">Weather Radar</div>`;
-    html += `<div class="legend-item" style="flex-direction: column; align-items: stretch; gap: 4px; width: 100%;">
-      <div style="display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: linear-gradient(to right, #00ecec, #00d800, #ff0000, #d800d8);"></div>
-      <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-muted); width: 100%;">
-        <span>Light Rain</span>
-        <span>Heavy Storm</span>
-      </div>
-    </div>`;
+    contentDiv.appendChild(createSectionHeader('Weather Radar'));
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'legend-item';
+    wrapper.style.cssText = 'flex-direction: column; align-items: stretch; gap: 4px; width: 100%;';
+
+    const gradientBar = document.createElement('div');
+    gradientBar.style.cssText = 'display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: linear-gradient(to right, #00ecec, #00d800, #ff0000, #d800d8);';
+    wrapper.appendChild(gradientBar);
+
+    const labelsDiv = document.createElement('div');
+    labelsDiv.style.cssText = 'display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-muted); width: 100%;';
+
+    const lightRain = document.createElement('span');
+    lightRain.textContent = 'Light Rain';
+    labelsDiv.appendChild(lightRain);
+
+    const heavyStorm = document.createElement('span');
+    heavyStorm.textContent = 'Heavy Storm';
+    labelsDiv.appendChild(heavyStorm);
+
+    wrapper.appendChild(labelsDiv);
+    contentDiv.appendChild(wrapper);
   }
 
   if (airspaceActiveSet.has('Weather Warnings (NWS Hazards)')) {
-    html += `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin:6px 0 4px;">Weather Warnings</div>`;
-    html += `<div class="legend-item"><span class="legend-color" style="background:#ef4444; border: 1px solid rgba(255,255,255,0.2);"></span> NWS Active Warning Area</div>`;
-    html += `<div class="legend-item"><span class="legend-color" style="background:#f59e0b; border: 1px solid rgba(255,255,255,0.2);"></span> NWS Active Watch / Advisory</div>`;
+    contentDiv.appendChild(createSectionHeader('Weather Warnings'));
+    contentDiv.appendChild(createLegendItem('background:#ef4444; border: 1px solid rgba(255,255,255,0.2);', 'NWS Active Warning Area'));
+    contentDiv.appendChild(createLegendItem('background:#f59e0b; border: 1px solid rgba(255,255,255,0.2);', 'NWS Active Watch / Advisory'));
   }
 
-  html += '</div>';
-  container.innerHTML = html;
+  container.appendChild(contentDiv);
 }
 
 // Apply or remove FeatureServer data based on current zoom level.
