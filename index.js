@@ -3289,10 +3289,6 @@ function buildTemplateKml(finishAction, speed) {
         <wpml:droneEnumValue>68</wpml:droneEnumValue>
         <wpml:droneSubEnumValue>0</wpml:droneSubEnumValue>
       </wpml:droneInfo>
-      <wpml:payloadInfo>
-        <wpml:payloadEnumValue>68</wpml:payloadEnumValue>
-        <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-      </wpml:payloadInfo>
     </wpml:missionConfig>
   </Document>
 </kml>`;
@@ -3475,10 +3471,6 @@ ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
         <wpml:droneEnumValue>68</wpml:droneEnumValue>
         <wpml:droneSubEnumValue>0</wpml:droneSubEnumValue>
       </wpml:droneInfo>
-      <wpml:payloadInfo>
-        <wpml:payloadEnumValue>68</wpml:payloadEnumValue>
-        <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-      </wpml:payloadInfo>
     </wpml:missionConfig>
     <Folder>
       <wpml:templateId>0</wpml:templateId>
