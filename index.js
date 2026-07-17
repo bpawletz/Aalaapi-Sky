@@ -2290,7 +2290,7 @@ function updateMapLegend() {
       
       const uniqueAlts = [...new Set(importedWaypoints.map(w => w.alt))].sort((a, b) => b - a);
       
-      let htmlContent = '';
+      const legendItems = [];
       uniqueAlts.forEach((alt, idx) => {
         let color = '#06b6d4'; // default cyan
         if (uniqueAlts.length > 1) {
@@ -2310,7 +2310,20 @@ function updateMapLegend() {
             color = colors[idx % 4];
           }
         }
-        htmlContent += `<div class="legend-item"><span class="legend-color" style="background-color: ${color};"></span> Alt: ${formatDistance(alt, 1)}</div>`;
+
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'legend-item';
+
+        const colorSpan = document.createElement('span');
+        colorSpan.className = 'legend-color';
+        colorSpan.style.backgroundColor = color;
+
+        const textNode = document.createTextNode(` Alt: ${formatDistance(alt, 1)}`);
+
+        itemDiv.appendChild(colorSpan);
+        itemDiv.appendChild(textNode);
+
+        legendItems.push(itemDiv);
       });
       
       const headerDiv = document.createElement('div');
@@ -2352,7 +2365,7 @@ function updateMapLegend() {
       const contentDiv = document.createElement('div');
       contentDiv.className = 'legend-content';
       contentDiv.style.cssText = 'transition: opacity 0.2s ease;';
-      contentDiv.innerHTML = htmlContent;
+      legendItems.forEach(item => contentDiv.appendChild(item));
 
       div.appendChild(contentDiv);
       
