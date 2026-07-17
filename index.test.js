@@ -23,8 +23,20 @@ global.document = {
   createElement: (tag) => ({
     style: {},
     appendChild: () => {},
+    replaceChildren: () => {},
     textContent: '',
-    innerHTML: ''
+    innerHTML: '',
+    setAttribute: () => {},
+    className: ''
+  }),
+  createElementNS: (ns, tag) => ({
+    style: {},
+    appendChild: () => {},
+    replaceChildren: () => {},
+    textContent: '',
+    innerHTML: '',
+    setAttribute: () => {},
+    className: ''
   }),
   createTextNode: (text) => text
 };
