@@ -4,7 +4,7 @@
 
 A waypoint mission generator and editor for drone flight planning. Designed for high-fidelity 2D mapping and 3D Gaussian Splats. It operates entirely in the browser using client-side technologies.
 
-> **About the Name:** *Aalaapi* (Inuktitut: ᐋᓛᐱ) is an Inuktitut term meaning **"Be silent so you can hear something beautiful."** It highlights the harmony of silent, structured observations.
+> **About the Name:** *Aalaapi* (Myaamia / Miami-Illinois) means **"Look in a particular direction, observe."** It highlights the scanner/camera observing and planning paths from the sky.
 
 ---
 
