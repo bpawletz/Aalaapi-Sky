@@ -8,6 +8,16 @@ A waypoint mission generator and editor for drone flight planning. Designed for 
 
 ---
 
+## Disclaimer & Legal Warning
+
+> [!WARNING]
+> **USE AT YOUR OWN RISK.** This software is provided solely for flight planning visualization, preview, and educational purposes.
+>
+> * **No Liability for Physical Assets:** The developers and contributors of Aalaapi Sky assume absolutely no responsibility or liability for hardware loss, drone crashes, "flyaways", property damage, personal injury, or legal violations resulting from the use of flight plans generated or edited by this software.
+> * **Pilot Responsibility:** The remote pilot-in-command (PIC) is solely responsible for the safe and lawful operation of their aircraft. You must independently verify all flight altitudes, waypoint clearances, local obstacles, weather conditions, and active airspace restrictions (including obtaining appropriate FAA LAANC authorizations). All flights must comply with applicable regulations, such as **FAA Part 107** for commercial operations or **FAA Section 44809 / TRUST** for recreational flyers, including keeping the aircraft within Visual Line of Sight (VLOS) at all times.
+
+---
+
 ## Key Features
 
 ### 1. Visual Flight Pattern Selector
@@ -87,13 +97,6 @@ Aalaapi Sky compiles flight plans into DJI's proprietary **WPML (Waypoint Markup
 * **Supported Models:** DJI Mini 4 Pro, DJI Air 3, DJI Mavic 3, Mavic 3 Pro, Mavic 3 Classic, Mavic 3 Enterprise, DJI Inspire 3, DJI Matrice 30 (M30/M30T), and DJI Matrice 300/350 RTK.
 * **Unsupported Models:** Older DJI models (including the DJI Mini 3 Pro, Mavic Air 2, Mavic 2 series, and Phantom 4 series) utilize legacy `.kml` or proprietary database structures and are not compatible with WPML V2.
 
----
 
-## Disclaimer & Legal Warning
-
-**USE AT YOUR OWN RISK.** This software is provided solely for flight planning visualization, preview, and educational purposes.
-
-* **No Liability for Physical Assets:** The developers and contributors of Aalaapi Sky assume absolutely no responsibility or liability for hardware loss, drone crashes, "flyaways", property damage, personal injury, or legal violations resulting from the use of flight plans generated or edited by this software.
-* **Pilot Responsibility:** The remote pilot-in-command (PIC) is solely responsible for the safe and lawful operation of their aircraft. You must independently verify all flight altitudes, waypoint clearances, local obstacles, weather conditions, and active airspace restrictions (including obtaining appropriate FAA LAANC authorizations). All flights must comply with applicable regulations, such as **FAA Part 107** for commercial operations or **FAA Section 44809 / TRUST** for recreational flyers, including keeping the aircraft within Visual Line of Sight (VLOS) at all times.
 
 
