@@ -79,6 +79,6 @@ Toggleable aviation overlays mapped from official FAA REST endpoints:
 **USE AT YOUR OWN RISK.** This software is provided solely for flight planning visualization, preview, and educational purposes.
 
 * **No Liability for Physical Assets:** The developers and contributors of Aalaapi Sky assume absolutely no responsibility or liability for hardware loss, drone crashes, "flyaways", property damage, personal injury, or legal violations resulting from the use of flight plans generated or edited by this software.
-* **Pilot Responsibility:** The remote pilot-in-command (PIC) is solely responsible for the safe and lawful operation of their aircraft. You must independently verify all flight altitudes, waypoint clearances, local obstacles, weather conditions, and active airspace restrictions (including obtaining appropriate FAA LAANC authorizations) before launching any flight mission.
+* **Pilot Responsibility:** The remote pilot-in-command (PIC) is solely responsible for the safe and lawful operation of their aircraft. You must independently verify all flight altitudes, waypoint clearances, local obstacles, weather conditions, and active airspace restrictions (including obtaining appropriate FAA LAANC authorizations). All flights must comply with applicable regulations, such as **FAA Part 107** for commercial operations or **FAA Section 44809 / TRUST** for recreational flyers, including keeping the aircraft within Visual Line of Sight (VLOS) at all times.
 
 
