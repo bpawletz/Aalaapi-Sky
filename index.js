@@ -881,6 +881,26 @@ function initUIEventListeners() {
       }
     });
   }
+
+  const btnToggleFootprints = document.getElementById('btn-3d-toggle-footprints');
+  if (btnToggleFootprints) {
+    btnToggleFootprints.addEventListener('click', () => {
+      showFootprints = !showFootprints;
+      if (fpvActive) {
+        const hp = getWaypointHeadingAndPitch(fpvProgressIndex, getCurrentWaypoints());
+        redrawGroundPlane(hp.heading, hp.pitch);
+      } else {
+        redrawGroundPlane(0, 0);
+      }
+      const indicator = document.getElementById('indicator-3d-footprints');
+      if (indicator) {
+        indicator.style.background = showFootprints ? '#10b981' : '#ef4444';
+      }
+    });
+  }
+
+  // Wires up FPV mode listeners
+  setupFPVListeners();
 }
 
 // Dynamically hide/show sliders and change labels based on chosen flight pattern
@@ -4568,6 +4588,28 @@ let threeScene, threeCamera, threeRenderer, threeControls, threeAnimationId;
 let showCones = true;
 let autoRotate3D = false;
 let coneGroups = [];
+let waypointsGroup, pathsGroup, groundLinesGroup, conesGroup;
+let cachedTileImages = [];
+let threeGroundCanvas = null;
+let threeGroundCtx = null;
+let threeGroundTexture = null;
+let groundPlaneOffsetX = 0;
+let groundPlaneOffsetZ = 0;
+let groundPlaneSize = 0;
+let showFootprints = true;
+
+// FPV Walkthrough & Editor State Variables
+let fpvActive = false;
+let fpvPlaying = false;
+let fpvProgressIndex = 0;
+let fpvSubInterpolation = 0.0;
+let fpvSpeed = 1.0;
+let fpvOriginalCamPos = null;
+let fpvOriginalCamTarget = null;
+let fpvPhotoFlashActive = false;
+let fpvPhotoDelayTimer = null;
+let fpvRecordTimer = null;
+let fpvRecordSeconds = 0;
 
 // Create a rectangular pyramid representing the camera's field of view (frustum)
 function createCameraPyramidGeometry(hfov, vfov, height) {
@@ -4600,6 +4642,7 @@ function createCameraPyramidGeometry(hfov, vfov, height) {
 
 // Draw photogrammetry coverage heatmap on the ground plane canvas
 function drawCoverageHeatmap(ctx, planeOffsetX, planeOffsetZ, planeSize) {
+  if (fpvActive || !showFootprints) return;
   const waypoints = getCurrentWaypoints();
   if (!waypoints || waypoints.length === 0) return;
 
@@ -4656,6 +4699,313 @@ function drawCoverageHeatmap(ctx, planeOffsetX, planeOffsetZ, planeSize) {
     ctx.fill();
     ctx.restore();
   });
+}
+
+// Calculate the heading and pitch for a waypoint index
+function getWaypointHeadingAndPitch(idx, waypoints) {
+  let heading = 0;
+  const wp = waypoints[idx];
+  const rotationDeg = parseFloat(document.getElementById('grid-rotation').value) || 0;
+  if (wp.heading !== null && wp.heading !== undefined) {
+    heading = wp.heading;
+  } else {
+    heading = getDefaultHeading(idx, waypoints, rotationDeg);
+  }
+  const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value) || -60;
+  const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : defaultGimbalPitch;
+  return { heading, pitch };
+}
+
+// Recreate waypoints, lines, and cones inside the active Three.js scene
+function recreate3DWaypointsAndPaths() {
+  if (!threeScene) return;
+
+  // Clear existing groups from scene
+  if (waypointsGroup) threeScene.remove(waypointsGroup);
+  if (pathsGroup) threeScene.remove(pathsGroup);
+  if (groundLinesGroup) threeScene.remove(groundLinesGroup);
+  if (conesGroup) threeScene.remove(conesGroup);
+
+  const waypoints = getCurrentWaypoints();
+  if (!waypoints || waypoints.length === 0) return;
+
+  coneGroups = [];
+  const rotationDeg = parseFloat(document.getElementById('grid-rotation').value) || 0;
+  const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value) || -60;
+
+  waypointsGroup = new THREE.Group();
+  pathsGroup = new THREE.Group();
+  groundLinesGroup = new THREE.Group();
+  conesGroup = new THREE.Group();
+
+  const materialCache = {};
+
+  waypoints.forEach((wp, idx) => {
+    const x3d = wp.x;
+    const y3d = wp.alt;
+    const z3d = -wp.y;
+
+    const isStart = idx === 0;
+    const isEnd = idx === waypoints.length - 1;
+
+    const isSplitStart = activeSplitStartIndices && activeSplitStartIndices.has(wp.idx !== undefined ? wp.idx : idx);
+
+    // Plot Waypoint Sphere
+    let r = 1.8;
+    let colorHex = 0x06b6d4; // Default cyan
+
+    if (isStart || isSplitStart) {
+      r = 3.0;
+      colorHex = 0x10b981; // Green for all split starts
+    } else if (isEnd) {
+      r = 3.0;
+      colorHex = 0xef4444; // Red
+    } else if (wp.isModified) {
+      colorHex = 0xec4899; // Pink
+    } else {
+      const ring = wp.ringIndex;
+      if (ring === 0) colorHex = 0xa855f7; // purple
+      else if (ring === 1) colorHex = 0x06b6d4; // cyan
+      else if (ring === 2) colorHex = 0xf59e0b; // orange
+      else if (ring === 3) colorHex = 0x3b82f6; // blue
+    }
+
+    const sphereGeom = new THREE.SphereGeometry(r, 12, 12);
+    let sphereMat = materialCache[colorHex];
+    if (!sphereMat) {
+      sphereMat = new THREE.MeshBasicMaterial({ color: colorHex, wireframe: false });
+      materialCache[colorHex] = sphereMat;
+    }
+    const sphereMesh = new THREE.Mesh(sphereGeom, sphereMat);
+    sphereMesh.position.set(x3d, y3d, z3d);
+    waypointsGroup.add(sphereMesh);
+
+    // Plot Ground Line Projection
+    const groundLinePoints = [
+      new THREE.Vector3(x3d, y3d, z3d),
+      new THREE.Vector3(x3d, 0, z3d)
+    ];
+    const groundLineGeom = new THREE.BufferGeometry().setFromPoints(groundLinePoints);
+    const groundLineMat = new THREE.LineDashedMaterial({
+      color: 0x475569,
+      dashSize: 3,
+      gapSize: 2
+    });
+    const groundLine = new THREE.Line(groundLineGeom, groundLineMat);
+    groundLine.computeLineDistances();
+    groundLinesGroup.add(groundLine);
+
+    // Plot Flight Path Line between wp and nextWp
+    if (idx < waypoints.length - 1) {
+      const nextWp = waypoints[idx + 1];
+      const nX = nextWp.x;
+      const nY = nextWp.alt;
+      const nZ = -nextWp.y;
+
+      const startVec = new THREE.Vector3(x3d, y3d, z3d);
+      const endVec = new THREE.Vector3(nX, nY, nZ);
+
+      const pathPoints = [startVec, endVec];
+      const segGeom = new THREE.BufferGeometry().setFromPoints(pathPoints);
+      const d = Math.sqrt(Math.pow(nextWp.x - wp.x, 2) + Math.pow(nextWp.y - wp.y, 2));
+      let segColor = 0x06b6d4;
+      let isWarning = d > 100.0;
+
+      if (isWarning) {
+        segColor = 0xef4444; // Warning Red
+      } else {
+        const nextRing = nextWp.ringIndex;
+        if (nextRing === 0) segColor = 0xa855f7;
+        else if (nextRing === 1) segColor = 0x06b6d4;
+        else if (nextRing === 2) segColor = 0xf59e0b;
+        else if (nextRing === 3) segColor = 0x3b82f6;
+      }
+
+      let segLine;
+      if (isWarning) {
+        const segMat = new THREE.LineDashedMaterial({
+          color: segColor,
+          dashSize: 4,
+          gapSize: 2
+        });
+        segLine = new THREE.Line(segGeom, segMat);
+        segLine.computeLineDistances();
+      } else {
+        const segMat = new THREE.LineBasicMaterial({
+          color: segColor,
+          linewidth: 2
+        });
+        segLine = new THREE.Line(segGeom, segMat);
+      }
+      pathsGroup.add(segLine);
+
+      // Add Directional Arrow Cone
+      const direction = new THREE.Vector3().subVectors(endVec, startVec);
+      const segLen3d = direction.length();
+      if (segLen3d > 4.0) {
+        direction.normalize();
+        const midpoint = new THREE.Vector3().addVectors(startVec, endVec).multiplyScalar(0.5);
+        const arrowConeGeom = new THREE.ConeGeometry(0.8, 2.5, 8);
+        const arrowConeMat = new THREE.MeshBasicMaterial({ color: segColor, depthTest: true });
+        const arrowConeMesh = new THREE.Mesh(arrowConeGeom, arrowConeMat);
+        arrowConeMesh.position.copy(midpoint);
+        const upVector = new THREE.Vector3(0, 1, 0);
+        arrowConeMesh.quaternion.setFromUnitVectors(upVector, direction);
+        pathsGroup.add(arrowConeMesh);
+      }
+    }
+
+    // Plot Camera FOV Cone
+    const { heading, pitch } = getWaypointHeadingAndPitch(idx, waypoints);
+
+    const localConeGroup = new THREE.Group();
+    localConeGroup.position.set(x3d, y3d, z3d);
+    localConeGroup.rotation.y = -heading * Math.PI / 180; // Compass rotation clockwise
+
+    const coneHeight = 8;
+    const coneGeom = createCameraPyramidGeometry(CAMERA_HFOV, CAMERA_VFOV, coneHeight);
+
+    let coneColorHex = colorHex;
+    if (!wp.isModified && wp.ringIndex === null) {
+      coneColorHex = 0x06b6d4;
+    }
+
+    const coneMat = new THREE.MeshBasicMaterial({
+      color: coneColorHex,
+      wireframe: false,
+      transparent: true,
+      opacity: 0.15,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const coneMesh = new THREE.Mesh(coneGeom, coneMat);
+    coneMesh.rotation.x = ((90 + pitch) * Math.PI) / 180; // Correctly align default downward geometry to gimbal pitch
+
+    // Add wireframe outlines
+    const wireGeom = new THREE.EdgesGeometry(coneGeom);
+    const wireMat = new THREE.LineBasicMaterial({
+      color: coneColorHex,
+      transparent: true,
+      opacity: 0.55
+    });
+    const wireframe = new THREE.LineSegments(wireGeom, wireMat);
+    coneMesh.add(wireframe);
+
+    // Optical Axis Center Ray
+    const axisPoints = [
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, -coneHeight, 0)
+    ];
+    const axisGeom = new THREE.BufferGeometry().setFromPoints(axisPoints);
+    const axisMat = new THREE.LineBasicMaterial({
+      color: coneColorHex,
+      transparent: true,
+      opacity: 0.4
+    });
+    const axisLine = new THREE.Line(axisGeom, axisMat);
+    coneMesh.add(axisLine);
+
+    localConeGroup.add(coneMesh);
+    conesGroup.add(localConeGroup);
+    coneGroups.push(localConeGroup);
+  });
+
+  threeScene.add(waypointsGroup);
+  threeScene.add(pathsGroup);
+  threeScene.add(groundLinesGroup);
+
+  conesGroup.visible = showCones;
+  threeScene.add(conesGroup);
+}
+
+// Draws the dynamic photogrammetry coverage footprint for the active FPV camera
+function drawActiveFPVFootprint(ctx, heading, pitch) {
+  if (!fpvActive || !showFootprints || !threeCamera) return;
+
+  const alt = threeCamera.position.y;
+  const headingRad = (heading * Math.PI) / 180;
+
+  const xDrone = threeCamera.position.x;
+  const zDrone = threeCamera.position.z;
+
+  let d = 0;
+  if (pitch > -90) {
+    d = alt * Math.tan((90 + pitch) * Math.PI / 180);
+  }
+
+  // Centroid of projection on ground
+  const px = xDrone + d * Math.sin(headingRad);
+  const pz = zDrone + d * Math.cos(headingRad);
+
+  // Slant range to center of footprint
+  const cosAngle = Math.cos((90 + pitch) * Math.PI / 180);
+  const slantRange = cosAngle > 0.05 ? alt / cosAngle : alt;
+
+  const alphaAcross = (CAMERA_HFOV / 2) * Math.PI / 180;
+  const alphaAlong = (CAMERA_VFOV / 2) * Math.PI / 180;
+
+  const radiusAcross = slantRange * Math.tan(alphaAcross);
+  const radiusAlong = slantRange * Math.tan(alphaAlong) / (cosAngle > 0.05 ? cosAngle : 1.0);
+
+  // Map to canvas pixel space
+  const pixelX = ((px - groundPlaneOffsetX) / groundPlaneSize) * 768;
+  const pixelY = 768 - ((pz - groundPlaneOffsetZ) / groundPlaneSize) * 768;
+
+  const pixelRadiusAcross = (radiusAcross / groundPlaneSize) * 768;
+  const pixelRadiusAlong = (radiusAlong / groundPlaneSize) * 768;
+
+  ctx.save();
+  ctx.translate(pixelX, pixelY);
+  ctx.rotate(headingRad);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, pixelRadiusAcross, pixelRadiusAlong, 0, 0, 2 * Math.PI);
+
+  // Create focal point radial gradient: brightest at center (optical axis intersection)
+  const maxRadius = Math.max(pixelRadiusAcross, pixelRadiusAlong);
+  const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, maxRadius);
+  grad.addColorStop(0, "rgba(34, 197, 94, 0.55)");   // Bright green center
+  grad.addColorStop(0.3, "rgba(34, 197, 94, 0.25)"); // Soft green
+  grad.addColorStop(1, "rgba(34, 197, 94, 0.0)");     // Fades to transparent
+
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.restore();
+}
+
+// Redraws the 2D ground plane canvas and flags the Three.js texture for updates
+function redrawGroundPlane(heading, pitch) {
+  if (!threeGroundCanvas || !threeGroundCtx || !threeGroundTexture) return;
+
+  const ctx = threeGroundCtx;
+  ctx.fillStyle = "#070a13";
+  ctx.fillRect(0, 0, 768, 768);
+
+  cachedTileImages.forEach(t => {
+    try {
+      ctx.drawImage(t.img, t.dx * 256, t.dy * 256, 256, 256);
+    } catch(e) {}
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(t.dx * 256, t.dy * 256, 256, 256);
+  });
+
+  // Draw the grid lines
+  ctx.strokeStyle = "rgba(6, 182, 212, 0.15)";
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 12; i++) {
+    const coord = i * 64;
+    ctx.beginPath(); ctx.moveTo(coord, 0); ctx.lineTo(coord, 768); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, coord); ctx.lineTo(768, coord); ctx.stroke();
+  }
+
+  // Draw heatmap ONLY if FPV is not active and showFootprints is true
+  if (!fpvActive && showFootprints) {
+    drawCoverageHeatmap(ctx, groundPlaneOffsetX, groundPlaneOffsetZ, groundPlaneSize);
+  } else if (fpvActive && showFootprints) {
+    drawActiveFPVFootprint(ctx, heading, pitch);
+  }
+
+  threeGroundTexture.needsUpdate = true;
 }
 
 // Initialize 3D Preview Scene
@@ -4858,6 +5208,15 @@ function init3DPreview() {
               ctx.beginPath(); ctx.moveTo(0, coord); ctx.lineTo(768, coord); ctx.stroke();
             }
 
+            // Cache variables for FPV toggling
+            threeGroundCanvas = groundCanvas;
+            threeGroundCtx = ctx;
+            threeGroundTexture = groundTexture;
+            groundPlaneOffsetX = planeOffsetX;
+            groundPlaneOffsetZ = planeOffsetZ;
+            groundPlaneSize = planeSize;
+            cachedTileImages = tileImages;
+
             // Draw coverage heatmap
             drawCoverageHeatmap(ctx, planeOffsetX, planeOffsetZ, planeSize);
             groundTexture.needsUpdate = true;
@@ -4896,220 +5255,26 @@ function init3DPreview() {
   threeScene.add(arrowHelper);
 
   // 8. Plot Waypoints, Cones, and Ground Lines
-  coneGroups = [];
-  const rotationDeg = parseFloat(document.getElementById('grid-rotation').value) || 0;
-  const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value) || -60;
-
-  const waypointsGroup = new THREE.Group();
-  const pathsGroup = new THREE.Group();
-  const groundLinesGroup = new THREE.Group();
-  const conesGroup = new THREE.Group();
-
-  const materialCache = {};
-
-  waypoints.forEach((wp, idx) => {
-    const x3d = wp.x;
-    const y3d = wp.alt;
-    const z3d = -wp.y;
-
-    const isStart = idx === 0;
-    const isEnd = idx === waypoints.length - 1;
-
-    const isSplitStart = activeSplitStartIndices && activeSplitStartIndices.has(wp.idx !== undefined ? wp.idx : idx);
-
-    // Plot Waypoint Sphere
-    let r = 1.8;
-    let colorHex = 0x06b6d4; // Default cyan
-
-    if (isStart || isSplitStart) {
-      r = 3.0;
-      colorHex = 0x10b981; // Green for all split starts
-    } else if (isEnd) {
-      r = 3.0;
-      colorHex = 0xef4444; // Red
-    } else if (wp.isModified) {
-      colorHex = 0xec4899; // Hot pink
-    } else {
-      if (wp.ringIndex === 0) colorHex = 0xa855f7; // High Orbit
-      else if (wp.ringIndex === 1) colorHex = 0x06b6d4; // Mid Orbit / Standard Grid
-      else if (wp.ringIndex === 2) colorHex = 0xf59e0b; // Low Orbit
-      else if (wp.ringIndex === 3) colorHex = 0x3b82f6; // Combo Grid
-    }
-
-    let sphereMat = materialCache[colorHex];
-    if (!sphereMat) {
-      sphereMat = new THREE.MeshPhongMaterial({
-        color: colorHex,
-        shininess: 80,
-        emissive: colorHex,
-        emissiveIntensity: 0.2
-      });
-      materialCache[colorHex] = sphereMat;
-    }
-
-    const sphereGeom = new THREE.SphereGeometry(r, 16, 16);
-    const sphereMesh = new THREE.Mesh(sphereGeom, sphereMat);
-    sphereMesh.position.set(x3d, y3d, z3d);
-    waypointsGroup.add(sphereMesh);
-
-    // Plot Vertical Ground projector
-    const vertPoints = [
-      new THREE.Vector3(x3d, 0, z3d),
-      new THREE.Vector3(x3d, y3d, z3d)
-    ];
-    const vertGeom = new THREE.BufferGeometry().setFromPoints(vertPoints);
-    const vertMat = new THREE.LineBasicMaterial({
-      color: 0x94a3b8,
-      transparent: true,
-      opacity: 0.35
-    });
-    const vertLine = new THREE.Line(vertGeom, vertMat);
-    groundLinesGroup.add(vertLine);
-
-    // Plot Path Segment to next waypoint
-    if (idx < waypoints.length - 1) {
-      const nextWp = waypoints[idx + 1];
-      const nX = nextWp.x;
-      const nY = nextWp.alt;
-      const nZ = -nextWp.y;
-
-      const startVec = new THREE.Vector3(x3d, y3d, z3d);
-      const endVec = new THREE.Vector3(nX, nY, nZ);
-
-      const pathPoints = [startVec, endVec];
-      const segGeom = new THREE.BufferGeometry().setFromPoints(pathPoints);
-      const d = Math.sqrt(Math.pow(nextWp.x - wp.x, 2) + Math.pow(nextWp.y - wp.y, 2));
-      let segColor = 0x06b6d4;
-      let isWarning = d > 100.0;
-
-      if (isWarning) {
-        segColor = 0xef4444; // Warning Red
-      } else {
-        const nextRing = nextWp.ringIndex;
-        if (nextRing === 0) segColor = 0xa855f7;
-        else if (nextRing === 1) segColor = 0x06b6d4;
-        else if (nextRing === 2) segColor = 0xf59e0b;
-        else if (nextRing === 3) segColor = 0x3b82f6;
-      }
-
-      let segLine;
-      if (isWarning) {
-        const segMat = new THREE.LineDashedMaterial({
-          color: segColor,
-          dashSize: 4,
-          gapSize: 2
-        });
-        segLine = new THREE.Line(segGeom, segMat);
-        segLine.computeLineDistances();
-      } else {
-        const segMat = new THREE.LineBasicMaterial({
-          color: segColor,
-          linewidth: 2
-        });
-        segLine = new THREE.Line(segGeom, segMat);
-      }
-      pathsGroup.add(segLine);
-
-      // Add Directional Arrow (Cone) pointing from wp to nextWp at midpoint
-      const direction = new THREE.Vector3().subVectors(endVec, startVec);
-      const segLen3d = direction.length();
-      if (segLen3d > 4.0) {
-        direction.normalize();
-        
-        // Midpoint of segment
-        const midpoint = new THREE.Vector3().addVectors(startVec, endVec).multiplyScalar(0.5);
-        
-        // Create small arrow cone
-        const arrowConeGeom = new THREE.ConeGeometry(0.8, 2.5, 8);
-        const arrowConeMat = new THREE.MeshBasicMaterial({
-          color: segColor,
-          depthTest: true
-        });
-        const arrowConeMesh = new THREE.Mesh(arrowConeGeom, arrowConeMat);
-        arrowConeMesh.position.copy(midpoint);
-        
-        // Align standard Cone (Y-axis pointing up) with direction vector
-        const upVector = new THREE.Vector3(0, 1, 0);
-        arrowConeMesh.quaternion.setFromUnitVectors(upVector, direction);
-        pathsGroup.add(arrowConeMesh);
-      }
-    }
-
-    // Plot Camera FOV Cone (Rectangular Frustum matching camera specs)
-    let heading = 0;
-    if (wp.heading !== null && wp.heading !== undefined) {
-      heading = wp.heading;
-    } else {
-      heading = getDefaultHeading(idx, waypoints, rotationDeg);
-    }
-    const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : defaultGimbalPitch;
-
-    const localConeGroup = new THREE.Group();
-    localConeGroup.position.set(x3d, y3d, z3d);
-    localConeGroup.rotation.y = -heading * Math.PI / 180; // Compass rotation clockwise
-
-    const coneHeight = 8;
-    const coneGeom = createCameraPyramidGeometry(CAMERA_HFOV, CAMERA_VFOV, coneHeight);
-
-    let coneColorHex = colorHex;
-    if (!wp.isModified && wp.ringIndex === null) {
-      coneColorHex = 0x06b6d4;
-    }
-
-    // Volumetric fill material (transparent solid face rendering)
-    const coneMat = new THREE.MeshBasicMaterial({
-      color: coneColorHex,
-      transparent: true,
-      opacity: 0.08,
-      side: THREE.DoubleSide
-    });
-
-    const coneMesh = new THREE.Mesh(coneGeom, coneMat);
-    coneMesh.rotation.x = (90 + pitch) * Math.PI / 180; // pitch rotation
-
-    // Clean outer outline (frustum edges, no diagonal lines)
-    const edgesGeom = new THREE.EdgesGeometry(coneGeom);
-    const edgesMat = new THREE.LineBasicMaterial({
-      color: coneColorHex,
-      transparent: true,
-      opacity: 0.35
-    });
-    const edgesLine = new THREE.LineSegments(edgesGeom, edgesMat);
-    coneMesh.add(edgesLine);
-
-    // Optical Axis Center Ray
-    const axisPoints = [
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0, -coneHeight, 0)
-    ];
-    const axisGeom = new THREE.BufferGeometry().setFromPoints(axisPoints);
-    const axisMat = new THREE.LineBasicMaterial({
-      color: coneColorHex,
-      transparent: true,
-      opacity: 0.4
-    });
-    const axisLine = new THREE.Line(axisGeom, axisMat);
-    coneMesh.add(axisLine);
-
-    localConeGroup.add(coneMesh);
-    conesGroup.add(localConeGroup);
-    coneGroups.push(localConeGroup);
-  });
-
-  threeScene.add(waypointsGroup);
-  threeScene.add(pathsGroup);
-  threeScene.add(groundLinesGroup);
-  
-  conesGroup.visible = showCones;
-  threeScene.add(conesGroup);
+  recreate3DWaypointsAndPaths();
 
   // 9. Reset view
   reset3DCamera();
 
   // 10. Animation render loop
+  let lastTime = performance.now();
   const animate = () => {
     threeAnimationId = requestAnimationFrame(animate);
-    if (threeControls) threeControls.update();
+    
+    const now = performance.now();
+    const dt = (now - lastTime) / 1000;
+    lastTime = now;
+
+    if (fpvActive) {
+      updateFPVCamera(dt);
+    } else {
+      if (threeControls) threeControls.update();
+    }
+
     if (threeRenderer && threeScene && threeCamera) {
       threeRenderer.render(threeScene, threeCamera);
     }
@@ -5150,6 +5315,603 @@ function reset3DCamera() {
   threeControls.update();
 }
 
+// ==========================================
+// 3D FPV WALKTHROUGH & EDITOR MODE
+// ==========================================
+
+function updateFPVCamera(dt) {
+  if (!threeCamera || !threeScene) return;
+
+  const waypoints = getCurrentWaypoints();
+  if (!waypoints || waypoints.length === 0) {
+    toggleFPVWalkthrough(false);
+    return;
+  }
+
+  // Handle Photo Flash Fade Out
+  const flashOverlay = document.getElementById('fpv-flash-overlay');
+  if (flashOverlay && fpvPhotoFlashActive) {
+    let opacity = parseFloat(flashOverlay.style.opacity) || 0;
+    opacity -= dt * 6.0; // fade quickly
+    if (opacity <= 0) {
+      opacity = 0;
+      fpvPhotoFlashActive = false;
+    }
+    flashOverlay.style.opacity = opacity;
+  }
+
+  // Handle Playback Traversal
+  if (fpvPlaying && !fpvPhotoFlashActive && !fpvPhotoDelayTimer) {
+    const p1 = waypoints[fpvProgressIndex];
+    const p2 = waypoints[fpvProgressIndex + 1];
+
+    if (p2) {
+      // Calculate realistic speed-based interpolation step
+      const dx = p2.x - p1.x;
+      const dy = p2.alt - p1.alt;
+      const dz = (-p2.y) - (-p1.y);
+      const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+      
+      const speed = parseFloat(document.getElementById('speed').value) || 5;
+      const stepTime = dist / speed; // time in seconds
+      
+      if (stepTime > 0.05) {
+        fpvSubInterpolation += (dt / stepTime) * fpvSpeed;
+      } else {
+        fpvSubInterpolation = 1.0;
+      }
+
+      if (fpvSubInterpolation >= 1.0) {
+        // Arrived at next waypoint!
+        fpvSubInterpolation = 0.0;
+        fpvProgressIndex++;
+        
+        // Handle stopAndShoot pause at waypoint
+        const captureMode = document.getElementById('capture-mode').value;
+        if (captureMode === 'stopAndShoot' && fpvProgressIndex < waypoints.length) {
+          triggerFPVPhotoCapture();
+        }
+      }
+    } else {
+      // Reached the end of flight path
+      fpvPlaying = false;
+      fpvSubInterpolation = 0.0;
+      fpvProgressIndex = waypoints.length - 1;
+      
+      // Stop recording if active
+      if (fpvRecordTimer) {
+        clearInterval(fpvRecordTimer);
+        fpvRecordTimer = null;
+      }
+      
+      const playPauseBtn = document.getElementById('fpv-btn-play-pause');
+      if (playPauseBtn) {
+        document.getElementById('fpv-icon-play').classList.remove('hidden');
+        document.getElementById('fpv-icon-pause').classList.add('hidden');
+      }
+      
+      const mediaDot = document.getElementById('fpv-media-dot');
+      const mediaText = document.getElementById('fpv-media-text');
+      if (mediaDot && mediaText) {
+        mediaDot.style.background = '#10b981';
+        mediaText.textContent = 'Mission Complete';
+      }
+      
+      // Open editor panel
+      const editorPanel = document.getElementById('fpv-editor-panel');
+      if (editorPanel) editorPanel.classList.remove('hidden');
+    }
+  }
+
+  // Calculate FPV Position & Orientation
+  const p1 = waypoints[fpvProgressIndex];
+  const p2 = waypoints[fpvProgressIndex + 1];
+  let currentPos = new THREE.Vector3();
+  let heading = 0;
+  let pitch = 0;
+
+  if (p2 && fpvPlaying) {
+    currentPos.x = THREE.MathUtils.lerp(p1.x, p2.x, fpvSubInterpolation);
+    currentPos.y = THREE.MathUtils.lerp(p1.alt, p2.alt, fpvSubInterpolation);
+    currentPos.z = THREE.MathUtils.lerp(-p1.y, -p2.y, fpvSubInterpolation);
+
+    const hp1 = getWaypointHeadingAndPitch(fpvProgressIndex, waypoints);
+    const hp2 = getWaypointHeadingAndPitch(fpvProgressIndex + 1, waypoints);
+
+    // Interpolate heading handling 0/360 wrap-around
+    let h1 = hp1.heading;
+    let h2 = hp2.heading;
+    let diff = h2 - h1;
+    if (diff > 180) diff -= 360;
+    else if (diff < -180) diff += 360;
+    heading = h1 + diff * fpvSubInterpolation;
+
+    pitch = THREE.MathUtils.lerp(hp1.pitch, hp2.pitch, fpvSubInterpolation);
+  } else {
+    currentPos.set(p1.x, p1.alt, -p1.y);
+    const hp = getWaypointHeadingAndPitch(fpvProgressIndex, waypoints);
+    heading = hp.heading;
+    pitch = hp.pitch;
+  }
+
+  // Update FPV Camera Position and Direction
+  threeCamera.position.copy(currentPos);
+  
+  // Set orientation: Yaw (Y-axis) then Pitch (X-axis)
+  const yawRad = -heading * Math.PI / 180;
+  const pitchRad = pitch * Math.PI / 180;
+  threeCamera.rotation.set(pitchRad, yawRad, 0, 'YXZ');
+
+  // Update HUD Telemetry Labels
+  const telemetryAlt = document.getElementById('fpv-telemetry-alt');
+  const telemetrySpeed = document.getElementById('fpv-telemetry-speed');
+  const telemetryWp = document.getElementById('fpv-telemetry-wp');
+  
+  if (telemetryAlt) telemetryAlt.textContent = Math.round(currentPos.y);
+  if (telemetrySpeed) {
+    const currentSpeed = fpvPlaying ? (parseFloat(document.getElementById('speed').value) || 5) : 0;
+    telemetrySpeed.textContent = (currentSpeed * fpvSpeed).toFixed(1);
+  }
+  if (telemetryWp) telemetryWp.textContent = `${fpvProgressIndex + 1} / ${waypoints.length}`;
+
+  // Dynamically redraw active camera footprint ellipse on ground plane
+  if (showFootprints) {
+    redrawGroundPlane(heading, pitch);
+  }
+}
+
+function triggerFPVPhotoCapture() {
+  const flashOverlay = document.getElementById('fpv-flash-overlay');
+  const mediaDot = document.getElementById('fpv-media-dot');
+  const mediaText = document.getElementById('fpv-media-text');
+
+  if (flashOverlay) flashOverlay.style.opacity = '1.0';
+  fpvPhotoFlashActive = true;
+  
+  if (mediaDot && mediaText) {
+    mediaDot.style.background = '#f59e0b';
+    mediaText.textContent = 'Capturing Photo';
+  }
+
+  // Pause movement for 1.5 seconds during capture
+  fpvPhotoDelayTimer = setTimeout(() => {
+    fpvPhotoDelayTimer = null;
+    if (mediaDot && mediaText) {
+      mediaDot.style.background = '#10b981';
+      mediaText.textContent = 'Ready';
+    }
+  }, 1500);
+}
+
+function startFPVVideoRecording() {
+  const mediaDot = document.getElementById('fpv-media-dot');
+  const mediaText = document.getElementById('fpv-media-text');
+  const mediaTimer = document.getElementById('fpv-media-timer');
+
+  if (mediaDot && mediaText && mediaTimer) {
+    mediaDot.style.background = '#ef4444';
+    mediaText.textContent = 'Recording Video';
+    mediaTimer.classList.remove('hidden');
+    
+    fpvRecordSeconds = 0;
+    mediaTimer.textContent = '00:00';
+
+    if (fpvRecordTimer) clearInterval(fpvRecordTimer);
+    fpvRecordTimer = setInterval(() => {
+      if (fpvPlaying) {
+        fpvRecordSeconds++;
+        const mins = Math.floor(fpvRecordSeconds / 60).toString().padStart(2, '0');
+        const secs = (fpvRecordSeconds % 60).toString().padStart(2, '0');
+        mediaTimer.textContent = `${mins}:${secs}`;
+      }
+    }, 1000);
+  }
+}
+
+function toggleFPVWalkthrough(enable) {
+  const hudOverlay = document.getElementById('fpv-hud-overlay');
+  const fpvBtnIndicator = document.getElementById('indicator-3d-fpv');
+  const editorPanel = document.getElementById('fpv-editor-panel');
+  const playPauseBtn = document.getElementById('fpv-btn-play-pause');
+  const instructions = document.getElementById('three-instructions');
+
+  if (enable) {
+    fpvActive = true;
+    fpvPlaying = false;
+    fpvProgressIndex = 0;
+    fpvSubInterpolation = 0.0;
+    
+    // Save original camera view
+    if (threeCamera && threeControls) {
+      fpvOriginalCamPos = threeCamera.position.clone();
+      fpvOriginalCamTarget = threeControls.target.clone();
+      threeControls.enabled = false;
+    }
+
+    if (hudOverlay) hudOverlay.classList.remove('hidden');
+    if (fpvBtnIndicator) fpvBtnIndicator.style.background = '#10b981';
+    if (instructions) instructions.classList.add('hidden');
+    
+    // Always open editor panel initially since we start paused
+    if (editorPanel) editorPanel.classList.remove('hidden');
+    
+    if (playPauseBtn) {
+      document.getElementById('fpv-icon-play').classList.remove('hidden');
+      document.getElementById('fpv-icon-pause').classList.add('hidden');
+    }
+
+    const captureMode = document.getElementById('capture-mode').value;
+    if (captureMode === 'video') {
+      startFPVVideoRecording();
+    } else {
+      const mediaDot = document.getElementById('fpv-media-dot');
+      const mediaText = document.getElementById('fpv-media-text');
+      const mediaTimer = document.getElementById('fpv-media-timer');
+      if (mediaDot && mediaText) {
+        mediaDot.style.background = '#10b981';
+        mediaText.textContent = 'Ready';
+      }
+      if (mediaTimer) mediaTimer.classList.add('hidden');
+    }
+
+    const hp = getWaypointHeadingAndPitch(0, getCurrentWaypoints());
+    redrawGroundPlane(hp.heading, hp.pitch); // Draw active FPV footprint if enabled
+    updateFPVEditorUI();
+  } else {
+    // Exit FPV Mode
+    fpvActive = false;
+    fpvPlaying = false;
+    
+    if (fpvPhotoDelayTimer) {
+      clearTimeout(fpvPhotoDelayTimer);
+      fpvPhotoDelayTimer = null;
+    }
+    if (fpvRecordTimer) {
+      clearInterval(fpvRecordTimer);
+      fpvRecordTimer = null;
+    }
+
+    if (hudOverlay) hudOverlay.classList.add('hidden');
+    if (fpvBtnIndicator) fpvBtnIndicator.style.background = '#ef4444';
+    if (editorPanel) editorPanel.classList.add('hidden');
+    if (instructions) instructions.classList.remove('hidden');
+
+    // Restore original camera position and targets
+    if (threeCamera && threeControls) {
+      threeControls.enabled = true;
+      if (fpvOriginalCamPos && fpvOriginalCamTarget) {
+        threeCamera.position.copy(fpvOriginalCamPos);
+        threeControls.target.copy(fpvOriginalCamTarget);
+        threeControls.update();
+      } else {
+        reset3DCamera();
+      }
+    }
+
+    redrawGroundPlane(0, 0); // Restore green footprint highlights
+  }
+}
+
+function updateFPVEditorUI() {
+  const waypoints = getCurrentWaypoints();
+  if (!waypoints || !waypoints[fpvProgressIndex]) return;
+
+  const wp = waypoints[fpvProgressIndex];
+
+  // Title and coords
+  const wpIndexSpan = document.getElementById('fpv-editor-wp-index');
+  const coordsSpan = document.getElementById('fpv-editor-coords');
+  if (wpIndexSpan) wpIndexSpan.textContent = fpvProgressIndex + 1;
+  if (coordsSpan) coordsSpan.textContent = `${wp.lat.toFixed(6)}, ${wp.lon.toFixed(6)}`;
+
+  // Alt
+  const altVal = document.getElementById('fpv-edit-alt-val');
+  const altSlider = document.getElementById('fpv-edit-alt');
+  if (altVal) altVal.textContent = Math.round(wp.alt);
+  if (altSlider) altSlider.value = Math.round(wp.alt);
+
+  // Pitch
+  const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value) || -60;
+  const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : defaultGimbalPitch;
+  const pitchVal = document.getElementById('fpv-edit-pitch-val');
+  const pitchSlider = document.getElementById('fpv-edit-pitch');
+  if (pitchVal) pitchVal.textContent = Math.round(pitch);
+  if (pitchSlider) pitchSlider.value = Math.round(pitch);
+
+  // Heading/Yaw
+  const headingVal = document.getElementById('fpv-edit-heading-val');
+  const headingSlider = document.getElementById('fpv-edit-heading');
+  const headingAuto = document.getElementById('fpv-edit-heading-auto');
+  
+  const isAutoYaw = wp.heading === null || wp.heading === undefined;
+  if (headingAuto) headingAuto.checked = isAutoYaw;
+
+  if (headingVal && headingSlider) {
+    if (isAutoYaw) {
+      const rotationDeg = parseFloat(document.getElementById('grid-rotation').value) || 0;
+      const autoHead = getDefaultHeading(fpvProgressIndex, waypoints, rotationDeg);
+      headingVal.textContent = `Auto (${Math.round(autoHead)}°)`;
+      headingSlider.value = Math.round(autoHead);
+      headingSlider.disabled = true;
+      headingSlider.style.opacity = '0.4';
+    } else {
+      headingVal.textContent = `${Math.round(wp.heading)}°`;
+      headingSlider.value = Math.round(wp.heading);
+      headingSlider.disabled = false;
+      headingSlider.style.opacity = '1.0';
+    }
+  }
+}
+
+function fpvDeleteWaypoint() {
+  const waypoints = getCurrentWaypoints();
+  if (!waypoints || waypoints.length <= 1) {
+    alert("Cannot delete waypoint: a flight plan must contain at least 2 waypoints.");
+    return;
+  }
+
+  waypoints.splice(fpvProgressIndex, 1);
+
+  // Re-index all waypoints
+  waypoints.forEach((wp, idx) => {
+    wp.idx = idx;
+  });
+
+  // Clamp current pointer
+  if (fpvProgressIndex >= waypoints.length) {
+    fpvProgressIndex = waypoints.length - 1;
+  }
+  fpvSubInterpolation = 0.0;
+
+  // Redraw Leaflet markers, path line geometries, and stats
+  redrawCurrentMission();
+  // Rebuild Three.js waypoints & line meshes
+  recreate3DWaypointsAndPaths();
+  // Refresh FPV Editor sliders to active point
+  updateFPVEditorUI();
+}
+
+function fpvInsertWaypoint() {
+  const waypoints = getCurrentWaypoints();
+  if (!waypoints || waypoints.length === 0) return;
+
+  const currentWp = waypoints[fpvProgressIndex];
+  const nextWp = waypoints[fpvProgressIndex + 1];
+
+  let newX, newY, newAlt, newHeading, newPitch;
+
+  if (nextWp) {
+    newX = (currentWp.x + nextWp.x) / 2;
+    newY = (currentWp.y + nextWp.y) / 2;
+    newAlt = (currentWp.alt + nextWp.alt) / 2;
+    newHeading = currentWp.heading;
+    newPitch = currentWp.pitch;
+  } else {
+    // Extrapolate forward slightly based on waypoint heading orientation
+    const hp = getWaypointHeadingAndPitch(fpvProgressIndex, waypoints);
+    const rad = (hp.heading * Math.PI) / 180;
+    newX = currentWp.x + 20 * Math.sin(rad);
+    newY = currentWp.y + 20 * Math.cos(rad);
+    newAlt = currentWp.alt;
+    newHeading = currentWp.heading;
+    newPitch = currentWp.pitch;
+  }
+
+  const centerLatLng = centerMarker.getLatLng();
+  const geo = localToGeodetic(newX, newY, centerLatLng.lat, centerLatLng.lng, 0);
+
+  const newWp = {
+    x: newX,
+    y: newY,
+    lat: geo.lat,
+    lon: geo.lng,
+    alt: newAlt,
+    pitch: newPitch,
+    heading: newHeading,
+    isModified: true
+  };
+
+  waypoints.splice(fpvProgressIndex + 1, 0, newWp);
+
+  // Re-index
+  waypoints.forEach((wp, idx) => {
+    wp.idx = idx;
+  });
+
+  // Target focus on the newly inserted waypoint
+  fpvProgressIndex++;
+  fpvSubInterpolation = 0.0;
+
+  // Redraw overlays and UI
+  redrawCurrentMission();
+  recreate3DWaypointsAndPaths();
+  updateFPVEditorUI();
+}
+
+// Bind all FPV mode HUD buttons and sliders
+function setupFPVListeners() {
+  const btn3dFpv = document.getElementById('btn-3d-fpv');
+  if (btn3dFpv) {
+    btn3dFpv.addEventListener('click', () => {
+      toggleFPVWalkthrough(!fpvActive);
+    });
+  }
+
+  // Play / Pause
+  const playPauseBtn = document.getElementById('fpv-btn-play-pause');
+  if (playPauseBtn) {
+    playPauseBtn.addEventListener('click', () => {
+      fpvPlaying = !fpvPlaying;
+      
+      const playIcon = document.getElementById('fpv-icon-play');
+      const pauseIcon = document.getElementById('fpv-icon-pause');
+      const editorPanel = document.getElementById('fpv-editor-panel');
+
+      if (fpvPlaying) {
+        if (playIcon) playIcon.classList.add('hidden');
+        if (pauseIcon) pauseIcon.classList.remove('hidden');
+        if (editorPanel) editorPanel.classList.add('hidden');
+        
+        // If recording video, make sure timer starts
+        const captureMode = document.getElementById('capture-mode').value;
+        if (captureMode === 'video' && !fpvRecordTimer) {
+          startFPVVideoRecording();
+        }
+      } else {
+        if (playIcon) playIcon.classList.remove('hidden');
+        if (pauseIcon) pauseIcon.classList.add('hidden');
+        if (editorPanel) editorPanel.classList.remove('hidden');
+        updateFPVEditorUI();
+      }
+    });
+  }
+
+  // Stop / Exit FPV Walkthrough
+  const stopBtn = document.getElementById('fpv-btn-stop');
+  if (stopBtn) {
+    stopBtn.addEventListener('click', () => {
+      toggleFPVWalkthrough(false);
+    });
+  }
+
+  // Step Backward
+  const stepBackBtn = document.getElementById('fpv-btn-step-back');
+  if (stepBackBtn) {
+    stepBackBtn.addEventListener('click', () => {
+      fpvPlaying = false;
+      const playIcon = document.getElementById('fpv-icon-play');
+      const pauseIcon = document.getElementById('fpv-icon-pause');
+      if (playIcon) playIcon.classList.remove('hidden');
+      if (pauseIcon) pauseIcon.classList.add('hidden');
+
+      if (fpvProgressIndex > 0) {
+        fpvProgressIndex--;
+      }
+      fpvSubInterpolation = 0.0;
+
+      const editorPanel = document.getElementById('fpv-editor-panel');
+      if (editorPanel) editorPanel.classList.remove('hidden');
+      updateFPVEditorUI();
+    });
+  }
+
+  // Step Forward
+  const stepForwardBtn = document.getElementById('fpv-btn-step-forward');
+  if (stepForwardBtn) {
+    stepForwardBtn.addEventListener('click', () => {
+      fpvPlaying = false;
+      const playIcon = document.getElementById('fpv-icon-play');
+      const pauseIcon = document.getElementById('fpv-icon-pause');
+      if (playIcon) playIcon.classList.remove('hidden');
+      if (pauseIcon) pauseIcon.classList.add('hidden');
+
+      const waypoints = getCurrentWaypoints();
+      if (waypoints && fpvProgressIndex < waypoints.length - 1) {
+        fpvProgressIndex++;
+      }
+      fpvSubInterpolation = 0.0;
+
+      const editorPanel = document.getElementById('fpv-editor-panel');
+      if (editorPanel) editorPanel.classList.remove('hidden');
+      updateFPVEditorUI();
+    });
+  }
+
+  // Traversal Speed Slider
+  const speedSlider = document.getElementById('fpv-speed-slider');
+  const speedText = document.getElementById('fpv-speed-text');
+  if (speedSlider && speedText) {
+    speedSlider.addEventListener('input', (e) => {
+      fpvSpeed = parseFloat(e.target.value);
+      speedText.textContent = `${fpvSpeed.toFixed(1)}x`;
+    });
+  }
+
+  // Waypoint Editor Altitude Slider
+  const editAltSlider = document.getElementById('fpv-edit-alt');
+  const editAltVal = document.getElementById('fpv-edit-alt-val');
+  if (editAltSlider && editAltVal) {
+    editAltSlider.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value);
+      editAltVal.textContent = val;
+      
+      const waypoints = getCurrentWaypoints();
+      if (waypoints && waypoints[fpvProgressIndex]) {
+        waypoints[fpvProgressIndex].alt = val;
+        waypoints[fpvProgressIndex].isModified = true;
+        redrawCurrentMission();
+        recreate3DWaypointsAndPaths();
+      }
+    });
+  }
+
+  // Waypoint Editor Gimbal Pitch Slider
+  const editPitchSlider = document.getElementById('fpv-edit-pitch');
+  const editPitchVal = document.getElementById('fpv-edit-pitch-val');
+  if (editPitchSlider && editPitchVal) {
+    editPitchSlider.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value);
+      editPitchVal.textContent = val;
+      
+      const waypoints = getCurrentWaypoints();
+      if (waypoints && waypoints[fpvProgressIndex]) {
+        waypoints[fpvProgressIndex].pitch = val;
+        waypoints[fpvProgressIndex].isModified = true;
+        redrawCurrentMission();
+        recreate3DWaypointsAndPaths();
+      }
+    });
+  }
+
+  // Waypoint Editor Yaw Heading Auto Checkbox
+  const editHeadingAuto = document.getElementById('fpv-edit-heading-auto');
+  const editHeadingSlider = document.getElementById('fpv-edit-heading');
+  const editHeadingVal = document.getElementById('fpv-edit-heading-val');
+  
+  if (editHeadingAuto && editHeadingSlider && editHeadingVal) {
+    editHeadingAuto.addEventListener('change', (e) => {
+      const isAuto = e.target.checked;
+      const waypoints = getCurrentWaypoints();
+      if (waypoints && waypoints[fpvProgressIndex]) {
+        if (isAuto) {
+          waypoints[fpvProgressIndex].heading = null;
+        } else {
+          waypoints[fpvProgressIndex].heading = parseInt(editHeadingSlider.value);
+        }
+        waypoints[fpvProgressIndex].isModified = true;
+        redrawCurrentMission();
+        recreate3DWaypointsAndPaths();
+        updateFPVEditorUI();
+      }
+    });
+
+    editHeadingSlider.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value);
+      editHeadingVal.textContent = `${val}°`;
+      
+      const waypoints = getCurrentWaypoints();
+      if (waypoints && waypoints[fpvProgressIndex] && !editHeadingAuto.checked) {
+        waypoints[fpvProgressIndex].heading = val;
+        waypoints[fpvProgressIndex].isModified = true;
+        redrawCurrentMission();
+        recreate3DWaypointsAndPaths();
+      }
+    });
+  }
+
+  // Delete Waypoint
+  const deleteBtn = document.getElementById('fpv-btn-delete-wp');
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', fpvDeleteWaypoint);
+  }
+
+  // Insert Waypoint
+  const insertBtn = document.getElementById('fpv-btn-insert-wp');
+  if (insertBtn) {
+    insertBtn.addEventListener('click', fpvInsertWaypoint);
+  }
+}
+
 // Dynamic container resizing
 function handle3DResize() {
   const container = document.getElementById('three-container');
@@ -5163,6 +5925,7 @@ function handle3DResize() {
 
 // Clean up WebGL resources
 function cleanup3DPreview() {
+  toggleFPVWalkthrough(false);
   window.removeEventListener('resize', handle3DResize);
 
   if (threeAnimationId) {
@@ -5187,6 +5950,10 @@ function cleanup3DPreview() {
   threeScene = null;
   threeCamera = null;
   coneGroups = [];
+  cachedTileImages = [];
+  threeGroundCanvas = null;
+  threeGroundCtx = null;
+  threeGroundTexture = null;
 }
 
 // Auto-Plan State

@@ -2,6 +2,14 @@
 
 All notable changes to Aalaapi Sky will be documented in this file.
 
+## [1.11.0] - 2026-07-17
+
+### Added
+- **3D FPV Walkthrough:** Added an interactive First-Person View camera simulation to the 3D preview.
+- **3D Interactive Waypoint Editor:** Added a HUD panel during walkthrough pauses allowing real-time waypoint altitude, gimbal pitch, and yaw heading configuration.
+- **Insert & Delete in 3D:** Added buttons to instantly insert a new intermediate waypoint or delete the current waypoint directly from the 3D HUD, automatically updating the 3D path model and Leaflet maps.
+- **FPV Telemetry & Media Overlays:** Added visual indicators for altitude, flight speed, waypoint progress, a target crosshair, camera shutter flash on photo captures, and a blinking timer overlay during video recording.
+
 ## [1.10.3] - 2026-07-16
 
 ### Fixed
