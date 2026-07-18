@@ -224,6 +224,77 @@ describe('Grid Generation Tests', () => {
   });
 });
 
+describe('Multi-Orbit Generation Tests', () => {
+  test('generateMultiOrbitCoordinates produces 3 rings with correct altitudes, pitches, and points', () => {
+    // Generate multi-orbit with radius=100, sPhoto=50, baseAltitude=100
+    const result = generateMultiOrbitCoordinates(100, 50, 100, -90); // defaultGimbalPitch isn't used directly for rings but we provide it
+
+    assert.ok(result.waypoints);
+    assert.ok(result.photos);
+    assert.strictEqual(result.waypoints.length, result.photos.length, 'Waypoints and photos should have same length');
+
+    // Filter points by ringIndex
+    const ring0 = result.waypoints.filter(wp => wp.ringIndex === 0);
+    const ring1 = result.waypoints.filter(wp => wp.ringIndex === 1);
+    const ring2 = result.waypoints.filter(wp => wp.ringIndex === 2);
+
+    assert.ok(ring0.length > 0);
+    assert.ok(ring1.length > 0);
+    assert.ok(ring2.length > 0);
+
+    // Verify altitudes and pitches
+    assert.strictEqual(ring0[0].alt, 120, 'Ring 0 altitude should be baseAltitude * 1.2');
+    assert.strictEqual(ring0[0].pitch, -60, 'Ring 0 pitch should be -60');
+
+    assert.strictEqual(ring1[0].alt, 100, 'Ring 1 altitude should be baseAltitude * 1.0');
+    assert.strictEqual(ring1[0].pitch, -45, 'Ring 1 pitch should be -45');
+
+    assert.strictEqual(ring2[0].alt, 80, 'Ring 2 altitude should be baseAltitude * 0.8');
+    assert.strictEqual(ring2[0].pitch, -30, 'Ring 2 pitch should be -30');
+
+    // Validate headings direct towards the center and alternating directions
+    // Note: direction is alternated by theta.
+    // For ring 0 (idx % 2 === 0), theta increases: 0, >0, ... (counter-clockwise)
+    // For ring 1 (idx % 2 !== 0), theta decreases: 2*PI, <2*PI, ... (clockwise)
+
+    // We check that a point on positive X axis (y=0) has heading towards center (-X) which is approx 270 degrees
+    // (In local coordinates where X is East, Y is North. Point at (r, 0) is East. To look center (0,0), it must look West (270 deg)).
+
+    // Let's just check the first point of ring 0, which corresponds to i=0, theta=0 => x=r, y=0.
+    const pt0 = ring0[0];
+    assert.ok(Math.abs(pt0.heading - 270) < 1.0, `Point at theta=0 should face West (270 deg), got ${pt0.heading}`);
+
+    // Alternating directions
+    // For ring 0, i=1 should have theta > 0, so y > 0
+    const ring0_pt1 = ring0[1];
+    assert.ok(ring0_pt1.y > 0, 'Ring 0 should go counter-clockwise (positive Y for first step)');
+
+    // For ring 1, i=0 has theta=2PI (x=r, y=0 approx), i=1 has theta < 2PI, so y < 0
+    const ring1_pt1 = ring1[1];
+    assert.ok(ring1_pt1.y < 0, 'Ring 1 should go clockwise (negative Y for first step)');
+
+    // For ring 2, i=1 should have theta > 0, so y > 0
+    const ring2_pt1 = ring2[1];
+    assert.ok(ring2_pt1.y > 0, 'Ring 2 should go counter-clockwise (positive Y for first step)');
+  });
+
+  test('generateMultiOrbitCoordinates enforces minimum number of photos per ring', () => {
+    // Generate multi-orbit with huge sPhoto to force the min 8 photos rule
+    // Note that the loop goes from i=0 to nPhotos, so there are nPhotos+1 points per ring.
+    // If nPhotos=8, there are 9 points per ring.
+    const result = generateMultiOrbitCoordinates(100, 1000, 100, -90);
+
+    const ring0 = result.waypoints.filter(wp => wp.ringIndex === 0);
+    const ring1 = result.waypoints.filter(wp => wp.ringIndex === 1);
+    const ring2 = result.waypoints.filter(wp => wp.ringIndex === 2);
+
+    assert.strictEqual(ring0.length, 9, 'Ring 0 should have 9 points (nPhotos=8, i from 0 to 8)');
+    assert.strictEqual(ring1.length, 9, 'Ring 1 should have 9 points');
+    assert.strictEqual(ring2.length, 9, 'Ring 2 should have 9 points');
+    assert.strictEqual(result.waypoints.length, 27, 'Total waypoints should be 27');
+  });
+});
+
 describe('searchAddress API Tests', () => {
   let originalFetch;
   let originalAlert;
