@@ -431,17 +431,17 @@ function initMap() {
   };
 
   const overlays = {
-    "VFR Sectional Chart": vfrSectionalLayer
+    "VFR Sectional Chart (US Only)": vfrSectionalLayer
   };
-  if (classAirspaceLayer) overlays["Controlled Airspace (Class B/C/D/E)"] = classAirspaceLayer;
-  if (specialUseAirspaceLayer) overlays["Restricted & Special Use Airspace"] = specialUseAirspaceLayer;
-  if (uasFacilityMapLayer) overlays["UAS Facility Maps (LAANC)"] = uasFacilityMapLayer;
-  if (obstaclesLayer) overlays["Obstacles & Antennas (FAA)"] = obstaclesLayer;
-  if (powerLinesLayer) overlays["Power Lines (HIFLD)"] = powerLinesLayer;
+  if (classAirspaceLayer) overlays["Controlled Airspace (Class B/C/D/E) (US Only)"] = classAirspaceLayer;
+  if (specialUseAirspaceLayer) overlays["Restricted & Special Use Airspace (US Only)"] = specialUseAirspaceLayer;
+  if (uasFacilityMapLayer) overlays["UAS Facility Maps (LAANC) (US Only)"] = uasFacilityMapLayer;
+  if (obstaclesLayer) overlays["Obstacles & Antennas (FAA) (US Only)"] = obstaclesLayer;
+  if (powerLinesLayer) overlays["Power Lines (HIFLD) (US Only)"] = powerLinesLayer;
   
   // Weather Overlays
-  overlays["Weather Radar (NEXRAD)"] = weatherRadarLayer;
-  overlays["Weather Warnings (NWS Hazards)"] = weatherWarningsLayer;
+  overlays["Weather Radar (NEXRAD) (US Only)"] = weatherRadarLayer;
+  overlays["Weather Warnings (NWS Hazards) (US Only)"] = weatherWarningsLayer;
 
   L.control.layers(baseMaps, overlays, { position: 'topleft' }).addTo(map);
 
@@ -450,8 +450,8 @@ function initMap() {
   map.on('overlayadd overlayremove', function(e) {
     // Track LAANC checkbox state
     if (uasFacilityMapLayer) {
-      if (e.type === 'overlayadd'    && e.name === 'UAS Facility Maps (LAANC)') uasFacilityMapEnabled = true;
-      if (e.type === 'overlayremove' && e.name === 'UAS Facility Maps (LAANC)') {
+      if (e.type === 'overlayadd'    && e.name === 'UAS Facility Maps (LAANC) (US Only)') uasFacilityMapEnabled = true;
+      if (e.type === 'overlayremove' && e.name === 'UAS Facility Maps (LAANC) (US Only)') {
         uasFacilityMapEnabled = false;
         // Clear all features immediately to free memory
         uasFacilityMapLayer.setWhere('1=0');
@@ -462,15 +462,15 @@ function initMap() {
 
     // Track Obstacles checkbox state
     if (obstaclesLayer) {
-      if (e.type === 'overlayadd'    && e.name === 'Obstacles & Antennas (FAA)') obstaclesEnabled = true;
-      if (e.type === 'overlayremove' && e.name === 'Obstacles & Antennas (FAA)') {
+      if (e.type === 'overlayadd'    && e.name === 'Obstacles & Antennas (FAA) (US Only)') obstaclesEnabled = true;
+      if (e.type === 'overlayremove' && e.name === 'Obstacles & Antennas (FAA) (US Only)') {
         obstaclesEnabled = false;
         obstaclesLayer.setWhere('1=0');
       }
       if (obstaclesEnabled) applyZoomGates();
 
-      if (e.type === 'overlayadd'    && e.name === 'Power Lines (HIFLD)') powerLinesEnabled = true;
-      if (e.type === 'overlayremove' && e.name === 'Power Lines (HIFLD)') {
+      if (e.type === 'overlayadd'    && e.name === 'Power Lines (HIFLD) (US Only)') powerLinesEnabled = true;
+      if (e.type === 'overlayremove' && e.name === 'Power Lines (HIFLD) (US Only)') {
         powerLinesEnabled = false;
         powerLinesLayer.setWhere('1=0');
       }
@@ -2615,14 +2615,14 @@ function updateAirspaceLegend(e) {
   if (!container) return;
 
   const overlayNames = [
-    'VFR Sectional Chart',
-    'Controlled Airspace (Class B/C/D/E)',
-    'Restricted & Special Use Airspace',
-    'UAS Facility Maps (LAANC)',
-    'Obstacles & Antennas (FAA)',
-    'Power Lines (HIFLD)',
-    'Weather Radar (NEXRAD)',
-    'Weather Warnings (NWS Hazards)'
+    'VFR Sectional Chart (US Only)',
+    'Controlled Airspace (Class B/C/D/E) (US Only)',
+    'Restricted & Special Use Airspace (US Only)',
+    'UAS Facility Maps (LAANC) (US Only)',
+    'Obstacles & Antennas (FAA) (US Only)',
+    'Power Lines (HIFLD) (US Only)',
+    'Weather Radar (NEXRAD) (US Only)',
+    'Weather Warnings (NWS Hazards) (US Only)'
   ];
 
   const hasOverlay = overlayNames.some(n => airspaceActiveSet.has(n));
@@ -2630,11 +2630,11 @@ function updateAirspaceLegend(e) {
   if (!hasOverlay) return;
 
   const currentZoom = map ? map.getZoom() : 99;
-  const laancActive = airspaceActiveSet.has('UAS Facility Maps (LAANC)');
+  const laancActive = airspaceActiveSet.has('UAS Facility Maps (LAANC) (US Only)');
   const laancZoomedOut = laancActive && currentZoom < LAANC_MIN_ZOOM;
-  const obstaclesActive = airspaceActiveSet.has('Obstacles & Antennas (FAA)');
+  const obstaclesActive = airspaceActiveSet.has('Obstacles & Antennas (FAA) (US Only)');
   const obstaclesZoomedOut = obstaclesActive && currentZoom < OBSTACLES_MIN_ZOOM;
-  const powerLinesActive = airspaceActiveSet.has('Power Lines (HIFLD)');
+  const powerLinesActive = airspaceActiveSet.has('Power Lines (HIFLD) (US Only)');
   const powerLinesZoomedOut = powerLinesActive && currentZoom < POWER_LINES_MIN_ZOOM;
 
   container.replaceChildren();
@@ -2713,12 +2713,12 @@ function updateAirspaceLegend(e) {
     return div;
   }
 
-  if (airspaceActiveSet.has('VFR Sectional Chart')) {
+  if (airspaceActiveSet.has('VFR Sectional Chart (US Only)')) {
     contentDiv.appendChild(createSectionHeader('VFR Chart'));
     contentDiv.appendChild(createLegendItem('background:linear-gradient(135deg,#6eb5ff,#a0c8ff);border:1px solid rgba(255,255,255,0.2);opacity:0.8;', 'Raster aeronautical chart'));
   }
 
-  if (airspaceActiveSet.has('Controlled Airspace (Class B/C/D/E)')) {
+  if (airspaceActiveSet.has('Controlled Airspace (Class B/C/D/E) (US Only)')) {
     contentDiv.appendChild(createSectionHeader('Controlled Airspace'));
     contentDiv.appendChild(createLegendItem('background:#2563eb;', 'Class B (Surface–10,000 ft)'));
     contentDiv.appendChild(createLegendItem('background:#a855f7;', 'Class C (Surface–4,000 ft)'));
@@ -2726,7 +2726,7 @@ function updateAirspaceLegend(e) {
     contentDiv.appendChild(createLegendItem('background:#10b981;', 'Class E (Varies)'));
   }
 
-  if (airspaceActiveSet.has('Restricted & Special Use Airspace')) {
+  if (airspaceActiveSet.has('Restricted & Special Use Airspace (US Only)')) {
     contentDiv.appendChild(createSectionHeader('Special Use Airspace'));
     contentDiv.appendChild(createLegendItem('background:#ef4444;', 'Prohibited / Restricted'));
     contentDiv.appendChild(createLegendItem('background:#f59e0b;', 'Warning Area / MOA'));
@@ -2763,7 +2763,7 @@ function updateAirspaceLegend(e) {
     }
   }
 
-  if (airspaceActiveSet.has('Weather Radar (NEXRAD)')) {
+  if (airspaceActiveSet.has('Weather Radar (NEXRAD) (US Only)')) {
     contentDiv.appendChild(createSectionHeader('Weather Radar'));
 
     const wrapper = document.createElement('div');
@@ -2789,7 +2789,7 @@ function updateAirspaceLegend(e) {
     contentDiv.appendChild(wrapper);
   }
 
-  if (airspaceActiveSet.has('Weather Warnings (NWS Hazards)')) {
+  if (airspaceActiveSet.has('Weather Warnings (NWS Hazards) (US Only)')) {
     contentDiv.appendChild(createSectionHeader('Weather Warnings'));
     contentDiv.appendChild(createLegendItem('background:#ef4444; border: 1px solid rgba(255,255,255,0.2);', 'NWS Active Warning Area'));
     contentDiv.appendChild(createLegendItem('background:#f59e0b; border: 1px solid rgba(255,255,255,0.2);', 'NWS Active Watch / Advisory'));
