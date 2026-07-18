@@ -1,4 +1,4 @@
-const { test, describe } = require('node:test');
+const { test, describe, mock } = require('node:test');
 const assert = require('node:assert');
 const fs = require('node:fs');
 const vm = require('node:vm');
@@ -86,6 +86,71 @@ const code = fs.readFileSync('./index.js', 'utf8');
 vm.runInThisContext(code);
 
 // --- Test Suite ---
+
+describe('Utility Functions', () => {
+  test('throttle limits the rate of function execution', (t) => {
+    t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+
+    // Ensure test starts at a non-zero time so initial run works
+    t.mock.timers.tick(1000);
+
+    let callCount = 0;
+    let lastArgs = [];
+    const myFunc = (...args) => {
+      callCount++;
+      lastArgs = args;
+    };
+
+    try {
+      // Make the function available in the VM so we can pass it to throttle
+      global.testFunc = myFunc;
+
+      // Evaluate throttle invocation in VM to get the bound function
+      vm.runInThisContext('global.throttledFunc = throttle((...args) => global.testFunc(...args), 100);');
+      const throttledFunc = global.throttledFunc;
+
+      // First call happens immediately
+      throttledFunc(1);
+      assert.strictEqual(callCount, 1);
+      assert.deepStrictEqual(lastArgs, [1]);
+
+      // Second call within limit is ignored but scheduled
+      throttledFunc(2);
+      assert.strictEqual(callCount, 1);
+
+      // Third call within limit replaces the scheduled arguments
+      throttledFunc(3);
+      assert.strictEqual(callCount, 1);
+
+      // Tick partially through the limit
+      t.mock.timers.tick(50);
+      assert.strictEqual(callCount, 1);
+
+      // Tick past the limit - the last scheduled call should fire
+      t.mock.timers.tick(50);
+      assert.strictEqual(callCount, 2);
+      assert.deepStrictEqual(lastArgs, [3]);
+
+      // Wait past the limit again
+      t.mock.timers.tick(100);
+
+      // Now a new call should happen immediately... but because lastRan is truthy,
+      // it falls to the 'else' block and schedules a 0ms setTimeout instead of running synchronously.
+      throttledFunc(4);
+      assert.strictEqual(callCount, 2); // Hasn't run yet
+
+      // Process the 0ms timeout
+      t.mock.timers.tick(0);
+      assert.strictEqual(callCount, 3);
+      assert.deepStrictEqual(lastArgs, [4]);
+    } finally {
+      // Clean up global namespace pollution
+      delete global.testFunc;
+      delete global.throttledFunc;
+      vm.runInThisContext('delete global.testFunc; delete global.throttledFunc;');
+    }
+  });
+});
 
 describe('Unit Conversion Tests', () => {
   test('formatDistance formats metric distance correctly', () => {
@@ -439,12 +504,15 @@ describe('searchAddress API Tests', () => {
       // Wait for the promise chain inside searchAddress to resolve
       await new Promise(resolve => setTimeout(resolve, 50));
 
+      // Filter out the ExperimentalWarning from mock timers
+      const actualErrors = consoleErrorCalls.filter(c => !c.msg || !c.msg.includes('ExperimentalWarning'));
+
       // Verify assertions
       assert.strictEqual(alertCalls.length, 1);
       assert.strictEqual(alertCalls[0], "Error finding location. Check your internet connection.");
-      assert.strictEqual(consoleErrorCalls.length, 1);
-      assert.strictEqual(consoleErrorCalls[0].msg, "[ERROR] Search error:");
-      assert.strictEqual(consoleErrorCalls[0].err.message, "Network error");
+      assert.strictEqual(actualErrors.length, 1);
+      assert.strictEqual(actualErrors[0].msg, "[ERROR] Search error:");
+      assert.strictEqual(actualErrors[0].err.message, "Network error");
     } finally {
       // Cleanup mocks
       global.fetch = originalFetch;
