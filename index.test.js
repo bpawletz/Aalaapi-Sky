@@ -414,7 +414,7 @@ describe('searchAddress API Tests', () => {
       assert.strictEqual(alertCalls.length, 1);
       assert.strictEqual(alertCalls[0], "Error finding location. Check your internet connection.");
       assert.strictEqual(consoleErrorCalls.length, 1);
-      assert.strictEqual(consoleErrorCalls[0].msg, "Search error:");
+      assert.strictEqual(consoleErrorCalls[0].msg, "[ERROR] Search error:");
       assert.strictEqual(consoleErrorCalls[0].err.message, "Network error");
     } finally {
       // Cleanup mocks
