@@ -1,0 +1,48 @@
+name: Auto-Build and Test
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'index.js'
+      - 'index.css'
+      - 'index_template.html'
+      - 'scratch/build.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Run Build Script
+      run: python scratch/build.py
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Run Tests
+      run: node --test index.test.js
+
+    - name: Commit and Push built index.html
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add index.html
+        # Commit and push only if there are changes
+        git diff --quiet && git diff --staged --quiet || (git commit -m "chore: auto-compile index.html [skip ci]" && git push)
