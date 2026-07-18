@@ -37,7 +37,7 @@ jobs:
         node-version: '22'
 
     - name: Run Tests
-      run: node --test index.test.js
+      run: node --no-deprecation --test index.test.js
 
     - name: Commit and Push built index.html
       run: |
