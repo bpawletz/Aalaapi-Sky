@@ -1632,6 +1632,20 @@ html, body {
           </div>
 
           <div class="control-group">
+            <label for="drone-model">Export Drone Target</label>
+            <select id="drone-model" class="form-select">
+              <option value="90" selected>DJI Mini 4 Pro (90)</option>
+              <option value="89">DJI Air 3 (89)</option>
+              <option value="77">DJI Mavic 3 / Classic / Pro (77)</option>
+              <option value="68">DJI Mavic 3 Enterprise (68)</option>
+              <option value="67">DJI Matrice 30 / 30T (67)</option>
+              <option value="60">DJI Matrice 300 / 350 RTK (60)</option>
+              <option value="71">DJI Inspire 3 (71)</option>
+            </select>
+            <p class="help-text">Ensures compatibility by matching the model ID inside the KMZ to your drone.</p>
+          </div>
+
+          <div class="control-group">
             <div class="control-label">
               <span>Camera HFOV (Horizontal)</span>
               <span class="value-display"><span id="camera-hfov-val">69.7</span>&deg;</span>
@@ -2001,7 +2015,7 @@ html, body {
             <div style="font-size: 0.72rem; font-style: italic; color: var(--text-muted); margin-top: 2px; line-height: 1.2;">
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
-            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.13.2</span>
+            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.13.3</span>
           </div>
         </div>
         
@@ -2065,6 +2079,12 @@ html, body {
  
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.13.3):</strong>
+             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+               <li><strong>RC2 & DJI Fly Compatibility:</strong> Added target drone selector to dynamically output correct drone model metadata and namespaces, preventing import failures on controllers.</li>
+             </ul>
+           </div>
+           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.13.2):</strong>
              <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
                <li><strong>Logo & Icon Redesign:</strong> Created and implemented custom Myaamia geometric-styled drone logo SVGs in the sidebar/About modal headers and configured browser favicons.</li>
@@ -3265,7 +3285,7 @@ function initUIEventListeners() {
     'grid-width', 'grid-height', 'grid-rotation',
     'front-overlap', 'side-overlap', 'gimbal-pitch',
     'altitude', 'speed', 'heading-mode', 'finish-action', 'capture-mode', 'path-mode',
-    'max-flight-time', 'camera-model', 'camera-hfov', 'camera-vfov', 'road-offset'
+    'max-flight-time', 'camera-model', 'drone-model', 'camera-hfov', 'camera-vfov', 'road-offset'
   ];
 
   controls.forEach(id => {
@@ -3286,6 +3306,7 @@ function initUIEventListeners() {
 
   // Handle Camera Model preset change
   const cameraModelEl = document.getElementById('camera-model');
+  const droneModelEl = document.getElementById('drone-model');
   const hfovSlider = document.getElementById('camera-hfov');
   const vfovSlider = document.getElementById('camera-vfov');
   if (cameraModelEl && hfovSlider && vfovSlider) {
@@ -3294,9 +3315,11 @@ function initUIEventListeners() {
       if (model === 'dji_mini_4_pro_std') {
         hfovSlider.value = 69.7;
         vfovSlider.value = 55.2;
+        if (droneModelEl) droneModelEl.value = '90'; // Auto-select Mini 4 Pro (90)
       } else if (model === 'dji_mini_4_pro_wide') {
         hfovSlider.value = 97.0;
         vfovSlider.value = 79.0;
+        if (droneModelEl) droneModelEl.value = '90'; // Auto-select Mini 4 Pro (90)
       } else if (model === 'skyrover_x1_std') {
         hfovSlider.value = 67.2;
         vfovSlider.value = 53.1;
@@ -6174,8 +6197,11 @@ function updateStatsPanel(stats) {
 // Generate the WPML template.kml content
 function buildTemplateKml(finishAction, speed) {
   const timestamp = Date.now();
+  const droneModelEl = document.getElementById('drone-model');
+  const droneEnumValue = droneModelEl ? parseInt(droneModelEl.value, 10) : 90; // Default to Mini 4 Pro
+
   return `<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
   <Document>
     <wpml:author>Aalaapi Sky Generator</wpml:author>
     <wpml:createTime>${timestamp}</wpml:createTime>
@@ -6187,7 +6213,7 @@ function buildTemplateKml(finishAction, speed) {
       <wpml:executeRCLostAction>goBack</wpml:executeRCLostAction>
       <wpml:globalTransitionalSpeed>${speed}</wpml:globalTransitionalSpeed>
       <wpml:droneInfo>
-        <wpml:droneEnumValue>68</wpml:droneEnumValue>
+        <wpml:droneEnumValue>${droneEnumValue}</wpml:droneEnumValue>
         <wpml:droneSubEnumValue>0</wpml:droneSubEnumValue>
       </wpml:droneInfo>
     </wpml:missionConfig>
@@ -6356,8 +6382,11 @@ ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
       </Placemark>\n`;
   });
 
+  const droneModelEl = document.getElementById('drone-model');
+  const droneEnumValue = droneModelEl ? parseInt(droneModelEl.value, 10) : 90; // Default to Mini 4 Pro
+
   return `<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
   <Document>
     <wpml:author>Aalaapi Sky Generator</wpml:author>
     <wpml:createTime>${timestamp}</wpml:createTime>
@@ -6369,7 +6398,7 @@ ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
       <wpml:executeRCLostAction>goBack</wpml:executeRCLostAction>
       <wpml:globalTransitionalSpeed>${speed}</wpml:globalTransitionalSpeed>
       <wpml:droneInfo>
-        <wpml:droneEnumValue>68</wpml:droneEnumValue>
+        <wpml:droneEnumValue>${droneEnumValue}</wpml:droneEnumValue>
         <wpml:droneSubEnumValue>0</wpml:droneSubEnumValue>
       </wpml:droneInfo>
     </wpml:missionConfig>
@@ -6613,6 +6642,21 @@ function parseWPML(wpmlText) {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(wpmlText, "text/xml");
     
+    // Parse droneEnumValue to restore the selected target drone model
+    const droneEnumNode = xmlDoc.getElementsByTagName("wpml:droneEnumValue")[0] || xmlDoc.getElementsByTagName("droneEnumValue")[0];
+    if (droneEnumNode) {
+      const droneVal = droneEnumNode.textContent.trim();
+      const droneSelect = document.getElementById('drone-model');
+      if (droneSelect) {
+        for (let i = 0; i < droneSelect.options.length; i++) {
+          if (droneSelect.options[i].value === droneVal) {
+            droneSelect.value = droneVal;
+            break;
+          }
+        }
+      }
+    }
+
     const placemarks = xmlDoc.getElementsByTagName("Placemark");
     if (placemarks.length === 0) {
       throw new Error("No waypoints found in the mission file.");
@@ -9032,6 +9076,7 @@ function showAutoPlanModal() {
     rotation: document.getElementById('grid-rotation').value,
     center: centerMarker ? centerMarker.getLatLng() : null,
     cameraModel: document.getElementById('camera-model').value,
+    droneModel: document.getElementById('drone-model') ? document.getElementById('drone-model').value : '90',
     cameraHfov: document.getElementById('camera-hfov').value,
     cameraVfov: document.getElementById('camera-vfov').value
   };
@@ -9137,6 +9182,10 @@ function restoreOriginalSettings() {
   if (originalMissionSettings.cameraModel) {
     const cameraModelEl = document.getElementById('camera-model');
     if (cameraModelEl) cameraModelEl.value = originalMissionSettings.cameraModel;
+  }
+  if (originalMissionSettings.droneModel) {
+    const droneModelEl = document.getElementById('drone-model');
+    if (droneModelEl) droneModelEl.value = originalMissionSettings.droneModel;
   }
   if (originalMissionSettings.cameraHfov) {
     const hfovEl = document.getElementById('camera-hfov');

@@ -583,7 +583,7 @@ function initUIEventListeners() {
     'grid-width', 'grid-height', 'grid-rotation',
     'front-overlap', 'side-overlap', 'gimbal-pitch',
     'altitude', 'speed', 'heading-mode', 'finish-action', 'capture-mode', 'path-mode',
-    'max-flight-time', 'camera-model', 'camera-hfov', 'camera-vfov', 'road-offset'
+    'max-flight-time', 'camera-model', 'drone-model', 'camera-hfov', 'camera-vfov', 'road-offset'
   ];
 
   controls.forEach(id => {
@@ -604,6 +604,7 @@ function initUIEventListeners() {
 
   // Handle Camera Model preset change
   const cameraModelEl = document.getElementById('camera-model');
+  const droneModelEl = document.getElementById('drone-model');
   const hfovSlider = document.getElementById('camera-hfov');
   const vfovSlider = document.getElementById('camera-vfov');
   if (cameraModelEl && hfovSlider && vfovSlider) {
@@ -612,9 +613,11 @@ function initUIEventListeners() {
       if (model === 'dji_mini_4_pro_std') {
         hfovSlider.value = 69.7;
         vfovSlider.value = 55.2;
+        if (droneModelEl) droneModelEl.value = '90'; // Auto-select Mini 4 Pro (90)
       } else if (model === 'dji_mini_4_pro_wide') {
         hfovSlider.value = 97.0;
         vfovSlider.value = 79.0;
+        if (droneModelEl) droneModelEl.value = '90'; // Auto-select Mini 4 Pro (90)
       } else if (model === 'skyrover_x1_std') {
         hfovSlider.value = 67.2;
         vfovSlider.value = 53.1;
@@ -3492,8 +3495,11 @@ function updateStatsPanel(stats) {
 // Generate the WPML template.kml content
 function buildTemplateKml(finishAction, speed) {
   const timestamp = Date.now();
+  const droneModelEl = document.getElementById('drone-model');
+  const droneEnumValue = droneModelEl ? parseInt(droneModelEl.value, 10) : 90; // Default to Mini 4 Pro
+
   return `<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
   <Document>
     <wpml:author>Aalaapi Sky Generator</wpml:author>
     <wpml:createTime>${timestamp}</wpml:createTime>
@@ -3505,7 +3511,7 @@ function buildTemplateKml(finishAction, speed) {
       <wpml:executeRCLostAction>goBack</wpml:executeRCLostAction>
       <wpml:globalTransitionalSpeed>${speed}</wpml:globalTransitionalSpeed>
       <wpml:droneInfo>
-        <wpml:droneEnumValue>68</wpml:droneEnumValue>
+        <wpml:droneEnumValue>${droneEnumValue}</wpml:droneEnumValue>
         <wpml:droneSubEnumValue>0</wpml:droneSubEnumValue>
       </wpml:droneInfo>
     </wpml:missionConfig>
@@ -3674,8 +3680,11 @@ ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
       </Placemark>\n`;
   });
 
+  const droneModelEl = document.getElementById('drone-model');
+  const droneEnumValue = droneModelEl ? parseInt(droneModelEl.value, 10) : 90; // Default to Mini 4 Pro
+
   return `<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
   <Document>
     <wpml:author>Aalaapi Sky Generator</wpml:author>
     <wpml:createTime>${timestamp}</wpml:createTime>
@@ -3687,7 +3696,7 @@ ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
       <wpml:executeRCLostAction>goBack</wpml:executeRCLostAction>
       <wpml:globalTransitionalSpeed>${speed}</wpml:globalTransitionalSpeed>
       <wpml:droneInfo>
-        <wpml:droneEnumValue>68</wpml:droneEnumValue>
+        <wpml:droneEnumValue>${droneEnumValue}</wpml:droneEnumValue>
         <wpml:droneSubEnumValue>0</wpml:droneSubEnumValue>
       </wpml:droneInfo>
     </wpml:missionConfig>
@@ -3931,6 +3940,21 @@ function parseWPML(wpmlText) {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(wpmlText, "text/xml");
     
+    // Parse droneEnumValue to restore the selected target drone model
+    const droneEnumNode = xmlDoc.getElementsByTagName("wpml:droneEnumValue")[0] || xmlDoc.getElementsByTagName("droneEnumValue")[0];
+    if (droneEnumNode) {
+      const droneVal = droneEnumNode.textContent.trim();
+      const droneSelect = document.getElementById('drone-model');
+      if (droneSelect) {
+        for (let i = 0; i < droneSelect.options.length; i++) {
+          if (droneSelect.options[i].value === droneVal) {
+            droneSelect.value = droneVal;
+            break;
+          }
+        }
+      }
+    }
+
     const placemarks = xmlDoc.getElementsByTagName("Placemark");
     if (placemarks.length === 0) {
       throw new Error("No waypoints found in the mission file.");
@@ -6350,6 +6374,7 @@ function showAutoPlanModal() {
     rotation: document.getElementById('grid-rotation').value,
     center: centerMarker ? centerMarker.getLatLng() : null,
     cameraModel: document.getElementById('camera-model').value,
+    droneModel: document.getElementById('drone-model') ? document.getElementById('drone-model').value : '90',
     cameraHfov: document.getElementById('camera-hfov').value,
     cameraVfov: document.getElementById('camera-vfov').value
   };
@@ -6455,6 +6480,10 @@ function restoreOriginalSettings() {
   if (originalMissionSettings.cameraModel) {
     const cameraModelEl = document.getElementById('camera-model');
     if (cameraModelEl) cameraModelEl.value = originalMissionSettings.cameraModel;
+  }
+  if (originalMissionSettings.droneModel) {
+    const droneModelEl = document.getElementById('drone-model');
+    if (droneModelEl) droneModelEl.value = originalMissionSettings.droneModel;
   }
   if (originalMissionSettings.cameraHfov) {
     const hfovEl = document.getElementById('camera-hfov');
