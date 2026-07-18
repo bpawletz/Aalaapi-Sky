@@ -51,6 +51,9 @@ global.console.warn = () => {};
 
 global.DOMParser = class DOMParser {
   parseFromString(str, type) {
+    if (str === 'invalid_xml_string') {
+      throw new Error('Invalid XML structure');
+    }
     return {
       getElementsByTagName: (tag) => {
         if (tag === 'Placemark' && str.includes('<Placemark>')) {
@@ -148,6 +151,22 @@ describe('Unit Conversion Tests', () => {
 });
 
 describe('parseWPML Tests', () => {
+  test('parseWPML handles invalid XML parsing errors', () => {
+    // Reset alert spy
+    global.lastAlert = null;
+
+    // Provide invalid XML string to trigger parsing error
+    const invalidMission = 'invalid_xml_string';
+
+    // Should catch error, log it, alert the user, and clear the mission
+    parseWPML(invalidMission);
+
+    assert.strictEqual(global.lastAlert, 'Failed to parse KML: Invalid XML structure', 'Alert should display the correct parsing error message');
+    assert.strictEqual(importedWaypoints, null, 'importedWaypoints should be cleared');
+    assert.strictEqual(importedPhotos, null, 'importedPhotos should be cleared');
+    assert.strictEqual(importedFileName, null, 'importedFileName should be cleared');
+  });
+
   test('parseWPML handles missing waypoints gracefully', () => {
     // Reset alert spy
     global.lastAlert = null;
