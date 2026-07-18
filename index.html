@@ -1810,6 +1810,7 @@ html, body {
           <li><strong>Flight Plan Verification:</strong> You must manually verify all generated flight path altitudes, speed targets, battery reserves, and safe clearance from obstacles (such as trees, power lines, and terrain) before launching.</li>
           <li><strong>Regulatory Compliance:</strong> You must check local weather, verify airspace status, obtain necessary authorizations (such as FAA LAANC), and ensure your flight complies with civil aviation regulations—such as **FAA Part 107** for commercial operations or **Section 44809 / TRUST** for recreational flyers, including maintaining Visual Line of Sight (VLOS) at all times.</li>
           <li><strong>Third-Party Data & Live Feeds:</strong> All map overlays (including FAA airspace configurations, NOAA weather radar, and power line databases) are pulled dynamically from external third-party government feeds. The developers make no warranties regarding their accuracy, timeliness, or availability. You must independently cross-reference all airspace data.</li>
+          <li><strong>Emergency Procedures & Fail-Safes:</strong> You are solely responsible for knowing how to immediately abort an automated flight plan and resume manual control on your specific aircraft. You must verify and configure fail-safe actions (e.g. Return-to-Home altitude, signal loss behavior) before takeoff to clear all obstructions.</li>
         </ul>
         <p style="font-style: italic; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 8px; color: var(--text-muted);">
           By clicking "Proceed to Planner", you acknowledge that you have read, understood, and accept all terms of this disclaimer.
@@ -1941,7 +1942,7 @@ html, body {
             <div style="font-size: 0.72rem; font-style: italic; color: var(--text-muted); margin-top: 2px; line-height: 1.2;">
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
-            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.12.6</span>
+            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.12.7</span>
           </div>
         </div>
         
@@ -1960,11 +1961,17 @@ html, body {
         <!-- Legal Disclaimer Alert -->
         <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; color: #fca5a5; margin-top: 8px;">
           <strong style="color: #f87171; display: block; margin-bottom: 4px; font-size: 0.82rem;">⚠️ Disclaimer & Safety Warning:</strong>
-          This software is provided "as is" for flight visualization and planning purposes. The developers and contributors of Aalaapi Sky assume no liability for drone crashes, hardware loss, "flyaways", property damage, or regulatory violations. The pilot-in-command is solely responsible for verifying flight paths and complying with airspace safety rules under FAA Part 107 or Section 44809 (TRUST). All live map overlays (FAA airspace, NOAA weather feeds, power grids) are sourced dynamically from external servers; the developers are not responsible for feed latency, outages, or inaccuracies. Pilots must verify constraints against official publications.
+          This software is provided "as is" for flight visualization and planning purposes. The developers and contributors of Aalaapi Sky assume no liability for drone crashes, hardware loss, "flyaways", property damage, or regulatory violations. The pilot-in-command is solely responsible for verifying flight paths and complying with airspace safety rules under FAA Part 107 or Section 44809 (TRUST). All live map overlays (FAA airspace, NOAA weather feeds, power grids) are sourced dynamically from external servers; the developers are not responsible for feed latency, outages, or inaccuracies. Pilots must verify constraints against official publications and are solely responsible for configuring fail-safes and knowing how to immediately abort automated flights.
         </div>
  
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.12.7):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>**Safety Disclaimer Updates (Emergency Procedures):** Added specific safety checkpoints to disclaimers requiring remote pilots to assume sole responsibility for knowing how to abort automated missions on their specific drone model, and to verify all local fail-safe configurations (like Return-to-Home altitude and signal loss response actions) before takeoff.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.12.6):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li>**Legal Disclaimer Updates (Third-Party Data Feeds):** Expanded the flight safety disclaimers (in the gatekeeper modal, About modal, and README) to explicitly state that all live third-party government data feeds (FAA airspace, NOAA/NWS weather, HIFLD infrastructure) are provided "as-is", and that the developers are not liable for any inaccuracies, outages, or latencies in this external data.</li>
