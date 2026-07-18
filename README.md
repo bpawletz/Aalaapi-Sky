@@ -15,6 +15,7 @@ A waypoint mission generator and editor for drone flight planning. Designed for 
 >
 > * **No Liability for Physical Assets:** The developers and contributors of Aalaapi Sky assume absolutely no responsibility or liability for hardware loss, drone crashes, "flyaways", property damage, personal injury, or legal violations resulting from the use of flight plans generated or edited by this software.
 > * **Pilot Responsibility:** The remote pilot-in-command (PIC) is solely responsible for the safe and lawful operation of their aircraft. You must independently verify all flight altitudes, waypoint clearances, local obstacles, weather conditions, and active airspace restrictions (including obtaining appropriate FAA LAANC authorizations). All flights must comply with applicable regulations, such as **FAA Part 107** for commercial operations or **FAA Section 44809 / TRUST** for recreational flyers, including keeping the aircraft within Visual Line of Sight (VLOS) at all times.
+> * **Third-Party Data & Live Feeds:** This software displays data retrieved directly from external, third-party government servers (such as live FAA airspace grids, NOAA/NWS weather radar, and HIFLD infrastructure assets). The developers and contributors assume no responsibility for any inaccuracies, omissions, service outages, or latency in these external data feeds. Pilots must independently cross-reference and verify all flight planning constraints using official source publications (such as aeronautical charts, active NOTAMs, and direct NOAA briefings).
 
 ---
 
