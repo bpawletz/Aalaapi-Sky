@@ -2,6 +2,11 @@
 
 All notable changes to Aalaapi Sky will be documented in this file.
 
+## [1.12.6] - 2026-07-18
+
+### Changed
+- **Legal Disclaimer Updates (Third-Party Data Feeds):** Expanded the flight safety disclaimers (in the gatekeeper modal, About modal, and README) to explicitly state that all live third-party government data feeds (FAA airspace, NOAA/NWS weather, HIFLD infrastructure) are provided "as-is", and that the developers are not liable for any inaccuracies, outages, or latencies in this external data.
+
 ## [1.12.5] - 2026-07-18
 
 ### Changed
