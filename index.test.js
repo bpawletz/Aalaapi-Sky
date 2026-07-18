@@ -778,3 +778,85 @@ describe('getSubMissionFlightTime Tests', () => {
     assert.strictEqual(time2, 45);
   });
 });
+
+describe('updateOpenSkyLink Tests', () => {
+  let originalGetElementById;
+
+  test('uses centerMarker if available', () => {
+    originalGetElementById = global.document.getElementById;
+    const fakeLink = { href: '' };
+    global.document.getElementById = (id) => {
+      if (id === 'opensky-link') return fakeLink;
+      return originalGetElementById ? originalGetElementById(id) : null;
+    };
+
+    try {
+      vm.runInThisContext('map = { getCenter: () => ({ lat: 10, lng: 20 }) };');
+      vm.runInThisContext('centerMarker = { getLatLng: () => ({ lat: 15.12345, lng: 25.67891 }) };');
+      vm.runInThisContext('updateOpenSkyLink()');
+
+      assert.strictEqual(fakeLink.href, 'https://map.opensky-network.org/?lat=15.1235&lon=25.6789&zoom=11');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+      vm.runInThisContext('map = null; centerMarker = null;');
+    }
+  });
+
+  test('uses map center if centerMarker is not available', () => {
+    originalGetElementById = global.document.getElementById;
+    const fakeLink = { href: '' };
+    global.document.getElementById = (id) => {
+      if (id === 'opensky-link') return fakeLink;
+      return originalGetElementById ? originalGetElementById(id) : null;
+    };
+
+    try {
+      vm.runInThisContext('map = { getCenter: () => ({ lat: 10.11111, lng: 20.22222 }) };');
+      vm.runInThisContext('centerMarker = null;');
+      vm.runInThisContext('updateOpenSkyLink()');
+
+      assert.strictEqual(fakeLink.href, 'https://map.opensky-network.org/?lat=10.1111&lon=20.2222&zoom=11');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+      vm.runInThisContext('map = null;');
+    }
+  });
+
+  test('does nothing if linkEl is not found', () => {
+    originalGetElementById = global.document.getElementById;
+    global.document.getElementById = (id) => {
+      if (id === 'opensky-link') return null;
+      return originalGetElementById ? originalGetElementById(id) : null;
+    };
+
+    try {
+      vm.runInThisContext('map = { getCenter: () => { throw new Error("Should not be called"); } };');
+      vm.runInThisContext('centerMarker = null;');
+      vm.runInThisContext('updateOpenSkyLink()');
+      assert.ok(true);
+    } finally {
+      global.document.getElementById = originalGetElementById;
+      vm.runInThisContext('map = null;');
+    }
+  });
+
+  test('does nothing if map is null', () => {
+    originalGetElementById = global.document.getElementById;
+    let fakeLink = { href: 'original-href' };
+    global.document.getElementById = (id) => {
+      if (id === 'opensky-link') return fakeLink;
+      return originalGetElementById ? originalGetElementById(id) : null;
+    };
+
+    try {
+      vm.runInThisContext('map = null;');
+      vm.runInThisContext('centerMarker = { getLatLng: () => { throw new Error("Should not be called"); } };');
+      vm.runInThisContext('updateOpenSkyLink()');
+
+      assert.strictEqual(fakeLink.href, 'original-href');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+      vm.runInThisContext('centerMarker = null;');
+    }
+  });
+});
