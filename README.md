@@ -27,9 +27,12 @@ An interactive 8-card visual selector maps out flight paths procedurally:
 - **Visual Feedback & Nudging:** Selected waypoints highlight, and their positions can be nudged with precision controls.
 - **Interactive Reset:** A **Reset** button appears on modified waypoints, allowing you to instantly restore their original coordinates, altitude, pitch, heading, and configuration.
 
-### 3. Interactive 3D Mission Preview
+### 3. Interactive 3D Mission Preview & FPV Walkthrough
 - **High-Fidelity Engine:** Rendered using Three.js with full camera FOV (Field of View) cones.
 - **Coverage Heatmap:** Color-coded footprint highlights density of photogrammetry coverage.
+- **FPV (First Person View) Simulation:** Toggle the FPV View mode to jump into the drone's cockpit. Simulate the actual flight path with a virtual playback engine.
+- **Playback & Telemetry Dashboard:** Play/pause the flight simulation, adjust playback speed, and view a live telemetry overlay (Altitude, Speed, Gimbal Pitch, and Yaw).
+- **Interactive Shutter & Video Simulation:** Simulates camera shutter flashes at photo capture waypoints (supporting Stop & Shoot and Continuous modes) and tracks recording time.
 - **Controls:** Fully supports rotation (left-click + drag), zooming (scroll), and panning (right-click + drag) to verify flight clearances.
 
 ### 4. Live FAA Airspace Overlays (US Only)
