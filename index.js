@@ -211,6 +211,36 @@ let weatherWarningsLayer;
 
 // Initialize the application when the DOM is fully loaded
 document.addEventListener("DOMContentLoaded", () => {
+  // Safety Disclaimer Check
+  const accepted = localStorage.getItem('aalaapi_sky_disclaimer_accepted');
+  const disclaimerModal = document.getElementById('disclaimer-modal');
+  if (accepted !== 'true') {
+    if (disclaimerModal) {
+      disclaimerModal.classList.remove('hidden');
+    }
+  }
+
+  // Wires up Disclaimer elements
+  const agreeCheckbox = document.getElementById('disclaimer-agree-checkbox');
+  const proceedBtn = document.getElementById('disclaimer-proceed-btn');
+  if (agreeCheckbox && proceedBtn && disclaimerModal) {
+    agreeCheckbox.addEventListener('change', (e) => {
+      proceedBtn.disabled = !e.target.checked;
+      if (e.target.checked) {
+        proceedBtn.style.opacity = '1.0';
+        proceedBtn.style.cursor = 'pointer';
+      } else {
+        proceedBtn.style.opacity = '0.5';
+        proceedBtn.style.cursor = 'not-allowed';
+      }
+    });
+
+    proceedBtn.addEventListener('click', () => {
+      localStorage.setItem('aalaapi_sky_disclaimer_accepted', 'true');
+      disclaimerModal.classList.add('hidden');
+    });
+  }
+
   // Restore unit system selection
   const savedUnit = localStorage.getItem('aalaapi_sky_unit_system') || 'metric';
   const unitSystemEl = document.getElementById('unit-system');
