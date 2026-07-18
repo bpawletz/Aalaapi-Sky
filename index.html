@@ -6613,7 +6613,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
   );
 
   popupContent.innerHTML = `
-    <h4 style="margin: 0 0 12px 0; color: #06b6d4; font-size: 0.95rem; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;">Edit Waypoint ${idx}</h4>
+    <h4 id="edit-wp-title" style="margin: 0 0 12px 0; color: #06b6d4; font-size: 0.95rem; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;"></h4>
     <div style="display: flex; flex-direction: column; gap: 12px; font-size: 0.8rem;">
       
       <!-- Altitude Slider -->
@@ -6682,6 +6682,8 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       </div>
     </div>
   `;
+
+  popupContent.querySelector('#edit-wp-title').textContent = `Edit Waypoint ${idx}`;
 
   // Bind events to the elements directly before they are inserted into the DOM
   const saveBtn = popupContent.querySelector('#save-wp-btn');
