@@ -2,6 +2,14 @@
 
 All notable changes to Aalaapi Sky will be documented in this file.
 
+## [1.12.8] - 2026-07-18
+
+### Fixed
+- **VFR Sectional Map Layer:** Appended the `.png` extension format suffix to the FAA ArcGIS REST tile request URL to restore compatibility with the live tile server.
+
+### Removed
+- **Trackable KMZ Files:** Deleted all previously tracked KMZ test files containing flight coordinate coordinates and pilot metadata from the Git repository and added `*.kmz` / `*.zip` to `.gitignore` to prevent future tracking.
+
 ## [1.12.7] - 2026-07-18
 
 ### Changed
