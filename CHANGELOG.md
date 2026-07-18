@@ -2,6 +2,11 @@
 
 All notable changes to Aalaapi Sky will be documented in this file.
 
+## [1.12.7] - 2026-07-18
+
+### Changed
+- **Safety Disclaimer Updates (Emergency Procedures):** Added specific safety checkpoints to disclaimers requiring remote pilots to assume sole responsibility for knowing how to abort automated missions on their specific drone model, and to verify all local fail-safe configurations (like Return-to-Home altitude and signal loss response actions) before takeoff.
+
 ## [1.12.6] - 2026-07-18
 
 ### Changed
