@@ -494,6 +494,15 @@
         <button id="close-guide-btn" class="close-btn" type="button" aria-label="Close guide">&times;</button>
       </header>
       <div class="modal-content">
+        <!-- Compatibility Callout -->
+        <div class="modal-alert info" style="margin-bottom: 15px; border-left-color: var(--accent-cyan); background: rgba(6, 182, 212, 0.05); font-size: 0.85rem; line-height: 1.4; padding: 12px; border-radius: 8px;">
+          <strong>System Compatibility:</strong> This tool compiles missions into the modern <strong>DJI WPML V2</strong> format.
+          <ul style="margin-top: 6px; padding-left: 18px; font-size: 0.8rem; list-style-type: disc; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px;">
+            <li><strong>Supported Drones:</strong> DJI Mini 4 Pro, DJI Air 3, Mavic 3 Series (Classic/Pro/Enterprise), Inspire 3, Matrice 30/300/350, and other newer aircraft using the DJI Fly App or DJI Pilot 2.</li>
+            <li><strong>Unsupported Drones:</strong> Older DJI models (e.g., DJI Mini 3 Pro, Mavic Air 2, Mavic 2, Phantom 4, etc.) which do not support WPML V2 waypoint files.</li>
+          </ul>
+        </div>
+
         <p>Since the consumer DJI Fly App does not support direct KML/KMZ waypoint imports from its user interface, you must use a directory overwrite workaround to load this custom flight mission:</p>
         
         <!-- Multipart Info Callout (New) -->
@@ -590,7 +599,7 @@
           </div>
           <div>
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
-            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.12.2</span>
+            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.12.3</span>
           </div>
         </div>
         
@@ -614,6 +623,12 @@
  
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.12.3):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>**DJI Hardware Compatibility Callouts:** Added explicit hardware compatibility details (in the UI Export guide modal and the README) detailing that generated KMZ plans follow the modern DJI WPML V2 specification, listing supported aircraft (e.g. Mini 4 Pro, Air 3, Mavic 3) and noting unsupported legacy drone models.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.12.2):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li>**UI Label Enhancements (US Only Badges):** Added clear `(US Only)` badge labels to all FAA and NOAA weather/airspace overlays in the Leaflet map layer control and popups to clarify which resources only cover US territory.</li>
