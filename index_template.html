@@ -558,7 +558,7 @@
           </div>
           <div>
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
-            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.10.3</span>
+            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.11.0</span>
           </div>
         </div>
         
@@ -576,6 +576,15 @@
  
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.11.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li>**3D FPV Walkthrough:** Added an interactive First-Person View camera simulation to the 3D preview.</li>
+              <li>**3D Interactive Waypoint Editor:** Added inline HUD panels during walkthrough pauses to edit waypoint altitude, gimbal pitch, and yaw heading configuration.</li>
+              <li>**Insert & Delete in 3D:** Added FPV HUD buttons to delete the active waypoint or insert new intermediate points.</li>
+              <li>**FPV Telemetry & Media Overlays:** Added real-time telemetry overlays (altitude, speed, current waypoint) and indicators for camera captures and video recording.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.10.3):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li>**DJI RC2/WPML Compatibility:** Fixed waypoint flight load/execution error on DJI RC2 controllers when hitting "Go" by removing the unsupported `wpml:payloadInfo` block from generated flight plans.</li>
@@ -865,6 +874,140 @@
             <span>Camera Cones</span>
             <span id="indicator-3d-cones" style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
           </button>
+          <button id="btn-3d-toggle-footprints" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; text-align: left; display: flex; align-items: center; gap: 6px; width: 130px; justify-content: space-between;">
+            <span>Footprints</span>
+            <span id="indicator-3d-footprints" style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+          </button>
+          <button id="btn-3d-fpv" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; text-align: left; display: flex; align-items: center; gap: 6px; width: 130px; justify-content: space-between;">
+            <span>FPV Mode</span>
+            <span id="indicator-3d-fpv" style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444; display: inline-block;"></span>
+          </button>
+        </div>
+
+        <!-- FPV Walkthrough HUD Overlay -->
+        <div id="fpv-hud-overlay" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 15; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; padding: 16px; font-family: 'Outfit', sans-serif; color: #f8fafc;">
+          <!-- FPV Top Row (Blends into header, shows media recording/ready status and current telemetry) -->
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+            <!-- Left spacer to prevent overlap with HUD controls -->
+            <div style="width: 160px; flex-shrink: 0;"></div>
+            
+            <!-- Top Center: Media status -->
+            <div id="fpv-media-status-container" style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255,255,255,0.08); padding: 8px 12px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 8px; pointer-events: auto; backdrop-filter: blur(8px); margin: 0 auto;">
+              <span id="fpv-media-dot" style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+              <span id="fpv-media-text" style="font-size: 0.8rem; text-transform: uppercase;">Ready</span>
+              <span id="fpv-media-timer" class="hidden" style="font-size: 0.8rem; color: #94a3b8; font-family: monospace;">00:00</span>
+            </div>
+            
+            <!-- Top Right: Telemetry Details -->
+            <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255,255,255,0.08); padding: 8px 12px; border-radius: 8px; font-weight: 500; display: flex; gap: 16px; pointer-events: auto; backdrop-filter: blur(8px); font-size: 0.8rem; flex-shrink: 0;">
+              <div><span style="color: #94a3b8;">ALT:</span> <span id="fpv-telemetry-alt" style="color: #06b6d4; font-weight: 600; font-family: monospace;">0</span> <span id="fpv-telemetry-alt-unit" style="font-size: 0.7rem; color: #94a3b8;">m</span></div>
+              <div><span style="color: #94a3b8;">SPD:</span> <span id="fpv-telemetry-speed" style="color: #06b6d4; font-weight: 600; font-family: monospace;">0</span> <span style="font-size: 0.7rem; color: #94a3b8;">m/s</span></div>
+              <div><span style="color: #94a3b8;">WP:</span> <span id="fpv-telemetry-wp" style="color: #06b6d4; font-weight: 600; font-family: monospace;">0 / 0</span></div>
+            </div>
+          </div>
+
+          <!-- FPV Center Reticle (Viewfinder crosshair overlay) -->
+          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; width: 120px; height: 120px; pointer-events: none; opacity: 0.3;">
+            <div style="width: 100px; height: 100px; border: 1px solid #06b6d4; border-radius: 50%;"></div>
+            <div style="position: absolute; width: 4px; height: 4px; border-radius: 50%; background: #06b6d4;"></div>
+            <div style="position: absolute; width: 24px; height: 1px; background: #06b6d4; left: 10px;"></div>
+            <div style="position: absolute; width: 24px; height: 1px; background: #06b6d4; right: 10px;"></div>
+            <div style="position: absolute; height: 24px; width: 1px; background: #06b6d4; top: 10px;"></div>
+            <div style="position: absolute; height: 24px; width: 1px; background: #06b6d4; bottom: 10px;"></div>
+          </div>
+
+          <!-- FPV Camera Flash Overlay (Flashes white when taking a photo) -->
+          <div id="fpv-flash-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; opacity: 0; pointer-events: none; transition: opacity 0.15s ease-out; z-index: 20;"></div>
+
+          <!-- FPV Bottom Section (Waypoints & Flight controls and waypoint editor) -->
+          <div style="display: flex; flex-direction: column; gap: 12px; width: 100%; align-items: center;">
+            
+            <!-- Waypoint Editor Sub-panel (Only shown when paused) -->
+            <div id="fpv-editor-panel" class="hidden" style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(6, 182, 212, 0.3); padding: 12px 16px; border-radius: 12px; width: 100%; max-width: 480px; pointer-events: auto; backdrop-filter: blur(12px); display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);">
+              <div style="font-weight: 600; color: #06b6d4; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+                <span>🛠️ Edit Waypoint <span id="fpv-editor-wp-index">0</span></span>
+                <span id="fpv-editor-coords" style="font-family: monospace; font-size: 0.7rem; color: #94a3b8;">0.000000, 0.000000</span>
+              </div>
+              
+              <!-- Editor Sliders -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.75rem;">
+                <div style="display: flex; flex-direction: column; gap: 3px;">
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #94a3b8;">Altitude:</span>
+                    <span style="color: #06b6d4; font-weight: 600;"><span id="fpv-edit-alt-val">50</span> <span id="fpv-edit-alt-unit">m</span></span>
+                  </div>
+                  <input type="range" id="fpv-edit-alt" min="5" max="120" value="50" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer;">
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 3px;">
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #94a3b8;">Gimbal Pitch:</span>
+                    <span style="color: #06b6d4; font-weight: 600;"><span id="fpv-edit-pitch-val">-60</span>&deg;</span>
+                  </div>
+                  <input type="range" id="fpv-edit-pitch" min="-90" max="0" value="-60" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer;">
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 3px; grid-column: 1 / -1;">
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #94a3b8;">Yaw Heading:</span>
+                    <span style="color: #06b6d4; font-weight: 600;"><span id="fpv-edit-heading-val">Auto</span></span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="range" id="fpv-edit-heading" min="0" max="359" value="0" disabled style="flex: 1; height: 4px; accent-color: #06b6d4; cursor: pointer; opacity: 0.4;">
+                    <label style="display: inline-flex; align-items: center; gap: 4px; color: #94a3b8; font-size: 0.7rem; cursor: pointer; white-space: nowrap;">
+                      <input type="checkbox" id="fpv-edit-heading-auto" checked style="accent-color: #06b6d4; margin: 0; cursor: pointer;"> Auto
+                    </label>
+                  </div>
+                </div>
+              </div>
+              
+              <div style="display: flex; gap: 10px; margin-top: 4px; font-size: 0.75rem;">
+                <button id="fpv-btn-delete-wp" class="btn-secondary" style="flex: 1; padding: 6px 12px; border-color: rgba(239, 68, 68, 0.3); color: #ef4444; border-radius: 6px; font-weight: 600;">Delete Point</button>
+                <button id="fpv-btn-insert-wp" class="btn-primary" style="flex: 1; padding: 6px 12px; background: var(--primary-gradient); border-radius: 6px; font-weight: 600;">Insert Point</button>
+              </div>
+            </div>
+
+            <!-- FPV Controls Panel -->
+            <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255,255,255,0.08); padding: 12px 20px; border-radius: 12px; display: flex; align-items: center; gap: 16px; pointer-events: auto; backdrop-filter: blur(8px); width: 100%; max-width: 480px; box-sizing: border-box; justify-content: space-between; box-shadow: 0 4px 20px rgba(0,0,0,0.35);">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <button id="fpv-btn-step-back" class="btn-secondary" style="padding: 8px; border-radius: 8px; min-width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; margin: 0;" title="Step to Previous Waypoint">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="19 20 9 12 19 4 19 20"></polygon>
+                    <line x1="5" y1="19" x2="5" y2="5"></line>
+                  </svg>
+                </button>
+                
+                <button id="fpv-btn-play-pause" class="btn-primary" style="padding: 8px; border-radius: 8px; min-width: 44px; height: 36px; display: inline-flex; align-items: center; justify-content: center; margin: 0; background: var(--primary-gradient);">
+                  <svg id="fpv-icon-play" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                  <svg id="fpv-icon-pause" class="hidden" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="6" y="4" width="4" height="16"></rect>
+                    <rect x="14" y="4" width="4" height="16"></rect>
+                  </svg>
+                </button>
+                
+                <button id="fpv-btn-step-forward" class="btn-secondary" style="padding: 8px; border-radius: 8px; min-width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; margin: 0;" title="Step to Next Waypoint">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                    <line x1="19" y1="5" x2="19" y2="19"></line>
+                  </svg>
+                </button>
+                
+                <button id="fpv-btn-stop" class="btn-secondary" style="padding: 8px; border-radius: 8px; min-width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; margin: 0; color: #ef4444; border-color: rgba(239,68,68,0.2);" title="Exit Walkthrough Mode">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="4" y="4" width="16" height="16"></rect>
+                  </svg>
+                </button>
+              </div>
+              
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; flex: 1; margin-left: 12px;">
+                <span style="color: #94a3b8; font-weight: 500;">Speed:</span>
+                <input type="range" id="fpv-speed-slider" min="0.2" max="3" step="0.1" value="1" style="flex: 1; height: 4px; accent-color: #06b6d4; cursor: pointer;">
+                <span id="fpv-speed-text" style="font-family: monospace; width: 32px; text-align: right; font-weight: 600;">1.0x</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Floating HUD Legend -->
@@ -880,7 +1023,7 @@
         </div>
 
         <!-- Helper Instructions -->
-        <div style="position: absolute; top: 16px; right: 16px; z-index: 10; color: var(--text-muted); font-size: 0.75rem; background: rgba(15, 23, 42, 0.6); padding: 6px 10px; border-radius: 6px; pointer-events: none; border: 1px solid rgba(255,255,255,0.04); backdrop-filter: blur(4px);">
+        <div id="three-instructions" style="position: absolute; top: 16px; right: 16px; z-index: 10; color: var(--text-muted); font-size: 0.75rem; background: rgba(15, 23, 42, 0.6); padding: 6px 10px; border-radius: 6px; pointer-events: none; border: 1px solid rgba(255,255,255,0.04); backdrop-filter: blur(4px);">
           Left-click & drag: Rotate | Scroll: Zoom | Right-click & drag: Pan
         </div>
       </div>
