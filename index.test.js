@@ -511,3 +511,49 @@ test('NWS Weather fetching bounds and parsing', async () => {
     global.fetch = originalFetch;
   }
 });
+
+describe('Circular Grid Generation Tests', () => {
+  test('generateCircularGridCoordinates returns basic grid with proper structure', () => {
+    // Generate a basic circular grid: radius=100, sLine=40, sPhoto=40, captureMode='hover'
+    const result = generateCircularGridCoordinates(100, 40, 40, 'hover');
+
+    assert.ok(result.waypoints);
+    assert.ok(result.photos);
+    assert.ok(result.waypoints.length > 0, 'Should generate waypoints');
+    assert.ok(result.photos.length > 0, 'Should generate photos');
+
+    // In 'hover' mode, waypoints and photos should be identical in length and coordinates
+    assert.strictEqual(result.waypoints.length, result.photos.length, 'Waypoints and photos should match in hover mode');
+  });
+
+  test('generateCircularGridCoordinates handles continuous capture mode correctly', () => {
+    // In continuous/video mode, waypoints only at start/end of lines, but photos at every shutter point
+    const result = generateCircularGridCoordinates(100, 40, 20, 'continuous');
+
+    assert.ok(result.waypoints.length < result.photos.length, 'Waypoints should be fewer than photos in continuous mode');
+    assert.ok(result.waypoints.length % 2 === 0, 'Waypoints should be in pairs (start/end of lines)');
+  });
+
+  test('generateCircularGridCoordinates points are within the circular boundary', () => {
+    const radius = 100;
+    const result = generateCircularGridCoordinates(radius, 30, 30, 'hover');
+
+    for (const pt of result.photos) {
+      // Calculate distance from center (0,0)
+      const dist = Math.sqrt(pt.x * pt.x + pt.y * pt.y);
+      // Allow a small epsilon for floating point math
+      assert.ok(dist <= radius + 0.1, `Point (${pt.x}, ${pt.y}) is outside radius ${radius}, dist: ${dist}`);
+    }
+  });
+
+  test('generateCircularGridCoordinates skips lines that are too short at edges', () => {
+    // If yMax < 5.0, line is skipped. Let's pick parameters where extreme edges would be < 5.
+    // e.g., radius=50, sLine=49. The lines would be at x=-50, x=-1, x=48
+    // At x=-50 or x=50, yMax = 0, so those should be skipped.
+    const result = generateCircularGridCoordinates(50, 49, 10, 'hover');
+
+    for (const pt of result.photos) {
+      assert.ok(Math.abs(pt.x) !== 50, `Line at x=${pt.x} should have been skipped`);
+    }
+  });
+});
