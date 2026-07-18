@@ -20,6 +20,7 @@ global.document = {
   },
   addEventListener: () => {},
   querySelectorAll: () => [],
+  createTextNode: (text) => ({ textContent: text }),
   createElement: (tag) => ({
     style: {},
     appendChild: () => {},
@@ -776,5 +777,202 @@ describe('getSubMissionFlightTime Tests', () => {
 
     const time2 = vm.runInThisContext(`getSubMissionFlightTime(global.wpsInput, 1, 1, 5, 'continuous')`);
     assert.strictEqual(time2, 45);
+  });
+});
+
+describe('updateWeatherPanelUI Tests', () => {
+  test('handles isLoading state', () => {
+    let windowText = '';
+    let dirsHidden = false;
+    let dirsCleared = false;
+
+    const mockGetElementById = (id) => {
+      if (id === 'stat-weather-window') {
+        return {
+          set textContent(val) { windowText = val; },
+          style: {},
+          replaceChildren: () => {}
+        };
+      }
+      if (id === 'stat-weather-dirs') {
+        return {
+          replaceChildren: () => { dirsCleared = true; },
+          classList: {
+            add: (cls) => { if (cls === 'hidden') dirsHidden = true; },
+            remove: () => {}
+          }
+        };
+      }
+      return null;
+    };
+
+    const originalGetElementById = global.document.getElementById;
+    global.document.getElementById = mockGetElementById;
+
+    try {
+      vm.runInThisContext('updateWeatherPanelUI(null, null, true)');
+      assert.strictEqual(windowText, 'Loading...');
+      assert.strictEqual(dirsHidden, true);
+      assert.strictEqual(dirsCleared, true);
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+
+  test('handles statusMsg without loading', () => {
+    let windowText = '';
+
+    const mockGetElementById = (id) => {
+      if (id === 'stat-weather-window') {
+        return {
+          set textContent(val) { windowText = val; },
+          style: {},
+          replaceChildren: () => {}
+        };
+      }
+      if (id === 'stat-weather-dirs') {
+        return {
+          replaceChildren: () => {},
+          classList: { add: () => {}, remove: () => {} }
+        };
+      }
+      return null;
+    };
+
+    const originalGetElementById = global.document.getElementById;
+    global.document.getElementById = mockGetElementById;
+
+    try {
+      vm.runInThisContext('updateWeatherPanelUI(null, "Error Message", false)');
+      assert.strictEqual(windowText, 'Error Message');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+
+  test('handles no data state', () => {
+    let windowText = '';
+    let dirsHidden = false;
+
+    const mockGetElementById = (id) => {
+      if (id === 'stat-weather-window') {
+        return {
+          set textContent(val) { windowText = val; },
+          style: {},
+          replaceChildren: () => {}
+        };
+      }
+      if (id === 'stat-weather-dirs') {
+        return {
+          replaceChildren: () => {},
+          classList: {
+            add: (cls) => { if (cls === 'hidden') dirsHidden = true; },
+            remove: () => {}
+          }
+        };
+      }
+      return null;
+    };
+
+    const originalGetElementById = global.document.getElementById;
+    global.document.getElementById = mockGetElementById;
+
+    try {
+      vm.runInThisContext('updateWeatherPanelUI(null, null, false)');
+      assert.strictEqual(windowText, '🔴 No Data');
+      assert.strictEqual(dirsHidden, true);
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+
+  test('handles VFR flight category', () => {
+    let windowChildren = [];
+    let dirsHidden = true;
+
+    const mockGetElementById = (id) => {
+      if (id === 'stat-weather-window') {
+        return {
+          style: {},
+          replaceChildren: () => { windowChildren = []; },
+          appendChild: (child) => { windowChildren.push(child); }
+        };
+      }
+      if (id === 'stat-weather-dirs') {
+        return {
+          replaceChildren: () => {},
+          appendChild: () => {},
+          classList: {
+            add: () => {},
+            remove: (cls) => { if (cls === 'hidden') dirsHidden = false; }
+          }
+        };
+      }
+      return null;
+    };
+
+    const originalGetElementById = global.document.getElementById;
+    global.document.getElementById = mockGetElementById;
+
+    try {
+      const directions = {
+        closest: {
+          fltCat: "VFR",
+          name: "Test Station",
+          distance: 10,
+          raw: "TEST RAW",
+          visibilitySM: 10,
+          ceilingFt: 5000,
+          timestamp: "2023-01-01T12:00:00Z"
+        }
+      };
+      vm.runInThisContext(`global.testDirs = ${JSON.stringify(directions)};`);
+      vm.runInThisContext('updateWeatherPanelUI(global.testDirs, null, false)');
+
+      assert.strictEqual(dirsHidden, false);
+      assert.strictEqual(windowChildren.length, 2);
+      assert.strictEqual(windowChildren[0].textContent, '🟢 Allowed (VFR)');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+
+  test('handles MVFR and IFR flight categories', () => {
+    let windowChildren = [];
+
+    const mockGetElementById = (id) => {
+      if (id === 'stat-weather-window') {
+        return {
+          style: {},
+          replaceChildren: () => { windowChildren = []; },
+          appendChild: (child) => { windowChildren.push(child); }
+        };
+      }
+      if (id === 'stat-weather-dirs') {
+        return {
+          replaceChildren: () => {},
+          appendChild: () => {},
+          classList: { add: () => {}, remove: () => {} }
+        };
+      }
+      return null;
+    };
+
+    const originalGetElementById = global.document.getElementById;
+    global.document.getElementById = mockGetElementById;
+
+    try {
+      const mvfrDirections = { closest: { fltCat: "MVFR", name: "Test", distance: 10, raw: "", visibilitySM: 4, ceilingFt: 2000 } };
+      vm.runInThisContext(`global.testDirsMVFR = ${JSON.stringify(mvfrDirections)};`);
+      vm.runInThisContext('updateWeatherPanelUI(global.testDirsMVFR, null, false)');
+      assert.strictEqual(windowChildren[0].textContent, '🟡 Caution (MVFR)');
+
+      const ifrDirections = { closest: { fltCat: "IFR", name: "Test", distance: 10, raw: "", visibilitySM: 2, ceilingFt: 800 } };
+      vm.runInThisContext(`global.testDirsIFR = ${JSON.stringify(ifrDirections)};`);
+      vm.runInThisContext('updateWeatherPanelUI(global.testDirsIFR, null, false)');
+      assert.strictEqual(windowChildren[0].textContent, '🔴 Not Allowed (IFR)');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
   });
 });
