@@ -3815,7 +3815,7 @@ function exportKMZ() {
   // Always define the "Press Go" warning
   const pressGoWarning = 
     `⚠️ "Press Go" Upload Checklist:\n` +
-    `Waypoint missions may fail to start when you press "Go" if:\n` +
+    `Waypoint missions may fail to start when you press "Go" as this app is in development, or if:\n` +
     `  1. The drone's max altitude limit in DJI Fly settings is less than the mission altitude (${altitude}m).\n` +
     `  2. The drone does not have a strong GPS lock (at least 10+ satellites) at takeoff.\n` +
     `  3. You are too far away from the first waypoint.\n` +

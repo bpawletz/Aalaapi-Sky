@@ -2,6 +2,11 @@
 
 All notable changes to Aalaapi Sky will be documented in this file.
 
+## [1.13.5] - 2026-07-18
+
+### Changed
+- **Export Warning Note:** Enhanced the KMZ export safety checklist to include an explicit disclaimer at the top of the "Press Go" upload instructions stating that the app is in active development, prompting pilots to verify all coordinate and camera outputs.
+
 ## [1.13.4] - 2026-07-18
 
 ### Added
