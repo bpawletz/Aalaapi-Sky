@@ -75,9 +75,39 @@ function formatDistance(meters, decimalPlaces = 1) {
 function initGeolocation() {
   const btn = document.getElementById('locate-me-btn');
   const label = document.getElementById('locate-me-label');
+  const LOCATION_CACHE_KEY = 'aalaapi_sky_last_location';
+
+  // Helper — applies a location object {lat, lon} to app state and flies map
+  function applyLocation(loc, isCached) {
+    userLocation = { lat: loc.lat, lon: loc.lon };
+    if (label) label.textContent = isCached ? '📍 Cached Location' : '✓ Located';
+    if (btn) {
+      btn.style.color = isCached ? 'var(--accent-cyan, #06b6d4)' : 'var(--accent-green, #10b981)';
+      btn.style.borderColor = isCached ? 'rgba(6, 182, 212, 0.4)' : 'rgba(16, 185, 129, 0.4)';
+      btn.disabled = false;
+    }
+    if (typeof map !== 'undefined' && map) {
+      map.flyTo([userLocation.lat, userLocation.lon], Math.max(map.getZoom(), 15), { animate: true, duration: 1.2 });
+    }
+    if (getCurrentWaypoints()) {
+      redrawCurrentMission();
+    }
+  }
+
+  // On page load — restore the last known location from localStorage so
+  // mobile users who previously located themselves still have a useful
+  // starting position even if geolocation is blocked on this visit.
+  try {
+    const cached = JSON.parse(localStorage.getItem(LOCATION_CACHE_KEY));
+    if (cached && typeof cached.lat === 'number' && typeof cached.lon === 'number') {
+      applyLocation(cached, true);
+    }
+  } catch (e) {
+    Logger.warn('Could not restore cached location:', e);
+  }
 
   if (!navigator.geolocation) {
-    if (label) label.textContent = 'Location Not Supported';
+    if (label && !userLocation) label.textContent = 'Location Not Supported';
     if (btn) btn.disabled = true;
     return;
   }
@@ -86,36 +116,46 @@ function initGeolocation() {
     btn.addEventListener('click', () => {
       if (label) label.textContent = '⏳ Locating…';
       btn.disabled = true;
+      btn.style.color = '';
+      btn.style.borderColor = '';
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          userLocation = {
+          const loc = {
             lat: position.coords.latitude,
             lon: position.coords.longitude
           };
-          if (label) label.textContent = '✓ Located';
-          btn.style.color = 'var(--accent-green, #10b981)';
-          btn.style.borderColor = 'rgba(16, 185, 129, 0.4)';
-          btn.disabled = false;
-          // Fly the map to the user's position
-          if (typeof map !== 'undefined' && map) {
-            map.flyTo([userLocation.lat, userLocation.lon], Math.max(map.getZoom(), 15), { animate: true, duration: 1.2 });
+          // Persist fresh fix to localStorage for next session / mobile fallback
+          try {
+            localStorage.setItem(LOCATION_CACHE_KEY, JSON.stringify(loc));
+          } catch (e) {
+            Logger.warn('Could not cache location:', e);
           }
-          if (getCurrentWaypoints()) {
-            redrawCurrentMission();
-          }
+          applyLocation(loc, false);
         },
         (error) => {
           Logger.warn("Geolocation service failed:", error);
+          // If we have a cached location, fall back silently to it
+          try {
+            const cached = JSON.parse(localStorage.getItem(LOCATION_CACHE_KEY));
+            if (cached && typeof cached.lat === 'number') {
+              Logger.info('GPS denied — using cached location fallback.');
+              applyLocation(cached, true);
+              return;
+            }
+          } catch (e) { /* ignore */ }
           if (label) label.textContent = '✗ Location Denied';
-          btn.style.color = 'var(--accent-red, #ef4444)';
-          btn.style.borderColor = 'rgba(239, 68, 68, 0.4)';
-          btn.disabled = false;
+          if (btn) {
+            btn.style.color = 'var(--accent-red, #ef4444)';
+            btn.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+            btn.disabled = false;
+          }
         },
         { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
       );
     });
   }
 }
+
 
 function initPatternSelectorCards() {
   const cards = document.querySelectorAll('.pattern-card');
@@ -265,10 +305,22 @@ function initMap() {
   const defaultLat = 40.0165;
   const defaultLng = -83.1787;
 
+  // Use the last known location as the starting view if cached, so mobile
+  // users land on their area without needing a GPS fix on every session.
+  let startLat = defaultLat;
+  let startLng = defaultLng;
+  try {
+    const cached = JSON.parse(localStorage.getItem('aalaapi_sky_last_location'));
+    if (cached && typeof cached.lat === 'number' && typeof cached.lon === 'number') {
+      startLat = cached.lat;
+      startLng = cached.lon;
+    }
+  } catch (e) { /* ignore — fall back to default */ }
+
   // Initialize Map
   map = L.map('map', {
     zoomControl: false // We will add zoom control on top-left instead of default top-left
-  }).setView([defaultLat, defaultLng], 17);
+  }).setView([startLat, startLng], 17);
 
   // Add zoom control to top-left
   L.control.zoom({ position: 'topleft' }).addTo(map);
