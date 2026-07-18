@@ -294,6 +294,20 @@
           </div>
 
           <div class="control-group">
+            <label for="drone-model">Export Drone Target</label>
+            <select id="drone-model" class="form-select">
+              <option value="90" selected>DJI Mini 4 Pro (90)</option>
+              <option value="89">DJI Air 3 (89)</option>
+              <option value="77">DJI Mavic 3 / Classic / Pro (77)</option>
+              <option value="68">DJI Mavic 3 Enterprise (68)</option>
+              <option value="67">DJI Matrice 30 / 30T (67)</option>
+              <option value="60">DJI Matrice 300 / 350 RTK (60)</option>
+              <option value="71">DJI Inspire 3 (71)</option>
+            </select>
+            <p class="help-text">Ensures compatibility by matching the model ID inside the KMZ to your drone.</p>
+          </div>
+
+          <div class="control-group">
             <div class="control-label">
               <span>Camera HFOV (Horizontal)</span>
               <span class="value-display"><span id="camera-hfov-val">69.7</span>&deg;</span>
@@ -663,7 +677,7 @@
             <div style="font-size: 0.72rem; font-style: italic; color: var(--text-muted); margin-top: 2px; line-height: 1.2;">
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
-            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.13.2</span>
+            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.13.3</span>
           </div>
         </div>
         
@@ -727,6 +741,12 @@
  
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.13.3):</strong>
+             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+               <li><strong>RC2 & DJI Fly Compatibility:</strong> Added target drone selector to dynamically output correct drone model metadata and namespaces, preventing import failures on controllers.</li>
+             </ul>
+           </div>
+           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.13.2):</strong>
              <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
                <li><strong>Logo & Icon Redesign:</strong> Created and implemented custom Myaamia geometric-styled drone logo SVGs in the sidebar/About modal headers and configured browser favicons.</li>
