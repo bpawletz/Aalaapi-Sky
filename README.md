@@ -30,14 +30,15 @@ An interactive 8-card visual selector maps out flight paths procedurally:
 - **Coverage Heatmap:** Color-coded footprint highlights density of photogrammetry coverage.
 - **Controls:** Fully supports rotation (left-click + drag), zooming (scroll), and panning (right-click + drag) to verify flight clearances.
 
-### 4. Live FAA Airspace Overlays
-Toggleable aviation overlays mapped from official FAA REST endpoints:
+### 4. Live FAA Airspace Overlays (US Only)
+Toggleable aviation overlays mapped from official FAA REST endpoints (covers the United States and its territories only):
 - **VFR Sectional Charts:** High-resolution aeronautical chart raster tiles.
 - **Controlled Airspace:** Color-coded boundaries for Class B (Blue), Class C (Purple), Class D (Pink), and Class E (Green) airspaces.
 - **Special Use Airspace:** Visual boundaries for restricted, prohibited, and military operations areas.
 - **UAS Facility Maps (LAANC):** Local grids showing maximum allowable drone altitudes (from 0 to 400 ft) with permanent labels.
 
-### 5. Real-Time Weather & Infrastructure Layers
+### 5. Real-Time Weather & Infrastructure Layers (US Only)
+*Note: Weather radar, hazards, and power grids cover the United States only.*
 - **NEXRAD Weather Radar:** Composite reflectivity radar showing active precipitation.
 - **NWS Hazards (Weather Warnings):** Active warnings, watches, and advisories.
 - **Dynamic Legend:** Floating map key showing radar intensity scale and active hazard warnings.
