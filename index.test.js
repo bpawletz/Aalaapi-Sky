@@ -224,6 +224,71 @@ describe('Grid Generation Tests', () => {
   });
 });
 
+describe('Orbit Generation Tests', () => {
+  test('generateOrbitCoordinates enforces minimum number of photos constraint', () => {
+    // Generate orbit with huge sPhoto to force the min 8 photos rule
+    // nPhotos = max(8, round(circumference / sPhoto))
+    // For radius 100, sPhoto 1000, nPhotos should be 8.
+    // The loop goes from i=0 to nPhotos, so there are nPhotos+1 points.
+    const result = generateOrbitCoordinates(100, 1000, 120, -60);
+
+    assert.ok(result.waypoints);
+    assert.ok(result.photos);
+    assert.strictEqual(result.waypoints.length, 9, 'Should have 9 points (nPhotos=8, i from 0 to 8)');
+    assert.strictEqual(result.photos.length, 9, 'Should have 9 photos');
+  });
+
+  test('generateOrbitCoordinates calculates correct coordinates, altitude, and pitch', () => {
+    const result = generateOrbitCoordinates(100, 50, 120, -60);
+
+    assert.ok(result.waypoints.length > 0);
+
+    // Verify first point (theta = 0)
+    // x = r*cos(0) = 100, y = r*sin(0) = 0
+    const pt0 = result.waypoints[0];
+    assert.strictEqual(pt0.x, 100);
+    assert.strictEqual(pt0.y, 0);
+    assert.strictEqual(pt0.alt, 120);
+    assert.strictEqual(pt0.pitch, -60);
+
+    // Check all points
+    for (const pt of result.waypoints) {
+      assert.strictEqual(pt.alt, 120, 'Altitude should match baseAltitude');
+      assert.strictEqual(pt.pitch, -60, 'Pitch should match defaultGimbalPitch');
+
+      // Distance to center should be roughly radius (100)
+      const dist = Math.sqrt(pt.x * pt.x + pt.y * pt.y);
+      assert.ok(Math.abs(dist - 100) < 0.001, 'Distance from center should be radius');
+    }
+  });
+
+  test('generateOrbitCoordinates heading points directly to center', () => {
+    const result = generateOrbitCoordinates(100, 50, 120, -60);
+
+    // For theta = 0, x=100, y=0. To point to center (0,0), heading should be West (270 degrees).
+    const pt0 = result.waypoints[0];
+    assert.ok(Math.abs(pt0.heading - 270) < 1.0, `Point at theta=0 should face West (270 deg), got ${pt0.heading}`);
+
+    // For theta = pi/2, x=0, y=100. To point to center, heading should be South (180 degrees).
+    // Let's find a point close to pi/2 (if nPhotos is divisible by 4)
+    // Actually we can just check the general formula for all points
+    for (const pt of result.waypoints) {
+      // The point is at (pt.x, pt.y). The vector to center is (-pt.x, -pt.y).
+      // Heading is angle from North (Y-axis) clockwise.
+      // So dy = -pt.y (North component is -Y, wait, in typical Math atan2:
+      // Math.atan2(y, x) is angle from X axis.
+      // The code uses Math.atan2(-x, -y).
+      // Which means y-axis is first argument? Wait, Math.atan2(y, x).
+      // So Math.atan2(-x, -y) is actually atan2(dx, dy) which computes angle from North!
+
+      const expectedHeading = Math.atan2(-pt.x, -pt.y) * (180.0 / Math.PI);
+      let expectedH = expectedHeading < 0 ? expectedHeading + 360 : expectedHeading;
+
+      assert.ok(Math.abs(pt.heading - expectedH) < 0.001, `Heading incorrect for x=${pt.x}, y=${pt.y}`);
+    }
+  });
+});
+
 describe('Multi-Orbit Generation Tests', () => {
   test('generateMultiOrbitCoordinates produces 3 rings with correct altitudes, pitches, and points', () => {
     // Generate multi-orbit with radius=100, sPhoto=50, baseAltitude=100
