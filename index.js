@@ -4334,7 +4334,6 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
         <button id="save-wp-btn" class="btn-primary" style="padding: 6px 12px; font-size: 0.75rem; flex: 1; min-height: 28px; line-height: 1.2;">Save</button>
         <button id="reset-wp-btn" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; color: #eab308; border-color: rgba(234, 179, 8, 0.3); flex: 1; min-height: 28px; line-height: 1.2; display: ${hasMoved ? 'inline-block' : 'none'};">Reset</button>
         <button id="delete-wp-btn" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; color: #ef4444; border-color: rgba(239, 68, 68, 0.3); flex: 1; min-height: 28px; line-height: 1.2;">Delete</button>
-      </div>min-height: 28px; line-height: 1.2;">Delete</button>
       </div>
     </div>
   `;
