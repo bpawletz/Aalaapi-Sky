@@ -256,6 +256,28 @@ describe('parseWPML Tests', () => {
 });
 
 describe('Coordinate Math Tests', () => {
+  test('calculateDistance computes correct distance between two coordinates', () => {
+    // Distance between same points should be 0
+    assert.strictEqual(calculateDistance(0, 0, 0, 0), 0);
+    assert.strictEqual(calculateDistance(45, -90, 45, -90), 0);
+
+    // Distance from San Francisco to Los Angeles is roughly 559 km
+    const sfLat = 37.7749;
+    const sfLon = -122.4194;
+    const laLat = 34.0522;
+    const laLon = -118.2437;
+    const distSFLA = calculateDistance(sfLat, sfLon, laLat, laLon);
+    assert.ok(Math.abs(distSFLA - 559) < 2, `Distance SF to LA was ${distSFLA}, expected ~559`);
+
+    // Distance between equator points (1 degree longitude) is roughly 111.32 km
+    const distEquator = calculateDistance(0, 0, 0, 1);
+    assert.ok(Math.abs(distEquator - 111.32) < 0.2, `Distance 1 deg on equator was ${distEquator}, expected ~111.32`);
+
+    // Distance between 0,0 and 1,0 (1 degree latitude) is roughly 111.19 km
+    const distLat = calculateDistance(0, 0, 1, 0);
+    assert.ok(Math.abs(distLat - 111.19) < 0.2, `Distance 1 deg lat was ${distLat}, expected ~111.19`);
+  });
+
   test('localToGeodetic converts local offsets back to geodetic', () => {
     // Test point at origin (centerLat=0, centerLon=0), no rotation
     const res1 = localToGeodetic(0, 0, 0, 0, 0);
