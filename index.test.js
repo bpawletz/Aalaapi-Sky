@@ -256,6 +256,44 @@ describe('parseWPML Tests', () => {
 });
 
 describe('Coordinate Math Tests', () => {
+  test('getDefaultHeading computes correct headings', () => {
+    // Single waypoint
+    const wp1 = [{ x: 0, y: 0 }];
+    assert.strictEqual(getDefaultHeading(0, wp1, 0), 0, 'Single waypoint should default to 0 heading');
+
+    // Two waypoints, moving North (positive Y)
+    const wpNorth = [{ x: 0, y: 0 }, { x: 0, y: 10 }];
+    assert.strictEqual(getDefaultHeading(0, wpNorth, 0), 0, 'Moving North should be 0 degrees');
+
+    // Two waypoints, moving East (positive X)
+    const wpEast = [{ x: 0, y: 0 }, { x: 10, y: 0 }];
+    assert.strictEqual(getDefaultHeading(0, wpEast, 0), 90, 'Moving East should be 90 degrees');
+
+    // Two waypoints, moving South (negative Y)
+    const wpSouth = [{ x: 0, y: 0 }, { x: 0, y: -10 }];
+    assert.strictEqual(getDefaultHeading(0, wpSouth, 0), 180, 'Moving South should be 180 degrees');
+
+    // Two waypoints, moving West (negative X)
+    const wpWest = [{ x: 0, y: 0 }, { x: -10, y: 0 }];
+    assert.strictEqual(getDefaultHeading(0, wpWest, 0), 270, 'Moving West should be 270 degrees');
+
+    // Last waypoint in an array uses previous waypoint's heading
+    assert.strictEqual(getDefaultHeading(1, wpEast, 0), 90, 'Last waypoint should use the heading from the previous segment');
+
+    // Middle waypoint uses next waypoint's heading
+    const wpMiddle = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }];
+    assert.strictEqual(getDefaultHeading(1, wpMiddle, 0), 0, 'Middle waypoint should use heading to next waypoint (North = 0)');
+
+    // Applying rotation
+    assert.strictEqual(getDefaultHeading(0, wpEast, 45), 135, 'Rotation should offset the heading');
+
+    // Negative heading normalization (-90 deg rotation on North = -90 => 270)
+    assert.strictEqual(getDefaultHeading(0, wpNorth, -90), 270, 'Negative heading should be correctly wrapped to [0, 360)');
+
+    // Greater than 360 rotation
+    assert.strictEqual(getDefaultHeading(0, wpEast, 360), 90, 'Rotation >= 360 should be normalized');
+  });
+
   test('calculateDistance computes correct distance between two coordinates', () => {
     // Distance between same points should be 0
     assert.strictEqual(calculateDistance(0, 0, 0, 0), 0);
