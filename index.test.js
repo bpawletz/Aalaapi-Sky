@@ -595,3 +595,29 @@ test('NWS Weather fetching bounds and parsing', async () => {
     global.fetch = originalFetch;
   }
 });
+
+describe('getSubMissionFlightTime Tests', () => {
+  test('calculates time for continuous capture mode', async () => {
+    const wps = [{x: 0, y: 0}, {x: 30, y: 40}];
+    vm.runInThisContext(`global.wpsInput = ${JSON.stringify(wps)};`);
+    const time = vm.runInThisContext(`getSubMissionFlightTime(global.wpsInput, 0, 1, 5, 'continuous')`);
+    assert.strictEqual(time, 55);
+  });
+
+  test('calculates time for stopAndShoot capture mode', async () => {
+    const wps = [{x: 0, y: 0}, {x: 30, y: 40}, {x: 30, y: 80}];
+    vm.runInThisContext(`global.wpsInput = ${JSON.stringify(wps)};`);
+    const time = vm.runInThisContext(`getSubMissionFlightTime(global.wpsInput, 0, 2, 10, 'stopAndShoot')`);
+    assert.strictEqual(time, 67.5);
+  });
+
+  test('calculates time for 0 distance segments', async () => {
+    const wps = [{x: 10, y: 10}, {x: 10, y: 10}, {x: 10, y: 10}];
+    vm.runInThisContext(`global.wpsInput = ${JSON.stringify(wps)};`);
+    const time = vm.runInThisContext(`getSubMissionFlightTime(global.wpsInput, 0, 2, 5, 'continuous')`);
+    assert.strictEqual(time, 45);
+
+    const time2 = vm.runInThisContext(`getSubMissionFlightTime(global.wpsInput, 1, 1, 5, 'continuous')`);
+    assert.strictEqual(time2, 45);
+  });
+});
