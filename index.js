@@ -4017,6 +4017,7 @@ function parseWPML(wpmlText) {
 
       let pitch = null;
       let isRingStart = false;
+      let hasPhoto = false;
       const actionGroups = pm.getElementsByTagName("wpml:actionGroup") || pm.getElementsByTagName("actionGroup");
       for (let j = 0; j < actionGroups.length; j++) {
         const ag = actionGroups[j];
@@ -4024,11 +4025,15 @@ function parseWPML(wpmlText) {
         for (let k = 0; k < actions.length; k++) {
           const act = actions[k];
           const actuatorNode = act.getElementsByTagName("wpml:actionActuatorFunc")[0] || act.getElementsByTagName("actionActuatorFunc")[0];
-          if (actuatorNode && (actuatorNode.textContent === "gimbalRotate" || actuatorNode.textContent === "gimbalEvenlyRotate")) {
-            const pitchNode = act.getElementsByTagName("wpml:gimbalPitchRotateAngle")[0] || act.getElementsByTagName("gimbalPitchRotateAngle")[0];
-            if (pitchNode) {
-              pitch = parseFloat(pitchNode.textContent);
-              isRingStart = true;
+          if (actuatorNode) {
+            if (actuatorNode.textContent === "gimbalRotate" || actuatorNode.textContent === "gimbalEvenlyRotate") {
+              const pitchNode = act.getElementsByTagName("wpml:gimbalPitchRotateAngle")[0] || act.getElementsByTagName("gimbalPitchRotateAngle")[0];
+              if (pitchNode) {
+                pitch = parseFloat(pitchNode.textContent);
+                isRingStart = true;
+              }
+            } else if (actuatorNode.textContent === "takePhoto") {
+              hasPhoto = true;
             }
           }
         }
@@ -4046,18 +4051,6 @@ function parseWPML(wpmlText) {
         ringIndex: null
       });
 
-      let hasPhoto = false;
-      for (let j = 0; j < actionGroups.length; j++) {
-        const ag = actionGroups[j];
-        const actions = ag.getElementsByTagName("wpml:action") || ag.getElementsByTagName("action");
-        for (let k = 0; k < actions.length; k++) {
-          const act = actions[k];
-          const actuatorNode = act.getElementsByTagName("wpml:actionActuatorFunc")[0] || act.getElementsByTagName("actionActuatorFunc")[0];
-          if (actuatorNode && actuatorNode.textContent === "takePhoto") {
-            hasPhoto = true;
-          }
-        }
-      }
       if (hasPhoto) {
         photos.push({
           lat: lat,
