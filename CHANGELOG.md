@@ -1,9 +1,16 @@
-## [1.11.1] - 2026-07-18
-- Added a centralized logging utility to improve observability by replacing direct console.warn/error calls with Logger.warn/error.
-
 # Changelog
 
 All notable changes to Aalaapi Sky will be documented in this file.
+
+## [1.12.0] - 2026-07-18
+
+### Added
+- **Flight Safety Acknowledgment Popup:** Added an initial gatekeeper modal that forces the user to review and accept the flight safety disclaimer and developer liability waiver before accessing the planner.
+- **MIT Open-Source License:** Formally licensed the repository under the MIT License to encourage community contributions and protect against legal liability.
+- **GitHub Actions Auto-Compilation & Caching CI:** Added a GitHub workflow to compile `index.html` on git push, verify Node unit tests, handle push conflicts, and cache npm/Playwright dependencies.
+
+## [1.11.1] - 2026-07-18
+- Added a centralized logging utility to improve observability by replacing direct console.warn/error calls with Logger.warn/error.
 
 ## [1.11.0] - 2026-07-17
 
