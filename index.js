@@ -12,6 +12,26 @@ let originalMissionSettings = null;
 // Geolocation state
 let userLocation = null;
 
+// Utility functions
+function throttle(func, limit) {
+  let lastFunc;
+  let lastRan;
+  return function(...args) {
+    if (!lastRan) {
+      func.apply(this, args);
+      lastRan = Date.now();
+    } else {
+      clearTimeout(lastFunc);
+      lastFunc = setTimeout(() => {
+        if ((Date.now() - lastRan) >= limit) {
+          func.apply(this, args);
+          lastRan = Date.now();
+        }
+      }, limit - (Date.now() - lastRan));
+    }
+  };
+}
+
 // Unit conversion constants
 const M_TO_FT = 3.2808399;
 const FT_TO_M = 0.3048;
@@ -4356,21 +4376,23 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     }
   };
 
+  const throttledUpdateRealtimeMarker = throttle(updateRealtimeMarker, 32);
+
   // Add event listeners to sliders
   altSlider.addEventListener('input', () => {
     const val = parseFloat(altSlider.value);
     altValText.textContent = unit === 'imperial' ? Math.round(val * M_TO_FT) : val.toFixed(0);
-    updateRealtimeMarker();
+    throttledUpdateRealtimeMarker();
   });
 
   pitchSlider.addEventListener('input', () => {
     pitchValText.textContent = pitchSlider.value;
-    updateRealtimeMarker();
+    throttledUpdateRealtimeMarker();
   });
 
   headingSlider.addEventListener('input', () => {
     headingValText.textContent = headingSlider.value + '°';
-    updateRealtimeMarker();
+    throttledUpdateRealtimeMarker();
   });
 
   headingAutoCheckbox.addEventListener('change', () => {
@@ -4387,8 +4409,8 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
   });
 
   // Direct coordinate inputs listeners
-  latInput.addEventListener('input', updateRealtimeMarker);
-  lonInput.addEventListener('input', updateRealtimeMarker);
+  latInput.addEventListener('input', throttledUpdateRealtimeMarker);
+  lonInput.addEventListener('input', throttledUpdateRealtimeMarker);
 
   // D-Pad Nudge functionality
   const steps = unit === 'imperial'
