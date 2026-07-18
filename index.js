@@ -6886,7 +6886,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     let visCheck = closest.visibilitySM >= 3 ? "✅" : "❌";
     let visColor = closest.visibilitySM >= 3 ? "var(--success-color)" : "var(--error-color)";
     visDiv.style.color = visColor;
-    visDiv.innerHTML = `${visCheck} Visibility: ${closest.visibilitySM.toFixed(1)} SM (Req &ge; 3)`;
+    visDiv.textContent = `${visCheck} Visibility: ${closest.visibilitySM.toFixed(1)} SM (Req ≥ 3)`;
   } else {
     visDiv.style.color = "var(--text-secondary)";
     visDiv.textContent = "❓ Visibility: Unknown";
@@ -6899,7 +6899,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     let ceilColor = closest.ceilingFt >= 1000 ? "var(--success-color)" : "var(--error-color)";
     const cStr = closest.ceilingFt >= 99999 ? "Clear" : `${closest.ceilingFt.toFixed(0)} ft`;
     ceilDiv.style.color = ceilColor;
-    ceilDiv.innerHTML = `${ceilCheck} Ceiling: ${cStr} (Req &ge; 1000 ft)`;
+    ceilDiv.textContent = `${ceilCheck} Ceiling: ${cStr} (Req ≥ 1000 ft)`;
   } else {
     ceilDiv.style.color = "var(--success-color)";
     ceilDiv.textContent = "✅ Ceiling: Unknown";
