@@ -1353,6 +1353,11 @@ html, body {
 
 
 </style>
+  
+  <!-- App Icon & Favicon -->
+  <link rel="icon" type="image/png" href="icon.png">
+  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Ccircle cx='12' cy='12' r='9' stroke='%2306b6d4' stroke-width='0.5' stroke-dasharray='2 2' opacity='0.25'/%3E%3Ccircle cx='12' cy='12' r='6' stroke='%2306b6d4' stroke-width='0.75' opacity='0.4'/%3E%3Cline x1='12' y1='12' x2='6.5' y2='6.5' stroke='%23c2622d' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='12' y1='12' x2='17.5' y2='6.5' stroke='%23c2622d' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='12' y1='12' x2='6.5' y2='17.5' stroke='%23c2622d' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='12' y1='12' x2='17.5' y2='17.5' stroke='%23c2622d' stroke-width='2' stroke-linecap='round'/%3E%3Cpolygon points='10,9 11,10 10,11 9,10' fill='%23f5f0e8'/%3E%3Cpolygon points='8,7 9,8 8,9 7,8' fill='%23f5f0e8'/%3E%3Cpolygon points='14,9 15,10 14,11 13,10' fill='%23f5f0e8'/%3E%3Cpolygon points='16,7 17,8 16,9 15,8' fill='%23f5f0e8'/%3E%3Cpolygon points='10,15 11,14 10,13 9,14' fill='%23f5f0e8'/%3E%3Cpolygon points='8,17 9,16 8,15 7,16' fill='%23f5f0e8'/%3E%3Cpolygon points='14,15 15,14 14,13 13,14' fill='%23f5f0e8'/%3E%3Cpolygon points='16,17 17,16 16,15 15,16' fill='%23f5f0e8'/%3E%3Ccircle cx='5.5' cy='5.5' r='2.2' stroke='%2306b6d4' stroke-width='1.2'/%3E%3Ccircle cx='18.5' cy='5.5' r='2.2' stroke='%2306b6d4' stroke-width='1.2'/%3E%3Ccircle cx='5.5' cy='18.5' r='2.2' stroke='%2306b6d4' stroke-width='1.2'/%3E%3Ccircle cx='18.5' cy='18.5' r='2.2' stroke='%2306b6d4' stroke-width='1.2'/%3E%3Cpolygon points='12,7 17,12 12,17 7,12' fill='%23c2622d' stroke='%23f5f0e8' stroke-width='0.75'/%3E%3Cpolygon points='12,9.5 14.5,12 12,14.5 9.5,12' fill='%2306b6d4'/%3E%3Ccircle cx='12' cy='12' r='1' fill='%23f5f0e8'/%3E%3C/svg%3E">
 </head>
 <body>
   <div class="app-container">
@@ -1370,10 +1375,37 @@ html, body {
       <header class="app-header">
         <div class="header-top-row">
           <div class="logo">
-            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-              <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-              <line x1="12" y1="22.08" x2="12" y2="12"/>
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- Concentric Myaamia/radar halos -->
+              <circle cx="12" cy="12" r="9" stroke="#06b6d4" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.25" />
+              <circle cx="12" cy="12" r="6" stroke="#06b6d4" stroke-width="0.75" opacity="0.4" />
+              
+              <!-- Diagonal Arms (NW, NE, SW, SE) -->
+              <line x1="12" y1="12" x2="6.5" y2="6.5" stroke="#c2622d" stroke-width="2" stroke-linecap="round" />
+              <line x1="12" y1="12" x2="17.5" y2="6.5" stroke="#c2622d" stroke-width="2" stroke-linecap="round" />
+              <line x1="12" y1="12" x2="6.5" y2="17.5" stroke="#c2622d" stroke-width="2" stroke-linecap="round" />
+              <line x1="12" y1="12" x2="17.5" y2="17.5" stroke="#c2622d" stroke-width="2" stroke-linecap="round" />
+
+              <!-- Myaamia Beadwork Diamonds on Arms -->
+              <polygon points="10,9 11,10 10,11 9,10" fill="#f5f0e8" />
+              <polygon points="8,7 9,8 8,9 7,8" fill="#f5f0e8" />
+              <polygon points="14,9 15,10 14,11 13,10" fill="#f5f0e8" />
+              <polygon points="16,7 17,8 16,9 15,8" fill="#f5f0e8" />
+              <polygon points="10,15 11,14 10,13 9,14" fill="#f5f0e8" />
+              <polygon points="8,17 9,16 8,15 7,16" fill="#f5f0e8" />
+              <polygon points="14,15 15,14 14,13 13,14" fill="#f5f0e8" />
+              <polygon points="16,17 17,16 16,15 15,16" fill="#f5f0e8" />
+
+              <!-- Propeller Rings -->
+              <circle cx="5.5" cy="5.5" r="2.2" stroke="#06b6d4" stroke-width="1.2" fill="none" />
+              <circle cx="18.5" cy="5.5" r="2.2" stroke="#06b6d4" stroke-width="1.2" fill="none" />
+              <circle cx="5.5" cy="18.5" r="2.2" stroke="#06b6d4" stroke-width="1.2" fill="none" />
+              <circle cx="18.5" cy="18.5" r="2.2" stroke="#06b6d4" stroke-width="1.2" fill="none" />
+
+              <!-- Center Hub - Myaamia Rosette -->
+              <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
+              <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
+              <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
             </svg>
             <h1>Aalaapi Sky</h1>
           </div>
@@ -1930,11 +1962,38 @@ html, body {
       </header>
       <div class="modal-content">
         <div style="display: flex; align-items: center; gap: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
-          <div style="background: var(--primary-gradient); padding: 12px; border-radius: 12px; color: var(--text-inverse); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-              <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-              <line x1="12" y1="22.08" x2="12" y2="12"/>
+          <div style="background: #0a0f1e; border: 1px solid rgba(255, 255, 255, 0.08); padding: 10px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);">
+            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- Concentric Myaamia/radar halos -->
+              <circle cx="12" cy="12" r="9" stroke="#06b6d4" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.25" />
+              <circle cx="12" cy="12" r="6" stroke="#06b6d4" stroke-width="0.75" opacity="0.4" />
+              
+              <!-- Diagonal Arms (NW, NE, SW, SE) -->
+              <line x1="12" y1="12" x2="6.5" y2="6.5" stroke="#c2622d" stroke-width="2" stroke-linecap="round" />
+              <line x1="12" y1="12" x2="17.5" y2="6.5" stroke="#c2622d" stroke-width="2" stroke-linecap="round" />
+              <line x1="12" y1="12" x2="6.5" y2="17.5" stroke="#c2622d" stroke-width="2" stroke-linecap="round" />
+              <line x1="12" y1="12" x2="17.5" y2="17.5" stroke="#c2622d" stroke-width="2" stroke-linecap="round" />
+
+              <!-- Myaamia Beadwork Diamonds on Arms -->
+              <polygon points="10,9 11,10 10,11 9,10" fill="#f5f0e8" />
+              <polygon points="8,7 9,8 8,9 7,8" fill="#f5f0e8" />
+              <polygon points="14,9 15,10 14,11 13,10" fill="#f5f0e8" />
+              <polygon points="16,7 17,8 16,9 15,8" fill="#f5f0e8" />
+              <polygon points="10,15 11,14 10,13 9,14" fill="#f5f0e8" />
+              <polygon points="8,17 9,16 8,15 7,16" fill="#f5f0e8" />
+              <polygon points="14,15 15,14 14,13 13,14" fill="#f5f0e8" />
+              <polygon points="16,17 17,16 16,15 15,16" fill="#f5f0e8" />
+
+              <!-- Propeller Rings -->
+              <circle cx="5.5" cy="5.5" r="2.2" stroke="#06b6d4" stroke-width="1.2" fill="none" />
+              <circle cx="18.5" cy="5.5" r="2.2" stroke="#06b6d4" stroke-width="1.2" fill="none" />
+              <circle cx="5.5" cy="18.5" r="2.2" stroke="#06b6d4" stroke-width="1.2" fill="none" />
+              <circle cx="18.5" cy="18.5" r="2.2" stroke="#06b6d4" stroke-width="1.2" fill="none" />
+
+              <!-- Center Hub - Myaamia Rosette -->
+              <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
+              <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
+              <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
             </svg>
           </div>
           <div>
@@ -1942,7 +2001,7 @@ html, body {
             <div style="font-size: 0.72rem; font-style: italic; color: var(--text-muted); margin-top: 2px; line-height: 1.2;">
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
-            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.13.1</span>
+            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.13.2</span>
           </div>
         </div>
         
@@ -2006,6 +2065,12 @@ html, body {
  
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.13.2):</strong>
+             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+               <li><strong>Logo & Icon Redesign:</strong> Created and implemented custom Myaamia geometric-styled drone logo SVGs in the sidebar/About modal headers and configured browser favicons.</li>
+             </ul>
+           </div>
+           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.13.1):</strong>
              <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
                <li><strong>About Modal Disclaimer:</strong> Replaced wall-of-text safety warning with a color-coded 2-column icon card grid for easier scanning.</li>
