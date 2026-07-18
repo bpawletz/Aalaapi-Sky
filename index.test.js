@@ -210,6 +210,35 @@ describe('Coordinate Math Tests', () => {
     assert.strictEqual(res3.lat, 0);
     assert.ok(res3.lon > 0, 'Lon should be greater than 0 when moving East');
   });
+
+  test('geodeticToLocal converts geodetic coordinates to local offsets', () => {
+    // Test point at origin (lat=0, lon=0, centerLat=0, centerLon=0)
+    const res1 = geodeticToLocal(0, 0, 0, 0);
+    assert.strictEqual(res1.x, 0);
+    assert.strictEqual(res1.y, 0);
+
+    // Test a point North of origin (lat=1, lon=0, centerLat=0, centerLon=0)
+    const res2 = geodeticToLocal(1, 0, 0, 0);
+    assert.strictEqual(res2.x, 0);
+    assert.ok(res2.y > 0, 'y should be greater than 0 when North of center');
+
+    // Test a point East of origin (lat=0, lon=1, centerLat=0, centerLon=0)
+    const res3 = geodeticToLocal(0, 1, 0, 0);
+    assert.ok(res3.x > 0, 'x should be greater than 0 when East of center');
+    assert.strictEqual(res3.y, 0);
+
+    // Test round-trip conversion (localToGeodetic -> geodeticToLocal)
+    const centerLat = 45;
+    const centerLon = -90;
+    const localX = 150;
+    const localY = -200;
+    const geo = localToGeodetic(localX, localY, centerLat, centerLon, 0);
+    const localAgain = geodeticToLocal(geo.lat, geo.lon, centerLat, centerLon);
+
+    // Allow small floating point precision differences
+    assert.ok(Math.abs(localAgain.x - localX) < 1e-5, 'x coordinate should match after round-trip');
+    assert.ok(Math.abs(localAgain.y - localY) < 1e-5, 'y coordinate should match after round-trip');
+  });
 });
 
 describe('Grid Generation Tests', () => {
