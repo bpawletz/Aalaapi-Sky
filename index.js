@@ -3812,6 +3812,15 @@ function exportKMZ() {
   const totalStats = calculateStats(waypoints, getCurrentPhotos(), speed, null, null, captureMode);
   const totalDurationSeconds = totalStats ? totalStats.flightTimeSeconds : 0;
 
+  // Always define the "Press Go" warning
+  const pressGoWarning = 
+    `⚠️ "Press Go" Upload Checklist:\n` +
+    `Waypoint missions may fail to start when you press "Go" if:\n` +
+    `  1. The drone's max altitude limit in DJI Fly settings is less than the mission altitude (${altitude}m).\n` +
+    `  2. The drone does not have a strong GPS lock (at least 10+ satellites) at takeoff.\n` +
+    `  3. You are too far away from the first waypoint.\n` +
+    `  4. The flight area lies within an unauthorized NFZ / Geozone.\n\n`;
+
   if (totalDurationSeconds > maxFlightTimeSeconds && waypoints.length > 1) {
     const parts = splitWaypointsIntoParts(waypoints, maxFlightTimeMinutes, speed, captureMode);
     if (parts.length > 1) {
@@ -3819,8 +3828,9 @@ function exportKMZ() {
       if (warningMessage) {
         confirmMsg += warningMessage;
       }
-      confirmMsg += `• Flight Time Limit: The estimated mission duration (${totalStats.timeStr}) exceeds the Max Flight Time limit of ${maxFlightTimeMinutes} minutes.\n\n` +
+      confirmMsg += `• Flight Time Limit: The estimated mission duration (${totalStats.timeStr}) exceeds the Max Flight Time limit of ${maxFlightTimeMinutes} minutes.\n` +
                     `It will be automatically split into ${parts.length} separate KMZ files inside a ZIP archive.\n\n` +
+                    pressGoWarning +
                     `Do you want to proceed with exporting the split mission?`;
       if (!confirm(confirmMsg)) {
         return;
@@ -3860,11 +3870,15 @@ function exportKMZ() {
     }
   }
 
+  let confirmMessage = "";
   if (warningMessage) {
-    const confirmMessage = `Warning Details:\n\n${warningMessage}Do you acknowledge these safety warnings and want to export the mission anyway?`;
-    if (!confirm(confirmMessage)) {
-      return;
-    }
+    confirmMessage = `Warning Details:\n\n${warningMessage}${pressGoWarning}Do you acknowledge these safety warnings and want to export the mission?`;
+  } else {
+    confirmMessage = `${pressGoWarning}Do you want to proceed and export the mission?`;
+  }
+
+  if (!confirm(confirmMessage)) {
+    return;
   }
 
   // 4. Generate XML contents
