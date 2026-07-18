@@ -296,7 +296,7 @@ function initMap() {
 
   // Initialize Airspace Overlays
   // VFR tile layer — always available (standard L.tileLayer, no Esri dependency)
-  vfrSectionalLayer = L.tileLayer('https://tiles.arcgis.com/tiles/ssFJjBXIUyZDrSYZ/arcgis/rest/services/VFR_Sectional/MapServer/tile/{z}/{y}/{x}', {
+  vfrSectionalLayer = L.tileLayer('https://tiles.arcgis.com/tiles/ssFJjBXIUyZDrSYZ/arcgis/rest/services/VFR_Sectional/MapServer/tile/{z}/{y}/{x}.png', {
     maxZoom: 22,
     maxNativeZoom: 12, // FAA tiles only go to zoom 12; browser upscales beyond that
     minZoom: 4,
