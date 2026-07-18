@@ -153,6 +153,80 @@ describe('Utility Functions', () => {
   });
 });
 
+describe('updateOpenSkyLink Tests', () => {
+  const originalGetElementById = global.document.getElementById;
+
+  test('updates link using centerMarker', () => {
+    let mockLinkEl = { href: '' };
+    global.document.getElementById = (id) => {
+      if (id === 'opensky-link') return mockLinkEl;
+      return null;
+    };
+
+    try {
+      vm.runInThisContext(`
+        map = { getCenter: () => ({ lat: 10, lng: 20 }) };
+        centerMarker = { getLatLng: () => ({ lat: 30.12345, lng: 40.54321 }) };
+        updateOpenSkyLink();
+      `);
+
+      assert.strictEqual(mockLinkEl.href, 'https://map.opensky-network.org/?lat=30.1234&lon=40.5432&zoom=11');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+
+  test('updates link using map center if no centerMarker', () => {
+    let mockLinkEl = { href: '' };
+    global.document.getElementById = (id) => {
+      if (id === 'opensky-link') return mockLinkEl;
+      return null;
+    };
+
+    try {
+      vm.runInThisContext(`
+        map = { getCenter: () => ({ lat: 10.98765, lng: 20.12345 }) };
+        centerMarker = null;
+        updateOpenSkyLink();
+      `);
+
+      assert.strictEqual(mockLinkEl.href, 'https://map.opensky-network.org/?lat=10.9877&lon=20.1234&zoom=11');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+
+  test('does nothing if map or linkEl is missing', () => {
+    let mockLinkEl = { href: 'original' };
+
+    // Missing map
+    global.document.getElementById = (id) => {
+      if (id === 'opensky-link') return mockLinkEl;
+      return null;
+    };
+
+    try {
+      vm.runInThisContext(`
+        map = null;
+        centerMarker = null;
+        updateOpenSkyLink();
+      `);
+      assert.strictEqual(mockLinkEl.href, 'original');
+
+      // Missing linkEl
+      global.document.getElementById = (id) => null;
+      vm.runInThisContext(`
+        map = { getCenter: () => ({ lat: 10, lng: 20 }) };
+        centerMarker = null;
+        updateOpenSkyLink();
+      `);
+      // Should not throw and link remains 'original' conceptually
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+});
+
 describe('Unit Conversion Tests', () => {
   test('formatDistance formats metric distance correctly', () => {
     // default getUnitSystem() returns 'metric' because localStorage is stubbed
