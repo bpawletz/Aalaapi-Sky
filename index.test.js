@@ -395,6 +395,54 @@ describe('Grid Generation Tests', () => {
     assert.strictEqual(minY, -50);
     assert.strictEqual(maxY, 50);
   });
+
+  test('generateCircularGridCoordinates produces correct grid for hover mode', () => {
+    // Generate circular grid: radius 100, sLine 50, sPhoto 50, captureMode 'hover'
+    const result = generateCircularGridCoordinates(100, 50, 50, 'hover');
+
+    assert.ok(result.waypoints);
+    assert.ok(result.photos);
+
+    // From scratchpad: hover mode returns 13 waypoints and 13 photos for these params
+    assert.strictEqual(result.waypoints.length, 13, 'Should have exactly 13 waypoints');
+    assert.strictEqual(result.photos.length, 13, 'Should have exactly 13 photos');
+
+    const xs = result.waypoints.map(wp => wp.x);
+    const ys = result.waypoints.map(wp => wp.y);
+
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+
+    assert.strictEqual(minX, -50);
+    assert.strictEqual(maxX, 50);
+    // Bounding box of clipped circle
+    assert.strictEqual(Math.round(minY), -100);
+    assert.strictEqual(Math.round(maxY), 100);
+  });
+
+  test('generateCircularGridCoordinates produces correct grid for continuous mode', () => {
+    // Generate circular grid: radius 100, sLine 50, sPhoto 50, captureMode 'continuous'
+    const result = generateCircularGridCoordinates(100, 50, 50, 'continuous');
+
+    assert.ok(result.waypoints);
+    assert.ok(result.photos);
+
+    // Continuous mode only adds waypoints at start/end of lines, but all photos
+    assert.strictEqual(result.waypoints.length, 6, 'Should have exactly 6 waypoints');
+    assert.strictEqual(result.photos.length, 13, 'Should have exactly 13 photos');
+  });
+
+  test('generateCircularGridCoordinates handles edge cases with too large spacing', () => {
+    // Spacing larger than radius -> 0 points due to yMax < 5.0 check and loop conditions
+    const result = generateCircularGridCoordinates(100, 200, 200, 'hover');
+
+    assert.ok(result.waypoints);
+    assert.ok(result.photos);
+    assert.strictEqual(result.waypoints.length, 0);
+    assert.strictEqual(result.photos.length, 0);
+  });
 });
 
 describe('Orbit Generation Tests', () => {
