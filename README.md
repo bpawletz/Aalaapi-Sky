@@ -75,6 +75,15 @@ Toggleable aviation overlays mapped from official FAA REST endpoints (covers the
 
 ---
 
+## DJI Hardware Compatibility
+
+Aalaapi Sky compiles flight plans into DJI's proprietary **WPML (Waypoint Markup Language) V2** standard.
+
+* **Supported Models:** DJI Mini 4 Pro, DJI Air 3, DJI Mavic 3, Mavic 3 Pro, Mavic 3 Classic, Mavic 3 Enterprise, DJI Inspire 3, DJI Matrice 30 (M30/M30T), and DJI Matrice 300/350 RTK.
+* **Unsupported Models:** Older DJI models (including the DJI Mini 3 Pro, Mavic Air 2, Mavic 2 series, and Phantom 4 series) utilize legacy `.kml` or proprietary database structures and are not compatible with WPML V2.
+
+---
+
 ## Disclaimer & Legal Warning
 
 **USE AT YOUR OWN RISK.** This software is provided solely for flight planning visualization, preview, and educational purposes.
