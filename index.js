@@ -1,3 +1,10 @@
+// Centralized Logging Utility
+const Logger = {
+  info: (msg, ...args) => console.info(`[INFO] ${msg}`, ...args),
+  warn: (msg, ...args) => console.warn(`[WARN] ${msg}`, ...args),
+  error: (msg, ...args) => console.error(`[ERROR] ${msg}`, ...args)
+};
+
 // Global state variables
 let map;
 let centerMarker = null;
@@ -98,7 +105,7 @@ function initGeolocation() {
           }
         },
         (error) => {
-          console.warn("Geolocation service failed:", error);
+          Logger.warn("Geolocation service failed:", error);
           if (label) label.textContent = '✗ Location Denied';
           btn.style.color = 'var(--accent-red, #ef4444)';
           btn.style.borderColor = 'rgba(239, 68, 68, 0.4)';
@@ -366,7 +373,7 @@ function initMap() {
       }
     });
   } else {
-    console.warn('Esri Leaflet not loaded — FAA FeatureServer airspace layers unavailable. VFR Sectional Chart (tile layer) still available.');
+    Logger.warn('Esri Leaflet not loaded — FAA FeatureServer airspace layers unavailable. VFR Sectional Chart (tile layer) still available.');
   }
 
   // Initialize NOAA Weather Overlays (WMS)
@@ -1216,7 +1223,7 @@ function searchAddress() {
       }
     })
     .catch(err => {
-      console.error("Search error:", err);
+      Logger.error("Search error:", err);
       alert("Error finding location. Check your internet connection.");
     });
 }
@@ -3150,7 +3157,7 @@ function addRoadWaypoint(lat, lng) {
         }
       }
 
-      console.warn("OSRM routing failed, falling back to direct line segment.");
+      Logger.warn("OSRM routing failed, falling back to direct line segment.");
       fallbackDirectLine();
     })
     .catch(err => {
@@ -3161,7 +3168,7 @@ function addRoadWaypoint(lat, lng) {
         freeformInstructions.style.borderColor = "";
         freeformInstructions.style.color = "";
       }
-      console.error("OSRM error:", err);
+      Logger.error("OSRM error:", err);
       fallbackDirectLine();
     });
 
@@ -3755,7 +3762,7 @@ function exportKMZ() {
           link.click();
         });
       }).catch(err => {
-        console.error("Split ZIP creation failed:", err);
+        Logger.error("Split ZIP creation failed:", err);
         alert("An error occurred while creating the split KMZ files.");
       });
       return;
@@ -3794,7 +3801,7 @@ function exportKMZ() {
       link.click();
     });
   } catch (err) {
-    console.error("ZIP creation failed:", err);
+    Logger.error("ZIP creation failed:", err);
     alert("An error occurred while creating the KMZ file. Check console for details.");
   }
 }
@@ -3829,7 +3836,7 @@ function handleKMZImport(e) {
         parseWPML(wpmlText);
       })
       .catch(err => {
-        console.error("KMZ Import error:", err);
+        Logger.error("KMZ Import error:", err);
         alert(`Failed to import KMZ: ${err.message}`);
         clearImportedMission();
       });
@@ -4020,7 +4027,7 @@ function parseWPML(wpmlText) {
     updateGrid();
     
   } catch (err) {
-    console.error("XML Parsing error:", err);
+    Logger.error("XML Parsing error:", err);
     alert(`Failed to parse KML: ${err.message}`);
     clearImportedMission();
   }
@@ -5251,7 +5258,7 @@ function init3DPreview() {
       }
     }
   } catch (err) {
-    console.warn("Failed to initialize ground map texture:", err);
+    Logger.warn("Failed to initialize ground map texture:", err);
   }
 
   // Add Axes Helper (Red = East, Green = Up, Blue = South)
@@ -6711,7 +6718,7 @@ async function fetchAndProcessWeather(centerLat, centerLon) {
     updateWeatherPanelUI(directions, null, false);
 
   } catch (error) {
-    console.error("Error fetching weather data:", error);
+    Logger.error("Error fetching weather data:", error);
     updateWeatherPanelUI(null, "Error", false);
   }
 }

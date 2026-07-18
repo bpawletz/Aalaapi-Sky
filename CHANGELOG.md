@@ -1,3 +1,6 @@
+## [1.11.1] - 2026-07-18
+- Added a centralized logging utility to improve observability by replacing direct console.warn/error calls with Logger.warn/error.
+
 # Changelog
 
 All notable changes to Aalaapi Sky will be documented in this file.
