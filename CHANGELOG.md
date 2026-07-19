@@ -2,11 +2,6 @@
 
 All notable changes to Aalaapi Sky will be documented in this file.
 
-## [1.17.5] - 2026-07-20
-
-### Added
-- **3D FPV Waypoint Editor Parity:** Added Position (Nudge) D-Pad controls and manual Latitude/Longitude input fields to the 3D FPV Waypoint Editor, bringing it to feature parity with the 2D map editor.
-
 ## [1.17.4] - 2026-07-19
 
 ### Fixed
