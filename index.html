@@ -2814,6 +2814,40 @@ html, body {
                 <span id="fpv-editor-coords" style="font-family: monospace; font-size: 0.7rem; color: #94a3b8;">0.000000, 0.000000</span>
               </div>
               
+              <div style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+                <div style="display: flex; gap: 15px; align-items: flex-start; justify-content: space-between; font-size: 0.75rem;">
+                  <!-- Position Nudge Controls -->
+                  <div style="flex-shrink: 0;">
+                    <div style="color: #94a3b8; margin-bottom: 3px;">Position (Nudge)</div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 22px); grid-template-rows: repeat(3, 22px); gap: 2px;">
+                      <button id="fpv-nudge-nw-btn" class="sidebar-btn" style="padding: 0; min-height: 0; font-size: 0.7rem; opacity: 0.5; cursor: not-allowed;" disabled>&#8598;</button>
+                      <button id="fpv-nudge-n-btn" class="sidebar-btn" style="padding: 0; min-height: 0; font-size: 0.7rem;">&#8593;</button>
+                      <button id="fpv-nudge-ne-btn" class="sidebar-btn" style="padding: 0; min-height: 0; font-size: 0.7rem; opacity: 0.5; cursor: not-allowed;" disabled>&#8599;</button>
+
+                      <button id="fpv-nudge-w-btn" class="sidebar-btn" style="padding: 0; min-height: 0; font-size: 0.7rem;">&#8592;</button>
+                      <div style="display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: #94a3b8;">1m</div>
+                      <button id="fpv-nudge-e-btn" class="sidebar-btn" style="padding: 0; min-height: 0; font-size: 0.7rem;">&#8594;</button>
+
+                      <button id="fpv-nudge-sw-btn" class="sidebar-btn" style="padding: 0; min-height: 0; font-size: 0.7rem; opacity: 0.5; cursor: not-allowed;" disabled>&#8601;</button>
+                      <button id="fpv-nudge-s-btn" class="sidebar-btn" style="padding: 0; min-height: 0; font-size: 0.7rem;">&#8595;</button>
+                      <button id="fpv-nudge-se-btn" class="sidebar-btn" style="padding: 0; min-height: 0; font-size: 0.7rem; opacity: 0.5; cursor: not-allowed;" disabled>&#8600;</button>
+                    </div>
+                  </div>
+
+                  <!-- Manual Lat/Lon Inputs -->
+                  <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                      <span style="color: #94a3b8; width: 25px; display: inline-block;">Lat:</span>
+                      <input type="number" id="fpv-edit-wp-lat" step="0.000001" style="width: 100%; padding: 2px 5px; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 4px; color: white; font-size: 0.7rem;">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                      <span style="color: #94a3b8; width: 25px; display: inline-block;">Lon:</span>
+                      <input type="number" id="fpv-edit-wp-lon" step="0.000001" style="width: 100%; padding: 2px 5px; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 4px; color: white; font-size: 0.7rem;">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <!-- Editor Sliders -->
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.75rem;">
                 <div style="display: flex; flex-direction: column; gap: 3px;">
@@ -2852,31 +2886,6 @@ html, body {
                 </div>
               </div>
               
-              <!-- Position Nudge & Lat/Lon Inputs -->
-              <div style="display: flex; flex-direction: column; gap: 6px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
-                <span style="color: #94a3b8; font-weight: 500;">Position (Nudge):</span>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <!-- D-Pad -->
-                  <div style="display: grid; grid-template-columns: repeat(3, 24px); grid-template-rows: repeat(3, 24px); gap: 2px; justify-content: center; width: 80px;">
-                    <div></div>
-                    <button id="fpv-nudge-n-btn" type="button" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #06b6d4; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; font-weight: bold; width: 24px; height: 24px; padding: 0;">▲</button>
-                    <div></div>
-                    <button id="fpv-nudge-w-btn" type="button" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #06b6d4; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; font-weight: bold; width: 24px; height: 24px; padding: 0;">◀</button>
-                    <div id="fpv-nudge-step-display" style="display: flex; align-items: center; justify-content: center; font-size: 0.65rem; color: var(--accent-cyan); font-weight: bold; user-select: none; cursor: pointer;">1m</div>
-                    <button id="fpv-nudge-e-btn" type="button" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #06b6d4; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; font-weight: bold; width: 24px; height: 24px; padding: 0;">▶</button>
-                    <div></div>
-                    <button id="fpv-nudge-s-btn" type="button" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #06b6d4; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; font-weight: bold; width: 24px; height: 24px; padding: 0;">▼</button>
-                    <div></div>
-                  </div>
-
-                  <!-- Lat/Lon inputs -->
-                  <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; margin-left: 8px;">
-                    <input type="text" id="fpv-edit-wp-lat" style="background: rgba(15,23,42,0.6); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 4px; color: #fff; font-size: 0.7rem; width: 100%; text-align: center;" placeholder="Latitude">
-                    <input type="text" id="fpv-edit-wp-lon" style="background: rgba(15,23,42,0.6); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 4px; color: #fff; font-size: 0.7rem; width: 100%; text-align: center;" placeholder="Longitude">
-                  </div>
-                </div>
-              </div>
-
               <div style="display: flex; gap: 10px; margin-top: 4px; font-size: 0.75rem;">
                 <button id="fpv-btn-delete-wp" class="btn-secondary" style="flex: 1; padding: 6px 12px; border-color: rgba(239, 68, 68, 0.3); color: #ef4444; border-radius: 6px; font-weight: 600;">Delete Point</button>
                 <button id="fpv-btn-insert-wp" class="btn-primary" style="flex: 1; padding: 6px 12px; background: var(--primary-gradient); border-radius: 6px; font-weight: 600;">Insert Point</button>
@@ -9265,6 +9274,12 @@ function updateFPVEditorUI() {
   if (wpIndexSpan) wpIndexSpan.textContent = fpvProgressIndex + 1;
   if (coordsSpan) coordsSpan.textContent = `${wp.lat.toFixed(6)}, ${wp.lon.toFixed(6)}`;
 
+  // Lat / Lon inputs
+  const latInput = document.getElementById('fpv-edit-wp-lat');
+  const lonInput = document.getElementById('fpv-edit-wp-lon');
+  if (latInput) latInput.value = wp.lat.toFixed(7);
+  if (lonInput) lonInput.value = wp.lon.toFixed(7);
+
   // Alt
   const altVal = document.getElementById('fpv-edit-alt-val');
   const altSlider = document.getElementById('fpv-edit-alt');
@@ -9656,6 +9671,108 @@ function setupFPVListeners() {
         }
       });
     }
+  }
+
+  // Position Nudge & Lat/Lon Logic
+  const latInput = document.getElementById('fpv-edit-wp-lat');
+  const lonInput = document.getElementById('fpv-edit-wp-lon');
+  const stepDisplay = document.getElementById('fpv-nudge-step-display');
+
+  if (latInput && lonInput && stepDisplay) {
+    // Update step label on open
+    const unit = getUnitSystem();
+    const initialStepLabel = unit === 'imperial' ? '5 ft' : '1m';
+    stepDisplay.textContent = initialStepLabel;
+
+    // Cycle nudge steps
+    const steps = unit === 'imperial'
+      ? [0.3048, 1.524, 3.048]  // ~1ft, 5ft, 10ft in meters
+      : [0.2, 1, 5];            // 0.2m, 1m, 5m
+    const stepLabels = unit === 'imperial'
+      ? ['1 ft', '5 ft', '10 ft']
+      : ['0.2m', '1m', '5m'];
+    let currentStepIndex = 1; // Default to middle index (5ft or 1m)
+
+    stepDisplay.addEventListener('click', () => {
+      currentStepIndex = (currentStepIndex + 1) % steps.length;
+      stepDisplay.textContent = stepLabels[currentStepIndex];
+    });
+
+    const applyLatLonUpdate = (newLat, newLon) => {
+      const waypoints = getCurrentWaypoints();
+      if (!waypoints || !waypoints[fpvProgressIndex]) return;
+
+      const wp = waypoints[fpvProgressIndex];
+      const centerLatLng = centerMarker.getLatLng();
+      const offsets = geodeticToLocal(newLat, newLon, centerLatLng.lat, centerLatLng.lng);
+
+      wp.lat = newLat;
+      wp.lon = newLon;
+      wp.x = offsets.x;
+      wp.y = offsets.y;
+      wp.isModified = true;
+
+      const gridType = document.getElementById('grid-type').value;
+      if (gridType === 'road-following') {
+        const roadWaypoints = window.roadWaypoints || [];
+        if (roadWaypoints && roadWaypoints[fpvProgressIndex]) {
+          roadWaypoints[fpvProgressIndex].lat = newLat;
+          roadWaypoints[fpvProgressIndex].lon = newLon;
+          roadWaypoints[fpvProgressIndex].x = offsets.x;
+          roadWaypoints[fpvProgressIndex].y = offsets.y;
+          roadWaypoints[fpvProgressIndex].isModified = true;
+          recalculateRoadOffsetPath(centerLatLng.lat, centerLatLng.lng);
+        }
+      }
+
+      const activePhotos = getCurrentPhotos();
+      const hasPhoto = activePhotos && activePhotos[fpvProgressIndex];
+      if (hasPhoto && gridType !== 'road-following') {
+        activePhotos[fpvProgressIndex].lat = newLat;
+        activePhotos[fpvProgressIndex].lon = newLon;
+        activePhotos[fpvProgressIndex].x = offsets.x;
+        activePhotos[fpvProgressIndex].y = offsets.y;
+      }
+
+      latInput.value = newLat.toFixed(7);
+      lonInput.value = newLon.toFixed(7);
+
+      redrawCurrentMission();
+      recreate3DWaypointsAndPaths();
+      updateFPVEditorUI();
+    };
+
+    const handleManualInput = () => {
+      const newLat = parseFloat(latInput.value);
+      const newLon = parseFloat(lonInput.value);
+      if (isNaN(newLat) || isNaN(newLon)) return;
+      applyLatLonUpdate(newLat, newLon);
+    };
+
+    latInput.addEventListener('change', handleManualInput);
+    lonInput.addEventListener('change', handleManualInput);
+
+    const R_EARTH = 6378137.0;
+    const nudge = (dLatDir, dLonDir) => {
+      const latVal = parseFloat(latInput.value);
+      const lonVal = parseFloat(lonInput.value);
+      if (isNaN(latVal) || isNaN(lonVal)) return;
+
+      const dist = steps[currentStepIndex];
+      const dLatMeters = dLatDir * dist;
+      const dLonMeters = dLonDir * dist;
+
+      const latRad = latVal * Math.PI / 180.0;
+      const deltaLat = (dLatMeters / R_EARTH) * (180.0 / Math.PI);
+      const deltaLon = (dLonMeters / (R_EARTH * Math.cos(latRad))) * (180.0 / Math.PI);
+
+      applyLatLonUpdate(latVal + deltaLat, lonVal + deltaLon);
+    };
+
+    document.getElementById('fpv-nudge-n-btn')?.addEventListener('click', () => nudge(1, 0));
+    document.getElementById('fpv-nudge-s-btn')?.addEventListener('click', () => nudge(-1, 0));
+    document.getElementById('fpv-nudge-e-btn')?.addEventListener('click', () => nudge(0, 1));
+    document.getElementById('fpv-nudge-w-btn')?.addEventListener('click', () => nudge(0, -1));
   }
 
   // Delete Waypoint
