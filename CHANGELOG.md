@@ -2,6 +2,12 @@
 
 All notable changes to Aalaapi Sky will be documented in this file.
 
+## [1.15.1] - 2026-07-19
+
+### Fixed
+- **Road-Following Waypoint Editor:** Clicking a road node marker now correctly opens the waypoint editor popup without crashing. Fixed a null-guard on `marker.getTooltip()` calls, guarded `tempHeading.toFixed()` against `null`, and corrected the `revertChanges` function to restore the simple `"Road Node N"` tooltip (instead of a heading/pitch tooltip) for road-following markers.
+- **Popup Cancel Revert:** Closing the waypoint editor without saving now also correctly restores `wp.headingMode` to its pre-edit value.
+
 ## [1.15.0] - 2026-07-19
 
 ### Added
