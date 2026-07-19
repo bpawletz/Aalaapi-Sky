@@ -2333,8 +2333,8 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
         marker.bindPopup(() => {
           return createWaypointEditorDOM(wp, idx, marker);
         }, {
-          maxWidth: 220,
-          minWidth: 210
+          maxWidth: 240,
+          minWidth: 230
         });
 
         marker.addTo(roadPathGroup);
@@ -2364,8 +2364,8 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
         droneMarker.bindPopup(() => {
           return createWaypointEditorDOM(roadWp, idx, roadWp.roadMarker, droneMarker);
         }, {
-          maxWidth: 220,
-          minWidth: 210
+          maxWidth: 240,
+          minWidth: 230
         });
 
         droneMarker.on('click', (e) => {
@@ -2439,8 +2439,8 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
       marker.bindPopup(() => {
         return createWaypointEditorDOM(wp, idx, marker);
       }, {
-        maxWidth: 220,
-        minWidth: 210
+        maxWidth: 240,
+        minWidth: 230
       });
 
       marker.addTo(waypointMarkersGroup);
@@ -3709,14 +3709,28 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     let headingAngleEnable = turnMode.includes('Stop') ? 1 : 0;
     let poiPoint = "0.000000,0.000000,0.000000";
 
-    if (headingMode === 'towardPOI' && typeof centerMarker !== 'undefined' && centerMarker) {
-      const latlng = centerMarker.getLatLng();
-      poiPoint = `${latlng.lng.toFixed(13)},${latlng.lat.toFixed(13)},0.000000`;
-    }
+    const wpMode = wp.headingMode || 'inherit';
+    if (wpMode !== 'inherit') {
+      if (wpMode === 'custom') {
+        actualHeadingMode = 'smoothTransition';
+        actualHeadingAngle = wp.heading !== null && wp.heading !== undefined ? wp.heading : 0;
+      } else {
+        actualHeadingMode = wpMode;
+        if (wpMode === 'towardPOI' && typeof centerMarker !== 'undefined' && centerMarker) {
+          const latlng = centerMarker.getLatLng();
+          poiPoint = `${latlng.lng.toFixed(13)},${latlng.lat.toFixed(13)},0.000000`;
+        }
+      }
+    } else {
+      if (headingMode === 'towardPOI' && typeof centerMarker !== 'undefined' && centerMarker) {
+        const latlng = centerMarker.getLatLng();
+        poiPoint = `${latlng.lng.toFixed(13)},${latlng.lat.toFixed(13)},0.000000`;
+      }
 
-    if (wp.heading !== null && wp.heading !== undefined) {
-      actualHeadingMode = 'smoothTransition';
-      actualHeadingAngle = wp.heading;
+      if (wp.heading !== null && wp.heading !== undefined) {
+        actualHeadingMode = 'smoothTransition';
+        actualHeadingAngle = wp.heading;
+      }
     }
 
     const currentAltitude = wp.alt !== undefined ? wp.alt : altitude;
@@ -4152,6 +4166,7 @@ function parseWPML(wpmlText) {
       wp.origAlt = wp.alt;
       wp.origPitch = wp.pitch;
       wp.origHeading = wp.heading;
+      wp.origHeadingMode = wp.headingMode || 'inherit';
       wp.origIsRingStart = wp.isRingStart || false;
       wp.origIsModified = false;
     });
@@ -4320,7 +4335,7 @@ function updatePathLinesAndStats(waypoints, photoLocations, centerLat, centerLon
 function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
   const popupContent = document.createElement('div');
   popupContent.className = 'wp-editor-popup';
-  popupContent.style.width = '210px';
+  popupContent.style.width = '230px';
   popupContent.style.color = '#f8fafc';
   popupContent.style.fontFamily = 'Outfit, sans-serif';
 
@@ -4335,6 +4350,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
   const originalAlt = wp.alt;
   const originalPitch = wp.pitch;
   const originalHeading = wp.heading;
+  const originalHeadingMode = wp.headingMode || 'inherit';
   const originalIsRingStart = wp.isRingStart;
   const originalIsModified = wp.isModified;
   const originalOrigIsRingStart = wp.origIsRingStart;
@@ -4364,10 +4380,13 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     (wp.origLon !== undefined && wp.origLon !== null && Math.abs(wp.lon - wp.origLon) > 1e-9) ||
     (wp.origAlt !== undefined && wp.origAlt !== null && Math.abs(wp.alt - wp.origAlt) > 1e-3) ||
     (wp.origPitch !== undefined && wp.origPitch !== null && wp.pitch !== wp.origPitch) ||
+    (wp.origHeadingMode !== undefined && wp.origHeadingMode !== null && wp.headingMode !== wp.origHeadingMode) ||
     (wp.origHeading !== undefined && wp.origHeading !== null && wp.heading !== wp.origHeading) ||
     (wp.origHeading === null && wp.heading !== null) ||
     (wp.origHeading !== null && wp.heading === null)
   );
+
+  const curMode = wp.headingMode || 'inherit';
 
   popupContent.innerHTML = `
     <h4 id="edit-wp-title" style="margin: 0 0 12px 0; color: #06b6d4; font-size: 0.95rem; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;"></h4>
@@ -4391,18 +4410,21 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
         <input type="range" id="edit-wp-pitch" min="-90" max="0" value="${pitchVal}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
       </div>
  
-      <!-- Yaw / Heading Slider & Auto Checkbox -->
+      <!-- Yaw / Heading Selector -->
       <div style="display: flex; flex-direction: column; gap: 4px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #94a3b8; font-weight: 500;">Yaw Heading:</span>
-          <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-heading-val">${headingVal !== '' ? headingVal + '&deg;' : 'Auto'}</span></span>
+          <span style="color: #94a3b8; font-weight: 500;">Heading Mode:</span>
+          <span id="edit-wp-heading-val" style="color: #06b6d4; font-weight: 600;">Auto</span>
         </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <input type="range" id="edit-wp-heading" min="0" max="359" value="${headingVal !== '' ? headingVal : 0}" ${headingVal === '' ? 'disabled' : ''} style="flex: 1; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer; ${headingVal === '' ? 'opacity: 0.4;' : ''}">
-          <label style="display: inline-flex; align-items: center; gap: 4px; color: #94a3b8; font-size: 0.75rem; cursor: pointer; white-space: nowrap; flex-shrink: 0;">
-            <input type="checkbox" id="edit-wp-heading-auto" ${headingVal === '' ? 'checked' : ''} style="cursor: pointer; accent-color: #06b6d4; margin: 0;">
-            Auto
-          </label>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <select id="edit-wp-heading-mode" class="form-select" style="font-size: 0.72rem; padding: 4px 8px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); cursor: pointer; width: 100%;">
+            <option value="inherit" ${curMode === 'inherit' ? 'selected' : ''}>Inherit Global Default</option>
+            <option value="followWayline" ${curMode === 'followWayline' ? 'selected' : ''}>Follow Flight Path</option>
+            <option value="fixed" ${curMode === 'fixed' ? 'selected' : ''}>Fixed Heading (North)</option>
+            <option value="towardPOI" ${curMode === 'towardPOI' ? 'selected' : ''}>Point of Interest (POI)</option>
+            <option value="custom" ${curMode === 'custom' ? 'selected' : ''}>Custom Angle</option>
+          </select>
+          <input type="range" id="edit-wp-heading" min="0" max="359" value="${headingVal !== '' ? headingVal : 0}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer; display: ${curMode === 'custom' ? 'block' : 'none'};">
         </div>
       </div>
  
@@ -4454,27 +4476,52 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
 
   const headingSlider = popupContent.querySelector('#edit-wp-heading');
   const headingValText = popupContent.querySelector('#edit-wp-heading-val');
-  const headingAutoCheckbox = popupContent.querySelector('#edit-wp-heading-auto');
+  const headingModeSelect = popupContent.querySelector('#edit-wp-heading-mode');
 
   const latInput = popupContent.querySelector('#edit-wp-lat');
   const lonInput = popupContent.querySelector('#edit-wp-lon');
 
   // Real-time map update helper
   const updateRealtimeMarker = () => {
-    const isAutoYaw = headingAutoCheckbox.checked;
-    const tempHeading = isAutoYaw ? null : parseFloat(headingSlider.value);
+    const mode = headingModeSelect.value;
     const tempPitch = parseFloat(pitchSlider.value);
     const tempAlt = parseFloat(altSlider.value);
-    const rotationDeg = parseFloat(document.getElementById('grid-rotation').value);
+    const rotationDeg = parseFloat(document.getElementById('grid-rotation').value) || 0;
+    const autoHead = getDefaultHeading(idx, getCurrentWaypoints(), rotationDeg);
 
     // Apply temporary lat/lon position to marker representation on map
     const latVal = parseFloat(latInput.value);
     const lonVal = parseFloat(lonInput.value);
+
+    let tempHeading = null;
+    let effectiveMode = mode;
+    if (mode === 'inherit') {
+      const globalMode = document.getElementById('heading-mode');
+      effectiveMode = globalMode ? globalMode.value : 'followWayline';
+    }
+
+    if (effectiveMode === 'custom') {
+      tempHeading = parseFloat(headingSlider.value);
+    } else if (effectiveMode === 'followWayline') {
+      tempHeading = autoHead;
+    } else if (effectiveMode === 'fixed') {
+      tempHeading = 0;
+    } else if (effectiveMode === 'towardPOI') {
+      if (typeof centerMarker !== 'undefined' && centerMarker) {
+        const latlng = centerMarker.getLatLng();
+        const dy = latlng.lat - (isNaN(latVal) ? wp.lat : latVal);
+        const dx = latlng.lng - (isNaN(lonVal) ? wp.lon : lonVal);
+        tempHeading = (90 - (Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
+      } else {
+        tempHeading = 0;
+      }
+    }
     
     // Temporarily update wp properties for real-time calculation
     wp.alt = tempAlt;
     wp.pitch = tempPitch;
-    wp.heading = tempHeading;
+    wp.heading = (mode === 'custom') ? tempHeading : null;
+    wp.headingMode = mode;
 
     if (!isNaN(latVal) && !isNaN(lonVal)) {
       marker.setLatLng([latVal, lonVal]);
@@ -4534,8 +4581,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       // Update tooltip for standard waypoints
       const isStart = idx === 0;
       const isEnd = idx === getCurrentWaypoints().length - 1;
-      const computedHeading = isAutoYaw ? getDefaultHeading(idx, getCurrentWaypoints(), rotationDeg) : tempHeading;
-      const newTitle = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(tempAlt, 0)}<br>Yaw: ${computedHeading.toFixed(0)}°<br>Pitch: ${tempPitch}°`;
+      const newTitle = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(tempAlt, 0)}<br>Yaw: ${tempHeading.toFixed(0)}°<br>Pitch: ${tempPitch}°`;
       marker.getTooltip().setContent(newTitle);
     } else {
       // Keep simple tooltip for road nodes
@@ -4547,17 +4593,14 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     const currentLon = parseFloat(lonInput.value);
     const currentAlt = parseFloat(altSlider.value);
     const currentPitch = parseFloat(pitchSlider.value);
-    const currentIsAutoYaw = headingAutoCheckbox.checked;
-    const currentHeading = currentIsAutoYaw ? null : parseFloat(headingSlider.value);
 
     const isChangedFromOrig = (
       (wp.origLat !== undefined && wp.origLat !== null && Math.abs(currentLat - wp.origLat) > 1e-9) ||
       (wp.origLon !== undefined && wp.origLon !== null && Math.abs(currentLon - wp.origLon) > 1e-9) ||
       (wp.origAlt !== undefined && wp.origAlt !== null && Math.abs(currentAlt - wp.origAlt) > 1e-3) ||
       (wp.origPitch !== undefined && wp.origPitch !== null && currentPitch !== wp.origPitch) ||
-      (wp.origHeading !== undefined && wp.origHeading !== null && currentHeading !== wp.origHeading) ||
-      (wp.origHeading === null && currentHeading !== null) ||
-      (wp.origHeading !== null && currentHeading === null)
+      ((wp.origHeadingMode || 'inherit') !== mode) ||
+      (mode === 'custom' && wp.origHeading !== null && tempHeading !== wp.origHeading)
     );
 
     if (resetBtn) {
@@ -4584,15 +4627,12 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     throttledUpdateRealtimeMarker();
   });
 
-  headingAutoCheckbox.addEventListener('change', () => {
-    if (headingAutoCheckbox.checked) {
-      headingSlider.disabled = true;
-      headingSlider.style.opacity = '0.4';
-      headingValText.textContent = 'Auto';
-    } else {
-      headingSlider.disabled = false;
-      headingSlider.style.opacity = '1';
+  headingModeSelect.addEventListener('change', () => {
+    if (headingModeSelect.value === 'custom') {
+      headingSlider.style.display = 'block';
       headingValText.textContent = headingSlider.value + '°';
+    } else {
+      headingSlider.style.display = 'none';
     }
     updateRealtimeMarker();
   });
@@ -4702,14 +4742,15 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       
       const altVal = parseFloat(altSlider.value);
       const pitchVal = parseFloat(pitchSlider.value);
-      const isAutoYaw = headingAutoCheckbox.checked;
-      const headingVal = isAutoYaw ? null : parseFloat(headingSlider.value);
+      const mode = headingModeSelect.value;
+      const headingVal = (mode === 'custom') ? parseFloat(headingSlider.value) : null;
       const latVal = parseFloat(latInput.value);
       const lonVal = parseFloat(lonInput.value);
 
       wp.alt = altVal;
       wp.pitch = pitchVal;
       wp.heading = headingVal;
+      wp.headingMode = mode;
       wp.lat = latVal;
       wp.lon = lonVal;
       wp.isRingStart = true; // Mark as explicit parameter change point
@@ -4736,6 +4777,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       if (wp.origAlt !== undefined && wp.origAlt !== null) wp.alt = wp.origAlt;
       if (wp.origPitch !== undefined && wp.origPitch !== null) wp.pitch = wp.origPitch;
       if (wp.origHeading !== undefined) wp.heading = wp.origHeading;
+      wp.headingMode = wp.origHeadingMode || 'inherit';
       wp.isRingStart = wp.origIsRingStart !== undefined ? wp.origIsRingStart : false;
       wp.isModified = wp.origIsModified !== undefined ? wp.origIsModified : false;
       
@@ -5831,27 +5873,52 @@ function updateFPVEditorUI() {
   if (pitchVal) pitchVal.textContent = Math.round(pitch);
   if (pitchSlider) pitchSlider.value = Math.round(pitch);
 
-  // Heading/Yaw
+  // Heading/Yaw Mode and Value
   const headingVal = document.getElementById('fpv-edit-heading-val');
   const headingSlider = document.getElementById('fpv-edit-heading');
-  const headingAuto = document.getElementById('fpv-edit-heading-auto');
-  
-  const isAutoYaw = wp.heading === null || wp.heading === undefined;
-  if (headingAuto) headingAuto.checked = isAutoYaw;
+  const headingModeSelect = document.getElementById('fpv-edit-heading-mode');
 
-  if (headingVal && headingSlider) {
-    if (isAutoYaw) {
+  if (headingModeSelect) {
+    const mode = wp.headingMode || 'inherit';
+    headingModeSelect.value = mode;
+
+    if (headingVal && headingSlider) {
       const rotationDeg = parseFloat(document.getElementById('grid-rotation').value) || 0;
       const autoHead = getDefaultHeading(fpvProgressIndex, waypoints, rotationDeg);
-      headingVal.textContent = `Auto (${Math.round(autoHead)}°)`;
-      headingSlider.value = Math.round(autoHead);
-      headingSlider.disabled = true;
-      headingSlider.style.opacity = '0.4';
-    } else {
-      headingVal.textContent = `${Math.round(wp.heading)}°`;
-      headingSlider.value = Math.round(wp.heading);
-      headingSlider.disabled = false;
-      headingSlider.style.opacity = '1.0';
+
+      // Helper to compute angle based on mode
+      let displayAngle = 0;
+      let effectiveMode = mode;
+      if (mode === 'inherit') {
+        const globalMode = document.getElementById('heading-mode');
+        effectiveMode = globalMode ? globalMode.value : 'followWayline';
+      }
+
+      if (effectiveMode === 'followWayline') {
+        displayAngle = autoHead;
+      } else if (effectiveMode === 'fixed') {
+        displayAngle = 0;
+      } else if (effectiveMode === 'towardPOI') {
+        if (typeof centerMarker !== 'undefined' && centerMarker) {
+          const latlng = centerMarker.getLatLng();
+          const dy = latlng.lat - wp.lat;
+          const dx = latlng.lng - wp.lon;
+          displayAngle = (90 - (Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
+        } else {
+          displayAngle = 0;
+        }
+      } else if (effectiveMode === 'custom') {
+        displayAngle = wp.heading !== null && wp.heading !== undefined ? wp.heading : autoHead;
+      }
+
+      if (mode === 'custom') {
+        headingSlider.style.display = 'block';
+        headingSlider.value = Math.round(displayAngle);
+        headingVal.textContent = `${Math.round(displayAngle)}°`;
+      } else {
+        headingSlider.style.display = 'none';
+        headingVal.textContent = `${Math.round(displayAngle)}°`;
+      }
     }
   }
 }
@@ -6076,20 +6143,23 @@ function setupFPVListeners() {
     });
   }
 
-  // Waypoint Editor Yaw Heading Auto Checkbox
-  const editHeadingAuto = document.getElementById('fpv-edit-heading-auto');
+  // Waypoint Editor Yaw Heading Mode Selector
+  const editHeadingMode = document.getElementById('fpv-edit-heading-mode');
   const editHeadingSlider = document.getElementById('fpv-edit-heading');
   const editHeadingVal = document.getElementById('fpv-edit-heading-val');
   
-  if (editHeadingAuto && editHeadingSlider && editHeadingVal) {
-    editHeadingAuto.addEventListener('change', (e) => {
-      const isAuto = e.target.checked;
+  if (editHeadingMode && editHeadingSlider && editHeadingVal) {
+    editHeadingMode.addEventListener('change', (e) => {
+      const mode = e.target.value;
       const waypoints = getCurrentWaypoints();
       if (waypoints && waypoints[fpvProgressIndex]) {
-        if (isAuto) {
+        waypoints[fpvProgressIndex].headingMode = mode;
+        if (mode !== 'custom') {
           waypoints[fpvProgressIndex].heading = null;
         } else {
-          waypoints[fpvProgressIndex].heading = parseInt(editHeadingSlider.value);
+          const rotationDeg = parseFloat(document.getElementById('grid-rotation').value) || 0;
+          const autoHead = getDefaultHeading(fpvProgressIndex, waypoints, rotationDeg);
+          waypoints[fpvProgressIndex].heading = Math.round(autoHead);
         }
         waypoints[fpvProgressIndex].isModified = true;
         redrawCurrentMission();
@@ -6103,7 +6173,7 @@ function setupFPVListeners() {
       editHeadingVal.textContent = `${val}°`;
       
       const waypoints = getCurrentWaypoints();
-      if (waypoints && waypoints[fpvProgressIndex] && !editHeadingAuto.checked) {
+      if (waypoints && waypoints[fpvProgressIndex] && editHeadingMode.value === 'custom') {
         waypoints[fpvProgressIndex].heading = val;
         waypoints[fpvProgressIndex].isModified = true;
         redrawCurrentMission();
