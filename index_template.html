@@ -812,7 +812,7 @@
             <div style="font-size: 0.72rem; font-style: italic; color: var(--text-muted); margin-top: 2px; line-height: 1.2;">
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
-            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.15.0</span>
+            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.15.1</span>
           </div>
         </div>
         
@@ -876,7 +876,14 @@
  
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
-            <strong style="color: var(--text-main);">Changelog (v1.15.0):</strong>
+            <strong style="color: var(--text-main);">Changelog (v1.15.1):</strong>
+             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+               <li><strong>Road-Following Editor Fix:</strong> Clicking a road node now opens the popup without crashing. Fixed null tooltip guards, null heading guards, and incorrect tooltip restoration on cancel.</li>
+               <li><strong>Popup Cancel Revert:</strong> Closing the editor without saving now correctly restores <code>headingMode</code>.</li>
+             </ul>
+           </div>
+           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+             <strong style="color: var(--text-main);">Changelog (v1.15.0):</strong>
              <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
                <li><strong>Per-Waypoint Heading Mode (Map Popup):</strong> Replaced Auto checkbox with a full Heading Mode dropdown (5 options) in the map waypoint editor popup. Custom Angle slider shows/hides dynamically.</li>
                <li><strong>Consistent Editing UI:</strong> Map popup and FPV panel now show identical heading controls. Popup width increased to 230px.</li>
