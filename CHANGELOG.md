@@ -2,6 +2,11 @@
 
 All notable changes to Aalaapi Sky will be documented in this file.
 
+## [1.16.1] - 2026-07-19
+
+### Fixed
+- **3D Camera Cone Yaw Alignment:** Aligned the 3D FPV view camera cones in the Three.js preview with the 2D map marker heading/yaw arrows. Modified `getWaypointHeadingAndPitch` to dynamically resolve custom heading modes (such as `towardPOI` and `fixed`) and POI targets, resolving the visual disconnect.
+
 ## [1.16.0] - 2026-07-19
 
 ### Added
