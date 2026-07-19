@@ -2,6 +2,14 @@
 
 All notable changes to Aalaapi Sky will be documented in this file.
 
+## [1.16.0] - 2026-07-19
+
+### Added
+- **Multiple Points of Interest (POIs):** Added support for defining and managing multiple Points of Interest on the Leaflet map. Users can click "+ Add POI" in the sidebar to spawn new custom terracotta POI markers, name them, drag them to position, or delete them.
+- **Per-Waypoint POI Selection:** Waypoints that use a POI heading mode can now choose *which* specific POI to track (e.g. POI 0 (Center), POI 1, POI 2, etc.) using a dropdown selector inside both the map waypoint editor popup and the FPV editor panel.
+- **Dynamic Real-Time Yaws:** Waypoints orient their yaws dynamically on the map in real-time toward the coordinates of their selected target POI.
+- **Multi-POI Export:** WPML exporter correctly maps `<wpml:waypointPoiPoint>` coordinates and `<wpml:waypointHeadingPoiIndex>` tags to match the selected target POI index for every waypoint.
+
 ## [1.15.2] - 2026-07-19
 
 ### Fixed
