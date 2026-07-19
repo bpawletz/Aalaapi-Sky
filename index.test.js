@@ -1670,3 +1670,32 @@ describe('buildWaylinesWpml Multi-POI Export Tests', () => {
   });
 });
 
+describe('getWaypointHeadingAndPitch 3D Yaw Alignment Tests', () => {
+  test('calculates correct heading for towardPOI and fixed modes in 3D scene helper', () => {
+    try {
+      vm.runInThisContext(`
+        pois = [
+          { name: 'POI 0 (Center)', lat: 40.0, lon: -83.0 },
+          { name: 'POI 1', lat: 40.0, lon: -83.001 }
+        ];
+      `);
+
+      const wps = [
+        { lat: 40.0, lon: -83.0, x: 0, y: 0, alt: 50, headingMode: 'towardPOI', poiIndex: 1 },
+        { lat: 40.0, lon: -83.0, x: 0, y: 0, alt: 50, headingMode: 'fixed' }
+      ];
+
+      const res0 = vm.runInThisContext(`getWaypointHeadingAndPitch(0, ${JSON.stringify(wps)})`);
+      const res1 = vm.runInThisContext(`getWaypointHeadingAndPitch(1, ${JSON.stringify(wps)})`);
+
+      // Pointing West (lon -83.001 vs -83.0) should be 270 degrees
+      assert.ok(Math.abs(res0.heading - 270) < 1.0);
+      assert.strictEqual(res1.heading, 0);
+
+    } finally {
+      vm.runInThisContext('pois = [];');
+    }
+  });
+});
+
+

@@ -2166,7 +2166,7 @@ html, body {
             <div style="font-size: 0.72rem; font-style: italic; color: var(--text-muted); margin-top: 2px; line-height: 1.2;">
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
-            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.16.0</span>
+            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.16.1</span>
           </div>
         </div>
         
@@ -2230,7 +2230,13 @@ html, body {
  
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
-            <strong style="color: var(--text-main);">Changelog (v1.16.0):</strong>
+            <strong style="color: var(--text-main);">Changelog (v1.16.1):</strong>
+             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+               <li><strong>3D Camera Yaw Alignment:</strong> Aligned the 3D FPV camera cones in the Three.js preview with the 2D map camera heading arrows across all target POIs and heading modes.</li>
+             </ul>
+           </div>
+           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+             <strong style="color: var(--text-main);">Changelog (v1.16.0):</strong>
              <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
                <li><strong>Multiple POIs (Points of Interest):</strong> Manage and add multiple POI targets on the map using a new Points of Interest sidebar management controller.</li>
                <li><strong>Per-Waypoint POI Selection:</strong> Waypoints using a POI heading mode can select which specific POI target to orient toward.</li>
@@ -8198,7 +8204,35 @@ function getWaypointHeadingAndPitch(idx, waypoints) {
   if (wp.heading !== null && wp.heading !== undefined) {
     heading = wp.heading;
   } else {
-    heading = getDefaultHeading(idx, waypoints, rotationDeg);
+    const mode = wp.headingMode || 'inherit';
+    let effectiveMode = mode;
+    if (mode === 'inherit') {
+      const globalMode = document.getElementById('heading-mode')?.value;
+      effectiveMode = globalMode || 'followWayline';
+    }
+
+    if (effectiveMode === 'towardPOI') {
+      const selectedPoiIndex = wp.poiIndex || 0;
+      const targetPoi = pois[selectedPoiIndex];
+      if (targetPoi) {
+        const dy = targetPoi.lat - wp.lat;
+        const dx = targetPoi.lon - wp.lon;
+        heading = (90 - (Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
+      } else {
+        if (typeof centerMarker !== 'undefined' && centerMarker) {
+          const latlng = centerMarker.getLatLng();
+          const dy = latlng.lat - wp.lat;
+          const dx = latlng.lng - wp.lon;
+          heading = (90 - (Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
+        } else {
+          heading = 0;
+        }
+      }
+    } else if (effectiveMode === 'fixed') {
+      heading = 0;
+    } else {
+      heading = getDefaultHeading(idx, waypoints, rotationDeg);
+    }
   }
   const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value) || -60;
   const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : defaultGimbalPitch;
