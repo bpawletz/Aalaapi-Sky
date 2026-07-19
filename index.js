@@ -5261,7 +5261,35 @@ function getWaypointHeadingAndPitch(idx, waypoints) {
   if (wp.heading !== null && wp.heading !== undefined) {
     heading = wp.heading;
   } else {
-    heading = getDefaultHeading(idx, waypoints, rotationDeg);
+    const mode = wp.headingMode || 'inherit';
+    let effectiveMode = mode;
+    if (mode === 'inherit') {
+      const globalMode = document.getElementById('heading-mode')?.value;
+      effectiveMode = globalMode || 'followWayline';
+    }
+
+    if (effectiveMode === 'towardPOI') {
+      const selectedPoiIndex = wp.poiIndex || 0;
+      const targetPoi = pois[selectedPoiIndex];
+      if (targetPoi) {
+        const dy = targetPoi.lat - wp.lat;
+        const dx = targetPoi.lon - wp.lon;
+        heading = (90 - (Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
+      } else {
+        if (typeof centerMarker !== 'undefined' && centerMarker) {
+          const latlng = centerMarker.getLatLng();
+          const dy = latlng.lat - wp.lat;
+          const dx = latlng.lng - wp.lon;
+          heading = (90 - (Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
+        } else {
+          heading = 0;
+        }
+      }
+    } else if (effectiveMode === 'fixed') {
+      heading = 0;
+    } else {
+      heading = getDefaultHeading(idx, waypoints, rotationDeg);
+    }
   }
   const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value) || -60;
   const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : defaultGimbalPitch;
