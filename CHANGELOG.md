@@ -2,6 +2,11 @@
 
 All notable changes to Aalaapi Sky will be documented in this file.
 
+## [1.13.7] - 2026-07-18
+
+### Added
+- **Settings State Persistence (localStorage):** Configured automatic serialization and saving of all 18 UI control elements (flight limits, overlap percentages, camera setups, grid boundaries, and road snaps) to localStorage. On application load, these settings are restored instantly, preserving custom flight planning parameters.
+
 ## [1.13.6] - 2026-07-18
 
 ### Added

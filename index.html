@@ -2099,7 +2099,7 @@ html, body {
             <div style="font-size: 0.72rem; font-style: italic; color: var(--text-muted); margin-top: 2px; line-height: 1.2;">
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
-            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.13.6</span>
+            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.13.7</span>
           </div>
         </div>
         
@@ -2163,6 +2163,12 @@ html, body {
  
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.13.7):</strong>
+             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+               <li><strong>State Persistence:</strong> Automatically saves all 18 sidebar controls and switch settings to localStorage, auto-restoring them when the app is reloaded.</li>
+             </ul>
+           </div>
+           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.13.6):</strong>
              <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
                <li><strong>Visual Slider Labels:</strong> Added theme-colored inline SVGs (terracotta & cyan) to all 12 range slider labels in the sidebar for better visual context.</li>
@@ -3093,6 +3099,9 @@ document.addEventListener("DOMContentLoaded", () => {
     cachedUnitSystem = savedUnit;
   }
 
+  // Restore all range sliders and configurations from localStorage
+  restoreSettingsFromLocalStorage();
+
   initMap();
   initUIEventListeners();
   initGeolocation(); // Wires up the Locate Me button — does NOT auto-request permission
@@ -3380,15 +3389,54 @@ function initMap() {
   updateOpenSkyLink();
 }
 
+const CONTROLS_LIST = [
+  'grid-type', 'grid-width', 'grid-height', 'grid-rotation',
+  'front-overlap', 'side-overlap', 'gimbal-pitch',
+  'altitude', 'speed', 'heading-mode', 'finish-action', 'capture-mode', 'path-mode',
+  'max-flight-time', 'camera-model', 'drone-model', 'camera-hfov', 'camera-vfov', 'road-offset'
+];
+
+function saveAllSettingsToLocalStorage() {
+  const settings = {};
+  CONTROLS_LIST.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      settings[id] = el.value;
+    }
+  });
+  const roadSnapEl = document.getElementById('road-snap');
+  if (roadSnapEl) {
+    settings['road-snap'] = roadSnapEl.checked;
+  }
+  localStorage.setItem('aalaapi_sky_input_settings', JSON.stringify(settings));
+}
+
+function restoreSettingsFromLocalStorage() {
+  try {
+    const saved = localStorage.getItem('aalaapi_sky_input_settings');
+    if (!saved) return;
+    const settings = JSON.parse(saved);
+    CONTROLS_LIST.forEach(id => {
+      if (settings[id] !== undefined) {
+        const el = document.getElementById(id);
+        if (el) {
+          el.value = settings[id];
+        }
+      }
+    });
+    const roadSnapEl = document.getElementById('road-snap');
+    if (roadSnapEl && settings['road-snap'] !== undefined) {
+      roadSnapEl.checked = settings['road-snap'];
+    }
+  } catch (err) {
+    Logger.error("Failed to restore settings from localStorage:", err);
+  }
+}
+
 // Setup Event Listeners for UI controls
 function initUIEventListeners() {
   // Get all controls
-  const controls = [
-    'grid-width', 'grid-height', 'grid-rotation',
-    'front-overlap', 'side-overlap', 'gimbal-pitch',
-    'altitude', 'speed', 'heading-mode', 'finish-action', 'capture-mode', 'path-mode',
-    'max-flight-time', 'camera-model', 'drone-model', 'camera-hfov', 'camera-vfov', 'road-offset'
-  ];
+  const controls = [...CONTROLS_LIST];
 
   controls.forEach(id => {
     const el = document.getElementById(id);
@@ -3403,8 +3451,17 @@ function initUIEventListeners() {
     el.addEventListener('change', () => {
       syncDisplayValues();
       updateGrid();
+      saveAllSettingsToLocalStorage();
     });
   });
+
+  const roadSnapEl = document.getElementById('road-snap');
+  if (roadSnapEl) {
+    roadSnapEl.addEventListener('change', () => {
+      updateGrid();
+      saveAllSettingsToLocalStorage();
+    });
+  }
 
   // Handle Camera Model preset change
   const cameraModelEl = document.getElementById('camera-model');
