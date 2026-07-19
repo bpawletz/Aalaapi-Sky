@@ -1802,7 +1802,7 @@ html, body {
             <p class="help-text">Missions exceeding this time will be split into multiple waypoint files on export.</p>
           </div>
 
-          <div class="control-group">
+          <div class="control-group" id="heading-mode-container">
             <div class="control-label" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
               <span style="display: inline-flex; align-items: center; gap: 6px;">
                 <svg viewBox="0 0 24 24" width="16" height="16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
@@ -1815,6 +1815,7 @@ html, body {
             <select id="heading-mode" class="form-select">
               <option value="followWayline">Follow Flight Path (Forward-facing)</option>
               <option value="fixed">Fixed Heading (North)</option>
+              <option value="towardPOI">Point of Interest (POI / Target-Facing)</option>
             </select>
 
             <!-- Interactive Collapsible Help Drawer -->
@@ -2148,7 +2149,7 @@ html, body {
             <div style="font-size: 0.72rem; font-style: italic; color: var(--text-muted); margin-top: 2px; line-height: 1.2;">
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
-            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.13.9</span>
+            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.14.0</span>
           </div>
         </div>
         
@@ -2212,6 +2213,12 @@ html, body {
  
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.14.0):</strong>
+             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+               <li><strong>POI Heading Mode & Adaptive UI:</strong> Added POI Target-Facing heading support to WPML exports and dynamically hide Heading Mode controls for circular orbit patterns.</li>
+             </ul>
+           </div>
+           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.13.9):</strong>
              <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
                <li><strong>Heading Mode POI Simulation:</strong> Added a third tab to the Heading Mode help drawer showing a Point of Interest (POI) center target with dynamic tracking camera view cones.</li>
@@ -4099,6 +4106,18 @@ function togglePatternParameters() {
 
   // Force value displays to synchronize with the new slider values
   syncDisplayValues();
+
+  // Conditionally hide Heading Mode for orbits (which have fixed procedural headings)
+  const headingModeContainer = document.getElementById('heading-mode-container');
+  if (headingModeContainer) {
+    if (gridType === 'orbit' || gridType === 'multi-orbit') {
+      headingModeContainer.style.display = 'none';
+      const helpDrawer = document.getElementById('heading-help-drawer');
+      if (helpDrawer) helpDrawer.classList.add('hidden');
+    } else {
+      headingModeContainer.style.display = 'block';
+    }
+  }
 
   const isProcedural = (gridType !== 'freeform' && gridType !== 'road-following');
   if (isProcedural) {
@@ -6566,6 +6585,12 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     let actualHeadingMode = headingMode;
     let actualHeadingAngle = 0;
     let headingAngleEnable = turnMode.includes('Stop') ? 1 : 0;
+    let poiPoint = "0.000000,0.000000,0.000000";
+
+    if (headingMode === 'towardPOI' && typeof centerMarker !== 'undefined' && centerMarker) {
+      const latlng = centerMarker.getLatLng();
+      poiPoint = `${latlng.lng.toFixed(13)},${latlng.lat.toFixed(13)},0.000000`;
+    }
 
     if (wp.heading !== null && wp.heading !== undefined) {
       actualHeadingMode = 'smoothTransition';
@@ -6586,7 +6611,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
         <wpml:waypointHeadingParam>
           <wpml:waypointHeadingMode>${actualHeadingMode}</wpml:waypointHeadingMode>
           <wpml:waypointHeadingAngle>${actualHeadingAngle.toFixed(1)}</wpml:waypointHeadingAngle>
-          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointPoiPoint>${poiPoint}</wpml:waypointPoiPoint>
           <wpml:waypointHeadingAngleEnable>${headingAngleEnable}</wpml:waypointHeadingAngleEnable>
           <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
           <wpml:waypointHeadingPoiIndex>0</wpml:waypointHeadingPoiIndex>
