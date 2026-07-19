@@ -2,6 +2,12 @@
 
 All notable changes to Aalaapi Sky will be documented in this file.
 
+## [1.14.0] - 2026-07-18
+
+### Added
+- **POI Heading Mode:** Added the third choice, **Point of Interest (POI / Target-Facing)**, to the Heading Mode selector. Exports the `<wpml:waypointHeadingMode>towardPOI</wpml:waypointHeadingMode>` configuration and targets the mission center coordinates automatically.
+- **Adaptive Sidebar Options:** Integrated conditional visibility for Heading Mode parameters. The controls are dynamically hidden when Oblique Orbit or Multi-Orbit patterns are chosen to declutter the sidebar layout.
+
 ## [1.13.9] - 2026-07-18
 
 ### Added
