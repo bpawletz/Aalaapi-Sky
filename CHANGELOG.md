@@ -2,6 +2,11 @@
 
 All notable changes to Aalaapi Sky will be documented in this file.
 
+## [1.13.9] - 2026-07-18
+
+### Added
+- **Heading Mode POI Simulation:** Enhanced the interactive Heading Mode help drawer with a third tab, **POI / Target**, representing a Point of Interest (actor) as a terracotta center target. The animated camera view cone dynamically yaws to track and lock onto this subject coordinate as the drone flies past.
+
 ## [1.13.8] - 2026-07-18
 
 ### Added

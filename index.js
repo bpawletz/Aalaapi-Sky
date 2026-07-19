@@ -7054,13 +7054,15 @@ function initHeadingHelpDrawer() {
   const helpDrawer = document.getElementById('heading-help-drawer');
   const tabFollow = document.getElementById('heading-tab-follow');
   const tabFixed = document.getElementById('heading-tab-fixed');
+  const tabPoi = document.getElementById('heading-tab-poi');
   const helpDesc = document.getElementById('heading-help-desc');
   const animDrone = document.getElementById('anim-drone');
+  const animPoiTarget = document.getElementById('anim-poi-target');
   const activePath = document.getElementById('anim-flight-path-active');
 
-  if (!helpBtn || !helpDrawer || !tabFollow || !tabFixed || !helpDesc || !animDrone) return;
+  if (!helpBtn || !helpDrawer || !tabFollow || !tabFixed || !tabPoi || !helpDesc || !animDrone || !animPoiTarget) return;
 
-  let activeMode = 'followWayline'; // or 'fixed'
+  let activeMode = 'followWayline'; // 'followWayline', 'fixed', or 'poi'
   let animationFrameId = null;
   let isDrawerOpen = false;
 
@@ -7085,11 +7087,14 @@ function initHeadingHelpDrawer() {
     tabFollow.style.borderColor = 'rgba(6, 182, 212, 0.3)';
     tabFollow.style.color = 'var(--accent-cyan)';
 
-    tabFixed.classList.remove('active');
-    tabFixed.style.background = 'none';
-    tabFixed.style.borderColor = 'transparent';
-    tabFixed.style.color = 'var(--text-muted)';
+    [tabFixed, tabPoi].forEach(t => {
+      t.classList.remove('active');
+      t.style.background = 'none';
+      t.style.borderColor = 'transparent';
+      t.style.color = 'var(--text-muted)';
+    });
 
+    animPoiTarget.style.opacity = '0';
     helpDesc.textContent = "Drone rotates forward along the path. Camera always points ahead.";
   });
 
@@ -7101,24 +7106,47 @@ function initHeadingHelpDrawer() {
     tabFixed.style.borderColor = 'rgba(6, 182, 212, 0.3)';
     tabFixed.style.color = 'var(--accent-cyan)';
 
-    tabFollow.classList.remove('active');
-    tabFollow.style.background = 'none';
-    tabFollow.style.borderColor = 'transparent';
-    tabFollow.style.color = 'var(--text-muted)';
+    [tabFollow, tabPoi].forEach(t => {
+      t.classList.remove('active');
+      t.style.background = 'none';
+      t.style.borderColor = 'transparent';
+      t.style.color = 'var(--text-muted)';
+    });
 
+    animPoiTarget.style.opacity = '0';
     helpDesc.textContent = "Drone keeps a constant heading (North). The aircraft flies sideways or backwards as needed.";
+  });
+
+  // Switch to POI Tab
+  tabPoi.addEventListener('click', () => {
+    activeMode = 'poi';
+    tabPoi.classList.add('active');
+    tabPoi.style.background = 'rgba(6, 182, 212, 0.15)';
+    tabPoi.style.borderColor = 'rgba(6, 182, 212, 0.3)';
+    tabPoi.style.color = 'var(--accent-cyan)';
+
+    [tabFollow, tabFixed].forEach(t => {
+      t.classList.remove('active');
+      t.style.background = 'none';
+      t.style.borderColor = 'transparent';
+      t.style.color = 'var(--text-muted)';
+    });
+
+    animPoiTarget.style.opacity = '1';
+    helpDesc.textContent = "Camera locks onto a Point of Interest (POI). The drone continuously yaws to face the target subject.";
   });
 
   // Animation logic
   let startTime = null;
   const duration = 4000; // 4 seconds loop
 
-  // Path coordinates: segment 1 is (30,55) to (100,25), segment 2 is (100,25) to (170,65)
-  const p0 = { x: 30, y: 55 };
+  // Path coordinates: segment 1 is (30,65) to (100,25), segment 2 is (100,25) to (170,65)
+  const p0 = { x: 30, y: 65 };
   const p1 = { x: 100, y: 25 };
   const p2 = { x: 170, y: 65 };
+  const poi = { x: 100, y: 48 };
 
-  // Angle of segments in degrees
+  // Angle of segments in degrees (+90 offset to align the North-oriented pointer polygon)
   const angle1 = Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI + 90;
   const angle2 = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI + 90;
 
@@ -7133,14 +7161,26 @@ function initHeadingHelpDrawer() {
       let tSeg = progress / 0.5;
       x = p0.x + (p1.x - p0.x) * tSeg;
       y = p0.y + (p1.y - p0.y) * tSeg;
-      angle = activeMode === 'followWayline' ? angle1 : 0;
+      if (activeMode === 'followWayline') {
+        angle = angle1;
+      } else if (activeMode === 'fixed') {
+        angle = 0;
+      } else { // POI mode
+        angle = Math.atan2(poi.y - y, poi.x - x) * 180 / Math.PI + 90;
+      }
     } 
     // Segment 2 (50% to 100% of loop time)
     else {
       let tSeg = (progress - 0.5) / 0.5;
       x = p1.x + (p2.x - p1.x) * tSeg;
       y = p1.y + (p2.y - p1.y) * tSeg;
-      angle = activeMode === 'followWayline' ? angle2 : 0;
+      if (activeMode === 'followWayline') {
+        angle = angle2;
+      } else if (activeMode === 'fixed') {
+        angle = 0;
+      } else { // POI mode
+        angle = Math.atan2(poi.y - y, poi.x - x) * 180 / Math.PI + 90;
+      }
     }
 
     animDrone.setAttribute('transform', `translate(${x}, ${y}) rotate(${angle})`);
