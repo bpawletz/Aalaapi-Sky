@@ -1340,13 +1340,13 @@ describe('buildWaylinesWpml towardPOI Tests', () => {
     try {
       vm.runInThisContext(`
         centerMarker = {
-          getLatLng: () => ({ lat: 40.0123, lng: -83.0456 })
+          getLatLng: () => ({ lat: 41.8827, lng: -87.6227 })
         };
       `);
       
       const wps = [
-        { lat: 40.0123, lon: -83.0456, x: 0, y: 0, alt: 50 },
-        { lat: 40.0223, lon: -83.0456, x: 0, y: 100, alt: 50 }
+        { lat: 41.8827, lon: -87.6227, x: 0, y: 0, alt: 50 },
+        { lat: 41.8927, lon: -87.6227, x: 0, y: 100, alt: 50 }
       ];
 
       const xml = vm.runInThisContext(`
@@ -1354,7 +1354,7 @@ describe('buildWaylinesWpml towardPOI Tests', () => {
       `);
 
       assert.strictEqual(xml.includes('<wpml:waypointHeadingMode>towardPOI</wpml:waypointHeadingMode>'), true);
-      assert.strictEqual(xml.includes('<wpml:waypointPoiPoint>40.0123000000000,-83.0456000000000,0.000000</wpml:waypointPoiPoint>'), true);
+      assert.strictEqual(xml.includes('<wpml:waypointPoiPoint>41.8827000000000,-87.6227000000000,0.000000</wpml:waypointPoiPoint>'), true);
     } finally {
       vm.runInThisContext('centerMarker = null;');
     }
@@ -1403,14 +1403,14 @@ describe('buildWaylinesWpml Waypoint Overrides Tests', () => {
     try {
       vm.runInThisContext(`
         centerMarker = {
-          getLatLng: () => ({ lat: 40.0123, lng: -83.0456 })
+          getLatLng: () => ({ lat: 41.8827, lng: -87.6227 })
         };
       `);
 
       const wps = [
-        { lat: 40.0123, lon: -83.0456, alt: 50, headingMode: 'fixed' },
-        { lat: 40.0123, lon: -83.0456, alt: 50, headingMode: 'towardPOI' },
-        { lat: 40.0123, lon: -83.0456, alt: 50, headingMode: 'custom', heading: 180 }
+        { lat: 41.8827, lon: -87.6227, alt: 50, headingMode: 'fixed' },
+        { lat: 41.8827, lon: -87.6227, alt: 50, headingMode: 'towardPOI' },
+        { lat: 41.8827, lon: -87.6227, alt: 50, headingMode: 'custom', heading: 180 }
       ];
 
       const xml = vm.runInThisContext(`
@@ -1451,7 +1451,7 @@ describe('updateFPVEditorUI headingMode Tests', () => {
       
       // Test inherit mode
       vm.runInThisContext(`
-        generatedWaypoints = [{ lat: 40.0, lon: -83.0, alt: 50, headingMode: 'inherit' }];
+        generatedWaypoints = [{ lat: 41.88, lon: -87.62, alt: 50, headingMode: 'inherit' }];
         updateFPVEditorUI();
       `);
       assert.strictEqual(mockSelect.value, 'inherit');
@@ -1459,7 +1459,7 @@ describe('updateFPVEditorUI headingMode Tests', () => {
 
       // Test custom mode
       vm.runInThisContext(`
-        generatedWaypoints = [{ lat: 40.0, lon: -83.0, alt: 50, headingMode: 'custom', heading: 245 }];
+        generatedWaypoints = [{ lat: 41.88, lon: -87.62, alt: 50, headingMode: 'custom', heading: 245 }];
         updateFPVEditorUI();
       `);
       assert.strictEqual(mockSelect.value, 'custom');
@@ -1521,8 +1521,8 @@ describe('createWaypointEditorDOM headingMode Tests', () => {
     };
 
     try {
-      vm.runInThisContext('centerMarker = { getLatLng: () => ({ lat: 40.0, lng: -83.0 }) };');
-      global.testWp = { lat: 40.0, lon: -83.0, alt: 50, pitch: -45, heading: null, headingMode: 'inherit' };
+      vm.runInThisContext('centerMarker = { getLatLng: () => ({ lat: 41.88, lng: -87.62 }) };');
+      global.testWp = { lat: 41.88, lon: -87.62, alt: 50, pitch: -45, heading: null, headingMode: 'inherit' };
       global.testMarker = {
         setLatLng: () => {}, getTooltip: () => ({ setContent: () => {} }),
         setIcon: () => {}, on: () => {}, off: () => {}, closePopup: () => {}
@@ -1569,8 +1569,8 @@ describe('createWaypointEditorDOM headingMode Tests', () => {
     };
 
     try {
-      vm.runInThisContext('centerMarker = { getLatLng: () => ({ lat: 40.0, lng: -83.0 }) };');
-      global.testWp2 = { lat: 40.0, lon: -83.0, alt: 50, pitch: -45, heading: 135, headingMode: 'custom' };
+      vm.runInThisContext('centerMarker = { getLatLng: () => ({ lat: 41.88, lng: -87.62 }) };');
+      global.testWp2 = { lat: 41.88, lon: -87.62, alt: 50, pitch: -45, heading: 135, headingMode: 'custom' };
       global.testMarker2 = {
         setLatLng: () => {}, getTooltip: () => ({ setContent: () => {} }),
         setIcon: () => {}, on: () => {}, off: () => {}, closePopup: () => {}
@@ -1607,10 +1607,10 @@ describe('recalculateRoadOffsetPath Custom Heading & FPV Sync Tests', () => {
     try {
       vm.runInThisContext(`
         roadWaypoints = [
-          { lat: 40.0, lon: -83.0, x: 0, y: 0, alt: 50, headingMode: 'custom', heading: 120 },
-          { lat: 40.01, lon: -83.0, x: 0, y: 100, alt: 60, headingMode: 'fixed' }
+          { lat: 41.88, lon: -87.62, x: 0, y: 0, alt: 50, headingMode: 'custom', heading: 120 },
+          { lat: 41.89, lon: -87.62, x: 0, y: 100, alt: 60, headingMode: 'fixed' }
         ];
-        recalculateRoadOffsetPath(40.0, -83.0);
+        recalculateRoadOffsetPath(41.88, -87.62);
       `);
 
       const genWps = vm.runInThisContext('generatedWaypoints');
@@ -1638,31 +1638,31 @@ describe('buildWaylinesWpml Multi-POI Export Tests', () => {
     try {
       vm.runInThisContext(`
         centerMarker = {
-          getLatLng: () => ({ lat: 40.0, lng: -83.0 })
+          getLatLng: () => ({ lat: 41.88, lng: -87.62 })
         };
         pois = [
-          { name: 'POI 0 (Center)', lat: 40.0, lon: -83.0 },
-          { name: 'POI 1', lat: 40.05, lon: -83.05 },
-          { name: 'POI 2', lat: 40.10, lon: -83.10 }
+          { name: 'POI 0 (Center)', lat: 41.88, lon: -87.62 },
+          { name: 'POI 1', lat: 41.93, lon: -87.67 },
+          { name: 'POI 2', lat: 41.98, lon: -87.72 }
         ];
       `);
 
       const wps = [
-        { lat: 40.0, lon: -83.0, x: 0, y: 0, alt: 50, headingMode: 'towardPOI', poiIndex: 1 },
-        { lat: 40.01, lon: -83.0, x: 0, y: 100, alt: 50, headingMode: 'towardPOI', poiIndex: 2 }
+        { lat: 41.88, lon: -87.62, x: 0, y: 0, alt: 50, headingMode: 'towardPOI', poiIndex: 1 },
+        { lat: 41.89, lon: -87.62, x: 0, y: 100, alt: 50, headingMode: 'towardPOI', poiIndex: 2 }
       ];
 
       const xml = vm.runInThisContext(`
         buildWaylinesWpml(${JSON.stringify(wps)}, 50, 4, 'followWayline', 'goHome', -90, 'hover', 'normal')
       `);
 
-      // Waypoint 0 should point to POI 1 (-83.05, 40.05)
+      // Waypoint 0 should point to POI 1 (-87.67, 41.93)
       assert.ok(xml.includes('<wpml:waypointHeadingPoiIndex>1</wpml:waypointHeadingPoiIndex>'));
-      assert.ok(xml.includes('<wpml:waypointPoiPoint>40.0500000000000,-83.0500000000000,0.000000</wpml:waypointPoiPoint>'));
+      assert.ok(xml.includes('<wpml:waypointPoiPoint>41.9300000000000,-87.6700000000000,0.000000</wpml:waypointPoiPoint>'));
 
-      // Waypoint 1 should point to POI 2 (-83.10, 40.10)
+      // Waypoint 1 should point to POI 2 (-87.72, 41.98)
       assert.ok(xml.includes('<wpml:waypointHeadingPoiIndex>2</wpml:waypointHeadingPoiIndex>'));
-      assert.ok(xml.includes('<wpml:waypointPoiPoint>40.1000000000000,-83.1000000000000,0.000000</wpml:waypointPoiPoint>'));
+      assert.ok(xml.includes('<wpml:waypointPoiPoint>41.9800000000000,-87.7200000000000,0.000000</wpml:waypointPoiPoint>'));
 
     } finally {
       vm.runInThisContext('centerMarker = null; pois = [];');
@@ -1675,20 +1675,20 @@ describe('getWaypointHeadingAndPitch 3D Yaw Alignment Tests', () => {
     try {
       vm.runInThisContext(`
         pois = [
-          { name: 'POI 0 (Center)', lat: 40.0, lon: -83.0 },
-          { name: 'POI 1', lat: 40.0, lon: -83.001 }
+          { name: 'POI 0 (Center)', lat: 41.88, lon: -87.62 },
+          { name: 'POI 1', lat: 41.88, lon: -87.621 }
         ];
       `);
 
       const wps = [
-        { lat: 40.0, lon: -83.0, x: 0, y: 0, alt: 50, headingMode: 'towardPOI', poiIndex: 1 },
-        { lat: 40.0, lon: -83.0, x: 0, y: 0, alt: 50, headingMode: 'fixed' }
+        { lat: 41.88, lon: -87.62, x: 0, y: 0, alt: 50, headingMode: 'towardPOI', poiIndex: 1 },
+        { lat: 41.88, lon: -87.62, x: 0, y: 0, alt: 50, headingMode: 'fixed' }
       ];
 
       const res0 = vm.runInThisContext(`getWaypointHeadingAndPitch(0, ${JSON.stringify(wps)})`);
       const res1 = vm.runInThisContext(`getWaypointHeadingAndPitch(1, ${JSON.stringify(wps)})`);
 
-      // Pointing West (lon -83.001 vs -83.0) should be 270 degrees
+      // Pointing West (lon -87.621 vs -87.62) should be 270 degrees
       assert.ok(Math.abs(res0.heading - 270) < 1.0);
       assert.strictEqual(res1.heading, 0);
 
