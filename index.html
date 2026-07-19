@@ -2150,7 +2150,7 @@ html, body {
             <div style="font-size: 0.72rem; font-style: italic; color: var(--text-muted); margin-top: 2px; line-height: 1.2;">
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
-            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.15.0</span>
+            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.15.1</span>
           </div>
         </div>
         
@@ -2214,7 +2214,14 @@ html, body {
  
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
-            <strong style="color: var(--text-main);">Changelog (v1.15.0):</strong>
+            <strong style="color: var(--text-main);">Changelog (v1.15.1):</strong>
+             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+               <li><strong>Road-Following Editor Fix:</strong> Clicking a road node now opens the popup without crashing. Fixed null tooltip guards, null heading guards, and incorrect tooltip restoration on cancel.</li>
+               <li><strong>Popup Cancel Revert:</strong> Closing the editor without saving now correctly restores <code>headingMode</code>.</li>
+             </ul>
+           </div>
+           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+             <strong style="color: var(--text-main);">Changelog (v1.15.0):</strong>
              <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
                <li><strong>Per-Waypoint Heading Mode (Map Popup):</strong> Replaced Auto checkbox with a full Heading Mode dropdown (5 options) in the map waypoint editor popup. Custom Angle slider shows/hides dynamically.</li>
                <li><strong>Consistent Editing UI:</strong> Map popup and FPV panel now show identical heading controls. Popup width increased to 230px.</li>
@@ -7477,11 +7484,12 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       // Update tooltip for standard waypoints
       const isStart = idx === 0;
       const isEnd = idx === getCurrentWaypoints().length - 1;
-      const newTitle = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(tempAlt, 0)}<br>Yaw: ${tempHeading.toFixed(0)}°<br>Pitch: ${tempPitch}°`;
-      marker.getTooltip().setContent(newTitle);
+      const yawDisplay = (tempHeading !== null && !isNaN(tempHeading)) ? tempHeading.toFixed(0) : '—';
+      const newTitle = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(tempAlt, 0)}<br>Yaw: ${yawDisplay}°<br>Pitch: ${tempPitch}°`;
+      if (marker.getTooltip()) marker.getTooltip().setContent(newTitle);
     } else {
       // Keep simple tooltip for road nodes
-      marker.getTooltip().setContent(`Road Node ${idx}`);
+      if (marker.getTooltip()) marker.getTooltip().setContent(`Road Node ${idx}`);
     }
 
     // Dynamic visibility update for Reset button
@@ -7591,6 +7599,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     wp.alt = originalAlt;
     wp.pitch = originalPitch;
     wp.heading = originalHeading;
+    wp.headingMode = originalHeadingMode;
     wp.isRingStart = originalIsRingStart;
     wp.isModified = originalIsModified;
     wp.origIsRingStart = originalOrigIsRingStart;
@@ -7612,17 +7621,22 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     }
 
     const rotationDeg = parseFloat(document.getElementById('grid-rotation').value);
-    const isStart = idx === 0;
-    const isEnd = idx === getCurrentWaypoints().length - 1;
-    let heading = 0;
-    if (wp.heading !== null && wp.heading !== undefined) {
-      heading = wp.heading;
+    const gridType2 = document.getElementById('grid-type')?.value;
+    if (gridType2 === 'road-following') {
+      if (marker.getTooltip()) marker.getTooltip().setContent(`Road Node ${idx}`);
     } else {
-      heading = getDefaultHeading(idx, getCurrentWaypoints(), rotationDeg);
+      const isStart = idx === 0;
+      const isEnd = idx === getCurrentWaypoints().length - 1;
+      let heading = 0;
+      if (wp.heading !== null && wp.heading !== undefined) {
+        heading = wp.heading;
+      } else {
+        heading = getDefaultHeading(idx, getCurrentWaypoints(), rotationDeg);
+      }
+      const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : parseFloat(document.getElementById('gimbal-pitch').value);
+      const originalTitle = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${heading.toFixed(0)}°<br>Pitch: ${pitch}°`;
+      if (marker.getTooltip()) marker.getTooltip().setContent(originalTitle);
     }
-    const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : parseFloat(document.getElementById('gimbal-pitch').value);
-    const originalTitle = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${heading.toFixed(0)}°<br>Pitch: ${pitch}°`;
-    marker.getTooltip().setContent(originalTitle);
 
     // Redraw lines and stats
     const centerLatLng = centerMarker.getLatLng();

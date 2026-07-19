@@ -4581,11 +4581,12 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       // Update tooltip for standard waypoints
       const isStart = idx === 0;
       const isEnd = idx === getCurrentWaypoints().length - 1;
-      const newTitle = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(tempAlt, 0)}<br>Yaw: ${tempHeading.toFixed(0)}°<br>Pitch: ${tempPitch}°`;
-      marker.getTooltip().setContent(newTitle);
+      const yawDisplay = (tempHeading !== null && !isNaN(tempHeading)) ? tempHeading.toFixed(0) : '—';
+      const newTitle = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(tempAlt, 0)}<br>Yaw: ${yawDisplay}°<br>Pitch: ${tempPitch}°`;
+      if (marker.getTooltip()) marker.getTooltip().setContent(newTitle);
     } else {
       // Keep simple tooltip for road nodes
-      marker.getTooltip().setContent(`Road Node ${idx}`);
+      if (marker.getTooltip()) marker.getTooltip().setContent(`Road Node ${idx}`);
     }
 
     // Dynamic visibility update for Reset button
@@ -4695,6 +4696,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     wp.alt = originalAlt;
     wp.pitch = originalPitch;
     wp.heading = originalHeading;
+    wp.headingMode = originalHeadingMode;
     wp.isRingStart = originalIsRingStart;
     wp.isModified = originalIsModified;
     wp.origIsRingStart = originalOrigIsRingStart;
@@ -4716,17 +4718,22 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     }
 
     const rotationDeg = parseFloat(document.getElementById('grid-rotation').value);
-    const isStart = idx === 0;
-    const isEnd = idx === getCurrentWaypoints().length - 1;
-    let heading = 0;
-    if (wp.heading !== null && wp.heading !== undefined) {
-      heading = wp.heading;
+    const gridType2 = document.getElementById('grid-type')?.value;
+    if (gridType2 === 'road-following') {
+      if (marker.getTooltip()) marker.getTooltip().setContent(`Road Node ${idx}`);
     } else {
-      heading = getDefaultHeading(idx, getCurrentWaypoints(), rotationDeg);
+      const isStart = idx === 0;
+      const isEnd = idx === getCurrentWaypoints().length - 1;
+      let heading = 0;
+      if (wp.heading !== null && wp.heading !== undefined) {
+        heading = wp.heading;
+      } else {
+        heading = getDefaultHeading(idx, getCurrentWaypoints(), rotationDeg);
+      }
+      const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : parseFloat(document.getElementById('gimbal-pitch').value);
+      const originalTitle = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${heading.toFixed(0)}°<br>Pitch: ${pitch}°`;
+      if (marker.getTooltip()) marker.getTooltip().setContent(originalTitle);
     }
-    const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : parseFloat(document.getElementById('gimbal-pitch').value);
-    const originalTitle = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${heading.toFixed(0)}°<br>Pitch: ${pitch}°`;
-    marker.getTooltip().setContent(originalTitle);
 
     // Redraw lines and stats
     const centerLatLng = centerMarker.getLatLng();
