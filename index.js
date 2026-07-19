@@ -8,6 +8,7 @@ const Logger = {
 // Global state variables
 let map;
 let centerMarker = null;
+let pois = []; // Array of POI objects: { lat, lon, marker, name }
 let flightPathPolyline = null;
 let gridBoundsPolygon = null;
 let waypointMarkersGroup = null;
@@ -727,6 +728,19 @@ function initUIEventListeners() {
     }
   });
 
+  // Add POI button
+  const addPoiBtn = document.getElementById('add-poi-btn');
+  if (addPoiBtn) {
+    addPoiBtn.addEventListener('click', () => {
+      if (typeof map !== 'undefined' && map) {
+        const center = map.getCenter();
+        const offsetLat = center.lat + (Math.random() - 0.5) * 0.0005;
+        const offsetLng = center.lng + (Math.random() - 0.5) * 0.0005;
+        addPoi(offsetLat, offsetLng);
+      }
+    });
+  }
+
   // Guide Modal controls
   const showGuideBtn = document.getElementById('show-guide-btn');
   const closeGuideBtn = document.getElementById('close-guide-btn');
@@ -1381,6 +1395,10 @@ function searchAddress() {
 function setGridCenter(lat, lng) {
   if (centerMarker) {
     centerMarker.setLatLng([lat, lng]);
+    if (pois[0]) {
+      pois[0].lat = lat;
+      pois[0].lon = lng;
+    }
   } else {
     // Custom iconic marker for mission center
     const centerIcon = L.divIcon({
@@ -1393,8 +1411,21 @@ function setGridCenter(lat, lng) {
     centerMarker = L.marker([lat, lng], { draggable: true, icon: centerIcon }).addTo(map);
     centerMarker.bindPopup("<b>Flight Mission Center</b><br>Drag to reposition grid.").openPopup();
     
+    // Set pois[0]
+    pois[0] = {
+      lat: lat,
+      lon: lng,
+      marker: centerMarker,
+      name: "POI 0 (Center)"
+    };
+
     // Recalculate grid when center is dragged
     centerMarker.on('drag', () => {
+      if (pois[0]) {
+        const latlng = centerMarker.getLatLng();
+        pois[0].lat = latlng.lat;
+        pois[0].lon = latlng.lng;
+      }
       updateGrid();
     });
     centerMarker.on('dragend', () => {
@@ -1402,9 +1433,169 @@ function setGridCenter(lat, lng) {
     });
   }
 
+  updatePoiListUI();
   updateGrid();
   updateOpenSkyLink();
 }
+
+function addPoi(lat, lon) {
+  if (!map) return;
+  const idx = pois.length;
+  // Terracotta target style
+  const poiIcon = L.divIcon({
+    className: `custom-poi-marker-${idx}`,
+    html: `<div style="background-color: #f43f5e; width: 16px; height: 16px; border-radius: 50%; border: 3px solid #f8fafc; box-shadow: 0 0 10px rgba(244,63,94,0.8); display: flex; align-items: center; justify-content: center; color: white; font-size: 8px; font-weight: bold;">${idx}</div>`,
+    iconSize: [16, 16],
+    iconAnchor: [8, 8]
+  });
+
+  const marker = L.marker([lat, lon], { draggable: true, icon: poiIcon }).addTo(map);
+  marker.bindPopup(`<b>POI ${idx}</b><br>Drag to reposition target.`).openPopup();
+
+  const poiObj = {
+    lat: lat,
+    lon: lon,
+    marker: marker,
+    name: `POI ${idx}`
+  };
+  pois.push(poiObj);
+
+  marker.on('drag', () => {
+    const latlng = marker.getLatLng();
+    poiObj.lat = latlng.lat;
+    poiObj.lon = latlng.lng;
+    updateGrid();
+  });
+
+  marker.on('dragend', () => {
+    marker.openPopup();
+  });
+
+  updatePoiListUI();
+  updateGrid();
+}
+
+function deletePoi(idx) {
+  if (idx === 0) return; // Cannot delete POI 0 (Center)
+  const poi = pois[idx];
+  if (poi) {
+    if (poi.marker) {
+      map.removeLayer(poi.marker);
+    }
+    // Remove it from the list
+    pois.splice(idx, 1);
+    
+    // Re-index remaining POIs after index
+    for (let i = idx; i < pois.length; i++) {
+      pois[i].name = `POI ${i}`;
+      // Update marker text and class
+      const newHtml = `<div style="background-color: #f43f5e; width: 16px; height: 16px; border-radius: 50%; border: 3px solid #f8fafc; box-shadow: 0 0 10px rgba(244,63,94,0.8); display: flex; align-items: center; justify-content: center; color: white; font-size: 8px; font-weight: bold;">${i}</div>`;
+      pois[i].marker.setIcon(L.divIcon({
+        className: `custom-poi-marker-${i}`,
+        html: newHtml,
+        iconSize: [16, 16],
+        iconAnchor: [8, 8]
+      }));
+      pois[i].marker.getPopup().setContent(`<b>POI ${i}</b><br>Drag to reposition target.`);
+    }
+
+    // Reset any waypoint pointing to this POI or higher
+    const wps = getCurrentWaypoints();
+    if (wps) {
+      wps.forEach(wp => {
+        if (wp.poiIndex === idx) {
+          wp.poiIndex = 0;
+        } else if (wp.poiIndex > idx) {
+          wp.poiIndex--;
+        }
+      });
+    }
+
+    // Do the same for roadWaypoints
+    if (roadWaypoints) {
+      roadWaypoints.forEach(wp => {
+        if (wp.poiIndex === idx) {
+          wp.poiIndex = 0;
+        } else if (wp.poiIndex > idx) {
+          wp.poiIndex--;
+        }
+      });
+    }
+
+    updatePoiListUI();
+    updateGrid();
+  }
+}
+
+function updatePoiListUI() {
+  const container = document.getElementById('poi-items-list');
+  if (!container) return;
+  container.innerHTML = '';
+
+  pois.forEach((poi, idx) => {
+    const item = document.createElement('div');
+    item.className = 'poi-item';
+    item.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; font-size: 0.75rem; color: var(--text-main);';
+
+    const infoDiv = document.createElement('div');
+    infoDiv.style.cssText = 'display: flex; align-items: center; gap: 6px;';
+    
+    const dot = document.createElement('span');
+    dot.style.cssText = `display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${idx === 0 ? '#06b6d4' : '#f43f5e'};`;
+    infoDiv.appendChild(dot);
+
+    const titleSpan = document.createElement('span');
+    titleSpan.style.cssText = 'font-weight: 600;';
+    titleSpan.textContent = poi.name;
+    infoDiv.appendChild(titleSpan);
+
+    item.appendChild(infoDiv);
+
+    const actionDiv = document.createElement('div');
+    actionDiv.style.cssText = 'display: flex; align-items: center; gap: 8px;';
+
+    const coordSpan = document.createElement('span');
+    coordSpan.style.cssText = 'color: var(--text-muted); font-size: 0.65rem;';
+    coordSpan.textContent = `${poi.lat.toFixed(5)}, ${poi.lon.toFixed(5)}`;
+    actionDiv.appendChild(coordSpan);
+
+    if (idx > 0) {
+      const deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.innerHTML = '&times;';
+      deleteBtn.style.cssText = 'background: none; border: none; color: #ef4444; cursor: pointer; padding: 0 4px; font-size: 1rem; line-height: 1; transition: opacity 0.2s;';
+      deleteBtn.addEventListener('mouseover', () => { deleteBtn.style.opacity = '0.7'; });
+      deleteBtn.addEventListener('mouseout', () => { deleteBtn.style.opacity = '1.0'; });
+      deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deletePoi(idx);
+      });
+      actionDiv.appendChild(deleteBtn);
+    }
+
+    item.appendChild(actionDiv);
+    container.appendChild(item);
+  });
+}
+
+function clearAllPois() {
+  pois.forEach((poi, idx) => {
+    if (idx > 0 && poi.marker) {
+      map.removeLayer(poi.marker);
+    }
+  });
+  pois = [];
+  if (centerMarker) {
+    pois[0] = {
+      lat: centerMarker.getLatLng().lat,
+      lon: centerMarker.getLatLng().lng,
+      marker: centerMarker,
+      name: "POI 0 (Center)"
+    };
+  }
+  updatePoiListUI();
+}
+
 
 function recalculateRoadOffsetPath(centerLat, centerLon) {
   if (!roadWaypoints || roadWaypoints.length === 0) {
@@ -1516,10 +1707,11 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
     } else if (effectiveMode === 'fixed') {
       headingVal = 0;
     } else if (effectiveMode === 'towardPOI') {
-      if (typeof centerMarker !== 'undefined' && centerMarker) {
-        const latlng = centerMarker.getLatLng();
-        const dy = latlng.lat - geo.lat;
-        const dx = latlng.lng - geo.lon;
+      const selectedPoiIndex = wp.poiIndex || 0;
+      const targetPoi = pois[selectedPoiIndex];
+      if (targetPoi) {
+        const dy = targetPoi.lat - geo.lat;
+        const dx = targetPoi.lon - geo.lon;
         headingVal = (90 - (Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
       } else {
         headingVal = standardRoadFacing;
@@ -1540,6 +1732,8 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
       pitch: pitchVal,
       heading: headingVal,
       headingMode: mode,
+      poiIndex: wp.poiIndex || 0,
+      origPoiIndex: wp.origPoiIndex || 0,
       isRingStart: wp.isRingStart || false,
       ringIndex: wp.ringIndex !== undefined ? wp.ringIndex : null,
       idx: idx
@@ -2155,7 +2349,28 @@ function getMarkerIcon(wp, idx, waypoints, rotationDeg, tempHeading, tempPitch, 
   } else if (wp.heading !== null && wp.heading !== undefined) {
     heading = wp.heading;
   } else {
-    heading = getDefaultHeading(idx, waypoints, rotationDeg);
+    const mode = wp.headingMode || 'inherit';
+    let effectiveMode = mode;
+    if (mode === 'inherit') {
+      const globalMode = document.getElementById('heading-mode')?.value;
+      effectiveMode = globalMode || 'followWayline';
+    }
+
+    if (effectiveMode === 'towardPOI') {
+      const selectedPoiIndex = wp.poiIndex || 0;
+      const targetPoi = pois[selectedPoiIndex];
+      if (targetPoi) {
+        const dy = targetPoi.lat - wp.lat;
+        const dx = targetPoi.lon - wp.lon;
+        heading = (90 - (Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
+      } else {
+        heading = 0;
+      }
+    } else if (effectiveMode === 'fixed') {
+      heading = 0;
+    } else {
+      heading = getDefaultHeading(idx, waypoints, rotationDeg);
+    }
   }
 
   // Pitch calculation
@@ -3741,21 +3956,34 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     let poiPoint = "0.000000,0.000000,0.000000";
 
     const wpMode = wp.headingMode || 'inherit';
+    let targetPoiIndex = wp.poiIndex || 0;
     if (wpMode !== 'inherit') {
       if (wpMode === 'custom') {
         actualHeadingMode = 'smoothTransition';
         actualHeadingAngle = wp.heading !== null && wp.heading !== undefined ? wp.heading : 0;
       } else {
         actualHeadingMode = wpMode;
-        if (wpMode === 'towardPOI' && typeof centerMarker !== 'undefined' && centerMarker) {
-          const latlng = centerMarker.getLatLng();
-          poiPoint = `${latlng.lng.toFixed(13)},${latlng.lat.toFixed(13)},0.000000`;
+        if (wpMode === 'towardPOI') {
+          let targetPoi = pois[targetPoiIndex] || pois[0];
+          if (!targetPoi && targetPoiIndex === 0 && typeof centerMarker !== 'undefined' && centerMarker) {
+            const latlng = centerMarker.getLatLng();
+            targetPoi = { lat: latlng.lat, lon: latlng.lng };
+          }
+          if (targetPoi) {
+            poiPoint = `${targetPoi.lon.toFixed(13)},${targetPoi.lat.toFixed(13)},0.000000`;
+          }
         }
       }
     } else {
-      if (headingMode === 'towardPOI' && typeof centerMarker !== 'undefined' && centerMarker) {
-        const latlng = centerMarker.getLatLng();
-        poiPoint = `${latlng.lng.toFixed(13)},${latlng.lat.toFixed(13)},0.000000`;
+      if (headingMode === 'towardPOI') {
+        let targetPoi = pois[targetPoiIndex] || pois[0];
+        if (!targetPoi && targetPoiIndex === 0 && typeof centerMarker !== 'undefined' && centerMarker) {
+          const latlng = centerMarker.getLatLng();
+          targetPoi = { lat: latlng.lat, lon: latlng.lng };
+        }
+        if (targetPoi) {
+          poiPoint = `${targetPoi.lon.toFixed(13)},${targetPoi.lat.toFixed(13)},0.000000`;
+        }
       }
 
       if (wp.heading !== null && wp.heading !== undefined) {
@@ -3781,7 +4009,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
           <wpml:waypointPoiPoint>${poiPoint}</wpml:waypointPoiPoint>
           <wpml:waypointHeadingAngleEnable>${headingAngleEnable}</wpml:waypointHeadingAngleEnable>
           <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
-          <wpml:waypointHeadingPoiIndex>0</wpml:waypointHeadingPoiIndex>
+          <wpml:waypointHeadingPoiIndex>${targetPoiIndex}</wpml:waypointHeadingPoiIndex>
         </wpml:waypointHeadingParam>
         <wpml:waypointTurnParam>
           <wpml:waypointTurnMode>${turnMode}</wpml:waypointTurnMode>
@@ -4310,6 +4538,7 @@ function clearMap() {
       map.removeLayer(centerMarker);
       centerMarker = null;
     }
+    clearAllPois();
     importedWaypoints = null;
     importedPhotos = null;
     importedFileName = null;
@@ -4382,6 +4611,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
   const originalPitch = wp.pitch;
   const originalHeading = wp.heading;
   const originalHeadingMode = wp.headingMode || 'inherit';
+  const originalPoiIndex = wp.poiIndex || 0;
   const originalIsRingStart = wp.isRingStart;
   const originalIsModified = wp.isModified;
   const originalOrigIsRingStart = wp.origIsRingStart;
@@ -4412,12 +4642,19 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     (wp.origAlt !== undefined && wp.origAlt !== null && Math.abs(wp.alt - wp.origAlt) > 1e-3) ||
     (wp.origPitch !== undefined && wp.origPitch !== null && wp.pitch !== wp.origPitch) ||
     (wp.origHeadingMode !== undefined && wp.origHeadingMode !== null && wp.headingMode !== wp.origHeadingMode) ||
+    (wp.origPoiIndex !== undefined && wp.origPoiIndex !== null && (wp.poiIndex || 0) !== wp.origPoiIndex) ||
     (wp.origHeading !== undefined && wp.origHeading !== null && wp.heading !== wp.origHeading) ||
     (wp.origHeading === null && wp.heading !== null) ||
     (wp.origHeading !== null && wp.heading === null)
   );
 
   const curMode = wp.headingMode || 'inherit';
+  const poiIndex = wp.poiIndex || 0;
+  const isPoiMode = (curMode === 'towardPOI' || (curMode === 'inherit' && document.getElementById('heading-mode')?.value === 'towardPOI'));
+  let poiSelectOptions = '';
+  pois.forEach((poi, idx) => {
+    poiSelectOptions += `<option value="${idx}" ${poiIndex === idx ? 'selected' : ''}>${poi.name}</option>`;
+  });
 
   popupContent.innerHTML = `
     <h4 id="edit-wp-title" style="margin: 0 0 12px 0; color: #06b6d4; font-size: 0.95rem; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;"></h4>
@@ -4454,6 +4691,9 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
             <option value="fixed" ${curMode === 'fixed' ? 'selected' : ''}>Fixed Heading (North)</option>
             <option value="towardPOI" ${curMode === 'towardPOI' ? 'selected' : ''}>Point of Interest (POI)</option>
             <option value="custom" ${curMode === 'custom' ? 'selected' : ''}>Custom Angle</option>
+          </select>
+          <select id="edit-wp-poi-select" class="form-select" style="font-size: 0.72rem; padding: 4px 8px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); cursor: pointer; width: 100%; display: ${isPoiMode ? 'block' : 'none'};">
+            ${poiSelectOptions}
           </select>
           <input type="range" id="edit-wp-heading" min="0" max="359" value="${headingVal !== '' ? headingVal : 0}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer; display: ${curMode === 'custom' ? 'block' : 'none'};">
         </div>
@@ -4508,6 +4748,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
   const headingSlider = popupContent.querySelector('#edit-wp-heading');
   const headingValText = popupContent.querySelector('#edit-wp-heading-val');
   const headingModeSelect = popupContent.querySelector('#edit-wp-heading-mode');
+  const poiSelect = popupContent.querySelector('#edit-wp-poi-select');
 
   const latInput = popupContent.querySelector('#edit-wp-lat');
   const lonInput = popupContent.querySelector('#edit-wp-lon');
@@ -4538,10 +4779,11 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     } else if (effectiveMode === 'fixed') {
       tempHeading = 0;
     } else if (effectiveMode === 'towardPOI') {
-      if (typeof centerMarker !== 'undefined' && centerMarker) {
-        const latlng = centerMarker.getLatLng();
-        const dy = latlng.lat - (isNaN(latVal) ? wp.lat : latVal);
-        const dx = latlng.lng - (isNaN(lonVal) ? wp.lon : lonVal);
+      const selectedPoiIndex = poiSelect ? parseInt(poiSelect.value) : (wp.poiIndex || 0);
+      const targetPoi = pois[selectedPoiIndex];
+      if (targetPoi) {
+        const dy = targetPoi.lat - (isNaN(latVal) ? wp.lat : latVal);
+        const dx = targetPoi.lon - (isNaN(lonVal) ? wp.lon : lonVal);
         tempHeading = (90 - (Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
       } else {
         tempHeading = 0;
@@ -4553,6 +4795,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     wp.pitch = tempPitch;
     wp.heading = (mode === 'custom') ? tempHeading : null;
     wp.headingMode = mode;
+    wp.poiIndex = poiSelect ? parseInt(poiSelect.value) : (wp.poiIndex || 0);
 
     if (!isNaN(latVal) && !isNaN(lonVal)) {
       marker.setLatLng([latVal, lonVal]);
@@ -4632,6 +4875,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       (wp.origAlt !== undefined && wp.origAlt !== null && Math.abs(currentAlt - wp.origAlt) > 1e-3) ||
       (wp.origPitch !== undefined && wp.origPitch !== null && currentPitch !== wp.origPitch) ||
       ((wp.origHeadingMode || 'inherit') !== mode) ||
+      ((wp.origPoiIndex || 0) !== (wp.poiIndex || 0)) ||
       (mode === 'custom' && wp.origHeading !== null && tempHeading !== wp.origHeading)
     );
 
@@ -4666,8 +4910,19 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     } else {
       headingSlider.style.display = 'none';
     }
+    if (poiSelect) {
+      const mode = headingModeSelect.value;
+      const isPoi = (mode === 'towardPOI' || (mode === 'inherit' && document.getElementById('heading-mode')?.value === 'towardPOI'));
+      poiSelect.style.display = isPoi ? 'block' : 'none';
+    }
     updateRealtimeMarker();
   });
+
+  if (poiSelect) {
+    poiSelect.addEventListener('change', () => {
+      updateRealtimeMarker();
+    });
+  }
 
   // Direct coordinate inputs listeners
   latInput.addEventListener('input', throttledUpdateRealtimeMarker);
@@ -4728,6 +4983,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     wp.pitch = originalPitch;
     wp.heading = originalHeading;
     wp.headingMode = originalHeadingMode;
+    wp.poiIndex = originalPoiIndex;
     wp.isRingStart = originalIsRingStart;
     wp.isModified = originalIsModified;
     wp.origIsRingStart = originalOrigIsRingStart;
@@ -4782,6 +5038,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       const pitchVal = parseFloat(pitchSlider.value);
       const mode = headingModeSelect.value;
       const headingVal = (mode === 'custom') ? parseFloat(headingSlider.value) : null;
+      const poiIndexVal = poiSelect ? parseInt(poiSelect.value) : 0;
       const latVal = parseFloat(latInput.value);
       const lonVal = parseFloat(lonInput.value);
 
@@ -4789,6 +5046,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       wp.pitch = pitchVal;
       wp.heading = headingVal;
       wp.headingMode = mode;
+      wp.poiIndex = poiIndexVal;
       wp.lat = latVal;
       wp.lon = lonVal;
       wp.isRingStart = true; // Mark as explicit parameter change point
@@ -4816,6 +5074,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       if (wp.origPitch !== undefined && wp.origPitch !== null) wp.pitch = wp.origPitch;
       if (wp.origHeading !== undefined) wp.heading = wp.origHeading;
       wp.headingMode = wp.origHeadingMode || 'inherit';
+      wp.poiIndex = wp.origPoiIndex || 0;
       wp.isRingStart = wp.origIsRingStart !== undefined ? wp.origIsRingStart : false;
       wp.isModified = wp.origIsModified !== undefined ? wp.origIsModified : false;
       
@@ -5932,21 +6191,38 @@ function updateFPVEditorUI() {
         effectiveMode = globalMode ? globalMode.value : 'followWayline';
       }
 
+      let standardRoadFacing = 0;
       if (effectiveMode === 'followWayline') {
         displayAngle = autoHead;
       } else if (effectiveMode === 'fixed') {
         displayAngle = 0;
       } else if (effectiveMode === 'towardPOI') {
-        if (typeof centerMarker !== 'undefined' && centerMarker) {
-          const latlng = centerMarker.getLatLng();
-          const dy = latlng.lat - wp.lat;
-          const dx = latlng.lng - wp.lon;
+        const selectedPoiIndex = wp.poiIndex || 0;
+        const targetPoi = pois[selectedPoiIndex];
+        if (targetPoi) {
+          const dy = targetPoi.lat - wp.lat;
+          const dx = targetPoi.lon - wp.lon;
           displayAngle = (90 - (Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
         } else {
           displayAngle = 0;
         }
       } else if (effectiveMode === 'custom') {
         displayAngle = wp.heading !== null && wp.heading !== undefined ? wp.heading : autoHead;
+      }
+
+      const poiSelect = document.getElementById('fpv-edit-poi-select');
+      if (poiSelect) {
+        poiSelect.innerHTML = '';
+        pois.forEach((poi, idx) => {
+          const opt = document.createElement('option');
+          opt.value = idx;
+          opt.textContent = poi.name;
+          if (idx === (wp.poiIndex || 0)) {
+            opt.selected = true;
+          }
+          poiSelect.appendChild(opt);
+        });
+        poiSelect.style.display = (effectiveMode === 'towardPOI') ? 'block' : 'none';
       }
 
       if (mode === 'custom') {
@@ -6249,6 +6525,28 @@ function setupFPVListeners() {
         recreate3DWaypointsAndPaths();
       }
     });
+
+    const editPoiSelect = document.getElementById('fpv-edit-poi-select');
+    if (editPoiSelect) {
+      editPoiSelect.addEventListener('change', (e) => {
+        const idxVal = parseInt(e.target.value);
+        const waypoints = getCurrentWaypoints();
+        if (waypoints && waypoints[fpvProgressIndex]) {
+          waypoints[fpvProgressIndex].poiIndex = idxVal;
+          waypoints[fpvProgressIndex].isModified = true;
+          
+          const gridType = document.getElementById('grid-type').value;
+          if (gridType === 'road-following' && roadWaypoints && roadWaypoints[fpvProgressIndex]) {
+            roadWaypoints[fpvProgressIndex].poiIndex = idxVal;
+            roadWaypoints[fpvProgressIndex].isModified = true;
+          }
+
+          redrawCurrentMission();
+          recreate3DWaypointsAndPaths();
+          updateFPVEditorUI();
+        }
+      });
+    }
   }
 
   // Delete Waypoint
@@ -6391,6 +6689,7 @@ function enterAutoPlanMode() {
 
   // Clear any existing mission so the user starts fresh
   if (centerMarker) { map.removeLayer(centerMarker); centerMarker = null; }
+  clearAllPois();
   importedWaypoints = null;
   importedPhotos = null;
   importedFileName = null;
