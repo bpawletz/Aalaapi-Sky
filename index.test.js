@@ -225,6 +225,7 @@ describe('updateOpenSkyLink Tests', () => {
       global.document.getElementById = originalGetElementById;
     }
   });
+
 });
 
 describe('Unit Conversion Tests', () => {
@@ -1034,7 +1035,20 @@ describe('updateWeatherPanelUI Tests', () => {
     };
 
     const originalGetElementById = global.document.getElementById;
+    const originalCreateElement = global.document.createElement;
+
     global.document.getElementById = mockGetElementById;
+    // We override createElement specifically to capture appendChild calls on elements inside updateWeatherPanelUI
+    global.document.createElement = (tag) => {
+      const el = {
+        tagName: tag.toUpperCase(),
+        style: {},
+        classList: { add: () => {}, remove: () => {} },
+        childrenAdded: [],
+        appendChild: function(child) { this.childrenAdded.push(child); }
+      };
+      return el;
+    };
 
     try {
       const directions = {
@@ -1095,6 +1109,71 @@ describe('updateWeatherPanelUI Tests', () => {
       assert.strictEqual(windowChildren[0].textContent, '🔴 Not Allowed (IFR)');
     } finally {
       global.document.getElementById = originalGetElementById;
+    }
+  });
+
+  test('safely formats ceiling text without XSS vulnerability', () => {
+    let dirsChildren = [];
+
+    const mockGetElementById = (id) => {
+      if (id === 'stat-weather-window') {
+        return {
+          style: {},
+          replaceChildren: () => {},
+          appendChild: () => {}
+        };
+      }
+      if (id === 'stat-weather-dirs') {
+        return {
+          replaceChildren: () => { dirsChildren = []; },
+          appendChild: (child) => { dirsChildren.push(child); },
+          classList: { add: () => {}, remove: () => {} }
+        };
+      }
+      return null;
+    };
+
+    const originalGetElementById = global.document.getElementById;
+    const originalCreateElement = global.document.createElement;
+
+    global.document.getElementById = mockGetElementById;
+    global.document.createElement = (tag) => {
+      const el = {
+        tagName: tag.toUpperCase(),
+        style: {},
+        classList: { add: () => {}, remove: () => {} },
+        childrenAdded: [],
+        appendChild: function(child) { this.childrenAdded.push(child); }
+      };
+      return el;
+    };
+
+    try {
+      const directions = {
+        closest: {
+          fltCat: "VFR",
+          name: "Test Station",
+          distance: 10,
+          raw: "TEST RAW",
+          visibilitySM: 10,
+          ceilingFt: 5000,
+          timestamp: "2023-01-01T12:00:00Z"
+        }
+      };
+      vm.runInThisContext(`global.testDirsSafe = ${JSON.stringify(directions)};`);
+      vm.runInThisContext('updateWeatherPanelUI(global.testDirsSafe, null, false)');
+
+      // dirsChildren[0] is the main container for the checklist
+      const container = dirsChildren[0];
+
+      // index.js updateWeatherPanelUI appends the title, visDiv, then ceilDiv:
+      assert.strictEqual(container.childrenAdded.length >= 3, true);
+      const ceilDivNode = container.childrenAdded[2];
+
+      assert.strictEqual(ceilDivNode.textContent, '✅ Ceiling: 5000 ft (Req ≥ 1000 ft)');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+      global.document.createElement = originalCreateElement;
     }
   });
 });
