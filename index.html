@@ -2150,7 +2150,7 @@ html, body {
             <div style="font-size: 0.72rem; font-style: italic; color: var(--text-muted); margin-top: 2px; line-height: 1.2;">
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
-            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.15.1</span>
+            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.15.2</span>
           </div>
         </div>
         
@@ -2214,7 +2214,14 @@ html, body {
  
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
-            <strong style="color: var(--text-main);">Changelog (v1.15.1):</strong>
+            <strong style="color: var(--text-main);">Changelog (v1.15.2):</strong>
+             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+               <li><strong>Road-Following Waypoint Edits:</strong> Enabled custom heading and headingMode values to be properly processed and preserved during offset path calculation.</li>
+               <li><strong>FPV Editor Road Sync:</strong> Sync FPV editor adjustments (altitude, pitch, custom heading, and headingMode) back to the original road segment node coordinates to prevent them from being lost.</li>
+             </ul>
+           </div>
+           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+             <strong style="color: var(--text-main);">Changelog (v1.15.1):</strong>
              <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
                <li><strong>Road-Following Editor Fix:</strong> Clicking a road node now opens the popup without crashing. Fixed null tooltip guards, null heading guards, and incorrect tooltip restoration on cancel.</li>
                <li><strong>Popup Cancel Revert:</strong> Closing the editor without saving now correctly restores <code>headingMode</code>.</li>
@@ -4396,11 +4403,41 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
       pitchVal = -Math.round(Math.atan2(altVal, Math.abs(D)) * (180.0 / Math.PI));
     }
     
-    let headingVal;
+    // Resolve heading and headingMode
+    const mode = wp.headingMode || 'inherit';
+    let effectiveMode = mode;
+    if (mode === 'inherit') {
+      const globalMode = document.getElementById('heading-mode')?.value;
+      effectiveMode = globalMode || 'followWayline';
+    }
+
+    // Default standard road-facing heading (pointing from drone to the road segment)
+    let standardRoadFacing;
     if (Math.abs(D) < 0.01) {
-      headingVal = Math.atan2(tx, ty) * (180.0 / Math.PI);
+      standardRoadFacing = Math.atan2(tx, ty) * (180.0 / Math.PI);
     } else {
-      headingVal = Math.atan2(wp.x - droneX, wp.y - droneY) * (180.0 / Math.PI);
+      standardRoadFacing = Math.atan2(wp.x - droneX, wp.y - droneY) * (180.0 / Math.PI);
+    }
+    standardRoadFacing = (standardRoadFacing + 360) % 360;
+
+    let headingVal;
+    if (effectiveMode === 'custom' && wp.heading !== null && wp.heading !== undefined) {
+      headingVal = wp.heading;
+    } else if (effectiveMode === 'fixed') {
+      headingVal = 0;
+    } else if (effectiveMode === 'towardPOI') {
+      if (typeof centerMarker !== 'undefined' && centerMarker) {
+        const latlng = centerMarker.getLatLng();
+        const dy = latlng.lat - geo.lat;
+        const dx = latlng.lng - geo.lon;
+        headingVal = (90 - (Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
+      } else {
+        headingVal = standardRoadFacing;
+      }
+    } else if (effectiveMode === 'followWayline') {
+      headingVal = (Math.atan2(tx, ty) * (180.0 / Math.PI) + 360) % 360;
+    } else {
+      headingVal = standardRoadFacing;
     }
     headingVal = (headingVal + 360) % 360;
 
@@ -4412,6 +4449,7 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
       alt: altVal,
       pitch: pitchVal,
       heading: headingVal,
+      headingMode: mode,
       isRingStart: wp.isRingStart || false,
       ringIndex: wp.ringIndex !== undefined ? wp.ringIndex : null,
       idx: idx
@@ -9029,6 +9067,13 @@ function setupFPVListeners() {
       if (waypoints && waypoints[fpvProgressIndex]) {
         waypoints[fpvProgressIndex].alt = val;
         waypoints[fpvProgressIndex].isModified = true;
+        
+        const gridType = document.getElementById('grid-type').value;
+        if (gridType === 'road-following' && roadWaypoints && roadWaypoints[fpvProgressIndex]) {
+          roadWaypoints[fpvProgressIndex].alt = val;
+          roadWaypoints[fpvProgressIndex].isModified = true;
+        }
+
         redrawCurrentMission();
         recreate3DWaypointsAndPaths();
       }
@@ -9047,6 +9092,13 @@ function setupFPVListeners() {
       if (waypoints && waypoints[fpvProgressIndex]) {
         waypoints[fpvProgressIndex].pitch = val;
         waypoints[fpvProgressIndex].isModified = true;
+        
+        const gridType = document.getElementById('grid-type').value;
+        if (gridType === 'road-following' && roadWaypoints && roadWaypoints[fpvProgressIndex]) {
+          roadWaypoints[fpvProgressIndex].pitch = val;
+          roadWaypoints[fpvProgressIndex].isModified = true;
+        }
+
         redrawCurrentMission();
         recreate3DWaypointsAndPaths();
       }
@@ -9064,14 +9116,24 @@ function setupFPVListeners() {
       const waypoints = getCurrentWaypoints();
       if (waypoints && waypoints[fpvProgressIndex]) {
         waypoints[fpvProgressIndex].headingMode = mode;
+        let finalHeading = null;
         if (mode !== 'custom') {
           waypoints[fpvProgressIndex].heading = null;
         } else {
           const rotationDeg = parseFloat(document.getElementById('grid-rotation').value) || 0;
           const autoHead = getDefaultHeading(fpvProgressIndex, waypoints, rotationDeg);
-          waypoints[fpvProgressIndex].heading = Math.round(autoHead);
+          finalHeading = Math.round(autoHead);
+          waypoints[fpvProgressIndex].heading = finalHeading;
         }
         waypoints[fpvProgressIndex].isModified = true;
+        
+        const gridType = document.getElementById('grid-type').value;
+        if (gridType === 'road-following' && roadWaypoints && roadWaypoints[fpvProgressIndex]) {
+          roadWaypoints[fpvProgressIndex].headingMode = mode;
+          roadWaypoints[fpvProgressIndex].heading = finalHeading;
+          roadWaypoints[fpvProgressIndex].isModified = true;
+        }
+
         redrawCurrentMission();
         recreate3DWaypointsAndPaths();
         updateFPVEditorUI();
@@ -9086,6 +9148,13 @@ function setupFPVListeners() {
       if (waypoints && waypoints[fpvProgressIndex] && editHeadingMode.value === 'custom') {
         waypoints[fpvProgressIndex].heading = val;
         waypoints[fpvProgressIndex].isModified = true;
+        
+        const gridType = document.getElementById('grid-type').value;
+        if (gridType === 'road-following' && roadWaypoints && roadWaypoints[fpvProgressIndex]) {
+          roadWaypoints[fpvProgressIndex].heading = val;
+          roadWaypoints[fpvProgressIndex].isModified = true;
+        }
+
         redrawCurrentMission();
         recreate3DWaypointsAndPaths();
       }
