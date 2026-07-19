@@ -2,6 +2,12 @@
 
 All notable changes to Aalaapi Sky will be documented in this file.
 
+## [1.15.2] - 2026-07-19
+
+### Fixed
+- **Road-Following Waypoint Edits:** Fixed heading and headingMode overrides not persisting in road-following paths. `recalculateRoadOffsetPath` now dynamically calculates and applies headings based on the waypoint's custom heading and headingMode parameters.
+- **FPV Editor Road Sync:** Fixed a bug where updates in the FPV editor panel (altitude, gimbal pitch, custom heading, and headingMode) would get discarded on redraw in road-following mode. Any edits to generated waypoints are now correctly synced back to the corresponding road node points in `roadWaypoints`.
+
 ## [1.15.1] - 2026-07-19
 
 ### Fixed
