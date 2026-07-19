@@ -1493,11 +1493,41 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
       pitchVal = -Math.round(Math.atan2(altVal, Math.abs(D)) * (180.0 / Math.PI));
     }
     
-    let headingVal;
+    // Resolve heading and headingMode
+    const mode = wp.headingMode || 'inherit';
+    let effectiveMode = mode;
+    if (mode === 'inherit') {
+      const globalMode = document.getElementById('heading-mode')?.value;
+      effectiveMode = globalMode || 'followWayline';
+    }
+
+    // Default standard road-facing heading (pointing from drone to the road segment)
+    let standardRoadFacing;
     if (Math.abs(D) < 0.01) {
-      headingVal = Math.atan2(tx, ty) * (180.0 / Math.PI);
+      standardRoadFacing = Math.atan2(tx, ty) * (180.0 / Math.PI);
     } else {
-      headingVal = Math.atan2(wp.x - droneX, wp.y - droneY) * (180.0 / Math.PI);
+      standardRoadFacing = Math.atan2(wp.x - droneX, wp.y - droneY) * (180.0 / Math.PI);
+    }
+    standardRoadFacing = (standardRoadFacing + 360) % 360;
+
+    let headingVal;
+    if (effectiveMode === 'custom' && wp.heading !== null && wp.heading !== undefined) {
+      headingVal = wp.heading;
+    } else if (effectiveMode === 'fixed') {
+      headingVal = 0;
+    } else if (effectiveMode === 'towardPOI') {
+      if (typeof centerMarker !== 'undefined' && centerMarker) {
+        const latlng = centerMarker.getLatLng();
+        const dy = latlng.lat - geo.lat;
+        const dx = latlng.lng - geo.lon;
+        headingVal = (90 - (Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
+      } else {
+        headingVal = standardRoadFacing;
+      }
+    } else if (effectiveMode === 'followWayline') {
+      headingVal = (Math.atan2(tx, ty) * (180.0 / Math.PI) + 360) % 360;
+    } else {
+      headingVal = standardRoadFacing;
     }
     headingVal = (headingVal + 360) % 360;
 
@@ -1509,6 +1539,7 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
       alt: altVal,
       pitch: pitchVal,
       heading: headingVal,
+      headingMode: mode,
       isRingStart: wp.isRingStart || false,
       ringIndex: wp.ringIndex !== undefined ? wp.ringIndex : null,
       idx: idx
@@ -6126,6 +6157,13 @@ function setupFPVListeners() {
       if (waypoints && waypoints[fpvProgressIndex]) {
         waypoints[fpvProgressIndex].alt = val;
         waypoints[fpvProgressIndex].isModified = true;
+        
+        const gridType = document.getElementById('grid-type').value;
+        if (gridType === 'road-following' && roadWaypoints && roadWaypoints[fpvProgressIndex]) {
+          roadWaypoints[fpvProgressIndex].alt = val;
+          roadWaypoints[fpvProgressIndex].isModified = true;
+        }
+
         redrawCurrentMission();
         recreate3DWaypointsAndPaths();
       }
@@ -6144,6 +6182,13 @@ function setupFPVListeners() {
       if (waypoints && waypoints[fpvProgressIndex]) {
         waypoints[fpvProgressIndex].pitch = val;
         waypoints[fpvProgressIndex].isModified = true;
+        
+        const gridType = document.getElementById('grid-type').value;
+        if (gridType === 'road-following' && roadWaypoints && roadWaypoints[fpvProgressIndex]) {
+          roadWaypoints[fpvProgressIndex].pitch = val;
+          roadWaypoints[fpvProgressIndex].isModified = true;
+        }
+
         redrawCurrentMission();
         recreate3DWaypointsAndPaths();
       }
@@ -6161,14 +6206,24 @@ function setupFPVListeners() {
       const waypoints = getCurrentWaypoints();
       if (waypoints && waypoints[fpvProgressIndex]) {
         waypoints[fpvProgressIndex].headingMode = mode;
+        let finalHeading = null;
         if (mode !== 'custom') {
           waypoints[fpvProgressIndex].heading = null;
         } else {
           const rotationDeg = parseFloat(document.getElementById('grid-rotation').value) || 0;
           const autoHead = getDefaultHeading(fpvProgressIndex, waypoints, rotationDeg);
-          waypoints[fpvProgressIndex].heading = Math.round(autoHead);
+          finalHeading = Math.round(autoHead);
+          waypoints[fpvProgressIndex].heading = finalHeading;
         }
         waypoints[fpvProgressIndex].isModified = true;
+        
+        const gridType = document.getElementById('grid-type').value;
+        if (gridType === 'road-following' && roadWaypoints && roadWaypoints[fpvProgressIndex]) {
+          roadWaypoints[fpvProgressIndex].headingMode = mode;
+          roadWaypoints[fpvProgressIndex].heading = finalHeading;
+          roadWaypoints[fpvProgressIndex].isModified = true;
+        }
+
         redrawCurrentMission();
         recreate3DWaypointsAndPaths();
         updateFPVEditorUI();
@@ -6183,6 +6238,13 @@ function setupFPVListeners() {
       if (waypoints && waypoints[fpvProgressIndex] && editHeadingMode.value === 'custom') {
         waypoints[fpvProgressIndex].heading = val;
         waypoints[fpvProgressIndex].isModified = true;
+        
+        const gridType = document.getElementById('grid-type').value;
+        if (gridType === 'road-following' && roadWaypoints && roadWaypoints[fpvProgressIndex]) {
+          roadWaypoints[fpvProgressIndex].heading = val;
+          roadWaypoints[fpvProgressIndex].isModified = true;
+        }
+
         redrawCurrentMission();
         recreate3DWaypointsAndPaths();
       }
