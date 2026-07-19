@@ -2,6 +2,11 @@
 
 All notable changes to Aalaapi Sky will be documented in this file.
 
+## [1.16.2] - 2026-07-19
+
+### Fixed
+- **POI Coordinate Export Order:** Corrected the coordinate order in `<wpml:waypointPoiPoint>` tags to be **Latitude, Longitude, Altitude** instead of standard KML Longitude, Latitude, Altitude. This fixes a positioning mismatch where DJI RC2 controllers would misinterpret the POI location and point the camera in incorrect directions.
+
 ## [1.16.1] - 2026-07-19
 
 ### Fixed

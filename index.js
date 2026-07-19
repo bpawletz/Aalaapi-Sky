@@ -3970,7 +3970,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
             targetPoi = { lat: latlng.lat, lon: latlng.lng };
           }
           if (targetPoi) {
-            poiPoint = `${targetPoi.lon.toFixed(13)},${targetPoi.lat.toFixed(13)},0.000000`;
+            poiPoint = `${targetPoi.lat.toFixed(13)},${targetPoi.lon.toFixed(13)},0.000000`;
           }
         }
       }
@@ -3982,7 +3982,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
           targetPoi = { lat: latlng.lat, lon: latlng.lng };
         }
         if (targetPoi) {
-          poiPoint = `${targetPoi.lon.toFixed(13)},${targetPoi.lat.toFixed(13)},0.000000`;
+          poiPoint = `${targetPoi.lat.toFixed(13)},${targetPoi.lon.toFixed(13)},0.000000`;
         }
       }
 
