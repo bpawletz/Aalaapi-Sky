@@ -481,17 +481,27 @@
 
             <!-- Interactive Collapsible Help Drawer -->
             <div id="heading-help-drawer" class="help-drawer hidden" style="background: rgba(15, 23, 42, 0.4); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-top: 8px; display: flex; flex-direction: column; gap: 10px;">
-              <div style="display: flex; gap: 6px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px;">
-                <button id="heading-tab-follow" class="active" type="button" style="flex: 1; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); color: var(--accent-cyan); font-size: 0.7rem; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px;">Follow Path</button>
-                <button id="heading-tab-fixed" type="button" style="flex: 1; background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 0.7rem; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px;">Fixed Heading</button>
+              <div style="display: flex; gap: 4px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px;">
+                <button id="heading-tab-follow" class="active" type="button" style="flex: 1; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); color: var(--accent-cyan); font-size: 0.65rem; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px; transition: var(--transition-smooth);">Follow Path</button>
+                <button id="heading-tab-fixed" type="button" style="flex: 1; background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 0.65rem; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px; transition: var(--transition-smooth);">Fixed Heading</button>
+                <button id="heading-tab-poi" type="button" style="flex: 1; background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 0.65rem; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px; transition: var(--transition-smooth);">POI / Target</button>
               </div>
               <div class="animation-container" style="position: relative; height: 90px; background: rgba(5, 8, 15, 0.45); border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, 0.03);">
                 <svg viewBox="0 0 200 90" style="width: 100%; height: 100%;">
                   <!-- Flight path line -->
-                  <path d="M 30,55 L 100,25 L 170,65" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2" stroke-dasharray="4 4"/>
-                  <path id="anim-flight-path-active" d="M 30,55 L 100,25 L 170,65" fill="none" stroke="var(--accent-cyan)" stroke-width="2" stroke-dasharray="250" stroke-dashoffset="250" opacity="0.4"/>
+                  <path d="M 30,65 L 100,25 L 170,65" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2" stroke-dasharray="4 4"/>
+                  <path id="anim-flight-path-active" d="M 30,65 L 100,25 L 170,65" fill="none" stroke="var(--accent-cyan)" stroke-width="2" stroke-dasharray="250" stroke-dashoffset="250" opacity="0.4"/>
+                  
+                  <!-- POI Target (hidden by default) -->
+                  <g id="anim-poi-target" transform="translate(100, 48)" opacity="0" style="transition: opacity 0.3s ease;">
+                    <circle cx="0" cy="0" r="7" fill="rgba(194, 98, 45, 0.2)" stroke="#c2622d" stroke-width="1.2"/>
+                    <circle cx="0" cy="0" r="2.5" fill="#c2622d"/>
+                  </g>
+
                   <!-- Animated Drone Group -->
-                  <g id="anim-drone" transform="translate(30,55)">
+                  <g id="anim-drone" transform="translate(30,65)">
+                    <!-- Camera FOV cone -->
+                    <polygon points="0,-4 -18,-42 18,-42" fill="rgba(6, 182, 212, 0.12)" stroke="rgba(6, 182, 212, 0.35)" stroke-width="0.8" />
                     <!-- Arms -->
                     <line x1="-7" y1="-7" x2="7" y2="7" stroke="#c2622d" stroke-width="1.5" />
                     <line x1="-7" y1="7" x2="7" y2="-7" stroke="#c2622d" stroke-width="1.5" />
@@ -800,7 +810,7 @@
             <div style="font-size: 0.72rem; font-style: italic; color: var(--text-muted); margin-top: 2px; line-height: 1.2;">
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
-            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.13.8</span>
+            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.13.9</span>
           </div>
         </div>
         
@@ -864,6 +874,12 @@
  
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.13.9):</strong>
+             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+               <li><strong>Heading Mode POI Simulation:</strong> Added a third tab to the Heading Mode help drawer showing a Point of Interest (POI) center target with dynamic tracking camera view cones.</li>
+             </ul>
+           </div>
+           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.13.8):</strong>
              <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
                <li><strong>Heading Mode Help Drawer:</strong> Added an interactive collapsible explanation drawer under Heading Mode with vector drone flight simulations for Follow Path vs. Fixed Heading.</li>

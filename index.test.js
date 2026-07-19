@@ -1183,6 +1183,7 @@ describe('initHeadingHelpDrawer Tests', () => {
     let helpBtnClicked = null;
     let tabFollowClicked = null;
     let tabFixedClicked = null;
+    let tabPoiClicked = null;
 
     const mockHelpBtn = {
       addEventListener: (evt, cb) => {
@@ -1215,8 +1216,19 @@ describe('initHeadingHelpDrawer Tests', () => {
       },
       style: {}
     };
+    const mockTabPoi = {
+      addEventListener: (evt, cb) => {
+        if (evt === 'click') tabPoiClicked = cb;
+      },
+      classList: {
+        add: mock.fn(),
+        remove: mock.fn()
+      },
+      style: {}
+    };
     const mockHelpDesc = { textContent: '' };
     const mockAnimDrone = { setAttribute: mock.fn() };
+    const mockAnimPoiTarget = { style: { opacity: '0' } };
     const mockActivePath = { setAttribute: mock.fn() };
 
     const originalGetElementById = global.document.getElementById;
@@ -1225,8 +1237,10 @@ describe('initHeadingHelpDrawer Tests', () => {
       if (id === 'heading-help-drawer') return mockHelpDrawer;
       if (id === 'heading-tab-follow') return mockTabFollow;
       if (id === 'heading-tab-fixed') return mockTabFixed;
+      if (id === 'heading-tab-poi') return mockTabPoi;
       if (id === 'heading-help-desc') return mockHelpDesc;
       if (id === 'anim-drone') return mockAnimDrone;
+      if (id === 'anim-poi-target') return mockAnimPoiTarget;
       if (id === 'anim-flight-path-active') return mockActivePath;
       return null;
     };
@@ -1251,6 +1265,7 @@ describe('initHeadingHelpDrawer Tests', () => {
       assert.ok(helpBtnClicked);
       assert.ok(tabFollowClicked);
       assert.ok(tabFixedClicked);
+      assert.ok(tabPoiClicked);
 
       // Trigger drawer toggle click
       const mockEvent = { stopPropagation: () => {} };
@@ -1262,9 +1277,15 @@ describe('initHeadingHelpDrawer Tests', () => {
       // Trigger tab clicks and verify description updates
       tabFixedClicked();
       assert.strictEqual(mockHelpDesc.textContent.includes('constant heading'), true);
+      assert.strictEqual(mockAnimPoiTarget.style.opacity, '0');
 
       tabFollowClicked();
       assert.strictEqual(mockHelpDesc.textContent.includes('rotates forward'), true);
+      assert.strictEqual(mockAnimPoiTarget.style.opacity, '0');
+
+      tabPoiClicked();
+      assert.strictEqual(mockHelpDesc.textContent.includes('locks onto a Point of Interest'), true);
+      assert.strictEqual(mockAnimPoiTarget.style.opacity, '1');
 
     } finally {
       global.document.getElementById = originalGetElementById;
