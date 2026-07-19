@@ -2,6 +2,11 @@
 
 All notable changes to Aalaapi Sky will be documented in this file.
 
+## [1.16.4] - 2026-07-19
+
+### Changed
+- **Export Warning Prompts:** Refined safety alerts to remove the word "buggy" and make it explicitly clear that waypoint files are not working properly on export.
+
 ## [1.16.3] - 2026-07-19
 
 ### Added
