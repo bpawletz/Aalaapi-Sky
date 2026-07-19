@@ -2,6 +2,11 @@
 
 All notable changes to Aalaapi Sky will be documented in this file.
 
+## [1.16.3] - 2026-07-19
+
+### Added
+- **Alpha/Buggy Warning Banner & Startup Card:** Added a persistent red "Beta / Buggy" warning badge next to the branding title in the sidebar, and inserted a prominent red active development warning card inside the initial flight safety disclaimer modal.
+
 ## [1.16.2] - 2026-07-19
 
 ### Fixed
