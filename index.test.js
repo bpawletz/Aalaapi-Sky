@@ -1594,4 +1594,41 @@ describe('createWaypointEditorDOM headingMode Tests', () => {
   });
 });
 
+describe('recalculateRoadOffsetPath Custom Heading & FPV Sync Tests', () => {
+  test('recalculateRoadOffsetPath respects custom headingMode and heading overrides', () => {
+    const originalGetElementById = global.document.getElementById;
+    global.document.getElementById = (id) => {
+      if (id === 'road-offset') return { value: '15' };
+      if (id === 'altitude') return { value: '50' };
+      if (id === 'heading-mode') return { value: 'followWayline' };
+      return originalGetElementById(id);
+    };
 
+    try {
+      vm.runInThisContext(`
+        roadWaypoints = [
+          { lat: 40.0, lon: -83.0, x: 0, y: 0, alt: 50, headingMode: 'custom', heading: 120 },
+          { lat: 40.01, lon: -83.0, x: 0, y: 100, alt: 60, headingMode: 'fixed' }
+        ];
+        recalculateRoadOffsetPath(40.0, -83.0);
+      `);
+
+      const genWps = vm.runInThisContext('generatedWaypoints');
+      assert.strictEqual(genWps.length, 2);
+      
+      // First waypoint should have custom heading = 120 and headingMode = 'custom'
+      assert.strictEqual(genWps[0].heading, 120);
+      assert.strictEqual(genWps[0].headingMode, 'custom');
+      assert.strictEqual(genWps[0].alt, 50);
+
+      // Second waypoint should have fixed heading = 0 and headingMode = 'fixed'
+      assert.strictEqual(genWps[1].heading, 0);
+      assert.strictEqual(genWps[1].headingMode, 'fixed');
+      assert.strictEqual(genWps[1].alt, 60);
+
+    } finally {
+      global.document.getElementById = originalGetElementById;
+      vm.runInThisContext('roadWaypoints = []; generatedWaypoints = [];');
+    }
+  });
+});
