@@ -226,6 +226,46 @@ describe('updateOpenSkyLink Tests', () => {
     }
   });
 
+  test('formats coordinates to exactly 4 decimal places with trailing zeros', () => {
+    let mockLinkEl = { href: '' };
+    global.document.getElementById = (id) => {
+      if (id === 'opensky-link') return mockLinkEl;
+      return null;
+    };
+
+    try {
+      vm.runInThisContext(`
+        map = { getCenter: () => ({ lat: -10.1, lng: 20 }) };
+        centerMarker = null;
+        updateOpenSkyLink();
+      `);
+
+      assert.strictEqual(mockLinkEl.href, 'https://map.opensky-network.org/?lat=-10.1000&lon=20.0000&zoom=11');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+
+  test('handles zero coordinates correctly', () => {
+    let mockLinkEl = { href: '' };
+    global.document.getElementById = (id) => {
+      if (id === 'opensky-link') return mockLinkEl;
+      return null;
+    };
+
+    try {
+      vm.runInThisContext(`
+        map = { getCenter: () => ({ lat: 0, lng: 0 }) };
+        centerMarker = null;
+        updateOpenSkyLink();
+      `);
+
+      assert.strictEqual(mockLinkEl.href, 'https://map.opensky-network.org/?lat=0.0000&lon=0.0000&zoom=11');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+
 });
 
 describe('Unit Conversion Tests', () => {
