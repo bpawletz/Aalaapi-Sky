@@ -1632,3 +1632,41 @@ describe('recalculateRoadOffsetPath Custom Heading & FPV Sync Tests', () => {
     }
   });
 });
+
+describe('buildWaylinesWpml Multi-POI Export Tests', () => {
+  test('exports correct POI coordinates and indexes for multiple POIs', () => {
+    try {
+      vm.runInThisContext(`
+        centerMarker = {
+          getLatLng: () => ({ lat: 40.0, lng: -83.0 })
+        };
+        pois = [
+          { name: 'POI 0 (Center)', lat: 40.0, lon: -83.0 },
+          { name: 'POI 1', lat: 40.05, lon: -83.05 },
+          { name: 'POI 2', lat: 40.10, lon: -83.10 }
+        ];
+      `);
+
+      const wps = [
+        { lat: 40.0, lon: -83.0, x: 0, y: 0, alt: 50, headingMode: 'towardPOI', poiIndex: 1 },
+        { lat: 40.01, lon: -83.0, x: 0, y: 100, alt: 50, headingMode: 'towardPOI', poiIndex: 2 }
+      ];
+
+      const xml = vm.runInThisContext(`
+        buildWaylinesWpml(${JSON.stringify(wps)}, 50, 4, 'followWayline', 'goHome', -90, 'hover', 'normal')
+      `);
+
+      // Waypoint 0 should point to POI 1 (-83.05, 40.05)
+      assert.ok(xml.includes('<wpml:waypointHeadingPoiIndex>1</wpml:waypointHeadingPoiIndex>'));
+      assert.ok(xml.includes('<wpml:waypointPoiPoint>-83.0500000000000,40.0500000000000,0.000000</wpml:waypointPoiPoint>'));
+
+      // Waypoint 1 should point to POI 2 (-83.10, 40.10)
+      assert.ok(xml.includes('<wpml:waypointHeadingPoiIndex>2</wpml:waypointHeadingPoiIndex>'));
+      assert.ok(xml.includes('<wpml:waypointPoiPoint>-83.1000000000000,40.1000000000000,0.000000</wpml:waypointPoiPoint>'));
+
+    } finally {
+      vm.runInThisContext('centerMarker = null; pois = [];');
+    }
+  });
+});
+
