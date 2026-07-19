@@ -2,6 +2,34 @@
 
 All notable changes to Aalaapi Sky will be documented in this file.
 
+## [1.17.4] - 2026-07-19
+
+### Fixed
+- **Drone Target Default Sync Bug:** Fixed a bug where switching camera model presets automatically set the drone target dropdown to the value `'90'`. Since the dropdown was updated to use `'68'` for the Mini 4 Pro, this caused the dropdown to become invalid, exporting `NaN` for `<wpml:droneEnumValue>`. Aalaapi now correctly uses `'68'` in all camera preset bindings and default enums.
+
+## [1.17.3] - 2026-07-19
+
+### Fixed
+- **POI Heading Mode Override Bug:** Fixed a bug where procedurally generated waypoint heading angles (from grid path generation) were overriding the global "Face POI" (`towardPOI`) heading mode during XML export. Aalaapi now properly honors the global "Face POI" heading mode even if the waypoint object contains a default computed heading angle.
+
+## [1.17.2] - 2026-07-19
+
+### Fixed
+- **POI Export Bug Revert & Fix:** Reverted the hardcoded POI index that broke single and multi-POI mission rendering. Fixed the true underlying bug where the waypoint's custom `poiIndex` and `headingMode` were completely stripped from the waypoint objects during KMZ export mapping, causing all exported waypoints to default to POI 1 (index 0).
+
+## [1.17.1] - 2026-07-19
+
+### Fixed
+- **Multi-POI DJI Parser Bug:** Fixed a critical issue where exporting multiple Points of Interest caused the DJI RC2 controller to discard subsequent POIs and point all waypoints to the first POI. The RC2 firmware requires all `<wpml:waypointHeadingPoiIndex>` tags to literally be `0`, regardless of how many POIs exist, relying purely on the coordinate payload to generate the markers. Aalaapi now properly hardcodes this index to `0` instead of mapping it 1:1 to the internal UI index.
+
+## [1.17.0] - 2026-07-19
+
+### Added
+- **RC2 Gap Features:** Added WPML generation support for missing RC2 parameters: Finish Actions (Back to Start), Signal Lost Actions (Hover, Land, RTH, Continue), and Camera Zoom (up to 4.0x with tenths precision).
+
+### Fixed
+- **Mini 4 Pro KMZ Format Error:** Fixed a critical bug causing the DJI RC2 controller to reject generated waypoint KMZs for the Mini 4 Pro. Aalaapi now correctly uses `68` (the Mavic 3 Enterprise enum) for the Mini 4 Pro's WPML `droneEnumValue` output.
+
 ## [1.16.4] - 2026-07-19
 
 ### Changed
