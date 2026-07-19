@@ -2,6 +2,11 @@
 
 All notable changes to Aalaapi Sky will be documented in this file.
 
+## [1.13.8] - 2026-07-18
+
+### Added
+- **Heading Mode Help Drawer:** Implemented an interactive collapsible help drawer next to the Heading Mode selector. Features tabbed descriptions and a custom vector micro-animation showing a terracotta & cyan drone moving along a path to illustrate Follow Flight Path vs. Fixed Heading yaw dynamics.
+
 ## [1.13.7] - 2026-07-18
 
 ### Added
