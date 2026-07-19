@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aalaapi Sky - Drone Waypoint Mission Planner</title>
+  <title>Aalaapi Sky - WPML Flight Planner v1.17.4</title>
   
   <!-- Modern Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1662,7 +1662,7 @@ html, body {
           <div class="control-group">
             <label for="drone-model">Export Drone Target</label>
             <select id="drone-model" class="form-select">
-              <option value="90" selected>DJI Mini 4 Pro (90)</option>
+              <option value="68" selected>DJI Mini 4 Pro (68)</option>
               <option value="89">DJI Air 3 (89)</option>
               <option value="77">DJI Mavic 3 / Classic / Pro (77)</option>
               <option value="68">DJI Mavic 3 Enterprise (68)</option>
@@ -1671,6 +1671,21 @@ html, body {
               <option value="71">DJI Inspire 3 (71)</option>
             </select>
             <p class="help-text">Ensures compatibility by matching the model ID inside the KMZ to your drone.</p>
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              <span style="display: inline-flex; align-items: center; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
+                  <circle cx="11" cy="11" r="8" fill="none" stroke="#06b6d4"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" stroke="#06b6d4"></line>
+                </svg>
+                Camera Zoom
+              </span>
+              <span class="value-display"><span id="camera-zoom-val">1.0</span>x</span>
+            </div>
+            <input type="range" id="camera-zoom" min="1.0" max="4.0" step="0.1" value="1.0" class="slider" aria-label="Camera Zoom">
+            <p class="help-text" style="margin-top: 4px;">Magnification factor for WPML output.</p>
           </div>
 
           <div class="control-group">
@@ -1881,8 +1896,19 @@ html, body {
             <label for="finish-action">Finish Action</label>
             <select id="finish-action" class="form-select">
               <option value="goHome">Return to Home (RTH)</option>
+              <option value="gotoFirstWaypoint">Back to Start Point</option>
               <option value="noAction">Hover in Place</option>
               <option value="autoLand">Auto Land</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="signal-lost-action">Signal Lost Action</label>
+            <select id="signal-lost-action" class="form-select">
+              <option value="goBack" selected>Return to Home (RTH)</option>
+              <option value="hover">Hover in Place</option>
+              <option value="landing">Auto Land</option>
+              <option value="goContinue">Continue Mission</option>
             </select>
           </div>
 
@@ -2172,7 +2198,7 @@ html, body {
             <div style="font-size: 0.72rem; font-style: italic; color: var(--text-muted); margin-top: 2px; line-height: 1.2;">
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
-            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.16.4</span>
+            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.17.4</span>
           </div>
         </div>
         
@@ -2235,9 +2261,22 @@ html, body {
         </div>
  
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
-          <div>
-            <strong style="color: var(--text-main);">Changelog (v1.16.4):</strong>
+          <ul style="margin: 0; padding-left: 20px; color: var(--text-muted); font-size: 0.85rem; display: flex; flex-direction: column; gap: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.17.4):</strong>
+            <li><strong>Drone Target Default Sync Bug:</strong> Fixed a bug where camera preset switches reset the drone model dropdown value to an invalid '90' setting, causing 'NaN' droneEnumValue outputs. Aalaapi now properly sets it to '68'.</li>
+          </ul>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+             <strong style="color: var(--text-main);">Changelog (v1.17.3):</strong>
              <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+               <li><strong>POI Heading Mode Override Bug:</strong> Fixed a bug where procedurally generated waypoint heading angles (from grid path generation) were overriding the global "Face POI" (`towardPOI`) heading mode during XML export.</li>
+             </ul>
+               <li><strong>POI Export Bug Fix:</strong> Fixed a critical bug where waypoints manually set to point to subsequent POIs (POI 2, etc.) were reset back to POI 1 during KMZ export because the custom `poiIndex` and `headingMode` parameters were stripped from the waypoint objects when compiling the export payload.</li>
+             </ul>
+               <li><strong>Multi-POI DJI Parser Bug:</strong> Attempted fix by hardcoding index to 0. (Reverted in v1.17.2 to fix POI disappearance).</li>
+             </ul>
+               <li><strong>RC2 Gap Features:</strong> Added WPML generation support for missing RC2 parameters: Finish Actions (Back to Start), Signal Lost Actions (Hover, Land, RTH, Continue), and Camera Zoom (up to 4.0x with tenths precision).</li>
+               <li><strong>Mini 4 Pro KMZ Format Error:</strong> Fixed a critical bug causing the DJI RC2 controller to reject generated waypoint KMZs for the Mini 4 Pro. Aalaapi now correctly uses `68` (the Mavic 3 Enterprise enum) for the Mini 4 Pro's WPML `droneEnumValue` output.</li>
+             </ul>
                <li><strong>Export Warning Prompts Refinement:</strong> Removed "buggy" label and explicitly specified that waypoint files do not work properly on export.</li>
              </ul>
            </div>

@@ -306,9 +306,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Initialize Leaflet Map
 function initMap() {
-  // Default to Lakewood neighborhood, Hilliard, Ohio
-  const defaultLat = 40.0165;
-  const defaultLng = -83.1787;
+  // Default to Millennium Park, Chicago, Illinois (anonymized)
+  const defaultLat = 41.8827;
+  const defaultLng = -87.6227;
 
   // Use the last known location as the starting view if cached, so mobile
   // users land on their area without needing a GPS fix on every session.
@@ -584,8 +584,8 @@ function initMap() {
 const CONTROLS_LIST = [
   'grid-type', 'grid-width', 'grid-height', 'grid-rotation',
   'front-overlap', 'side-overlap', 'gimbal-pitch',
-  'altitude', 'speed', 'heading-mode', 'finish-action', 'capture-mode', 'path-mode',
-  'max-flight-time', 'camera-model', 'drone-model', 'camera-hfov', 'camera-vfov', 'road-offset'
+  'altitude', 'speed', 'heading-mode', 'finish-action', 'capture-mode', 'path-mode', 'signal-lost-action',
+  'max-flight-time', 'camera-model', 'drone-model', 'camera-zoom', 'camera-hfov', 'camera-vfov', 'road-offset'
 ];
 
 function saveAllSettingsToLocalStorage() {
@@ -666,11 +666,11 @@ function initUIEventListeners() {
       if (model === 'dji_mini_4_pro_std') {
         hfovSlider.value = 69.7;
         vfovSlider.value = 55.2;
-        if (droneModelEl) droneModelEl.value = '90'; // Auto-select Mini 4 Pro (90)
+        if (droneModelEl) droneModelEl.value = '68'; // Auto-select Mini 4 Pro (68)
       } else if (model === 'dji_mini_4_pro_wide') {
         hfovSlider.value = 97.0;
         vfovSlider.value = 79.0;
-        if (droneModelEl) droneModelEl.value = '90'; // Auto-select Mini 4 Pro (90)
+        if (droneModelEl) droneModelEl.value = '68'; // Auto-select Mini 4 Pro (68)
       } else if (model === 'skyrover_x1_std') {
         hfovSlider.value = 67.2;
         vfovSlider.value = 53.1;
@@ -1313,11 +1313,15 @@ function syncDisplayValues() {
   // Sync Camera HFOV and VFOV variables and displays
   const hfovSlider = document.getElementById('camera-hfov');
   const vfovSlider = document.getElementById('camera-vfov');
+  const zoomSlider = document.getElementById('camera-zoom');
   if (hfovSlider && vfovSlider) {
     CAMERA_HFOV = parseFloat(hfovSlider.value);
     CAMERA_VFOV = parseFloat(vfovSlider.value);
     document.getElementById('camera-hfov-val').textContent = hfovSlider.value;
     document.getElementById('camera-vfov-val').textContent = vfovSlider.value;
+  }
+  if (zoomSlider) {
+    document.getElementById('camera-zoom-val').textContent = parseFloat(zoomSlider.value).toFixed(1);
   }
 
 
@@ -3806,7 +3810,16 @@ function updateStatsPanel(stats) {
 function buildTemplateKml(finishAction, speed) {
   const timestamp = Date.now();
   const droneModelEl = document.getElementById('drone-model');
-  const droneEnumValue = droneModelEl ? parseInt(droneModelEl.value, 10) : 90; // Default to Mini 4 Pro
+  const droneEnumValue = droneModelEl ? parseInt(droneModelEl.value, 10) : 68; // Default to Mini 4 Pro (68)
+
+  const signalLostEl = document.getElementById('signal-lost-action');
+  const signalLostValue = signalLostEl ? signalLostEl.value : 'goBack';
+  let exitOnRCLost = 'executeLostAction';
+  let executeRCLostAction = signalLostValue;
+  if (signalLostValue === 'goContinue') {
+    exitOnRCLost = 'goContinue';
+    executeRCLostAction = 'goBack';
+  }
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
@@ -3817,8 +3830,8 @@ function buildTemplateKml(finishAction, speed) {
     <wpml:missionConfig>
       <wpml:flyToWaylineMode>safely</wpml:flyToWaylineMode>
       <wpml:finishAction>${finishAction}</wpml:finishAction>
-      <wpml:exitOnRCLost>executeLostAction</wpml:exitOnRCLost>
-      <wpml:executeRCLostAction>goBack</wpml:executeRCLostAction>
+      <wpml:exitOnRCLost>${exitOnRCLost}</wpml:exitOnRCLost>
+      <wpml:executeRCLostAction>${executeRCLostAction}</wpml:executeRCLostAction>
       <wpml:globalTransitionalSpeed>${speed}</wpml:globalTransitionalSpeed>
       <wpml:droneInfo>
         <wpml:droneEnumValue>${droneEnumValue}</wpml:droneEnumValue>
@@ -3833,6 +3846,9 @@ function buildTemplateKml(finishAction, speed) {
 function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode) {
   const timestamp = Date.now();
   
+  const zoomEl = document.getElementById('camera-zoom');
+  const cameraZoom = zoomEl ? parseFloat(zoomEl.value) : 1.0;
+
   // Build XML Placemark tags (waypoints)
   let placemarksXml = '';
   let turnMode;
@@ -3949,6 +3965,29 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
       }
     }
 
+    // 4. Zoom action (only set once on the first waypoint to apply for the entire flight)
+    if (cameraZoom > 1.0 && idx === 0) {
+      actionsForThisPlacemark += `        <wpml:actionGroup>
+          <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>${idx}</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>zoom</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:focalLength>0</wpml:focalLength>
+              <wpml:isUseFocalFactor>1</wpml:isUseFocalFactor>
+              <wpml:focalFactor>${cameraZoom.toFixed(1)}</wpml:focalFactor>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>\n`;
+    }
+
     // Determine heading mode and angle for this waypoint
     let actualHeadingMode = headingMode;
     let actualHeadingAngle = 0;
@@ -3986,7 +4025,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
         }
       }
 
-      if (wp.heading !== null && wp.heading !== undefined) {
+      if (headingMode !== 'towardPOI' && wp.heading !== null && wp.heading !== undefined) {
         actualHeadingMode = 'smoothTransition';
         actualHeadingAngle = wp.heading;
       }
@@ -4024,7 +4063,16 @@ ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
   });
 
   const droneModelEl = document.getElementById('drone-model');
-  const droneEnumValue = droneModelEl ? parseInt(droneModelEl.value, 10) : 90; // Default to Mini 4 Pro
+  const droneEnumValue = droneModelEl ? parseInt(droneModelEl.value, 10) : 68; // Default to Mini 4 Pro (68)
+
+  const signalLostEl = document.getElementById('signal-lost-action');
+  const signalLostValue = signalLostEl ? signalLostEl.value : 'goBack';
+  let exitOnRCLost = 'executeLostAction';
+  let executeRCLostAction = signalLostValue;
+  if (signalLostValue === 'goContinue') {
+    exitOnRCLost = 'goContinue';
+    executeRCLostAction = 'goBack';
+  }
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
@@ -4035,8 +4083,8 @@ ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
     <wpml:missionConfig>
       <wpml:flyToWaylineMode>safely</wpml:flyToWaylineMode>
       <wpml:finishAction>${finishAction}</wpml:finishAction>
-      <wpml:exitOnRCLost>executeLostAction</wpml:exitOnRCLost>
-      <wpml:executeRCLostAction>goBack</wpml:executeRCLostAction>
+      <wpml:exitOnRCLost>${exitOnRCLost}</wpml:exitOnRCLost>
+      <wpml:executeRCLostAction>${executeRCLostAction}</wpml:executeRCLostAction>
       <wpml:globalTransitionalSpeed>${speed}</wpml:globalTransitionalSpeed>
       <wpml:droneInfo>
         <wpml:droneEnumValue>${droneEnumValue}</wpml:droneEnumValue>
@@ -4095,7 +4143,9 @@ function exportKMZ() {
         speed: speed, // Use UI speed slider value
         heading: wp.heading,
         isRingStart: wp.isRingStart || false,
-        ringIndex: wp.ringIndex !== undefined ? wp.ringIndex : null
+        ringIndex: wp.ringIndex !== undefined ? wp.ringIndex : null,
+        poiIndex: wp.poiIndex !== undefined ? wp.poiIndex : null,
+        headingMode: wp.headingMode !== undefined ? wp.headingMode : null
       };
     });
   }
@@ -6917,7 +6967,7 @@ function showAutoPlanModal() {
     rotation: document.getElementById('grid-rotation').value,
     center: centerMarker ? centerMarker.getLatLng() : null,
     cameraModel: document.getElementById('camera-model').value,
-    droneModel: document.getElementById('drone-model') ? document.getElementById('drone-model').value : '90',
+    droneModel: document.getElementById('drone-model') ? document.getElementById('drone-model').value : '68',
     cameraHfov: document.getElementById('camera-hfov').value,
     cameraVfov: document.getElementById('camera-vfov').value
   };
