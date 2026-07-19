@@ -289,6 +289,9 @@ document.addEventListener("DOMContentLoaded", () => {
     cachedUnitSystem = savedUnit;
   }
 
+  // Restore all range sliders and configurations from localStorage
+  restoreSettingsFromLocalStorage();
+
   initMap();
   initUIEventListeners();
   initGeolocation(); // Wires up the Locate Me button — does NOT auto-request permission
@@ -576,15 +579,54 @@ function initMap() {
   updateOpenSkyLink();
 }
 
+const CONTROLS_LIST = [
+  'grid-type', 'grid-width', 'grid-height', 'grid-rotation',
+  'front-overlap', 'side-overlap', 'gimbal-pitch',
+  'altitude', 'speed', 'heading-mode', 'finish-action', 'capture-mode', 'path-mode',
+  'max-flight-time', 'camera-model', 'drone-model', 'camera-hfov', 'camera-vfov', 'road-offset'
+];
+
+function saveAllSettingsToLocalStorage() {
+  const settings = {};
+  CONTROLS_LIST.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      settings[id] = el.value;
+    }
+  });
+  const roadSnapEl = document.getElementById('road-snap');
+  if (roadSnapEl) {
+    settings['road-snap'] = roadSnapEl.checked;
+  }
+  localStorage.setItem('aalaapi_sky_input_settings', JSON.stringify(settings));
+}
+
+function restoreSettingsFromLocalStorage() {
+  try {
+    const saved = localStorage.getItem('aalaapi_sky_input_settings');
+    if (!saved) return;
+    const settings = JSON.parse(saved);
+    CONTROLS_LIST.forEach(id => {
+      if (settings[id] !== undefined) {
+        const el = document.getElementById(id);
+        if (el) {
+          el.value = settings[id];
+        }
+      }
+    });
+    const roadSnapEl = document.getElementById('road-snap');
+    if (roadSnapEl && settings['road-snap'] !== undefined) {
+      roadSnapEl.checked = settings['road-snap'];
+    }
+  } catch (err) {
+    Logger.error("Failed to restore settings from localStorage:", err);
+  }
+}
+
 // Setup Event Listeners for UI controls
 function initUIEventListeners() {
   // Get all controls
-  const controls = [
-    'grid-width', 'grid-height', 'grid-rotation',
-    'front-overlap', 'side-overlap', 'gimbal-pitch',
-    'altitude', 'speed', 'heading-mode', 'finish-action', 'capture-mode', 'path-mode',
-    'max-flight-time', 'camera-model', 'drone-model', 'camera-hfov', 'camera-vfov', 'road-offset'
-  ];
+  const controls = [...CONTROLS_LIST];
 
   controls.forEach(id => {
     const el = document.getElementById(id);
@@ -599,8 +641,17 @@ function initUIEventListeners() {
     el.addEventListener('change', () => {
       syncDisplayValues();
       updateGrid();
+      saveAllSettingsToLocalStorage();
     });
   });
+
+  const roadSnapEl = document.getElementById('road-snap');
+  if (roadSnapEl) {
+    roadSnapEl.addEventListener('change', () => {
+      updateGrid();
+      saveAllSettingsToLocalStorage();
+    });
+  }
 
   // Handle Camera Model preset change
   const cameraModelEl = document.getElementById('camera-model');
