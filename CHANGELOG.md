@@ -2,6 +2,11 @@
 
 All notable changes to Aalaapi Sky will be documented in this file.
 
+## [1.14.1] - 2026-07-18
+
+### Changed
+- **Heading Mode Explanation:** Added a clear, static description paragraph below the Heading Mode dropdown in the sidebar to clarify that it operates as a global default, with procedural overrides applying to orbits.
+
 ## [1.14.0] - 2026-07-18
 
 ### Added

@@ -479,6 +479,7 @@
               <option value="fixed">Fixed Heading (North)</option>
               <option value="towardPOI">Point of Interest (POI / Target-Facing)</option>
             </select>
+            <p class="help-text" style="margin-top: 4px; margin-bottom: 0;">Applies as a global default to all waypoints in the mission (procedural orbits automatically override this setting).</p>
 
             <!-- Interactive Collapsible Help Drawer -->
             <div id="heading-help-drawer" class="help-drawer hidden" style="background: rgba(15, 23, 42, 0.4); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-top: 8px; display: flex; flex-direction: column; gap: 10px;">
@@ -811,7 +812,7 @@
             <div style="font-size: 0.72rem; font-style: italic; color: var(--text-muted); margin-top: 2px; line-height: 1.2;">
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
-            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.14.0</span>
+            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.14.1</span>
           </div>
         </div>
         
@@ -875,6 +876,12 @@
  
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.14.1):</strong>
+             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+               <li><strong>Heading Mode Explanation:</strong> Added static descriptive explanation under the selector indicating it serves as a global default.</li>
+             </ul>
+           </div>
+           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.14.0):</strong>
              <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
                <li><strong>POI Heading Mode & Adaptive UI:</strong> Added POI Target-Facing heading support to WPML exports and dynamically hide Heading Mode controls for circular orbit patterns.</li>
