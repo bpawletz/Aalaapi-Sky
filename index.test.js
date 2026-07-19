@@ -1335,3 +1335,67 @@ describe('initHeadingHelpDrawer Tests', () => {
   });
 });
 
+describe('buildWaylinesWpml towardPOI Tests', () => {
+  test('generates XML with correct POI coordinates when towardPOI mode is selected', () => {
+    try {
+      vm.runInThisContext(`
+        centerMarker = {
+          getLatLng: () => ({ lat: 40.0123, lng: -83.0456 })
+        };
+      `);
+      
+      const wps = [
+        { lat: 40.0123, lon: -83.0456, x: 0, y: 0, alt: 50 },
+        { lat: 40.0223, lon: -83.0456, x: 0, y: 100, alt: 50 }
+      ];
+
+      const xml = vm.runInThisContext(`
+        buildWaylinesWpml(${JSON.stringify(wps)}, 50, 4, 'towardPOI', 'goHome', -90, 'hover', 'normal')
+      `);
+
+      assert.strictEqual(xml.includes('<wpml:waypointHeadingMode>towardPOI</wpml:waypointHeadingMode>'), true);
+      assert.strictEqual(xml.includes('<wpml:waypointPoiPoint>-83.0456000000000,40.0123000000000,0.000000</wpml:waypointPoiPoint>'), true);
+    } finally {
+      vm.runInThisContext('centerMarker = null;');
+    }
+  });
+});
+
+describe('togglePatternParameters Visibility Tests', () => {
+  test('hides heading mode selector for orbits and shows it for grids', () => {
+    let mockContainer = { style: { display: '' } };
+    const originalGetElementById = global.document.getElementById;
+
+    global.document.getElementById = (id) => {
+      if (id === 'heading-mode-container') return mockContainer;
+      if (id === 'grid-type') return { value: 'orbit' };
+      if (id === 'grid-width') return { closest: () => ({ style: {}, querySelector: () => ({}) }) };
+      if (id === 'grid-height') return { closest: () => ({ style: {}, querySelector: () => ({}) }) };
+      if (id === 'grid-rotation') return { closest: () => ({ style: {}, querySelector: () => ({}) }) };
+      return originalGetElementById(id);
+    };
+
+    try {
+      vm.runInThisContext('togglePatternParameters()');
+      assert.strictEqual(mockContainer.style.display, 'none');
+
+      // Test showing for grid
+      global.document.getElementById = (id) => {
+        if (id === 'heading-mode-container') return mockContainer;
+        if (id === 'grid-type') return { value: 'single' };
+        if (id === 'grid-width') return { closest: () => ({ style: {}, querySelector: () => ({}) }) };
+        if (id === 'grid-height') return { closest: () => ({ style: {}, querySelector: () => ({}) }) };
+        if (id === 'grid-rotation') return { closest: () => ({ style: {}, querySelector: () => ({}) }) };
+        return originalGetElementById(id);
+      };
+
+      vm.runInThisContext('togglePatternParameters()');
+      assert.strictEqual(mockContainer.style.display, 'block');
+
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+});
+
+

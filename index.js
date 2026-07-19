@@ -1229,6 +1229,18 @@ function togglePatternParameters() {
   // Force value displays to synchronize with the new slider values
   syncDisplayValues();
 
+  // Conditionally hide Heading Mode for orbits (which have fixed procedural headings)
+  const headingModeContainer = document.getElementById('heading-mode-container');
+  if (headingModeContainer) {
+    if (gridType === 'orbit' || gridType === 'multi-orbit') {
+      headingModeContainer.style.display = 'none';
+      const helpDrawer = document.getElementById('heading-help-drawer');
+      if (helpDrawer) helpDrawer.classList.add('hidden');
+    } else {
+      headingModeContainer.style.display = 'block';
+    }
+  }
+
   const isProcedural = (gridType !== 'freeform' && gridType !== 'road-following');
   if (isProcedural) {
     roadWaypoints = []; // Clear road nodes
@@ -3695,6 +3707,12 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     let actualHeadingMode = headingMode;
     let actualHeadingAngle = 0;
     let headingAngleEnable = turnMode.includes('Stop') ? 1 : 0;
+    let poiPoint = "0.000000,0.000000,0.000000";
+
+    if (headingMode === 'towardPOI' && typeof centerMarker !== 'undefined' && centerMarker) {
+      const latlng = centerMarker.getLatLng();
+      poiPoint = `${latlng.lng.toFixed(13)},${latlng.lat.toFixed(13)},0.000000`;
+    }
 
     if (wp.heading !== null && wp.heading !== undefined) {
       actualHeadingMode = 'smoothTransition';
@@ -3715,7 +3733,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
         <wpml:waypointHeadingParam>
           <wpml:waypointHeadingMode>${actualHeadingMode}</wpml:waypointHeadingMode>
           <wpml:waypointHeadingAngle>${actualHeadingAngle.toFixed(1)}</wpml:waypointHeadingAngle>
-          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointPoiPoint>${poiPoint}</wpml:waypointPoiPoint>
           <wpml:waypointHeadingAngleEnable>${headingAngleEnable}</wpml:waypointHeadingAngleEnable>
           <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
           <wpml:waypointHeadingPoiIndex>0</wpml:waypointHeadingPoiIndex>
