@@ -69,7 +69,7 @@
               <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
               <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
             </svg>
-            <h1 style="display: inline-flex; align-items: center; gap: 8px;">Aalaapi Sky <span style="font-size: 0.55rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 5px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; vertical-align: middle; line-height: 1;">Beta / Buggy</span></h1>
+            <h1 style="display: inline-flex; align-items: center; gap: 8px;">Aalaapi Sky <span style="font-size: 0.55rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 5px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; vertical-align: middle; line-height: 1;">Beta</span></h1>
           </div>
           <div style="display: flex; gap: 8px; align-items: center;">
             <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" style="padding: 8px; display: inline-flex; align-items: center; justify-content: center; margin: 0; border-radius: 8px; width: 36px; height: 36px;">
@@ -661,9 +661,9 @@
       </header>
       <div class="modal-content" style="font-size: 0.85rem; line-height: 1.5; display: flex; flex-direction: column; gap: 12px; color: var(--text-muted); max-height: 50dvh; overflow-y: auto; padding: 16px 0;">
         <div style="border: 1px solid rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.08); padding: 12px; border-radius: 8px; margin-bottom: 4px;">
-          <strong style="color: #ef4444; display: block; font-size: 0.88rem; margin-bottom: 4px;">⚠️ Active Development & Alpha Software Warning</strong>
+          <strong style="color: #ef4444; display: block; font-size: 0.88rem; margin-bottom: 4px;">⚠️ Active Development & Flight Plan Export Notice</strong>
           <span style="color: var(--text-main); font-size: 0.8rem; line-height: 1.4; display: block;">
-            This tool is currently under active development. It is <strong>known to be buggy</strong> and does not always generate flight coordinates or camera parameters as expected. Always verify the exported KMZ file in Google Earth or DJI Pilot 2 before launching.
+            This tool is currently under active development. Generated waypoint files <strong>are not working properly on export</strong> and coordinates or camera parameters may fail to load correctly on your controller. Always verify the exported KMZ files in Google Earth or DJI Pilot 2 before attempting any flight.
           </span>
         </div>
         <p style="color: var(--text-main); font-weight: 600;">
@@ -834,7 +834,7 @@
             <div style="font-size: 0.72rem; font-style: italic; color: var(--text-muted); margin-top: 2px; line-height: 1.2;">
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
-            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.16.3</span>
+            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.16.4</span>
           </div>
         </div>
         
@@ -898,7 +898,13 @@
  
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
-            <strong style="color: var(--text-main);">Changelog (v1.16.3):</strong>
+            <strong style="color: var(--text-main);">Changelog (v1.16.4):</strong>
+             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+               <li><strong>Export Warning Prompts Refinement:</strong> Removed "buggy" label and explicitly specified that waypoint files do not work properly on export.</li>
+             </ul>
+           </div>
+           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+             <strong style="color: var(--text-main);">Changelog (v1.16.3):</strong>
              <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
                <li><strong>Buggy / Beta Warning Prompts:</strong> Added active development warnings inside both the startup safety disclaimer gatekeeper modal and the sidebar header title branding.</li>
              </ul>
