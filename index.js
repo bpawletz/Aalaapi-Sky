@@ -6234,6 +6234,12 @@ function updateFPVEditorUI() {
   if (wpIndexSpan) wpIndexSpan.textContent = fpvProgressIndex + 1;
   if (coordsSpan) coordsSpan.textContent = `${wp.lat.toFixed(6)}, ${wp.lon.toFixed(6)}`;
 
+  // Lat / Lon inputs
+  const latInput = document.getElementById('fpv-edit-wp-lat');
+  const lonInput = document.getElementById('fpv-edit-wp-lon');
+  if (latInput) latInput.value = wp.lat.toFixed(7);
+  if (lonInput) lonInput.value = wp.lon.toFixed(7);
+
   // Alt
   const altVal = document.getElementById('fpv-edit-alt-val');
   const altSlider = document.getElementById('fpv-edit-alt');
@@ -6625,6 +6631,108 @@ function setupFPVListeners() {
         }
       });
     }
+  }
+
+  // Position Nudge & Lat/Lon Logic
+  const latInput = document.getElementById('fpv-edit-wp-lat');
+  const lonInput = document.getElementById('fpv-edit-wp-lon');
+  const stepDisplay = document.getElementById('fpv-nudge-step-display');
+
+  if (latInput && lonInput && stepDisplay) {
+    // Update step label on open
+    const unit = getUnitSystem();
+    const initialStepLabel = unit === 'imperial' ? '5 ft' : '1m';
+    stepDisplay.textContent = initialStepLabel;
+
+    // Cycle nudge steps
+    const steps = unit === 'imperial'
+      ? [0.3048, 1.524, 3.048]  // ~1ft, 5ft, 10ft in meters
+      : [0.2, 1, 5];            // 0.2m, 1m, 5m
+    const stepLabels = unit === 'imperial'
+      ? ['1 ft', '5 ft', '10 ft']
+      : ['0.2m', '1m', '5m'];
+    let currentStepIndex = 1; // Default to middle index (5ft or 1m)
+
+    stepDisplay.addEventListener('click', () => {
+      currentStepIndex = (currentStepIndex + 1) % steps.length;
+      stepDisplay.textContent = stepLabels[currentStepIndex];
+    });
+
+    const applyLatLonUpdate = (newLat, newLon) => {
+      const waypoints = getCurrentWaypoints();
+      if (!waypoints || !waypoints[fpvProgressIndex]) return;
+
+      const wp = waypoints[fpvProgressIndex];
+      const centerLatLng = centerMarker.getLatLng();
+      const offsets = geodeticToLocal(newLat, newLon, centerLatLng.lat, centerLatLng.lng);
+
+      wp.lat = newLat;
+      wp.lon = newLon;
+      wp.x = offsets.x;
+      wp.y = offsets.y;
+      wp.isModified = true;
+
+      const gridType = document.getElementById('grid-type').value;
+      if (gridType === 'road-following') {
+        const roadWaypoints = window.roadWaypoints || [];
+        if (roadWaypoints && roadWaypoints[fpvProgressIndex]) {
+          roadWaypoints[fpvProgressIndex].lat = newLat;
+          roadWaypoints[fpvProgressIndex].lon = newLon;
+          roadWaypoints[fpvProgressIndex].x = offsets.x;
+          roadWaypoints[fpvProgressIndex].y = offsets.y;
+          roadWaypoints[fpvProgressIndex].isModified = true;
+          recalculateRoadOffsetPath(centerLatLng.lat, centerLatLng.lng);
+        }
+      }
+
+      const activePhotos = getCurrentPhotos();
+      const hasPhoto = activePhotos && activePhotos[fpvProgressIndex];
+      if (hasPhoto && gridType !== 'road-following') {
+        activePhotos[fpvProgressIndex].lat = newLat;
+        activePhotos[fpvProgressIndex].lon = newLon;
+        activePhotos[fpvProgressIndex].x = offsets.x;
+        activePhotos[fpvProgressIndex].y = offsets.y;
+      }
+
+      latInput.value = newLat.toFixed(7);
+      lonInput.value = newLon.toFixed(7);
+
+      redrawCurrentMission();
+      recreate3DWaypointsAndPaths();
+      updateFPVEditorUI();
+    };
+
+    const handleManualInput = () => {
+      const newLat = parseFloat(latInput.value);
+      const newLon = parseFloat(lonInput.value);
+      if (isNaN(newLat) || isNaN(newLon)) return;
+      applyLatLonUpdate(newLat, newLon);
+    };
+
+    latInput.addEventListener('change', handleManualInput);
+    lonInput.addEventListener('change', handleManualInput);
+
+    const R_EARTH = 6378137.0;
+    const nudge = (dLatDir, dLonDir) => {
+      const latVal = parseFloat(latInput.value);
+      const lonVal = parseFloat(lonInput.value);
+      if (isNaN(latVal) || isNaN(lonVal)) return;
+
+      const dist = steps[currentStepIndex];
+      const dLatMeters = dLatDir * dist;
+      const dLonMeters = dLonDir * dist;
+
+      const latRad = latVal * Math.PI / 180.0;
+      const deltaLat = (dLatMeters / R_EARTH) * (180.0 / Math.PI);
+      const deltaLon = (dLonMeters / (R_EARTH * Math.cos(latRad))) * (180.0 / Math.PI);
+
+      applyLatLonUpdate(latVal + deltaLat, lonVal + deltaLon);
+    };
+
+    document.getElementById('fpv-nudge-n-btn')?.addEventListener('click', () => nudge(1, 0));
+    document.getElementById('fpv-nudge-s-btn')?.addEventListener('click', () => nudge(-1, 0));
+    document.getElementById('fpv-nudge-e-btn')?.addEventListener('click', () => nudge(0, 1));
+    document.getElementById('fpv-nudge-w-btn')?.addEventListener('click', () => nudge(0, -1));
   }
 
   // Delete Waypoint
