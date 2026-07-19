@@ -1803,11 +1803,50 @@ html, body {
           </div>
 
           <div class="control-group">
-            <label for="heading-mode">Heading Mode</label>
+            <div class="control-label" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+              <span style="display: inline-flex; align-items: center; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
+                  <polygon points="3 11 22 2 13 21 11 13 3 11" stroke="#06b6d4" fill="none"/>
+                </svg>
+                Heading Mode
+              </span>
+              <button id="heading-help-btn" type="button" aria-label="Heading Mode Information" style="background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.2); color: var(--accent-cyan); cursor: pointer; padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; transition: var(--transition-smooth); display: inline-flex; align-items: center; justify-content: center; height: 20px; width: 20px; margin: 0;">?</button>
+            </div>
             <select id="heading-mode" class="form-select">
               <option value="followWayline">Follow Flight Path (Forward-facing)</option>
               <option value="fixed">Fixed Heading (North)</option>
             </select>
+
+            <!-- Interactive Collapsible Help Drawer -->
+            <div id="heading-help-drawer" class="help-drawer hidden" style="background: rgba(15, 23, 42, 0.4); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-top: 8px; display: flex; flex-direction: column; gap: 10px;">
+              <div style="display: flex; gap: 6px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px;">
+                <button id="heading-tab-follow" class="active" type="button" style="flex: 1; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); color: var(--accent-cyan); font-size: 0.7rem; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px;">Follow Path</button>
+                <button id="heading-tab-fixed" type="button" style="flex: 1; background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 0.7rem; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px;">Fixed Heading</button>
+              </div>
+              <div class="animation-container" style="position: relative; height: 90px; background: rgba(5, 8, 15, 0.45); border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, 0.03);">
+                <svg viewBox="0 0 200 90" style="width: 100%; height: 100%;">
+                  <!-- Flight path line -->
+                  <path d="M 30,55 L 100,25 L 170,65" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2" stroke-dasharray="4 4"/>
+                  <path id="anim-flight-path-active" d="M 30,55 L 100,25 L 170,65" fill="none" stroke="var(--accent-cyan)" stroke-width="2" stroke-dasharray="250" stroke-dashoffset="250" opacity="0.4"/>
+                  <!-- Animated Drone Group -->
+                  <g id="anim-drone" transform="translate(30,55)">
+                    <!-- Arms -->
+                    <line x1="-7" y1="-7" x2="7" y2="7" stroke="#c2622d" stroke-width="1.5" />
+                    <line x1="-7" y1="7" x2="7" y2="-7" stroke="#c2622d" stroke-width="1.5" />
+                    <!-- Propellers -->
+                    <circle cx="-7" cy="-7" r="2.2" stroke="#06b6d4" stroke-width="0.8" fill="none"/>
+                    <circle cx="7" cy="-7" r="2.2" stroke="#06b6d4" stroke-width="0.8" fill="none"/>
+                    <circle cx="-7" cy="7" r="2.2" stroke="#06b6d4" stroke-width="0.8" fill="none"/>
+                    <circle cx="7" cy="7" r="2.2" stroke="#06b6d4" stroke-width="0.8" fill="none"/>
+                    <!-- Direction Pointer -->
+                    <polygon points="0,-4 -3.5,2.5 3.5,2.5" fill="#06b6d4" />
+                  </g>
+                </svg>
+              </div>
+              <p id="heading-help-desc" style="font-size: 0.72rem; color: var(--text-muted); line-height: 1.35; margin: 0; min-height: 32px;">
+                Drone rotates forward along the path. Camera always points ahead.
+              </p>
+            </div>
           </div>
 
           <div class="control-group">
@@ -2099,7 +2138,7 @@ html, body {
             <div style="font-size: 0.72rem; font-style: italic; color: var(--text-muted); margin-top: 2px; line-height: 1.2;">
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
-            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.13.7</span>
+            <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2); margin-top: 4px;">Version 1.13.8</span>
           </div>
         </div>
         
@@ -2163,6 +2202,12 @@ html, body {
  
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.13.8):</strong>
+             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+               <li><strong>Heading Mode Help Drawer:</strong> Added an interactive collapsible explanation drawer under Heading Mode with vector drone flight simulations for Follow Path vs. Fixed Heading.</li>
+             </ul>
+           </div>
+           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.13.7):</strong>
              <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
                <li><strong>State Persistence:</strong> Automatically saves all 18 sidebar controls and switch settings to localStorage, auto-restoring them when the app is reloaded.</li>
@@ -3107,6 +3152,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initGeolocation(); // Wires up the Locate Me button — does NOT auto-request permission
   initAutoPlan();
   initPatternSelectorCards();
+  initHeadingHelpDrawer();
   // No updateGrid() here — map starts clean; user clicks map or uses Auto-Plan/Import to begin
   syncDisplayValues();
   togglePatternParameters();
@@ -9854,6 +9900,126 @@ function updateOpenSkyLink() {
   if (linkEl && map) {
     const center = centerMarker ? centerMarker.getLatLng() : map.getCenter();
     linkEl.href = `https://map.opensky-network.org/?lat=${center.lat.toFixed(4)}&lon=${center.lng.toFixed(4)}&zoom=11`;
+  }
+}
+
+// Interactive Collapsible Help Drawer for Heading Mode
+function initHeadingHelpDrawer() {
+  const helpBtn = document.getElementById('heading-help-btn');
+  const helpDrawer = document.getElementById('heading-help-drawer');
+  const tabFollow = document.getElementById('heading-tab-follow');
+  const tabFixed = document.getElementById('heading-tab-fixed');
+  const helpDesc = document.getElementById('heading-help-desc');
+  const animDrone = document.getElementById('anim-drone');
+  const activePath = document.getElementById('anim-flight-path-active');
+
+  if (!helpBtn || !helpDrawer || !tabFollow || !tabFixed || !helpDesc || !animDrone) return;
+
+  let activeMode = 'followWayline'; // or 'fixed'
+  let animationFrameId = null;
+  let isDrawerOpen = false;
+
+  // Toggle drawer visibility
+  helpBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    isDrawerOpen = !isDrawerOpen;
+    helpDrawer.classList.toggle('hidden', !isDrawerOpen);
+    
+    if (isDrawerOpen) {
+      startAnimation();
+    } else {
+      stopAnimation();
+    }
+  });
+
+  // Switch to Follow Path Tab
+  tabFollow.addEventListener('click', () => {
+    activeMode = 'followWayline';
+    tabFollow.classList.add('active');
+    tabFollow.style.background = 'rgba(6, 182, 212, 0.15)';
+    tabFollow.style.borderColor = 'rgba(6, 182, 212, 0.3)';
+    tabFollow.style.color = 'var(--accent-cyan)';
+
+    tabFixed.classList.remove('active');
+    tabFixed.style.background = 'none';
+    tabFixed.style.borderColor = 'transparent';
+    tabFixed.style.color = 'var(--text-muted)';
+
+    helpDesc.textContent = "Drone rotates forward along the path. Camera always points ahead.";
+  });
+
+  // Switch to Fixed Heading Tab
+  tabFixed.addEventListener('click', () => {
+    activeMode = 'fixed';
+    tabFixed.classList.add('active');
+    tabFixed.style.background = 'rgba(6, 182, 212, 0.15)';
+    tabFixed.style.borderColor = 'rgba(6, 182, 212, 0.3)';
+    tabFixed.style.color = 'var(--accent-cyan)';
+
+    tabFollow.classList.remove('active');
+    tabFollow.style.background = 'none';
+    tabFollow.style.borderColor = 'transparent';
+    tabFollow.style.color = 'var(--text-muted)';
+
+    helpDesc.textContent = "Drone keeps a constant heading (North). The aircraft flies sideways or backwards as needed.";
+  });
+
+  // Animation logic
+  let startTime = null;
+  const duration = 4000; // 4 seconds loop
+
+  // Path coordinates: segment 1 is (30,55) to (100,25), segment 2 is (100,25) to (170,65)
+  const p0 = { x: 30, y: 55 };
+  const p1 = { x: 100, y: 25 };
+  const p2 = { x: 170, y: 65 };
+
+  // Angle of segments in degrees
+  const angle1 = Math.atan2(p1.y - p0.y, p1.x - p0.x) * 180 / Math.PI + 90;
+  const angle2 = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI + 90;
+
+  function animate(timestamp) {
+    if (!startTime) startTime = timestamp;
+    let elapsed = timestamp - startTime;
+    let progress = (elapsed % duration) / duration;
+
+    let x, y, angle;
+    // Segment 1 (0% to 50% of loop time)
+    if (progress < 0.5) {
+      let tSeg = progress / 0.5;
+      x = p0.x + (p1.x - p0.x) * tSeg;
+      y = p0.y + (p1.y - p0.y) * tSeg;
+      angle = activeMode === 'followWayline' ? angle1 : 0;
+    } 
+    // Segment 2 (50% to 100% of loop time)
+    else {
+      let tSeg = (progress - 0.5) / 0.5;
+      x = p1.x + (p2.x - p1.x) * tSeg;
+      y = p1.y + (p2.y - p1.y) * tSeg;
+      angle = activeMode === 'followWayline' ? angle2 : 0;
+    }
+
+    animDrone.setAttribute('transform', `translate(${x}, ${y}) rotate(${angle})`);
+
+    if (activePath) {
+      const totalPathLength = 250;
+      let dashOffset = totalPathLength * (1 - progress);
+      activePath.setAttribute('stroke-dashoffset', dashOffset);
+    }
+
+    animationFrameId = requestAnimationFrame(animate);
+  }
+
+  function startAnimation() {
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    startTime = null;
+    animationFrameId = requestAnimationFrame(animate);
+  }
+
+  function stopAnimation() {
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
   }
 }
 

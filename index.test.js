@@ -1177,3 +1177,100 @@ describe('updateWeatherPanelUI Tests', () => {
     }
   });
 });
+
+describe('initHeadingHelpDrawer Tests', () => {
+  test('attaches click listeners and handles drawer toggling and tabs', () => {
+    let helpBtnClicked = null;
+    let tabFollowClicked = null;
+    let tabFixedClicked = null;
+
+    const mockHelpBtn = {
+      addEventListener: (evt, cb) => {
+        if (evt === 'click') helpBtnClicked = cb;
+      }
+    };
+    const mockHelpDrawer = {
+      classList: {
+        contains: (cls) => cls === 'hidden',
+        toggle: mock.fn()
+      }
+    };
+    const mockTabFollow = {
+      addEventListener: (evt, cb) => {
+        if (evt === 'click') tabFollowClicked = cb;
+      },
+      classList: {
+        add: mock.fn(),
+        remove: mock.fn()
+      },
+      style: {}
+    };
+    const mockTabFixed = {
+      addEventListener: (evt, cb) => {
+        if (evt === 'click') tabFixedClicked = cb;
+      },
+      classList: {
+        add: mock.fn(),
+        remove: mock.fn()
+      },
+      style: {}
+    };
+    const mockHelpDesc = { textContent: '' };
+    const mockAnimDrone = { setAttribute: mock.fn() };
+    const mockActivePath = { setAttribute: mock.fn() };
+
+    const originalGetElementById = global.document.getElementById;
+    global.document.getElementById = (id) => {
+      if (id === 'heading-help-btn') return mockHelpBtn;
+      if (id === 'heading-help-drawer') return mockHelpDrawer;
+      if (id === 'heading-tab-follow') return mockTabFollow;
+      if (id === 'heading-tab-fixed') return mockTabFixed;
+      if (id === 'heading-help-desc') return mockHelpDesc;
+      if (id === 'anim-drone') return mockAnimDrone;
+      if (id === 'anim-flight-path-active') return mockActivePath;
+      return null;
+    };
+
+    // Mock requestAnimationFrame and cancelAnimationFrame
+    const originalRaf = global.requestAnimationFrame;
+    const originalCaf = global.cancelAnimationFrame;
+    let callCount = 0;
+    global.requestAnimationFrame = (cb) => {
+      callCount++;
+      if (callCount === 1) {
+        cb(100); // execute exactly once synchronously to cover code paths
+      }
+      return 123;
+    };
+    global.cancelAnimationFrame = () => {};
+
+    try {
+      vm.runInThisContext('initHeadingHelpDrawer()');
+
+      // Assert click listeners were bound
+      assert.ok(helpBtnClicked);
+      assert.ok(tabFollowClicked);
+      assert.ok(tabFixedClicked);
+
+      // Trigger drawer toggle click
+      const mockEvent = { stopPropagation: () => {} };
+      helpBtnClicked(mockEvent);
+
+      // Verify toggle was called
+      assert.strictEqual(mockHelpDrawer.classList.toggle.mock.callCount(), 1);
+
+      // Trigger tab clicks and verify description updates
+      tabFixedClicked();
+      assert.strictEqual(mockHelpDesc.textContent.includes('constant heading'), true);
+
+      tabFollowClicked();
+      assert.strictEqual(mockHelpDesc.textContent.includes('rotates forward'), true);
+
+    } finally {
+      global.document.getElementById = originalGetElementById;
+      global.requestAnimationFrame = originalRaf;
+      global.cancelAnimationFrame = originalCaf;
+    }
+  });
+});
+
