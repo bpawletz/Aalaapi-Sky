@@ -1398,4 +1398,200 @@ describe('togglePatternParameters Visibility Tests', () => {
   });
 });
 
+describe('buildWaylinesWpml Waypoint Overrides Tests', () => {
+  test('respects individual waypoint headingMode settings in KML generation', () => {
+    try {
+      vm.runInThisContext(`
+        centerMarker = {
+          getLatLng: () => ({ lat: 40.0123, lng: -83.0456 })
+        };
+      `);
+
+      const wps = [
+        { lat: 40.0123, lon: -83.0456, alt: 50, headingMode: 'fixed' },
+        { lat: 40.0123, lon: -83.0456, alt: 50, headingMode: 'towardPOI' },
+        { lat: 40.0123, lon: -83.0456, alt: 50, headingMode: 'custom', heading: 180 }
+      ];
+
+      const xml = vm.runInThisContext(`
+        buildWaylinesWpml(${JSON.stringify(wps)}, 50, 4, 'followWayline', 'goHome', -90, 'hover', 'normal')
+      `);
+
+      // Waypoint 0 should be fixed
+      assert.strictEqual(xml.includes('<wpml:waypointHeadingMode>fixed</wpml:waypointHeadingMode>'), true);
+      // Waypoint 1 should be towardPOI
+      assert.strictEqual(xml.includes('<wpml:waypointHeadingMode>towardPOI</wpml:waypointHeadingMode>'), true);
+      // Waypoint 2 should be smoothTransition with angle 180
+      assert.strictEqual(xml.includes('<wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>'), true);
+      assert.strictEqual(xml.includes('<wpml:waypointHeadingAngle>180.0</wpml:waypointHeadingAngle>'), true);
+
+    } finally {
+      vm.runInThisContext('centerMarker = null;');
+    }
+  });
+});
+
+describe('updateFPVEditorUI headingMode Tests', () => {
+  test('correctly configures heading dropdown and slider visibility in FPV editor', () => {
+    const originalGetElementById = global.document.getElementById;
+
+    const mockSelect = { value: '' };
+    const mockSlider = { style: { display: 'none' }, value: 0 };
+    const mockVal = { textContent: '' };
+
+    global.document.getElementById = (id) => {
+      if (id === 'fpv-edit-heading-mode') return mockSelect;
+      if (id === 'fpv-edit-heading') return mockSlider;
+      if (id === 'fpv-edit-heading-val') return mockVal;
+      return originalGetElementById(id);
+    };
+
+    try {
+      vm.runInThisContext('fpvProgressIndex = 0;');
+      
+      // Test inherit mode
+      vm.runInThisContext(`
+        generatedWaypoints = [{ lat: 40.0, lon: -83.0, alt: 50, headingMode: 'inherit' }];
+        updateFPVEditorUI();
+      `);
+      assert.strictEqual(mockSelect.value, 'inherit');
+      assert.strictEqual(mockSlider.style.display, 'none');
+
+      // Test custom mode
+      vm.runInThisContext(`
+        generatedWaypoints = [{ lat: 40.0, lon: -83.0, alt: 50, headingMode: 'custom', heading: 245 }];
+        updateFPVEditorUI();
+      `);
+      assert.strictEqual(mockSelect.value, 'custom');
+      assert.strictEqual(mockSlider.style.display, 'block');
+      assert.strictEqual(mockSlider.value, 245);
+      assert.strictEqual(mockVal.textContent, '245°');
+
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+});
+
+describe('createWaypointEditorDOM headingMode Tests', () => {
+  test('popup HTML contains headingMode select with all 5 mode options', () => {
+    // We test the innerHTML string by patching document.createElement to return
+    // a proper mock object that has innerHTML/querySelector support.
+    const originalCreateElement = global.document.createElement;
+    const originalGetElementById = global.document.getElementById;
+
+    // Build a minimal element mock that stores innerHTML and exposes querySelector
+    const makeEl = (tag) => {
+      const el = {
+        tagName: tag.toUpperCase(),
+        className: '',
+        style: {},
+        innerHTML: '',
+        _listeners: {},
+        appendChild: function(child) { return child; },
+        querySelector: function(sel) {
+          // Parse the stored innerHTML to find matching id
+          const m = sel.match(/^#(.+)$/);
+          if (!m) return null;
+          const id = m[1];
+          const re = new RegExp(`id="${id}"[^>]*>`);
+          if (!re.test(this.innerHTML)) return null;
+          // Return minimal mock for matched elements
+          const styleMatch = this.innerHTML.match(new RegExp(`id="${id}"[^>]*style="([^"]*)"`));
+          const valMatch = this.innerHTML.match(new RegExp(`id="${id}"[^>]*value="([^"]*)"`));
+          return {
+            value: valMatch ? valMatch[1] : '',
+            style: { display: styleMatch ? (styleMatch[1].match(/display:\s*(\w+)/) || ['',''])[1] : '' },
+            textContent: '',
+            disabled: false,
+            addEventListener: () => {}
+          };
+        },
+        on: () => {},
+        addEventListener: () => {}
+      };
+      return el;
+    };
+
+    global.document.createElement = (tag) => makeEl(tag);
+    global.document.getElementById = (id) => {
+      if (id === 'grid-rotation') return { value: '0' };
+      if (id === 'grid-type') return { value: 'single' };
+      return originalGetElementById(id);
+    };
+
+    try {
+      vm.runInThisContext('centerMarker = { getLatLng: () => ({ lat: 40.0, lng: -83.0 }) };');
+      global.testWp = { lat: 40.0, lon: -83.0, alt: 50, pitch: -45, heading: null, headingMode: 'inherit' };
+      global.testMarker = {
+        setLatLng: () => {}, getTooltip: () => ({ setContent: () => {} }),
+        setIcon: () => {}, on: () => {}, off: () => {}, closePopup: () => {}
+      };
+      const container = vm.runInThisContext(
+        'createWaypointEditorDOM(global.testWp, 0, global.testMarker)'
+      );
+
+      const html = container.innerHTML;
+      assert.ok(html.includes('id="edit-wp-heading-mode"'), 'should include heading mode select');
+      assert.ok(html.includes('value="inherit"'), 'inherit option should exist');
+      assert.ok(html.includes('value="followWayline"'), 'followWayline option should exist');
+      assert.ok(html.includes('value="fixed"'), 'fixed option should exist');
+      assert.ok(html.includes('value="towardPOI"'), 'towardPOI option should exist');
+      assert.ok(html.includes('value="custom"'), 'custom option should exist');
+      // For inherit mode the custom slider should be display:none
+      assert.ok(html.includes('display: none'), 'custom angle slider should be hidden for inherit mode');
+
+    } finally {
+      global.document.createElement = originalCreateElement;
+      global.document.getElementById = originalGetElementById;
+      vm.runInThisContext('centerMarker = null;');
+      delete global.testWp;
+      delete global.testMarker;
+    }
+  });
+
+  test('popup HTML shows custom slider as display:block when headingMode is custom', () => {
+    const originalCreateElement = global.document.createElement;
+    const originalGetElementById = global.document.getElementById;
+
+    const makeEl = (tag) => ({
+      tagName: tag.toUpperCase(), className: '', style: {}, innerHTML: '',
+      appendChild: (c) => c,
+      querySelector: () => ({ value: '', style: {}, textContent: '', disabled: false, addEventListener: () => {} }),
+      on: () => {}, addEventListener: () => {}
+    });
+
+    global.document.createElement = (tag) => makeEl(tag);
+    global.document.getElementById = (id) => {
+      if (id === 'grid-rotation') return { value: '0' };
+      if (id === 'grid-type') return { value: 'single' };
+      return originalGetElementById(id);
+    };
+
+    try {
+      vm.runInThisContext('centerMarker = { getLatLng: () => ({ lat: 40.0, lng: -83.0 }) };');
+      global.testWp2 = { lat: 40.0, lon: -83.0, alt: 50, pitch: -45, heading: 135, headingMode: 'custom' };
+      global.testMarker2 = {
+        setLatLng: () => {}, getTooltip: () => ({ setContent: () => {} }),
+        setIcon: () => {}, on: () => {}, off: () => {}, closePopup: () => {}
+      };
+      const container = vm.runInThisContext(
+        'createWaypointEditorDOM(global.testWp2, 0, global.testMarker2)'
+      );
+
+      const html = container.innerHTML;
+      assert.ok(html.includes('id="edit-wp-heading-mode"'), 'should include heading mode select');
+      // Custom mode slider should be display:block in the template
+      assert.ok(html.includes('display: block'), 'custom angle slider should be visible for custom mode');
+
+    } finally {
+      global.document.createElement = originalCreateElement;
+      global.document.getElementById = originalGetElementById;
+      vm.runInThisContext('centerMarker = null;');
+      delete global.testWp2;
+      delete global.testMarker2;
+    }
+  });
+});
+
 

@@ -2,6 +2,15 @@
 
 All notable changes to Aalaapi Sky will be documented in this file.
 
+## [1.15.0] - 2026-07-19
+
+### Added
+- **Per-Waypoint Heading Mode (Map Popup):** Replaced the legacy Auto checkbox in the map marker waypoint editor popup with a full five-option **Heading Mode** dropdown selector matching the FPV editor panel — options include Inherit Global Default, Follow Flight Path, Fixed Heading (North), Point of Interest (POI), and Custom Angle. The Custom Angle range slider is conditionally shown/hidden based on the selection.
+
+### Changed
+- **Consistent Waypoint Editing UI:** Both the map popup editor and the FPV panel editor now show identical heading mode controls, ensuring consistent behavior across all editing interfaces.
+- **Wider Waypoint Popup:** Increased map popup width from 210px to 230px for better readability and padding around controls.
+
 ## [1.14.1] - 2026-07-18
 
 ### Changed
