@@ -1354,7 +1354,7 @@ describe('buildWaylinesWpml towardPOI Tests', () => {
       `);
 
       assert.strictEqual(xml.includes('<wpml:waypointHeadingMode>towardPOI</wpml:waypointHeadingMode>'), true);
-      assert.strictEqual(xml.includes('<wpml:waypointPoiPoint>-83.0456000000000,40.0123000000000,0.000000</wpml:waypointPoiPoint>'), true);
+      assert.strictEqual(xml.includes('<wpml:waypointPoiPoint>40.0123000000000,-83.0456000000000,0.000000</wpml:waypointPoiPoint>'), true);
     } finally {
       vm.runInThisContext('centerMarker = null;');
     }
@@ -1658,11 +1658,11 @@ describe('buildWaylinesWpml Multi-POI Export Tests', () => {
 
       // Waypoint 0 should point to POI 1 (-83.05, 40.05)
       assert.ok(xml.includes('<wpml:waypointHeadingPoiIndex>1</wpml:waypointHeadingPoiIndex>'));
-      assert.ok(xml.includes('<wpml:waypointPoiPoint>-83.0500000000000,40.0500000000000,0.000000</wpml:waypointPoiPoint>'));
+      assert.ok(xml.includes('<wpml:waypointPoiPoint>40.0500000000000,-83.0500000000000,0.000000</wpml:waypointPoiPoint>'));
 
       // Waypoint 1 should point to POI 2 (-83.10, 40.10)
       assert.ok(xml.includes('<wpml:waypointHeadingPoiIndex>2</wpml:waypointHeadingPoiIndex>'));
-      assert.ok(xml.includes('<wpml:waypointPoiPoint>-83.1000000000000,40.1000000000000,0.000000</wpml:waypointPoiPoint>'));
+      assert.ok(xml.includes('<wpml:waypointPoiPoint>40.1000000000000,-83.1000000000000,0.000000</wpml:waypointPoiPoint>'));
 
     } finally {
       vm.runInThisContext('centerMarker = null; pois = [];');
