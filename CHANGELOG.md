@@ -2,6 +2,11 @@
 
 All notable changes to Aalaapi Sky will be documented in this file.
 
+## [1.13.6] - 2026-07-18
+
+### Added
+- **Visual Slider Labels:** Integrated beautiful inline SVGs styled with the terracotta and cyan theme next to all 12 range slider labels in the sidebar (Section 2, 3, and 4) to visually communicate the parameter being modified.
+
 ## [1.13.5] - 2026-07-18
 
 ### Changed
