@@ -1,0 +1,472 @@
+TAP version 13
+# Subtest: Utility Functions
+    # Subtest: throttle limits the rate of function execution
+    ok 1 - throttle limits the rate of function execution
+      ---
+      duration_ms: 3.796446
+      type: 'test'
+      ...
+    1..1
+ok 1 - Utility Functions
+  ---
+  duration_ms: 5.711926
+  type: 'suite'
+  ...
+# Subtest: updateOpenSkyLink Tests
+    # Subtest: updates link using centerMarker
+    ok 1 - updates link using centerMarker
+      ---
+      duration_ms: 0.592807
+      type: 'test'
+      ...
+    # Subtest: updates link using map center if no centerMarker
+    ok 2 - updates link using map center if no centerMarker
+      ---
+      duration_ms: 0.392534
+      type: 'test'
+      ...
+    # Subtest: does nothing if map or linkEl is missing
+    ok 3 - does nothing if map or linkEl is missing
+      ---
+      duration_ms: 0.418948
+      type: 'test'
+      ...
+    # Subtest: formats coordinates to exactly 4 decimal places with trailing zeros
+    ok 4 - formats coordinates to exactly 4 decimal places with trailing zeros
+      ---
+      duration_ms: 0.288578
+      type: 'test'
+      ...
+    # Subtest: handles zero coordinates correctly
+    ok 5 - handles zero coordinates correctly
+      ---
+      duration_ms: 0.263385
+      type: 'test'
+      ...
+    1..5
+ok 2 - updateOpenSkyLink Tests
+  ---
+  duration_ms: 2.313427
+  type: 'suite'
+  ...
+# Subtest: Unit Conversion Tests
+    # Subtest: formatDistance formats metric distance correctly
+    ok 1 - formatDistance formats metric distance correctly
+      ---
+      duration_ms: 0.493646
+      type: 'test'
+      ...
+    # Subtest: formatDistance handles null, undefined, and NaN
+    ok 2 - formatDistance handles null, undefined, and NaN
+      ---
+      duration_ms: 0.161413
+      type: 'test'
+      ...
+    # Subtest: formatDistance formats imperial distance correctly
+    ok 3 - formatDistance formats imperial distance correctly
+      ---
+      duration_ms: 0.56959
+      type: 'test'
+      ...
+    # Subtest: formatDistance handles null, undefined, and NaN for imperial
+    ok 4 - formatDistance handles null, undefined, and NaN for imperial
+      ---
+      duration_ms: 0.356189
+      type: 'test'
+      ...
+    1..4
+ok 3 - Unit Conversion Tests
+  ---
+  duration_ms: 1.832804
+  type: 'suite'
+  ...
+# Subtest: parseWPML Tests
+    # Subtest: parseWPML handles invalid XML parsing errors
+    ok 1 - parseWPML handles invalid XML parsing errors
+      ---
+      duration_ms: 1.727676
+      type: 'test'
+      ...
+    # Subtest: parseWPML handles missing waypoints gracefully
+    ok 2 - parseWPML handles missing waypoints gracefully
+      ---
+      duration_ms: 0.282519
+      type: 'test'
+      ...
+    1..2
+ok 4 - parseWPML Tests
+  ---
+  duration_ms: 2.239412
+  type: 'suite'
+  ...
+# Subtest: Coordinate Math Tests
+    # Subtest: getDefaultHeading computes correct headings
+    ok 1 - getDefaultHeading computes correct headings
+      ---
+      duration_ms: 0.741152
+      type: 'test'
+      ...
+    # Subtest: calculateDistance computes correct distance between two coordinates
+    ok 2 - calculateDistance computes correct distance between two coordinates
+      ---
+      duration_ms: 0.407413
+      type: 'test'
+      ...
+    # Subtest: localToGeodetic converts local offsets back to geodetic
+    ok 3 - localToGeodetic converts local offsets back to geodetic
+      ---
+      duration_ms: 0.27098
+      type: 'test'
+      ...
+    # Subtest: geodeticToLocal converts geodetic coordinates to local offsets
+    ok 4 - geodeticToLocal converts geodetic coordinates to local offsets
+      ---
+      duration_ms: 0.382653
+      type: 'test'
+      ...
+    1..4
+ok 5 - Coordinate Math Tests
+  ---
+  duration_ms: 2.175704
+  type: 'suite'
+  ...
+# Subtest: Grid Generation Tests
+    # Subtest: generateGridCoordinates produces correct basic single grid
+    ok 1 - generateGridCoordinates produces correct basic single grid
+      ---
+      duration_ms: 0.597848
+      type: 'test'
+      ...
+    # Subtest: generateCircularGridCoordinates produces correct grid for hover mode
+    ok 2 - generateCircularGridCoordinates produces correct grid for hover mode
+      ---
+      duration_ms: 0.439689
+      type: 'test'
+      ...
+    # Subtest: generateCircularGridCoordinates produces correct grid for continuous mode
+    ok 3 - generateCircularGridCoordinates produces correct grid for continuous mode
+      ---
+      duration_ms: 0.182459
+      type: 'test'
+      ...
+    # Subtest: generateCircularGridCoordinates handles edge cases with too large spacing
+    ok 4 - generateCircularGridCoordinates handles edge cases with too large spacing
+      ---
+      duration_ms: 0.157033
+      type: 'test'
+      ...
+    1..4
+ok 6 - Grid Generation Tests
+  ---
+  duration_ms: 1.732639
+  type: 'suite'
+  ...
+# Subtest: Orbit Generation Tests
+    # Subtest: generateOrbitCoordinates enforces minimum number of photos constraint
+    ok 1 - generateOrbitCoordinates enforces minimum number of photos constraint
+      ---
+      duration_ms: 0.410843
+      type: 'test'
+      ...
+    # Subtest: generateOrbitCoordinates calculates correct coordinates, altitude, and pitch
+    ok 2 - generateOrbitCoordinates calculates correct coordinates, altitude, and pitch
+      ---
+      duration_ms: 0.309197
+      type: 'test'
+      ...
+    # Subtest: generateOrbitCoordinates heading points directly to center
+    ok 3 - generateOrbitCoordinates heading points directly to center
+      ---
+      duration_ms: 0.28812
+      type: 'test'
+      ...
+    1..3
+ok 7 - Orbit Generation Tests
+  ---
+  duration_ms: 1.286623
+  type: 'suite'
+  ...
+# Subtest: Multi-Orbit Generation Tests
+    # Subtest: generateMultiOrbitCoordinates produces 3 rings with correct altitudes, pitches, and points
+    ok 1 - generateMultiOrbitCoordinates produces 3 rings with correct altitudes, pitches, and points
+      ---
+      duration_ms: 0.786014
+      type: 'test'
+      ...
+    # Subtest: generateMultiOrbitCoordinates enforces minimum number of photos per ring
+    ok 2 - generateMultiOrbitCoordinates enforces minimum number of photos per ring
+      ---
+      duration_ms: 0.276022
+      type: 'test'
+      ...
+    1..2
+ok 8 - Multi-Orbit Generation Tests
+  ---
+  duration_ms: 1.246405
+  type: 'suite'
+  ...
+# Subtest: searchAddress API Tests
+    # Subtest: searchAddress handles network failure gracefully
+    ok 1 - searchAddress handles network failure gracefully
+      ---
+      duration_ms: 51.42861
+      type: 'test'
+      ...
+    1..1
+ok 9 - searchAddress API Tests
+  ---
+  duration_ms: 51.781649
+  type: 'suite'
+  ...
+# Subtest: calculateStats Tests
+    # Subtest: returns null when waypoints length is less than 2
+    ok 1 - returns null when waypoints length is less than 2
+      ---
+      duration_ms: 0.641134
+      type: 'test'
+      ...
+    # Subtest: calculates total distance correctly with simple waypoints
+    ok 2 - calculates total distance correctly with simple waypoints
+      ---
+      duration_ms: 0.256737
+      type: 'test'
+      ...
+    # Subtest: detects isolated waypoints when max nearest neighbor distance > 100
+    ok 3 - detects isolated waypoints when max nearest neighbor distance > 100
+      ---
+      duration_ms: 0.19837
+      type: 'test'
+      ...
+    # Subtest: calculates isFarFromTakeoff correctly
+    ok 4 - calculates isFarFromTakeoff correctly
+      ---
+      duration_ms: 0.534318
+      type: 'test'
+      ...
+    # Subtest: calculates flight time and parts count correctly
+    ok 5 - calculates flight time and parts count correctly
+      ---
+      duration_ms: 0.329412
+      type: 'test'
+      ...
+    1..5
+ok 10 - calculateStats Tests
+  ---
+  duration_ms: 2.259024
+  type: 'suite'
+  ...
+# Subtest: NWS Weather fetching bounds and parsing
+ok 11 - NWS Weather fetching bounds and parsing
+  ---
+  duration_ms: 1.585941
+  type: 'test'
+  ...
+# Subtest: getSubMissionFlightTime Tests
+    # Subtest: calculates time for continuous capture mode
+    ok 1 - calculates time for continuous capture mode
+      ---
+      duration_ms: 0.386194
+      type: 'test'
+      ...
+    # Subtest: calculates time for stopAndShoot capture mode
+    ok 2 - calculates time for stopAndShoot capture mode
+      ---
+      duration_ms: 0.279098
+      type: 'test'
+      ...
+    # Subtest: calculates time for 0 distance segments
+    ok 3 - calculates time for 0 distance segments
+      ---
+      duration_ms: 0.268548
+      type: 'test'
+      ...
+    1..3
+ok 12 - getSubMissionFlightTime Tests
+  ---
+  duration_ms: 1.167241
+  type: 'suite'
+  ...
+# Subtest: updateWeatherPanelUI Tests
+    # Subtest: handles isLoading state
+    ok 1 - handles isLoading state
+      ---
+      duration_ms: 0.471866
+      type: 'test'
+      ...
+    # Subtest: handles statusMsg without loading
+    ok 2 - handles statusMsg without loading
+      ---
+      duration_ms: 0.298672
+      type: 'test'
+      ...
+    # Subtest: handles no data state
+    ok 3 - handles no data state
+      ---
+      duration_ms: 0.309701
+      type: 'test'
+      ...
+    # Subtest: handles VFR flight category
+    ok 4 - handles VFR flight category
+      ---
+      duration_ms: 25.325021
+      type: 'test'
+      ...
+    # Subtest: handles MVFR and IFR flight categories
+    ok 5 - handles MVFR and IFR flight categories
+      ---
+      duration_ms: 0.836532
+      type: 'test'
+      ...
+    # Subtest: safely formats ceiling text without XSS vulnerability
+    ok 6 - safely formats ceiling text without XSS vulnerability
+      ---
+      duration_ms: 0.820868
+      type: 'test'
+      ...
+    1..6
+ok 13 - updateWeatherPanelUI Tests
+  ---
+  duration_ms: 28.506485
+  type: 'suite'
+  ...
+# Subtest: initHeadingHelpDrawer Tests
+    # Subtest: attaches click listeners and handles drawer toggling and tabs
+    ok 1 - attaches click listeners and handles drawer toggling and tabs
+      ---
+      duration_ms: 1.908099
+      type: 'test'
+      ...
+    1..1
+ok 14 - initHeadingHelpDrawer Tests
+  ---
+  duration_ms: 2.03013
+  type: 'suite'
+  ...
+# Subtest: buildWaylinesWpml towardPOI Tests
+    # Subtest: generates XML with correct POI coordinates when towardPOI mode is selected
+    ok 1 - generates XML with correct POI coordinates when towardPOI mode is selected
+      ---
+      duration_ms: 1.142352
+      type: 'test'
+      ...
+    1..1
+ok 15 - buildWaylinesWpml towardPOI Tests
+  ---
+  duration_ms: 1.275925
+  type: 'suite'
+  ...
+# Subtest: togglePatternParameters Visibility Tests
+    # Subtest: hides heading mode selector for orbits and shows it for grids
+    ok 1 - hides heading mode selector for orbits and shows it for grids
+      ---
+      duration_ms: 1.430938
+      type: 'test'
+      ...
+    1..1
+ok 16 - togglePatternParameters Visibility Tests
+  ---
+  duration_ms: 1.560085
+  type: 'suite'
+  ...
+# Subtest: buildWaylinesWpml Waypoint Overrides Tests
+    # Subtest: respects individual waypoint headingMode settings in KML generation
+    ok 1 - respects individual waypoint headingMode settings in KML generation
+      ---
+      duration_ms: 0.38492
+      type: 'test'
+      ...
+    1..1
+ok 17 - buildWaylinesWpml Waypoint Overrides Tests
+  ---
+  duration_ms: 0.490484
+  type: 'suite'
+  ...
+# Subtest: updateFPVEditorUI headingMode Tests
+    # Subtest: correctly configures heading dropdown and slider visibility in FPV editor
+    ok 1 - correctly configures heading dropdown and slider visibility in FPV editor
+      ---
+      duration_ms: 0.84256
+      type: 'test'
+      ...
+    1..1
+ok 18 - updateFPVEditorUI headingMode Tests
+  ---
+  duration_ms: 0.949884
+  type: 'suite'
+  ...
+# Subtest: createWaypointEditorDOM headingMode Tests
+    # Subtest: popup HTML contains headingMode select with all 5 mode options
+    ok 1 - popup HTML contains headingMode select with all 5 mode options
+      ---
+      duration_ms: 3.559637
+      type: 'test'
+      ...
+    # Subtest: popup HTML shows custom slider as display:block when headingMode is custom
+    ok 2 - popup HTML shows custom slider as display:block when headingMode is custom
+      ---
+      duration_ms: 0.602941
+      type: 'test'
+      ...
+    1..2
+ok 19 - createWaypointEditorDOM headingMode Tests
+  ---
+  duration_ms: 4.328979
+  type: 'suite'
+  ...
+# Subtest: recalculateRoadOffsetPath Custom Heading & FPV Sync Tests
+    # Subtest: recalculateRoadOffsetPath respects custom headingMode and heading overrides
+    ok 1 - recalculateRoadOffsetPath respects custom headingMode and heading overrides
+      ---
+      duration_ms: 1.18646
+      type: 'test'
+      ...
+    1..1
+ok 20 - recalculateRoadOffsetPath Custom Heading & FPV Sync Tests
+  ---
+  duration_ms: 1.307127
+  type: 'suite'
+  ...
+# Subtest: buildWaylinesWpml Multi-POI Export Tests
+    # Subtest: exports correct POI coordinates and indexes for multiple POIs
+    ok 1 - exports correct POI coordinates and indexes for multiple POIs
+      ---
+      duration_ms: 0.47586
+      type: 'test'
+      ...
+    1..1
+ok 21 - buildWaylinesWpml Multi-POI Export Tests
+  ---
+  duration_ms: 0.581602
+  type: 'suite'
+  ...
+# Subtest: getWaypointHeadingAndPitch 3D Yaw Alignment Tests
+    # Subtest: calculates correct heading for towardPOI and fixed modes in 3D scene helper
+    ok 1 - calculates correct heading for towardPOI and fixed modes in 3D scene helper
+      ---
+      duration_ms: 0.587643
+      type: 'test'
+      ...
+    1..1
+ok 22 - getWaypointHeadingAndPitch 3D Yaw Alignment Tests
+  ---
+  duration_ms: 0.690422
+  type: 'suite'
+  ...
+1..22
+# tests 51
+# suites 21
+# pass 51
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 254.511305
+# start of coverage report
+# ------------------------------------------------------------------------------------------------------------------------------------------------
+# file          | line % | branch % | funcs % | uncovered lines
+# ------------------------------------------------------------------------------------------------------------------------------------------------
+# index.test.js |  98.30 |    92.22 |   77.45 | 34-40 61-62 163 183 205 233 253 721 838 907 969 1002 1037 1074 1134 1173 1285 1566-1568 1603-1604
+# ------------------------------------------------------------------------------------------------------------------------------------------------
+# all files     |  98.30 |    92.22 |   77.45 |
+# ------------------------------------------------------------------------------------------------------------------------------------------------
+# end of coverage report
