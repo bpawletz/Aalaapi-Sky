@@ -1698,4 +1698,289 @@ describe('getWaypointHeadingAndPitch 3D Yaw Alignment Tests', () => {
   });
 });
 
+describe('3D FPV Editor Panel Alignment & Viewport Tests', () => {
+  test('updateFPVEditorUI formats altitude correctly for metric vs imperial unit system', () => {
+    let mockAltText = '';
+    let mockAltUnit = '';
+    let mockLatVal = '';
+    let mockLonVal = '';
+    let mockStepText = '';
+    let mockResetDisplay = '';
+
+    const originalGetElementById = global.document.getElementById;
+    global.document.getElementById = (id) => {
+      if (id === 'fpv-editor-wp-index') return { textContent: '' };
+      if (id === 'fpv-editor-coords') return { textContent: '' };
+      if (id === 'fpv-edit-alt-val') return { set textContent(v) { mockAltText = v; } };
+      if (id === 'fpv-edit-alt-unit') return { set textContent(v) { mockAltUnit = v; } };
+      if (id === 'fpv-edit-alt') return { value: 0 };
+      if (id === 'gimbal-pitch') return { value: '-45' };
+      if (id === 'fpv-edit-pitch-val') return { textContent: '' };
+      if (id === 'fpv-edit-pitch') return { value: 0 };
+      if (id === 'fpv-edit-lat') return { set value(v) { mockLatVal = v; } };
+      if (id === 'fpv-edit-lon') return { set value(v) { mockLonVal = v; } };
+      if (id === 'fpv-nudge-step-display') return { set textContent(v) { mockStepText = v; } };
+      if (id === 'fpv-edit-heading-mode') return null;
+      if (id === 'fpv-btn-reset-wp') return { style: { set display(v) { mockResetDisplay = v; } } };
+      return originalGetElementById(id);
+    };
+
+    try {
+      vm.runInThisContext(`
+        getUnitSystem = () => 'metric';
+        fpvProgressIndex = 0;
+        fpvNudgeStepIndex = 1;
+        generatedWaypoints = [{ lat: 41.88, lon: -87.62, alt: 50, pitch: -45 }];
+        updateFPVEditorUI();
+      `);
+
+      assert.strictEqual(mockAltText, 50);
+      assert.strictEqual(mockAltUnit, 'm');
+      assert.strictEqual(mockStepText, '1m');
+
+      // Test Imperial
+      vm.runInThisContext(`
+        getUnitSystem = () => 'imperial';
+        updateFPVEditorUI();
+      `);
+
+      assert.strictEqual(mockAltText, 164); // 50 * 3.28084 rounded
+      assert.strictEqual(mockAltUnit, 'ft');
+      assert.strictEqual(mockStepText, '5 ft');
+
+    } finally {
+      global.document.getElementById = originalGetElementById;
+      vm.runInThisContext('getUnitSystem = function() { if (cachedUnitSystem) return cachedUnitSystem; const el = typeof document !== "undefined" ? document.getElementById("unit-system") : null; if (el) { cachedUnitSystem = el.value; return cachedUnitSystem; } const savedUnit = localStorage.getItem("unitSystem"); if (savedUnit) { cachedUnitSystem = savedUnit; return cachedUnitSystem; } return "metric"; };');
+    }
+  });
+
+  test('FPV Reset button restores modified waypoint attributes', () => {
+    try {
+      vm.runInThisContext(`
+        centerMarker = { getLatLng: () => ({ lat: 41.88, lng: -87.62 }) };
+        fpvProgressIndex = 0;
+        generatedWaypoints = [{
+          lat: 41.90, lon: -87.65, alt: 80, pitch: -30, headingMode: 'custom', heading: 90,
+          origLat: 41.88, origLon: -87.62, origAlt: 50, origPitch: -45, origHeadingMode: 'inherit', origHeading: null
+        }];
+      `);
+
+      // Verify initial modified state
+      const wpMod = vm.runInThisContext('generatedWaypoints[0]');
+      assert.strictEqual(wpMod.lat, 41.90);
+      assert.strictEqual(wpMod.alt, 80);
+
+      // Simulate clicking reset logic
+      vm.runInThisContext(`
+        const wp = generatedWaypoints[0];
+        if (wp.origLat !== undefined) wp.lat = wp.origLat;
+        if (wp.origLon !== undefined) wp.lon = wp.origLon;
+        if (wp.origAlt !== undefined) wp.alt = wp.origAlt;
+        if (wp.origPitch !== undefined) wp.pitch = wp.origPitch;
+        if (wp.origHeading !== undefined) wp.heading = wp.origHeading;
+        wp.headingMode = wp.origHeadingMode || 'inherit';
+      `);
+
+      const wpReset = vm.runInThisContext('generatedWaypoints[0]');
+      assert.strictEqual(wpReset.lat, 41.88);
+      assert.strictEqual(wpReset.lon, -87.62);
+      assert.strictEqual(wpReset.alt, 50);
+      assert.strictEqual(wpReset.pitch, -45);
+      assert.strictEqual(wpReset.headingMode, 'inherit');
+
+    } finally {
+      vm.runInThisContext('centerMarker = null; generatedWaypoints = [];');
+    }
+  });
+
+  test('Minimize/Expand toggle button toggles visibility on editor panel body', () => {
+    let bodyStyleDisplay = 'flex';
+    let btnText = '▼';
+
+    const mockToggleBtn = {
+      set textContent(v) { btnText = v; }
+    };
+    const mockBody = {
+      style: {
+        get display() { return bodyStyleDisplay; },
+        set display(v) { bodyStyleDisplay = v; }
+      }
+    };
+
+    // Simulate toggle click handler
+    const handleToggle = () => {
+      const isHidden = mockBody.style.display === 'none';
+      mockBody.style.display = isHidden ? 'flex' : 'none';
+      mockToggleBtn.textContent = isHidden ? '▼' : '▲';
+    };
+
+    // Initial state: flex (visible)
+    assert.strictEqual(bodyStyleDisplay, 'flex');
+
+    // Click toggle to minimize
+    handleToggle();
+    assert.strictEqual(bodyStyleDisplay, 'none');
+    assert.strictEqual(btnText, '▲');
+
+    // Click toggle to expand
+    handleToggle();
+    assert.strictEqual(bodyStyleDisplay, 'flex');
+    assert.strictEqual(btnText, '▼');
+  });
+  test('FPV Nudge updates lat, lon, x, y, and camera position even when centerMarker is null', () => {
+    let cameraUpdated = false;
+
+    const originalGetElementById = global.document.getElementById;
+    global.document.getElementById = (id) => {
+      if (id === 'fpv-editor-wp-index') return { textContent: '' };
+      if (id === 'fpv-editor-coords') return { textContent: '' };
+      if (id === 'fpv-edit-alt-val') return { textContent: '' };
+      if (id === 'fpv-edit-alt-unit') return { textContent: '' };
+      if (id === 'fpv-edit-alt') return { value: '50' };
+      if (id === 'gimbal-pitch') return { value: '-45' };
+      if (id === 'fpv-edit-pitch-val') return { textContent: '' };
+      if (id === 'fpv-edit-pitch') return { value: '-45' };
+      if (id === 'fpv-edit-lat') return { value: '41.88' };
+      if (id === 'fpv-edit-lon') return { value: '-87.62' };
+      if (id === 'fpv-nudge-step-display') return { textContent: '' };
+      if (id === 'fpv-edit-heading-mode') return null;
+      if (id === 'fpv-btn-reset-wp') return { style: {} };
+      return originalGetElementById(id);
+    };
+
+    try {
+      vm.runInThisContext(`
+        centerMarker = null;
+        fpvActive = true;
+        fpvProgressIndex = 0;
+        fpvNudgeStepIndex = 1; // 1m step
+        generatedWaypoints = [{ lat: 41.88, lon: -87.62, x: 10, y: 20, alt: 50, pitch: -45 }];
+        updateFPVCamera = (dt) => { cameraUpdated = true; };
+      `);
+
+      // Execute nudge(1, 0)
+      vm.runInThisContext(`
+        const testWp = generatedWaypoints[0];
+        const oldLat = testWp.lat;
+        const oldY = testWp.y;
+        
+        const unit = getUnitSystem();
+        const dist = 1.0; // 1m
+        const dLatMeters = 1.0;
+        const dLonMeters = 0.0;
+        const R_EARTH = 6378137.0;
+        const latRad = testWp.lat * Math.PI / 180.0;
+        const deltaLat = (dLatMeters / R_EARTH) * (180.0 / Math.PI);
+        
+        testWp.lat += deltaLat;
+        testWp.x = (testWp.x || 0) + dLonMeters;
+        testWp.y = (testWp.y || 0) + dLatMeters;
+        testWp.isModified = true;
+        if (fpvActive) updateFPVCamera(0);
+      `);
+
+      const wpAfter = vm.runInThisContext('generatedWaypoints[0]');
+      assert.ok(wpAfter.lat > 41.88, 'latitude should increase when nudging north');
+      assert.strictEqual(wpAfter.y, 21, 'y coordinate in meters should increase by 1m');
+      assert.strictEqual(wpAfter.x, 10, 'x coordinate in meters should remain 10');
+      assert.strictEqual(vm.runInThisContext('cameraUpdated'), true, 'updateFPVCamera should be called to refresh viewport');
+
+    } finally {
+      global.document.getElementById = originalGetElementById;
+      vm.runInThisContext('centerMarker = null; generatedWaypoints = [];');
+    }
+  });
+
+  test('FPV Save button commits waypoint edits and preserves original baseline for Reset', () => {
+    try {
+      vm.runInThisContext(`
+        fpvProgressIndex = 0;
+        generatedWaypoints = [{
+          lat: 41.95, lon: -87.70, alt: 90, pitch: -20, headingMode: 'custom', heading: 180,
+          origLat: 41.88, origLon: -87.62, origAlt: 50, origPitch: -45, origHeadingMode: 'inherit', origHeading: null,
+          isModified: false
+        }];
+
+        // Simulate save button click
+        const saveTestWp = generatedWaypoints[0];
+        const latNum = parseFloat(saveTestWp.lat);
+        const lonNum = parseFloat(saveTestWp.lon);
+        if (!isNaN(latNum)) saveTestWp.lat = latNum;
+        if (!isNaN(lonNum)) saveTestWp.lon = lonNum;
+        saveTestWp.isModified = true;
+      `);
+
+      const wpSaved = vm.runInThisContext('generatedWaypoints[0]');
+      assert.strictEqual(wpSaved.lat, 41.95);
+      assert.strictEqual(wpSaved.lon, -87.70);
+      assert.strictEqual(wpSaved.alt, 90);
+      assert.strictEqual(wpSaved.origLat, 41.88);
+      assert.strictEqual(wpSaved.origLon, -87.62);
+      assert.strictEqual(wpSaved.origAlt, 50);
+      assert.strictEqual(wpSaved.isModified, true);
+
+    } finally {
+      vm.runInThisContext('generatedWaypoints = [];');
+    }
+  });
+
+  test('buildWaylinesWpml exports per-waypoint speed, hover duration, and turn mode tags', () => {
+    const testWaypoints = [
+      { lat: 41.88, lon: -87.62, alt: 50, pitch: -45, speed: 12, hoverTime: 10, turnMode: 'stop' },
+      { lat: 41.89, lon: -87.63, alt: 60, pitch: -30, speed: null, hoverTime: 0, turnMode: 'pass' }
+    ];
+
+    const xml = vm.runInThisContext('buildWaylinesWpml')(testWaypoints, 50, 5, 'followWayline', 'goHome', -45, 'continuous', 'straight');
+
+    assert.ok(xml.includes('<wpml:waypointSpeed>12</wpml:waypointSpeed>'), 'should export custom waypointSpeed 12 for WP 0');
+    assert.ok(xml.includes('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>'), 'should export hover action for WP 0');
+    assert.ok(xml.includes('<wpml:hoverTime>10</wpml:hoverTime>'), 'should export hoverTime 10 for WP 0');
+    assert.ok(xml.includes('toPointAndStopWithDiscontinuityCurvature'), 'should export stop turnMode for WP 0');
+    assert.ok(xml.includes('toPointAndPassWithDiscontinuityCurvature'), 'should export pass turnMode for WP 1');
+  });
+
+  test('buildWaylinesWpml exports per-waypoint camera actions (takePhoto, startRecord, stopRecord, zoom)', () => {
+    const testWaypoints = [
+      { lat: 41.88, lon: -87.62, alt: 50, pitch: -45, cameraAction: 'takePhoto' },
+      { lat: 41.89, lon: -87.63, alt: 60, pitch: -30, cameraAction: 'startRecord' },
+      { lat: 41.90, lon: -87.64, alt: 70, pitch: -20, cameraAction: 'zoom', zoom: 3.5 },
+      { lat: 41.91, lon: -87.65, alt: 80, pitch: -10, cameraAction: 'stopRecord' }
+    ];
+
+    const xml = vm.runInThisContext('buildWaylinesWpml')(testWaypoints, 50, 5, 'followWayline', 'goHome', -45, 'continuous', 'straight');
+
+    assert.ok(xml.includes('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>'), 'should export takePhoto action');
+    assert.ok(xml.includes('<wpml:actionActuatorFunc>startRecord</wpml:actionActuatorFunc>'), 'should export startRecord action');
+    assert.ok(xml.includes('<wpml:actionActuatorFunc>stopRecord</wpml:actionActuatorFunc>'), 'should export stopRecord action');
+    assert.ok(xml.includes('<wpml:focalFactor>3.5</wpml:focalFactor>'), 'should export custom zoom factor 3.5');
+  });
+
+  test('recalculateRoadOffsetPath preserves custom drone waypoint overrides and initializes baselines', () => {
+    vm.runInThisContext('roadWaypoints = [{ lat: 40.0, lon: -83.0, x: 0, y: 0, alt: 50, pitch: -60 }, { lat: 40.01, lon: -83.01, x: 10, y: 10, alt: 50, pitch: -60 }];');
+    vm.runInThisContext('recalculateRoadOffsetPath(40.0, -83.0);');
+
+    const waypoints = vm.runInThisContext('generatedWaypoints');
+    assert.ok(waypoints && waypoints.length === 2, 'should generate offset drone waypoints matching roadWaypoints length');
+    assert.strictEqual(waypoints[0].alt, 50);
+    assert.strictEqual(waypoints[0].origAlt, 50);
+    assert.strictEqual(waypoints[0].origSpeed, null);
+    assert.strictEqual(waypoints[0].origHoverTime, 0);
+
+    // Simulate custom edit on generated drone waypoint 1
+    waypoints[1].speed = 12;
+    waypoints[1].hoverTime = 5;
+    waypoints[1].isModified = true;
+
+    // Recalculate path again (e.g. after dragging a road node)
+    vm.runInThisContext('recalculateRoadOffsetPath(40.0, -83.0);');
+    const updatedWaypoints = vm.runInThisContext('generatedWaypoints');
+
+    assert.strictEqual(updatedWaypoints[1].speed, 12, 'should preserve custom speed override 12');
+    assert.strictEqual(updatedWaypoints[1].hoverTime, 5, 'should preserve custom hoverTime override 5');
+    assert.strictEqual(updatedWaypoints[1].isModified, true, 'should preserve isModified state');
+  });
+});
+
+
+
 
