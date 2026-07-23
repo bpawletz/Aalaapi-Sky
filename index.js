@@ -1021,9 +1021,47 @@ function initUIEventListeners() {
   const closeModal = () => {
     if (preview3dModal) {
       preview3dModal.classList.add('hidden');
+      const card = document.getElementById('preview-3d-card');
+      if (card && card.classList.contains('fullscreen-3d')) {
+        card.classList.remove('fullscreen-3d');
+        const expandIcon = document.getElementById('expand-3d-icon-expand');
+        const compressIcon = document.getElementById('expand-3d-icon-compress');
+        const expandText = document.getElementById('expand-3d-text');
+        if (expandIcon) expandIcon.classList.remove('hidden');
+        if (compressIcon) compressIcon.classList.add('hidden');
+        if (expandText) expandText.textContent = 'Expand';
+      }
+      if (document.exitFullscreen && document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
       cleanup3DPreview();
     }
   };
+
+  const expand3dBtn = document.getElementById('expand-3d-btn');
+  if (expand3dBtn) {
+    expand3dBtn.addEventListener('click', () => {
+      const card = document.getElementById('preview-3d-card');
+      if (!card) return;
+      const isExpanded = card.classList.toggle('fullscreen-3d');
+      const expandIcon = document.getElementById('expand-3d-icon-expand');
+      const compressIcon = document.getElementById('expand-3d-icon-compress');
+      const expandText = document.getElementById('expand-3d-text');
+      
+      if (expandIcon) expandIcon.classList.toggle('hidden', isExpanded);
+      if (compressIcon) compressIcon.classList.toggle('hidden', !isExpanded);
+      if (expandText) expandText.textContent = isExpanded ? 'Restore' : 'Expand';
+
+      if (isExpanded && preview3dModal && preview3dModal.requestFullscreen) {
+        preview3dModal.requestFullscreen().catch(() => {});
+      } else if (!isExpanded && document.exitFullscreen && document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+
+      setTimeout(handle3DResize, 50);
+      setTimeout(handle3DResize, 300);
+    });
+  }
 
   if (close3dBtn) close3dBtn.addEventListener('click', closeModal);
   if (close3dFooterBtn) close3dFooterBtn.addEventListener('click', closeModal);
@@ -1073,6 +1111,18 @@ function initUIEventListeners() {
       const indicator = document.getElementById('indicator-3d-footprints');
       if (indicator) {
         indicator.style.background = showFootprints ? '#10b981' : '#ef4444';
+      }
+    });
+  }
+
+  const btnToggleDrones = document.getElementById('btn-3d-toggle-drones');
+  if (btnToggleDrones) {
+    btnToggleDrones.addEventListener('click', () => {
+      showDroneModels = !showDroneModels;
+      recreate3DWaypointsAndPaths();
+      const indicator = document.getElementById('indicator-3d-drones');
+      if (indicator) {
+        indicator.style.background = showDroneModels ? '#10b981' : '#ef4444';
       }
     });
   }
@@ -1612,40 +1662,45 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
   const D = roadOffsetSlider ? parseFloat(roadOffsetSlider.value) : 15;
   const altitude = parseFloat(document.getElementById('altitude').value);
 
-  generatedWaypoints = roadWaypoints.map((wp, idx) => {
+  const targetList = (generatedWaypoints && generatedWaypoints.length >= roadWaypoints.length) ? generatedWaypoints : roadWaypoints;
+
+  generatedWaypoints = targetList.map((wp, idx) => {
+    const roadNode = (roadWaypoints && roadWaypoints[idx]) ? roadWaypoints[idx] : (roadWaypoints ? roadWaypoints[Math.min(idx, roadWaypoints.length - 1)] : wp);
+
     // 1. Calculate stable tangent vector using lookahead/lookbehind (minimum 10.0m distance)
     let tx = 0;
     let ty = 1;
     if (roadWaypoints.length > 1) {
       const MIN_DIST = 10.0;
-      let prev = roadWaypoints[idx];
-      let next = roadWaypoints[idx];
+      const rIdx = Math.min(idx, roadWaypoints.length - 1);
+      let prev = roadWaypoints[rIdx];
+      let next = roadWaypoints[rIdx];
 
       // Find backward point at least MIN_DIST meters away
-      for (let i = idx - 1; i >= 0; i--) {
-        const dx = roadWaypoints[i].x - roadWaypoints[idx].x;
-        const dy = roadWaypoints[i].y - roadWaypoints[idx].y;
+      for (let i = rIdx - 1; i >= 0; i--) {
+        const dx = roadWaypoints[i].x - roadWaypoints[rIdx].x;
+        const dy = roadWaypoints[i].y - roadWaypoints[rIdx].y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist >= MIN_DIST) {
           prev = roadWaypoints[i];
           break;
         }
       }
-      if (prev === roadWaypoints[idx] && idx > 0) {
+      if (prev === roadWaypoints[rIdx] && rIdx > 0) {
         prev = roadWaypoints[0];
       }
 
       // Find forward point at least MIN_DIST meters away
-      for (let i = idx + 1; i < roadWaypoints.length; i++) {
-        const dx = roadWaypoints[i].x - roadWaypoints[idx].x;
-        const dy = roadWaypoints[i].y - roadWaypoints[idx].y;
+      for (let i = rIdx + 1; i < roadWaypoints.length; i++) {
+        const dx = roadWaypoints[i].x - roadWaypoints[rIdx].x;
+        const dy = roadWaypoints[i].y - roadWaypoints[rIdx].y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist >= MIN_DIST) {
           next = roadWaypoints[i];
           break;
         }
       }
-      if (next === roadWaypoints[idx] && idx < roadWaypoints.length - 1) {
+      if (next === roadWaypoints[rIdx] && rIdx < roadWaypoints.length - 1) {
         next = roadWaypoints[roadWaypoints.length - 1];
       }
 
@@ -1675,8 +1730,8 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
 
     // 2. Project drone position (offset by D along normal)
     // Normal is (ty, -tx)
-    const droneX = wp.x + D * ty;
-    const droneY = wp.y - D * tx;
+    const droneX = roadNode.x + D * ty;
+    const droneY = roadNode.y - D * tx;
 
     // 3. Convert drone local coordinates back to geodetic lat/lon
     const geo = localToGeodetic(droneX, droneY, centerLat, centerLon, 0);
@@ -1701,7 +1756,7 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
     if (Math.abs(D) < 0.01) {
       standardRoadFacing = Math.atan2(tx, ty) * (180.0 / Math.PI);
     } else {
-      standardRoadFacing = Math.atan2(wp.x - droneX, wp.y - droneY) * (180.0 / Math.PI);
+      standardRoadFacing = Math.atan2(roadNode.x - droneX, roadNode.y - droneY) * (180.0 / Math.PI);
     }
     standardRoadFacing = (standardRoadFacing + 360) % 360;
 
@@ -1727,18 +1782,92 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
     }
     headingVal = (headingVal + 360) % 360;
 
+    const existingGwp = (generatedWaypoints && generatedWaypoints[idx]) ? generatedWaypoints[idx] : null;
+    const isCustomPosition = (existingGwp && existingGwp.isModified && (
+      (existingGwp.origLat !== undefined && existingGwp.origLat !== null && Math.abs(existingGwp.lat - existingGwp.origLat) > 1e-9) ||
+      (existingGwp.origLon !== undefined && existingGwp.origLon !== null && Math.abs(existingGwp.lon - existingGwp.origLon) > 1e-9)
+    ));
+
+    const finalLat = isCustomPosition ? existingGwp.lat : geo.lat;
+    const finalLon = isCustomPosition ? existingGwp.lon : geo.lon;
+    const finalX = isCustomPosition ? existingGwp.x : droneX;
+    const finalY = isCustomPosition ? existingGwp.y : droneY;
+
+    const finalAlt = (existingGwp && existingGwp.alt !== undefined && existingGwp.alt !== null && existingGwp.isModified) ? existingGwp.alt : altVal;
+    const finalPitch = (existingGwp && existingGwp.pitch !== undefined && existingGwp.pitch !== null && existingGwp.isModified) ? existingGwp.pitch : pitchVal;
+    const finalSpeed = (existingGwp && existingGwp.speed !== undefined && existingGwp.speed !== null) ? existingGwp.speed : (wp.speed !== undefined ? wp.speed : null);
+    const finalHover = (existingGwp && existingGwp.hoverTime !== undefined && existingGwp.hoverTime !== null) ? existingGwp.hoverTime : (wp.hoverTime !== undefined ? wp.hoverTime : 0);
+    const finalTurn = (existingGwp && existingGwp.turnMode !== undefined && existingGwp.turnMode !== null) ? existingGwp.turnMode : (wp.turnMode || 'inherit');
+    const finalAction = (existingGwp && existingGwp.cameraAction !== undefined && existingGwp.cameraAction !== null) ? existingGwp.cameraAction : (wp.cameraAction || 'inherit');
+    const finalZoom = (existingGwp && existingGwp.zoom !== undefined && existingGwp.zoom !== null) ? existingGwp.zoom : (wp.zoom !== undefined ? wp.zoom : 1.0);
+
+    if (existingGwp) {
+      existingGwp.lat = finalLat;
+      existingGwp.lon = finalLon;
+      existingGwp.x = finalX;
+      existingGwp.y = finalY;
+      existingGwp.alt = finalAlt;
+      existingGwp.pitch = finalPitch;
+      existingGwp.heading = headingVal;
+      existingGwp.headingMode = mode;
+      existingGwp.speed = finalSpeed;
+      existingGwp.hoverTime = finalHover;
+      existingGwp.turnMode = finalTurn;
+      existingGwp.cameraAction = finalAction;
+      existingGwp.zoom = finalZoom;
+      existingGwp.poiIndex = wp.poiIndex || 0;
+      if (existingGwp.origLat === undefined || existingGwp.origLat === null) {
+        existingGwp.origLat = geo.lat;
+        existingGwp.origLon = geo.lon;
+        existingGwp.origX = droneX;
+        existingGwp.origY = droneY;
+      }
+      if (existingGwp.origAlt === undefined || existingGwp.origAlt === null) existingGwp.origAlt = altVal;
+      if (existingGwp.origPitch === undefined || existingGwp.origPitch === null) existingGwp.origPitch = pitchVal;
+      if (existingGwp.origHeading === undefined) existingGwp.origHeading = headingVal;
+      if (existingGwp.origHeadingMode === undefined) existingGwp.origHeadingMode = mode;
+      if (existingGwp.origSpeed === undefined) existingGwp.origSpeed = wp.origSpeed !== undefined ? wp.origSpeed : null;
+      if (existingGwp.origHoverTime === undefined) existingGwp.origHoverTime = wp.origHoverTime !== undefined ? wp.origHoverTime : 0;
+      if (existingGwp.origTurnMode === undefined) existingGwp.origTurnMode = wp.origTurnMode || 'inherit';
+      if (existingGwp.origCameraAction === undefined) existingGwp.origCameraAction = wp.origCameraAction || 'inherit';
+      if (existingGwp.origZoom === undefined) existingGwp.origZoom = wp.origZoom !== undefined ? wp.origZoom : 1.0;
+      if (existingGwp.origPoiIndex === undefined) existingGwp.origPoiIndex = wp.origPoiIndex || 0;
+      existingGwp.isRingStart = wp.isRingStart || false;
+      existingGwp.idx = idx;
+      return existingGwp;
+    }
+
     return {
-      lat: geo.lat,
-      lon: geo.lon,
-      x: droneX,
-      y: droneY,
-      alt: altVal,
-      pitch: pitchVal,
+      lat: finalLat,
+      lon: finalLon,
+      x: finalX,
+      y: finalY,
+      alt: finalAlt,
+      pitch: finalPitch,
       heading: headingVal,
       headingMode: mode,
+      speed: finalSpeed,
+      hoverTime: finalHover,
+      turnMode: finalTurn,
+      cameraAction: finalAction,
+      zoom: finalZoom,
       poiIndex: wp.poiIndex || 0,
+      origLat: geo.lat,
+      origLon: geo.lon,
+      origX: droneX,
+      origY: droneY,
+      origAlt: altVal,
+      origPitch: pitchVal,
+      origHeading: headingVal,
+      origHeadingMode: mode,
+      origSpeed: wp.origSpeed !== undefined ? wp.origSpeed : null,
+      origHoverTime: wp.origHoverTime !== undefined ? wp.origHoverTime : 0,
+      origTurnMode: wp.origTurnMode || 'inherit',
+      origCameraAction: wp.origCameraAction || 'inherit',
+      origZoom: wp.origZoom !== undefined ? wp.origZoom : 1.0,
       origPoiIndex: wp.origPoiIndex || 0,
       isRingStart: wp.isRingStart || false,
+      isModified: false,
       ringIndex: wp.ringIndex !== undefined ? wp.ringIndex : null,
       idx: idx
     };
@@ -1794,10 +1923,9 @@ function updateGrid() {
       const geo = localToGeodetic(wp.x, wp.y, centerLat, centerLon, 0); // 0 rotation since offsets already hold rotation
       wp.lat = geo.lat;
       wp.lon = geo.lon;
-      if (wp.pitch === null || wp.pitch === undefined) {
-        wp.pitch = defaultGimbalPitch;
+      if (wp.speed === null || wp.speed === undefined) {
+        wp.speed = speed;
       }
-      wp.speed = speed;
     });
 
     importedPhotos.forEach(pt => {
@@ -1899,6 +2027,11 @@ function updateGrid() {
           alt: alt,
           pitch: pitch,
           heading: finalHeading,
+          speed: pt.speed !== undefined ? pt.speed : null,
+          hoverTime: pt.hoverTime !== undefined ? pt.hoverTime : 0,
+          turnMode: pt.turnMode || 'inherit',
+          cameraAction: pt.cameraAction || 'inherit',
+          zoom: pt.zoom !== undefined ? pt.zoom : 1.0,
           isRingStart: pt.isRingStart || false,
           ringIndex: pt.ringIndex !== undefined ? pt.ringIndex : null,
           origLat: geo.lat,
@@ -1908,6 +2041,11 @@ function updateGrid() {
           origAlt: alt,
           origPitch: pitch,
           origHeading: finalHeading,
+          origSpeed: pt.speed !== undefined ? pt.speed : null,
+          origHoverTime: pt.hoverTime !== undefined ? pt.hoverTime : 0,
+          origTurnMode: pt.turnMode || 'inherit',
+          origCameraAction: pt.cameraAction || 'inherit',
+          origZoom: pt.zoom !== undefined ? pt.zoom : 1.0,
           origIsRingStart: pt.isRingStart || false,
           origIsModified: false
         };
@@ -2565,7 +2703,8 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
             if (gwp.mapMarker) {
               gwp.mapMarker.setLatLng([gwp.lat, gwp.lon]);
               const gPitch = gwp.pitch !== undefined && gwp.pitch !== null ? gwp.pitch : gimbalPitch;
-              const tooltipContent = `Drone Waypoint ${gwp.idx}<br>Height: ${formatDistance(gwp.alt, 0)}<br>Yaw: ${gwp.heading.toFixed(0)}°<br>Pitch: ${gPitch}°`;
+              const headingDisplay = (gwp.heading !== null && gwp.heading !== undefined && !isNaN(gwp.heading)) ? gwp.heading.toFixed(0) : '—';
+              const tooltipContent = `Drone Waypoint ${gwp.idx}<br>Height: ${formatDistance(gwp.alt, 0)}<br>Yaw: ${headingDisplay}°<br>Pitch: ${gPitch}°`;
               gwp.mapMarker.setTooltipContent(tooltipContent);
             }
           });
@@ -2602,27 +2741,25 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
       });
 
       const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch;
-      const tooltipContent = `Drone Waypoint ${idx}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${wp.heading.toFixed(0)}°<br>Pitch: ${pitch}°`;
+      const headingDisplay = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading.toFixed(0) : '—';
+      const tooltipContent = `Drone Waypoint ${idx}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${headingDisplay}°<br>Pitch: ${pitch}°`;
       droneMarker.bindTooltip(tooltipContent, { direction: 'top', offset: [0, -5] });
 
       wp.mapMarker = droneMarker;
       droneMarker.addTo(waypointMarkersGroup);
 
       // Make drone waypoints interactive to select/edit/delete
-      const roadWp = roadWaypoints[idx];
-      if (roadWp && roadWp.roadMarker) {
-        droneMarker.bindPopup(() => {
-          return createWaypointEditorDOM(roadWp, idx, roadWp.roadMarker, droneMarker);
-        }, {
-          maxWidth: 240,
-          minWidth: 230
-        });
+      droneMarker.bindPopup(() => {
+        return createWaypointEditorDOM(wp, idx, droneMarker);
+      }, {
+        maxWidth: 240,
+        minWidth: 230
+      });
 
-        droneMarker.on('click', (e) => {
-          L.DomEvent.stopPropagation(e);
-          droneMarker.openPopup();
-        });
-      }
+      droneMarker.on('click', (e) => {
+        L.DomEvent.stopPropagation(e);
+        droneMarker.openPopup();
+      });
     });
 
   } else {
@@ -2693,6 +2830,7 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
         minWidth: 230
       });
 
+      wp.mapMarker = marker;
       marker.addTo(waypointMarkersGroup);
     });
   }
@@ -3988,6 +4126,106 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
         </wpml:actionGroup>\n`;
     }
 
+    // 5. Per-waypoint hover duration action group
+    if (wp.hoverTime && wp.hoverTime > 0) {
+      actionsForThisPlacemark += `        <wpml:actionGroup>
+          <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>${idx}</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:hoverTime>${wp.hoverTime}</wpml:hoverTime>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>\n`;
+    }
+
+    // 6. Per-waypoint camera action (RC 2 feature parity)
+    const perWpAction = wp.cameraAction || 'inherit';
+    if (perWpAction !== 'inherit' && perWpAction !== 'none') {
+      if (perWpAction === 'takePhoto') {
+        actionsForThisPlacemark += `        <wpml:actionGroup>
+          <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>${idx}</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>\n`;
+      } else if (perWpAction === 'startRecord') {
+        actionsForThisPlacemark += `        <wpml:actionGroup>
+          <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>${idx}</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>startRecord</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>\n`;
+      } else if (perWpAction === 'stopRecord') {
+        actionsForThisPlacemark += `        <wpml:actionGroup>
+          <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>${idx}</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>stopRecord</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>\n`;
+      } else if (perWpAction === 'zoom') {
+        const zoomFactor = wp.zoom ? parseFloat(wp.zoom) : cameraZoom;
+        actionsForThisPlacemark += `        <wpml:actionGroup>
+          <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>${idx}</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>zoom</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:focalLength>0</wpml:focalLength>
+              <wpml:isUseFocalFactor>1</wpml:isUseFocalFactor>
+              <wpml:focalFactor>${zoomFactor.toFixed(1)}</wpml:focalFactor>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>\n`;
+      }
+    }
+
     // Determine heading mode and angle for this waypoint
     let actualHeadingMode = headingMode;
     let actualHeadingAngle = 0;
@@ -4032,6 +4270,19 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     }
 
     const currentAltitude = wp.alt !== undefined ? wp.alt : altitude;
+    const actualSpeed = (wp.speed !== undefined && wp.speed !== null && !isNaN(wp.speed)) ? wp.speed : speed;
+    let actualTurnMode = turnMode;
+    if (wp.turnMode && wp.turnMode !== 'inherit') {
+      if (pathMode === 'straight') {
+        actualTurnMode = wp.turnMode === 'stop'
+          ? 'toPointAndStopWithDiscontinuityCurvature'
+          : 'toPointAndPassWithDiscontinuityCurvature';
+      } else {
+        actualTurnMode = wp.turnMode === 'stop'
+          ? 'toPointAndStopWithContinuityCurvature'
+          : 'toPointAndPassWithContinuityCurvature';
+      }
+    }
 
     placemarksXml += `      <Placemark>
         <Point>
@@ -4041,7 +4292,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
         </Point>
         <wpml:index>${idx}</wpml:index>
         <wpml:executeHeight>${currentAltitude}</wpml:executeHeight>
-        <wpml:waypointSpeed>${speed}</wpml:waypointSpeed>
+        <wpml:waypointSpeed>${actualSpeed}</wpml:waypointSpeed>
         <wpml:waypointHeadingParam>
           <wpml:waypointHeadingMode>${actualHeadingMode}</wpml:waypointHeadingMode>
           <wpml:waypointHeadingAngle>${actualHeadingAngle.toFixed(1)}</wpml:waypointHeadingAngle>
@@ -4051,7 +4302,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
           <wpml:waypointHeadingPoiIndex>${targetPoiIndex}</wpml:waypointHeadingPoiIndex>
         </wpml:waypointHeadingParam>
         <wpml:waypointTurnParam>
-          <wpml:waypointTurnMode>${turnMode}</wpml:waypointTurnMode>
+          <wpml:waypointTurnMode>${actualTurnMode}</wpml:waypointTurnMode>
           <wpml:waypointTurnDampingDist>0</wpml:waypointTurnDampingDist>
         </wpml:waypointTurnParam>
         <wpml:useStraightLine>${useStraightLine}</wpml:useStraightLine>
@@ -4476,6 +4727,11 @@ function parseWPML(wpmlText) {
       wp.origPitch = wp.pitch;
       wp.origHeading = wp.heading;
       wp.origHeadingMode = wp.headingMode || 'inherit';
+      wp.origSpeed = wp.speed !== undefined ? wp.speed : null;
+      wp.origHoverTime = wp.hoverTime !== undefined ? wp.hoverTime : 0;
+      wp.origTurnMode = wp.turnMode || 'inherit';
+      wp.origCameraAction = wp.cameraAction || 'inherit';
+      wp.origZoom = wp.zoom !== undefined ? wp.zoom : 1.0;
       wp.origIsRingStart = wp.isRingStart || false;
       wp.origIsModified = false;
     });
@@ -4642,6 +4898,59 @@ function updatePathLinesAndStats(waypoints, photoLocations, centerLat, centerLon
   updateStatsPanel(stats);
 }
 
+function convertToFreeformMission() {
+  const currentWps = getCurrentWaypoints();
+  if (!currentWps || currentWps.length === 0) return;
+  const altitude = parseFloat(document.getElementById('altitude').value);
+  
+  generatedWaypoints = currentWps.map((w, idx) => ({
+    lat: w.lat,
+    lon: w.lon,
+    x: w.x,
+    y: w.y,
+    alt: w.alt || altitude,
+    pitch: w.pitch !== undefined ? w.pitch : null,
+    heading: w.heading !== undefined ? w.heading : null,
+    headingMode: w.headingMode || 'inherit',
+    poiIndex: w.poiIndex || 0,
+    speed: w.speed !== undefined ? w.speed : null,
+    hoverTime: w.hoverTime !== undefined ? w.hoverTime : 0,
+    turnMode: w.turnMode || 'inherit',
+    cameraAction: w.cameraAction || 'inherit',
+    zoom: w.zoom !== undefined ? w.zoom : 1.0,
+    isRingStart: w.isRingStart || false,
+    ringIndex: w.ringIndex || null,
+    isClicked: true,
+    idx: idx,
+    origLat: w.origLat !== undefined ? w.origLat : w.lat,
+    origLon: w.origLon !== undefined ? w.origLon : w.lon,
+    origX: w.origX !== undefined ? w.origX : w.x,
+    origY: w.origY !== undefined ? w.origY : w.y,
+    origAlt: w.origAlt !== undefined ? w.origAlt : (w.alt || altitude),
+    origPitch: w.origPitch !== undefined ? w.origPitch : (w.pitch !== undefined ? w.pitch : null),
+    origHeading: w.origHeading !== undefined ? w.origHeading : (w.heading !== undefined ? w.heading : null),
+    origHeadingMode: w.origHeadingMode || w.headingMode || 'inherit',
+    origPoiIndex: w.origPoiIndex !== undefined ? w.origPoiIndex : (w.poiIndex || 0),
+    origSpeed: w.origSpeed !== undefined ? w.origSpeed : (w.speed !== undefined ? w.speed : null),
+    origHoverTime: w.origHoverTime !== undefined ? w.origHoverTime : (w.hoverTime !== undefined ? w.hoverTime : 0),
+    origTurnMode: w.origTurnMode || w.turnMode || 'inherit',
+    origCameraAction: w.origCameraAction || w.cameraAction || 'inherit',
+    origZoom: w.origZoom !== undefined ? w.origZoom : (w.zoom !== undefined ? w.zoom : 1.0)
+  }));
+
+  roadWaypoints = [];
+  importedWaypoints = null;
+
+  const gridTypeSelect = document.getElementById('grid-type');
+  if (gridTypeSelect) {
+    gridTypeSelect.value = 'freeform';
+    gridTypeSelect.dispatchEvent(new Event('change'));
+  }
+  togglePatternParameters();
+  syncDisplayValues();
+  redrawCurrentMission();
+}
+
 function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
   const popupContent = document.createElement('div');
   popupContent.className = 'wp-editor-popup';
@@ -4649,10 +4958,73 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
   popupContent.style.color = '#f8fafc';
   popupContent.style.fontFamily = 'Outfit, sans-serif';
 
+  const gridType = document.getElementById('grid-type')?.value;
+  if (gridType === 'road-following') {
+    if (wp.roadMarker) {
+      popupContent.innerHTML = `
+        <div style="font-weight: 600; margin-bottom: 8px; color: var(--text-main); font-size: 0.9rem; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+          <span>Road Node ${idx}</span>
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.35;">
+          ℹ️ Drag this amber marker on the map to adjust the road driving path.
+        </div>
+        <button id="delete-road-node-btn" class="btn btn-danger" style="width: 100%; font-size: 0.8rem; padding: 6px 10px; background: #ef4444; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+          <span>Delete Road Node ${idx}</span>
+        </button>
+      `;
+
+      const deleteBtn = popupContent.querySelector('#delete-road-node-btn');
+      if (deleteBtn) {
+        deleteBtn.addEventListener('click', () => {
+          if (confirm(`Are you sure you want to delete Road Node ${idx}?`)) {
+            if (roadWaypoints && roadWaypoints.length > idx) {
+              roadWaypoints.splice(idx, 1);
+              roadWaypoints.forEach((w, newIdx) => { w.idx = newIdx; });
+            }
+            if (marker && marker.closePopup) marker.closePopup();
+            updateGrid();
+          }
+        });
+      }
+      return popupContent;
+    } else {
+      const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value);
+      const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : defaultGimbalPitch;
+      const headingDisplay = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading.toFixed(0) : '—';
+
+      popupContent.innerHTML = `
+        <div style="font-weight: 600; margin-bottom: 8px; color: var(--text-main); font-size: 0.9rem; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+          <span>Drone Waypoint ${idx}</span>
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px; display: flex; flex-direction: column; gap: 4px;">
+          <div><strong>Height:</strong> ${formatDistance(wp.alt, 0)}</div>
+          <div><strong>Yaw:</strong> ${headingDisplay}°</div>
+          <div><strong>Gimbal Pitch:</strong> ${pitch}°</div>
+        </div>
+        <div style="background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.25); padding: 8px; border-radius: 6px; font-size: 0.75rem; color: #cbd5e1; margin-bottom: 10px; line-height: 1.35;">
+          ℹ️ Road Follow waypoints are automatically calculated relative to the road offset.<br><br>
+          To edit, move, or nudge individual waypoints, please convert to <strong>Freeform</strong> mode.
+        </div>
+        <button id="convert-to-freeform-btn" class="btn btn-primary" style="width: 100%; font-size: 0.8rem; padding: 6px 10px; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--accent-cyan); color: #0f172a; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+          <span>✏️ Convert to Freeform Mode</span>
+        </button>
+      `;
+
+      const convertBtn = popupContent.querySelector('#convert-to-freeform-btn');
+      if (convertBtn) {
+        convertBtn.addEventListener('click', () => {
+          if (marker && marker.closePopup) marker.closePopup();
+          convertToFreeformMission();
+        });
+      }
+
+      return popupContent;
+    }
+  }
+
   const headingVal = (wp.heading !== undefined && wp.heading !== null) ? wp.heading.toFixed(0) : '';
   const pitchVal = (wp.pitch !== undefined && wp.pitch !== null) ? wp.pitch : -45;
 
-  // Track original properties to support revert on cancel
   const originalLat = wp.lat;
   const originalLon = wp.lon;
   const originalX = wp.x;
@@ -4662,10 +5034,20 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
   const originalHeading = wp.heading;
   const originalHeadingMode = wp.headingMode || 'inherit';
   const originalPoiIndex = wp.poiIndex || 0;
+  const originalSpeed = wp.speed;
+  const originalHoverTime = wp.hoverTime;
+  const originalTurnMode = wp.turnMode || 'inherit';
+  const originalCameraAction = wp.cameraAction || 'inherit';
+  const originalZoom = wp.zoom;
   const originalIsRingStart = wp.isRingStart;
   const originalIsModified = wp.isModified;
   const originalOrigIsRingStart = wp.origIsRingStart;
   const originalOrigIsModified = wp.origIsModified;
+
+  const originalRoadLat = (roadWaypoints && roadWaypoints[idx]) ? roadWaypoints[idx].lat : null;
+  const originalRoadLon = (roadWaypoints && roadWaypoints[idx]) ? roadWaypoints[idx].lon : null;
+  const originalRoadX = (roadWaypoints && roadWaypoints[idx]) ? roadWaypoints[idx].x : null;
+  const originalRoadY = (roadWaypoints && roadWaypoints[idx]) ? roadWaypoints[idx].y : null;
 
   // Track photo offsets if applicable
   let originalPhotoLat = null;
@@ -4707,13 +5089,16 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
   });
 
   popupContent.innerHTML = `
-    <h4 id="edit-wp-title" style="margin: 0 0 12px 0; color: #06b6d4; font-size: 0.95rem; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;"></h4>
-    <div style="display: flex; flex-direction: column; gap: 12px; font-size: 0.8rem;">
+    <h4 id="edit-wp-title" style="margin: 0 0 12px 0; color: #06b6d4; font-size: 0.95rem; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+      <span id="edit-wp-title-text">Edit Waypoint ${idx}</span>
+      <button id="wp-popup-collapse-btn" type="button" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 0.75rem; padding: 0 4px;" title="Minimize/Expand Popup">▼</button>
+    </h4>
+    <div id="edit-wp-body" style="display: flex; flex-direction: column; gap: 12px; font-size: 0.8rem;">
       
       <!-- Altitude Slider -->
       <div style="display: flex; flex-direction: column; gap: 4px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #94a3b8; font-weight: 500;">Altitude:</span>
+          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;"><svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><line x1="3" y1="21" x2="21" y2="21" stroke="#c2622d"/><path d="M12 21v-12M9 12l3-3 3 3" stroke="#06b6d4" fill="none"/><circle cx="12" cy="7" r="1.5" fill="#f5f0e8"/></svg>Altitude:</span>
           <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-alt-val">${altDisp}</span> ${altUnitStr}</span>
         </div>
         <input type="range" id="edit-wp-alt" min="5" max="120" value="${wp.alt.toFixed(0)}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
@@ -4722,16 +5107,70 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       <!-- Pitch Slider -->
       <div style="display: flex; flex-direction: column; gap: 4px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #94a3b8; font-weight: 500;">Gimbal Pitch:</span>
+          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;"><svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="8" cy="8" r="3" stroke="#c2622d" fill="none"/><line x1="8" y1="5" x2="8" y2="2" stroke="#c2622d"/><line x1="8" y1="8" x2="16" y2="16" stroke="#06b6d4"/><path d="M13 17l4-1-1-4" fill="#06b6d4" stroke="#06b6d4"/></svg>Gimbal Pitch:</span>
           <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-pitch-val">${pitchVal}</span>&deg;</span>
         </div>
         <input type="range" id="edit-wp-pitch" min="-90" max="0" value="${pitchVal}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
       </div>
  
+      <!-- Speed Override Slider -->
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;"><svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M3 12a9 9 0 0 1 15-6.7M21 12a9 9 0 0 1-9 9" stroke="#06b6d4" fill="none"/><line x1="12" y1="12" x2="17" y2="8" stroke="#c2622d"/><circle cx="12" cy="12" r="1.5" fill="#f5f0e8"/></svg>Flight Speed:</span>
+          <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-speed-val">${wp.speed ? wp.speed + ' m/s' : 'Auto'}</span></span>
+        </div>
+        <input type="range" id="edit-wp-speed" min="1" max="15" step="0.5" value="${wp.speed || 5}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
+      </div>
+
+      <!-- Hover Duration Input -->
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;"><svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="12" cy="12" r="9" stroke="#06b6d4" fill="none"/><polyline points="12 6 12 12 16 14" stroke="#c2622d"/></svg>Hover Time:</span>
+          <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-hover-val">${wp.hoverTime || 0}</span>s</span>
+        </div>
+        <input type="range" id="edit-wp-hover" min="0" max="60" step="1" value="${wp.hoverTime || 0}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
+      </div>
+
+      <!-- Turn Mode Selector -->
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;"><svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" stroke="#06b6d4" fill="none"/><line x1="4" y1="22" x2="4" y2="15" stroke="#c2622d"/></svg>Turn Mode:</span>
+          <select id="edit-wp-turn-mode" class="form-select" style="font-size: 0.72rem; padding: 3px 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); cursor: pointer;">
+            <option value="inherit" ${!wp.turnMode || wp.turnMode === 'inherit' ? 'selected' : ''}>Inherit Global</option>
+            <option value="stop" ${wp.turnMode === 'stop' ? 'selected' : ''}>Stop & Turn</option>
+            <option value="pass" ${wp.turnMode === 'pass' ? 'selected' : ''}>Curved Pass</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Camera Action Selector -->
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;"><svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="#06b6d4" fill="none"/><circle cx="12" cy="13" r="4" stroke="#c2622d" fill="none"/></svg>Camera Action:</span>
+          <select id="edit-wp-camera-action" class="form-select" style="font-size: 0.72rem; padding: 3px 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); cursor: pointer;">
+            <option value="inherit" ${!wp.cameraAction || wp.cameraAction === 'inherit' ? 'selected' : ''}>Inherit Global Mode</option>
+            <option value="none" ${wp.cameraAction === 'none' ? 'selected' : ''}>None (No Action)</option>
+            <option value="takePhoto" ${wp.cameraAction === 'takePhoto' ? 'selected' : ''}>Take Photo</option>
+            <option value="startRecord" ${wp.cameraAction === 'startRecord' ? 'selected' : ''}>Start Recording</option>
+            <option value="stopRecord" ${wp.cameraAction === 'stopRecord' ? 'selected' : ''}>Stop Recording</option>
+            <option value="zoom" ${wp.cameraAction === 'zoom' ? 'selected' : ''}>Set Camera Zoom</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Camera Zoom Factor Input -->
+      <div id="edit-wp-zoom-container" style="display: ${wp.cameraAction === 'zoom' ? 'flex' : 'none'}; flex-direction: column; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;"><svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="11" cy="11" r="8" fill="none" stroke="#06b6d4"></circle><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="#06b6d4"></line></svg>Camera Zoom:</span>
+          <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-zoom-val">${(wp.zoom || 1.0).toFixed(1)}</span>x</span>
+        </div>
+        <input type="range" id="edit-wp-zoom" min="1.0" max="4.0" step="0.1" value="${wp.zoom || 1.0}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
+      </div>
+
       <!-- Yaw / Heading Selector -->
       <div style="display: flex; flex-direction: column; gap: 4px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #94a3b8; font-weight: 500;">Heading Mode:</span>
+          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;"><svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><polygon points="3 11 22 2 13 21 11 13 3 11" stroke="#06b6d4" fill="none"/></svg>Heading Mode:</span>
           <span id="edit-wp-heading-val" style="color: #06b6d4; font-weight: 600;">Auto</span>
         </div>
         <div style="display: flex; flex-direction: column; gap: 6px;">
@@ -4751,7 +5190,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
  
       <!-- Position Nudge & Lat/Lon Inputs -->
       <div style="display: flex; flex-direction: column; gap: 6px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
-        <span style="color: #94a3b8; font-weight: 500;">Position (Nudge):</span>
+        <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;"><svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z" stroke="#06b6d4" fill="none"/><circle cx="12" cy="10" r="3" stroke="#c2622d" fill="none"/></svg>Position (Nudge):</span>
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <!-- D-Pad -->
           <div style="display: grid; grid-template-columns: repeat(3, 24px); grid-template-rows: repeat(3, 24px); gap: 2px; justify-content: center; width: 80px;">
@@ -4775,14 +5214,23 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       </div>
  
       <div style="display: flex; gap: 8px; margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
-        <button id="save-wp-btn" class="btn-primary" style="padding: 6px 12px; font-size: 0.75rem; flex: 1; min-height: 28px; line-height: 1.2;">Save</button>
-        <button id="reset-wp-btn" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; color: #eab308; border-color: rgba(234, 179, 8, 0.3); flex: 1; min-height: 28px; line-height: 1.2; display: ${hasMoved ? 'inline-block' : 'none'};">Reset</button>
+        <button id="save-wp-btn" class="btn-primary" style="padding: 6px 12px; font-size: 0.75rem; flex: 1; min-height: 28px; line-height: 1.2; display: inline-block;">Save</button>
+        <button id="reset-wp-btn" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; color: #eab308; border-color: rgba(234, 179, 8, 0.3); flex: 1; min-height: 28px; line-height: 1.2; display: inline-block;">Revert</button>
         <button id="delete-wp-btn" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; color: #ef4444; border-color: rgba(239, 68, 68, 0.3); flex: 1; min-height: 28px; line-height: 1.2;">Delete</button>
       </div>
     </div>
   `;
 
-  popupContent.querySelector('#edit-wp-title').textContent = `Edit Waypoint ${idx}`;
+  const popupCollapseBtn = popupContent.querySelector('#wp-popup-collapse-btn');
+  const popupBody = popupContent.querySelector('#edit-wp-body');
+  if (popupCollapseBtn && popupBody) {
+    popupCollapseBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isHidden = popupBody.style.display === 'none';
+      popupBody.style.display = isHidden ? 'flex' : 'none';
+      popupCollapseBtn.textContent = isHidden ? '▼' : '▲';
+    });
+  }
 
   // Bind events to the elements directly before they are inserted into the DOM
   const saveBtn = popupContent.querySelector('#save-wp-btn');
@@ -4858,6 +5306,13 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       wp.x = offsets.x;
       wp.y = offsets.y;
       
+      if (wp.origLat !== undefined && (Math.abs(latVal - wp.origLat) > 1e-9 || Math.abs(lonVal - wp.origLon) > 1e-9)) {
+        wp.isModified = true;
+      }
+
+      if (saveBtn) saveBtn.style.display = 'inline-block';
+      if (resetBtn) resetBtn.style.display = 'inline-block';
+      
       const gridType = document.getElementById('grid-type')?.value;
       if (hasPhoto && gridType !== 'road-following') {
         activePhotos[idx].lat = latVal;
@@ -4867,6 +5322,26 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       }
       
       if (gridType === 'road-following') {
+        if (!wp.roadMarker && roadWaypoints && roadWaypoints[idx]) {
+          const prevLat = (wp._lastLat !== undefined) ? wp._lastLat : originalLat;
+          const prevLon = (wp._lastLon !== undefined) ? wp._lastLon : originalLon;
+          const dLat = latVal - prevLat;
+          const dLon = lonVal - prevLon;
+          wp._lastLat = latVal;
+          wp._lastLon = lonVal;
+
+          roadWaypoints[idx].lat += dLat;
+          roadWaypoints[idx].lon += dLon;
+          const rOffsets = geodeticToLocal(roadWaypoints[idx].lat, roadWaypoints[idx].lon, centerLatLng.lat, centerLatLng.lng);
+          roadWaypoints[idx].x = rOffsets.x;
+          roadWaypoints[idx].y = rOffsets.y;
+          roadWaypoints[idx].isModified = true;
+
+          if (roadWaypoints[idx].roadMarker) {
+            roadWaypoints[idx].roadMarker.setLatLng([roadWaypoints[idx].lat, roadWaypoints[idx].lon]);
+          }
+        }
+
         recalculateRoadOffsetPath(centerLatLng.lat, centerLatLng.lng);
 
         // Update all drone markers positions and tooltips
@@ -4875,7 +5350,8 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
           if (gwp.mapMarker) {
             gwp.mapMarker.setLatLng([gwp.lat, gwp.lon]);
             const gPitch = gwp.pitch !== undefined && gwp.pitch !== null ? gwp.pitch : defaultGimbalPitch;
-            const tooltipContent = `Drone Waypoint ${gwp.idx}<br>Height: ${formatDistance(gwp.alt, 0)}<br>Yaw: ${gwp.heading.toFixed(0)}°<br>Pitch: ${gPitch}°`;
+            const headingDisplay = (gwp.heading !== null && gwp.heading !== undefined && !isNaN(gwp.heading)) ? gwp.heading.toFixed(0) : '—';
+            const tooltipContent = `Drone Waypoint ${gwp.idx}<br>Height: ${formatDistance(gwp.alt, 0)}<br>Yaw: ${headingDisplay}°<br>Pitch: ${gPitch}°`;
             gwp.mapMarker.setTooltipContent(tooltipContent);
           }
         });
@@ -4918,12 +5394,22 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     const currentLon = parseFloat(lonInput.value);
     const currentAlt = parseFloat(altSlider.value);
     const currentPitch = parseFloat(pitchSlider.value);
+    const currentSpeed = speedSlider ? parseFloat(speedSlider.value) : (wp.speed || null);
+    const currentHover = hoverSlider ? parseInt(hoverSlider.value) : (wp.hoverTime || 0);
+    const currentTurnMode = turnModeSelect ? turnModeSelect.value : (wp.turnMode || 'inherit');
+    const currentCameraAction = cameraActionSelect ? cameraActionSelect.value : (wp.cameraAction || 'inherit');
+    const currentZoom = zoomSlider ? parseFloat(zoomSlider.value) : (wp.zoom || 1.0);
 
     const isChangedFromOrig = (
       (wp.origLat !== undefined && wp.origLat !== null && Math.abs(currentLat - wp.origLat) > 1e-9) ||
       (wp.origLon !== undefined && wp.origLon !== null && Math.abs(currentLon - wp.origLon) > 1e-9) ||
       (wp.origAlt !== undefined && wp.origAlt !== null && Math.abs(currentAlt - wp.origAlt) > 1e-3) ||
       (wp.origPitch !== undefined && wp.origPitch !== null && currentPitch !== wp.origPitch) ||
+      (wp.origSpeed !== undefined && currentSpeed !== wp.origSpeed) ||
+      (wp.origHoverTime !== undefined && currentHover !== wp.origHoverTime) ||
+      (wp.origTurnMode !== undefined && currentTurnMode !== wp.origTurnMode) ||
+      (wp.origCameraAction !== undefined && currentCameraAction !== wp.origCameraAction) ||
+      (wp.origZoom !== undefined && currentZoom !== wp.origZoom) ||
       ((wp.origHeadingMode || 'inherit') !== mode) ||
       ((wp.origPoiIndex || 0) !== (wp.poiIndex || 0)) ||
       (mode === 'custom' && wp.origHeading !== null && tempHeading !== wp.origHeading)
@@ -4931,6 +5417,9 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
 
     if (resetBtn) {
       resetBtn.style.display = isChangedFromOrig ? 'inline-block' : 'none';
+    }
+    if (saveBtn) {
+      saveBtn.style.display = isChangedFromOrig ? 'inline-block' : 'none';
     }
   };
 
@@ -4947,6 +5436,54 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     pitchValText.textContent = pitchSlider.value;
     throttledUpdateRealtimeMarker();
   });
+
+  const speedSlider = popupContent.querySelector('#edit-wp-speed');
+  const speedValText = popupContent.querySelector('#edit-wp-speed-val');
+  if (speedSlider && speedValText) {
+    speedSlider.addEventListener('input', () => {
+      const val = parseFloat(speedSlider.value);
+      speedValText.textContent = `${val} m/s`;
+      throttledUpdateRealtimeMarker();
+    });
+  }
+
+  const hoverSlider = popupContent.querySelector('#edit-wp-hover');
+  const hoverValText = popupContent.querySelector('#edit-wp-hover-val');
+  if (hoverSlider && hoverValText) {
+    hoverSlider.addEventListener('input', () => {
+      const val = parseInt(hoverSlider.value);
+      hoverValText.textContent = `${val}`;
+      throttledUpdateRealtimeMarker();
+    });
+  }
+
+  const turnModeSelect = popupContent.querySelector('#edit-wp-turn-mode');
+  if (turnModeSelect) {
+    turnModeSelect.addEventListener('change', () => {
+      throttledUpdateRealtimeMarker();
+    });
+  }
+
+  const cameraActionSelect = popupContent.querySelector('#edit-wp-camera-action');
+  const zoomContainer = popupContent.querySelector('#edit-wp-zoom-container');
+  const zoomSlider = popupContent.querySelector('#edit-wp-zoom');
+  const zoomValText = popupContent.querySelector('#edit-wp-zoom-val');
+
+  if (cameraActionSelect) {
+    cameraActionSelect.addEventListener('change', () => {
+      if (zoomContainer) {
+        zoomContainer.style.display = (cameraActionSelect.value === 'zoom') ? 'flex' : 'none';
+      }
+      throttledUpdateRealtimeMarker();
+    });
+  }
+
+  if (zoomSlider && zoomValText) {
+    zoomSlider.addEventListener('input', () => {
+      zoomValText.textContent = parseFloat(zoomSlider.value).toFixed(1);
+      throttledUpdateRealtimeMarker();
+    });
+  }
 
   headingSlider.addEventListener('input', () => {
     headingValText.textContent = headingSlider.value + '°';
@@ -5034,6 +5571,11 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     wp.heading = originalHeading;
     wp.headingMode = originalHeadingMode;
     wp.poiIndex = originalPoiIndex;
+    wp.speed = originalSpeed;
+    wp.hoverTime = originalHoverTime;
+    wp.turnMode = originalTurnMode;
+    wp.cameraAction = originalCameraAction;
+    wp.zoom = originalZoom;
     wp.isRingStart = originalIsRingStart;
     wp.isModified = originalIsModified;
     wp.origIsRingStart = originalOrigIsRingStart;
@@ -5056,8 +5598,38 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
 
     const rotationDeg = parseFloat(document.getElementById('grid-rotation').value);
     const gridType2 = document.getElementById('grid-type')?.value;
+    delete wp._lastLat;
+    delete wp._lastLon;
+
     if (gridType2 === 'road-following') {
-      if (marker.getTooltip()) marker.getTooltip().setContent(`Road Node ${idx}`);
+      if (roadWaypoints && roadWaypoints[idx] && originalRoadLat !== null) {
+        roadWaypoints[idx].lat = originalRoadLat;
+        roadWaypoints[idx].lon = originalRoadLon;
+        roadWaypoints[idx].x = originalRoadX;
+        roadWaypoints[idx].y = originalRoadY;
+        roadWaypoints[idx].alt = originalAlt;
+        roadWaypoints[idx].pitch = originalPitch;
+        roadWaypoints[idx].heading = originalHeading;
+        roadWaypoints[idx].headingMode = originalHeadingMode;
+        roadWaypoints[idx].poiIndex = originalPoiIndex;
+        roadWaypoints[idx].speed = originalSpeed;
+        roadWaypoints[idx].hoverTime = originalHoverTime;
+        roadWaypoints[idx].turnMode = originalTurnMode;
+        roadWaypoints[idx].cameraAction = originalCameraAction;
+        roadWaypoints[idx].zoom = originalZoom;
+        roadWaypoints[idx].isModified = originalIsModified;
+      }
+
+      if (wp.roadMarker) {
+        if (marker.getTooltip()) marker.getTooltip().setContent(`Road Node ${idx}`);
+      } else {
+        const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value);
+        const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : defaultGimbalPitch;
+        const headingDisplay = (wp.heading !== null && wp.heading !== undefined) ? wp.heading.toFixed(0) : '—';
+        const tooltipContent = `Drone Waypoint ${idx}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${headingDisplay}°<br>Pitch: ${pitch}°`;
+        if (marker.getTooltip()) marker.getTooltip().setContent(tooltipContent);
+      }
+      redrawCurrentMission();
     } else {
       const isStart = idx === 0;
       const isEnd = idx === getCurrentWaypoints().length - 1;
@@ -5070,19 +5642,25 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : parseFloat(document.getElementById('gimbal-pitch').value);
       const originalTitle = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${heading.toFixed(0)}°<br>Pitch: ${pitch}°`;
       if (marker.getTooltip()) marker.getTooltip().setContent(originalTitle);
-    }
 
-    // Redraw lines and stats
-    const centerLatLng = centerMarker.getLatLng();
-    updatePathLinesAndStats(getCurrentWaypoints(), getCurrentPhotos(), centerLatLng.lat, centerLatLng.lng, parseFloat(document.getElementById('grid-width').value), parseFloat(document.getElementById('grid-height').value), rotationDeg);
+      // Redraw lines and stats
+      const centerLatLng = centerMarker.getLatLng();
+      updatePathLinesAndStats(getCurrentWaypoints(), getCurrentPhotos(), centerLatLng.lat, centerLatLng.lng, parseFloat(document.getElementById('grid-width').value), parseFloat(document.getElementById('grid-height').value), rotationDeg);
+    }
   };
 
-  const popupCloseMarker = popupMarker || marker;
-  popupCloseMarker.on('popupclose', revertChanges);
+  const popupObj = popupMarker ? (typeof popupMarker.getPopup === 'function' ? popupMarker.getPopup() : null) : (marker && typeof marker.getPopup === 'function' ? marker.getPopup() : null);
+  const unbindRevert = () => {
+    isSaved = true; // Prevent revert from firing
+    if (popupObj && typeof popupObj.off === 'function') popupObj.off('remove', revertChanges);
+    if (marker && typeof marker.off === 'function') marker.off('popupclose', revertChanges);
+  };
+  if (popupObj && typeof popupObj.on === 'function') popupObj.on('remove', revertChanges);
+  if (marker && typeof marker.on === 'function') marker.on('popupclose', revertChanges);
 
   if (saveBtn) {
     saveBtn.addEventListener('click', () => {
-      isSaved = true; // Mark as saved so revert listener doesn't trigger
+      unbindRevert();
       
       const altVal = parseFloat(altSlider.value);
       const pitchVal = parseFloat(pitchSlider.value);
@@ -5092,25 +5670,58 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       const latVal = parseFloat(latInput.value);
       const lonVal = parseFloat(lonInput.value);
 
+      const speedVal = speedSlider ? parseFloat(speedSlider.value) : NaN;
+      const hoverVal = hoverSlider ? parseInt(hoverSlider.value) : NaN;
+      const turnModeVal = turnModeSelect ? turnModeSelect.value : null;
+      const cameraActionVal = cameraActionSelect ? cameraActionSelect.value : null;
+      const zoomVal = zoomSlider ? parseFloat(zoomSlider.value) : NaN;
+
+      // Save custom edits and mark as modified (preserving orig baseline for Reset)
+      if (!isNaN(latVal)) wp.lat = latVal;
+      if (!isNaN(lonVal)) wp.lon = lonVal;
       wp.alt = altVal;
       wp.pitch = pitchVal;
       wp.heading = headingVal;
       wp.headingMode = mode;
       wp.poiIndex = poiIndexVal;
-      wp.lat = latVal;
-      wp.lon = lonVal;
+      if (!isNaN(speedVal)) wp.speed = speedVal;
+      if (!isNaN(hoverVal)) wp.hoverTime = hoverVal;
+      if (turnModeVal) wp.turnMode = turnModeVal;
+      if (cameraActionVal) wp.cameraAction = cameraActionVal;
+      if (!isNaN(zoomVal)) wp.zoom = zoomVal;
       wp.isRingStart = true; // Mark as explicit parameter change point
       wp.isModified = true; // Mark as edited
 
-      popupCloseMarker.off('popupclose', revertChanges); // Unbind revert listener
-      popupCloseMarker.closePopup();
+      const gridType = document.getElementById('grid-type')?.value;
+      if (gridType === 'road-following' && wp.roadMarker && roadWaypoints && roadWaypoints[idx]) {
+        if (!isNaN(latVal)) roadWaypoints[idx].lat = latVal;
+        if (!isNaN(lonVal)) roadWaypoints[idx].lon = lonVal;
+        roadWaypoints[idx].alt = altVal;
+        roadWaypoints[idx].pitch = pitchVal;
+        roadWaypoints[idx].heading = headingVal;
+        roadWaypoints[idx].headingMode = mode;
+        roadWaypoints[idx].poiIndex = poiIndexVal;
+        if (!isNaN(speedVal)) roadWaypoints[idx].speed = speedVal;
+        if (!isNaN(hoverVal)) roadWaypoints[idx].hoverTime = hoverVal;
+        if (turnModeVal) roadWaypoints[idx].turnMode = turnModeVal;
+        if (cameraActionVal) roadWaypoints[idx].cameraAction = cameraActionVal;
+        if (!isNaN(zoomVal)) roadWaypoints[idx].zoom = zoomVal;
+        roadWaypoints[idx].isModified = true;
+      }
+
+      if (popupObj) popupObj.close ? popupObj.close() : (marker && marker.closePopup());
       redrawCurrentMission();
+      recreate3DWaypointsAndPaths();
+      if (fpvActive) {
+        updateFPVEditorUI();
+        updateFPVCamera(0);
+      }
     });
   }
 
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
-      isSaved = true; // Mark as saved so revert listener doesn't trigger
+      unbindRevert();
       
       if (wp.origLat !== undefined && wp.origLat !== null) wp.lat = wp.origLat;
       if (wp.origLon !== undefined && wp.origLon !== null) wp.lon = wp.origLon;
@@ -5125,6 +5736,11 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       if (wp.origHeading !== undefined) wp.heading = wp.origHeading;
       wp.headingMode = wp.origHeadingMode || 'inherit';
       wp.poiIndex = wp.origPoiIndex || 0;
+      wp.speed = wp.origSpeed !== undefined ? wp.origSpeed : null;
+      wp.hoverTime = wp.origHoverTime !== undefined ? wp.origHoverTime : 0;
+      wp.turnMode = wp.origTurnMode || 'inherit';
+      wp.cameraAction = wp.origCameraAction || 'inherit';
+      wp.zoom = wp.origZoom !== undefined ? wp.origZoom : 1.0;
       wp.isRingStart = wp.origIsRingStart !== undefined ? wp.origIsRingStart : false;
       wp.isModified = wp.origIsModified !== undefined ? wp.origIsModified : false;
       
@@ -5144,14 +5760,24 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
         photo.isModified = photo.origIsModified !== undefined ? photo.origIsModified : false;
       }
       
-      popupCloseMarker.off('popupclose', revertChanges);
-      popupCloseMarker.closePopup();
-      
       const gridType = document.getElementById('grid-type')?.value;
-      if (gridType === 'road-following') {
-        recalculateRoadOffsetPath(centerLatLng.lat, centerLatLng.lng);
+      if (gridType === 'road-following' && wp.roadMarker && roadWaypoints && roadWaypoints[idx]) {
+        roadWaypoints[idx].lat = wp.lat;
+        roadWaypoints[idx].lon = wp.lon;
+        roadWaypoints[idx].alt = wp.alt;
+        roadWaypoints[idx].pitch = wp.pitch;
+        roadWaypoints[idx].heading = wp.heading;
+        roadWaypoints[idx].headingMode = wp.headingMode;
+        roadWaypoints[idx].poiIndex = wp.poiIndex;
+        roadWaypoints[idx].speed = wp.speed;
+        roadWaypoints[idx].hoverTime = wp.hoverTime;
+        roadWaypoints[idx].turnMode = wp.turnMode;
+        roadWaypoints[idx].cameraAction = wp.cameraAction;
+        roadWaypoints[idx].zoom = wp.zoom;
+        roadWaypoints[idx].isModified = wp.isModified;
       }
-      
+
+      if (popupObj) popupObj.close ? popupObj.close() : (marker && marker.closePopup());
       redrawCurrentMission();
     });
   }
@@ -5159,24 +5785,33 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
   if (deleteBtn) {
     deleteBtn.addEventListener('click', () => {
       const gridType = document.getElementById('grid-type').value;
-      if (confirm(`Are you sure you want to delete ${gridType === 'road-following' ? 'Road Node' : 'Waypoint'} ${idx}?`)) {
-        isSaved = true; // Prevent revert from firing
-        popupCloseMarker.off('popupclose', revertChanges);
+      const isRoadFollow = (gridType === 'road-following');
+      const label = isRoadFollow ? 'Road Node / Waypoint' : 'Waypoint';
+      if (confirm(`Are you sure you want to delete ${label} ${idx}?`)) {
+        unbindRevert();
 
-        const activeWps = gridType === 'road-following' ? roadWaypoints : getCurrentWaypoints();
-        const activePts = gridType === 'road-following' ? null : getCurrentPhotos();
-        
-        if (activeWps) {
-          activeWps.splice(idx, 1);
-          activeWps.forEach((w, newIdx) => {
-            w.idx = newIdx;
-          });
+        if (isRoadFollow) {
+          if (roadWaypoints && roadWaypoints.length > idx) {
+            roadWaypoints.splice(idx, 1);
+            roadWaypoints.forEach((w, newIdx) => { w.idx = newIdx; });
+          }
+          if (generatedWaypoints && generatedWaypoints.length > idx) {
+            generatedWaypoints.splice(idx, 1);
+            generatedWaypoints.forEach((w, newIdx) => { w.idx = newIdx; });
+          }
+        } else {
+          const activeWps = getCurrentWaypoints();
+          const activePts = getCurrentPhotos();
+          if (activeWps && activeWps[idx]) {
+            activeWps.splice(idx, 1);
+            activeWps.forEach((w, newIdx) => { w.idx = newIdx; });
+          }
+          if (activePts && activePts[idx]) {
+            activePts.splice(idx, 1);
+          }
         }
-        if (activePts && activePts[idx]) {
-          activePts.splice(idx, 1);
-        }
-        
-        popupCloseMarker.closePopup();
+
+        if (popupObj) popupObj.close ? popupObj.close() : (marker && marker.closePopup());
         redrawCurrentMission();
       }
     });
@@ -5204,6 +5839,7 @@ let showFootprints = true;
 let fpvActive = false;
 let fpvPlaying = false;
 let fpvProgressIndex = 0;
+let fpvNudgeStepIndex = 1;
 let fpvSubInterpolation = 0.0;
 let fpvSpeed = 1.0;
 let fpvOriginalCamPos = null;
@@ -5346,6 +5982,107 @@ function getWaypointHeadingAndPitch(idx, waypoints) {
   return { heading, pitch };
 }
 
+let showDroneModels = true;
+
+// Create a procedural 3D Quadcopter Drone mesh for waypoint visualization
+function create3DDroneMesh(colorHex, scale = 1.0) {
+  const droneGroup = new THREE.Group();
+
+  const bodyMat = new THREE.MeshPhongMaterial({
+    color: 0x1e293b,
+    shininess: 80
+  });
+  const accentMat = new THREE.MeshPhongMaterial({
+    color: colorHex,
+    shininess: 90
+  });
+  const armMat = new THREE.MeshPhongMaterial({
+    color: 0x475569,
+    shininess: 50
+  });
+  const rotorMat = new THREE.MeshBasicMaterial({
+    color: 0x38bdf8,
+    transparent: true,
+    opacity: 0.65,
+    side: THREE.DoubleSide
+  });
+  const lensMat = new THREE.MeshPhongMaterial({
+    color: 0x0f172a,
+    shininess: 100
+  });
+
+  // 1. Central Fuselage Body
+  const bodyGeom = new THREE.BoxGeometry(1.2 * scale, 0.4 * scale, 1.6 * scale);
+  const bodyMesh = new THREE.Mesh(bodyGeom, bodyMat);
+  droneGroup.add(bodyMesh);
+
+  // Top Accent Shell
+  const shellGeom = new THREE.BoxGeometry(0.9 * scale, 0.25 * scale, 1.2 * scale);
+  const shellMesh = new THREE.Mesh(shellGeom, accentMat);
+  shellMesh.position.y = 0.25 * scale;
+  droneGroup.add(shellMesh);
+
+  // Top Status LED Light
+  const ledGeom = new THREE.SphereGeometry(0.15 * scale, 8, 8);
+  const ledMesh = new THREE.Mesh(ledGeom, accentMat);
+  ledMesh.position.set(0, 0.35 * scale, -0.5 * scale);
+  droneGroup.add(ledMesh);
+
+  // 2. Camera Gimbal Payload (Front - Negative Z)
+  const gimbalGroup = new THREE.Group();
+  gimbalGroup.position.set(0, -0.1 * scale, -0.8 * scale);
+  
+  const gimbalGeom = new THREE.SphereGeometry(0.3 * scale, 12, 12);
+  const gimbalMesh = new THREE.Mesh(gimbalGeom, bodyMat);
+  gimbalGroup.add(gimbalMesh);
+
+  const lensGeom = new THREE.CylinderGeometry(0.18 * scale, 0.18 * scale, 0.2 * scale, 12);
+  const lensMesh = new THREE.Mesh(lensGeom, lensMat);
+  lensMesh.rotation.x = Math.PI / 2;
+  lensMesh.position.z = -0.15 * scale;
+  gimbalGroup.add(lensMesh);
+
+  droneGroup.add(gimbalGroup);
+  droneGroup.userData.gimbalGroup = gimbalGroup;
+
+  // 3. Four Quadcopter Rotor Arms & Propeller Discs
+  const armPositions = [
+    { x: 1.1 * scale, z: -1.1 * scale }, // Front Right
+    { x: -1.1 * scale, z: -1.1 * scale }, // Front Left
+    { x: 1.1 * scale, z: 1.1 * scale },  // Rear Right
+    { x: -1.1 * scale, z: 1.1 * scale }   // Rear Left
+  ];
+
+  armPositions.forEach((pos, idx) => {
+    // Carbon Arm Shaft
+    const dx = pos.x;
+    const dz = pos.z;
+    const armLen = Math.sqrt(dx * dx + dz * dz);
+    const armGeom = new THREE.CylinderGeometry(0.08 * scale, 0.08 * scale, armLen, 8);
+    const armMesh = new THREE.Mesh(armGeom, armMat);
+
+    armMesh.position.set(dx / 2, 0, dz / 2);
+    armMesh.rotation.z = Math.PI / 2;
+    armMesh.rotation.y = -Math.atan2(dz, dx);
+    droneGroup.add(armMesh);
+
+    // Motor Pod
+    const motorGeom = new THREE.CylinderGeometry(0.2 * scale, 0.2 * scale, 0.3 * scale, 12);
+    const motorMat = idx < 2 ? accentMat : armMat; // Highlight front motors
+    const motorMesh = new THREE.Mesh(motorGeom, motorMat);
+    motorMesh.position.set(pos.x, 0.1 * scale, pos.z);
+    droneGroup.add(motorMesh);
+
+    // Rotor Propeller Blur Disc
+    const propGeom = new THREE.CylinderGeometry(0.8 * scale, 0.8 * scale, 0.02 * scale, 16);
+    const propMesh = new THREE.Mesh(propGeom, rotorMat);
+    propMesh.position.set(pos.x, 0.28 * scale, pos.z);
+    droneGroup.add(propMesh);
+  });
+
+  return droneGroup;
+}
+
 // Recreate waypoints, lines, and cones inside the active Three.js scene
 function recreate3DWaypointsAndPaths() {
   if (!threeScene) return;
@@ -5400,15 +6137,34 @@ function recreate3DWaypointsAndPaths() {
       else if (ring === 3) colorHex = 0x3b82f6; // blue
     }
 
-    const sphereGeom = new THREE.SphereGeometry(r, 12, 12);
-    let sphereMat = materialCache[colorHex];
-    if (!sphereMat) {
-      sphereMat = new THREE.MeshBasicMaterial({ color: colorHex, wireframe: false });
-      materialCache[colorHex] = sphereMat;
+    if (showDroneModels) {
+      const hp = getWaypointHeadingAndPitch(idx, waypoints);
+      const droneScale = (isStart || isEnd || isSplitStart) ? 0.55 : 0.4;
+      const droneMesh = create3DDroneMesh(colorHex, droneScale);
+      droneMesh.position.set(x3d, y3d, z3d);
+
+      // Rotate drone body to face flight heading
+      const headingRad = (hp.heading || 0) * Math.PI / 180.0;
+      droneMesh.rotation.y = -headingRad;
+
+      // Tilt camera gimbal inside drone group to pitch angle
+      const pitchRad = (hp.pitch || -60) * Math.PI / 180.0;
+      if (droneMesh.userData && droneMesh.userData.gimbalGroup) {
+        droneMesh.userData.gimbalGroup.rotation.x = -pitchRad;
+      }
+
+      waypointsGroup.add(droneMesh);
+    } else {
+      const sphereGeom = new THREE.SphereGeometry(r, 12, 12);
+      let sphereMat = materialCache[colorHex];
+      if (!sphereMat) {
+        sphereMat = new THREE.MeshBasicMaterial({ color: colorHex, wireframe: false });
+        materialCache[colorHex] = sphereMat;
+      }
+      const sphereMesh = new THREE.Mesh(sphereGeom, sphereMat);
+      sphereMesh.position.set(x3d, y3d, z3d);
+      waypointsGroup.add(sphereMesh);
     }
-    const sphereMesh = new THREE.Mesh(sphereGeom, sphereMat);
-    sphereMesh.position.set(x3d, y3d, z3d);
-    waypointsGroup.add(sphereMesh);
 
     // Plot Ground Line Projection
     const groundLinePoints = [
@@ -5971,7 +6727,7 @@ function updateFPVCamera(dt) {
   }
 
   // Handle Playback Traversal
-  if (fpvPlaying && !fpvPhotoFlashActive && !fpvPhotoDelayTimer) {
+  if (fpvPlaying && !fpvPhotoDelayTimer) {
     const p1 = waypoints[fpvProgressIndex];
     const p2 = waypoints[fpvProgressIndex + 1];
 
@@ -5996,10 +6752,25 @@ function updateFPVCamera(dt) {
         fpvSubInterpolation = 0.0;
         fpvProgressIndex++;
         
-        // Handle stopAndShoot pause at waypoint
-        const captureMode = document.getElementById('capture-mode').value;
-        if (captureMode === 'stopAndShoot' && fpvProgressIndex < waypoints.length) {
-          triggerFPVPhotoCapture();
+        if (fpvProgressIndex < waypoints.length) {
+          const wp = waypoints[fpvProgressIndex];
+          const hoverTime = (wp && wp.hoverTime && wp.hoverTime > 0) ? wp.hoverTime : 0;
+          const turnMode = wp ? wp.turnMode : 'inherit';
+          const globalPathMode = document.getElementById('path-mode')?.value;
+          const captureMode = document.getElementById('capture-mode')?.value;
+
+          const isStraightLines = (turnMode === 'stop') || (turnMode === 'inherit' && globalPathMode === 'straight');
+          const isStopAndShoot = (captureMode === 'stopAndShoot');
+
+          // Determine if the real drone actually hovers at this waypoint
+          let hoverDuration = 0;
+          if (hoverTime > 0) {
+            hoverDuration = hoverTime;
+          } else if (isStraightLines || isStopAndShoot) {
+            hoverDuration = 1.5;
+          }
+
+          triggerFPVPhotoCapture(hoverDuration);
         }
       }
     } else {
@@ -6090,7 +6861,7 @@ function updateFPVCamera(dt) {
   }
 }
 
-function triggerFPVPhotoCapture() {
+function triggerFPVPhotoCapture(hoverDurationSeconds = 0) {
   const flashOverlay = document.getElementById('fpv-flash-overlay');
   const mediaDot = document.getElementById('fpv-media-dot');
   const mediaText = document.getElementById('fpv-media-text');
@@ -6098,19 +6869,31 @@ function triggerFPVPhotoCapture() {
   if (flashOverlay) flashOverlay.style.opacity = '1.0';
   fpvPhotoFlashActive = true;
   
-  if (mediaDot && mediaText) {
-    mediaDot.style.background = '#f59e0b';
-    mediaText.textContent = 'Capturing Photo';
-  }
+  if (hoverDurationSeconds > 0) {
+    if (mediaDot && mediaText) {
+      mediaDot.style.background = '#f59e0b';
+      mediaText.textContent = `Hovering (${hoverDurationSeconds}s)`;
+    }
 
-  // Pause movement for 1.5 seconds during capture
-  fpvPhotoDelayTimer = setTimeout(() => {
-    fpvPhotoDelayTimer = null;
+    const delayMs = (hoverDurationSeconds * 1000) / (fpvSpeed || 1.0);
+    fpvPhotoDelayTimer = setTimeout(() => {
+      fpvPhotoDelayTimer = null;
+      if (mediaDot && mediaText) {
+        mediaDot.style.background = '#10b981';
+        mediaText.textContent = 'Ready';
+      }
+    }, delayMs);
+  } else {
     if (mediaDot && mediaText) {
       mediaDot.style.background = '#10b981';
-      mediaText.textContent = 'Ready';
+      mediaText.textContent = 'Photo Captured';
+      setTimeout(() => {
+        if (mediaText && mediaText.textContent === 'Photo Captured') {
+          mediaText.textContent = 'Ready';
+        }
+      }, 800);
     }
-  }, 1500);
+  }
 }
 
 function startFPVVideoRecording() {
@@ -6228,25 +7011,107 @@ function updateFPVEditorUI() {
 
   const wp = waypoints[fpvProgressIndex];
 
+  const latNum = parseFloat(wp.lat);
+  const lonNum = parseFloat(wp.lon);
+
   // Title and coords
   const wpIndexSpan = document.getElementById('fpv-editor-wp-index');
   const coordsSpan = document.getElementById('fpv-editor-coords');
   if (wpIndexSpan) wpIndexSpan.textContent = fpvProgressIndex + 1;
-  if (coordsSpan) coordsSpan.textContent = `${wp.lat.toFixed(6)}, ${wp.lon.toFixed(6)}`;
+  if (coordsSpan) {
+    coordsSpan.textContent = (!isNaN(latNum) && !isNaN(lonNum)) ? `${latNum.toFixed(6)}, ${lonNum.toFixed(6)}` : '';
+  }
 
-  // Alt
+  // Altitude with unit conversion
+  const unit = getUnitSystem();
   const altVal = document.getElementById('fpv-edit-alt-val');
+  const altUnit = document.getElementById('fpv-edit-alt-unit');
   const altSlider = document.getElementById('fpv-edit-alt');
-  if (altVal) altVal.textContent = Math.round(wp.alt);
+  const altDisp = unit === 'imperial' ? Math.round(wp.alt * M_TO_FT) : Math.round(wp.alt);
+  if (altVal) altVal.textContent = altDisp;
+  if (altUnit) altUnit.textContent = unit === 'imperial' ? 'ft' : 'm';
   if (altSlider) altSlider.value = Math.round(wp.alt);
 
   // Pitch
-  const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value) || -60;
+  const gimbalPitchEl = document.getElementById('gimbal-pitch');
+  const defaultGimbalPitch = gimbalPitchEl ? (parseFloat(gimbalPitchEl.value) || -60) : -60;
   const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : defaultGimbalPitch;
   const pitchVal = document.getElementById('fpv-edit-pitch-val');
   const pitchSlider = document.getElementById('fpv-edit-pitch');
   if (pitchVal) pitchVal.textContent = Math.round(pitch);
   if (pitchSlider) pitchSlider.value = Math.round(pitch);
+
+  // Lat / Lon precision inputs
+  const latInput = document.getElementById('fpv-edit-lat');
+  const lonInput = document.getElementById('fpv-edit-lon');
+  if (latInput && document.activeElement !== latInput) {
+    latInput.value = !isNaN(latNum) ? latNum.toFixed(7) : '';
+  }
+  if (lonInput && document.activeElement !== lonInput) {
+    lonInput.value = !isNaN(lonNum) ? lonNum.toFixed(7) : '';
+  }
+
+  // Waypoint Scrubber Slider Sync
+  const scrubberSlider = document.getElementById('fpv-wp-scrubber-slider');
+  const scrubberText = document.getElementById('fpv-wp-scrubber-text');
+  if (scrubberSlider && scrubberText && waypoints) {
+    scrubberSlider.max = waypoints.length;
+    if (document.activeElement !== scrubberSlider) {
+      scrubberSlider.value = fpvProgressIndex + 1;
+    }
+    scrubberText.textContent = `${fpvProgressIndex + 1} / ${waypoints.length}`;
+  }
+
+  // D-Pad step display
+  const stepDisplay = document.getElementById('fpv-nudge-step-display');
+  const stepLabels = unit === 'imperial' ? ['1 ft', '5 ft', '20 ft'] : ['0.2m', '1m', '5m'];
+  if (stepDisplay) stepDisplay.textContent = stepLabels[fpvNudgeStepIndex] || stepLabels[1];
+
+  // Speed Override
+  const speedVal = document.getElementById('fpv-edit-speed-val');
+  const speedSlider = document.getElementById('fpv-edit-speed');
+  if (speedSlider && speedVal) {
+    if (document.activeElement !== speedSlider) {
+      speedSlider.value = wp.speed || 5;
+    }
+    speedVal.textContent = wp.speed ? `${wp.speed} m/s` : 'Auto';
+  }
+
+  // Hover Duration
+  const hoverVal = document.getElementById('fpv-edit-hover-val');
+  const hoverSlider = document.getElementById('fpv-edit-hover');
+  if (hoverSlider && hoverVal) {
+    if (document.activeElement !== hoverSlider) {
+      hoverSlider.value = wp.hoverTime || 0;
+    }
+    hoverVal.textContent = `${wp.hoverTime || 0}`;
+  }
+
+  // Turn Mode
+  const turnModeSelect = document.getElementById('fpv-edit-turn-mode');
+  if (turnModeSelect) {
+    turnModeSelect.value = wp.turnMode || 'inherit';
+  }
+
+  // Camera Action
+  const cameraActionSelect = document.getElementById('fpv-edit-camera-action');
+  const zoomContainer = document.getElementById('fpv-edit-zoom-container');
+  if (cameraActionSelect) {
+    cameraActionSelect.value = wp.cameraAction || 'inherit';
+    if (zoomContainer) {
+      zoomContainer.style.display = (wp.cameraAction === 'zoom') ? 'flex' : 'none';
+    }
+  }
+
+  // Camera Zoom
+  const zoomVal = document.getElementById('fpv-edit-zoom-val');
+  const zoomSlider = document.getElementById('fpv-edit-zoom');
+  if (zoomSlider && zoomVal) {
+    if (document.activeElement !== zoomSlider) {
+      zoomSlider.value = wp.zoom || 1.0;
+    }
+    zoomVal.textContent = (wp.zoom || 1.0).toFixed(1);
+  }
 
   // Heading/Yaw Mode and Value
   const headingVal = document.getElementById('fpv-edit-heading-val');
@@ -6258,7 +7123,8 @@ function updateFPVEditorUI() {
     headingModeSelect.value = mode;
 
     if (headingVal && headingSlider) {
-      const rotationDeg = parseFloat(document.getElementById('grid-rotation').value) || 0;
+      const rotEl = document.getElementById('grid-rotation');
+      const rotationDeg = rotEl ? (parseFloat(rotEl.value) || 0) : 0;
       const autoHead = getDefaultHeading(fpvProgressIndex, waypoints, rotationDeg);
 
       // Helper to compute angle based on mode
@@ -6313,34 +7179,80 @@ function updateFPVEditorUI() {
       }
     }
   }
+
+  // Save & Reset button visibility
+  const resetBtn = document.getElementById('fpv-btn-reset-wp');
+  const saveBtn = document.getElementById('fpv-btn-save-wp');
+  if (resetBtn || saveBtn) {
+    const isModifiedFromOrig = (
+      wp.isModified ||
+      (wp.origLat !== undefined && wp.origLat !== null && Math.abs(wp.lat - wp.origLat) > 1e-9) ||
+      (wp.origLon !== undefined && wp.origLon !== null && Math.abs(wp.lon - wp.origLon) > 1e-9) ||
+      (wp.origAlt !== undefined && wp.origAlt !== null && Math.abs(wp.alt - wp.origAlt) > 1e-3) ||
+      (wp.origPitch !== undefined && wp.origPitch !== null && wp.pitch !== wp.origPitch) ||
+      (wp.origSpeed !== undefined && wp.speed !== wp.origSpeed) ||
+      (wp.origHoverTime !== undefined && wp.hoverTime !== wp.origHoverTime) ||
+      (wp.origTurnMode !== undefined && wp.turnMode !== wp.origTurnMode) ||
+      (wp.origCameraAction !== undefined && wp.cameraAction !== wp.origCameraAction) ||
+      (wp.origZoom !== undefined && wp.zoom !== wp.origZoom) ||
+      ((wp.origHeadingMode || 'inherit') !== (wp.headingMode || 'inherit')) ||
+      ((wp.origPoiIndex || 0) !== (wp.poiIndex || 0)) ||
+      (wp.headingMode === 'custom' && wp.origHeading !== null && wp.heading !== wp.origHeading)
+    );
+    if (resetBtn) resetBtn.style.display = isModifiedFromOrig ? 'inline-block' : 'none';
+    if (saveBtn) saveBtn.style.display = (wp.hasDraftEdits || (isModifiedFromOrig && !wp.isModified)) ? 'inline-block' : 'none';
+  }
 }
 
 function fpvDeleteWaypoint() {
   const waypoints = getCurrentWaypoints();
-  if (!waypoints || waypoints.length <= 1) {
+  if (!waypoints || waypoints.length <= 2) {
     alert("Cannot delete waypoint: a flight plan must contain at least 2 waypoints.");
     return;
   }
 
-  waypoints.splice(fpvProgressIndex, 1);
+  const gridType = document.getElementById('grid-type')?.value;
+  const isRoadFollow = (gridType === 'road-following');
+  const label = isRoadFollow ? 'Road Node / Waypoint' : 'Waypoint';
+  if (confirm(`Are you sure you want to delete ${label} ${fpvProgressIndex + 1}?`)) {
+    if (isRoadFollow) {
+      if (roadWaypoints && roadWaypoints.length > fpvProgressIndex) {
+        roadWaypoints.splice(fpvProgressIndex, 1);
+        roadWaypoints.forEach((wp, idx) => { wp.idx = idx; });
+      }
+      if (generatedWaypoints && generatedWaypoints.length > fpvProgressIndex) {
+        generatedWaypoints.splice(fpvProgressIndex, 1);
+        generatedWaypoints.forEach((wp, idx) => { wp.idx = idx; });
+      }
+    } else {
+      const activeWps = getCurrentWaypoints();
+      const activePts = getCurrentPhotos();
+      if (activeWps && activeWps[fpvProgressIndex]) {
+        activeWps.splice(fpvProgressIndex, 1);
+        activeWps.forEach((wp, idx) => { wp.idx = idx; });
+      }
+      if (activePts && activePts[fpvProgressIndex]) {
+        activePts.splice(fpvProgressIndex, 1);
+      }
+    }
 
-  // Re-index all waypoints
-  waypoints.forEach((wp, idx) => {
-    wp.idx = idx;
-  });
+    const currentWps = getCurrentWaypoints();
+    if (fpvProgressIndex >= currentWps.length) {
+      fpvProgressIndex = Math.max(0, currentWps.length - 1);
+    }
+    fpvSubInterpolation = 0.0;
 
-  // Clamp current pointer
-  if (fpvProgressIndex >= waypoints.length) {
-    fpvProgressIndex = waypoints.length - 1;
+    // Redraw Leaflet markers, path line geometries, and stats
+    redrawCurrentMission();
+    // Rebuild Three.js waypoints & line meshes
+    recreate3DWaypointsAndPaths();
+    // Refresh FPV Editor sliders to active point
+    updateFPVEditorUI();
+
+    if (fpvActive) {
+      updateFPVCamera(0);
+    }
   }
-  fpvSubInterpolation = 0.0;
-
-  // Redraw Leaflet markers, path line geometries, and stats
-  redrawCurrentMission();
-  // Rebuild Three.js waypoints & line meshes
-  recreate3DWaypointsAndPaths();
-  // Refresh FPV Editor sliders to active point
-  updateFPVEditorUI();
 }
 
 function fpvInsertWaypoint() {
@@ -6369,17 +7281,38 @@ function fpvInsertWaypoint() {
     newPitch = currentWp.pitch;
   }
 
-  const centerLatLng = centerMarker.getLatLng();
-  const geo = localToGeodetic(newX, newY, centerLatLng.lat, centerLatLng.lng, 0);
+  let geo;
+  if (centerMarker) {
+    const centerLatLng = centerMarker.getLatLng();
+    geo = localToGeodetic(newX, newY, centerLatLng.lat, centerLatLng.lng, 0);
+  } else {
+    const R_EARTH = 6378137.0;
+    const latRad = currentWp.lat * Math.PI / 180.0;
+    geo = {
+      lat: currentWp.lat + (20 / R_EARTH) * (180.0 / Math.PI),
+      lon: currentWp.lon + (20 / (R_EARTH * Math.cos(latRad))) * (180.0 / Math.PI)
+    };
+  }
 
   const newWp = {
     x: newX,
     y: newY,
     lat: geo.lat,
-    lon: geo.lng,
+    lon: geo.lon,
     alt: newAlt,
     pitch: newPitch,
     heading: newHeading,
+    headingMode: 'inherit',
+    poiIndex: 0,
+    origLat: geo.lat,
+    origLon: geo.lon,
+    origAlt: newAlt,
+    origPitch: newPitch,
+    origHeading: newHeading,
+    origHeadingMode: 'inherit',
+    origPoiIndex: 0,
+    origX: newX,
+    origY: newY,
     isModified: true
   };
 
@@ -6398,6 +7331,10 @@ function fpvInsertWaypoint() {
   redrawCurrentMission();
   recreate3DWaypointsAndPaths();
   updateFPVEditorUI();
+
+  if (fpvActive) {
+    updateFPVCamera(0);
+  }
 }
 
 // Bind all FPV mode HUD buttons and sliders
@@ -6499,6 +7436,24 @@ function setupFPVListeners() {
     });
   }
 
+  // Waypoint Progress Scrubber Slider
+  const scrubberSlider = document.getElementById('fpv-wp-scrubber-slider');
+  if (scrubberSlider) {
+    scrubberSlider.addEventListener('input', (e) => {
+      const waypoints = getCurrentWaypoints();
+      if (!waypoints || waypoints.length === 0) return;
+      const targetIdx = parseInt(e.target.value) - 1;
+      if (targetIdx >= 0 && targetIdx < waypoints.length) {
+        fpvProgressIndex = targetIdx;
+        fpvSubInterpolation = 0.0;
+        updateFPVEditorUI();
+        if (fpvActive) {
+          updateFPVCamera(0);
+        }
+      }
+    });
+  }
+
   // Waypoint Editor Altitude Slider
   const editAltSlider = document.getElementById('fpv-edit-alt');
   const editAltVal = document.getElementById('fpv-edit-alt-val');
@@ -6511,6 +7466,7 @@ function setupFPVListeners() {
       if (waypoints && waypoints[fpvProgressIndex]) {
         waypoints[fpvProgressIndex].alt = val;
         waypoints[fpvProgressIndex].isModified = true;
+        waypoints[fpvProgressIndex].hasDraftEdits = true;
         
         const gridType = document.getElementById('grid-type').value;
         if (gridType === 'road-following' && roadWaypoints && roadWaypoints[fpvProgressIndex]) {
@@ -6520,6 +7476,7 @@ function setupFPVListeners() {
 
         redrawCurrentMission();
         recreate3DWaypointsAndPaths();
+        updateFPVEditorUI();
       }
     });
   }
@@ -6536,6 +7493,7 @@ function setupFPVListeners() {
       if (waypoints && waypoints[fpvProgressIndex]) {
         waypoints[fpvProgressIndex].pitch = val;
         waypoints[fpvProgressIndex].isModified = true;
+        waypoints[fpvProgressIndex].hasDraftEdits = true;
         
         const gridType = document.getElementById('grid-type').value;
         if (gridType === 'road-following' && roadWaypoints && roadWaypoints[fpvProgressIndex]) {
@@ -6545,6 +7503,7 @@ function setupFPVListeners() {
 
         redrawCurrentMission();
         recreate3DWaypointsAndPaths();
+        updateFPVEditorUI();
       }
     });
   }
@@ -6570,6 +7529,7 @@ function setupFPVListeners() {
           waypoints[fpvProgressIndex].heading = finalHeading;
         }
         waypoints[fpvProgressIndex].isModified = true;
+        waypoints[fpvProgressIndex].hasDraftEdits = true;
         
         const gridType = document.getElementById('grid-type').value;
         if (gridType === 'road-following' && roadWaypoints && roadWaypoints[fpvProgressIndex]) {
@@ -6592,6 +7552,7 @@ function setupFPVListeners() {
       if (waypoints && waypoints[fpvProgressIndex] && editHeadingMode.value === 'custom') {
         waypoints[fpvProgressIndex].heading = val;
         waypoints[fpvProgressIndex].isModified = true;
+        waypoints[fpvProgressIndex].hasDraftEdits = true;
         
         const gridType = document.getElementById('grid-type').value;
         if (gridType === 'road-following' && roadWaypoints && roadWaypoints[fpvProgressIndex]) {
@@ -6601,6 +7562,7 @@ function setupFPVListeners() {
 
         redrawCurrentMission();
         recreate3DWaypointsAndPaths();
+        updateFPVEditorUI();
       }
     });
 
@@ -6625,6 +7587,410 @@ function setupFPVListeners() {
         }
       });
     }
+  }
+
+  // Speed Override Slider
+  const editSpeedSlider = document.getElementById('fpv-edit-speed');
+  if (editSpeedSlider) {
+    editSpeedSlider.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      const waypoints = getCurrentWaypoints();
+      if (waypoints && waypoints[fpvProgressIndex]) {
+        waypoints[fpvProgressIndex].speed = val;
+        waypoints[fpvProgressIndex].isModified = true;
+        waypoints[fpvProgressIndex].hasDraftEdits = true;
+        updateFPVEditorUI();
+      }
+    });
+  }
+
+  // Hover Duration Slider
+      const editHoverSlider = document.getElementById('fpv-edit-hover');
+  if (editHoverSlider) {
+    editHoverSlider.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value);
+      const waypoints = getCurrentWaypoints();
+      if (waypoints && waypoints[fpvProgressIndex]) {
+        waypoints[fpvProgressIndex].hoverTime = val;
+        waypoints[fpvProgressIndex].isModified = true;
+        waypoints[fpvProgressIndex].hasDraftEdits = true;
+        updateFPVEditorUI();
+      }
+    });
+  }
+
+  // Turn Mode Selector
+  const editTurnModeSelect = document.getElementById('fpv-edit-turn-mode');
+  if (editTurnModeSelect) {
+    editTurnModeSelect.addEventListener('change', (e) => {
+      const mode = e.target.value;
+      const waypoints = getCurrentWaypoints();
+      if (waypoints && waypoints[fpvProgressIndex]) {
+        waypoints[fpvProgressIndex].turnMode = mode;
+        waypoints[fpvProgressIndex].isModified = true;
+        waypoints[fpvProgressIndex].hasDraftEdits = true;
+        updateFPVEditorUI();
+      }
+    });
+  }
+
+  // Camera Action Selector
+  const editCameraActionSelect = document.getElementById('fpv-edit-camera-action');
+  if (editCameraActionSelect) {
+    editCameraActionSelect.addEventListener('change', (e) => {
+      const mode = e.target.value;
+      const waypoints = getCurrentWaypoints();
+      if (waypoints && waypoints[fpvProgressIndex]) {
+        waypoints[fpvProgressIndex].cameraAction = mode;
+        waypoints[fpvProgressIndex].isModified = true;
+        waypoints[fpvProgressIndex].hasDraftEdits = true;
+        updateFPVEditorUI();
+      }
+    });
+  }
+
+  // Camera Zoom Slider
+  const editZoomSlider = document.getElementById('fpv-edit-zoom');
+  if (editZoomSlider) {
+    editZoomSlider.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      const waypoints = getCurrentWaypoints();
+      if (waypoints && waypoints[fpvProgressIndex]) {
+        waypoints[fpvProgressIndex].zoom = val;
+        waypoints[fpvProgressIndex].isModified = true;
+        waypoints[fpvProgressIndex].hasDraftEdits = true;
+        updateFPVEditorUI();
+      }
+    });
+  }
+
+  // FPV Editor Toggle Minimize / Expand
+  const editorToggleBtn = document.getElementById('fpv-editor-toggle-btn');
+  const editorBody = document.getElementById('fpv-editor-body');
+  if (editorToggleBtn && editorBody) {
+    editorToggleBtn.addEventListener('click', () => {
+      const isHidden = editorBody.style.display === 'none';
+      editorBody.style.display = isHidden ? 'flex' : 'none';
+      editorToggleBtn.textContent = isHidden ? '▼' : '▲';
+    });
+  }
+
+  // Nudge step display button
+  const fpvStepDisplay = document.getElementById('fpv-nudge-step-display');
+  if (fpvStepDisplay) {
+    fpvStepDisplay.addEventListener('click', () => {
+      fpvNudgeStepIndex = (fpvNudgeStepIndex + 1) % 3;
+      updateFPVEditorUI();
+    });
+  }
+
+  // Position Nudge Helper for FPV (fwdDir: +1 forward, -1 backward; rightDir: +1 right, -1 left)
+  const fpvNudge = (fwdDir, rightDir, e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    const gridType = document.getElementById('grid-type')?.value;
+    if (gridType === 'road-following') {
+      if (confirm("Road Follow waypoints are automatically calculated relative to the road offset. Would you like to convert to Freeform mode to move or nudge individual waypoints?")) {
+        convertToFreeformMission();
+      }
+      return;
+    }
+
+    const waypoints = getCurrentWaypoints();
+    if (!waypoints || !waypoints[fpvProgressIndex]) return;
+    const wp = waypoints[fpvProgressIndex];
+
+    const latNum = parseFloat(wp.lat);
+    const lonNum = parseFloat(wp.lon);
+    if (isNaN(latNum) || isNaN(lonNum)) return;
+
+    const unit = getUnitSystem();
+    const steps = unit === 'imperial'
+      ? [0.3048, 1.524, 6.096] // 1ft, 5ft, 20ft in meters
+      : [0.2, 1.0, 5.0];      // 0.2m, 1m, 5m in meters
+    const dist = steps[fpvNudgeStepIndex] !== undefined ? steps[fpvNudgeStepIndex] : steps[1];
+
+    // Get current FPV camera heading angle
+    const hp = getWaypointHeadingAndPitch(fpvProgressIndex, waypoints);
+    const headingDeg = (hp && hp.heading !== undefined) ? hp.heading : 0;
+    const headingRad = headingDeg * Math.PI / 180.0;
+
+    // Transform FPV viewport direction into North/East meter displacements
+    const dNorthMeters = (fwdDir * Math.cos(headingRad)) - (rightDir * Math.sin(headingRad));
+    const dEastMeters  = (fwdDir * Math.sin(headingRad)) + (rightDir * Math.cos(headingRad));
+
+    const dLatMeters = dNorthMeters * dist;
+    const dLonMeters = dEastMeters * dist;
+
+    const R_EARTH = 6378137.0;
+    const latRad = latNum * Math.PI / 180.0;
+    const deltaLat = (dLatMeters / R_EARTH) * (180.0 / Math.PI);
+    const deltaLon = (dLonMeters / (R_EARTH * Math.cos(latRad))) * (180.0 / Math.PI);
+
+    wp.lat = latNum + deltaLat;
+    wp.lon = lonNum + deltaLon;
+    wp.isModified = true;
+    wp.hasDraftEdits = true;
+
+    if (centerMarker) {
+      const centerLatLng = centerMarker.getLatLng();
+      const offsets = geodeticToLocal(wp.lat, wp.lon, centerLatLng.lat, centerLatLng.lng);
+      wp.x = offsets.x;
+      wp.y = offsets.y;
+    } else {
+      const R_EARTH = 6378137.0;
+      const dLatMetersOld = (wp.lat - latNum) * Math.PI / 180.0 * R_EARTH;
+      const dLonMetersOld = (wp.lon - lonNum) * Math.PI / 180.0 * R_EARTH * Math.cos(latRad);
+      wp.x = (wp.x || 0) + dLonMetersOld;
+      wp.y = (wp.y || 0) + dLatMetersOld;
+    }
+
+    if (gridType === 'road-following' && roadWaypoints && roadWaypoints[fpvProgressIndex]) {
+      roadWaypoints[fpvProgressIndex].lat = wp.lat;
+      roadWaypoints[fpvProgressIndex].lon = wp.lon;
+      roadWaypoints[fpvProgressIndex].x = wp.x;
+      roadWaypoints[fpvProgressIndex].y = wp.y;
+      roadWaypoints[fpvProgressIndex].isModified = true;
+    }
+
+    // Force update DOM text input values and blur focus
+    const latInput = document.getElementById('fpv-edit-lat');
+    const lonInput = document.getElementById('fpv-edit-lon');
+    if (latInput) latInput.value = wp.lat.toFixed(7);
+    if (lonInput) lonInput.value = wp.lon.toFixed(7);
+
+    if (wp.mapMarker) {
+      wp.mapMarker.setLatLng([wp.lat, wp.lon]);
+    }
+    if (typeof pathGroup !== 'undefined' && pathGroup) {
+      pathGroup.eachLayer(layer => {
+        if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+          layer.setLatLngs(waypoints.map(w => [w.lat, w.lon]));
+        }
+      });
+    }
+
+    redrawCurrentMission();
+    recreate3DWaypointsAndPaths();
+    updateFPVEditorUI();
+
+    if (fpvActive) {
+      updateFPVCamera(0);
+    }
+  };
+
+  const btnN = document.getElementById('fpv-nudge-n-btn');
+  const btnS = document.getElementById('fpv-nudge-s-btn');
+  const btnE = document.getElementById('fpv-nudge-e-btn');
+  const btnW = document.getElementById('fpv-nudge-w-btn');
+
+  if (btnN) btnN.addEventListener('click', (e) => fpvNudge(1, 0, e));  // Forward
+  if (btnS) btnS.addEventListener('click', (e) => fpvNudge(-1, 0, e)); // Backward
+  if (btnE) btnE.addEventListener('click', (e) => fpvNudge(0, 1, e));  // Right
+  if (btnW) btnW.addEventListener('click', (e) => fpvNudge(0, -1, e)); // Left
+
+  // Lat / Lon Text Inputs Real-Time Updating
+  const latInput = document.getElementById('fpv-edit-lat');
+  const lonInput = document.getElementById('fpv-edit-lon');
+  
+  const updateFpvCoordsFromInput = () => {
+    const waypoints = getCurrentWaypoints();
+    if (!waypoints || !waypoints[fpvProgressIndex]) return;
+    const wp = waypoints[fpvProgressIndex];
+
+    const latVal = parseFloat(latInput.value);
+    const lonVal = parseFloat(lonInput.value);
+    if (!isNaN(latVal) && !isNaN(lonVal)) {
+      const oldLat = wp.lat;
+      const oldLon = wp.lon;
+
+      wp.lat = latVal;
+      wp.lon = lonVal;
+      wp.isModified = true;
+      wp.hasDraftEdits = true;
+
+      if (centerMarker) {
+        const centerLatLng = centerMarker.getLatLng();
+        const offsets = geodeticToLocal(wp.lat, wp.lon, centerLatLng.lat, centerLatLng.lng);
+        wp.x = offsets.x;
+        wp.y = offsets.y;
+      } else {
+        const R_EARTH = 6378137.0;
+        const latRad = oldLat * Math.PI / 180.0;
+        const dLatMeters = (latVal - oldLat) * Math.PI / 180.0 * R_EARTH;
+        const dLonMeters = (lonVal - oldLon) * Math.PI / 180.0 * R_EARTH * Math.cos(latRad);
+        wp.x = (wp.x || 0) + dLonMeters;
+        wp.y = (wp.y || 0) + dLatMeters;
+      }
+
+      const gridType = document.getElementById('grid-type')?.value;
+      if (gridType === 'road-following' && roadWaypoints && roadWaypoints[fpvProgressIndex]) {
+        roadWaypoints[fpvProgressIndex].lat = wp.lat;
+        roadWaypoints[fpvProgressIndex].lon = wp.lon;
+        roadWaypoints[fpvProgressIndex].x = wp.x;
+        roadWaypoints[fpvProgressIndex].y = wp.y;
+        roadWaypoints[fpvProgressIndex].isModified = true;
+      }
+
+      if (wp.mapMarker) {
+        wp.mapMarker.setLatLng([wp.lat, wp.lon]);
+      }
+      if (typeof pathGroup !== 'undefined' && pathGroup) {
+        pathGroup.eachLayer(layer => {
+          if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+            layer.setLatLngs(waypoints.map(w => [w.lat, w.lon]));
+          }
+        });
+      }
+
+      redrawCurrentMission();
+      recreate3DWaypointsAndPaths();
+      updateFPVEditorUI();
+
+      if (fpvActive) {
+        updateFPVCamera(0);
+      }
+    }
+  };
+
+  if (latInput) latInput.addEventListener('input', throttle(updateFpvCoordsFromInput, 32));
+  if (lonInput) lonInput.addEventListener('input', throttle(updateFpvCoordsFromInput, 32));
+
+  // Save Waypoint
+  const fpvSaveBtn = document.getElementById('fpv-btn-save-wp');
+  if (fpvSaveBtn) {
+    fpvSaveBtn.addEventListener('click', (e) => {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      const waypoints = getCurrentWaypoints();
+      if (!waypoints || !waypoints[fpvProgressIndex]) return;
+      const wp = waypoints[fpvProgressIndex];
+
+      const latInput = document.getElementById('fpv-edit-lat');
+      const lonInput = document.getElementById('fpv-edit-lon');
+      const altInput = document.getElementById('fpv-edit-alt');
+      const pitchInput = document.getElementById('fpv-edit-pitch');
+      const speedInput = document.getElementById('fpv-edit-speed');
+      const hoverInput = document.getElementById('fpv-edit-hover');
+      const turnModeInput = document.getElementById('fpv-edit-turn-mode');
+      const cameraActionInput = document.getElementById('fpv-edit-camera-action');
+      const zoomInput = document.getElementById('fpv-edit-zoom');
+      const headingModeInput = document.getElementById('fpv-edit-heading-mode');
+      const headingInput = document.getElementById('fpv-edit-heading');
+      const poiInput = document.getElementById('fpv-edit-poi-select');
+
+      const latNum = latInput ? parseFloat(latInput.value) : parseFloat(wp.lat);
+      const lonNum = lonInput ? parseFloat(lonInput.value) : parseFloat(wp.lon);
+      if (!isNaN(latNum)) wp.lat = latNum;
+      if (!isNaN(lonNum)) wp.lon = lonNum;
+
+      if (altInput) wp.alt = parseFloat(altInput.value);
+      if (pitchInput) wp.pitch = parseFloat(pitchInput.value);
+      if (speedInput) wp.speed = parseFloat(speedInput.value);
+      if (hoverInput) wp.hoverTime = parseInt(hoverInput.value);
+      if (turnModeInput) wp.turnMode = turnModeInput.value;
+      if (cameraActionInput) wp.cameraAction = cameraActionInput.value;
+      if (zoomInput) wp.zoom = parseFloat(zoomInput.value);
+
+      if (headingModeInput) {
+        wp.headingMode = headingModeInput.value;
+        if (wp.headingMode === 'custom' && headingInput) {
+          wp.heading = parseFloat(headingInput.value);
+        } else if (wp.headingMode !== 'custom') {
+          wp.heading = null;
+        }
+      }
+      if (poiInput) wp.poiIndex = parseInt(poiInput.value);
+
+      wp.isRingStart = true;
+      wp.isModified = true;
+      wp.hasDraftEdits = false;
+
+      const gridType = document.getElementById('grid-type')?.value;
+      if (gridType === 'road-following' && roadWaypoints && roadWaypoints[fpvProgressIndex]) {
+        if (!isNaN(latNum)) roadWaypoints[fpvProgressIndex].lat = latNum;
+        if (!isNaN(lonNum)) roadWaypoints[fpvProgressIndex].lon = lonNum;
+        roadWaypoints[fpvProgressIndex].alt = wp.alt;
+        roadWaypoints[fpvProgressIndex].pitch = wp.pitch;
+        roadWaypoints[fpvProgressIndex].heading = wp.heading;
+        roadWaypoints[fpvProgressIndex].headingMode = wp.headingMode || 'inherit';
+        roadWaypoints[fpvProgressIndex].poiIndex = wp.poiIndex || 0;
+        roadWaypoints[fpvProgressIndex].speed = wp.speed;
+        roadWaypoints[fpvProgressIndex].hoverTime = wp.hoverTime;
+        roadWaypoints[fpvProgressIndex].turnMode = wp.turnMode;
+        roadWaypoints[fpvProgressIndex].cameraAction = wp.cameraAction;
+        roadWaypoints[fpvProgressIndex].zoom = wp.zoom;
+        roadWaypoints[fpvProgressIndex].isModified = true;
+      }
+
+      redrawCurrentMission();
+      recreate3DWaypointsAndPaths();
+      updateFPVEditorUI();
+    });
+  }
+
+  // Reset Waypoint
+  const fpvResetBtn = document.getElementById('fpv-btn-reset-wp');
+  if (fpvResetBtn) {
+    fpvResetBtn.addEventListener('click', (e) => {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      const waypoints = getCurrentWaypoints();
+      if (!waypoints || !waypoints[fpvProgressIndex]) return;
+      const wp = waypoints[fpvProgressIndex];
+
+      if (wp.origLat !== undefined && wp.origLat !== null) wp.lat = wp.origLat;
+      if (wp.origLon !== undefined && wp.origLon !== null) wp.lon = wp.origLon;
+      
+      if (centerMarker) {
+        const centerLatLng = centerMarker.getLatLng();
+        const offsets = geodeticToLocal(wp.lat, wp.lon, centerLatLng.lat, centerLatLng.lng);
+        wp.x = offsets.x;
+        wp.y = offsets.y;
+      } else if (wp.origX !== undefined && wp.origX !== null) {
+        wp.x = wp.origX;
+        wp.y = wp.origY;
+      }
+
+      if (wp.origAlt !== undefined && wp.origAlt !== null) wp.alt = wp.origAlt;
+      if (wp.origPitch !== undefined && wp.origPitch !== null) wp.pitch = wp.origPitch;
+      if (wp.origHeading !== undefined) wp.heading = wp.origHeading;
+      wp.headingMode = wp.origHeadingMode || 'inherit';
+      wp.poiIndex = wp.origPoiIndex || 0;
+      wp.speed = wp.origSpeed !== undefined ? wp.origSpeed : null;
+      wp.hoverTime = wp.origHoverTime !== undefined ? wp.origHoverTime : 0;
+      wp.turnMode = wp.origTurnMode || 'inherit';
+      wp.cameraAction = wp.origCameraAction || 'inherit';
+      wp.zoom = wp.origZoom !== undefined ? wp.origZoom : 1.0;
+      wp.isRingStart = wp.origIsRingStart !== undefined ? wp.origIsRingStart : false;
+      wp.isModified = wp.origIsModified !== undefined ? wp.origIsModified : false;
+      wp.hasDraftEdits = false;
+
+      const gridType = document.getElementById('grid-type')?.value;
+      if (gridType === 'road-following' && roadWaypoints && roadWaypoints[fpvProgressIndex]) {
+        if (wp.origLat !== undefined) roadWaypoints[fpvProgressIndex].lat = wp.origLat;
+        if (wp.origLon !== undefined) roadWaypoints[fpvProgressIndex].lon = wp.origLon;
+        if (wp.origAlt !== undefined) roadWaypoints[fpvProgressIndex].alt = wp.origAlt;
+        if (wp.origPitch !== undefined) roadWaypoints[fpvProgressIndex].pitch = wp.origPitch;
+        if (wp.origHeading !== undefined) roadWaypoints[fpvProgressIndex].heading = wp.origHeading;
+        roadWaypoints[fpvProgressIndex].headingMode = wp.origHeadingMode || 'inherit';
+        roadWaypoints[fpvProgressIndex].poiIndex = wp.origPoiIndex || 0;
+        roadWaypoints[fpvProgressIndex].isModified = false;
+      }
+
+      if (wp.mapMarker) {
+        wp.mapMarker.setLatLng([wp.lat, wp.lon]);
+      }
+
+      redrawCurrentMission();
+      recreate3DWaypointsAndPaths();
+      updateFPVEditorUI();
+
+      if (fpvActive) {
+        updateFPVCamera(0);
+      }
+    });
   }
 
   // Delete Waypoint
