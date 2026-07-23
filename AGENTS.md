@@ -28,8 +28,15 @@ When changing the project version, you must update the version tag in the follow
 4. **`index_template.html`:**
    - Update the version-tag `<span>` and the changelog list header/bullets identically to the edits made in `index.html`.
 
-## 3. Standard Verification
-After applying updates and bumping versions, run the test suite to verify code correctness:
+## 3. Build & Compilation Step
+`index.html` is a single-file application bundle compiled from `index_template.html`, `index.css`, and `index.js`.
+After making edits to `index.js`, `index.css`, or `index_template.html`, you **MUST** run the build script to compile the `index.html` bundle:
+```bash
+python scratch/build.py
+```
+
+## 4. Standard Verification
+After applying updates, bumping versions, and running the build script, run the test suite to verify code correctness:
 ```bash
 node --test index.test.js
 ```

@@ -2,6 +2,199 @@
 
 All notable changes to Aalaapi Sky will be documented in this file.
 
+## [1.25.2] - 2026-07-23
+
+### Fixed
+- **Left Nav Sync & Freeform Waypoint Save/Revert Controls:**
+  - Dispatched native `change` event on `#grid-type` select element during popup conversion, ensuring the left navigation menu dropdown immediately syncs to display **Freeform**.
+  - Always enabled **Save**, **Revert**, and **Delete** buttons in the Waypoint Editor popup for Freeform waypoints, enabling full parameter saving and restoration.
+
+## [1.25.1] - 2026-07-23
+
+### Fixed
+- **Road Follow Popup Convert to Freeform Fix:** Fixed `convertToFreeformMission` to directly populate `generatedWaypoints` and trigger `redrawCurrentMission`, enabling full draggable marker creation and seamless conversion when clicking *Convert to Freeform Mode* from Road Follow popup editors. Saved `wp.mapMarker` reference across all standard waypoints.
+
+## [1.25.0] - 2026-07-23
+
+### Added & Changed
+- **Road Follow Procedural Protection & Convert to Freeform Workflow:**
+  - Prevented invalid individual coordinate edits on procedural Road Follow offset waypoints to preserve calculated road offset alignment.
+  - Added **"Convert to Freeform Mode"** workflow: Clicking cyan drone waypoints or nudging in Road Follow mode displays an informative guidance banner with a one-click button to convert the calculated flight plan into an unconstrained, fully editable Freeform mission.
+
+## [1.24.3] - 2026-07-23
+
+### Fixed
+- **Road Follow Baseline Coordinate Preservation:** Fixed `recalculateRoadOffsetPath` so `origLat`, `origLon`, `origX`, `origY` baseline coordinates are preserved once initialized, preventing custom nudged positions from resetting back to original road offsets during subsequent redraws or saves.
+
+## [1.24.2] - 2026-07-23
+
+### Fixed
+- **Road Follow Multi-Waypoint Nudge & Uncaught Heading Exception:** Fixed `recalculateRoadOffsetPath` to use a clamped `roadNode` reference for intermediate drone waypoints (e.g. Waypoint 3) when `generatedWaypoints.length > roadWaypoints.length`. Added safe formatting for null/undefined heading values in Leaflet tooltips to prevent uncaught exceptions when nudging intermediate waypoints.
+
+## [1.24.1] - 2026-07-23
+
+### Fixed
+- **Road Follow Multi-Waypoint Count & Nudge Fix:** Fixed `recalculateRoadOffsetPath` so editing or nudging waypoints when `generatedWaypoints.length > roadWaypoints.length` (such as Waypoint 3) retains all waypoints without truncating or throwing undefined errors.
+
+## [1.24.0] - 2026-07-23
+
+### Added & Fixed
+- **Synchronized Road Follow Editing & Deletion:**
+  - Deleting any waypoint in Road Follow mode now removes the node from both `roadWaypoints` and `generatedWaypoints`, updating the road path geometry and recalculating the offset flight path.
+  - Editing or nudging drone waypoint coordinates dynamically shifts the underlying road control node, keeping the road path and drone path 100% synchronized and locked together.
+
+## [1.23.4] - 2026-07-23
+
+### Fixed
+- **Road Follow Object Identity & Popup Cancel Revert:** Preserved waypoint object identity in `recalculateRoadOffsetPath` so real-time popup edits operate on identical memory references. Bound `revertChanges` to popup remove events to guarantee unsaved real-time edits cleanly revert on popup close.
+
+## [1.23.3] - 2026-07-23
+
+### Fixed
+- **Road Follow Save, Reset & Revert Alignment:** Fixed Road Follow popup save and reset logic to prevent corrupting road node positions when editing cyan drone waypoints. Added full map path line and stats redrawing on popup cancel/revert so un-saved real-time edits cleanly restore.
+
+## [1.23.2] - 2026-07-23
+
+### Fixed
+- **Road Follow Waypoint Nudge Position Persistence:** Fixed Road Follow mode nudge controls so nudging drone waypoints updates their coordinates and preserves custom nudged positions in `recalculateRoadOffsetPath` without resetting back to un-nudged road offsets.
+
+## [1.23.1] - 2026-07-23
+
+### Fixed
+- **Road Follow Waypoint Editing & Popup Binding:** Fixed Road Follow mode so clicking any cyan drone waypoint opens its individual editor popup to edit altitude, pitch, speed, hover time, camera action, zoom, heading, or position. Preserved custom drone waypoint overrides in `recalculateRoadOffsetPath` when dragging road nodes.
+
+## [1.23.0] - 2026-07-23
+
+### Added
+- **Resizable & Fullscreen 3D View Modal:** Added an Expand/Restore button (`#expand-3d-btn`) to the 3D Flight Path Preview modal header, allowing full-screen expansion and native browser fullscreen toggle with automatic 3D canvas viewport re-scaling.
+
+## [1.22.0] - 2026-07-23
+
+### Added
+- **Matching Icon Indicators in Waypoint Editors:** Added consistent SVG visual indicators (Altitude, Pitch, Speed, Hover Time, Turn Mode, Camera Action, Camera Zoom, Heading Mode, Position Nudge) matching the left control panel across both 2D Map Waypoint Popups and 3D FPV HUD Editors.
+
+## [1.21.3] - 2026-07-23
+
+### Fixed
+- **Speed & Hover Time Save & Revert Persistence:** Fixed saving, baseline tracking (`origSpeed`, `origHoverTime`, `origTurnMode`, `origCameraAction`, `origZoom`), and cancel/reset behavior for per-waypoint speed overrides and hover durations across both 2D Map Popups and 3D FPV HUD Editors.
+
+## [1.21.2] - 2026-07-22
+
+### Fixed
+- **FPV Straight Lines Animation Pause Fix:** Updated FPV walkthrough playback logic to check `#path-mode === 'straight'` ("Straight Lines (Drone stops at points)") so the 3D FPV simulation correctly halts movement at every waypoint when flying straight line missions.
+
+## [1.21.1] - 2026-07-22
+
+### Changed
+- **Mini 4 Pro Focal Zoom Range Alignment:** Capped per-waypoint camera zoom slider range to 1.0x – 4.0x matching the physical camera specs of the DJI Mini 4 Pro payload.
+
+## [1.21.0] - 2026-07-22
+
+### Added
+- **Per-Waypoint Camera Actions & Zoom (RC 2 Parity):** Added per-waypoint Camera Action selection (`Inherit Global Mode`, `None`, `Take Photo`, `Start Recording`, `Stop Recording`, `Set Camera Zoom`) and focal zoom factor adjustment (1.0x – 7.0x) on both 2D Map Popups and 3D FPV HUD Editors.
+- **WPML Camera Action Export:** Compiled per-waypoint camera actions into native WPML `<wpml:actionGroup>` tags (`takePhoto`, `startRecord`, `stopRecord`, `zoom`) in exported `waylines.wpml` files.
+
+## [1.20.2] - 2026-07-22
+
+### Fixed
+- **Real-World FPV Hover & Traversal Logic:** 3D FPV simulation now glides continuously through waypoints during Continuous Flight Mode or Curved Pass without pausing, only hovering when an actual IRL hover is configured (`hoverTime > 0` or Stop & Turn).
+
+## [1.20.1] - 2026-07-22
+
+### Changed
+- **Compact DJI Mini 4 Pro 3D Drone Scale:** Reduced 3D quadcopter drone model scale (0.4 scale factor) for sleek, uncluttered 3D mission view matching compact drones like the DJI Mini 4 Pro.
+
+## [1.20.0] - 2026-07-22
+
+### Added
+- **3D Quadcopter Drone Waypoint Models:** Replaced plain spheres in the 3D scene preview with realistic 3D quadcopter drone models featuring carbon rotor arms, motor pods, propeller blur discs, color-accented hulls, and camera gimbal payloads.
+- **Dynamic 3D Yaw & Gimbal Pitch Orientation:** Each 3D drone model automatically rotates to face its waypoint's flight heading angle and tilts its camera gimbal payload to the target gimbal pitch angle.
+- **3D Controls HUD Toggle:** Added a `3D Drones` toggle button to the 3D scene overlay controls to easily switch between 3D Drone Models and Spheres.
+
+## [1.19.0] - 2026-07-22
+
+### Added
+- **DJI RC 2 Waypoint Editor Parity:** Added per-waypoint Flight Speed overrides (1–15 m/s or Imperial equivalent), per-waypoint Hover Durations (0–60s), and per-waypoint Turn Curvature Mode controls (`Stop & Turn` vs `Curved Pass`) across 2D map popups and 3D FPV HUD editors.
+- **WPML 1.0 XML Compilation:** Exported per-waypoint `<wpml:waypointSpeed>`, `<wpml:waypointTurnMode>`, and `<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>` WPML tags into `waylines.wpml` for native execution on DJI RC 2, DJI Fly, and Matrice controllers.
+
+## [1.18.13] - 2026-07-22
+
+### Fixed
+- **2D Popup Baseline Protection:** Removed `orig*` baseline property overwrites from 2D popup Save listener. Now, leaving the editor (closing popups or scrubbing to other waypoints) preserves the original pattern baseline settings, allowing pilots to reset any modified waypoint back to its original pattern state at any time.
+
+## [1.18.12] - 2026-07-22
+
+### Fixed
+- **FPV Save & Reset Immediate Responsiveness:** Added `updateFPVEditorUI()` triggers to all altitude, pitch, and heading slider input events. The **Save** button now appears immediately on ANY waypoint change (sliders, text inputs, D-Pad nudges), and **Reset** returns the waypoint to its original pattern state.
+
+## [1.18.11] - 2026-07-22
+
+### Fixed
+- **FPV Save Baseline Protection:** Prevented `fpvSaveWaypoint()` from overwriting `origLat`, `origLon`, `origAlt`, `origPitch`, `origHeading` baseline properties, ensuring the **Reset** button remains visible on modified waypoints after saving and successfully reverts waypoints back to original pattern settings.
+
+## [1.18.10] - 2026-07-22
+
+### Fixed
+- **Reset Button Persistence After Save:** Fixed `fpvSaveWaypoint()` and 2D popup Save button to preserve original pattern baseline settings (`origLat`, `origLon`, `origAlt`, etc.) when saving custom edits. The **Reset** button now remains available on modified waypoints after saving, allowing pilots to revert back to original pattern settings at any time.
+
+## [1.18.9] - 2026-07-22
+
+### Changed
+- **2D Map & 3D FPV Waypoint Edit Action Alignment:** Unified Save, Reset, and Delete behaviors across both 2D map popups and 3D FPV HUD panels. Save & Reset buttons now remain hidden until unsaved edits exist on both views, commit baseline properties identically, and trigger full 2D map & 3D scene re-renders.
+
+## [1.18.8] - 2026-07-22
+
+### Changed
+- **FPV Save & Reset Dynamic Visibility:** Updated `#fpv-btn-save-wp` and `#fpv-btn-reset-wp` to remain hidden until unsaved edits are made to a waypoint, keeping the HUD action bar clean.
+
+## [1.18.7] - 2026-07-22
+
+### Fixed
+- **FPV Waypoint Insert Property Initialization:** Fixed `fpvInsertWaypoint()` longitude property assignment (`lon: geo.lon`) and baseline property initialization (`origLat`, `origLon`, `origAlt`, `origPitch`, `origHeading`), resolving inserted waypoint corruption and viewport camera updates.
+
+### Added
+- **FPV Waypoint Scrubber Slider:** Added a real-time Waypoint Progress Scrubber Slider (`#fpv-wp-scrubber-slider`) to the 3D FPV HUD playback bar, allowing pilots to scrub directly to any waypoint across the mission.
+
+## [1.18.6] - 2026-07-22
+
+### Fixed
+- **Inlined Build Synchronization:** Rebuilt `index.html` single-file bundle using `scratch/build.py` to compile the updated JS/CSS logic into inlined browser scripts, restoring FPV Lat/Lon text input values and 3D position nudge functionality.
+
+## [1.18.5] - 2026-07-22
+
+### Fixed
+- **FPV Waypoint Latitude/Longitude String Parsing Crash Fix:** Fixed an uncaught `TypeError` in `updateFPVEditorUI()` where string-formatted coordinates (e.g. `"40.0164223"`) caused `.toFixed(7)` to throw an exception, resulting in blank inputs and breaking position nudge calculations. Wrapped coordinate formatting in `parseFloat()`.
+
+## [1.18.4] - 2026-07-22
+
+### Fixed
+- **FPV Camera View-Relative Nudge & Input Lock Fix:** Fixed FPV D-Pad position nudge to transform displacements relative to current FPV camera heading angle (`Forward`, `Backward`, `Left`, `Right`). Forced immediate updates to text inputs (`#fpv-edit-lat`, `#fpv-edit-lon`) during nudge execution to prevent input focus locks from overwriting nudged coordinates.
+
+## [1.18.3] - 2026-07-22
+
+### Added
+- **3D FPV Waypoint Save & Revert Buttons:** Added cyan **Save** button (`#fpv-btn-save-wp`) and yellow **Reset/Revert** button (`#fpv-btn-reset-wp`) to the 3D FPV Waypoint Editor HUD panel, giving complete UI and workflow parity with the 2D map waypoint editor popup.
+
+### Fixed
+- **FPV Waypoint Latitude & Longitude Text Input Formatting:** Fixed a parsing bug where string coordinates in waypoint objects caused `.toFixed(7)` to throw, resulting in blank Lat/Lon inputs and broken nudge calculations. Latitude and Longitude values are now safely parsed with `parseFloat()`.
+
+## [1.18.2] - 2026-07-22
+
+### Fixed
+- **FPV Lat/Lon Text Inputs & Nudge Initial Value Bug:** Fixed an uncaught `TypeError` in `updateFPVEditorUI()` caused by missing null checks on optional DOM controls (e.g. `gimbal-pitch`), which previously interrupted script execution before updating the Lat/Lon text input values. Removed static `0.0000000` HTML attribute defaults and added safe fallback dereferencing so FPV nudge controls always operate on valid waypoint coordinates.
+
+## [1.18.1] - 2026-07-22
+
+### Fixed
+- **3D FPV Waypoint Position Nudge & Viewport Sync:** Fixed an issue where nudging waypoints in the 3D FPV HUD editor did not update coordinates when a center marker was absent, and failed to refresh the 3D FPV camera viewport position in real-time while paused. Added fallback Cartesian coordinate calculations (`wp.x`, `wp.y`), immediate FPV camera position rendering (`updateFPVCamera(0)`), and event propagation handling for D-Pad nudge buttons, Lat/Lon text inputs, and Reset triggers.
+
+## [1.18.0] - 2026-07-22
+
+### Added
+- **3D FPV Waypoint Menu Alignment:** Aligned the 3D FPV Waypoint Editor HUD panel with the 2D Map Waypoint Editor popup. Added precision Latitude/Longitude text inputs, D-Pad coordinate nudge controls with customizable step distances (`0.2m`/`1m`/`5m` or `1ft`/`5ft`/`20ft`), yellow **Reset** button for restoring original generated states, and Imperial/Metric unit conversions (`ft` vs `m`).
+- **Non-Obstructive Viewport Layout:** Relocated the 3D FPV Editor panel from the lower-center (where it obscured the drone flight viewfinder and reticle) to a floating upper-right side card with semi-transparent glass backdrop.
+- **Minimize/Expand Toggles:** Added quick collapse/expand toggles (`▼`) to both the 3D FPV Editor panel and the 2D Map Waypoint Editor popup, allowing pilots to instantly minimize menus for an unobstructed view of the map or FPV camera.
+
 ## [1.17.4] - 2026-07-19
 
 ### Fixed
