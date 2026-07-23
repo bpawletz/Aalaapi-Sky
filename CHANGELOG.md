@@ -2,6 +2,11 @@
 
 All notable changes to Aalaapi Sky will be documented in this file.
 
+## [1.25.3] - 2026-07-23
+
+### Fixed
+- **About Modal Changelog Placement Markup Fix:** Fixed HTML div nesting in `index_template.html` so the Changelog section displays in its dedicated container below the safety warning grid instead of inside the *Know Your Emergency Abort* card.
+
 ## [1.25.2] - 2026-07-23
 
 ### Fixed
