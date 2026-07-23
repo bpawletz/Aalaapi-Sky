@@ -41,3 +41,17 @@ After applying updates, bumping versions, and running the build script, run the 
 node --test index.test.js
 ```
 All tests must pass before the task can be marked complete.
+
+## 5. Automated Build, Test & Push Workflow
+To automate building, verifying unit tests, committing, and pushing changes to the remote repository, you can use the included convenience scripts:
+
+- **Git Bash / Linux / macOS:**
+  ```bash
+  ./push.sh "feat(scope): brief description of changes"
+  ```
+- **PowerShell / Windows:**
+  ```powershell
+  .\push.ps1 "feat(scope): brief description of changes"
+  ```
+
+These scripts automatically run the build step (`python scratch/build.py`), run unit tests (`node --test index.test.js`), stage changes (`git add .`), create a git commit, and push to `origin/main`.
