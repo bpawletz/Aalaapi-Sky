@@ -1015,6 +1015,8 @@ function initUIEventListeners() {
         document.querySelector('.sidebar').classList.remove('open');
       }
       init3DPreview();
+      setTimeout(handle3DResize, 50);
+      setTimeout(handle3DResize, 250);
     });
   }
 
@@ -6668,6 +6670,8 @@ function init3DPreview() {
   animate();
 
   window.addEventListener('resize', handle3DResize);
+  setTimeout(handle3DResize, 50);
+  setTimeout(handle3DResize, 250);
 }
 
 // Reset camera to fit bounding box
