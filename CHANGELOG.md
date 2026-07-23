@@ -2,6 +2,12 @@
 
 All notable changes to Aalaapi Sky will be documented in this file.
 
+## [1.25.4] - 2026-07-23
+
+### Added & Fixed
+- **3D View Auto-Resize Render Fix:** Added automatic `handle3DResize` triggers on modal open to ensure Three.js canvas resizes to container dimensions post-reflow, eliminating 0x0 canvas rendering.
+- **Automated Git Push Scripts:** Added `push.sh` and `push.ps1` scripts to automate single-file compilation, unit test execution, git staging, committing, and pushing.
+
 ## [1.25.3] - 2026-07-23
 
 ### Fixed
