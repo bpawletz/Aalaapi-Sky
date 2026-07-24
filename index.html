@@ -2209,7 +2209,7 @@ html, body {
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
             <div>
-              <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2);">Version 1.25.8</span>
+              <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2);">Version 1.25.9</span>
             </div>
           </div>
         </div>
@@ -2273,9 +2273,15 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <ul style="margin: 0; padding-left: 20px; color: var(--text-muted); font-size: 0.85rem; display: flex; flex-direction: column; gap: 8px;">
-            <strong style="color: var(--text-main);">Changelog (v1.25.8):</strong>
-            <li><strong>JSZip Zip Folder Removal & Modal UI Fixes:</strong> Passed <code>createFolders: false</code> to JSZip to strip directory entries causing Android extraction failures. Fixed About modal HTML alignment and optimized Settings gear modal open response time.</li>
+            <strong style="color: var(--text-main);">Changelog (v1.25.9):</strong>
+            <li><strong>Default Location Update (Miami-Illinois Cornfield):</strong> Updated starting map coordinates to the historic Grand Village of the Illinois / Utica, IL area (41.3215° N, 88.9950° W), combining Miami-Illinois historic heritage with open rural cornfield flight area.</li>
           </ul>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.25.8):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>JSZip Zip Folder Removal & Modal UI Fixes:</strong> Passed <code>createFolders: false</code> to JSZip to strip directory entries causing Android extraction failures. Fixed About modal HTML alignment and optimized Settings gear modal open response time.</li>
+            </ul>
+          </div>
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.25.7):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -3702,9 +3708,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Initialize Leaflet Map
 function initMap() {
-  // Default to Millennium Park, Chicago, Illinois (anonymized)
-  const defaultLat = 41.8827;
-  const defaultLng = -87.6227;
+  // Default to Grand Village of the Illinois / Utica, IL (Historic Miami-Illinois tribe settlement & rural cornfield)
+  const defaultLat = 41.3215;
+  const defaultLng = -88.9950;
 
   // Use the last known location as the starting view if cached, so mobile
   // users land on their area without needing a GPS fix on every session.

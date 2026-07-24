@@ -333,9 +333,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Initialize Leaflet Map
 function initMap() {
-  // Default to Millennium Park, Chicago, Illinois (anonymized)
-  const defaultLat = 41.8827;
-  const defaultLng = -87.6227;
+  // Default to Grand Village of the Illinois / Utica, IL (Historic Miami-Illinois tribe settlement & rural cornfield)
+  const defaultLat = 41.3215;
+  const defaultLng = -88.9950;
 
   // Use the last known location as the starting view if cached, so mobile
   // users land on their area without needing a GPS fix on every session.
