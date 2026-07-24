@@ -2273,9 +2273,27 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <ul style="margin: 0; padding-left: 20px; color: var(--text-muted); font-size: 0.85rem; display: flex; flex-direction: column; gap: 8px;">
-            <strong style="color: var(--text-main);">Changelog (v1.25.9):</strong>
-            <li><strong>Default Location Update (Miami-Illinois Cornfield):</strong> Updated starting map coordinates to the historic Grand Village of the Illinois / Utica, IL area (41.3215° N, 88.9950° W), combining Miami-Illinois historic heritage with open rural cornfield flight area.</li>
+            <strong style="color: var(--text-main);">Changelog (v1.25.12):</strong>
+            <li><strong>Row Turn Gimbal Pan Limit Fix:</strong> Stripped redundant <code>waypointGimbalHeadingParam</code> from Placemarks to prevent gimbal heading calculations from conflicting with aircraft turns at grid row ends.</li>
           </ul>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.25.11):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Gimbal Pan Axis Limit Fix:</strong> Stripped <code>gimbalYawRotateEnable</code> and <code>gimbalYawRotateAngle</code> from <code>gimbalRotate</code> action parameters to eliminate the "Gimble pan axis reached movement limit error" on DJI controllers.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.25.10):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Instant Gimbal Rotation & Payload Pitch Fixes:</strong> Added <code>usePointSetting</code> payload pitch mode to WPML exports, used <code>gimbalRotate</code> at Waypoint 0 for instant -90° Nadir orientation, removed <code>waypointGimbalYawAngle</code> to eliminate max pan gimbal error, and added parser pitch fallback & propagation.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.25.9):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Default Location Update (Miami-Illinois Cornfield):</strong> Updated starting map coordinates to the historic Grand Village of the Illinois / Utica, IL area (41.3215° N, 88.9950° W), combining Miami-Illinois historic heritage with open rural cornfield flight area.</li>
+            </ul>
+          </div>
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.25.8):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -7396,6 +7414,18 @@ function buildTemplateKml(finishAction, speed) {
         <wpml:droneSubEnumValue>0</wpml:droneSubEnumValue>
       </wpml:droneInfo>
     </wpml:missionConfig>
+    <Folder>
+      <wpml:templateId>0</wpml:templateId>
+      <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
+      <wpml:waylineId>0</wpml:waylineId>
+      <wpml:distance>0</wpml:distance>
+      <wpml:duration>0</wpml:duration>
+      <wpml:autoFlightSpeed>${speed}</wpml:autoFlightSpeed>
+      <wpml:payloadParam>
+        <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+        <wpml:payloadPitchControlMode>usePointSetting</wpml:payloadPitchControlMode>
+      </wpml:payloadParam>
+    </Folder>
   </Document>
 </kml>`;
 }
@@ -7434,20 +7464,22 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     const isRoadFollowing = gridType === 'road-following';
     if (idx === 0 || wp.isRingStart || isRoadFollowing) {
       const currentPitch = wp.pitch !== undefined ? wp.pitch : gimbalPitch;
-      const gimbalEndIndex = (idx < waypoints.length - 1) ? (idx + 1) : idx;
       actionsForThisPlacemark += `        <wpml:actionGroup>
           <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
           <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>${gimbalEndIndex}</wpml:actionGroupEndIndex>
+          <wpml:actionGroupEndIndex>${idx}</wpml:actionGroupEndIndex>
           <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
           <wpml:actionTrigger>
             <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalEvenlyRotate</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
+              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
+              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
               <wpml:gimbalPitchRotateAngle>${currentPitch}</wpml:gimbalPitchRotateAngle>
+              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
               <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
             </wpml:actionActuatorFuncParam>
@@ -7720,11 +7752,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
           <wpml:waypointTurnDampingDist>0</wpml:waypointTurnDampingDist>
         </wpml:waypointTurnParam>
         <wpml:useStraightLine>${useStraightLine}</wpml:useStraightLine>
-${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
-          <wpml:waypointGimbalPitchAngle>${wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch}</wpml:waypointGimbalPitchAngle>
-          <wpml:waypointGimbalYawAngle>0</wpml:waypointGimbalYawAngle>
-        </wpml:waypointGimbalHeadingParam>
-      </Placemark>\n`;
+${actionsForThisPlacemark}      </Placemark>\n`;
   });
 
   const droneModelEl = document.getElementById('drone-model');
@@ -7760,6 +7788,10 @@ ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
       <wpml:distance>0</wpml:distance>
       <wpml:duration>0</wpml:duration>
       <wpml:autoFlightSpeed>${speed}</wpml:autoFlightSpeed>
+      <wpml:payloadParam>
+        <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+        <wpml:payloadPitchControlMode>usePointSetting</wpml:payloadPitchControlMode>
+      </wpml:payloadParam>
       ${placemarksXml}    </Folder>
   </Document>
 </kml>`;
@@ -8031,6 +8063,7 @@ function parseWPML(wpmlText) {
     const photos = [];
     let sumLat = 0;
     let sumLon = 0;
+    let currentPitch = null;
 
     for (let i = 0; i < placemarks.length; i++) {
       const pm = placemarks[i];
@@ -8090,6 +8123,19 @@ function parseWPML(wpmlText) {
             }
           }
         }
+      }
+
+      if (pitch === null) {
+        const gPitchNode = pm.getElementsByTagName("wpml:waypointGimbalPitchAngle")[0] || pm.getElementsByTagName("waypointGimbalPitchAngle")[0];
+        if (gPitchNode) {
+          pitch = parseFloat(gPitchNode.textContent);
+        }
+      }
+
+      if (pitch !== null) {
+        currentPitch = pitch;
+      } else if (currentPitch !== null) {
+        pitch = currentPitch;
       }
 
       waypoints.push({
