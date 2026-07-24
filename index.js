@@ -1497,16 +1497,19 @@ function searchAddress() {
     });
 }
 
-// Helper to detect overlapping items at a map position
-function getOverlappingItemsAt(targetLatLng, thresholdMeters = 5) {
+// Helper to detect visually overlapping items at a map position (in screen pixels)
+function getOverlappingItemsAt(targetLatLng, maxPixelDistance = 12) {
   const items = [];
   if (!targetLatLng || typeof map === 'undefined' || !map) return items;
 
   const targetPoint = L.latLng(targetLatLng.lat, targetLatLng.lng);
+  const targetPixel = map.latLngToContainerPoint(targetPoint);
 
   if (centerMarker) {
     const centerLatLng = centerMarker.getLatLng();
-    if (targetPoint.distanceTo(centerLatLng) <= thresholdMeters) {
+    const centerPixel = map.latLngToContainerPoint(centerLatLng);
+    const dist = Math.hypot(targetPixel.x - centerPixel.x, targetPixel.y - centerPixel.y);
+    if (dist <= maxPixelDistance) {
       items.push({
         type: 'center',
         name: '📍 Flight Mission Center',
@@ -1520,7 +1523,9 @@ function getOverlappingItemsAt(targetLatLng, thresholdMeters = 5) {
   waypoints.forEach((wp, idx) => {
     if (wp.mapMarker) {
       const wpLatLng = L.latLng(wp.lat, wp.lon);
-      if (targetPoint.distanceTo(wpLatLng) <= thresholdMeters) {
+      const wpPixel = map.latLngToContainerPoint(wpLatLng);
+      const dist = Math.hypot(targetPixel.x - wpPixel.x, targetPixel.y - wpPixel.y);
+      if (dist <= maxPixelDistance) {
         items.push({
           type: 'waypoint',
           name: `🔵 Waypoint ${idx}`,
