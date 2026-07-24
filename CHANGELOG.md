@@ -1,6 +1,39 @@
 # Changelog
 
-All notable changes to Aalaapi Sky will be documented in this file.
+## [1.25.8] - 2026-07-23
+
+### Fixed & Improved
+- **JSZip `createFolders: false` Archive Fix:**
+  - Passed `{ createFolders: false }` to JSZip file creation calls in [index.js](file:///c:/Users/bpawl/OneDrive/code/Aalaapi-Sky/index.js), preventing JSZip from creating empty `wpmz/` directory entries that caused Android zip extraction failures on DJI Fly / RC2.
+- **About Modal Layout & Alignment Fix:**
+  - Fixed unclosed HTML container tags in [index_template.html](file:///c:/Users/bpawl/OneDrive/code/Aalaapi-Sky/index_template.html#L857-L867) to properly align the title, Myaamia subtitle, and version tag badge inside the About modal header.
+- **Settings Gear Modal Responsiveness Improvement:**
+  - Added `display: none !important;` to `.modal-overlay.hidden` in [index.css](file:///c:/Users/bpawl/OneDrive/code/Aalaapi-Sky/index.css#L429-L433), eliminating hidden modal DOM render overhead and making the gear settings modal open instantly.
+
+## [1.25.7] - 2026-07-23
+
+### Fixed
+- **DJI RC2 `gimbalEvenlyRotate` Action Group End Index Fix:**
+  - Corrected `actionGroupEndIndex` for `gimbalEvenlyRotate` action groups from `idx` (zero-length waypoint segment) to `idx + 1` (valid wayline segment), resolving flight controller divide-by-zero trajectory validation errors upon pressing **GO**.
+
+## [1.25.6] - 2026-07-23
+
+### Fixed
+- **DJI Fly "File Has No Waypoints" & Zip Extraction Fix:**
+  - Removed explicit `wpmz/` directory entries from generated `.kmz` zip archives, resolving Android Zip unarchiver parsing errors that caused DJI Fly to fail loading waypoints.
+  - Enabled explicit `DEFLATE` compression for exported KMZ archives in JSZip options, matching native DJI RC2 mission export standards 100%.
+
+## [1.25.5] - 2026-07-23
+
+### Fixed
+- **DJI RC2 Mission Execution & Payload Action Fix:**
+  - Updated WPML XML namespace from `http://www.dji.com/wpmz/1.0.2` to standard `http://www.uav.com/wpmz/1.0.2` across `template.kml` and `waylines.wpml`, preventing RC2 flight controller validation errors when pressing GO.
+  - Changed gimbal rotation action actuator function from Enterprise `gimbalRotate` to RC2 consumer payload standard `gimbalEvenlyRotate` with `gimbalPitchRotateAngle`, eliminating mission execution failure on DJI RC2 / DJI Fly controllers.
+  - Resolved `waypointHeadingAngleEnable` parameter conflicts when `followWayline` mode is selected.
+  - Cleaned up redundant `waylines.wpml` Document header metadata.
+- **Settings Modal & Unit System Selection Fix:**
+  - Defined missing `syncDisplayValues()` function, eliminating uncaught JavaScript reference errors when opening Settings modal or toggling between Metric (meters, m/s) and Imperial (feet, mph).
+  - Preserved and restored saved unit system preferences from `localStorage` on application startup.
 
 ## [1.25.4] - 2026-07-23
 
