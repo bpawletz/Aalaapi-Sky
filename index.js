@@ -58,7 +58,7 @@ function getUnitSystem() {
     return cachedUnitSystem;
   }
 
-  return (typeof localStorage !== 'undefined' ? localStorage.getItem('aalaapi_sky_unit_system') : null) || 'metric';
+  return (typeof localStorage !== 'undefined' ? localStorage.getItem('aalaapi_sky_unit_system') : null) || 'imperial';
 }
 
 function formatDistance(meters, decimalPlaces = 1) {
@@ -310,7 +310,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Restore unit system selection
-  const savedUnit = localStorage.getItem('aalaapi_sky_unit_system') || 'metric';
+  const savedUnit = localStorage.getItem('aalaapi_sky_unit_system') || 'imperial';
   const unitSystemEl = document.getElementById('unit-system');
   if (unitSystemEl) {
     unitSystemEl.value = savedUnit;
@@ -961,9 +961,10 @@ function initUIEventListeners() {
 
   // Accordion Mode (Auto-Collapse) handler
   const accordionModeToggle = document.getElementById('accordion-mode-toggle');
-  let isAccordionMode = false;
+  let isAccordionMode = true;
   if (accordionModeToggle) {
-    isAccordionMode = localStorage.getItem('aalaapi_sky_accordion_mode') === 'true';
+    const savedAccordion = localStorage.getItem('aalaapi_sky_accordion_mode');
+    isAccordionMode = savedAccordion !== null ? (savedAccordion === 'true') : true;
     accordionModeToggle.checked = isAccordionMode;
 
     accordionModeToggle.addEventListener('change', () => {
@@ -991,10 +992,16 @@ function initUIEventListeners() {
     // Only bind if the section isn't guide-section
     const section = header.closest('.control-section');
     if (section && !section.classList.contains('guide-section')) {
-      // Restore previous collapsed state if saved
+      // Restore previous collapsed state if saved; default to collapsed
       const sectionIndex = Array.from(document.querySelectorAll('.control-section')).indexOf(section);
-      const isCollapsed = localStorage.getItem(`aalaapi_sky_section_${sectionIndex}_collapsed`) === 'true';
-      if (isCollapsed) {
+      const isCollapsed = localStorage.getItem(`aalaapi_sky_section_${sectionIndex}_collapsed`);
+      if (isCollapsed !== null) {
+        if (isCollapsed === 'true') {
+          section.classList.add('collapsed');
+        } else {
+          section.classList.remove('collapsed');
+        }
+      } else {
         section.classList.add('collapsed');
       }
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.26.0] - 2026-07-24
+
+### Changed & Improved
+- **Default Imperial (Feet `ft`) Units:** Set default measurement unit system configuration to Imperial (feet, `ft`, mph) across UI selects and fallback settings in [index.js](file:///c:/Users/bpawl/OneDrive/code/Aalaapi-Sky/index.js) and [index_template.html](file:///c:/Users/bpawl/OneDrive/code/Aalaapi-Sky/index_template.html).
+- **Default Collapsed Accordions & Auto-Collapse Mode:** Updated sidebar control topics to start collapsed by default and enabled Accordion Auto-Collapse mode by default for cleaner, streamlined map navigation.
+
 ## [1.25.12] - 2026-07-24
 
 ### Fixed
