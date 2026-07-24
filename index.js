@@ -1497,6 +1497,99 @@ function searchAddress() {
     });
 }
 
+// Helper to detect overlapping items at a map position
+function getOverlappingItemsAt(targetLatLng, thresholdMeters = 5) {
+  const items = [];
+  if (!targetLatLng || typeof map === 'undefined' || !map) return items;
+
+  const targetPoint = L.latLng(targetLatLng.lat, targetLatLng.lng);
+
+  if (centerMarker) {
+    const centerLatLng = centerMarker.getLatLng();
+    if (targetPoint.distanceTo(centerLatLng) <= thresholdMeters) {
+      items.push({
+        type: 'center',
+        name: '📍 Flight Mission Center',
+        marker: centerMarker,
+        latLng: centerLatLng
+      });
+    }
+  }
+
+  const waypoints = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
+  waypoints.forEach((wp, idx) => {
+    if (wp.mapMarker) {
+      const wpLatLng = L.latLng(wp.lat, wp.lon);
+      if (targetPoint.distanceTo(wpLatLng) <= thresholdMeters) {
+        items.push({
+          type: 'waypoint',
+          name: `🔵 Waypoint ${idx}`,
+          wp: wp,
+          idx: idx,
+          marker: wp.mapMarker,
+          latLng: wpLatLng
+        });
+      }
+    }
+  });
+
+  return items;
+}
+
+// Open disambiguation choice popup when items overlap at the same spot
+function openDisambiguationPopup(latLng, items) {
+  if (!map || items.length <= 1) return false;
+
+  const container = document.createElement('div');
+  container.className = 'disambiguation-popup-container';
+  container.style.cssText = 'padding: 4px; font-family: var(--font-secondary); min-width: 190px;';
+
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size: 0.8rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px; text-align: center;';
+  title.textContent = 'Overlapping Map Items';
+  container.appendChild(title);
+
+  const list = document.createElement('div');
+  list.style.cssText = 'display: flex; flex-direction: column; gap: 6px;';
+
+  items.forEach(item => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-secondary';
+    btn.style.cssText = 'display: flex; align-items: center; gap: 8px; justify-content: flex-start; padding: 6px 10px; width: 100%; font-size: 0.8rem; border-radius: 6px; cursor: pointer; text-align: left; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: var(--text-main);';
+
+    const label = document.createElement('span');
+    label.style.cssText = 'font-weight: 600; flex: 1;';
+    label.textContent = item.name;
+
+    btn.appendChild(label);
+
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      map.closePopup();
+      setTimeout(() => {
+        if (item.type === 'center' && centerMarker) {
+          centerMarker.openPopup();
+        } else if (item.type === 'waypoint' && item.marker) {
+          item.marker.openPopup();
+        }
+      }, 50);
+    });
+
+    list.appendChild(btn);
+  });
+
+  container.appendChild(list);
+
+  L.popup({ maxWidth: 230, minWidth: 200 })
+    .setLatLng(latLng)
+    .setContent(container)
+    .openOn(map);
+
+  return true;
+}
+
 // Position the grid center marker
 function setGridCenter(lat, lng) {
   if (centerMarker) {
@@ -1536,6 +1629,15 @@ function setGridCenter(lat, lng) {
     });
     centerMarker.on('dragend', () => {
       centerMarker.openPopup();
+    });
+    centerMarker.on('click', (e) => {
+      L.DomEvent.stopPropagation(e);
+      const items = getOverlappingItemsAt(centerMarker.getLatLng());
+      if (items.length > 1) {
+        openDisambiguationPopup(centerMarker.getLatLng(), items);
+      } else {
+        centerMarker.openPopup();
+      }
     });
   }
 
@@ -2810,7 +2912,12 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
 
       droneMarker.on('click', (e) => {
         L.DomEvent.stopPropagation(e);
-        droneMarker.openPopup();
+        const items = getOverlappingItemsAt(droneMarker.getLatLng());
+        if (items.length > 1) {
+          openDisambiguationPopup(droneMarker.getLatLng(), items);
+        } else {
+          droneMarker.openPopup();
+        }
       });
     });
 
@@ -2880,6 +2987,16 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
       }, {
         maxWidth: 240,
         minWidth: 230
+      });
+
+      marker.on('click', (e) => {
+        L.DomEvent.stopPropagation(e);
+        const items = getOverlappingItemsAt(marker.getLatLng());
+        if (items.length > 1) {
+          openDisambiguationPopup(marker.getLatLng(), items);
+        } else {
+          marker.openPopup();
+        }
       });
 
       wp.mapMarker = marker;
