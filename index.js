@@ -73,6 +73,33 @@ function formatDistance(meters, decimalPlaces = 1) {
   return `${meters.toFixed(decimalPlaces)} m`;
 }
 
+function syncDisplayValues() {
+  const unit = getUnitSystem();
+  const distUnitStr = unit === 'imperial' ? 'ft' : 'm';
+  const speedUnitStr = unit === 'imperial' ? 'mph' : 'm/s';
+
+  const altUnitEl = document.getElementById('altitude-unit');
+  if (altUnitEl) altUnitEl.textContent = distUnitStr;
+
+  const spacingUnitEl = document.getElementById('grid-spacing-unit');
+  if (spacingUnitEl) spacingUnitEl.textContent = distUnitStr;
+
+  const speedUnitEl = document.getElementById('speed-unit');
+  if (speedUnitEl) speedUnitEl.textContent = speedUnitStr;
+
+  const apHeightUnitEl = document.getElementById('ap-height-unit');
+  if (apHeightUnitEl) apHeightUnitEl.textContent = distUnitStr;
+
+  const apClearanceUnitEl = document.getElementById('ap-clearance-unit');
+  if (apClearanceUnitEl) apClearanceUnitEl.textContent = distUnitStr;
+
+  const fpvAltUnitEl = document.getElementById('fpv-edit-alt-unit');
+  if (fpvAltUnitEl) fpvAltUnitEl.textContent = distUnitStr;
+
+  const fpvTelemAltUnitEl = document.getElementById('fpv-telemetry-alt-unit');
+  if (fpvTelemAltUnitEl) fpvTelemAltUnitEl.textContent = distUnitStr;
+}
+
 function initGeolocation() {
   const btn = document.getElementById('locate-me-btn');
   const label = document.getElementById('locate-me-label');
@@ -867,6 +894,14 @@ function initUIEventListeners() {
 
   const unitSystemEl = document.getElementById('unit-system');
   if (unitSystemEl) {
+    const savedUnit = localStorage.getItem('aalaapi_sky_unit_system');
+    if (savedUnit) {
+      unitSystemEl.value = savedUnit;
+      cachedUnitSystem = savedUnit;
+    } else {
+      cachedUnitSystem = unitSystemEl.value;
+    }
+    syncDisplayValues();
     unitSystemEl.addEventListener('change', () => {
       localStorage.setItem('aalaapi_sky_unit_system', unitSystemEl.value);
       cachedUnitSystem = unitSystemEl.value;
@@ -888,13 +923,21 @@ function initUIEventListeners() {
   if (configBtn && configModal) {
     const toggleConfigModal = () => {
       configModal.classList.toggle('hidden');
-      if (!configModal.classList.contains('hidden') && window.innerWidth <= 768) {
-        document.querySelector('.sidebar').classList.remove('open');
+      if (!configModal.classList.contains('hidden')) {
+        if (unitSystemEl) unitSystemEl.value = getUnitSystem();
+        if (window.innerWidth <= 768) {
+          document.querySelector('.sidebar')?.classList.remove('open');
+        }
       }
     };
     configBtn.addEventListener('click', toggleConfigModal);
     if (closeConfigBtn) closeConfigBtn.addEventListener('click', toggleConfigModal);
     if (closeConfigFooterBtn) closeConfigFooterBtn.addEventListener('click', toggleConfigModal);
+    configModal.addEventListener('click', (e) => {
+      if (e.target === configModal) {
+        configModal.classList.add('hidden');
+      }
+    });
   }
 
   // Minimize Sidebar Toggle checkbox handler
@@ -3962,7 +4005,7 @@ function buildTemplateKml(finishAction, speed) {
   }
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">
   <Document>
     <wpml:author>Aalaapi Sky Generator</wpml:author>
     <wpml:createTime>${timestamp}</wpml:createTime>
@@ -4016,28 +4059,21 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     const isRoadFollowing = gridType === 'road-following';
     if (idx === 0 || wp.isRingStart || isRoadFollowing) {
       const currentPitch = wp.pitch !== undefined ? wp.pitch : gimbalPitch;
+      const gimbalEndIndex = (idx < waypoints.length - 1) ? (idx + 1) : idx;
       actionsForThisPlacemark += `        <wpml:actionGroup>
           <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
           <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>${idx}</wpml:actionGroupEndIndex>
+          <wpml:actionGroupEndIndex>${gimbalEndIndex}</wpml:actionGroupEndIndex>
           <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
           <wpml:actionTrigger>
             <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFunc>gimbalEvenlyRotate</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>aircraft</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
               <wpml:gimbalPitchRotateAngle>${currentPitch}</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
               <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
             </wpml:actionActuatorFuncParam>
           </wpml:action>
@@ -4231,7 +4267,6 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     // Determine heading mode and angle for this waypoint
     let actualHeadingMode = headingMode;
     let actualHeadingAngle = 0;
-    let headingAngleEnable = turnMode.includes('Stop') ? 1 : 0;
     let poiPoint = "0.000000,0.000000,0.000000";
 
     const wpMode = wp.headingMode || 'inherit';
@@ -4270,6 +4305,8 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
         actualHeadingAngle = wp.heading;
       }
     }
+
+    const headingAngleEnable = (actualHeadingMode === 'followWayline') ? 0 : 1;
 
     const currentAltitude = wp.alt !== undefined ? wp.alt : altitude;
     const actualSpeed = (wp.speed !== undefined && wp.speed !== null && !isNaN(wp.speed)) ? wp.speed : speed;
@@ -4328,11 +4365,8 @@ ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
   }
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">
   <Document>
-    <wpml:author>Aalaapi Sky Generator</wpml:author>
-    <wpml:createTime>${timestamp}</wpml:createTime>
-    <wpml:updateTime>${timestamp}</wpml:updateTime>
     <wpml:missionConfig>
       <wpml:flyToWaylineMode>safely</wpml:flyToWaylineMode>
       <wpml:finishAction>${finishAction}</wpml:finishAction>
@@ -4489,11 +4523,10 @@ function exportKMZ() {
         const partWaylines = buildWaylinesWpml(part.waypoints, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode);
         
         const partZip = new JSZip();
-        const wpmz = partZip.folder("wpmz");
-        wpmz.file("template.kml", partTemplate);
-        wpmz.file("waylines.wpml", partWaylines);
+        partZip.file("wpmz/template.kml", partTemplate, { createFolders: false });
+        partZip.file("wpmz/waylines.wpml", partWaylines, { createFolders: false });
         
-        return partZip.generateAsync({ type: "blob" }).then(content => {
+        return partZip.generateAsync({ type: "blob", compression: "DEFLATE" }).then(content => {
           let baseName = importedFileName ? importedFileName.replace(/\.kmz$/i, '') : `GridMission_Alt${altitude}m`;
           const partFileName = `${baseName}_Part${partNum}_of_${parts.length}.kmz`;
           parentZip.file(partFileName, content);
@@ -4501,7 +4534,7 @@ function exportKMZ() {
       });
 
       Promise.all(promises).then(() => {
-        parentZip.generateAsync({ type: "blob" }).then(content => {
+        parentZip.generateAsync({ type: "blob", compression: "DEFLATE" }).then(content => {
           const link = document.createElement("a");
           link.href = URL.createObjectURL(content);
           let zipName = importedFileName ? importedFileName.replace(/\.kmz$/i, '') : `GridMission_Alt${altitude}m`;
@@ -4534,11 +4567,10 @@ function exportKMZ() {
   // 5. Create ZIP and trigger download
   try {
     const zip = new JSZip();
-    const wpmzFolder = zip.folder("wpmz");
-    wpmzFolder.file("template.kml", templateKml);
-    wpmzFolder.file("waylines.wpml", waylinesWpml);
+    zip.file("wpmz/template.kml", templateKml, { createFolders: false });
+    zip.file("wpmz/waylines.wpml", waylinesWpml, { createFolders: false });
 
-    zip.generateAsync({ type: "blob" }).then(function (content) {
+    zip.generateAsync({ type: "blob", compression: "DEFLATE" }).then(function (content) {
       const link = document.createElement("a");
       link.href = URL.createObjectURL(content);
       
