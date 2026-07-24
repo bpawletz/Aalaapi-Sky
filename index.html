@@ -1435,7 +1435,7 @@ html, body {
 
       <div class="scroll-container">
         <!-- Section 1: Import or Locate -->
-        <section class="control-section">
+        <section class="control-section collapsed">
           <h3>1. Import or Center Location</h3>
           
           <div class="control-group" style="margin-bottom: 12px;">
@@ -1579,7 +1579,7 @@ html, body {
         </section>
 
         <!-- Section 2: Grid Geometry -->
-        <section class="control-section" id="grid-geometry-section">
+        <section class="control-section collapsed" id="grid-geometry-section">
           <h3 id="grid-geometry-title">2. Grid Geometry</h3>
           
           <div class="control-group">
@@ -1656,7 +1656,7 @@ html, body {
         </section>
 
         <!-- Section 3: Camera & Overlap -->
-        <section class="control-section">
+        <section class="control-section collapsed">
           <h3>3. Camera &amp; Overlap</h3>
           <div class="control-group">
             <label for="camera-model">Drone &amp; Camera Model</label>
@@ -1778,7 +1778,7 @@ html, body {
         </section>
 
         <!-- Section 4: Flight Configuration -->
-        <section class="control-section">
+        <section class="control-section collapsed">
           <h3>4. Flight Configuration</h3>
           
           <div class="control-group">
@@ -2273,9 +2273,15 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <ul style="margin: 0; padding-left: 20px; color: var(--text-muted); font-size: 0.85rem; display: flex; flex-direction: column; gap: 8px;">
-            <strong style="color: var(--text-main);">Changelog (v1.25.12):</strong>
-            <li><strong>Row Turn Gimbal Pan Limit Fix:</strong> Stripped redundant <code>waypointGimbalHeadingParam</code> from Placemarks to prevent gimbal heading calculations from conflicting with aircraft turns at grid row ends.</li>
+            <strong style="color: var(--text-main);">Changelog (v1.26.0):</strong>
+            <li><strong>Default Feet (ft) Units & Collapsed Accordion Sections:</strong> Updated default measurement configuration to feet (imperial) and set sidebar accordion sections to collapsed with auto-collapse mode enabled by default.</li>
           </ul>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.25.12):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Row Turn Gimbal Pan Limit Fix:</strong> Stripped redundant <code>waypointGimbalHeadingParam</code> from Placemarks to prevent gimbal heading calculations from conflicting with aircraft turns at grid row ends.</li>
+            </ul>
+          </div>
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.25.11):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -2974,8 +2980,8 @@ html, body {
         <div class="control-group">
           <label for="unit-system" style="font-weight: 600; color: var(--text-main); margin-bottom: 8px; display: block;">Measurement Units</label>
           <select id="unit-system" class="form-select" style="width: 100%;">
-            <option value="metric" selected>Metric (meters, m/s)</option>
-            <option value="imperial">Imperial (feet, mph)</option>
+            <option value="metric">Metric (meters, m/s)</option>
+            <option value="imperial" selected>Imperial (feet, mph)</option>
           </select>
           <p class="help-text" style="margin-top: 4px;">Sets map grid measurements and flight inputs to feet or meters.</p>
         </div>
@@ -3451,7 +3457,7 @@ function getUnitSystem() {
     return cachedUnitSystem;
   }
 
-  return (typeof localStorage !== 'undefined' ? localStorage.getItem('aalaapi_sky_unit_system') : null) || 'metric';
+  return (typeof localStorage !== 'undefined' ? localStorage.getItem('aalaapi_sky_unit_system') : null) || 'imperial';
 }
 
 function formatDistance(meters, decimalPlaces = 1) {
@@ -3703,7 +3709,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Restore unit system selection
-  const savedUnit = localStorage.getItem('aalaapi_sky_unit_system') || 'metric';
+  const savedUnit = localStorage.getItem('aalaapi_sky_unit_system') || 'imperial';
   const unitSystemEl = document.getElementById('unit-system');
   if (unitSystemEl) {
     unitSystemEl.value = savedUnit;
@@ -4354,9 +4360,10 @@ function initUIEventListeners() {
 
   // Accordion Mode (Auto-Collapse) handler
   const accordionModeToggle = document.getElementById('accordion-mode-toggle');
-  let isAccordionMode = false;
+  let isAccordionMode = true;
   if (accordionModeToggle) {
-    isAccordionMode = localStorage.getItem('aalaapi_sky_accordion_mode') === 'true';
+    const savedAccordion = localStorage.getItem('aalaapi_sky_accordion_mode');
+    isAccordionMode = savedAccordion !== null ? (savedAccordion === 'true') : true;
     accordionModeToggle.checked = isAccordionMode;
 
     accordionModeToggle.addEventListener('change', () => {
@@ -4384,10 +4391,16 @@ function initUIEventListeners() {
     // Only bind if the section isn't guide-section
     const section = header.closest('.control-section');
     if (section && !section.classList.contains('guide-section')) {
-      // Restore previous collapsed state if saved
+      // Restore previous collapsed state if saved; default to collapsed
       const sectionIndex = Array.from(document.querySelectorAll('.control-section')).indexOf(section);
-      const isCollapsed = localStorage.getItem(`aalaapi_sky_section_${sectionIndex}_collapsed`) === 'true';
-      if (isCollapsed) {
+      const isCollapsed = localStorage.getItem(`aalaapi_sky_section_${sectionIndex}_collapsed`);
+      if (isCollapsed !== null) {
+        if (isCollapsed === 'true') {
+          section.classList.add('collapsed');
+        } else {
+          section.classList.remove('collapsed');
+        }
+      } else {
         section.classList.add('collapsed');
       }
 
