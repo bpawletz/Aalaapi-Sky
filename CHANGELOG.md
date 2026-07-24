@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.26.1] - 2026-07-24
+
+### Added & Improved
+- **Overlapping Map Item Disambiguation Popup:** Implemented `getOverlappingItemsAt` distance checker and selection popup helper in [index.js](file:///c:/Users/bpawl/OneDrive/code/Aalaapi-Sky/index.js). When clicking a point where the Flight Mission Center and a Waypoint reside on the same spot, an interactive choice popup appears allowing you to select either **📍 Flight Mission Center** or **🔵 Waypoint #**.
+
 ## [1.26.0] - 2026-07-24
 
 ### Changed & Improved
