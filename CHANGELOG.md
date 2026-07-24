@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.26.2] - 2026-07-24
+
+### Fixed
+- **Screen Pixel Overlap Detection:** Switched `getOverlappingItemsAt` from 5-meter geographic distance to screen container pixel distance (`maxPixelDistance = 12px`). Nearby non-overlapping waypoints along the flight path no longer falsely trigger the disambiguation list.
+
 ## [1.26.1] - 2026-07-24
 
 ### Added & Improved
