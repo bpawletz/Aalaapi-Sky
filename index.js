@@ -4021,6 +4021,18 @@ function buildTemplateKml(finishAction, speed) {
         <wpml:droneSubEnumValue>0</wpml:droneSubEnumValue>
       </wpml:droneInfo>
     </wpml:missionConfig>
+    <Folder>
+      <wpml:templateId>0</wpml:templateId>
+      <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
+      <wpml:waylineId>0</wpml:waylineId>
+      <wpml:distance>0</wpml:distance>
+      <wpml:duration>0</wpml:duration>
+      <wpml:autoFlightSpeed>${speed}</wpml:autoFlightSpeed>
+      <wpml:payloadParam>
+        <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+        <wpml:payloadPitchControlMode>usePointSetting</wpml:payloadPitchControlMode>
+      </wpml:payloadParam>
+    </Folder>
   </Document>
 </kml>`;
 }
@@ -4059,20 +4071,22 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     const isRoadFollowing = gridType === 'road-following';
     if (idx === 0 || wp.isRingStart || isRoadFollowing) {
       const currentPitch = wp.pitch !== undefined ? wp.pitch : gimbalPitch;
-      const gimbalEndIndex = (idx < waypoints.length - 1) ? (idx + 1) : idx;
       actionsForThisPlacemark += `        <wpml:actionGroup>
           <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
           <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>${gimbalEndIndex}</wpml:actionGroupEndIndex>
+          <wpml:actionGroupEndIndex>${idx}</wpml:actionGroupEndIndex>
           <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
           <wpml:actionTrigger>
             <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalEvenlyRotate</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
+              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
+              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
               <wpml:gimbalPitchRotateAngle>${currentPitch}</wpml:gimbalPitchRotateAngle>
+              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
               <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
             </wpml:actionActuatorFuncParam>
@@ -4345,11 +4359,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
           <wpml:waypointTurnDampingDist>0</wpml:waypointTurnDampingDist>
         </wpml:waypointTurnParam>
         <wpml:useStraightLine>${useStraightLine}</wpml:useStraightLine>
-${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
-          <wpml:waypointGimbalPitchAngle>${wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch}</wpml:waypointGimbalPitchAngle>
-          <wpml:waypointGimbalYawAngle>0</wpml:waypointGimbalYawAngle>
-        </wpml:waypointGimbalHeadingParam>
-      </Placemark>\n`;
+${actionsForThisPlacemark}      </Placemark>\n`;
   });
 
   const droneModelEl = document.getElementById('drone-model');
@@ -4385,6 +4395,10 @@ ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
       <wpml:distance>0</wpml:distance>
       <wpml:duration>0</wpml:duration>
       <wpml:autoFlightSpeed>${speed}</wpml:autoFlightSpeed>
+      <wpml:payloadParam>
+        <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+        <wpml:payloadPitchControlMode>usePointSetting</wpml:payloadPitchControlMode>
+      </wpml:payloadParam>
       ${placemarksXml}    </Folder>
   </Document>
 </kml>`;
@@ -4656,6 +4670,7 @@ function parseWPML(wpmlText) {
     const photos = [];
     let sumLat = 0;
     let sumLon = 0;
+    let currentPitch = null;
 
     for (let i = 0; i < placemarks.length; i++) {
       const pm = placemarks[i];
@@ -4715,6 +4730,19 @@ function parseWPML(wpmlText) {
             }
           }
         }
+      }
+
+      if (pitch === null) {
+        const gPitchNode = pm.getElementsByTagName("wpml:waypointGimbalPitchAngle")[0] || pm.getElementsByTagName("waypointGimbalPitchAngle")[0];
+        if (gPitchNode) {
+          pitch = parseFloat(gPitchNode.textContent);
+        }
+      }
+
+      if (pitch !== null) {
+        currentPitch = pitch;
+      } else if (currentPitch !== null) {
+        pitch = currentPitch;
       }
 
       waypoints.push({
