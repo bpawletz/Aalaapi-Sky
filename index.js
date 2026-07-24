@@ -5591,19 +5591,33 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     const currentCameraAction = cameraActionSelect ? cameraActionSelect.value : (wp.cameraAction || 'inherit');
     const currentZoom = zoomSlider ? parseFloat(zoomSlider.value) : (wp.zoom || 1.0);
 
+    const baseLat = (wp.origLat !== undefined && wp.origLat !== null) ? wp.origLat : originalLat;
+    const baseLon = (wp.origLon !== undefined && wp.origLon !== null) ? wp.origLon : originalLon;
+    const baseAlt = (wp.origAlt !== undefined && wp.origAlt !== null) ? wp.origAlt : originalAlt;
+    const basePitch = (wp.origPitch !== undefined && wp.origPitch !== null) ? wp.origPitch : originalPitch;
+    const baseHeading = (wp.origHeading !== undefined) ? wp.origHeading : originalHeading;
+    const baseHeadingMode = wp.origHeadingMode || originalHeadingMode || 'inherit';
+    const basePoiIndex = (wp.origPoiIndex !== undefined && wp.origPoiIndex !== null) ? wp.origPoiIndex : originalPoiIndex;
+    const baseSpeed = (wp.origSpeed !== undefined && wp.origSpeed !== null) ? wp.origSpeed : originalSpeed;
+    const baseHover = (wp.origHoverTime !== undefined && wp.origHoverTime !== null) ? wp.origHoverTime : originalHoverTime;
+    const baseTurnMode = wp.origTurnMode || originalTurnMode || 'inherit';
+    const baseCameraAction = wp.origCameraAction || originalCameraAction || 'inherit';
+    const baseZoom = (wp.origZoom !== undefined && wp.origZoom !== null) ? wp.origZoom : originalZoom;
+
     const isChangedFromOrig = (
-      (wp.origLat !== undefined && wp.origLat !== null && Math.abs(currentLat - wp.origLat) > 1e-9) ||
-      (wp.origLon !== undefined && wp.origLon !== null && Math.abs(currentLon - wp.origLon) > 1e-9) ||
-      (wp.origAlt !== undefined && wp.origAlt !== null && Math.abs(currentAlt - wp.origAlt) > 1e-3) ||
-      (wp.origPitch !== undefined && wp.origPitch !== null && currentPitch !== wp.origPitch) ||
-      (wp.origSpeed !== undefined && currentSpeed !== wp.origSpeed) ||
-      (wp.origHoverTime !== undefined && currentHover !== wp.origHoverTime) ||
-      (wp.origTurnMode !== undefined && currentTurnMode !== wp.origTurnMode) ||
-      (wp.origCameraAction !== undefined && currentCameraAction !== wp.origCameraAction) ||
-      (wp.origZoom !== undefined && currentZoom !== wp.origZoom) ||
-      ((wp.origHeadingMode || 'inherit') !== mode) ||
-      ((wp.origPoiIndex || 0) !== (wp.poiIndex || 0)) ||
-      (mode === 'custom' && wp.origHeading !== null && tempHeading !== wp.origHeading)
+      Math.abs(currentLat - baseLat) > 1e-9 ||
+      Math.abs(currentLon - baseLon) > 1e-9 ||
+      Math.abs(currentAlt - baseAlt) > 1e-3 ||
+      currentPitch !== basePitch ||
+      (currentSpeed !== null && currentSpeed !== baseSpeed) ||
+      (currentHover !== 0 && currentHover !== baseHover) ||
+      currentTurnMode !== baseTurnMode ||
+      currentCameraAction !== baseCameraAction ||
+      currentZoom !== baseZoom ||
+      baseHeadingMode !== mode ||
+      basePoiIndex !== (wp.poiIndex || 0) ||
+      (mode === 'custom' && baseHeading !== null && tempHeading !== baseHeading) ||
+      !!wp.isModified
     );
 
     if (resetBtn) {
@@ -5914,41 +5928,41 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     resetBtn.addEventListener('click', () => {
       unbindRevert();
       
-      if (wp.origLat !== undefined && wp.origLat !== null) wp.lat = wp.origLat;
-      if (wp.origLon !== undefined && wp.origLon !== null) wp.lon = wp.origLon;
+      wp.lat = (wp.origLat !== undefined && wp.origLat !== null) ? wp.origLat : originalLat;
+      wp.lon = (wp.origLon !== undefined && wp.origLon !== null) ? wp.origLon : originalLon;
       
-      const centerLatLng = centerMarker.getLatLng();
+      const centerLatLng = centerMarker ? centerMarker.getLatLng() : { lat: centerLat, lng: centerLon };
       const offsets = geodeticToLocal(wp.lat, wp.lon, centerLatLng.lat, centerLatLng.lng);
       wp.x = offsets.x;
       wp.y = offsets.y;
       
-      if (wp.origAlt !== undefined && wp.origAlt !== null) wp.alt = wp.origAlt;
-      if (wp.origPitch !== undefined && wp.origPitch !== null) wp.pitch = wp.origPitch;
-      if (wp.origHeading !== undefined) wp.heading = wp.origHeading;
-      wp.headingMode = wp.origHeadingMode || 'inherit';
-      wp.poiIndex = wp.origPoiIndex || 0;
-      wp.speed = wp.origSpeed !== undefined ? wp.origSpeed : null;
-      wp.hoverTime = wp.origHoverTime !== undefined ? wp.origHoverTime : 0;
-      wp.turnMode = wp.origTurnMode || 'inherit';
-      wp.cameraAction = wp.origCameraAction || 'inherit';
-      wp.zoom = wp.origZoom !== undefined ? wp.origZoom : 1.0;
+      wp.alt = (wp.origAlt !== undefined && wp.origAlt !== null) ? wp.origAlt : originalAlt;
+      wp.pitch = (wp.origPitch !== undefined && wp.origPitch !== null) ? wp.origPitch : originalPitch;
+      wp.heading = (wp.origHeading !== undefined) ? wp.origHeading : originalHeading;
+      wp.headingMode = wp.origHeadingMode || originalHeadingMode || 'inherit';
+      wp.poiIndex = (wp.origPoiIndex !== undefined && wp.origPoiIndex !== null) ? wp.origPoiIndex : originalPoiIndex;
+      wp.speed = (wp.origSpeed !== undefined && wp.origSpeed !== null) ? wp.origSpeed : originalSpeed;
+      wp.hoverTime = (wp.origHoverTime !== undefined && wp.origHoverTime !== null) ? wp.origHoverTime : originalHoverTime;
+      wp.turnMode = wp.origTurnMode || originalTurnMode || 'inherit';
+      wp.cameraAction = wp.origCameraAction || originalCameraAction || 'inherit';
+      wp.zoom = (wp.origZoom !== undefined && wp.origZoom !== null) ? wp.origZoom : originalZoom;
       wp.isRingStart = wp.origIsRingStart !== undefined ? wp.origIsRingStart : false;
-      wp.isModified = wp.origIsModified !== undefined ? wp.origIsModified : false;
+      wp.isModified = false;
       
       // Also reset photo locations if they exist
       const activePhotos = getCurrentPhotos();
       if (hasPhoto && activePhotos && activePhotos[idx]) {
         const photo = activePhotos[idx];
-        if (photo.origLat !== undefined && photo.origLat !== null) photo.lat = photo.origLat;
-        if (photo.origLon !== undefined && photo.origLon !== null) photo.lon = photo.origLon;
+        photo.lat = (photo.origLat !== undefined && photo.origLat !== null) ? photo.origLat : originalPhotoLat;
+        photo.lon = (photo.origLon !== undefined && photo.origLon !== null) ? photo.origLon : originalPhotoLon;
         const ptOffsets = geodeticToLocal(photo.lat, photo.lon, centerLatLng.lat, centerLatLng.lng);
         photo.x = ptOffsets.x;
         photo.y = ptOffsets.y;
-        if (photo.origAlt !== undefined && photo.origAlt !== null) photo.alt = photo.origAlt;
-        if (photo.origPitch !== undefined && photo.origPitch !== null) photo.pitch = photo.origPitch;
-        if (photo.origHeading !== undefined) photo.heading = photo.origHeading;
+        photo.alt = (photo.origAlt !== undefined && photo.origAlt !== null) ? photo.origAlt : originalAlt;
+        photo.pitch = (photo.origPitch !== undefined && photo.origPitch !== null) ? photo.origPitch : originalPitch;
+        photo.heading = (photo.origHeading !== undefined) ? photo.origHeading : originalHeading;
         photo.isRingStart = photo.origIsRingStart !== undefined ? photo.origIsRingStart : false;
-        photo.isModified = photo.origIsModified !== undefined ? photo.origIsModified : false;
+        photo.isModified = false;
       }
       
       const gridType = document.getElementById('grid-type')?.value;

@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.26.3] - 2026-07-24
+
+### Fixed
+- **Waypoint Editor Revert Button Fix:** Corrected baseline fallback evaluation in `isChangedFromOrig` and the `resetBtn` click handler in [index.js](file:///c:/Users/bpawl/OneDrive/code/Aalaapi-Sky/index.js). Clicking **Revert** now reliably resets modified waypoint coordinates, altitude, pitch, speed, hover duration, and camera parameters back to their original unedited state.
+
 ## [1.26.2] - 2026-07-24
 
 ### Fixed
