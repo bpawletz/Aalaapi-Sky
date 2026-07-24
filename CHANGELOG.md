@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.25.9] - 2026-07-23
+
+### Changed
+- **Default Map Location Update (Historic Miami-Illinois / Rural Cornfield):**
+  - Updated default map starting coordinates in [index.js](file:///c:/Users/bpawl/OneDrive/code/Aalaapi-Sky/index.js) from downtown Chicago to the historic Grand Village of the Illinois / Utica, IL area (41.3215° N, 88.9950° W), combining historic Miami-Illinois tribe settlement heritage with open rural cornfield terrain ideal for drone flight planning.
+
 ## [1.25.8] - 2026-07-23
 
 ### Fixed & Improved
