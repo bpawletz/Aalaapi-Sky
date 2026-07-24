@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.25.12] - 2026-07-24
+
+### Fixed
+- **Row Turn Gimbal Pan Limit Conflict Fix:**
+  - Omitted redundant `<wpml:waypointGimbalHeadingParam>` from Placemarks when using `gimbalRotate` action groups in [index.js](file:///c:/Users/bpawl/OneDrive/code/Aalaapi-Sky/index.js), resolving issue where per-waypoint gimbal heading calculations conflicted with drone yaw rotation at the end of grid rows (past the first couple of waypoints) and triggered **Gimble pan axis reached movement limit error**.
+
+## [1.25.11] - 2026-07-24
+
+### Fixed
+- **Gimbal Pan Axis Movement Limit Fix:**
+  - Omitted `<wpml:gimbalYawRotateEnable>` and `<wpml:gimbalYawRotateAngle>` from `gimbalRotate` action parameters in [index.js](file:///c:/Users/bpawl/OneDrive/code/Aalaapi-Sky/index.js), resolving issue where DJI flight software evaluates pan axis limits against 0° world North and triggers **Gimble pan axis reached movement limit error**.
+
+## [1.25.10] - 2026-07-24
+
+### Fixed
+- **Instant Gimbal Rotation & WPML Payload Pitch Control Fixes:**
+  - Added `<wpml:payloadPitchControlMode>usePointSetting</wpml:payloadPitchControlMode>` inside `<wpml:payloadParam>` of `template.kml` and `waylines.wpml`, resolving issue where DJI drones default to manual pitch control and ignore waypoint gimbal pitch settings.
+  - Replaced `gimbalEvenlyRotate` segment rotation with point-level `<wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>` at Waypoint 0 (`actionGroupStartIndex = idx`, `actionGroupEndIndex = idx`) with full `<wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>` and `<wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>` parameters, ensuring camera pitch turns to -90° Nadir immediately at the 1st waypoint.
+  - Omitted `<wpml:waypointGimbalYawAngle>` from `<wpml:waypointGimbalHeadingParam>` to prevent DJI controllers from reporting a **Max Pan Gimbal Error** when drone heading isn't facing North.
+  - Enhanced `parseWPML` to fallback to `<wpml:waypointGimbalPitchAngle>` and propagate active pitch across all waypoints in imported KMZ missions.
+
 ## [1.25.9] - 2026-07-23
 
 ### Changed
