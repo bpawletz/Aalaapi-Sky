@@ -730,6 +730,13 @@ html, body {
   pointer-events: none;
 }
 
+.marker-selected {
+  filter: drop-shadow(0 0 8px #06b6d4) drop-shadow(0 0 14px rgba(6, 182, 212, 0.9)) !important;
+  outline: 2px solid #06b6d4;
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+
 .hidden {
   display: none !important;
 }

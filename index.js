@@ -1497,25 +1497,80 @@ function searchAddress() {
     });
 }
 
+let currentlySelectedMarker = null;
+
+// Elevate selected marker z-index to top and apply visual highlight
+function bringMarkerToFront(targetMarker) {
+  if (!targetMarker) return;
+  
+  const removeHighlight = (m) => {
+    if (!m) return;
+    if (m.setZIndexOffset) m.setZIndexOffset(0);
+    if (m._icon) {
+      if (typeof L !== 'undefined' && L && L.DomUtil && typeof L.DomUtil.removeClass === 'function') {
+        L.DomUtil.removeClass(m._icon, 'marker-selected');
+      } else if (m._icon.classList && typeof m._icon.classList.remove === 'function') {
+        m._icon.classList.remove('marker-selected');
+      }
+    }
+  };
+
+  if (typeof centerMarker !== 'undefined' && centerMarker) removeHighlight(centerMarker);
+
+  const waypoints = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
+  waypoints.forEach(wp => {
+    if (wp && wp.mapMarker) removeHighlight(wp.mapMarker);
+  });
+
+  if (typeof roadWaypoints !== 'undefined' && roadWaypoints) {
+    roadWaypoints.forEach(wp => {
+      if (wp && wp.roadMarker) removeHighlight(wp.roadMarker);
+    });
+  }
+
+  if (typeof pois !== 'undefined' && pois) {
+    pois.forEach(p => {
+      if (p && p.marker) removeHighlight(p.marker);
+    });
+  }
+
+  if (targetMarker.setZIndexOffset) {
+    targetMarker.setZIndexOffset(1000);
+  }
+  if (targetMarker._icon) {
+    if (typeof L !== 'undefined' && L && L.DomUtil && typeof L.DomUtil.addClass === 'function') {
+      L.DomUtil.addClass(targetMarker._icon, 'marker-selected');
+    } else if (targetMarker._icon.classList && typeof targetMarker._icon.classList.add === 'function') {
+      targetMarker._icon.classList.add('marker-selected');
+    }
+  }
+
+  currentlySelectedMarker = targetMarker;
+}
+
 // Helper to detect visually overlapping items at a map position (in screen pixels)
-function getOverlappingItemsAt(targetLatLng, maxPixelDistance = 12) {
+function getOverlappingItemsAt(targetLatLng, maxPixelDistance = 15) {
   const items = [];
-  if (!targetLatLng || typeof map === 'undefined' || !map) return items;
+  if (!targetLatLng || typeof map === 'undefined' || !map || typeof map.latLngToContainerPoint !== 'function') return items;
+  if (typeof L === 'undefined' || !L || typeof L.latLng !== 'function') return items;
 
   const targetPoint = L.latLng(targetLatLng.lat, targetLatLng.lng);
   const targetPixel = map.latLngToContainerPoint(targetPoint);
+  if (!targetPixel) return items;
 
-  if (centerMarker) {
+  if (centerMarker && typeof centerMarker.getLatLng === 'function') {
     const centerLatLng = centerMarker.getLatLng();
     const centerPixel = map.latLngToContainerPoint(centerLatLng);
-    const dist = Math.hypot(targetPixel.x - centerPixel.x, targetPixel.y - centerPixel.y);
-    if (dist <= maxPixelDistance) {
-      items.push({
-        type: 'center',
-        name: '📍 Flight Mission Center',
-        marker: centerMarker,
-        latLng: centerLatLng
-      });
+    if (centerPixel) {
+      const dist = Math.hypot(targetPixel.x - centerPixel.x, targetPixel.y - centerPixel.y);
+      if (dist <= maxPixelDistance) {
+        items.push({
+          type: 'center',
+          name: '📍 Flight Mission Center',
+          marker: centerMarker,
+          latLng: centerLatLng
+        });
+      }
     }
   }
 
@@ -1524,19 +1579,43 @@ function getOverlappingItemsAt(targetLatLng, maxPixelDistance = 12) {
     if (wp.mapMarker) {
       const wpLatLng = L.latLng(wp.lat, wp.lon);
       const wpPixel = map.latLngToContainerPoint(wpLatLng);
-      const dist = Math.hypot(targetPixel.x - wpPixel.x, targetPixel.y - wpPixel.y);
-      if (dist <= maxPixelDistance) {
-        items.push({
-          type: 'waypoint',
-          name: `🔵 Waypoint ${idx}`,
-          wp: wp,
-          idx: idx,
-          marker: wp.mapMarker,
-          latLng: wpLatLng
-        });
+      if (wpPixel) {
+        const dist = Math.hypot(targetPixel.x - wpPixel.x, targetPixel.y - wpPixel.y);
+        if (dist <= maxPixelDistance) {
+          items.push({
+            type: 'waypoint',
+            name: `🔵 Waypoint ${idx}`,
+            wp: wp,
+            idx: idx,
+            marker: wp.mapMarker,
+            latLng: wpLatLng
+          });
+        }
       }
     }
   });
+
+  if (typeof roadWaypoints !== 'undefined' && roadWaypoints) {
+    roadWaypoints.forEach((wp, idx) => {
+      if (wp.roadMarker && !items.some(i => i.marker === wp.roadMarker)) {
+        const rLatLng = L.latLng(wp.lat, wp.lon);
+        const rPixel = map.latLngToContainerPoint(rLatLng);
+        if (rPixel) {
+          const dist = Math.hypot(targetPixel.x - rPixel.x, targetPixel.y - rPixel.y);
+          if (dist <= maxPixelDistance) {
+            items.push({
+              type: 'roadNode',
+              name: `🛣️ Road Node ${idx}`,
+              wp: wp,
+              idx: idx,
+              marker: wp.roadMarker,
+              latLng: rLatLng
+            });
+          }
+        }
+      }
+    });
+  }
 
   return items;
 }
@@ -1574,9 +1653,8 @@ function openDisambiguationPopup(latLng, items) {
       e.stopPropagation();
       map.closePopup();
       setTimeout(() => {
-        if (item.type === 'center' && centerMarker) {
-          centerMarker.openPopup();
-        } else if (item.type === 'waypoint' && item.marker) {
+        if (item.marker) {
+          bringMarkerToFront(item.marker);
           item.marker.openPopup();
         }
       }, 50);
@@ -2873,9 +2951,17 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
           redrawCurrentMission();
         });
 
+        marker.on('dragstart', () => bringMarkerToFront(marker));
+        marker.on('popupopen', () => bringMarkerToFront(marker));
         marker.on('click', (e) => {
           L.DomEvent.stopPropagation(e);
-          marker.openPopup();
+          const items = getOverlappingItemsAt(marker.getLatLng());
+          if (items.length > 1) {
+            openDisambiguationPopup(marker.getLatLng(), items);
+          } else {
+            bringMarkerToFront(marker);
+            marker.openPopup();
+          }
         });
 
         marker.bindPopup(() => {
@@ -2915,12 +3001,14 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
         minWidth: 230
       });
 
+      droneMarker.on('popupopen', () => bringMarkerToFront(droneMarker));
       droneMarker.on('click', (e) => {
         L.DomEvent.stopPropagation(e);
         const items = getOverlappingItemsAt(droneMarker.getLatLng());
         if (items.length > 1) {
           openDisambiguationPopup(droneMarker.getLatLng(), items);
         } else {
+          bringMarkerToFront(droneMarker);
           droneMarker.openPopup();
         }
       });
@@ -2956,6 +3044,7 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
       marker.bindTooltip(title, { direction: 'top', offset: [0, -10] });
 
       if (isDraggable) {
+        marker.on('dragstart', () => bringMarkerToFront(marker));
         marker.on('drag', (e) => {
           const newLatLng = e.target.getLatLng();
           const offsets = geodeticToLocal(newLatLng.lat, newLatLng.lng, centerLat, centerLon);
@@ -2994,12 +3083,14 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
         minWidth: 230
       });
 
+      marker.on('popupopen', () => bringMarkerToFront(marker));
       marker.on('click', (e) => {
         L.DomEvent.stopPropagation(e);
         const items = getOverlappingItemsAt(marker.getLatLng());
         if (items.length > 1) {
           openDisambiguationPopup(marker.getLatLng(), items);
         } else {
+          bringMarkerToFront(marker);
           marker.openPopup();
         }
       });
@@ -5149,6 +5240,28 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
   popupContent.style.color = '#f8fafc';
   popupContent.style.fontFamily = 'Outfit, sans-serif';
 
+  const overlappingItems = getOverlappingItemsAt({ lat: wp.lat, lng: wp.lon });
+  let overlappingHTML = '';
+  if (overlappingItems.length > 1) {
+    let optionsHTML = '';
+    overlappingItems.forEach(item => {
+      const isCurrent = (item.marker === marker || (item.type === 'waypoint' && item.idx === idx));
+      const valKey = `${item.type}_${item.idx !== undefined ? item.idx : 0}`;
+      optionsHTML += `<option value="${valKey}" ${isCurrent ? 'selected' : ''}>${item.name}</option>`;
+    });
+    overlappingHTML = `
+      <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 6px; padding: 6px 8px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 4px;">
+        <div style="font-size: 0.72rem; color: #f59e0b; font-weight: 600; display: flex; align-items: center; justify-content: space-between;">
+          <span>⚠️ Overlapping Items (${overlappingItems.length})</span>
+          <span style="font-size: 0.65rem; color: #cbd5e1;">Switch:</span>
+        </div>
+        <select class="overlapping-switcher-select form-select" style="font-size: 0.75rem; padding: 3px 6px; border-radius: 4px; background: rgba(15, 23, 42, 0.8); color: #f8fafc; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; width: 100%;">
+          ${optionsHTML}
+        </select>
+      </div>
+    `;
+  }
+
   const gridType = document.getElementById('grid-type')?.value;
   if (gridType === 'road-following') {
     if (wp.roadMarker) {
@@ -5156,6 +5269,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
         <div style="font-weight: 600; margin-bottom: 8px; color: var(--text-main); font-size: 0.9rem; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
           <span>Road Node ${idx}</span>
         </div>
+        ${overlappingHTML}
         <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.35;">
           ℹ️ Drag this amber marker on the map to adjust the road driving path.
         </div>
@@ -5285,6 +5399,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       <button id="wp-popup-collapse-btn" type="button" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 0.75rem; padding: 0 4px;" title="Minimize/Expand Popup">▼</button>
     </h4>
     <div id="edit-wp-body" style="display: flex; flex-direction: column; gap: 12px; font-size: 0.8rem;">
+      ${overlappingHTML}
       
       <!-- Altitude Slider -->
       <div style="display: flex; flex-direction: column; gap: 4px;">
@@ -5928,62 +6043,129 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     resetBtn.addEventListener('click', () => {
       unbindRevert();
       
-      wp.lat = (wp.origLat !== undefined && wp.origLat !== null) ? wp.origLat : originalLat;
-      wp.lon = (wp.origLon !== undefined && wp.origLon !== null) ? wp.origLon : originalLon;
+      const defaultAlt = parseFloat(document.getElementById('altitude')?.value || 50);
+      const defaultPitch = parseFloat(document.getElementById('gimbal-pitch')?.value || -45);
+
+      wp.lat = (wp.origLat !== undefined && wp.origLat !== null) ? wp.origLat : (wp._baseLat !== undefined ? wp._baseLat : wp.lat);
+      wp.lon = (wp.origLon !== undefined && wp.origLon !== null) ? wp.origLon : (wp._baseLon !== undefined ? wp._baseLon : wp.lon);
       
       const centerLatLng = centerMarker ? centerMarker.getLatLng() : { lat: centerLat, lng: centerLon };
       const offsets = geodeticToLocal(wp.lat, wp.lon, centerLatLng.lat, centerLatLng.lng);
       wp.x = offsets.x;
       wp.y = offsets.y;
       
-      wp.alt = (wp.origAlt !== undefined && wp.origAlt !== null) ? wp.origAlt : originalAlt;
-      wp.pitch = (wp.origPitch !== undefined && wp.origPitch !== null) ? wp.origPitch : originalPitch;
-      wp.heading = (wp.origHeading !== undefined) ? wp.origHeading : originalHeading;
-      wp.headingMode = wp.origHeadingMode || originalHeadingMode || 'inherit';
-      wp.poiIndex = (wp.origPoiIndex !== undefined && wp.origPoiIndex !== null) ? wp.origPoiIndex : originalPoiIndex;
-      wp.speed = (wp.origSpeed !== undefined && wp.origSpeed !== null) ? wp.origSpeed : originalSpeed;
-      wp.hoverTime = (wp.origHoverTime !== undefined && wp.origHoverTime !== null) ? wp.origHoverTime : originalHoverTime;
-      wp.turnMode = wp.origTurnMode || originalTurnMode || 'inherit';
-      wp.cameraAction = wp.origCameraAction || originalCameraAction || 'inherit';
-      wp.zoom = (wp.origZoom !== undefined && wp.origZoom !== null) ? wp.origZoom : originalZoom;
+      wp.alt = (wp.origAlt !== undefined && wp.origAlt !== null) ? wp.origAlt : defaultAlt;
+      wp.pitch = (wp.origPitch !== undefined && wp.origPitch !== null) ? wp.origPitch : defaultPitch;
+      wp.heading = (wp.origHeading !== undefined) ? wp.origHeading : null;
+      wp.headingMode = wp.origHeadingMode || 'inherit';
+      wp.poiIndex = (wp.origPoiIndex !== undefined && wp.origPoiIndex !== null) ? wp.origPoiIndex : 0;
+      wp.speed = (wp.origSpeed !== undefined) ? wp.origSpeed : null;
+      wp.hoverTime = (wp.origHoverTime !== undefined && wp.origHoverTime !== null) ? wp.origHoverTime : 0;
+      wp.turnMode = wp.origTurnMode || 'inherit';
+      wp.cameraAction = wp.origCameraAction || 'inherit';
+      wp.zoom = (wp.origZoom !== undefined && wp.origZoom !== null) ? wp.origZoom : 1.0;
       wp.isRingStart = wp.origIsRingStart !== undefined ? wp.origIsRingStart : false;
       wp.isModified = false;
+      delete wp._lastLat;
+      delete wp._lastLon;
       
       // Also reset photo locations if they exist
       const activePhotos = getCurrentPhotos();
       if (hasPhoto && activePhotos && activePhotos[idx]) {
         const photo = activePhotos[idx];
-        photo.lat = (photo.origLat !== undefined && photo.origLat !== null) ? photo.origLat : originalPhotoLat;
-        photo.lon = (photo.origLon !== undefined && photo.origLon !== null) ? photo.origLon : originalPhotoLon;
+        photo.lat = (photo.origLat !== undefined && photo.origLat !== null) ? photo.origLat : wp.lat;
+        photo.lon = (photo.origLon !== undefined && photo.origLon !== null) ? photo.origLon : wp.lon;
         const ptOffsets = geodeticToLocal(photo.lat, photo.lon, centerLatLng.lat, centerLatLng.lng);
         photo.x = ptOffsets.x;
         photo.y = ptOffsets.y;
-        photo.alt = (photo.origAlt !== undefined && photo.origAlt !== null) ? photo.origAlt : originalAlt;
-        photo.pitch = (photo.origPitch !== undefined && photo.origPitch !== null) ? photo.origPitch : originalPitch;
-        photo.heading = (photo.origHeading !== undefined) ? photo.origHeading : originalHeading;
+        photo.alt = (photo.origAlt !== undefined && photo.origAlt !== null) ? photo.origAlt : wp.alt;
+        photo.pitch = (photo.origPitch !== undefined && photo.origPitch !== null) ? photo.origPitch : wp.pitch;
+        photo.heading = (photo.origHeading !== undefined) ? photo.origHeading : wp.heading;
         photo.isRingStart = photo.origIsRingStart !== undefined ? photo.origIsRingStart : false;
         photo.isModified = false;
       }
       
       const gridType = document.getElementById('grid-type')?.value;
-      if (gridType === 'road-following' && wp.roadMarker && roadWaypoints && roadWaypoints[idx]) {
-        roadWaypoints[idx].lat = wp.lat;
-        roadWaypoints[idx].lon = wp.lon;
-        roadWaypoints[idx].alt = wp.alt;
-        roadWaypoints[idx].pitch = wp.pitch;
-        roadWaypoints[idx].heading = wp.heading;
-        roadWaypoints[idx].headingMode = wp.headingMode;
-        roadWaypoints[idx].poiIndex = wp.poiIndex;
-        roadWaypoints[idx].speed = wp.speed;
-        roadWaypoints[idx].hoverTime = wp.hoverTime;
-        roadWaypoints[idx].turnMode = wp.turnMode;
-        roadWaypoints[idx].cameraAction = wp.cameraAction;
-        roadWaypoints[idx].zoom = wp.zoom;
-        roadWaypoints[idx].isModified = wp.isModified;
+      if (gridType === 'road-following' && roadWaypoints && roadWaypoints[idx]) {
+        const rWp = roadWaypoints[idx];
+        rWp.lat = (rWp.origLat !== undefined && rWp.origLat !== null) ? rWp.origLat : rWp.lat;
+        rWp.lon = (rWp.origLon !== undefined && rWp.origLon !== null) ? rWp.origLon : rWp.lon;
+        const rOffsets = geodeticToLocal(rWp.lat, rWp.lon, centerLatLng.lat, centerLatLng.lng);
+        rWp.x = rOffsets.x;
+        rWp.y = rOffsets.y;
+        rWp.alt = (rWp.origAlt !== undefined && rWp.origAlt !== null) ? rWp.origAlt : defaultAlt;
+        rWp.pitch = (rWp.origPitch !== undefined && rWp.origPitch !== null) ? rWp.origPitch : defaultPitch;
+        rWp.heading = rWp.origHeading !== undefined ? rWp.origHeading : null;
+        rWp.headingMode = rWp.origHeadingMode || 'inherit';
+        rWp.poiIndex = rWp.origPoiIndex || 0;
+        rWp.speed = rWp.origSpeed !== undefined ? rWp.origSpeed : null;
+        rWp.hoverTime = rWp.origHoverTime !== undefined ? rWp.origHoverTime : 0;
+        rWp.turnMode = rWp.origTurnMode || 'inherit';
+        rWp.cameraAction = rWp.origCameraAction || 'inherit';
+        rWp.zoom = rWp.origZoom !== undefined ? rWp.origZoom : 1.0;
+        rWp.isModified = false;
+        delete rWp._lastLat;
+        delete rWp._lastLon;
+        if (rWp.roadMarker && typeof rWp.roadMarker.setLatLng === 'function') {
+          rWp.roadMarker.setLatLng([rWp.lat, rWp.lon]);
+        }
+      }
+
+      // Reposition Leaflet markers back to original baseline
+      if (marker && typeof marker.setLatLng === 'function') {
+        marker.setLatLng([wp.lat, wp.lon]);
+      }
+      if (wp.mapMarker && typeof wp.mapMarker.setLatLng === 'function') {
+        wp.mapMarker.setLatLng([wp.lat, wp.lon]);
+      }
+      if (wp.roadMarker && typeof wp.roadMarker.setLatLng === 'function') {
+        wp.roadMarker.setLatLng([wp.lat, wp.lon]);
+      }
+
+      const rotationDeg = parseFloat(document.getElementById('grid-rotation')?.value || 0);
+      if (gridType !== 'road-following') {
+        const originalIcon = getMarkerIcon(wp, idx, getCurrentWaypoints(), rotationDeg);
+        if (marker && typeof marker.setIcon === 'function') marker.setIcon(originalIcon);
+        if (wp.mapMarker && typeof wp.mapMarker.setIcon === 'function') wp.mapMarker.setIcon(originalIcon);
+
+        const isStart = idx === 0;
+        const isEnd = idx === getCurrentWaypoints().length - 1;
+        let heading = 0;
+        if (wp.heading !== null && wp.heading !== undefined) {
+          heading = wp.heading;
+        } else {
+          heading = getDefaultHeading(idx, getCurrentWaypoints(), rotationDeg);
+        }
+        const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : parseFloat(document.getElementById('gimbal-pitch')?.value || -45);
+        const originalTitle = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${heading.toFixed(0)}°<br>Pitch: ${pitch}°`;
+        if (marker && typeof marker.setTooltipContent === 'function') marker.setTooltipContent(originalTitle);
+        if (wp.mapMarker && typeof wp.mapMarker.setTooltipContent === 'function') wp.mapMarker.setTooltipContent(originalTitle);
+      } else {
+        if (wp.roadMarker) {
+          if (marker && typeof marker.setTooltipContent === 'function') marker.setTooltipContent(`Road Node ${idx}`);
+        } else {
+          const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch')?.value || -45);
+          const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : defaultGimbalPitch;
+          const headingDisplay = (wp.heading !== null && wp.heading !== undefined) ? wp.heading.toFixed(0) : '—';
+          const tooltipContent = `Drone Waypoint ${idx}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${headingDisplay}°<br>Pitch: ${pitch}°`;
+          if (marker && typeof marker.setTooltipContent === 'function') marker.setTooltipContent(tooltipContent);
+          if (wp.mapMarker && typeof wp.mapMarker.setTooltipContent === 'function') wp.mapMarker.setTooltipContent(tooltipContent);
+        }
       }
 
       if (popupObj) popupObj.close ? popupObj.close() : (marker && marker.closePopup());
-      redrawCurrentMission();
+
+      if (gridType !== 'freeform') {
+        updateGrid();
+      } else {
+        redrawCurrentMission();
+      }
+      
+      recreate3DWaypointsAndPaths();
+      if (fpvActive) {
+        updateFPVEditorUI();
+        updateFPVCamera(0);
+      }
     });
   }
 
@@ -6018,6 +6200,22 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
 
         if (popupObj) popupObj.close ? popupObj.close() : (marker && marker.closePopup());
         redrawCurrentMission();
+      }
+    });
+  }
+
+  const switcherSelect = popupContent.querySelector('.overlapping-switcher-select');
+  if (switcherSelect) {
+    switcherSelect.addEventListener('change', (e) => {
+      const selectedVal = e.target.value;
+      const targetItem = overlappingItems.find(item => `${item.type}_${item.idx !== undefined ? item.idx : 0}` === selectedVal);
+      if (targetItem && targetItem.marker) {
+        if (typeof unbindRevert === 'function') unbindRevert();
+        if (marker && marker.closePopup) marker.closePopup();
+        bringMarkerToFront(targetItem.marker);
+        setTimeout(() => {
+          targetItem.marker.openPopup();
+        }, 50);
       }
     });
   }

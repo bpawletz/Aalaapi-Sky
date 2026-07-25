@@ -4,8 +4,8 @@ set -e
 echo "🔨 Building single-file bundle..."
 python scratch/build.py
 
-echo "🧪 Running unit tests..."
-node --test index.test.js
+echo "🧪 Running unit & E2E tests..."
+node --test index.test.js index.e2e.test.js
 
 echo "📦 Staging git changes..."
 git add .

@@ -12,24 +12,44 @@ Before creating bug reports, please check the existing issues as you might find 
 
 Enhancement suggestions are tracked as GitHub issues. When creating an enhancement suggestion, please provide a clear and descriptive title and a detailed description of the proposed functionality.
 
-### Pull Requests
+### Development & Testing Workflow
 
-The process described here has several goals:
+1. **Fork & Clone:**
+   ```bash
+   git clone https://github.com/your-username/Aalaapi-Sky.git
+   cd Aalaapi-Sky
+   ```
 
-- Maintain project quality
-- Fix problems that are important to users
-- Engage the community in working toward the best possible project
+2. **Install Dependencies:**
+   ```bash
+   npm install
+   npx playwright install chromium
+   ```
 
-Please follow these steps to have your contribution considered by the maintainers:
+3. **Make Edits & Build Bundle:**
+   `index.html` is a single-file application bundle compiled from `index_template.html`, `index.css`, and `index.js`.
+   After making edits to source files (`index.js`, `index.css`, `index_template.html`), compile `index.html`:
+   ```bash
+   python scratch/build.py
+   ```
 
-1. **Fork the repository** and create your branch from `main`.
-2. **Clone your fork** to your local machine.
-3. **Set up the development environment** if necessary (e.g., installing dependencies).
-4. **Make your changes** in the new branch.
-5. **Test your changes** to ensure they work as expected and don't break existing functionality.
-6. **Commit your changes** with a clear and descriptive commit message.
-7. **Push your branch** to your fork on GitHub.
-8. **Open a Pull Request** against the `main` branch of the original repository. Ensure you provide a comprehensive description of the changes in your PR.
+4. **Run Unit & Playwright E2E UI Tests:**
+   Verify code correctness by running the full test suite (66+ unit & E2E Playwright tests):
+   ```bash
+   # Run both unit and Playwright E2E tests:
+   npm test
+
+   # Or run specific test suites:
+   npm run test:unit
+   npm run test:e2e
+   ```
+
+5. **Versioning & Push Helper Scripts:**
+   When adding functional changes or bug fixes, bump the version (in `package.json`, `CHANGELOG.md`, `index.html`, and `index_template.html`) and use the convenience scripts to automatically build, test, stage, commit, and push:
+   - **Linux / macOS / Git Bash:** `./push.sh "feat(scope): description"`
+   - **Windows PowerShell:** `.\push.ps1 "feat(scope): description"`
+
+6. **Submit Pull Request:** Open a Pull Request against the `main` branch. Ensure all unit and Playwright E2E tests pass.
 
 ## Styleguides
 

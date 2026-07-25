@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.26.6] - 2026-07-25
+
+### Fixed
+- **Overlapping Waypoint Selection & Map Dragging:** Implemented `bringMarkerToFront()` to elevate the selected map marker's z-index (`zIndexOffset = 1000`) and apply a prominent cyan selection ring (`.marker-selected`). Clicking an item in the disambiguation popup or starting a drag now correctly targets the chosen waypoint rather than unselected overlapping markers beneath it.
+- **Overlapping Items Editor Switcher:** Added an interactive "Overlapping Items" quick switcher dropdown directly inside the waypoint editor popup header, allowing users to effortlessly switch active focus between overlapping waypoints, road nodes, or center markers without closing the popup.
+- **Road Node Overlap Disambiguation:** Integrated `roadWaypoints` into `getOverlappingItemsAt()` and attached `dragstart`, `popupopen`, and disambiguation click handlers to road node markers.
+
+## [1.26.5] - 2026-07-25
+
+### Fixed
+- **Reopen Editor Popup Revert Fix:** Fixed `resetBtn` in [index.js](file:///c:/Users/bpawl/OneDrive/code/Aalaapi-Sky/index.js) so that reopening a previously edited and saved waypoint editor popup and clicking **Revert** cleanly restores all attributes (speed, altitude, pitch, heading, hover duration, coordinates) back to original pattern/mission baselines instead of falling back to saved custom values.
+
+## [1.26.4] - 2026-07-25
+
+### Fixed
+- **Waypoint Revert Position & Marker Restoration:** Fixed `resetBtn` in the 2D waypoint editor popup to properly reposition Leaflet markers on the map back to original baseline coordinates (`origLat`, `origLon`). Ensured road control nodes in Road-Following mode cleanly revert to their original locations without corrupting cyan drone waypoints, and synchronized marker icons, tooltips, 3D scene representation, and FPV UI on revert.
+
 ## [1.26.3] - 2026-07-24
 
 ### Fixed
