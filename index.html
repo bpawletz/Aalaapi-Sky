@@ -5738,13 +5738,13 @@ function updateGrid() {
         if (existingGwp && existingGwp.isModified) {
           return {
             ...existingGwp,
-            origLat: geo.lat,
-            origLon: geo.lon,
-            origX: pt.x,
-            origY: pt.y,
-            origAlt: alt,
-            origPitch: pitch,
-            origHeading: finalHeading
+            origLat: (existingGwp.origLat !== undefined && existingGwp.origLat !== null) ? existingGwp.origLat : geo.lat,
+            origLon: (existingGwp.origLon !== undefined && existingGwp.origLon !== null) ? existingGwp.origLon : geo.lon,
+            origX: (existingGwp.origX !== undefined && existingGwp.origX !== null) ? existingGwp.origX : pt.x,
+            origY: (existingGwp.origY !== undefined && existingGwp.origY !== null) ? existingGwp.origY : pt.y,
+            origAlt: (existingGwp.origAlt !== undefined && existingGwp.origAlt !== null) ? existingGwp.origAlt : alt,
+            origPitch: (existingGwp.origPitch !== undefined && existingGwp.origPitch !== null) ? existingGwp.origPitch : pitch,
+            origHeading: (existingGwp.origHeading !== undefined) ? existingGwp.origHeading : finalHeading
           };
         }
 
