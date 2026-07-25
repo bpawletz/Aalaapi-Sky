@@ -539,6 +539,50 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
     assert.ok(centerMoveResult.success, `Center move E2E test failed. IsModified: ${centerMoveResult.isModified}`);
   });
+
+  test('E2E: Revert button restores original calculated waypoint position after a grab and drag move on map', async () => {
+    const grabMoveRevertResult = await page.evaluate(() => {
+      if (typeof setGridCenter === 'function') {
+        setGridCenter(41.88, -87.62);
+      }
+      const wps = getCurrentWaypoints() || [];
+      if (!wps || wps.length === 0) return { success: false, reason: 'No waypoints' };
+
+      const wp = wps[0];
+      const initialLat = wp.origLat !== undefined ? wp.origLat : wp.lat;
+      const initialLon = wp.origLon !== undefined ? wp.origLon : wp.lon;
+
+      // 1. Simulate grab and move (drag) on map
+      wp.lat = initialLat + 0.005;
+      wp.lon = initialLon + 0.005;
+      wp.isModified = true;
+
+      // 2. Open editor popup and click Revert / Reset
+      const dummyMarker = {
+        setLatLng: () => {}, setIcon: () => {},
+        getTooltip: () => ({ setContent: () => {} }), setTooltipContent: () => {},
+        on: () => {}, off: () => {}, closePopup: () => {}
+      };
+
+      const dom = createWaypointEditorDOM(wp, 0, dummyMarker);
+      const resetBtn = dom.querySelector('#reset-wp-btn');
+      if (!resetBtn) return { success: false, reason: 'No reset button found in DOM' };
+
+      resetBtn.click();
+
+      const postRevertWp = (getCurrentWaypoints() || [])[0];
+
+      return {
+        success: postRevertWp && postRevertWp.lat === initialLat && postRevertWp.isModified === false,
+        initialLat,
+        postRevertLat: postRevertWp ? postRevertWp.lat : null,
+        isModified: postRevertWp ? postRevertWp.isModified : true
+      };
+    });
+
+    assert.ok(grabMoveRevertResult.success, `Grab move revert E2E test failed. InitialLat: ${grabMoveRevertResult.initialLat}, PostRevertLat: ${grabMoveRevertResult.postRevertLat}`);
+    assert.strictEqual(grabMoveRevertResult.isModified, false, 'isModified should be reset to false after reverting a grab move');
+  });
 });
 
 
