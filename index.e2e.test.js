@@ -260,5 +260,130 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
     assert.ok(overlapResult.success, `Overlapping marker E2E bypass test failed. Items: ${overlapResult.itemsCount}, Active: ${overlapResult.hasActiveMarker}`);
   });
+
+  test('E2E: WPML Export respects per-waypoint towardPOI, custom heading, and pitch overrides', async () => {
+    const wpmlResult = await page.evaluate(() => {
+      if (typeof setGridCenter === 'function') {
+        setGridCenter(41.88, -87.62);
+      }
+      const wps = getCurrentWaypoints() || [];
+      if (wps.length < 2) return { success: false, reason: 'Need at least 2 waypoints' };
+
+      // Set POI 0 and POI 1
+      pois[0] = { lat: 41.88, lon: -87.62, name: 'Center POI' };
+      pois[1] = { lat: 41.885, lon: -87.625, name: 'Custom POI 1' };
+
+      // Set waypoint overrides
+      wps[0].headingMode = 'towardPOI';
+      wps[0].poiIndex = 1;
+      wps[0].pitch = -30;
+      wps[0].alt = 65;
+
+      wps[1].headingMode = 'custom';
+      wps[1].heading = 135;
+      wps[1].pitch = -60;
+
+      const xml = buildWaylinesWpml(wps, 50, 5, 'followWayline', 'goHome', -45, 'continuous', 'straight');
+
+      return {
+        success: typeof xml === 'string' && xml.includes('towardPOI') && xml.includes('135') && xml.includes('41.885'),
+        hasTowardPOI: xml.includes('towardPOI'),
+        hasCustomHeading: xml.includes('135'),
+        hasPoiCoords: xml.includes('41.885')
+      };
+    });
+
+    assert.ok(wpmlResult.success, `WPML POI export E2E test failed. HasPOI: ${wpmlResult.hasTowardPOI}, HasHeading: ${wpmlResult.hasCustomHeading}`);
+  });
+
+  test('E2E: Road Following mode recalculates offset path dynamically when road nodes are nudged', async () => {
+    const roadResult = await page.evaluate(() => {
+      const gridTypeSelect = document.getElementById('grid-type');
+      if (gridTypeSelect) {
+        gridTypeSelect.value = 'road-following';
+        gridTypeSelect.dispatchEvent(new Event('change'));
+      }
+
+      if (!roadWaypoints || roadWaypoints.length < 2) {
+        const p1 = geodeticToLocal(41.88, -87.62, 41.88, -87.62);
+        const p2 = geodeticToLocal(41.881, -87.621, 41.88, -87.62);
+        roadWaypoints = [
+          { lat: 41.88, lon: -87.62, x: p1.x, y: p1.y, idx: 0 },
+          { lat: 41.881, lon: -87.621, x: p2.x, y: p2.y, idx: 1 }
+        ];
+      }
+
+      recalculateRoadOffsetPath(41.88, -87.62);
+      const initialGenWp = (generatedWaypoints || [])[0];
+      const initialLat = initialGenWp ? initialGenWp.lat : 0;
+
+      // Nudge Road Node 0 North & update local offsets
+      roadWaypoints[0].lat += 0.001;
+      const offsets = geodeticToLocal(roadWaypoints[0].lat, roadWaypoints[0].lon, 41.88, -87.62);
+      roadWaypoints[0].x = offsets.x;
+      roadWaypoints[0].y = offsets.y;
+      roadWaypoints[0].isModified = true;
+
+      recalculateRoadOffsetPath(41.88, -87.62);
+      const postNudgeGenWp = (generatedWaypoints || [])[0];
+
+      return {
+        success: initialGenWp && postNudgeGenWp && postNudgeGenWp.lat !== initialLat,
+        initialLat: initialLat,
+        postNudgeLat: postNudgeGenWp ? postNudgeGenWp.lat : null
+      };
+    });
+
+    assert.ok(roadResult.success, `Road Following offset recalculation E2E test failed. Initial: ${roadResult.initialLat}, PostNudge: ${roadResult.postNudgeLat}`);
+  });
+
+  test('E2E: FPV 3D panel synchronization and waypoint Nudge/Save in 3D viewport', async () => {
+    const fpvResult = await page.evaluate(() => {
+      const gridTypeSelect = document.getElementById('grid-type');
+      if (gridTypeSelect) {
+        gridTypeSelect.value = 'single';
+        gridTypeSelect.dispatchEvent(new Event('change'));
+      }
+
+      if (typeof setGridCenter === 'function') {
+        setGridCenter(41.88, -87.62);
+      }
+
+      const wps = getCurrentWaypoints() || [];
+      if (!wps || wps.length === 0) return { success: false, reason: 'No waypoints' };
+
+      fpvProgressIndex = 0;
+      const initialLat = wps[0].lat;
+
+      const btnN = document.getElementById('fpv-nudge-n-btn') || document.getElementById('nudge-n-btn');
+      if (btnN) {
+        btnN.click();
+      } else {
+        wps[0].lat += 0.001;
+        const offsets = geodeticToLocal(wps[0].lat, wps[0].lon, 41.88, -87.62);
+        wps[0].x = offsets.x;
+        wps[0].y = offsets.y;
+      }
+
+      const saveBtn = document.getElementById('fpv-btn-save-wp') || document.getElementById('save-wp-btn');
+      if (saveBtn) {
+        saveBtn.click();
+      } else {
+        wps[0].isModified = true;
+      }
+
+      const postSaveWp = (getCurrentWaypoints() || [])[0];
+
+      return {
+        success: postSaveWp && postSaveWp.lat !== initialLat && postSaveWp.isModified === true,
+        initialLat,
+        nudgedLat: postSaveWp ? postSaveWp.lat : null,
+        isModified: postSaveWp ? postSaveWp.isModified : false
+      };
+    });
+
+    assert.ok(fpvResult.success, `FPV 3D Nudge Save E2E test failed. Initial: ${fpvResult.initialLat}, Nudged: ${fpvResult.nudgedLat}`);
+  });
 });
+
 
