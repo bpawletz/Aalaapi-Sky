@@ -2982,7 +2982,8 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
           return createWaypointEditorDOM(wp, idx, marker);
         }, {
           maxWidth: 240,
-          minWidth: 230
+          minWidth: 230,
+          offset: [0, -20]
         });
 
         marker.addTo(roadPathGroup);
@@ -3012,7 +3013,8 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
         return createWaypointEditorDOM(wp, idx, droneMarker);
       }, {
         maxWidth: 240,
-        minWidth: 230
+        minWidth: 230,
+        offset: [0, -20]
       });
 
       droneMarker.on('popupopen', () => bringMarkerToFront(droneMarker, idx));
@@ -3100,7 +3102,8 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
         return createWaypointEditorDOM(wp, idx, marker);
       }, {
         maxWidth: 240,
-        minWidth: 230
+        minWidth: 230,
+        offset: [0, -20]
       });
 
       marker.on('popupopen', () => bringMarkerToFront(marker, idx));
@@ -6022,8 +6025,20 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       const zoomVal = zoomSlider ? parseFloat(zoomSlider.value) : NaN;
 
       // Save custom edits and mark as modified (preserving orig baseline for Reset)
-      if (!isNaN(latVal)) wp.lat = latVal;
-      if (!isNaN(lonVal)) wp.lon = lonVal;
+      if (!isNaN(latVal) && !isNaN(lonVal)) {
+        if (wp.origLat === undefined || wp.origLat === null) wp.origLat = originalLat;
+        if (wp.origLon === undefined || wp.origLon === null) wp.origLon = originalLon;
+        if (wp.origX === undefined || wp.origX === null) wp.origX = originalX;
+        if (wp.origY === undefined || wp.origY === null) wp.origY = originalY;
+
+        wp.lat = latVal;
+        wp.lon = lonVal;
+        const centerLat = centerMarker ? centerMarker.getLatLng().lat : (pois[0] ? pois[0].lat : latVal);
+        const centerLon = centerMarker ? centerMarker.getLatLng().lng : (pois[0] ? pois[0].lon : lonVal);
+        const offsets = geodeticToLocal(latVal, lonVal, centerLat, centerLon);
+        wp.x = offsets.x;
+        wp.y = offsets.y;
+      }
       wp.alt = altVal;
       wp.pitch = pitchVal;
       wp.heading = headingVal;
@@ -6039,19 +6054,32 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
 
       const gridType = document.getElementById('grid-type')?.value;
       if (gridType === 'road-following' && wp.roadMarker && roadWaypoints && roadWaypoints[idx]) {
-        if (!isNaN(latVal)) roadWaypoints[idx].lat = latVal;
-        if (!isNaN(lonVal)) roadWaypoints[idx].lon = lonVal;
-        roadWaypoints[idx].alt = altVal;
-        roadWaypoints[idx].pitch = pitchVal;
-        roadWaypoints[idx].heading = headingVal;
-        roadWaypoints[idx].headingMode = mode;
-        roadWaypoints[idx].poiIndex = poiIndexVal;
-        if (!isNaN(speedVal)) roadWaypoints[idx].speed = speedVal;
-        if (!isNaN(hoverVal)) roadWaypoints[idx].hoverTime = hoverVal;
-        if (turnModeVal) roadWaypoints[idx].turnMode = turnModeVal;
-        if (cameraActionVal) roadWaypoints[idx].cameraAction = cameraActionVal;
-        if (!isNaN(zoomVal)) roadWaypoints[idx].zoom = zoomVal;
-        roadWaypoints[idx].isModified = true;
+        const rWp = roadWaypoints[idx];
+        if (!isNaN(latVal) && !isNaN(lonVal)) {
+          if (rWp.origLat === undefined || rWp.origLat === null) rWp.origLat = (originalRoadLat !== null ? originalRoadLat : rWp.lat);
+          if (rWp.origLon === undefined || rWp.origLon === null) rWp.origLon = (originalRoadLon !== null ? originalRoadLon : rWp.lon);
+          if (rWp.origX === undefined || rWp.origX === null) rWp.origX = (originalRoadX !== null ? originalRoadX : rWp.x);
+          if (rWp.origY === undefined || rWp.origY === null) rWp.origY = (originalRoadY !== null ? originalRoadY : rWp.y);
+
+          rWp.lat = latVal;
+          rWp.lon = lonVal;
+          const centerLat = centerMarker ? centerMarker.getLatLng().lat : (pois[0] ? pois[0].lat : latVal);
+          const centerLon = centerMarker ? centerMarker.getLatLng().lng : (pois[0] ? pois[0].lon : lonVal);
+          const offsets = geodeticToLocal(latVal, lonVal, centerLat, centerLon);
+          rWp.x = offsets.x;
+          rWp.y = offsets.y;
+        }
+        rWp.alt = altVal;
+        rWp.pitch = pitchVal;
+        rWp.heading = headingVal;
+        rWp.headingMode = mode;
+        rWp.poiIndex = poiIndexVal;
+        if (!isNaN(speedVal)) rWp.speed = speedVal;
+        if (!isNaN(hoverVal)) rWp.hoverTime = hoverVal;
+        if (turnModeVal) rWp.turnMode = turnModeVal;
+        if (cameraActionVal) rWp.cameraAction = cameraActionVal;
+        if (!isNaN(zoomVal)) rWp.zoom = zoomVal;
+        rWp.isModified = true;
       }
 
       if (popupObj) popupObj.close ? popupObj.close() : (marker && marker.closePopup());

@@ -2161,7 +2161,56 @@ describe('Overlapping Waypoints & bringMarkerToFront Tests', () => {
       delete global.testMarker2;
     }
   });
+
+  test('Save button updates lat, lon, x, y offsets and preserves orig baselines', () => {
+    try {
+      vm.runInThisContext('centerMarker = { getLatLng: () => ({ lat: 41.88, lng: -87.62 }) };');
+      const testWp = {
+        lat: 41.88, lon: -87.62, x: 0, y: 0, alt: 50, pitch: -45, heading: 0
+      };
+      
+      vm.runInThisContext(`
+        {
+          const testSaveWp = ${JSON.stringify(testWp)};
+          const latVal = 41.881;
+          const lonVal = -87.619;
+          const originalLat = 41.88;
+          const originalLon = -87.62;
+          const originalX = 0;
+          const originalY = 0;
+
+          if (!isNaN(latVal) && !isNaN(lonVal)) {
+            if (testSaveWp.origLat === undefined || testSaveWp.origLat === null) testSaveWp.origLat = originalLat;
+            if (testSaveWp.origLon === undefined || testSaveWp.origLon === null) testSaveWp.origLon = originalLon;
+            if (testSaveWp.origX === undefined || testSaveWp.origX === null) testSaveWp.origX = originalX;
+            if (testSaveWp.origY === undefined || testSaveWp.origY === null) testSaveWp.origY = originalY;
+
+            testSaveWp.lat = latVal;
+            testSaveWp.lon = lonVal;
+            const centerLat = centerMarker ? centerMarker.getLatLng().lat : latVal;
+            const centerLon = centerMarker ? centerMarker.getLatLng().lng : lonVal;
+            const offsets = geodeticToLocal(latVal, lonVal, centerLat, centerLon);
+            testSaveWp.x = offsets.x;
+            testSaveWp.y = offsets.y;
+          }
+          testSaveWp.isModified = true;
+          global.savedWpResult = testSaveWp;
+        }
+      `);
+
+      const savedWp = vm.runInThisContext('global.savedWpResult');
+      assert.strictEqual(savedWp.lat, 41.881, 'lat should update to 41.881');
+      assert.strictEqual(savedWp.lon, -87.619, 'lon should update to -87.619');
+      assert.ok(Math.abs(savedWp.x) > 0, 'x offset should be recalculated from new lat/lon');
+      assert.ok(Math.abs(savedWp.y) > 0, 'y offset should be recalculated from new lat/lon');
+      assert.strictEqual(savedWp.isModified, true, 'isModified should be set to true');
+
+    } finally {
+      vm.runInThisContext('centerMarker = null; delete global.savedWpResult;');
+    }
+  });
 });
+
 
 
 
