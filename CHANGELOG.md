@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.26.10] - 2026-07-25
+
+### Fixed
+- **Leaflet `popupclose` Event Overwrite on Waypoint Revert:** Added `isReverted` guard flag in `createWaypointEditorDOM` to prevent Leaflet's `popupclose` event handler (`revertChanges`) from overwriting restored origin coordinates when closing the popup after clicking **Revert**.
+
 ## [1.26.9] - 2026-07-25
 
 ### Added
