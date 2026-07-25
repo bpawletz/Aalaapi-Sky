@@ -2318,6 +2318,7 @@ function updateGrid() {
           zoom: pt.zoom !== undefined ? pt.zoom : 1.0,
           isRingStart: pt.isRingStart || false,
           ringIndex: pt.ringIndex !== undefined ? pt.ringIndex : null,
+          isModified: false,
           origLat: geo.lat,
           origLon: geo.lon,
           origX: pt.x,
@@ -2975,6 +2976,7 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
           wp.lon = newLatLng.lng;
           wp.x = offsets.x;
           wp.y = offsets.y;
+          wp.isModified = true;
           
           roadPolyline.setLatLngs(roadWaypoints.map(w => [w.lat, w.lon]));
 
@@ -2992,6 +2994,19 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
               gwp.mapMarker.setTooltipContent(tooltipContent);
             }
           });
+        });
+
+        marker.on('dragstart', () => {
+          bringMarkerToFront(marker);
+          if (typeof map !== 'undefined' && map && map.closePopup) {
+            map.closePopup();
+          }
+          if (wp.origLat === undefined || wp.origLat === null) {
+            wp.origLat = wp.lat;
+            wp.origLon = wp.lon;
+            wp.origX = wp.x;
+            wp.origY = wp.y;
+          }
         });
 
         marker.on('dragend', () => {
@@ -3038,6 +3053,8 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
         fillOpacity: 0.9,
         weight: 8 // Large weight for easy click target
       });
+
+      wp.droneMarker = droneMarker;
 
       const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch;
       const headingDisplay = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading.toFixed(0) : '—';
@@ -3103,6 +3120,12 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
           bringMarkerToFront(marker, idx);
           if (typeof map !== 'undefined' && map && map.closePopup) {
             map.closePopup();
+          }
+          if (wp.origLat === undefined || wp.origLat === null) {
+            wp.origLat = wp.lat;
+            wp.origLon = wp.lon;
+            wp.origX = wp.x;
+            wp.origY = wp.y;
           }
         });
         marker.on('drag', (e) => {
