@@ -719,6 +719,92 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(fullStepResult.success, `2D Grid grab move X/Y revert test failed. Origin: (${fullStepResult.originLat}, ${fullStepResult.originLon}), Reverted: (${fullStepResult.revertedLat}, ${fullStepResult.revertedLon})`);
     assert.strictEqual(fullStepResult.isModified, false, 'isModified should be false after reverting 2D grid waypoint move');
   });
+
+  test('E2E: Revert works correctly after popup opened and closed multiple times (guards against popupclose listener accumulation regression)', async () => {
+    // This test directly validates the fix for the listener accumulation bug.
+    // Previously, each popup open added a new revertChanges closure to marker.on('popupclose').
+    // When Save or Revert was clicked, old stale closures (isSaved=false) still fired on
+    // popup close and overwrote the correct state. The fix clears all listeners before each bind.
+    const accumulationResult = await page.evaluate(() => {
+      if (typeof setGridCenter === 'function') {
+        setGridCenter(41.88, -87.62);
+      }
+      const wps = typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null;
+      if (!wps || wps.length === 0) return { success: false, reason: 'No waypoints' };
+
+      const wp = wps[0];
+      const originLat = wp.origLat !== undefined ? wp.origLat : wp.lat;
+      const originLon = wp.origLon !== undefined ? wp.origLon : wp.lon;
+
+      // Track how many times popupclose fires and whether stale handlers run
+      let popupcloseHandlers = [];
+      let staleHandlerFiredCount = 0;
+
+      const trackingMarker = {
+        setLatLng: () => {},
+        setIcon: () => {},
+        getTooltip: () => ({ setContent: () => {} }),
+        setTooltipContent: () => {},
+        getPopup: () => null,
+        closePopup: () => {},
+        off: (evt, fn) => {
+          if (evt === 'popupclose' && fn === undefined) {
+            popupcloseHandlers = []; // Correct fix: clear all
+          } else if (evt === 'popupclose' && typeof fn === 'function') {
+            const i = popupcloseHandlers.indexOf(fn);
+            if (i !== -1) popupcloseHandlers.splice(i, 1);
+          }
+        },
+        on: (evt, fn) => {
+          if (evt === 'popupclose') popupcloseHandlers.push(fn);
+        }
+      };
+
+      // 1. Move waypoint away from origin
+      wp.lat = originLat + 0.005;
+      wp.lon = originLon + 0.005;
+      wp.isModified = true;
+
+      // 2. Open popup 3 times without saving/reverting (simulates user opening and dismissing)
+      createWaypointEditorDOM(wp, 0, trackingMarker); // open 1
+      createWaypointEditorDOM(wp, 0, trackingMarker); // open 2
+      createWaypointEditorDOM(wp, 0, trackingMarker); // open 3 — Revert clicked here
+
+      const listenerCountAfterThreeOpens = popupcloseHandlers.length;
+
+      // 3. On 3rd open, click Revert
+      const dom = createWaypointEditorDOM(wp, 0, trackingMarker);
+      const resetBtn = dom.querySelector('#reset-wp-btn');
+      if (!resetBtn) return { success: false, reason: 'No reset button in DOM', listenerCountAfterThreeOpens };
+      resetBtn.click();
+
+      // 4. Simulate popup close event firing (all accumulated handlers, if any)
+      for (const handler of popupcloseHandlers) {
+        try { handler(); } catch (e) { staleHandlerFiredCount++; }
+      }
+
+      const postRevertWp = (getCurrentWaypoints() || [])[0];
+
+      return {
+        success: postRevertWp && Math.abs(postRevertWp.lat - originLat) < 1e-7 && postRevertWp.isModified === false,
+        listenerCountAfterThreeOpens,
+        finalListenerCount: popupcloseHandlers.length,
+        originLat,
+        postRevertLat: postRevertWp ? postRevertWp.lat : null,
+        isModified: postRevertWp ? postRevertWp.isModified : true,
+        staleHandlerFiredCount
+      };
+    });
+
+    assert.ok(accumulationResult.success,
+      `Listener accumulation regression test failed. ` +
+      `Origin: ${accumulationResult.originLat}, PostRevert: ${accumulationResult.postRevertLat}, ` +
+      `isModified: ${accumulationResult.isModified}`);
+    assert.strictEqual(accumulationResult.listenerCountAfterThreeOpens, 1,
+      `After 3 popup opens, should have exactly 1 popupclose listener, got: ${accumulationResult.listenerCountAfterThreeOpens}`);
+    assert.strictEqual(accumulationResult.isModified, false,
+      'isModified should be false after Revert, even after multiple popup opens');
+  });
 });
 
 
