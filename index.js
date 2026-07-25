@@ -5292,7 +5292,6 @@ function convertToFreeformMission() {
     zoom: w.zoom !== undefined ? w.zoom : 1.0,
     isRingStart: w.isRingStart || false,
     ringIndex: w.ringIndex || null,
-    isClicked: true,
     idx: idx,
     origLat: w.origLat !== undefined ? w.origLat : w.lat,
     origLon: w.origLon !== undefined ? w.origLon : w.lon,
