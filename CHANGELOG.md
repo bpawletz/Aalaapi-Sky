@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.26.13] - 2026-07-25
+
+### Fixed
+- **Accumulated `popupclose` Listeners Causing Revert/Save Failure:** Each time the waypoint editor popup opened, a new `revertChanges` closure was attached to `marker.on('popupclose', ...)`. Old closures accumulated on the marker and fired on popup close, overwriting saved or reverted state with stale values because each closure captured its own `isSaved = false` flag. Fixed by calling `marker.off('popupclose')` (clearing all listeners) before attaching the new listener on every popup open. Revert and Save now work correctly regardless of how many times the popup was previously opened.
+
 ## [1.26.12] - 2026-07-25
 
 ### Fixed
