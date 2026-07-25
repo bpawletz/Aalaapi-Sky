@@ -8485,9 +8485,10 @@ function setupFPVListeners() {
       wp.turnMode = wp.origTurnMode || 'inherit';
       wp.cameraAction = wp.origCameraAction || 'inherit';
       wp.zoom = wp.origZoom !== undefined ? wp.origZoom : 1.0;
-      wp.isRingStart = wp.origIsRingStart !== undefined ? wp.origIsRingStart : false;
-      wp.isModified = wp.origIsModified !== undefined ? wp.origIsModified : false;
+      wp.isModified = false;
       wp.hasDraftEdits = false;
+      delete wp._lastLat;
+      delete wp._lastLon;
 
       const gridType = document.getElementById('grid-type')?.value;
       if (gridType === 'road-following' && roadWaypoints && roadWaypoints[fpvProgressIndex]) {
@@ -8505,7 +8506,11 @@ function setupFPVListeners() {
         wp.mapMarker.setLatLng([wp.lat, wp.lon]);
       }
 
-      redrawCurrentMission();
+      if (gridType !== 'freeform') {
+        updateGrid();
+      } else {
+        redrawCurrentMission();
+      }
       recreate3DWaypointsAndPaths();
       updateFPVEditorUI();
 
