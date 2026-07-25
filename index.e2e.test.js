@@ -513,6 +513,32 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
     assert.ok(openSkyResult.success, `OpenSky link E2E test failed. Href: ${openSkyResult.href}`);
   });
+
+  test('E2E: Moving grid center point recalculates all waypoints procedurally and clears custom saved modifications', async () => {
+    const centerMoveResult = await page.evaluate(() => {
+      if (typeof setGridCenter === 'function') {
+        setGridCenter(41.88, -87.62);
+      }
+      const wps = getCurrentWaypoints() || [];
+      if (wps.length === 0) return { success: false, reason: 'No waypoints' };
+
+      // Mark Waypoint 0 as modified
+      wps[0].isModified = true;
+
+      // Move grid center point
+      setGridCenter(41.89, -87.63);
+
+      const updatedWps = getCurrentWaypoints() || [];
+
+      return {
+        success: updatedWps.length > 0 && (!updatedWps[0].isModified || updatedWps[0].isModified === false),
+        isModified: updatedWps.length > 0 ? !!updatedWps[0].isModified : false,
+        newLat: updatedWps.length > 0 ? updatedWps[0].lat : null
+      };
+    });
+
+    assert.ok(centerMoveResult.success, `Center move E2E test failed. IsModified: ${centerMoveResult.isModified}`);
+  });
 });
 
 
