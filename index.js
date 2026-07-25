@@ -6080,6 +6080,13 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
   };
 
   const popupObj = popupMarker ? (typeof popupMarker.getPopup === 'function' ? popupMarker.getPopup() : null) : (marker && typeof marker.getPopup === 'function' ? marker.getPopup() : null);
+
+  // Clear ALL previously accumulated popupclose listeners before adding new one.
+  // Each popup open creates a new revertChanges closure; without this, old closures
+  // (with isSaved=false) accumulate on the marker and fire on close, overwriting saves/reverts.
+  if (marker && typeof marker.off === 'function') marker.off('popupclose');
+  if (popupObj && typeof popupObj.off === 'function') popupObj.off('remove');
+
   const unbindRevert = () => {
     isSaved = true; // Prevent revert from firing
     if (popupObj && typeof popupObj.off === 'function') popupObj.off('remove', revertChanges);
