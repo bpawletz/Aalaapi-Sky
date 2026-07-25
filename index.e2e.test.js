@@ -644,6 +644,81 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(singleGridRevertResult.success, `Single grid revert test failed. Expected: ${singleGridRevertResult.originLatAtCenterPlacement}, Got: ${singleGridRevertResult.revertedLat}`);
     assert.strictEqual(singleGridRevertResult.isModified, false, 'isModified should be false after reverting in Single Grid mode');
   });
+
+  test('E2E: 2D Grid grab waypoint move a few meters in X and Y then click waypoint and revert to origin', async () => {
+    const fullStepResult = await page.evaluate(() => {
+      // 1. Set 2D Grid pattern and center
+      const gridTypeSelect = document.getElementById('grid-type');
+      if (gridTypeSelect) {
+        gridTypeSelect.value = 'single';
+        gridTypeSelect.dispatchEvent(new Event('change'));
+      }
+      if (typeof setGridCenter === 'function') {
+        setGridCenter(41.88, -87.62);
+      }
+
+      const waypoints = getCurrentWaypoints() || [];
+      if (!waypoints || waypoints.length === 0) return { success: false, reason: 'No waypoints in 2D grid' };
+
+      const wp = waypoints[0];
+      const originLat = wp.origLat;
+      const originLon = wp.origLon;
+      const originX = wp.origX;
+      const originY = wp.origY;
+
+      // 2. Grab waypoint and move it a few meters in both X and Y
+      // 10 meters in X (lon) and 10 meters in Y (lat)
+      const R_EARTH = 6378137.0;
+      const dLatRad = 10.0 / R_EARTH;
+      const dLonRad = 10.0 / (R_EARTH * Math.cos(originLat * Math.PI / 180.0));
+
+      const movedLat = originLat + (dLatRad * 180.0 / Math.PI);
+      const movedLon = originLon + (dLonRad * 180.0 / Math.PI);
+
+      wp.lat = movedLat;
+      wp.lon = movedLon;
+      const offsets = geodeticToLocal(movedLat, movedLon, 41.88, -87.62);
+      wp.x = offsets.x;
+      wp.y = offsets.y;
+      wp.isModified = true;
+
+      // 3. Simulate placement completion (redraw)
+      if (typeof redrawCurrentMission === 'function') {
+        redrawCurrentMission();
+      }
+
+      // 4. Click on waypoint to open popup and click Revert
+      const dummyMarker = {
+        setLatLng: () => {}, setIcon: () => {},
+        getTooltip: () => ({ setContent: () => {} }), setTooltipContent: () => {},
+        on: () => {}, off: () => {}, closePopup: () => {}
+      };
+
+      const dom = createWaypointEditorDOM(wp, 0, dummyMarker);
+      const resetBtn = dom.querySelector('#reset-wp-btn');
+      if (!resetBtn) return { success: false, reason: 'No reset button found' };
+
+      resetBtn.click();
+
+      // 5. Verify waypoint returned 100% to origin
+      const postRevertWp = (getCurrentWaypoints() || [])[0];
+
+      return {
+        success: postRevertWp &&
+                 Math.abs(postRevertWp.lat - originLat) < 1e-7 &&
+                 Math.abs(postRevertWp.lon - originLon) < 1e-7 &&
+                 postRevertWp.isModified === false,
+        originLat,
+        originLon,
+        revertedLat: postRevertWp ? postRevertWp.lat : null,
+        revertedLon: postRevertWp ? postRevertWp.lon : null,
+        isModified: postRevertWp ? postRevertWp.isModified : true
+      };
+    });
+
+    assert.ok(fullStepResult.success, `2D Grid grab move X/Y revert test failed. Origin: (${fullStepResult.originLat}, ${fullStepResult.originLon}), Reverted: (${fullStepResult.revertedLat}, ${fullStepResult.revertedLon})`);
+    assert.strictEqual(fullStepResult.isModified, false, 'isModified should be false after reverting 2D grid waypoint move');
+  });
 });
 
 
