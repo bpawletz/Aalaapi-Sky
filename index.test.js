@@ -70,15 +70,20 @@ global.localStorage = {
 };
 global.navigator = {};
 global.L = {
-  layerGroup: () => ({}),
-  featureGroup: () => ({}),
+  layerGroup: () => ({ clearLayers: () => {}, addLayer: () => {}, eachLayer: () => {} }),
+  featureGroup: () => ({ clearLayers: () => {}, addLayer: () => {}, eachLayer: () => {} }),
   icon: () => ({}),
+  divIcon: () => ({}),
+  marker: () => ({ bindTooltip: () => {}, bindPopup: () => {}, on: () => {}, addTo: () => {}, setLatLng: () => {}, setIcon: () => {} }),
+  circleMarker: () => ({ bindTooltip: () => {}, bindPopup: () => {}, on: () => {}, addTo: () => {}, setLatLng: () => {} }),
+  polyline: () => ({ addTo: () => {}, setLatLngs: () => {} }),
+  polygon: () => ({ addTo: () => {}, setLatLngs: () => {} }),
   Control: {
     extend: () => function() {}
   },
-  control: {
-    layers: () => ({}),
-    scale: () => ({})
+  control: () => ({ addTo: () => {}, onAdd: () => {} }),
+  DomUtil: {
+    create: () => ({ style: {}, innerHTML: '' })
   }
 };
 
@@ -270,13 +275,17 @@ describe('updateOpenSkyLink Tests', () => {
 
 describe('Unit Conversion Tests', () => {
   test('formatDistance formats metric distance correctly', () => {
-    // default getUnitSystem() returns 'metric' because localStorage is stubbed
+    vm.runInThisContext('cachedUnitSystem = null;');
+    global.localStorage.getItem = () => 'metric';
+    vm.runInThisContext('getUnitSystem = function() { if (cachedUnitSystem) return cachedUnitSystem; const el = typeof document !== "undefined" ? document.getElementById("unit-system") : null; if (el) { cachedUnitSystem = el.value; return cachedUnitSystem; } const savedUnit = localStorage.getItem("unitSystem"); if (savedUnit) { cachedUnitSystem = savedUnit; return cachedUnitSystem; } return "metric"; };');
+    vm.runInThisContext('cachedUnitSystem = null;');
     assert.strictEqual(formatDistance(10), '10.0 m');
     assert.strictEqual(formatDistance(10, 2), '10.00 m');
     assert.strictEqual(formatDistance(0), '0.0 m');
   });
 
   test('formatDistance handles null, undefined, and NaN', () => {
+    vm.runInThisContext('cachedUnitSystem = null;');
     assert.strictEqual(formatDistance(null), '0 m');
     assert.strictEqual(formatDistance(undefined), '0 m');
     assert.strictEqual(formatDistance(NaN), '0 m');
@@ -1979,7 +1988,181 @@ describe('3D FPV Editor Panel Alignment & Viewport Tests', () => {
     assert.strictEqual(updatedWaypoints[1].hoverTime, 5, 'should preserve custom hoverTime override 5');
     assert.strictEqual(updatedWaypoints[1].isModified, true, 'should preserve isModified state');
   });
+
+  test('Waypoint Revert button restores baseline position, marker position, and road node', () => {
+    const originalCreateElement = global.document.createElement;
+    const originalGetElementById = global.document.getElementById;
+
+    const listeners = {};
+    const elements = {};
+    const makeEl = (id, tag = 'DIV') => {
+      if (elements[id]) return elements[id];
+      const el = {
+        id: id,
+        tagName: tag.toUpperCase(),
+        className: '',
+        style: {},
+        classList: { add: () => {}, remove: () => {} },
+        replaceChildren: () => {},
+        value: '0',
+        textContent: '',
+        appendChild: (c) => c,
+        querySelector: (sel) => {
+          if (sel === '#reset-wp-btn') return makeEl('reset-wp-btn', 'BUTTON');
+          if (sel === '#save-wp-btn') return makeEl('save-wp-btn', 'BUTTON');
+          if (sel === '#delete-wp-btn') return makeEl('delete-wp-btn', 'BUTTON');
+          if (sel === '#edit-wp-lat') return makeEl('edit-wp-lat', 'INPUT');
+          if (sel === '#edit-wp-lon') return makeEl('edit-wp-lon', 'INPUT');
+          if (sel === '#edit-wp-alt') return makeEl('edit-wp-alt', 'INPUT');
+          if (sel === '#edit-wp-pitch') return makeEl('edit-wp-pitch', 'INPUT');
+          if (sel === '#edit-wp-heading') return makeEl('edit-wp-heading', 'INPUT');
+          if (sel === '#edit-wp-heading-mode') return makeEl('edit-wp-heading-mode', 'SELECT');
+          if (sel === '#nudge-step-display') return makeEl('nudge-step-display', 'DIV');
+          return makeEl('sub-' + Math.random(), 'DIV');
+        },
+        addEventListener: (evt, fn) => {
+          listeners[id + ':' + evt] = fn;
+        },
+        dispatchEvent: () => {}
+      };
+      elements[id] = el;
+      return el;
+    };
+
+    global.document.createElement = (tag) => makeEl('created-' + Math.random(), tag);
+    global.document.getElementById = (id) => {
+      if (id === 'grid-rotation') return { value: '0' };
+      if (id === 'grid-type') return { value: 'single' };
+      if (id === 'altitude') return { value: '50' };
+      if (id === 'gimbal-pitch') return { value: '-45' };
+      return makeEl(id);
+    };
+
+    let markerLatLng = null;
+    let markerIcon = null;
+
+    try {
+      vm.runInThisContext('centerMarker = { getLatLng: () => ({ lat: 41.88, lng: -87.62 }) };');
+      vm.runInThisContext('flightPathGroup = { clearLayers: () => {}, addLayer: () => {}, eachLayer: () => {} };');
+      vm.runInThisContext('waypointMarkersGroup = { clearLayers: () => {}, addLayer: () => {}, eachLayer: () => {} };');
+      vm.runInThisContext('photoMarkersGroup = { clearLayers: () => {}, addLayer: () => {}, eachLayer: () => {} };');
+      vm.runInThisContext('gridBoundsGroup = { clearLayers: () => {}, addLayer: () => {}, eachLayer: () => {} };');
+      const testWp = {
+        lat: 41.89, lon: -87.63, x: 10, y: 10, alt: 60, pitch: -30, heading: 90, isModified: true,
+        origLat: 41.88, origLon: -87.62, origX: 0, origY: 0, origAlt: 50, origPitch: -45, origHeading: 0
+      };
+      const testMarker = {
+        setLatLng: (latlng) => { markerLatLng = latlng; },
+        setIcon: (icon) => { markerIcon = icon; },
+        getTooltip: () => ({ setContent: () => {} }),
+        setTooltipContent: () => {},
+        on: () => {}, off: () => {}, closePopup: () => {}
+      };
+      global.testWp = testWp;
+      global.testMarker = testMarker;
+
+      vm.runInThisContext('createWaypointEditorDOM(global.testWp, 0, global.testMarker)');
+
+      // Trigger click on reset button
+      const resetListener = listeners['reset-wp-btn:click'];
+      assert.ok(typeof resetListener === 'function', 'Revert button should have a click listener');
+      resetListener();
+
+      assert.strictEqual(testWp.lat, 41.88, 'lat should revert to origLat');
+      assert.strictEqual(testWp.lon, -87.62, 'lon should revert to origLon');
+      assert.strictEqual(testWp.alt, 50, 'alt should revert to origAlt');
+      assert.strictEqual(testWp.pitch, -45, 'pitch should revert to origPitch');
+      assert.strictEqual(testWp.isModified, false, 'isModified should reset to false');
+      assert.deepStrictEqual(markerLatLng, [41.88, -87.62], 'Leaflet marker setLatLng should be called with original coordinates');
+
+    } finally {
+      global.document.createElement = originalCreateElement;
+      global.document.getElementById = originalGetElementById;
+      vm.runInThisContext('centerMarker = null;');
+      delete global.testWp;
+      delete global.testMarker;
+    }
+  });
 });
+
+describe('Overlapping Waypoints & bringMarkerToFront Tests', () => {
+  test('bringMarkerToFront elevates target marker zIndexOffset to 1000 and resets others', () => {
+    let m1ZIndex = 0;
+    let m2ZIndex = 0;
+    let m1Class = '';
+    let m2Class = '';
+
+    const marker1 = {
+      _icon: { className: '' },
+      setZIndexOffset: (z) => { m1ZIndex = z; }
+    };
+    const marker2 = {
+      _icon: { className: '' },
+      setZIndexOffset: (z) => { m2ZIndex = z; }
+    };
+
+    global.testMarker1 = marker1;
+    global.testMarker2 = marker2;
+
+    try {
+      vm.runInThisContext(`
+        generatedWaypoints = [
+          { lat: 41.88, lon: -87.62, mapMarker: global.testMarker1 },
+          { lat: 41.88, lon: -87.62, mapMarker: global.testMarker2 }
+        ];
+        bringMarkerToFront(global.testMarker1);
+      `);
+
+      assert.strictEqual(m1ZIndex, 1000, 'marker1 zIndexOffset should be 1000');
+      assert.strictEqual(m2ZIndex, 0, 'marker2 zIndexOffset should be 0');
+
+      vm.runInThisContext('bringMarkerToFront(global.testMarker2);');
+
+      assert.strictEqual(m1ZIndex, 0, 'marker1 zIndexOffset should be reset to 0');
+      assert.strictEqual(m2ZIndex, 1000, 'marker2 zIndexOffset should be elevated to 1000');
+
+    } finally {
+      vm.runInThisContext('generatedWaypoints = [];');
+      delete global.testMarker1;
+      delete global.testMarker2;
+    }
+  });
+
+  test('getOverlappingItemsAt detects overlapping waypoints and road nodes', () => {
+    const marker1 = { getLatLng: () => ({ lat: 41.88, lng: -87.62 }) };
+    const marker2 = { getLatLng: () => ({ lat: 41.88, lng: -87.62 }) };
+
+    global.testMarker1 = marker1;
+    global.testMarker2 = marker2;
+
+    try {
+      vm.runInThisContext(`
+        L = {
+          latLng: (lat, lon) => ({ lat, lng: lon })
+        };
+        map = {
+          latLngToContainerPoint: (latLng) => ({ x: 100, y: 100 })
+        };
+        importedWaypoints = null;
+        generatedWaypoints = [
+          { lat: 41.88, lon: -87.62, mapMarker: global.testMarker1 },
+          { lat: 41.88, lon: -87.62, mapMarker: global.testMarker2 }
+        ];
+      `);
+
+      const items = vm.runInThisContext('getOverlappingItemsAt({ lat: 41.88, lng: -87.62 })');
+      assert.strictEqual(items.length, 2, 'Should find 2 overlapping waypoints');
+      assert.strictEqual(items[0].name, '🔵 Waypoint 0');
+      assert.strictEqual(items[1].name, '🔵 Waypoint 1');
+
+    } finally {
+      vm.runInThisContext('generatedWaypoints = []; map = null; L = null;');
+      delete global.testMarker1;
+      delete global.testMarker2;
+    }
+  });
+});
+
 
 
 

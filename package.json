@@ -4,11 +4,13 @@
     "playwright": "^1.61.1"
   },
   "name": "app",
-  "version": "1.26.3",
+  "version": "1.26.6",
   "description": "**Drone Waypoint Mission Planner**",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test index.test.js index.e2e.test.js",
+    "test:unit": "node --test index.test.js",
+    "test:e2e": "node --test index.e2e.test.js"
   },
   "repository": {
     "type": "git",
