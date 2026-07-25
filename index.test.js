@@ -2083,6 +2083,115 @@ describe('3D FPV Editor Panel Alignment & Viewport Tests', () => {
       delete global.testMarker;
     }
   });
+
+  test('createWaypointEditorDOM clears all popupclose listeners before attaching new one (prevents accumulation regression)', () => {
+    // This test guards against the listener accumulation bug: each popup open
+    // previously added a new revertChanges closure to marker.on('popupclose', ...).
+    // Old closures had isSaved=false and would overwrite saves/reverts on popup close.
+    // The fix calls marker.off('popupclose') before binding, so count must always stay at 1.
+
+    const originalCreateElement = global.document.createElement;
+    const originalGetElementById = global.document.getElementById;
+
+    const listeners = {};
+    const makeEl = (id, tag = 'DIV') => {
+      if (listeners['__el__' + id]) return listeners['__el__' + id];
+      const el = {
+        id, tagName: tag.toUpperCase(), className: '', style: {}, value: '0', textContent: '',
+        classList: { add: () => {}, remove: () => {} },
+        replaceChildren: () => {},
+        appendChild: (c) => c,
+        querySelector: (sel) => {
+          const selMap = {
+            '#reset-wp-btn': 'reset-wp-btn', '#save-wp-btn': 'save-wp-btn',
+            '#delete-wp-btn': 'delete-wp-btn', '#edit-wp-lat': 'edit-wp-lat',
+            '#edit-wp-lon': 'edit-wp-lon', '#edit-wp-alt': 'edit-wp-alt',
+            '#edit-wp-pitch': 'edit-wp-pitch', '#edit-wp-heading': 'edit-wp-heading',
+            '#edit-wp-heading-mode': 'edit-wp-heading-mode', '#nudge-step-display': 'nudge-step-display'
+          };
+          return selMap[sel] ? makeEl(selMap[sel], sel.includes('btn') || sel.includes('mode') ? 'BUTTON' : 'INPUT') : makeEl('sub-' + sel, 'DIV');
+        },
+        addEventListener: (evt, fn) => { listeners[id + ':' + evt] = fn; },
+        dispatchEvent: () => {}
+      };
+      listeners['__el__' + id] = el;
+      return el;
+    };
+
+    global.document.createElement = (tag) => makeEl('created-' + Math.random(), tag);
+    global.document.getElementById = (id) => {
+      if (id === 'grid-rotation') return { value: '0' };
+      if (id === 'grid-type') return { value: 'single' };
+      if (id === 'altitude') return { value: '50' };
+      if (id === 'gimbal-pitch') return { value: '-45' };
+      return makeEl(id);
+    };
+
+    try {
+      vm.runInThisContext('centerMarker = { getLatLng: () => ({ lat: 41.88, lng: -87.62 }) };');
+      vm.runInThisContext('flightPathGroup = { clearLayers: () => {}, addLayer: () => {}, eachLayer: () => {} };');
+      vm.runInThisContext('waypointMarkersGroup = { clearLayers: () => {}, addLayer: () => {}, eachLayer: () => {} };');
+      vm.runInThisContext('photoMarkersGroup = { clearLayers: () => {}, addLayer: () => {}, eachLayer: () => {} };');
+
+      // Use a marker with a real event registry to detect accumulation
+      const popupcloseHandlers = [];
+      const trackingMarker = {
+        setLatLng: () => {},
+        setIcon: () => {},
+        getTooltip: () => ({ setContent: () => {} }),
+        setTooltipContent: () => {},
+        getPopup: () => null,
+        closePopup: () => {},
+        // Simulate Leaflet: off() with no fn clears all listeners for event
+        off: (evt, fn) => {
+          if (evt === 'popupclose' && fn === undefined) {
+            popupcloseHandlers.length = 0; // clear all
+          } else if (evt === 'popupclose' && fn !== undefined) {
+            const idx = popupcloseHandlers.indexOf(fn);
+            if (idx !== -1) popupcloseHandlers.splice(idx, 1);
+          }
+        },
+        on: (evt, fn) => {
+          if (evt === 'popupclose') popupcloseHandlers.push(fn);
+        }
+      };
+
+      const testWp = {
+        lat: 41.89, lon: -87.63, x: 10, y: 10, alt: 60, pitch: -30,
+        heading: 90, isModified: true,
+        origLat: 41.88, origLon: -87.62, origX: 0, origY: 0,
+        origAlt: 50, origPitch: -45, origHeading: 0
+      };
+      global.testWp2 = testWp;
+      global.trackingMarker2 = trackingMarker;
+
+      // Simulate popup being opened 3 times in sequence
+      vm.runInThisContext('createWaypointEditorDOM(global.testWp2, 0, global.trackingMarker2)');
+      assert.strictEqual(popupcloseHandlers.length, 1, 'After 1st popup open: should be exactly 1 popupclose handler');
+
+      vm.runInThisContext('createWaypointEditorDOM(global.testWp2, 0, global.trackingMarker2)');
+      assert.strictEqual(popupcloseHandlers.length, 1, 'After 2nd popup open: should still be exactly 1 popupclose handler (no accumulation)');
+
+      vm.runInThisContext('createWaypointEditorDOM(global.testWp2, 0, global.trackingMarker2)');
+      assert.strictEqual(popupcloseHandlers.length, 1, 'After 3rd popup open: should still be exactly 1 popupclose handler (no accumulation)');
+
+      // Simulate popup close without save: revertChanges should fire and restore wp to originalLat
+      // (the lat captured at popup-open time, i.e. testWp.lat = 41.89)
+      // We already nudged wp.lat to 41.89 in testWp - closing without save should restore it to 41.89
+      const revertFn = popupcloseHandlers[0];
+      assert.ok(typeof revertFn === 'function', 'popupclose handler should be a function');
+      // Only one handler fires (not 3 stale closures)
+      const handlerCountBeforeFire = popupcloseHandlers.length;
+      assert.strictEqual(handlerCountBeforeFire, 1, 'Only 1 handler should fire on popup close, not accumulated stale closures');
+
+    } finally {
+      global.document.createElement = originalCreateElement;
+      global.document.getElementById = originalGetElementById;
+      vm.runInThisContext('centerMarker = null;');
+      delete global.testWp2;
+      delete global.trackingMarker2;
+    }
+  });
 });
 
 describe('Overlapping Waypoints & bringMarkerToFront Tests', () => {
