@@ -35,15 +35,21 @@ After making edits to `index.js`, `index.css`, or `index_template.html`, you **M
 python scratch/build.py
 ```
 
-## 4. Standard Verification
-After applying updates, bumping versions, and running the build script, run the test suite to verify code correctness:
+## 4. Standard Verification (Unit & E2E Tests)
+After applying updates, bumping versions, and running the build script, run both the unit and Playwright E2E UI test suites to verify code correctness:
 ```bash
-node --test index.test.js
+# Run both unit and E2E tests:
+node --test index.test.js index.e2e.test.js
+# Or using npm:
+npm test
 ```
-All tests must pass before the task can be marked complete.
+- **Unit Tests (`index.test.js`)**: Add unit tests for core logic, calculations, WPML parsing/exporting, and UI helper functions.
+- **E2E UI Tests (`index.e2e.test.js`)**: Add Playwright E2E UI tests for any new interactive features, modals, pattern generators, or editor popup behaviors.
+
+All unit and E2E tests must pass before the task can be marked complete.
 
 ## 5. Automated Build, Test & Push Workflow
-To automate building, verifying unit tests, committing, and pushing changes to the remote repository, you can use the included convenience scripts:
+To automate building, verifying unit and E2E tests, committing, and pushing changes to the remote repository, you can use the included convenience scripts:
 
 - **Git Bash / Linux / macOS:**
   ```bash
@@ -54,4 +60,4 @@ To automate building, verifying unit tests, committing, and pushing changes to t
   .\push.ps1 "feat(scope): brief description of changes"
   ```
 
-These scripts automatically run the build step (`python scratch/build.py`), run unit tests (`node --test index.test.js`), stage changes (`git add .`), create a git commit, and push to `origin/main`.
+These scripts automatically run the build step (`python scratch/build.py`), run unit & E2E tests (`node --test index.test.js index.e2e.test.js`), stage changes (`git add .`), create a git commit, and push to `origin/main`.

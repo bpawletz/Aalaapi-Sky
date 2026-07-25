@@ -3,8 +3,8 @@ $ErrorActionPreference = "Stop"
 Write-Host "🔨 Building single-file bundle..." -ForegroundColor Cyan
 python scratch/build.py
 
-Write-Host "🧪 Running unit tests..." -ForegroundColor Cyan
-node --test index.test.js
+Write-Host '🧪 Running unit & E2E tests...' -ForegroundColor Cyan
+node --test index.test.js index.e2e.test.js
 
 Write-Host "📦 Staging git changes..." -ForegroundColor Cyan
 git add .
