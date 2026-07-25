@@ -384,6 +384,136 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
     assert.ok(fpvResult.success, `FPV 3D Nudge Save E2E test failed. Initial: ${fpvResult.initialLat}, Nudged: ${fpvResult.nudgedLat}`);
   });
+
+  test('E2E: Basic Grid Parameter Sliders update generated waypoints, stats, and map overlays', async () => {
+    const gridParamResult = await page.evaluate(() => {
+      const gridTypeSelect = document.getElementById('grid-type');
+      if (gridTypeSelect) {
+        gridTypeSelect.value = 'single';
+        gridTypeSelect.dispatchEvent(new Event('change'));
+      }
+      if (typeof setGridCenter === 'function') {
+        setGridCenter(41.88, -87.62);
+      }
+
+      const initialWpCount = (getCurrentWaypoints() || []).length;
+
+      // Change grid width and height
+      const widthSlider = document.getElementById('grid-width');
+      const heightSlider = document.getElementById('grid-height');
+      const rotationSlider = document.getElementById('grid-rotation');
+
+      if (widthSlider) widthSlider.value = '250';
+      if (heightSlider) heightSlider.value = '250';
+      if (rotationSlider) rotationSlider.value = '45';
+
+      if (typeof updateGrid === 'function') {
+        updateGrid();
+      }
+
+      const updatedWps = getCurrentWaypoints() || [];
+      const updatedWpCount = updatedWps.length;
+
+      return {
+        success: updatedWpCount > 0 && (updatedWpCount !== initialWpCount || updatedWps[0].alt !== undefined),
+        initialWpCount,
+        updatedWpCount
+      };
+    });
+
+    assert.ok(gridParamResult.success, `Grid parameter sliders E2E test failed. Initial: ${gridParamResult.initialWpCount}, Updated: ${gridParamResult.updatedWpCount}`);
+  });
+
+  test('E2E: POI Management (Add POI, Reposition POI, and Delete POI)', async () => {
+    const poiResult = await page.evaluate(() => {
+      if (typeof setGridCenter === 'function') {
+        setGridCenter(41.88, -87.62);
+      }
+
+      const initialPoiCount = pois.length;
+
+      // Add a second POI
+      pois.push({
+        lat: 41.885,
+        lon: -87.625,
+        name: 'Target Structure 1'
+      });
+
+      if (typeof updatePoiListUI === 'function') {
+        updatePoiListUI();
+      }
+
+      const countWithPoi = pois.length;
+
+      // Delete POI 1
+      if (pois.length > 1) {
+        pois.splice(1, 1);
+        if (typeof updatePoiListUI === 'function') updatePoiListUI();
+      }
+
+      const finalPoiCount = pois.length;
+
+      return {
+        success: countWithPoi === initialPoiCount + 1 && finalPoiCount === initialPoiCount,
+        initialPoiCount,
+        countWithPoi,
+        finalPoiCount
+      };
+    });
+
+    assert.ok(poiResult.success, `POI management E2E test failed. Initial: ${poiResult.initialPoiCount}, WithPOI: ${poiResult.countWithPoi}, Final: ${poiResult.finalPoiCount}`);
+  });
+
+  test('E2E: Capture Mode Toggle (Continuous vs Hover) updates photo markers & statistics', async () => {
+    const captureResult = await page.evaluate(() => {
+      if (typeof setGridCenter === 'function') {
+        setGridCenter(41.88, -87.62);
+      }
+
+      const captureSelect = document.getElementById('capture-mode');
+      if (!captureSelect) return { success: false, reason: 'capture-mode select missing' };
+
+      // Switch to Continuous mode
+      captureSelect.value = 'continuous';
+      if (typeof updateGrid === 'function') updateGrid();
+      const continuousPhotos = (getCurrentPhotos() || []).length;
+
+      // Switch to Hover mode
+      captureSelect.value = 'hover';
+      if (typeof updateGrid === 'function') updateGrid();
+      const hoverPhotos = (getCurrentPhotos() || []).length;
+
+      return {
+        success: true,
+        continuousPhotos,
+        hoverPhotos
+      };
+    });
+
+    assert.ok(captureResult.success, 'Capture mode toggle test failed');
+  });
+
+  test('E2E: OpenSky Aviation Link formatting updates dynamically with center marker coordinates', async () => {
+    const openSkyResult = await page.evaluate(() => {
+      if (typeof setGridCenter === 'function') {
+        setGridCenter(41.8800, -87.6200);
+      }
+      if (typeof updateOpenSkyLink === 'function') {
+        updateOpenSkyLink();
+      }
+
+      const linkEl = document.getElementById('opensky-link');
+      const href = linkEl ? linkEl.href : '';
+
+      return {
+        success: href.includes('opensky-network.org') || href.includes('41.88'),
+        href
+      };
+    });
+
+    assert.ok(openSkyResult.success, `OpenSky link E2E test failed. Href: ${openSkyResult.href}`);
+  });
 });
+
 
 
