@@ -2028,10 +2028,7 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
     headingVal = (headingVal + 360) % 360;
 
     const existingGwp = (generatedWaypoints && generatedWaypoints[idx]) ? generatedWaypoints[idx] : null;
-    const isCustomPosition = (existingGwp && existingGwp.isModified && (
-      (existingGwp.origLat !== undefined && existingGwp.origLat !== null && Math.abs(existingGwp.lat - existingGwp.origLat) > 1e-9) ||
-      (existingGwp.origLon !== undefined && existingGwp.origLon !== null && Math.abs(existingGwp.lon - existingGwp.origLon) > 1e-9)
-    ));
+    const isCustomPosition = (existingGwp && !!existingGwp.isModified);
 
     const finalLat = isCustomPosition ? existingGwp.lat : geo.lat;
     const finalLon = isCustomPosition ? existingGwp.lon : geo.lon;
@@ -2252,7 +2249,8 @@ function updateGrid() {
         gridData = generateGridCoordinates(gridWidth, gridHeight, actualRotation, gridType, captureMode, sLine, sPhoto);
       }
       
-      waypoints = gridData.waypoints.map(pt => {
+      waypoints = gridData.waypoints.map((pt, idx) => {
+        const existingGwp = (generatedWaypoints && generatedWaypoints[idx]) ? generatedWaypoints[idx] : null;
         const geo = localToGeodetic(pt.x, pt.y, centerLat, centerLon, actualRotation);
         const alt = pt.alt !== undefined ? pt.alt : altitude;
         const pitch = pt.pitch !== undefined ? pt.pitch : defaultGimbalPitch;
@@ -2265,6 +2263,19 @@ function updateGrid() {
 
         if (finalHeading !== null && finalHeading !== undefined) {
           finalHeading = (finalHeading + actualRotation) % 360;
+        }
+
+        if (existingGwp && existingGwp.isModified) {
+          return {
+            ...existingGwp,
+            origLat: geo.lat,
+            origLon: geo.lon,
+            origX: pt.x,
+            origY: pt.y,
+            origAlt: alt,
+            origPitch: pitch,
+            origHeading: finalHeading
+          };
         }
 
         return {
