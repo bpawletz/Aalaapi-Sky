@@ -1498,10 +1498,14 @@ function searchAddress() {
 }
 
 let currentlySelectedMarker = null;
+let selectedWaypointIndex = null;
 
 // Elevate selected marker z-index to top and apply visual highlight
-function bringMarkerToFront(targetMarker) {
+function bringMarkerToFront(targetMarker, idx = null) {
   if (!targetMarker) return;
+  if (idx !== null) {
+    selectedWaypointIndex = idx;
+  }
   if (currentlySelectedMarker === targetMarker && targetMarker._icon && (targetMarker._icon.classList ? targetMarker._icon.classList.contains('marker-selected') : true)) {
     return;
   }
@@ -1657,7 +1661,7 @@ function openDisambiguationPopup(latLng, items) {
       map.closePopup();
       setTimeout(() => {
         if (item.marker) {
-          bringMarkerToFront(item.marker);
+          bringMarkerToFront(item.marker, item.idx !== undefined ? item.idx : null);
           item.marker.openPopup();
         }
       }, 50);
@@ -1719,9 +1723,10 @@ function setGridCenter(lat, lng) {
     centerMarker.on('click', (e) => {
       L.DomEvent.stopPropagation(e);
       const items = getOverlappingItemsAt(centerMarker.getLatLng());
-      if (items.length > 1) {
+      if (items.length > 1 && currentlySelectedMarker !== centerMarker) {
         openDisambiguationPopup(centerMarker.getLatLng(), items);
       } else {
+        bringMarkerToFront(centerMarker);
         centerMarker.openPopup();
       }
     });
@@ -2965,10 +2970,10 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
         marker.on('click', (e) => {
           L.DomEvent.stopPropagation(e);
           const items = getOverlappingItemsAt(marker.getLatLng());
-          if (items.length > 1) {
+          if (items.length > 1 && currentlySelectedMarker !== marker) {
             openDisambiguationPopup(marker.getLatLng(), items);
           } else {
-            bringMarkerToFront(marker);
+            bringMarkerToFront(marker, idx);
             marker.openPopup();
           }
         });
@@ -3010,14 +3015,14 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
         minWidth: 230
       });
 
-      droneMarker.on('popupopen', () => bringMarkerToFront(droneMarker));
+      droneMarker.on('popupopen', () => bringMarkerToFront(droneMarker, idx));
       droneMarker.on('click', (e) => {
         L.DomEvent.stopPropagation(e);
         const items = getOverlappingItemsAt(droneMarker.getLatLng());
-        if (items.length > 1) {
+        if (items.length > 1 && currentlySelectedMarker !== droneMarker) {
           openDisambiguationPopup(droneMarker.getLatLng(), items);
         } else {
-          bringMarkerToFront(droneMarker);
+          bringMarkerToFront(droneMarker, idx);
           droneMarker.openPopup();
         }
       });
@@ -3054,7 +3059,7 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
 
       if (isDraggable) {
         marker.on('dragstart', () => {
-          bringMarkerToFront(marker);
+          bringMarkerToFront(marker, idx);
           if (typeof map !== 'undefined' && map && map.closePopup) {
             map.closePopup();
           }
@@ -3087,7 +3092,7 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
         marker.on('dragend', () => {
           // Redraw completely to update headings and tooltips
           redrawCurrentMission();
-          if (wp.mapMarker) bringMarkerToFront(wp.mapMarker);
+          if (wp.mapMarker) bringMarkerToFront(wp.mapMarker, idx);
         });
       }
 
@@ -3098,14 +3103,14 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
         minWidth: 230
       });
 
-      marker.on('popupopen', () => bringMarkerToFront(marker));
+      marker.on('popupopen', () => bringMarkerToFront(marker, idx));
       marker.on('click', (e) => {
         L.DomEvent.stopPropagation(e);
         const items = getOverlappingItemsAt(marker.getLatLng());
-        if (items.length > 1) {
+        if (items.length > 1 && currentlySelectedMarker !== marker) {
           openDisambiguationPopup(marker.getLatLng(), items);
         } else {
-          bringMarkerToFront(marker);
+          bringMarkerToFront(marker, idx);
           marker.openPopup();
         }
       });
@@ -3127,6 +3132,11 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
         weight: 0
       }).addTo(photoMarkersGroup);
     });
+  }
+
+  // Elevate active selected marker after redraw
+  if (selectedWaypointIndex !== null && waypoints[selectedWaypointIndex] && waypoints[selectedWaypointIndex].mapMarker) {
+    bringMarkerToFront(waypoints[selectedWaypointIndex].mapMarker, selectedWaypointIndex);
   }
 
   // 6. Update Map Legend
