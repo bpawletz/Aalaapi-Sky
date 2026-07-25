@@ -9585,8 +9585,8 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       
       const centerLatLng = centerMarker ? centerMarker.getLatLng() : { lat: centerLat, lng: centerLon };
       const offsets = geodeticToLocal(wp.lat, wp.lon, centerLatLng.lat, centerLatLng.lng);
-      wp.x = offsets.x;
-      wp.y = offsets.y;
+      wp.x = (wp.origX !== undefined && wp.origX !== null) ? wp.origX : offsets.x;
+      wp.y = (wp.origY !== undefined && wp.origY !== null) ? wp.origY : offsets.y;
       
       wp.alt = (wp.origAlt !== undefined && wp.origAlt !== null) ? wp.origAlt : defaultAlt;
       wp.pitch = (wp.origPitch !== undefined && wp.origPitch !== null) ? wp.origPitch : defaultPitch;
