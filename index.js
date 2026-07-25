@@ -5966,9 +5966,10 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
 
   // Revert listener if popup is closed without clicking save
   let isSaved = false;
+  let isReverted = false;
   
   const revertChanges = () => {
-    if (isSaved) return;
+    if (isSaved || isReverted) return;
     
     // Restore original values in the state
     wp.lat = originalLat;
@@ -6155,6 +6156,8 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
 
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
+      isSaved = true;
+      isReverted = true;
       unbindRevert();
       
       const defaultAlt = parseFloat(document.getElementById('altitude')?.value || 50);
