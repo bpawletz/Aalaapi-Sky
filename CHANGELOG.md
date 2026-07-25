@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.26.9] - 2026-07-25
+
+### Added
+- **Always-Visible Version Header Badge:** Added a prominent version badge (`v1.26.9`) directly above the `Beta` badge in the main sidebar header title so the application version is always visible at a glance without having to open the About modal.
+
+### Fixed
+- **Time-of-Center-Placement Waypoint Revert:** Fixed `updateGrid()` to freeze `origLat`, `origLon`, `origX`, `origY`, `origAlt`, `origPitch`, and `origHeading` as the procedural baseline at the time of grid center placement. Grabbing, moving, or nudging waypoints and clicking **Revert** snaps the waypoint 100% back to the origin calculated position.
+- **Grid Center Movement Recalculation:** Moving the grid center point now clears custom waypoint position overrides (`clearWaypointCustomModifications()`) and recalculates all waypoints procedurally around the new center.
+
 ## [1.26.6] - 2026-07-25
 
 ### Fixed
