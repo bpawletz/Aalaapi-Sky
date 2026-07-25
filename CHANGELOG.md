@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.26.11] - 2026-07-25
+
+### Fixed
+- **3D FPV Editor Panel Waypoint Revert:** Updated FPV panel Reset button (`#fpv-btn-reset-wp`) to invoke `updateGrid()` and set `isModified = false`, ensuring procedural grid waypoints revert cleanly to their origin coordinates when editing in 3D FPV view.
+
 ## [1.26.10] - 2026-07-25
 
 ### Fixed
