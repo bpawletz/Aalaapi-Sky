@@ -2209,6 +2209,24 @@ describe('Overlapping Waypoints & bringMarkerToFront Tests', () => {
       vm.runInThisContext('centerMarker = null; delete global.savedWpResult;');
     }
   });
+
+  test('Moving grid center point clears custom waypoint modifications and recalculates all waypoints', () => {
+    try {
+      vm.runInThisContext(`
+        generatedWaypoints = [
+          { lat: 41.88, lon: -87.62, x: 10, y: 10, isModified: true, origLat: 41.88, origLon: -87.62 }
+        ];
+        clearWaypointCustomModifications();
+      `);
+
+      const wps = vm.runInThisContext('generatedWaypoints');
+      assert.strictEqual(wps[0].isModified, false, 'isModified should be reset to false when center moves');
+      assert.strictEqual(wps[0].origLat, undefined, 'origLat should be deleted when center moves');
+
+    } finally {
+      vm.runInThisContext('generatedWaypoints = [];');
+    }
+  });
 });
 
 

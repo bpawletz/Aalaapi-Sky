@@ -5122,8 +5122,33 @@ function openDisambiguationPopup(latLng, items) {
   return true;
 }
 
+// Clear custom waypoint modifications when grid center moves so all waypoints recalculate procedurally
+function clearWaypointCustomModifications() {
+  const wps = (typeof generatedWaypoints !== 'undefined' && generatedWaypoints) ? generatedWaypoints : [];
+  wps.forEach(wp => {
+    if (wp) {
+      wp.isModified = false;
+      delete wp.origLat;
+      delete wp.origLon;
+      delete wp.origX;
+      delete wp.origY;
+    }
+  });
+  const rWps = (typeof roadWaypoints !== 'undefined' && roadWaypoints) ? roadWaypoints : [];
+  rWps.forEach(wp => {
+    if (wp) {
+      wp.isModified = false;
+      delete wp.origLat;
+      delete wp.origLon;
+      delete wp.origX;
+      delete wp.origY;
+    }
+  });
+}
+
 // Position the grid center marker
 function setGridCenter(lat, lng) {
+  clearWaypointCustomModifications();
   if (centerMarker) {
     centerMarker.setLatLng([lat, lng]);
     if (pois[0]) {
@@ -5151,6 +5176,9 @@ function setGridCenter(lat, lng) {
     };
 
     // Recalculate grid when center is dragged
+    centerMarker.on('dragstart', () => {
+      clearWaypointCustomModifications();
+    });
     centerMarker.on('drag', () => {
       if (pois[0]) {
         const latlng = centerMarker.getLatLng();
