@@ -3127,6 +3127,7 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
             wp.origX = wp.x;
             wp.origY = wp.y;
           }
+          wp.isModified = true;
         });
         marker.on('drag', (e) => {
           const newLatLng = e.target.getLatLng();
@@ -5696,12 +5697,18 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       // Update global wp temporary values for real-time path updates
       const centerLatLng = centerMarker.getLatLng();
       const offsets = geodeticToLocal(latVal, lonVal, centerLatLng.lat, centerLatLng.lng);
+      if (wp.origLat === undefined || wp.origLat === null) {
+        wp.origLat = wp.lat;
+        wp.origLon = wp.lon;
+        wp.origX = wp.x;
+        wp.origY = wp.y;
+      }
       wp.lat = latVal;
       wp.lon = lonVal;
       wp.x = offsets.x;
       wp.y = offsets.y;
       
-      if (wp.origLat !== undefined && (Math.abs(latVal - wp.origLat) > 1e-9 || Math.abs(lonVal - wp.origLon) > 1e-9)) {
+      if (Math.abs(latVal - wp.origLat) > 1e-9 || Math.abs(lonVal - wp.origLon) > 1e-9) {
         wp.isModified = true;
       }
 
@@ -8252,6 +8259,12 @@ function setupFPVListeners() {
     const deltaLat = (dLatMeters / R_EARTH) * (180.0 / Math.PI);
     const deltaLon = (dLonMeters / (R_EARTH * Math.cos(latRad))) * (180.0 / Math.PI);
 
+    if (wp.origLat === undefined || wp.origLat === null) {
+      wp.origLat = wp.lat;
+      wp.origLon = wp.lon;
+      wp.origX = wp.x;
+      wp.origY = wp.y;
+    }
     wp.lat = latNum + deltaLat;
     wp.lon = lonNum + deltaLon;
     wp.isModified = true;
@@ -8329,6 +8342,12 @@ function setupFPVListeners() {
       const oldLat = wp.lat;
       const oldLon = wp.lon;
 
+      if (wp.origLat === undefined || wp.origLat === null) {
+        wp.origLat = wp.lat;
+        wp.origLon = wp.lon;
+        wp.origX = wp.x;
+        wp.origY = wp.y;
+      }
       wp.lat = latVal;
       wp.lon = lonVal;
       wp.isModified = true;
