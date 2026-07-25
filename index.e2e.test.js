@@ -583,6 +583,67 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(grabMoveRevertResult.success, `Grab move revert E2E test failed. InitialLat: ${grabMoveRevertResult.initialLat}, PostRevertLat: ${grabMoveRevertResult.postRevertLat}`);
     assert.strictEqual(grabMoveRevertResult.isModified, false, 'isModified should be reset to false after reverting a grab move');
   });
+
+  test('E2E: Single Grid mode waypoint grab, move, and Revert restores initial origin baseline generated at center placement', async () => {
+    const singleGridRevertResult = await page.evaluate(() => {
+      const gridTypeSelect = document.getElementById('grid-type');
+      if (gridTypeSelect) {
+        gridTypeSelect.value = 'single';
+        gridTypeSelect.dispatchEvent(new Event('change'));
+      }
+      if (typeof setGridCenter === 'function') {
+        setGridCenter(41.88, -87.62);
+      }
+
+      const wps = getCurrentWaypoints() || [];
+      if (!wps || wps.length === 0) return { success: false, reason: 'No waypoints in single grid' };
+
+      const wp = wps[0];
+      const originLatAtCenterPlacement = wp.origLat;
+      const originLonAtCenterPlacement = wp.origLon;
+
+      // Move waypoint
+      wp.lat = originLatAtCenterPlacement + 0.003;
+      wp.lon = originLonAtCenterPlacement + 0.003;
+      wp.isModified = true;
+
+      // Trigger updateGrid while modified
+      if (typeof updateGrid === 'function') {
+        updateGrid();
+      }
+
+      // Verify origLat is preserved
+      const movedWp = (getCurrentWaypoints() || [])[0];
+      if (movedWp.origLat !== originLatAtCenterPlacement) {
+        return { success: false, reason: `origLat was overwritten during updateGrid! expected ${originLatAtCenterPlacement}, got ${movedWp.origLat}` };
+      }
+
+      // Revert waypoint
+      const dummyMarker = {
+        setLatLng: () => {}, setIcon: () => {},
+        getTooltip: () => ({ setContent: () => {} }), setTooltipContent: () => {},
+        on: () => {}, off: () => {}, closePopup: () => {}
+      };
+
+      const dom = createWaypointEditorDOM(movedWp, 0, dummyMarker);
+      const resetBtn = dom.querySelector('#reset-wp-btn');
+      if (!resetBtn) return { success: false, reason: 'No reset button found' };
+
+      resetBtn.click();
+
+      const revertedWp = (getCurrentWaypoints() || [])[0];
+
+      return {
+        success: revertedWp && revertedWp.lat === originLatAtCenterPlacement && revertedWp.isModified === false,
+        originLatAtCenterPlacement,
+        revertedLat: revertedWp ? revertedWp.lat : null,
+        isModified: revertedWp ? revertedWp.isModified : true
+      };
+    });
+
+    assert.ok(singleGridRevertResult.success, `Single grid revert test failed. Expected: ${singleGridRevertResult.originLatAtCenterPlacement}, Got: ${singleGridRevertResult.revertedLat}`);
+    assert.strictEqual(singleGridRevertResult.isModified, false, 'isModified should be false after reverting in Single Grid mode');
+  });
 });
 
 
