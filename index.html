@@ -9575,10 +9575,27 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
 
       // Save custom edits and mark as modified (preserving orig baseline for Reset)
       if (!isNaN(latVal) && !isNaN(lonVal)) {
-        if (wp.origLat === undefined || wp.origLat === null) wp.origLat = originalLat;
-        if (wp.origLon === undefined || wp.origLon === null) wp.origLon = originalLon;
-        if (wp.origX === undefined || wp.origX === null) wp.origX = originalX;
-        if (wp.origY === undefined || wp.origY === null) wp.origY = originalY;
+        if (centerMarker && (wp.origLat === undefined || wp.origLat === null)) {
+          const centerLatLng = centerMarker.getLatLng();
+          const gridWidth = parseFloat(document.getElementById('grid-width')?.value || 100);
+          const gridHeight = parseFloat(document.getElementById('grid-height')?.value || 100);
+          const rotationDeg = parseFloat(document.getElementById('grid-rotation')?.value || 0);
+          const gridType = document.getElementById('grid-type')?.value || 'single';
+          const captureMode = document.getElementById('capture-mode')?.value || 'hover';
+          const altitude = parseFloat(document.getElementById('altitude')?.value || 50);
+          const overlapFront = parseFloat(document.getElementById('overlap-front')?.value || 70);
+          const overlapSide = parseFloat(document.getElementById('overlap-side')?.value || 70);
+          const spacings = getSpacings(overlapFront, overlapSide, altitude);
+          const gridData = generateGridCoordinates(gridWidth, gridHeight, rotationDeg, gridType, captureMode, spacings.sLine, spacings.sPhoto);
+          if (gridData && gridData.waypoints && gridData.waypoints[idx]) {
+            const pt = gridData.waypoints[idx];
+            const geo = localToGeodetic(pt.x, pt.y, centerLatLng.lat, centerLatLng.lng, rotationDeg);
+            wp.origLat = geo.lat;
+            wp.origLon = geo.lon;
+            wp.origX = pt.x;
+            wp.origY = pt.y;
+          }
+        }
 
         wp.lat = latVal;
         wp.lon = lonVal;
