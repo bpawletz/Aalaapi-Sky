@@ -1505,6 +1505,12 @@ function bringMarkerToFront(targetMarker, idx = null) {
   if (!targetMarker) return;
   if (idx !== null) {
     selectedWaypointIndex = idx;
+    if (typeof fpvProgressIndex !== 'undefined') {
+      fpvProgressIndex = idx;
+      if (typeof updateFPVEditorUI === 'function') {
+        updateFPVEditorUI();
+      }
+    }
   }
   if (currentlySelectedMarker === targetMarker && targetMarker._icon && (targetMarker._icon.classList ? targetMarker._icon.classList.contains('marker-selected') : true)) {
     return;
@@ -5419,6 +5425,13 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
 
   const headingVal = (wp.heading !== undefined && wp.heading !== null) ? wp.heading.toFixed(0) : '';
   const pitchVal = (wp.pitch !== undefined && wp.pitch !== null) ? wp.pitch : -45;
+
+  if (typeof fpvProgressIndex !== 'undefined' && idx !== null && idx !== undefined) {
+    fpvProgressIndex = idx;
+    if (typeof updateFPVEditorUI === 'function') {
+      updateFPVEditorUI();
+    }
+  }
 
   const originalLat = wp.lat;
   const originalLon = wp.lon;

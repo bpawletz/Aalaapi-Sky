@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.26.12] - 2026-07-25
+
+### Fixed
+- **FPV & Map Selection Synchronization:** Automatically update `fpvProgressIndex` and refresh `updateFPVEditorUI()` whenever a waypoint is clicked, selected on map, or opened in popup. Ensures 3D FPV panel Nudge and Revert controls immediately act on the active selected waypoint.
+
 ## [1.26.11] - 2026-07-25
 
 ### Fixed
