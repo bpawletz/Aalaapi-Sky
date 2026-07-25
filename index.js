@@ -1502,6 +1502,9 @@ let currentlySelectedMarker = null;
 // Elevate selected marker z-index to top and apply visual highlight
 function bringMarkerToFront(targetMarker) {
   if (!targetMarker) return;
+  if (currentlySelectedMarker === targetMarker && targetMarker._icon && (targetMarker._icon.classList ? targetMarker._icon.classList.contains('marker-selected') : true)) {
+    return;
+  }
   
   const removeHighlight = (m) => {
     if (!m) return;
@@ -2949,9 +2952,15 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
 
         marker.on('dragend', () => {
           redrawCurrentMission();
+          if (wp.roadMarker) bringMarkerToFront(wp.roadMarker);
         });
 
-        marker.on('dragstart', () => bringMarkerToFront(marker));
+        marker.on('dragstart', () => {
+          bringMarkerToFront(marker);
+          if (typeof map !== 'undefined' && map && map.closePopup) {
+            map.closePopup();
+          }
+        });
         marker.on('popupopen', () => bringMarkerToFront(marker));
         marker.on('click', (e) => {
           L.DomEvent.stopPropagation(e);
@@ -3044,7 +3053,12 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
       marker.bindTooltip(title, { direction: 'top', offset: [0, -10] });
 
       if (isDraggable) {
-        marker.on('dragstart', () => bringMarkerToFront(marker));
+        marker.on('dragstart', () => {
+          bringMarkerToFront(marker);
+          if (typeof map !== 'undefined' && map && map.closePopup) {
+            map.closePopup();
+          }
+        });
         marker.on('drag', (e) => {
           const newLatLng = e.target.getLatLng();
           const offsets = geodeticToLocal(newLatLng.lat, newLatLng.lng, centerLat, centerLon);
@@ -3073,6 +3087,7 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
         marker.on('dragend', () => {
           // Redraw completely to update headings and tooltips
           redrawCurrentMission();
+          if (wp.mapMarker) bringMarkerToFront(wp.mapMarker);
         });
       }
 
