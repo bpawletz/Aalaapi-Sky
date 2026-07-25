@@ -169,4 +169,96 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
     assert.ok(exportResult.success, `WPML export error: ${exportResult.error}`);
   });
+
+  test('E2E: Waypoint D-Pad Nudge edits and Save button persist location after redraw', async () => {
+    const nudgeSaveResult = await page.evaluate(() => {
+      if (typeof setGridCenter === 'function') {
+        setGridCenter(41.88, -87.62);
+      }
+      const wps = typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null;
+      if (!wps || wps.length === 0) return { success: false, reason: 'No waypoints found' };
+
+      const wp = wps[0];
+      const initialLat = wp.lat;
+      const initialLon = wp.lon;
+
+      const dummyMarker = {
+        setLatLng: () => {}, setIcon: () => {},
+        getTooltip: () => ({ setContent: () => {} }),
+        setTooltipContent: () => {}, on: () => {}, off: () => {}, closePopup: () => {}
+      };
+
+      // 1. Render editor DOM
+      const dom = createWaypointEditorDOM(wp, 0, dummyMarker);
+      const northBtn = dom.querySelector('#nudge-n-btn');
+      const saveBtn = dom.querySelector('#save-wp-btn');
+
+      if (!northBtn || !saveBtn) {
+        return { success: false, reason: 'Nudge North button or Save button missing from DOM' };
+      }
+
+      // 2. Click Nudge North button
+      northBtn.click();
+      const nudgedLat = parseFloat(dom.querySelector('#edit-wp-lat').value);
+
+      if (nudgedLat === initialLat) {
+        return { success: false, reason: 'Nudge North failed to change latInput value' };
+      }
+
+      // 3. Click Save button
+      saveBtn.click();
+
+      // 4. Trigger redrawCurrentMission
+      if (typeof redrawCurrentMission === 'function') {
+        redrawCurrentMission();
+      }
+
+      const postRedrawWp = (getCurrentWaypoints() || [])[0];
+
+      return {
+        success: postRedrawWp && postRedrawWp.lat === nudgedLat && postRedrawWp.isModified === true,
+        nudgedLat,
+        postRedrawLat: postRedrawWp ? postRedrawWp.lat : null,
+        isModified: postRedrawWp ? postRedrawWp.isModified : false
+      };
+    });
+
+    assert.ok(nudgeSaveResult.success, `Nudge save E2E test failed. NudgedLat: ${nudgeSaveResult.nudgedLat}, PostRedrawLat: ${nudgeSaveResult.postRedrawLat}`);
+    assert.strictEqual(nudgeSaveResult.isModified, true, 'Waypoint should be marked as modified after saving nudge');
+  });
+
+  test('E2E: Overlapping waypoint selection bypasses disambiguation menu for active marker', async () => {
+    const overlapResult = await page.evaluate(() => {
+      const wps = getCurrentWaypoints() || [];
+      if (wps.length < 2) return { success: false, reason: 'Need at least 2 waypoints' };
+
+      // Make Waypoint 0 and Waypoint 1 overlap
+      wps[0].lat = 41.8805;
+      wps[0].lon = -87.6205;
+      wps[1].lat = 41.8805;
+      wps[1].lon = -87.6205;
+
+      const m1 = { getLatLng: () => ({ lat: 41.8805, lng: -87.6205 }), setZIndexOffset: () => {}, _icon: { classList: { contains: () => true, add: () => {}, remove: () => {} } } };
+      wps[0].mapMarker = m1;
+      wps[1].mapMarker = m1;
+
+      // Bring Waypoint 0 to front
+      bringMarkerToFront(m1, 0);
+
+      // Verify that selecting active marker returns false for opening disambiguation popup
+      const items = getOverlappingItemsAt({ lat: 41.8805, lng: -87.6205 });
+      const activeSelectedMarker = typeof currentlySelectedMarker !== 'undefined' ? currentlySelectedMarker : null;
+
+      const shouldBypassDisambiguation = items.length > 1 && activeSelectedMarker === m1;
+
+      return {
+        success: shouldBypassDisambiguation,
+        itemsCount: items.length,
+        hasActiveMarker: activeSelectedMarker === m1
+      };
+    });
+
+    assert.ok(overlapResult.success, `Overlapping marker E2E bypass test failed. Items: ${overlapResult.itemsCount}, Active: ${overlapResult.hasActiveMarker}`);
+  });
 });
+
