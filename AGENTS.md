@@ -27,6 +27,10 @@ When changing the project version, you must update the version tag in the follow
    - Update the changelog header `<strong style="color: var(--text-main);">Changelog (vX.Y.Z):</strong>` and append the new version bullet points at the top of the changelog list container.
 4. **`index_template.html`:**
    - Update the version-tag `<span>` and the changelog list header/bullets identically to the edits made in `index.html`.
+5. **`index_template.html` header badge (5th location):**
+   - Update the `<span class="header-version-badge">vX.Y.Z</span>` element on line 72 inside the `<h1>` app title.
+   - This is the small version badge shown next to "Aalaapi Sky" in the sidebar header (distinct from the About modal version-tag).
+   - Example: `<span class="header-version-badge" ...>v1.26.14</span>`
 
 ## 3. Build & Compilation Step
 `index.html` is a single-file application bundle compiled from `index_template.html`, `index.css`, and `index.js`.
