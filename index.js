@@ -606,6 +606,7 @@ function initMap() {
 
   // Initial update
   updateOpenSkyLink();
+  applyZoomGates(); // Set initial zoom-gate state (e.g. wp-zoomed-out class)
 }
 
 const CONTROLS_LIST = [
@@ -3699,6 +3700,20 @@ function applyZoomGates() {
 
   // Refresh the legend to show/hide the zoom notice
   updateAirspaceLegend(null);
+
+  // Hide pitch labels, camera cones, and arrows at low zoom to prevent them
+  // from visually floating disconnected from their map-anchored dot position.
+  // These elements extend outside the 24x24 iconSize box (overflow: visible),
+  // so at low zoom they appear detached. Hide them below zoom 18.
+  const WP_DETAIL_MIN_ZOOM = 18;
+  const mapContainer = map.getContainer();
+  if (mapContainer) {
+    if (zoom >= WP_DETAIL_MIN_ZOOM) {
+      mapContainer.classList.remove('wp-zoomed-out');
+    } else {
+      mapContainer.classList.add('wp-zoomed-out');
+    }
+  }
 }
 
 
