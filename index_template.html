@@ -861,7 +861,7 @@
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
             <div>
-              <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2);">Version 1.26.13</span>
+              <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2);">Version 1.26.14</span>
             </div>
           </div>
         </div>
@@ -925,7 +925,13 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <ul style="margin: 0; padding-left: 20px; color: var(--text-muted); font-size: 0.85rem; display: flex; flex-direction: column; gap: 8px;">
-            <strong style="color: var(--text-main);">Changelog (v1.26.13):</strong>
+            <strong style="color: var(--text-main);">Changelog (v1.26.14):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Floating Waypoint Markers Fix:</strong> Pitch labels, camera cones, and arrows are now hidden below zoom 18 to prevent them from visually floating detached from their map-anchored dot when zoomed out.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.26.13):</strong></strong>
             <li><strong>Accumulated popupclose Listener Fix:</strong> Fixed Revert and Save failures caused by old <code>revertChanges</code> closures accumulating on the waypoint marker across multiple popup opens. Now clears all popupclose listeners before attaching a fresh one on each popup open.</li>
           </ul>
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
