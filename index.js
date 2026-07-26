@@ -12,6 +12,7 @@ let pois = []; // Array of POI objects: { lat, lon, marker, name }
 let flightPathPolyline = null;
 let gridBoundsPolygon = null;
 let waypointMarkersGroup = null;
+let pitchLabelsGroup = null; // Separate layer for pitch labels — avoids ghost-dot artifacts in marker pane during zoom
 let photoMarkersGroup = null;
 let isAnyPopupOpen = false;
 let isLegendCollapsed = false;
@@ -571,6 +572,7 @@ function initMap() {
   // Layer groups for flight paths and markers
   flightPathPolyline = L.layerGroup().addTo(map);
   waypointMarkersGroup = L.layerGroup().addTo(map);
+  pitchLabelsGroup = L.layerGroup().addTo(map); // Above waypointMarkersGroup
   photoMarkersGroup = L.layerGroup().addTo(map);
   roadPathGroup = L.layerGroup().addTo(map);
 
@@ -2829,7 +2831,6 @@ function getMarkerIcon(wp, idx, waypoints, rotationDeg, tempHeading, tempPitch, 
       </div>
       <div class="wp-static-container">
         <div class="wp-dot" style="background-color: ${color}; border-color: ${borderColor}; width: ${radius * 2}px; height: ${radius * 2}px; border-width: ${borderWeight}px;"></div>
-        <div class="wp-pitch-label">${pitch}°</div>
       </div>
     `,
     iconSize: [24, 24],
@@ -2899,6 +2900,7 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
   if (flightPathPolyline) flightPathPolyline.clearLayers();
   if (gridBoundsPolygon) map.removeLayer(gridBoundsPolygon);
   waypointMarkersGroup.clearLayers();
+  if (pitchLabelsGroup) pitchLabelsGroup.clearLayers();
   photoMarkersGroup.clearLayers();
   if (roadPathGroup) roadPathGroup.clearLayers();
 
@@ -3190,6 +3192,26 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
 
       wp.mapMarker = marker;
       marker.addTo(waypointMarkersGroup);
+
+      // Add pitch label as a SEPARATE marker in pitchLabelsGroup.
+      // This avoids the ghost-dot artifact: labels inside divIcons use overflow:visible
+      // which causes them to render outside the icon's composited layer during zoom animations.
+      // A dedicated label marker lives in its own pane and is properly repositioned on zoom.
+      if (pitchLabelsGroup) {
+        const labelIcon = L.divIcon({
+          className: 'wp-pitch-label-marker',
+          html: `<div class="wp-pitch-label">${pitch}°</div>`,
+          iconSize: [30, 14],
+          iconAnchor: [15, -6] // Centered horizontally, positioned below the dot
+        });
+        const labelMarker = L.marker([wp.lat, wp.lon], {
+          icon: labelIcon,
+          interactive: false,
+          zIndexOffset: -100
+        });
+        wp.pitchLabelMarker = labelMarker;
+        labelMarker.addTo(pitchLabelsGroup);
+      }
     });
   }
 
@@ -3710,8 +3732,16 @@ function applyZoomGates() {
   if (mapContainer) {
     if (zoom >= WP_DETAIL_MIN_ZOOM) {
       mapContainer.classList.remove('wp-zoomed-out');
+      // Show pitch label layer
+      if (pitchLabelsGroup && !map.hasLayer(pitchLabelsGroup)) {
+        pitchLabelsGroup.addTo(map);
+      }
     } else {
       mapContainer.classList.add('wp-zoomed-out');
+      // Hide pitch label layer entirely — removes all label markers from pane, no ghost dots
+      if (pitchLabelsGroup && map.hasLayer(pitchLabelsGroup)) {
+        map.removeLayer(pitchLabelsGroup);
+      }
     }
   }
 }
@@ -5254,6 +5284,7 @@ function clearMap() {
       gridBoundsPolygon = null;
     }
     waypointMarkersGroup.clearLayers();
+    if (pitchLabelsGroup) pitchLabelsGroup.clearLayers();
     photoMarkersGroup.clearLayers();
 
     // Reset controls visibility / state
@@ -8743,6 +8774,7 @@ function enterAutoPlanMode() {
   if (roadPathGroup) roadPathGroup.clearLayers();
   if (gridBoundsPolygon) { map.removeLayer(gridBoundsPolygon); gridBoundsPolygon = null; }
   if (waypointMarkersGroup) waypointMarkersGroup.clearLayers();
+  if (pitchLabelsGroup) pitchLabelsGroup.clearLayers();
   if (photoMarkersGroup) photoMarkersGroup.clearLayers();
   const clearImportedBtn = document.getElementById('clear-imported-btn');
   if (clearImportedBtn) clearImportedBtn.classList.add('hidden');
