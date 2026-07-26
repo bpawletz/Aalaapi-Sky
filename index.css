@@ -728,6 +728,15 @@ html, body {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
   font-family: var(--font-secondary);
   pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+/* Hide pitch labels and camera cones when zoomed out far — prevents them from
+   visually floating detached from their map-anchored dot position */
+.leaflet-container.wp-zoomed-out .wp-pitch-label,
+.leaflet-container.wp-zoomed-out .wp-camera-cone,
+.leaflet-container.wp-zoomed-out .wp-arrow {
+  display: none !important;
 }
 
 .marker-selected {

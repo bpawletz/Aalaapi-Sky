@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.26.14] - 2026-07-26
+
+### Fixed
+- **Waypoint Markers Floating at Low Zoom:** When zoomed out below zoom 18, the pitch label (e.g. `-60°`) and camera cone/arrow SVG elements extend outside the Leaflet icon's 24×24px bounding box (`overflow: visible`), causing them to visually detach from their map-anchored dot position. Fixed by adding a `wp-zoomed-out` CSS class to the Leaflet container via `applyZoomGates()` at zoom < 18, which hides `.wp-pitch-label`, `.wp-camera-cone`, and `.wp-arrow` via CSS. At zoom ≥ 18 (close-up working view) all detail elements reappear normally.
+
 ## [1.26.13] - 2026-07-25
 
 ### Fixed
