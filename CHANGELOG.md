@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.26.15] - 2026-08-01
+
+### Fixed
+- **Gimbal Pan Axis Movement Limit on Straight-Line Flights:** The `gimbalRotate` WPML action was missing `gimbalYawRotateEnable` and `gimbalYawRotateAngle` parameters, leaving gimbal yaw uncontrolled. During straight-line 2D Grid flights, the abrupt 180° heading reversals at grid line crossings caused the gimbal pan motor to exceed its mechanical rotation range, triggering DJI's "Gimbal pan axis reached movement limit" error. Fixed by explicitly setting `gimbalYawRotateEnable=0` and `gimbalYawRotateAngle=0` to lock the gimbal yaw to center.
+
 ## [1.26.14] - 2026-07-26
 
 ### Fixed
