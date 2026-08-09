@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.27.10] - 2026-08-09
+
+### Fixed
+- **Drone Model Selection**: Corrected the `droneEnumValue` for Mavic 3 Enterprise from `68` to `77` in the dropdown select options and default fallback settings, resolving flight execution failures (error after pressing Go) due to model mismatch on the drone controller.
+
 ## [1.27.9] - 2026-08-09
 
 ### Fixed
