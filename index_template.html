@@ -69,7 +69,7 @@
               <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
               <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
             </svg>
-            <h1 style="display: inline-flex; align-items: center; gap: 8px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.55rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); color: #06b6d4; padding: 1px 5px; border-radius: 4px; line-height: 1; font-family: monospace;">v1.26.15</span><span style="font-size: 0.5rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 4px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
+            <h1 style="display: inline-flex; align-items: center; gap: 8px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.55rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); color: #06b6d4; padding: 1px 5px; border-radius: 4px; line-height: 1; font-family: monospace;">v1.27.6</span><span style="font-size: 0.5rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 4px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
           </div>
           <div style="display: flex; gap: 8px; align-items: center;">
             <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" style="padding: 8px; display: inline-flex; align-items: center; justify-content: center; margin: 0; border-radius: 8px; width: 36px; height: 36px;">
@@ -592,6 +592,15 @@
             </select>
             <p class="help-text" id="capture-help-text">Stop &amp; Shoot halts the drone at every coordinate to take a photo. Recommended for sharp, automated maps.</p>
           </div>
+
+          <div class="control-group">
+            <label for="global-hover-time">Hover Time at Waypoints</label>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="range" id="global-hover-time" class="form-range" min="0" max="60" step="1" value="0" style="flex: 1;">
+              <span style="min-width: 32px; text-align: right; font-weight: 600; color: var(--accent-cyan);"><span id="global-hover-time-val">0</span>s</span>
+            </div>
+            <p class="help-text">Seconds the drone hovers (dwells) at each waypoint before continuing. Per-waypoint overrides take priority. Set per-waypoint to 0 to skip hover at that point.</p>
+          </div>
         </section>
 
         <!-- Section 5: Copier Instructions -->
@@ -861,7 +870,7 @@
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
             <div>
-              <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2);">Version 1.26.15</span>
+              <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2);">Version 1.27.6</span>
             </div>
           </div>
         </div>
@@ -925,6 +934,48 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <ul style="margin: 0; padding-left: 20px; color: var(--text-muted); font-size: 0.85rem; display: flex; flex-direction: column; gap: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.27.6):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Unit Test Mocks:</strong> Corrected weather panel and RC2 compliance tests in <code>index.test.js</code> to ensure overridden DOM helper mocks (specifically <code>document.getElementById</code> and <code>document.createElement</code>) are properly restored in <code>finally</code> blocks, preventing asynchronous background activity from triggering uncaught exceptions after tests complete.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.27.5):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Duplicate Function Definition:</strong> Removed a duplicate <code>syncDisplayValues()</code> function definition that was shadowing another and combined their functionality to ensure all UI elements and settings unit labels update correctly when unit preferences are changed.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.27.4):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Enforced Stationary Yaw (<code>angleEnable=1</code>):</strong> Fixed export where <code>&lt;wpml:waypointHeadingAngleEnable&gt;0&lt;/wpml:waypointHeadingAngleEnable&gt;</code> caused DJI Pilot 2 to ignore the target heading angle (e.g. 180° South) while stopped for photos, defaulting to North (0°) and spinning. Now exports <code>angleEnable=1</code> so the flight controller locks the target heading during hover/stop.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.27.3):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>NaN Heading Angle Fix:</strong> Waypoints without Cartesian <code>x</code>/<code>y</code> offsets (freshly generated grids) caused <code>getDefaultHeading()</code> to return <code>NaN</code>, written into <code>&lt;wpml:waypointHeadingAngle&gt;</code>. DJI controllers rejected the mission with "error performing waypoint flight" when pressing Go. Fixed by computing the geodetic bearing directly from <code>lat</code>/<code>lon</code> coordinates.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.27.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Mandatory <code>templateType</code> Tag:</strong> Added missing <code>&lt;wpml:templateType&gt;waypoint&lt;/wpml:templateType&gt;</code> to the <code>&lt;Folder&gt;</code> element in both <code>template.kml</code> and <code>waylines.wpml</code>, resolving mission upload/validation errors on DJI Pilot 2 and controller apps.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.27.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>2D Grid Return Leg Heading Fix:</strong> Fixed WPML export where hardcoded <code>0.0°</code> (North) fallback angles in <code>followWayline</code> placemarks caused aircraft to execute 180° rotation spin-dances at every stop-and-shoot waypoint on reverse grid legs (Leg 2, Leg 4, etc.). Dynamically exports the wayline direction heading in <code>&lt;wpml:waypointHeadingAngle&gt;</code> for all <code>followWayline</code> waypoints.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.27.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Global Hover Time:</strong> Added a new "Hover Time at Waypoints" slider in mission settings that sets a default hover (dwell) duration for all waypoints. The drone will pause at each waypoint for the specified number of seconds before continuing. Per-waypoint overrides take priority; set a waypoint's hover to 0 to explicitly skip hover at that point.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.26.15):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Gimbal Pan Axis Fix:</strong> Added missing <code>gimbalYawRotateEnable</code> and <code>gimbalYawRotateAngle</code> to the WPML <code>gimbalRotate</code> action, preventing the DJI "Gimbal pan axis reached movement limit" error during straight-line grid flights.</li>
