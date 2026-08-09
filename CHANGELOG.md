@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.27.8] - 2026-08-09
+
+### Fixed
+- **Minimum Hover Enforcement for Repositioning**: Enforced a minimum 2-second hover duration (rather than just checking if hover is 0) during gimbal and yaw heading shifts. If the user overrides waypoint hover to a value less than 2 seconds (e.g. 1 second), it auto-escalates to 2 seconds to ensure adequate hardware stabilization time. Updated UI warnings, FPV simulation, KML generator, and stats calculations accordingly.
+
 ## [1.27.7] - 2026-08-09
 
 ### Fixed
