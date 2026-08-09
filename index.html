@@ -1440,7 +1440,7 @@ html, body {
               <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
               <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
             </svg>
-            <h1 style="display: inline-flex; align-items: center; gap: 8px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.55rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); color: #06b6d4; padding: 1px 5px; border-radius: 4px; line-height: 1; font-family: monospace;">v1.27.9</span><span style="font-size: 0.5rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 4px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
+            <h1 style="display: inline-flex; align-items: center; gap: 8px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.55rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); color: #06b6d4; padding: 1px 5px; border-radius: 4px; line-height: 1; font-family: monospace;">v1.27.10</span><span style="font-size: 0.5rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 4px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
           </div>
           <div style="display: flex; gap: 8px; align-items: center;">
             <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" style="padding: 8px; display: inline-flex; align-items: center; justify-content: center; margin: 0; border-radius: 8px; width: 36px; height: 36px;">
@@ -1695,12 +1695,11 @@ html, body {
           <div class="control-group">
             <label for="drone-model">Export Drone Target</label>
             <select id="drone-model" class="form-select">
-              <option value="68" selected>DJI Mini 4 Pro (68)</option>
-              <option value="89">DJI Air 3 (89)</option>
-              <option value="77">DJI Mavic 3 / Classic / Pro (77)</option>
-              <option value="68">DJI Mavic 3 Enterprise (68)</option>
+              <option value="77" selected>DJI Mavic 3 Enterprise (77)</option>
               <option value="67">DJI Matrice 30 / 30T (67)</option>
               <option value="60">DJI Matrice 300 / 350 RTK (60)</option>
+              <option value="68">DJI Mini 4 Pro (68)</option>
+              <option value="89">DJI Air 3 (89)</option>
               <option value="71">DJI Inspire 3 (71)</option>
             </select>
             <p class="help-text">Ensures compatibility by matching the model ID inside the KMZ to your drone.</p>
@@ -2241,7 +2240,7 @@ html, body {
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
             <div>
-              <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2);">Version 1.27.9</span>
+              <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2);">Version 1.27.10</span>
             </div>
           </div>
         </div>
@@ -2305,6 +2304,12 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <ul style="margin: 0; padding-left: 20px; color: var(--text-muted); font-size: 0.85rem; display: flex; flex-direction: column; gap: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.27.10):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Drone Model Selection:</strong> Corrected the <code>droneEnumValue</code> for Mavic 3 Enterprise from <code>68</code> to <code>77</code> in the dropdown select options and default fallback settings, resolving flight execution failures (error after pressing Go) due to model mismatch on the drone controller.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.27.9):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Coordinates Altitude Tag:</strong> Added missing altitude component (the third parameter) in the <code>&lt;coordinates&gt;</code> tag of KML/WPML <code>&lt;Point&gt;</code> elements (e.g. <code>longitude,latitude,altitude</code>), resolving schema validation errors on strict flight controllers like the DJI RC 2 running DJI Pilot 2.</li>
@@ -7963,7 +7968,7 @@ function updateStatsPanel(stats) {
 function buildTemplateKml(finishAction, speed) {
   const timestamp = Date.now();
   const droneModelEl = document.getElementById('drone-model');
-  const droneEnumValue = droneModelEl ? parseInt(droneModelEl.value, 10) : 68; // Default to Mini 4 Pro (68)
+  const droneEnumValue = droneModelEl ? parseInt(droneModelEl.value, 10) : 77; // Default to Mavic 3 Enterprise (77)
 
   const signalLostEl = document.getElementById('signal-lost-action');
   const signalLostValue = signalLostEl ? signalLostEl.value : 'goBack';
@@ -8140,7 +8145,6 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
             <wpml:actionActuatorFunc>startRecord</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
             </wpml:actionActuatorFuncParam>
           </wpml:action>
         </wpml:actionGroup>\n`;
@@ -8179,7 +8183,6 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
             </wpml:actionActuatorFuncParam>
           </wpml:action>
         </wpml:actionGroup>\n`;
@@ -8202,7 +8205,6 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
             </wpml:actionActuatorFuncParam>
           </wpml:action>
         </wpml:actionGroup>\n`;
@@ -8220,7 +8222,6 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
             <wpml:actionActuatorFunc>startRecord</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
             </wpml:actionActuatorFuncParam>
           </wpml:action>
         </wpml:actionGroup>\n`;
