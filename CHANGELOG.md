@@ -1,5 +1,40 @@
 # Changelog
 
+## [1.27.6] - 2026-08-09
+
+### Fixed
+- **Unit Test Mocks:** Corrected weather panel and RC2 compliance tests in `index.test.js` to ensure overridden DOM helper mocks (specifically `document.getElementById` and `document.createElement`) are properly restored in `finally` blocks, preventing asynchronous background activity from triggering uncaught exceptions after tests complete.
+
+## [1.27.5] - 2026-08-08
+
+### Fixed
+- **Duplicate Function Definition:** Removed a duplicate `syncDisplayValues()` function definition that was shadowing another and combined their functionality to ensure all UI elements and settings unit labels update correctly when unit preferences are changed.
+
+## [1.27.4] - 2026-08-08
+
+### Fixed
+- **Enforced Heading Angle Enable (`waypointHeadingAngleEnable=1`)**: Fixed WPML export where `headingAngleEnable` was hardcoded to `0` for `followWayline` mode. When set to `0`, DJI Pilot 2 ignored `<wpml:waypointHeadingAngle>` during stationary hover/stop actions and defaulted to North (`0.0°`), causing 180° turnaround spin-dances on Southbound grid legs. Explicitly set `waypointHeadingAngleEnable` to `1` so the flight controller enforces the target wayline heading angle when stopping to take photos.
+
+## [1.27.3] - 2026-08-08
+
+### Fixed
+- **NaN `waypointHeadingAngle` in `followWayline` Mode:** Waypoints generated without Cartesian `x`/`y` offsets (lat/lon-only grid waypoints) caused `getDefaultHeading()` to return `NaN`, which was written directly into `<wpml:waypointHeadingAngle>`. DJI controllers reject any mission containing `NaN` with an "error performing waypoint flight" when pressing Go. Fixed by computing the geodetic bearing directly from `lat`/`lon` coordinates instead of relying on `x`/`y` offsets.
+
+## [1.27.2] - 2026-08-08
+
+### Fixed
+- **Mandatory `wpml:templateType` Tag in WPML Export:** Added the missing `<wpml:templateType>waypoint</wpml:templateType>` tag to the `<Folder>` element in both `template.kml` and `waylines.wpml`. Resolves mission upload/validation errors on DJI Pilot 2 and DJI controller apps when importing KMZ flight plans.
+
+## [1.27.1] - 2026-08-08
+
+### Fixed
+- **2D Grid Return Leg Heading Rotation (180° Stationary Fallback Spin Dance):** Fixed a critical WPML export bug on reverse grid legs (Leg 2, Leg 4, etc.) during Nadir (-90° pitch) Stop & Shoot missions. Previously, `<wpml:waypointHeadingAngle>` was hardcoded to `0.0` (North) for all `followWayline` placemarks. When the drone stopped at a waypoint on a Southbound/Westbound leg (heading 180°) to take a photo and hover, zero movement velocity caused DJI Pilot 2 to fall back to the stationary target angle (`0.0° North`), forcing the aircraft to spin 180° to face North, take the photo, and spin 180° back to South when resuming flight. Fixed by dynamically calculating and exporting the wayline direction heading in `<wpml:waypointHeadingAngle>` for every placemark in `followWayline` mode.
+
+## [1.27.0] - 2026-08-06
+
+### Added
+- **Global Hover Time:** New "Hover Time at Waypoints" slider (0–60s) in mission settings. Sets a default hover (dwell) duration at every waypoint. Per-waypoint overrides take priority; setting a waypoint's hover to 0 explicitly skips hover at that point. Affects WPML export, flight time estimates, FPV walkthrough preview, and mission splitting calculations.
+
 ## [1.26.15] - 2026-08-01
 
 ### Fixed

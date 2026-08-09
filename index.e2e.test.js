@@ -805,7 +805,42 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(accumulationResult.isModified, false,
       'isModified should be false after Revert, even after multiple popup opens');
   });
+
+  test('E2E: Global Hover Time slider persists value and includes hover action tags in WPML export', async () => {
+    const hoverTestResult = await page.evaluate(() => {
+      const globalHoverInput = document.getElementById('global-hover-time');
+      const globalHoverVal = document.getElementById('global-hover-time-val');
+      if (!globalHoverInput || !globalHoverVal) return { success: false, reason: 'global-hover-time element missing' };
+
+      // Set global hover slider value to 7 seconds
+      globalHoverInput.value = '7';
+      globalHoverInput.dispatchEvent(new Event('input', { bubbles: true }));
+      globalHoverInput.dispatchEvent(new Event('change', { bubbles: true }));
+
+      const displaySynced = globalHoverVal.textContent === '7';
+
+      // Generate WPML XML with 2 test waypoints
+      if (typeof setGridCenter === 'function') {
+        setGridCenter(41.88, -87.62);
+      }
+      const wps = getCurrentWaypoints();
+      let xmlContainsHover = false;
+      if (wps && wps.length > 0 && typeof buildWaylinesWpml === 'function') {
+        const xml = buildWaylinesWpml(wps, 50, 5, 'followWayline', 'goHome', -45, 'continuous', 'straight');
+        xmlContainsHover = xml.includes('<wpml:hoverTime>7</wpml:hoverTime>');
+      }
+
+      return {
+        success: displaySynced && xmlContainsHover,
+        displaySynced,
+        xmlContainsHover
+      };
+    });
+
+    assert.ok(hoverTestResult.success, `Global Hover Time E2E test failed. Synced: ${hoverTestResult.displaySynced}, XML: ${hoverTestResult.xmlContainsHover}`);
+  });
 });
+
 
 
 

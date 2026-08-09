@@ -7,6 +7,7 @@ const vm = require('node:vm');
 global.document = {
   getElementById: (id) => {
     if (id === 'unit-system') return null;
+    if (global._stubElements && global._stubElements[id] !== undefined) return global._stubElements[id];
     return {
       classList: { add: () => {}, remove: () => {} },
       value: '',
@@ -1119,6 +1120,7 @@ describe('updateWeatherPanelUI Tests', () => {
       assert.strictEqual(windowChildren[0].textContent, '🟢 Allowed (VFR)');
     } finally {
       global.document.getElementById = originalGetElementById;
+      global.document.createElement = originalCreateElement;
     }
   });
 
@@ -1973,7 +1975,7 @@ describe('3D FPV Editor Panel Alignment & Viewport Tests', () => {
     assert.strictEqual(waypoints[0].alt, 50);
     assert.strictEqual(waypoints[0].origAlt, 50);
     assert.strictEqual(waypoints[0].origSpeed, null);
-    assert.strictEqual(waypoints[0].origHoverTime, 0);
+    assert.strictEqual(waypoints[0].origHoverTime, null);
 
     // Simulate custom edit on generated drone waypoint 1
     waypoints[1].speed = 12;
@@ -1987,6 +1989,33 @@ describe('3D FPV Editor Panel Alignment & Viewport Tests', () => {
     assert.strictEqual(updatedWaypoints[1].speed, 12, 'should preserve custom speed override 12');
     assert.strictEqual(updatedWaypoints[1].hoverTime, 5, 'should preserve custom hoverTime override 5');
     assert.strictEqual(updatedWaypoints[1].isModified, true, 'should preserve isModified state');
+  });
+
+  test('buildWaylinesWpml applies global hover time when waypoint hoverTime is null and allows 0 override', () => {
+    const testWaypoints = [
+      { lat: 41.88, lon: -87.62, alt: 50, pitch: -45, hoverTime: null },
+      { lat: 41.89, lon: -87.63, alt: 60, pitch: -30, hoverTime: 12 },
+      { lat: 41.90, lon: -87.64, alt: 70, pitch: -20, hoverTime: 0 }
+    ];
+
+    global._stubElements = {
+      'global-hover-time': { value: '5' }
+    };
+
+    try {
+      const xml = vm.runInThisContext('buildWaylinesWpml')(testWaypoints, 50, 5, 'followWayline', 'goHome', -45, 'continuous', 'straight');
+
+      assert.ok(xml.includes('<wpml:hoverTime>5</wpml:hoverTime>'), 'should use global hover 5 for WP 0 (null hoverTime)');
+      assert.ok(xml.includes('<wpml:hoverTime>12</wpml:hoverTime>'), 'should use explicit hover override 12 for WP 1');
+      
+      // Split XML by Placemark to verify WP 2 (hoverTime: 0) does not contain a hover action
+      const placemarks = xml.split('<Placemark>');
+      assert.ok(placemarks.length >= 4, 'should have placemarks');
+      const wp2Xml = placemarks[3]; // WP 2 is placemark index 2 (4th array element)
+      assert.ok(!wp2Xml.includes('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>'), 'should skip hover action for WP 2 with explicit hoverTime 0');
+    } finally {
+      delete global._stubElements;
+    }
   });
 
   test('Waypoint Revert button restores baseline position, marker position, and road node', () => {
@@ -2343,3 +2372,115 @@ describe('Overlapping Waypoints & bringMarkerToFront Tests', () => {
 
 
 
+
+describe('WPML Validation & Stationary Fallback Regression Tests', () => {
+  test('buildTemplateKml includes mandatory wpml:templateType waypoint tag', () => {
+    const xml = vm.runInThisContext('buildTemplateKml("goHome", 4)');
+    assert.strictEqual(xml.includes('<wpml:templateType>waypoint</wpml:templateType>'), true, 'template.kml must contain wpml:templateType tag');
+  });
+
+  test('buildWaylinesWpml includes mandatory wpml:templateType tag in Folder', () => {
+    const wps = [
+      { lat: 40.0127, lon: -83.1771, alt: 17, headingMode: 'inherit' },
+      { lat: 40.0128, lon: -83.1771, alt: 17, headingMode: 'inherit' }
+    ];
+    const xml = vm.runInThisContext(`buildWaylinesWpml(${JSON.stringify(wps)}, 17, 4, 'followWayline', 'goHome', -90, 'stopAndShoot', 'straight')`);
+    assert.strictEqual(xml.includes('<wpml:templateType>waypoint</wpml:templateType>'), true, 'waylines.wpml Folder must contain wpml:templateType tag');
+  });
+
+  test('multi-leg 2D grid export assigns correct wayline direction angles and enables them (waypointHeadingAngleEnable=1) for stationary fallback', () => {
+    const wps = [
+      { lat: 40.0127, lon: -83.1771, alt: 17, heading: 0, headingMode: 'inherit' },
+      { lat: 40.0129, lon: -83.1771, alt: 17, heading: 0, headingMode: 'inherit' },
+      { lat: 40.0129, lon: -83.1770, alt: 17, heading: 180, headingMode: 'inherit' },
+      { lat: 40.0127, lon: -83.1770, alt: 17, heading: 180, headingMode: 'inherit' },
+      { lat: 40.0127, lon: -83.1769, alt: 17, heading: 0, headingMode: 'inherit' },
+      { lat: 40.0129, lon: -83.1769, alt: 17, heading: 0, headingMode: 'inherit' },
+      { lat: 40.0129, lon: -83.1768, alt: 17, heading: 180, headingMode: 'inherit' },
+      { lat: 40.0127, lon: -83.1768, alt: 17, heading: 180, headingMode: 'inherit' }
+    ];
+    const xml = vm.runInThisContext(`buildWaylinesWpml(${JSON.stringify(wps)}, 17, 4, 'followWayline', 'goHome', -90, 'stopAndShoot', 'straight')`);
+    assert.strictEqual(xml.includes('<wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>'), true);
+    assert.strictEqual(xml.includes('<wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>'), false);
+    assert.strictEqual(xml.includes('<wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>'), true);
+    assert.strictEqual(xml.includes('<wpml:waypointHeadingAngle>180.0</wpml:waypointHeadingAngle>'), true);
+    assert.strictEqual(xml.includes('<wpml:waypointHeadingAngle>0.0</wpml:waypointHeadingAngle>'), true);
+  });
+
+  test('followWayline waypoints without x/y offsets (lat/lon only) never produce NaN waypointHeadingAngle', () => {
+    const wps = [
+      { lat: 40.0127, lon: -83.1771, alt: 17, headingMode: 'inherit' },
+      { lat: 40.0129, lon: -83.1771, alt: 17, headingMode: 'inherit' }
+    ];
+    const xml = vm.runInThisContext(`buildWaylinesWpml(${JSON.stringify(wps)}, 17, 4, 'followWayline', 'goHome', -90, 'stopAndShoot', 'straight')`);
+    assert.strictEqual(xml.includes('<wpml:waypointHeadingAngle>NaN</wpml:waypointHeadingAngle>'), false);
+    assert.strictEqual(xml.includes('<wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>'), true);
+  });
+
+  test('all pattern types (double grid, orbit, multi-orbit) export valid waypointHeadingAngle and waypointHeadingAngleEnable=1', () => {
+    const doubleGridWps = [
+      { lat: 40.0127, lon: -83.1771, alt: 17, headingMode: 'inherit' },
+      { lat: 40.0129, lon: -83.1771, alt: 17, headingMode: 'inherit' }
+    ];
+    const xmlDouble = vm.runInThisContext(`buildWaylinesWpml(${JSON.stringify(doubleGridWps)}, 17, 4, 'followWayline', 'goHome', -90, 'stopAndShoot', 'straight')`);
+    assert.strictEqual(xmlDouble.includes('<wpml:waypointHeadingAngle>NaN</wpml:waypointHeadingAngle>'), false);
+    assert.strictEqual(xmlDouble.includes('<wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>'), true);
+    const orbitWps = [
+      { lat: 40.0127, lon: -83.1771, alt: 17, headingMode: 'towardPOI' },
+      { lat: 40.0129, lon: -83.1771, alt: 17, headingMode: 'towardPOI' }
+    ];
+    const xmlOrbit = vm.runInThisContext(`buildWaylinesWpml(${JSON.stringify(orbitWps)}, 17, 4, 'towardPOI', 'goHome', -90, 'stopAndShoot', 'straight')`);
+    assert.strictEqual(xmlOrbit.includes('<wpml:waypointHeadingAngle>NaN</wpml:waypointHeadingAngle>'), false);
+    assert.strictEqual(xmlOrbit.includes('<wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>'), true);
+  });
+});
+
+describe('RC2 WPML Compliance Tests', () => {
+  const rc2GoldenTags = [
+    'actionGroupStartIndex', 'actionGroupMode', 'waypointHeadingPathMode', 'flyToWaylineMode',
+    'waypointHeadingMode', 'Point', 'waypointHeadingPoiIndex',
+    'actionGroup', 'exitOnRCLost', 'distance', 'actionGroupEndIndex', 'waypointHeadingAngle',
+    'useStraightLine', 'action', 'executeHeight', 'Placemark',
+    'actionActuatorFunc', 'waypointTurnMode', 'actionActuatorFuncParam', 'duration',
+    'gimbalPitchRotateAngle', 'waypointPoiPoint', 'waylineId',
+    'waypointTurnDampingDist', 'gimbalRollRotateAngle', 'droneSubEnumValue', 'droneInfo',
+    'actionId', 'actionGroupId', 'actionTriggerType', 'executeHeightMode', 'waypointHeadingParam',
+    'coordinates', 'droneEnumValue', 'actionTrigger', 'globalTransitionalSpeed', 'autoFlightSpeed',
+    'Document', 'executeRCLostAction', 'index', 'finishAction', 'templateId', 'waypointSpeed',
+    'missionConfig', 'waypointTurnParam', 'Folder', 'payloadPositionIndex',
+    'waypointHeadingAngleEnable'
+  ];
+
+  test('buildWaylinesWpml should contain all required RC2 golden tags for standard flight', () => {
+    const originalGetElementById = global.document.getElementById;
+    try {
+      vm.runInThisContext(`
+        generatedWaypoints = [
+          { lat: 41.88, lon: -87.62, alt: 50, heading: 0, pitch: -90, hoverTime: 5, cameraAction: 'takePhoto', gimbalPitch: -45 },
+          { lat: 41.89, lon: -87.62, alt: 50, heading: 0, pitch: -90, hoverTime: 0, cameraAction: 'none' }
+        ];
+        document.getElementById = (id) => {
+          const valMap = {
+            'finish-action': 'goHome',
+            'flight-speed': '5',
+            'rc-lost-action': 'goHome',
+            'gimbal-pitch': '-90'
+          };
+          return { value: valMap[id] || '', checked: true };
+        };
+      `);
+
+      const xmlString = vm.runInThisContext('buildWaylinesWpml(generatedWaypoints, "waypoint")');
+      const tagMatches = xmlString.matchAll(/<([a-zA-Z0-9]+:)?([a-zA-Z0-9]+)[>\s]/g);
+      const generatedTags = new Set([...tagMatches].map(m => m[2]));
+
+      const missingTags = rc2GoldenTags.filter(t => !generatedTags.has(t));
+      assert.deepStrictEqual(missingTags, [], 'Generated WPML should not miss any RC2 required tags');
+      assert.ok(xmlString.includes('<wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>'), 'waypointHeadingAngleEnable must be true/1');
+      assert.ok(xmlString.includes('<wpml:actionGroupStartIndex>0</wpml:actionGroupStartIndex>'), 'actionGroupStartIndex should be a valid number');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+      vm.runInThisContext('generatedWaypoints = [];');
+    }
+  });
+});
