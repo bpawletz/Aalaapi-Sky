@@ -2549,6 +2549,23 @@ describe('WPML Validation & Stationary Fallback Regression Tests', () => {
     assert.strictEqual(parseFloat(coord1Parts[2]), 25); // altitude override
   });
 
+  test('buildWaylinesWpml includes waypointGimbalHeadingParam and extra gimbalRotate tags for DJI schema compliance', () => {
+    const wps = [
+      { lat: 40.0127, lon: -83.1771, alt: 17, headingMode: 'inherit' }
+    ];
+    const xml = vm.runInThisContext(`buildWaylinesWpml(${JSON.stringify(wps)}, 17, 4, 'followWayline', 'goHome', -90, 'stopAndShoot', 'straight')`);
+    
+    // Assert waypointGimbalHeadingParam tags
+    assert.strictEqual(xml.includes('<wpml:waypointGimbalHeadingParam>'), true, 'waylines.wpml must contain waypointGimbalHeadingParam');
+    assert.strictEqual(xml.includes('<wpml:waypointGimbalPitchAngle>0</wpml:waypointGimbalPitchAngle>'), true, 'waylines.wpml must contain waypointGimbalPitchAngle');
+    assert.strictEqual(xml.includes('<wpml:waypointGimbalYawAngle>0</wpml:waypointGimbalYawAngle>'), true, 'waylines.wpml must contain waypointGimbalYawAngle');
+    
+    // Assert extra gimbalRotate tags
+    assert.strictEqual(xml.includes('<wpml:gimbalHeadingYawBase>aircraft</wpml:gimbalHeadingYawBase>'), true, 'waylines.wpml must contain gimbalHeadingYawBase');
+    assert.strictEqual(xml.includes('<wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>'), true, 'waylines.wpml must contain gimbalRotateTimeEnable');
+    assert.strictEqual(xml.includes('<wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>'), true, 'waylines.wpml must contain gimbalRotateTime');
+  });
+
   test('multi-leg 2D grid export assigns correct wayline direction angles and enables them (waypointHeadingAngleEnable=1) for stationary fallback', () => {
     const wps = [
       { lat: 40.0127, lon: -83.1771, alt: 17, heading: 0, headingMode: 'inherit' },
