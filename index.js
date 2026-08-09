@@ -4856,7 +4856,7 @@ ${templateTypeXml}      <wpml:templateId>0</wpml:templateId>
       <wpml:distance>0</wpml:distance>
       <wpml:duration>0</wpml:duration>
       <wpml:autoFlightSpeed>${speed}</wpml:autoFlightSpeed>
-${payloadParamXml}      ${placemarksXml}    </Folder>
+${payloadParamXml}${placemarksXml}    </Folder>
   </Document>
 </kml>`;
 }
