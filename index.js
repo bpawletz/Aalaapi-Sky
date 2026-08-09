@@ -73,34 +73,6 @@ function formatDistance(meters, decimalPlaces = 1) {
   }
   return `${meters.toFixed(decimalPlaces)} m`;
 }
-
-function syncDisplayValues() {
-  const unit = getUnitSystem();
-  const distUnitStr = unit === 'imperial' ? 'ft' : 'm';
-  const speedUnitStr = unit === 'imperial' ? 'mph' : 'm/s';
-
-  const altUnitEl = document.getElementById('altitude-unit');
-  if (altUnitEl) altUnitEl.textContent = distUnitStr;
-
-  const spacingUnitEl = document.getElementById('grid-spacing-unit');
-  if (spacingUnitEl) spacingUnitEl.textContent = distUnitStr;
-
-  const speedUnitEl = document.getElementById('speed-unit');
-  if (speedUnitEl) speedUnitEl.textContent = speedUnitStr;
-
-  const apHeightUnitEl = document.getElementById('ap-height-unit');
-  if (apHeightUnitEl) apHeightUnitEl.textContent = distUnitStr;
-
-  const apClearanceUnitEl = document.getElementById('ap-clearance-unit');
-  if (apClearanceUnitEl) apClearanceUnitEl.textContent = distUnitStr;
-
-  const fpvAltUnitEl = document.getElementById('fpv-edit-alt-unit');
-  if (fpvAltUnitEl) fpvAltUnitEl.textContent = distUnitStr;
-
-  const fpvTelemAltUnitEl = document.getElementById('fpv-telemetry-alt-unit');
-  if (fpvTelemAltUnitEl) fpvTelemAltUnitEl.textContent = distUnitStr;
-}
-
 function initGeolocation() {
   const btn = document.getElementById('locate-me-btn');
   const label = document.getElementById('locate-me-label');
@@ -615,7 +587,8 @@ const CONTROLS_LIST = [
   'grid-type', 'grid-width', 'grid-height', 'grid-rotation',
   'front-overlap', 'side-overlap', 'gimbal-pitch',
   'altitude', 'speed', 'heading-mode', 'finish-action', 'capture-mode', 'path-mode', 'signal-lost-action',
-  'max-flight-time', 'camera-model', 'drone-model', 'camera-zoom', 'camera-hfov', 'camera-vfov', 'road-offset'
+  'max-flight-time', 'camera-model', 'drone-model', 'camera-zoom', 'camera-hfov', 'camera-vfov', 'road-offset',
+  'global-hover-time'
 ];
 
 function saveAllSettingsToLocalStorage() {
@@ -1375,11 +1348,30 @@ function togglePatternParameters() {
 function syncDisplayValues() {
   const gridType = document.getElementById('grid-type').value;
   const unit = getUnitSystem();
+  
+  const distUnitStr = unit === 'imperial' ? 'ft' : 'm';
+  const speedUnitStr = unit === 'imperial' ? 'mph' : 'm/s';
 
   const widthVal = parseFloat(document.getElementById('grid-width').value);
   const rotationVal = parseFloat(document.getElementById('grid-rotation').value);
   const altitudeVal = parseFloat(document.getElementById('altitude').value);
   const speedVal = parseFloat(document.getElementById('speed').value);
+
+  // Update additional units
+  const spacingUnitEl = document.getElementById('grid-spacing-unit');
+  if (spacingUnitEl) spacingUnitEl.textContent = distUnitStr;
+
+  const apHeightUnitEl = document.getElementById('ap-height-unit');
+  if (apHeightUnitEl) apHeightUnitEl.textContent = distUnitStr;
+
+  const apClearanceUnitEl = document.getElementById('ap-clearance-unit');
+  if (apClearanceUnitEl) apClearanceUnitEl.textContent = distUnitStr;
+
+  const fpvAltUnitEl = document.getElementById('fpv-edit-alt-unit');
+  if (fpvAltUnitEl) fpvAltUnitEl.textContent = distUnitStr;
+
+  const fpvTelemAltUnitEl = document.getElementById('fpv-telemetry-alt-unit');
+  if (fpvTelemAltUnitEl) fpvTelemAltUnitEl.textContent = distUnitStr;
 
   // Update Grid Width
   if (unit === 'imperial') {
@@ -1453,6 +1445,13 @@ function syncDisplayValues() {
   const maxFlightTimeValEl = document.getElementById('max-flight-time-val');
   if (maxFlightTimeEl && maxFlightTimeValEl) {
     maxFlightTimeValEl.textContent = maxFlightTimeEl.value;
+  }
+
+  // Update Global Hover Time
+  const globalHoverSlider = document.getElementById('global-hover-time');
+  const globalHoverValEl = document.getElementById('global-hover-time-val');
+  if (globalHoverSlider && globalHoverValEl) {
+    globalHoverValEl.textContent = globalHoverSlider.value;
   }
 
   // Update Road Offset
@@ -2075,7 +2074,7 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
     const finalAlt = (existingGwp && existingGwp.alt !== undefined && existingGwp.alt !== null && existingGwp.isModified) ? existingGwp.alt : altVal;
     const finalPitch = (existingGwp && existingGwp.pitch !== undefined && existingGwp.pitch !== null && existingGwp.isModified) ? existingGwp.pitch : pitchVal;
     const finalSpeed = (existingGwp && existingGwp.speed !== undefined && existingGwp.speed !== null) ? existingGwp.speed : (wp.speed !== undefined ? wp.speed : null);
-    const finalHover = (existingGwp && existingGwp.hoverTime !== undefined && existingGwp.hoverTime !== null) ? existingGwp.hoverTime : (wp.hoverTime !== undefined ? wp.hoverTime : 0);
+    const finalHover = (existingGwp && existingGwp.hoverTime !== undefined && existingGwp.hoverTime !== null) ? existingGwp.hoverTime : (wp.hoverTime !== undefined ? wp.hoverTime : null);
     const finalTurn = (existingGwp && existingGwp.turnMode !== undefined && existingGwp.turnMode !== null) ? existingGwp.turnMode : (wp.turnMode || 'inherit');
     const finalAction = (existingGwp && existingGwp.cameraAction !== undefined && existingGwp.cameraAction !== null) ? existingGwp.cameraAction : (wp.cameraAction || 'inherit');
     const finalZoom = (existingGwp && existingGwp.zoom !== undefined && existingGwp.zoom !== null) ? existingGwp.zoom : (wp.zoom !== undefined ? wp.zoom : 1.0);
@@ -2106,7 +2105,7 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
       if (existingGwp.origHeading === undefined) existingGwp.origHeading = headingVal;
       if (existingGwp.origHeadingMode === undefined) existingGwp.origHeadingMode = mode;
       if (existingGwp.origSpeed === undefined) existingGwp.origSpeed = wp.origSpeed !== undefined ? wp.origSpeed : null;
-      if (existingGwp.origHoverTime === undefined) existingGwp.origHoverTime = wp.origHoverTime !== undefined ? wp.origHoverTime : 0;
+      if (existingGwp.origHoverTime === undefined) existingGwp.origHoverTime = wp.origHoverTime !== undefined ? wp.origHoverTime : null;
       if (existingGwp.origTurnMode === undefined) existingGwp.origTurnMode = wp.origTurnMode || 'inherit';
       if (existingGwp.origCameraAction === undefined) existingGwp.origCameraAction = wp.origCameraAction || 'inherit';
       if (existingGwp.origZoom === undefined) existingGwp.origZoom = wp.origZoom !== undefined ? wp.origZoom : 1.0;
@@ -2140,7 +2139,7 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
       origHeading: headingVal,
       origHeadingMode: mode,
       origSpeed: wp.origSpeed !== undefined ? wp.origSpeed : null,
-      origHoverTime: wp.origHoverTime !== undefined ? wp.origHoverTime : 0,
+      origHoverTime: wp.origHoverTime !== undefined ? wp.origHoverTime : null,
       origTurnMode: wp.origTurnMode || 'inherit',
       origCameraAction: wp.origCameraAction || 'inherit',
       origZoom: wp.origZoom !== undefined ? wp.origZoom : 1.0,
@@ -2321,7 +2320,7 @@ function updateGrid() {
           pitch: pitch,
           heading: finalHeading,
           speed: pt.speed !== undefined ? pt.speed : null,
-          hoverTime: pt.hoverTime !== undefined ? pt.hoverTime : 0,
+          hoverTime: pt.hoverTime !== undefined ? pt.hoverTime : null,
           turnMode: pt.turnMode || 'inherit',
           cameraAction: pt.cameraAction || 'inherit',
           zoom: pt.zoom !== undefined ? pt.zoom : 1.0,
@@ -2336,7 +2335,7 @@ function updateGrid() {
           origPitch: pitch,
           origHeading: finalHeading,
           origSpeed: pt.speed !== undefined ? pt.speed : null,
-          origHoverTime: pt.hoverTime !== undefined ? pt.hoverTime : 0,
+          origHoverTime: pt.hoverTime !== undefined ? pt.hoverTime : null,
           origTurnMode: pt.turnMode || 'inherit',
           origCameraAction: pt.cameraAction || 'inherit',
           origZoom: pt.zoom !== undefined ? pt.zoom : 1.0,
@@ -2715,6 +2714,7 @@ function generateGridMultiOrbitComboCoordinates(radius, rotation, captureMode, s
 // Convert relative coordinates (meters) to geodesic coordinates (Lat/Lon)
 // Handles rotation (heading in degrees) relative to North
 function localToGeodetic(x, y, centerLat, centerLon, rotationDeg) {
+  rotationDeg = rotationDeg || 0;
   const alpha = (rotationDeg * Math.PI) / 180.0;
   
   // Rotate local coordinates
@@ -3763,6 +3763,12 @@ function getSubMissionFlightTime(wps, startIdx, endIdx, speed, captureMode) {
   if (captureMode === 'stopAndShoot') {
     timeSec += photoCount * 4.5;
   }
+  // Add global hover time per waypoint
+  const globalHoverEl = document.getElementById('global-hover-time');
+  const globalHover = globalHoverEl ? parseInt(globalHoverEl.value) : 0;
+  if (globalHover > 0) {
+    timeSec += (endIdx - startIdx + 1) * globalHover;
+  }
   timeSec += 45; // Takeoff, landing, and acceleration buffer
   return timeSec;
 }
@@ -4199,6 +4205,12 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
   if (captureMode === 'stopAndShoot') {
     flightTimeSeconds += photoCount * 4.5;
   }
+  // Add global hover time per waypoint
+  const globalHoverEl = document.getElementById('global-hover-time');
+  const globalHover = globalHoverEl ? parseInt(globalHoverEl.value) : 0;
+  if (globalHover > 0) {
+    flightTimeSeconds += waypoints.length * globalHover;
+  }
   
   flightTimeSeconds += 45;
 
@@ -4384,6 +4396,7 @@ function buildTemplateKml(finishAction, speed) {
       </wpml:droneInfo>
     </wpml:missionConfig>
     <Folder>
+      <wpml:templateType>waypoint</wpml:templateType>
       <wpml:templateId>0</wpml:templateId>
       <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
       <wpml:waylineId>0</wpml:waylineId>
@@ -4405,6 +4418,9 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
   
   const zoomEl = document.getElementById('camera-zoom');
   const cameraZoom = zoomEl ? parseFloat(zoomEl.value) : 1.0;
+
+  const globalHoverEl = document.getElementById('global-hover-time');
+  const globalHoverTime = globalHoverEl ? parseInt(globalHoverEl.value) : 0;
 
   // Build XML Placemark tags (waypoints)
   let placemarksXml = '';
@@ -4542,8 +4558,9 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
         </wpml:actionGroup>\n`;
     }
 
-    // 5. Per-waypoint hover duration action group
-    if (wp.hoverTime && wp.hoverTime > 0) {
+    // 5. Hover duration action group (per-waypoint override > global; 0 = skip)
+    const effectiveHover = (wp.hoverTime !== null && wp.hoverTime !== undefined) ? wp.hoverTime : globalHoverTime;
+    if (effectiveHover > 0) {
       actionsForThisPlacemark += `        <wpml:actionGroup>
           <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
           <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
@@ -4556,7 +4573,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
-              <wpml:hoverTime>${wp.hoverTime}</wpml:hoverTime>
+              <wpml:hoverTime>${effectiveHover}</wpml:hoverTime>
             </wpml:actionActuatorFuncParam>
           </wpml:action>
         </wpml:actionGroup>\n`;
@@ -4677,14 +4694,42 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
           poiPoint = `${targetPoi.lat.toFixed(13)},${targetPoi.lon.toFixed(13)},0.000000`;
         }
       }
+    }
 
-      if (headingMode !== 'towardPOI' && wp.heading !== null && wp.heading !== undefined) {
-        actualHeadingMode = 'smoothTransition';
+    if (actualHeadingMode === 'followWayline') {
+      if (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
         actualHeadingAngle = wp.heading;
+      } else {
+        // Compute bearing from lat/lon to avoid NaN when x/y offsets are not set
+        let fromWp, toWp;
+        if (idx < waypoints.length - 1) {
+          fromWp = waypoints[idx];
+          toWp = waypoints[idx + 1];
+        } else if (idx > 0) {
+          fromWp = waypoints[idx - 1];
+          toWp = waypoints[idx];
+        }
+        if (toWp && fromWp &&
+            fromWp.lat !== undefined && fromWp.lon !== undefined &&
+            toWp.lat !== undefined && toWp.lon !== undefined) {
+          const lat1 = fromWp.lat * Math.PI / 180;
+          const lat2 = toWp.lat * Math.PI / 180;
+          const dLon = (toWp.lon - fromWp.lon) * Math.PI / 180;
+          const y = Math.sin(dLon) * Math.cos(lat2);
+          const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+          let bearing = Math.atan2(y, x) * 180 / Math.PI;
+          if (bearing < 0) bearing += 360;
+          actualHeadingAngle = bearing;
+        } else {
+          const gridRotEl = document.getElementById('grid-rotation');
+          const gridRot = gridRotEl ? parseFloat(gridRotEl.value) : 0;
+          const h = getDefaultHeading(idx, waypoints, gridRot);
+          actualHeadingAngle = isNaN(h) ? 0 : h;
+        }
       }
     }
 
-    const headingAngleEnable = (actualHeadingMode === 'followWayline') ? 0 : 1;
+    const headingAngleEnable = 1;
 
     const currentAltitude = wp.alt !== undefined ? wp.alt : altitude;
     const actualSpeed = (wp.speed !== undefined && wp.speed !== null && !isNaN(wp.speed)) ? wp.speed : speed;
@@ -4753,6 +4798,7 @@ ${actionsForThisPlacemark}      </Placemark>\n`;
       </wpml:droneInfo>
     </wpml:missionConfig>
     <Folder>
+      <wpml:templateType>waypoint</wpml:templateType>
       <wpml:templateId>0</wpml:templateId>
       <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
       <wpml:waylineId>0</wpml:waylineId>
@@ -5154,7 +5200,7 @@ function parseWPML(wpmlText) {
       wp.origHeading = wp.heading;
       wp.origHeadingMode = wp.headingMode || 'inherit';
       wp.origSpeed = wp.speed !== undefined ? wp.speed : null;
-      wp.origHoverTime = wp.hoverTime !== undefined ? wp.hoverTime : 0;
+      wp.origHoverTime = wp.hoverTime !== undefined ? wp.hoverTime : null;
       wp.origTurnMode = wp.turnMode || 'inherit';
       wp.origCameraAction = wp.cameraAction || 'inherit';
       wp.origZoom = wp.zoom !== undefined ? wp.zoom : 1.0;
@@ -5341,7 +5387,7 @@ function convertToFreeformMission() {
     headingMode: w.headingMode || 'inherit',
     poiIndex: w.poiIndex || 0,
     speed: w.speed !== undefined ? w.speed : null,
-    hoverTime: w.hoverTime !== undefined ? w.hoverTime : 0,
+    hoverTime: w.hoverTime !== undefined ? w.hoverTime : null,
     turnMode: w.turnMode || 'inherit',
     cameraAction: w.cameraAction || 'inherit',
     zoom: w.zoom !== undefined ? w.zoom : 1.0,
@@ -5358,7 +5404,7 @@ function convertToFreeformMission() {
     origHeadingMode: w.origHeadingMode || w.headingMode || 'inherit',
     origPoiIndex: w.origPoiIndex !== undefined ? w.origPoiIndex : (w.poiIndex || 0),
     origSpeed: w.origSpeed !== undefined ? w.origSpeed : (w.speed !== undefined ? w.speed : null),
-    origHoverTime: w.origHoverTime !== undefined ? w.origHoverTime : (w.hoverTime !== undefined ? w.hoverTime : 0),
+    origHoverTime: w.origHoverTime !== undefined ? w.origHoverTime : (w.hoverTime !== undefined ? w.hoverTime : null),
     origTurnMode: w.origTurnMode || w.turnMode || 'inherit',
     origCameraAction: w.origCameraAction || w.cameraAction || 'inherit',
     origZoom: w.origZoom !== undefined ? w.origZoom : (w.zoom !== undefined ? w.zoom : 1.0)
@@ -5583,9 +5629,9 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       <div style="display: flex; flex-direction: column; gap: 4px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;"><svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="12" cy="12" r="9" stroke="#06b6d4" fill="none"/><polyline points="12 6 12 12 16 14" stroke="#c2622d"/></svg>Hover Time:</span>
-          <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-hover-val">${wp.hoverTime || 0}</span>s</span>
+          <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-hover-val">${wp.hoverTime !== null && wp.hoverTime !== undefined ? wp.hoverTime : (document.getElementById('global-hover-time') ? parseInt(document.getElementById('global-hover-time').value) : 0)}</span>s${wp.hoverTime === null || wp.hoverTime === undefined ? ' <span style="color: #94a3b8; font-size: 0.7rem;">(Global)</span>' : ''}</span>
         </div>
-        <input type="range" id="edit-wp-hover" min="0" max="60" step="1" value="${wp.hoverTime || 0}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
+        <input type="range" id="edit-wp-hover" min="0" max="60" step="1" value="${wp.hoverTime !== null && wp.hoverTime !== undefined ? wp.hoverTime : (document.getElementById('global-hover-time') ? parseInt(document.getElementById('global-hover-time').value) : 0)}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
       </div>
 
       <!-- Turn Mode Selector -->
@@ -5882,7 +5928,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       Math.abs(currentAlt - baseAlt) > 1e-3 ||
       currentPitch !== basePitch ||
       (currentSpeed !== null && currentSpeed !== baseSpeed) ||
-      (currentHover !== 0 && currentHover !== baseHover) ||
+      (currentHover !== baseHover) ||
       currentTurnMode !== baseTurnMode ||
       currentCameraAction !== baseCameraAction ||
       currentZoom !== baseZoom ||
@@ -6269,7 +6315,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       wp.headingMode = wp.origHeadingMode || 'inherit';
       wp.poiIndex = (wp.origPoiIndex !== undefined && wp.origPoiIndex !== null) ? wp.origPoiIndex : 0;
       wp.speed = (wp.origSpeed !== undefined) ? wp.origSpeed : null;
-      wp.hoverTime = (wp.origHoverTime !== undefined && wp.origHoverTime !== null) ? wp.origHoverTime : 0;
+      wp.hoverTime = (wp.origHoverTime !== undefined) ? wp.origHoverTime : null;
       wp.turnMode = wp.origTurnMode || 'inherit';
       wp.cameraAction = wp.origCameraAction || 'inherit';
       wp.zoom = (wp.origZoom !== undefined && wp.origZoom !== null) ? wp.origZoom : 1.0;
@@ -7368,7 +7414,10 @@ function updateFPVCamera(dt) {
         
         if (fpvProgressIndex < waypoints.length) {
           const wp = waypoints[fpvProgressIndex];
-          const hoverTime = (wp && wp.hoverTime && wp.hoverTime > 0) ? wp.hoverTime : 0;
+          const wpHoverTime = (wp && wp.hoverTime !== null && wp.hoverTime !== undefined) ? wp.hoverTime : null;
+          const globalHoverEl = document.getElementById('global-hover-time');
+          const globalHover = globalHoverEl ? parseInt(globalHoverEl.value) : 0;
+          const effectiveHover = (wpHoverTime !== null) ? wpHoverTime : globalHover;
           const turnMode = wp ? wp.turnMode : 'inherit';
           const globalPathMode = document.getElementById('path-mode')?.value;
           const captureMode = document.getElementById('capture-mode')?.value;
@@ -7378,8 +7427,8 @@ function updateFPVCamera(dt) {
 
           // Determine if the real drone actually hovers at this waypoint
           let hoverDuration = 0;
-          if (hoverTime > 0) {
-            hoverDuration = hoverTime;
+          if (effectiveHover > 0) {
+            hoverDuration = effectiveHover;
           } else if (isStraightLines || isStopAndShoot) {
             hoverDuration = 1.5;
           }
@@ -8585,7 +8634,7 @@ function setupFPVListeners() {
       wp.headingMode = wp.origHeadingMode || 'inherit';
       wp.poiIndex = wp.origPoiIndex || 0;
       wp.speed = wp.origSpeed !== undefined ? wp.origSpeed : null;
-      wp.hoverTime = wp.origHoverTime !== undefined ? wp.origHoverTime : 0;
+      wp.hoverTime = wp.origHoverTime !== undefined ? wp.origHoverTime : null;
       wp.turnMode = wp.origTurnMode || 'inherit';
       wp.cameraAction = wp.origCameraAction || 'inherit';
       wp.zoom = wp.origZoom !== undefined ? wp.origZoom : 1.0;

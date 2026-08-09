@@ -39,7 +39,7 @@ After making edits to `index.js`, `index.css`, or `index_template.html`, you **M
 python scratch/build.py
 ```
 
-## 4. Standard Verification (Unit & E2E Tests)
+## 4. Standard Verification & Mandatory Regression Testing (Unit & E2E Tests)
 After applying updates, bumping versions, and running the build script, run both the unit and Playwright E2E UI test suites to verify code correctness:
 ```bash
 # Run both unit and E2E tests:
@@ -47,7 +47,8 @@ node --test index.test.js index.e2e.test.js
 # Or using npm:
 npm test
 ```
-- **Unit Tests (`index.test.js`)**: Add unit tests for core logic, calculations, WPML parsing/exporting, and UI helper functions.
+- **Mandatory Bug Fix Tests**: Whenever you identify or fix a bug, issue, or edge-case regression (e.g., XML tag validation, NaN values, calculation errors, or UI behaviors), you **MUST** write a dedicated unit test in `index.test.js` or E2E UI test in `index.e2e.test.js` specifically asserting that the issue is prevented from recurring.
+- **Unit Tests (`index.test.js`)**: Add unit tests for core logic, calculations, WPML parsing/exporting, schema tags, non-NaN validations, and UI helper functions.
 - **E2E UI Tests (`index.e2e.test.js`)**: Add Playwright E2E UI tests for any new interactive features, modals, pattern generators, or editor popup behaviors.
 
 All unit and E2E tests must pass before the task can be marked complete.
