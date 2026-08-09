@@ -4404,6 +4404,25 @@ function buildTemplateKml(finishAction, speed) {
     executeRCLostAction = 'goBack';
   }
 
+  const isEnterprise = (droneEnumValue !== 68 && droneEnumValue !== 89);
+  let folderXml = '';
+  if (isEnterprise) {
+    folderXml = `
+    <Folder>
+      <wpml:templateType>waypoint</wpml:templateType>
+      <wpml:templateId>0</wpml:templateId>
+      <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
+      <wpml:waylineId>0</wpml:waylineId>
+      <wpml:distance>0</wpml:distance>
+      <wpml:duration>0</wpml:duration>
+      <wpml:autoFlightSpeed>${speed}</wpml:autoFlightSpeed>
+      <wpml:payloadParam>
+        <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+        <wpml:payloadPitchControlMode>usePointSetting</wpml:payloadPitchControlMode>
+      </wpml:payloadParam>
+    </Folder>`;
+  }
+
   return `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">
   <Document>
@@ -4420,20 +4439,7 @@ function buildTemplateKml(finishAction, speed) {
         <wpml:droneEnumValue>${droneEnumValue}</wpml:droneEnumValue>
         <wpml:droneSubEnumValue>0</wpml:droneSubEnumValue>
       </wpml:droneInfo>
-    </wpml:missionConfig>
-    <Folder>
-      <wpml:templateType>waypoint</wpml:templateType>
-      <wpml:templateId>0</wpml:templateId>
-      <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
-      <wpml:waylineId>0</wpml:waylineId>
-      <wpml:distance>0</wpml:distance>
-      <wpml:duration>0</wpml:duration>
-      <wpml:autoFlightSpeed>${speed}</wpml:autoFlightSpeed>
-      <wpml:payloadParam>
-        <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-        <wpml:payloadPitchControlMode>usePointSetting</wpml:payloadPitchControlMode>
-      </wpml:payloadParam>
-    </Folder>
+    </wpml:missionConfig>${folderXml}
   </Document>
 </kml>`;
 }
@@ -4804,7 +4810,7 @@ ${actionsForThisPlacemark}      </Placemark>\n`;
   });
 
   const droneModelEl = document.getElementById('drone-model');
-  const droneEnumValue = droneModelEl ? parseInt(droneModelEl.value, 10) : 68; // Default to Mini 4 Pro (68)
+  const droneEnumValue = droneModelEl ? parseInt(droneModelEl.value, 10) : 77; // Default to Mavic 3 Enterprise (77)
 
   const signalLostEl = document.getElementById('signal-lost-action');
   const signalLostValue = signalLostEl ? signalLostEl.value : 'goBack';
@@ -4814,6 +4820,13 @@ ${actionsForThisPlacemark}      </Placemark>\n`;
     exitOnRCLost = 'goContinue';
     executeRCLostAction = 'goBack';
   }
+
+  const isEnterprise = (droneEnumValue !== 68 && droneEnumValue !== 89);
+  let templateTypeXml = isEnterprise ? '      <wpml:templateType>waypoint</wpml:templateType>\n' : '';
+  let payloadParamXml = isEnterprise ? `      <wpml:payloadParam>
+        <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+        <wpml:payloadPitchControlMode>usePointSetting</wpml:payloadPitchControlMode>
+      </wpml:payloadParam>\n` : '';
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">
@@ -4830,18 +4843,13 @@ ${actionsForThisPlacemark}      </Placemark>\n`;
       </wpml:droneInfo>
     </wpml:missionConfig>
     <Folder>
-      <wpml:templateType>waypoint</wpml:templateType>
-      <wpml:templateId>0</wpml:templateId>
+${templateTypeXml}      <wpml:templateId>0</wpml:templateId>
       <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
       <wpml:waylineId>0</wpml:waylineId>
       <wpml:distance>0</wpml:distance>
       <wpml:duration>0</wpml:duration>
       <wpml:autoFlightSpeed>${speed}</wpml:autoFlightSpeed>
-      <wpml:payloadParam>
-        <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-        <wpml:payloadPitchControlMode>usePointSetting</wpml:payloadPitchControlMode>
-      </wpml:payloadParam>
-      ${placemarksXml}    </Folder>
+${payloadParamXml}      ${placemarksXml}    </Folder>
   </Document>
 </kml>`;
 }
