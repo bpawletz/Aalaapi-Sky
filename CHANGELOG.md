@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.27.9] - 2026-08-09
+
+### Fixed
+- **Coordinates Altitude Tag**: Added missing altitude component (the third parameter) in the `<coordinates>` tag of KML/WPML `<Point>` elements (e.g. `longitude,latitude,altitude`), resolving schema validation errors on strict flight controllers like the DJI RC 2 running DJI Pilot 2.
+
 ## [1.27.8] - 2026-08-09
 
 ### Fixed
