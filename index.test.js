@@ -873,12 +873,11 @@ describe('calculateStats Tests', () => {
       assert.strictEqual(statsHover.timeStr, '0m 50s');
 
       // Capture mode 'stopAndShoot'
-      // Flight time = 5 (distance/speed) + 3*4.5 (photos) + 45 (base) = 50 + 13.5 = 63.5 seconds.
+      // Flight time = 5 (distance/speed) + 3*4.5 (photos) + 45 (base) + 2 (auto-settling) = 65.5 seconds.
       const statsStop = calculateStats(waypoints, photoLocations, speed, 10, 10, 'stopAndShoot');
-      assert.strictEqual(statsStop.flightTimeSeconds, 63.5);
-      assert.strictEqual(statsStop.timeStr, '1m 4s'); // 63.5s -> 1m 4s (rounded)
+      assert.strictEqual(statsStop.flightTimeSeconds, 65.5);
+      assert.strictEqual(statsStop.timeStr, '1m 6s'); // 65.5s -> 1m 6s (rounded)
 
-      // Over max flight time scenario
       // Change distance to 2000m (2000/10 = 200s + 45 = 245s). Max is 120s.
       const waypointsLong = [
         { x: 0, y: 0, z: 0, lat: 0, lon: 0 },
@@ -939,7 +938,7 @@ describe('getSubMissionFlightTime Tests', () => {
     const wps = [{x: 0, y: 0}, {x: 30, y: 40}, {x: 30, y: 80}];
     vm.runInThisContext(`global.wpsInput = ${JSON.stringify(wps)};`);
     const time = vm.runInThisContext(`getSubMissionFlightTime(global.wpsInput, 0, 2, 10, 'stopAndShoot')`);
-    assert.strictEqual(time, 67.5);
+    assert.strictEqual(time, 71.5);
   });
 
   test('calculates time for 0 distance segments', async () => {
@@ -2013,6 +2012,104 @@ describe('3D FPV Editor Panel Alignment & Viewport Tests', () => {
       assert.ok(placemarks.length >= 4, 'should have placemarks');
       const wp2Xml = placemarks[3]; // WP 2 is placemark index 2 (4th array element)
       assert.ok(!wp2Xml.includes('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>'), 'should skip hover action for WP 2 with explicit hoverTime 0');
+    } finally {
+      delete global._stubElements;
+    }
+  });
+
+  test('buildWaylinesWpml reorders hover action before photo action and injects auto-settling delays', () => {
+    try {
+      global._stubElements = {
+        'camera-zoom': { value: '1.0' },
+        'global-hover-time': { value: '0' },
+        'grid-type': { value: 'freeform' },
+        'drone-model': { value: '68' },
+        'signal-lost-action': { value: 'goBack' },
+        'grid-rotation': { value: '0' },
+        'heading-mode': { value: 'custom' }
+      };
+
+      // Waypoint 0: target pitch is -45 (takeoff default is 0), so it requires gimbal repositioning.
+      // Waypoint 1: target pitch is -45, custom heading is 0.
+      // Waypoint 2: target pitch is -45, custom heading is 90 (repositioning heading change 90°).
+      const testWaypoints = [
+        { lat: 41.88, lon: -87.62, alt: 50, pitch: -45, headingMode: 'custom', heading: 0, hoverTime: null },
+        { lat: 41.89, lon: -87.63, alt: 50, pitch: -45, headingMode: 'custom', heading: 0, hoverTime: 0 },
+        { lat: 41.90, lon: -87.64, alt: 50, pitch: -45, headingMode: 'custom', heading: 90, hoverTime: 0 }
+      ];
+
+      const xml = vm.runInThisContext('buildWaylinesWpml')(testWaypoints, 50, 5, 'custom', 'goHome', -45, 'stopAndShoot', 'straight');
+      
+      const placemarks = xml.split('<Placemark>');
+      assert.ok(placemarks.length >= 4, 'should split into at least 3 placemarks');
+      
+      // Placemark 1 (WP 0) has gimbal change from 0 to -45.
+      // It should have an auto-applied settling hover of 2s because hoverTime is null (inheriting global 0) and it needs repositioning.
+      const wp0Xml = placemarks[1];
+      assert.ok(wp0Xml.includes('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>'), 'WP 0 should have hover action');
+      assert.ok(wp0Xml.includes('<wpml:hoverTime>2</wpml:hoverTime>'), 'WP 0 should have 2s hover delay');
+      
+      // Verification of action sequencing: <wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc> must appear BEFORE <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+      const hoverIndex0 = wp0Xml.indexOf('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>');
+      const photoIndex0 = wp0Xml.indexOf('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>');
+      assert.ok(hoverIndex0 !== -1 && photoIndex0 !== -1, 'WP 0 should have both hover and takePhoto actions');
+      assert.ok(hoverIndex0 < photoIndex0, 'WP 0 hover action must be sequenced before takePhoto action');
+
+      // Placemark 2 (WP 1) has no change in pitch (-45 -> -45) and no change in heading (0 -> 0).
+      // Since hoverTime is 0, it should not have a hover action.
+      const wp1Xml = placemarks[2];
+      assert.ok(!wp1Xml.includes('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>'), 'WP 1 should not have hover action');
+
+      // Placemark 3 (WP 2) has a custom heading change of 90 degrees (0 -> 90).
+      // Since hoverTime is 0 and isStopAndShoot is true, it should auto-inject a 2s hover.
+      const wp2Xml = placemarks[3];
+      assert.ok(wp2Xml.includes('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>'), 'WP 2 should have hover action due to heading change');
+      assert.ok(wp2Xml.includes('<wpml:hoverTime>2</wpml:hoverTime>'), 'WP 2 should have 2s auto-settling delay');
+
+      const hoverIndex2 = wp2Xml.indexOf('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>');
+      const photoIndex2 = wp2Xml.indexOf('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>');
+      assert.ok(hoverIndex2 < photoIndex2, 'WP 2 hover action must be sequenced before takePhoto action');
+
+    } finally {
+      delete global._stubElements;
+    }
+  });
+
+  test('calculateStats and getSubMissionFlightTime factor in automatic settling delays', () => {
+    try {
+      global._stubElements = {
+        'camera-zoom': { value: '1.0' },
+        'global-hover-time': { value: '0' },
+        'max-flight-time': { value: '20' },
+        'grid-rotation': { value: '0' },
+        'heading-mode': { value: 'custom' }
+      };
+
+      const testWaypoints = [
+        { x: 0, y: 0, lat: 41.88, lon: -87.62, alt: 50, pitch: -45, headingMode: 'custom', heading: 0, hoverTime: null },
+        { x: 0, y: 100, lat: 41.89, lon: -87.63, alt: 50, pitch: -45, headingMode: 'custom', heading: 0, hoverTime: 0 },
+        { x: 0, y: 200, lat: 41.90, lon: -87.64, alt: 50, pitch: -45, headingMode: 'custom', heading: 90, hoverTime: 0 }
+      ];
+
+      // calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, captureMode)
+      const stats = vm.runInThisContext('calculateStats')(testWaypoints, [{}, {}, {}], 10, 50, 50, 'stopAndShoot');
+      
+      // Expected flight time:
+      // distance: 200m / speed 10 = 20s
+      // stopAndShoot photoCount * 4.5 = 3 * 4.5 = 13.5s
+      // Buffer = 45s
+      // Auto-settling hovers:
+      // WP 0: gimbal change from takeoff (0 -> -45) = 2s
+      // WP 1: no change = 0s
+      // WP 2: heading change (0 -> 90) = 2s
+      // Total hover = 4s
+      // Total flightTimeSeconds = 20 + 13.5 + 4 + 45 = 82.5 seconds
+      assert.strictEqual(Math.round(stats.flightTimeSeconds), 83);
+
+      // getSubMissionFlightTime(wps, startIdx, endIdx, speed, captureMode)
+      const subTime = vm.runInThisContext('getSubMissionFlightTime')(testWaypoints, 0, 2, 10, 'stopAndShoot');
+      assert.strictEqual(Math.round(subTime), 83);
+
     } finally {
       delete global._stubElements;
     }

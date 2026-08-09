@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.27.7] - 2026-08-09
+
+### Fixed
+- **Gimbal/Yaw Repositioning Dwell Time:** Reordered generated WPML KML action groups so that `hover` duration (if any) executes *before* `takePhoto` to ensure camera stabilization. Added automatic 2-second settling hover delays in KML export and 3D FPV simulation at waypoints where camera gimbal pitch or drone yaw heading changes under `stopAndShoot` mode if hover is set to `0`. Added a dynamic warning banner in the Waypoint Editor popup and updated stats calculations to include auto-settling delays.
+
 ## [1.27.6] - 2026-08-09
 
 ### Fixed

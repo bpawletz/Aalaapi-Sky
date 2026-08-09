@@ -3745,8 +3745,6 @@ function applyZoomGates() {
     }
   }
 }
-
-
 function getSubMissionFlightTime(wps, startIdx, endIdx, speed, captureMode) {
   let distance = 0;
   for (let i = startIdx + 1; i <= endIdx; i++) {
@@ -3763,12 +3761,28 @@ function getSubMissionFlightTime(wps, startIdx, endIdx, speed, captureMode) {
   if (captureMode === 'stopAndShoot') {
     timeSec += photoCount * 4.5;
   }
-  // Add global hover time per waypoint
+  
+  // Sum hover times across the sub-mission waypoints
   const globalHoverEl = document.getElementById('global-hover-time');
-  const globalHover = globalHoverEl ? parseInt(globalHoverEl.value) : 0;
-  if (globalHover > 0) {
-    timeSec += (endIdx - startIdx + 1) * globalHover;
+  const globalHover = globalHoverEl ? (parseInt(globalHoverEl.value) || 0) : 0;
+  const isStopAndShoot = captureMode === 'stopAndShoot';
+  
+  let totalHoverSeconds = 0;
+  for (let i = startIdx; i <= endIdx; i++) {
+    const wp = wps[i];
+    if (!wp) continue;
+    const baseHover = (wp.hoverTime !== null && wp.hoverTime !== undefined) ? wp.hoverTime : globalHover;
+    let wpEffectiveHover = baseHover;
+    if (isStopAndShoot && wpEffectiveHover === 0) {
+      const reposInfo = checkNeedsReposition(i, wps);
+      if (reposInfo.needsReposition) {
+        wpEffectiveHover = 2; // Auto-applied settling delay
+      }
+    }
+    totalHoverSeconds += wpEffectiveHover;
   }
+  timeSec += totalHoverSeconds;
+  
   timeSec += 45; // Takeoff, landing, and acceleration buffer
   return timeSec;
 }
@@ -4199,18 +4213,30 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
 
   // 2. Photo count
   const photoCount = photoLocations.length;
-
   // 3. Est flight time (accounting for stop-and-shoot hover delays)
   let flightTimeSeconds = totalDistance / speed;
   if (captureMode === 'stopAndShoot') {
     flightTimeSeconds += photoCount * 4.5;
   }
-  // Add global hover time per waypoint
+  
+  // Sum hover times across all waypoints
   const globalHoverEl = document.getElementById('global-hover-time');
-  const globalHover = globalHoverEl ? parseInt(globalHoverEl.value) : 0;
-  if (globalHover > 0) {
-    flightTimeSeconds += waypoints.length * globalHover;
-  }
+  const globalHover = globalHoverEl ? (parseInt(globalHoverEl.value) || 0) : 0;
+  const isStopAndShoot = captureMode === 'stopAndShoot';
+  
+  let totalHoverSeconds = 0;
+  waypoints.forEach((wp, idx) => {
+    const baseHover = (wp.hoverTime !== null && wp.hoverTime !== undefined) ? wp.hoverTime : globalHover;
+    let wpEffectiveHover = baseHover;
+    if (isStopAndShoot && wpEffectiveHover === 0) {
+      const reposInfo = checkNeedsReposition(idx, waypoints);
+      if (reposInfo.needsReposition) {
+        wpEffectiveHover = 2; // Auto-applied settling delay
+      }
+    }
+    totalHoverSeconds += wpEffectiveHover;
+  });
+  flightTimeSeconds += totalHoverSeconds;
   
   flightTimeSeconds += 45;
 
@@ -4444,6 +4470,17 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     let actionGroupId = 1;
     let actionsForThisPlacemark = '';
     
+    // Determine if repositioning (gimbal pitch or heading yaw) is required
+    const reposInfo = checkNeedsReposition(idx, waypoints);
+    const isStopAndShoot = captureMode === 'stopAndShoot';
+    
+    // Determine effective hover time, auto-injecting 2s settling delay if needed
+    const baseHover = (wp.hoverTime !== null && wp.hoverTime !== undefined) ? wp.hoverTime : globalHoverTime;
+    let effectiveHover = baseHover;
+    if (isStopAndShoot && effectiveHover === 0 && reposInfo.needsReposition) {
+      effectiveHover = 2;
+    }
+    
     // 1. Always set gimbal pitch at start of flight (waypoint index 0), at start of a new ring, OR at every waypoint for road-following
     const gridType = document.getElementById('grid-type')?.value;
     const isRoadFollowing = gridType === 'road-following';
@@ -4474,8 +4511,8 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
         </wpml:actionGroup>\n`;
     }
 
-    // 2. If Stop & Shoot is active, also add photo trigger at this waypoint
-    if (captureMode === 'stopAndShoot') {
+    // 2. Hover duration action group (MUST run BEFORE camera capture to stabilize gimbal and yaw)
+    if (effectiveHover > 0) {
       actionsForThisPlacemark += `        <wpml:actionGroup>
           <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
           <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
@@ -4486,16 +4523,38 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
-            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+              <wpml:hoverTime>${effectiveHover}</wpml:hoverTime>
             </wpml:actionActuatorFuncParam>
           </wpml:action>
         </wpml:actionGroup>\n`;
     }
 
-    // 3. Video record actions if captureMode is video (start at waypoint 0, stop at final waypoint)
+    // 3. Zoom action (only set once on the first waypoint to apply for the entire flight)
+    if (cameraZoom > 1.0 && idx === 0) {
+      actionsForThisPlacemark += `        <wpml:actionGroup>
+          <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>${idx}</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>zoom</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:focalLength>0</wpml:focalLength>
+              <wpml:isUseFocalFactor>1</wpml:isUseFocalFactor>
+              <wpml:focalFactor>${cameraZoom.toFixed(1)}</wpml:focalFactor>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>\n`;
+    }
+
+    // 4. Video record actions if captureMode is video (start at waypoint 0, stop at final waypoint)
     if (captureMode === 'video') {
       if (idx === 0) {
         actionsForThisPlacemark += `        <wpml:actionGroup>
@@ -4535,8 +4594,8 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
       }
     }
 
-    // 4. Zoom action (only set once on the first waypoint to apply for the entire flight)
-    if (cameraZoom > 1.0 && idx === 0) {
+    // 5. If Stop & Shoot is active, also add photo trigger at this waypoint
+    if (captureMode === 'stopAndShoot') {
       actionsForThisPlacemark += `        <wpml:actionGroup>
           <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
           <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
@@ -4547,33 +4606,10 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
-            <wpml:actionActuatorFunc>zoom</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
-              <wpml:focalLength>0</wpml:focalLength>
-              <wpml:isUseFocalFactor>1</wpml:isUseFocalFactor>
-              <wpml:focalFactor>${cameraZoom.toFixed(1)}</wpml:focalFactor>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-        </wpml:actionGroup>\n`;
-    }
-
-    // 5. Hover duration action group (per-waypoint override > global; 0 = skip)
-    const effectiveHover = (wp.hoverTime !== null && wp.hoverTime !== undefined) ? wp.hoverTime : globalHoverTime;
-    if (effectiveHover > 0) {
-      actionsForThisPlacemark += `        <wpml:actionGroup>
-          <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
-          <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>${idx}</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
-          <wpml:actionTrigger>
-            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
-          </wpml:actionTrigger>
-          <wpml:action>
-            <wpml:actionId>${actionId++}</wpml:actionId>
-            <wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:hoverTime>${effectiveHover}</wpml:hoverTime>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
             </wpml:actionActuatorFuncParam>
           </wpml:action>
         </wpml:actionGroup>\n`;
@@ -5632,6 +5668,9 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
           <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-hover-val">${wp.hoverTime !== null && wp.hoverTime !== undefined ? wp.hoverTime : (document.getElementById('global-hover-time') ? parseInt(document.getElementById('global-hover-time').value) : 0)}</span>s${wp.hoverTime === null || wp.hoverTime === undefined ? ' <span style="color: #94a3b8; font-size: 0.7rem;">(Global)</span>' : ''}</span>
         </div>
         <input type="range" id="edit-wp-hover" min="0" max="60" step="1" value="${wp.hoverTime !== null && wp.hoverTime !== undefined ? wp.hoverTime : (document.getElementById('global-hover-time') ? parseInt(document.getElementById('global-hover-time').value) : 0)}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
+        <div id="edit-wp-hover-warning" style="display: none; font-size: 0.65rem; color: #f59e0b; margin-top: 2px; line-height: 1.2;">
+          ⚠️ Gimbal/yaw change: 2s auto-settling delay will be applied in KML export.
+        </div>
       </div>
 
       <!-- Turn Mode Selector -->
@@ -5945,18 +5984,45 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       saveBtn.style.display = isChangedFromOrig ? 'inline-block' : 'none';
     }
   };
-
   const throttledUpdateRealtimeMarker = throttle(updateRealtimeMarker, 32);
+
+  const updateWarningVisibility = () => {
+    const warningDiv = popupContent.querySelector('#edit-wp-hover-warning');
+    if (!warningDiv) return;
+    
+    const currentHoverVal = hoverSlider ? parseInt(hoverSlider.value) : 0;
+    const isStopAndShoot = document.getElementById('capture-mode')?.value === 'stopAndShoot';
+    
+    const tempWp = {
+      ...wp,
+      alt: parseFloat(altSlider.value),
+      pitch: parseFloat(pitchSlider.value),
+      headingMode: headingModeSelect.value,
+      heading: headingModeSelect.value === 'custom' ? parseFloat(headingSlider.value) : (wp.heading !== undefined ? wp.heading : null),
+      poiIndex: poiSelect ? parseInt(poiSelect.value) : (wp.poiIndex || 0),
+    };
+    
+    const waypointsCopy = getCurrentWaypoints().map((w, i) => i === idx ? tempWp : w);
+    const reposInfo = checkNeedsReposition(idx, waypointsCopy);
+    
+    if (isStopAndShoot && currentHoverVal === 0 && reposInfo.needsReposition) {
+      warningDiv.style.display = 'block';
+    } else {
+      warningDiv.style.display = 'none';
+    }
+  };
 
   // Add event listeners to sliders
   altSlider.addEventListener('input', () => {
     const val = parseFloat(altSlider.value);
     altValText.textContent = unit === 'imperial' ? Math.round(val * M_TO_FT) : val.toFixed(0);
+    updateWarningVisibility();
     throttledUpdateRealtimeMarker();
   });
 
   pitchSlider.addEventListener('input', () => {
     pitchValText.textContent = pitchSlider.value;
+    updateWarningVisibility();
     throttledUpdateRealtimeMarker();
   });
 
@@ -5976,6 +6042,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     hoverSlider.addEventListener('input', () => {
       const val = parseInt(hoverSlider.value);
       hoverValText.textContent = `${val}`;
+      updateWarningVisibility();
       throttledUpdateRealtimeMarker();
     });
   }
@@ -6010,6 +6077,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
 
   headingSlider.addEventListener('input', () => {
     headingValText.textContent = headingSlider.value + '°';
+    updateWarningVisibility();
     throttledUpdateRealtimeMarker();
   });
 
@@ -6025,14 +6093,19 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       const isPoi = (mode === 'towardPOI' || (mode === 'inherit' && document.getElementById('heading-mode')?.value === 'towardPOI'));
       poiSelect.style.display = isPoi ? 'block' : 'none';
     }
+    updateWarningVisibility();
     updateRealtimeMarker();
   });
 
   if (poiSelect) {
     poiSelect.addEventListener('change', () => {
+      updateWarningVisibility();
       updateRealtimeMarker();
     });
   }
+
+  // Set initial warning visibility
+  setTimeout(updateWarningVisibility, 0);
 
   // Direct coordinate inputs listeners
   latInput.addEventListener('input', throttledUpdateRealtimeMarker);
@@ -6595,6 +6668,36 @@ function drawCoverageHeatmap(ctx, planeOffsetX, planeOffsetZ, planeSize) {
     ctx.fill();
     ctx.restore();
   });
+}
+
+// Check if a waypoint requires repositioning of gimbal or drone heading
+function checkNeedsReposition(idx, waypoints) {
+  if (!waypoints || waypoints.length === 0 || idx === null || idx === undefined || idx < 0 || idx >= waypoints.length) {
+    return { needsReposition: false, isGimbalChanged: false, isHeadingChanged: false };
+  }
+  const current = getWaypointHeadingAndPitch(idx, waypoints);
+  
+  let isGimbalChanged = false;
+  let isHeadingChanged = false;
+  
+  if (idx === 0) {
+    // Takeoff: gimbal defaults to 0. Any target pitch less than -5 is a change.
+    isGimbalChanged = current.pitch < -5;
+    isHeadingChanged = false;
+  } else {
+    const prev = getWaypointHeadingAndPitch(idx - 1, waypoints);
+    isGimbalChanged = Math.abs(current.pitch - prev.pitch) >= 5;
+    
+    let headingDiff = Math.abs(current.heading - prev.heading) % 360;
+    if (headingDiff > 180) headingDiff = 360 - headingDiff;
+    isHeadingChanged = headingDiff >= 10;
+  }
+  
+  return {
+    needsReposition: isGimbalChanged || isHeadingChanged,
+    isGimbalChanged,
+    isHeadingChanged
+  };
 }
 
 // Calculate the heading and pitch for a waypoint index
@@ -7417,22 +7520,18 @@ function updateFPVCamera(dt) {
           const wpHoverTime = (wp && wp.hoverTime !== null && wp.hoverTime !== undefined) ? wp.hoverTime : null;
           const globalHoverEl = document.getElementById('global-hover-time');
           const globalHover = globalHoverEl ? parseInt(globalHoverEl.value) : 0;
-          const effectiveHover = (wpHoverTime !== null) ? wpHoverTime : globalHover;
-          const turnMode = wp ? wp.turnMode : 'inherit';
-          const globalPathMode = document.getElementById('path-mode')?.value;
           const captureMode = document.getElementById('capture-mode')?.value;
-
-          const isStraightLines = (turnMode === 'stop') || (turnMode === 'inherit' && globalPathMode === 'straight');
           const isStopAndShoot = (captureMode === 'stopAndShoot');
 
           // Determine if the real drone actually hovers at this waypoint
-          let hoverDuration = 0;
-          if (effectiveHover > 0) {
-            hoverDuration = effectiveHover;
-          } else if (isStraightLines || isStopAndShoot) {
-            hoverDuration = 1.5;
+          const baseHover = (wpHoverTime !== null) ? wpHoverTime : globalHover;
+          let hoverDuration = baseHover;
+          if (isStopAndShoot && hoverDuration === 0) {
+            const reposInfo = checkNeedsReposition(fpvProgressIndex, waypoints);
+            if (reposInfo.needsReposition) {
+              hoverDuration = 2.0; // Auto-applied settling delay
+            }
           }
-
           triggerFPVPhotoCapture(hoverDuration);
         }
       }
@@ -7523,15 +7622,11 @@ function updateFPVCamera(dt) {
     redrawGroundPlane(heading, pitch);
   }
 }
-
 function triggerFPVPhotoCapture(hoverDurationSeconds = 0) {
   const flashOverlay = document.getElementById('fpv-flash-overlay');
   const mediaDot = document.getElementById('fpv-media-dot');
   const mediaText = document.getElementById('fpv-media-text');
 
-  if (flashOverlay) flashOverlay.style.opacity = '1.0';
-  fpvPhotoFlashActive = true;
-  
   if (hoverDurationSeconds > 0) {
     if (mediaDot && mediaText) {
       mediaDot.style.background = '#f59e0b';
@@ -7541,12 +7636,26 @@ function triggerFPVPhotoCapture(hoverDurationSeconds = 0) {
     const delayMs = (hoverDurationSeconds * 1000) / (fpvSpeed || 1.0);
     fpvPhotoDelayTimer = setTimeout(() => {
       fpvPhotoDelayTimer = null;
+      
+      // Trigger the photo flash at the END of the hover duration
+      if (flashOverlay) flashOverlay.style.opacity = '1.0';
+      fpvPhotoFlashActive = true;
+      
       if (mediaDot && mediaText) {
         mediaDot.style.background = '#10b981';
-        mediaText.textContent = 'Ready';
+        mediaText.textContent = 'Photo Captured';
+        setTimeout(() => {
+          if (mediaText && mediaText.textContent === 'Photo Captured') {
+            mediaText.textContent = 'Ready';
+          }
+        }, 800);
       }
     }, delayMs);
   } else {
+    // No hover duration: trigger photo immediately
+    if (flashOverlay) flashOverlay.style.opacity = '1.0';
+    fpvPhotoFlashActive = true;
+
     if (mediaDot && mediaText) {
       mediaDot.style.background = '#10b981';
       mediaText.textContent = 'Photo Captured';
