@@ -2497,6 +2497,34 @@ describe('WPML Validation & Stationary Fallback Regression Tests', () => {
     assert.strictEqual(xml.includes('<wpml:templateType>waypoint</wpml:templateType>'), true, 'waylines.wpml Folder must contain wpml:templateType tag');
   });
 
+  test('buildWaylinesWpml exports standard KML coordinates tags containing longitude, latitude, and altitude', () => {
+    const wps = [
+      { lat: 40.0127, lon: -83.1771, alt: 17, headingMode: 'inherit' },
+      { lat: 40.0128, lon: -83.1771, alt: 25, headingMode: 'inherit' }
+    ];
+    const xml = vm.runInThisContext(`buildWaylinesWpml(${JSON.stringify(wps)}, 17, 4, 'followWayline', 'goHome', -90, 'stopAndShoot', 'straight')`);
+    
+    // Split XML by <coordinates> tag to find the values
+    const parts = xml.split('<coordinates>');
+    assert.ok(parts.length >= 3, 'should have coordinates tags');
+    
+    const coord0 = parts[1].split('</coordinates>')[0].trim();
+    const coord1 = parts[2].split('</coordinates>')[0].trim();
+    
+    // Check that there are 3 comma-separated components: longitude, latitude, altitude
+    const coord0Parts = coord0.split(',');
+    assert.strictEqual(coord0Parts.length, 3, 'WP 0 coordinates should have 3 parts');
+    assert.strictEqual(parseFloat(coord0Parts[0]), -83.1771);
+    assert.strictEqual(parseFloat(coord0Parts[1]), 40.0127);
+    assert.strictEqual(parseFloat(coord0Parts[2]), 17); // altitude
+    
+    const coord1Parts = coord1.split(',');
+    assert.strictEqual(coord1Parts.length, 3, 'WP 1 coordinates should have 3 parts');
+    assert.strictEqual(parseFloat(coord1Parts[0]), -83.1771);
+    assert.strictEqual(parseFloat(coord1Parts[1]), 40.0128);
+    assert.strictEqual(parseFloat(coord1Parts[2]), 25); // altitude override
+  });
+
   test('multi-leg 2D grid export assigns correct wayline direction angles and enables them (waypointHeadingAngleEnable=1) for stationary fallback', () => {
     const wps = [
       { lat: 40.0127, lon: -83.1771, alt: 17, heading: 0, headingMode: 'inherit' },

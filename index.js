@@ -4785,7 +4785,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     placemarksXml += `      <Placemark>
         <Point>
           <coordinates>
-            ${wp.lon.toFixed(13)},${wp.lat.toFixed(13)}
+            ${wp.lon.toFixed(13)},${wp.lat.toFixed(13)},${currentAltitude}
           </coordinates>
         </Point>
         <wpml:index>${idx}</wpml:index>
