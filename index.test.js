@@ -2029,29 +2029,32 @@ describe('3D FPV Editor Panel Alignment & Viewport Tests', () => {
         'heading-mode': { value: 'custom' }
       };
 
-      // Waypoint 0: target pitch is -45 (takeoff default is 0), so it requires gimbal repositioning.
-      // Waypoint 1: target pitch is -45, custom heading is 0.
-      // Waypoint 2: target pitch is -45, custom heading is 90 (repositioning heading change 90°).
-      // Waypoint 3: target pitch is -45, custom heading is 180 (repositioning heading change 90°), hoverTime is 1 (too short).
+      // Waypoint 0: target pitch is -45, hoverTime null, global hover 0 → no auto-inject (user set global 0)
+      // Waypoint 1: target pitch is -45, hoverTime explicitly 0 → no hover
+      // Waypoint 2: heading changes 90°, hoverTime explicitly 0 → auto-inject suppressed by explicit 0
+      // Waypoint 3: heading changes 90°, hoverTime null (inherits global 0) → also suppressed
+      // Waypoint 4: heading changes 90°, hoverTime null, global hover 2 → auto-inject triggers
       const testWaypoints = [
         { lat: 41.88, lon: -87.62, alt: 50, pitch: -45, headingMode: 'custom', heading: 0, hoverTime: null },
         { lat: 41.89, lon: -87.63, alt: 50, pitch: -45, headingMode: 'custom', heading: 0, hoverTime: 0 },
         { lat: 41.90, lon: -87.64, alt: 50, pitch: -45, headingMode: 'custom', heading: 90, hoverTime: 0 },
-        { lat: 41.91, lon: -87.65, alt: 50, pitch: -45, headingMode: 'custom', heading: 180, hoverTime: 1 }
+        { lat: 41.91, lon: -87.65, alt: 50, pitch: -45, headingMode: 'custom', heading: 180, hoverTime: null },
+        { lat: 41.92, lon: -87.66, alt: 50, pitch: -45, headingMode: 'custom', heading: 270, hoverTime: null }
       ];
+
+      // Update global hover to 2 for the last test case check
+      global._stubElements['global-hover-time'].value = '2';
 
       const xml = vm.runInThisContext('buildWaylinesWpml')(testWaypoints, 50, 5, 'custom', 'goHome', -45, 'stopAndShoot', 'straight');
       
       const placemarks = xml.split('<Placemark>');
-      assert.ok(placemarks.length >= 5, 'should split into at least 4 placemarks');
+      assert.ok(placemarks.length >= 6, 'should split into at least 5 placemarks');
       
-      // Placemark 1 (WP 0) has gimbal change from 0 to -45.
-      // It should have an auto-applied settling hover of 2s because hoverTime is null (inheriting global 0) and it needs repositioning.
+      // WP 0: hoverTime null, global hover 2 → auto-inject triggers 2s
       const wp0Xml = placemarks[1];
-      assert.ok(wp0Xml.includes('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>'), 'WP 0 should have hover action');
+      assert.ok(wp0Xml.includes('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>'), 'WP 0 should auto-inject hover');
       assert.ok(wp0Xml.includes('<wpml:hoverTime>2</wpml:hoverTime>'), 'WP 0 should have 2s hover delay');
       
-      // Verification of action sequencing: <wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc> must appear BEFORE <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
       const hoverIndex0 = wp0Xml.indexOf('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>');
       const photoIndex0 = wp0Xml.indexOf('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>');
       assert.ok(hoverIndex0 !== -1 && photoIndex0 !== -1, 'WP 0 should have both hover and takePhoto actions');
@@ -2072,11 +2075,10 @@ describe('3D FPV Editor Panel Alignment & Viewport Tests', () => {
       const photoIndex2 = wp2Xml.indexOf('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>');
       assert.ok(hoverIndex2 < photoIndex2, 'WP 2 hover action must be sequenced before takePhoto action');
 
-      // Placemark 4 (WP 3) has heading change of 90 degrees and manual hover of 1s.
-      // Since it requires repositioning and hoverTime is < 2s, it should escalate to 2s.
+      // WP 3: heading changes 90°, hoverTime null (inherits global 0) → auto-inject 2s settling
       const wp3Xml = placemarks[4];
       assert.ok(wp3Xml.includes('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>'), 'WP 3 should have hover action');
-      assert.ok(wp3Xml.includes('<wpml:hoverTime>2</wpml:hoverTime>'), 'WP 3 should escalate 1s hover to 2s settling delay');
+      assert.ok(wp3Xml.includes('<wpml:hoverTime>2</wpml:hoverTime>'), 'WP 3 should escalate to 2s settling delay');
 
       const hoverIndex3 = wp3Xml.indexOf('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>');
       const photoIndex3 = wp3Xml.indexOf('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>');
