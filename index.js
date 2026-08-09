@@ -3773,7 +3773,7 @@ function getSubMissionFlightTime(wps, startIdx, endIdx, speed, captureMode) {
     if (!wp) continue;
     const baseHover = (wp.hoverTime !== null && wp.hoverTime !== undefined) ? wp.hoverTime : globalHover;
     let wpEffectiveHover = baseHover;
-    if (isStopAndShoot && wpEffectiveHover === 0) {
+    if (isStopAndShoot && wpEffectiveHover < 2) {
       const reposInfo = checkNeedsReposition(i, wps);
       if (reposInfo.needsReposition) {
         wpEffectiveHover = 2; // Auto-applied settling delay
@@ -4228,7 +4228,7 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
   waypoints.forEach((wp, idx) => {
     const baseHover = (wp.hoverTime !== null && wp.hoverTime !== undefined) ? wp.hoverTime : globalHover;
     let wpEffectiveHover = baseHover;
-    if (isStopAndShoot && wpEffectiveHover === 0) {
+    if (isStopAndShoot && wpEffectiveHover < 2) {
       const reposInfo = checkNeedsReposition(idx, waypoints);
       if (reposInfo.needsReposition) {
         wpEffectiveHover = 2; // Auto-applied settling delay
@@ -4477,7 +4477,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     // Determine effective hover time, auto-injecting 2s settling delay if needed
     const baseHover = (wp.hoverTime !== null && wp.hoverTime !== undefined) ? wp.hoverTime : globalHoverTime;
     let effectiveHover = baseHover;
-    if (isStopAndShoot && effectiveHover === 0 && reposInfo.needsReposition) {
+    if (isStopAndShoot && effectiveHover < 2 && reposInfo.needsReposition) {
       effectiveHover = 2;
     }
     
@@ -6005,7 +6005,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     const waypointsCopy = getCurrentWaypoints().map((w, i) => i === idx ? tempWp : w);
     const reposInfo = checkNeedsReposition(idx, waypointsCopy);
     
-    if (isStopAndShoot && currentHoverVal === 0 && reposInfo.needsReposition) {
+    if (isStopAndShoot && currentHoverVal < 2 && reposInfo.needsReposition) {
       warningDiv.style.display = 'block';
     } else {
       warningDiv.style.display = 'none';
@@ -7526,7 +7526,7 @@ function updateFPVCamera(dt) {
           // Determine if the real drone actually hovers at this waypoint
           const baseHover = (wpHoverTime !== null) ? wpHoverTime : globalHover;
           let hoverDuration = baseHover;
-          if (isStopAndShoot && hoverDuration === 0) {
+          if (isStopAndShoot && hoverDuration < 2) {
             const reposInfo = checkNeedsReposition(fpvProgressIndex, waypoints);
             if (reposInfo.needsReposition) {
               hoverDuration = 2.0; // Auto-applied settling delay
