@@ -8080,6 +8080,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
+              <wpml:gimbalHeadingYawBase>aircraft</wpml:gimbalHeadingYawBase>
               <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
               <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
               <wpml:gimbalPitchRotateAngle>${currentPitch}</wpml:gimbalPitchRotateAngle>
@@ -8087,6 +8088,8 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
               <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
               <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
               <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
+              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
+              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
             </wpml:actionActuatorFuncParam>
           </wpml:action>
@@ -8382,7 +8385,11 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
           <wpml:waypointTurnDampingDist>0</wpml:waypointTurnDampingDist>
         </wpml:waypointTurnParam>
         <wpml:useStraightLine>${useStraightLine}</wpml:useStraightLine>
-${actionsForThisPlacemark}      </Placemark>\n`;
+${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
+          <wpml:waypointGimbalPitchAngle>0</wpml:waypointGimbalPitchAngle>
+          <wpml:waypointGimbalYawAngle>0</wpml:waypointGimbalYawAngle>
+        </wpml:waypointGimbalHeadingParam>
+      </Placemark>\n`;
   });
 
   const droneModelEl = document.getElementById('drone-model');
