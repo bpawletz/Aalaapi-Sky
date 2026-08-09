@@ -936,6 +936,7 @@
             <strong style="color: var(--text-main);">Changelog (v1.27.10):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Drone Model Selection:</strong> Corrected the <code>droneEnumValue</code> for Mavic 3 Enterprise from <code>68</code> to <code>77</code> in the dropdown select options and default fallback settings, resolving flight execution failures (error after pressing Go) due to model mismatch on the drone controller.</li>
+              <li><strong>Consumer Drone Compatibility:</strong> Conditionally omitted the <code>&lt;Folder&gt;</code> block in <code>template.kml</code>, and the <code>&lt;wpml:templateType&gt;</code> and <code>&lt;wpml:payloadParam&gt;</code> tags in <code>waylines.wpml</code> for consumer drones (Mini 4 Pro and Air 3), resolving the "error after pressing Go" upload failures on the DJI Fly app.</li>
             </ul>
           </div>
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">

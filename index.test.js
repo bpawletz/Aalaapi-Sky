@@ -2497,6 +2497,30 @@ describe('WPML Validation & Stationary Fallback Regression Tests', () => {
     assert.strictEqual(xml.includes('<wpml:templateType>waypoint</wpml:templateType>'), true, 'waylines.wpml Folder must contain wpml:templateType tag');
   });
 
+  test('buildWaylinesWpml omits templateType and payloadParam for consumer drones (Mini 4 Pro)', () => {
+    const wps = [
+      { lat: 40.0127, lon: -83.1771, alt: 17, headingMode: 'inherit' }
+    ];
+    // Mock the drone-model value to 68 (Mini 4 Pro)
+    const originalGetElementById = global.document.getElementById;
+    global.document.getElementById = (id) => {
+      if (id === 'drone-model') {
+        return { value: '68' };
+      }
+      return originalGetElementById ? originalGetElementById(id) : null;
+    };
+    try {
+      const xml = vm.runInThisContext(`buildWaylinesWpml(${JSON.stringify(wps)}, 17, 4, 'followWayline', 'goHome', -90, 'stopAndShoot', 'straight')`);
+      assert.strictEqual(xml.includes('<wpml:templateType>'), false, 'Should omit templateType for consumer drones');
+      assert.strictEqual(xml.includes('<wpml:payloadParam>'), false, 'Should omit payloadParam for consumer drones');
+      
+      const xmlTemplate = vm.runInThisContext('buildTemplateKml("goHome", 4)');
+      assert.strictEqual(xmlTemplate.includes('<Folder>'), false, 'Should omit Folder entirely for consumer drones in template.kml');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+
   test('buildWaylinesWpml exports standard KML coordinates tags containing longitude, latitude, and altitude', () => {
     const wps = [
       { lat: 40.0127, lon: -83.1771, alt: 17, headingMode: 'inherit' },
