@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.27.11] - 2026-08-10
+
+### Fixed
+- **2D Grid / Double Grid "Dance" — Gimbal Pitch Override**: `<wpml:waypointGimbalHeadingParam>` was being emitted with a hardcoded `waypointGimbalPitchAngle` of `0` at every `<Placemark>`. On the Mini 4 Pro the firmware applies this tag as the waypoint-level target gimbal angle, overriding the `gimbalRotate` action group that was correctly setting the mission pitch (e.g. `-90°` for nadir). The drone would arrive, the gimbalRotate action would fire, then the `waypointGimbalHeadingParam` would snap the gimbal back to horizontal, causing photos to be taken at the wrong angle and the drone to appear to "dance". Fixed by computing `effectivePitch` from the waypoint's own pitch or the global gimbal pitch and using it in the tag.
+- **2D Grid / Double Grid Malformed First Placemark**: A stray 6-space literal between `${payloadParamXml}` and `${placemarksXml}` in the WPML Folder template string was prepending extra whitespace to the first `<Placemark>` element only. Although XML whitespace is generally insignificant, the DJI Fly app's strict XML parser treated the mis-indented first waypoint as structurally invalid, causing the 2D grid to execute with the first waypoint's actions skipped (the "dance") and the larger double grid to be rejected entirely. Fixed by removing the spurious spaces.
+
 ## [1.27.10] - 2026-08-09
 
 ### Fixed
