@@ -8066,8 +8066,10 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     // 1. Always set gimbal pitch at start of flight (waypoint index 0), at start of a new ring, OR at every waypoint for road-following
     const gridType = document.getElementById('grid-type')?.value;
     const isRoadFollowing = gridType === 'road-following';
+    // Compute effective pitch for use in both gimbalRotate action and waypointGimbalHeadingParam
+    const effectivePitch = wp.pitch !== undefined ? wp.pitch : gimbalPitch;
     if (idx === 0 || wp.isRingStart || isRoadFollowing) {
-      const currentPitch = wp.pitch !== undefined ? wp.pitch : gimbalPitch;
+      const currentPitch = effectivePitch;
       actionsForThisPlacemark += `        <wpml:actionGroup>
           <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
           <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
@@ -8386,7 +8388,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
         </wpml:waypointTurnParam>
         <wpml:useStraightLine>${useStraightLine}</wpml:useStraightLine>
 ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
-          <wpml:waypointGimbalPitchAngle>0</wpml:waypointGimbalPitchAngle>
+          <wpml:waypointGimbalPitchAngle>${effectivePitch}</wpml:waypointGimbalPitchAngle>
           <wpml:waypointGimbalYawAngle>0</wpml:waypointGimbalYawAngle>
         </wpml:waypointGimbalHeadingParam>
       </Placemark>\n`;
