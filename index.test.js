@@ -2559,7 +2559,8 @@ describe('WPML Validation & Stationary Fallback Regression Tests', () => {
     
     // Assert waypointGimbalHeadingParam tags
     assert.strictEqual(xml.includes('<wpml:waypointGimbalHeadingParam>'), true, 'waylines.wpml must contain waypointGimbalHeadingParam');
-    assert.strictEqual(xml.includes('<wpml:waypointGimbalPitchAngle>0</wpml:waypointGimbalPitchAngle>'), true, 'waylines.wpml must contain waypointGimbalPitchAngle');
+    // waypointGimbalPitchAngle must match the effective pitch (gimbalPitch arg = -90 when wp.pitch is undefined)
+    assert.strictEqual(xml.includes('<wpml:waypointGimbalPitchAngle>-90</wpml:waypointGimbalPitchAngle>'), true, 'waylines.wpml waypointGimbalPitchAngle must reflect effective gimbal pitch (-90)');
     assert.strictEqual(xml.includes('<wpml:waypointGimbalYawAngle>0</wpml:waypointGimbalYawAngle>'), true, 'waylines.wpml must contain waypointGimbalYawAngle');
     
     // Assert extra gimbalRotate tags
