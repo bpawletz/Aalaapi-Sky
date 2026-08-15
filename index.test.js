@@ -2029,11 +2029,14 @@ describe('3D FPV Editor Panel Alignment & Viewport Tests', () => {
         'heading-mode': { value: 'custom' }
       };
 
-      // Waypoint 0: target pitch is -45, hoverTime null, global hover 0 → no auto-inject (user set global 0)
-      // Waypoint 1: target pitch is -45, hoverTime explicitly 0 → no hover
-      // Waypoint 2: heading changes 90°, hoverTime explicitly 0 → auto-inject suppressed by explicit 0
-      // Waypoint 3: heading changes 90°, hoverTime null (inherits global 0) → also suppressed
-      // Waypoint 4: heading changes 90°, hoverTime null, global hover 2 → auto-inject triggers
+      // In stopAndShoot mode a 2s minimum hover is ALWAYS enforced at every waypoint regardless
+      // of the user-set hoverTime or whether a reposition is needed. This ensures the gimbal
+      // stabilizes before the camera fires (fixes RC2 gimbal error and missed shots at 0s hover).
+      // Waypoint 0: hoverTime null, global hover 2 → 2s hover (WP0 always gets gimbalRotate + hover)
+      // Waypoint 1: hoverTime explicitly 0 → auto-elevated to 2s (stopAndShoot minimum)
+      // Waypoint 2: heading changes 90°, hoverTime 0 → auto-elevated to 2s
+      // Waypoint 3: heading changes 90°, hoverTime null → auto-elevated to 2s
+      // Waypoint 4: heading changes 90°, hoverTime null, global hover 2 → 2s
       const testWaypoints = [
         { lat: 41.88, lon: -87.62, alt: 50, pitch: -45, headingMode: 'custom', heading: 0, hoverTime: null },
         { lat: 41.89, lon: -87.63, alt: 50, pitch: -45, headingMode: 'custom', heading: 0, hoverTime: 0 },
@@ -2042,7 +2045,7 @@ describe('3D FPV Editor Panel Alignment & Viewport Tests', () => {
         { lat: 41.92, lon: -87.66, alt: 50, pitch: -45, headingMode: 'custom', heading: 270, hoverTime: null }
       ];
 
-      // Update global hover to 2 for the last test case check
+      // Set global hover to 2
       global._stubElements['global-hover-time'].value = '2';
 
       const xml = vm.runInThisContext('buildWaylinesWpml')(testWaypoints, 50, 5, 'custom', 'goHome', -45, 'stopAndShoot', 'straight');
@@ -2060,25 +2063,25 @@ describe('3D FPV Editor Panel Alignment & Viewport Tests', () => {
       assert.ok(hoverIndex0 !== -1 && photoIndex0 !== -1, 'WP 0 should have both hover and takePhoto actions');
       assert.ok(hoverIndex0 < photoIndex0, 'WP 0 hover action must be sequenced before takePhoto action');
 
-      // Placemark 2 (WP 1) has no change in pitch (-45 -> -45) and no change in heading (0 -> 0).
-      // Since hoverTime is 0, it should not have a hover action.
+      // Placemark 2 (WP 1): hoverTime explicitly 0 but stopAndShoot mode enforces 2s minimum.
+      // Even though pitch and heading are unchanged, the drone must hover to stabilize before photo.
       const wp1Xml = placemarks[2];
-      assert.ok(!wp1Xml.includes('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>'), 'WP 1 should not have hover action');
+      assert.ok(wp1Xml.includes('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>'), 'WP 1 must have hover action (stopAndShoot 2s minimum enforced even with hoverTime=0)');
+      assert.ok(wp1Xml.includes('<wpml:hoverTime>2</wpml:hoverTime>'), 'WP 1 hover must be 2s minimum');
 
-      // Placemark 3 (WP 2) has a custom heading change of 90 degrees (0 -> 90).
-      // Since hoverTime is 0 and isStopAndShoot is true, it should auto-inject a 2s hover.
+      // Placemark 3 (WP 2): heading changes 90°, hoverTime=0 → elevated to 2s minimum.
       const wp2Xml = placemarks[3];
-      assert.ok(wp2Xml.includes('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>'), 'WP 2 should have hover action due to heading change');
-      assert.ok(wp2Xml.includes('<wpml:hoverTime>2</wpml:hoverTime>'), 'WP 2 should have 2s auto-settling delay');
+      assert.ok(wp2Xml.includes('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>'), 'WP 2 should have hover action');
+      assert.ok(wp2Xml.includes('<wpml:hoverTime>2</wpml:hoverTime>'), 'WP 2 should have 2s hover');
 
       const hoverIndex2 = wp2Xml.indexOf('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>');
       const photoIndex2 = wp2Xml.indexOf('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>');
       assert.ok(hoverIndex2 < photoIndex2, 'WP 2 hover action must be sequenced before takePhoto action');
 
-      // WP 3: heading changes 90°, hoverTime null (inherits global 0) → auto-inject 2s settling
+      // WP 3: heading changes 90°, hoverTime null (inherits global 2) → 2s hover
       const wp3Xml = placemarks[4];
       assert.ok(wp3Xml.includes('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>'), 'WP 3 should have hover action');
-      assert.ok(wp3Xml.includes('<wpml:hoverTime>2</wpml:hoverTime>'), 'WP 3 should escalate to 2s settling delay');
+      assert.ok(wp3Xml.includes('<wpml:hoverTime>2</wpml:hoverTime>'), 'WP 3 should have 2s hover');
 
       const hoverIndex3 = wp3Xml.indexOf('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>');
       const photoIndex3 = wp3Xml.indexOf('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>');
@@ -2662,6 +2665,220 @@ describe('RC2 WPML Compliance Tests', () => {
     } finally {
       global.document.getElementById = originalGetElementById;
       vm.runInThisContext('generatedWaypoints = [];');
+    }
+  });
+});
+// ─── Regression: actionGroupId globally unique across all waypoints ────────────
+describe('buildWaylinesWpml actionGroupId uniqueness regression', () => {
+  test('actionGroupId values are globally unique across all waypoints (double grid fix)', () => {
+    const originalGetElementById = global.document.getElementById;
+    try {
+      global.document.getElementById = (id) => {
+        const valMap = {
+          'drone-model': '68',
+          'signal-lost-action': 'goBack',
+          'camera-zoom': '1.0',
+          'global-hover-time': '2',
+          'grid-type': 'double',
+          'grid-rotation': '0',
+          'heading-mode': 'followWayline',
+        };
+        return { value: valMap[id] || '', checked: false };
+      };
+
+      // Simulate a 6-waypoint double grid (3 per pass) with stop-and-shoot
+      const wps = [
+        { lat: 40.01, lon: -83.17, alt: 22, pitch: -90, heading: 45, isRingStart: false, hoverTime: 2 },
+        { lat: 40.02, lon: -83.17, alt: 22, pitch: -90, heading: 45, isRingStart: false, hoverTime: 2 },
+        { lat: 40.03, lon: -83.17, alt: 22, pitch: -90, heading: 45, isRingStart: false, hoverTime: 2 },
+        { lat: 40.01, lon: -83.16, alt: 22, pitch: -90, heading: 135, isRingStart: false, hoverTime: 2 },
+        { lat: 40.01, lon: -83.17, alt: 22, pitch: -90, heading: 135, isRingStart: false, hoverTime: 2 },
+        { lat: 40.01, lon: -83.18, alt: 22, pitch: -90, heading: 135, isRingStart: false, hoverTime: 2 },
+      ];
+
+      const xml = vm.runInThisContext(`
+        buildWaylinesWpml(${JSON.stringify(wps)}, 22, 2, 'followWayline', 'goHome', -90, 'stopAndShoot', 'straight')
+      `);
+
+      // Extract all actionGroupId values
+      const matches = [...xml.matchAll(/<wpml:actionGroupId>(\d+)<\/wpml:actionGroupId>/g)];
+      const ids = matches.map(m => parseInt(m[1], 10));
+
+      assert.ok(ids.length > 0, 'Should have at least one action group');
+
+      // All IDs must be unique
+      const uniqueIds = new Set(ids);
+      assert.strictEqual(uniqueIds.size, ids.length,
+        `actionGroupId values must be globally unique. Found duplicates: ${ids.filter((v, i) => ids.indexOf(v) !== i)}`);
+
+      // IDs should be monotonically increasing from 1
+      for (let i = 0; i < ids.length; i++) {
+        assert.strictEqual(ids[i], i + 1, `actionGroupId at position ${i} should be ${i + 1}, got ${ids[i]}`);
+      }
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+
+  test('actionGroupId remains globally unique for a large 40-waypoint double grid', () => {
+    const originalGetElementById = global.document.getElementById;
+    try {
+      global.document.getElementById = (id) => {
+        const valMap = {
+          'drone-model': '68',
+          'signal-lost-action': 'goBack',
+          'camera-zoom': '1.0',
+          'global-hover-time': '2',
+          'grid-type': 'double',
+          'grid-rotation': '0',
+          'heading-mode': 'followWayline',
+        };
+        return { value: valMap[id] || '', checked: false };
+      };
+
+      // Build 40 waypoints mimicking a double grid
+      const wps = Array.from({ length: 40 }, (_, i) => ({
+        lat: 40.01 + (i % 20) * 0.001,
+        lon: -83.17 + Math.floor(i / 20) * 0.001,
+        alt: 22,
+        pitch: -90,
+        heading: i < 20 ? 0 : 90,
+        isRingStart: false,
+        hoverTime: 2,
+      }));
+
+      const xml = vm.runInThisContext(`
+        buildWaylinesWpml(${JSON.stringify(wps)}, 22, 2, 'followWayline', 'goHome', -90, 'stopAndShoot', 'straight')
+      `);
+
+      const matches = [...xml.matchAll(/<wpml:actionGroupId>(\d+)<\/wpml:actionGroupId>/g)];
+      const ids = matches.map(m => parseInt(m[1], 10));
+
+      const uniqueIds = new Set(ids);
+      assert.strictEqual(uniqueIds.size, ids.length,
+        `40-waypoint double grid must have no duplicate actionGroupId values. Total AGs: ${ids.length}, Unique: ${uniqueIds.size}`);
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+});
+
+// ─── Regression: stop-and-shoot always enforces 2s minimum hover ──────────────
+describe('buildWaylinesWpml stop-and-shoot 2s minimum hover regression', () => {
+  test('enforces 2s hover at every waypoint in stopAndShoot mode when set to 0s', () => {
+    const originalGetElementById = global.document.getElementById;
+    try {
+      global.document.getElementById = (id) => {
+        const valMap = {
+          'drone-model': '68',
+          'signal-lost-action': 'goBack',
+          'camera-zoom': '1.0',
+          'global-hover-time': '0',   // User set 0s
+          'grid-type': 'single',
+          'grid-rotation': '0',
+          'heading-mode': 'followWayline',
+        };
+        return { value: valMap[id] || '', checked: false };
+      };
+
+      // 5 waypoints on a straight N-S grid line: no reposition needed, constant pitch -90
+      const wps = [
+        { lat: 40.010, lon: -83.177, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
+        { lat: 40.011, lon: -83.177, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
+        { lat: 40.012, lon: -83.177, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
+        { lat: 40.013, lon: -83.177, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
+        { lat: 40.014, lon: -83.177, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
+      ];
+
+      const xml = vm.runInThisContext(`
+        buildWaylinesWpml(${JSON.stringify(wps)}, 22, 2, 'followWayline', 'goHome', -90, 'stopAndShoot', 'straight')
+      `);
+
+      // Every waypoint must have a hover action
+      const hoverMatches = [...xml.matchAll(/<wpml:hoverTime>(\d+)<\/wpml:hoverTime>/g)];
+      const hoverValues = hoverMatches.map(m => parseInt(m[1], 10));
+
+      // Should have 5 hover entries (one per waypoint)
+      assert.strictEqual(hoverValues.length, wps.length,
+        `Expected ${wps.length} hover actions (one per waypoint), got ${hoverValues.length}`);
+
+      // All hover values must be >= 2
+      hoverValues.forEach((h, i) => {
+        assert.ok(h >= 2,
+          `Waypoint ${i} hover time must be >= 2s in stopAndShoot mode, got ${h}s`);
+      });
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+
+  test('respects user hover > 2s without clamping down in stopAndShoot mode', () => {
+    const originalGetElementById = global.document.getElementById;
+    try {
+      global.document.getElementById = (id) => {
+        const valMap = {
+          'drone-model': '68',
+          'signal-lost-action': 'goBack',
+          'camera-zoom': '1.0',
+          'global-hover-time': '5',  // User set 5s
+          'grid-type': 'single',
+          'grid-rotation': '0',
+          'heading-mode': 'followWayline',
+        };
+        return { value: valMap[id] || '', checked: false };
+      };
+
+      const wps = [
+        { lat: 40.010, lon: -83.177, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
+        { lat: 40.011, lon: -83.177, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
+      ];
+
+      const xml = vm.runInThisContext(`
+        buildWaylinesWpml(${JSON.stringify(wps)}, 22, 2, 'followWayline', 'goHome', -90, 'stopAndShoot', 'straight')
+      `);
+
+      const hoverMatches = [...xml.matchAll(/<wpml:hoverTime>(\d+)<\/wpml:hoverTime>/g)];
+      const hoverValues = hoverMatches.map(m => parseInt(m[1], 10));
+
+      hoverValues.forEach((h, i) => {
+        assert.strictEqual(h, 5, `Waypoint ${i}: user-set 5s hover should not be reduced, got ${h}s`);
+      });
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+
+  test('hover mode (continuous) does not enforce minimum hover', () => {
+    const originalGetElementById = global.document.getElementById;
+    try {
+      global.document.getElementById = (id) => {
+        const valMap = {
+          'drone-model': '68',
+          'signal-lost-action': 'goBack',
+          'camera-zoom': '1.0',
+          'global-hover-time': '0',
+          'grid-type': 'single',
+          'grid-rotation': '0',
+          'heading-mode': 'followWayline',
+        };
+        return { value: valMap[id] || '', checked: false };
+      };
+
+      const wps = [
+        { lat: 40.010, lon: -83.177, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
+        { lat: 40.011, lon: -83.177, alt: 22, pitch: -90, heading: 0, isRingStart: false, hoverTime: null },
+      ];
+
+      const xml = vm.runInThisContext(`
+        buildWaylinesWpml(${JSON.stringify(wps)}, 22, 2, 'followWayline', 'goHome', -90, 'hover', 'straight')
+      `);
+
+      // In continuous/hover mode with 0s hover, there should be NO hover actions
+      const hoverMatches = [...xml.matchAll(/<wpml:hoverTime>/g)];
+      assert.strictEqual(hoverMatches.length, 0,
+        'Continuous/hover mode with 0s hover should not inject hover actions');
+    } finally {
+      global.document.getElementById = originalGetElementById;
     }
   });
 });
