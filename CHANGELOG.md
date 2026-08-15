@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.28.0] - 2026-08-14
+
+### Fixed
+- **Double Grid "Go" Button Error — Duplicate WPML `actionGroupId`**: The DJI WPML specification requires `wpml:actionGroupId` to be globally unique across the entire `waylines.wpml` file. The previous code reset this counter to `1` for each new waypoint, producing heavily duplicated IDs (e.g. `actionGroupId=1` appearing 40 times in a 40-waypoint double grid with 81 total action groups). DJI Fly rejects missions at upload when duplicate action group IDs are present at sufficient scale, causing the "error when pressing Go" on double grid missions. Fixed by promoting `actionGroupId` to a single global counter (like `actionId`) that never resets between waypoints.
+- **Stop-and-Shoot 0-Second Hover — No Photo / RC2 Gimbal Error**: In stop-and-shoot capture mode, the 2-second hover auto-inject previously only triggered when a gimbal or heading reposition was detected. On straight 2D grid lines at constant pitch (-90°) and `followWayline` heading, no reposition is detected at waypoints 1+, so no stabilization delay was inserted. This caused the camera to fire before the gimbal settled, resulting in missed/blurry shots and a gimbal error on RC2. Fixed by enforcing a 2-second minimum hover at **every** stop-and-shoot waypoint regardless of repositioning, ensuring consistent gimbal stabilization before each camera trigger.
+
 ## [1.27.11] - 2026-08-10
 
 ### Fixed
