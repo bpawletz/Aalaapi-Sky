@@ -4471,19 +4471,25 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
   }
 
   let actionId = 1;
+  // actionGroupId must be globally unique across the entire waylines.wpml file (DJI WPML spec).
+  // Using a single counter shared across all waypoints prevents duplicate IDs that cause
+  // DJI Fly to reject the mission at "Go" press (observed on double-grid with 81 action groups).
+  let actionGroupId = 1;
 
   waypoints.forEach((wp, idx) => {
-    let actionGroupId = 1;
     let actionsForThisPlacemark = '';
     
     // Determine if repositioning (gimbal pitch or heading yaw) is required
     const reposInfo = checkNeedsReposition(idx, waypoints);
     const isStopAndShoot = captureMode === 'stopAndShoot';
     
-    // Determine effective hover time, auto-injecting 2s settling delay if needed
+    // Determine effective hover time.
+    // In stop-and-shoot mode, always enforce a 2s minimum at every waypoint so the gimbal
+    // has time to stabilize before the camera fires (fixes gimbal error and missed shots at 0s).
+    // The 2s floor matches the existing reposition auto-inject and DJI's own settling guidance.
     const baseHover = (wp.hoverTime !== null && wp.hoverTime !== undefined) ? wp.hoverTime : globalHoverTime;
     let effectiveHover = baseHover;
-    if (isStopAndShoot && effectiveHover < 2 && reposInfo.needsReposition) {
+    if (isStopAndShoot && effectiveHover < 2) {
       effectiveHover = 2;
     }
     
