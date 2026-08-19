@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.28.1] - 2026-08-19
+
+### Fixed
+- **Default Drone Model Was Mavic 3 Enterprise (77):** The "Export Drone Target" dropdown defaulted to DJI Mavic 3 Enterprise (droneEnumValue 77) on every fresh page load. This caused enterprise-specific WPML tags (`wpml:payloadParam`, `wpml:payloadPitchControlMode`) to be embedded in all exported KMZ files. DJI Fly on a Mini 4 Pro does not support these enterprise tags and rejects the mission at upload (error when pressing Go or loading). Changed the default to DJI Mini 4 Pro (68), which is the most common consumer drone target. Enterprise drone users should manually select their model before exporting.
+
 ## [1.28.0] - 2026-08-14
 
 ### Fixed
