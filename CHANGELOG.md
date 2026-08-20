@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.31.0] - 2026-08-20
+
+### Added
+- **DJI RC 2 Map Preview Generator & Auto-Sync (`map_preview/<UUID>/<UUID>.jpg`):** Aalaapi Sky now automatically renders a 400x300 JPG thumbnail preview of the flight route on mission export. The `rc2-sync` companion script automatically detects and transfers the thumbnail into the RC 2's `waypoint/map_preview/<UUID>/` directory so DJI Fly displays the graphical mission route preview on the controller screen.
+
 ## [1.30.0] - 2026-08-20
 
 ### Added
