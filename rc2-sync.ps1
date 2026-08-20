@@ -2,8 +2,8 @@
 .SYNOPSIS
     Aalaapi Sky - Real-Time DJI RC 2 Auto-Sync Companion
 .DESCRIPTION
-    Monitors the Downloads folder for exported KMZ missions and automatically
-    transfers them directly to the connected DJI RC 2 waypoint folder via Windows Shell MTP.
+    Monitors the Downloads folder for exported KMZ missions and JPG map preview thumbnails,
+    automatically transferring them directly to the connected DJI RC 2 controller over USB MTP.
 #>
 
 $Host.UI.RawUI.WindowTitle = "Aalaapi Sky - RC2 Auto-Sync"
@@ -39,16 +39,17 @@ function Find-RC2WaypointFolders {
     
     if (-not $dji) { return $null }
 
-    $storage = Get-SubFolderItem $dji "Internal shared storage"
+    $storage   = Get-SubFolderItem $dji "Internal shared storage"
     if (-not $storage) { return $null }
     
-    $android = Get-SubFolderItem $storage "Android"
-    $data    = Get-SubFolderItem $android "data"
-    $djiApp  = Get-SubFolderItem $data "dji.go.v5"
-    $files   = Get-SubFolderItem $djiApp "files"
-    $waypoint= Get-SubFolderItem $files "waypoint"
-    
+    $android   = Get-SubFolderItem $storage "Android"
+    $data      = Get-SubFolderItem $android "data"
+    $djiApp    = Get-SubFolderItem $data "dji.go.v5"
+    $files     = Get-SubFolderItem $djiApp "files"
+    $waypoint  = Get-SubFolderItem $files "waypoint"
     if (-not $waypoint) { return $null }
+    
+    $mapPreview= Get-SubFolderItem $waypoint "map_preview"
     
     $wpFolder = $waypoint.GetFolder
     $uuidFolders = @()
@@ -61,6 +62,7 @@ function Find-RC2WaypointFolders {
     return @{
         Device = $dji
         WaypointFolder = $wpFolder
+        MapPreviewFolder = if ($mapPreview) { $mapPreview.GetFolder } else { $null }
         UUIDFolders = $uuidFolders
     }
 }
@@ -89,79 +91,89 @@ if ($rc2Info.UUIDFolders.Count -eq 0) {
 
 Write-Host ""
 Write-Host "[*] Watching folder: $downloadsPath" -ForegroundColor Cyan
-Write-Host "[*] Whenever you export or download a KMZ in Aalaapi Sky, it will automatically sync to RC2!" -ForegroundColor Green
+Write-Host "[*] Whenever you export a KMZ mission or JPG preview, it will sync automatically!" -ForegroundColor Green
 Write-Host "    (Press Ctrl+C to stop auto-sync)" -ForegroundColor Gray
 Write-Host "----------------------------------------------------------" -ForegroundColor DarkGray
 
 $processedFiles = @{}
 
-# Pre-populate existing files so we only react to newly exported ones
-Get-ChildItem -Path $downloadsPath -Filter "*.kmz" -File -ErrorAction SilentlyContinue | ForEach-Object {
+# Pre-populate existing files
+Get-ChildItem -Path $downloadsPath -Include "*.kmz", "*.jpg", "*.jpeg", "*.png" -File -ErrorAction SilentlyContinue | ForEach-Object {
     $processedFiles[$_.FullName] = $_.LastWriteTimeUtc.Ticks
 }
 
 while ($true) {
     try {
-        $kmzFiles = Get-ChildItem -Path $downloadsPath -Filter "*.kmz" -File -ErrorAction SilentlyContinue
+        $syncCandidates = Get-ChildItem -Path $downloadsPath -Include "*.kmz", "*.jpg", "*.jpeg", "*.png" -File -ErrorAction SilentlyContinue
         
-        foreach ($file in $kmzFiles) {
+        foreach ($file in $syncCandidates) {
             $lastTick = $processedFiles[$file.FullName]
             $currTick = $file.LastWriteTimeUtc.Ticks
             
             if (-not $lastTick -or $currTick -gt $lastTick) {
-                # Wait briefly for browser to finish writing download
                 Start-Sleep -Milliseconds 600
                 $processedFiles[$file.FullName] = $currTick
                 
-                Write-Host "`n[>] Detected exported KMZ: $($file.Name)" -ForegroundColor White
-                
-                # Re-verify RC2 connection
                 $currentRC2 = Find-RC2WaypointFolders
                 if (-not $currentRC2) {
                     Write-Host "[!] RC2 disconnected. Cannot sync $($file.Name)" -ForegroundColor Red
                     continue
                 }
                 
-                # Determine target folder
-                $targetFolderItem = $null
-                $targetFileName = $file.Name
+                $isImage = ($file.Extension -in @(".jpg", ".jpeg", ".png"))
+                $isKMZ   = ($file.Extension -eq ".kmz")
                 
-                # Check if file name has a UUID
+                # Detect target UUID
+                $targetUUID = $null
                 if ($file.Name -match "([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})") {
-                    $detectedUUID = $matches[1].ToUpper()
-                    $matched = $currentRC2.UUIDFolders | Where-Object { $_.Name.ToUpper() -eq $detectedUUID } | Select-Object -First 1
-                    if ($matched) {
-                        $targetFolderItem = $matched
-                        $targetFileName = "$detectedUUID.kmz"
-                    }
+                    $targetUUID = $matches[1].ToUpper()
+                } elseif ($currentRC2.UUIDFolders.Count -gt 0) {
+                    $targetUUID = $currentRC2.UUIDFolders[0].Name.ToUpper()
                 }
                 
-                # Fallback to the first available slot if no matching UUID
-                if (-not $targetFolderItem -and $currentRC2.UUIDFolders.Count -gt 0) {
-                    $targetFolderItem = $currentRC2.UUIDFolders[0]
-                    $targetFileName = "$($targetFolderItem.Name).kmz"
+                if (-not $targetUUID) {
+                    continue
                 }
                 
-                if ($targetFolderItem) {
-                    Write-Host "    -> Destination on RC2: waypoint\$($targetFolderItem.Name)\$targetFileName" -ForegroundColor Cyan
+                if ($isKMZ) {
+                    Write-Host "`n[>] Syncing Mission KMZ: $($file.Name)" -ForegroundColor White
+                    $targetFolderItem = $currentRC2.UUIDFolders | Where-Object { $_.Name.ToUpper() -eq $targetUUID } | Select-Object -First 1
                     
-                    # Stage file with correct target filename
-                    $syncFile = $file.FullName
-                    if ($file.Name -ne $targetFileName) {
+                    if ($targetFolderItem) {
+                        $targetFileName = "$targetUUID.kmz"
+                        Write-Host "    -> Destination: waypoint\$targetUUID\$targetFileName" -ForegroundColor Cyan
+                        
                         $stagedPath = Join-Path $stagingDir $targetFileName
                         Copy-Item -Path $file.FullName -Destination $stagedPath -Force
-                        $syncFile = $stagedPath
+                        
+                        $destFolder = $targetFolderItem.GetFolder
+                        $destFolder.CopyHere($stagedPath, 16)
+                        
+                        Start-Sleep -Seconds 2
+                        [System.Console]::Beep(1000, 150)
+                        Write-Host "[V] SUCCESS: Mission KMZ transferred to DJI RC 2!" -ForegroundColor Green
                     }
-                    
-                    $destFolder = $targetFolderItem.GetFolder
-                    $destFolder.CopyHere($syncFile, 16) # 16 = FOF_NOCONFIRMATION (Overwrite silently)
-                    
-                    Start-Sleep -Seconds 2
-                    
-                    [System.Console]::Beep(1000, 150)
-                    Write-Host "[V] SUCCESS: Mission transferred to DJI RC 2! Ready to fly." -ForegroundColor Green
-                } else {
-                    Write-Host "[-] Could not determine target mission slot on RC2." -ForegroundColor Red
+                }
+                elseif ($isImage) {
+                    Write-Host "`n[>] Syncing Map Preview Thumbnail: $($file.Name)" -ForegroundColor White
+                    if ($currentRC2.MapPreviewFolder) {
+                        $previewTargetFolderItem = Get-SubFolderItem $currentRC2.MapPreviewFolder $targetUUID
+                        
+                        if ($previewTargetFolderItem) {
+                            $targetFileName = "$targetUUID.jpg"
+                            Write-Host "    -> Destination: waypoint\map_preview\$targetUUID\$targetFileName" -ForegroundColor Cyan
+                            
+                            $stagedPath = Join-Path $stagingDir $targetFileName
+                            Copy-Item -Path $file.FullName -Destination $stagedPath -Force
+                            
+                            $destFolder = $previewTargetFolderItem.GetFolder
+                            $destFolder.CopyHere($stagedPath, 16)
+                            
+                            Start-Sleep -Seconds 2
+                            [System.Console]::Beep(1200, 150)
+                            Write-Host "[V] SUCCESS: Map Preview Thumbnail transferred to DJI RC 2!" -ForegroundColor Green
+                        }
+                    }
                 }
             }
         }

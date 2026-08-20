@@ -2882,3 +2882,86 @@ describe('buildWaylinesWpml stop-and-shoot 2s minimum hover regression', () => {
     }
   });
 });
+
+describe('Mission Map Preview Generator Tests', () => {
+  test('generateMissionPreviewBlob returns a Promise that resolves gracefully', async () => {
+    const wps = [
+      { lat: 40.010, lon: -83.177, alt: 50 },
+      { lat: 40.011, lon: -83.176, alt: 50 },
+      { lat: 40.012, lon: -83.175, alt: 50 }
+    ];
+
+    // Mock canvas in global context
+    const origCreateElement = global.document.createElement;
+    try {
+      global.document.createElement = (tag) => {
+        if (tag === 'canvas') {
+          return {
+            width: 400,
+            height: 300,
+            getContext: () => ({
+              fillStyle: '',
+              fillRect: () => {},
+              strokeStyle: '',
+              lineWidth: 1,
+              beginPath: () => {},
+              moveTo: () => {},
+              lineTo: () => {},
+              stroke: () => {},
+              arc: () => {},
+              fill: () => {},
+              fillText: () => {}
+            }),
+            toBlob: (cb, type, q) => cb({ size: 2048, type })
+          };
+        }
+        return origCreateElement(tag);
+      };
+
+      const result = await vm.runInThisContext(`
+        generateMissionPreviewBlob(${JSON.stringify(wps)})
+      `);
+
+      assert.ok(result, 'Preview generator should return a blob');
+      assert.strictEqual(result.type, 'image/jpeg');
+    } finally {
+      global.document.createElement = origCreateElement;
+    }
+  });
+
+  test('generateMissionPreviewBlob handles empty waypoints gracefully', async () => {
+    const origCreateElement = global.document.createElement;
+    try {
+      global.document.createElement = (tag) => {
+        if (tag === 'canvas') {
+          return {
+            width: 400,
+            height: 300,
+            getContext: () => ({
+              fillStyle: '',
+              fillRect: () => {},
+              strokeStyle: '',
+              lineWidth: 1,
+              beginPath: () => {},
+              moveTo: () => {},
+              lineTo: () => {},
+              stroke: () => {},
+              fillText: () => {}
+            }),
+            toBlob: (cb, type) => cb({ size: 1024, type })
+          };
+        }
+        return origCreateElement(tag);
+      };
+
+      const result = await vm.runInThisContext(`
+        generateMissionPreviewBlob([])
+      `);
+
+      assert.ok(result, 'Should resolve for empty array without error');
+    } finally {
+      global.document.createElement = origCreateElement;
+    }
+  });
+});
+

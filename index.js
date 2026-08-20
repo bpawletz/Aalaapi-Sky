@@ -5062,11 +5062,121 @@ function exportKMZ() {
         link.download = `GridMission_Alt${altitude}m_${dateStr}.kmz`;
       }
       link.click();
+
+      // Also generate 400x300 mission preview JPG for DJI RC 2 map_preview
+      generateMissionPreviewBlob(waypoints).then(imgBlob => {
+        if (imgBlob && typeof document !== 'undefined') {
+          const imgLink = document.createElement("a");
+          imgLink.href = URL.createObjectURL(imgBlob);
+          const baseName = importedFileName ? importedFileName.replace(/\.kmz$/i, '') : `GridMission_Alt${altitude}m_${new Date().toISOString().slice(0, 10)}`;
+          imgLink.download = `${baseName}.jpg`;
+          imgLink.click();
+        }
+      }).catch(() => {});
     });
   } catch (err) {
     Logger.error("ZIP creation failed:", err);
     alert("An error occurred while creating the KMZ file. Check console for details.");
   }
+}
+
+// ─── Map Preview Thumbnail Generator ──────────────────────────────────────────
+// Generates a 400x300 JPG thumbnail preview of the waypoint flight path matching
+// the DJI Fly map_preview thumbnail specifications for RC 2 controller display.
+
+function generateMissionPreviewBlob(waypoints, width = 400, height = 300) {
+  if (typeof document === 'undefined' || !document.createElement) return Promise.resolve(null);
+  const canvas = document.createElement('canvas');
+  if (!canvas || !canvas.getContext) return Promise.resolve(null);
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return Promise.resolve(null);
+
+  // Dark slate background
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 0, width, height);
+
+  // Subtle coordinate grid lines
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+  ctx.lineWidth = 1;
+  for (let x = 40; x < width; x += 40) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, height);
+    ctx.stroke();
+  }
+  for (let y = 30; y < height; y += 30) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(width, y);
+    ctx.stroke();
+  }
+
+  if (waypoints && waypoints.length > 0) {
+    let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
+    waypoints.forEach(wp => {
+      if (wp.lat < minLat) minLat = wp.lat;
+      if (wp.lat > maxLat) maxLat = wp.lat;
+      if (wp.lon < minLon) minLon = wp.lon;
+      if (wp.lon > maxLon) maxLon = wp.lon;
+    });
+
+    const spanLat = (maxLat - minLat) || 0.0001;
+    const spanLon = (maxLon - minLon) || 0.0001;
+    const pad = 45;
+    const drawW = width - pad * 2;
+    const drawH = height - pad * 2;
+
+    const toScreen = (lat, lon) => ({
+      x: pad + ((lon - minLon) / spanLon) * drawW,
+      y: height - (pad + ((lat - minLat) / spanLat) * drawH)
+    });
+
+    // Draw wayline path
+    ctx.strokeStyle = '#06b6d4';
+    ctx.lineWidth = 3.5;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    if (ctx.shadowBlur !== undefined) {
+      ctx.shadowColor = 'rgba(6, 182, 212, 0.7)';
+      ctx.shadowBlur = 8;
+    }
+
+    ctx.beginPath();
+    waypoints.forEach((wp, i) => {
+      const pt = toScreen(wp.lat, wp.lon);
+      if (i === 0) ctx.moveTo(pt.x, pt.y);
+      else ctx.lineTo(pt.x, pt.y);
+    });
+    ctx.stroke();
+    if (ctx.shadowBlur !== undefined) ctx.shadowBlur = 0;
+
+    // Draw waypoint nodes
+    waypoints.forEach((wp, i) => {
+      const pt = toScreen(wp.lat, wp.lon);
+      ctx.fillStyle = (i === 0) ? '#22c55e' : (i === waypoints.length - 1) ? '#ef4444' : '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, (i === 0 || i === waypoints.length - 1) ? 5.5 : 3.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+  }
+
+  // Header branding badge
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  ctx.fillText('AALAAPI SKY', 14, 22);
+
+  return new Promise(resolve => {
+    if (canvas.toBlob) {
+      canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.85);
+    } else {
+      resolve(null);
+    }
+  });
 }
 
 // ─── Save to RC2 ──────────────────────────────────────────────────────────────
@@ -5277,6 +5387,16 @@ async function saveToRC2() {
     link.download = suggestedName;
     link.click();
   }
+
+  // Generate and download 400x300 preview thumbnail for RC 2 map_preview
+  generateMissionPreviewBlob(waypoints).then(imgBlob => {
+    if (imgBlob && typeof document !== 'undefined') {
+      const imgLink = document.createElement('a');
+      imgLink.href  = URL.createObjectURL(imgBlob);
+      imgLink.download = `${uuid}.jpg`;
+      imgLink.click();
+    }
+  }).catch(() => {});
 }
 
 // KMZ Import Handlers & Parsers
