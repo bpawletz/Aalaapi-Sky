@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.32.0] - 2026-08-20
+
+### Changed
+- **Streamlined RC 2 Export Workflow:** Removed the non-functional in-browser "Save to RC2" button (due to Windows MTP browser write limitations). Streamlined the primary "Export KMZ" button to automatically name both the `.kmz` mission and `.jpg` map preview thumbnail with the configured DJI UUID. When `rc2-sync.bat` is running on PC, clicking "Export KMZ" automatically transfers the mission and route thumbnail to the connected RC 2 controller.
+
 ## [1.31.0] - 2026-08-20
 
 ### Added
