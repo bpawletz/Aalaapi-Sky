@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.29.0] - 2026-08-20
+
+### Added
+- **Save to RC2:** New "Save to RC2" button (cyan, below Export KMZ) uses the browser's native Save As dialog (`showSaveFilePicker()` File System Access API) to write the KMZ with the correct UUID filename directly to the RC2's MTP storage. Eliminates the manual rename step entirely. Chrome's `id` parameter causes the dialog to remember the RC2 UUID folder across sessions, so subsequent saves open directly to the right location. Falls back to a correctly-named browser download if the MTP write is blocked by Windows. Only displayed in Chrome/Edge (browsers that support the File System Access API).
+- **DJI Fly Waypoint UUID field:** New config field under "Export Drone Target". Enter the UUID once (`354A8F93-759C-42C3-A8D5-746F79C7622A` or your own) and it persists in `localStorage`. Auto-populated from the filename when importing a UUID-named KMZ.
+
 ## [1.28.1] - 2026-08-19
 
 ### Fixed
