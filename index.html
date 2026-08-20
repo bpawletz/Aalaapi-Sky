@@ -8882,26 +8882,42 @@ async function saveToRC2() {
   }
 
   // ── 4. Write blob to the chosen file handle ───────────────────────────────
+  // Windows MTP devices can cause createWritable()/close() to appear to
+  // succeed (no error thrown) while never actually writing bytes to the
+  // device. We verify by reading the file size back after close().
   const statusEl = document.getElementById('rc2-save-status');
+
+  let writeSucceeded = false;
   try {
     const writable = await fileHandle.createWritable();
     await writable.write(blob);
     await writable.close();
 
-    if (statusEl) {
-      statusEl.textContent = `\u2713 Saved: ${fileHandle.name}`;
-      statusEl.style.color = '#22c55e';
-      setTimeout(() => { if (statusEl) statusEl.style.color = ''; }, 3000);
+    // Verify the bytes actually landed — MTP writes often fail silently
+    try {
+      const written = await fileHandle.getFile();
+      writeSucceeded = (written.size === blob.size);
+    } catch {
+      writeSucceeded = false; // couldn't read back → treat as failed
     }
-  } catch (err) {
-    Logger.warn('RC2 direct write failed (likely MTP limitation):', err);
+  } catch {
+    writeSucceeded = false;
+  }
 
-    // MTP write blocked — fall back to a correctly-named download so the
-    // rename step is still eliminated.
+  if (writeSucceeded) {
     if (statusEl) {
-      statusEl.textContent = '\u26a0\ufe0f MTP write blocked \u2014 downloading with correct filename instead.';
+      statusEl.textContent = `\u2713 Saved directly to RC2: ${fileHandle.name}`;
+      statusEl.style.color = '#22c55e';
+      setTimeout(() => { if (statusEl) statusEl.style.color = ''; }, 4000);
+    }
+  } else {
+    // MTP blocked the write — fall back to a correctly-named download.
+    // The user just needs to copy the file from Downloads to the RC2 folder;
+    // at least the rename step is eliminated.
+    if (statusEl) {
+      statusEl.textContent = '\u26a0\ufe0f Windows MTP blocked direct write \u2014 downloading with correct filename. Copy to RC2 manually.';
       statusEl.style.color = '#f59e0b';
-      setTimeout(() => { if (statusEl) { statusEl.style.color = ''; statusEl.textContent = ''; } }, 6000);
+      setTimeout(() => { if (statusEl) { statusEl.style.color = ''; statusEl.textContent = `RC2 folder: \u2026/waypoint/${uuid.slice(0, 8)}\u2026`; } }, 8000);
     }
 
     const link = document.createElement('a');
