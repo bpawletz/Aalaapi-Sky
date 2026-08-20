@@ -5054,12 +5054,18 @@ function exportKMZ() {
       const link = document.createElement("a");
       link.href = URL.createObjectURL(content);
       
-      // Keep the original filename if imported, otherwise make a new procedurally named one
+      const storedUuid = getRC2UUID();
+      let downloadBase = "";
       if (importedFileName) {
         link.download = importedFileName;
+        downloadBase = importedFileName.replace(/\.kmz$/i, "");
+      } else if (storedUuid && RC2_UUID_PATTERN.test(storedUuid)) {
+        link.download = `${storedUuid}.kmz`;
+        downloadBase = storedUuid;
       } else {
         const dateStr = new Date().toISOString().slice(0, 10);
         link.download = `GridMission_Alt${altitude}m_${dateStr}.kmz`;
+        downloadBase = `GridMission_Alt${altitude}m_${dateStr}`;
       }
       link.click();
 
@@ -5068,8 +5074,7 @@ function exportKMZ() {
         if (imgBlob && typeof document !== 'undefined') {
           const imgLink = document.createElement("a");
           imgLink.href = URL.createObjectURL(imgBlob);
-          const baseName = importedFileName ? importedFileName.replace(/\.kmz$/i, '') : `GridMission_Alt${altitude}m_${new Date().toISOString().slice(0, 10)}`;
-          imgLink.download = `${baseName}.jpg`;
+          imgLink.download = `${downloadBase}.jpg`;
           imgLink.click();
         }
       }).catch(() => {});
@@ -5179,10 +5184,7 @@ function generateMissionPreviewBlob(waypoints, width = 400, height = 300) {
   });
 }
 
-// ─── Save to RC2 ──────────────────────────────────────────────────────────────
-// Saves a correctly-named KMZ (UUID.kmz) directly via the File System Access
-// API showSaveFilePicker(), which uses the Windows Shell save dialog and
-// therefore supports MTP-mounted devices like the DJI RC2.
+// ─── DJI Fly UUID Settings ───────────────────────────────────────────────────
 
 const RC2_UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const RC2_UUID_LS_KEY  = 'aalaapi-rc2-uuid';
@@ -5195,29 +5197,19 @@ function setRC2UUID(uuid) {
   localStorage.setItem(RC2_UUID_LS_KEY, uuid);
   const input   = document.getElementById('rc2-uuid');
   const preview = document.getElementById('rc2-uuid-preview');
-  const status  = document.getElementById('rc2-save-status');
-  if (input   && input.value !== uuid) input.value = uuid;
+  if (input && input.value !== uuid) input.value = uuid;
   if (preview) preview.textContent = uuid || '[UUID]';
-  if (status  && uuid) status.textContent = `RC2 folder: …/waypoint/${uuid.slice(0,8)}…`;
 }
 
 function clearRC2UUID() {
   localStorage.removeItem(RC2_UUID_LS_KEY);
   const input   = document.getElementById('rc2-uuid');
   const preview = document.getElementById('rc2-uuid-preview');
-  const status  = document.getElementById('rc2-save-status');
   if (input)   input.value = '';
   if (preview) preview.textContent = '[UUID]';
-  if (status)  status.textContent = '';
 }
 
 function initRC2Controls() {
-  // Show the Save to RC2 row only when the FSA API is available (Chrome/Edge)
-  const row = document.getElementById('save-rc2-row');
-  if (row && window.showSaveFilePicker) {
-    row.style.display = 'block';
-  }
-
   // Restore stored UUID into the input field
   const storedUuid = getRC2UUID();
   if (storedUuid) setRC2UUID(storedUuid);
@@ -5246,157 +5238,6 @@ function initRC2Controls() {
   // Clear button
   const clearBtn = document.getElementById('rc2-uuid-clear');
   if (clearBtn) clearBtn.addEventListener('click', clearRC2UUID);
-
-  // Save to RC2 button
-  const saveBtn = document.getElementById('save-rc2-btn');
-  if (saveBtn) saveBtn.addEventListener('click', saveToRC2);
-}
-
-async function saveToRC2() {
-  // ── 1. Synchronous checks (must stay before any await) ───────────────────
-  if (!centerMarker) {
-    alert('Please select a flight mission center on the map first.');
-    return;
-  }
-
-  const altitude    = parseFloat(document.getElementById('altitude').value);
-  const speed       = parseFloat(document.getElementById('speed').value);
-  const headingMode = document.getElementById('heading-mode').value;
-  const finishAction= document.getElementById('finish-action').value;
-  const gimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value);
-  const captureMode = document.getElementById('capture-mode').value;
-  const pathMode    = document.getElementById('path-mode').value;
-
-  const currentWps = getCurrentWaypoints();
-  if (!currentWps || currentWps.length === 0) {
-    alert('No waypoints generated. Please check your grid dimensions and overlap settings.');
-    return;
-  }
-
-  // UUID — read synchronously from localStorage; prompt only if missing
-  // (prompt() is synchronous and does not break the user-gesture context)
-  let uuid = getRC2UUID();
-  if (!uuid) {
-    const prompted = prompt(
-      'Enter your DJI Fly Waypoint UUID.\n\n' +
-      'Find it on the RC2 at:\n' +
-      'Android \u203a data \u203a dji.go.v5 \u203a files \u203a waypoint \u203a [YOUR UUID FOLDER]\n\n' +
-      'Example: 354A8F93-759C-42C3-A8D5-746F79C7622A'
-    );
-    if (!prompted) return;
-    const trimmed = prompted.trim();
-    if (!RC2_UUID_PATTERN.test(trimmed)) {
-      alert("That doesn't look like a valid UUID. Please try again.");
-      return;
-    }
-    uuid = trimmed;
-    setRC2UUID(uuid);
-  }
-
-  const suggestedName = `${uuid}.kmz`;
-
-  // ── 2. Open the native Save dialog NOW — must be called while the click
-  //       user-gesture is still active (i.e. before the first `await`).
-  //       The 'id' param makes Chrome remember the last directory across
-  //       sessions, so the dialog opens in the RC2 UUID folder after the
-  //       first save.
-  let fileHandle;
-  try {
-    fileHandle = await window.showSaveFilePicker({
-      id: 'dji-rc2-waypoint',
-      suggestedName,
-      types: [{
-        description: 'DJI KMZ Mission File',
-        accept: { 'application/vnd.google-earth.kmz': ['.kmz'] }
-      }]
-    });
-  } catch (err) {
-    if (err.name === 'AbortError') return; // user cancelled — silent
-    Logger.error('showSaveFilePicker failed:', err);
-    alert('Could not open the save dialog: ' + err.message);
-    return;
-  }
-
-  // ── 3. Now build the KMZ blob (async is fine here — dialog already open) ──
-  const waypoints = currentWps.map(wp => ({
-    lat: wp.lat, lon: wp.lon, alt: wp.alt,
-    pitch: wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch,
-    speed, heading: wp.heading,
-    isRingStart: wp.isRingStart || false,
-    ringIndex:   wp.ringIndex   !== undefined ? wp.ringIndex   : null,
-    poiIndex:    wp.poiIndex    !== undefined ? wp.poiIndex    : null,
-    headingMode: wp.headingMode !== undefined ? wp.headingMode : null
-  }));
-
-  const templateKml  = buildTemplateKml(finishAction, speed);
-  const waylinesWpml = buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode);
-  const zip = new JSZip();
-  zip.file('wpmz/template.kml',  templateKml,  { createFolders: false });
-  zip.file('wpmz/waylines.wpml', waylinesWpml, { createFolders: false });
-
-  let blob;
-  try {
-    blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
-  } catch (err) {
-    Logger.error('RC2 KMZ generation failed:', err);
-    alert('Failed to generate KMZ: ' + err.message);
-    return;
-  }
-
-  // ── 4. Write blob to the chosen file handle ───────────────────────────────
-  // Windows MTP devices can cause createWritable()/close() to appear to
-  // succeed (no error thrown) while never actually writing bytes to the
-  // device. We verify by reading the file size back after close().
-  const statusEl = document.getElementById('rc2-save-status');
-
-  let writeSucceeded = false;
-  try {
-    const writable = await fileHandle.createWritable();
-    await writable.write(blob);
-    await writable.close();
-
-    // Verify the bytes actually landed — MTP writes often fail silently
-    try {
-      const written = await fileHandle.getFile();
-      writeSucceeded = (written.size === blob.size);
-    } catch {
-      writeSucceeded = false; // couldn't read back → treat as failed
-    }
-  } catch {
-    writeSucceeded = false;
-  }
-
-  if (writeSucceeded) {
-    if (statusEl) {
-      statusEl.textContent = `\u2713 Saved directly to RC2: ${fileHandle.name}`;
-      statusEl.style.color = '#22c55e';
-      setTimeout(() => { if (statusEl) statusEl.style.color = ''; }, 4000);
-    }
-  } else {
-    // MTP blocked the write — fall back to a correctly-named download.
-    // The user just needs to copy the file from Downloads to the RC2 folder;
-    // at least the rename step is eliminated.
-    if (statusEl) {
-      statusEl.textContent = '\u26a0\ufe0f Windows MTP blocked direct write \u2014 downloading with correct filename. Copy to RC2 manually.';
-      statusEl.style.color = '#f59e0b';
-      setTimeout(() => { if (statusEl) { statusEl.style.color = ''; statusEl.textContent = `RC2 folder: \u2026/waypoint/${uuid.slice(0, 8)}\u2026`; } }, 8000);
-    }
-
-    const link = document.createElement('a');
-    link.href     = URL.createObjectURL(blob);
-    link.download = suggestedName;
-    link.click();
-  }
-
-  // Generate and download 400x300 preview thumbnail for RC 2 map_preview
-  generateMissionPreviewBlob(waypoints).then(imgBlob => {
-    if (imgBlob && typeof document !== 'undefined') {
-      const imgLink = document.createElement('a');
-      imgLink.href  = URL.createObjectURL(imgBlob);
-      imgLink.download = `${uuid}.jpg`;
-      imgLink.click();
-    }
-  }).catch(() => {});
 }
 
 // KMZ Import Handlers & Parsers
