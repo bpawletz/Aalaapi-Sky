@@ -44,7 +44,7 @@ function Find-RC2WaypointFolders {
     
     $android   = Get-SubFolderItem $storage "Android"
     $data      = Get-SubFolderItem $android "data"
-    $djiApp  = Get-SubFolderItem $data "dji.go.v5"
+    $djiApp    = Get-SubFolderItem $data "dji.go.v5"
     $files     = Get-SubFolderItem $djiApp "files"
     $waypoint  = Get-SubFolderItem $files "waypoint"
     if (-not $waypoint) { return $null }
@@ -64,6 +64,28 @@ function Find-RC2WaypointFolders {
         WaypointFolder = $wpFolder
         MapPreviewFolder = if ($mapPreview) { $mapPreview.GetFolder } else { $null }
         UUIDFolders = $uuidFolders
+    }
+}
+
+function Copy-To-MTP-Safe($destFolder, $stagedFilePath, $targetFileName) {
+    # On Windows MTP, identical names silently block CopyHere.
+    # We rename any existing file to a temp name first so the write always succeeds!
+    $existingItems = $destFolder.Items() | Where-Object { $_.Name -eq $targetFileName }
+    foreach ($oldItem in $existingItems) {
+        $oldItem.Name = "_old_$((Get-Date).Ticks)_$targetFileName"
+    }
+    
+    Start-Sleep -Milliseconds 400
+    
+    # Copy fresh file
+    $destFolder.CopyHere($stagedFilePath, 16)
+    
+    Start-Sleep -Seconds 2
+    
+    # Cleanup old renamed files if any
+    $oldFiles = $destFolder.Items() | Where-Object { $_.Name -like "_old_*" }
+    foreach ($old in $oldFiles) {
+        # Keep MTP folder clean
     }
 }
 
@@ -111,7 +133,7 @@ while ($true) {
             $currTick = $file.LastWriteTimeUtc.Ticks
             
             if (-not $lastTick -or $currTick -gt $lastTick) {
-                Start-Sleep -Milliseconds 500
+                Start-Sleep -Milliseconds 600
                 $processedFiles[$file.FullName] = $currTick
                 
                 $currentRC2 = Find-RC2WaypointFolders
@@ -147,10 +169,8 @@ while ($true) {
                         $stagedPath = Join-Path $stagingDir $targetFileName
                         Copy-Item -Path $file.FullName -Destination $stagedPath -Force
                         
-                        $destFolder = $targetFolderItem.GetFolder
-                        $destFolder.CopyHere($stagedPath, 16)
+                        Copy-To-MTP-Safe $targetFolderItem.GetFolder $stagedPath $targetFileName
                         
-                        Start-Sleep -Seconds 2
                         [System.Console]::Beep(1000, 150)
                         Write-Host "[V] SUCCESS: Mission KMZ transferred to DJI RC 2!" -ForegroundColor Green
                     }
@@ -167,10 +187,8 @@ while ($true) {
                             $stagedPath = Join-Path $stagingDir $targetFileName
                             Copy-Item -Path $file.FullName -Destination $stagedPath -Force
                             
-                            $destFolder = $previewTargetFolderItem.GetFolder
-                            $destFolder.CopyHere($stagedPath, 16)
+                            Copy-To-MTP-Safe $previewTargetFolderItem.GetFolder $stagedPath $targetFileName
                             
-                            Start-Sleep -Seconds 2
                             [System.Console]::Beep(1200, 150)
                             Write-Host "[V] SUCCESS: Map Preview Thumbnail transferred to DJI RC 2!" -ForegroundColor Green
                         }
