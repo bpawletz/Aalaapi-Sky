@@ -44,7 +44,7 @@ function Find-RC2WaypointFolders {
     
     $android   = Get-SubFolderItem $storage "Android"
     $data      = Get-SubFolderItem $android "data"
-    $djiApp    = Get-SubFolderItem $data "dji.go.v5"
+    $djiApp  = Get-SubFolderItem $data "dji.go.v5"
     $files     = Get-SubFolderItem $djiApp "files"
     $waypoint  = Get-SubFolderItem $files "waypoint"
     if (-not $waypoint) { return $null }
@@ -98,20 +98,20 @@ Write-Host "----------------------------------------------------------" -Foregro
 $processedFiles = @{}
 
 # Pre-populate existing files
-Get-ChildItem -Path $downloadsPath -Include "*.kmz", "*.jpg", "*.jpeg", "*.png" -File -ErrorAction SilentlyContinue | ForEach-Object {
+Get-ChildItem -Path $downloadsPath -File -ErrorAction SilentlyContinue | Where-Object { $_.Extension.ToLower() -in @(".kmz", ".jpg", ".jpeg", ".png") } | ForEach-Object {
     $processedFiles[$_.FullName] = $_.LastWriteTimeUtc.Ticks
 }
 
 while ($true) {
     try {
-        $syncCandidates = Get-ChildItem -Path $downloadsPath -Include "*.kmz", "*.jpg", "*.jpeg", "*.png" -File -ErrorAction SilentlyContinue
+        $syncCandidates = Get-ChildItem -Path $downloadsPath -File -ErrorAction SilentlyContinue | Where-Object { $_.Extension.ToLower() -in @(".kmz", ".jpg", ".jpeg", ".png") }
         
         foreach ($file in $syncCandidates) {
             $lastTick = $processedFiles[$file.FullName]
             $currTick = $file.LastWriteTimeUtc.Ticks
             
             if (-not $lastTick -or $currTick -gt $lastTick) {
-                Start-Sleep -Milliseconds 600
+                Start-Sleep -Milliseconds 500
                 $processedFiles[$file.FullName] = $currTick
                 
                 $currentRC2 = Find-RC2WaypointFolders
@@ -120,8 +120,9 @@ while ($true) {
                     continue
                 }
                 
-                $isImage = ($file.Extension -in @(".jpg", ".jpeg", ".png"))
-                $isKMZ   = ($file.Extension -eq ".kmz")
+                $ext = $file.Extension.ToLower()
+                $isImage = ($ext -in @(".jpg", ".jpeg", ".png"))
+                $isKMZ   = ($ext -eq ".kmz")
                 
                 # Detect target UUID
                 $targetUUID = $null
