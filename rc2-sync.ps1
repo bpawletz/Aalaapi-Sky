@@ -29,7 +29,7 @@ if (-not (Test-Path $downloadsPath)) {
 
 function Get-SubFolderItem($folderItem, $name) {
     if (-not $folderItem) { return $null }
-    $folder = $folderItem.GetFolder
+    $folder = if ($folderItem.GetFolder) { $folderItem.GetFolder } else { $folderItem }
     return $folder.Items() | Where-Object { $_.Name -eq $name } | Select-Object -First 1
 }
 
@@ -75,18 +75,12 @@ function Copy-To-MTP-Safe($destFolder, $stagedFilePath, $targetFileName) {
         $oldItem.Name = "_old_$((Get-Date).Ticks)_$targetFileName"
     }
     
-    Start-Sleep -Milliseconds 400
+    Start-Sleep -Milliseconds 300
     
     # Copy fresh file
     $destFolder.CopyHere($stagedFilePath, 16)
     
-    Start-Sleep -Seconds 2
-    
-    # Cleanup old renamed files if any
-    $oldFiles = $destFolder.Items() | Where-Object { $_.Name -like "_old_*" }
-    foreach ($old in $oldFiles) {
-        # Keep MTP folder clean
-    }
+    Start-Sleep -Seconds 1
 }
 
 Write-Host "[*] Checking for connected DJI RC 2 controller..." -ForegroundColor Yellow
@@ -191,6 +185,8 @@ while ($true) {
                             
                             [System.Console]::Beep(1200, 150)
                             Write-Host "[V] SUCCESS: Map Preview Thumbnail transferred to DJI RC 2!" -ForegroundColor Green
+                        } else {
+                            Write-Host "[-] Could not find preview folder waypoint\map_preview\$targetUUID on RC2" -ForegroundColor Red
                         }
                     }
                 }
