@@ -5143,12 +5143,12 @@ function initRC2Controls() {
 }
 
 async function saveToRC2() {
+  // ── 1. Synchronous checks (must stay before any await) ───────────────────
   if (!centerMarker) {
     alert('Please select a flight mission center on the map first.');
     return;
   }
 
-  // ── 1. Collect all the same params as exportKMZ ──────────────────────────
   const altitude    = parseFloat(document.getElementById('altitude').value);
   const speed       = parseFloat(document.getElementById('speed').value);
   const headingMode = document.getElementById('heading-mode').value;
@@ -5157,23 +5157,14 @@ async function saveToRC2() {
   const captureMode = document.getElementById('capture-mode').value;
   const pathMode    = document.getElementById('path-mode').value;
 
-  const currentWps  = getCurrentWaypoints();
+  const currentWps = getCurrentWaypoints();
   if (!currentWps || currentWps.length === 0) {
     alert('No waypoints generated. Please check your grid dimensions and overlap settings.');
     return;
   }
 
-  const waypoints = currentWps.map(wp => ({
-    lat: wp.lat, lon: wp.lon, alt: wp.alt,
-    pitch: wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch,
-    speed, heading: wp.heading,
-    isRingStart: wp.isRingStart || false,
-    ringIndex:   wp.ringIndex   !== undefined ? wp.ringIndex   : null,
-    poiIndex:    wp.poiIndex    !== undefined ? wp.poiIndex    : null,
-    headingMode: wp.headingMode !== undefined ? wp.headingMode : null
-  }));
-
-  // ── 2. Resolve / prompt for UUID ─────────────────────────────────────────
+  // UUID — read synchronously from localStorage; prompt only if missing
+  // (prompt() is synchronous and does not break the user-gesture context)
   let uuid = getRC2UUID();
   if (!uuid) {
     const prompted = prompt(
@@ -5185,7 +5176,7 @@ async function saveToRC2() {
     if (!prompted) return;
     const trimmed = prompted.trim();
     if (!RC2_UUID_PATTERN.test(trimmed)) {
-      alert('That doesn\'t look like a valid UUID. Please try again.');
+      alert("That doesn't look like a valid UUID. Please try again.");
       return;
     }
     uuid = trimmed;
@@ -5194,26 +5185,11 @@ async function saveToRC2() {
 
   const suggestedName = `${uuid}.kmz`;
 
-  // ── 3. Build KMZ blob ────────────────────────────────────────────────────
-  const templateKml  = buildTemplateKml(finishAction, speed);
-  const waylinesWpml = buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode);
-  const zip = new JSZip();
-  zip.file('wpmz/template.kml',   templateKml,   { createFolders: false });
-  zip.file('wpmz/waylines.wpml',  waylinesWpml,  { createFolders: false });
-
-  let blob;
-  try {
-    blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
-  } catch (err) {
-    Logger.error('RC2 KMZ generation failed:', err);
-    alert('Failed to generate KMZ: ' + err.message);
-    return;
-  }
-
-  // ── 4. showSaveFilePicker — opens native Shell Save-As dialog ────────────
-  //   The 'id' parameter makes Chrome remember the last directory used for
-  //   this picker across sessions, so after the first save the dialog opens
-  //   directly in the RC2 UUID folder.
+  // ── 2. Open the native Save dialog NOW — must be called while the click
+  //       user-gesture is still active (i.e. before the first `await`).
+  //       The 'id' param makes Chrome remember the last directory across
+  //       sessions, so the dialog opens in the RC2 UUID folder after the
+  //       first save.
   let fileHandle;
   try {
     fileHandle = await window.showSaveFilePicker({
@@ -5231,32 +5207,57 @@ async function saveToRC2() {
     return;
   }
 
-  // ── 5. Write the blob ────────────────────────────────────────────────────
+  // ── 3. Now build the KMZ blob (async is fine here — dialog already open) ──
+  const waypoints = currentWps.map(wp => ({
+    lat: wp.lat, lon: wp.lon, alt: wp.alt,
+    pitch: wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch,
+    speed, heading: wp.heading,
+    isRingStart: wp.isRingStart || false,
+    ringIndex:   wp.ringIndex   !== undefined ? wp.ringIndex   : null,
+    poiIndex:    wp.poiIndex    !== undefined ? wp.poiIndex    : null,
+    headingMode: wp.headingMode !== undefined ? wp.headingMode : null
+  }));
+
+  const templateKml  = buildTemplateKml(finishAction, speed);
+  const waylinesWpml = buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode);
+  const zip = new JSZip();
+  zip.file('wpmz/template.kml',  templateKml,  { createFolders: false });
+  zip.file('wpmz/waylines.wpml', waylinesWpml, { createFolders: false });
+
+  let blob;
+  try {
+    blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+  } catch (err) {
+    Logger.error('RC2 KMZ generation failed:', err);
+    alert('Failed to generate KMZ: ' + err.message);
+    return;
+  }
+
+  // ── 4. Write blob to the chosen file handle ───────────────────────────────
   const statusEl = document.getElementById('rc2-save-status');
   try {
     const writable = await fileHandle.createWritable();
     await writable.write(blob);
     await writable.close();
 
-    if (statusEl) statusEl.textContent = `\u2713 Saved: ${fileHandle.name}`;
-    // Brief green flash on status
     if (statusEl) {
+      statusEl.textContent = `\u2713 Saved: ${fileHandle.name}`;
       statusEl.style.color = '#22c55e';
       setTimeout(() => { if (statusEl) statusEl.style.color = ''; }, 3000);
     }
   } catch (err) {
     Logger.warn('RC2 direct write failed (likely MTP limitation):', err);
 
-    // MTP write failed — fall back to a normal browser download with the
-    // correct UUID filename so the user still avoids the rename step.
+    // MTP write blocked — fall back to a correctly-named download so the
+    // rename step is still eliminated.
     if (statusEl) {
-      statusEl.textContent = '\u26a0\ufe0f MTP write blocked — downloading with correct filename instead.';
+      statusEl.textContent = '\u26a0\ufe0f MTP write blocked \u2014 downloading with correct filename instead.';
       statusEl.style.color = '#f59e0b';
       setTimeout(() => { if (statusEl) { statusEl.style.color = ''; statusEl.textContent = ''; } }, 6000);
     }
 
     const link = document.createElement('a');
-    link.href  = URL.createObjectURL(blob);
+    link.href     = URL.createObjectURL(blob);
     link.download = suggestedName;
     link.click();
   }
