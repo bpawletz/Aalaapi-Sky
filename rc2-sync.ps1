@@ -16,6 +16,11 @@ Write-Host ""
 
 $shell = New-Object -ComObject Shell.Application
 $downloadsPath = Join-Path $HOME "Downloads"
+$stagingDir    = Join-Path $PSScriptRoot "scratch\rc2_staging"
+
+if (-not (Test-Path $stagingDir)) {
+    New-Item -ItemType Directory -Path $stagingDir -Force | Out-Null
+}
 
 if (-not (Test-Path $downloadsPath)) {
     Write-Host "[-] Could not locate Downloads directory at: $downloadsPath" -ForegroundColor Red
@@ -82,8 +87,6 @@ if ($rc2Info.UUIDFolders.Count -eq 0) {
     }
 }
 
-$defaultTarget = if ($rc2Info.UUIDFolders.Count -gt 0) { $rc2Info.UUIDFolders[0] } else { $null }
-
 Write-Host ""
 Write-Host "[*] Watching folder: $downloadsPath" -ForegroundColor Cyan
 Write-Host "[*] Whenever you export or download a KMZ in Aalaapi Sky, it will automatically sync to RC2!" -ForegroundColor Green
@@ -110,7 +113,7 @@ while ($true) {
                 Start-Sleep -Milliseconds 600
                 $processedFiles[$file.FullName] = $currTick
                 
-                Write-Host "`n[>] Detected KMZ: $($file.Name)" -ForegroundColor White
+                Write-Host "`n[>] Detected exported KMZ: $($file.Name)" -ForegroundColor White
                 
                 # Re-verify RC2 connection
                 $currentRC2 = Find-RC2WaypointFolders
@@ -137,27 +140,23 @@ while ($true) {
                 if (-not $targetFolderItem -and $currentRC2.UUIDFolders.Count -gt 0) {
                     $targetFolderItem = $currentRC2.UUIDFolders[0]
                     $targetFileName = "$($targetFolderItem.Name).kmz"
-                    Write-Host "    Mapping to primary RC2 slot: $($targetFolderItem.Name)" -ForegroundColor Gray
                 }
                 
                 if ($targetFolderItem) {
-                    Write-Host "[*] Copying to RC2 -> $($targetFolderItem.Name)..." -ForegroundColor Cyan
+                    Write-Host "    -> Destination on RC2: waypoint\$($targetFolderItem.Name)\$targetFileName" -ForegroundColor Cyan
                     
-                    # If target name needs to be UUID.kmz and current file has a different name, create a temp copy
+                    # Stage file with correct target filename
                     $syncFile = $file.FullName
-                    $tempCopy = $null
                     if ($file.Name -ne $targetFileName) {
-                        $tempCopy = Join-Path $env:TEMP $targetFileName
-                        Copy-Item -Path $file.FullName -Destination $tempCopy -Force
-                        $syncFile = $tempCopy
+                        $stagedPath = Join-Path $stagingDir $targetFileName
+                        Copy-Item -Path $file.FullName -Destination $stagedPath -Force
+                        $syncFile = $stagedPath
                     }
                     
                     $destFolder = $targetFolderItem.GetFolder
                     $destFolder.CopyHere($syncFile, 16) # 16 = FOF_NOCONFIRMATION (Overwrite silently)
                     
-                    if ($tempCopy -and (Test-Path $tempCopy)) {
-                        Remove-Item $tempCopy -Force -ErrorAction SilentlyContinue
-                    }
+                    Start-Sleep -Seconds 2
                     
                     [System.Console]::Beep(1000, 150)
                     Write-Host "[V] SUCCESS: Mission transferred to DJI RC 2! Ready to fly." -ForegroundColor Green
