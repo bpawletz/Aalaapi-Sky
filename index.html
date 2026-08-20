@@ -1466,7 +1466,7 @@ html, body {
               <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
               <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
             </svg>
-            <h1 style="display: inline-flex; align-items: center; gap: 8px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.55rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); color: #06b6d4; padding: 1px 5px; border-radius: 4px; line-height: 1; font-family: monospace;">v1.30.0</span><span style="font-size: 0.5rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 4px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
+            <h1 style="display: inline-flex; align-items: center; gap: 8px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.55rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); color: #06b6d4; padding: 1px 5px; border-radius: 4px; line-height: 1; font-family: monospace;">v1.31.0</span><span style="font-size: 0.5rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 4px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
           </div>
           <div style="display: flex; gap: 8px; align-items: center;">
             <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" style="padding: 8px; display: inline-flex; align-items: center; justify-content: center; margin: 0; border-radius: 8px; width: 36px; height: 36px;">
@@ -2286,7 +2286,7 @@ html, body {
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
             <div>
-              <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2);">Version 1.30.0</span>
+              <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2);">Version 1.31.0</span>
             </div>
           </div>
         </div>
@@ -2350,6 +2350,12 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <ul style="margin: 0; padding-left: 20px; color: var(--text-muted); font-size: 0.85rem; display: flex; flex-direction: column; gap: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.31.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>DJI RC 2 Map Preview Generator:</strong> Automatically creates 400x300 JPG flight route thumbnails on export. <code>rc2-sync</code> syncs them directly to the RC 2 <code>map_preview/</code> directory for visual mission selection.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.30.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>DJI RC 2 Auto-Sync Companion:</strong> Added <code>rc2-sync.bat</code> companion utility for 1-click zero-touch mission transfers directly to the connected DJI RC 2 controller over USB.</li>
@@ -8716,11 +8722,121 @@ function exportKMZ() {
         link.download = `GridMission_Alt${altitude}m_${dateStr}.kmz`;
       }
       link.click();
+
+      // Also generate 400x300 mission preview JPG for DJI RC 2 map_preview
+      generateMissionPreviewBlob(waypoints).then(imgBlob => {
+        if (imgBlob && typeof document !== 'undefined') {
+          const imgLink = document.createElement("a");
+          imgLink.href = URL.createObjectURL(imgBlob);
+          const baseName = importedFileName ? importedFileName.replace(/\.kmz$/i, '') : `GridMission_Alt${altitude}m_${new Date().toISOString().slice(0, 10)}`;
+          imgLink.download = `${baseName}.jpg`;
+          imgLink.click();
+        }
+      }).catch(() => {});
     });
   } catch (err) {
     Logger.error("ZIP creation failed:", err);
     alert("An error occurred while creating the KMZ file. Check console for details.");
   }
+}
+
+// ─── Map Preview Thumbnail Generator ──────────────────────────────────────────
+// Generates a 400x300 JPG thumbnail preview of the waypoint flight path matching
+// the DJI Fly map_preview thumbnail specifications for RC 2 controller display.
+
+function generateMissionPreviewBlob(waypoints, width = 400, height = 300) {
+  if (typeof document === 'undefined' || !document.createElement) return Promise.resolve(null);
+  const canvas = document.createElement('canvas');
+  if (!canvas || !canvas.getContext) return Promise.resolve(null);
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return Promise.resolve(null);
+
+  // Dark slate background
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 0, width, height);
+
+  // Subtle coordinate grid lines
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+  ctx.lineWidth = 1;
+  for (let x = 40; x < width; x += 40) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, height);
+    ctx.stroke();
+  }
+  for (let y = 30; y < height; y += 30) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(width, y);
+    ctx.stroke();
+  }
+
+  if (waypoints && waypoints.length > 0) {
+    let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
+    waypoints.forEach(wp => {
+      if (wp.lat < minLat) minLat = wp.lat;
+      if (wp.lat > maxLat) maxLat = wp.lat;
+      if (wp.lon < minLon) minLon = wp.lon;
+      if (wp.lon > maxLon) maxLon = wp.lon;
+    });
+
+    const spanLat = (maxLat - minLat) || 0.0001;
+    const spanLon = (maxLon - minLon) || 0.0001;
+    const pad = 45;
+    const drawW = width - pad * 2;
+    const drawH = height - pad * 2;
+
+    const toScreen = (lat, lon) => ({
+      x: pad + ((lon - minLon) / spanLon) * drawW,
+      y: height - (pad + ((lat - minLat) / spanLat) * drawH)
+    });
+
+    // Draw wayline path
+    ctx.strokeStyle = '#06b6d4';
+    ctx.lineWidth = 3.5;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    if (ctx.shadowBlur !== undefined) {
+      ctx.shadowColor = 'rgba(6, 182, 212, 0.7)';
+      ctx.shadowBlur = 8;
+    }
+
+    ctx.beginPath();
+    waypoints.forEach((wp, i) => {
+      const pt = toScreen(wp.lat, wp.lon);
+      if (i === 0) ctx.moveTo(pt.x, pt.y);
+      else ctx.lineTo(pt.x, pt.y);
+    });
+    ctx.stroke();
+    if (ctx.shadowBlur !== undefined) ctx.shadowBlur = 0;
+
+    // Draw waypoint nodes
+    waypoints.forEach((wp, i) => {
+      const pt = toScreen(wp.lat, wp.lon);
+      ctx.fillStyle = (i === 0) ? '#22c55e' : (i === waypoints.length - 1) ? '#ef4444' : '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, (i === 0 || i === waypoints.length - 1) ? 5.5 : 3.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+  }
+
+  // Header branding badge
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  ctx.fillText('AALAAPI SKY', 14, 22);
+
+  return new Promise(resolve => {
+    if (canvas.toBlob) {
+      canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.85);
+    } else {
+      resolve(null);
+    }
+  });
 }
 
 // ─── Save to RC2 ──────────────────────────────────────────────────────────────
@@ -8931,6 +9047,16 @@ async function saveToRC2() {
     link.download = suggestedName;
     link.click();
   }
+
+  // Generate and download 400x300 preview thumbnail for RC 2 map_preview
+  generateMissionPreviewBlob(waypoints).then(imgBlob => {
+    if (imgBlob && typeof document !== 'undefined') {
+      const imgLink = document.createElement('a');
+      imgLink.href  = URL.createObjectURL(imgBlob);
+      imgLink.download = `${uuid}.jpg`;
+      imgLink.click();
+    }
+  }).catch(() => {});
 }
 
 // KMZ Import Handlers & Parsers
