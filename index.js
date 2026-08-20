@@ -839,7 +839,8 @@ function initUIEventListeners() {
 
   // Download Mission file
   document.getElementById('download-btn').addEventListener('click', exportKMZ);
-  
+  initRC2Controls();
+
   // Import KMZ triggers
   const importBtn = document.getElementById('import-btn');
   const importFileInput = document.getElementById('import-file-input');
@@ -5068,6 +5069,199 @@ function exportKMZ() {
   }
 }
 
+// ─── Save to RC2 ──────────────────────────────────────────────────────────────
+// Saves a correctly-named KMZ (UUID.kmz) directly via the File System Access
+// API showSaveFilePicker(), which uses the Windows Shell save dialog and
+// therefore supports MTP-mounted devices like the DJI RC2.
+
+const RC2_UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const RC2_UUID_LS_KEY  = 'aalaapi-rc2-uuid';
+
+function getRC2UUID() {
+  return localStorage.getItem(RC2_UUID_LS_KEY) || '';
+}
+
+function setRC2UUID(uuid) {
+  localStorage.setItem(RC2_UUID_LS_KEY, uuid);
+  const input   = document.getElementById('rc2-uuid');
+  const preview = document.getElementById('rc2-uuid-preview');
+  const status  = document.getElementById('rc2-save-status');
+  if (input   && input.value !== uuid) input.value = uuid;
+  if (preview) preview.textContent = uuid || '[UUID]';
+  if (status  && uuid) status.textContent = `RC2 folder: …/waypoint/${uuid.slice(0,8)}…`;
+}
+
+function clearRC2UUID() {
+  localStorage.removeItem(RC2_UUID_LS_KEY);
+  const input   = document.getElementById('rc2-uuid');
+  const preview = document.getElementById('rc2-uuid-preview');
+  const status  = document.getElementById('rc2-save-status');
+  if (input)   input.value = '';
+  if (preview) preview.textContent = '[UUID]';
+  if (status)  status.textContent = '';
+}
+
+function initRC2Controls() {
+  // Show the Save to RC2 row only when the FSA API is available (Chrome/Edge)
+  const row = document.getElementById('save-rc2-row');
+  if (row && window.showSaveFilePicker) {
+    row.style.display = 'block';
+  }
+
+  // Restore stored UUID into the input field
+  const storedUuid = getRC2UUID();
+  if (storedUuid) setRC2UUID(storedUuid);
+
+  // UUID input → localStorage live sync
+  const uuidInput = document.getElementById('rc2-uuid');
+  if (uuidInput) {
+    uuidInput.addEventListener('input', () => {
+      const v = uuidInput.value.trim();
+      if (RC2_UUID_PATTERN.test(v)) {
+        setRC2UUID(v);
+      } else {
+        const preview = document.getElementById('rc2-uuid-preview');
+        if (preview) preview.textContent = v || '[UUID]';
+      }
+    });
+    uuidInput.addEventListener('blur', () => {
+      const v = uuidInput.value.trim();
+      if (v && !RC2_UUID_PATTERN.test(v)) {
+        uuidInput.style.outline = '2px solid #ef4444';
+        setTimeout(() => uuidInput.style.outline = '', 1500);
+      }
+    });
+  }
+
+  // Clear button
+  const clearBtn = document.getElementById('rc2-uuid-clear');
+  if (clearBtn) clearBtn.addEventListener('click', clearRC2UUID);
+
+  // Save to RC2 button
+  const saveBtn = document.getElementById('save-rc2-btn');
+  if (saveBtn) saveBtn.addEventListener('click', saveToRC2);
+}
+
+async function saveToRC2() {
+  if (!centerMarker) {
+    alert('Please select a flight mission center on the map first.');
+    return;
+  }
+
+  // ── 1. Collect all the same params as exportKMZ ──────────────────────────
+  const altitude    = parseFloat(document.getElementById('altitude').value);
+  const speed       = parseFloat(document.getElementById('speed').value);
+  const headingMode = document.getElementById('heading-mode').value;
+  const finishAction= document.getElementById('finish-action').value;
+  const gimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value);
+  const captureMode = document.getElementById('capture-mode').value;
+  const pathMode    = document.getElementById('path-mode').value;
+
+  const currentWps  = getCurrentWaypoints();
+  if (!currentWps || currentWps.length === 0) {
+    alert('No waypoints generated. Please check your grid dimensions and overlap settings.');
+    return;
+  }
+
+  const waypoints = currentWps.map(wp => ({
+    lat: wp.lat, lon: wp.lon, alt: wp.alt,
+    pitch: wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch,
+    speed, heading: wp.heading,
+    isRingStart: wp.isRingStart || false,
+    ringIndex:   wp.ringIndex   !== undefined ? wp.ringIndex   : null,
+    poiIndex:    wp.poiIndex    !== undefined ? wp.poiIndex    : null,
+    headingMode: wp.headingMode !== undefined ? wp.headingMode : null
+  }));
+
+  // ── 2. Resolve / prompt for UUID ─────────────────────────────────────────
+  let uuid = getRC2UUID();
+  if (!uuid) {
+    const prompted = prompt(
+      'Enter your DJI Fly Waypoint UUID.\n\n' +
+      'Find it on the RC2 at:\n' +
+      'Android \u203a data \u203a dji.go.v5 \u203a files \u203a waypoint \u203a [YOUR UUID FOLDER]\n\n' +
+      'Example: 354A8F93-759C-42C3-A8D5-746F79C7622A'
+    );
+    if (!prompted) return;
+    const trimmed = prompted.trim();
+    if (!RC2_UUID_PATTERN.test(trimmed)) {
+      alert('That doesn\'t look like a valid UUID. Please try again.');
+      return;
+    }
+    uuid = trimmed;
+    setRC2UUID(uuid);
+  }
+
+  const suggestedName = `${uuid}.kmz`;
+
+  // ── 3. Build KMZ blob ────────────────────────────────────────────────────
+  const templateKml  = buildTemplateKml(finishAction, speed);
+  const waylinesWpml = buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode);
+  const zip = new JSZip();
+  zip.file('wpmz/template.kml',   templateKml,   { createFolders: false });
+  zip.file('wpmz/waylines.wpml',  waylinesWpml,  { createFolders: false });
+
+  let blob;
+  try {
+    blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+  } catch (err) {
+    Logger.error('RC2 KMZ generation failed:', err);
+    alert('Failed to generate KMZ: ' + err.message);
+    return;
+  }
+
+  // ── 4. showSaveFilePicker — opens native Shell Save-As dialog ────────────
+  //   The 'id' parameter makes Chrome remember the last directory used for
+  //   this picker across sessions, so after the first save the dialog opens
+  //   directly in the RC2 UUID folder.
+  let fileHandle;
+  try {
+    fileHandle = await window.showSaveFilePicker({
+      id: 'dji-rc2-waypoint',
+      suggestedName,
+      types: [{
+        description: 'DJI KMZ Mission File',
+        accept: { 'application/vnd.google-earth.kmz': ['.kmz'] }
+      }]
+    });
+  } catch (err) {
+    if (err.name === 'AbortError') return; // user cancelled — silent
+    Logger.error('showSaveFilePicker failed:', err);
+    alert('Could not open the save dialog: ' + err.message);
+    return;
+  }
+
+  // ── 5. Write the blob ────────────────────────────────────────────────────
+  const statusEl = document.getElementById('rc2-save-status');
+  try {
+    const writable = await fileHandle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+
+    if (statusEl) statusEl.textContent = `\u2713 Saved: ${fileHandle.name}`;
+    // Brief green flash on status
+    if (statusEl) {
+      statusEl.style.color = '#22c55e';
+      setTimeout(() => { if (statusEl) statusEl.style.color = ''; }, 3000);
+    }
+  } catch (err) {
+    Logger.warn('RC2 direct write failed (likely MTP limitation):', err);
+
+    // MTP write failed — fall back to a normal browser download with the
+    // correct UUID filename so the user still avoids the rename step.
+    if (statusEl) {
+      statusEl.textContent = '\u26a0\ufe0f MTP write blocked — downloading with correct filename instead.';
+      statusEl.style.color = '#f59e0b';
+      setTimeout(() => { if (statusEl) { statusEl.style.color = ''; statusEl.textContent = ''; } }, 6000);
+    }
+
+    const link = document.createElement('a');
+    link.href  = URL.createObjectURL(blob);
+    link.download = suggestedName;
+    link.click();
+  }
+}
+
 // KMZ Import Handlers & Parsers
 function handleKMZImport(e) {
   const file = e.target.files[0];
@@ -5076,6 +5270,12 @@ function handleKMZImport(e) {
   importedFileName = file.name;
   const statusText = document.getElementById('import-status-text');
   if (statusText) statusText.textContent = `Loading ${file.name}...`;
+
+  // Auto-detect DJI UUID from filename (e.g. "354A8F93-759C-42C3-A8D5-746F79C7622A.kmz")
+  const uuidMatch = file.name.match(/^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+  if (uuidMatch && !getRC2UUID()) {
+    setRC2UUID(uuidMatch[1]);
+  }
 
   const reader = new FileReader();
   reader.onload = function(evt) {

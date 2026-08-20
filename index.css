@@ -305,6 +305,32 @@ html, body {
   transform: translateY(0);
 }
 
+.btn-rc2 {
+  background: linear-gradient(135deg, #0e7490, #0369a1);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font-primary);
+  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  transition: var(--transition-smooth);
+  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.35);
+}
+.btn-rc2:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(3, 105, 161, 0.5);
+}
+.btn-rc2:active {
+  transform: translateY(0);
+}
+
 .btn-secondary {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border-color);

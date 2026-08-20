@@ -69,7 +69,7 @@
               <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
               <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
             </svg>
-            <h1 style="display: inline-flex; align-items: center; gap: 8px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.55rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); color: #06b6d4; padding: 1px 5px; border-radius: 4px; line-height: 1; font-family: monospace;">v1.28.1</span><span style="font-size: 0.5rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 4px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
+            <h1 style="display: inline-flex; align-items: center; gap: 8px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.55rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); color: #06b6d4; padding: 1px 5px; border-radius: 4px; line-height: 1; font-family: monospace;">v1.29.0</span><span style="font-size: 0.5rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 4px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
           </div>
           <div style="display: flex; gap: 8px; align-items: center;">
             <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" style="padding: 8px; display: inline-flex; align-items: center; justify-content: center; margin: 0; border-radius: 8px; width: 36px; height: 36px;">
@@ -332,6 +332,15 @@
               <option value="71">DJI Inspire 3 (71)</option>
             </select>
             <p class="help-text">Ensures compatibility by matching the model ID inside the KMZ to your drone.</p>
+          </div>
+
+          <div class="control-group">
+            <label for="rc2-uuid">DJI Fly Waypoint UUID</label>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input type="text" id="rc2-uuid" class="form-input" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" maxlength="36" style="font-family:monospace;font-size:0.75rem;flex:1;letter-spacing:0.03em;" />
+              <button id="rc2-uuid-clear" type="button" title="Clear UUID" style="background:rgba(255,255,255,0.07);border:1px solid var(--border-color);color:var(--text-muted);border-radius:6px;padding:5px 8px;cursor:pointer;font-size:0.8rem;flex-shrink:0;">✕</button>
+            </div>
+            <p class="help-text">RC2 path: Android/data/dji.go.v5/files/waypoint/<strong id="rc2-uuid-preview" style="color:var(--text-main);">[UUID]</strong> — auto-detected on KMZ import.</p>
           </div>
 
           <div class="control-group">
@@ -623,6 +632,17 @@
               Export KMZ
             </button>
           </div>
+          <div id="save-rc2-row" style="display:none;margin-top:6px;">
+            <button id="save-rc2-btn" class="btn-rc2" type="button">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                <line x1="8" y1="21" x2="16" y2="21"/>
+                <line x1="12" y1="17" x2="12" y2="21"/>
+              </svg>
+              Save to RC2
+            </button>
+            <p id="rc2-save-status" style="margin:3px 0 0;font-size:0.71rem;color:var(--text-muted);min-height:1em;"></p>
+          </div>
         </section>
       </div>
     </aside>
@@ -869,7 +889,7 @@
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
             <div>
-              <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2);">Version 1.28.1</span>
+              <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2);">Version 1.29.0</span>
             </div>
           </div>
         </div>
@@ -933,6 +953,12 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <ul style="margin: 0; padding-left: 20px; color: var(--text-muted); font-size: 0.85rem; display: flex; flex-direction: column; gap: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.29.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Save to RC2:</strong> New "Save to RC2" button uses the browser's native Save dialog (File System Access API) to write the KMZ with the correct UUID filename directly to the RC2 MTP storage. Eliminates the rename step and Chrome remembers the RC2 folder location across sessions. UUID auto-detected from imported KMZ filename; also configurable in the new "DJI Fly Waypoint UUID" field. If MTP write is blocked by Windows, falls back to a correctly-named download.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.28.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Default Drone Model Was Mavic 3 Enterprise (77):</strong> The Export Drone Target dropdown defaulted to Mavic 3 Enterprise (77) on every fresh page load, embedding enterprise WPML tags that DJI Fly rejects on a Mini 4 Pro (error when pressing Go). Changed default to DJI Mini 4 Pro (68).</li>
