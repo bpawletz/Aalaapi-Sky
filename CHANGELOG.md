@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.30.0] - 2026-08-20
+
+### Added
+- **Real-Time DJI RC 2 Auto-Sync Companion (`rc2-sync.bat` / `rc2-sync.ps1`):** Added a one-click background sync script that detects connected DJI RC 2 controllers over USB MTP and watches the Downloads folder. Any exported or downloaded KMZ mission from Aalaapi Sky is instantly and automatically transferred into the controller's active waypoint mission folder with zero manual file explorer copying or renaming.
+
 ## [1.29.0] - 2026-08-20
 
 ### Added
