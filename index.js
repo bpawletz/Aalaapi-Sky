@@ -2501,7 +2501,7 @@ function generateOrbitCoordinates(radius, sPhoto, baseAltitude, defaultGimbalPit
   const circumference = 2 * Math.PI * radius;
   const nPhotos = Math.max(8, Math.round(circumference / sPhoto));
 
-  for (let i = 0; i <= nPhotos; i++) {
+  for (let i = 0; i < nPhotos; i++) {
     const theta = (i / nPhotos) * 2 * Math.PI;
     const x = radius * Math.cos(theta);
     const y = radius * Math.sin(theta);
@@ -2515,7 +2515,8 @@ function generateOrbitCoordinates(radius, sPhoto, baseAltitude, defaultGimbalPit
       y: y,
       alt: baseAltitude,
       pitch: defaultGimbalPitch,
-      heading: heading
+      heading: heading,
+      headingMode: 'smoothTransition'
     };
 
     photos.push(pt);
@@ -2542,7 +2543,7 @@ function generateMultiOrbitCoordinates(radius, sPhoto, baseAltitude, defaultGimb
     const circumference = 2 * Math.PI * r;
     const nPhotos = Math.max(8, Math.round(circumference / sPhoto));
     
-    for (let i = 0; i <= nPhotos; i++) {
+    for (let i = 0; i < nPhotos; i++) {
       // Alternate direction per ring
       const theta = (ringIdx % 2 === 0) 
         ? (i / nPhotos) * 2 * Math.PI 
@@ -2560,6 +2561,7 @@ function generateMultiOrbitCoordinates(radius, sPhoto, baseAltitude, defaultGimb
         alt: ring.alt,
         pitch: ring.pitch,
         heading: heading,
+        headingMode: 'smoothTransition',
         isRingStart: i === 0,
         ringIndex: ringIdx
       };
@@ -2644,6 +2646,7 @@ function generateGridOrbitComboCoordinates(radius, rotation, captureMode, sLine,
     alt: baseAltitude,
     pitch: defaultGimbalPitch, // Oblique pitch from slider
     heading: pt.heading, // Point at center (POI)
+    headingMode: 'smoothTransition',
     isRingStart: idx === 0, // Set gimbal to oblique at start of orbit
     ringIndex: 0 // Violet (High/Orbit)
   }));
@@ -2689,6 +2692,7 @@ function generateGridMultiOrbitComboCoordinates(radius, rotation, captureMode, s
     alt: pt.alt,
     pitch: pt.pitch,
     heading: pt.heading,
+    headingMode: 'smoothTransition',
     isRingStart: pt.isRingStart,
     ringIndex: pt.ringIndex // Violet (0), Cyan (1), Amber (2)
   }));
@@ -4394,7 +4398,8 @@ function updateStatsPanel(stats) {
 function buildTemplateKml(finishAction, speed) {
   const timestamp = Date.now();
   const droneModelEl = document.getElementById('drone-model');
-  const droneEnumValue = droneModelEl ? parseInt(droneModelEl.value, 10) : 77; // Default to Mavic 3 Enterprise (77)
+  const parsedDroneVal = droneModelEl ? parseInt(droneModelEl.value, 10) : NaN;
+  const droneEnumValue = !isNaN(parsedDroneVal) ? parsedDroneVal : 77; // Default to Mavic 3 Enterprise (77)
 
   const signalLostEl = document.getElementById('signal-lost-action');
   const signalLostValue = signalLostEl ? signalLostEl.value : 'goBack';
@@ -4717,9 +4722,9 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     const wpMode = wp.headingMode || 'inherit';
     let targetPoiIndex = wp.poiIndex || 0;
     if (wpMode !== 'inherit') {
-      if (wpMode === 'custom') {
+      if (wpMode === 'custom' || wpMode === 'smoothTransition') {
         actualHeadingMode = 'smoothTransition';
-        actualHeadingAngle = wp.heading !== null && wp.heading !== undefined ? wp.heading : 0;
+        actualHeadingAngle = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
       } else {
         actualHeadingMode = wpMode;
         if (wpMode === 'towardPOI') {
@@ -4729,7 +4734,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
             targetPoi = { lat: latlng.lat, lon: latlng.lng };
           }
           if (targetPoi) {
-            poiPoint = `${targetPoi.lat.toFixed(13)},${targetPoi.lon.toFixed(13)},0.000000`;
+            poiPoint = `${targetPoi.lon.toFixed(13)},${targetPoi.lat.toFixed(13)},0.000000`;
           }
         }
       }
@@ -4741,8 +4746,11 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
           targetPoi = { lat: latlng.lat, lon: latlng.lng };
         }
         if (targetPoi) {
-          poiPoint = `${targetPoi.lat.toFixed(13)},${targetPoi.lon.toFixed(13)},0.000000`;
+          poiPoint = `${targetPoi.lon.toFixed(13)},${targetPoi.lat.toFixed(13)},0.000000`;
         }
+      } else if (headingMode === 'custom') {
+        actualHeadingMode = 'smoothTransition';
+        actualHeadingAngle = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
       }
     }
 
@@ -4777,6 +4785,10 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
           actualHeadingAngle = isNaN(h) ? 0 : h;
         }
       }
+    }
+
+    if (isNaN(actualHeadingAngle) || actualHeadingAngle === null || actualHeadingAngle === undefined) {
+      actualHeadingAngle = 0;
     }
 
     const headingAngleEnable = 1;
@@ -4826,7 +4838,8 @@ ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
   });
 
   const droneModelEl = document.getElementById('drone-model');
-  const droneEnumValue = droneModelEl ? parseInt(droneModelEl.value, 10) : 77; // Default to Mavic 3 Enterprise (77)
+  const parsedDroneVal = droneModelEl ? parseInt(droneModelEl.value, 10) : NaN;
+  const droneEnumValue = !isNaN(parsedDroneVal) ? parsedDroneVal : 77; // Default to Mavic 3 Enterprise (77)
 
   const signalLostEl = document.getElementById('signal-lost-action');
   const signalLostValue = signalLostEl ? signalLostEl.value : 'goBack';
@@ -6901,7 +6914,7 @@ function checkNeedsReposition(idx, waypoints) {
 function getWaypointHeadingAndPitch(idx, waypoints) {
   let heading = 0;
   const wp = waypoints[idx];
-  const rotationDeg = parseFloat(document.getElementById('grid-rotation').value) || 0;
+  const rotationDeg = parseFloat(document.getElementById('grid-rotation')?.value) || 0;
   if (wp.heading !== null && wp.heading !== undefined) {
     heading = wp.heading;
   } else {
@@ -6935,7 +6948,7 @@ function getWaypointHeadingAndPitch(idx, waypoints) {
       heading = getDefaultHeading(idx, waypoints, rotationDeg);
     }
   }
-  const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value) || -60;
+  const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch')?.value) || -60;
   const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : defaultGimbalPitch;
   return { heading, pitch };
 }

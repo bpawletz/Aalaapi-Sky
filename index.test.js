@@ -576,13 +576,13 @@ describe('Orbit Generation Tests', () => {
     // Generate orbit with huge sPhoto to force the min 8 photos rule
     // nPhotos = max(8, round(circumference / sPhoto))
     // For radius 100, sPhoto 1000, nPhotos should be 8.
-    // The loop goes from i=0 to nPhotos, so there are nPhotos+1 points.
+    // The loop goes from i=0 to nPhotos-1, so there are exactly nPhotos unique points.
     const result = generateOrbitCoordinates(100, 1000, 120, -60);
 
     assert.ok(result.waypoints);
     assert.ok(result.photos);
-    assert.strictEqual(result.waypoints.length, 9, 'Should have 9 points (nPhotos=8, i from 0 to 8)');
-    assert.strictEqual(result.photos.length, 9, 'Should have 9 photos');
+    assert.strictEqual(result.waypoints.length, 8, 'Should have 8 unique points (nPhotos=8 without duplicate closing point)');
+    assert.strictEqual(result.photos.length, 8, 'Should have 8 photos');
   });
 
   test('generateOrbitCoordinates calculates correct coordinates, altitude, and pitch', () => {
@@ -692,18 +692,18 @@ describe('Multi-Orbit Generation Tests', () => {
 
   test('generateMultiOrbitCoordinates enforces minimum number of photos per ring', () => {
     // Generate multi-orbit with huge sPhoto to force the min 8 photos rule
-    // Note that the loop goes from i=0 to nPhotos, so there are nPhotos+1 points per ring.
-    // If nPhotos=8, there are 9 points per ring.
+    // Each ring has exactly nPhotos unique points without duplicate closing points.
+    // If nPhotos=8, there are 8 points per ring.
     const result = generateMultiOrbitCoordinates(100, 1000, 100, -90);
 
     const ring0 = result.waypoints.filter(wp => wp.ringIndex === 0);
     const ring1 = result.waypoints.filter(wp => wp.ringIndex === 1);
     const ring2 = result.waypoints.filter(wp => wp.ringIndex === 2);
 
-    assert.strictEqual(ring0.length, 9, 'Ring 0 should have 9 points (nPhotos=8, i from 0 to 8)');
-    assert.strictEqual(ring1.length, 9, 'Ring 1 should have 9 points');
-    assert.strictEqual(ring2.length, 9, 'Ring 2 should have 9 points');
-    assert.strictEqual(result.waypoints.length, 27, 'Total waypoints should be 27');
+    assert.strictEqual(ring0.length, 8, 'Ring 0 should have 8 unique points (nPhotos=8)');
+    assert.strictEqual(ring1.length, 8, 'Ring 1 should have 8 unique points');
+    assert.strictEqual(ring2.length, 8, 'Ring 2 should have 8 unique points');
+    assert.strictEqual(result.waypoints.length, 24, 'Total waypoints should be 24');
   });
 });
 
@@ -1364,7 +1364,7 @@ describe('buildWaylinesWpml towardPOI Tests', () => {
       `);
 
       assert.strictEqual(xml.includes('<wpml:waypointHeadingMode>towardPOI</wpml:waypointHeadingMode>'), true);
-      assert.strictEqual(xml.includes('<wpml:waypointPoiPoint>41.8827000000000,-87.6227000000000,0.000000</wpml:waypointPoiPoint>'), true);
+      assert.strictEqual(xml.includes('<wpml:waypointPoiPoint>-87.6227000000000,41.8827000000000,0.000000</wpml:waypointPoiPoint>'), true);
     } finally {
       vm.runInThisContext('centerMarker = null;');
     }
@@ -1668,11 +1668,11 @@ describe('buildWaylinesWpml Multi-POI Export Tests', () => {
 
       // Waypoint 0 should point to POI 1 (-87.67, 41.93)
       assert.ok(xml.includes('<wpml:waypointHeadingPoiIndex>1</wpml:waypointHeadingPoiIndex>'));
-      assert.ok(xml.includes('<wpml:waypointPoiPoint>41.9300000000000,-87.6700000000000,0.000000</wpml:waypointPoiPoint>'));
+      assert.ok(xml.includes('<wpml:waypointPoiPoint>-87.6700000000000,41.9300000000000,0.000000</wpml:waypointPoiPoint>'));
 
       // Waypoint 1 should point to POI 2 (-87.72, 41.98)
       assert.ok(xml.includes('<wpml:waypointHeadingPoiIndex>2</wpml:waypointHeadingPoiIndex>'));
-      assert.ok(xml.includes('<wpml:waypointPoiPoint>41.9800000000000,-87.7200000000000,0.000000</wpml:waypointPoiPoint>'));
+      assert.ok(xml.includes('<wpml:waypointPoiPoint>-87.7200000000000,41.9800000000000,0.000000</wpml:waypointPoiPoint>'));
 
     } finally {
       vm.runInThisContext('centerMarker = null; pois = [];');
@@ -2962,6 +2962,47 @@ describe('Mission Map Preview Generator Tests', () => {
     } finally {
       global.document.createElement = origCreateElement;
     }
+  });
+});
+
+describe('Orbit and POI Flight Controller WPML Compliance Regression Tests', () => {
+  test('generateOrbitCoordinates produces exactly nPhotos unique points with no duplicate closing point', () => {
+    const orbit = generateOrbitCoordinates(50, 20, 30, -45);
+    assert.strictEqual(orbit.waypoints.length, orbit.photos.length);
+    
+    // Check that every point has a unique (x, y) coordinate
+    const seen = new Set();
+    orbit.waypoints.forEach((wp, idx) => {
+      const key = `${wp.x.toFixed(4)},${wp.y.toFixed(4)}`;
+      assert.strictEqual(seen.has(key), false, `Duplicate orbit waypoint coordinate found at index ${idx}: ${key}`);
+      seen.add(key);
+      assert.strictEqual(wp.headingMode, 'smoothTransition', 'Orbit waypoints must have smoothTransition headingMode');
+      assert.ok(wp.heading >= 0 && wp.heading <= 360, 'Heading must be valid angle');
+    });
+  });
+
+  test('buildWaylinesWpml exports orbit waypoints with smoothTransition and POI in lon,lat order', () => {
+    const orbit = generateOrbitCoordinates(50, 30, 25, -60);
+    // Convert to lat/lon waypoints
+    const wps = orbit.waypoints.map((wp, idx) => ({
+      lat: 40.0 + (wp.y / 111319.5),
+      lon: -83.0 + (wp.x / (111319.5 * Math.cos(40.0 * Math.PI / 180))),
+      alt: wp.alt,
+      pitch: wp.pitch,
+      heading: wp.heading,
+      headingMode: wp.headingMode
+    }));
+
+    const xml = vm.runInThisContext(`
+      buildWaylinesWpml(${JSON.stringify(wps)}, 25, 4, 'followWayline', 'goHome', -60, 'stopAndShoot', 'normal')
+    `);
+
+    // Must contain smoothTransition for custom headings
+    assert.ok(xml.includes('<wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>'));
+    // Must NOT contain NaN
+    assert.strictEqual(xml.includes('NaN'), false);
+    // Coordinate tags must be lon,lat,alt
+    assert.ok(xml.includes('<coordinates>'));
   });
 });
 
