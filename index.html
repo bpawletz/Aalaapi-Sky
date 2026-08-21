@@ -9331,6 +9331,7 @@ const FlightDiagnostics = {
   isPlaying: false,
   playbackSpeed: 1,
   currentPointIndex: 0,
+  playbackFractionalIndex: 0.0,
   telemetryData: null,
   comparisonData: null,
   animFrameId: null,
@@ -9354,12 +9355,17 @@ const FlightDiagnostics = {
     if (closeBtn) closeBtn.addEventListener('click', () => this.close());
 
     const playBtn = document.getElementById('diag-play-btn');
-    if (playBtn) playBtn.addEventListener('click', () => this.togglePlay());
+    if (playBtn) playBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.togglePlay();
+    });
 
     const slider = document.getElementById('diag-timeline-slider');
     if (slider) {
       slider.addEventListener('input', (e) => {
-        this.seekTo(parseInt(e.target.value, 10));
+        const val = parseInt(e.target.value, 10);
+        this.playbackFractionalIndex = val;
+        this.seekTo(val, false, true);
       });
     }
 
@@ -9425,6 +9431,38 @@ const FlightDiagnostics = {
     }
   },
 
+  getSceneOrigin() {
+    if (this.telemetryData && this.telemetryData.homePoint) {
+      return this.telemetryData.homePoint;
+    }
+    if (typeof centerMarker !== 'undefined' && centerMarker) {
+      const pos = centerMarker.getLatLng();
+      return { lat: pos.lat, lon: pos.lng };
+    }
+    if (this.telemetryData && this.telemetryData.points && this.telemetryData.points.length > 0) {
+      return { lat: this.telemetryData.points[0].lat, lon: this.telemetryData.points[0].lon };
+    }
+    return { lat: 40.0130, lon: -83.1765 };
+  },
+
+  projectToWorld(lat, lon, alt = 0) {
+    const origin = this.getSceneOrigin();
+    const tileZoom = 18;
+    const tileWidthMeters = 40075016.686 * Math.cos(origin.lat * Math.PI / 180) / Math.pow(2, tileZoom);
+    const sinLat0 = Math.sin(origin.lat * Math.PI / 180);
+    const xTile0 = ((origin.lon + 180) / 360) * Math.pow(2, tileZoom);
+    const yTile0 = (0.5 - Math.log((1 + sinLat0) / (1 - sinLat0)) / (4 * Math.PI)) * Math.pow(2, tileZoom);
+
+    const sinLat = Math.sin(lat * Math.PI / 180);
+    const xTile = ((lon + 180) / 360) * Math.pow(2, tileZoom);
+    const yTile = (0.5 - Math.log((1 + sinLat) / (1 - sinLat)) / (4 * Math.PI)) * Math.pow(2, tileZoom);
+
+    const x = (xTile - xTile0) * tileWidthMeters;
+    const z = (yTile - yTile0) * tileWidthMeters;
+    const y = Math.max(0.1, alt);
+    return new THREE.Vector3(x, y, z);
+  },
+
   async open(customData = null) {
     const modal = document.getElementById('flight-diagnostics-modal');
     if (!modal) return;
@@ -9441,7 +9479,8 @@ const FlightDiagnostics = {
 
     this.updateStatsUI();
     this.init3DScene();
-    this.seekTo(0);
+    this.playbackFractionalIndex = 0.0;
+    this.seekTo(0, true, true);
     this.pause();
   },
 
@@ -9578,8 +9617,8 @@ const FlightDiagnostics = {
   },
 
   addSatelliteFloor() {
-    if (!this.telemetryData || !this.telemetryData.points || !this.telemetryData.points.length || typeof document === 'undefined' || !document.createElement) return;
-    const origin = this.telemetryData.points[0];
+    if (!this.telemetryData || typeof document === 'undefined' || !document.createElement) return;
+    const origin = this.getSceneOrigin();
     const cLat = origin.lat;
     const cLon = origin.lon;
 
@@ -9656,27 +9695,10 @@ const FlightDiagnostics = {
   buildTrajectoryMeshes() {
     if (!this.telemetryData || !this.telemetryData.points) return;
     const pts = this.telemetryData.points;
-    const origin = pts[0];
-
-    const tileZoom = 18;
-    const tileWidthMeters = 40075016.686 * Math.cos(origin.lat * Math.PI / 180) / Math.pow(2, tileZoom);
-    const sinLat0 = Math.sin(origin.lat * Math.PI / 180);
-    const xTile0 = ((origin.lon + 180) / 360) * Math.pow(2, tileZoom);
-    const yTile0 = (0.5 - Math.log((1 + sinLat0) / (1 - sinLat0)) / (4 * Math.PI)) * Math.pow(2, tileZoom);
-
-    const projectToWorld = (lat, lon, alt) => {
-      const sinLat = Math.sin(lat * Math.PI / 180);
-      const xTile = ((lon + 180) / 360) * Math.pow(2, tileZoom);
-      const yTile = (0.5 - Math.log((1 + sinLat) / (1 - sinLat)) / (4 * Math.PI)) * Math.pow(2, tileZoom);
-      const x = (xTile - xTile0) * tileWidthMeters;
-      const z = (yTile - yTile0) * tileWidthMeters;
-      const y = Math.max(0.1, alt);
-      return new THREE.Vector3(x, y, z);
-    };
 
     const actualCoords = [];
     pts.forEach(p => {
-      actualCoords.push(projectToWorld(p.lat, p.lon, p.alt));
+      actualCoords.push(this.projectToWorld(p.lat, p.lon, p.alt));
     });
 
     const actualGeo = new THREE.BufferGeometry().setFromPoints(actualCoords);
@@ -9687,7 +9709,7 @@ const FlightDiagnostics = {
     const plannedCoords = [];
     const wps = getActiveMissionWaypoints();
     wps.forEach(wp => {
-      plannedCoords.push(projectToWorld(wp.lat, wp.lon, wp.altitude || 21.0));
+      plannedCoords.push(this.projectToWorld(wp.lat, wp.lon, wp.altitude || 21.0));
     });
     if (plannedCoords.length > 1) {
       const planGeo = new THREE.BufferGeometry().setFromPoints(plannedCoords);
@@ -9736,12 +9758,16 @@ const FlightDiagnostics = {
       if (this.lastFrameTime) {
         const deltaSec = (now - this.lastFrameTime) / 1000;
         const advanceSteps = deltaSec * this.playbackSpeed;
-        this.currentPointIndex += advanceSteps;
-        if (this.currentPointIndex >= this.telemetryData.points.length - 1) {
-          this.currentPointIndex = this.telemetryData.points.length - 1;
+        this.playbackFractionalIndex += advanceSteps;
+
+        const maxIdx = this.telemetryData.points.length - 1;
+        if (this.playbackFractionalIndex >= maxIdx) {
+          this.playbackFractionalIndex = maxIdx;
           this.pause();
         }
-        this.seekTo(Math.floor(this.currentPointIndex), true);
+
+        const pointIndex = Math.min(Math.floor(this.playbackFractionalIndex), maxIdx);
+        this.seekTo(pointIndex, true, false);
       }
       this.lastFrameTime = now;
     }
@@ -9760,9 +9786,10 @@ const FlightDiagnostics = {
   play() {
     if (!this.isOpen) return;
     if (this.telemetryData && this.telemetryData.points && this.telemetryData.points.length > 0) {
-      if (this.currentPointIndex >= this.telemetryData.points.length - 1) {
-        this.currentPointIndex = 0;
-        this.seekTo(0);
+      const maxIdx = this.telemetryData.points.length - 1;
+      if (this.playbackFractionalIndex >= maxIdx || this.currentPointIndex >= maxIdx) {
+        this.playbackFractionalIndex = 0.0;
+        this.seekTo(0, true, true);
       }
     }
     this.isPlaying = true;
@@ -9786,30 +9813,20 @@ const FlightDiagnostics = {
     if (paIcon) paIcon.style.display = 'none';
   },
 
-  seekTo(index, updateSlider = true) {
+  seekTo(index, updateSlider = true, syncFraction = true) {
     if (!this.telemetryData || !this.telemetryData.points || !this.telemetryData.points.length) return;
     const pts = this.telemetryData.points;
     const safeIdx = Math.max(0, Math.min(index, pts.length - 1));
     this.currentPointIndex = safeIdx;
+    if (syncFraction) {
+      this.playbackFractionalIndex = safeIdx;
+    }
 
     const pt = pts[safeIdx];
-    const origin = pts[0];
-
-    const tileZoom = 18;
-    const tileWidthMeters = 40075016.686 * Math.cos(origin.lat * Math.PI / 180) / Math.pow(2, tileZoom);
-    const sinLat0 = Math.sin(origin.lat * Math.PI / 180);
-    const xTile0 = ((origin.lon + 180) / 360) * Math.pow(2, tileZoom);
-    const yTile0 = (0.5 - Math.log((1 + sinLat0) / (1 - sinLat0)) / (4 * Math.PI)) * Math.pow(2, tileZoom);
-
-    const sinLat = Math.sin(pt.lat * Math.PI / 180);
-    const xTile = ((pt.lon + 180) / 360) * Math.pow(2, tileZoom);
-    const yTile = (0.5 - Math.log((1 + sinLat) / (1 - sinLat)) / (4 * Math.PI)) * Math.pow(2, tileZoom);
 
     if (this.droneMesh) {
-      const x = (xTile - xTile0) * tileWidthMeters;
-      const z = (yTile - yTile0) * tileWidthMeters;
-      const y = Math.max(0.1, pt.alt);
-      this.droneMesh.position.set(x, y, z);
+      const pos = this.projectToWorld(pt.lat, pt.lon, pt.alt);
+      this.droneMesh.position.copy(pos);
       this.droneMesh.rotation.y = (pt.yaw * Math.PI) / 180;
 
       if (this.frustumMesh) {
@@ -9902,7 +9919,9 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
   let currentTime = 0;
   let totalDistance = 0;
   let battery = 98.0;
-  const homePoint = { lat: waypoints[0].lat, lon: waypoints[0].lon, alt: 0 };
+  const homePoint = options.homePoint || (typeof centerMarker !== 'undefined' && centerMarker
+    ? { lat: centerMarker.getLatLng().lat, lon: centerMarker.getLatLng().lng, alt: 0 }
+    : { lat: waypoints[0].lat, lon: waypoints[0].lon, alt: 0 });
 
   const takeoffDuration = Math.max(4, Math.round(defaultAlt / 2.5));
   for (let s = 0; s <= takeoffDuration; s++) {
@@ -9910,8 +9929,8 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
     points.push({
       time: s,
       timeStr: formatTime(s),
-      lat: waypoints[0].lat,
-      lon: waypoints[0].lon,
+      lat: homePoint.lat,
+      lon: homePoint.lon,
       alt: Math.round(defaultAlt * tRatio * 10) / 10,
       speed: Math.round(tRatio * 1.5 * 10) / 10,
       pitch: Math.round(globalPitch * tRatio * 10) / 10,
