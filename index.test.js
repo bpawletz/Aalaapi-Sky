@@ -3060,4 +3060,78 @@ describe('Companion Bridge & Direct Sync Tests', () => {
   });
 });
 
+describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
+  test('generateTelemetryFromWaypoints generates complete time-series points with photo events', () => {
+    const testWps = [
+      { lat: 40.012, lon: -83.177, altitude: 21, gimbalPitch: -60, speed: 4 },
+      { lat: 40.013, lon: -83.177, altitude: 21, gimbalPitch: -60, speed: 4 },
+      { lat: 40.013, lon: -83.176, altitude: 21, gimbalPitch: -60, speed: 4 }
+    ];
+
+    const result = vm.runInThisContext(`generateTelemetryFromWaypoints(${JSON.stringify(testWps)}, { altitude: 21, speed: 4, gimbalPitch: -60 })`);
+    assert.ok(result);
+    assert.ok(result.points.length > 0);
+    assert.strictEqual(result.droneModel, 'DJI Mini 4 Pro');
+    assert.strictEqual(result.maxAltitude, 21);
+    assert.strictEqual(result.photoCount, 3);
+    assert.ok(result.durationSec > 10);
+
+    // Assert photo events exist in points
+    const photoPoints = result.points.filter(p => p.isPhoto);
+    assert.strictEqual(photoPoints.length, 3);
+    assert.ok(result.batteryStart > result.batteryEnd);
+  });
+
+  test('computeFlightComparison computes accurate variance between plan and actual flight', () => {
+    const planned = { waypointCount: 48, altitude: 21.0, estimatedTimeSec: 230, totalDistance: 820 };
+    const actual = {
+      durationSec: 252,
+      durationFormatted: '04:12',
+      totalDistance: 845,
+      maxAltitude: 21.3,
+      photoCount: 48,
+      batteryStart: 98,
+      batteryEnd: 76,
+      batteryUsed: 22
+    };
+
+    const comp = vm.runInThisContext(`computeFlightComparison(${JSON.stringify(planned)}, ${JSON.stringify(actual)})`);
+    assert.ok(comp);
+    assert.strictEqual(comp.photos.actual, 48);
+    assert.strictEqual(comp.photos.completionPct, '100%');
+    assert.strictEqual(comp.photos.status, 'optimal');
+    assert.ok(comp.time.delta.includes('+22s'));
+    assert.ok(comp.distance.delta.includes('+25 m'));
+  });
+
+  test('FlightDiagnostics open and seekTo update UI elements safely', () => {
+    const elements = {};
+    const origGetElementById = global.document.getElementById;
+    global.document.getElementById = (id) => {
+      if (!elements[id]) {
+        elements[id] = {
+          classList: { add() {}, remove() {} },
+          style: {},
+          textContent: '',
+          value: '0',
+          addEventListener() {}
+        };
+      }
+      return elements[id];
+    };
+
+    try {
+      vm.runInThisContext(`
+        FlightDiagnostics.open();
+        FlightDiagnostics.seekTo(5);
+        FlightDiagnostics.close();
+      `);
+      assert.strictEqual(elements['diag-hud-alt']?.textContent !== '', true);
+    } finally {
+      global.document.getElementById = origGetElementById;
+    }
+  });
+});
+
+
 
