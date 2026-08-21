@@ -3006,3 +3006,58 @@ describe('Orbit and POI Flight Controller WPML Compliance Regression Tests', () 
   });
 });
 
+describe('Companion Bridge & Direct Sync Tests', () => {
+  test('generateKMZBlob creates in-memory bundle with template and waylines XML', async () => {
+    // Mock JSZip
+    const origJSZip = global.JSZip;
+    global.JSZip = class {
+      constructor() {
+        this.files = {};
+      }
+      file(name, content) {
+        this.files[name] = content;
+      }
+      generateAsync(opts) {
+        return Promise.resolve(new Uint8Array([80, 75, 3, 4]));
+      }
+    };
+
+    try {
+      const result = await vm.runInThisContext(`generateKMZBlob()`);
+      assert.ok(result);
+      assert.ok(result.blob);
+      assert.ok(result.templateKml);
+      assert.ok(result.waylinesWpml);
+      assert.ok(result.waylinesWpml.includes('<Document>'));
+    } finally {
+      global.JSZip = origJSZip;
+    }
+  });
+
+  test('pollCompanionStatus handles offline state gracefully without crashing', async () => {
+    let dot = { style: { background: '' } };
+    let text = { textContent: '', style: { color: '' } };
+    let label = { textContent: '' };
+    let btn = { style: { display: '' } };
+
+    const origGetElementById = global.document.getElementById;
+    global.document.getElementById = (id) => {
+      if (id === 'companion-indicator-dot') return dot;
+      if (id === 'companion-status-text') return text;
+      if (id === 'companion-device-label') return label;
+      if (id === 'direct-rc2-sync-btn') return btn;
+      return origGetElementById ? origGetElementById(id) : null;
+    };
+
+    try {
+      await vm.runInThisContext(`pollCompanionStatus()`);
+      assert.strictEqual(text.textContent, 'Companion Offline');
+      assert.strictEqual(dot.style.background, '#64748b');
+      assert.strictEqual(btn.style.display, 'none');
+    } finally {
+      global.document.getElementById = origGetElementById;
+    }
+  });
+});
+
+
