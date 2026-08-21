@@ -311,8 +311,29 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/api/latest-flight' && req.method === 'GET') {
       const flightData = await extractLatestFlight();
+      const { generateTelemetryFromWaypoints, computeFlightComparison } = require('./log_decoder.js');
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(flightData));
+      return;
+    }
+
+    if (pathname === '/api/flight-telemetry' && (req.method === 'GET' || req.method === 'POST')) {
+      const { generateTelemetryFromWaypoints, computeFlightComparison } = require('./log_decoder.js');
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const payload = body ? JSON.parse(body) : {};
+          const waypoints = payload.waypoints || [];
+          const telemetry = generateTelemetryFromWaypoints(waypoints, payload.options || {});
+          const comparison = computeFlightComparison(payload.planned || {}, telemetry);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, telemetry, comparison }));
+        } catch (e) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: e.message }));
+        }
+      });
       return;
     }
 
