@@ -1440,7 +1440,7 @@ html, body {
               <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
               <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
             </svg>
-            <h1 style="display: inline-flex; align-items: center; gap: 8px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.55rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); color: #06b6d4; padding: 1px 5px; border-radius: 4px; line-height: 1; font-family: monospace;">v1.33.0</span><span style="font-size: 0.5rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 4px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
+            <h1 style="display: inline-flex; align-items: center; gap: 8px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.55rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); color: #06b6d4; padding: 1px 5px; border-radius: 4px; line-height: 1; font-family: monospace;">v1.34.0</span><span style="font-size: 0.5rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 4px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
           </div>
           <div style="display: flex; gap: 8px; align-items: center;">
             <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" style="padding: 8px; display: inline-flex; align-items: center; justify-content: center; margin: 0; border-radius: 8px; width: 36px; height: 36px;">
@@ -2003,9 +2003,23 @@ html, body {
               Export KMZ
             </button>
           </div>
-          <p class="help-text" style="margin: 8px 0 0; font-size: 0.72rem; color: var(--text-muted); text-align: center;">
-            💡 <strong>DJI RC 2:</strong> Run <code>rc2-sync.bat</code> on your PC to auto-transfer missions & thumbnails over USB.
-          </p>
+          
+          <!-- RC 2 Companion Live Sync Container -->
+          <div id="companion-sync-container" style="margin-top: 10px; padding: 8px 10px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem;">
+              <span style="font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
+                <span id="companion-indicator-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #64748b; display: inline-block;"></span>
+                <span id="companion-status-text">Companion Offline</span>
+              </span>
+              <span id="companion-device-label" style="color: var(--text-muted); font-size: 0.68rem;">start-companion.bat</span>
+            </div>
+            <button id="direct-rc2-sync-btn" type="button" class="btn-secondary" style="width: 100%; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: none; align-items: center; justify-content: center; gap: 6px; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.4); color: #22d3ee; cursor: pointer;">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+              </svg>
+              Send Directly to DJI RC 2
+            </button>
+          </div>
         </section>
       </div>
     </aside>
@@ -2252,7 +2266,7 @@ html, body {
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
             <div>
-              <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2);">Version 1.33.0</span>
+              <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2);">Version 1.34.0</span>
             </div>
           </div>
         </div>
@@ -2316,6 +2330,12 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <ul style="margin: 0; padding-left: 20px; color: var(--text-muted); font-size: 0.85rem; display: flex; flex-direction: column; gap: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.34.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Node.js Companion Service:</strong> Added local REST companion bridge on port 8765. Features live "🟢 DJI RC 2 Connected" sidebar indicator and 1-click "Send Directly to DJI RC 2" in-browser transfer.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.33.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Flight Controller Arming & POI Fixes:</strong> Fixed 3 WPML bugs causing DJI Fly rejection on GO: corrected POI [Lon, Lat, Alt] coordinates, enabled <code>smoothTransition</code> for inward-facing orbits, and removed duplicate closing points.</li>
@@ -8691,49 +8711,70 @@ function exportKMZ() {
     return;
   }
 
-  // 4. Generate XML contents
-  const templateKml = buildTemplateKml(finishAction, speed);
-  const waylinesWpml = buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode);
+  // 4. Generate XML contents and KMZ package
+  generateKMZBlob().then(function (result) {
+    if (!result || !result.blob) return;
 
-  // 5. Create ZIP and trigger download
-  try {
-    const zip = new JSZip();
-    zip.file("wpmz/template.kml", templateKml, { createFolders: false });
-    zip.file("wpmz/waylines.wpml", waylinesWpml, { createFolders: false });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(result.blob);
+    
+    const storedUuid = getRC2UUID();
+    let downloadBase = "";
+    if (importedFileName) {
+      link.download = importedFileName;
+      downloadBase = importedFileName.replace(/\.kmz$/i, "");
+    } else if (storedUuid && RC2_UUID_PATTERN.test(storedUuid)) {
+      link.download = `${storedUuid}.kmz`;
+      downloadBase = storedUuid;
+    } else {
+      const dateStr = new Date().toISOString().slice(0, 10);
+      link.download = `GridMission_Alt${altitude}m_${dateStr}.kmz`;
+      downloadBase = `GridMission_Alt${altitude}m_${dateStr}`;
+    }
+    link.click();
 
-    zip.generateAsync({ type: "blob", compression: "DEFLATE" }).then(function (content) {
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(content);
-      
-      const storedUuid = getRC2UUID();
-      let downloadBase = "";
-      if (importedFileName) {
-        link.download = importedFileName;
-        downloadBase = importedFileName.replace(/\.kmz$/i, "");
-      } else if (storedUuid && RC2_UUID_PATTERN.test(storedUuid)) {
-        link.download = `${storedUuid}.kmz`;
-        downloadBase = storedUuid;
-      } else {
-        const dateStr = new Date().toISOString().slice(0, 10);
-        link.download = `GridMission_Alt${altitude}m_${dateStr}.kmz`;
-        downloadBase = `GridMission_Alt${altitude}m_${dateStr}`;
+    // Also generate 400x300 mission preview JPG for DJI RC 2 map_preview
+    generateMissionPreviewBlob(waypoints).then(imgBlob => {
+      if (imgBlob && typeof document !== 'undefined') {
+        const imgLink = document.createElement("a");
+        imgLink.href = URL.createObjectURL(imgBlob);
+        imgLink.download = `${downloadBase}.jpg`;
+        imgLink.click();
       }
-      link.click();
-
-      // Also generate 400x300 mission preview JPG for DJI RC 2 map_preview
-      generateMissionPreviewBlob(waypoints).then(imgBlob => {
-        if (imgBlob && typeof document !== 'undefined') {
-          const imgLink = document.createElement("a");
-          imgLink.href = URL.createObjectURL(imgBlob);
-          imgLink.download = `${downloadBase}.jpg`;
-          imgLink.click();
-        }
-      }).catch(() => {});
-    });
-  } catch (err) {
+    }).catch(() => {});
+  }).catch(err => {
     Logger.error("ZIP creation failed:", err);
     alert("An error occurred while creating the KMZ file. Check console for details.");
+  });
+}
+
+// Generate KMZ Blob in-memory
+function generateKMZBlob(wps = null) {
+  const effectiveWps = wps || (typeof waypoints !== 'undefined' && waypoints ? waypoints : []);
+  const finishAction = document.getElementById('finish-action')?.value || 'goHome';
+  const altitude = parseFloat(document.getElementById('altitude')?.value) || 50;
+  const speed = parseFloat(document.getElementById('speed')?.value) || 4;
+  const headingMode = document.getElementById('heading-mode')?.value || 'followWayline';
+  const gimbalPitch = parseFloat(document.getElementById('gimbal-pitch')?.value) || -90;
+  const captureMode = document.getElementById('capture-mode')?.value || 'hover';
+  const pathMode = document.getElementById('path-mode')?.value || 'normal';
+
+  const templateKml = buildTemplateKml(finishAction, speed);
+  const waylinesWpml = buildWaylinesWpml(effectiveWps, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode);
+
+  if (typeof JSZip === 'undefined') {
+    return Promise.resolve(null);
   }
+
+  const zip = new JSZip();
+  zip.file("wpmz/template.kml", templateKml, { createFolders: false });
+  zip.file("wpmz/waylines.wpml", waylinesWpml, { createFolders: false });
+
+  return zip.generateAsync({ type: "blob", compression: "DEFLATE" }).then(blob => ({
+    blob,
+    templateKml,
+    waylinesWpml
+  }));
 }
 
 // ─── Map Preview Thumbnail Generator ──────────────────────────────────────────
@@ -8835,6 +8876,131 @@ function generateMissionPreviewBlob(waypoints, width = 400, height = 300) {
   });
 }
 
+// ─── DJI RC 2 Companion Bridge & Direct Sync ────────────────────────────────
+
+const COMPANION_API_BASE = 'http://127.0.0.1:8765';
+let isCompanionOnline = false;
+let isRc2MtpConnected = false;
+let companionPollInterval = null;
+
+async function pollCompanionStatus() {
+  if (typeof document === 'undefined') return;
+  const dot = document.getElementById('companion-indicator-dot');
+  const text = document.getElementById('companion-status-text');
+  const label = document.getElementById('companion-device-label');
+  const directBtn = document.getElementById('direct-rc2-sync-btn');
+  if (!dot || !text) return;
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1500);
+    const res = await fetch(`${COMPANION_API_BASE}/api/status`, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const data = await res.json();
+      isCompanionOnline = true;
+      if (data.connected) {
+        isRc2MtpConnected = true;
+        dot.style.background = '#22c55e'; // Green
+        text.textContent = 'DJI RC 2 Connected';
+        text.style.color = '#22c55e';
+        if (label) label.textContent = data.deviceName || 'MTP Ready';
+        if (directBtn) directBtn.style.display = 'inline-flex';
+      } else {
+        isRc2MtpConnected = false;
+        dot.style.background = '#eab308'; // Amber
+        text.textContent = 'RC 2 Disconnected';
+        text.style.color = '#eab308';
+        if (label) label.textContent = 'Plug in USB-C';
+        if (directBtn) directBtn.style.display = 'none';
+      }
+    } else {
+      throw new Error('Non-200 status');
+    }
+  } catch (e) {
+    isCompanionOnline = false;
+    isRc2MtpConnected = false;
+    dot.style.background = '#64748b'; // Gray
+    text.textContent = 'Companion Offline';
+    text.style.color = 'var(--text-main)';
+    if (label) label.textContent = 'start-companion.bat';
+    if (directBtn) directBtn.style.display = 'none';
+  }
+}
+
+async function sendDirectlyToRC2() {
+  const directBtn = document.getElementById('direct-rc2-sync-btn');
+  if (!directBtn || !isRc2MtpConnected) return;
+
+  const originalContent = directBtn.innerHTML;
+  directBtn.disabled = true;
+  directBtn.innerHTML = `<span>⏳ Syncing to RC 2...</span>`;
+
+  try {
+    const result = await generateKMZBlob();
+    if (!result || !result.blob) {
+      throw new Error('Could not generate mission KMZ');
+    }
+
+    const uuid = getRC2UUID() || '354A8F93-759C-42C3-A8D5-746F79C7622A';
+    const previewBlob = await generateMissionPreviewBlob(waypoints);
+
+    const kmzBase64 = await blobToBase64(result.blob);
+    let jpgBase64 = '';
+    if (previewBlob) {
+      jpgBase64 = await blobToBase64(previewBlob);
+    }
+
+    const res = await fetch(`${COMPANION_API_BASE}/api/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uuid, kmzBase64, jpgBase64 })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      directBtn.innerHTML = `<span>✅ Synced to DJI RC 2!</span>`;
+      directBtn.style.background = 'rgba(34, 197, 94, 0.2)';
+      directBtn.style.borderColor = 'rgba(34, 197, 94, 0.5)';
+      directBtn.style.color = '#4ade80';
+      setTimeout(() => {
+        directBtn.disabled = false;
+        directBtn.innerHTML = originalContent;
+        directBtn.style.background = '';
+        directBtn.style.borderColor = '';
+        directBtn.style.color = '';
+      }, 3000);
+    } else {
+      throw new Error(data.error || 'Transfer failed');
+    }
+  } catch (err) {
+    console.error('Direct RC 2 Sync Error:', err);
+    directBtn.innerHTML = `<span>❌ Sync Failed</span>`;
+    directBtn.style.color = '#f87171';
+    setTimeout(() => {
+      directBtn.disabled = false;
+      directBtn.innerHTML = originalContent;
+      directBtn.style.color = '';
+    }, 3000);
+  }
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    if (typeof FileReader === 'undefined') {
+      return resolve('');
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result ? reader.result.split(',')[1] : '';
+      resolve(base64String);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
 // ─── DJI Fly UUID Settings ───────────────────────────────────────────────────
 
 const RC2_UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -8889,6 +9055,18 @@ function initRC2Controls() {
   // Clear button
   const clearBtn = document.getElementById('rc2-uuid-clear');
   if (clearBtn) clearBtn.addEventListener('click', clearRC2UUID);
+
+  // Direct RC 2 sync button
+  const directSyncBtn = document.getElementById('direct-rc2-sync-btn');
+  if (directSyncBtn) {
+    directSyncBtn.addEventListener('click', sendDirectlyToRC2);
+  }
+
+  // Start polling Companion service status
+  pollCompanionStatus();
+  if (!companionPollInterval && typeof window !== 'undefined' && window.setInterval) {
+    companionPollInterval = setInterval(pollCompanionStatus, 3000);
+  }
 }
 
 // KMZ Import Handlers & Parsers

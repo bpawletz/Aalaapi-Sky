@@ -5053,49 +5053,70 @@ function exportKMZ() {
     return;
   }
 
-  // 4. Generate XML contents
-  const templateKml = buildTemplateKml(finishAction, speed);
-  const waylinesWpml = buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode);
+  // 4. Generate XML contents and KMZ package
+  generateKMZBlob().then(function (result) {
+    if (!result || !result.blob) return;
 
-  // 5. Create ZIP and trigger download
-  try {
-    const zip = new JSZip();
-    zip.file("wpmz/template.kml", templateKml, { createFolders: false });
-    zip.file("wpmz/waylines.wpml", waylinesWpml, { createFolders: false });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(result.blob);
+    
+    const storedUuid = getRC2UUID();
+    let downloadBase = "";
+    if (importedFileName) {
+      link.download = importedFileName;
+      downloadBase = importedFileName.replace(/\.kmz$/i, "");
+    } else if (storedUuid && RC2_UUID_PATTERN.test(storedUuid)) {
+      link.download = `${storedUuid}.kmz`;
+      downloadBase = storedUuid;
+    } else {
+      const dateStr = new Date().toISOString().slice(0, 10);
+      link.download = `GridMission_Alt${altitude}m_${dateStr}.kmz`;
+      downloadBase = `GridMission_Alt${altitude}m_${dateStr}`;
+    }
+    link.click();
 
-    zip.generateAsync({ type: "blob", compression: "DEFLATE" }).then(function (content) {
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(content);
-      
-      const storedUuid = getRC2UUID();
-      let downloadBase = "";
-      if (importedFileName) {
-        link.download = importedFileName;
-        downloadBase = importedFileName.replace(/\.kmz$/i, "");
-      } else if (storedUuid && RC2_UUID_PATTERN.test(storedUuid)) {
-        link.download = `${storedUuid}.kmz`;
-        downloadBase = storedUuid;
-      } else {
-        const dateStr = new Date().toISOString().slice(0, 10);
-        link.download = `GridMission_Alt${altitude}m_${dateStr}.kmz`;
-        downloadBase = `GridMission_Alt${altitude}m_${dateStr}`;
+    // Also generate 400x300 mission preview JPG for DJI RC 2 map_preview
+    generateMissionPreviewBlob(waypoints).then(imgBlob => {
+      if (imgBlob && typeof document !== 'undefined') {
+        const imgLink = document.createElement("a");
+        imgLink.href = URL.createObjectURL(imgBlob);
+        imgLink.download = `${downloadBase}.jpg`;
+        imgLink.click();
       }
-      link.click();
-
-      // Also generate 400x300 mission preview JPG for DJI RC 2 map_preview
-      generateMissionPreviewBlob(waypoints).then(imgBlob => {
-        if (imgBlob && typeof document !== 'undefined') {
-          const imgLink = document.createElement("a");
-          imgLink.href = URL.createObjectURL(imgBlob);
-          imgLink.download = `${downloadBase}.jpg`;
-          imgLink.click();
-        }
-      }).catch(() => {});
-    });
-  } catch (err) {
+    }).catch(() => {});
+  }).catch(err => {
     Logger.error("ZIP creation failed:", err);
     alert("An error occurred while creating the KMZ file. Check console for details.");
+  });
+}
+
+// Generate KMZ Blob in-memory
+function generateKMZBlob(wps = null) {
+  const effectiveWps = wps || (typeof waypoints !== 'undefined' && waypoints ? waypoints : []);
+  const finishAction = document.getElementById('finish-action')?.value || 'goHome';
+  const altitude = parseFloat(document.getElementById('altitude')?.value) || 50;
+  const speed = parseFloat(document.getElementById('speed')?.value) || 4;
+  const headingMode = document.getElementById('heading-mode')?.value || 'followWayline';
+  const gimbalPitch = parseFloat(document.getElementById('gimbal-pitch')?.value) || -90;
+  const captureMode = document.getElementById('capture-mode')?.value || 'hover';
+  const pathMode = document.getElementById('path-mode')?.value || 'normal';
+
+  const templateKml = buildTemplateKml(finishAction, speed);
+  const waylinesWpml = buildWaylinesWpml(effectiveWps, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode);
+
+  if (typeof JSZip === 'undefined') {
+    return Promise.resolve(null);
   }
+
+  const zip = new JSZip();
+  zip.file("wpmz/template.kml", templateKml, { createFolders: false });
+  zip.file("wpmz/waylines.wpml", waylinesWpml, { createFolders: false });
+
+  return zip.generateAsync({ type: "blob", compression: "DEFLATE" }).then(blob => ({
+    blob,
+    templateKml,
+    waylinesWpml
+  }));
 }
 
 // ─── Map Preview Thumbnail Generator ──────────────────────────────────────────
@@ -5197,6 +5218,131 @@ function generateMissionPreviewBlob(waypoints, width = 400, height = 300) {
   });
 }
 
+// ─── DJI RC 2 Companion Bridge & Direct Sync ────────────────────────────────
+
+const COMPANION_API_BASE = 'http://127.0.0.1:8765';
+let isCompanionOnline = false;
+let isRc2MtpConnected = false;
+let companionPollInterval = null;
+
+async function pollCompanionStatus() {
+  if (typeof document === 'undefined') return;
+  const dot = document.getElementById('companion-indicator-dot');
+  const text = document.getElementById('companion-status-text');
+  const label = document.getElementById('companion-device-label');
+  const directBtn = document.getElementById('direct-rc2-sync-btn');
+  if (!dot || !text) return;
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1500);
+    const res = await fetch(`${COMPANION_API_BASE}/api/status`, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const data = await res.json();
+      isCompanionOnline = true;
+      if (data.connected) {
+        isRc2MtpConnected = true;
+        dot.style.background = '#22c55e'; // Green
+        text.textContent = 'DJI RC 2 Connected';
+        text.style.color = '#22c55e';
+        if (label) label.textContent = data.deviceName || 'MTP Ready';
+        if (directBtn) directBtn.style.display = 'inline-flex';
+      } else {
+        isRc2MtpConnected = false;
+        dot.style.background = '#eab308'; // Amber
+        text.textContent = 'RC 2 Disconnected';
+        text.style.color = '#eab308';
+        if (label) label.textContent = 'Plug in USB-C';
+        if (directBtn) directBtn.style.display = 'none';
+      }
+    } else {
+      throw new Error('Non-200 status');
+    }
+  } catch (e) {
+    isCompanionOnline = false;
+    isRc2MtpConnected = false;
+    dot.style.background = '#64748b'; // Gray
+    text.textContent = 'Companion Offline';
+    text.style.color = 'var(--text-main)';
+    if (label) label.textContent = 'start-companion.bat';
+    if (directBtn) directBtn.style.display = 'none';
+  }
+}
+
+async function sendDirectlyToRC2() {
+  const directBtn = document.getElementById('direct-rc2-sync-btn');
+  if (!directBtn || !isRc2MtpConnected) return;
+
+  const originalContent = directBtn.innerHTML;
+  directBtn.disabled = true;
+  directBtn.innerHTML = `<span>⏳ Syncing to RC 2...</span>`;
+
+  try {
+    const result = await generateKMZBlob();
+    if (!result || !result.blob) {
+      throw new Error('Could not generate mission KMZ');
+    }
+
+    const uuid = getRC2UUID() || '354A8F93-759C-42C3-A8D5-746F79C7622A';
+    const previewBlob = await generateMissionPreviewBlob(waypoints);
+
+    const kmzBase64 = await blobToBase64(result.blob);
+    let jpgBase64 = '';
+    if (previewBlob) {
+      jpgBase64 = await blobToBase64(previewBlob);
+    }
+
+    const res = await fetch(`${COMPANION_API_BASE}/api/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uuid, kmzBase64, jpgBase64 })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      directBtn.innerHTML = `<span>✅ Synced to DJI RC 2!</span>`;
+      directBtn.style.background = 'rgba(34, 197, 94, 0.2)';
+      directBtn.style.borderColor = 'rgba(34, 197, 94, 0.5)';
+      directBtn.style.color = '#4ade80';
+      setTimeout(() => {
+        directBtn.disabled = false;
+        directBtn.innerHTML = originalContent;
+        directBtn.style.background = '';
+        directBtn.style.borderColor = '';
+        directBtn.style.color = '';
+      }, 3000);
+    } else {
+      throw new Error(data.error || 'Transfer failed');
+    }
+  } catch (err) {
+    console.error('Direct RC 2 Sync Error:', err);
+    directBtn.innerHTML = `<span>❌ Sync Failed</span>`;
+    directBtn.style.color = '#f87171';
+    setTimeout(() => {
+      directBtn.disabled = false;
+      directBtn.innerHTML = originalContent;
+      directBtn.style.color = '';
+    }, 3000);
+  }
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    if (typeof FileReader === 'undefined') {
+      return resolve('');
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result ? reader.result.split(',')[1] : '';
+      resolve(base64String);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
 // ─── DJI Fly UUID Settings ───────────────────────────────────────────────────
 
 const RC2_UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -5251,6 +5397,18 @@ function initRC2Controls() {
   // Clear button
   const clearBtn = document.getElementById('rc2-uuid-clear');
   if (clearBtn) clearBtn.addEventListener('click', clearRC2UUID);
+
+  // Direct RC 2 sync button
+  const directSyncBtn = document.getElementById('direct-rc2-sync-btn');
+  if (directSyncBtn) {
+    directSyncBtn.addEventListener('click', sendDirectlyToRC2);
+  }
+
+  // Start polling Companion service status
+  pollCompanionStatus();
+  if (!companionPollInterval && typeof window !== 'undefined' && window.setInterval) {
+    companionPollInterval = setInterval(pollCompanionStatus, 3000);
+  }
 }
 
 // KMZ Import Handlers & Parsers

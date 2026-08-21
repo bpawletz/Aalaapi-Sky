@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.34.0] - 2026-08-20
+
+### Added
+- **Node.js Companion Service & Direct In-Browser RC 2 Sync:**
+  - Added native Node.js companion service (`tools/companion/server.js`) running on port `8765`.
+  - Added live **"🟢 DJI RC 2 Connected"** status indicator badge in the Aalaapi Sky sidebar.
+  - Added **"⚡ Send Directly to DJI RC 2"** 1-click transfer button that streams in-memory KMZ packages and route preview thumbnails straight to connected controllers over USB MTP with zero manual file copying.
+  - Added npm shortcut (`npm run companion`) and 1-click batch launcher (`start-companion.bat`).
+
 ## [1.33.0] - 2026-08-20
 
 ### Fixed

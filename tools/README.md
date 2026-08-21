@@ -6,7 +6,19 @@ A collection of lightweight automation tools for seamless DJI RC 2 synchronizati
 
 ## 🛠 Available Tools
 
-### 1. `rc2-sync` — Real-Time DJI RC 2 Auto-Sync
+### 1. `Node.js Companion Service` (Recommended) — Live Web Bridge & Direct Transfer
+**Files:** [`tools/companion/server.js`](file:///c:/Users/bpawl/OneDrive/code/Aalaapi-Sky/tools/companion/server.js), [`start-companion.bat`](file:///c:/Users/bpawl/OneDrive/code/Aalaapi-Sky/start-companion.bat)
+**Run via:** `npm run companion` or double-clicking `start-companion.bat`
+
+- **Purpose:** Lightweight local REST daemon (port `8765`) that connects the Aalaapi Sky browser interface directly to your DJI RC 2 controller over USB MTP.
+- **Features:**
+  - **Live Web Status:** Displays **`🟢 DJI RC 2 Connected`** in the Aalaapi Sky sidebar when plugged in.
+  - **1-Click Direct Transfer:** Adds a **"⚡ Send Directly to DJI RC 2"** button in the web UI. Streams in-memory KMZ packages and route preview thumbnails straight to the controller in <1 second with zero file copying.
+  - **Zero External Dependencies:** Built entirely with Node.js built-in modules (`node:http`, `node:fs`, `node:child_process`).
+
+---
+
+### 2. `rc2-sync` — Real-Time DJI RC 2 Auto-Sync (Folder Watcher)
 **Files:** [`rc2-sync.bat`](file:///c:/Users/bpawl/OneDrive/code/Aalaapi-Sky/tools/rc2-sync.bat), [`rc2-sync.ps1`](file:///c:/Users/bpawl/OneDrive/code/Aalaapi-Sky/tools/rc2-sync.ps1)
 
 - **Purpose:** Automatically transfers exported `.kmz` waypoint missions and map preview route thumbnails (`.jpg`) to a connected DJI RC 2 controller over USB MTP.
