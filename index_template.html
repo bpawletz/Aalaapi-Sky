@@ -69,7 +69,7 @@
               <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
               <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
             </svg>
-            <h1 style="display: inline-flex; align-items: center; gap: 8px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.55rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); color: #06b6d4; padding: 1px 5px; border-radius: 4px; line-height: 1; font-family: monospace;">v1.34.0</span><span style="font-size: 0.5rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 4px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
+            <h1 style="display: inline-flex; align-items: center; gap: 8px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.55rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); color: #06b6d4; padding: 1px 5px; border-radius: 4px; line-height: 1; font-family: monospace;">v1.35.0</span><span style="font-size: 0.5rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 4px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
           </div>
           <div style="display: flex; gap: 8px; align-items: center;">
             <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" style="padding: 8px; display: inline-flex; align-items: center; justify-content: center; margin: 0; border-radius: 8px; width: 36px; height: 36px;">
@@ -648,6 +648,14 @@
               </svg>
               Send Directly to DJI RC 2
             </button>
+            <button id="open-diagnostics-btn" type="button" class="btn-secondary" style="width: 100%; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24; cursor: pointer;">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10"/>
+                <line x1="12" y1="20" x2="12" y2="4"/>
+                <line x1="6" y1="20" x2="6" y2="14"/>
+              </svg>
+              Flight Diagnostics &amp; 3D Replay
+            </button>
           </div>
         </section>
       </div>
@@ -895,7 +903,7 @@
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
             <div>
-              <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2);">Version 1.34.0</span>
+              <span class="version-tag" style="display: inline-block; font-size: 0.75rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.2);">Version 1.35.0</span>
             </div>
           </div>
         </div>
@@ -959,6 +967,12 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <ul style="margin: 0; padding-left: 20px; color: var(--text-muted); font-size: 0.85rem; display: flex; flex-direction: column; gap: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.35.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Phase 2 Diagnostics &amp; 3D Replay:</strong> Added dedicated Flight Diagnostics Dashboard with dual 3D trajectory rendering (Planned vs Actual GPS), interactive timeline scrubber, live cockpit HUD, and variance metrics.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.34.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Node.js Companion Service:</strong> Added local REST companion bridge on port 8765. Features live "🟢 DJI RC 2 Connected" sidebar indicator and 1-click "Send Directly to DJI RC 2" in-browser transfer.</li>
@@ -2260,6 +2274,205 @@
         <button id="ap-cancel-btn" class="btn-secondary" type="button" style="margin-top: 0;">Cancel</button>
         <button id="ap-apply-btn" class="btn-primary" type="button">Apply Mission</button>
       </footer>
+    </div>
+  </div>
+
+  <!-- Flight Diagnostics & 3D Replay Dashboard Modal -->
+  <div id="flight-diagnostics-modal" class="modal-overlay hidden" style="z-index: 9999;">
+    <div id="flight-diagnostics-card" class="modal glass" style="max-width: 1200px; width: 95%; height: 90dvh; display: flex; flex-direction: column; padding: 0; overflow: hidden; border: 1px solid rgba(6, 182, 212, 0.3); box-shadow: 0 16px 48px rgba(0,0,0,0.6);">
+      
+      <!-- Diagnostics Header -->
+      <header class="modal-header" style="padding: 14px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.75);">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); display: flex; align-items: center; justify-content: center; color: #fbbf24;">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10"/>
+              <line x1="12" y1="20" x2="12" y2="4"/>
+              <line x1="6" y1="20" x2="6" y2="14"/>
+            </svg>
+          </div>
+          <div>
+            <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+              Flight Diagnostics &amp; 3D Telemetry Replay
+              <span id="diag-drone-badge" style="font-size: 0.65rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); color: #22d3ee; padding: 2px 6px; border-radius: 4px; font-family: monospace;">DJI Mini 4 Pro</span>
+            </h3>
+            <div id="diag-flight-meta" style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
+              Telemetry Log: FlightRecord_2026-08-20_[19-42-28].txt • Duration: 04m 12s
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <button id="diag-load-file-btn" type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; margin: 0; display: inline-flex; align-items: center; gap: 6px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            Load Log...
+          </button>
+          <input type="file" id="diag-file-input" accept=".txt,.csv,.json,.kmz" style="display: none;" />
+          <button id="diag-close-btn" class="modal-close-btn" type="button" aria-label="Close diagnostics" style="background: none; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer; line-height: 1; padding: 0 4px;">&times;</button>
+        </div>
+      </header>
+
+      <!-- Diagnostics Main Body -->
+      <div style="flex: 1; display: flex; overflow: hidden; position: relative;">
+        
+        <!-- 3D Scene Viewport Area -->
+        <div style="flex: 1; display: flex; flex-direction: column; position: relative; background: #0b1120;">
+          <div id="diag-3d-canvas-container" style="flex: 1; width: 100%; height: 100%; position: relative; overflow: hidden;">
+            
+            <!-- Live Cockpit HUD Overlay -->
+            <div id="diag-hud-overlay" style="position: absolute; top: 12px; left: 12px; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; display: flex; gap: 16px; font-size: 0.75rem; pointer-events: none; z-index: 10; color: #f8fafc; font-family: monospace;">
+              <div>
+                <div style="color: var(--text-muted); font-size: 0.65rem;">ALTITUDE</div>
+                <div id="diag-hud-alt" style="font-weight: 700; color: #38bdf8; font-size: 0.95rem;">21.0 m</div>
+              </div>
+              <div>
+                <div style="color: var(--text-muted); font-size: 0.65rem;">SPEED</div>
+                <div id="diag-hud-speed" style="font-weight: 700; color: #4ade80; font-size: 0.95rem;">4.1 m/s</div>
+              </div>
+              <div>
+                <div style="color: var(--text-muted); font-size: 0.65rem;">GIMBAL PITCH</div>
+                <div id="diag-hud-pitch" style="font-weight: 700; color: #fbbf24; font-size: 0.95rem;">-60.0&deg;</div>
+              </div>
+              <div>
+                <div style="color: var(--text-muted); font-size: 0.65rem;">BATTERY</div>
+                <div id="diag-hud-battery" style="font-weight: 700; color: #a78bfa; font-size: 0.95rem;">87%</div>
+              </div>
+              <div>
+                <div style="color: var(--text-muted); font-size: 0.65rem;">GPS SATS</div>
+                <div id="diag-hud-sats" style="font-weight: 700; color: #22d3ee; font-size: 0.95rem;">24</div>
+              </div>
+            </div>
+
+            <!-- 3D / 2D Camera View Toggle -->
+            <div style="position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; z-index: 10;">
+              <button id="diag-view-3d-btn" type="button" class="btn-secondary active" style="padding: 4px 8px; font-size: 0.7rem; margin: 0; background: rgba(6, 182, 212, 0.2); border-color: rgba(6, 182, 212, 0.5); color: #22d3ee;">3D View</button>
+              <button id="diag-view-top-btn" type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.7rem; margin: 0;">Top Down</button>
+            </div>
+
+            <!-- Path Legend -->
+            <div style="position: absolute; bottom: 12px; left: 12px; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 6px 10px; display: flex; gap: 12px; font-size: 0.7rem; z-index: 10;">
+              <div style="display: flex; align-items: center; gap: 5px;">
+                <span style="width: 10px; height: 3px; background: #06b6d4; display: inline-block; border-radius: 2px;"></span>
+                <span style="color: var(--text-muted);">Planned WPML</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 5px;">
+                <span style="width: 10px; height: 3px; background: #f59e0b; display: inline-block; border-radius: 2px;"></span>
+                <span style="color: #fbbf24; font-weight: 600;">Actual Flown GPS</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 5px;">
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: #22c55e; display: inline-block;"></span>
+                <span style="color: var(--text-muted);">Photo Trigger</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Timeline Controller -->
+          <div style="padding: 10px 16px; background: rgba(15, 23, 42, 0.95); border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <button id="diag-play-btn" type="button" style="width: 34px; height: 34px; border-radius: 50%; background: var(--primary-gradient); border: none; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; box-shadow: 0 2px 8px rgba(6, 182, 212, 0.4);">
+                <svg id="diag-play-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <svg id="diag-pause-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="display: none;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+              </button>
+
+              <span id="diag-time-display" style="font-family: monospace; font-size: 0.8rem; font-weight: 600; color: var(--text-main); min-width: 95px;">00:00 / 04:12</span>
+
+              <input id="diag-timeline-slider" type="range" min="0" max="252" value="0" step="1" style="flex: 1; accent-color: #06b6d4; cursor: pointer;" />
+
+              <!-- Speed Multiplier Buttons -->
+              <div style="display: flex; gap: 4px; align-items: center;">
+                <button class="diag-speed-btn active" data-speed="1" style="padding: 3px 6px; font-size: 0.68rem; border-radius: 4px; background: rgba(6, 182, 212, 0.2); border: 1px solid rgba(6, 182, 212, 0.4); color: #22d3ee; cursor: pointer;">1x</button>
+                <button class="diag-speed-btn" data-speed="2" style="padding: 3px 6px; font-size: 0.68rem; border-radius: 4px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer;">2x</button>
+                <button class="diag-speed-btn" data-speed="5" style="padding: 3px 6px; font-size: 0.68rem; border-radius: 4px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer;">5x</button>
+                <button class="diag-speed-btn" data-speed="10" style="padding: 3px 6px; font-size: 0.68rem; border-radius: 4px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer;">10x</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Diagnostics Sidebar -->
+        <aside style="width: 320px; border-left: 1px solid var(--border-color); background: rgba(15, 23, 42, 0.65); display: flex; flex-direction: column; overflow-y: auto; padding: 14px; gap: 12px;">
+          
+          <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-main); display: flex; justify-content: space-between; align-items: center;">
+            <span>Mission Comparison</span>
+            <span style="font-size: 0.7rem; color: #22c55e; background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.3); padding: 1px 6px; border-radius: 4px;">✅ Completed</span>
+          </div>
+
+          <!-- Comparison Table Card -->
+          <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; font-size: 0.76rem;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 6px;">
+              <span style="color: var(--text-muted);">Flight Time</span>
+              <div style="text-align: right;">
+                <span id="diag-stat-time-actual" style="font-weight: 700; color: var(--text-main);">04m 12s</span>
+                <span id="diag-stat-time-delta" style="color: #fbbf24; font-size: 0.7rem; margin-left: 4px;">(+22s)</span>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 6px;">
+              <span style="color: var(--text-muted);">Total Distance</span>
+              <div style="text-align: right;">
+                <span id="diag-stat-dist-actual" style="font-weight: 700; color: var(--text-main);">845 m</span>
+                <span id="diag-stat-dist-delta" style="color: var(--text-muted); font-size: 0.7rem; margin-left: 4px;">(Plan: 820m)</span>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 6px;">
+              <span style="color: var(--text-muted);">Max Altitude</span>
+              <div style="text-align: right;">
+                <span id="diag-stat-alt-actual" style="font-weight: 700; color: var(--text-main);">21.3 m</span>
+                <span id="diag-stat-alt-delta" style="color: #38bdf8; font-size: 0.7rem; margin-left: 4px;">(+0.3m)</span>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: var(--text-muted);">Photos Captured</span>
+              <div style="text-align: right;">
+                <span id="diag-stat-photos-actual" style="font-weight: 700; color: #4ade80;">48 / 48 Photos</span>
+                <span style="color: #4ade80; font-size: 0.7rem; margin-left: 4px;">(100%)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Trajectory Deviation Card -->
+          <div style="background: rgba(6, 182, 212, 0.05); border: 1px solid rgba(6, 182, 212, 0.2); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 4px; font-size: 0.74rem;">
+            <div style="font-weight: 600; color: var(--accent-cyan);">🎯 Trajectory Accuracy</div>
+            <div style="color: var(--text-muted); line-height: 1.35;">
+              Max wayline drift: <strong style="color: var(--text-main);">0.8 m</strong>.<br />
+              Heading tracking error: <strong style="color: var(--text-main);">&lt; 1.2&deg;</strong>.<br />
+              All waypoint photo trigger positions verified within tolerance.
+            </div>
+          </div>
+
+          <!-- Battery Profile Card -->
+          <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px; font-size: 0.74rem;">
+            <div style="font-weight: 600; color: #a78bfa;">🔋 Battery Health &amp; Consumption</div>
+            <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+              <span>Consumption:</span>
+              <strong style="color: var(--text-main);">98% &rarr; 76% (22% used)</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
+              <span>Burn Rate:</span>
+              <strong style="color: #a78bfa;">~5.2% / minute</strong>
+            </div>
+          </div>
+
+          <div style="flex: 1;"></div>
+
+          <!-- Action Buttons -->
+          <button id="diag-export-geojson-btn" type="button" class="btn-primary" style="width: 100%; padding: 8px 12px; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Export Flight GeoJSON
+          </button>
+        </aside>
+      </div>
     </div>
   </div>
 
