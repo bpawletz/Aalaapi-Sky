@@ -3041,6 +3041,9 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     let btn = { style: { display: '' } };
 
     const origGetElementById = global.document.getElementById;
+    const origFetch = global.fetch;
+    global.fetch = () => Promise.reject(new Error('Connection refused'));
+
     global.document.getElementById = (id) => {
       if (id === 'companion-indicator-dot') return dot;
       if (id === 'companion-status-text') return text;
@@ -3056,6 +3059,7 @@ describe('Companion Bridge & Direct Sync Tests', () => {
       assert.strictEqual(btn.style.display, 'none');
     } finally {
       global.document.getElementById = origGetElementById;
+      global.fetch = origFetch;
     }
   });
 });
