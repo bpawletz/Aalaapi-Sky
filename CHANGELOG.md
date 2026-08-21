@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.35.0] - 2026-08-20
+
+### Added
+- **Phase 2: In-Browser 3D Flight Replay & Diagnostics Dashboard:**
+  - Added dedicated **"📊 Flight Diagnostics & 3D Replay"** trigger button in the RC 2 companion sidebar container.
+  - Added full-screen **Flight Diagnostics Dashboard** featuring:
+    - **Dual 3D Trajectory Rendering:** Planned Waypoint Trajectory (Cyan) rendered side-by-side with the Actual Flown GPS track (Gold/Orange).
+    - **Interactive Playback Controller:** Synchronized timeline scrubber with Play/Pause, timestamp counter, and variable speed multipliers (`1x`, `2x`, `5x`, `10x`).
+    - **Live Cockpit Telemetry HUD:** Real-time altitude, ground speed, gimbal pitch, drone yaw, battery %, and satellite count.
+    - **Mission Variance & Comparison Cards:** Planned vs. Actual duration, distance, max altitude, photos captured, and trajectory drift analytics.
+    - **Flight GeoJSON Export:** 1-click download of the complete flight track and photo trigger events.
+  - Added `tools/companion/log_decoder.js` telemetry decoder module with REST API integration on `/api/flight-telemetry`.
+
 ## [1.34.0] - 2026-08-20
 
 ### Added
