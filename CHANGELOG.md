@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.33.0] - 2026-08-20
+
+### Fixed
+- **Flight Controller Rejection on "GO" (Orbits, Multi-Orbit, and POI Missions):** Fixed 3 critical WPML formatting and trajectory solver bugs that caused DJI Fly to reject uploaded missions on arming:
+  1. **Corrected POI Coordinate Ordering:** Fixed `waypointPoiPoint` coordinate order to standard `[Longitude, Latitude, Altitude]`. Previously, latitude and longitude were transposed, placing target POIs on the opposite side of Earth (>12,000 km away) and triggering pre-flight geofence/safety validation rejections.
+  2. **Resolved Heading Mode Conflict in Orbits (`smoothTransition`):** Orbit waypoints with inward-facing angles now explicitly export `<wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>` instead of conflicting with `followWayline` trajectory tracking.
+  3. **Eliminated Duplicate Orbit Endpoints:** Fixed circular orbit loops (`i < nPhotos`) to prevent zero-distance overlapping closing waypoints from creating continuous-curvature mathematical singularities in DJI's flight controller.
+
 ## [1.32.0] - 2026-08-20
 
 ### Changed
