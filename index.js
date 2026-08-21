@@ -5235,7 +5235,7 @@ async function pollCompanionStatus() {
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1500);
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
     const res = await fetch(`${COMPANION_API_BASE}/api/status`, { signal: controller.signal });
     clearTimeout(timeoutId);
 

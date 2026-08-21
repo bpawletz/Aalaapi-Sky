@@ -107,6 +107,28 @@ if ($storage) {
   return { connected: false, error: result.error };
 }
 
+// Background status caching
+let cachedRc2Status = { connected: false, checking: true, lastCheck: 0 };
+let isCheckingStatus = false;
+
+async function updateRc2Status() {
+  if (isCheckingStatus) return cachedRc2Status;
+  isCheckingStatus = true;
+  try {
+    const status = await checkRc2Status();
+    cachedRc2Status = { ...status, lastCheck: Date.now() };
+  } catch (err) {
+    cachedRc2Status = { connected: false, error: err.message, lastCheck: Date.now() };
+  } finally {
+    isCheckingStatus = false;
+  }
+  return cachedRc2Status;
+}
+
+// Initial check and recurring background poll every 3.5s
+updateRc2Status();
+setInterval(updateRc2Status, 3500);
+
 // 2. Transfer KMZ & Preview JPG to RC 2
 async function transferToRc2(uuid, kmzPath, jpgPath) {
   const psScript = `
@@ -250,9 +272,8 @@ const server = http.createServer(async (req, res) => {
 
   try {
     if (pathname === '/api/status' && req.method === 'GET') {
-      const status = await checkRc2Status();
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(status));
+      res.end(JSON.stringify(cachedRc2Status));
       return;
     }
 
