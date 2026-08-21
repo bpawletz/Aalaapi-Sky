@@ -9519,6 +9519,9 @@ const FlightDiagnostics = {
     const grid = new THREE.GridHelper(400, 40, 0x06b6d4, 0x1e293b);
     this.threeScene.add(grid);
 
+    // Satellite Map Floor (aligned with flight origin)
+    this.addSatelliteFloor();
+
     // Home Point Marker (Green Ring)
     const homeGeo = new THREE.RingGeometry(2, 2.5, 32);
     const homeMat = new THREE.MeshBasicMaterial({ color: 0x22c55e, side: THREE.DoubleSide });
@@ -9530,6 +9533,84 @@ const FlightDiagnostics = {
     this.buildTrajectoryMeshes();
     this.buildDroneAvatar();
     this.animate();
+  },
+
+  addSatelliteFloor() {
+    if (!this.telemetryData || !this.telemetryData.points || !this.telemetryData.points.length || typeof document === 'undefined' || !document.createElement) return;
+    const origin = this.telemetryData.points[0];
+    const cLat = origin.lat;
+    const cLon = origin.lon;
+
+    const tileZoom = 18;
+    const tileWidthMeters = 40075016.686 * Math.cos(cLat * Math.PI / 180) / Math.pow(2, tileZoom);
+
+    const sinLat = Math.sin(cLat * Math.PI / 180);
+    const xTileFrac = ((cLon + 180) / 360) * Math.pow(2, tileZoom);
+    const yTileFrac = (0.5 - Math.log((1 + sinLat) / (1 - sinLat)) / (4 * Math.PI)) * Math.pow(2, tileZoom);
+
+    const xTileCenter = Math.floor(xTileFrac);
+    const yTileCenter = Math.floor(yTileFrac);
+
+    const planeSize = tileWidthMeters * 3;
+
+    const distX_tiles = xTileFrac - (xTileCenter - 1);
+    const distY_tiles = yTileFrac - (yTileCenter - 1);
+
+    const planeOffsetX = (1.5 - distX_tiles) * tileWidthMeters;
+    const planeOffsetZ = (1.5 - distY_tiles) * tileWidthMeters;
+
+    const groundGeom = new THREE.PlaneGeometry(planeSize, planeSize);
+    
+    const groundCanvas = document.createElement('canvas');
+    if (!groundCanvas || !groundCanvas.getContext) return;
+    groundCanvas.width = 768;
+    groundCanvas.height = 768;
+    const ctx = groundCanvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = "#070a13";
+    ctx.fillRect(0, 0, 768, 768);
+
+    ctx.strokeStyle = "rgba(6, 182, 212, 0.15)";
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 12; i++) {
+      const coord = i * 64;
+      ctx.beginPath(); ctx.moveTo(coord, 0); ctx.lineTo(coord, 768); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, coord); ctx.lineTo(768, coord); ctx.stroke();
+    }
+
+    const groundTexture = new THREE.CanvasTexture(groundCanvas);
+    const groundMaterial = new THREE.MeshBasicMaterial({
+      map: groundTexture,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.95
+    });
+
+    const groundMesh = new THREE.Mesh(groundGeom, groundMaterial);
+    groundMesh.rotation.x = -Math.PI / 2;
+    groundMesh.position.set(planeOffsetX, -0.2, planeOffsetZ);
+    this.threeScene.add(groundMesh);
+
+    if (typeof Image !== 'undefined') {
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const tx = xTileCenter + dx;
+          const ty = yTileCenter + dy;
+          const posX = (dx + 1) * 256;
+          const posY = (dy + 1) * 256;
+
+          const tileUrl = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${tileZoom}/${ty}/${tx}`;
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => {
+            ctx.drawImage(img, posX, posY, 256, 256);
+            groundTexture.needsUpdate = true;
+          };
+          img.src = tileUrl;
+        }
+      }
+    }
   },
 
   buildTrajectoryMeshes() {
