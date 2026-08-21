@@ -309,6 +309,34 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (pathname === '/api/flights' && req.method === 'GET') {
+      try {
+        let files = [];
+        if (fs.existsSync(LATEST_DIR)) {
+          files = fs.readdirSync(LATEST_DIR)
+            .filter(f => f.startsWith('FlightRecord_') && f.endsWith('.txt'))
+            .sort().reverse();
+        }
+        const flightList = files.map((f, idx) => {
+          const stats = fs.statSync(path.join(LATEST_DIR, f));
+          const match = f.match(/FlightRecord_(\d{4}-\d{2}-\d{2})_\[(\d{2}-\d{2}-\d{2})\]/);
+          const dateStr = match ? `${match[1]} ${match[2].replace(/-/g, ':')}` : 'Flight';
+          return {
+            filename: f,
+            label: `Flight ${files.length - idx} — ${dateStr} (${Math.round(stats.size / 1024)} KB)`,
+            date: dateStr,
+            size: stats.size
+          };
+        });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, flights: flightList }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+      return;
+    }
+
     if (pathname === '/api/latest-flight' && req.method === 'GET') {
       const flightData = await extractLatestFlight();
       const { generateTelemetryFromWaypoints, computeFlightComparison } = require('./log_decoder.js');
