@@ -99,6 +99,17 @@ Aalaapi Sky compiles flight plans into DJI's proprietary **WPML (Waypoint Markup
 * **Supported Models:** DJI Mini 4 Pro, DJI Air 3, DJI Mavic 3, Mavic 3 Pro, Mavic 3 Classic, Mavic 3 Enterprise, DJI Inspire 3, DJI Matrice 30 (M30/M30T), and DJI Matrice 300/350 RTK.
 * **Unsupported Models:** Older DJI models (including the DJI Mini 3 Pro, Mavic Air 2, Mavic 2 series, and Phantom 4 series) utilize legacy `.kml` or proprietary database structures and are not compatible with WPML V2.
 
+---
+
+## 🛠 DJI RC 2 Companion Tools
+
+The [`tools/`](file:///c:/Users/bpawl/OneDrive/code/Aalaapi-Sky/tools/) directory includes automated utilities for DJI RC 2 controllers over USB MTP:
+* **`tools/rc2-sync.bat`**: Watches `Downloads` and automatically syncs exported KMZs and map preview thumbnails to the RC 2's active waypoint directory.
+* **`tools/extract-latest-flight.bat`**: Pulls and analyzes the newest flight logs, missions, thumbnails, and telemetry database from both `Downloads` and the connected RC 2.
+* **`tools/map-rc2.bat`**: Scans the connected controller and generates a complete storage map report.
+
+See the [Companion Tools README](file:///c:/Users/bpawl/OneDrive/code/Aalaapi-Sky/tools/README.md) for detailed instructions.
+
 
 
 
