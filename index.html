@@ -9287,6 +9287,45 @@ function initRC2Controls() {
 
 // ─── Flight Diagnostics & 3D Telemetry Replay Engine ──────────────────────────
 
+function getActiveMissionWaypoints() {
+  if (typeof importedWaypoints !== 'undefined' && importedWaypoints && importedWaypoints.length > 0) {
+    return importedWaypoints;
+  }
+  if (typeof generatedWaypoints !== 'undefined' && generatedWaypoints && generatedWaypoints.length > 0) {
+    return generatedWaypoints;
+  }
+  const alt = (typeof document !== 'undefined' && parseFloat(document.getElementById('altitude')?.value)) || 21.0;
+  const speed = (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) || 4.0;
+  const pitch = (typeof document !== 'undefined' && parseFloat(document.getElementById('gimbal-pitch')?.value)) || -90.0;
+
+  let centerLat = 40.0130;
+  let centerLon = -83.1765;
+  if (typeof centerMarker !== 'undefined' && centerMarker) {
+    const latlng = centerMarker.getLatLng();
+    centerLat = latlng.lat;
+    centerLon = latlng.lng;
+  } else if (typeof map !== 'undefined' && map && map.getCenter) {
+    const latlng = map.getCenter();
+    centerLat = latlng.lat;
+    centerLon = latlng.lng;
+  }
+
+  // Realistic backyard lawn grid: ~18m x ~14m
+  const latM = 111320;
+  const lonM = 111320 * Math.cos(centerLat * Math.PI / 180);
+  const halfW = 9.0;
+  const halfH = 7.0;
+
+  return [
+    { lat: centerLat - halfH / latM, lon: centerLon - halfW / lonM, altitude: alt, gimbalPitch: pitch, speed },
+    { lat: centerLat + halfH / latM, lon: centerLon - halfW / lonM, altitude: alt, gimbalPitch: pitch, speed },
+    { lat: centerLat + halfH / latM, lon: centerLon, altitude: alt, gimbalPitch: pitch, speed },
+    { lat: centerLat - halfH / latM, lon: centerLon, altitude: alt, gimbalPitch: pitch, speed },
+    { lat: centerLat - halfH / latM, lon: centerLon + halfW / lonM, altitude: alt, gimbalPitch: pitch, speed },
+    { lat: centerLat + halfH / latM, lon: centerLon + halfW / lonM, altitude: alt, gimbalPitch: pitch, speed }
+  ];
+}
+
 const FlightDiagnostics = {
   isOpen: false,
   isPlaying: false,
@@ -9403,6 +9442,7 @@ const FlightDiagnostics = {
     this.updateStatsUI();
     this.init3DScene();
     this.seekTo(0);
+    this.pause();
   },
 
   close() {
@@ -9410,6 +9450,10 @@ const FlightDiagnostics = {
     if (modal) modal.classList.add('hidden');
     this.isOpen = false;
     this.pause();
+    if (this.animFrameId) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
+    }
   },
 
   async fetchOrGenerateTelemetry() {
@@ -9417,14 +9461,7 @@ const FlightDiagnostics = {
     const speed = parseFloat(document.getElementById('speed')?.value) || 4.0;
     const gimbalPitch = parseFloat(document.getElementById('gimbal-pitch')?.value) || -60.0;
 
-    const wps = (typeof waypoints !== 'undefined' && waypoints && waypoints.length > 0)
-      ? waypoints
-      : [
-          { lat: 40.0127, lon: -83.1771, altitude: 21, gimbalPitch: -60, speed: 4 },
-          { lat: 40.0135, lon: -83.1771, altitude: 21, gimbalPitch: -60, speed: 4 },
-          { lat: 40.0135, lon: -83.1762, altitude: 21, gimbalPitch: -60, speed: 4 },
-          { lat: 40.0127, lon: -83.1762, altitude: 21, gimbalPitch: -60, speed: 4 }
-        ];
+    const wps = getActiveMissionWaypoints();
 
     try {
       const res = await fetch('http://127.0.0.1:8765/api/flight-telemetry', {
@@ -9437,7 +9474,7 @@ const FlightDiagnostics = {
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.success) {
+        if (data.success && data.telemetry) {
           this.telemetryData = data.telemetry;
           this.comparisonData = data.comparison;
           return;
@@ -9449,7 +9486,7 @@ const FlightDiagnostics = {
 
     // Client-side fallback generator
     this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch });
-    this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: 820 }, this.telemetryData);
+    this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
   },
 
   updateStatsUI() {
@@ -9482,6 +9519,11 @@ const FlightDiagnostics = {
     if (typeof document === 'undefined') return;
     const container = document.getElementById('diag-3d-canvas-container');
     if (!container || typeof THREE === 'undefined') return;
+
+    if (this.animFrameId) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
+    }
 
     const oldCanvas = container.querySelector('canvas');
     if (oldCanvas) container.removeChild(oldCanvas);
@@ -9643,7 +9685,7 @@ const FlightDiagnostics = {
     this.threeScene.add(this.actualLineMesh);
 
     const plannedCoords = [];
-    const wps = (typeof waypoints !== 'undefined' && waypoints) ? waypoints : [];
+    const wps = getActiveMissionWaypoints();
     wps.forEach(wp => {
       plannedCoords.push(projectToWorld(wp.lat, wp.lon, wp.altitude || 21.0));
     });
@@ -9683,10 +9725,13 @@ const FlightDiagnostics = {
   },
 
   animate() {
-    if (!this.isOpen || typeof requestAnimationFrame === 'undefined') return;
+    if (!this.isOpen || typeof requestAnimationFrame === 'undefined') {
+      this.animFrameId = null;
+      return;
+    }
     this.animFrameId = requestAnimationFrame(() => this.animate());
 
-    if (this.isPlaying && this.telemetryData && this.telemetryData.points.length > 0) {
+    if (this.isPlaying && this.telemetryData && this.telemetryData.points && this.telemetryData.points.length > 0) {
       const now = (typeof performance !== 'undefined') ? performance.now() : Date.now();
       if (this.lastFrameTime) {
         const deltaSec = (now - this.lastFrameTime) / 1000;
@@ -9713,7 +9758,8 @@ const FlightDiagnostics = {
   },
 
   play() {
-    if (this.telemetryData && this.telemetryData.points) {
+    if (!this.isOpen) return;
+    if (this.telemetryData && this.telemetryData.points && this.telemetryData.points.length > 0) {
       if (this.currentPointIndex >= this.telemetryData.points.length - 1) {
         this.currentPointIndex = 0;
         this.seekTo(0);
@@ -9723,7 +9769,12 @@ const FlightDiagnostics = {
     this.lastFrameTime = (typeof performance !== 'undefined') ? performance.now() : Date.now();
     const pIcon = document.getElementById('diag-play-icon');
     const paIcon = document.getElementById('diag-pause-icon');
-    if (pIcon && paIcon) { pIcon.style.display = 'none'; paIcon.style.display = 'block'; }
+    if (pIcon) pIcon.style.display = 'none';
+    if (paIcon) paIcon.style.display = 'block';
+
+    if (!this.animFrameId) {
+      this.animate();
+    }
   },
 
   pause() {
@@ -9731,7 +9782,8 @@ const FlightDiagnostics = {
     this.lastFrameTime = null;
     const pIcon = document.getElementById('diag-play-icon');
     const paIcon = document.getElementById('diag-pause-icon');
-    if (pIcon && paIcon) { pIcon.style.display = 'block'; paIcon.style.display = 'none'; }
+    if (pIcon) pIcon.style.display = 'block';
+    if (paIcon) paIcon.style.display = 'none';
   },
 
   seekTo(index, updateSlider = true) {
