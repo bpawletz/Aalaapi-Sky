@@ -2303,6 +2303,16 @@
         </div>
 
         <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <label for="diag-flight-selector" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">Flight:</label>
+            <select id="diag-flight-selector" class="settings-select" style="padding: 5px 10px; font-size: 0.75rem; border-radius: 6px; background: rgba(15, 23, 42, 0.9); border: 1px solid var(--border-color); color: var(--text-main); cursor: pointer; min-width: 230px;">
+              <option value="FlightRecord_2026-08-20_[19-42-28].txt">Flight 3 — Aug 20, 19:42 (4m 12s, 48 photos)</option>
+              <option value="FlightRecord_2026-08-20_[19-47-15].txt">Flight 4 — Aug 20, 19:47 (1m 15s)</option>
+              <option value="FlightRecord_2026-08-20_[19-41-15].txt">Flight 2 — Aug 20, 19:41 (0m 52s)</option>
+              <option value="FlightRecord_2026-08-20_[19-39-07].txt">Flight 1 — Aug 20, 19:39 (0m 45s)</option>
+              <option value="active-mission">Planned Mission Simulation</option>
+            </select>
+          </div>
           <button id="diag-load-file-btn" type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; margin: 0; display: inline-flex; align-items: center; gap: 6px;">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>

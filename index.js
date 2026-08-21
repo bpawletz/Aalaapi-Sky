@@ -5547,6 +5547,14 @@ const FlightDiagnostics = {
       });
     }
 
+    // Flight selector dropdown
+    const flightSel = document.getElementById('diag-flight-selector');
+    if (flightSel) {
+      flightSel.addEventListener('change', (e) => {
+        this.loadSelectedFlight(e.target.value);
+      });
+    }
+
     // Export GeoJSON button
     const exportBtn = document.getElementById('diag-export-geojson-btn');
     if (exportBtn) exportBtn.addEventListener('click', () => this.exportGeoJSON());
@@ -5558,6 +5566,79 @@ const FlightDiagnostics = {
       loadBtn.addEventListener('click', () => fileInput.click());
       fileInput.addEventListener('change', (e) => this.handleLogFileImport(e));
     }
+  },
+
+  async refreshFlightList() {
+    const flightSel = document.getElementById('diag-flight-selector');
+    if (!flightSel || typeof fetch === 'undefined') return;
+
+    try {
+      const res = await fetch('http://127.0.0.1:8765/api/flights');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.flights && data.flights.length > 0) {
+          flightSel.innerHTML = '';
+          data.flights.forEach((f, idx) => {
+            const opt = document.createElement('option');
+            opt.value = f.filename;
+            opt.textContent = f.label;
+            if (idx === 0) opt.selected = true;
+            flightSel.appendChild(opt);
+          });
+          const planOpt = document.createElement('option');
+          planOpt.value = 'active-mission';
+          planOpt.textContent = 'Planned Mission Simulation';
+          flightSel.appendChild(planOpt);
+        }
+      }
+    } catch (e) {
+      // Keep existing options
+    }
+  },
+
+  async loadSelectedFlight(flightId) {
+    const wps = getActiveMissionWaypoints();
+    const altitude = (typeof document !== 'undefined' && parseFloat(document.getElementById('altitude')?.value)) || 21.0;
+    const speed = (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) || 4.0;
+    const gimbalPitch = (typeof document !== 'undefined' && parseFloat(document.getElementById('gimbal-pitch')?.value)) || -60.0;
+
+    if (flightId === 'active-mission') {
+      this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch });
+      this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
+    } else {
+      try {
+        const res = await fetch(`http://127.0.0.1:8765/api/flight-telemetry?file=${encodeURIComponent(flightId)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            flightId,
+            waypoints: wps,
+            options: { altitude, speed, gimbalPitch }
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.telemetry) {
+            this.telemetryData = data.telemetry;
+            this.comparisonData = data.comparison;
+          }
+        }
+      } catch (e) {
+        this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch });
+        this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
+      }
+    }
+
+    const meta = document.getElementById('diag-flight-meta');
+    if (meta && this.telemetryData) {
+      meta.textContent = `Telemetry Log: ${flightId} • Duration: ${this.telemetryData.durationFormatted}`;
+    }
+
+    this.updateStatsUI();
+    this.init3DScene();
+    this.playbackFractionalIndex = 0.0;
+    this.seekTo(0, true, true);
+    this.pause();
   },
 
   getSceneOrigin() {
@@ -5597,6 +5678,9 @@ const FlightDiagnostics = {
     if (!modal) return;
     modal.classList.remove('hidden');
     this.isOpen = true;
+
+    // Refresh flight list dropdown from companion
+    await this.refreshFlightList();
 
     // Load or generate telemetry
     if (customData) {
