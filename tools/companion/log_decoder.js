@@ -40,7 +40,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
   let currentTime = 0; // seconds
   let totalDistance = 0;
   let battery = 98.0; // %
-  const homePoint = { lat: waypoints[0].lat, lon: waypoints[0].lon, alt: 0 };
+  const homePoint = options.homePoint || { lat: waypoints[0].lat, lon: waypoints[0].lon, alt: 0 };
 
   // Takeoff sequence (ascend from 0 to target altitude)
   const takeoffDuration = Math.max(4, Math.round(defaultAlt / 2.5));
@@ -49,8 +49,8 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
     points.push({
       time: s,
       timeStr: formatTime(s),
-      lat: waypoints[0].lat,
-      lon: waypoints[0].lon,
+      lat: homePoint.lat,
+      lon: homePoint.lon,
       alt: Math.round(defaultAlt * tRatio * 10) / 10,
       speed: Math.round(tRatio * 1.5 * 10) / 10,
       pitch: Math.round(globalPitch * tRatio * 10) / 10,
