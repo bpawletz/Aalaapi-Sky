@@ -4,10 +4,11 @@
     "playwright": "^1.61.1"
   },
   "name": "app",
-  "version": "1.33.0",
+  "version": "1.34.0",
   "description": "**Drone Waypoint Mission Planner**",
   "main": "index.js",
   "scripts": {
+    "companion": "node tools/companion/server.js",
     "test": "node --test index.test.js index.e2e.test.js",
     "test:unit": "node --test index.test.js",
     "test:e2e": "node --test index.e2e.test.js"
