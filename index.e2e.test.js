@@ -839,6 +839,74 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
     assert.ok(hoverTestResult.success, `Global Hover Time E2E test failed. Synced: ${hoverTestResult.displaySynced}, XML: ${hoverTestResult.xmlContainsHover}`);
   });
+
+  test('E2E: RC 2 Sync Box offline guidance and multi-tab guide modal interaction', async () => {
+    // Intercept companion status to test offline state deterministically
+    await page.route('**/api/status', route => route.abort());
+    
+    const offlineTestResult = await page.evaluate(async () => {
+      if (typeof pollCompanionStatus === 'function') {
+        await pollCompanionStatus();
+      }
+      const syncContainer = document.getElementById('companion-sync-container');
+      const isOffline = syncContainer ? syncContainer.classList.contains('is-offline') : false;
+      const hint = document.getElementById('companion-offline-hint');
+      const hintVisible = hint ? hint.style.display !== 'none' : false;
+
+      // Click offline hint to open guide modal
+      if (hint) hint.click();
+      const guideModal = document.getElementById('guide-modal');
+      const modalOpened = guideModal ? !guideModal.classList.contains('hidden') : false;
+      const companionPane = document.getElementById('guide-pane-companion');
+      const companionActive = companionPane ? !companionPane.classList.contains('hidden') : false;
+
+      // Switch to Watcher tab
+      const watcherBtn = document.querySelector('.guide-tab-btn[data-tab="watcher"]');
+      if (watcherBtn) watcherBtn.click();
+      const watcherPane = document.getElementById('guide-pane-watcher');
+      const watcherActive = watcherPane ? !watcherPane.classList.contains('hidden') : false;
+      const companionHidden = companionPane ? companionPane.classList.contains('hidden') : false;
+
+      // Switch to Manual tab
+      const manualBtn = document.querySelector('.guide-tab-btn[data-tab="manual"]');
+      if (manualBtn) manualBtn.click();
+      const manualPane = document.getElementById('guide-pane-manual');
+      const manualActive = manualPane ? !manualPane.classList.contains('hidden') : false;
+
+      // Check that infographic image is present and loaded
+      const optionsImg = document.getElementById('guide-options-img');
+      const hasInfographic = !!optionsImg && optionsImg.src.startsWith('data:image/jpeg;base64');
+
+      // Close modal
+      const closeBtn = document.getElementById('close-guide-btn');
+      if (closeBtn) closeBtn.click();
+      const modalClosed = guideModal ? guideModal.classList.contains('hidden') : false;
+
+      return {
+        isOffline,
+        hintVisible,
+        modalOpened,
+        hasInfographic,
+        companionActive,
+        watcherActive,
+        companionHidden,
+        manualActive,
+        modalClosed
+      };
+    });
+
+    assert.ok(offlineTestResult.isOffline, '#companion-sync-container should have .is-offline class');
+    assert.ok(offlineTestResult.hintVisible, '#companion-offline-hint should be visible when companion is offline');
+    assert.ok(offlineTestResult.modalOpened, '#guide-modal should open when clicking offline hint');
+    assert.ok(offlineTestResult.hasInfographic, '#guide-options-img should be embedded with valid base64 data URI');
+    assert.ok(offlineTestResult.companionActive, '#guide-pane-companion should be active initially');
+    assert.ok(offlineTestResult.watcherActive, '#guide-pane-watcher should become active on watcher tab click');
+    assert.ok(offlineTestResult.companionHidden, '#guide-pane-companion should be hidden on watcher tab click');
+    assert.ok(offlineTestResult.manualActive, '#guide-pane-manual should become active on manual tab click');
+    assert.ok(offlineTestResult.modalClosed, '#guide-modal should be closed on close button click');
+
+    await page.unroute('**/api/status');
+  });
 });
 
 
