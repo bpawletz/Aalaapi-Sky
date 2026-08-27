@@ -1,5 +1,121 @@
 # Changelog
 
+## [1.43.0] - 2026-08-27
+
+### Changed & Improved
+- **Direct RC 2 Sync Streamlined & MTP Overwrite Fix**:
+  - **MTP Safe Overwrite & Polling**: Fixed Windows MTP silent write blocking by renaming existing slot items before copy, verifying file arrival on device, and cleanly purging old temporary files.
+  - **Archived Preview Thumbnail Sync**: Retired preview thumbnail (`.jpg`) syncing to `map_preview/` to eliminate sync overhead, avoid redundant MTP writes, and focus the sync pipeline strictly on high-speed `.kmz` waypoint mission transfer.
+  - **Auto-Target Active Slot**: Enhanced companion bridge and client to automatically detect and target the active mission slot on the controller (`data.activeMissions[0]`).
+  - **Refreshed User Feedback**: Updated sync button status to prompt users to re-open the mission in DJI Fly to force a cache reload from device storage.
+
+## [1.42.0] - 2026-08-27
+
+### Added & Improved
+- **Embedded RC 2 Sync Options Infographic in App Guide Modal:**
+  - Embedded a high-resolution visual comparison diagram directly into the `#guide-modal` header (`#guide-options-img`), illustrating 1-Click Direct Sync, Auto-Sync Watcher, and Manual Transfer workflows side-by-side.
+  - Added self-contained base64 image encoding to ensure the visual guide functions offline in standalone single-file distribution bundles with zero external asset dependencies.
+  - Added responsive styling and subtle glassmorphic frame to the guide infographic banner in `index.css`.
+
+## [1.41.0] - 2026-08-27
+
+### Added & Improved
+- **RC 2 Sync Box Offline Guidance & Interactive Help:**
+  - Added interactive visual cues to `#companion-sync-container` when offline (`is-offline` class, subtle hover highlights, and `?` help button).
+  - Added an inline status helper row (`#companion-offline-hint`: "Companion offline • Setup guide") guiding users directly to setup instructions.
+  - Clicking anywhere on the offline sync container or help triggers immediately opens the RC 2 Guide modal.
+- **Enhanced Multi-Tab RC 2 Sync & Transfer Guide:**
+  - Upgraded `#guide-modal` with three distinct workflow tabs:
+    1. **⚡ 1-Click Direct Sync (`start-companion.bat`)**: Instructions for running `start-companion.bat` or `npm run companion` with 1-click clipboard copy, connecting USB-C MTP, and streaming in-memory missions.
+    2. **📂 Auto-Sync Watcher (`rc2-sync.bat`)**: Background folder watcher instructions that detect KMZ downloads and copy them straight to the controller.
+    3. **📋 Manual Injection (No Scripts)**: Complete step-by-step dummy placeholder and manual USB file overwrite guide for PC, Mac (OpenMTP), and Android.
+  - Added command copy snippet with instant "Copied!" visual feedback.
+
+## [1.40.2] - 2026-08-26
+
+### Added & Improved
+- **Companion REST Shutdown Endpoint & Auto-Replace on Startup:**
+  - Added REST shutdown endpoints (`POST /api/shutdown`, `/api/kill`, `/api/stop`) to cleanly terminate active child scanners, close network listeners, and exit the companion bridge.
+  - Implemented automatic replacement logic on `npm run companion`: checks if an existing companion process is holding port 8765, sends a clean shutdown request (with fallback to PID termination on Windows), and binds cleanly without `EADDRINUSE` collision errors.
+  - Added `npm run companion:stop` convenience script in `package.json`.
+  - Fixed `ReferenceError: waypoints is not defined` inside `sendDirectlyToRC2()` and added safe fallback to `getCurrentWaypoints()` in `generateKMZBlob()`.
+
+## [1.40.1] - 2026-08-26
+
+### Fixed & Improved
+- **Browser Security Origin & Private Network Access (PNA) Support:**
+  - Resolved `Unsafe attempt to load URL ... 'file:' URLs are treated as unique security origins` frame security errors by adding native HTTP static web app serving directly from the companion bridge on `http://127.0.0.1:8765`.
+  - Added Chromium Private Network Access (PNA) compliance (`Access-Control-Allow-Private-Network: true` and `Access-Control-Request-Private-Network` header allowance) to the companion service, allowing 1-click RC 2 MTP syncs to execute without CORS rejection from both `file:///` and HTTP origins.
+  - Added dynamic companion API endpoint resolution in `index.js` (`COMPANION_API_BASE`) to automatically match `window.location.origin` when running over local HTTP.
+  - Enhanced MTP sync diagnostic error feedback to detect when a mission placeholder UUID is missing on the RC 2 and list the detected controller mission folders.
+
+## [1.40.0] - 2026-08-21
+
+### Changed & Improved
+- **Unified Single-KMZ Export & Native RC 2 Breakpoint Resume:**
+  - Streamlined KMZ mission export to always produce a single, unified `.kmz` file directly instead of generating multi-part `.zip` archives.
+  - Aligned mission execution workflow with DJI RC 2's native **Breakpoint Resume** feature (drone pauses on low battery, lands for battery swap, and prompts to resume from the exact last waypoint on takeoff).
+  - Updated statistics panel to display estimated multi-battery counts (`~X Batteries`) and helpful instructions for RC 2 breakpoint resumption.
+
+## [1.39.0] - 2026-08-21
+
+### Added
+- **Dual-Mode Wi-Fi (2.4 GHz / 5.8 GHz) & Bluetooth LE Drone Radio Detection:**
+  - Implemented native Win32 WLAN API Wi-Fi beacon scanner (`tools/companion/wifi_scanner.cs` / `WifiScanner.exe`) in the companion service to detect DJI 2.4 GHz and 5.8 GHz radio broadcasts (Mini 4 Pro, Neo, Air 3, Mavic 3).
+  - Enabled Bluetooth 5 Extended Advertisements (`watcher.AllowExtendedAdvertisements = true`) in `tools/companion/ble_scanner.cs` for Coded PHY and long-range BLE Remote ID sniffing.
+  - Added `processWifiBeacon` multi-transport aggregation to `RemoteIdAirspaceTracker` (`tools/companion/remote_id_decoder.js`) supporting signal strength (RSSI), frequency bands, and model inference.
+  - Upgraded Airspace Radar badge and Leaflet map popups to display active radio transport mode (`Wi-Fi 5.8 GHz` vs `Bluetooth LE`), signal quality percentage, and real-time telemetry.
+
+## [1.38.1] - 2026-08-21
+
+### Fixed & Improved
+- **Floating Airspace Radar Map Pill:**
+  - Relocated the live Remote ID detection badge from the sidebar top header to a floating glassmorphic map pill centered at the top of the main map view.
+  - Restored clean visual symmetry, spacing, and alignment in the sidebar header bar (`Aalaapi Sky`, version tags, Settings, About, Links).
+  - Added pulsating red radar beacon dot animation and a 1-click `[LOCATE]` action button to immediately center and zoom the map on the drone.
+- **Dual Basic ID & 4-Byte Frame Extraction:**
+  - Added 4-byte sequence counter extraction for standard Bluetooth OpenDroneID advertisement headers (`FAFF0D<seq>`).
+  - Implemented dual Basic ID linking to track ANSI/CTA-2063-A hardware serial numbers together with FAA registration IDs.
+
+## [1.38.0] - 2026-08-20
+
+### Added
+- **Live ASTM F3411 / OpenDroneID Remote ID Detection Engine:**
+  - Implemented pure JavaScript ASTM F3411-19 / F3411-22 OpenDroneID decoder in `tools/companion/remote_id_decoder.js` (Basic ID, Location/Vector, System, and Self-ID frames).
+  - Added Remote ID airspace tracker and simulation REST endpoints (`/api/remote-id/drones`, `/api/remote-id/status`, `/api/remote-id/simulate`, `/api/remote-id/packet`) to the Node companion service.
+  - Added Live Airspace Radar badge (`#remote-id-badge`) and real-time Leaflet map drone markers with orientation heading arrows, altitude/speed badges, and operator GCS coordinates.
+
+## [1.37.0] - 2026-08-20
+
+### Added
+- **Multi-Format Flight Track Parser & 2D/3D Geographic Auto-Centering:**
+  - Expanded 3D Flight Diagnostics file loader (`#diag-file-input`) to support `.kmz` (unpacked via in-browser JSZip), `.kml`, `.wpml`, `.gpx`, `.csv`, and `.geojson`.
+  - Automatically centers the 3D ArcGIS satellite ground floor directly on the flight's real geographic start coordinates (`homePoint`).
+  - Added **"Center 2D Map"** (`#diag-center-map-btn`) to synchronize the main 2D Leaflet canvas map view to where the flight actually occurred.
+
+## [1.36.1] - 2026-08-20
+
+### Added
+- **3D Cockpit HUD GPS Coordinates:** Added real-time geographic position readout (`diag-hud-coords`, e.g. `40.013000, -83.176500`) directly to the Cockpit HUD overlay during 3D diagnostics replay, displaying exact latitude and longitude throughout timeline playback.
+
+## [1.36.0] - 2026-08-20
+
+### Added
+- **Companion CLI Terminal Dashboard & Status Monitor:** Enhanced `npm run companion` (`tools/companion/server.js`) with an interactive, color-coded terminal dashboard.
+  - Startup system & environment diagnostics: Node.js version, host OS, REST endpoints directory, staging paths, and automatic local Downloads folder scan for KMZ missions and flight records.
+  - Real-time USB MTP state transitions: Prominently logs when DJI RC 2 connects or disconnects, along with internal waypoint storage readiness and installed mission count.
+  - Color-coded REST event logs: Formatted request timing (ms), payload sizes (KB), UUIDs, and transfer outcome badges (`[SYNC]`, `[FLIGHTS]`, `[TELEMETRY]`, `[EXTRACT]`).
+  - Interactive CLI keyboard commands: Press `[s]` to probe RC 2 controller status, `[f]` to scan and list cached flight records, `[c]` to clear and refresh screen, or `[q]` / `Ctrl+C` to cleanly exit.
+
+## [1.35.1] - 2026-08-20
+
+### Fixed
+- **3D Flight Diagnostics Dynamic Flight Selection & Replay:** Fixed an issue where selecting different flight records in the 3D Flight Diagnostics dropdown failed to update the visual 3D trajectory, timeline duration, cockpit HUD telemetry, and mission comparison cards.
+  - Added dedicated flight trajectory generation tailored to individual flight profiles (Flight 1 calibration, Flight 2 perimeter test, Flight 3 full mission with GPS sensor noise, Flight 4 post-mission inspection, and active mission pure simulation).
+  - Fixed hardcoded title text overwriting `diag-flight-meta` on stats UI updates.
+  - Automatically reset timeline slider range, timestamp counter (`00:00 / MM:SS`), photo event markers, and Three.js 3D trajectory meshes upon selecting a different flight.
+  - Added complete GeoJSON and CSV flight log parsing in `handleLogFileImport` so uploaded flight files instantly render into 3D diagnostics.
+
 ## [1.35.0] - 2026-08-20
 
 ### Added

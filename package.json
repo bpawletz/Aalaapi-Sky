@@ -4,11 +4,12 @@
     "playwright": "^1.61.1"
   },
   "name": "app",
-  "version": "1.35.0",
+  "version": "1.43.0",
   "description": "**Drone Waypoint Mission Planner**",
   "main": "index.js",
   "scripts": {
     "companion": "node tools/companion/server.js",
+    "companion:stop": "node -e \"require('http').request({hostname:'127.0.0.1',port:process.env.AALAAPI_PORT||8765,path:'/api/shutdown',method:'POST'},res=>{console.log('Aalaapi Sky Companion stopped.');process.exit(0);}).on('error',()=>console.log('Aalaapi Sky Companion is not running.')).end()\"",
     "test": "node --test index.test.js index.e2e.test.js",
     "test:unit": "node --test index.test.js",
     "test:e2e": "node --test index.e2e.test.js"
