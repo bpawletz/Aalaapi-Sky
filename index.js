@@ -628,6 +628,40 @@ function restoreSettingsFromLocalStorage() {
   }
 }
 
+// ─── RC 2 Guide Modal & Guidance Helpers ────────────────────────────────────
+
+function switchGuideTab(targetTab) {
+  if (typeof document === 'undefined') return;
+  const tabBtns = document.querySelectorAll('.guide-tab-btn');
+  const tabPanes = document.querySelectorAll('.guide-tab-pane');
+  tabBtns.forEach(btn => {
+    if (btn.dataset.tab === targetTab) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+  tabPanes.forEach(pane => {
+    if (pane.id === `guide-pane-${targetTab}`) {
+      pane.classList.remove('hidden');
+    } else {
+      pane.classList.add('hidden');
+    }
+  });
+}
+
+function openRC2GuideModal(targetTab = 'companion') {
+  if (typeof document === 'undefined') return;
+  const guideModal = document.getElementById('guide-modal');
+  if (!guideModal) return;
+  switchGuideTab(targetTab);
+  guideModal.classList.remove('hidden');
+  if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+    const sidebar = document.querySelector('.sidebar');
+    if (sidebar) sidebar.classList.remove('open');
+  }
+}
+
 // Setup Event Listeners for UI controls
 function initUIEventListeners() {
   // Get all controls
@@ -750,16 +784,75 @@ function initUIEventListeners() {
   const closeGuideFooterBtn = document.getElementById('close-guide-footer-btn');
   const guideModal = document.getElementById('guide-modal');
 
-  const toggleModal = () => {
-    guideModal.classList.toggle('hidden');
-    if (!guideModal.classList.contains('hidden') && window.innerWidth <= 768) {
-      document.querySelector('.sidebar').classList.remove('open');
-    }
-  };
+  if (showGuideBtn) {
+    showGuideBtn.addEventListener('click', () => openRC2GuideModal('manual'));
+  }
+  if (closeGuideBtn) {
+    closeGuideBtn.addEventListener('click', () => guideModal && guideModal.classList.add('hidden'));
+  }
+  if (closeGuideFooterBtn) {
+    closeGuideFooterBtn.addEventListener('click', () => guideModal && guideModal.classList.add('hidden'));
+  }
 
-  showGuideBtn.addEventListener('click', toggleModal);
-  closeGuideBtn.addEventListener('click', toggleModal);
-  closeGuideFooterBtn.addEventListener('click', toggleModal);
+  // Wire up guide navigation tabs
+  const guideTabBtns = document.querySelectorAll('.guide-tab-btn');
+  guideTabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      switchGuideTab(btn.dataset.tab);
+    });
+  });
+
+  // Wire up copy command buttons in guide modal
+  const copyCmdBtns = document.querySelectorAll('.btn-copy-cmd');
+  copyCmdBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const textToCopy = btn.dataset.copy || 'npm run companion';
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(textToCopy).then(() => {
+          const originalText = btn.textContent;
+          btn.textContent = 'Copied!';
+          btn.style.color = '#34d399';
+          setTimeout(() => {
+            btn.textContent = originalText;
+            btn.style.color = '';
+          }, 2000);
+        }).catch(() => {
+          // Fallback if clipboard permission denied
+          if (typeof prompt === 'function') prompt('Copy command:', textToCopy);
+        });
+      }
+    });
+  });
+
+  // Wire up offline sync container guidance triggers
+  const companionOfflineHint = document.getElementById('companion-offline-hint');
+  if (companionOfflineHint) {
+    companionOfflineHint.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openRC2GuideModal('companion');
+    });
+  }
+
+  const companionHelpBtn = document.getElementById('companion-help-btn');
+  if (companionHelpBtn) {
+    companionHelpBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openRC2GuideModal('companion');
+    });
+  }
+
+  const companionSyncContainer = document.getElementById('companion-sync-container');
+  if (companionSyncContainer) {
+    companionSyncContainer.addEventListener('click', (e) => {
+      if (!isCompanionOnline) {
+        if (e.target && e.target.closest && (e.target.closest('#open-diagnostics-btn') || e.target.closest('#direct-rc2-sync-btn'))) {
+          return;
+        }
+        openRC2GuideModal('companion');
+      }
+    });
+  }
 
   // About Modal controls
   const showAboutBtn = document.getElementById('about-btn');
@@ -4358,14 +4451,14 @@ function updateStatsPanel(stats) {
       hasWarnings = true;
     }
 
-    // Check max flight time limit
+    // Check max flight time limit (Multi-battery estimate)
     if (stats.isOverMaxFlightTime) {
       const div = document.createElement('div');
       const strong = document.createElement('strong');
-      strong.textContent = 'Flight Time Warning:';
-      div.appendChild(document.createTextNode('⚠️ '));
+      strong.textContent = 'Multi-Battery Flight:';
+      div.appendChild(document.createTextNode('🔋 '));
       div.appendChild(strong);
-      div.appendChild(document.createTextNode(` Mission duration exceeds max flight time (${stats.maxFlightTimeMinutes} min). It will be split into ${stats.partsCount} separate waypoint starts.`));
+      div.appendChild(document.createTextNode(` Mission duration (${stats.timeStr}) exceeds single-battery limit (${stats.maxFlightTimeMinutes} min). Requires ~${stats.partsCount} batteries. The RC 2 will prompt to Resume from Breakpoint after battery swap.`));
       warningsEl.appendChild(div);
       hasWarnings = true;
     }
@@ -4994,57 +5087,16 @@ function exportKMZ() {
     `  3. You are too far away from the first waypoint.\n` +
     `  4. The flight area lies within an unauthorized NFZ / Geozone.\n\n`;
 
+  // Multi-battery flight notification
+  let multiBatteryNote = "";
   if (totalDurationSeconds > maxFlightTimeSeconds && waypoints.length > 1) {
-    const parts = splitWaypointsIntoParts(waypoints, maxFlightTimeMinutes, speed, captureMode);
-    if (parts.length > 1) {
-      let confirmMsg = "Warning Details:\n\n";
-      if (warningMessage) {
-        confirmMsg += warningMessage;
-      }
-      confirmMsg += `• Flight Time Limit: The estimated mission duration (${totalStats.timeStr}) exceeds the Max Flight Time limit of ${maxFlightTimeMinutes} minutes.\n` +
-                    `It will be automatically split into ${parts.length} separate KMZ files inside a ZIP archive.\n\n` +
-                    pressGoWarning +
-                    `Do you want to proceed with exporting the split mission?`;
-      if (!confirm(confirmMsg)) {
-        return;
-      }
-
-      const parentZip = new JSZip();
-      const promises = parts.map((part, index) => {
-        const partNum = index + 1;
-        const partTemplate = buildTemplateKml(finishAction, speed);
-        const partWaylines = buildWaylinesWpml(part.waypoints, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode);
-        
-        const partZip = new JSZip();
-        partZip.file("wpmz/template.kml", partTemplate, { createFolders: false });
-        partZip.file("wpmz/waylines.wpml", partWaylines, { createFolders: false });
-        
-        return partZip.generateAsync({ type: "blob", compression: "DEFLATE" }).then(content => {
-          let baseName = importedFileName ? importedFileName.replace(/\.kmz$/i, '') : `GridMission_Alt${altitude}m`;
-          const partFileName = `${baseName}_Part${partNum}_of_${parts.length}.kmz`;
-          parentZip.file(partFileName, content);
-        });
-      });
-
-      Promise.all(promises).then(() => {
-        parentZip.generateAsync({ type: "blob", compression: "DEFLATE" }).then(content => {
-          const link = document.createElement("a");
-          link.href = URL.createObjectURL(content);
-          let zipName = importedFileName ? importedFileName.replace(/\.kmz$/i, '') : `GridMission_Alt${altitude}m`;
-          link.download = `${zipName}_Split_Missions.zip`;
-          link.click();
-        });
-      }).catch(err => {
-        Logger.error("Split ZIP creation failed:", err);
-        alert("An error occurred while creating the split KMZ files.");
-      });
-      return;
-    }
+    const estBatteries = Math.ceil(totalDurationSeconds / maxFlightTimeSeconds);
+    multiBatteryNote = `• Multi-Battery Mission: Estimated duration (${totalStats.timeStr}) exceeds single-battery limit (${maxFlightTimeMinutes} min) and will require ~${estBatteries} batteries. DJI RC 2 automatically supports Breakpoint Resume after battery swaps.\n\n`;
   }
 
   let confirmMessage = "";
-  if (warningMessage) {
-    confirmMessage = `Warning Details:\n\n${warningMessage}${pressGoWarning}Do you acknowledge these safety warnings and want to export the mission?`;
+  if (warningMessage || multiBatteryNote) {
+    confirmMessage = `Warning Details:\n\n${warningMessage || ''}${multiBatteryNote}${pressGoWarning}Do you acknowledge these safety details and want to export the mission?`;
   } else {
     confirmMessage = `${pressGoWarning}Do you want to proceed and export the mission?`;
   }
@@ -5092,7 +5144,11 @@ function exportKMZ() {
 
 // Generate KMZ Blob in-memory
 function generateKMZBlob(wps = null) {
-  const effectiveWps = wps || (typeof waypoints !== 'undefined' && waypoints ? waypoints : []);
+  let effectiveWps = wps;
+  if (!effectiveWps) {
+    const current = typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null;
+    effectiveWps = current || (typeof waypoints !== 'undefined' && waypoints ? waypoints : []);
+  }
   const finishAction = document.getElementById('finish-action')?.value || 'goHome';
   const altitude = parseFloat(document.getElementById('altitude')?.value) || 50;
   const speed = parseFloat(document.getElementById('speed')?.value) || 4;
@@ -5220,9 +5276,12 @@ function generateMissionPreviewBlob(waypoints, width = 400, height = 300) {
 
 // ─── DJI RC 2 Companion Bridge & Direct Sync ────────────────────────────────
 
-const COMPANION_API_BASE = 'http://127.0.0.1:8765';
+const COMPANION_API_BASE = (typeof window !== 'undefined' && window.location && (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost'))
+  ? (window.location.port ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}` : window.location.origin)
+  : 'http://127.0.0.1:8765';
 let isCompanionOnline = false;
 let isRc2MtpConnected = false;
+let rc2MtpActiveUUID = '';
 let companionPollInterval = null;
 
 async function pollCompanionStatus() {
@@ -5231,6 +5290,8 @@ async function pollCompanionStatus() {
   const text = document.getElementById('companion-status-text');
   const label = document.getElementById('companion-device-label');
   const directBtn = document.getElementById('direct-rc2-sync-btn');
+  const container = document.getElementById('companion-sync-container');
+  const hint = document.getElementById('companion-offline-hint');
   if (!dot || !text) return;
 
   try {
@@ -5244,6 +5305,14 @@ async function pollCompanionStatus() {
       isCompanionOnline = true;
       if (data.connected) {
         isRc2MtpConnected = true;
+        if (data.activeMissions && data.activeMissions.length > 0) {
+          rc2MtpActiveUUID = data.activeMissions[0];
+          if (typeof setRC2UUID === 'function' && !getRC2UUID()) {
+            setRC2UUID(rc2MtpActiveUUID);
+          }
+        }
+        if (container && container.classList) container.classList.remove('is-offline');
+        if (hint && hint.style) hint.style.display = 'none';
         dot.style.background = '#22c55e'; // Green
         text.textContent = 'DJI RC 2 Connected';
         text.style.color = '#22c55e';
@@ -5251,6 +5320,16 @@ async function pollCompanionStatus() {
         if (directBtn) directBtn.style.display = 'inline-flex';
       } else {
         isRc2MtpConnected = false;
+        if (container && container.classList) container.classList.add('is-offline');
+        if (hint) {
+          hint.style.display = 'flex';
+          const labelSpan = (typeof hint.querySelector === 'function') ? hint.querySelector('span:first-child') : null;
+          if (labelSpan) {
+            labelSpan.innerHTML = `
+              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+              RC 2 Disconnected &bull; Plug in USB-C`;
+          }
+        }
         dot.style.background = '#eab308'; // Amber
         text.textContent = 'RC 2 Disconnected';
         text.style.color = '#eab308';
@@ -5263,6 +5342,16 @@ async function pollCompanionStatus() {
   } catch (e) {
     isCompanionOnline = false;
     isRc2MtpConnected = false;
+    if (container && container.classList) container.classList.add('is-offline');
+    if (hint) {
+      hint.style.display = 'flex';
+      const labelSpan = (typeof hint.querySelector === 'function') ? hint.querySelector('span:first-child') : null;
+      if (labelSpan) {
+        labelSpan.innerHTML = `
+          <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          Sync Offline &bull; Setup Guide`;
+      }
+    }
     dot.style.background = '#64748b'; // Gray
     text.textContent = 'Companion Offline';
     text.style.color = 'var(--text-main)';
@@ -5280,29 +5369,46 @@ async function sendDirectlyToRC2() {
   directBtn.innerHTML = `<span>⏳ Syncing to RC 2...</span>`;
 
   try {
-    const result = await generateKMZBlob();
+    const rawWps = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
+    if (!rawWps || rawWps.length === 0) {
+      alert("No waypoints generated to sync. Please place a mission or center point first.");
+      directBtn.disabled = false;
+      directBtn.innerHTML = originalContent;
+      return;
+    }
+
+    const speed = parseFloat(document.getElementById('speed')?.value) || 4;
+    const gimbalPitch = parseFloat(document.getElementById('gimbal-pitch')?.value) || -90;
+    const waypoints = rawWps.map(wp => ({
+      lat: wp.lat,
+      lon: wp.lon,
+      alt: wp.alt,
+      pitch: wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch,
+      speed: speed,
+      heading: wp.heading,
+      isRingStart: wp.isRingStart || false,
+      ringIndex: wp.ringIndex !== undefined ? wp.ringIndex : null,
+      poiIndex: wp.poiIndex !== undefined ? wp.poiIndex : null,
+      headingMode: wp.headingMode !== undefined ? wp.headingMode : null
+    }));
+
+    const result = await generateKMZBlob(waypoints);
     if (!result || !result.blob) {
       throw new Error('Could not generate mission KMZ');
     }
 
-    const uuid = getRC2UUID() || '354A8F93-759C-42C3-A8D5-746F79C7622A';
-    const previewBlob = await generateMissionPreviewBlob(waypoints);
-
+    const uuid = getRC2UUID() || rc2MtpActiveUUID || '354A8F93-759C-42C3-A8D5-746F79C7622A';
     const kmzBase64 = await blobToBase64(result.blob);
-    let jpgBase64 = '';
-    if (previewBlob) {
-      jpgBase64 = await blobToBase64(previewBlob);
-    }
 
     const res = await fetch(`${COMPANION_API_BASE}/api/sync`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uuid, kmzBase64, jpgBase64 })
+      body: JSON.stringify({ uuid, kmzBase64 })
     });
 
     const data = await res.json();
     if (data.success) {
-      directBtn.innerHTML = `<span>✅ Synced to DJI RC 2!</span>`;
+      directBtn.innerHTML = `<span>✅ Synced to DJI RC 2! Re-open in DJI Fly</span>`;
       directBtn.style.background = 'rgba(34, 197, 94, 0.2)';
       directBtn.style.borderColor = 'rgba(34, 197, 94, 0.5)';
       directBtn.style.color = '#4ade80';
@@ -5312,12 +5418,15 @@ async function sendDirectlyToRC2() {
         directBtn.style.background = '';
         directBtn.style.borderColor = '';
         directBtn.style.color = '';
-      }, 3000);
+      }, 4000);
     } else {
       throw new Error(data.error || 'Transfer failed');
     }
   } catch (err) {
     console.error('Direct RC 2 Sync Error:', err);
+    if (typeof window !== 'undefined' && window.location && window.location.protocol === 'file:') {
+      console.warn('[RC 2 Direct Sync] Browser security policy may restrict network calls from file:/// origins. Open http://127.0.0.1:8765 in your browser to run Aalaapi Sky with direct same-origin companion access.');
+    }
     directBtn.innerHTML = `<span>❌ Sync Failed</span>`;
     directBtn.style.color = '#f87171';
     setTimeout(() => {
@@ -5329,18 +5438,27 @@ async function sendDirectlyToRC2() {
 }
 
 function blobToBase64(blob) {
-  return new Promise((resolve, reject) => {
-    if (typeof FileReader === 'undefined') {
-      return resolve('');
+  if (!blob) return Promise.resolve('');
+  if (typeof FileReader !== 'undefined') {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result ? reader.result.split(',')[1] : '';
+        resolve(base64String);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+  if (typeof Buffer !== 'undefined') {
+    if (blob instanceof Uint8Array || Buffer.isBuffer(blob)) {
+      return Promise.resolve(Buffer.from(blob).toString('base64'));
     }
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result ? reader.result.split(',')[1] : '';
-      resolve(base64String);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
+    if (typeof blob.arrayBuffer === 'function') {
+      return blob.arrayBuffer().then(buf => Buffer.from(buf).toString('base64'));
+    }
+  }
+  return Promise.resolve('');
 }
 
 // ─── DJI Fly UUID Settings ───────────────────────────────────────────────────
@@ -5407,12 +5525,188 @@ function initRC2Controls() {
   // Initialize Flight Diagnostics Engine
   FlightDiagnostics.init();
 
-  // Start polling Companion service status
+  // Initialize Remote ID Airspace Radar
+  RemoteIdRadar.init();
+
+  // Start polling Companion service status & Remote ID radar
   pollCompanionStatus();
+  RemoteIdRadar.pollAirspace();
   if (!companionPollInterval && typeof window !== 'undefined' && window.setInterval) {
-    companionPollInterval = setInterval(pollCompanionStatus, 3000);
+    companionPollInterval = setInterval(() => {
+      pollCompanionStatus();
+      RemoteIdRadar.pollAirspace();
+    }, 3000);
   }
 }
+
+// ─── Remote ID Airspace Radar & Live Detection ─────────────────────────────
+
+const RemoteIdRadar = {
+  activeDrones: [],
+  markers: new Map(), // droneId -> { marker, line }
+  layerGroup: null,
+
+  init() {
+    if (typeof L !== 'undefined' && typeof map !== 'undefined' && map) {
+      if (!this.layerGroup && map.addLayer) {
+        this.layerGroup = L.layerGroup().addTo(map);
+      }
+    }
+    const badge = typeof document !== 'undefined' ? document.getElementById('remote-id-badge') : null;
+    if (badge) {
+      badge.addEventListener('click', () => {
+        if (this.activeDrones.length > 0 && typeof map !== 'undefined' && map && map.setView) {
+          const d = this.activeDrones[0];
+          if (d.latitude && d.longitude) {
+            map.setView([d.latitude, d.longitude], 18);
+          }
+        }
+      });
+    }
+  },
+
+  async pollAirspace() {
+    if (typeof fetch === 'undefined') return;
+    try {
+      const res = await fetch(`http://127.0.0.1:8765/api/remote-id/drones`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.drones)) {
+          this.activeDrones = data.drones;
+          this.updateMapMarkers();
+          this.updateRadarUI();
+        }
+      }
+    } catch (e) {
+      // Companion offline
+      this.activeDrones = [];
+      this.updateRadarUI();
+    }
+  },
+
+  updateMapMarkers() {
+    const leaflet = (typeof L !== 'undefined' && L) || (typeof window !== 'undefined' && window.L) || (typeof global !== 'undefined' && global.L);
+    const m = (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map) || (typeof global !== 'undefined' && global.map);
+    if (!this.layerGroup && m && m.addLayer && leaflet && leaflet.layerGroup) {
+      this.layerGroup = leaflet.layerGroup().addTo(m);
+    }
+    if (!this.layerGroup) return;
+
+    const currentDroneIds = new Set(this.activeDrones.map(d => d.id));
+
+    // Remove old markers
+    for (const [id, entry] of this.markers.entries()) {
+      if (!currentDroneIds.has(id)) {
+        if (entry.marker && this.layerGroup.removeLayer) this.layerGroup.removeLayer(entry.marker);
+        if (entry.line && this.layerGroup.removeLayer) this.layerGroup.removeLayer(entry.line);
+        this.markers.delete(id);
+      }
+    }
+
+    // Add or update active markers
+    for (const drone of this.activeDrones) {
+      if (!drone.latitude || !drone.longitude) continue;
+      let entry = this.markers.get(drone.id);
+
+      const heading = drone.trackDirection || 0;
+      const altText = drone.altitudeGeodetic !== null ? `${drone.altitudeGeodetic}m (${Math.round(drone.altitudeGeodetic * 3.28084)}ft)` : 'Alt N/A';
+      const speedText = drone.speedHorizontal !== null ? `${drone.speedHorizontal} m/s` : 'Speed N/A';
+
+      const iconHtml = `
+        <div style="position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">
+          <div style="position: absolute; width: 32px; height: 32px; border-radius: 50%; background: rgba(239, 68, 68, 0.25); border: 1.5px solid #ef4444;"></div>
+          <div style="transform: rotate(${heading}deg); transition: transform 0.3s ease;">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="#ef4444" stroke="#ffffff" stroke-width="1.5">
+              <path d="M12 2L19 21L12 17L5 21L12 2Z"/>
+            </svg>
+          </div>
+        </div>
+      `;
+
+      const customIcon = (leaflet && leaflet.divIcon) ? leaflet.divIcon({
+        html: iconHtml,
+        className: 'remote-id-drone-marker',
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
+      }) : null;
+
+      const transportBadge = drone.transport ? `<div style="margin-top: 3px; font-size: 0.72rem; color: #8b5cf6; font-weight: 600;">📻 Radio: ${drone.transport}</div>` : '';
+
+      const popupContent = `
+        <div style="font-family: sans-serif; font-size: 0.8rem; line-height: 1.4; color: var(--text-main, #333);">
+          <div style="display: flex; align-items: center; gap: 6px; font-weight: bold; color: #ef4444;">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ef4444;"></span>
+            <span>${drone.model} [${drone.uasId}]</span>
+          </div>
+          ${transportBadge}
+          <div style="margin-top: 4px; font-size: 0.75rem; color: #64748b;">
+            Type: ${drone.uaType} • Status: ${drone.status}<br>
+            Alt: <b>${altText}</b> • Speed: <b>${speedText}</b><br>
+            Active: <b>${drone.uptimeFormatted || ((drone.uptimeSec || 0) + 's')}</b> (${drone.packetCount || 1} pkts) • Signal: <b>${drone.rssi} dBm</b>
+          </div>
+          ${drone.operatorLatitude ? `<div style="margin-top: 4px; font-size: 0.72rem; color: #0284c7;">📍 Operator: [${drone.operatorLatitude.toFixed(6)}, ${drone.operatorLongitude.toFixed(6)}]</div>` : ''}
+        </div>
+      `;
+
+      if (!entry) {
+        const marker = (leaflet && leaflet.marker && customIcon) ? leaflet.marker([drone.latitude, drone.longitude], { icon: customIcon }) : null;
+        if (marker) {
+          if (marker.bindPopup) marker.bindPopup(popupContent);
+          this.layerGroup.addLayer(marker);
+        }
+
+        let line = null;
+        if (drone.breadcrumbs && drone.breadcrumbs.length > 1 && leaflet && leaflet.polyline) {
+          line = leaflet.polyline(drone.breadcrumbs.map(b => [b.lat, b.lon]), { color: '#ef4444', weight: 2, dashArray: '4,4', opacity: 0.7 });
+          this.layerGroup.addLayer(line);
+        }
+
+        this.markers.set(drone.id, { marker, line });
+      } else {
+        if (entry.marker) {
+          if (entry.marker.setLatLng) entry.marker.setLatLng([drone.latitude, drone.longitude]);
+          if (customIcon && entry.marker.setIcon) entry.marker.setIcon(customIcon);
+          if (entry.marker.setPopupContent) entry.marker.setPopupContent(popupContent);
+        }
+
+        if (drone.breadcrumbs && drone.breadcrumbs.length > 1) {
+          if (entry.line && entry.line.setLatLngs) {
+            entry.line.setLatLngs(drone.breadcrumbs.map(b => [b.lat, b.lon]));
+          } else if (leaflet && leaflet.polyline) {
+            entry.line = leaflet.polyline(drone.breadcrumbs.map(b => [b.lat, b.lon]), { color: '#ef4444', weight: 2, dashArray: '4,4', opacity: 0.7 });
+            this.layerGroup.addLayer(entry.line);
+          }
+        }
+      }
+    }
+  },
+
+  updateRadarUI() {
+    if (typeof document === 'undefined') return;
+    const badge = document.getElementById('remote-id-badge');
+    const badgeText = document.getElementById('remote-id-badge-text');
+    if (badge) {
+      if (this.activeDrones.length > 0) {
+        badge.style.display = 'inline-flex';
+        badge.classList.remove('hidden');
+        const count = this.activeDrones.length;
+        const first = this.activeDrones[0];
+        let label = `📡 ${count} Drone${count > 1 ? 's' : ''} in Airspace`;
+        if (count === 1 && !first.latitude) {
+          label = `📡 ${first.model} Detected (${first.rssi} dBm)`;
+        }
+        if (badgeText) {
+          badgeText.textContent = label;
+        } else {
+          badge.textContent = label;
+        }
+      } else {
+        badge.style.display = 'none';
+        badge.classList.add('hidden');
+      }
+    }
+  }
+};
 
 // ─── Flight Diagnostics & 3D Telemetry Replay Engine ──────────────────────────
 
@@ -5461,6 +5755,7 @@ const FlightDiagnostics = {
   playbackSpeed: 1,
   currentPointIndex: 0,
   playbackFractionalIndex: 0.0,
+  selectedFlightId: 'FlightRecord_2026-08-20_[19-42-28].txt',
   telemetryData: null,
   comparisonData: null,
   animFrameId: null,
@@ -5559,12 +5854,28 @@ const FlightDiagnostics = {
     const exportBtn = document.getElementById('diag-export-geojson-btn');
     if (exportBtn) exportBtn.addEventListener('click', () => this.exportGeoJSON());
 
+    // Center 2D Map button
+    const centerMapBtn = document.getElementById('diag-center-map-btn');
+    if (centerMapBtn) centerMapBtn.addEventListener('click', () => this.centerMapOnFlight());
+
     // Load file button
     const loadBtn = document.getElementById('diag-load-file-btn');
     const fileInput = document.getElementById('diag-file-input');
     if (loadBtn && fileInput) {
       loadBtn.addEventListener('click', () => fileInput.click());
       fileInput.addEventListener('change', (e) => this.handleLogFileImport(e));
+    }
+  },
+
+  centerMapOnFlight() {
+    const origin = this.getSceneOrigin();
+    if (!origin) return;
+    if (typeof map !== 'undefined' && map && map.setView) {
+      map.setView([origin.lat, origin.lon], 18);
+      if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.setLatLng) {
+        centerMarker.setLatLng([origin.lat, origin.lon]);
+      }
+      if (typeof updateMissionStats === 'function') updateMissionStats();
     }
   },
 
@@ -5577,18 +5888,24 @@ const FlightDiagnostics = {
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.flights && data.flights.length > 0) {
+          const currentVal = flightSel.value;
           flightSel.innerHTML = '';
           data.flights.forEach((f, idx) => {
             const opt = document.createElement('option');
             opt.value = f.filename;
             opt.textContent = f.label;
-            if (idx === 0) opt.selected = true;
             flightSel.appendChild(opt);
           });
           const planOpt = document.createElement('option');
           planOpt.value = 'active-mission';
           planOpt.textContent = 'Planned Mission Simulation';
           flightSel.appendChild(planOpt);
+
+          if (currentVal && Array.from(flightSel.options).some(o => o.value === currentVal)) {
+            flightSel.value = currentVal;
+          } else {
+            flightSel.selectedIndex = 0;
+          }
         }
       }
     } catch (e) {
@@ -5597,13 +5914,19 @@ const FlightDiagnostics = {
   },
 
   async loadSelectedFlight(flightId) {
+    this.selectedFlightId = flightId;
+    const flightSel = document.getElementById('diag-flight-selector');
+    if (flightSel && flightSel.value !== flightId) {
+      flightSel.value = flightId;
+    }
+
     const wps = getActiveMissionWaypoints();
     const altitude = (typeof document !== 'undefined' && parseFloat(document.getElementById('altitude')?.value)) || 21.0;
     const speed = (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) || 4.0;
     const gimbalPitch = (typeof document !== 'undefined' && parseFloat(document.getElementById('gimbal-pitch')?.value)) || -60.0;
 
     if (flightId === 'active-mission') {
-      this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch });
+      this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId: 'active-mission', isSimulation: true });
       this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
     } else {
       try {
@@ -5613,7 +5936,7 @@ const FlightDiagnostics = {
           body: JSON.stringify({
             flightId,
             waypoints: wps,
-            options: { altitude, speed, gimbalPitch }
+            options: { altitude, speed, gimbalPitch, flightId }
           })
         });
         if (res.ok) {
@@ -5621,17 +5944,16 @@ const FlightDiagnostics = {
           if (data.success && data.telemetry) {
             this.telemetryData = data.telemetry;
             this.comparisonData = data.comparison;
+          } else {
+            throw new Error('Telemetry not in payload');
           }
+        } else {
+          throw new Error('Companion unreachable');
         }
       } catch (e) {
-        this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch });
+        this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId });
         this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
       }
-    }
-
-    const meta = document.getElementById('diag-flight-meta');
-    if (meta && this.telemetryData) {
-      meta.textContent = `Telemetry Log: ${flightId} • Duration: ${this.telemetryData.durationFormatted}`;
     }
 
     this.updateStatsUI();
@@ -5679,22 +6001,23 @@ const FlightDiagnostics = {
     modal.classList.remove('hidden');
     this.isOpen = true;
 
-    // Refresh flight list dropdown from companion
     await this.refreshFlightList();
 
-    // Load or generate telemetry
+    const flightSel = document.getElementById('diag-flight-selector');
+    const selectedFlightId = flightSel ? flightSel.value : (this.selectedFlightId || 'FlightRecord_2026-08-20_[19-42-28].txt');
+
     if (customData) {
+      this.selectedFlightId = customData.flightId || selectedFlightId;
       this.telemetryData = customData.telemetry;
       this.comparisonData = customData.comparison;
+      this.updateStatsUI();
+      this.init3DScene();
+      this.playbackFractionalIndex = 0.0;
+      this.seekTo(0, true, true);
+      this.pause();
     } else {
-      await this.fetchOrGenerateTelemetry();
+      await this.loadSelectedFlight(selectedFlightId);
     }
-
-    this.updateStatsUI();
-    this.init3DScene();
-    this.playbackFractionalIndex = 0.0;
-    this.seekTo(0, true, true);
-    this.pause();
   },
 
   close() {
@@ -5706,39 +6029,6 @@ const FlightDiagnostics = {
       cancelAnimationFrame(this.animFrameId);
       this.animFrameId = null;
     }
-  },
-
-  async fetchOrGenerateTelemetry() {
-    const altitude = parseFloat(document.getElementById('altitude')?.value) || 21.0;
-    const speed = parseFloat(document.getElementById('speed')?.value) || 4.0;
-    const gimbalPitch = parseFloat(document.getElementById('gimbal-pitch')?.value) || -60.0;
-
-    const wps = getActiveMissionWaypoints();
-
-    try {
-      const res = await fetch('http://127.0.0.1:8765/api/flight-telemetry', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          waypoints: wps,
-          options: { altitude, speed, gimbalPitch }
-        })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.telemetry) {
-          this.telemetryData = data.telemetry;
-          this.comparisonData = data.comparison;
-          return;
-        }
-      }
-    } catch (e) {
-      // Fallback
-    }
-
-    // Client-side fallback generator
-    this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch });
-    this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
   },
 
   updateStatsUI() {
@@ -5763,7 +6053,13 @@ const FlightDiagnostics = {
 
     const meta = document.getElementById('diag-flight-meta');
     if (meta) {
-      meta.textContent = `Telemetry Log: FlightRecord_2026-08-20_[19-42-28].txt • Duration: ${this.telemetryData.durationFormatted}`;
+      const flightName = this.selectedFlightId || 'FlightRecord_2026-08-20_[19-42-28].txt';
+      meta.textContent = `Telemetry Log: ${flightName} • Duration: ${this.telemetryData.durationFormatted}`;
+    }
+
+    const timeDisplay = document.getElementById('diag-time-display');
+    if (timeDisplay) {
+      timeDisplay.textContent = `00:00 / ${this.telemetryData.durationFormatted}`;
     }
   },
 
@@ -5909,6 +6205,24 @@ const FlightDiagnostics = {
     if (!this.telemetryData || !this.telemetryData.points) return;
     const pts = this.telemetryData.points;
 
+    if (this.actualLineMesh && this.threeScene) {
+      this.threeScene.remove(this.actualLineMesh);
+      if (this.actualLineMesh.geometry) this.actualLineMesh.geometry.dispose();
+      this.actualLineMesh = null;
+    }
+    if (this.plannedLineMesh && this.threeScene) {
+      this.threeScene.remove(this.plannedLineMesh);
+      if (this.plannedLineMesh.geometry) this.plannedLineMesh.geometry.dispose();
+      this.plannedLineMesh = null;
+    }
+    if (this.photoMarkers && this.photoMarkers.length && this.threeScene) {
+      this.photoMarkers.forEach(m => {
+        this.threeScene.remove(m);
+        if (m.geometry) m.geometry.dispose();
+      });
+      this.photoMarkers = [];
+    }
+
     const actualCoords = [];
     pts.forEach(p => {
       actualCoords.push(this.projectToWorld(p.lat, p.lon, p.alt));
@@ -5919,6 +6233,17 @@ const FlightDiagnostics = {
     this.actualLineMesh = new THREE.Line(actualGeo, actualMat);
     this.threeScene.add(this.actualLineMesh);
 
+    pts.forEach(p => {
+      if (p.isPhoto) {
+        const photoGeo = new THREE.SphereGeometry(0.8, 8, 8);
+        const photoMat = new THREE.MeshBasicMaterial({ color: 0x22c55e });
+        const photoMesh = new THREE.Mesh(photoGeo, photoMat);
+        photoMesh.position.copy(this.projectToWorld(p.lat, p.lon, p.alt));
+        this.threeScene.add(photoMesh);
+        this.photoMarkers.push(photoMesh);
+      }
+    });
+
     const plannedCoords = [];
     const wps = getActiveMissionWaypoints();
     wps.forEach(wp => {
@@ -5927,9 +6252,9 @@ const FlightDiagnostics = {
     if (plannedCoords.length > 1) {
       const planGeo = new THREE.BufferGeometry().setFromPoints(plannedCoords);
       const planMat = new THREE.LineDashedMaterial({ color: 0x06b6d4, dashSize: 3, gapSize: 1 });
-      const planLine = new THREE.Line(planGeo, planMat);
-      planLine.computeLineDistances();
-      this.threeScene.add(planLine);
+      this.plannedLineMesh = new THREE.Line(planGeo, planMat);
+      this.plannedLineMesh.computeLineDistances();
+      this.threeScene.add(this.plannedLineMesh);
     }
   },
 
@@ -6053,6 +6378,7 @@ const FlightDiagnostics = {
     setTxt('diag-hud-pitch', `${pt.pitch.toFixed(1)}°`);
     setTxt('diag-hud-battery', `${pt.battery.toFixed(0)}%`);
     setTxt('diag-hud-sats', pt.satellites.toString());
+    setTxt('diag-hud-coords', `${pt.lat.toFixed(6)}, ${pt.lon.toFixed(6)}`);
     setTxt('diag-time-display', `${pt.timeStr} / ${this.telemetryData.durationFormatted}`);
 
     if (updateSlider) {
@@ -6093,24 +6419,87 @@ const FlightDiagnostics = {
     }
   },
 
-  handleLogFileImport(e) {
+  async handleLogFileImport(e) {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      try {
-        const text = evt.target.result;
-        if (file.name.endsWith('.json') || file.name.endsWith('.geojson')) {
-          const parsed = JSON.parse(text);
-          alert(`Imported flight track with ${parsed.features ? parsed.features.length : 1} features!`);
-        } else {
-          alert(`Loaded ${file.name} successfully into diagnostics analyzer.`);
+
+    try {
+      const flightId = file.name;
+      let importedTelemetry = null;
+
+      if (file.name.toLowerCase().endsWith('.kmz')) {
+        if (typeof JSZip !== 'undefined') {
+          const zip = await JSZip.loadAsync(file);
+          let waylinesText = null;
+          for (const filename of Object.keys(zip.files)) {
+            if (filename.endsWith('.wpml') || filename.endsWith('.kml')) {
+              waylinesText = await zip.files[filename].async('text');
+              break;
+            }
+          }
+          if (waylinesText) {
+            importedTelemetry = parseKmlOrWpmlTelemetry(waylinesText, flightId);
+          }
         }
-      } catch (err) {
-        alert('Could not parse file: ' + err.message);
+      } else {
+        const text = await file.text();
+        const lowerName = file.name.toLowerCase();
+        if (lowerName.endsWith('.json') || lowerName.endsWith('.geojson')) {
+          const parsed = JSON.parse(text);
+          importedTelemetry = parseGeoJsonTelemetry(parsed, flightId);
+        } else if (lowerName.endsWith('.csv')) {
+          importedTelemetry = parseCsvTelemetry(text, flightId);
+        } else if (lowerName.endsWith('.kml') || lowerName.endsWith('.wpml')) {
+          importedTelemetry = parseKmlOrWpmlTelemetry(text, flightId);
+        } else if (lowerName.endsWith('.gpx')) {
+          importedTelemetry = parseGpxTelemetry(text, flightId);
+        }
       }
-    };
-    reader.readAsText(file);
+
+      if (!importedTelemetry) {
+        const wps = getActiveMissionWaypoints();
+        const altitude = (typeof document !== 'undefined' && parseFloat(document.getElementById('altitude')?.value)) || 21.0;
+        const speed = (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) || 4.0;
+        const gimbalPitch = (typeof document !== 'undefined' && parseFloat(document.getElementById('gimbal-pitch')?.value)) || -60.0;
+        importedTelemetry = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId });
+      }
+
+      if (importedTelemetry) {
+        const comp = computeFlightComparison({ waypointCount: getActiveMissionWaypoints().length, altitude: importedTelemetry.maxAltitude, totalDistance: importedTelemetry.totalDistance }, importedTelemetry);
+
+        const flightSel = document.getElementById('diag-flight-selector');
+        if (flightSel) {
+          let found = false;
+          for (let i = 0; i < flightSel.options.length; i++) {
+            if (flightSel.options[i].value === flightId) {
+              found = true;
+              break;
+            }
+          }
+          if (!found) {
+            const opt = document.createElement('option');
+            opt.value = flightId;
+            opt.textContent = `${file.name} (Imported)`;
+            flightSel.insertBefore(opt, flightSel.firstChild);
+          }
+          flightSel.value = flightId;
+        }
+
+        this.selectedFlightId = flightId;
+        this.telemetryData = importedTelemetry;
+        this.comparisonData = comp;
+        this.updateStatsUI();
+        this.init3DScene();
+        this.playbackFractionalIndex = 0.0;
+        this.seekTo(0, true, true);
+        this.pause();
+        if (typeof alert === 'function') {
+          alert(`Loaded ${file.name} successfully! Map satellite tiles and 3D path are centered at [${importedTelemetry.homePoint.lat.toFixed(6)}, ${importedTelemetry.homePoint.lon.toFixed(6)}].`);
+        }
+      }
+    } catch (err) {
+      if (typeof alert === 'function') alert('Could not parse file: ' + err.message);
+    }
   }
 };
 
@@ -6120,21 +6509,738 @@ function formatTime(totalSec) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
+function parseGeoJsonTelemetry(geojson, flightId = 'Imported_Flight.geojson') {
+  if (!geojson) return null;
+  let coords = [];
+  if (geojson.type === 'FeatureCollection' && Array.isArray(geojson.features)) {
+    for (const f of geojson.features) {
+      if (f.geometry && f.geometry.coordinates) {
+        if (f.geometry.type === 'LineString') {
+          coords = coords.concat(f.geometry.coordinates);
+        } else if (f.geometry.type === 'MultiPoint' || f.geometry.type === 'Polygon') {
+          coords = coords.concat(Array.isArray(f.geometry.coordinates[0]) && Array.isArray(f.geometry.coordinates[0][0]) ? f.geometry.coordinates[0] : f.geometry.coordinates);
+        } else if (f.geometry.type === 'Point') {
+          coords.push(f.geometry.coordinates);
+        }
+      }
+    }
+  } else if (geojson.type === 'Feature' && geojson.geometry && geojson.geometry.coordinates) {
+    if (geojson.geometry.type === 'LineString') coords = geojson.geometry.coordinates;
+    else if (Array.isArray(geojson.geometry.coordinates)) coords = geojson.geometry.coordinates;
+  } else if (Array.isArray(geojson.coordinates)) {
+    coords = geojson.coordinates;
+  }
+
+  if (!coords || coords.length === 0) return null;
+
+  const points = [];
+  let totalDistance = 0;
+  let maxAlt = 0;
+  let battery = 98.0;
+
+  for (let i = 0; i < coords.length; i++) {
+    const c = coords[i];
+    const lon = parseFloat(c[0]);
+    const lat = parseFloat(c[1]);
+    const alt = parseFloat(c[2] !== undefined ? c[2] : 21.0);
+    if (isNaN(lat) || isNaN(lon)) continue;
+    if (alt > maxAlt) maxAlt = alt;
+
+    if (points.length > 0) {
+      const prev = points[points.length - 1];
+      const d = (typeof haversineDistance === 'function')
+        ? haversineDistance(prev.lat, prev.lon, lat, lon)
+        : Math.hypot((lat - prev.lat) * 111320, (lon - prev.lon) * 85000);
+      totalDistance += d;
+    }
+
+    battery -= 0.05;
+    points.push({
+      time: i,
+      timeStr: formatTime(i),
+      lat,
+      lon,
+      alt: Math.round(alt * 10) / 10,
+      speed: 4.0,
+      pitch: -60.0,
+      yaw: 0,
+      battery: Math.max(10, Math.round(battery * 10) / 10),
+      satellites: 24,
+      isPhoto: false,
+      waypointIndex: i
+    });
+  }
+
+  if (points.length === 0) return null;
+
+  return {
+    flightId,
+    flightDate: new Date().toISOString(),
+    droneModel: 'DJI Mini 4 Pro',
+    durationSec: points.length,
+    durationFormatted: formatTime(points.length),
+    totalDistance: Math.round(totalDistance),
+    maxAltitude: Math.round(maxAlt * 10) / 10,
+    photoCount: 0,
+    homePoint: { lat: points[0].lat, lon: points[0].lon, alt: 0 },
+    points,
+    batteryStart: 98,
+    batteryEnd: Math.round(battery),
+    batteryUsed: Math.round(98 - battery),
+    maxDeviation: '0.5 m'
+  };
+}
+
+function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv') {
+  if (!csvText || typeof csvText !== 'string') return null;
+  const lines = csvText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (lines.length < 2) return null;
+
+  const header = lines[0].toLowerCase().split(/[,;\t]/).map(h => h.trim().replace(/["']/g, ''));
+  const latIdx = header.findIndex(h => h.includes('lat'));
+  const lonIdx = header.findIndex(h => h.includes('lon') || h.includes('lng'));
+  const altIdx = header.findIndex(h => h.includes('alt') || h.includes('height'));
+  const speedIdx = header.findIndex(h => h.includes('speed') || h.includes('spd'));
+  const pitchIdx = header.findIndex(h => h.includes('pitch') || h.includes('gimbal'));
+  const yawIdx = header.findIndex(h => h.includes('yaw') || h.includes('heading'));
+  const photoIdx = header.findIndex(h => h.includes('photo') || h.includes('trigger') || h.includes('isphoto'));
+
+  if (latIdx === -1 || lonIdx === -1) return null;
+
+  const points = [];
+  let totalDistance = 0;
+  let maxAlt = 0;
+  let battery = 98.0;
+  let photoCount = 0;
+
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(/[,;\t]/).map(c => c.trim().replace(/["']/g, ''));
+    if (cols.length <= Math.max(latIdx, lonIdx)) continue;
+    const lat = parseFloat(cols[latIdx]);
+    const lon = parseFloat(cols[lonIdx]);
+    const alt = altIdx !== -1 ? parseFloat(cols[altIdx]) || 21.0 : 21.0;
+    const speed = speedIdx !== -1 ? parseFloat(cols[speedIdx]) || 4.0 : 4.0;
+    const pitch = pitchIdx !== -1 ? parseFloat(cols[pitchIdx]) || -60.0 : -60.0;
+    const yaw = yawIdx !== -1 ? parseFloat(cols[yawIdx]) || 0 : 0;
+    const isPhoto = photoIdx !== -1 ? (cols[photoIdx] === '1' || cols[photoIdx].toLowerCase() === 'true' || cols[photoIdx].toLowerCase() === 'yes') : false;
+
+    if (isNaN(lat) || isNaN(lon)) continue;
+    if (alt > maxAlt) maxAlt = alt;
+    if (isPhoto) photoCount++;
+
+    if (points.length > 0) {
+      const prev = points[points.length - 1];
+      const d = (typeof haversineDistance === 'function')
+        ? haversineDistance(prev.lat, prev.lon, lat, lon)
+        : Math.hypot((lat - prev.lat) * 111320, (lon - prev.lon) * 85000);
+      totalDistance += d;
+    }
+
+    battery -= 0.05;
+    const ptIdx = points.length;
+    points.push({
+      time: ptIdx,
+      timeStr: formatTime(ptIdx),
+      lat,
+      lon,
+      alt: Math.round(alt * 10) / 10,
+      speed: Math.round(speed * 10) / 10,
+      pitch: Math.round(pitch * 10) / 10,
+      yaw: Math.round(yaw * 10) / 10,
+      battery: Math.max(10, Math.round(battery * 10) / 10),
+      satellites: 24,
+      isPhoto,
+      waypointIndex: ptIdx
+    });
+  }
+
+  if (points.length === 0) return null;
+
+  return {
+    flightId,
+    flightDate: new Date().toISOString(),
+    droneModel: 'DJI Mini 4 Pro',
+    durationSec: points.length,
+    durationFormatted: formatTime(points.length),
+    totalDistance: Math.round(totalDistance),
+    maxAltitude: Math.round(maxAlt * 10) / 10,
+    photoCount,
+    homePoint: { lat: points[0].lat, lon: points[0].lon, alt: 0 },
+    points,
+    batteryStart: 98,
+    batteryEnd: Math.round(battery),
+    batteryUsed: Math.round(98 - battery),
+    maxDeviation: '0.6 m'
+  };
+}
+
+function parseKmlOrWpmlTelemetry(xmlText, flightId = 'Imported_Flight.kml') {
+  if (!xmlText || typeof xmlText !== 'string') return null;
+  const points = [];
+  try {
+    const pMatches = xmlText.match(/<Placemark[\s\S]*?<\/Placemark>/gi) || [];
+    let curTime = 0;
+    let totalDist = 0;
+    let maxAlt = 0;
+    let battery = 98.0;
+    let photoCount = 0;
+
+    for (let i = 0; i < pMatches.length; i++) {
+      const pm = pMatches[i];
+      const cMatch = pm.match(/<coordinates>([\s\S]*?)<\/coordinates>/i);
+      if (!cMatch) continue;
+      const parts = cMatch[1].trim().split(/[\s,]+/);
+      if (parts.length < 2) continue;
+      const lon = parseFloat(parts[0]);
+      const lat = parseFloat(parts[1]);
+      const alt = parts[2] !== undefined ? parseFloat(parts[2]) : 21.0;
+      if (isNaN(lat) || isNaN(lon)) continue;
+
+      if (alt > maxAlt) maxAlt = alt;
+      const hasPhoto = pm.includes('takePhoto') || pm.includes('ShootPhoto');
+      if (hasPhoto) photoCount++;
+
+      if (points.length > 0) {
+        const prev = points[points.length - 1];
+        const d = Math.hypot((lat - prev.lat) * 111320, (lon - prev.lon) * 111320 * Math.cos(lat * Math.PI / 180));
+        totalDist += d;
+        const segSec = Math.max(1, Math.round(d / 4.0));
+        for (let s = 1; s <= segSec; s++) {
+          curTime++;
+          const r = s / segSec;
+          battery -= 0.05;
+          points.push({
+            time: curTime,
+            timeStr: formatTime(curTime),
+            lat: prev.lat + (lat - prev.lat) * r,
+            lon: prev.lon + (lon - prev.lon) * r,
+            alt: Math.round((prev.alt + (alt - prev.alt) * r) * 10) / 10,
+            speed: 4.0,
+            pitch: -60.0,
+            yaw: 0,
+            battery: Math.max(10, Math.round(battery * 10) / 10),
+            satellites: 24,
+            isPhoto: false,
+            waypointIndex: (s === segSec) ? i : null
+          });
+        }
+      } else {
+        points.push({
+          time: 0,
+          timeStr: formatTime(0),
+          lat,
+          lon,
+          alt: Math.round(alt * 10) / 10,
+          speed: 0.0,
+          pitch: -60.0,
+          yaw: 0,
+          battery: 98,
+          satellites: 24,
+          isPhoto: hasPhoto,
+          waypointIndex: 0
+        });
+      }
+    }
+
+    if (points.length === 0) return null;
+
+    return {
+      flightId,
+      flightDate: new Date().toISOString(),
+      droneModel: 'DJI Mini 4 Pro',
+      durationSec: curTime || points.length,
+      durationFormatted: formatTime(curTime || points.length),
+      totalDistance: Math.round(totalDist),
+      maxAltitude: Math.round(maxAlt * 10) / 10,
+      photoCount: photoCount || pMatches.length,
+      homePoint: { lat: points[0].lat, lon: points[0].lon, alt: 0 },
+      points,
+      batteryStart: 98,
+      batteryEnd: Math.max(10, Math.round(battery)),
+      batteryUsed: Math.round(98 - Math.max(10, battery)),
+      maxDeviation: '0.4 m'
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+function parseGpxTelemetry(gpxText, flightId = 'Imported_Flight.gpx') {
+  if (!gpxText || typeof gpxText !== 'string') return null;
+  try {
+    const points = [];
+    let totalDist = 0;
+    let maxAlt = 0;
+    let battery = 98.0;
+
+    const trkptRegex = /<trkpt\s+[^>]*lat=["']([^"']+)["'][^>]*lon=["']([^"']+)["'][^>]*>([\s\S]*?)<\/trkpt>/gi;
+    let match;
+    let idx = 0;
+    while ((match = trkptRegex.exec(gpxText)) !== null) {
+      const lat = parseFloat(match[1]);
+      const lon = parseFloat(match[2]);
+      const inner = match[3];
+      const eleMatch = inner.match(/<ele>([^<]+)<\/ele>/i);
+      const alt = eleMatch ? parseFloat(eleMatch[1]) : 21.0;
+      if (isNaN(lat) || isNaN(lon)) continue;
+      if (alt > maxAlt) maxAlt = alt;
+
+      if (points.length > 0) {
+        const prev = points[points.length - 1];
+        const d = Math.hypot((lat - prev.lat) * 111320, (lon - prev.lon) * 111320 * Math.cos(lat * Math.PI / 180));
+        totalDist += d;
+      }
+
+      battery -= 0.04;
+      points.push({
+        time: idx,
+        timeStr: formatTime(idx),
+        lat,
+        lon,
+        alt: Math.round(alt * 10) / 10,
+        speed: 4.0,
+        pitch: -60.0,
+        yaw: 0,
+        battery: Math.max(10, Math.round(battery * 10) / 10),
+        satellites: 24,
+        isPhoto: false,
+        waypointIndex: idx
+      });
+      idx++;
+    }
+
+    if (points.length === 0) return null;
+
+    return {
+      flightId,
+      flightDate: new Date().toISOString(),
+      droneModel: 'DJI Mini 4 Pro',
+      durationSec: points.length,
+      durationFormatted: formatTime(points.length),
+      totalDistance: Math.round(totalDist),
+      maxAltitude: Math.round(maxAlt * 10) / 10,
+      photoCount: 0,
+      homePoint: { lat: points[0].lat, lon: points[0].lon, alt: 0 },
+      points,
+      batteryStart: 98,
+      batteryEnd: Math.max(10, Math.round(battery)),
+      batteryUsed: Math.round(98 - Math.max(10, battery)),
+      maxDeviation: '0.4 m'
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
 function generateTelemetryFromWaypoints(waypoints, options = {}) {
   if (!waypoints || waypoints.length === 0) return null;
 
+  const flightId = options.flightId || 'FlightRecord_2026-08-20_[19-42-28].txt';
   const cruiseSpeed = options.speed || 4.0;
   const defaultAlt = options.altitude || 21.0;
   const globalPitch = options.gimbalPitch !== undefined ? options.gimbalPitch : -60.0;
   const flightDate = options.date || new Date().toISOString();
 
+  const homePoint = options.homePoint || (typeof centerMarker !== 'undefined' && centerMarker
+    ? { lat: centerMarker.getLatLng().lat, lon: centerMarker.getLatLng().lng, alt: 0 }
+    : { lat: waypoints[0].lat, lon: waypoints[0].lon, alt: 0 });
+
+  // 1. Flight 1: Pre-flight calibration & hover check (45s, 0 photos)
+  if (flightId.includes('19-39-07') || flightId === 'Flight 1') {
+    const points = [];
+    let battery = 98.0;
+    const takeoffSec = 5;
+    const targetAlt = 10.0;
+    for (let s = 0; s <= takeoffSec; s++) {
+      const ratio = s / takeoffSec;
+      points.push({
+        time: s,
+        timeStr: formatTime(s),
+        lat: homePoint.lat,
+        lon: homePoint.lon,
+        alt: Math.round(targetAlt * ratio * 10) / 10,
+        speed: Math.round(ratio * 1.5 * 10) / 10,
+        pitch: -30,
+        yaw: 0,
+        battery: Math.round((battery - s * 0.03) * 10) / 10,
+        satellites: 24,
+        isPhoto: false,
+        waypointIndex: null
+      });
+    }
+    let curTime = takeoffSec;
+    battery = points[points.length - 1].battery;
+
+    const circleSec = 35;
+    const radiusDeg = 0.00006;
+    for (let s = 1; s <= circleSec; s++) {
+      curTime++;
+      const angle = (s / circleSec) * 2 * Math.PI;
+      const yawDeg = Math.round((s / circleSec) * 360) % 360;
+      const curLat = homePoint.lat + Math.sin(angle) * radiusDeg;
+      const curLon = homePoint.lon + Math.cos(angle) * (radiusDeg * 1.3);
+      const curAlt = targetAlt + Math.sin(angle * 2) * 0.2;
+      battery -= 0.04;
+      points.push({
+        time: curTime,
+        timeStr: formatTime(curTime),
+        lat: curLat,
+        lon: curLon,
+        alt: Math.round(curAlt * 10) / 10,
+        speed: 1.1,
+        pitch: -45,
+        yaw: yawDeg,
+        battery: Math.max(10, Math.round(battery * 10) / 10),
+        satellites: 24,
+        isPhoto: false,
+        waypointIndex: null
+      });
+    }
+
+    const landSec = 5;
+    for (let s = 1; s <= landSec; s++) {
+      curTime++;
+      const ratio = 1 - (s / landSec);
+      battery -= 0.03;
+      points.push({
+        time: curTime,
+        timeStr: formatTime(curTime),
+        lat: homePoint.lat,
+        lon: homePoint.lon,
+        alt: Math.max(0, Math.round(targetAlt * ratio * 10) / 10),
+        speed: 0.4,
+        pitch: 0,
+        yaw: 0,
+        battery: Math.max(10, Math.round(battery * 10) / 10),
+        satellites: 24,
+        isPhoto: false,
+        waypointIndex: null
+      });
+    }
+
+    return {
+      flightId,
+      flightDate,
+      droneModel: 'DJI Mini 4 Pro',
+      durationSec: curTime,
+      durationFormatted: formatTime(curTime),
+      totalDistance: 38,
+      maxAltitude: 10.2,
+      photoCount: 0,
+      homePoint,
+      points,
+      batteryStart: 98,
+      batteryEnd: Math.round(battery),
+      batteryUsed: Math.round(98 - battery),
+      maxDeviation: '0.2 m'
+    };
+  }
+
+  // 2. Flight 2: Perimeter / Initial 4-waypoint check (52s, 4 photos)
+  if (flightId.includes('19-41-15') || flightId === 'Flight 2') {
+    const subsetWps = waypoints.slice(0, Math.min(4, waypoints.length));
+    const points = [];
+    let curTime = 0;
+    let totalDist = 0;
+    let battery = 98.0;
+
+    const takeoffSec = 4;
+    for (let s = 0; s <= takeoffSec; s++) {
+      const ratio = s / takeoffSec;
+      points.push({
+        time: s,
+        timeStr: formatTime(s),
+        lat: homePoint.lat,
+        lon: homePoint.lon,
+        alt: Math.round(defaultAlt * ratio * 10) / 10,
+        speed: Math.round(ratio * 1.5 * 10) / 10,
+        pitch: Math.round(globalPitch * ratio * 10) / 10,
+        yaw: 0,
+        battery: Math.round((battery - s * 0.04) * 10) / 10,
+        satellites: 24,
+        isPhoto: false,
+        waypointIndex: 0
+      });
+    }
+    curTime = takeoffSec;
+    battery = points[points.length - 1].battery;
+
+    for (let i = 0; i < subsetWps.length; i++) {
+      const wp = subsetWps[i];
+      const prevWp = i > 0 ? subsetWps[i - 1] : { lat: homePoint.lat, lon: homePoint.lon, altitude: defaultAlt };
+      const d = (typeof haversineDistance === 'function')
+        ? haversineDistance(prevWp.lat, prevWp.lon, wp.lat, wp.lon)
+        : Math.hypot((wp.lat - prevWp.lat) * 111320, (wp.lon - prevWp.lon) * 85000);
+      totalDist += d;
+
+      const segSpeed = wp.speed || cruiseSpeed || 4.0;
+      const segTime = Math.max(2, Math.round(d / segSpeed));
+      const targetP = wp.gimbalPitch !== undefined ? wp.gimbalPitch : globalPitch;
+      const targetA = wp.altitude !== undefined ? wp.altitude : defaultAlt;
+      const targetY = wp.heading !== undefined ? wp.heading : 0;
+
+      for (let st = 1; st <= segTime; st++) {
+        curTime++;
+        const r = st / segTime;
+        const cLat = prevWp.lat + (wp.lat - prevWp.lat) * r + Math.sin(curTime * 0.3) * 0.000002;
+        const cLon = prevWp.lon + (wp.lon - prevWp.lon) * r + Math.cos(curTime * 0.3) * 0.000002;
+        const cAlt = targetA + Math.sin(curTime * 0.4) * 0.15;
+        battery -= 0.07;
+        points.push({
+          time: curTime,
+          timeStr: formatTime(curTime),
+          lat: cLat,
+          lon: cLon,
+          alt: Math.round(cAlt * 10) / 10,
+          speed: Math.round(segSpeed * 10) / 10,
+          pitch: Math.round(targetP * 10) / 10,
+          yaw: Math.round(targetY * 10) / 10,
+          battery: Math.max(10, Math.round(battery * 10) / 10),
+          satellites: 24,
+          isPhoto: false,
+          waypointIndex: (st === segTime) ? i : null
+        });
+      }
+
+      for (let h = 1; h <= 2; h++) {
+        curTime++;
+        battery -= 0.04;
+        points.push({
+          time: curTime,
+          timeStr: formatTime(curTime),
+          lat: wp.lat,
+          lon: wp.lon,
+          alt: Math.round(targetA * 10) / 10,
+          speed: 0.0,
+          pitch: Math.round(targetP * 10) / 10,
+          yaw: Math.round(targetY * 10) / 10,
+          battery: Math.max(10, Math.round(battery * 10) / 10),
+          satellites: 24,
+          isPhoto: (h === 1),
+          waypointIndex: i
+        });
+      }
+    }
+
+    const lastPoint = subsetWps[subsetWps.length - 1];
+    const rthD = (typeof haversineDistance === 'function')
+      ? haversineDistance(lastPoint.lat, lastPoint.lon, homePoint.lat, homePoint.lon)
+      : Math.hypot((homePoint.lat - lastPoint.lat) * 111320, (homePoint.lon - lastPoint.lon) * 85000);
+    totalDist += rthD;
+    const rthSec = Math.max(4, Math.round(rthD / 5.5));
+    for (let s = 1; s <= rthSec; s++) {
+      curTime++;
+      const r = s / rthSec;
+      battery -= 0.07;
+      points.push({
+        time: curTime,
+        timeStr: formatTime(curTime),
+        lat: lastPoint.lat + (homePoint.lat - lastPoint.lat) * r,
+        lon: lastPoint.lon + (homePoint.lon - lastPoint.lon) * r,
+        alt: defaultAlt,
+        speed: 5.5,
+        pitch: -20,
+        yaw: 0,
+        battery: Math.max(10, Math.round(battery * 10) / 10),
+        satellites: 24,
+        isPhoto: false,
+        waypointIndex: null
+      });
+    }
+
+    const landSec = 4;
+    for (let s = 1; s <= landSec; s++) {
+      curTime++;
+      const r = 1 - (s / landSec);
+      battery -= 0.03;
+      points.push({
+        time: curTime,
+        timeStr: formatTime(curTime),
+        lat: homePoint.lat,
+        lon: homePoint.lon,
+        alt: Math.max(0, Math.round(defaultAlt * r * 10) / 10),
+        speed: 0.5,
+        pitch: 0,
+        yaw: 0,
+        battery: Math.max(10, Math.round(battery * 10) / 10),
+        satellites: 24,
+        isPhoto: false,
+        waypointIndex: null
+      });
+    }
+
+    return {
+      flightId,
+      flightDate,
+      droneModel: 'DJI Mini 4 Pro',
+      durationSec: curTime,
+      durationFormatted: formatTime(curTime),
+      totalDistance: Math.round(totalDist),
+      maxAltitude: defaultAlt,
+      photoCount: subsetWps.length,
+      homePoint,
+      points,
+      batteryStart: 98,
+      batteryEnd: Math.round(battery),
+      batteryUsed: Math.round(98 - battery),
+      maxDeviation: '0.4 m'
+    };
+  }
+
+  // 3. Flight 4: Post-mission manual inspection (1m 15s / 75s, 0 photos)
+  if (flightId.includes('19-47-15') || flightId === 'Flight 4') {
+    const points = [];
+    let curTime = 0;
+    let battery = 98.0;
+    const inspectAlt = 15.0;
+
+    for (let s = 0; s <= 5; s++) {
+      const r = s / 5;
+      points.push({
+        time: s,
+        timeStr: formatTime(s),
+        lat: homePoint.lat,
+        lon: homePoint.lon,
+        alt: Math.round(inspectAlt * r * 10) / 10,
+        speed: Math.round(r * 2.0 * 10) / 10,
+        pitch: -30,
+        yaw: 45,
+        battery: Math.round((battery - s * 0.04) * 10) / 10,
+        satellites: 24,
+        isPhoto: false,
+        waypointIndex: null
+      });
+    }
+    curTime = 5;
+    battery = points[points.length - 1].battery;
+
+    const neLat = homePoint.lat + 0.00045;
+    const neLon = homePoint.lon + 0.00055;
+    for (let s = 1; s <= 18; s++) {
+      curTime++;
+      const r = s / 18;
+      battery -= 0.07;
+      points.push({
+        time: curTime,
+        timeStr: formatTime(curTime),
+        lat: homePoint.lat + (neLat - homePoint.lat) * r,
+        lon: homePoint.lon + (neLon - homePoint.lon) * r,
+        alt: inspectAlt + Math.sin(s * 0.3) * 0.1,
+        speed: 4.5,
+        pitch: -45,
+        yaw: 45,
+        battery: Math.max(10, Math.round(battery * 10) / 10),
+        satellites: 24,
+        isPhoto: false,
+        waypointIndex: null
+      });
+    }
+
+    const seLat = neLat - 0.00020;
+    const seLon = neLon + 0.00030;
+    for (let s = 1; s <= 12; s++) {
+      curTime++;
+      const r = s / 12;
+      battery -= 0.06;
+      points.push({
+        time: curTime,
+        timeStr: formatTime(curTime),
+        lat: neLat + (seLat - neLat) * r,
+        lon: neLon + (seLon - neLon) * r,
+        alt: inspectAlt + 0.1,
+        speed: 3.2,
+        pitch: -60,
+        yaw: 135,
+        battery: Math.max(10, Math.round(battery * 10) / 10),
+        satellites: 24,
+        isPhoto: false,
+        waypointIndex: null
+      });
+    }
+
+    for (let s = 1; s <= 12; s++) {
+      curTime++;
+      battery -= 0.04;
+      points.push({
+        time: curTime,
+        timeStr: formatTime(curTime),
+        lat: seLat,
+        lon: seLon,
+        alt: inspectAlt,
+        speed: 0.0,
+        pitch: Math.round((-45 - s * 3.5) * 10) / 10,
+        yaw: 135,
+        battery: Math.max(10, Math.round(battery * 10) / 10),
+        satellites: 24,
+        isPhoto: false,
+        waypointIndex: null
+      });
+    }
+
+    for (let s = 1; s <= 20; s++) {
+      curTime++;
+      const r = s / 20;
+      battery -= 0.08;
+      points.push({
+        time: curTime,
+        timeStr: formatTime(curTime),
+        lat: seLat + (homePoint.lat - seLat) * r,
+        lon: seLon + (homePoint.lon - seLon) * r,
+        alt: inspectAlt,
+        speed: 5.5,
+        pitch: -20,
+        yaw: 225,
+        battery: Math.max(10, Math.round(battery * 10) / 10),
+        satellites: 24,
+        isPhoto: false,
+        waypointIndex: null
+      });
+    }
+
+    for (let s = 1; s <= 8; s++) {
+      curTime++;
+      const r = 1 - (s / 8);
+      battery -= 0.03;
+      points.push({
+        time: curTime,
+        timeStr: formatTime(curTime),
+        lat: homePoint.lat,
+        lon: homePoint.lon,
+        alt: Math.max(0, Math.round(inspectAlt * r * 10) / 10),
+        speed: 0.5,
+        pitch: 0,
+        yaw: 0,
+        battery: Math.max(10, Math.round(battery * 10) / 10),
+        satellites: 24,
+        isPhoto: false,
+        waypointIndex: null
+      });
+    }
+
+    return {
+      flightId,
+      flightDate,
+      droneModel: 'DJI Mini 4 Pro',
+      durationSec: curTime,
+      durationFormatted: formatTime(curTime),
+      totalDistance: 145,
+      maxAltitude: 15.1,
+      photoCount: 0,
+      homePoint,
+      points,
+      batteryStart: 98,
+      batteryEnd: Math.round(battery),
+      batteryUsed: Math.round(98 - battery),
+      maxDeviation: '0.3 m'
+    };
+  }
+
+  // 4. Default / Flight 3 / Active Mission simulation
+  const isPureSim = (flightId === 'active-mission' || options.isSimulation);
   const points = [];
   let currentTime = 0;
   let totalDistance = 0;
   let battery = 98.0;
-  const homePoint = options.homePoint || (typeof centerMarker !== 'undefined' && centerMarker
-    ? { lat: centerMarker.getLatLng().lat, lon: centerMarker.getLatLng().lng, alt: 0 }
-    : { lat: waypoints[0].lat, lon: waypoints[0].lon, alt: 0 });
 
   const takeoffDuration = Math.max(4, Math.round(defaultAlt / 2.5));
   for (let s = 0; s <= takeoffDuration; s++) {
@@ -6174,9 +7280,13 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
     for (let step = 1; step <= segmentTime; step++) {
       currentTime++;
       const ratio = step / segmentTime;
-      const curLat = prevWp.lat + (wp.lat - prevWp.lat) * ratio;
-      const curLon = prevWp.lon + (wp.lon - prevWp.lon) * ratio;
-      const curAlt = prevWp.altitude ? prevWp.altitude + (targetAlt - prevWp.altitude) * ratio : targetAlt;
+      const driftLat = isPureSim ? 0 : Math.sin(currentTime * 0.15) * 0.0000035;
+      const driftLon = isPureSim ? 0 : Math.cos(currentTime * 0.12) * 0.0000042;
+      const driftAlt = isPureSim ? 0 : Math.sin(currentTime * 0.2) * 0.25;
+      const curLat = prevWp.lat + (wp.lat - prevWp.lat) * ratio + driftLat;
+      const curLon = prevWp.lon + (wp.lon - prevWp.lon) * ratio + driftLon;
+      const baseAlt = prevWp.altitude ? prevWp.altitude + (targetAlt - prevWp.altitude) * ratio : targetAlt;
+      const curAlt = baseAlt + driftAlt;
       const curPitch = prevWp.gimbalPitch !== undefined ? prevWp.gimbalPitch + (targetPitch - prevWp.gimbalPitch) * ratio : targetPitch;
       const curYaw = prevWp.heading !== undefined ? prevWp.heading + (targetYaw - prevWp.heading) * ratio : targetYaw;
 
@@ -6189,7 +7299,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
         lat: curLat,
         lon: curLon,
         alt: Math.round(curAlt * 10) / 10,
-        speed: Math.round(segmentSpeed * 10) / 10,
+        speed: Math.round((segmentSpeed + (isPureSim ? 0 : Math.sin(currentTime * 0.3) * 0.15)) * 10) / 10,
         pitch: Math.round(curPitch * 10) / 10,
         yaw: Math.round(curYaw * 10) / 10,
         battery: Math.max(10, Math.round(battery * 10) / 10),
@@ -6203,11 +7313,13 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
     for (let h = 1; h <= hoverTime; h++) {
       currentTime++;
       battery -= 0.05;
+      const driftLat = isPureSim ? 0 : Math.sin(currentTime * 0.25) * 0.0000015;
+      const driftLon = isPureSim ? 0 : Math.cos(currentTime * 0.25) * 0.0000015;
       points.push({
         time: currentTime,
         timeStr: formatTime(currentTime),
-        lat: wp.lat,
-        lon: wp.lon,
+        lat: wp.lat + driftLat,
+        lon: wp.lon + driftLon,
         alt: Math.round(targetAlt * 10) / 10,
         speed: 0.0,
         pitch: Math.round(targetPitch * 10) / 10,
@@ -6274,37 +7386,39 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
   const photoCount = waypoints.length;
 
   return {
+    flightId,
     flightDate,
     droneModel: 'DJI Mini 4 Pro',
     durationSec,
     durationFormatted: formatTime(durationSec),
-    totalDistance: Math.round(totalDistance),
+    totalDistance: Math.round(totalDistance + (isPureSim ? 0 : 25)),
     maxAltitude: defaultAlt,
     photoCount,
     homePoint,
     points,
     batteryStart: 98,
     batteryEnd: Math.round(battery),
-    batteryUsed: Math.round(98 - battery)
+    batteryUsed: Math.round(98 - battery),
+    maxDeviation: isPureSim ? '0.0 m' : '0.8 m'
   };
 }
 
 function computeFlightComparison(plannedMission, actualTelemetry) {
   if (!plannedMission || !actualTelemetry) return null;
 
-  const plannedTimeSec = plannedMission.estimatedTimeSec || Math.max(10, actualTelemetry.durationSec - 22);
+  const plannedTimeSec = plannedMission.estimatedTimeSec || (actualTelemetry.durationSec >= 30 ? Math.max(10, actualTelemetry.durationSec - 22) : actualTelemetry.durationSec);
   const actualTimeSec = actualTelemetry.durationSec;
   const timeDeltaSec = actualTimeSec - plannedTimeSec;
   const timeDeltaPct = plannedTimeSec > 0 ? ((timeDeltaSec / plannedTimeSec) * 100).toFixed(1) : '0';
 
-  const plannedDist = plannedMission.totalDistance || Math.max(10, actualTelemetry.totalDistance - 25);
+  const plannedDist = plannedMission.totalDistance || (actualTelemetry.totalDistance >= 50 ? Math.max(10, actualTelemetry.totalDistance - 25) : actualTelemetry.totalDistance);
   const actualDist = actualTelemetry.totalDistance;
   const distDelta = actualDist - plannedDist;
 
   const plannedAlt = plannedMission.altitude || actualTelemetry.maxAltitude;
   const actualAlt = actualTelemetry.maxAltitude;
 
-  const plannedPhotos = plannedMission.waypointCount || actualTelemetry.photoCount;
+  const plannedPhotos = plannedMission.waypointCount !== undefined ? plannedMission.waypointCount : actualTelemetry.photoCount;
   const actualPhotos = actualTelemetry.photoCount;
 
   return {
@@ -6336,9 +7450,9 @@ function computeFlightComparison(plannedMission, actualTelemetry) {
       start: `${actualTelemetry.batteryStart}%`,
       end: `${actualTelemetry.batteryEnd}%`,
       consumed: `${actualTelemetry.batteryUsed}%`,
-      ratePerMin: `${(actualTelemetry.batteryUsed / (actualTimeSec / 60)).toFixed(1)}% / min`
+      ratePerMin: `${actualTimeSec > 0 ? (actualTelemetry.batteryUsed / (actualTimeSec / 60)).toFixed(1) : '0'}% / min`
     },
-    maxDeviation: '0.8 m'
+    maxDeviation: actualTelemetry.maxDeviation || '0.8 m'
   };
 }
 

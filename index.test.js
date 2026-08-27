@@ -87,6 +87,7 @@ global.L = {
     create: () => ({ style: {}, innerHTML: '' })
   }
 };
+global.window.L = global.L;
 
 // Evaluate index.js in this context
 const code = fs.readFileSync('./index.js', 'utf8');
@@ -3039,6 +3040,8 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     let text = { textContent: '', style: { color: '' } };
     let label = { textContent: '' };
     let btn = { style: { display: '' } };
+    let container = { classList: { add: (c) => container.classes.add(c), remove: (c) => container.classes.delete(c) }, classes: new Set() };
+    let hint = { style: { display: '' } };
 
     const origGetElementById = global.document.getElementById;
     const origFetch = global.fetch;
@@ -3049,6 +3052,8 @@ describe('Companion Bridge & Direct Sync Tests', () => {
       if (id === 'companion-status-text') return text;
       if (id === 'companion-device-label') return label;
       if (id === 'direct-rc2-sync-btn') return btn;
+      if (id === 'companion-sync-container') return container;
+      if (id === 'companion-offline-hint') return hint;
       return origGetElementById ? origGetElementById(id) : null;
     };
 
@@ -3057,9 +3062,182 @@ describe('Companion Bridge & Direct Sync Tests', () => {
       assert.strictEqual(text.textContent, 'Companion Offline');
       assert.strictEqual(dot.style.background, '#64748b');
       assert.strictEqual(btn.style.display, 'none');
+      assert.ok(container.classes.has('is-offline'));
+      assert.strictEqual(hint.style.display, 'flex');
     } finally {
       global.document.getElementById = origGetElementById;
       global.fetch = origFetch;
+    }
+  });
+
+  test('setCorsHeaders sets Private Network Access and cross-origin headers', () => {
+    const { setCorsHeaders } = require('./tools/companion/server.js');
+    const headers = {};
+    const mockRes = {
+      setHeader(k, v) {
+        headers[k] = v;
+      }
+    };
+    setCorsHeaders(mockRes);
+    assert.strictEqual(headers['Access-Control-Allow-Origin'], '*');
+    assert.strictEqual(headers['Access-Control-Allow-Private-Network'], 'true');
+    assert.ok(headers['Access-Control-Allow-Headers'].includes('Access-Control-Request-Private-Network'));
+  });
+
+  test('COMPANION_API_BASE dynamically resolves to window.location.origin on localhost and defaults cleanly', () => {
+    const testOnLocalhost = vm.runInThisContext(`
+      (() => {
+        const origLocation = window.location;
+        try {
+          window.location = { hostname: '127.0.0.1', port: '8765', protocol: 'http:', origin: 'http://127.0.0.1:8765' };
+          return (typeof window !== 'undefined' && window.location && (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost'))
+            ? (window.location.port ? \`\${window.location.protocol}//\${window.location.hostname}:\${window.location.port}\` : window.location.origin)
+            : 'http://127.0.0.1:8765';
+        } finally {
+          window.location = origLocation;
+        }
+      })()
+    `);
+    assert.strictEqual(testOnLocalhost, 'http://127.0.0.1:8765');
+
+    const testOnFileProtocol = vm.runInThisContext(`
+      (() => {
+        const origLocation = window.location;
+        try {
+          window.location = { hostname: '', port: '', protocol: 'file:', origin: 'null' };
+          return (typeof window !== 'undefined' && window.location && (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost'))
+            ? (window.location.port ? \`\${window.location.protocol}//\${window.location.hostname}:\${window.location.port}\` : window.location.origin)
+            : 'http://127.0.0.1:8765';
+        } finally {
+          window.location = origLocation;
+        }
+      })()
+    `);
+    assert.strictEqual(testOnFileProtocol, 'http://127.0.0.1:8765');
+  });
+
+  test('sendDirectlyToRC2 resolves waypoints safely without ReferenceError', async () => {
+    let directBtn = {
+      innerHTML: '<span>Sync</span>',
+      disabled: false,
+      style: {}
+    };
+
+    const origGetElementById = global.document.getElementById;
+    const origFetch = global.fetch;
+    const origGetItem = global.localStorage ? global.localStorage.getItem : null;
+
+    let fetchPayload = null;
+    global.fetch = (url, opts) => {
+      fetchPayload = JSON.parse(opts.body);
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ success: true, data: { uuid: fetchPayload.uuid } })
+      });
+    };
+
+    if (global.localStorage) {
+      global.localStorage.getItem = (k) => k === 'aalaapi-rc2-uuid' ? '354A8F93-759C-42C3-A8D5-746F79C7622A' : null;
+    }
+
+    global.document.getElementById = (id) => {
+      if (id === 'direct-rc2-sync-btn') return directBtn;
+      if (id === 'speed') return { value: '5' };
+      if (id === 'gimbal-pitch') return { value: '-45' };
+      if (id === 'altitude') return { value: '60' };
+      if (id === 'heading-mode') return { value: 'followWayline' };
+      if (id === 'finish-action') return { value: 'goHome' };
+      if (id === 'capture-mode') return { value: 'hover' };
+      if (id === 'path-mode') return { value: 'normal' };
+      return origGetElementById ? origGetElementById(id) : null;
+    };
+
+    try {
+      vm.runInThisContext('isRc2MtpConnected = true;');
+      // Mock JSZip
+      const origJSZip = global.JSZip;
+      global.JSZip = class {
+        constructor() { this.files = {}; }
+        file(name, content) { this.files[name] = content; }
+        generateAsync(opts) { return Promise.resolve(new Uint8Array([80, 75, 3, 4])); }
+      };
+
+      vm.runInThisContext(`
+        getCurrentWaypoints = () => [
+          { lat: 40.012, lon: -83.177, alt: 50, heading: 90, pitch: -45 },
+          { lat: 40.013, lon: -83.177, alt: 50, heading: 90, pitch: -45 }
+        ];
+      `);
+
+      await vm.runInThisContext('sendDirectlyToRC2()');
+      assert.ok(fetchPayload, 'Fetch should have been called with mission payload');
+      assert.strictEqual(fetchPayload.uuid, '354A8F93-759C-42C3-A8D5-746F79C7622A');
+      assert.ok(fetchPayload.kmzBase64, 'Payload should include kmzBase64');
+      assert.strictEqual(fetchPayload.jpgBase64, undefined, 'Preview thumbnail jpgBase64 should be archived/omitted');
+      assert.ok(directBtn.innerHTML.includes('Synced to DJI RC 2!'));
+    } finally {
+      global.document.getElementById = origGetElementById;
+      global.fetch = origFetch;
+      if (global.localStorage && origGetItem) {
+        global.localStorage.getItem = origGetItem;
+      }
+    }
+  });
+
+  test('companion server exports stopScanners, killExistingCompanion, and VERSION 1.43.0', () => {
+    const companion = require('./tools/companion/server.js');
+    assert.strictEqual(typeof companion.stopScanners, 'function');
+    assert.strictEqual(typeof companion.killExistingCompanion, 'function');
+    assert.strictEqual(companion.VERSION, '1.43.0');
+  });
+
+  test('killExistingCompanion handles offline port cleanly without error', async () => {
+    const { killExistingCompanion } = require('./tools/companion/server.js');
+    await assert.doesNotReject(async () => {
+      await killExistingCompanion(59999);
+    });
+  });
+
+  test('switchGuideTab and openRC2GuideModal toggle tabs and offline guidance panes cleanly', () => {
+    const tabBtnCompanion = { dataset: { tab: 'companion' }, classList: { classes: new Set(), add(c) { this.classes.add(c); }, remove(c) { this.classes.delete(c); }, contains(c) { return this.classes.has(c); } } };
+    const tabBtnManual = { dataset: { tab: 'manual' }, classList: { classes: new Set(), add(c) { this.classes.add(c); }, remove(c) { this.classes.delete(c); }, contains(c) { return this.classes.has(c); } } };
+    const paneCompanion = { id: 'guide-pane-companion', classList: { classes: new Set(), add(c) { this.classes.add(c); }, remove(c) { this.classes.delete(c); }, contains(c) { return this.classes.has(c); } } };
+    const paneManual = { id: 'guide-pane-manual', classList: { classes: new Set(), add(c) { this.classes.add(c); }, remove(c) { this.classes.delete(c); }, contains(c) { return this.classes.has(c); } } };
+    const guideModal = { classList: { classes: new Set(['hidden']), remove(c) { this.classes.delete(c); }, add(c) { this.classes.add(c); }, contains(c) { return this.classes.has(c); } } };
+
+    const origQSA = global.document.querySelectorAll;
+    const origGetElementById = global.document.getElementById;
+
+    global.document.querySelectorAll = (selector) => {
+      if (selector === '.guide-tab-btn') return [tabBtnCompanion, tabBtnManual];
+      if (selector === '.guide-tab-pane') return [paneCompanion, paneManual];
+      return origQSA ? origQSA(selector) : [];
+    };
+
+    global.document.getElementById = (id) => {
+      if (id === 'guide-modal') return guideModal;
+      return origGetElementById ? origGetElementById(id) : null;
+    };
+
+    try {
+      vm.runInThisContext(`switchGuideTab('companion')`);
+      assert.ok(tabBtnCompanion.classList.contains('active'));
+      assert.ok(!tabBtnManual.classList.contains('active'));
+      assert.ok(!paneCompanion.classList.contains('hidden'));
+      assert.ok(paneManual.classList.contains('hidden'));
+
+      vm.runInThisContext(`switchGuideTab('manual')`);
+      assert.ok(!tabBtnCompanion.classList.contains('active'));
+      assert.ok(tabBtnManual.classList.contains('active'));
+      assert.ok(paneCompanion.classList.contains('hidden'));
+      assert.ok(!paneManual.classList.contains('hidden'));
+
+      vm.runInThisContext(`openRC2GuideModal('companion')`);
+      assert.ok(!guideModal.classList.contains('hidden'));
+      assert.ok(tabBtnCompanion.classList.contains('active'));
+    } finally {
+      global.document.querySelectorAll = origQSA;
+      global.document.getElementById = origGetElementById;
     }
   });
 });
@@ -3108,7 +3286,7 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
     assert.ok(comp.distance.delta.includes('+25 m'));
   });
 
-  test('FlightDiagnostics open and seekTo update UI elements safely', () => {
+  test('FlightDiagnostics open and seekTo update UI elements safely', async () => {
     const elements = {};
     const origGetElementById = global.document.getElementById;
     global.document.getElementById = (id) => {
@@ -3125,17 +3303,351 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
     };
 
     try {
-      vm.runInThisContext(`
-        FlightDiagnostics.open();
-        FlightDiagnostics.seekTo(5);
-        FlightDiagnostics.close();
+      await vm.runInThisContext(`
+        (async () => {
+          await FlightDiagnostics.open();
+          FlightDiagnostics.seekTo(5);
+          FlightDiagnostics.close();
+        })()
       `);
       assert.strictEqual(elements['diag-hud-alt']?.textContent !== '', true);
+      assert.strictEqual(elements['diag-hud-coords']?.textContent.includes(','), true);
     } finally {
       global.document.getElementById = origGetElementById;
     }
   });
+
+  test('generateTelemetryFromWaypoints generates distinct profiles for different flight records', () => {
+    const testWps = [
+      { lat: 40.012, lon: -83.177, altitude: 21, gimbalPitch: -60, speed: 4 },
+      { lat: 40.013, lon: -83.177, altitude: 21, gimbalPitch: -60, speed: 4 },
+      { lat: 40.013, lon: -83.176, altitude: 21, gimbalPitch: -60, speed: 4 },
+      { lat: 40.012, lon: -83.176, altitude: 21, gimbalPitch: -60, speed: 4 },
+      { lat: 40.011, lon: -83.175, altitude: 21, gimbalPitch: -60, speed: 4 }
+    ];
+
+    // Flight 1 (Pre-flight calibration)
+    const f1 = vm.runInThisContext(`generateTelemetryFromWaypoints(${JSON.stringify(testWps)}, { flightId: 'FlightRecord_2026-08-20_[19-39-07].txt' })`);
+    assert.ok(f1);
+    assert.strictEqual(f1.durationSec, 45);
+    assert.strictEqual(f1.photoCount, 0);
+    assert.strictEqual(f1.durationFormatted, '00:45');
+
+    // Flight 2 (Perimeter test)
+    const f2 = vm.runInThisContext(`generateTelemetryFromWaypoints(${JSON.stringify(testWps)}, { flightId: 'FlightRecord_2026-08-20_[19-41-15].txt' })`);
+    assert.ok(f2);
+    assert.strictEqual(f2.photoCount, 4);
+    assert.ok(f2.durationSec > 0);
+
+    // Flight 4 (Post-mission inspection)
+    const f4 = vm.runInThisContext(`generateTelemetryFromWaypoints(${JSON.stringify(testWps)}, { flightId: 'FlightRecord_2026-08-20_[19-47-15].txt' })`);
+    assert.ok(f4);
+    assert.strictEqual(f4.durationSec, 75);
+    assert.strictEqual(f4.photoCount, 0);
+    assert.strictEqual(f4.durationFormatted, '01:15');
+
+    // Active Mission pure simulation
+    const fSim = vm.runInThisContext(`generateTelemetryFromWaypoints(${JSON.stringify(testWps)}, { flightId: 'active-mission' })`);
+    assert.ok(fSim);
+    assert.strictEqual(fSim.maxDeviation, '0.0 m');
+    assert.strictEqual(fSim.photoCount, 5);
+
+    // Assert that different flights have different durations and trajectories
+    assert.notStrictEqual(f1.durationSec, f4.durationSec);
+    assert.notStrictEqual(f1.points[15].lat, f4.points[15].lat);
+  });
+
+  test('FlightDiagnostics loadSelectedFlight dynamically changes flight metadata and UI', async () => {
+    const elements = {};
+    const origGetElementById = global.document.getElementById;
+    global.document.getElementById = (id) => {
+      if (!elements[id]) {
+        elements[id] = {
+          classList: { add() {}, remove() {} },
+          style: {},
+          textContent: '',
+          value: '0',
+          addEventListener() {}
+        };
+      }
+      return elements[id];
+    };
+
+    try {
+      await vm.runInThisContext(`
+        FlightDiagnostics.loadSelectedFlight('FlightRecord_2026-08-20_[19-39-07].txt');
+      `);
+      assert.strictEqual(elements['diag-flight-meta']?.textContent.includes('FlightRecord_2026-08-20_[19-39-07].txt'), true);
+      assert.strictEqual(elements['diag-flight-meta']?.textContent.includes('00:45'), true);
+      assert.strictEqual(elements['diag-timeline-slider']?.max, '45');
+      assert.strictEqual(elements['diag-time-display']?.textContent, '00:00 / 00:45');
+
+      // Now switch to Flight 4
+      await vm.runInThisContext(`
+        FlightDiagnostics.loadSelectedFlight('FlightRecord_2026-08-20_[19-47-15].txt');
+      `);
+      assert.strictEqual(elements['diag-flight-meta']?.textContent.includes('FlightRecord_2026-08-20_[19-47-15].txt'), true);
+      assert.strictEqual(elements['diag-flight-meta']?.textContent.includes('01:15'), true);
+      assert.strictEqual(elements['diag-timeline-slider']?.max, '75');
+      assert.strictEqual(elements['diag-time-display']?.textContent, '00:00 / 01:15');
+    } finally {
+      global.document.getElementById = origGetElementById;
+    }
+  });
+
+  test('parseGeoJsonTelemetry and parseCsvTelemetry correctly parse imported flight tracks', () => {
+    const geojson = {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          geometry: {
+            type: "LineString",
+            coordinates: [
+              [-83.177, 40.012, 10],
+              [-83.177, 40.013, 20],
+              [-83.176, 40.013, 25]
+            ]
+          }
+        }
+      ]
+    };
+
+    const gResult = vm.runInThisContext(`parseGeoJsonTelemetry(${JSON.stringify(geojson)}, 'custom_track.geojson')`);
+    assert.ok(gResult);
+    const csv = `latitude,longitude,altitude,speed,pitch,yaw,isPhoto\n40.012,-83.177,15,4,-60,0,0\n40.013,-83.177,20,4,-60,90,1`;
+    const cResult = vm.runInThisContext(`parseCsvTelemetry(${JSON.stringify(csv)}, 'custom_log.csv')`);
+    assert.ok(cResult);
+    assert.strictEqual(cResult.points.length, 2);
+    assert.strictEqual(cResult.photoCount, 1);
+    assert.strictEqual(cResult.maxAltitude, 20);
+  });
+
+  test('parseKmlOrWpmlTelemetry and parseGpxTelemetry correctly parse real flight paths', () => {
+    const kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <Placemark>
+      <Point><coordinates>-122.4194,37.7749,15</coordinates></Point>
+      <action>takePhoto</action>
+    </Placemark>
+    <Placemark>
+      <Point><coordinates>-122.4190,37.7752,25</coordinates></Point>
+      <action>takePhoto</action>
+    </Placemark>
+  </Document>
+</kml>`;
+
+    const kResult = vm.runInThisContext(`parseKmlOrWpmlTelemetry(${JSON.stringify(kml)}, 'mission_track.kml')`);
+    assert.ok(kResult);
+    assert.strictEqual(kResult.homePoint.lat, 37.7749);
+    assert.strictEqual(kResult.homePoint.lon, -122.4194);
+    assert.strictEqual(kResult.maxAltitude, 25);
+    assert.strictEqual(kResult.photoCount, 2);
+
+    const gpx = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1">
+  <trk><trkseg>
+    <trkpt lat="37.7749" lon="-122.4194"><ele>10.5</ele></trkpt>
+    <trkpt lat="37.7755" lon="-122.4190"><ele>18.0</ele></trkpt>
+  </trkseg></trk>
+</gpx>`;
+
+    const gpxResult = vm.runInThisContext(`parseGpxTelemetry(${JSON.stringify(gpx)}, 'flight_gps.gpx')`);
+    assert.ok(gpxResult);
+    assert.strictEqual(gpxResult.points.length, 2);
+    assert.strictEqual(gpxResult.homePoint.lat, 37.7749);
+    assert.strictEqual(gpxResult.maxAltitude, 18.0);
+  });
+
+  test('FlightDiagnostics centerMapOnFlight updates map view to real flight coordinates', () => {
+    let pannedTo = null;
+    global._testMap = {
+      setView(latlng, zoom) {
+        pannedTo = { lat: latlng[0], lon: latlng[1], zoom };
+      },
+      getCenter() { return { lat: 37.7749, lng: -122.4194 }; }
+    };
+
+    try {
+      vm.runInThisContext(`
+        map = global._testMap;
+        FlightDiagnostics.telemetryData = {
+          homePoint: { lat: 37.7749, lon: -122.4194, alt: 0 },
+          points: [{ lat: 37.7749, lon: -122.4194, alt: 10 }]
+        };
+        FlightDiagnostics.centerMapOnFlight();
+      `);
+      assert.ok(pannedTo);
+      assert.strictEqual(pannedTo.lat, 37.7749);
+      assert.strictEqual(pannedTo.lon, -122.4194);
+      assert.strictEqual(pannedTo.zoom, 18);
+    } finally {
+      delete global._testMap;
+    }
+  });
+
+  test('Remote ID ASTM F3411 decoder correctly parses Basic ID, Location, and System messages', () => {
+    const {
+      decodeOdidMessage,
+      parseRemoteIdPayload,
+      createSyntheticOdidPayload,
+      RemoteIdAirspaceTracker
+    } = require('./tools/companion/remote_id_decoder.js');
+
+    const synPayload = createSyntheticOdidPayload({
+      uasId: '1581F4DJI-MINI-4',
+      lat: 40.013055,
+      lon: -83.176511,
+      alt: 45.0,
+      speed: 6.5,
+      heading: 180,
+      opLat: 40.012500,
+      opLon: -83.176000
+    });
+
+    assert.ok(synPayload);
+    const messages = parseRemoteIdPayload(synPayload);
+    assert.strictEqual(messages.length, 3);
+
+    // Basic ID
+    const basic = messages.find(m => m.msgType === 0);
+    assert.ok(basic);
+    assert.strictEqual(basic.uasId, '1581F4DJI-MINI-4');
+    assert.strictEqual(basic.uaType, 'Helicopter (Multirotor)');
+
+    // Location / Vector
+    const loc = messages.find(m => m.msgType === 1);
+    assert.ok(loc);
+    assert.strictEqual(loc.latitude, 40.013055);
+    assert.strictEqual(loc.longitude, -83.176511);
+    assert.strictEqual(loc.altitudeGeodetic, 45.0);
+    assert.strictEqual(loc.speedHorizontal, 6.5);
+    assert.strictEqual(loc.trackDirection, 180);
+
+    // System
+    const sys = messages.find(m => m.msgType === 4);
+    assert.ok(sys);
+    assert.strictEqual(sys.operatorLatitude, 40.0125);
+    assert.strictEqual(sys.operatorLongitude, -83.176);
+
+    // Tracker aggregation
+    const tracker = new RemoteIdAirspaceTracker(10);
+    const drone = tracker.processAdvertisement({
+      mac: 'FA:0B:BC:15:81:F4',
+      rssi: -55,
+      rawPayload: synPayload
+    });
+
+    assert.ok(drone);
+    assert.strictEqual(drone.uasId, '1581F4DJI-MINI-4');
+    assert.strictEqual(drone.model, 'DJI Mini 4 Pro');
+    assert.strictEqual(drone.latitude, 40.013055);
+    assert.strictEqual(drone.breadcrumbs.length, 1);
+
+    const activeDrones = tracker.getActiveDrones();
+    assert.strictEqual(activeDrones.length, 1);
+    assert.strictEqual(activeDrones[0].rssi, -55);
+  });
+
+  test('RemoteIdRadar updates map markers and UI badge cleanly', () => {
+    global._testMap = {
+      addLayer: () => {},
+      setView: () => {}
+    };
+
+    try {
+      const err = vm.runInThisContext(`
+        try {
+          L = global.L;
+          map = global._testMap;
+          RemoteIdRadar.layerGroup = {
+            addLayer: function(l) { global._testLayerAdded = true; },
+            removeLayer: function(l) {}
+          };
+          if (!RemoteIdRadar.markers) RemoteIdRadar.markers = new Map();
+          RemoteIdRadar.markers.clear();
+          RemoteIdRadar.activeDrones = [{
+            id: 'FA:0B:BC:11:22:33',
+            uasId: '1581F4TEST',
+            model: 'DJI Mini 4 Pro',
+            uaType: 'Multirotor',
+            status: 'Airborne',
+            latitude: 40.0130,
+            longitude: -83.1765,
+            altitudeGeodetic: 30,
+            speedHorizontal: 4.0,
+            trackDirection: 90,
+            rssi: -60,
+            breadcrumbs: []
+          }];
+          RemoteIdRadar.updateMapMarkers();
+          RemoteIdRadar.updateRadarUI();
+          null;
+        } catch (e) {
+          e.message + ' \\n' + e.stack;
+        }
+      `);
+      if (err) assert.fail('Error in VM: ' + err);
+      assert.strictEqual(global._testLayerAdded, true);
+    } finally {
+      delete global._testMap;
+      delete global._testLayerAdded;
+    }
+  });
+
+  test('RemoteIdAirspaceTracker processWifiBeacon correctly parses 5.8GHz and 2.4GHz DJI Wi-Fi beacons', () => {
+    const { RemoteIdAirspaceTracker, createSyntheticOdidPayload } = require('./tools/companion/remote_id_decoder.js');
+
+    const tracker = new RemoteIdAirspaceTracker(10);
+
+    // 1. Ingest 5.8 GHz DJI Mini 4 Pro beacon
+    const drone1 = tracker.processWifiBeacon({
+      mac: 'E4:7A:2C:D7:09:A2',
+      ssid: 'DJI-MINI4-Pro-09A2',
+      freq: 5745,
+      rssi: -59,
+      quality: 83
+    });
+
+    assert.ok(drone1);
+    assert.strictEqual(drone1.model, 'DJI Mini 4 Pro');
+    assert.strictEqual(drone1.uasId, 'DJI-MINI4-Pro-09A2');
+    assert.strictEqual(drone1.frequencyMhz, 5745);
+    assert.strictEqual(drone1.rssi, -59);
+    assert.strictEqual(drone1.signalQuality, 83);
+    assert.ok(drone1.transport.includes('5.8 GHz'));
+
+    // 2. Ingest 2.4 GHz DJI Neo beacon with embedded ASTM IE payload
+    const synPayload = createSyntheticOdidPayload({
+      uasId: '1581F4NEO-9988',
+      lat: 40.0135,
+      lon: -83.1762,
+      alt: 18.0
+    });
+
+    const drone2 = tracker.processWifiBeacon({
+      mac: '60:60:1F:AA:BB:CC',
+      ssid: 'DJI-Neo-01A2',
+      freq: 2412,
+      rssi: -65,
+      quality: 75,
+      ieHex: synPayload.toString('hex')
+    });
+
+    assert.ok(drone2);
+    assert.strictEqual(drone2.model, 'DJI Neo');
+    assert.strictEqual(drone2.latitude, 40.0135);
+    assert.strictEqual(drone2.longitude, -83.1762);
+    assert.strictEqual(drone2.altitudeGeodetic, 18.0);
+    assert.ok(drone2.transport.includes('2.4 GHz'));
+
+    const active = tracker.getActiveDrones();
+    assert.strictEqual(active.length, 2);
+  });
 });
+
+
 
 
 

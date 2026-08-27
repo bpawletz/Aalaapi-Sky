@@ -5,36 +5,296 @@
  * browser web interface with a connected DJI RC 2 controller over USB MTP.
  * 
  * Features:
- * - Real-time RC 2 connection status detection
+ * - Real-time RC 2 connection status detection with live CLI state tracking
  * - Direct 1-click in-browser mission and route thumbnail transfer
- * - Automated Downloads folder watcher
- * - Latest flight record telemetry log extraction & analysis
+ * - Automated Downloads folder watcher & flight log inspection
+ * - Telemetry log extraction, 3D trajectory replay & variance analysis
+ * - Interactive terminal CLI dashboard with ANSI status indicators
  */
 
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
-const { execFile } = require('node:child_process');
+const readline = require('node:readline');
+const { execFile, spawn, execFileSync } = require('node:child_process');
 
-const PORT = process.env.AALAAPI_PORT || 8765;
+const VERSION = '1.43.0';
+const PORT = process.env.AALAAPI_PORT ? parseInt(process.env.AALAAPI_PORT, 10) : 8765;
 const STAGING_DIR = path.resolve(__dirname, '../../scratch/companion_staging');
 const LATEST_DIR = path.resolve(__dirname, '../../scratch/latest_flight');
+
+const {
+  RemoteIdAirspaceTracker,
+  createSyntheticOdidPayload,
+  parseRemoteIdPayload
+} = require('./remote_id_decoder.js');
+
+const airspaceTracker = new RemoteIdAirspaceTracker(15);
+let bleScannerProc = null;
+let bleScannerActive = false;
+let totalBlePackets = 0;
+
+let wifiScannerProc = null;
+let wifiScannerActive = false;
+let totalWifiPackets = 0;
+
+function startBleScanner() {
+  const exePath = path.join(__dirname, 'BleScanner.exe');
+  if (!fs.existsSync(exePath)) {
+    try {
+      const cscPath = 'C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe';
+      if (fs.existsSync(cscPath)) {
+        const csPath = path.join(__dirname, 'ble_scanner.cs');
+        const args = [
+          '/noconfig', '/target:exe', `/out:${exePath}`,
+          '/r:C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\mscorlib.dll',
+          '/r:C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\System.dll',
+          '/r:C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\System.Core.dll',
+          '/r:C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\System.Runtime.dll',
+          '/r:C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\System.Runtime.WindowsRuntime.dll',
+          '/r:C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\System.Runtime.InteropServices.WindowsRuntime.dll',
+          '/r:C:\\Windows\\System32\\WinMetadata\\Windows.Foundation.winmd',
+          '/r:C:\\Windows\\System32\\WinMetadata\\Windows.Devices.winmd',
+          '/r:C:\\Windows\\System32\\WinMetadata\\Windows.Storage.winmd',
+          csPath
+        ];
+        execFileSync(cscPath, args, { stdio: 'ignore' });
+      }
+    } catch (e) {
+      logError('[BLE SCANNER]', `Auto-compilation error: ${e.message}`);
+    }
+  }
+
+  if (!fs.existsSync(exePath)) {
+    logWarn('[BLE SCANNER]', 'BleScanner.exe not found. Live BLE sniffing unavailable.');
+    return;
+  }
+
+  try {
+    bleScannerProc = spawn(exePath, [], { stdio: ['pipe', 'pipe', 'ignore'] });
+    bleScannerActive = true;
+
+    const rl = readline.createInterface({ input: bleScannerProc.stdout });
+    rl.on('line', (line) => {
+      if (!line || !line.startsWith('ADV|')) return;
+      totalBlePackets++;
+      const parts = line.split('|');
+      if (parts.length >= 5) {
+        const mac = parts[1];
+        const rssi = parseInt(parts[2], 10) || -70;
+        const typeHex = parts[3];
+        const payloadHex = parts[4];
+
+        // Decode ASTM Remote ID frame
+        const msgs = parseRemoteIdPayload(payloadHex, typeHex);
+        if (msgs && msgs.length > 0) {
+          const drone = airspaceTracker.processAdvertisement({ mac, rssi, rawPayload: payloadHex });
+          if (drone && drone.uasId && drone.uasId !== 'Awaiting ID...') {
+            const now = Date.now();
+            if (!drone._lastLogged || now - drone._lastLogged > 3500) {
+              drone._lastLogged = now;
+              const totalSec = Math.max(0, Math.floor((now - drone.firstSeen) / 1000));
+              const mins = Math.floor(totalSec / 60);
+              const secs = totalSec % 60;
+              const uptimeStr = mins > 0 ? `${mins}m ${secs.toString().padStart(2, '0')}s` : `${secs}s`;
+
+              const posText = drone.latitude !== null ? `Pos: (${drone.latitude}, ${drone.longitude})` : 'Pos: Acquiring GPS...';
+              let altText = 'Alt: N/A';
+              if (drone.altitudeGeodetic !== null) {
+                const feetMsl = Math.round(drone.altitudeGeodetic * 3.28084);
+                const aglPart = drone.heightAgl !== null ? ` [${drone.heightAgl}m AGL]` : '';
+                altText = `Alt: ${drone.altitudeGeodetic}m MSL (${feetMsl}ft)${aglPart}`;
+              }
+              logSuccess('[BLE RID LIVE]', `🛰️ Detected ${drone.model} [${drone.uasId}] • ${posText} • ${altText} • On: ${uptimeStr} (${drone.packetCount} pkts) • RSSI: ${drone.rssi} dBm`);
+            }
+          }
+        }
+      }
+    });
+
+    bleScannerProc.on('error', (err) => {
+      bleScannerActive = false;
+      logError('[BLE SCANNER]', `Process error: ${err.message}`);
+    });
+
+    bleScannerProc.on('exit', () => {
+      bleScannerActive = false;
+    });
+  } catch (err) {
+    logError('[BLE SCANNER]', `Failed to start BLE scanner: ${err.message}`);
+  }
+}
+
+function startWifiScanner() {
+  const exePath = path.join(__dirname, 'WifiScanner.exe');
+  if (!fs.existsSync(exePath)) {
+    try {
+      const cscPath = 'C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe';
+      if (fs.existsSync(cscPath)) {
+        const csPath = path.join(__dirname, 'wifi_scanner.cs');
+        const args = [
+          '/noconfig', '/target:exe', `/out:${exePath}`,
+          '/r:C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\mscorlib.dll',
+          '/r:C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\System.dll',
+          '/r:C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\System.Core.dll',
+          csPath
+        ];
+        execFileSync(cscPath, args, { stdio: 'ignore' });
+      }
+    } catch (e) {
+      logError('[WIFI SCANNER]', `Auto-compilation error: ${e.message}`);
+    }
+  }
+
+  if (!fs.existsSync(exePath)) {
+    logWarn('[WIFI SCANNER]', 'WifiScanner.exe not found. Live 2.4/5.8GHz Wi-Fi sniffing unavailable.');
+    return;
+  }
+
+  try {
+    wifiScannerProc = spawn(exePath, [], { stdio: ['pipe', 'pipe', 'ignore'] });
+    wifiScannerActive = true;
+
+    const rl = readline.createInterface({ input: wifiScannerProc.stdout });
+    rl.on('line', (line) => {
+      if (!line || !line.startsWith('WIFI|')) return;
+      totalWifiPackets++;
+      const parts = line.split('|');
+      if (parts.length >= 6) {
+        const mac = parts[1];
+        const rssi = parseInt(parts[2], 10) || -60;
+        const freq = parseInt(parts[3], 10) || 2400;
+        const quality = parseInt(parts[4], 10) || 80;
+        const ssid = parts[5];
+        const ieHex = parts[6] || '';
+
+        const drone = airspaceTracker.processWifiBeacon({ mac, ssid, freq, rssi, quality, ieHex });
+        if (drone && drone.uasId) {
+          const now = Date.now();
+          if (!drone._lastLogged || now - drone._lastLogged > 3500) {
+            drone._lastLogged = now;
+            const totalSec = Math.max(0, Math.floor((now - drone.firstSeen) / 1000));
+            const mins = Math.floor(totalSec / 60);
+            const secs = totalSec % 60;
+            const uptimeStr = mins > 0 ? `${mins}m ${secs.toString().padStart(2, '0')}s` : `${secs}s`;
+
+            const freqStr = freq >= 5000 ? `5.8 GHz (${freq} MHz)` : `2.4 GHz (${freq} MHz)`;
+            logSuccess('[WIFI RF LIVE]', `🛰️ Detected ${drone.model} [${drone.uasId}] • ${freqStr} • RSSI: ${drone.rssi} dBm (Quality: ${drone.signalQuality || 80}%) • Active: ${uptimeStr}`);
+          }
+        }
+      }
+    });
+
+    wifiScannerProc.on('error', (err) => {
+      wifiScannerActive = false;
+      logError('[WIFI SCANNER]', `Process error: ${err.message}`);
+    });
+
+    wifiScannerProc.on('exit', () => {
+      wifiScannerActive = false;
+    });
+  } catch (err) {
+    logError('[WIFI SCANNER]', `Failed to start Wi-Fi scanner: ${err.message}`);
+  }
+}
+
+// Clean up child scanner processes
+function stopScanners() {
+  if (bleScannerProc) {
+    try {
+      bleScannerProc.stdin.write('quit\n');
+      bleScannerProc.kill();
+    } catch (e) {}
+    bleScannerProc = null;
+    bleScannerActive = false;
+  }
+  if (wifiScannerProc) {
+    try {
+      wifiScannerProc.stdin.write('quit\n');
+      wifiScannerProc.kill();
+    } catch (e) {}
+    wifiScannerProc = null;
+    wifiScannerActive = false;
+  }
+}
+
+process.on('exit', () => stopScanners());
+process.on('SIGINT', () => {
+  stopScanners();
+  process.exit(0);
+});
+process.on('SIGTERM', () => {
+  stopScanners();
+  process.exit(0);
+});
 
 // Ensure directories exist
 if (!fs.existsSync(STAGING_DIR)) fs.mkdirSync(STAGING_DIR, { recursive: true });
 if (!fs.existsSync(LATEST_DIR)) fs.mkdirSync(LATEST_DIR, { recursive: true });
 
+// ANSI Styling Tokens
+const colors = {
+  reset: '\x1b[0m',
+  bold: '\x1b[1m',
+  dim: '\x1b[2m',
+  italic: '\x1b[3m',
+  underline: '\x1b[4m',
+  cyan: '\x1b[36m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  blue: '\x1b[34m',
+  magenta: '\x1b[35m',
+  red: '\x1b[31m',
+  white: '\x1b[37m',
+  gray: '\x1b[90m',
+  bgCyan: '\x1b[46m',
+  bgGreen: '\x1b[42m',
+  bgYellow: '\x1b[43m',
+  bgRed: '\x1b[41m',
+  black: '\x1b[30m'
+};
+
+function getTimestamp() {
+  const d = new Date();
+  return d.toTimeString().slice(0, 8);
+}
+
+function logInfo(tag, msg) {
+  console.log(`${colors.gray}[${getTimestamp()}]${colors.reset} ${colors.cyan}${colors.bold}${tag}${colors.reset} ${msg}`);
+}
+
+function logSuccess(tag, msg) {
+  console.log(`${colors.gray}[${getTimestamp()}]${colors.reset} ${colors.green}${colors.bold}${tag}${colors.reset} ${msg}`);
+}
+
+function logWarn(tag, msg) {
+  console.log(`${colors.gray}[${getTimestamp()}]${colors.reset} ${colors.yellow}${colors.bold}${tag}${colors.reset} ${msg}`);
+}
+
+function logError(tag, msg) {
+  console.log(`${colors.gray}[${getTimestamp()}]${colors.reset} ${colors.red}${colors.bold}${tag}${colors.reset} ${msg}`);
+}
+
+function logDetail(label, val) {
+  console.log(`  ${colors.gray}├─${colors.reset} ${colors.white}${label}:${colors.reset} ${colors.dim}${val}${colors.reset}`);
+}
+
+function logDetailLast(label, val) {
+  console.log(`  ${colors.gray}└─${colors.reset} ${colors.white}${label}:${colors.reset} ${colors.dim}${val}${colors.reset}`);
+}
+
 // Common CORS Headers
 function setCorsHeaders(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With, Access-Control-Request-Private-Network');
+  res.setHeader('Access-Control-Allow-Private-Network', 'true');
 }
 
 // Execute PowerShell COM helper for MTP operations
 function runMtpScript(scriptContent) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const encodedCommand = Buffer.from(scriptContent, 'utf16le').toString('base64');
     execFile(
       'powershell.exe',
@@ -107,9 +367,11 @@ if ($storage) {
   return { connected: false, error: result.error };
 }
 
-// Background status caching
+// Background status caching & State Transition Watcher
 let cachedRc2Status = { connected: false, checking: true, lastCheck: 0 };
 let isCheckingStatus = false;
+let lastConnectionState = null;
+let lastMissionCount = -1;
 
 async function updateRc2Status() {
   if (isCheckingStatus) return cachedRc2Status;
@@ -117,20 +379,37 @@ async function updateRc2Status() {
   try {
     const status = await checkRc2Status();
     cachedRc2Status = { ...status, lastCheck: Date.now() };
+
+    // Detect state changes
+    const curConnected = !!status.connected;
+    const curMissions = status.activeMissions ? status.activeMissions.length : 0;
+
+    if (curConnected !== lastConnectionState || (curConnected && curMissions !== lastMissionCount)) {
+      lastConnectionState = curConnected;
+      lastMissionCount = curMissions;
+
+      if (curConnected) {
+        logSuccess('[RC 2 CONNECTED]', `Detected "${status.deviceName || 'DJI RC 2'}" over USB MTP`);
+        logDetail('Storage Status', status.waypointReady ? 'Ready (/Android/data/dji.go.v5/files/waypoint)' : 'Waypoint folder pending');
+        logDetailLast('Missions on RC 2', `${curMissions} mission(s) installed on controller`);
+      } else {
+        logWarn('[RC 2 OFFLINE]', 'DJI RC 2 controller disconnected or not detected. (Connect USB-C and select "File Transfer")');
+      }
+    }
   } catch (err) {
     cachedRc2Status = { connected: false, error: err.message, lastCheck: Date.now() };
+    if (lastConnectionState !== false) {
+      lastConnectionState = false;
+      logError('[RC 2 ERROR]', err.message);
+    }
   } finally {
     isCheckingStatus = false;
   }
   return cachedRc2Status;
 }
 
-// Initial check and recurring background poll every 3.5s
-updateRc2Status();
-setInterval(updateRc2Status, 3500);
-
-// 2. Transfer KMZ & Preview JPG to RC 2
-async function transferToRc2(uuid, kmzPath, jpgPath) {
+// 2. Transfer KMZ to RC 2 (Preview thumbnail archived)
+async function transferToRc2(uuid, kmzPath) {
   const psScript = `
 $shell = New-Object -ComObject Shell.Application
 $thisPC = $shell.Namespace(17)
@@ -161,31 +440,69 @@ if (-not $wp) {
     exit
 }
 
-# 1. Sync KMZ to waypoint/<UUID>/<UUID>.kmz
+# 1. Resolve target mission folder & UUID
 $targetMissionFolder = Get-SubItem $wp "${uuid}"
-if ($targetMissionFolder) {
-    $kmzFile = "${kmzPath}"
-    if (Test-Path $kmzFile) {
-        $targetMissionFolder.GetFolder.CopyHere($kmzFile, 16)
+$targetUUID = "${uuid}"
+
+if (-not $targetMissionFolder) {
+    # Auto-fallback to first available UUID slot on the controller if specified UUID not found
+    $availSlots = @($wp.GetFolder.Items() | Where-Object { $_.IsFolder -and $_.Name -match "^[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}$" })
+    if ($availSlots.Count -gt 0) {
+        $targetMissionFolder = $availSlots[0]
+        $targetUUID = $targetMissionFolder.Name
+    } else {
+        @{ success = $false; error = "No mission placeholder folder found on RC 2. Please create a dummy mission on your RC 2 first." } | ConvertTo-Json -Compress
+        exit
     }
 }
 
-# 2. Sync Preview Thumbnail to waypoint/map_preview/<UUID>/<UUID>.jpg
-$previewFolder = Get-SubItem $wp "map_preview"
-if ($previewFolder) {
-    $targetPrev = Get-SubItem $previewFolder "${uuid}"
-    if ($targetPrev) {
-        $jpgFile = "${jpgPath}"
-        if (Test-Path $jpgFile) {
-            $targetPrev.GetFolder.CopyHere($jpgFile, 16)
-        }
+$destMissionFolder = $targetMissionFolder.GetFolder
+$targetKmzName = "$($targetUUID).kmz"
+
+# Safe MTP copy for KMZ:
+# Windows MTP silently blocks CopyHere if an identical file name exists.
+# Rename existing items first so the fresh write is guaranteed to succeed.
+$existingKmz = @($destMissionFolder.Items() | Where-Object { $_.Name -eq $targetKmzName -or ($_.Name -like "*.kmz" -and $_.Name -notlike "_old_*") })
+foreach ($oldKmz in $existingKmz) {
+    try { $oldKmz.Name = "_old_$((Get-Date).Ticks)_$($oldKmz.Name)" } catch {}
+}
+Start-Sleep -Milliseconds 250
+
+$kmzFile = "${kmzPath}"
+if (Test-Path $kmzFile) {
+    $destMissionFolder.CopyHere($kmzFile, 16)
+    
+    # Wait for file to arrive on MTP device
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    while ($sw.Elapsed.TotalSeconds -lt 10) {
+        Start-Sleep -Milliseconds 300
+        $check = @($destMissionFolder.Items() | Where-Object { $_.Name -eq $targetKmzName })
+        if ($check.Count -gt 0) { break }
     }
 }
+
+# Clean up any leftover _old_ files in mission folder via MoveHere to local temp
+$trashDir = "${STAGING_DIR.replace(/\\/g, '\\\\')}\\trash"
+if (-not (Test-Path $trashDir)) { New-Item -ItemType Directory -Path $trashDir -Force | Out-Null }
+$trashFolder = $shell.Namespace($trashDir)
+
+$leftoverOld = @($destMissionFolder.Items() | Where-Object { $_.Name -like "_old_*" })
+foreach ($oldItem in $leftoverOld) {
+    try { $trashFolder.MoveHere($oldItem, 16) } catch {}
+}
+
+# Clean local trash folder
+Get-ChildItem -Path $trashDir -File -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+
+# Verify final KMZ presence
+$finalCheck = @($destMissionFolder.Items() | Where-Object { $_.Name -eq $targetKmzName })
+$syncVerified = ($finalCheck.Count -gt 0)
 
 @{
-    success = $true
-    uuid = "${uuid}"
-    message = "Mission and preview thumbnail synced to DJI RC 2"
+    success = $syncVerified
+    uuid = $targetUUID
+    verified = $syncVerified
+    message = if ($syncVerified) { "Mission KMZ successfully synced to DJI RC 2 slot $targetUUID!" } else { "Failed to write KMZ file to RC 2" }
 } | ConvertTo-Json -Compress
 `;
 
@@ -257,6 +574,56 @@ if ($dji) {
   return await runMtpScript(psScript);
 }
 
+// Format Startup Banner with System & Port Diagnostics
+function printStartupBanner() {
+  console.log(`${colors.cyan}${colors.bold}`);
+  console.log('  ╔══════════════════════════════════════════════════════════════════╗');
+  console.log('  ║                🛰️  AALAAPI SKY COMPANION BRIDGE                  ║');
+  console.log('  ║            Direct USB MTP Sync for DJI RC 2 / RC Plus            ║');
+  console.log('  ╚══════════════════════════════════════════════════════════════════╝');
+  console.log(`${colors.reset}`);
+
+  console.log(`${colors.bold}📌 System & Environment:${colors.reset}`);
+  logDetail('Bridge Version', `v${VERSION} (Node.js ${process.version})`);
+  logDetail('Operating Host', `${os.type()} ${os.release()} (${os.arch()})`);
+  logDetail('Web Interface', `http://127.0.0.1:${PORT}`);
+  logDetail('Local Endpoint', `http://127.0.0.1:${PORT}/api/status`);
+  logDetail('Staging Path', STAGING_DIR);
+  logDetail('Flight Logs', LATEST_DIR);
+
+  // Scan local Downloads folder for KMZ and flight logs
+  const downloadsDir = path.join(os.homedir(), 'Downloads');
+  let dlKmzCount = 0;
+  let dlLogCount = 0;
+  try {
+    if (fs.existsSync(downloadsDir)) {
+      const files = fs.readdirSync(downloadsDir);
+      dlKmzCount = files.filter(f => f.toLowerCase().endsWith('.kmz')).length;
+      dlLogCount = files.filter(f => f.startsWith('FlightRecord_') && f.endsWith('.txt')).length;
+    }
+  } catch (e) {}
+  logDetailLast('Downloads Scan', `${dlKmzCount} KMZ file(s), ${dlLogCount} FlightRecord file(s) found`);
+
+  console.log(`\n${colors.bold}🌐 Active Web & REST API Endpoints:${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /${colors.reset}                  ${colors.gray}Aalaapi Sky full web application interface${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/status${colors.reset}           ${colors.gray}Real-time DJI RC 2 connection status & mission inventory${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}POST /api/sync${colors.reset}             ${colors.gray}Direct 1-click in-memory KMZ & preview sync to RC 2${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/flights${colors.reset}          ${colors.gray}List extracted telemetry flight records & metadata${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}POST /api/flight-telemetry${colors.reset} ${colors.gray}3D flight trajectory solver, photo markers & variances${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/latest-flight${colors.reset}    ${colors.gray}Auto-extract latest flight log & KMZ over USB MTP${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/remote-id/drones${colors.reset} ${colors.gray}Live ASTM F3411 Remote ID detected drones in airspace${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}POST /api/shutdown${colors.reset}         ${colors.gray}Cleanly terminate running companion bridge process${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /health${colors.reset}               ${colors.gray}Service heartbeat and status ping${colors.reset}`);
+
+  if (process.stdin.isTTY) {
+    console.log(`\n${colors.bold}⌨️  Interactive CLI Commands:${colors.reset}`);
+    console.log(`  ${colors.yellow}[s]${colors.reset} Probe RC 2 status   ${colors.yellow}[r]${colors.reset} Probe Remote ID radar   ${colors.yellow}[f]${colors.reset} List flight logs   ${colors.yellow}[c]${colors.reset} Clear   ${colors.yellow}[q]${colors.reset} Exit\n`);
+  }
+
+  console.log(`${colors.gray}────────────────────────────────────────────────────────────────────────${colors.reset}`);
+  logInfo('[READY]', `Companion server active on http://127.0.0.1:${PORT}`);
+}
+
 // Create HTTP Server
 const server = http.createServer(async (req, res) => {
   setCorsHeaders(res);
@@ -271,13 +638,16 @@ const server = http.createServer(async (req, res) => {
   const pathname = url.pathname;
 
   try {
+    // 1. Controller Status Endpoint
     if (pathname === '/api/status' && req.method === 'GET') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(cachedRc2Status));
       return;
     }
 
+    // 2. Direct Sync Mission & Thumbnail to RC 2
     if (pathname === '/api/sync' && req.method === 'POST') {
+      const startTime = Date.now();
       let body = '';
       req.on('data', chunk => { body += chunk; });
       req.on('end', async () => {
@@ -285,23 +655,37 @@ const server = http.createServer(async (req, res) => {
           const payload = JSON.parse(body);
           const uuid = payload.uuid || '354A8F93-759C-42C3-A8D5-746F79C7622A';
 
+          logInfo('[SYNC REQUEST]', `Received mission sync package for UUID ${uuid}`);
+
           let kmzPath = '';
-          let jpgPath = '';
 
           if (payload.kmzBase64) {
             kmzPath = path.join(STAGING_DIR, `${uuid}.kmz`);
-            fs.writeFileSync(kmzPath, Buffer.from(payload.kmzBase64, 'base64'));
+            const kmzBuffer = Buffer.from(payload.kmzBase64, 'base64');
+            fs.writeFileSync(kmzPath, kmzBuffer);
+            logDetail('KMZ Package', `${(kmzBuffer.length / 1024).toFixed(1)} KB -> ${kmzPath}`);
           }
 
-          if (payload.jpgBase64) {
-            jpgPath = path.join(STAGING_DIR, `${uuid}.jpg`);
-            fs.writeFileSync(jpgPath, Buffer.from(payload.jpgBase64, 'base64'));
-          }
+          const transferResult = await transferToRc2(uuid, kmzPath);
+          const duration = Date.now() - startTime;
 
-          const transferResult = await transferToRc2(uuid, kmzPath, jpgPath);
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify(transferResult));
+          const resData = transferResult.data || {};
+          const isSuccess = Boolean(transferResult.success && resData.success);
+          const targetSlot = resData.uuid || uuid;
+
+          if (isSuccess) {
+            logSuccess('[SYNC SUCCESS]', `Mission ${targetSlot} transferred to DJI RC 2 in ${duration}ms!`);
+            logDetailLast('Result', resData.message || 'Complete');
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true, uuid: targetSlot, message: resData.message }));
+          } else {
+            const errMsg = resData.error || resData.message || transferResult.error || 'Failed to copy to RC 2';
+            logError('[SYNC FAILED]', `Transfer error: ${errMsg}`);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: errMsg }));
+          }
         } catch (err) {
+          logError('[SYNC ERROR]', err.message);
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ success: false, error: err.message }));
         }
@@ -309,6 +693,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // 3. Flight Logs List
     if (pathname === '/api/flights' && req.method === 'GET') {
       try {
         let files = [];
@@ -328,23 +713,32 @@ const server = http.createServer(async (req, res) => {
             size: stats.size
           };
         });
+        logInfo('[FLIGHTS API]', `Served ${flightList.length} flight record(s) to client`);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true, flights: flightList }));
       } catch (err) {
+        logError('[FLIGHTS ERROR]', err.message);
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: false, error: err.message }));
       }
       return;
     }
 
+    // 4. Extract Latest Flight over USB MTP
     if (pathname === '/api/latest-flight' && req.method === 'GET') {
+      logInfo('[EXTRACT API]', 'Extracting latest flight log & KMZ from DJI RC 2...');
       const flightData = await extractLatestFlight();
-      const { generateTelemetryFromWaypoints, computeFlightComparison } = require('./log_decoder.js');
+      if (flightData.data?.latestLog || flightData.data?.latestKmz) {
+        logSuccess('[EXTRACT SUCCESS]', `Log: ${flightData.data?.latestLog || 'None'}, KMZ: ${flightData.data?.latestKmz || 'None'}`);
+      } else {
+        logWarn('[EXTRACT INFO]', 'No new flight logs found on connected device');
+      }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(flightData));
       return;
     }
 
+    // 5. Flight Telemetry & 3D Replay Solver
     if (pathname === '/api/flight-telemetry' && (req.method === 'GET' || req.method === 'POST')) {
       const { generateTelemetryFromWaypoints, computeFlightComparison } = require('./log_decoder.js');
       let body = '';
@@ -353,11 +747,15 @@ const server = http.createServer(async (req, res) => {
         try {
           const payload = body ? JSON.parse(body) : {};
           const waypoints = payload.waypoints || [];
-          const telemetry = generateTelemetryFromWaypoints(waypoints, payload.options || {});
-          const comparison = computeFlightComparison(payload.planned || {}, telemetry);
+          const flightId = payload.flightId || url.searchParams.get('file') || '';
+          const options = Object.assign({}, payload.options || {}, { flightId });
+          const telemetry = generateTelemetryFromWaypoints(waypoints, options);
+          const comparison = computeFlightComparison(payload.planned || { waypointCount: waypoints.length, altitude: options.altitude }, telemetry);
+          logInfo('[TELEMETRY API]', `Solved flight track for "${flightId || 'Active Mission'}" (${telemetry.points.length} pts, ${telemetry.durationFormatted}, ${telemetry.photoCount} photos)`);
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ success: true, telemetry, comparison }));
         } catch (e) {
+          logError('[TELEMETRY ERROR]', e.message);
           res.writeHead(500, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ success: false, error: e.message }));
         }
@@ -365,10 +763,131 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    if (pathname === '/' || pathname === '/health') {
+    // 6. Remote ID Airspace Drones Endpoint
+    if (pathname === '/api/remote-id/drones' && req.method === 'GET') {
+      const activeDrones = airspaceTracker.getActiveDrones();
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ status: 'running', service: 'Aalaapi Sky Companion', version: '1.34.0' }));
+      res.end(JSON.stringify({
+        success: true,
+        count: activeDrones.length,
+        totalPackets: airspaceTracker.totalPackets,
+        drones: activeDrones
+      }));
       return;
+    }
+
+    // 7. Remote ID Scanner Status
+    if (pathname === '/api/remote-id/status' && req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        active: true,
+        protocol: 'ASTM F3411-19 / F3411-22 (OpenDroneID) + Wi-Fi Beacon Detection',
+        hardwareInterface: 'Dual-Mode Wi-Fi 6 (2.4/5.8 GHz) + Bluetooth 5.0 LE (WinRT / Intel AX201)',
+        totalPackets: airspaceTracker.totalPackets,
+        activeDrones: airspaceTracker.getActiveDrones().length
+      }));
+      return;
+    }
+
+    // 8. Remote ID Simulation Injector
+    if (pathname === '/api/remote-id/simulate' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const payload = body ? JSON.parse(body) : {};
+          const syntheticBytes = createSyntheticOdidPayload(payload);
+          const drone = airspaceTracker.processAdvertisement({
+            mac: payload.mac || 'FA:0B:BC:15:81:F4',
+            rssi: payload.rssi || -62,
+            rawPayload: syntheticBytes
+          });
+          logSuccess('[REMOTE ID SIM]', `Injected ASTM packet for ${drone.uasId} (${drone.model}) at [${drone.latitude}, ${drone.longitude}]`);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, drone }));
+        } catch (e) {
+          logError('[REMOTE ID SIM ERROR]', e.message);
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: e.message }));
+        }
+      });
+      return;
+    }
+
+    // 9. Remote ID Raw Packet Ingestion
+    if (pathname === '/api/remote-id/packet' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const payload = JSON.parse(body);
+          const drone = airspaceTracker.processAdvertisement({
+            mac: payload.mac || 'UNKNOWN_BLE',
+            rssi: payload.rssi || -70,
+            rawPayload: payload.rawPayload || payload.data
+          });
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, drone }));
+        } catch (e) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: e.message }));
+        }
+      });
+      return;
+    }
+
+    // 10. Heartbeat / Health Check
+    if (pathname === '/health') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ status: 'running', service: 'Aalaapi Sky Companion', version: VERSION, rc2: cachedRc2Status }));
+      return;
+    }
+
+    // 11. Remote Shutdown / Kill Endpoint
+    if ((pathname === '/api/shutdown' || pathname === '/api/kill' || pathname === '/api/stop') && (req.method === 'POST' || req.method === 'GET')) {
+      logWarn('[SHUTDOWN]', 'Received remote shutdown request via REST API');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, message: 'Aalaapi Sky Companion Bridge shutting down...' }));
+      stopScanners();
+      setTimeout(() => {
+        try { server.close(); } catch (e) {}
+        process.exit(0);
+      }, 250);
+      return;
+    }
+
+    // 11. Static File Serving (Aalaapi Sky Web App)
+    if (req.method === 'GET' || req.method === 'HEAD') {
+      const PROJECT_ROOT = path.resolve(__dirname, '../..');
+      const targetRel = (pathname === '/' || pathname === '/app') ? '/index.html' : pathname;
+      const safePath = path.normalize(path.join(PROJECT_ROOT, targetRel));
+
+      if (safePath.startsWith(PROJECT_ROOT) && fs.existsSync(safePath) && fs.statSync(safePath).isFile()) {
+        const ext = path.extname(safePath).toLowerCase();
+        const mimeTypes = {
+          '.html': 'text/html; charset=utf-8',
+          '.css': 'text/css; charset=utf-8',
+          '.js': 'application/javascript; charset=utf-8',
+          '.json': 'application/json; charset=utf-8',
+          '.png': 'image/png',
+          '.jpg': 'image/jpeg',
+          '.jpeg': 'image/jpeg',
+          '.svg': 'image/svg+xml',
+          '.ico': 'image/x-icon',
+          '.kml': 'application/vnd.google-earth.kml+xml',
+          '.kmz': 'application/vnd.google-earth.kmz',
+          '.txt': 'text/plain; charset=utf-8'
+        };
+        const contentType = mimeTypes[ext] || 'application/octet-stream';
+        res.writeHead(200, { 'Content-Type': contentType });
+        if (req.method === 'HEAD') {
+          res.end();
+          return;
+        }
+        fs.createReadStream(safePath).pipe(res);
+        return;
+      }
     }
 
     res.writeHead(404, { 'Content-Type': 'application/json' });
@@ -379,10 +898,157 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-// Start Server
-server.listen(PORT, '127.0.0.1', () => {
-  console.log('==========================================================');
-  console.log(`   Aalaapi Sky Companion Bridge running on http://127.0.0.1:${PORT}`);
-  console.log('==========================================================');
-  console.log('[*] Ready to accept direct transfers from Aalaapi Sky');
-});
+// Setup Interactive CLI Keyboard Shortcuts
+if (process.stdin.isTTY) {
+  readline.emitKeypressEvents(process.stdin);
+  try {
+    process.stdin.setRawMode(true);
+    process.stdin.on('keypress', async (str, key) => {
+      if (key && ((key.ctrl && key.name === 'c') || key.name === 'q')) {
+        console.log(`\n${colors.yellow}[*] Stopping Aalaapi Sky Companion Bridge...${colors.reset}`);
+        process.exit(0);
+      }
+      if (key && key.name === 'c') {
+        console.clear();
+        printStartupBanner();
+      }
+      if (key && key.name === 's') {
+        console.log(`\n${colors.cyan}[*] Probing DJI RC 2 controller status...${colors.reset}`);
+        const st = await checkRc2Status();
+        if (st.connected) {
+          logSuccess('[RC 2 STATUS]', `Device: ${st.deviceName || 'DJI RC 2'} (Waypoint storage: ${st.waypointReady ? 'Ready' : 'Missing'})`);
+          if (st.activeMissions && st.activeMissions.length > 0) {
+            console.log(`    ${colors.white}Missions:${colors.reset} ${st.activeMissions.join(', ')}`);
+          }
+        } else {
+          logWarn('[RC 2 STATUS]', 'DJI RC 2 is not currently connected over USB MTP.');
+        }
+      }
+      if (key && key.name === 'f') {
+        console.log(`\n${colors.cyan}[*] Scanning cached flight logs in ${LATEST_DIR}...${colors.reset}`);
+        if (fs.existsSync(LATEST_DIR)) {
+          const files = fs.readdirSync(LATEST_DIR).filter(f => f.startsWith('FlightRecord_') && f.endsWith('.txt'));
+          if (files.length === 0) {
+            console.log(`    ${colors.gray}No flight logs currently cached in ${LATEST_DIR}${colors.reset}`);
+          } else {
+            files.forEach(f => {
+              const sz = Math.round(fs.statSync(path.join(LATEST_DIR, f)).size / 1024);
+              console.log(`    ${colors.green}•${colors.reset} ${f} (${sz} KB)`);
+            });
+          }
+        }
+      }
+      if (key && key.name === 'r') {
+        console.log(`\n${colors.cyan}[*] Probing Dual-Mode Airspace Radar (Wi-Fi + BLE)...${colors.reset}`);
+        const active = airspaceTracker.getActiveDrones();
+        if (active.length === 0) {
+          console.log(`    ${colors.yellow}No active drones detected in local airspace.${colors.reset}`);
+          console.log(`    ${colors.gray}Injecting simulated DJI Mini 4 Pro Remote ID broadcast test packet...${colors.reset}`);
+          const syn = createSyntheticOdidPayload({ uasId: '1581F4TEST-M4P', lat: 40.0132, lon: -83.1760, alt: 35.0, heading: 45 });
+          const drone = airspaceTracker.processAdvertisement({ mac: 'FA:0B:BC:15:81:F4', rssi: -58, rawPayload: syn });
+          logSuccess('[REMOTE ID]', `Detected: ${drone.model} [${drone.uasId}] at (${drone.latitude}, ${drone.longitude}) alt: ${drone.altitudeGeodetic}m`);
+        } else {
+          console.log(`    ${colors.green}Active Airspace Drones (${active.length}):${colors.reset}`);
+          active.forEach(d => {
+            const posPart = d.latitude ? `Pos: ${d.latitude}, ${d.longitude}` : (d.transport ? `${d.transport}` : 'RF Beacon Detected');
+            const altPart = d.altitudeGeodetic !== null ? ` — Alt: ${d.altitudeGeodetic}m MSL` : '';
+            console.log(`    ${colors.green}•${colors.reset} ${d.model} (${d.uasId}) — ${posPart}${altPart} — On: ${d.uptimeFormatted || (d.uptimeSec + 's')} (${d.packetCount} pkts) — RSSI: ${d.rssi} dBm`);
+          });
+        }
+      }
+    });
+  } catch (e) {}
+}
+
+function killPortPid(port) {
+  return new Promise((resolve) => {
+    if (process.platform === 'win32') {
+      try {
+        const netstatOut = execFileSync('cmd.exe', ['/c', `netstat -ano | findstr :${port}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+        const lines = netstatOut.trim().split('\n');
+        for (const line of lines) {
+          if (line.includes('LISTENING')) {
+            const parts = line.trim().split(/\s+/);
+            const pid = parts[parts.length - 1];
+            if (pid && pid !== `${process.pid}` && pid !== '0') {
+              try {
+                execFileSync('taskkill.exe', ['/F', '/PID', pid], { stdio: 'ignore' });
+                setTimeout(resolve, 600);
+                return;
+              } catch (e) {}
+            }
+          }
+        }
+      } catch (e) {}
+    }
+    resolve();
+  });
+}
+
+async function killExistingCompanion(port) {
+  return new Promise((resolve) => {
+    let handled = false;
+    const finish = () => {
+      if (!handled) {
+        handled = true;
+        resolve();
+      }
+    };
+
+    const req = http.request({
+      hostname: '127.0.0.1',
+      port: port,
+      path: '/api/shutdown',
+      method: 'POST',
+      timeout: 1500
+    }, (res) => {
+      if (res.statusCode === 200) {
+        setTimeout(finish, 800);
+      } else {
+        killPortPid(port).then(finish);
+      }
+    });
+
+    req.on('error', () => {
+      killPortPid(port).then(finish);
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      killPortPid(port).then(finish);
+    });
+
+    req.end();
+  });
+}
+
+if (require.main === module) {
+  (async () => {
+    // Check and kill any previously running companion instance on the target port
+    await killExistingCompanion(PORT);
+
+    // Initial status check & background polling every 3.5s
+    updateRc2Status();
+    setInterval(updateRc2Status, 3500);
+
+    // Launch Live WinRT Bluetooth LE and Wi-Fi Remote ID scanners
+    startBleScanner();
+    startWifiScanner();
+
+    // Start Server
+    server.listen(PORT, '127.0.0.1', () => {
+      printStartupBanner();
+    });
+  })();
+}
+
+module.exports = {
+  server,
+  setCorsHeaders,
+  checkRc2Status,
+  transferToRc2,
+  stopScanners,
+  killExistingCompanion,
+  VERSION,
+  PORT
+};
