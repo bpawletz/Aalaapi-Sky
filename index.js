@@ -846,7 +846,7 @@ function initUIEventListeners() {
   if (companionSyncContainer) {
     companionSyncContainer.addEventListener('click', (e) => {
       if (!isCompanionOnline) {
-        if (e.target && e.target.closest && (e.target.closest('#open-diagnostics-btn') || e.target.closest('#direct-rc2-sync-btn'))) {
+        if (e.target && e.target.closest && (e.target.closest('#open-diagnostics-btn') || e.target.closest('#direct-rc2-sync-btn') || e.target.closest('#direct-rc2-pull-btn'))) {
           return;
         }
         openRC2GuideModal('companion');
@@ -4576,7 +4576,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
   let actionGroupId = 1;
 
   waypoints.forEach((wp, idx) => {
-    let actionsForThisPlacemark = '';
+    const waypointActions = [];
     
     // Determine if repositioning (gimbal pitch or heading yaw) is required
     const reposInfo = checkNeedsReposition(idx, waypoints);
@@ -4597,17 +4597,10 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     const isRoadFollowing = gridType === 'road-following';
     // Compute effective pitch for use in both gimbalRotate action and waypointGimbalHeadingParam
     const effectivePitch = wp.pitch !== undefined ? wp.pitch : gimbalPitch;
+
     if (idx === 0 || wp.isRingStart || isRoadFollowing) {
       const currentPitch = effectivePitch;
-      actionsForThisPlacemark += `        <wpml:actionGroup>
-          <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
-          <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>${idx}</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
-          <wpml:actionTrigger>
-            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
-          </wpml:actionTrigger>
-          <wpml:action>
+      waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
@@ -4623,41 +4616,23 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
               <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
             </wpml:actionActuatorFuncParam>
-          </wpml:action>
-        </wpml:actionGroup>\n`;
+          </wpml:action>`);
     }
 
-    // 2. Hover duration action group (MUST run BEFORE camera capture to stabilize gimbal and yaw)
+    // 2. Hover duration action (MUST run to stabilize gimbal and yaw)
     if (effectiveHover > 0) {
-      actionsForThisPlacemark += `        <wpml:actionGroup>
-          <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
-          <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>${idx}</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
-          <wpml:actionTrigger>
-            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
-          </wpml:actionTrigger>
-          <wpml:action>
+      waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:hoverTime>${effectiveHover}</wpml:hoverTime>
             </wpml:actionActuatorFuncParam>
-          </wpml:action>
-        </wpml:actionGroup>\n`;
+          </wpml:action>`);
     }
 
     // 3. Zoom action (only set once on the first waypoint to apply for the entire flight)
     if (cameraZoom > 1.0 && idx === 0) {
-      actionsForThisPlacemark += `        <wpml:actionGroup>
-          <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
-          <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>${idx}</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
-          <wpml:actionTrigger>
-            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
-          </wpml:actionTrigger>
-          <wpml:action>
+      waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>zoom</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
@@ -4666,134 +4641,73 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
               <wpml:focalFactor>${cameraZoom.toFixed(1)}</wpml:focalFactor>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
             </wpml:actionActuatorFuncParam>
-          </wpml:action>
-        </wpml:actionGroup>\n`;
+          </wpml:action>`);
     }
 
     // 4. Video record actions if captureMode is video (start at waypoint 0, stop at final waypoint)
     if (captureMode === 'video') {
       if (idx === 0) {
-        actionsForThisPlacemark += `        <wpml:actionGroup>
-          <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
-          <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>${idx}</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
-          <wpml:actionTrigger>
-            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
-          </wpml:actionTrigger>
-          <wpml:action>
+        waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>startRecord</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
             </wpml:actionActuatorFuncParam>
-          </wpml:action>
-        </wpml:actionGroup>\n`;
+          </wpml:action>`);
       } else if (idx === waypoints.length - 1) {
-        actionsForThisPlacemark += `        <wpml:actionGroup>
-          <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
-          <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>${idx}</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
-          <wpml:actionTrigger>
-            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
-          </wpml:actionTrigger>
-          <wpml:action>
+        waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>stopRecord</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
             </wpml:actionActuatorFuncParam>
-          </wpml:action>
-        </wpml:actionGroup>\n`;
+          </wpml:action>`);
       }
     }
 
     // 5. If Stop & Shoot is active, also add photo trigger at this waypoint
     if (captureMode === 'stopAndShoot') {
-      actionsForThisPlacemark += `        <wpml:actionGroup>
-          <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
-          <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>${idx}</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
-          <wpml:actionTrigger>
-            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
-          </wpml:actionTrigger>
-          <wpml:action>
+      waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
             </wpml:actionActuatorFuncParam>
-          </wpml:action>
-        </wpml:actionGroup>\n`;
+          </wpml:action>`);
     }
 
     // 6. Per-waypoint camera action (RC 2 feature parity)
     const perWpAction = wp.cameraAction || 'inherit';
     if (perWpAction !== 'inherit' && perWpAction !== 'none') {
       if (perWpAction === 'takePhoto') {
-        actionsForThisPlacemark += `        <wpml:actionGroup>
-          <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
-          <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>${idx}</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
-          <wpml:actionTrigger>
-            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
-          </wpml:actionTrigger>
-          <wpml:action>
+        waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
             </wpml:actionActuatorFuncParam>
-          </wpml:action>
-        </wpml:actionGroup>\n`;
+          </wpml:action>`);
       } else if (perWpAction === 'startRecord') {
-        actionsForThisPlacemark += `        <wpml:actionGroup>
-          <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
-          <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>${idx}</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
-          <wpml:actionTrigger>
-            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
-          </wpml:actionTrigger>
-          <wpml:action>
+        waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>startRecord</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
             </wpml:actionActuatorFuncParam>
-          </wpml:action>
-        </wpml:actionGroup>\n`;
+          </wpml:action>`);
       } else if (perWpAction === 'stopRecord') {
-        actionsForThisPlacemark += `        <wpml:actionGroup>
-          <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
-          <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>${idx}</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
-          <wpml:actionTrigger>
-            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
-          </wpml:actionTrigger>
-          <wpml:action>
+        waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>stopRecord</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
             </wpml:actionActuatorFuncParam>
-          </wpml:action>
-        </wpml:actionGroup>\n`;
+          </wpml:action>`);
       } else if (perWpAction === 'zoom') {
         const zoomFactor = wp.zoom ? parseFloat(wp.zoom) : cameraZoom;
-        actionsForThisPlacemark += `        <wpml:actionGroup>
-          <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
-          <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>${idx}</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
-          <wpml:actionTrigger>
-            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
-          </wpml:actionTrigger>
-          <wpml:action>
+        waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>zoom</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
@@ -4802,9 +4716,22 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
               <wpml:focalFactor>${zoomFactor.toFixed(1)}</wpml:focalFactor>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
             </wpml:actionActuatorFuncParam>
-          </wpml:action>
-        </wpml:actionGroup>\n`;
+          </wpml:action>`);
       }
+    }
+
+    let actionsForThisPlacemark = '';
+    if (waypointActions.length > 0) {
+      actionsForThisPlacemark = `        <wpml:actionGroup>
+          <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>${idx}</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+${waypointActions.join('\n')}
+        </wpml:actionGroup>\n`;
     }
 
     // Determine heading mode and angle for this waypoint
@@ -5289,7 +5216,9 @@ async function pollCompanionStatus() {
   const dot = document.getElementById('companion-indicator-dot');
   const text = document.getElementById('companion-status-text');
   const label = document.getElementById('companion-device-label');
+  const directActions = document.getElementById('rc2-direct-actions');
   const directBtn = document.getElementById('direct-rc2-sync-btn');
+  const pullBtn = document.getElementById('direct-rc2-pull-btn');
   const container = document.getElementById('companion-sync-container');
   const hint = document.getElementById('companion-offline-hint');
   if (!dot || !text) return;
@@ -5317,7 +5246,9 @@ async function pollCompanionStatus() {
         text.textContent = 'DJI RC 2 Connected';
         text.style.color = '#22c55e';
         if (label) label.textContent = data.deviceName || 'MTP Ready';
+        if (directActions) directActions.style.display = 'flex';
         if (directBtn) directBtn.style.display = 'inline-flex';
+        if (pullBtn) pullBtn.style.display = 'inline-flex';
       } else {
         isRc2MtpConnected = false;
         if (container && container.classList) container.classList.add('is-offline');
@@ -5334,7 +5265,9 @@ async function pollCompanionStatus() {
         text.textContent = 'RC 2 Disconnected';
         text.style.color = '#eab308';
         if (label) label.textContent = 'Plug in USB-C';
+        if (directActions) directActions.style.display = 'none';
         if (directBtn) directBtn.style.display = 'none';
+        if (pullBtn) pullBtn.style.display = 'none';
       }
     } else {
       throw new Error('Non-200 status');
@@ -5356,7 +5289,65 @@ async function pollCompanionStatus() {
     text.textContent = 'Companion Offline';
     text.style.color = 'var(--text-main)';
     if (label) label.textContent = 'start-companion.bat';
+    if (directActions) directActions.style.display = 'none';
     if (directBtn) directBtn.style.display = 'none';
+    if (pullBtn) pullBtn.style.display = 'none';
+  }
+}
+
+async function pullFromRC2() {
+  const pullBtn = document.getElementById('direct-rc2-pull-btn');
+  if (!pullBtn || !isRc2MtpConnected) return;
+
+  const originalContent = pullBtn.innerHTML;
+  pullBtn.disabled = true;
+  pullBtn.innerHTML = `<span>⏳ Pulling...</span>`;
+
+  try {
+    const targetUuid = getRC2UUID() || rc2MtpActiveUUID || '';
+    const query = targetUuid ? `?uuid=${encodeURIComponent(targetUuid)}` : '';
+    const res = await fetch(`${COMPANION_API_BASE}/api/pull-mission${query}`);
+    const data = await res.json();
+
+    if (data.success) {
+      if (data.uuid) {
+        setRC2UUID(data.uuid);
+      }
+      importedFileName = data.fileName || `${data.uuid || 'mission'}.kmz`;
+      const statusText = document.getElementById('import-status-text');
+      if (statusText) {
+        statusText.textContent = `Imported ${importedFileName}`;
+      }
+
+      if (data.waylinesWpml) {
+        parseWPML(data.waylinesWpml);
+      } else {
+        throw new Error('No waylines.wpml received from RC 2');
+      }
+
+      pullBtn.innerHTML = `<span>✅ Pulled ${data.uuid ? data.uuid.substring(0, 8) + '...' : ''}</span>`;
+      pullBtn.style.background = 'rgba(168, 85, 247, 0.25)';
+      pullBtn.style.borderColor = 'rgba(168, 85, 247, 0.6)';
+      pullBtn.style.color = '#c084fc';
+      setTimeout(() => {
+        pullBtn.disabled = false;
+        pullBtn.innerHTML = originalContent;
+        pullBtn.style.background = '';
+        pullBtn.style.borderColor = '';
+        pullBtn.style.color = '';
+      }, 4000);
+    } else {
+      throw new Error(data.error || 'Failed to pull mission from RC 2');
+    }
+  } catch (err) {
+    console.error('Direct RC 2 Pull Error:', err);
+    pullBtn.innerHTML = `<span>❌ Pull Failed</span>`;
+    pullBtn.style.color = '#f87171';
+    setTimeout(() => {
+      pullBtn.disabled = false;
+      pullBtn.innerHTML = originalContent;
+      pullBtn.style.color = '';
+    }, 3000);
   }
 }
 
@@ -5467,22 +5458,34 @@ const RC2_UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a
 const RC2_UUID_LS_KEY  = 'aalaapi-rc2-uuid';
 
 function getRC2UUID() {
-  return localStorage.getItem(RC2_UUID_LS_KEY) || '';
+  try {
+    return (typeof localStorage !== 'undefined' && localStorage.getItem) ? (localStorage.getItem(RC2_UUID_LS_KEY) || '') : '';
+  } catch (e) {
+    return '';
+  }
 }
 
 function setRC2UUID(uuid) {
-  localStorage.setItem(RC2_UUID_LS_KEY, uuid);
-  const input   = document.getElementById('rc2-uuid');
-  const preview = document.getElementById('rc2-uuid-preview');
+  try {
+    if (typeof localStorage !== 'undefined' && localStorage.setItem) {
+      localStorage.setItem(RC2_UUID_LS_KEY, uuid);
+    }
+  } catch (e) {}
+  const input = typeof document !== 'undefined' ? document.getElementById('rc2-uuid') : null;
+  const preview = typeof document !== 'undefined' ? document.getElementById('rc2-uuid-preview') : null;
   if (input && input.value !== uuid) input.value = uuid;
   if (preview) preview.textContent = uuid || '[UUID]';
 }
 
 function clearRC2UUID() {
-  localStorage.removeItem(RC2_UUID_LS_KEY);
-  const input   = document.getElementById('rc2-uuid');
-  const preview = document.getElementById('rc2-uuid-preview');
-  if (input)   input.value = '';
+  try {
+    if (typeof localStorage !== 'undefined' && localStorage.removeItem) {
+      localStorage.removeItem(RC2_UUID_LS_KEY);
+    }
+  } catch (e) {}
+  const input = typeof document !== 'undefined' ? document.getElementById('rc2-uuid') : null;
+  const preview = typeof document !== 'undefined' ? document.getElementById('rc2-uuid-preview') : null;
+  if (input) input.value = '';
   if (preview) preview.textContent = '[UUID]';
 }
 
@@ -5520,6 +5523,12 @@ function initRC2Controls() {
   const directSyncBtn = document.getElementById('direct-rc2-sync-btn');
   if (directSyncBtn) {
     directSyncBtn.addEventListener('click', sendDirectlyToRC2);
+  }
+
+  // Direct RC 2 pull button
+  const directPullBtn = document.getElementById('direct-rc2-pull-btn');
+  if (directPullBtn) {
+    directPullBtn.addEventListener('click', pullFromRC2);
   }
 
   // Initialize Flight Diagnostics Engine

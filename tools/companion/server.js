@@ -19,7 +19,7 @@ const os = require('node:os');
 const readline = require('node:readline');
 const { execFile, spawn, execFileSync } = require('node:child_process');
 
-const VERSION = '1.43.0';
+const VERSION = '1.44.0';
 const PORT = process.env.AALAAPI_PORT ? parseInt(process.env.AALAAPI_PORT, 10) : 8765;
 const STAGING_DIR = path.resolve(__dirname, '../../scratch/companion_staging');
 const LATEST_DIR = path.resolve(__dirname, '../../scratch/latest_flight');
@@ -509,7 +509,116 @@ $syncVerified = ($finalCheck.Count -gt 0)
   return await runMtpScript(psScript);
 }
 
-// 3. Extract Latest Flight Information
+// 3. Pull Current KMZ Mission from RC 2 over MTP
+async function pullFromRc2(requestedUuid = '') {
+  const psScript = `
+$shell = New-Object -ComObject Shell.Application
+$thisPC = $shell.Namespace(17)
+$dji = $thisPC.Items() | Where-Object { $_.Name -like "*DJI RC 2*" -or $_.Name -like "*DJI RC*" -or $_.Name -like "*RC2*" } | Select-Object -First 1
+
+if (-not $dji) {
+    @{ success = $false; error = "DJI RC 2 not connected" } | ConvertTo-Json -Compress
+    exit
+}
+
+function Get-SubItem($folderItem, $name) {
+    if (-not $folderItem) { return $null }
+    $folder = if ($folderItem.GetFolder) { $folderItem.GetFolder } else { $folderItem }
+    return $folder.Items() | Where-Object { $_.Name -eq $name } | Select-Object -First 1
+}
+
+$storage = Get-SubItem $dji "Internal shared storage"
+if (-not $storage) { $storage = Get-SubItem $dji "Internal storage" }
+$android = Get-SubItem $storage "Android"
+$data    = Get-SubItem $android "data"
+$djiApp  = Get-SubItem $data "dji.go.v5"
+$files   = Get-SubItem $djiApp "files"
+$wp      = Get-SubItem $files "waypoint"
+
+if (-not $wp) {
+    @{ success = $false; error = "Waypoint directory not found on RC 2" } | ConvertTo-Json -Compress
+    exit
+}
+
+$targetUUID = "${requestedUuid}"
+$targetFolder = $null
+
+if ($targetUUID) {
+    $targetFolder = Get-SubItem $wp $targetUUID
+} else {
+    $avail = @($wp.GetFolder.Items() | Where-Object { $_.IsFolder -and $_.Name -match '^[A-F0-9]{8}-' })
+    if ($avail.Count -gt 0) {
+        $targetFolder = $avail[0]
+        $targetUUID = $targetFolder.Name
+    }
+}
+
+if (-not $targetFolder) {
+    @{ success = $false; error = "No mission slot found on RC 2." } | ConvertTo-Json -Compress
+    exit
+}
+
+$kmzItem = @($targetFolder.GetFolder.Items() | Where-Object { $_.Name -like "*.kmz" -and $_.Name -notlike "_old_*" }) | Select-Object -First 1
+if (-not $kmzItem) {
+    @{ success = $false; error = "No active KMZ file found in slot $targetUUID on RC 2." } | ConvertTo-Json -Compress
+    exit
+}
+
+$stagingDir = "${STAGING_DIR.replace(/\\/g, '\\')}"
+$pullTempDir = "$stagingDir\\pull"
+if (-not (Test-Path $pullTempDir)) { New-Item -ItemType Directory -Path $pullTempDir -Force | Out-Null }
+Get-ChildItem -Path $pullTempDir -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+
+$cleanPath = $pullTempDir -replace '\\\\+', '\'
+$dest = $shell.Namespace($cleanPath)
+if (-not $dest) { $dest = $shell.Namespace($pullTempDir) }
+$dest.CopyHere($kmzItem, 16)
+
+$sw = [System.Diagnostics.Stopwatch]::StartNew()
+$arrived = $null
+while ($sw.Elapsed.TotalSeconds -lt 10) {
+    Start-Sleep -Milliseconds 300
+    $foundKmz = @(Get-ChildItem -Path $pullTempDir -Filter "*.kmz")
+    if ($foundKmz.Count -gt 0) {
+        $arrived = $foundKmz[0].FullName
+        break
+    }
+}
+
+if ($arrived) {
+    $targetLocalPath = "$stagingDir\\pulled_$targetUUID.kmz"
+    Copy-Item -Path $arrived -Destination $targetLocalPath -Force
+
+    $zipCopy = "$pullTempDir\\temp.zip"
+    Copy-Item -Path $arrived -Destination $zipCopy -Force
+    $unzipDir = "$pullTempDir\\unpacked"
+    Expand-Archive -Path $zipCopy -DestinationPath $unzipDir -Force
+
+    $tmplPath = "$unzipDir\\wpmz\\template.kml"
+    $wpmlPath = "$unzipDir\\wpmz\\waylines.wpml"
+    $tmplContent = if (Test-Path $tmplPath) { [string](Get-Content $tmplPath -Raw -Encoding UTF8) } else { "" }
+    $wpmlContent = if (Test-Path $wpmlPath) { [string](Get-Content $wpmlPath -Raw -Encoding UTF8) } else { "" }
+
+    Get-ChildItem -Path $pullTempDir -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+
+    @{
+        success = $true
+        uuid = $targetUUID
+        fileName = (Split-Path $arrived -Leaf)
+        localPath = $targetLocalPath
+        size = (Get-Item $targetLocalPath).Length
+        templateKml = $tmplContent
+        waylinesWpml = $wpmlContent
+    } | ConvertTo-Json -Compress
+} else {
+    Get-ChildItem -Path $pullTempDir -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+    @{ success = $false; error = "Timeout waiting for KMZ copy from RC 2." } | ConvertTo-Json -Compress
+}
+`;
+  return await runMtpScript(psScript);
+}
+
+// 4. Extract Latest Flight Information
 async function extractLatestFlight() {
   const psScript = `
 $shell = New-Object -ComObject Shell.Application
@@ -720,6 +829,54 @@ const server = http.createServer(async (req, res) => {
         logError('[FLIGHTS ERROR]', err.message);
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+      return;
+    }
+
+    // 3.5 Pull KMZ Mission directly from RC 2 over USB MTP
+    if ((pathname === '/api/pull-mission' || pathname === '/api/rc2/kmz') && req.method === 'GET') {
+      const requestedUuid = url.searchParams.get('uuid') || '';
+      const isDownload = url.searchParams.get('download') === '1';
+
+      logInfo('[PULL API]', `Pulling active mission KMZ from DJI RC 2${requestedUuid ? ` (slot ${requestedUuid})` : ''}...`);
+      const pullResult = await pullFromRc2(requestedUuid);
+
+      const resData = pullResult.data || {};
+      if (pullResult.success && resData.success) {
+        logSuccess('[PULL SUCCESS]', `Pulled mission ${resData.uuid} (${(resData.size / 1024).toFixed(1)} KB)`);
+
+        if (isDownload && resData.localPath && fs.existsSync(resData.localPath)) {
+          const fileBuf = fs.readFileSync(resData.localPath);
+          res.writeHead(200, {
+            'Content-Type': 'application/vnd.google-earth.kmz',
+            'Content-Disposition': `attachment; filename="${resData.uuid || 'mission'}.kmz"`,
+            'Content-Length': fileBuf.length
+          });
+          res.end(fileBuf);
+          return;
+        }
+
+        let kmzBase64 = '';
+        if (resData.localPath && fs.existsSync(resData.localPath)) {
+          kmzBase64 = fs.readFileSync(resData.localPath).toString('base64');
+        }
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: true,
+          uuid: resData.uuid,
+          fileName: resData.fileName,
+          size: resData.size,
+          kmzBase64,
+          templateKml: resData.templateKml,
+          waylinesWpml: resData.waylinesWpml,
+          message: `Mission ${resData.uuid} successfully pulled from RC 2`
+        }));
+      } else {
+        const errMsg = resData.error || pullResult.error || 'Failed to pull KMZ from RC 2';
+        logError('[PULL FAILED]', errMsg);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: errMsg }));
       }
       return;
     }
@@ -1047,6 +1204,7 @@ module.exports = {
   setCorsHeaders,
   checkRc2Status,
   transferToRc2,
+  pullFromRc2,
   stopScanners,
   killExistingCompanion,
   VERSION,
