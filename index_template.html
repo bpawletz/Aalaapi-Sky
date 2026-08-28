@@ -69,7 +69,7 @@
               <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
               <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
             </svg>
-            <h1 style="display: inline-flex; align-items: center; gap: 8px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.65rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 2px 7px; font-weight: 700; letter-spacing: 0.03em; vertical-align: middle; margin-left: 6px;">v1.43.0</span><span style="font-size: 0.5rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 4px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
+            <h1 style="display: inline-flex; align-items: center; gap: 8px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.65rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 2px 7px; font-weight: 700; letter-spacing: 0.03em; vertical-align: middle; margin-left: 6px;">v1.44.0</span><span style="font-size: 0.5rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 4px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
           </div>
           <div style="display: flex; gap: 8px; align-items: center;">
             <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" style="padding: 8px; display: inline-flex; align-items: center; justify-content: center; margin: 0; border-radius: 8px; width: 36px; height: 36px;">
@@ -652,12 +652,22 @@
               </span>
               <span style="font-weight: 600; text-decoration: underline;">How to use &rsaquo;</span>
             </div>
-            <button id="direct-rc2-sync-btn" type="button" class="btn-secondary" style="width: 100%; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: none; align-items: center; justify-content: center; gap: 6px; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.4); color: #22d3ee; cursor: pointer;">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-              </svg>
-              Send Directly to DJI RC 2
-            </button>
+            <div id="rc2-direct-actions" style="display: none; width: 100%; gap: 6px;">
+              <button id="direct-rc2-sync-btn" type="button" class="btn-secondary" style="flex: 1; padding: 6px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.4); color: #22d3ee; cursor: pointer;" title="Send active mission directly to connected DJI RC 2">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+                Send to RC 2
+              </button>
+              <button id="direct-rc2-pull-btn" type="button" class="btn-secondary" style="flex: 1; padding: 6px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.4); color: #c084fc; cursor: pointer;" title="Pull and import active mission KMZ from connected DJI RC 2">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Pull from RC 2
+              </button>
+            </div>
             <button id="open-diagnostics-btn" type="button" class="btn-secondary" style="width: 100%; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24; cursor: pointer;">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="20" x2="18" y2="10"/>
@@ -996,7 +1006,7 @@
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.43.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.44.0</span>
             </div>
           </div>
         </div>
@@ -1060,6 +1070,13 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.44.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Single ActionGroup Fix ("Error Performing Flight"):</strong> Consolidated all waypoint actions into a single parallel action group per waypoint to comply with DJI Fly pre-flight flight-controller validation rules and added <code>wpml:useGlobalPayloadLensIndex</code>.</li>
+              <li><strong>Direct RC 2 Mission Puller:</strong> Added 1-click KMZ pulling from connected DJI RC 2 over USB-C MTP via <code>/api/pull-mission</code> with instant map import and UUID detection.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.43.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Direct RC 2 Sync Streamlined &amp; MTP Safe Overwrite:</strong> Fixed Windows MTP silent overwrite blocking by renaming slot items before write and verifying arrival. Archived preview thumbnail sync to eliminate unnecessary MTP operations and optimize sync speed strictly for KMZ mission files. Added auto-slot detection and DJI Fly cache refresh guidance.</li>

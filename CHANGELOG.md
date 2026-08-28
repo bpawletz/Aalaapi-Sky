@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.44.0] - 2026-08-27
+
+### Added & Fixed
+- **Single ActionGroup WPML Validation Fix ("Error Performing Flight"):**
+  - Consolidated multiple actions on a single waypoint into a single `<wpml:actionGroup>` container in `buildWaylinesWpml`. Previously, multiple overlapping action groups at the same waypoint index caused DJI Fly pre-flight validation to abort with "Error performing flight".
+  - Added `<wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>` inside `<wpml:actionActuatorFuncParam>` for `takePhoto` actions to match golden DJI RC 2 WPML schema.
+- **Direct RC 2 KMZ Mission Puller & 1-Click Map Import:**
+  - Added `/api/pull-mission` and `/api/rc2/kmz` REST endpoints to the companion service to pull the active mission KMZ from the connected DJI RC 2 over USB-C MTP.
+  - Added **Pull from RC 2** (`#direct-rc2-pull-btn`) button in the companion sync box alongside Send to RC 2.
+  - Directly extracts `waylines.wpml` and imports waypoints, altitudes, speeds, headings, and gimbal angles into the active Aalaapi Sky map session with automatic UUID detection.
+
 ## [1.43.0] - 2026-08-27
 
 ### Changed & Improved
