@@ -632,17 +632,18 @@ function restoreSettingsFromLocalStorage() {
 
 function switchGuideTab(targetTab) {
   if (typeof document === 'undefined') return;
+  const canonicalTab = (targetTab === 'companion') ? 'service' : targetTab;
   const tabBtns = document.querySelectorAll('.guide-tab-btn');
   const tabPanes = document.querySelectorAll('.guide-tab-pane');
   tabBtns.forEach(btn => {
-    if (btn.dataset.tab === targetTab) {
+    if (btn.dataset.tab === canonicalTab || (canonicalTab === 'service' && btn.dataset.tab === 'companion')) {
       btn.classList.add('active');
     } else {
       btn.classList.remove('active');
     }
   });
   tabPanes.forEach(pane => {
-    if (pane.id === `guide-pane-${targetTab}`) {
+    if (pane.id === `guide-pane-${canonicalTab}` || (canonicalTab === 'service' && pane.id === 'guide-pane-companion')) {
       pane.classList.remove('hidden');
     } else {
       pane.classList.add('hidden');
@@ -650,7 +651,7 @@ function switchGuideTab(targetTab) {
   });
 }
 
-function openRC2GuideModal(targetTab = 'companion') {
+function openRC2GuideModal(targetTab = 'service') {
   if (typeof document === 'undefined') return;
   const guideModal = document.getElementById('guide-modal');
   if (!guideModal) return;
@@ -830,7 +831,11 @@ function initUIEventListeners() {
   if (companionOfflineHint) {
     companionOfflineHint.addEventListener('click', (e) => {
       e.stopPropagation();
-      openRC2GuideModal('companion');
+      if (!isCompanionOnline) {
+        openRC2GuideModal('service');
+      } else {
+        openRC2GuideModal('usb');
+      }
     });
   }
 
@@ -838,7 +843,23 @@ function initUIEventListeners() {
   if (companionHelpBtn) {
     companionHelpBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      openRC2GuideModal('companion');
+      openRC2GuideModal('service');
+    });
+  }
+
+  const companionServiceHelpBtn = document.getElementById('companion-service-help-btn');
+  if (companionServiceHelpBtn) {
+    companionServiceHelpBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openRC2GuideModal('service');
+    });
+  }
+
+  const companionUsbHelpBtn = document.getElementById('companion-usb-help-btn');
+  if (companionUsbHelpBtn) {
+    companionUsbHelpBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openRC2GuideModal('usb');
     });
   }
 
@@ -846,10 +867,15 @@ function initUIEventListeners() {
   if (companionSyncContainer) {
     companionSyncContainer.addEventListener('click', (e) => {
       if (!isCompanionOnline) {
-        if (e.target && e.target.closest && (e.target.closest('#open-diagnostics-btn') || e.target.closest('#direct-rc2-sync-btn') || e.target.closest('#direct-rc2-pull-btn'))) {
+        if (e.target && e.target.closest && (e.target.closest('#open-diagnostics-btn') || e.target.closest('#direct-rc2-sync-btn') || e.target.closest('#direct-rc2-pull-btn') || e.target.closest('#companion-service-help-btn') || e.target.closest('#companion-usb-help-btn'))) {
           return;
         }
-        openRC2GuideModal('companion');
+        openRC2GuideModal('service');
+      } else if (!isRc2MtpConnected) {
+        if (e.target && e.target.closest && (e.target.closest('#open-diagnostics-btn') || e.target.closest('#direct-rc2-sync-btn') || e.target.closest('#direct-rc2-pull-btn') || e.target.closest('#companion-service-help-btn') || e.target.closest('#companion-usb-help-btn'))) {
+          return;
+        }
+        openRC2GuideModal('usb');
       }
     });
   }
@@ -884,8 +910,11 @@ function initUIEventListeners() {
     const toggleLinksModal = (e) => {
       if (e) e.stopPropagation();
       linksModal.classList.toggle('hidden');
-      if (!linksModal.classList.contains('hidden') && window.innerWidth <= 768) {
-        document.querySelector('.sidebar').classList.remove('open');
+      if (!linksModal.classList.contains('hidden')) {
+        updateOpenSkyLink();
+        if (window.innerWidth <= 768) {
+          document.querySelector('.sidebar').classList.remove('open');
+        }
       }
     };
     showLinksBtn.addEventListener('click', toggleLinksModal);
@@ -5213,15 +5242,23 @@ let companionPollInterval = null;
 
 async function pollCompanionStatus() {
   if (typeof document === 'undefined') return;
+  const sDot = document.getElementById('companion-service-dot');
+  const sText = document.getElementById('companion-service-text');
+  const sLabel = document.getElementById('companion-service-label');
+  const uDot = document.getElementById('companion-usb-dot');
+  const uText = document.getElementById('companion-usb-text');
+  const uLabel = document.getElementById('companion-usb-label');
+
+  // Legacy alias elements for backward compatibility
   const dot = document.getElementById('companion-indicator-dot');
   const text = document.getElementById('companion-status-text');
   const label = document.getElementById('companion-device-label');
+
   const directActions = document.getElementById('rc2-direct-actions');
   const directBtn = document.getElementById('direct-rc2-sync-btn');
   const pullBtn = document.getElementById('direct-rc2-pull-btn');
   const container = document.getElementById('companion-sync-container');
   const hint = document.getElementById('companion-offline-hint');
-  if (!dot || !text) return;
 
   try {
     const controller = new AbortController();
@@ -5232,6 +5269,16 @@ async function pollCompanionStatus() {
     if (res.ok) {
       const data = await res.json();
       isCompanionOnline = true;
+
+      // 1. Update Bridge Service status (Online)
+      if (sDot) sDot.style.background = '#22c55e';
+      if (sText) {
+        sText.textContent = 'Bridge Service: Online';
+        sText.style.color = '#22c55e';
+      }
+      if (sLabel) sLabel.textContent = 'port 8765';
+
+      // 2. Update RC 2 USB Link status
       if (data.connected) {
         isRc2MtpConnected = true;
         if (data.activeMissions && data.activeMissions.length > 0) {
@@ -5242,10 +5289,22 @@ async function pollCompanionStatus() {
         }
         if (container && container.classList) container.classList.remove('is-offline');
         if (hint && hint.style) hint.style.display = 'none';
-        dot.style.background = '#22c55e'; // Green
-        text.textContent = 'DJI RC 2 Connected';
-        text.style.color = '#22c55e';
+
+        if (uDot) uDot.style.background = '#22c55e';
+        if (uText) {
+          uText.textContent = 'RC 2 USB Link: Connected';
+          uText.style.color = '#22c55e';
+        }
+        if (uLabel) uLabel.textContent = data.deviceName || 'MTP Ready';
+
+        // Legacy compatibility
+        if (dot) dot.style.background = '#22c55e';
+        if (text) {
+          text.textContent = 'DJI RC 2 Connected';
+          text.style.color = '#22c55e';
+        }
         if (label) label.textContent = data.deviceName || 'MTP Ready';
+
         if (directActions) directActions.style.display = 'flex';
         if (directBtn) directBtn.style.display = 'inline-flex';
         if (pullBtn) pullBtn.style.display = 'inline-flex';
@@ -5258,13 +5317,25 @@ async function pollCompanionStatus() {
           if (labelSpan) {
             labelSpan.innerHTML = `
               <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-              RC 2 Disconnected &bull; Plug in USB-C`;
+              RC 2 Unplugged &bull; USB Setup Guide`;
           }
         }
-        dot.style.background = '#eab308'; // Amber
-        text.textContent = 'RC 2 Disconnected';
-        text.style.color = '#eab308';
+
+        if (uDot) uDot.style.background = '#eab308'; // Amber
+        if (uText) {
+          uText.textContent = 'RC 2 USB Link: Unplugged';
+          uText.style.color = '#eab308';
+        }
+        if (uLabel) uLabel.textContent = 'Plug in USB-C';
+
+        // Legacy compatibility
+        if (dot) dot.style.background = '#eab308';
+        if (text) {
+          text.textContent = 'RC 2 Disconnected';
+          text.style.color = '#eab308';
+        }
         if (label) label.textContent = 'Plug in USB-C';
+
         if (directActions) directActions.style.display = 'none';
         if (directBtn) directBtn.style.display = 'none';
         if (pullBtn) pullBtn.style.display = 'none';
@@ -5282,13 +5353,34 @@ async function pollCompanionStatus() {
       if (labelSpan) {
         labelSpan.innerHTML = `
           <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-          Sync Offline &bull; Setup Guide`;
+          Bridge Offline &bull; Setup Guide`;
       }
     }
-    dot.style.background = '#64748b'; // Gray
-    text.textContent = 'Companion Offline';
-    text.style.color = 'var(--text-main)';
+
+    // 1. Service Offline
+    if (sDot) sDot.style.background = '#64748b'; // Gray
+    if (sText) {
+      sText.textContent = 'Bridge Service: Offline';
+      sText.style.color = 'var(--text-main)';
+    }
+    if (sLabel) sLabel.textContent = 'start-companion.bat';
+
+    // 2. USB Link Waiting
+    if (uDot) uDot.style.background = '#64748b'; // Gray
+    if (uText) {
+      uText.textContent = 'RC 2 USB Link: Waiting';
+      uText.style.color = 'var(--text-muted)';
+    }
+    if (uLabel) uLabel.textContent = 'Service Required';
+
+    // Legacy compatibility
+    if (dot) dot.style.background = '#64748b';
+    if (text) {
+      text.textContent = 'Companion Offline';
+      text.style.color = 'var(--text-main)';
+    }
     if (label) label.textContent = 'start-companion.bat';
+
     if (directActions) directActions.style.display = 'none';
     if (directBtn) directBtn.style.display = 'none';
     if (pullBtn) pullBtn.style.display = 'none';
@@ -12015,7 +12107,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
   if (isLoading || statusMsg) {
     windowEl.textContent = statusMsg || "Loading...";
     windowEl.style.color = "var(--text-secondary)";
-    dirsEl.replaceChildren();
+    if (typeof dirsEl.replaceChildren === 'function') dirsEl.replaceChildren(); else dirsEl.innerHTML = '';
     dirsEl.classList.add("hidden");
     return;
   }
@@ -12023,7 +12115,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
   if (!directions || !directions.closest) {
     windowEl.textContent = "🔴 No Data";
     windowEl.style.color = "var(--error-color)";
-    dirsEl.replaceChildren();
+    if (typeof dirsEl.replaceChildren === 'function') dirsEl.replaceChildren(); else dirsEl.innerHTML = '';
     dirsEl.classList.add("hidden");
     return;
   }
@@ -12058,7 +12150,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     }
   }
 
-  windowEl.replaceChildren();
+  if (typeof windowEl.replaceChildren === 'function') windowEl.replaceChildren(); else windowEl.innerHTML = '';
   const statusSpan = document.createElement("span");
   statusSpan.style.color = color;
   statusSpan.textContent = statusText;
@@ -12071,7 +12163,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
 
   windowEl.title = `Closest: ${closest.name} (${closest.distance.toFixed(1)}km)\nRaw: ${closest.raw}`;
 
-  dirsEl.replaceChildren();
+  if (typeof dirsEl.replaceChildren === 'function') dirsEl.replaceChildren(); else dirsEl.innerHTML = '';
   const container = document.createElement("div");
   container.style.cssText = "font-size: 0.8rem; line-height: 1.4;";
 

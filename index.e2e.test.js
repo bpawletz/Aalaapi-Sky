@@ -907,7 +907,194 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
     await page.unroute('**/api/status');
   });
+
+  test('E2E: Sidebar header buttons (#config-btn, #about-btn, #useful-links-btn) do not overflow sidebar container', async () => {
+    const overflowResult = await page.evaluate(() => {
+      const sidebar = document.querySelector('.sidebar');
+      const linksBtn = document.getElementById('useful-links-btn');
+      const aboutBtn = document.getElementById('about-btn');
+      const configBtn = document.getElementById('config-btn');
+
+      if (!sidebar || !linksBtn || !aboutBtn || !configBtn) {
+        return { success: false, reason: 'Elements missing' };
+      }
+
+      const sidebarRect = sidebar.getBoundingClientRect();
+      const linksRect = linksBtn.getBoundingClientRect();
+      const aboutRect = aboutBtn.getBoundingClientRect();
+      const configRect = configBtn.getBoundingClientRect();
+
+      // Ensure all buttons are within sidebar's right boundary (with a 2px tolerance for subpixel rounding)
+      const linksFit = linksRect.right <= sidebarRect.right + 2;
+      const aboutFit = aboutRect.right <= sidebarRect.right + 2;
+      const configFit = configRect.right <= sidebarRect.right + 2;
+
+      return {
+        success: linksFit && aboutFit && configFit,
+        sidebarRight: sidebarRect.right,
+        linksRight: linksRect.right,
+        aboutRight: aboutRect.right,
+        configRight: configRect.right
+      };
+    });
+
+    assert.ok(overflowResult.success, `Header buttons overflow sidebar: linksRight=${overflowResult.linksRight}, sidebarRight=${overflowResult.sidebarRight}`);
+  });
+
+  test('E2E: Clicking Useful Links button opens modal showing OpenSky Explorer with dynamic coords', async () => {
+    const modalResult = await page.evaluate(() => {
+      if (typeof setGridCenter === 'function') {
+        setGridCenter(37.7749, -122.4194);
+      }
+
+      const showLinksBtn = document.getElementById('useful-links-btn');
+      const linksModal = document.getElementById('links-modal');
+      if (!showLinksBtn || !linksModal) return { success: false, reason: 'Modal or button missing' };
+
+      // Click to open
+      showLinksBtn.click();
+      const isOpen = !linksModal.classList.contains('hidden');
+
+      const openSkyLink = linksModal.querySelector('#opensky-link');
+      if (!openSkyLink) return { success: false, reason: 'OpenSky link not in modal' };
+
+      const href = openSkyLink.getAttribute('href') || '';
+      const hasCoords = href.includes('37.77') && href.includes('-122.41');
+
+      // Click close button to reset
+      const closeBtn = document.getElementById('close-links-btn');
+      if (closeBtn) closeBtn.click();
+      const isClosed = linksModal.classList.contains('hidden');
+
+      return {
+        success: isOpen && isClosed && hasCoords,
+        isOpen,
+        isClosed,
+        hasCoords,
+        href
+      };
+    });
+
+    assert.ok(modalResult.success, `Useful Links modal test failed: ${JSON.stringify(modalResult)}`);
+  });
+
+  test('E2E: Companion box renders dual status indicators (Bridge Service and RC 2 USB Link)', async () => {
+    const statusResult = await page.evaluate(() => {
+      const serviceRow = document.getElementById('companion-service-row');
+      const usbRow = document.getElementById('companion-usb-row');
+      const serviceText = document.getElementById('companion-service-text');
+      const usbText = document.getElementById('companion-usb-text');
+      const serviceHelpBtn = document.getElementById('companion-service-help-btn');
+      const usbHelpBtn = document.getElementById('companion-usb-help-btn');
+
+      if (!serviceRow || !usbRow || !serviceText || !usbText || !serviceHelpBtn || !usbHelpBtn) {
+        return { success: false, reason: 'Elements missing' };
+      }
+
+      const serviceHasLabel = serviceText.textContent.includes('Bridge Service:');
+      const usbHasLabel = usbText.textContent.includes('RC 2 USB Link:');
+
+      return {
+        success: serviceHasLabel && usbHasLabel,
+        serviceText: serviceText.textContent,
+        usbText: usbText.textContent
+      };
+    });
+
+    assert.ok(statusResult.success, `Dual companion status check failed: ${JSON.stringify(statusResult)}`);
+  });
+
+  test('E2E: Companion help buttons open Guide modal to respective Service and USB Link tabs', async () => {
+    const helpResult = await page.evaluate(() => {
+      const guideModal = document.getElementById('guide-modal');
+      const closeBtn = document.getElementById('close-guide-btn');
+      const serviceHelpBtn = document.getElementById('companion-service-help-btn');
+      const usbHelpBtn = document.getElementById('companion-usb-help-btn');
+      const serviceTabBtn = document.querySelector('.guide-tab-btn[data-tab="service"]');
+      const usbTabBtn = document.querySelector('.guide-tab-btn[data-tab="usb"]');
+      const servicePane = document.getElementById('guide-pane-service');
+      const usbPane = document.getElementById('guide-pane-usb');
+
+      if (!guideModal || !closeBtn || !serviceHelpBtn || !usbHelpBtn || !serviceTabBtn || !usbTabBtn || !servicePane || !usbPane) {
+        return { success: false, reason: 'Guide modal elements missing' };
+      }
+
+      // 1. Click Service Help button
+      serviceHelpBtn.click();
+      const serviceModalOpen = !guideModal.classList.contains('hidden');
+      const serviceTabActive = serviceTabBtn.classList.contains('active');
+      const servicePaneVisible = !servicePane.classList.contains('hidden');
+
+      // Close modal
+      closeBtn.click();
+      const closedAfterService = guideModal.classList.contains('hidden');
+
+      // 2. Click USB Help button
+      usbHelpBtn.click();
+      const usbModalOpen = !guideModal.classList.contains('hidden');
+      const usbTabActive = usbTabBtn.classList.contains('active');
+      const usbPaneVisible = !usbPane.classList.contains('hidden');
+
+      // Close modal
+      closeBtn.click();
+      const closedAfterUsb = guideModal.classList.contains('hidden');
+
+      return {
+        success: serviceModalOpen && serviceTabActive && servicePaneVisible && closedAfterService &&
+                 usbModalOpen && usbTabActive && usbPaneVisible && closedAfterUsb,
+        serviceModalOpen,
+        serviceTabActive,
+        servicePaneVisible,
+        usbModalOpen,
+        usbTabActive,
+        usbPaneVisible
+      };
+    });
+
+    assert.ok(helpResult.success, `Companion help modal test failed: ${JSON.stringify(helpResult)}`);
+  });
+
+  test('E2E: Guide modal has Android & Tablet tab with Samsung My Files and Termux guidance', async () => {
+    const androidResult = await page.evaluate(() => {
+      const guideModal = document.getElementById('guide-modal');
+      const closeBtn = document.getElementById('close-guide-btn');
+      const serviceHelpBtn = document.getElementById('companion-service-help-btn');
+      const androidTabBtn = document.querySelector('.guide-tab-btn[data-tab="android"]');
+      const androidPane = document.getElementById('guide-pane-android');
+
+      if (!guideModal || !closeBtn || !serviceHelpBtn || !androidTabBtn || !androidPane) {
+        return { success: false, reason: 'Elements missing' };
+      }
+
+      // Open guide modal
+      serviceHelpBtn.click();
+
+      // Click Android tab
+      androidTabBtn.click();
+      const tabActive = androidTabBtn.classList.contains('active');
+      const paneVisible = !androidPane.classList.contains('hidden');
+      const hasMyFiles = androidPane.textContent.includes('Samsung "My Files"');
+      const hasTermux = androidPane.textContent.includes('Termux');
+
+      // Close modal
+      closeBtn.click();
+      const isClosed = guideModal.classList.contains('hidden');
+
+      return {
+        success: tabActive && paneVisible && hasMyFiles && hasTermux && isClosed,
+        tabActive,
+        paneVisible,
+        hasMyFiles,
+        hasTermux,
+        isClosed
+      };
+    });
+
+    assert.ok(androidResult.success, `Android guide tab test failed: ${JSON.stringify(androidResult)}`);
+  });
 });
+
+
 
 
 
