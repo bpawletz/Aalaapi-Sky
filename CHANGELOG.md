@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.46.1] - 2026-08-28
+
+### Fixed
+- **3D View Modal Visibility & Display Trapping:**
+  - Resolved an unclosed historical `<div>` in the About modal changelog markup that swallowed the closing tag for `#about-modal`.
+  - Previously, this caused `#preview-3d-modal` and `#config-modal` to be parsed as children of `#about-modal`, which had `display: none !important;` and `pointer-events: none;`, preventing the 3D Flight Path Preview modal from appearing on screen and causing the Three.js viewport canvas to render with 0x0 dimensions.
+  - Relocated `#preview-3d-modal` and `#config-modal` back to top-level dialog containers under `<body>`, restoring full-screen / pop-up 3D flight path visualization with interactive OrbitControls, camera cones, altitude stems, drone models, and ground satellite maps.
+- **HTML Document Hierarchy & Tag Validation:**
+  - Repaired unbalanced list closing tags and escaped raw XML tags (`<wpml:waypointPoiPoint>`) in historical changelog entries, achieving 100% tag balance and eliminating DOM parser warnings.
+
 ## [1.46.0] - 2026-08-27
 
 ### Added & Improved

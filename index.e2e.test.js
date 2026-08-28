@@ -1092,6 +1092,46 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
     assert.ok(androidResult.success, `Android guide tab test failed: ${JSON.stringify(androidResult)}`);
   });
+
+  test('E2E: 3D Flight Path Preview modal opens as a visible top-level dialog with non-zero dimensions and Three.js canvas', async () => {
+    const result = await page.evaluate(async () => {
+      if (typeof setGridCenter === 'function') {
+        setGridCenter(41.88, -87.62);
+      }
+      const preview3dBtn = document.getElementById('preview-3d-btn');
+      const preview3dModal = document.getElementById('preview-3d-modal');
+      const close3dBtn = document.getElementById('close-3d-btn');
+      const container = document.getElementById('three-container');
+
+      if (!preview3dBtn || !preview3dModal || !close3dBtn || !container) {
+        return { success: false, reason: 'Elements missing' };
+      }
+
+      preview3dBtn.click();
+      await new Promise(r => setTimeout(r, 100));
+
+      const rect = preview3dModal.getBoundingClientRect();
+      const cardRect = document.getElementById('preview-3d-card').getBoundingClientRect();
+      const canvas = container.querySelector('canvas');
+      const parentIsBody = preview3dModal.parentElement === document.body;
+      const isVisible = !preview3dModal.classList.contains('hidden') && rect.width > 0 && rect.height > 0;
+      const canvasRendered = !!canvas && canvas.width > 0 && canvas.height > 0;
+
+      close3dBtn.click();
+      const isClosed = preview3dModal.classList.contains('hidden');
+
+      return {
+        success: parentIsBody && isVisible && canvasRendered && cardRect.width > 0 && isClosed,
+        parentIsBody,
+        isVisible,
+        canvasRendered,
+        cardWidth: cardRect.width,
+        isClosed
+      };
+    });
+
+    assert.ok(result.success, `3D Preview modal E2E test failed: ${JSON.stringify(result)}`);
+  });
 });
 
 

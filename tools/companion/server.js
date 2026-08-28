@@ -19,7 +19,7 @@ const os = require('node:os');
 const readline = require('node:readline');
 const { execFile, spawn, execFileSync } = require('node:child_process');
 
-const VERSION = '1.46.0';
+const VERSION = '1.46.1';
 const PORT = process.env.AALAAPI_PORT ? parseInt(process.env.AALAAPI_PORT, 10) : 8765;
 const STAGING_DIR = path.resolve(__dirname, '../../scratch/companion_staging');
 const LATEST_DIR = path.resolve(__dirname, '../../scratch/latest_flight');
@@ -1270,19 +1270,27 @@ async function killExistingCompanion(port) {
     const finish = () => {
       if (!handled) {
         handled = true;
+        clearTimeout(connectTimer);
         resolve();
       }
     };
+
+    const connectTimer = setTimeout(() => {
+      if (!handled) {
+        try { req.destroy(); } catch (e) {}
+        killPortPid(port).then(finish);
+      }
+    }, 400);
 
     const req = http.request({
       hostname: '127.0.0.1',
       port: port,
       path: '/api/shutdown',
       method: 'POST',
-      timeout: 1500
+      timeout: 1000
     }, (res) => {
       if (res.statusCode === 200) {
-        setTimeout(finish, 800);
+        setTimeout(finish, 400);
       } else {
         killPortPid(port).then(finish);
       }
