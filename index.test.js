@@ -67,7 +67,11 @@ global.DOMParser = class DOMParser {
   }
 };
 global.localStorage = {
-  getItem: () => null
+  _data: {},
+  getItem(k) { return this._data[k] !== undefined ? this._data[k] : null; },
+  setItem(k, v) { this._data[k] = String(v); },
+  removeItem(k) { delete this._data[k]; },
+  clear() { this._data = {}; }
 };
 global.navigator = {};
 global.L = {
@@ -2636,6 +2640,47 @@ describe('RC2 WPML Compliance Tests', () => {
     'waypointHeadingAngleEnable'
   ];
 
+  test('buildWaylinesWpml groups multiple actions per waypoint under a single actionGroup (preventing DJI Fly Error performing flight)', () => {
+    const originalGetElementById = global.document.getElementById;
+    try {
+      global.document.getElementById = (id) => {
+        const valMap = {
+          'drone-model': '68',
+          'signal-lost-action': 'goBack',
+          'camera-zoom': '1.0',
+          'global-hover-time': '2',
+          'grid-type': 'single',
+          'grid-rotation': '0',
+          'heading-mode': 'followWayline',
+        };
+        return { value: valMap[id] || '', checked: false };
+      };
+
+      const wps = [
+        { lat: 40.010, lon: -83.177, alt: 25, pitch: -90, heading: 0, isRingStart: false, hoverTime: 2 }
+      ];
+
+      const xml = vm.runInThisContext(`
+        buildWaylinesWpml(${JSON.stringify(wps)}, 25, 2, 'followWayline', 'goHome', -90, 'stopAndShoot', 'straight')
+      `);
+
+      const placemarkMatch = xml.match(/<Placemark>[\s\S]*?<\/Placemark>/);
+      assert.ok(placemarkMatch, 'Placemark should exist');
+      const placemarkXml = placemarkMatch[0];
+
+      const actionGroupCount = (placemarkXml.match(/<wpml:actionGroup>/g) || []).length;
+      assert.strictEqual(actionGroupCount, 1,
+        `Expected exactly 1 consolidated wpml:actionGroup per waypoint placemark, found ${actionGroupCount}`);
+
+      assert.ok(placemarkXml.includes('<wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>'));
+      assert.ok(placemarkXml.includes('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>'));
+      assert.ok(placemarkXml.includes('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>'));
+      assert.ok(placemarkXml.includes('<wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>'));
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+
   test('buildWaylinesWpml should contain all required RC2 golden tags for standard flight', () => {
     const originalGetElementById = global.document.getElementById;
     try {
@@ -3184,11 +3229,61 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     }
   });
 
-  test('companion server exports stopScanners, killExistingCompanion, and VERSION 1.43.0', () => {
+  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.44.0', () => {
     const companion = require('./tools/companion/server.js');
     assert.strictEqual(typeof companion.stopScanners, 'function');
     assert.strictEqual(typeof companion.killExistingCompanion, 'function');
-    assert.strictEqual(companion.VERSION, '1.43.0');
+    assert.strictEqual(typeof companion.pullFromRc2, 'function');
+    assert.strictEqual(companion.VERSION, '1.44.0');
+  });
+
+  test('pullFromRC2 fetches mission from companion and triggers parseWPML', async () => {
+    let pullBtn = {
+      innerHTML: '<span>Pull from RC 2</span>',
+      disabled: false,
+      style: {}
+    };
+    let statusText = { textContent: '' };
+
+    const origGetElementById = global.document.getElementById;
+    const origFetch = global.fetch;
+
+    global.document.getElementById = (id) => {
+      if (id === 'direct-rc2-pull-btn') return pullBtn;
+      if (id === 'import-status-text') return statusText;
+      return origGetElementById ? origGetElementById(id) : null;
+    };
+
+    global.fetch = (url) => {
+      assert.ok(url.includes('/api/pull-mission'));
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          success: true,
+          uuid: '354A8F93-759C-42C3-A8D5-746F79C7622A',
+          fileName: '354A8F93-759C-42C3-A8D5-746F79C7622A.kmz',
+          waylinesWpml: '<?xml version="1.0"?><kml><Document><Placemark></Placemark></Document></kml>'
+        })
+      });
+    };
+
+    vm.runInThisContext(`
+      parseWPML = function(xml) {
+        window.__lastParsedXml = xml;
+      };
+    `);
+
+    try {
+      vm.runInThisContext('isRc2MtpConnected = true;');
+      await vm.runInThisContext('pullFromRC2()');
+      assert.ok(pullBtn.innerHTML.includes('Pulled'));
+      const lastParsed = vm.runInThisContext('window.__lastParsedXml');
+      assert.ok(lastParsed.includes('<Placemark>'));
+      assert.ok(statusText.textContent.includes('Imported'));
+    } finally {
+      global.document.getElementById = origGetElementById;
+      global.fetch = origFetch;
+    }
   });
 
   test('killExistingCompanion handles offline port cleanly without error', async () => {
