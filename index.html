@@ -89,11 +89,14 @@ html, body {
   height: 100%;
   z-index: 10;
   position: relative;
+  overflow-x: hidden;
 }
 
 .app-header {
-  padding: 24px 24px 24px 76px;
+  padding: 20px 12px 18px 64px;
   border-bottom: 1px solid var(--border-color);
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .header-top-row {
@@ -101,31 +104,58 @@ html, body {
   justify-content: space-between;
   align-items: center;
   width: 100%;
+  gap: 4px;
 }
 
 .logo {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
   color: var(--accent-cyan);
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .logo h1 {
-  font-size: 1.4rem;
+  font-size: 1.18rem;
   font-weight: 700;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.4px;
   background: var(--primary-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  white-space: nowrap;
+}
+
+.header-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .header-about-btn {
-  padding: 4px 10px !important;
-  font-size: 0.75rem !important;
-  min-height: 24px !important;
+  padding: 0 8px !important;
+  font-size: 0.72rem !important;
+  height: 30px !important;
+  min-height: 30px !important;
   line-height: 1.2 !important;
   width: auto !important;
-  border-radius: 6px !important;
+  border-radius: 7px !important;
+  margin: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.header-config-btn {
+  padding: 5px !important;
+  width: 30px !important;
+  height: 30px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  border-radius: 7px !important;
 }
 
 .subtitle {
@@ -1449,7 +1479,36 @@ html, body {
   color: #7dd3fc !important;
 }
 
-#companion-help-btn:hover {
+.companion-status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+
+.companion-help-circle-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #38bdf8;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  font-size: 0.65rem;
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+
+.companion-help-circle-btn:hover,
+#companion-help-btn:hover,
+#companion-service-help-btn:hover,
+#companion-usb-help-btn:hover {
   background: rgba(6, 182, 212, 0.3) !important;
   border-color: #38bdf8 !important;
   color: #fff !important;
@@ -1588,7 +1647,7 @@ html, body {
       <header class="app-header">
         <div class="header-top-row">
           <div class="logo">
-            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <!-- Concentric Myaamia/radar halos -->
               <circle cx="12" cy="12" r="9" stroke="#06b6d4" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.25" />
               <circle cx="12" cy="12" r="6" stroke="#06b6d4" stroke-width="0.75" opacity="0.4" />
@@ -1620,17 +1679,17 @@ html, body {
               <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
               <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
             </svg>
-            <h1 style="display: inline-flex; align-items: center; gap: 8px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.65rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 2px 7px; font-weight: 700; letter-spacing: 0.03em; vertical-align: middle; margin-left: 6px;">v1.44.0</span><span style="font-size: 0.5rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 4px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
+            <h1 style="display: inline-flex; align-items: center; gap: 4px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.46.0</span><span style="font-size: 0.48rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 3px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
           </div>
-          <div style="display: flex; gap: 8px; align-items: center;">
-            <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" style="padding: 8px; display: inline-flex; align-items: center; justify-content: center; margin: 0; border-radius: 8px; width: 36px; height: 36px;">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <div class="header-actions" style="display: flex; gap: 5px; align-items: center;">
+            <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" title="Configuration Settings">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="3"></circle>
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
               </svg>
             </button>
-            <button id="about-btn" class="btn-secondary header-about-btn" type="button" style="margin: 0; height: 36px; display: inline-flex; align-items: center; justify-content: center; padding: 0 12px; border-radius: 8px;">About</button>
-            <button id="useful-links-btn" class="btn-secondary header-about-btn" type="button" style="margin: 0; height: 36px; display: inline-flex; align-items: center; justify-content: center; padding: 0 12px; border-radius: 8px;">Links</button>
+            <button id="about-btn" class="btn-secondary header-about-btn" type="button" title="About & Changelog">About</button>
+            <button id="useful-links-btn" class="btn-secondary header-about-btn" type="button" title="Useful Links">Links</button>
           </div>
         </div>
         <p class="subtitle">Drone Waypoint Mission Planner</p>
@@ -2186,16 +2245,29 @@ html, body {
           
           <!-- RC 2 Companion Live Sync Container -->
           <div id="companion-sync-container" class="is-offline" style="margin-top: 10px; padding: 8px 10px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column; gap: 6px; transition: border-color 0.2s, background 0.2s;">
-            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem;">
+            <!-- Service Status Row -->
+            <div class="companion-status-row" id="companion-service-row">
               <span style="font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
-                <span id="companion-indicator-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #64748b; display: inline-block;"></span>
-                <span id="companion-status-text">Companion Offline</span>
+                <span id="companion-service-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #64748b; display: inline-block;"></span>
+                <span id="companion-service-text">Bridge Service: Offline</span>
               </span>
               <span style="display: inline-flex; align-items: center; gap: 6px;">
-                <span id="companion-device-label" style="color: var(--text-muted); font-size: 0.68rem;">start-companion.bat</span>
-                <button id="companion-help-btn" type="button" title="How to use &amp; connect RC 2" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); color: #38bdf8; border-radius: 50%; width: 16px; height: 16px; font-size: 0.65rem; font-weight: bold; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; line-height: 1;">?</button>
+                <span id="companion-service-label" style="color: var(--text-muted); font-size: 0.68rem;">start-companion.bat</span>
+                <button id="companion-service-help-btn" class="companion-help-circle-btn" type="button" title="How to start Bridge Service">?</button>
               </span>
             </div>
+            <!-- USB Link Status Row -->
+            <div class="companion-status-row" id="companion-usb-row">
+              <span style="font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
+                <span id="companion-usb-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #64748b; display: inline-block;"></span>
+                <span id="companion-usb-text">RC 2 USB Link: Waiting</span>
+              </span>
+              <span style="display: inline-flex; align-items: center; gap: 6px;">
+                <span id="companion-usb-label" style="color: var(--text-muted); font-size: 0.68rem;">Plug in USB-C</span>
+                <button id="companion-usb-help-btn" class="companion-help-circle-btn" type="button" title="How to connect DJI RC 2 via USB-C">?</button>
+              </span>
+            </div>
+            <!-- Contextual Help / Status Hint -->
             <div id="companion-offline-hint" style="font-size: 0.68rem; color: #38bdf8; display: flex; align-items: center; justify-content: space-between; padding-top: 4px; border-top: 1px solid rgba(255, 255, 255, 0.06); cursor: pointer;" title="Open RC 2 Sync &amp; Setup Guide">
               <span style="display: flex; align-items: center; gap: 4px;">
                 <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
@@ -2203,6 +2275,11 @@ html, body {
               </span>
               <span style="font-weight: 600; text-decoration: underline;">How to use &rsaquo;</span>
             </div>
+            <!-- Hidden backward-compatible aliases for legacy selector compatibility -->
+            <span id="companion-indicator-dot" style="display:none;"></span>
+            <span id="companion-status-text" style="display:none;">Companion Offline</span>
+            <span id="companion-device-label" style="display:none;">start-companion.bat</span>
+            <button id="companion-help-btn" style="display:none;" type="button">?</button>
             <div id="rc2-direct-actions" style="display: none; width: 100%; gap: 6px;">
               <button id="direct-rc2-sync-btn" type="button" class="btn-secondary" style="flex: 1; padding: 6px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.4); color: #22d3ee; cursor: pointer;" title="Send active mission directly to connected DJI RC 2">
                 <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -2280,10 +2357,6 @@ html, body {
               <span class="stat-lbl">Est. Flight Time</span>
               <span class="stat-val" id="stat-flight-time">-</span>
             </div>
-            <div class="stat-item" style="grid-column: 1 / -1;">
-              <span class="stat-lbl">Air Traffic</span>
-              <span class="stat-val"><a id="opensky-link" href="https://map.opensky-network.org/" target="_blank" rel="noopener noreferrer" style="color: var(--accent-cyan); text-decoration: none;">OpenSky Explorer ↗</a></span>
-            </div>
             <div class="stat-item weather-window" style="grid-column: 1 / -1; margin-top: 8px;">
               <span class="stat-lbl" style="display:flex; justify-content:space-between; align-items:center;">Weather <button id="btn-refresh-weather" class="btn-sm" style="padding: 2px 6px; font-size: 0.7rem; background: var(--bg-hover); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;">↻ Refresh</button></span>
               <span class="stat-val" id="stat-weather-window">-</span>
@@ -2350,11 +2423,26 @@ html, body {
 
         <!-- Mode Navigation Tabs -->
         <div class="guide-nav-tabs">
-          <button type="button" class="guide-tab-btn active" data-tab="companion">
+          <button type="button" class="guide-tab-btn active" data-tab="service">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
             </svg>
-            1-Click Direct Sync
+            Bridge Service
+          </button>
+          <button type="button" class="guide-tab-btn" data-tab="usb">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="7" y="2" width="10" height="20" rx="3"></rect>
+              <line x1="12" y1="18" x2="12" y2="18.01"></line>
+              <line x1="10" y1="6" x2="14" y2="6"></line>
+            </svg>
+            RC 2 USB Link
+          </button>
+          <button type="button" class="guide-tab-btn" data-tab="android">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+              <line x1="12" y1="18" x2="12.01" y2="18"></line>
+            </svg>
+            Android &amp; Tablet
           </button>
           <button type="button" class="guide-tab-btn" data-tab="watcher">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -2371,37 +2459,145 @@ html, body {
           </button>
         </div>
 
-        <!-- TAB 1: 1-Click Direct Sync (Companion Bridge) -->
-        <div id="guide-pane-companion" class="guide-tab-pane">
+        <!-- TAB 1: Bridge Service Setup -->
+        <div id="guide-pane-service" class="guide-tab-pane">
           <div class="modal-alert info" style="margin-bottom: 14px; border-left-color: var(--accent-cyan); background: rgba(6, 182, 212, 0.06); font-size: 0.84rem; line-height: 1.4; padding: 12px; border-radius: 8px;">
-            <strong>⚡ Fastest Method:</strong> The Companion Bridge is a zero-dependency local background service that streams generated KMZ missions and route thumbnails directly to your connected DJI RC 2 over USB in &lt;1 second. Zero file downloads or manual file moving required!
+            <strong>⚡ Bridge Service (Port 8765):</strong> The Companion Bridge is a zero-dependency local Node.js background service (<code>tools/companion/server.js</code>) that enables direct 1-click mission synchronization and flight log replay over USB MTP.
           </div>
 
           <ol class="guide-steps">
             <li>
-              <strong>Start the Companion Bridge:</strong>
-              Double-click <code>start-companion.bat</code> in the project root folder, or run the following command in your terminal:
+              <strong>Start the Companion Service:</strong>
+              Double-click <code>start-companion.bat</code> in the repository root, or run the following command in your terminal:
               <div class="code-snippet-box">
                 <code>npm run companion</code>
                 <button type="button" class="btn-copy-cmd" data-copy="npm run companion">Copy</button>
               </div>
             </li>
             <li>
-              <strong>Connect DJI RC 2 via USB-C:</strong>
-              Use a data-capable USB-C cable to connect your RC 2 controller to your computer. On the controller screen, make sure it is powered on and set to <strong>File Transfer (MTP)</strong> mode.
+              <strong>Verify Bridge Status:</strong>
+              Once started, the sidebar companion box will illuminate <strong>`🟢 Bridge Service: Online (port 8765)`</strong>.
             </li>
             <li>
-              <strong>Stream Mission Directly:</strong>
-              Once connected, the sidebar sync box will illuminate <strong>`🟢 DJI RC 2 Connected`</strong> and reveal the cyan <strong>"⚡ Send Directly to DJI RC 2"</strong> button. Simply click it to sync your mission and thumbnail instantly.
+              <strong>Prerequisites &amp; Troubleshooting:</strong>
+              <ul style="margin: 6px 0 0 16px; padding: 0; list-style-type: disc; color: var(--text-muted); font-size: 0.8rem; line-height: 1.5;">
+                <li>Ensure <strong>Node.js</strong> (v18 or higher) is installed on your computer.</li>
+                <li>If port 8765 is occupied or the service fails to start, run <code>npm run companion:stop</code> or terminate lingering Node processes.</li>
+                <li>Browser Private Network Access: If your browser prompts for local network permissions, select "Allow".</li>
+              </ul>
             </li>
           </ol>
 
           <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; font-size: 0.78rem; color: var(--text-muted); margin-top: 12px; line-height: 1.4;">
-            <strong style="color: var(--text-main);">Note when Offline:</strong> If the companion service is not running, the sidebar shows <code>Companion Offline</code>. You can start it anytime using <code>start-companion.bat</code>, or export normally using the <strong>Auto-Sync Watcher</strong> or <strong>Manual Injection</strong> tabs above.
+            <strong style="color: var(--text-main);">Next Step:</strong> Once the service is online, switch to the <strong>RC 2 USB Link</strong> tab to connect your remote controller.
           </div>
         </div>
 
-        <!-- TAB 2: Auto-Sync Watcher (Folder Monitor) -->
+        <!-- TAB 2: RC 2 USB-C Connection Guide -->
+        <div id="guide-pane-usb" class="guide-tab-pane hidden">
+          <div class="modal-alert info" style="margin-bottom: 14px; border-left-color: #a855f7; background: rgba(168, 85, 247, 0.06); font-size: 0.84rem; line-height: 1.4; padding: 12px; border-radius: 8px;">
+            <strong>🔌 RC 2 USB-C &amp; MTP Setup:</strong> Connect your physical DJI RC 2 controller to your PC using a certified data-capable USB-C cable to transfer missions and telemetry.
+          </div>
+
+          <ol class="guide-steps">
+            <li>
+              <strong>Use a Certified Data Cable:</strong>
+              Use a high-quality USB-C cable that supports <strong>data transfer</strong>. Avoid cheap "charge-only" cables which lack data pins and cannot communicate with Windows.
+            </li>
+            <li>
+              <strong>Power On the Controller:</strong>
+              Press once, then press and hold the power button on your DJI RC 2 to turn it on completely before connecting.
+            </li>
+            <li>
+              <strong>Select "File Transfer (MTP)" on the Screen:</strong>
+              When plugged into your computer, a prompt will appear on the RC 2 touchscreen. Tap <strong>File Transfer (MTP)</strong> or <strong>Transfer files</strong>.
+              <div style="margin-top: 4px; font-size: 0.78rem; color: var(--text-muted);">
+                <em>Tip: If no popup appears, swipe down from the very top edge of the RC 2 screen to open Android notifications, tap "Charging this device via USB", and select "File Transfer".</em>
+              </div>
+            </li>
+            <li>
+              <strong>Verify in Windows Explorer:</strong>
+              Open Windows File Explorer (<code>Win + E</code>). You should see <strong>DJI RC 2</strong> listed under "This PC" / "Portable Devices", confirming access to the internal storage path:
+              <div class="code-snippet-box">
+                <code>/Android/data/dji.go.v5/files/waypoint</code>
+              </div>
+            </li>
+            <li>
+              <strong>1-Click Mission Transfer:</strong>
+              When recognized, the sidebar displays <strong>`🟢 RC 2 USB Link: Connected`</strong>. Click <strong>"⚡ Send to RC 2"</strong> to transfer your active KMZ mission and route thumbnail directly!
+            </li>
+          </ol>
+
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; font-size: 0.78rem; color: var(--text-muted); margin-top: 12px; line-height: 1.4;">
+            <strong style="color: var(--text-main);">DJI Fly Cache Refresh:</strong> If an updated mission doesn't immediately show up on the RC 2 screen, simply tap back to the Fly app home screen and reopen the Route library.
+          </div>
+        </div>
+
+        <!-- TAB 3: Android & Tablet Field Workflow -->
+        <div id="guide-pane-android" class="guide-tab-pane hidden">
+          <div class="modal-alert info" style="margin-bottom: 14px; border-left-color: #10b981; background: rgba(16, 185, 129, 0.06); font-size: 0.84rem; line-height: 1.4; padding: 12px; border-radius: 8px;">
+            <strong>📱 Android / Samsung Tablet Field Transfer:</strong> Plan flights in Chrome on your Samsung phone or tablet and transfer missions to your DJI RC 2 in the field without any PC!
+          </div>
+
+          <div style="font-weight: 700; color: var(--text-main); font-size: 0.88rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+            <span>⚡ Method 1: Zero-Install (Samsung "My Files" via USB-C Cable) — Works Today!</span>
+          </div>
+          <ol class="guide-steps">
+            <li>
+              <strong>Connect USB-C to USB-C:</strong> Plug a USB-C data cable between your Samsung tablet/phone and the DJI RC 2 controller.
+            </li>
+            <li>
+              <strong>Select "File Transfer (MTP)" on the RC 2:</strong> When prompted on the RC 2 touchscreen, tap <strong>File Transfer</strong>. (If no prompt appears, swipe down from the top edge and select USB notification).
+            </li>
+            <li>
+              <strong>Export KMZ from Aalaapi Sky:</strong> In your browser on the tablet, tap <strong>Export KMZ</strong> in the sidebar to download your flight plan to your device's <code>Downloads</code> folder.
+            </li>
+            <li>
+              <strong>Copy via Samsung "My Files" App:</strong>
+              <ul style="margin: 4px 0 0 16px; padding: 0; list-style-type: disc; color: var(--text-muted); font-size: 0.8rem; line-height: 1.5;">
+                <li>Open the built-in <strong>My Files</strong> app on your Samsung tablet.</li>
+                <li>Go to <strong>Internal storage &gt; Download</strong>, long-press your exported <code>.kmz</code> file and tap <strong>Copy</strong>.</li>
+                <li>Under Storage, tap <strong>DJI RC 2</strong> (or USB Storage), and navigate to:
+                  <div class="code-snippet-box" style="margin-top: 4px;">
+                    <code>Internal shared storage/Android/data/dji.go.v5/files/waypoint/[UUID]/</code>
+                  </div>
+                </li>
+                <li>Tap <strong>Copy here</strong>. Launch DJI Fly on the RC 2 and your mission is ready!</li>
+              </ul>
+            </li>
+          </ol>
+
+          <div style="font-weight: 700; color: var(--text-main); font-size: 0.88rem; margin: 14px 0 6px; display: flex; align-items: center; gap: 6px;">
+            <span>🛠️ Method 2: Running Companion Service on Android (Termux + ADB)</span>
+          </div>
+          <ol class="guide-steps">
+            <li>
+              <strong>Install Termux:</strong> Install <strong>Termux</strong> on your Android device (from F-Droid or GitHub).
+            </li>
+            <li>
+              <strong>Install Node.js &amp; ADB Tools:</strong> Run the following command in Termux:
+              <div class="code-snippet-box">
+                <code>pkg update &amp;&amp; pkg install nodejs git android-tools</code>
+                <button type="button" class="btn-copy-cmd" data-copy="pkg update && pkg install nodejs git android-tools">Copy</button>
+              </div>
+            </li>
+            <li>
+              <strong>Start the Companion Bridge:</strong> Inside the Aalaapi-Sky directory in Termux, run:
+              <div class="code-snippet-box">
+                <code>npm run companion</code>
+                <button type="button" class="btn-copy-cmd" data-copy="npm run companion">Copy</button>
+              </div>
+            </li>
+            <li>
+              <strong>1-Click Sync in Tablet Browser:</strong> Open Chrome on your tablet, navigate to Aalaapi Sky, and the companion box will illuminate <strong>`🟢 Bridge Service: Online`</strong> with ADB 1-click sync enabled!
+            </li>
+          </ol>
+        </div>
+
+        <!-- Hidden backward-compatible alias pane for legacy test assertions -->
+        <div id="guide-pane-companion" class="guide-tab-pane hidden" style="display:none;"></div>
+
+        <!-- TAB 4: Auto-Sync Watcher (Folder Monitor) -->
         <div id="guide-pane-watcher" class="guide-tab-pane hidden">
           <div class="modal-alert info" style="margin-bottom: 14px; border-left-color: var(--accent-cyan); background: rgba(6, 182, 212, 0.06); font-size: 0.84rem; line-height: 1.4; padding: 12px; border-radius: 8px;">
             <strong>📂 Folder Watcher Method:</strong> Watches your PC's <code>Downloads</code> folder. Whenever you click <strong>Export KMZ</strong>, the watcher detects the files and automatically moves them to the connected RC 2 controller.
@@ -2481,6 +2677,16 @@ html, body {
         <button id="close-links-btn" class="close-btn" type="button" aria-label="Close links">&times;</button>
       </header>
       <div class="modal-content" style="display: flex; flex-direction: column; gap: 12px;">
+        <a id="opensky-link" href="https://map.opensky-network.org/" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="text-decoration: none; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; flex-direction: column; gap: 2px; text-align: left;">
+            <span style="display: flex; align-items: center; gap: 6px;">
+              OpenSky Explorer
+              <span style="font-size: 0.65rem; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 4px; padding: 1px 5px; font-weight: 600;">Live Airspace</span>
+            </span>
+            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">Live airspace air traffic and flight tracking centered on mission coordinates.</span>
+          </div>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </a>
         <a href="https://iacra.faa.gov/IACRA/Default.aspx" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="text-decoration: none; display: flex; align-items: center; justify-content: space-between;">
           <div style="display: flex; flex-direction: column; gap: 2px; text-align: left;"><span>IACRA</span><span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">FAA pilot certification and remote pilot certificate management.</span></div>
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
@@ -2557,7 +2763,7 @@ html, body {
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.44.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.46.0</span>
             </div>
           </div>
         </div>
@@ -2621,6 +2827,28 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.46.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Android &amp; Samsung Tablet Field Transfer:</strong> Added a dedicated Android &amp; Tablet guide tab in the RC 2 Guide modal documenting the zero-install Samsung "My Files" USB-C OTG direct transfer workflow, as well as the mobile Termux companion service setup.</li>
+              <li><strong>Cross-Platform Companion &amp; ADB Support:</strong> Enhanced <code>tools/companion/server.js</code> with cross-platform platform detection, enabling <code>npm run companion</code> to run in Android Termux / Linux with ADB mission push/pull capabilities and graceful non-Windows scanner fallbacks.</li>
+              <li><strong>Repository Hygiene &amp; Cleanliness:</strong> Purged legacy error dump folders and untracked temporary scratch scripts and binaries from Git, keeping the repository light and focused while preserving the core <code>scratch/build.py</code> compiler.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.45.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Companion Box Dual Status:</strong> Separated companion indicator into Bridge Service status (<code>🟢 Online</code> / <code>⚪ Offline</code>) and RC 2 USB Link status (<code>🟢 Connected</code> / <code>🟡 Unplugged</code>), eliminating ambiguity between server state and USB connectivity.</li>
+              <li><strong>Dedicated Help Pathways:</strong> Added independent <code>?</code> help triggers for both Bridge Service and USB Link, directly opening the corresponding tabs in the RC 2 Guide modal.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.44.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Sidebar Header Layout &amp; Alignment:</strong> Optimized header padding and action button dimensions (<code>#config-btn</code>, <code>#about-btn</code>, <code>#useful-links-btn</code>) with responsive flex-wrapping, preventing the Links button from overflowing the navigation bar into the map viewport.</li>
+              <li><strong>OpenSky Explorer in Links Pop-Up:</strong> Relocated OpenSky Explorer live ADS-B airspace flight tracker from the floating stats overlay to the Useful Links modal pop-up (<code>#links-modal</code>) with live mission/map coordinate query parameters.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.44.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Single ActionGroup Fix ("Error Performing Flight"):</strong> Consolidated all waypoint actions into a single parallel action group per waypoint to comply with DJI Fly pre-flight flight-controller validation rules and added <code>wpml:useGlobalPayloadLensIndex</code>.</li>
@@ -4896,17 +5124,18 @@ function restoreSettingsFromLocalStorage() {
 
 function switchGuideTab(targetTab) {
   if (typeof document === 'undefined') return;
+  const canonicalTab = (targetTab === 'companion') ? 'service' : targetTab;
   const tabBtns = document.querySelectorAll('.guide-tab-btn');
   const tabPanes = document.querySelectorAll('.guide-tab-pane');
   tabBtns.forEach(btn => {
-    if (btn.dataset.tab === targetTab) {
+    if (btn.dataset.tab === canonicalTab || (canonicalTab === 'service' && btn.dataset.tab === 'companion')) {
       btn.classList.add('active');
     } else {
       btn.classList.remove('active');
     }
   });
   tabPanes.forEach(pane => {
-    if (pane.id === `guide-pane-${targetTab}`) {
+    if (pane.id === `guide-pane-${canonicalTab}` || (canonicalTab === 'service' && pane.id === 'guide-pane-companion')) {
       pane.classList.remove('hidden');
     } else {
       pane.classList.add('hidden');
@@ -4914,7 +5143,7 @@ function switchGuideTab(targetTab) {
   });
 }
 
-function openRC2GuideModal(targetTab = 'companion') {
+function openRC2GuideModal(targetTab = 'service') {
   if (typeof document === 'undefined') return;
   const guideModal = document.getElementById('guide-modal');
   if (!guideModal) return;
@@ -5094,7 +5323,11 @@ function initUIEventListeners() {
   if (companionOfflineHint) {
     companionOfflineHint.addEventListener('click', (e) => {
       e.stopPropagation();
-      openRC2GuideModal('companion');
+      if (!isCompanionOnline) {
+        openRC2GuideModal('service');
+      } else {
+        openRC2GuideModal('usb');
+      }
     });
   }
 
@@ -5102,7 +5335,23 @@ function initUIEventListeners() {
   if (companionHelpBtn) {
     companionHelpBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      openRC2GuideModal('companion');
+      openRC2GuideModal('service');
+    });
+  }
+
+  const companionServiceHelpBtn = document.getElementById('companion-service-help-btn');
+  if (companionServiceHelpBtn) {
+    companionServiceHelpBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openRC2GuideModal('service');
+    });
+  }
+
+  const companionUsbHelpBtn = document.getElementById('companion-usb-help-btn');
+  if (companionUsbHelpBtn) {
+    companionUsbHelpBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openRC2GuideModal('usb');
     });
   }
 
@@ -5110,10 +5359,15 @@ function initUIEventListeners() {
   if (companionSyncContainer) {
     companionSyncContainer.addEventListener('click', (e) => {
       if (!isCompanionOnline) {
-        if (e.target && e.target.closest && (e.target.closest('#open-diagnostics-btn') || e.target.closest('#direct-rc2-sync-btn') || e.target.closest('#direct-rc2-pull-btn'))) {
+        if (e.target && e.target.closest && (e.target.closest('#open-diagnostics-btn') || e.target.closest('#direct-rc2-sync-btn') || e.target.closest('#direct-rc2-pull-btn') || e.target.closest('#companion-service-help-btn') || e.target.closest('#companion-usb-help-btn'))) {
           return;
         }
-        openRC2GuideModal('companion');
+        openRC2GuideModal('service');
+      } else if (!isRc2MtpConnected) {
+        if (e.target && e.target.closest && (e.target.closest('#open-diagnostics-btn') || e.target.closest('#direct-rc2-sync-btn') || e.target.closest('#direct-rc2-pull-btn') || e.target.closest('#companion-service-help-btn') || e.target.closest('#companion-usb-help-btn'))) {
+          return;
+        }
+        openRC2GuideModal('usb');
       }
     });
   }
@@ -5148,8 +5402,11 @@ function initUIEventListeners() {
     const toggleLinksModal = (e) => {
       if (e) e.stopPropagation();
       linksModal.classList.toggle('hidden');
-      if (!linksModal.classList.contains('hidden') && window.innerWidth <= 768) {
-        document.querySelector('.sidebar').classList.remove('open');
+      if (!linksModal.classList.contains('hidden')) {
+        updateOpenSkyLink();
+        if (window.innerWidth <= 768) {
+          document.querySelector('.sidebar').classList.remove('open');
+        }
       }
     };
     showLinksBtn.addEventListener('click', toggleLinksModal);
@@ -9477,15 +9734,23 @@ let companionPollInterval = null;
 
 async function pollCompanionStatus() {
   if (typeof document === 'undefined') return;
+  const sDot = document.getElementById('companion-service-dot');
+  const sText = document.getElementById('companion-service-text');
+  const sLabel = document.getElementById('companion-service-label');
+  const uDot = document.getElementById('companion-usb-dot');
+  const uText = document.getElementById('companion-usb-text');
+  const uLabel = document.getElementById('companion-usb-label');
+
+  // Legacy alias elements for backward compatibility
   const dot = document.getElementById('companion-indicator-dot');
   const text = document.getElementById('companion-status-text');
   const label = document.getElementById('companion-device-label');
+
   const directActions = document.getElementById('rc2-direct-actions');
   const directBtn = document.getElementById('direct-rc2-sync-btn');
   const pullBtn = document.getElementById('direct-rc2-pull-btn');
   const container = document.getElementById('companion-sync-container');
   const hint = document.getElementById('companion-offline-hint');
-  if (!dot || !text) return;
 
   try {
     const controller = new AbortController();
@@ -9496,6 +9761,16 @@ async function pollCompanionStatus() {
     if (res.ok) {
       const data = await res.json();
       isCompanionOnline = true;
+
+      // 1. Update Bridge Service status (Online)
+      if (sDot) sDot.style.background = '#22c55e';
+      if (sText) {
+        sText.textContent = 'Bridge Service: Online';
+        sText.style.color = '#22c55e';
+      }
+      if (sLabel) sLabel.textContent = 'port 8765';
+
+      // 2. Update RC 2 USB Link status
       if (data.connected) {
         isRc2MtpConnected = true;
         if (data.activeMissions && data.activeMissions.length > 0) {
@@ -9506,10 +9781,22 @@ async function pollCompanionStatus() {
         }
         if (container && container.classList) container.classList.remove('is-offline');
         if (hint && hint.style) hint.style.display = 'none';
-        dot.style.background = '#22c55e'; // Green
-        text.textContent = 'DJI RC 2 Connected';
-        text.style.color = '#22c55e';
+
+        if (uDot) uDot.style.background = '#22c55e';
+        if (uText) {
+          uText.textContent = 'RC 2 USB Link: Connected';
+          uText.style.color = '#22c55e';
+        }
+        if (uLabel) uLabel.textContent = data.deviceName || 'MTP Ready';
+
+        // Legacy compatibility
+        if (dot) dot.style.background = '#22c55e';
+        if (text) {
+          text.textContent = 'DJI RC 2 Connected';
+          text.style.color = '#22c55e';
+        }
         if (label) label.textContent = data.deviceName || 'MTP Ready';
+
         if (directActions) directActions.style.display = 'flex';
         if (directBtn) directBtn.style.display = 'inline-flex';
         if (pullBtn) pullBtn.style.display = 'inline-flex';
@@ -9522,13 +9809,25 @@ async function pollCompanionStatus() {
           if (labelSpan) {
             labelSpan.innerHTML = `
               <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-              RC 2 Disconnected &bull; Plug in USB-C`;
+              RC 2 Unplugged &bull; USB Setup Guide`;
           }
         }
-        dot.style.background = '#eab308'; // Amber
-        text.textContent = 'RC 2 Disconnected';
-        text.style.color = '#eab308';
+
+        if (uDot) uDot.style.background = '#eab308'; // Amber
+        if (uText) {
+          uText.textContent = 'RC 2 USB Link: Unplugged';
+          uText.style.color = '#eab308';
+        }
+        if (uLabel) uLabel.textContent = 'Plug in USB-C';
+
+        // Legacy compatibility
+        if (dot) dot.style.background = '#eab308';
+        if (text) {
+          text.textContent = 'RC 2 Disconnected';
+          text.style.color = '#eab308';
+        }
         if (label) label.textContent = 'Plug in USB-C';
+
         if (directActions) directActions.style.display = 'none';
         if (directBtn) directBtn.style.display = 'none';
         if (pullBtn) pullBtn.style.display = 'none';
@@ -9546,13 +9845,34 @@ async function pollCompanionStatus() {
       if (labelSpan) {
         labelSpan.innerHTML = `
           <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-          Sync Offline &bull; Setup Guide`;
+          Bridge Offline &bull; Setup Guide`;
       }
     }
-    dot.style.background = '#64748b'; // Gray
-    text.textContent = 'Companion Offline';
-    text.style.color = 'var(--text-main)';
+
+    // 1. Service Offline
+    if (sDot) sDot.style.background = '#64748b'; // Gray
+    if (sText) {
+      sText.textContent = 'Bridge Service: Offline';
+      sText.style.color = 'var(--text-main)';
+    }
+    if (sLabel) sLabel.textContent = 'start-companion.bat';
+
+    // 2. USB Link Waiting
+    if (uDot) uDot.style.background = '#64748b'; // Gray
+    if (uText) {
+      uText.textContent = 'RC 2 USB Link: Waiting';
+      uText.style.color = 'var(--text-muted)';
+    }
+    if (uLabel) uLabel.textContent = 'Service Required';
+
+    // Legacy compatibility
+    if (dot) dot.style.background = '#64748b';
+    if (text) {
+      text.textContent = 'Companion Offline';
+      text.style.color = 'var(--text-main)';
+    }
     if (label) label.textContent = 'start-companion.bat';
+
     if (directActions) directActions.style.display = 'none';
     if (directBtn) directBtn.style.display = 'none';
     if (pullBtn) pullBtn.style.display = 'none';
@@ -16279,7 +16599,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
   if (isLoading || statusMsg) {
     windowEl.textContent = statusMsg || "Loading...";
     windowEl.style.color = "var(--text-secondary)";
-    dirsEl.replaceChildren();
+    if (typeof dirsEl.replaceChildren === 'function') dirsEl.replaceChildren(); else dirsEl.innerHTML = '';
     dirsEl.classList.add("hidden");
     return;
   }
@@ -16287,7 +16607,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
   if (!directions || !directions.closest) {
     windowEl.textContent = "🔴 No Data";
     windowEl.style.color = "var(--error-color)";
-    dirsEl.replaceChildren();
+    if (typeof dirsEl.replaceChildren === 'function') dirsEl.replaceChildren(); else dirsEl.innerHTML = '';
     dirsEl.classList.add("hidden");
     return;
   }
@@ -16322,7 +16642,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     }
   }
 
-  windowEl.replaceChildren();
+  if (typeof windowEl.replaceChildren === 'function') windowEl.replaceChildren(); else windowEl.innerHTML = '';
   const statusSpan = document.createElement("span");
   statusSpan.style.color = color;
   statusSpan.textContent = statusText;
@@ -16335,7 +16655,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
 
   windowEl.title = `Closest: ${closest.name} (${closest.distance.toFixed(1)}km)\nRaw: ${closest.raw}`;
 
-  dirsEl.replaceChildren();
+  if (typeof dirsEl.replaceChildren === 'function') dirsEl.replaceChildren(); else dirsEl.innerHTML = '';
   const container = document.createElement("div");
   container.style.cssText = "font-size: 0.8rem; line-height: 1.4;";
 

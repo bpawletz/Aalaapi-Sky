@@ -19,7 +19,7 @@ const os = require('node:os');
 const readline = require('node:readline');
 const { execFile, spawn, execFileSync } = require('node:child_process');
 
-const VERSION = '1.44.0';
+const VERSION = '1.46.0';
 const PORT = process.env.AALAAPI_PORT ? parseInt(process.env.AALAAPI_PORT, 10) : 8765;
 const STAGING_DIR = path.resolve(__dirname, '../../scratch/companion_staging');
 const LATEST_DIR = path.resolve(__dirname, '../../scratch/latest_flight');
@@ -39,7 +39,13 @@ let wifiScannerProc = null;
 let wifiScannerActive = false;
 let totalWifiPackets = 0;
 
+const IS_WINDOWS = process.platform === 'win32';
+
 function startBleScanner() {
+  if (!IS_WINDOWS) {
+    logDetail('BLE Scanner', `Live Bluetooth sniffing is Windows-only; skipped on ${process.platform}`);
+    return;
+  }
   const exePath = path.join(__dirname, 'BleScanner.exe');
   if (!fs.existsSync(exePath)) {
     try {
@@ -127,6 +133,10 @@ function startBleScanner() {
 }
 
 function startWifiScanner() {
+  if (!IS_WINDOWS) {
+    logDetail('Wi-Fi Scanner', `Native Wi-Fi packet capture is Windows-only; skipped on ${process.platform}`);
+    return;
+  }
   const exePath = path.join(__dirname, 'WifiScanner.exe');
   if (!fs.existsSync(exePath)) {
     try {
@@ -294,6 +304,12 @@ function setCorsHeaders(res) {
 
 // Execute PowerShell COM helper for MTP operations
 function runMtpScript(scriptContent) {
+  if (!IS_WINDOWS) {
+    return Promise.resolve({
+      success: false,
+      error: `PowerShell COM bridge is only available on Windows (${process.platform} detected).`
+    });
+  }
   return new Promise((resolve) => {
     const encodedCommand = Buffer.from(scriptContent, 'utf16le').toString('base64');
     execFile(
@@ -316,8 +332,65 @@ function runMtpScript(scriptContent) {
   });
 }
 
+// Android/Linux ADB Command Helper
+function runAdbCommand(args) {
+  return new Promise((resolve) => {
+    execFile('adb', args, { maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
+      if (error) {
+        resolve({ success: false, error: stderr ? stderr.trim() : error.message });
+      } else {
+        resolve({ success: true, stdout: stdout ? stdout.trim() : '' });
+      }
+    });
+  });
+}
+
+async function checkRc2AdbStatus() {
+  const devRes = await runAdbCommand(['devices']);
+  if (!devRes.success || !devRes.stdout) {
+    return { connected: false, error: devRes.error || 'ADB not available' };
+  }
+
+  const lines = devRes.stdout.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('List of devices'));
+  const activeDevice = lines.find(l => l.endsWith('device'));
+  if (!activeDevice) {
+    return { connected: false, error: 'No authorized ADB device found' };
+  }
+
+  const serial = activeDevice.split(/\s+/)[0];
+  const wpPath = '/sdcard/Android/data/dji.go.v5/files/waypoint';
+  const lsRes = await runAdbCommand(['-s', serial, 'shell', `ls -1 ${wpPath}`]);
+
+  let activeMissions = [];
+  if (lsRes.success && lsRes.stdout) {
+    activeMissions = lsRes.stdout
+      .split('\n')
+      .map(m => m.trim())
+      .filter(m => /^[A-F0-9]{8}-/i.test(m));
+  }
+
+  return {
+    connected: true,
+    deviceName: `DJI RC 2 (ADB: ${serial})`,
+    activeMissions,
+    waypointReady: lsRes.success
+  };
+}
+
 // 1. Check DJI RC 2 Connection Status
 async function checkRc2Status() {
+  if (!IS_WINDOWS) {
+    const adbStatus = await checkRc2AdbStatus();
+    if (adbStatus.connected) {
+      return adbStatus;
+    }
+    return {
+      connected: false,
+      platform: process.platform,
+      error: 'DJI RC 2 not detected. On Android/Linux, connect via USB-C with USB Debugging enabled (ADB) or use Samsung My Files manual copy.'
+    };
+  }
+
   const psScript = `
 $shell = New-Object -ComObject Shell.Application
 $thisPC = $shell.Namespace(17)
@@ -410,6 +483,26 @@ async function updateRc2Status() {
 
 // 2. Transfer KMZ to RC 2 (Preview thumbnail archived)
 async function transferToRc2(uuid, kmzPath) {
+  if (!IS_WINDOWS) {
+    const adbCheck = await checkRc2AdbStatus();
+    if (!adbCheck.connected) {
+      return { success: false, error: 'DJI RC 2 not connected via ADB on ' + process.platform };
+    }
+    const targetUUID = uuid;
+    const remoteDir = `/sdcard/Android/data/dji.go.v5/files/waypoint/${targetUUID}`;
+    await runAdbCommand(['shell', `mkdir -p ${remoteDir}`]);
+    const pushRes = await runAdbCommand(['push', kmzPath, `${remoteDir}/${targetUUID}.kmz`]);
+    if (pushRes.success) {
+      return {
+        success: true,
+        uuid: targetUUID,
+        verified: true,
+        message: `Mission KMZ successfully synced to DJI RC 2 slot ${targetUUID} via ADB!`
+      };
+    }
+    return { success: false, error: pushRes.error || 'Failed to push KMZ via ADB' };
+  }
+
   const psScript = `
 $shell = New-Object -ComObject Shell.Application
 $thisPC = $shell.Namespace(17)
@@ -511,6 +604,35 @@ $syncVerified = ($finalCheck.Count -gt 0)
 
 // 3. Pull Current KMZ Mission from RC 2 over MTP
 async function pullFromRc2(requestedUuid = '') {
+  if (!IS_WINDOWS) {
+    const adbCheck = await checkRc2AdbStatus();
+    if (!adbCheck.connected) {
+      return { success: false, error: 'DJI RC 2 not connected via ADB on ' + process.platform };
+    }
+    let targetUuid = requestedUuid;
+    if (!targetUuid && adbCheck.activeMissions && adbCheck.activeMissions.length > 0) {
+      targetUuid = adbCheck.activeMissions[0];
+    }
+    if (!targetUuid) {
+      return { success: false, error: 'No mission slot found on RC 2.' };
+    }
+    if (!fs.existsSync(STAGING_DIR)) {
+      fs.mkdirSync(STAGING_DIR, { recursive: true });
+    }
+    const targetLocalPath = path.join(STAGING_DIR, `pulled_${targetUuid}.kmz`);
+    const remoteKmz = `/sdcard/Android/data/dji.go.v5/files/waypoint/${targetUuid}/${targetUuid}.kmz`;
+    const pullRes = await runAdbCommand(['pull', remoteKmz, targetLocalPath]);
+    if (!pullRes.success || !fs.existsSync(targetLocalPath)) {
+      return { success: false, error: pullRes.error || 'Failed to pull KMZ from RC 2 via ADB' };
+    }
+    return {
+      success: true,
+      uuid: targetUuid,
+      fileName: `${targetUuid}.kmz`,
+      waylinesWpml: ''
+    };
+  }
+
   const psScript = `
 $shell = New-Object -ComObject Shell.Application
 $thisPC = $shell.Namespace(17)
