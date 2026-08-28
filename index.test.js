@@ -3339,12 +3339,12 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     }
   });
 
-  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.46.0', () => {
+  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.46.1', () => {
     const companion = require('./tools/companion/server.js');
     assert.strictEqual(typeof companion.stopScanners, 'function');
     assert.strictEqual(typeof companion.killExistingCompanion, 'function');
     assert.strictEqual(typeof companion.pullFromRc2, 'function');
-    assert.strictEqual(companion.VERSION, '1.46.0');
+    assert.strictEqual(companion.VERSION, '1.46.1');
   });
 
   test('pullFromRC2 fetches mission from companion and triggers parseWPML', async () => {
@@ -3535,6 +3535,8 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
   test('FlightDiagnostics open and seekTo update UI elements safely', async () => {
     const elements = {};
     const origGetElementById = global.document.getElementById;
+    const origFetch = global.fetch;
+    global.fetch = () => Promise.reject(new Error('Companion offline'));
     global.document.getElementById = (id) => {
       if (!elements[id]) {
         elements[id] = {
@@ -3560,6 +3562,7 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
       assert.strictEqual(elements['diag-hud-coords']?.textContent.includes(','), true);
     } finally {
       global.document.getElementById = origGetElementById;
+      global.fetch = origFetch;
     }
   });
 
@@ -3606,6 +3609,8 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
   test('FlightDiagnostics loadSelectedFlight dynamically changes flight metadata and UI', async () => {
     const elements = {};
     const origGetElementById = global.document.getElementById;
+    const origFetch = global.fetch;
+    global.fetch = () => Promise.reject(new Error('Companion offline'));
     global.document.getElementById = (id) => {
       if (!elements[id]) {
         elements[id] = {
@@ -3638,6 +3643,7 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
       assert.strictEqual(elements['diag-time-display']?.textContent, '00:00 / 01:15');
     } finally {
       global.document.getElementById = origGetElementById;
+      global.fetch = origFetch;
     }
   });
 
@@ -3890,6 +3896,39 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
 
     const active = tracker.getActiveDrones();
     assert.strictEqual(active.length, 2);
+  });
+});
+
+describe('3D Preview Modal Hierarchy & HTML Tag Balance Tests', () => {
+  test('preview-3d-modal and config-modal are top-level body children and not inside about-modal', () => {
+    const fs = require('fs');
+    
+    for (const filename of ['index_template.html', 'index.html']) {
+      const content = fs.readFileSync(filename, 'utf8');
+      
+      const aboutIdx = content.indexOf('id="about-modal"');
+      const configIdx = content.indexOf('id="config-modal"');
+      const preview3dIdx = content.indexOf('id="preview-3d-modal"');
+      
+      assert.ok(aboutIdx !== -1, `about-modal must exist in ${filename}`);
+      assert.ok(configIdx !== -1, `config-modal must exist in ${filename}`);
+      assert.ok(preview3dIdx !== -1, `preview-3d-modal must exist in ${filename}`);
+      
+      assert.ok(aboutIdx < configIdx, `about-modal must precede config-modal in ${filename}`);
+      assert.ok(configIdx < preview3dIdx, `config-modal must precede preview-3d-modal in ${filename}`);
+
+      // Count open and close div tags between about-modal and config-modal to ensure about-modal closed completely
+      const sliceBeforeConfig = content.slice(aboutIdx, configIdx);
+      const openDivs = (sliceBeforeConfig.match(/<div(\s|>)/gi) || []).length;
+      const closeDivs = (sliceBeforeConfig.match(/<\/div>/gi) || []).length;
+      assert.strictEqual(openDivs, closeDivs, `All <div> tags in about-modal must be closed before config-modal starts in ${filename}`);
+
+      // Also ensure preview-3d-modal is after the config-modal closes
+      const sliceBeforePreview = content.slice(configIdx, preview3dIdx);
+      const configOpenDivs = (sliceBeforePreview.match(/<div(\s|>)/gi) || []).length;
+      const configCloseDivs = (sliceBeforePreview.match(/<\/div>/gi) || []).length;
+      assert.strictEqual(configOpenDivs, configCloseDivs, `All <div> tags in config-modal must be closed before preview-3d-modal starts in ${filename}`);
+    }
   });
 });
 

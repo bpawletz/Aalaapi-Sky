@@ -5985,7 +5985,9 @@ const FlightDiagnostics = {
     if (!flightSel || typeof fetch === 'undefined') return;
 
     try {
-      const res = await fetch('http://127.0.0.1:8765/api/flights');
+      const res = await fetch('http://127.0.0.1:8765/api/flights', {
+        signal: AbortSignal.timeout ? AbortSignal.timeout(1500) : undefined
+      });
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.flights && data.flights.length > 0) {
@@ -6034,6 +6036,7 @@ const FlightDiagnostics = {
         const res = await fetch(`http://127.0.0.1:8765/api/flight-telemetry?file=${encodeURIComponent(flightId)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout ? AbortSignal.timeout(1500) : undefined,
           body: JSON.stringify({
             flightId,
             waypoints: wps,

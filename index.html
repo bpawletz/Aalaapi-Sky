@@ -1679,7 +1679,7 @@ html, body {
               <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
               <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
             </svg>
-            <h1 style="display: inline-flex; align-items: center; gap: 4px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.46.0</span><span style="font-size: 0.48rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 3px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
+            <h1 style="display: inline-flex; align-items: center; gap: 4px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.46.1</span><span style="font-size: 0.48rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 3px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
           </div>
           <div class="header-actions" style="display: flex; gap: 5px; align-items: center;">
             <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" title="Configuration Settings">
@@ -2763,7 +2763,7 @@ html, body {
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.46.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.46.1</span>
             </div>
           </div>
         </div>
@@ -2827,6 +2827,13 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.46.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>3D View Modal Visibility Fix:</strong> Repaired an unclosed <code>&lt;div&gt;</code> in the About modal changelog history that previously caused <code>#preview-3d-modal</code> and <code>#config-modal</code> to be nested inside a hidden container, restoring instant rendering of the 3D Flight Path Preview and Three.js canvas.</li>
+              <li><strong>HTML Hierarchy Validation:</strong> Fixed malformed list markup and escaped XML tags in historical changelog entries, achieving 100% HTML tag balance.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.46.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Android &amp; Samsung Tablet Field Transfer:</strong> Added a dedicated Android &amp; Tablet guide tab in the RC 2 Guide modal documenting the zero-install Samsung "My Files" USB-C OTG direct transfer workflow, as well as the mobile Termux companion service setup.</li>
@@ -3076,9 +3083,11 @@ html, body {
             </ul>
           </div>
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
-            <strong style="color: var(--text-main);">Changelog (v1.26.13):</strong></strong>
-            <li><strong>Accumulated popupclose Listener Fix:</strong> Fixed Revert and Save failures caused by old <code>revertChanges</code> closures accumulating on the waypoint marker across multiple popup opens. Now clears all popupclose listeners before attaching a fresh one on each popup open.</li>
-          </ul>
+            <strong style="color: var(--text-main);">Changelog (v1.26.13):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Accumulated popupclose Listener Fix:</strong> Fixed Revert and Save failures caused by old <code>revertChanges</code> closures accumulating on the waypoint marker across multiple popup opens. Now clears all popupclose listeners before attaching a fresh one on each popup open.</li>
+            </ul>
+          </div>
           <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.26.12):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -3429,14 +3438,10 @@ html, body {
              <strong style="color: var(--text-main);">Changelog (v1.17.3):</strong>
              <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
                <li><strong>POI Heading Mode Override Bug:</strong> Fixed a bug where procedurally generated waypoint heading angles (from grid path generation) were overriding the global "Face POI" (`towardPOI`) heading mode during XML export.</li>
-             </ul>
                <li><strong>POI Export Bug Fix:</strong> Fixed a critical bug where waypoints manually set to point to subsequent POIs (POI 2, etc.) were reset back to POI 1 during KMZ export because the custom `poiIndex` and `headingMode` parameters were stripped from the waypoint objects when compiling the export payload.</li>
-             </ul>
                <li><strong>Multi-POI DJI Parser Bug:</strong> Attempted fix by hardcoding index to 0. (Reverted in v1.17.2 to fix POI disappearance).</li>
-             </ul>
                <li><strong>RC2 Gap Features:</strong> Added WPML generation support for missing RC2 parameters: Finish Actions (Back to Start), Signal Lost Actions (Hover, Land, RTH, Continue), and Camera Zoom (up to 4.0x with tenths precision).</li>
                <li><strong>Mini 4 Pro KMZ Format Error:</strong> Fixed a critical bug causing the DJI RC2 controller to reject generated waypoint KMZs for the Mini 4 Pro. Aalaapi now correctly uses `68` (the Mavic 3 Enterprise enum) for the Mini 4 Pro's WPML `droneEnumValue` output.</li>
-             </ul>
                <li><strong>Export Warning Prompts Refinement:</strong> Removed "buggy" label and explicitly specified that waypoint files do not work properly on export.</li>
              </ul>
            </div>
@@ -3449,7 +3454,7 @@ html, body {
            <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
              <strong style="color: var(--text-main);">Changelog (v1.16.2):</strong>
              <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
-               <li><strong>POI Coordinate Export Order:</strong> Fixed `<wpml:waypointPoiPoint>` coordinate order to be Latitude, Longitude, Altitude, ensuring compatibility with DJI RC2 controllers and Pilot 2.</li>
+               <li><strong>POI Coordinate Export Order:</strong> Fixed <code>&lt;wpml:waypointPoiPoint&gt;</code> coordinate order to be Latitude, Longitude, Altitude, ensuring compatibility with DJI RC2 controllers and Pilot 2.</li>
              </ul>
            </div>
            <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
@@ -10477,7 +10482,9 @@ const FlightDiagnostics = {
     if (!flightSel || typeof fetch === 'undefined') return;
 
     try {
-      const res = await fetch('http://127.0.0.1:8765/api/flights');
+      const res = await fetch('http://127.0.0.1:8765/api/flights', {
+        signal: AbortSignal.timeout ? AbortSignal.timeout(1500) : undefined
+      });
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.flights && data.flights.length > 0) {
@@ -10526,6 +10533,7 @@ const FlightDiagnostics = {
         const res = await fetch(`http://127.0.0.1:8765/api/flight-telemetry?file=${encodeURIComponent(flightId)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout ? AbortSignal.timeout(1500) : undefined,
           body: JSON.stringify({
             flightId,
             waypoints: wps,
