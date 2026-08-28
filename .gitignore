@@ -1,4 +1,20 @@
+# Dependencies
 node_modules/
+
+# Archives and Media
 *.kmz
 *.zip
 *.mp4
+*.log
+
+# Debug & Error Dumps
+error/
+
+# Scratch & Temporary Files (Core build.py is preserved)
+scratch/*
+!scratch/build.py
+
+# Stray text dumps & temporary files
+prev.txt
+previous_test.txt
+dummy.kml

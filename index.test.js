@@ -277,6 +277,23 @@ describe('updateOpenSkyLink Tests', () => {
     }
   });
 
+  test('opensky-link element is located inside links-modal and not in stats-panel', () => {
+    const path = require('path');
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+
+    // Extract links-modal block
+    const linksModalMatch = templateHtml.match(/<div id="links-modal"[\s\S]*?<\/div>\s*<\/div>/);
+    assert.ok(linksModalMatch, '#links-modal block should exist in index_template.html');
+    assert.ok(linksModalMatch[0].includes('id="opensky-link"'), '#opensky-link should exist inside #links-modal');
+
+    // Verify stats panel does not contain opensky-link
+    const statsPanelIdx = templateHtml.indexOf('class="stats-panel');
+    if (statsPanelIdx !== -1) {
+      const statsPanelSnippet = templateHtml.substring(statsPanelIdx, statsPanelIdx + 2000);
+      assert.strictEqual(statsPanelSnippet.includes('id="opensky-link"'), false, '#opensky-link should no longer be inside stats panel');
+    }
+  });
+
 });
 
 describe('Unit Conversion Tests', () => {
@@ -3081,22 +3098,39 @@ describe('Companion Bridge & Direct Sync Tests', () => {
   });
 
   test('pollCompanionStatus handles offline state gracefully without crashing', async () => {
+    let sDot = { style: { background: '' } };
+    let sText = { textContent: '', style: { color: '' } };
+    let sLabel = { textContent: '' };
+    let uDot = { style: { background: '' } };
+    let uText = { textContent: '', style: { color: '' } };
+    let uLabel = { textContent: '' };
+
     let dot = { style: { background: '' } };
     let text = { textContent: '', style: { color: '' } };
     let label = { textContent: '' };
     let btn = { style: { display: '' } };
+    let pullBtn = { style: { display: '' } };
+    let directActions = { style: { display: '' } };
     let container = { classList: { add: (c) => container.classes.add(c), remove: (c) => container.classes.delete(c) }, classes: new Set() };
-    let hint = { style: { display: '' } };
+    let hint = { style: { display: '' }, querySelector: () => ({ innerHTML: '' }) };
 
     const origGetElementById = global.document.getElementById;
     const origFetch = global.fetch;
     global.fetch = () => Promise.reject(new Error('Connection refused'));
 
     global.document.getElementById = (id) => {
+      if (id === 'companion-service-dot') return sDot;
+      if (id === 'companion-service-text') return sText;
+      if (id === 'companion-service-label') return sLabel;
+      if (id === 'companion-usb-dot') return uDot;
+      if (id === 'companion-usb-text') return uText;
+      if (id === 'companion-usb-label') return uLabel;
       if (id === 'companion-indicator-dot') return dot;
       if (id === 'companion-status-text') return text;
       if (id === 'companion-device-label') return label;
       if (id === 'direct-rc2-sync-btn') return btn;
+      if (id === 'direct-rc2-pull-btn') return pullBtn;
+      if (id === 'rc2-direct-actions') return directActions;
       if (id === 'companion-sync-container') return container;
       if (id === 'companion-offline-hint') return hint;
       return origGetElementById ? origGetElementById(id) : null;
@@ -3104,11 +3138,87 @@ describe('Companion Bridge & Direct Sync Tests', () => {
 
     try {
       await vm.runInThisContext(`pollCompanionStatus()`);
+      assert.strictEqual(sText.textContent, 'Bridge Service: Offline');
+      assert.strictEqual(sDot.style.background, '#64748b');
+      assert.strictEqual(sLabel.textContent, 'start-companion.bat');
+      assert.strictEqual(uText.textContent, 'RC 2 USB Link: Waiting');
+      assert.strictEqual(uDot.style.background, '#64748b');
       assert.strictEqual(text.textContent, 'Companion Offline');
       assert.strictEqual(dot.style.background, '#64748b');
       assert.strictEqual(btn.style.display, 'none');
       assert.ok(container.classes.has('is-offline'));
       assert.strictEqual(hint.style.display, 'flex');
+    } finally {
+      global.document.getElementById = origGetElementById;
+      global.fetch = origFetch;
+    }
+  });
+
+  test('pollCompanionStatus updates both service and USB link indicators for connected and unplugged states', async () => {
+    let sDot = { style: { background: '' } };
+    let sText = { textContent: '', style: { color: '' } };
+    let sLabel = { textContent: '' };
+    let uDot = { style: { background: '' } };
+    let uText = { textContent: '', style: { color: '' } };
+    let uLabel = { textContent: '' };
+
+    let dot = { style: { background: '' } };
+    let text = { textContent: '', style: { color: '' } };
+    let label = { textContent: '' };
+    let btn = { style: { display: '' } };
+    let pullBtn = { style: { display: '' } };
+    let directActions = { style: { display: '' } };
+    let container = { classList: { add: (c) => container.classes.add(c), remove: (c) => container.classes.delete(c) }, classes: new Set() };
+    let hint = { style: { display: '' }, querySelector: () => ({ innerHTML: '' }) };
+
+    const origGetElementById = global.document.getElementById;
+    const origFetch = global.fetch;
+
+    global.document.getElementById = (id) => {
+      if (id === 'companion-service-dot') return sDot;
+      if (id === 'companion-service-text') return sText;
+      if (id === 'companion-service-label') return sLabel;
+      if (id === 'companion-usb-dot') return uDot;
+      if (id === 'companion-usb-text') return uText;
+      if (id === 'companion-usb-label') return uLabel;
+      if (id === 'companion-indicator-dot') return dot;
+      if (id === 'companion-status-text') return text;
+      if (id === 'companion-device-label') return label;
+      if (id === 'direct-rc2-sync-btn') return btn;
+      if (id === 'direct-rc2-pull-btn') return pullBtn;
+      if (id === 'rc2-direct-actions') return directActions;
+      if (id === 'companion-sync-container') return container;
+      if (id === 'companion-offline-hint') return hint;
+      return origGetElementById ? origGetElementById(id) : null;
+    };
+
+    try {
+      // 1. Online, USB unplugged
+      global.fetch = () => Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ connected: false })
+      });
+      await vm.runInThisContext(`pollCompanionStatus()`);
+      assert.strictEqual(sText.textContent, 'Bridge Service: Online');
+      assert.strictEqual(sDot.style.background, '#22c55e');
+      assert.strictEqual(uText.textContent, 'RC 2 USB Link: Unplugged');
+      assert.strictEqual(uDot.style.background, '#eab308');
+      assert.strictEqual(uLabel.textContent, 'Plug in USB-C');
+      assert.ok(container.classes.has('is-offline'));
+
+      // 2. Online, USB connected
+      global.fetch = () => Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ connected: true, deviceName: 'DJI RC 2 (MTP)' })
+      });
+      await vm.runInThisContext(`pollCompanionStatus()`);
+      assert.strictEqual(sText.textContent, 'Bridge Service: Online');
+      assert.strictEqual(sDot.style.background, '#22c55e');
+      assert.strictEqual(uText.textContent, 'RC 2 USB Link: Connected');
+      assert.strictEqual(uDot.style.background, '#22c55e');
+      assert.strictEqual(uLabel.textContent, 'DJI RC 2 (MTP)');
+      assert.ok(!container.classes.has('is-offline'));
+      assert.strictEqual(btn.style.display, 'inline-flex');
     } finally {
       global.document.getElementById = origGetElementById;
       global.fetch = origFetch;
@@ -3229,12 +3339,12 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     }
   });
 
-  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.44.0', () => {
+  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.46.0', () => {
     const companion = require('./tools/companion/server.js');
     assert.strictEqual(typeof companion.stopScanners, 'function');
     assert.strictEqual(typeof companion.killExistingCompanion, 'function');
     assert.strictEqual(typeof companion.pullFromRc2, 'function');
-    assert.strictEqual(companion.VERSION, '1.44.0');
+    assert.strictEqual(companion.VERSION, '1.46.0');
   });
 
   test('pullFromRC2 fetches mission from companion and triggers parseWPML', async () => {
@@ -3294,9 +3404,13 @@ describe('Companion Bridge & Direct Sync Tests', () => {
   });
 
   test('switchGuideTab and openRC2GuideModal toggle tabs and offline guidance panes cleanly', () => {
-    const tabBtnCompanion = { dataset: { tab: 'companion' }, classList: { classes: new Set(), add(c) { this.classes.add(c); }, remove(c) { this.classes.delete(c); }, contains(c) { return this.classes.has(c); } } };
+    const tabBtnService = { dataset: { tab: 'service' }, classList: { classes: new Set(), add(c) { this.classes.add(c); }, remove(c) { this.classes.delete(c); }, contains(c) { return this.classes.has(c); } } };
+    const tabBtnUsb = { dataset: { tab: 'usb' }, classList: { classes: new Set(), add(c) { this.classes.add(c); }, remove(c) { this.classes.delete(c); }, contains(c) { return this.classes.has(c); } } };
+    const tabBtnAndroid = { dataset: { tab: 'android' }, classList: { classes: new Set(), add(c) { this.classes.add(c); }, remove(c) { this.classes.delete(c); }, contains(c) { return this.classes.has(c); } } };
     const tabBtnManual = { dataset: { tab: 'manual' }, classList: { classes: new Set(), add(c) { this.classes.add(c); }, remove(c) { this.classes.delete(c); }, contains(c) { return this.classes.has(c); } } };
-    const paneCompanion = { id: 'guide-pane-companion', classList: { classes: new Set(), add(c) { this.classes.add(c); }, remove(c) { this.classes.delete(c); }, contains(c) { return this.classes.has(c); } } };
+    const paneService = { id: 'guide-pane-service', classList: { classes: new Set(), add(c) { this.classes.add(c); }, remove(c) { this.classes.delete(c); }, contains(c) { return this.classes.has(c); } } };
+    const paneUsb = { id: 'guide-pane-usb', classList: { classes: new Set(), add(c) { this.classes.add(c); }, remove(c) { this.classes.delete(c); }, contains(c) { return this.classes.has(c); } } };
+    const paneAndroid = { id: 'guide-pane-android', classList: { classes: new Set(), add(c) { this.classes.add(c); }, remove(c) { this.classes.delete(c); }, contains(c) { return this.classes.has(c); } } };
     const paneManual = { id: 'guide-pane-manual', classList: { classes: new Set(), add(c) { this.classes.add(c); }, remove(c) { this.classes.delete(c); }, contains(c) { return this.classes.has(c); } } };
     const guideModal = { classList: { classes: new Set(['hidden']), remove(c) { this.classes.delete(c); }, add(c) { this.classes.add(c); }, contains(c) { return this.classes.has(c); } } };
 
@@ -3304,8 +3418,8 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     const origGetElementById = global.document.getElementById;
 
     global.document.querySelectorAll = (selector) => {
-      if (selector === '.guide-tab-btn') return [tabBtnCompanion, tabBtnManual];
-      if (selector === '.guide-tab-pane') return [paneCompanion, paneManual];
+      if (selector === '.guide-tab-btn') return [tabBtnService, tabBtnUsb, tabBtnAndroid, tabBtnManual];
+      if (selector === '.guide-tab-pane') return [paneService, paneUsb, paneAndroid, paneManual];
       return origQSA ? origQSA(selector) : [];
     };
 
@@ -3315,25 +3429,62 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     };
 
     try {
+      // 1. Switch to service tab
+      vm.runInThisContext(`switchGuideTab('service')`);
+      assert.ok(tabBtnService.classList.contains('active'));
+      assert.ok(!tabBtnUsb.classList.contains('active'));
+      assert.ok(!tabBtnAndroid.classList.contains('active'));
+      assert.ok(!paneService.classList.contains('hidden'));
+      assert.ok(paneUsb.classList.contains('hidden'));
+      assert.ok(paneAndroid.classList.contains('hidden'));
+
+      // 2. Switch to USB tab
+      vm.runInThisContext(`switchGuideTab('usb')`);
+      assert.ok(!tabBtnService.classList.contains('active'));
+      assert.ok(tabBtnUsb.classList.contains('active'));
+      assert.ok(!tabBtnAndroid.classList.contains('active'));
+      assert.ok(paneService.classList.contains('hidden'));
+      assert.ok(!paneUsb.classList.contains('hidden'));
+      assert.ok(paneAndroid.classList.contains('hidden'));
+
+      // 3. Switch to Android tab
+      vm.runInThisContext(`switchGuideTab('android')`);
+      assert.ok(!tabBtnService.classList.contains('active'));
+      assert.ok(!tabBtnUsb.classList.contains('active'));
+      assert.ok(tabBtnAndroid.classList.contains('active'));
+      assert.ok(paneService.classList.contains('hidden'));
+      assert.ok(paneUsb.classList.contains('hidden'));
+      assert.ok(!paneAndroid.classList.contains('hidden'));
+
+      // 4. Backward compatible alias 'companion' maps to 'service'
       vm.runInThisContext(`switchGuideTab('companion')`);
-      assert.ok(tabBtnCompanion.classList.contains('active'));
-      assert.ok(!tabBtnManual.classList.contains('active'));
-      assert.ok(!paneCompanion.classList.contains('hidden'));
-      assert.ok(paneManual.classList.contains('hidden'));
+      assert.ok(tabBtnService.classList.contains('active'));
+      assert.ok(!paneService.classList.contains('hidden'));
 
-      vm.runInThisContext(`switchGuideTab('manual')`);
-      assert.ok(!tabBtnCompanion.classList.contains('active'));
-      assert.ok(tabBtnManual.classList.contains('active'));
-      assert.ok(paneCompanion.classList.contains('hidden'));
-      assert.ok(!paneManual.classList.contains('hidden'));
-
-      vm.runInThisContext(`openRC2GuideModal('companion')`);
+      // 5. openRC2GuideModal with 'android' opens modal and activates android tab
+      vm.runInThisContext(`openRC2GuideModal('android')`);
       assert.ok(!guideModal.classList.contains('hidden'));
-      assert.ok(tabBtnCompanion.classList.contains('active'));
+      assert.ok(tabBtnAndroid.classList.contains('active'));
     } finally {
       global.document.querySelectorAll = origQSA;
       global.document.getElementById = origGetElementById;
     }
+  });
+
+  test('index_template.html contains dual companion status rows, help buttons, and Android tab', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const html = fs.readFileSync(path.resolve(__dirname, './index_template.html'), 'utf8');
+
+    assert.ok(html.includes('id="companion-service-row"'), 'Should have companion-service-row');
+    assert.ok(html.includes('id="companion-usb-row"'), 'Should have companion-usb-row');
+    assert.ok(html.includes('id="companion-service-help-btn"'), 'Should have companion-service-help-btn');
+    assert.ok(html.includes('id="companion-usb-help-btn"'), 'Should have companion-usb-help-btn');
+    assert.ok(html.includes('id="guide-pane-service"'), 'Should have guide-pane-service');
+    assert.ok(html.includes('id="guide-pane-usb"'), 'Should have guide-pane-usb');
+    assert.ok(html.includes('data-tab="android"'), 'Should have data-tab="android"');
+    assert.ok(html.includes('id="guide-pane-android"'), 'Should have guide-pane-android');
+    assert.ok(html.includes('Samsung "My Files"'), 'Should document Samsung My Files workflow');
   });
 });
 

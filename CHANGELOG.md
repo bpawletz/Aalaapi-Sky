@@ -1,5 +1,44 @@
 # Changelog
 
+## [1.46.0] - 2026-08-27
+
+### Added & Improved
+- **Android & Samsung Tablet Field Guide:**
+  - Added a dedicated **Android & Tablet** tab in the RC 2 Guide modal documenting the zero-install field workflow: connecting the DJI RC 2 to a Samsung phone/tablet via USB-C to USB-C data cable, selecting "File Transfer (MTP)", exporting KMZ from browser, and using Samsung's built-in "My Files" app to copy missions directly into `/Android/data/dji.go.v5/files/waypoint/[UUID]/`.
+  - Added comprehensive instructions for running `npm run companion` inside **Termux** on Android with Node.js and ADB for mobile 1-click sync in Chrome.
+- **Cross-Platform Companion Bridge (Android Termux & Linux Support):**
+  - Refactored `tools/companion/server.js` with cross-platform platform detection (`process.platform !== 'win32'`).
+  - Added native ADB (Android Debug Bridge) command execution for checking device connection (`adb devices`), listing RC 2 missions, pushing KMZ files (`adb push`), and pulling KMZ missions (`adb pull`).
+  - Added graceful non-Windows fallbacks for WinRT C# scanners (`BleScanner.exe` and `WifiScanner.exe`), preventing crashes when running companion under Linux or Android Termux.
+- **Repository Hygiene & Git Cleanup:**
+  - Removed legacy error debug dumps (`error/`, stray `.txt` test transcripts) and untracked over 100 obsolete scratch test scripts, binaries, and extraction folders from Git.
+  - Optimized `.gitignore` to keep `scratch/` clean while preserving the core single-file compiler (`scratch/build.py`).
+
+## [1.45.0] - 2026-08-27
+
+### Added & Improved
+- **Companion Box Dual Status Readout (Bridge Service vs. RC 2 USB Link):**
+  - Separated the companion status indicator into two dedicated status rows:
+    - **Bridge Service Status:** Clearly shows whether the local Node.js bridge (`tools/companion/server.js` on port 8765) is `🟢 Online` or `⚪ Offline` (`start-companion.bat`).
+    - **RC 2 USB Link Status:** Shows whether the physical DJI RC 2 controller is `🟢 Connected (MTP)` or `🟡 Unplugged` (plug in USB-C data cable).
+  - Eliminates ambiguity where users mistook an unplugged USB cable for a companion server crash.
+- **Dedicated, Targeted Help Instructions for Service & USB:**
+  - Added independent `?` help buttons on both the Bridge Service row (`#companion-service-help-btn`) and the RC 2 USB Link row (`#companion-usb-help-btn`).
+  - Added dedicated tabs in the RC 2 Guide Modal (`#guide-modal`):
+    - **Bridge Service Tab:** Focuses on launching `start-companion.bat` / `npm run companion`, port 8765 requirements, and Node.js runtime.
+    - **RC 2 USB-C Link Tab:** Focuses on certified data-capable USB-C cables, controller power-on sequence, selecting "File Transfer (MTP)" on the RC 2 touchscreen, Windows Portable Devices recognition, and DJI Fly cache refresh.
+  - Deep-linked each help button to open the guide modal directly to its corresponding tab.
+
+## [1.44.1] - 2026-08-27
+
+### Fixed & Improved
+- **Sidebar Header Layout & Alignment:**
+  - Reclaimed header horizontal clearance by optimizing padding (`18px 14px 18px 68px`) and compacting action button dimensions (`#config-btn`, `#about-btn`, `#useful-links-btn`).
+  - Added responsive flex-wrapping to `.header-top-row` and `overflow-x: hidden` to `.sidebar`, preventing the Links button from overflowing the navigation bar or hanging off into the map canvas.
+- **OpenSky Explorer in Links Pop-Up:**
+  - Relocated OpenSky Explorer live airspace flight tracker from the floating mission statistics overlay to the Useful Links modal popup (`#links-modal`).
+  - Added automatic coordinate querying to update the OpenSky link whenever the Useful Links popup opens or the map center changes.
+
 ## [1.44.0] - 2026-08-27
 
 ### Added & Fixed
