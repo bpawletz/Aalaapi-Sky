@@ -3339,12 +3339,12 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     }
   });
 
-  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.46.1', () => {
+  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.47.0', () => {
     const companion = require('./tools/companion/server.js');
     assert.strictEqual(typeof companion.stopScanners, 'function');
     assert.strictEqual(typeof companion.killExistingCompanion, 'function');
     assert.strictEqual(typeof companion.pullFromRc2, 'function');
-    assert.strictEqual(companion.VERSION, '1.46.1');
+    assert.strictEqual(companion.VERSION, '1.47.0');
   });
 
   test('pullFromRC2 fetches mission from companion and triggers parseWPML', async () => {
@@ -3929,6 +3929,28 @@ describe('3D Preview Modal Hierarchy & HTML Tag Balance Tests', () => {
       const configCloseDivs = (sliceBeforePreview.match(/<\/div>/gi) || []).length;
       assert.strictEqual(configOpenDivs, configCloseDivs, `All <div> tags in config-modal must be closed before preview-3d-modal starts in ${filename}`);
     }
+  });
+});
+
+describe('Initial Acceptance Modal Safety & Disclaimer Tests', () => {
+  test('disclaimer-modal contains 2-column icon cards matching About modal and clean flight safety advisory', () => {
+    const fs = require('fs');
+    const content = fs.readFileSync('index_template.html', 'utf8');
+
+    assert.ok(content.includes('id="disclaimer-modal"'), 'disclaimer-modal must exist');
+    assert.ok(content.includes('id="disclaimer-agree-checkbox"'), 'disclaimer-agree-checkbox must exist');
+    assert.ok(content.includes('id="disclaimer-proceed-btn"'), 'disclaimer-proceed-btn must exist');
+
+    // Assert the 6 safety icon cards exist
+    assert.ok(content.includes('No Developer Liability'), 'Must include No Developer Liability');
+    assert.ok(content.includes('You Are the PIC'), 'Must include You Are the PIC');
+    assert.ok(content.includes('Verify Before Launch'), 'Must include Verify Before Launch');
+    assert.ok(content.includes('Regulatory Compliance'), 'Must include Regulatory Compliance');
+    assert.ok(content.includes('Live Data — Not Guaranteed'), 'Must include Live Data — Not Guaranteed');
+    assert.ok(content.includes('Know Your Emergency Abort'), 'Must include Know Your Emergency Abort');
+
+    // Assert obsolete active development error notice is removed
+    assert.strictEqual(content.includes('are not working properly on export'), false, 'Obsolete export failure notice must be removed');
   });
 });
 
