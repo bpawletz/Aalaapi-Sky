@@ -1679,7 +1679,7 @@ html, body {
               <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
               <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
             </svg>
-            <h1 style="display: inline-flex; align-items: center; gap: 4px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.46.1</span><span style="font-size: 0.48rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 3px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
+            <h1 style="display: inline-flex; align-items: center; gap: 4px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.47.0</span><span style="font-size: 0.48rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 3px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
           </div>
           <div class="header-actions" style="display: flex; gap: 5px; align-items: center;">
             <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" title="Configuration Settings">
@@ -2370,32 +2370,62 @@ html, body {
 
   <!-- Initial Safety Disclaimer & Acknowledgment Modal -->
   <div id="disclaimer-modal" class="modal-overlay hidden" style="z-index: 10000; background: rgba(5, 8, 16, 0.95); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center;">
-    <div class="modal glass" style="max-width: 500px; width: 90%; border: 1px solid rgba(239, 68, 68, 0.25); box-shadow: 0 8px 32px rgba(239, 68, 68, 0.15); display: flex; flex-direction: column;">
+    <div class="modal glass" style="max-width: 580px; width: 92%; border: 1px solid rgba(239, 68, 68, 0.25); box-shadow: 0 8px 32px rgba(239, 68, 68, 0.15); display: flex; flex-direction: column; max-height: 90vh;">
       <header class="modal-header" style="border-bottom: 1px solid rgba(239, 68, 68, 0.2); padding-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
         <h2 style="color: #ef4444; display: flex; align-items: center; gap: 8px; font-size: 1.2rem; margin: 0; font-weight: 700;">
-          <span>⚠️ Flight Safety & Liability Disclaimer</span>
+          <span>⚠️ Flight Safety &amp; Liability Disclaimer</span>
         </h2>
       </header>
-      <div class="modal-content" style="font-size: 0.85rem; line-height: 1.5; display: flex; flex-direction: column; gap: 12px; color: var(--text-muted); max-height: 50dvh; overflow-y: auto; padding: 16px 0;">
-        <div style="border: 1px solid rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.08); padding: 12px; border-radius: 8px; margin-bottom: 4px;">
-          <strong style="color: #ef4444; display: block; font-size: 0.88rem; margin-bottom: 4px;">⚠️ Active Development & Flight Plan Export Notice</strong>
-          <span style="color: var(--text-main); font-size: 0.8rem; line-height: 1.4; display: block;">
-            This tool is currently under active development. Generated waypoint files <strong>are not working properly on export</strong> and coordinates or camera parameters may fail to load correctly on your controller. Always verify the exported KMZ files in Google Earth or DJI Pilot 2 before attempting any flight.
+      <div class="modal-content" style="font-size: 0.85rem; line-height: 1.5; display: flex; flex-direction: column; gap: 12px; color: var(--text-muted); overflow-y: auto; padding: 16px 0;">
+        <div style="border: 1px solid rgba(239, 68, 68, 0.35); background: rgba(239, 68, 68, 0.08); padding: 10px 12px; border-radius: 8px;">
+          <strong style="color: #ef4444; display: flex; align-items: center; gap: 6px; font-size: 0.84rem; margin-bottom: 4px;">
+            ⚠️ Remote Pilot-in-Command Advisory
+          </strong>
+          <span style="color: var(--text-main); font-size: 0.78rem; line-height: 1.4; display: block;">
+            Aalaapi Sky is an autonomous waypoint flight planning tool. All remote pilots must review and accept the flight safety terms and operational requirements below before planning or executing missions.
           </span>
         </div>
-        <p style="color: var(--text-main); font-weight: 600;">
-          Before using Aalaapi Sky to plan your drone missions, you must review and agree to the following safety terms:
-        </p>
-        <ul style="padding-left: 20px; display: flex; flex-direction: column; gap: 8px; list-style-type: disc; color: var(--text-muted);">
-          <li><strong>No Developer Liability:</strong> The developers and contributors of Aalaapi Sky assume absolutely no responsibility or liability for hardware damage, drone crashes, "flyaways", property damage, personal injury, or legal fines resulting from the use of flight plans generated or edited by this software.</li>
-          <li><strong>Pilot-in-Command Responsibility:</strong> You, the pilot, are solely responsible for the safe and lawful operation of your aircraft. You must maintain Visual Line of Sight (VLOS) at all times during flight.</li>
-          <li><strong>Flight Plan Verification:</strong> You must manually verify all generated flight path altitudes, speed targets, battery reserves, and safe clearance from obstacles (such as trees, power lines, and terrain) before launching.</li>
-          <li><strong>Regulatory Compliance:</strong> You must check local weather, verify airspace status, obtain necessary authorizations (such as FAA LAANC), and ensure your flight complies with civil aviation regulations—such as **FAA Part 107** for commercial operations or **Section 44809 / TRUST** for recreational flyers, including maintaining Visual Line of Sight (VLOS) at all times.</li>
-          <li><strong>Third-Party Data & Live Feeds:</strong> All map overlays (including FAA airspace configurations, NOAA weather radar, and power line databases) are pulled dynamically from external third-party government feeds. The developers make no warranties regarding their accuracy, timeliness, or availability. You must independently cross-reference all airspace data.</li>
-          <li><strong>Emergency Procedures & Fail-Safes:</strong> You are solely responsible for knowing how to immediately abort an automated flight plan and resume manual control on your specific aircraft. You must verify and configure fail-safe actions (e.g. Return-to-Home altitude, signal loss behavior) before takeoff to clear all obstructions.</li>
-        </ul>
-        <p style="font-style: italic; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 8px; color: var(--text-muted);">
-          By clicking "Proceed to Planner", you acknowledge that you have read, understood, and accept all terms of this disclaimer.
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.76rem; line-height: 1.35;">
+          <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-size: 1.25rem; line-height: 1;">🚫</span>
+            <span style="color: #f87171; font-weight: 700; font-size: 0.72rem;">No Developer Liability</span>
+            <span style="color: #f87171;">Developers are not liable for crashes, flyaways, hardware damage, property damage, or regulatory fines.</span>
+          </div>
+
+          <div style="background: rgba(251, 191, 36, 0.08); border: 1px solid rgba(251, 191, 36, 0.2); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-size: 1.25rem; line-height: 1;">🧑‍✈️</span>
+            <span style="color: #fbbf24; font-weight: 700; font-size: 0.72rem;">You Are the PIC</span>
+            <span style="color: #fbbf24;">The pilot-in-command bears sole responsibility for safe, legal flight. Visual Line of Sight (VLOS) required at all times.</span>
+          </div>
+
+          <div style="background: rgba(16, 185, 129, 0.07); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-size: 1.25rem; line-height: 1;">✅</span>
+            <span style="color: #34d399; font-weight: 700; font-size: 0.72rem;">Verify Before Launch</span>
+            <span style="color: #34d399;">Manually confirm altitudes, speeds, battery margins, and obstacle clearance before takeoff.</span>
+          </div>
+
+          <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-size: 1.25rem; line-height: 1;">📜</span>
+            <span style="color: #818cf8; font-weight: 700; font-size: 0.72rem;">Regulatory Compliance</span>
+            <span style="color: #818cf8;">Obtain LAANC auth. Follow FAA Part 107 (commercial) or Sec. 44809 / TRUST (recreational).</span>
+          </div>
+
+          <div style="background: rgba(6, 182, 212, 0.07); border: 1px solid rgba(6, 182, 212, 0.2); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-size: 1.25rem; line-height: 1;">📡</span>
+            <span style="color: #22d3ee; font-weight: 700; font-size: 0.72rem;">Live Data — Not Guaranteed</span>
+            <span style="color: #22d3ee;">FAA airspace, NOAA weather &amp; power grids are third-party feeds. Cross-reference all data independently.</span>
+          </div>
+
+          <div style="background: rgba(249, 115, 22, 0.08); border: 1px solid rgba(249, 115, 22, 0.2); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-size: 1.25rem; line-height: 1;">🛑</span>
+            <span style="color: #fb923c; font-weight: 700; font-size: 0.72rem;">Know Your Emergency Abort</span>
+            <span style="color: #fb923c;">Know how to abort &amp; resume manual control. Configure RTH altitude &amp; signal-loss fail-safes before flight.</span>
+          </div>
+        </div>
+
+        <p style="font-style: italic; border-top: 1px solid var(--border-color); padding-top: 10px; margin: 0; color: var(--text-muted); font-size: 0.76rem;">
+          By checking the box below and clicking &quot;Proceed to Planner&quot;, you acknowledge that you have read, understood, and accept all terms of this flight safety disclaimer.
         </p>
       </div>
       <footer class="modal-footer" style="display: flex; flex-direction: column; gap: 12px; align-items: stretch; border-top: 1px solid var(--border-color); padding-top: 16px;">
@@ -2763,7 +2793,7 @@ html, body {
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.46.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.47.0</span>
             </div>
           </div>
         </div>
@@ -2827,6 +2857,13 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.47.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Initial Acceptance Modal Modernization:</strong> Redesigned the startup safety disclaimer modal to use the modern, color-coded 2-column icon card grid matching the About modal, harmonizing terms across the entire app.</li>
+              <li><strong>Advisory Notice Cleanup:</strong> Removed the outdated active development export error warning and updated terms to emphasize Pilot-in-Command pre-flight verification.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.46.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>3D View Modal Visibility Fix:</strong> Repaired an unclosed <code>&lt;div&gt;</code> in the About modal changelog history that previously caused <code>#preview-3d-modal</code> and <code>#config-modal</code> to be nested inside a hidden container, restoring instant rendering of the 3D Flight Path Preview and Three.js canvas.</li>

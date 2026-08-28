@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.47.0] - 2026-08-28
+
+### Added & Improved
+- **Initial Acceptance Modal Modernization:**
+  - Redesigned the startup `#disclaimer-modal` to use the modern, color-coded 2-column icon card grid matching the About modal (No Developer Liability, PIC Responsibility, Pre-launch Verification, Regulatory Compliance, Third-Party Live Feeds, and Emergency Abort).
+  - Maintained mandatory acceptance workflow requiring users to review terms, check the acknowledgment box, and click "Proceed to Planner" before planner access.
+- **Outdated Notice Cleanup:**
+  - Removed the legacy active development warning stating that waypoint exports were broken, replacing it with an accurate Remote Pilot-in-Command flight safety advisory.
+
 ## [1.46.1] - 2026-08-28
 
 ### Fixed

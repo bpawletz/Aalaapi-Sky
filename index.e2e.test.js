@@ -1132,6 +1132,62 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
     assert.ok(result.success, `3D Preview modal E2E test failed: ${JSON.stringify(result)}`);
   });
+
+  test('E2E: Initial Safety Disclaimer modal renders 2-column icon cards and enforces checkbox acceptance before proceeding', async () => {
+    const result = await page.evaluate(() => {
+      const modal = document.getElementById('disclaimer-modal');
+      const checkbox = document.getElementById('disclaimer-agree-checkbox');
+      const proceedBtn = document.getElementById('disclaimer-proceed-btn');
+
+      if (!modal || !checkbox || !proceedBtn) {
+        return { success: false, reason: 'Elements missing' };
+      }
+
+      // Temporarily reveal modal for testing
+      const wasHidden = modal.classList.contains('hidden');
+      modal.classList.remove('hidden');
+
+      const textContent = modal.textContent;
+      const hasPicCard = textContent.includes('You Are the PIC');
+      const hasLiabilityCard = textContent.includes('No Developer Liability');
+      const hasVerifyCard = textContent.includes('Verify Before Launch');
+      const hasComplianceCard = textContent.includes('Regulatory Compliance');
+      const hasLiveDataCard = textContent.includes('Live Data');
+      const hasAbortCard = textContent.includes('Know Your Emergency Abort');
+      const noExportError = !textContent.includes('are not working properly on export');
+
+      const initiallyDisabled = proceedBtn.disabled;
+
+      // Simulate checkbox check
+      checkbox.checked = true;
+      checkbox.dispatchEvent(new Event('change'));
+      const enabledAfterCheck = !proceedBtn.disabled;
+
+      // Simulate proceed click
+      proceedBtn.click();
+      const closedAfterProceed = modal.classList.contains('hidden');
+
+      if (wasHidden) {
+        modal.classList.add('hidden');
+      }
+
+      return {
+        success: hasPicCard && hasLiabilityCard && hasVerifyCard && hasComplianceCard && hasLiveDataCard && hasAbortCard && noExportError && initiallyDisabled && enabledAfterCheck && closedAfterProceed,
+        hasPicCard,
+        hasLiabilityCard,
+        hasVerifyCard,
+        hasComplianceCard,
+        hasLiveDataCard,
+        hasAbortCard,
+        noExportError,
+        initiallyDisabled,
+        enabledAfterCheck,
+        closedAfterProceed
+      };
+    });
+
+    assert.ok(result.success, `Disclaimer modal E2E test failed: ${JSON.stringify(result)}`);
+  });
 });
 
 
