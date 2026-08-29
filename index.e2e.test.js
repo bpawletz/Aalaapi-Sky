@@ -1446,6 +1446,49 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(copyResult.hasInspectorPrompt, 'Inspector copy button should copy Antigravity bug report');
     assert.ok(copyResult.hasDiagPrompt, 'Diag copy button should copy Antigravity bug report');
   });
+
+  test('E2E: Multi-Vendor Autopilot toggle easily enables/disables export container and persists to localStorage', async () => {
+    const toggleResult = await page.evaluate(() => {
+      const toggle = document.getElementById('multivendor-toggle');
+      const container = document.getElementById('multivendor-export-container');
+      const qgcBtn = document.getElementById('export-qgc-btn');
+      const autelBtn = document.getElementById('export-autel-btn');
+
+      if (!toggle || !container || !qgcBtn || !autelBtn) {
+        return { success: false, reason: 'Elements missing' };
+      }
+
+      // Initial state: hidden
+      const initiallyHidden = container.style.display === 'none' || getComputedStyle(container).display === 'none';
+
+      // Enable toggle
+      toggle.checked = true;
+      toggle.dispatchEvent(new Event('change'));
+      const visibleAfterEnable = container.style.display === 'flex' || getComputedStyle(container).display === 'flex';
+      const storedAfterEnable = localStorage.getItem('aalaapi-multivendor-enabled');
+
+      // Disable toggle
+      toggle.checked = false;
+      toggle.dispatchEvent(new Event('change'));
+      const hiddenAfterDisable = container.style.display === 'none';
+      const storedAfterDisable = localStorage.getItem('aalaapi-multivendor-enabled');
+
+      return {
+        success: true,
+        initiallyHidden,
+        visibleAfterEnable,
+        storedAfterEnable,
+        hiddenAfterDisable,
+        storedAfterDisable
+      };
+    });
+
+    assert.ok(toggleResult.success, 'Multi-vendor UI elements should exist');
+    assert.ok(toggleResult.visibleAfterEnable, 'Container should become visible when enabled');
+    assert.strictEqual(toggleResult.storedAfterEnable, 'true', 'Must persist true in localStorage');
+    assert.ok(toggleResult.hiddenAfterDisable, 'Container should hide when disabled');
+    assert.strictEqual(toggleResult.storedAfterDisable, 'false', 'Must persist false in localStorage');
+  });
 });
 
 

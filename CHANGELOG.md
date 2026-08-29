@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.57.0] - 2026-08-29
+
+### Added & Improved
+- **Multi-Vendor Autopilot & Model Context Protocol (MCP) Support:**
+  - **Easy Enable/Disable Toggle:** Added a multi-vendor autopilot switch in the Configuration Modal (`#multivendor-toggle`) and in the sidebar actions, allowing pilots to seamlessly toggle between standard DJI mode and multi-vendor mode.
+  - **QGroundControl `.plan` (PX4 / ArduPilot / MAVLink) Export:** Added `buildQgcMissionPlan()` enabling export of survey grids, waypoints, camera triggers, and gimbal pitch angles to native QGC `.plan` JSON format for PX4, ArduPilot, and MAVLink autopilots.
+  - **Autel Robotics `.kml` Export:** Added `buildAutelMissionKml()` enabling waypoint missions for Autel EVO II, EVO Lite, and EVO Max drones.
+  - **Multi-Vendor Model Context Protocol (MCP) Server (`tools/companion/mcp_server.js`):** Built an open-standard MCP server compatible with Google Antigravity, Claude Desktop, Cursor, and ChatGPT. Exposes tools for mission auditing, multi-vendor conversion, telemetry extraction, and failure inspection.
+  - **Declarative MCP Discovery (`.agents/mcp_config.json`):** Registered the `aalaapi-companion` MCP server in `.agents/mcp_config.json` for automatic discovery by Antigravity and other MCP clients.
+
 ## [1.56.0] - 2026-08-29
 
 ### Added & Improved
