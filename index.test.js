@@ -3340,12 +3340,12 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     }
   });
 
-  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.48.0', () => {
+  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.48.1', () => {
     const companion = require('./tools/companion/server.js');
     assert.strictEqual(typeof companion.stopScanners, 'function');
     assert.strictEqual(typeof companion.killExistingCompanion, 'function');
     assert.strictEqual(typeof companion.pullFromRc2, 'function');
-    assert.strictEqual(companion.VERSION, '1.48.0');
+    assert.strictEqual(companion.VERSION, '1.48.1');
   });
 
   test('pullFromRC2 fetches mission from companion and triggers parseWPML', async () => {
@@ -4182,6 +4182,112 @@ describe('Drone REST API Locate & Hover Tooltip Tests (v1.48.0)', () => {
     }
   });
 });
+
+// ─── Regression Tests: Double Grid & Freeform WPML Flight Execution Fixes ───────
+describe('v1.48.1 Double Grid and Freeform WPML Flight Execution Fixes', () => {
+  test('double grid with oblique pitch exports smoothTransition instead of followWayline', () => {
+    const originalGetElementById = global.document.getElementById;
+    try {
+      global.document.getElementById = (id) => ({
+        value: {
+          'drone-model': '68',
+          'signal-lost-action': 'goBack',
+          'camera-zoom': '1.0',
+          'global-hover-time': '2',
+          'grid-type': 'double',
+          'heading-mode': 'followWayline'
+        }[id] || '',
+        checked: false
+      });
+
+      const wps = [
+        { lat: 40.0125, lon: -83.1770, alt: 30, pitch: -60, heading: 45.0, isRingStart: false },
+        { lat: 40.0128, lon: -83.1770, alt: 30, pitch: -60, heading: 135.0, isRingStart: false }
+      ];
+
+      const xml = vm.runInThisContext(`
+        buildWaylinesWpml(${JSON.stringify(wps)}, 30, 4, 'followWayline', 'goHome', -60, 'stopAndShoot', 'curved')
+      `);
+
+      assert.ok(xml.includes('<wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>'),
+        'Double grid with oblique pitch must use smoothTransition mode so center-pointing headings do not conflict with wayline direction');
+      assert.ok(!xml.includes('<wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>'),
+        'Double grid with oblique pitch must NOT use followWayline mode');
+      assert.ok(xml.includes('<wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>'),
+        'Double grid with oblique pitch must enable heading angle');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+
+  test('single 2D grid with nadir pitch exports followWayline', () => {
+    const originalGetElementById = global.document.getElementById;
+    try {
+      global.document.getElementById = (id) => ({
+        value: {
+          'drone-model': '68',
+          'signal-lost-action': 'goBack',
+          'camera-zoom': '1.0',
+          'global-hover-time': '0',
+          'grid-type': 'single',
+          'heading-mode': 'followWayline'
+        }[id] || '',
+        checked: false
+      });
+
+      const wps = [
+        { lat: 40.0125, lon: -83.1770, alt: 30, pitch: -90, heading: 0, isRingStart: false },
+        { lat: 40.0128, lon: -83.1770, alt: 30, pitch: -90, heading: 0, isRingStart: false }
+      ];
+
+      const xml = vm.runInThisContext(`
+        buildWaylinesWpml(${JSON.stringify(wps)}, 30, 4, 'followWayline', 'goHome', -90, 'video', 'curved')
+      `);
+
+      assert.ok(xml.includes('<wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>'),
+        'Single 2D grid must use followWayline mode');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+
+  test('freeform with custom heading uses smoothTransition and clamps 0.0 to 0.1 to avoid firmware rejection', () => {
+    const originalGetElementById = global.document.getElementById;
+    try {
+      global.document.getElementById = (id) => ({
+        value: {
+          'drone-model': '68',
+          'signal-lost-action': 'goBack',
+          'camera-zoom': '1.0',
+          'global-hover-time': '2',
+          'grid-type': 'freeform',
+          'heading-mode': 'followWayline'
+        }[id] || '',
+        checked: false
+      });
+
+      // Heading strictly 0.0 deg
+      const wps = [
+        { lat: 40.0125, lon: -83.1770, alt: 30, pitch: -60, heading: 0.0, isRingStart: false },
+        { lat: 40.0128, lon: -83.1770, alt: 30, pitch: -60, heading: 90.0, isRingStart: false }
+      ];
+
+      const xml = vm.runInThisContext(`
+        buildWaylinesWpml(${JSON.stringify(wps)}, 30, 4, 'followWayline', 'goHome', -60, 'stopAndShoot', 'curved')
+      `);
+
+      assert.ok(xml.includes('<wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>'),
+        'Custom heading in freeform must use smoothTransition mode');
+      assert.ok(xml.includes('<wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>'),
+        'Custom heading in freeform must enable heading angle');
+      assert.ok(xml.includes('<wpml:waypointHeadingAngle>0.1</wpml:waypointHeadingAngle>'),
+        '0.0 deg custom heading must be clamped to 0.1 deg to prevent DJI Fly zero-angle flight suspension bug');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+});
+
 
 
 

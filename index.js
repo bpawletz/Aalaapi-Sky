@@ -2415,9 +2415,11 @@ function updateGrid() {
         const pitch = pt.pitch !== undefined ? pt.pitch : defaultGimbalPitch;
 
         let finalHeading = pt.heading;
+        let finalHeadingMode = pt.headingMode || null;
         if (gridType === 'double' && pitch !== -90) {
           finalHeading = Math.atan2(-pt.x, -pt.y) * (180.0 / Math.PI);
           if (finalHeading < 0) finalHeading += 360;
+          finalHeadingMode = 'smoothTransition';
         }
 
         if (finalHeading !== null && finalHeading !== undefined) {
@@ -2442,6 +2444,7 @@ function updateGrid() {
           alt: alt,
           pitch: pitch,
           heading: finalHeading,
+          headingMode: finalHeadingMode,
           speed: pt.speed !== undefined ? pt.speed : null,
           hoverTime: pt.hoverTime !== undefined ? pt.hoverTime : null,
           turnMode: pt.turnMode || 'inherit',
@@ -4786,18 +4789,28 @@ ${waypointActions.join('\n')}
         }
       }
     } else {
-      if (headingMode === 'towardPOI') {
-        let targetPoi = pois[targetPoiIndex] || pois[0];
-        if (!targetPoi && targetPoiIndex === 0 && typeof centerMarker !== 'undefined' && centerMarker) {
-          const latlng = centerMarker.getLatLng();
-          targetPoi = { lat: latlng.lat, lon: latlng.lng };
-        }
-        if (targetPoi) {
-          poiPoint = `${targetPoi.lon.toFixed(13)},${targetPoi.lat.toFixed(13)},0.000000`;
-        }
-      } else if (headingMode === 'custom') {
+      if (gridType === 'double' && effectivePitch !== -90 && wp.heading !== null && wp.heading !== undefined) {
+        // In Double Grid with oblique pitch, headings point toward the center, which requires smoothTransition
         actualHeadingMode = 'smoothTransition';
-        actualHeadingAngle = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
+        actualHeadingAngle = wp.heading;
+      } else if (gridType === 'freeform' && wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
+        // In Freeform with custom per-waypoint heading, use smoothTransition
+        actualHeadingMode = 'smoothTransition';
+        actualHeadingAngle = wp.heading;
+      } else {
+        if (headingMode === 'towardPOI') {
+          let targetPoi = pois[targetPoiIndex] || pois[0];
+          if (!targetPoi && targetPoiIndex === 0 && typeof centerMarker !== 'undefined' && centerMarker) {
+            const latlng = centerMarker.getLatLng();
+            targetPoi = { lat: latlng.lat, lon: latlng.lng };
+          }
+          if (targetPoi) {
+            poiPoint = `${targetPoi.lon.toFixed(13)},${targetPoi.lat.toFixed(13)},0.000000`;
+          }
+        } else if (headingMode === 'custom') {
+          actualHeadingMode = 'smoothTransition';
+          actualHeadingAngle = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
+        }
       }
     }
 
@@ -4836,6 +4849,15 @@ ${waypointActions.join('\n')}
 
     if (isNaN(actualHeadingAngle) || actualHeadingAngle === null || actualHeadingAngle === undefined) {
       actualHeadingAngle = 0;
+    }
+
+    // Normalize angle into [0, 360)
+    actualHeadingAngle = ((actualHeadingAngle % 360) + 360) % 360;
+
+    // DJI Fly firmware has a bug where waypointHeadingAngle of strictly 0.0 with headingAngleEnable: 1
+    // causes "Error performing flight: Waypoint Flight Suspended". Clamp 0.0 to 0.1 to avoid firmware rejection.
+    if (actualHeadingMode !== 'followWayline' && (actualHeadingAngle === 0 || Math.abs(actualHeadingAngle) < 0.05)) {
+      actualHeadingAngle = 0.1;
     }
 
     const headingAngleEnable = 1;
