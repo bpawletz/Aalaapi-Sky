@@ -69,7 +69,7 @@
               <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
               <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
             </svg>
-            <h1 style="display: inline-flex; align-items: center; gap: 4px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.55.0</span><span style="font-size: 0.48rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 3px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
+            <h1 style="display: inline-flex; align-items: center; gap: 4px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.56.0</span><span style="font-size: 0.48rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 3px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
           </div>
           <div class="header-actions" style="display: flex; gap: 5px; align-items: center;">
             <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" title="Configuration Settings">
@@ -1227,7 +1227,7 @@
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.55.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.56.0</span>
             </div>
           </div>
         </div>
@@ -1291,6 +1291,12 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.56.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Bad KMZ History Recording &amp; Antigravity Triage:</strong> Extended SQLite telemetry database with validation health schemas (<code>is_valid</code>, <code>validation_errors_json</code>, <code>wpml_xml</code>). Added Antigravity CLI triage tool (<code>tools/inspect_failed_mission.js</code>) and one-click "📋 Copy Antigravity Fix Prompt" buttons in Inspector and Diagnostics modals. Grouped bad KMZs in the flight history dropdown for instant playback and debugging.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.55.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Pre-Flight KMZ Audit &amp; DJI Fly Go Validator:</strong> Resolved KMZ flight path failures when pressing "Go" on DJI RC 2. Fixed contradictory <code>waypointHeadingAngleEnable: 1</code> on <code>followWayline</code>, enforced mandatory stop-turns on first and last waypoints, aligned coordinates to strict 2D <code>lon,lat</code> under <code>relativeToStartPoint</code>, corrected POI coordinate order to <code>lat,lon,alt</code>, and defaulted drone model to Mini 4 Pro (68). Added automated 10-rule pre-flight linter (<code>validateWpmlMission</code>), live status badge, and comprehensive KMZ Inspector modal.</li>
@@ -3040,6 +3046,9 @@
 
           <!-- Action Buttons -->
           <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
+            <button id="diag-copy-antigravity-btn" type="button" class="btn-secondary" style="width: 100%; padding: 8px 12px; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.35); color: #a5b4fc; cursor: pointer;" title="Copy comprehensive bug diagnosis prompt for Antigravity AI assistant">
+              📋 Copy Antigravity Fix Prompt
+            </button>
             <button id="diag-export-json-btn" type="button" class="btn-secondary" style="width: 100%; padding: 8px 12px; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24; cursor: pointer;">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -3136,7 +3145,8 @@
         <span style="font-size: 0.7rem; color: var(--text-muted);">
           All outgoing exports are auto-repaired and verified against DJI Fly firmware rules.
         </span>
-        <div style="display: flex; gap: 8px;">
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button id="inspector-copy-antigravity-btn" type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.4); color: #a5b4fc; display: inline-flex; align-items: center; gap: 4px;" title="Copy complete diagnostic bug report formatted for Antigravity AI assistant">📋 Copy Antigravity Fix Prompt</button>
           <button id="close-inspector-footer-btn" type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;">Close</button>
           <button id="inspector-autofix-download-btn" type="button" class="btn-primary" style="padding: 6px 12px; font-size: 0.75rem; font-weight: 600;">Export Verified KMZ</button>
         </div>

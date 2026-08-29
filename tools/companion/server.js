@@ -994,6 +994,56 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (pathname === '/api/diagnostics/bad' && req.method === 'GET') {
+      try {
+        const limit = parseInt(url.searchParams.get('limit') || '50', 10);
+        const offset = parseInt(url.searchParams.get('offset') || '0', 10);
+        const badMissions = diagDb.getBadMissions(limit, offset);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, count: badMissions.length, missions: badMissions }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+      return;
+    }
+
+    if (pathname === '/api/diagnostics/bad/latest' && req.method === 'GET') {
+      try {
+        const latest = diagDb.getLatestBadMission();
+        if (latest) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, mission: latest }));
+        } else {
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, message: 'No bad missions recorded in history' }));
+        }
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+      return;
+    }
+
+    if (pathname === '/api/diagnostics/report-failure' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const payload = body ? JSON.parse(body) : {};
+          const uuid = payload.uuid;
+          const errorMsg = payload.error || payload.errorMessage || 'Waypoint Flight Suspended';
+          const result = diagDb.reportExecutionFailure(uuid, errorMsg);
+          res.writeHead(result.success ? 200 : 400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(result));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
     if (pathname.startsWith('/api/diagnostics/') && req.method === 'GET') {
       try {
         const uuid = pathname.replace('/api/diagnostics/', '').trim();

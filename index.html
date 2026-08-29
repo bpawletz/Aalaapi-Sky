@@ -1726,7 +1726,7 @@ html, body {
               <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
               <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
             </svg>
-            <h1 style="display: inline-flex; align-items: center; gap: 4px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.55.0</span><span style="font-size: 0.48rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 3px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
+            <h1 style="display: inline-flex; align-items: center; gap: 4px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.56.0</span><span style="font-size: 0.48rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 3px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
           </div>
           <div class="header-actions" style="display: flex; gap: 5px; align-items: center;">
             <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" title="Configuration Settings">
@@ -2884,7 +2884,7 @@ html, body {
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.55.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.56.0</span>
             </div>
           </div>
         </div>
@@ -2948,6 +2948,12 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.56.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Bad KMZ History Recording &amp; Antigravity Triage:</strong> Extended SQLite telemetry database with validation health schemas (<code>is_valid</code>, <code>validation_errors_json</code>, <code>wpml_xml</code>). Added Antigravity CLI triage tool (<code>tools/inspect_failed_mission.js</code>) and one-click "📋 Copy Antigravity Fix Prompt" buttons in Inspector and Diagnostics modals. Grouped bad KMZs in the flight history dropdown for instant playback and debugging.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.55.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Pre-Flight KMZ Audit &amp; DJI Fly Go Validator:</strong> Resolved KMZ flight path failures when pressing "Go" on DJI RC 2. Fixed contradictory <code>waypointHeadingAngleEnable: 1</code> on <code>followWayline</code>, enforced mandatory stop-turns on first and last waypoints, aligned coordinates to strict 2D <code>lon,lat</code> under <code>relativeToStartPoint</code>, corrected POI coordinate order to <code>lat,lon,alt</code>, and defaulted drone model to Mini 4 Pro (68). Added automated 10-rule pre-flight linter (<code>validateWpmlMission</code>), live status badge, and comprehensive KMZ Inspector modal.</li>
@@ -4697,6 +4703,9 @@ html, body {
 
           <!-- Action Buttons -->
           <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
+            <button id="diag-copy-antigravity-btn" type="button" class="btn-secondary" style="width: 100%; padding: 8px 12px; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.35); color: #a5b4fc; cursor: pointer;" title="Copy comprehensive bug diagnosis prompt for Antigravity AI assistant">
+              📋 Copy Antigravity Fix Prompt
+            </button>
             <button id="diag-export-json-btn" type="button" class="btn-secondary" style="width: 100%; padding: 8px 12px; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24; cursor: pointer;">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -4793,7 +4802,8 @@ html, body {
         <span style="font-size: 0.7rem; color: var(--text-muted);">
           All outgoing exports are auto-repaired and verified against DJI Fly firmware rules.
         </span>
-        <div style="display: flex; gap: 8px;">
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button id="inspector-copy-antigravity-btn" type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.4); color: #a5b4fc; display: inline-flex; align-items: center; gap: 4px;" title="Copy complete diagnostic bug report formatted for Antigravity AI assistant">📋 Copy Antigravity Fix Prompt</button>
           <button id="close-inspector-footer-btn" type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;">Close</button>
           <button id="inspector-autofix-download-btn" type="button" class="btn-primary" style="padding: 6px 12px; font-size: 0.75rem; font-weight: 600;">Export Verified KMZ</button>
         </div>
@@ -5843,6 +5853,13 @@ function initUIEventListeners() {
     inspectorAutofixDownloadBtn.addEventListener('click', () => {
       KMZInspector.close();
       if (typeof exportKMZ === 'function') exportKMZ();
+    });
+  }
+
+  const inspectorCopyAntigravityBtn = document.getElementById('inspector-copy-antigravity-btn');
+  if (inspectorCopyAntigravityBtn) {
+    inspectorCopyAntigravityBtn.addEventListener('click', () => {
+      KMZInspector.copyAntigravityPrompt();
     });
   }
 
@@ -10356,8 +10373,35 @@ function exportKMZ() {
         speed,
         gimbalPitch,
         filename: link.download,
-        uuid: storedUuid || downloadBase
+        uuid: storedUuid || downloadBase,
+        validation: result.validation,
+        isValid: result.validation ? result.validation.valid : true,
+        wpmlXml: result.waylinesWpml,
+        templateXml: result.templateKml
       });
+
+      // If bad or invalid KMZ, save to local browser history
+      if (diagData && (!diagData.isValid || (diagData.validationErrors && diagData.validationErrors.length > 0))) {
+        try {
+          if (typeof localStorage !== 'undefined') {
+            const rawHist = localStorage.getItem('aalaapi_bad_kmz_history');
+            const badHist = rawHist ? JSON.parse(rawHist) : [];
+            badHist.unshift({
+              uuid: diagData.uuid,
+              filename: diagData.filename,
+              created_at: diagData.createdAt,
+              flight_pattern: diagData.flightPattern,
+              waypoint_count: diagData.summary?.waypointCount || waypoints.length,
+              validation_rules_passed: diagData.validationRulesPassed,
+              validation_errors: diagData.validationErrors,
+              is_valid: 0,
+              execution_status: 'invalid'
+            });
+            localStorage.setItem('aalaapi_bad_kmz_history', JSON.stringify(badHist.slice(0, 20)));
+          }
+        } catch (storageErr) {}
+      }
+
       if (diagData && typeof Blob !== 'undefined' && typeof document !== 'undefined') {
         const jsonBlob = new Blob([JSON.stringify(diagData, null, 2)], { type: "application/json" });
         const jsonLink = document.createElement("a");
@@ -10566,12 +10610,17 @@ function buildFlightDiagnosticsJSON(customWps = null, options = {}) {
       width: window.innerWidth,
       height: window.innerHeight
     } : null,
-    appVersion: '1.53.0',
+    appVersion: '1.56.0',
     capturedAt: new Date().toISOString()
   };
 
+  const isValid = options.isValid !== undefined ? options.isValid : (options.validation ? options.validation.valid : true);
+  const validationErrors = options.validationErrors || options.validation?.errors || [];
+  const validationWarnings = options.validationWarnings || options.validation?.warnings || [];
+  const validationRulesPassed = options.validationRulesPassed ?? options.validation?.rulesPassed ?? (isValid ? 10 : 10 - validationErrors.length);
+
   return {
-    schemaVersion: '1.53.0',
+    schemaVersion: '1.56.0',
     uuid,
     createdAt: new Date().toISOString(),
     filename: options.filename || `${uuid}.kmz`,
@@ -10582,6 +10631,15 @@ function buildFlightDiagnosticsJSON(customWps = null, options = {}) {
     userAgent,
     plan,
     diagnostics: telemetry,
+    isValid,
+    validationRulesPassed,
+    validationErrors,
+    validationWarnings,
+    validationReport: options.validationReport || options.validation || null,
+    wpmlXml: options.wpmlXml || '',
+    templateXml: options.templateXml || '',
+    executionStatus: options.executionStatus || (!isValid ? 'invalid' : 'pending'),
+    executionError: options.executionError || (validationErrors.length > 0 ? validationErrors.join('; ') : ''),
     summary: {
       waypointCount: currentWps.length,
       photoCount: telemetry?.photoCount ?? currentWps.length,
@@ -11117,8 +11175,34 @@ async function sendDirectlyToRC2() {
           speed,
           gimbalPitch,
           uuid,
-          filename: `${uuid}.kmz`
+          filename: `${uuid}.kmz`,
+          validation: result.validation,
+          isValid: result.validation ? result.validation.valid : true,
+          wpmlXml: result.waylinesWpml,
+          templateXml: result.templateKml
         });
+
+        if (diagData && (!diagData.isValid || (diagData.validationErrors && diagData.validationErrors.length > 0))) {
+          try {
+            if (typeof localStorage !== 'undefined') {
+              const rawHist = localStorage.getItem('aalaapi_bad_kmz_history');
+              const badHist = rawHist ? JSON.parse(rawHist) : [];
+              badHist.unshift({
+                uuid: diagData.uuid,
+                filename: diagData.filename,
+                created_at: diagData.createdAt,
+                flight_pattern: diagData.flightPattern,
+                waypoint_count: diagData.summary?.waypointCount || waypoints.length,
+                validation_rules_passed: diagData.validationRulesPassed,
+                validation_errors: diagData.validationErrors,
+                is_valid: 0,
+                execution_status: 'invalid'
+              });
+              localStorage.setItem('aalaapi_bad_kmz_history', JSON.stringify(badHist.slice(0, 20)));
+            }
+          } catch (storageErr) {}
+        }
+
         fetch(`${COMPANION_API_BASE}/api/diagnostics/archive`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -11752,6 +11836,7 @@ const FlightDiagnostics = {
   actualLineMesh: null,
   plannedLineMesh: null,
   photoMarkers: [],
+  currentLoadedMission: null,
 
   init() {
     if (typeof document === 'undefined') return;
@@ -11803,30 +11888,14 @@ const FlightDiagnostics = {
     const viewTopBtn = document.getElementById('diag-view-top-btn');
     if (view3dBtn && viewTopBtn) {
       view3dBtn.addEventListener('click', () => {
-        view3dBtn.style.background = 'rgba(6, 182, 212, 0.2)';
-        view3dBtn.style.borderColor = 'rgba(6, 182, 212, 0.5)';
-        view3dBtn.style.color = '#22d3ee';
-        viewTopBtn.style.background = '';
-        viewTopBtn.style.borderColor = '';
-        viewTopBtn.style.color = '';
-        if (this.threeCamera && this.threeControls) {
-          this.threeCamera.position.set(0, 100, 150);
-          this.threeControls.target.set(0, 20, 0);
-          this.threeControls.update();
-        }
+        view3dBtn.classList.add('active');
+        viewTopBtn.classList.remove('active');
+        this.resetCameraView('3d');
       });
       viewTopBtn.addEventListener('click', () => {
-        viewTopBtn.style.background = 'rgba(6, 182, 212, 0.2)';
-        viewTopBtn.style.borderColor = 'rgba(6, 182, 212, 0.5)';
-        viewTopBtn.style.color = '#22d3ee';
-        view3dBtn.style.background = '';
-        view3dBtn.style.borderColor = '';
-        view3dBtn.style.color = '';
-        if (this.threeCamera && this.threeControls) {
-          this.threeCamera.position.set(0, 220, 0.001);
-          this.threeControls.target.set(0, 0, 0);
-          this.threeControls.update();
-        }
+        viewTopBtn.classList.add('active');
+        view3dBtn.classList.remove('active');
+        this.resetCameraView('top');
       });
     }
 
@@ -11836,6 +11905,12 @@ const FlightDiagnostics = {
       flightSel.addEventListener('change', (e) => {
         this.loadSelectedFlight(e.target.value);
       });
+    }
+
+    // Copy Antigravity Fix Prompt button
+    const copyAntigravityBtn = document.getElementById('diag-copy-antigravity-btn');
+    if (copyAntigravityBtn) {
+      copyAntigravityBtn.addEventListener('click', () => this.copyAntigravityPrompt());
     }
 
     // Export Diag JSON button
@@ -11856,6 +11931,39 @@ const FlightDiagnostics = {
     if (loadBtn && fileInput) {
       loadBtn.addEventListener('click', () => fileInput.click());
       fileInput.addEventListener('change', (e) => this.handleLogFileImport(e));
+    }
+  },
+
+  copyAntigravityPrompt() {
+    let promptText = '';
+    if (this.currentLoadedMission) {
+      const m = this.currentLoadedMission;
+      promptText = KMZInspector.generateAntigravityPrompt(
+        m.validationReport || { rulesPassed: m.validation_rules_passed || 0, errors: m.validationErrors || [], warnings: m.validationWarnings || [] },
+        m.wpml_xml,
+        m.plan?.waypoints
+      );
+    } else {
+      promptText = KMZInspector.generateAntigravityPrompt();
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(promptText).then(() => {
+        const btn = document.getElementById('diag-copy-antigravity-btn');
+        if (btn) {
+          const orig = btn.innerHTML;
+          btn.innerHTML = '✅ Copied to Clipboard!';
+          btn.style.color = '#34d399';
+          setTimeout(() => {
+            btn.innerHTML = orig;
+            btn.style.color = '#a5b4fc';
+          }, 2500);
+        }
+      }).catch(() => {
+        if (typeof prompt === 'function') prompt('Copy Antigravity Fix Prompt:', promptText);
+      });
+    } else {
+      if (typeof prompt === 'function') prompt('Copy Antigravity Fix Prompt:', promptText);
     }
   },
 
@@ -11905,7 +12013,16 @@ const FlightDiagnostics = {
         }
       } catch (e) {}
 
-      if (rc2Flights.length === 0 && savedMissions.length === 0) return;
+      // Check localStorage for offline bad KMZ missions
+      let localBadMissions = [];
+      try {
+        if (typeof localStorage !== 'undefined') {
+          const raw = localStorage.getItem('aalaapi_bad_kmz_history');
+          if (raw) localBadMissions = JSON.parse(raw);
+        }
+      } catch (e) {}
+
+      if (rc2Flights.length === 0 && savedMissions.length === 0 && localBadMissions.length === 0) return;
 
       const currentVal = flightSel.value;
       flightSel.innerHTML = '';
@@ -11916,11 +12033,38 @@ const FlightDiagnostics = {
       planOpt.textContent = '🎯 Planned Mission Simulation (Active Workspace)';
       flightSel.appendChild(planOpt);
 
+      // Separate saved missions into valid vs bad / suspended
+      const validSaved = savedMissions.filter(m => m.is_valid !== 0 && m.execution_status !== 'suspended' && m.execution_status !== 'failed');
+      const badSaved = savedMissions.filter(m => m.is_valid === 0 || m.execution_status === 'suspended' || m.execution_status === 'failed');
+
+      // Combine bad missions from SQLite and localStorage
+      const combinedBad = [...badSaved];
+      localBadMissions.forEach(lm => {
+        if (!combinedBad.some(b => b.uuid === lm.uuid)) {
+          combinedBad.push(lm);
+        }
+      });
+
+      // Bad / Suspended Missions (Antigravity Triage)
+      if (combinedBad.length > 0) {
+        const groupBad = document.createElement('optgroup');
+        groupBad.label = '⚠️ Bad / Suspended KMZs (Antigravity Triage)';
+        combinedBad.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = `diag:${m.uuid}`;
+          const dateClean = (m.created_at || '').replace('T', ' ').replace(/\..+/, '').replace('Z', ' UTC');
+          const errCount = m.validation_errors ? m.validation_errors.length : (m.validation_errors_count || 0);
+          opt.textContent = `❌ [FAIL: ${errCount} Issues] ${m.filename || m.uuid} (${dateClean})`;
+          groupBad.appendChild(opt);
+        });
+        flightSel.appendChild(groupBad);
+      }
+
       // Saved Mission Diagnostics from SQLite Archive
-      if (savedMissions.length > 0) {
+      if (validSaved.length > 0) {
         const groupSaved = document.createElement('optgroup');
         groupSaved.label = 'Saved Mission Diagnostics (SQLite Archive)';
-        savedMissions.forEach((m, idx) => {
+        validSaved.forEach((m) => {
           const opt = document.createElement('option');
           opt.value = `diag:${m.uuid}`;
           const dateClean = (m.created_at || '').replace('T', ' ').replace(/\..+/, '').replace('Z', ' UTC');
@@ -11955,6 +12099,7 @@ const FlightDiagnostics = {
 
   async loadSelectedFlight(flightId) {
     this.selectedFlightId = flightId;
+    this.currentLoadedMission = null;
     const flightSel = document.getElementById('diag-flight-selector');
     if (flightSel && flightSel.value !== flightId) {
       flightSel.value = flightId;
@@ -11977,14 +12122,20 @@ const FlightDiagnostics = {
         });
         if (res.ok) {
           const data = await res.json();
-          if (data.success && data.mission && data.mission.diagnostics) {
-            this.telemetryData = data.mission.diagnostics;
-            const plannedStats = data.mission.plan?.statistics || {
-              waypointCount: data.mission.waypoint_count,
-              altitude: data.mission.altitude,
-              totalDistance: data.mission.total_distance
-            };
-            this.comparisonData = computeFlightComparison(plannedStats, this.telemetryData);
+          if (data.success && data.mission) {
+            this.currentLoadedMission = data.mission;
+            if (data.mission.diagnostics) {
+              this.telemetryData = data.mission.diagnostics;
+              const plannedStats = data.mission.plan?.statistics || {
+                waypointCount: data.mission.waypoint_count,
+                altitude: data.mission.altitude,
+                totalDistance: data.mission.total_distance
+              };
+              this.comparisonData = computeFlightComparison(plannedStats, this.telemetryData);
+            } else {
+              this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId });
+              this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
+            }
           } else {
             throw new Error('Diagnostics data missing in mission payload');
           }
@@ -12698,6 +12849,96 @@ const KMZInspector = {
     if (wpmlEl) wpmlEl.textContent = this.activeWpmlXml;
     const tmplEl = document.getElementById('inspector-xml-tmpl');
     if (tmplEl) tmplEl.textContent = this.activeTemplateXml;
+  },
+
+  generateAntigravityPrompt(report = null, wpml = '', wps = null) {
+    const r = report || this.activeReport;
+    const xml = wpml || this.activeWpmlXml || '';
+    const activeWps = wps || (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
+    let drone = 'DJI Mini 4 Pro (68)';
+    let pattern = 'single';
+    let alt = '50';
+    let speed = '4';
+    let pitch = '-90';
+    if (typeof document !== 'undefined') {
+      try {
+        const droneEl = document.getElementById('drone-model');
+        if (droneEl && droneEl.options && droneEl.selectedIndex >= 0 && droneEl.options[droneEl.selectedIndex]) {
+          drone = droneEl.options[droneEl.selectedIndex].text || drone;
+        }
+        pattern = document.getElementById('flight-pattern')?.value || pattern;
+        alt = document.getElementById('altitude')?.value || alt;
+        speed = document.getElementById('speed')?.value || speed;
+        pitch = document.getElementById('gimbal-pitch')?.value || pitch;
+      } catch (e) {}
+    }
+
+    let prompt = `### 🤖 ANTIGRAVITY BUG REPORT: Bad KMZ Mission Execution Issue\n\n`;
+    prompt += `**Mission Context:**\n`;
+    prompt += `- **Target Drone Model:** ${drone}\n`;
+    prompt += `- **Pattern:** ${pattern} (Altitude: ${alt}m, Speed: ${speed}m/s, Pitch: ${pitch}°)\n`;
+    prompt += `- **Waypoints Total:** ${activeWps.length}\n`;
+    if (r) {
+      prompt += `- **Validation Health Score:** ${r.rulesPassed ?? r.validation_rules_passed ?? 0}/10 Passed (${r.valid || r.is_valid ? 'Valid' : 'Invalid'})\n`;
+      const errList = r.errors || r.validationErrors || [];
+      if (errList.length > 0) {
+        prompt += `- **Detected Pre-Flight Errors:**\n`;
+        errList.forEach((e, i) => { prompt += `  ${i + 1}. ❌ ${e}\n`; });
+      }
+      const warnList = r.warnings || r.validationWarnings || [];
+      if (warnList.length > 0) {
+        prompt += `- **Detected Warnings:**\n`;
+        warnList.forEach((w, i) => { prompt += `  ${i + 1}. ⚠️ ${w}\n`; });
+      }
+    }
+
+    if (activeWps.length > 0) {
+      const sample = activeWps.slice(0, 5).map((wp, i) => ({
+        index: i,
+        lat: wp.lat,
+        lon: wp.lon,
+        alt: wp.altitude || alt,
+        heading: wp.heading,
+        turnMode: wp.turnMode
+      }));
+      prompt += `\n**Sample Waypoints Input:**\n\`\`\`json\n${JSON.stringify(sample, null, 2)}\n\`\`\`\n`;
+    }
+
+    if (xml) {
+      const placemarks = xml.split('<Placemark>');
+      const xmlExtract = placemarks.length > 1 ? '<Placemark>' + placemarks[1].substring(0, 450) + '...\n</Placemark>' : xml.substring(0, 600);
+      prompt += `\n**Offending / Generated WPML Snippet:**\n\`\`\`xml\n${xmlExtract}\n\`\`\`\n`;
+    }
+
+    prompt += `\n**Antigravity Instructions:**\n`;
+    prompt += `1. Inspect the offending XML and rule failures above.\n`;
+    prompt += `2. Formulate a regression unit test in \`index.test.js\` reproducing this exact configuration.\n`;
+    prompt += `3. Fix the generation/sanitization logic in \`index.js\` (\`buildWaylinesWpml\` / \`validateAndFixWpml\`).\n`;
+    prompt += `4. Run \`python scratch/build.py\` and verify all tests pass with \`npm test\`.\n`;
+
+    return prompt;
+  },
+
+  copyAntigravityPrompt() {
+    const promptText = this.generateAntigravityPrompt();
+    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(promptText).then(() => {
+        const btn = document.getElementById('inspector-copy-antigravity-btn');
+        if (btn) {
+          const orig = btn.innerHTML;
+          btn.innerHTML = '✅ Copied to Clipboard!';
+          btn.style.color = '#34d399';
+          setTimeout(() => {
+            btn.innerHTML = orig;
+            btn.style.color = '#a5b4fc';
+          }, 2500);
+        }
+      }).catch(() => {
+        if (typeof prompt === 'function') prompt('Copy Antigravity Fix Prompt:', promptText);
+      });
+    } else {
+      if (typeof prompt === 'function') prompt('Copy Antigravity Fix Prompt:', promptText);
+    }
   },
 
   async auditExternalKMZ(file) {

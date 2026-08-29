@@ -1021,6 +1021,13 @@ function initUIEventListeners() {
     });
   }
 
+  const inspectorCopyAntigravityBtn = document.getElementById('inspector-copy-antigravity-btn');
+  if (inspectorCopyAntigravityBtn) {
+    inspectorCopyAntigravityBtn.addEventListener('click', () => {
+      KMZInspector.copyAntigravityPrompt();
+    });
+  }
+
   if (inspectorFileInput) {
     inspectorFileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
@@ -5531,8 +5538,35 @@ function exportKMZ() {
         speed,
         gimbalPitch,
         filename: link.download,
-        uuid: storedUuid || downloadBase
+        uuid: storedUuid || downloadBase,
+        validation: result.validation,
+        isValid: result.validation ? result.validation.valid : true,
+        wpmlXml: result.waylinesWpml,
+        templateXml: result.templateKml
       });
+
+      // If bad or invalid KMZ, save to local browser history
+      if (diagData && (!diagData.isValid || (diagData.validationErrors && diagData.validationErrors.length > 0))) {
+        try {
+          if (typeof localStorage !== 'undefined') {
+            const rawHist = localStorage.getItem('aalaapi_bad_kmz_history');
+            const badHist = rawHist ? JSON.parse(rawHist) : [];
+            badHist.unshift({
+              uuid: diagData.uuid,
+              filename: diagData.filename,
+              created_at: diagData.createdAt,
+              flight_pattern: diagData.flightPattern,
+              waypoint_count: diagData.summary?.waypointCount || waypoints.length,
+              validation_rules_passed: diagData.validationRulesPassed,
+              validation_errors: diagData.validationErrors,
+              is_valid: 0,
+              execution_status: 'invalid'
+            });
+            localStorage.setItem('aalaapi_bad_kmz_history', JSON.stringify(badHist.slice(0, 20)));
+          }
+        } catch (storageErr) {}
+      }
+
       if (diagData && typeof Blob !== 'undefined' && typeof document !== 'undefined') {
         const jsonBlob = new Blob([JSON.stringify(diagData, null, 2)], { type: "application/json" });
         const jsonLink = document.createElement("a");
@@ -5741,12 +5775,17 @@ function buildFlightDiagnosticsJSON(customWps = null, options = {}) {
       width: window.innerWidth,
       height: window.innerHeight
     } : null,
-    appVersion: '1.53.0',
+    appVersion: '1.56.0',
     capturedAt: new Date().toISOString()
   };
 
+  const isValid = options.isValid !== undefined ? options.isValid : (options.validation ? options.validation.valid : true);
+  const validationErrors = options.validationErrors || options.validation?.errors || [];
+  const validationWarnings = options.validationWarnings || options.validation?.warnings || [];
+  const validationRulesPassed = options.validationRulesPassed ?? options.validation?.rulesPassed ?? (isValid ? 10 : 10 - validationErrors.length);
+
   return {
-    schemaVersion: '1.53.0',
+    schemaVersion: '1.56.0',
     uuid,
     createdAt: new Date().toISOString(),
     filename: options.filename || `${uuid}.kmz`,
@@ -5757,6 +5796,15 @@ function buildFlightDiagnosticsJSON(customWps = null, options = {}) {
     userAgent,
     plan,
     diagnostics: telemetry,
+    isValid,
+    validationRulesPassed,
+    validationErrors,
+    validationWarnings,
+    validationReport: options.validationReport || options.validation || null,
+    wpmlXml: options.wpmlXml || '',
+    templateXml: options.templateXml || '',
+    executionStatus: options.executionStatus || (!isValid ? 'invalid' : 'pending'),
+    executionError: options.executionError || (validationErrors.length > 0 ? validationErrors.join('; ') : ''),
     summary: {
       waypointCount: currentWps.length,
       photoCount: telemetry?.photoCount ?? currentWps.length,
@@ -6292,8 +6340,34 @@ async function sendDirectlyToRC2() {
           speed,
           gimbalPitch,
           uuid,
-          filename: `${uuid}.kmz`
+          filename: `${uuid}.kmz`,
+          validation: result.validation,
+          isValid: result.validation ? result.validation.valid : true,
+          wpmlXml: result.waylinesWpml,
+          templateXml: result.templateKml
         });
+
+        if (diagData && (!diagData.isValid || (diagData.validationErrors && diagData.validationErrors.length > 0))) {
+          try {
+            if (typeof localStorage !== 'undefined') {
+              const rawHist = localStorage.getItem('aalaapi_bad_kmz_history');
+              const badHist = rawHist ? JSON.parse(rawHist) : [];
+              badHist.unshift({
+                uuid: diagData.uuid,
+                filename: diagData.filename,
+                created_at: diagData.createdAt,
+                flight_pattern: diagData.flightPattern,
+                waypoint_count: diagData.summary?.waypointCount || waypoints.length,
+                validation_rules_passed: diagData.validationRulesPassed,
+                validation_errors: diagData.validationErrors,
+                is_valid: 0,
+                execution_status: 'invalid'
+              });
+              localStorage.setItem('aalaapi_bad_kmz_history', JSON.stringify(badHist.slice(0, 20)));
+            }
+          } catch (storageErr) {}
+        }
+
         fetch(`${COMPANION_API_BASE}/api/diagnostics/archive`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -6927,6 +7001,7 @@ const FlightDiagnostics = {
   actualLineMesh: null,
   plannedLineMesh: null,
   photoMarkers: [],
+  currentLoadedMission: null,
 
   init() {
     if (typeof document === 'undefined') return;
@@ -6978,30 +7053,14 @@ const FlightDiagnostics = {
     const viewTopBtn = document.getElementById('diag-view-top-btn');
     if (view3dBtn && viewTopBtn) {
       view3dBtn.addEventListener('click', () => {
-        view3dBtn.style.background = 'rgba(6, 182, 212, 0.2)';
-        view3dBtn.style.borderColor = 'rgba(6, 182, 212, 0.5)';
-        view3dBtn.style.color = '#22d3ee';
-        viewTopBtn.style.background = '';
-        viewTopBtn.style.borderColor = '';
-        viewTopBtn.style.color = '';
-        if (this.threeCamera && this.threeControls) {
-          this.threeCamera.position.set(0, 100, 150);
-          this.threeControls.target.set(0, 20, 0);
-          this.threeControls.update();
-        }
+        view3dBtn.classList.add('active');
+        viewTopBtn.classList.remove('active');
+        this.resetCameraView('3d');
       });
       viewTopBtn.addEventListener('click', () => {
-        viewTopBtn.style.background = 'rgba(6, 182, 212, 0.2)';
-        viewTopBtn.style.borderColor = 'rgba(6, 182, 212, 0.5)';
-        viewTopBtn.style.color = '#22d3ee';
-        view3dBtn.style.background = '';
-        view3dBtn.style.borderColor = '';
-        view3dBtn.style.color = '';
-        if (this.threeCamera && this.threeControls) {
-          this.threeCamera.position.set(0, 220, 0.001);
-          this.threeControls.target.set(0, 0, 0);
-          this.threeControls.update();
-        }
+        viewTopBtn.classList.add('active');
+        view3dBtn.classList.remove('active');
+        this.resetCameraView('top');
       });
     }
 
@@ -7011,6 +7070,12 @@ const FlightDiagnostics = {
       flightSel.addEventListener('change', (e) => {
         this.loadSelectedFlight(e.target.value);
       });
+    }
+
+    // Copy Antigravity Fix Prompt button
+    const copyAntigravityBtn = document.getElementById('diag-copy-antigravity-btn');
+    if (copyAntigravityBtn) {
+      copyAntigravityBtn.addEventListener('click', () => this.copyAntigravityPrompt());
     }
 
     // Export Diag JSON button
@@ -7031,6 +7096,39 @@ const FlightDiagnostics = {
     if (loadBtn && fileInput) {
       loadBtn.addEventListener('click', () => fileInput.click());
       fileInput.addEventListener('change', (e) => this.handleLogFileImport(e));
+    }
+  },
+
+  copyAntigravityPrompt() {
+    let promptText = '';
+    if (this.currentLoadedMission) {
+      const m = this.currentLoadedMission;
+      promptText = KMZInspector.generateAntigravityPrompt(
+        m.validationReport || { rulesPassed: m.validation_rules_passed || 0, errors: m.validationErrors || [], warnings: m.validationWarnings || [] },
+        m.wpml_xml,
+        m.plan?.waypoints
+      );
+    } else {
+      promptText = KMZInspector.generateAntigravityPrompt();
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(promptText).then(() => {
+        const btn = document.getElementById('diag-copy-antigravity-btn');
+        if (btn) {
+          const orig = btn.innerHTML;
+          btn.innerHTML = '✅ Copied to Clipboard!';
+          btn.style.color = '#34d399';
+          setTimeout(() => {
+            btn.innerHTML = orig;
+            btn.style.color = '#a5b4fc';
+          }, 2500);
+        }
+      }).catch(() => {
+        if (typeof prompt === 'function') prompt('Copy Antigravity Fix Prompt:', promptText);
+      });
+    } else {
+      if (typeof prompt === 'function') prompt('Copy Antigravity Fix Prompt:', promptText);
     }
   },
 
@@ -7080,7 +7178,16 @@ const FlightDiagnostics = {
         }
       } catch (e) {}
 
-      if (rc2Flights.length === 0 && savedMissions.length === 0) return;
+      // Check localStorage for offline bad KMZ missions
+      let localBadMissions = [];
+      try {
+        if (typeof localStorage !== 'undefined') {
+          const raw = localStorage.getItem('aalaapi_bad_kmz_history');
+          if (raw) localBadMissions = JSON.parse(raw);
+        }
+      } catch (e) {}
+
+      if (rc2Flights.length === 0 && savedMissions.length === 0 && localBadMissions.length === 0) return;
 
       const currentVal = flightSel.value;
       flightSel.innerHTML = '';
@@ -7091,11 +7198,38 @@ const FlightDiagnostics = {
       planOpt.textContent = '🎯 Planned Mission Simulation (Active Workspace)';
       flightSel.appendChild(planOpt);
 
+      // Separate saved missions into valid vs bad / suspended
+      const validSaved = savedMissions.filter(m => m.is_valid !== 0 && m.execution_status !== 'suspended' && m.execution_status !== 'failed');
+      const badSaved = savedMissions.filter(m => m.is_valid === 0 || m.execution_status === 'suspended' || m.execution_status === 'failed');
+
+      // Combine bad missions from SQLite and localStorage
+      const combinedBad = [...badSaved];
+      localBadMissions.forEach(lm => {
+        if (!combinedBad.some(b => b.uuid === lm.uuid)) {
+          combinedBad.push(lm);
+        }
+      });
+
+      // Bad / Suspended Missions (Antigravity Triage)
+      if (combinedBad.length > 0) {
+        const groupBad = document.createElement('optgroup');
+        groupBad.label = '⚠️ Bad / Suspended KMZs (Antigravity Triage)';
+        combinedBad.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = `diag:${m.uuid}`;
+          const dateClean = (m.created_at || '').replace('T', ' ').replace(/\..+/, '').replace('Z', ' UTC');
+          const errCount = m.validation_errors ? m.validation_errors.length : (m.validation_errors_count || 0);
+          opt.textContent = `❌ [FAIL: ${errCount} Issues] ${m.filename || m.uuid} (${dateClean})`;
+          groupBad.appendChild(opt);
+        });
+        flightSel.appendChild(groupBad);
+      }
+
       // Saved Mission Diagnostics from SQLite Archive
-      if (savedMissions.length > 0) {
+      if (validSaved.length > 0) {
         const groupSaved = document.createElement('optgroup');
         groupSaved.label = 'Saved Mission Diagnostics (SQLite Archive)';
-        savedMissions.forEach((m, idx) => {
+        validSaved.forEach((m) => {
           const opt = document.createElement('option');
           opt.value = `diag:${m.uuid}`;
           const dateClean = (m.created_at || '').replace('T', ' ').replace(/\..+/, '').replace('Z', ' UTC');
@@ -7130,6 +7264,7 @@ const FlightDiagnostics = {
 
   async loadSelectedFlight(flightId) {
     this.selectedFlightId = flightId;
+    this.currentLoadedMission = null;
     const flightSel = document.getElementById('diag-flight-selector');
     if (flightSel && flightSel.value !== flightId) {
       flightSel.value = flightId;
@@ -7152,14 +7287,20 @@ const FlightDiagnostics = {
         });
         if (res.ok) {
           const data = await res.json();
-          if (data.success && data.mission && data.mission.diagnostics) {
-            this.telemetryData = data.mission.diagnostics;
-            const plannedStats = data.mission.plan?.statistics || {
-              waypointCount: data.mission.waypoint_count,
-              altitude: data.mission.altitude,
-              totalDistance: data.mission.total_distance
-            };
-            this.comparisonData = computeFlightComparison(plannedStats, this.telemetryData);
+          if (data.success && data.mission) {
+            this.currentLoadedMission = data.mission;
+            if (data.mission.diagnostics) {
+              this.telemetryData = data.mission.diagnostics;
+              const plannedStats = data.mission.plan?.statistics || {
+                waypointCount: data.mission.waypoint_count,
+                altitude: data.mission.altitude,
+                totalDistance: data.mission.total_distance
+              };
+              this.comparisonData = computeFlightComparison(plannedStats, this.telemetryData);
+            } else {
+              this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId });
+              this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
+            }
           } else {
             throw new Error('Diagnostics data missing in mission payload');
           }
@@ -7873,6 +8014,96 @@ const KMZInspector = {
     if (wpmlEl) wpmlEl.textContent = this.activeWpmlXml;
     const tmplEl = document.getElementById('inspector-xml-tmpl');
     if (tmplEl) tmplEl.textContent = this.activeTemplateXml;
+  },
+
+  generateAntigravityPrompt(report = null, wpml = '', wps = null) {
+    const r = report || this.activeReport;
+    const xml = wpml || this.activeWpmlXml || '';
+    const activeWps = wps || (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
+    let drone = 'DJI Mini 4 Pro (68)';
+    let pattern = 'single';
+    let alt = '50';
+    let speed = '4';
+    let pitch = '-90';
+    if (typeof document !== 'undefined') {
+      try {
+        const droneEl = document.getElementById('drone-model');
+        if (droneEl && droneEl.options && droneEl.selectedIndex >= 0 && droneEl.options[droneEl.selectedIndex]) {
+          drone = droneEl.options[droneEl.selectedIndex].text || drone;
+        }
+        pattern = document.getElementById('flight-pattern')?.value || pattern;
+        alt = document.getElementById('altitude')?.value || alt;
+        speed = document.getElementById('speed')?.value || speed;
+        pitch = document.getElementById('gimbal-pitch')?.value || pitch;
+      } catch (e) {}
+    }
+
+    let prompt = `### 🤖 ANTIGRAVITY BUG REPORT: Bad KMZ Mission Execution Issue\n\n`;
+    prompt += `**Mission Context:**\n`;
+    prompt += `- **Target Drone Model:** ${drone}\n`;
+    prompt += `- **Pattern:** ${pattern} (Altitude: ${alt}m, Speed: ${speed}m/s, Pitch: ${pitch}°)\n`;
+    prompt += `- **Waypoints Total:** ${activeWps.length}\n`;
+    if (r) {
+      prompt += `- **Validation Health Score:** ${r.rulesPassed ?? r.validation_rules_passed ?? 0}/10 Passed (${r.valid || r.is_valid ? 'Valid' : 'Invalid'})\n`;
+      const errList = r.errors || r.validationErrors || [];
+      if (errList.length > 0) {
+        prompt += `- **Detected Pre-Flight Errors:**\n`;
+        errList.forEach((e, i) => { prompt += `  ${i + 1}. ❌ ${e}\n`; });
+      }
+      const warnList = r.warnings || r.validationWarnings || [];
+      if (warnList.length > 0) {
+        prompt += `- **Detected Warnings:**\n`;
+        warnList.forEach((w, i) => { prompt += `  ${i + 1}. ⚠️ ${w}\n`; });
+      }
+    }
+
+    if (activeWps.length > 0) {
+      const sample = activeWps.slice(0, 5).map((wp, i) => ({
+        index: i,
+        lat: wp.lat,
+        lon: wp.lon,
+        alt: wp.altitude || alt,
+        heading: wp.heading,
+        turnMode: wp.turnMode
+      }));
+      prompt += `\n**Sample Waypoints Input:**\n\`\`\`json\n${JSON.stringify(sample, null, 2)}\n\`\`\`\n`;
+    }
+
+    if (xml) {
+      const placemarks = xml.split('<Placemark>');
+      const xmlExtract = placemarks.length > 1 ? '<Placemark>' + placemarks[1].substring(0, 450) + '...\n</Placemark>' : xml.substring(0, 600);
+      prompt += `\n**Offending / Generated WPML Snippet:**\n\`\`\`xml\n${xmlExtract}\n\`\`\`\n`;
+    }
+
+    prompt += `\n**Antigravity Instructions:**\n`;
+    prompt += `1. Inspect the offending XML and rule failures above.\n`;
+    prompt += `2. Formulate a regression unit test in \`index.test.js\` reproducing this exact configuration.\n`;
+    prompt += `3. Fix the generation/sanitization logic in \`index.js\` (\`buildWaylinesWpml\` / \`validateAndFixWpml\`).\n`;
+    prompt += `4. Run \`python scratch/build.py\` and verify all tests pass with \`npm test\`.\n`;
+
+    return prompt;
+  },
+
+  copyAntigravityPrompt() {
+    const promptText = this.generateAntigravityPrompt();
+    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(promptText).then(() => {
+        const btn = document.getElementById('inspector-copy-antigravity-btn');
+        if (btn) {
+          const orig = btn.innerHTML;
+          btn.innerHTML = '✅ Copied to Clipboard!';
+          btn.style.color = '#34d399';
+          setTimeout(() => {
+            btn.innerHTML = orig;
+            btn.style.color = '#a5b4fc';
+          }, 2500);
+        }
+      }).catch(() => {
+        if (typeof prompt === 'function') prompt('Copy Antigravity Fix Prompt:', promptText);
+      });
+    } else {
+      if (typeof prompt === 'function') prompt('Copy Antigravity Fix Prompt:', promptText);
+    }
   },
 
   async auditExternalKMZ(file) {
