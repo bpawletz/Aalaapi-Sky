@@ -5138,28 +5138,35 @@ function exportKMZ() {
     }
     link.click();
 
-    // Also generate 400x300 mission preview JPG for DJI RC 2 map_preview
-    generateMissionPreviewBlob(waypoints).then(imgBlob => {
-      if (imgBlob && typeof document !== 'undefined') {
-        const imgLink = document.createElement("a");
-        imgLink.href = URL.createObjectURL(imgBlob);
-        imgLink.download = `${downloadBase}.jpg`;
-        imgLink.click();
-      }
-    }).catch(() => {});
-
-    // Also auto-export settings & mission plan JSON for troubleshooting and recording
+    // Also auto-export comprehensive Flight Diagnostics JSON (User Agent, 3D Simulation, Plan, & Camera)
     try {
-      const plan = buildMissionPlanJSON(waypoints);
-      if (plan && typeof Blob !== 'undefined' && typeof document !== 'undefined') {
-        const jsonBlob = new Blob([JSON.stringify(plan, null, 2)], { type: "application/json" });
+      const diagData = buildFlightDiagnosticsJSON(waypoints, {
+        altitude,
+        speed,
+        gimbalPitch,
+        filename: link.download,
+        uuid: storedUuid || downloadBase
+      });
+      if (diagData && typeof Blob !== 'undefined' && typeof document !== 'undefined') {
+        const jsonBlob = new Blob([JSON.stringify(diagData, null, 2)], { type: "application/json" });
         const jsonLink = document.createElement("a");
         jsonLink.href = URL.createObjectURL(jsonBlob);
-        jsonLink.download = `${downloadBase}_plan.json`;
+        jsonLink.download = `${downloadBase}_diag.json`;
         jsonLink.click();
       }
+
+      // Automatically archive diagnostics to local Companion SQLite service if running
+      if (typeof fetch !== 'undefined') {
+        fetch('http://127.0.0.1:8765/api/diagnostics/archive', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(diagData)
+        }).catch(() => {
+          // Companion service offline - file was already downloaded locally
+        });
+      }
     } catch (e) {
-      if (typeof Logger !== 'undefined' && Logger.warn) Logger.warn("Could not auto-export mission plan JSON:", e);
+      if (typeof Logger !== 'undefined' && Logger.warn) Logger.warn("Could not export diagnostics JSON:", e);
     }
   }).catch(err => {
     Logger.error("ZIP creation failed:", err);
@@ -5311,6 +5318,107 @@ function exportMissionPlanJSON(customWps = null) {
   }
 
   return { plan, blob, jsonStr };
+}
+
+// ─── Flight Diagnostics JSON Builder & Exporter ──────────────────────────────
+// Generates a comprehensive diagnostics export containing the complete mission plan,
+// simulated 3D trajectory time-series, photo capture events, turn dynamics,
+// and detailed client User Agent / hardware environment specs.
+
+function buildFlightDiagnosticsJSON(customWps = null, options = {}) {
+  const currentWps = customWps || (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
+  const plan = typeof buildMissionPlanJSON === 'function' ? buildMissionPlanJSON(currentWps) : null;
+  const isoTimestamp = typeof formatISO8601ForFilename === 'function' ? formatISO8601ForFilename() : new Date().toISOString().replace(/:/g, '-');
+  const uuid = options.uuid || (typeof getRC2UUID === 'function' && getRC2UUID()) || (plan && plan.metadata && plan.metadata.uuid) || `mission_${Date.now()}`;
+
+  const altitude = options.altitude ?? (typeof document !== 'undefined' && parseFloat(document.getElementById('altitude')?.value)) ?? 50.0;
+  const speed = options.speed ?? (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) ?? 4.0;
+  const gimbalPitch = options.gimbalPitch ?? (typeof document !== 'undefined' && parseFloat(document.getElementById('gimbal-pitch')?.value)) ?? -60.0;
+
+  const telemetry = typeof generateTelemetryFromWaypoints === 'function'
+    ? generateTelemetryFromWaypoints(currentWps, { altitude, speed, gimbalPitch, isSimulation: true, flightId: uuid })
+    : null;
+
+  const userAgent = {
+    raw: (typeof navigator !== 'undefined' && navigator.userAgent) ? navigator.userAgent : 'NodeJS/TestRunner',
+    platform: (typeof navigator !== 'undefined' && (navigator.userAgentData?.platform || navigator.platform)) || (typeof process !== 'undefined' ? process.platform : ''),
+    language: (typeof navigator !== 'undefined' && navigator.language) || 'en-US',
+    languages: (typeof navigator !== 'undefined' && Array.isArray(navigator.languages)) ? navigator.languages : ['en-US'],
+    screen: (typeof window !== 'undefined' && window.screen) ? {
+      width: window.screen.width,
+      height: window.screen.height,
+      colorDepth: window.screen.colorDepth,
+      pixelRatio: window.devicePixelRatio || 1
+    } : null,
+    viewport: (typeof window !== 'undefined') ? {
+      width: window.innerWidth,
+      height: window.innerHeight
+    } : null,
+    appVersion: '1.53.0',
+    capturedAt: new Date().toISOString()
+  };
+
+  return {
+    schemaVersion: '1.53.0',
+    uuid,
+    createdAt: new Date().toISOString(),
+    filename: options.filename || `${uuid}.kmz`,
+    flightPattern: plan?.geometry?.pattern || 'single',
+    altitude,
+    speed,
+    gimbalPitch,
+    userAgent,
+    plan,
+    diagnostics: telemetry,
+    summary: {
+      waypointCount: currentWps.length,
+      photoCount: telemetry?.photoCount ?? currentWps.length,
+      totalDistance: telemetry?.totalDistance ?? plan?.statistics?.totalDistanceMeters ?? 0,
+      estimatedDuration: telemetry?.durationSeconds ?? plan?.statistics?.totalFlightTimeSeconds ?? 0,
+      durationFormatted: telemetry?.durationFormatted ?? plan?.statistics?.flightTimeFormatted ?? '',
+      maxAltitude: telemetry?.maxAltitude ?? altitude,
+      homePoint: telemetry?.homePoint ?? plan?.centerPoint ?? null
+    }
+  };
+}
+
+function exportFlightDiagnosticsJSON(customWps = null, options = {}) {
+  const diagData = buildFlightDiagnosticsJSON(customWps, options);
+  const jsonStr = JSON.stringify(diagData, null, 2);
+  let blob = null;
+  if (typeof Blob !== 'undefined') {
+    blob = new Blob([jsonStr], { type: "application/json" });
+  }
+
+  const storedUuid = typeof getRC2UUID === 'function' ? getRC2UUID() : null;
+  let downloadBase = "";
+  const isoTimestamp = typeof formatISO8601ForFilename === 'function' ? formatISO8601ForFilename() : new Date().toISOString().replace(/:/g, '-');
+  if (typeof importedFileName !== 'undefined' && importedFileName) {
+    downloadBase = importedFileName.replace(/\.kmz$/i, "");
+  } else if (storedUuid && typeof RC2_UUID_PATTERN !== 'undefined' && RC2_UUID_PATTERN.test(storedUuid)) {
+    downloadBase = storedUuid;
+  } else {
+    const altitude = parseFloat(document.getElementById('altitude')?.value) || 50;
+    downloadBase = `GridMission_Alt${altitude}m_${isoTimestamp}`;
+  }
+
+  if (blob && typeof document !== 'undefined' && document.createElement) {
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${downloadBase}_diag.json`;
+    link.click();
+  }
+
+  // Also notify companion archive service
+  if (typeof fetch !== 'undefined') {
+    fetch('http://127.0.0.1:8765/api/diagnostics/archive', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(diagData)
+    }).catch(() => {});
+  }
+
+  return { diagData, blob, jsonStr };
 }
 
 // Generate KMZ Blob in-memory
@@ -5710,6 +5818,22 @@ async function sendDirectlyToRC2() {
       directBtn.style.background = 'rgba(34, 197, 94, 0.2)';
       directBtn.style.borderColor = 'rgba(34, 197, 94, 0.5)';
       directBtn.style.color = '#4ade80';
+
+      // Also archive the mission diagnostics in SQLite
+      try {
+        const diagData = buildFlightDiagnosticsJSON(waypoints, {
+          altitude: parseFloat(document.getElementById('altitude')?.value) || 50,
+          speed,
+          gimbalPitch,
+          uuid,
+          filename: `${uuid}.kmz`
+        });
+        fetch(`${COMPANION_API_BASE}/api/diagnostics/archive`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(diagData)
+        }).catch(() => {});
+      } catch (e) {}
       setTimeout(() => {
         directBtn.disabled = false;
         directBtn.innerHTML = originalContent;
@@ -6423,6 +6547,10 @@ const FlightDiagnostics = {
       });
     }
 
+    // Export Diag JSON button
+    const exportJsonBtn = document.getElementById('diag-export-json-btn');
+    if (exportJsonBtn) exportJsonBtn.addEventListener('click', () => this.exportDiagJSON());
+
     // Export GeoJSON button
     const exportBtn = document.getElementById('diag-export-geojson-btn');
     if (exportBtn) exportBtn.addEventListener('click', () => this.exportGeoJSON());
@@ -6995,6 +7123,19 @@ const FlightDiagnostics = {
       link.download = `FlightRecord_${iso8601}_Track.geojson`;
       link.click();
     }
+  },
+
+  exportDiagJSON() {
+    const wps = (typeof getActiveMissionWaypoints === 'function') ? getActiveMissionWaypoints() : [];
+    const altitude = (typeof document !== 'undefined' && parseFloat(document.getElementById('altitude')?.value)) || 50.0;
+    const speed = (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) || 4.0;
+    const gimbalPitch = (typeof document !== 'undefined' && parseFloat(document.getElementById('gimbal-pitch')?.value)) || -60.0;
+    return exportFlightDiagnosticsJSON(wps, {
+      altitude,
+      speed,
+      gimbalPitch,
+      uuid: this.selectedFlightId || 'active-mission'
+    });
   },
 
   async handleLogFileImport(e) {
