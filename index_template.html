@@ -69,7 +69,7 @@
               <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
               <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
             </svg>
-            <h1 style="display: inline-flex; align-items: center; gap: 4px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.56.0</span><span style="font-size: 0.48rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 3px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
+            <h1 style="display: inline-flex; align-items: center; gap: 4px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.57.0</span><span style="font-size: 0.48rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 3px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
           </div>
           <div class="header-actions" style="display: flex; gap: 5px; align-items: center;">
             <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" title="Configuration Settings">
@@ -656,6 +656,25 @@
             </span>
             <span style="font-size: 0.65rem; color: var(--text-muted); text-decoration: underline;">Inspect &rsaquo;</span>
           </div>
+
+          <!-- Multi-Vendor Autopilot Export Container (Toggled via Config or Toggle) -->
+          <div id="multivendor-export-container" style="display: none; margin-top: 6px; padding: 6px 8px; background: rgba(14, 165, 233, 0.05); border: 1px solid rgba(14, 165, 233, 0.25); border-radius: 8px; flex-direction: column; gap: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: #38bdf8;">
+              <span style="font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                Multi-Vendor Exports
+              </span>
+              <span style="font-size: 0.65rem; color: var(--text-muted);">PX4 &bull; MAVLink &bull; Autel</span>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button id="export-qgc-btn" class="btn-secondary" type="button" style="flex: 1; padding: 6px 4px; font-size: 0.72rem; font-weight: 600; border-radius: 6px; background: rgba(14, 165, 233, 0.12); border: 1px solid rgba(14, 165, 233, 0.3); color: #38bdf8;" title="Export QGroundControl (.plan) for PX4 / ArduPilot / MAVLink">
+                Export QGC (.plan)
+              </button>
+              <button id="export-autel-btn" class="btn-secondary" type="button" style="flex: 1; padding: 6px 4px; font-size: 0.72rem; font-weight: 600; border-radius: 6px; background: rgba(249, 115, 22, 0.12); border: 1px solid rgba(249, 115, 22, 0.3); color: #fb923c;" title="Export Autel Explorer (.kml) for EVO II / Lite">
+                Export Autel (.kml)
+              </button>
+            </div>
+          </div>
           
           <!-- RC 2 Companion Live Sync Container -->
           <div id="companion-sync-container" class="is-offline" style="margin-top: 10px; padding: 8px 10px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column; gap: 6px; transition: border-color 0.2s, background 0.2s;">
@@ -1227,7 +1246,7 @@
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.56.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.57.0</span>
             </div>
           </div>
         </div>
@@ -1291,6 +1310,12 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.57.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Multi-Vendor Autopilots &amp; Open MCP Server:</strong> Added an easy enable/disable toggle for Multi-Vendor Autopilot support. When enabled, unlocks native export for QGroundControl (<code>.plan</code> for PX4 / ArduPilot / MAVLink) and Autel Robotics (<code>.kml</code> for EVO II / Lite). Exposes an open Model Context Protocol (MCP) server compatible with Google Antigravity, Claude, Cursor, and ChatGPT.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.56.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Bad KMZ History Recording &amp; Antigravity Triage:</strong> Extended SQLite telemetry database with validation health schemas (<code>is_valid</code>, <code>validation_errors_json</code>, <code>wpml_xml</code>). Added Antigravity CLI triage tool (<code>tools/inspect_failed_mission.js</code>) and one-click "📋 Copy Antigravity Fix Prompt" buttons in Inspector and Diagnostics modals. Grouped bad KMZs in the flight history dropdown for instant playback and debugging.</li>
@@ -2477,6 +2502,22 @@
           <div style="display: flex; gap: 10px; margin-top: 12px;">
             <button id="collapse-all-topics-btn" class="btn-secondary" type="button" style="flex: 1; padding: 8px; font-size: 0.75rem; font-weight: 600;">Collapse All Topics</button>
             <button id="expand-all-topics-btn" class="btn-secondary" type="button" style="flex: 1; padding: 8px; font-size: 0.75rem; font-weight: 600;">Expand All Topics</button>
+          </div>
+        </div>
+
+        <!-- Multi-Vendor Autopilots Support -->
+        <div style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 16px;">
+          <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--text-main); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Multi-Vendor Autopilots</h3>
+          
+          <div class="control-group" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px;">
+            <div>
+              <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-main);">Enable Multi-Vendor Autopilots</span>
+              <p class="help-text" style="margin: 2px 0 0 0;">Unlocks QGroundControl (PX4 / ArduPilot / MAVLink) and Autel Robotics export formats and MCP multi-vendor tools.</p>
+            </div>
+            <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px;">
+              <input type="checkbox" id="multivendor-toggle" style="opacity: 0; width: 0; height: 0;">
+              <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
+            </label>
           </div>
         </div>
 

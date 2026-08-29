@@ -5578,6 +5578,163 @@ describe('Bad KMZ History Recording & Antigravity Triage Tests (v1.56.0)', () =>
   });
 });
 
+describe('Multi-Vendor Autopilots (PX4 / MAVLink / Autel) & Open MCP Server Tests (v1.57.0)', () => {
+  const dummyWps = [
+    { lat: 40.012, lon: -83.177, alt: 45, speed: 4, heading: 90, isPhoto: true },
+    { lat: 40.013, lon: -83.177, alt: 45, speed: 4, heading: 90, isPhoto: true },
+    { lat: 40.014, lon: -83.178, alt: 45, speed: 4, heading: 270, isPhoto: false }
+  ];
+
+  test('buildQgcMissionPlan produces compliant QGroundControl .plan JSON', () => {
+    const fn = vm.runInThisContext('buildQgcMissionPlan');
+    const plan = fn(dummyWps, { speed: 5, altitude: 45, gimbalPitch: -60 });
+
+    assert.strictEqual(plan.fileType, 'Plan');
+    assert.strictEqual(plan.groundStation, 'QGroundControl');
+    assert.strictEqual(plan.version, 1);
+    assert.ok(plan.mission);
+    assert.strictEqual(plan.mission.firmwareType, 12, 'Must default to PX4 Pro');
+    assert.strictEqual(plan.mission.vehicleType, 2, 'Must specify Multi-rotor');
+    assert.strictEqual(plan.mission.cruiseSpeed, 5);
+
+    const items = plan.mission.items;
+    assert.ok(items.length >= 4, 'Must include takeoff, gimbal, waypoints, and RTL');
+    assert.strictEqual(items[0].command, 22, 'First item must be MAV_CMD_NAV_TAKEOFF');
+    assert.strictEqual(items[1].command, 205, 'Second item must be MAV_CMD_DO_MOUNT_CONTROL for gimbal');
+
+    const wpItems = items.filter(it => it.command === 16);
+    assert.strictEqual(wpItems.length, 3, 'Must have 3 waypoint items');
+    assert.strictEqual(wpItems[0].params[4], 40.012, 'Must record latitude');
+    assert.strictEqual(wpItems[0].params[5], -83.177, 'Must record longitude');
+
+    const photoItems = items.filter(it => it.command === 203);
+    assert.strictEqual(photoItems.length, 2, 'Must have 2 camera trigger items for photo waypoints');
+
+    const rtlItem = items[items.length - 1];
+    assert.strictEqual(rtlItem.command, 20, 'Last item must be MAV_CMD_NAV_RETURN_TO_LAUNCH');
+  });
+
+  test('buildAutelMissionKml produces compliant Autel Explorer KML', () => {
+    const fn = vm.runInThisContext('buildAutelMissionKml');
+    const kml = fn(dummyWps, { speed: 4, altitude: 50, gimbalPitch: -45, name: 'TestAutelMission' });
+
+    assert.ok(kml.includes('<Document>'), 'Must contain Document');
+    assert.ok(kml.includes('<name>TestAutelMission</name>'), 'Must contain mission name');
+    assert.ok(kml.includes('<altitudeMode>relativeToGround</altitudeMode>'), 'Must specify relativeToGround');
+    assert.ok(kml.includes('<coordinates>-83.177,40.012,45</coordinates>'), 'Must format lon,lat,alt coordinates');
+    assert.ok(kml.includes('<Data name="gimbalPitch"><value>-45</value></Data>'), 'Must include gimbal pitch');
+    assert.ok(kml.includes('<Data name="action"><value>takePhoto</value></Data>'), 'Must flag photo actions');
+  });
+
+  test('MCP Server handles JSON-RPC initialization and dynamic multi-vendor tools', async () => {
+    const mcp = require('./tools/companion/mcp_server.js');
+
+    // 1. initialize
+    const initRes = await mcp.processRpcMessage({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'initialize',
+      params: { protocolVersion: '2024-11-05' }
+    });
+    assert.strictEqual(initRes.result.serverInfo.name, 'aalaapi-companion');
+    assert.strictEqual(initRes.result.serverInfo.version, '1.57.0');
+
+    // 2. tools/list in standard mode
+    mcp.setMultiVendorEnabled(false);
+    const standardList = await mcp.processRpcMessage({
+      jsonrpc: '2.0',
+      id: 2,
+      method: 'tools/list'
+    });
+    const standardTools = standardList.result.tools.map(t => t.name);
+    assert.ok(standardTools.includes('get_latest_bad_mission'));
+    assert.ok(standardTools.includes('list_bad_missions'));
+    assert.ok(standardTools.includes('set_multivendor_mode'));
+    assert.strictEqual(standardTools.includes('convert_mission_format'), false, 'Multi-vendor tool must not appear when disabled');
+
+    // 3. Enable multi-vendor mode via tool call
+    const enableRes = await mcp.processRpcMessage({
+      jsonrpc: '2.0',
+      id: 3,
+      method: 'tools/call',
+      params: {
+        name: 'set_multivendor_mode',
+        arguments: { enabled: true }
+      }
+    });
+    assert.ok(enableRes.result.content[0].text.includes('ENABLED'));
+
+    // 4. tools/list now includes convert_mission_format
+    const multiList = await mcp.processRpcMessage({
+      jsonrpc: '2.0',
+      id: 4,
+      method: 'tools/list'
+    });
+    const multiTools = multiList.result.tools.map(t => t.name);
+    assert.ok(multiTools.includes('convert_mission_format'), 'Multi-vendor tool must appear when enabled');
+
+    // 5. Convert to QGC plan via MCP tool call
+    const convertQgc = await mcp.processRpcMessage({
+      jsonrpc: '2.0',
+      id: 5,
+      method: 'tools/call',
+      params: {
+        name: 'convert_mission_format',
+        arguments: {
+          targetFormat: 'qgc_plan',
+          waypoints: dummyWps,
+          speed: 5,
+          altitude: 45
+        }
+      }
+    });
+    const parsedPlan = JSON.parse(convertQgc.result.content[0].text);
+    assert.strictEqual(parsedPlan.fileType, 'Plan');
+    assert.strictEqual(parsedPlan.groundStation, 'QGroundControl');
+
+    // 6. Convert to Autel KML via MCP tool call
+    const convertAutel = await mcp.processRpcMessage({
+      jsonrpc: '2.0',
+      id: 6,
+      method: 'tools/call',
+      params: {
+        name: 'convert_mission_format',
+        arguments: {
+          targetFormat: 'autel_kml',
+          waypoints: dummyWps,
+          speed: 4,
+          altitude: 50
+        }
+      }
+    });
+    assert.ok(convertAutel.result.content[0].text.includes('<Document>'));
+
+    // Reset multi-vendor state
+    mcp.setMultiVendorEnabled(false);
+  });
+
+  test('index_template.html and index.html contain Multi-Vendor toggle and export buttons', () => {
+    const fs = require('fs');
+    ['index_template.html', 'index.html'].forEach(filename => {
+      const content = fs.readFileSync(filename, 'utf8');
+      assert.ok(content.includes('id="multivendor-toggle"'), `Must include multivendor-toggle in ${filename}`);
+      assert.ok(content.includes('id="multivendor-export-container"'), `Must include multivendor-export-container in ${filename}`);
+      assert.ok(content.includes('id="export-qgc-btn"'), `Must include export-qgc-btn in ${filename}`);
+      assert.ok(content.includes('id="export-autel-btn"'), `Must include export-autel-btn in ${filename}`);
+    });
+  });
+
+  test('.agents/mcp_config.json exists and registers aalaapi-companion', () => {
+    const fs = require('fs');
+    assert.ok(fs.existsSync('.agents/mcp_config.json'), '.agents/mcp_config.json must exist');
+    const config = JSON.parse(fs.readFileSync('.agents/mcp_config.json', 'utf8'));
+    assert.ok(config.mcpServers);
+    assert.ok(config.mcpServers['aalaapi-companion']);
+    assert.strictEqual(config.mcpServers['aalaapi-companion'].command, 'node');
+  });
+});
+
+
 
 
 
