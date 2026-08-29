@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.48.3] - 2026-08-28
+
+### Added & Improved
+- **Weather Observation Station Display & Map Marker:**
+  - Added dedicated Reporting Station Info card to the weather panel displaying station ICAO, full station name, distance in km and miles from mission center, and a "Locate on Map" quick-action button.
+  - Added interactive Leaflet map marker for the weather station placed at the exact reporting station coordinates (`lat`, `lon`), styled with a color-coded flight category halo (VFR green, MVFR amber, IFR red).
+  - Configured weather station marker popup with station metadata, current visibility and ceiling, observation time, and a "Return to Center" button.
+  - Integrated "Weather Observation Station (NWS)" overlay layer toggle into the map layers control.
+  - Added unit test suite asserting weather station info card rendering and map marker creation.
+
 ## [1.48.2] - 2026-08-28
 
 ### Added & Fixed
