@@ -5816,6 +5816,137 @@ describe('Direct USB Flight Log Pulling UI Tests (v1.58.0)', () => {
   });
 });
 
+// ─── Regression Tests: Single Grid Oblique Pitch WPML Heading Enforcement (v1.58.1) ─────────
+describe('v1.58.1 Single Grid Oblique Pitch WPML Heading Enforcement', () => {
+  test('single grid with oblique pitch (-60°) strictly exports followWayline instead of smoothTransition', () => {
+    const originalGetElementById = global.document.getElementById;
+    try {
+      global.document.getElementById = (id) => ({
+        value: {
+          'drone-model': '68',
+          'signal-lost-action': 'goBack',
+          'camera-zoom': '1.0',
+          'global-hover-time': '2',
+          'grid-type': 'single',
+          'heading-mode': 'followWayline'
+        }[id] || '',
+        checked: false
+      });
+
+      const wps = [
+        { index: 0, lat: 40.01277424204881, lon: -83.17710595012082, alt: '22', heading: 45 },
+        { index: 1, lat: 40.01295390510564, lon: -83.17710595012082, alt: '22', heading: 135 },
+        { index: 2, lat: 40.01295390510564, lon: -83.17702775756642, alt: '22', heading: 161.565051177078 },
+        { index: 3, lat: 40.01277424204881, lon: -83.17702775756642, alt: '22', heading: 18.43494882292201 },
+        { index: 4, lat: 40.01277424204881, lon: -83.17694956501204, alt: '22', heading: 341.565051177078 }
+      ];
+
+      const xml = vm.runInThisContext(`
+        buildWaylinesWpml(${JSON.stringify(wps)}, 22, 4, 'followWayline', 'goHome', -60, 'stopAndShoot', 'straight')
+      `);
+
+      // Must strictly use followWayline, NEVER smoothTransition in single lawnmower grid
+      assert.ok(xml.includes('<wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>'),
+        'Single grid with oblique pitch must use followWayline mode');
+      assert.ok(!xml.includes('<wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>'),
+        'Single grid with oblique pitch must NOT use smoothTransition mode');
+
+      // Waypoint 0 must have headingAngleEnable: 1 and valid clamped non-zero angle
+      assert.ok(xml.includes('<wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>'),
+        'Waypoint 0 endpoint must have heading angle enabled');
+
+      // Validation check
+      const validation = vm.runInThisContext(`
+        validateWpmlMission(\`${xml}\`, '', { gridType: 'single' })
+      `);
+      assert.strictEqual(validation.valid, true, 'Must pass all 10 validation rules');
+      assert.strictEqual(validation.rulesPassed, 10, 'Health score must be 10/10');
+      assert.strictEqual(validation.errors.length, 0, 'Must have zero validation errors');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+
+  test('validateWpmlMission catches and flags smoothTransition in single grid missions', () => {
+    const offendingXml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">
+  <Document>
+    <wpml:missionConfig><wpml:droneEnumValue>68</wpml:droneEnumValue></wpml:missionConfig>
+    <Folder>
+      <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
+      <Placemark>
+        <Point><coordinates>-83.177105,40.012774</coordinates></Point>
+        <wpml:index>0</wpml:index>
+        <wpml:executeHeight>22</wpml:executeHeight>
+        <wpml:waypointSpeed>4</wpml:waypointSpeed>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>45.0</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam>
+          <wpml:waypointTurnMode>toPointAndStopWithDiscontinuityCurvature</wpml:waypointTurnMode>
+        </wpml:waypointTurnParam>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>`;
+
+    const val = vm.runInThisContext(`validateWpmlMission(\`${offendingXml}\`, '', { gridType: 'single' })`);
+    assert.strictEqual(val.valid, false, 'Should fail validation when smoothTransition is present in single grid');
+    assert.ok(val.errors.some(e => e.includes('Single grid pattern cannot use \'smoothTransition\'')),
+      'Should report Single grid smoothTransition error in Rule 1');
+  });
+
+  test('validateAndFixWpml automatically repairs smoothTransition to followWayline for single grid', () => {
+    const offendingXml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">
+  <Document>
+    <wpml:missionConfig><wpml:droneEnumValue>68</wpml:droneEnumValue></wpml:missionConfig>
+    <Folder>
+      <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
+      <Placemark>
+        <Point><coordinates>-83.177105,40.012774</coordinates></Point>
+        <wpml:index>0</wpml:index>
+        <wpml:executeHeight>22</wpml:executeHeight>
+        <wpml:waypointSpeed>4</wpml:waypointSpeed>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>45.0</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam>
+          <wpml:waypointTurnMode>toPointAndStopWithDiscontinuityCurvature</wpml:waypointTurnMode>
+        </wpml:waypointTurnParam>
+      </Placemark>
+      <Placemark>
+        <Point><coordinates>-83.177105,40.012953</coordinates></Point>
+        <wpml:index>1</wpml:index>
+        <wpml:executeHeight>22</wpml:executeHeight>
+        <wpml:waypointSpeed>4</wpml:waypointSpeed>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>135.0</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam>
+          <wpml:waypointTurnMode>toPointAndStopWithDiscontinuityCurvature</wpml:waypointTurnMode>
+        </wpml:waypointTurnParam>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>`;
+
+    const res = vm.runInThisContext(`validateAndFixWpml(\`${offendingXml}\`, '', { gridType: 'single' })`);
+    assert.ok(res.wpmlXml.includes('<wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>'),
+      'Must sanitize smoothTransition to followWayline');
+    assert.ok(!res.wpmlXml.includes('<wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>'),
+      'Must no longer contain smoothTransition');
+    assert.strictEqual(res.validation.valid, true, 'Sanitized XML must pass validation');
+  });
+});
+
+
 
 
 
