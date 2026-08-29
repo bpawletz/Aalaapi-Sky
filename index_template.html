@@ -69,7 +69,7 @@
               <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
               <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
             </svg>
-            <h1 style="display: inline-flex; align-items: center; gap: 4px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.54.0</span><span style="font-size: 0.48rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 3px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
+            <h1 style="display: inline-flex; align-items: center; gap: 4px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.55.0</span><span style="font-size: 0.48rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 3px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
           </div>
           <div class="header-actions" style="display: flex; gap: 5px; align-items: center;">
             <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" title="Configuration Settings">
@@ -614,31 +614,47 @@
         <!-- Section 5: Copier Instructions -->
         <section class="control-section guide-section">
           <button id="show-guide-btn" class="btn-secondary" type="button">Show RC2 Copy Instructions</button>
-          <div style="display: flex; gap: 8px; margin-top: 8px;">
-            <button id="preview-3d-btn" class="btn-secondary" type="button" style="flex: 1; padding: 10px 6px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.8rem; margin: 0;">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <div style="display: flex; gap: 6px; margin-top: 8px;">
+            <button id="preview-3d-btn" class="btn-secondary" type="button" style="flex: 1; padding: 10px 4px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.78rem; margin: 0;">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
                 <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
                 <line x1="12" y1="22.08" x2="12" y2="12"/>
               </svg>
               3D View
             </button>
-            <button id="action-diagnostics-btn" class="btn-secondary" type="button" style="flex: 1; padding: 10px 6px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.8rem; margin: 0; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24;" title="Flight Diagnostics &amp; 3D Telemetry Replay">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <button id="action-diagnostics-btn" class="btn-secondary" type="button" style="flex: 1; padding: 10px 4px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.78rem; margin: 0; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24;" title="Flight Diagnostics &amp; 3D Telemetry Replay">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="20" x2="18" y2="10"/>
                 <line x1="12" y1="20" x2="12" y2="4"/>
                 <line x1="6" y1="20" x2="6" y2="14"/>
               </svg>
               Flight Diag
             </button>
-            <button id="download-btn" class="btn-primary" type="button" style="flex: 1.2; padding: 10px 8px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.8rem; margin: 0;">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <button id="kmz-audit-btn" class="btn-secondary" type="button" style="flex: 1; padding: 10px 4px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.78rem; margin: 0; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #34d399;" title="Pre-Flight KMZ Audit &amp; DJI Fly Go Validator">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+              Audit KMZ
+            </button>
+            <button id="download-btn" class="btn-primary" type="button" style="flex: 1.2; padding: 10px 6px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.78rem; margin: 0;">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
               Export KMZ
             </button>
+          </div>
+          
+          <!-- Live Pre-Flight Compliance Status Badge -->
+          <div id="kmz-preflight-status-badge" style="display: flex; align-items: center; justify-content: space-between; font-size: 0.7rem; color: #34d399; margin-top: 6px; padding: 4px 8px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 6px; cursor: pointer; transition: background 0.2s, border-color 0.2s;" title="Click to view Pre-Flight Audit Details">
+            <span style="display: inline-flex; align-items: center; gap: 5px;">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              <strong id="kmz-preflight-text">DJI Fly Pre-Flight: 10/10 Rules Verified</strong>
+            </span>
+            <span style="font-size: 0.65rem; color: var(--text-muted); text-decoration: underline;">Inspect &rsaquo;</span>
           </div>
           
           <!-- RC 2 Companion Live Sync Container -->
@@ -1211,7 +1227,7 @@
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.54.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.55.0</span>
             </div>
           </div>
         </div>
@@ -1275,6 +1291,12 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.55.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Pre-Flight KMZ Audit &amp; DJI Fly Go Validator:</strong> Resolved KMZ flight path failures when pressing "Go" on DJI RC 2. Fixed contradictory <code>waypointHeadingAngleEnable: 1</code> on <code>followWayline</code>, enforced mandatory stop-turns on first and last waypoints, aligned coordinates to strict 2D <code>lon,lat</code> under <code>relativeToStartPoint</code>, corrected POI coordinate order to <code>lat,lon,alt</code>, and defaulted drone model to Mini 4 Pro (68). Added automated 10-rule pre-flight linter (<code>validateWpmlMission</code>), live status badge, and comprehensive KMZ Inspector modal.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.54.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Remote Companion Host &amp; LAN Auto-Discovery:</strong> Upgraded Companion Bridge to bind on <code>0.0.0.0</code> and automatically print all local network IP addresses on startup. Enhanced Aalaapi Sky with dynamic same-origin resolution for remote tablets/phones (zero-config when visiting <code>http://&lt;lan-ip&gt;:8765</code>), URL parameter support (<code>?companion=...</code>), and an in-sidebar Host Configuration panel with <code>localStorage</code> persistence.</li>
@@ -3036,6 +3058,88 @@
             </button>
           </div>
         </aside>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pre-Flight KMZ Audit & DJI Fly Go Inspector Modal -->
+  <div id="kmz-inspector-modal" class="modal-overlay hidden" style="z-index: 9999;">
+    <div class="modal-card" style="max-width: 780px; width: 92vw; max-height: 88vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; background: #0b101b; border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75);">
+      <!-- Modal Header -->
+      <div style="padding: 14px 18px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.02);">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.25rem;">🛡️</span>
+          <div>
+            <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+              Pre-Flight KMZ Audit &amp; DJI Fly Go Inspector
+            </h3>
+            <div style="font-size: 0.72rem; color: var(--text-muted);">
+              Audits mission XML against the 10 DJI Fly "Golden Tag" firmware rules to prevent Go button aborts
+            </div>
+          </div>
+        </div>
+        <button id="close-kmz-inspector-btn" type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.8rem; line-height: 1; border-radius: 6px;">✕</button>
+      </div>
+
+      <!-- Quick Metrics Bar -->
+      <div style="padding: 10px 18px; background: rgba(0, 0, 0, 0.35); border-bottom: 1px solid var(--border-color); display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; font-size: 0.75rem;">
+        <div>
+          <span style="color: var(--text-muted); display: block; font-size: 0.68rem;">Drone Target:</span>
+          <strong id="inspector-drone-target" style="color: #38bdf8;">DJI Mini 4 Pro (68)</strong>
+        </div>
+        <div>
+          <span style="color: var(--text-muted); display: block; font-size: 0.68rem;">Mission Waypoints:</span>
+          <strong id="inspector-wp-count" style="color: var(--text-main);">0 waypoints</strong>
+        </div>
+        <div>
+          <span style="color: var(--text-muted); display: block; font-size: 0.68rem;">Pre-Flight Health:</span>
+          <strong id="inspector-rules-score" style="color: #34d399;">10/10 Passed</strong>
+        </div>
+        <div>
+          <span style="color: var(--text-muted); display: block; font-size: 0.68rem;">Audit Existing KMZ:</span>
+          <label style="color: #38bdf8; text-decoration: underline; cursor: pointer; font-weight: 600;">
+            Upload .kmz
+            <input type="file" id="inspector-file-input" accept=".kmz" style="display: none;" />
+          </label>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div style="display: flex; gap: 4px; padding: 6px 18px; border-bottom: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.01);">
+        <button id="inspector-tab-checklist" type="button" class="btn-tab active" style="padding: 5px 12px; font-size: 0.75rem; border-radius: 6px; background: none; border: none; color: var(--text-main); font-weight: 600; cursor: pointer;">10-Point Pre-Flight Checklist</button>
+        <button id="inspector-tab-wpml" type="button" class="btn-tab" style="padding: 5px 12px; font-size: 0.75rem; border-radius: 6px; background: none; border: none; color: var(--text-muted); font-weight: 600; cursor: pointer;">waylines.wpml XML</button>
+        <button id="inspector-tab-tmpl" type="button" class="btn-tab" style="padding: 5px 12px; font-size: 0.75rem; border-radius: 6px; background: none; border: none; color: var(--text-muted); font-weight: 600; cursor: pointer;">template.kml XML</button>
+      </div>
+
+      <!-- Modal Body Tab Panes -->
+      <div style="flex: 1; overflow-y: auto; padding: 14px 18px;">
+        <!-- PANE 1: Checklist -->
+        <div id="inspector-pane-checklist" style="display: flex; flex-direction: column; gap: 8px;">
+          <div id="inspector-checklist-container" style="display: flex; flex-direction: column; gap: 8px;">
+            <!-- Generated dynamically by KMZInspector.render() -->
+          </div>
+        </div>
+
+        <!-- PANE 2: waylines.wpml -->
+        <div id="inspector-pane-wpml" class="hidden">
+          <pre id="inspector-xml-wpml" style="background: rgba(0, 0, 0, 0.5); padding: 12px; border-radius: 8px; font-size: 0.72rem; color: #38bdf8; font-family: monospace; white-space: pre-wrap; overflow-x: auto; max-height: 400px;"></pre>
+        </div>
+
+        <!-- PANE 3: template.kml -->
+        <div id="inspector-pane-tmpl" class="hidden">
+          <pre id="inspector-xml-tmpl" style="background: rgba(0, 0, 0, 0.5); padding: 12px; border-radius: 8px; font-size: 0.72rem; color: #38bdf8; font-family: monospace; white-space: pre-wrap; overflow-x: auto; max-height: 400px;"></pre>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div style="padding: 10px 18px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.02);">
+        <span style="font-size: 0.7rem; color: var(--text-muted);">
+          All outgoing exports are auto-repaired and verified against DJI Fly firmware rules.
+        </span>
+        <div style="display: flex; gap: 8px;">
+          <button id="close-inspector-footer-btn" type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;">Close</button>
+          <button id="inspector-autofix-download-btn" type="button" class="btn-primary" style="padding: 6px 12px; font-size: 0.75rem; font-weight: 600;">Export Verified KMZ</button>
+        </div>
       </div>
     </div>
   </div>

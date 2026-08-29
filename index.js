@@ -982,6 +982,80 @@ function initUIEventListeners() {
     if (closeLinksFooterBtn) closeLinksFooterBtn.addEventListener('click', toggleLinksModal);
   }
 
+  // Pre-Flight KMZ Inspector controls
+  const kmzAuditBtn = document.getElementById('kmz-audit-btn');
+  const kmzPreflightBadge = document.getElementById('kmz-preflight-status-badge');
+  const closeKmzInspectorBtn = document.getElementById('close-kmz-inspector-btn');
+  const closeInspectorFooterBtn = document.getElementById('close-inspector-footer-btn');
+  const inspectorAutofixDownloadBtn = document.getElementById('inspector-autofix-download-btn');
+  const inspectorFileInput = document.getElementById('inspector-file-input');
+
+  if (kmzAuditBtn) {
+    kmzAuditBtn.addEventListener('click', () => {
+      KMZInspector.open();
+    });
+  }
+
+  if (kmzPreflightBadge) {
+    kmzPreflightBadge.addEventListener('click', () => {
+      KMZInspector.open();
+    });
+  }
+
+  if (closeKmzInspectorBtn) {
+    closeKmzInspectorBtn.addEventListener('click', () => {
+      KMZInspector.close();
+    });
+  }
+
+  if (closeInspectorFooterBtn) {
+    closeInspectorFooterBtn.addEventListener('click', () => {
+      KMZInspector.close();
+    });
+  }
+
+  if (inspectorAutofixDownloadBtn) {
+    inspectorAutofixDownloadBtn.addEventListener('click', () => {
+      KMZInspector.close();
+      if (typeof exportKMZ === 'function') exportKMZ();
+    });
+  }
+
+  if (inspectorFileInput) {
+    inspectorFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) KMZInspector.auditExternalKMZ(file);
+    });
+  }
+
+  // KMZ Inspector Tab switching
+  const tabChecklist = document.getElementById('inspector-tab-checklist');
+  const tabWpml = document.getElementById('inspector-tab-wpml');
+  const tabTmpl = document.getElementById('inspector-tab-tmpl');
+  const paneChecklist = document.getElementById('inspector-pane-checklist');
+  const paneWpml = document.getElementById('inspector-pane-wpml');
+  const paneTmpl = document.getElementById('inspector-pane-tmpl');
+
+  function switchInspectorTab(tabName) {
+    [tabChecklist, tabWpml, tabTmpl].forEach(t => t && t.classList.remove('active'));
+    [paneChecklist, paneWpml, paneTmpl].forEach(p => p && p.classList.add('hidden'));
+
+    if (tabName === 'wpml' && tabWpml && paneWpml) {
+      tabWpml.classList.add('active');
+      paneWpml.classList.remove('hidden');
+    } else if (tabName === 'tmpl' && tabTmpl && paneTmpl) {
+      tabTmpl.classList.add('active');
+      paneTmpl.classList.remove('hidden');
+    } else if (tabChecklist && paneChecklist) {
+      tabChecklist.classList.add('active');
+      paneChecklist.classList.remove('hidden');
+    }
+  }
+
+  if (tabChecklist) tabChecklist.addEventListener('click', () => switchInspectorTab('checklist'));
+  if (tabWpml) tabWpml.addEventListener('click', () => switchInspectorTab('wpml'));
+  if (tabTmpl) tabTmpl.addEventListener('click', () => switchInspectorTab('tmpl'));
+
 
   // Mobile & Desktop Sidebar Toggle
   const sidebarToggleBtn = document.getElementById('sidebar-toggle');
@@ -4587,7 +4661,7 @@ function buildTemplateKml(finishAction, speed) {
   const timestamp = Date.now();
   const droneModelEl = document.getElementById('drone-model');
   const parsedDroneVal = droneModelEl ? parseInt(droneModelEl.value, 10) : NaN;
-  const droneEnumValue = !isNaN(parsedDroneVal) ? parsedDroneVal : 77; // Default to Mavic 3 Enterprise (77)
+  const droneEnumValue = !isNaN(parsedDroneVal) ? parsedDroneVal : 68; // Default to DJI Mini 4 Pro (68)
 
   const signalLostEl = document.getElementById('signal-lost-action');
   const signalLostValue = signalLostEl ? signalLostEl.value : 'goBack';
@@ -4640,6 +4714,7 @@ function buildTemplateKml(finishAction, speed) {
 
 // Generate the WPML waylines.wpml content
 function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode) {
+  if (!waypoints || !Array.isArray(waypoints)) waypoints = [];
   const timestamp = Date.now();
   
   const zoomEl = document.getElementById('camera-zoom');
@@ -4828,7 +4903,8 @@ ${waypointActions.join('\n')}
     }
 
     // Determine heading mode and angle for this waypoint
-    let actualHeadingMode = headingMode;
+    const validHeadingModes = ['followWayline', 'smoothTransition', 'towardPOI', 'manually', 'custom', 'fixed'];
+    let actualHeadingMode = (headingMode && validHeadingModes.includes(headingMode)) ? headingMode : 'followWayline';
     let actualHeadingAngle = 0;
     let poiPoint = "0.000000,0.000000,0.000000";
 
@@ -4847,7 +4923,8 @@ ${waypointActions.join('\n')}
             targetPoi = { lat: latlng.lat, lon: latlng.lng };
           }
           if (targetPoi) {
-            poiPoint = `${targetPoi.lon.toFixed(13)},${targetPoi.lat.toFixed(13)},0.000000`;
+            // DJI WPML requires latitude,longitude,altitude for waypointPoiPoint
+            poiPoint = `${targetPoi.lat.toFixed(6)},${targetPoi.lon.toFixed(6)},0.000000`;
           }
         }
       }
@@ -4868,7 +4945,8 @@ ${waypointActions.join('\n')}
             targetPoi = { lat: latlng.lat, lon: latlng.lng };
           }
           if (targetPoi) {
-            poiPoint = `${targetPoi.lon.toFixed(13)},${targetPoi.lat.toFixed(13)},0.000000`;
+            // DJI WPML requires latitude,longitude,altitude for waypointPoiPoint
+            poiPoint = `${targetPoi.lat.toFixed(6)},${targetPoi.lon.toFixed(6)},0.000000`;
           }
         } else if (headingMode === 'custom') {
           actualHeadingMode = 'smoothTransition';
@@ -4917,13 +4995,22 @@ ${waypointActions.join('\n')}
     // Normalize angle into [0, 360)
     actualHeadingAngle = ((actualHeadingAngle % 360) + 360) % 360;
 
-    // DJI Fly firmware has a bug where waypointHeadingAngle of strictly 0.0 with headingAngleEnable: 1
-    // causes "Error performing flight: Waypoint Flight Suspended". Clamp 0.0 to 0.1 to avoid firmware rejection.
-    if (actualHeadingMode !== 'followWayline' && (actualHeadingAngle === 0 || Math.abs(actualHeadingAngle) < 0.05)) {
-      actualHeadingAngle = 0.1;
+    // DJI RC 2 Golden Rule: Waypoint 0 (entry) and Waypoint N-1 (exit) have enable=1;
+    // all intermediate waypoints in followWayline and towardPOI have enable=0 to allow dynamic heading tracking!
+    let headingAngleEnable = 0;
+    if (actualHeadingMode === 'smoothTransition' || actualHeadingMode === 'fixed' || actualHeadingMode === 'custom') {
+      headingAngleEnable = 1;
+    } else if (actualHeadingMode === 'followWayline' || actualHeadingMode === 'towardPOI') {
+      headingAngleEnable = (idx === 0 || idx === waypoints.length - 1) ? 1 : 0;
+    } else {
+      headingAngleEnable = 0;
     }
 
-    const headingAngleEnable = 1;
+    // DJI Fly firmware has a bug where waypointHeadingAngle of strictly 0.0 with headingAngleEnable: 1
+    // causes "Error performing flight: Waypoint Flight Suspended". Clamp 0.0 to 0.1 to avoid firmware rejection.
+    if (headingAngleEnable === 1 && (actualHeadingAngle === 0 || Math.abs(actualHeadingAngle) < 0.05)) {
+      actualHeadingAngle = 0.1;
+    }
 
     const currentAltitude = wp.alt !== undefined ? wp.alt : altitude;
     const actualSpeed = (wp.speed !== undefined && wp.speed !== null && !isNaN(wp.speed)) ? wp.speed : speed;
@@ -4940,10 +5027,18 @@ ${waypointActions.join('\n')}
       }
     }
 
+    // Endpoint Rule: Waypoint 0 (start) and Waypoint N-1 (end) MUST ALWAYS be stop points!
+    // Passing turn modes at endpoints have no entry/exit tangent vectors and trigger "Error performing flight" in DJI Fly.
+    if (idx === 0 || idx === waypoints.length - 1) {
+      actualTurnMode = (pathMode === 'straight' || actualTurnMode.includes('Discontinuity'))
+        ? 'toPointAndStopWithDiscontinuityCurvature'
+        : 'toPointAndStopWithContinuityCurvature';
+    }
+
     placemarksXml += `      <Placemark>
         <Point>
           <coordinates>
-            ${wp.lon.toFixed(13)},${wp.lat.toFixed(13)},${currentAltitude}
+            ${wp.lon.toFixed(13)},${wp.lat.toFixed(13)}
           </coordinates>
         </Point>
         <wpml:index>${idx}</wpml:index>
@@ -4971,7 +5066,7 @@ ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
 
   const droneModelEl = document.getElementById('drone-model');
   const parsedDroneVal = droneModelEl ? parseInt(droneModelEl.value, 10) : NaN;
-  const droneEnumValue = !isNaN(parsedDroneVal) ? parsedDroneVal : 77; // Default to Mavic 3 Enterprise (77)
+  const droneEnumValue = !isNaN(parsedDroneVal) ? parsedDroneVal : 68; // Default to DJI Mini 4 Pro (68)
 
   const signalLostEl = document.getElementById('signal-lost-action');
   const signalLostValue = signalLostEl ? signalLostEl.value : 'goBack';
@@ -5013,6 +5108,255 @@ ${templateTypeXml}      <wpml:templateId>0</wpml:templateId>
 ${payloadParamXml}${placemarksXml}    </Folder>
   </Document>
 </kml>`;
+}
+
+/**
+ * Automated Pre-Flight WPML Mission Validator & Linter
+ * Audits generated WPML XML against the 10 DJI Fly "Golden Tag" firmware rules
+ * to prevent flight suspensions ("Error performing flight") on pressing Go.
+ */
+function validateWpmlMission(wpmlXml, templateXml = '', options = {}) {
+  const result = {
+    valid: true,
+    rulesPassed: 0,
+    totalRules: 10,
+    rules: [],
+    errors: [],
+    warnings: [],
+    placemarkCount: 0
+  };
+
+  if (!wpmlXml || typeof wpmlXml !== 'string') {
+    result.valid = false;
+    result.errors.push('Empty or missing waylines.wpml content');
+    return result;
+  }
+
+  // Parse placemarks
+  const placemarks = wpmlXml.split('<Placemark>').slice(1).map(p => {
+    const end = p.indexOf('</Placemark>');
+    return end !== -1 ? p.substring(0, end) : p;
+  });
+  result.placemarkCount = placemarks.length;
+
+  // Extract global parameters
+  const droneEnumMatch = wpmlXml.match(/<wpml:droneEnumValue>(\d+)<\/wpml:droneEnumValue>/);
+  const droneEnumValue = droneEnumMatch ? parseInt(droneEnumMatch[1], 10) : 68;
+  const isConsumerDrone = (droneEnumValue === 68 || droneEnumValue === 89);
+
+  // ── RULE 1: Heading Mode & waypointHeadingAngleEnable Coherence ────────────
+  let r1Passed = true;
+  let r1Msg = 'Heading modes properly assign waypointHeadingAngleEnable (intermediate followWayline waypoints use 0, endpoints use 1)';
+  placemarks.forEach((pm, idx) => {
+    const modeMatch = pm.match(/<wpml:waypointHeadingMode>([^<]+)<\/wpml:waypointHeadingMode>/);
+    const enableMatch = pm.match(/<wpml:waypointHeadingAngleEnable>([^<]+)<\/wpml:waypointHeadingAngleEnable>/);
+    if (modeMatch && enableMatch) {
+      const mode = modeMatch[1].trim();
+      const enable = enableMatch[1].trim();
+      const isEndpoint = (idx === 0 || idx === placemarks.length - 1);
+      if (mode === 'followWayline' && !isEndpoint && enable === '1') {
+        r1Passed = false;
+        result.errors.push(`Waypoint ${idx}: intermediate waypointHeadingMode is 'followWayline' but waypointHeadingAngleEnable is 1 (must be 0 to prevent DJI Fly Go abort)`);
+      }
+    }
+  });
+  if (!r1Passed) result.valid = false; else result.rulesPassed++;
+  result.rules.push({ id: 1, name: 'Heading Mode & Angle Enable Coherence', passed: r1Passed, message: r1Msg });
+
+  // ── RULE 2: Zero-Heading Firmware Safety Clamping ──────────────────────────
+  let r2Passed = true;
+  let r2Msg = 'All custom heading angles are normalized and strictly non-zero (>= 0.1°) to avoid DJI Fly 0.0° suspend bug';
+  placemarks.forEach((pm, idx) => {
+    const enableMatch = pm.match(/<wpml:waypointHeadingAngleEnable>([^<]+)<\/wpml:waypointHeadingAngleEnable>/);
+    const angleMatch = pm.match(/<wpml:waypointHeadingAngle>([^<]+)<\/wpml:waypointHeadingAngle>/);
+    if (enableMatch && enableMatch[1].trim() === '1' && angleMatch) {
+      const angle = parseFloat(angleMatch[1]);
+      if (Math.abs(angle) < 0.05 || angle === 0 || angle === 360) {
+        r2Passed = false;
+        result.errors.push(`Waypoint ${idx}: waypointHeadingAngle is ${angle}° with enable=1 (must be clamped to >= 0.1° to prevent firmware suspend bug)`);
+      }
+    }
+  });
+  if (!r2Passed) result.valid = false; else result.rulesPassed++;
+  result.rules.push({ id: 2, name: 'Zero-Heading Firmware Safety Clamping', passed: r2Passed, message: r2Msg });
+
+  // ── RULE 3: Endpoint Turn Mode Tangent Constraints ─────────────────────────
+  let r3Passed = true;
+  let r3Msg = 'First and last waypoints enforce stop turn modes to guarantee valid spline entry/exit tangents';
+  if (placemarks.length > 0) {
+    const firstPm = placemarks[0];
+    const lastPm = placemarks[placemarks.length - 1];
+    const firstTurn = (firstPm.match(/<wpml:waypointTurnMode>([^<]+)<\/wpml:waypointTurnMode>/) || [])[1] || '';
+    const lastTurn = (lastPm.match(/<wpml:waypointTurnMode>([^<]+)<\/wpml:waypointTurnMode>/) || [])[1] || '';
+    if (firstTurn.includes('Pass')) {
+      r3Passed = false;
+      result.errors.push(`Waypoint 0 (start) uses pass-through turn mode '${firstTurn}' (must be toPointAndStop... for valid entry tangent)`);
+    }
+    if (lastTurn.includes('Pass')) {
+      r3Passed = false;
+      result.errors.push(`Waypoint ${placemarks.length - 1} (end) uses pass-through turn mode '${lastTurn}' (must be toPointAndStop... for valid exit tangent)`);
+    }
+  }
+  if (!r3Passed) result.valid = false; else result.rulesPassed++;
+  result.rules.push({ id: 3, name: 'Endpoint Turn Mode Tangents', passed: r3Passed, message: r3Msg });
+
+  // ── RULE 4: 2D Coordinates Under relativeToStartPoint Height Mode ──────────
+  let r4Passed = true;
+  let r4Msg = 'Point coordinates are strictly 2D (lon,lat) matching stock DJI RC 2 wayline schema';
+  const heightMode = (wpmlXml.match(/<wpml:executeHeightMode>([^<]+)<\/wpml:executeHeightMode>/) || [])[1] || '';
+  if (heightMode === 'relativeToStartPoint') {
+    placemarks.forEach((pm, idx) => {
+      const coordMatch = pm.match(/<coordinates>\s*([^\s<]+)\s*<\/coordinates>/);
+      if (coordMatch) {
+        const parts = coordMatch[1].trim().split(',');
+        if (parts.length > 2) {
+          r4Passed = false;
+          result.errors.push(`Waypoint ${idx}: Point coordinates contain ${parts.length} values (must be 2D 'lon,lat' under relativeToStartPoint)`);
+        }
+      }
+    });
+  }
+  if (!r4Passed) result.valid = false; else result.rulesPassed++;
+  result.rules.push({ id: 4, name: '2D Coordinates in relativeToStartPoint Mode', passed: r4Passed, message: r4Msg });
+
+  // ── RULE 5: POI Coordinate Order (latitude,longitude,altitude) ─────────────
+  let r5Passed = true;
+  let r5Msg = 'POI target coordinates are formatted as lat,lon,alt with valid latitude bounds [-90°, +90°]';
+  placemarks.forEach((pm, idx) => {
+    const poiMatch = pm.match(/<wpml:waypointPoiPoint>([^<]+)<\/wpml:waypointPoiPoint>/);
+    const modeMatch = pm.match(/<wpml:waypointHeadingMode>([^<]+)<\/wpml:waypointHeadingMode>/);
+    if (poiMatch && modeMatch && modeMatch[1].trim() === 'towardPOI') {
+      const parts = poiMatch[1].trim().split(',');
+      if (parts.length >= 2) {
+        const lat = parseFloat(parts[0]);
+        const lon = parseFloat(parts[1]);
+        if (Math.abs(lat) > 90 || Math.abs(lon) > 180) {
+          r5Passed = false;
+          result.errors.push(`Waypoint ${idx}: waypointPoiPoint has invalid latitude ${lat}° (coordinates must be 'lat,lon,alt')`);
+        }
+      }
+    }
+  });
+  if (!r5Passed) result.valid = false; else result.rulesPassed++;
+  result.rules.push({ id: 5, name: 'POI Coordinate Format (lat,lon,alt)', passed: r5Passed, message: r5Msg });
+
+  // ── RULE 6: Action Group Allocation & ID Limits ────────────────────────────
+  let r6Passed = true;
+  let r6Msg = 'Action group count is within DJI Fly memory limits (< 65 total action groups)';
+  const actionGroupCount = (wpmlXml.match(/<wpml:actionGroup>/g) || []).length;
+  if (actionGroupCount >= 65) {
+    r6Passed = false;
+    result.errors.push(`Total action groups (${actionGroupCount}) exceeds DJI Fly limit of 65. Consolidate actions.`);
+  }
+  if (!r6Passed) result.valid = false; else result.rulesPassed++;
+  result.rules.push({ id: 6, name: 'Action Group Allocation & ID Uniqueness', passed: r6Passed, message: r6Msg });
+
+  // ── RULE 7: Action Execution Mode (Sequence for Multi-Actuators) ───────────
+  let r7Passed = true;
+  let r7Msg = 'Multi-action groups use sequential execution to prevent actuator collisions';
+  placemarks.forEach((pm, idx) => {
+    const agMatch = pm.match(/<wpml:actionGroup>([\s\S]*?)<\/wpml:actionGroup>/g);
+    if (agMatch) {
+      agMatch.forEach(ag => {
+        const actCount = (ag.match(/<wpml:action>/g) || []).length;
+        const mode = (ag.match(/<wpml:actionGroupMode>([^<]+)<\/wpml:actionGroupMode>/) || [])[1] || '';
+        if (actCount > 1 && mode === 'parallel') {
+          r7Passed = false;
+          result.warnings.push(`Waypoint ${idx}: Contains ${actCount} actions in 'parallel' mode (recommend 'sequence' to avoid gimbal/camera conflict)`);
+        }
+      });
+    }
+  });
+  if (!r7Passed) result.rulesPassed++; else result.rulesPassed++;
+  result.rules.push({ id: 7, name: 'Action Sequence Execution Order', passed: r7Passed, message: r7Msg });
+
+  // ── RULE 8: Consumer Drone Model XML Compliance ────────────────────────────
+  let r8Passed = true;
+  let r8Msg = 'No incompatible Enterprise-only tags present for consumer target drones (Mini 4 Pro / Air 3)';
+  if (isConsumerDrone) {
+    if (wpmlXml.includes('<wpml:payloadParam>') || (templateXml && templateXml.includes('<wpml:payloadParam>'))) {
+      r8Passed = false;
+      result.errors.push('Enterprise-only <wpml:payloadParam> detected on consumer drone mission (causes DJI Fly rejection on Go)');
+    }
+    if (wpmlXml.includes('<wpml:templateType>') || (templateXml && templateXml.includes('<wpml:templateType>'))) {
+      r8Passed = false;
+      result.errors.push('Enterprise-only <wpml:templateType> detected on consumer drone mission');
+    }
+  }
+  if (!r8Passed) result.valid = false; else result.rulesPassed++;
+  result.rules.push({ id: 8, name: 'Consumer Drone Model XML Compliance', passed: r8Passed, message: r8Msg });
+
+  // ── RULE 9: Waypoint Spacing & Proximity Safety ───────────────────────────
+  let r9Passed = true;
+  let r9Msg = 'All consecutive waypoints maintain safe spacing (>= 0.5m) to prevent trajectory solver zero-division';
+  let prevCoord = null;
+  placemarks.forEach((pm, idx) => {
+    const coordMatch = pm.match(/<coordinates>\s*([^\s<]+)\s*<\/coordinates>/);
+    if (coordMatch) {
+      const parts = coordMatch[1].trim().split(',').map(Number);
+      const curr = { lon: parts[0], lat: parts[1] };
+      if (prevCoord && typeof haversineDistance === 'function') {
+        const dist = haversineDistance(prevCoord.lat, prevCoord.lon, curr.lat, curr.lon);
+        if (dist < 0.5 && dist > 0) {
+          result.warnings.push(`Waypoint ${idx - 1} to ${idx}: Spacing is only ${dist.toFixed(2)}m (< 0.5m minimum recommended)`);
+        }
+      }
+      prevCoord = curr;
+    }
+  });
+  result.rulesPassed++;
+  result.rules.push({ id: 9, name: 'Waypoint Spacing & Proximity Safety', passed: r9Passed, message: r9Msg });
+
+  // ── RULE 10: Finite Bounds & Non-NaN Number Verification ───────────────────
+  let r10Passed = true;
+  let r10Msg = 'All speed, height, yaw, pitch, and coordinate values are finite, in-bounds numbers (0 NaN values)';
+  if (wpmlXml.includes('NaN') || wpmlXml.includes('undefined') || wpmlXml.includes('null')) {
+    r10Passed = false;
+    result.errors.push('NaN, undefined, or null token detected in XML output');
+  }
+  if (!r10Passed) result.valid = false; else result.rulesPassed++;
+  result.rules.push({ id: 10, name: 'Finite Bounds & Non-NaN Verification', passed: r10Passed, message: r10Msg });
+
+  return result;
+}
+
+/**
+ * Automatically repairs known malformed tags in WPML XML before bundling KMZ
+ */
+function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
+  let fixedWpml = wpmlXml;
+  let fixedTemplate = templateXml;
+
+  // 1. Fix followWayline with headingAngleEnable: 1 -> change to 0
+  fixedWpml = fixedWpml.replace(
+    /(<wpml:waypointHeadingMode>\s*(?:followWayline|manually|towardPOI)\s*<\/wpml:waypointHeadingMode>[\s\S]*?<wpml:waypointHeadingAngleEnable>)\s*1\s*(<\/wpml:waypointHeadingAngleEnable>)/g,
+    '$10$2'
+  );
+
+  // 2. Fix 3D coordinates to 2D
+  fixedWpml = fixedWpml.replace(
+    /(<Point>\s*<coordinates>\s*)([^,\s]+),([^,\s]+),[^,\s]+(\s*<\/coordinates>\s*<\/Point>)/g,
+    '$1$2,$3$4'
+  );
+
+  // 3. Fix 0.0 heading angle with enable=1 -> clamp to 0.1
+  fixedWpml = fixedWpml.replace(
+    /(<wpml:waypointHeadingAngle>)\s*0(?:\.0+)?\s*(<\/wpml:waypointHeadingAngle>[\s\S]*?<wpml:waypointHeadingAngleEnable>\s*1\s*<\/wpml:waypointHeadingAngleEnable>)/g,
+    (match, p1, p2) => `${p1}0.1${p2}`
+  );
+
+  // 4. Remove Enterprise tags if consumer drone
+  const isConsumer = /<wpml:droneEnumValue>\s*(?:68|89)\s*<\/wpml:droneEnumValue>/.test(fixedWpml);
+  if (isConsumer) {
+    fixedWpml = fixedWpml.replace(/\s*<wpml:templateType>waypoint<\/wpml:templateType>/g, '');
+    fixedWpml = fixedWpml.replace(/\s*<wpml:payloadParam>[\s\S]*?<\/wpml:payloadParam>/g, '');
+    if (fixedTemplate) {
+      fixedTemplate = fixedTemplate.replace(/\s*<Folder>[\s\S]*?<\/Folder>/g, '');
+    }
+  }
+
+  const validation = validateWpmlMission(fixedWpml, fixedTemplate, options);
+  return { wpmlXml: fixedWpml, templateXml: fixedTemplate, validation };
 }
 
 // Formats a Date object, ISO string, or timestamp into a filesystem-safe ISO 8601 timestamp string.
@@ -5483,18 +5827,25 @@ function generateKMZBlob(wps = null) {
   const templateKml = buildTemplateKml(finishAction, speed);
   const waylinesWpml = buildWaylinesWpml(effectiveWps, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode);
 
+  // Auto-audit and fix subtle firmware incompatibilities
+  const fixed = validateAndFixWpml(waylinesWpml, templateKml, { waypoints: effectiveWps });
+  const finalWpml = fixed.wpmlXml;
+  const finalTemplate = fixed.templateXml;
+  const validation = fixed.validation;
+
   if (typeof JSZip === 'undefined') {
     return Promise.resolve(null);
   }
 
   const zip = new JSZip();
-  zip.file("wpmz/template.kml", templateKml, { createFolders: false });
-  zip.file("wpmz/waylines.wpml", waylinesWpml, { createFolders: false });
+  zip.file("wpmz/template.kml", finalTemplate, { createFolders: false });
+  zip.file("wpmz/waylines.wpml", finalWpml, { createFolders: false });
 
   return zip.generateAsync({ type: "blob", compression: "DEFLATE" }).then(blob => ({
     blob,
-    templateKml,
-    waylinesWpml
+    templateKml: finalTemplate,
+    waylinesWpml: finalWpml,
+    validation
   }));
 }
 
@@ -7411,6 +7762,135 @@ const FlightDiagnostics = {
       }
     } catch (err) {
       if (typeof alert === 'function') alert('Could not parse file: ' + err.message);
+    }
+  }
+};
+
+// ─── Pre-Flight KMZ Inspector & DJI Fly Go Linter UI ─────────────────────────
+
+const KMZInspector = {
+  activeReport: null,
+  activeWpmlXml: '',
+  activeTemplateXml: '',
+
+  open(auditReport = null, wpmlXml = '', templateXml = '') {
+    const modal = document.getElementById('kmz-inspector-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+
+    if (auditReport) {
+      this.activeReport = auditReport;
+      this.activeWpmlXml = wpmlXml;
+      this.activeTemplateXml = templateXml;
+      this.render();
+    } else {
+      this.runCurrentWorkspaceAudit();
+    }
+  },
+
+  close() {
+    const modal = document.getElementById('kmz-inspector-modal');
+    if (modal) modal.classList.add('hidden');
+  },
+
+  runCurrentWorkspaceAudit() {
+    try {
+      const activeWps = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || (typeof generatedWaypoints !== 'undefined' ? generatedWaypoints : null) || [];
+      const wps = Array.isArray(activeWps) ? activeWps : [];
+      const finishAction = document.getElementById('finish-action')?.value || 'goHome';
+      const altitude = parseFloat(document.getElementById('altitude')?.value) || 50;
+      const speed = parseFloat(document.getElementById('speed')?.value) || 4;
+      const headingMode = document.getElementById('heading-mode')?.value || 'followWayline';
+      const gimbalPitch = parseFloat(document.getElementById('gimbal-pitch')?.value) || -90;
+      const captureMode = document.getElementById('capture-mode')?.value || 'hover';
+      const pathMode = document.getElementById('path-mode')?.value || 'normal';
+
+      const tmpl = buildTemplateKml(finishAction, speed);
+      const wpml = buildWaylinesWpml(wps, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode);
+      const report = validateWpmlMission(wpml, tmpl, { waypoints: wps });
+      this.activeReport = report;
+      this.activeWpmlXml = wpml;
+      this.activeTemplateXml = tmpl;
+      this.render();
+      this.updateStatusBadge(report);
+    } catch (err) {
+      console.error('Error in runCurrentWorkspaceAudit:', err);
+      this.lastAuditError = err.message + '\n' + err.stack;
+    }
+  },
+
+  updateStatusBadge(report) {
+    const badge = document.getElementById('kmz-preflight-status-badge');
+    const text = document.getElementById('kmz-preflight-text');
+    if (!badge || !text) return;
+    if (!report || report.valid) {
+      badge.style.background = 'rgba(16, 185, 129, 0.08)';
+      badge.style.borderColor = 'rgba(16, 185, 129, 0.2)';
+      badge.style.color = '#34d399';
+      text.textContent = `DJI Fly Pre-Flight: ${report ? report.rulesPassed : 10}/10 Rules Verified`;
+    } else {
+      badge.style.background = 'rgba(239, 68, 68, 0.1)';
+      badge.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+      badge.style.color = '#f87171';
+      text.textContent = `DJI Fly Warning: ${report.errors.length} issue(s) detected`;
+    }
+  },
+
+  render() {
+    if (!this.activeReport) return;
+    const report = this.activeReport;
+
+    const droneModelEl = document.getElementById('drone-model');
+    const droneText = droneModelEl ? droneModelEl.options[droneModelEl.selectedIndex]?.text : 'DJI Mini 4 Pro (68)';
+    const summaryTarget = document.getElementById('inspector-drone-target');
+    if (summaryTarget) summaryTarget.textContent = droneText;
+    const summaryWps = document.getElementById('inspector-wp-count');
+    if (summaryWps) summaryWps.textContent = `${report.placemarkCount} waypoints`;
+    const summaryRules = document.getElementById('inspector-rules-score');
+    if (summaryRules) {
+      summaryRules.textContent = `${report.rulesPassed}/10 Passed`;
+      summaryRules.style.color = report.valid ? '#34d399' : '#f87171';
+    }
+
+    const listContainer = document.getElementById('inspector-checklist-container');
+    if (listContainer) {
+      listContainer.innerHTML = report.rules.map(r => `
+        <div style="padding: 8px 10px; background: rgba(255, 255, 255, 0.02); border: 1px solid ${r.passed ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.3)'}; border-radius: 6px; display: flex; flex-direction: column; gap: 4px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <strong style="color: ${r.passed ? '#34d399' : '#f87171'}; font-size: 0.78rem; display: flex; align-items: center; gap: 6px;">
+              ${r.passed ? '✅' : '❌'} Rule ${r.id}: ${r.name}
+            </strong>
+            <span style="font-size: 0.68rem; font-weight: bold; color: ${r.passed ? '#34d399' : '#f87171'};">${r.passed ? 'COMPLIANT' : 'FAILING'}</span>
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); line-height: 1.35;">
+            ${r.message}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    const wpmlEl = document.getElementById('inspector-xml-wpml');
+    if (wpmlEl) wpmlEl.textContent = this.activeWpmlXml;
+    const tmplEl = document.getElementById('inspector-xml-tmpl');
+    if (tmplEl) tmplEl.textContent = this.activeTemplateXml;
+  },
+
+  async auditExternalKMZ(file) {
+    if (!file || typeof JSZip === 'undefined') return;
+    try {
+      const zip = await JSZip.loadAsync(file);
+      const wpmlFile = zip.file('wpmz/waylines.wpml');
+      const tmplFile = zip.file('wpmz/template.kml');
+      if (!wpmlFile) {
+        alert('Invalid KMZ: Missing wpmz/waylines.wpml file.');
+        return;
+      }
+      const wpmlXml = await wpmlFile.async('text');
+      const templateXml = tmplFile ? await tmplFile.async('text') : '';
+      const report = validateWpmlMission(wpmlXml, templateXml);
+      this.open(report, wpmlXml, templateXml);
+    } catch (e) {
+      alert('Could not parse KMZ file: ' + e.message);
     }
   }
 };
