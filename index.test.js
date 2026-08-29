@@ -943,7 +943,8 @@ test('NWS Weather fetching bounds and parsing', async () => {
     vm.runInThisContext('lastWeatherFetchCenter = null;');
     await vm.runInThisContext('fetchAndProcessWeather(45.0, -90.0)');
 
-    assert.strictEqual(fetchedUrls.length, 3);
+    // 1 (points) + 1 (stations list) + 2 (observations for the 2 mocked stations in parallel)
+    assert.strictEqual(fetchedUrls.length, 4, 'Should fetch: points, stations list, and observations for each discovered station');
   } finally {
     global.fetch = originalFetch;
   }
@@ -3341,12 +3342,12 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     }
   });
 
-  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.48.5', () => {
+  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.49.0', () => {
     const companion = require('./tools/companion/server.js');
     assert.strictEqual(typeof companion.stopScanners, 'function');
     assert.strictEqual(typeof companion.killExistingCompanion, 'function');
     assert.strictEqual(typeof companion.pullFromRc2, 'function');
-    assert.strictEqual(companion.VERSION, '1.48.5');
+    assert.strictEqual(companion.VERSION, '1.49.0');
   });
 
   test('pullFromRC2 fetches mission from companion and triggers parseWPML', async () => {
@@ -4507,6 +4508,13 @@ describe('Weather Station Display and Map Marker Tests (v1.48.3)', () => {
     let locateBtnText = '';
     let locateBtnHidden = true;
 
+    let toggleBtnText = '';
+    const mockToggleBtn = {
+      set textContent(v) { toggleBtnText = v; },
+      get textContent() { return toggleBtnText; },
+      classList: { add: () => {}, remove: () => {} }
+    };
+
     const mockLocateBtn = {
       set textContent(v) { locateBtnText = v; },
       get textContent() { return locateBtnText; },
@@ -4522,10 +4530,16 @@ describe('Weather Station Display and Map Marker Tests (v1.48.3)', () => {
       title: ''
     };
 
+    let dirsHidden = false;
+    let dirsAppended = [];
     const mockDirs = {
-      replaceChildren: () => {},
-      appendChild: () => {},
-      classList: { add: () => {}, remove: () => {} }
+      replaceChildren: () => { dirsAppended = []; },
+      appendChild: (c) => { dirsAppended.push(c); },
+      classList: {
+        add: (cls) => { if (cls === 'hidden') dirsHidden = true; },
+        remove: (cls) => { if (cls === 'hidden') dirsHidden = false; },
+        contains: (cls) => (cls === 'hidden' ? dirsHidden : false)
+      }
     };
 
     const origGetElementById = global.document.getElementById;
@@ -4533,20 +4547,31 @@ describe('Weather Station Display and Map Marker Tests (v1.48.3)', () => {
 
     global.document.getElementById = (id) => {
       if (id === 'btn-locate-weather-station') return mockLocateBtn;
+      if (id === 'btn-toggle-weather-details') return mockToggleBtn;
       if (id === 'stat-weather-window') return mockWindow;
       if (id === 'stat-weather-dirs') return mockDirs;
       return null;
     };
 
     global.document.createElement = (tag) => {
-      return {
+      const el = {
         tagName: tag.toUpperCase(),
-        style: {},
-        classList: { add: () => {}, remove: () => {} },
+        className: '',
+        style: { cssText: '' },
+        classList: { add: () => {}, remove: () => {}, contains: () => false },
         childrenAdded: [],
-        appendChild: function(c) { this.childrenAdded.push(c); }
+        appendChild: function(c) { this.childrenAdded.push(c); },
+        get textContent() { return this._textContent || ''; },
+        set textContent(v) { this._textContent = v; },
+        createTextNode: (t) => ({ _textContent: t, textContent: t }),
+        onclick: null,
+        type: '',
+        title: ''
       };
+      return el;
     };
+
+    global.document.createTextNode = (t) => ({ textContent: t, _textContent: t });
 
     try {
       const directions = {
@@ -4558,23 +4583,43 @@ describe('Weather Station Display and Map Marker Tests (v1.48.3)', () => {
           lon: -83.0730,
           fltCat: 'VFR',
           timestamp: '2026-08-28T20:00:00Z'
-        }
+        },
+        stations: [
+          { icaoId: 'KOSU', name: 'Ohio State University Airport', distance: 5.2, fltCat: 'VFR', lat: 40.08, lon: -83.07 },
+          { icaoId: 'KCMH', name: 'John Glenn International', distance: 18.4, fltCat: 'VFR', lat: 39.99, lon: -82.89 },
+          { icaoId: 'KTZR', name: 'Bolton Field', distance: 24.2, fltCat: 'VFR', lat: 39.90, lon: -83.14 }
+        ],
+        activeIndex: 0
       };
 
       vm.runInThisContext(`
         updateWeatherPanelUI(${JSON.stringify(directions)}, null, false);
       `);
 
-      // 1. Header button is populated and visible
-      assert.strictEqual(locateBtnHidden, false, 'Locate button should be unhidden');
-      assert.ok(locateBtnText.includes('KOSU'), 'Locate button should contain station ICAO');
-      assert.ok(locateBtnText.includes('5.2 km'), 'Locate button should contain distance');
+      // 1. Toggle button reflects expanded state
+      assert.strictEqual(toggleBtnText, '▴ Details', 'Toggle button should show collapse chevron when expanded');
 
       // 2. Window timeDiv (second child of windowEl) contains station ID & distance
       assert.strictEqual(windowChildren.length, 2);
       const timeDiv = windowChildren[1];
       assert.ok(timeDiv.textContent.includes('KOSU'), 'timeDiv should contain station ICAO');
       assert.ok(timeDiv.textContent.includes('5.2 km'), 'timeDiv should contain station distance');
+
+      // 3. Multi-station switcher tabs are rendered inside stationSection
+      const container = dirsAppended[0];
+      const stationSection = container.childrenAdded[container.childrenAdded.length - 1];
+      assert.strictEqual(stationSection.className, 'weather-station-info-card');
+      const switcher = stationSection.childrenAdded.find(c => c.className === 'multi-station-switcher');
+      assert.ok(switcher, 'Station switcher should be present when multiple stations are available');
+      assert.strictEqual(switcher.childrenAdded.length, 3, 'Should render 3 station tabs');
+      assert.ok(switcher.childrenAdded[0].textContent.includes('KOSU'), 'First tab should be KOSU');
+      assert.ok(switcher.childrenAdded[1].textContent.includes('KCMH'), 'Second tab should be KCMH');
+      assert.ok(switcher.childrenAdded[2].textContent.includes('KTZR'), 'Third tab should be KTZR');
+
+      // 4. toggleWeatherDetails can collapse the panel
+      vm.runInThisContext('toggleWeatherDetails(false);');
+      assert.strictEqual(dirsHidden, true, 'toggleWeatherDetails(false) should hide dirsEl');
+      assert.strictEqual(toggleBtnText, '▾ Details', 'Toggle button should show expand chevron when collapsed');
     } finally {
       global.document.getElementById = origGetElementById;
       global.document.createElement = origCreateElement;
