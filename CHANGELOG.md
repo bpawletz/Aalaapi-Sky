@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.50.0] - 2026-08-29
+
+### Added & Improved
+- **Live Remote ID Airspace Map Layer (Drone & Takeoff Overlay):**
+  - Registered `"Live Remote ID Airspace (Drone & Takeoff)"` in the Leaflet map's layer control overlay menu, enabling one-click toggle visibility of live airspace traffic.
+  - Added interactive **Takeoff / Launch Point marker** (`[H]` launch pad pin) plotted at the ASTM F3411 System Message operator coordinates.
+  - Rendered a dynamic dashed vector range line connecting the Takeoff location to the live Aircraft position with live distance calculation (e.g. `Distance from Takeoff: 142m`).
+  - Upgraded `RemoteIdRadar.locateDrone()` to intelligently frame both the takeoff location and aircraft coordinates within the viewport when tracking a drone.
+  - Added unit test coverage verifying layer group registration, marker generation, and vector line geometry.
+
 ## [1.49.0] - 2026-08-28
 
 ### Added & Improved

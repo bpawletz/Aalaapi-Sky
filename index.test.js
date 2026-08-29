@@ -3342,12 +3342,12 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     }
   });
 
-  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.49.0', () => {
+  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.50.0', () => {
     const companion = require('./tools/companion/server.js');
     assert.strictEqual(typeof companion.stopScanners, 'function');
     assert.strictEqual(typeof companion.killExistingCompanion, 'function');
     assert.strictEqual(typeof companion.pullFromRc2, 'function');
-    assert.strictEqual(companion.VERSION, '1.49.0');
+    assert.strictEqual(companion.VERSION, '1.50.0');
   });
 
   test('pullFromRC2 fetches mission from companion and triggers parseWPML', async () => {
@@ -4712,6 +4712,118 @@ describe('Weather Station Display and Map Marker Tests (v1.48.3)', () => {
       delete global.testMapLine;
       delete global.testLLine;
       delete global.testStationLayerLine;
+    }
+  });
+
+  test('RemoteIdRadar creates drone marker, takeoff marker, and connecting vector line on layerGroup', () => {
+    let addedLayers = [];
+    let removedLayers = [];
+    let fitBoundsArgs = null;
+
+    const mockLayerGroup = {
+      addLayer: (layer) => { addedLayers.push(layer); },
+      removeLayer: (layer) => { removedLayers.push(layer); }
+    };
+
+    const mockMap = {
+      addLayer: () => {},
+      removeLayer: () => {},
+      fitBounds: (bounds, opts) => { fitBoundsArgs = { bounds, opts }; },
+      setView: () => {},
+      panTo: () => {}
+    };
+
+    let markerLatLngs = [];
+    const mockL = {
+      marker: (latlng, opts) => {
+        markerLatLngs.push(latlng);
+        return {
+          latlng,
+          opts,
+          bindTooltip: () => {},
+          bindPopup: () => {},
+          setLatLng: function(ll) { this.latlng = ll; },
+          setIcon: () => {},
+          setTooltipContent: () => {},
+          setPopupContent: () => {},
+          on: () => {}
+        };
+      },
+      divIcon: (opts) => opts,
+      polyline: (pts, opts) => ({
+        pts,
+        opts,
+        bindTooltip: () => {},
+        setLatLngs: function(p) { this.pts = p; },
+        setTooltipContent: () => {}
+      }),
+      latLngBounds: (pts) => pts
+    };
+
+    global.testMockRadarMap = mockMap;
+    global.testMockRadarL = mockL;
+    global.testMockRadarLayer = mockLayerGroup;
+
+    try {
+      vm.runInThisContext(`
+        map = global.testMockRadarMap;
+        L = global.testMockRadarL;
+        remoteIdAirspaceLayer = global.testMockRadarLayer;
+        RemoteIdRadar.layerGroup = global.testMockRadarLayer;
+        RemoteIdRadar.markers.clear();
+
+        RemoteIdRadar.activeDrones = [{
+          id: '0C:3D:5E:B4:A9:E4',
+          model: 'Holyton HSRID02',
+          uasId: '2003F100000000001146',
+          latitude: 40.0127595,
+          longitude: -83.1771417,
+          operatorLatitude: 40.0125000,
+          operatorLongitude: -83.1770000,
+          altitudeGeodetic: 213.5,
+          speedHorizontal: 5.2,
+          trackDirection: 180,
+          status: 'Airborne'
+        }];
+
+        RemoteIdRadar.updateMapMarkers();
+      `);
+
+      // 1. Assert layers added: Drone Marker, Takeoff Marker, and Home Vector Line
+      assert.strictEqual(addedLayers.length, 3, 'Should add 3 layers: drone marker, takeoff marker, and vector line');
+      
+      const droneMarker = addedLayers[0];
+      const takeoffMarker = addedLayers[1];
+      const vectorLine = addedLayers[2];
+
+      assert.deepStrictEqual(droneMarker.latlng, [40.0127595, -83.1771417], 'Drone marker coords match live position');
+      assert.deepStrictEqual(takeoffMarker.latlng, [40.0125000, -83.1770000], 'Takeoff marker coords match launch position');
+      assert.deepStrictEqual(vectorLine.pts[0], [40.0125000, -83.1770000], 'Vector line start matches takeoff');
+      assert.deepStrictEqual(vectorLine.pts[1], [40.0127595, -83.1771417], 'Vector line end matches drone');
+      assert.ok(vectorLine.opts && vectorLine.opts.dashArray, 'Vector line is dashed');
+
+      // 2. Locate drone fits bounds around both Takeoff and Drone coordinates
+      vm.runInThisContext(`RemoteIdRadar.locateDrone('0C:3D:5E:B4:A9:E4');`);
+      assert.ok(fitBoundsArgs, 'locateDrone should call fitBounds when takeoff is present');
+      assert.deepStrictEqual(fitBoundsArgs.bounds[0], [40.0127595, -83.1771417]);
+      assert.deepStrictEqual(fitBoundsArgs.bounds[1], [40.0125000, -83.1770000]);
+
+      // 3. When active drones are cleared, all 3 layers are removed
+      vm.runInThisContext(`
+        RemoteIdRadar.activeDrones = [];
+        RemoteIdRadar.updateMapMarkers();
+      `);
+      assert.strictEqual(removedLayers.length, 3, 'Should remove drone, takeoff, and vector line layers when drone disappears');
+    } finally {
+      vm.runInThisContext(`
+        RemoteIdRadar.markers.clear();
+        RemoteIdRadar.activeDrones = [];
+        RemoteIdRadar.layerGroup = null;
+        remoteIdAirspaceLayer = null;
+      `);
+      delete global.testMockRadarMap;
+      delete global.testMockRadarL;
+      delete global.testMockRadarLayer;
     }
   });
 
