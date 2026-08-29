@@ -1188,6 +1188,89 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
     assert.ok(result.success, `Disclaimer modal E2E test failed: ${JSON.stringify(result)}`);
   });
+
+  test('E2E: Drone REST API locate on map, auto-tracking on new geo location, and hover HUD tooltip', async () => {
+    const locateResult = await page.evaluate(async () => {
+      if (!window.RemoteIdRadar) return { error: 'RemoteIdRadar not found' };
+
+      // 1. Ingest simulated drone at initial coordinates
+      const testDrone = {
+        id: 'e2e-drone-alpha',
+        uasId: '1581F4TEST123456',
+        model: 'DJI Mini 4 Pro',
+        status: 'Airborne',
+        latitude: 40.0125,
+        longitude: -83.1760,
+        altitudeGeodetic: 30.5,
+        speedHorizontal: 4.8,
+        trackDirection: 120,
+        transport: 'Wi-Fi 5.8 GHz',
+        rssi: -58,
+        breadcrumbs: [{ lat: 40.0125, lon: -83.1760, alt: 30.5, time: Date.now() }]
+      };
+
+      window.RemoteIdRadar.updateDroneLocation(testDrone);
+
+      // Verify pill visibility and marker existence
+      const badge = document.getElementById('remote-id-badge');
+      const badgeVisible = badge && !badge.classList.contains('hidden');
+
+      const markerEntry = window.RemoteIdRadar.markers.get('e2e-drone-alpha');
+      const hasMarker = !!(markerEntry && markerEntry.marker);
+
+      // Verify hover tooltip content
+      const tooltipHtml = window.RemoteIdRadar.formatDroneTooltip(testDrone);
+      const hasModelInTooltip = tooltipHtml.includes('DJI Mini 4 Pro');
+      const hasCoordsInTooltip = tooltipHtml.includes('40.012500, -83.176000');
+      const hasAltInTooltip = tooltipHtml.includes('30.5m');
+      const hasSpeedInTooltip = tooltipHtml.includes('4.8 m/s');
+
+      // 2. Click Locate badge
+      badge.click();
+      const isFollowing = window.RemoteIdRadar.isFollowing;
+      const locateLabel = document.getElementById('remote-id-locate-label');
+      const followingLabel = locateLabel ? locateLabel.textContent.includes('Following') : false;
+
+      // 3. Ingest updated geo location
+      const movedDrone = {
+        ...testDrone,
+        latitude: 40.0140,
+        longitude: -83.1745,
+        altitudeGeodetic: 35.0,
+        speedHorizontal: 6.2,
+        trackDirection: 90
+      };
+
+      window.RemoteIdRadar.updateDroneLocation(movedDrone);
+      const updatedMarker = window.RemoteIdRadar.markers.get('e2e-drone-alpha');
+      const latlng = updatedMarker && updatedMarker.marker && updatedMarker.marker.getLatLng ? updatedMarker.marker.getLatLng() : null;
+      const coordsMatch = latlng ? (Math.abs(latlng.lat - 40.0140) < 0.0001 && Math.abs(latlng.lng - (-83.1745)) < 0.0001) : true;
+
+      // Clean up test marker
+      if (window.RemoteIdRadar.layerGroup && markerEntry.marker) {
+        window.RemoteIdRadar.layerGroup.removeLayer(markerEntry.marker);
+      }
+      window.RemoteIdRadar.markers.delete('e2e-drone-alpha');
+      window.RemoteIdRadar.activeDrones = [];
+      window.RemoteIdRadar.isFollowing = false;
+      window.RemoteIdRadar.updateRadarUI();
+
+      return {
+        success: badgeVisible && hasMarker && hasModelInTooltip && hasCoordsInTooltip && hasAltInTooltip && hasSpeedInTooltip && isFollowing && followingLabel && coordsMatch,
+        badgeVisible,
+        hasMarker,
+        hasModelInTooltip,
+        hasCoordsInTooltip,
+        hasAltInTooltip,
+        hasSpeedInTooltip,
+        isFollowing,
+        followingLabel,
+        coordsMatch
+      };
+    });
+
+    assert.ok(locateResult.success, `Drone REST locate E2E test failed: ${JSON.stringify(locateResult)}`);
+  });
 });
 
 
