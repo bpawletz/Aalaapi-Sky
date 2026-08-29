@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.58.0] - 2026-08-29
+
+### Added & Improved
+- **Direct USB Flight Log Pulling on the HTML Interface:**
+  - **Diagnostics Modal Header Button (`#diag-pull-rc2-btn`):** Added a dedicated "📥 Pull from RC 2" button in the Flight Diagnostics Replay Modal header. When clicked, it connects to the Companion Bridge over USB MTP, extracts the newest `FlightRecord_*.txt` telemetry log from the DJI RC 2, refreshes the flight archive list, and immediately loads the decoded GPS trajectory onto the 3D replay canvas and Leaflet map.
+  - **Sidebar Companion Sync Action (`#direct-rc2-pull-log-btn`):** Added an "📥 Pull Flight Log" button inside the RC 2 Direct Sync card in the sidebar, allowing pilots to extract telemetry logs directly from the main planning screen with a single click.
+  - **Automated Replay Synchronization:** Automatically selects and displays newly pulled flight records in the timeline dropdown with loading feedback and error handling.
+
 ## [1.57.0] - 2026-08-29
 
 ### Added & Improved
