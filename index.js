@@ -4973,6 +4973,20 @@ ${payloadParamXml}${placemarksXml}    </Folder>
 </kml>`;
 }
 
+// Formats a Date object, ISO string, or timestamp into a filesystem-safe ISO 8601 timestamp string.
+// Format: YYYY-MM-DDTHH-mm-ssZ (filesystem safe, standard ISO 8601)
+function formatISO8601ForFilename(date = new Date()) {
+  try {
+    const d = (date instanceof Date) ? date : new Date(date);
+    if (isNaN(d.getTime())) {
+      return new Date().toISOString().replace(/:/g, '-').replace(/\.\d{3}/, '');
+    }
+    return d.toISOString().replace(/:/g, '-').replace(/\.\d{3}/, '');
+  } catch (e) {
+    return new Date().toISOString().replace(/:/g, '-').replace(/\.\d{3}/, '');
+  }
+}
+
 // Generate the KMZ file and trigger browser download
 function exportKMZ() {
   if (!centerMarker) {
@@ -5111,6 +5125,7 @@ function exportKMZ() {
     
     const storedUuid = getRC2UUID();
     let downloadBase = "";
+    const isoTimestamp = formatISO8601ForFilename();
     if (importedFileName) {
       link.download = importedFileName;
       downloadBase = importedFileName.replace(/\.kmz$/i, "");
@@ -5118,9 +5133,8 @@ function exportKMZ() {
       link.download = `${storedUuid}.kmz`;
       downloadBase = storedUuid;
     } else {
-      const dateStr = new Date().toISOString().slice(0, 10);
-      link.download = `GridMission_Alt${altitude}m_${dateStr}.kmz`;
-      downloadBase = `GridMission_Alt${altitude}m_${dateStr}`;
+      link.download = `GridMission_Alt${altitude}m_${isoTimestamp}.kmz`;
+      downloadBase = `GridMission_Alt${altitude}m_${isoTimestamp}`;
     }
     link.click();
 
@@ -5133,10 +5147,170 @@ function exportKMZ() {
         imgLink.click();
       }
     }).catch(() => {});
+
+    // Also auto-export settings & mission plan JSON for troubleshooting and recording
+    try {
+      const plan = buildMissionPlanJSON(waypoints);
+      if (plan && typeof Blob !== 'undefined' && typeof document !== 'undefined') {
+        const jsonBlob = new Blob([JSON.stringify(plan, null, 2)], { type: "application/json" });
+        const jsonLink = document.createElement("a");
+        jsonLink.href = URL.createObjectURL(jsonBlob);
+        jsonLink.download = `${downloadBase}_plan.json`;
+        jsonLink.click();
+      }
+    } catch (e) {
+      if (typeof Logger !== 'undefined' && Logger.warn) Logger.warn("Could not auto-export mission plan JSON:", e);
+    }
   }).catch(err => {
     Logger.error("ZIP creation failed:", err);
     alert("An error occurred while creating the KMZ file. Check console for details.");
   });
+}
+
+// ─── Settings & Mission Plan JSON Builder & Exporter ──────────────────────────
+// Generates a comprehensive, structured JSON representation of all application
+// settings, geometry parameters, camera profiles, flight configurations,
+// computed statistics, and waypoint coordinates for troubleshooting or archival.
+
+function buildMissionPlanJSON(customWps = null) {
+  const currentWps = customWps || (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
+  const centerLatLng = (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) ? centerMarker.getLatLng() : null;
+
+  const gridType = document.getElementById('grid-type')?.value || 'single';
+  const gridWidth = parseFloat(document.getElementById('grid-width')?.value) || 100;
+  const gridHeight = parseFloat(document.getElementById('grid-height')?.value) || 100;
+  const rotation = parseFloat(document.getElementById('grid-rotation')?.value) || 0;
+  const roadOffset = parseFloat(document.getElementById('road-offset')?.value) || 15;
+  const roadSnap = !!(document.getElementById('road-snap')?.checked);
+
+  const cameraModel = document.getElementById('camera-model')?.value || 'dji_mini_4_pro_std';
+  const droneModel = document.getElementById('drone-model')?.value || '68';
+  const cameraZoom = parseFloat(document.getElementById('camera-zoom')?.value) || 1.0;
+  const cameraHFOV = parseFloat(document.getElementById('camera-hfov')?.value) || 69.7;
+  const cameraVFOV = parseFloat(document.getElementById('camera-vfov')?.value) || 55.2;
+  const overlapFront = parseFloat(document.getElementById('front-overlap')?.value) || 80;
+  const overlapSide = parseFloat(document.getElementById('side-overlap')?.value) || 75;
+  const gimbalPitch = parseFloat(document.getElementById('gimbal-pitch')?.value) || -60;
+
+  const altitude = parseFloat(document.getElementById('altitude')?.value) || 50;
+  const speed = parseFloat(document.getElementById('speed')?.value) || 4;
+  const maxFlightTimeMinutes = parseFloat(document.getElementById('max-flight-time')?.value) || 20;
+  const headingMode = document.getElementById('heading-mode')?.value || 'followWayline';
+  const finishAction = document.getElementById('finish-action')?.value || 'goHome';
+  const signalLostAction = document.getElementById('signal-lost-action')?.value || 'goBack';
+  const pathMode = document.getElementById('path-mode')?.value || 'curved';
+  const captureMode = document.getElementById('capture-mode')?.value || 'stopAndShoot';
+  const globalHoverTime = parseFloat(document.getElementById('global-hover-time')?.value) || 0;
+
+  const unitSystem = typeof getUnitSystem === 'function' ? getUnitSystem() : 'imperial';
+  const storedUuid = typeof getRC2UUID === 'function' ? getRC2UUID() : null;
+
+  const formattedWaypoints = currentWps.map((wp, idx) => ({
+    index: idx,
+    lat: wp.lat,
+    lon: wp.lon,
+    alt: wp.alt !== undefined ? wp.alt : altitude,
+    pitch: wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch,
+    heading: wp.heading !== undefined ? wp.heading : null,
+    speed: wp.speed !== undefined ? wp.speed : speed,
+    hoverTime: wp.hoverTime !== undefined ? wp.hoverTime : globalHoverTime,
+    x: wp.x !== undefined ? wp.x : null,
+    y: wp.y !== undefined ? wp.y : null,
+    isRingStart: !!wp.isRingStart,
+    ringIndex: wp.ringIndex !== undefined ? wp.ringIndex : null,
+    poiIndex: wp.poiIndex !== undefined ? wp.poiIndex : null,
+    headingMode: wp.headingMode !== undefined ? wp.headingMode : null
+  }));
+
+  const totalStats = typeof calculateStats === 'function'
+    ? calculateStats(formattedWaypoints, typeof getCurrentPhotos === 'function' ? getCurrentPhotos() : null, speed, null, null, captureMode)
+    : null;
+
+  return {
+    schemaVersion: "1.0.0",
+    generator: "Aalaapi Sky",
+    version: "1.52.0",
+    exportedAt: new Date().toISOString(),
+    mission: {
+      uuid: storedUuid || null,
+      importedFileName: typeof importedFileName !== 'undefined' ? importedFileName : null,
+      pattern: gridType,
+      unitSystem: unitSystem,
+      center: centerLatLng ? { lat: centerLatLng.lat, lon: centerLatLng.lng } : null
+    },
+    settings: {
+      geometry: {
+        gridWidth,
+        gridHeight,
+        gridRotation: rotation,
+        roadOffset,
+        roadSnap
+      },
+      camera: {
+        cameraModel,
+        droneModelId: parseInt(droneModel, 10) || 68,
+        cameraZoom,
+        cameraHFOV,
+        cameraVFOV,
+        frontOverlapPercent: overlapFront,
+        sideOverlapPercent: overlapSide,
+        gimbalPitch
+      },
+      flight: {
+        altitude,
+        speed,
+        maxFlightTimeMinutes,
+        headingMode,
+        finishAction,
+        signalLostAction,
+        pathMode,
+        captureMode,
+        globalHoverTimeSeconds: globalHoverTime
+      }
+    },
+    pointsOfInterest: (typeof pointsOfInterest !== 'undefined' && Array.isArray(pointsOfInterest)) ? pointsOfInterest : [],
+    statistics: totalStats ? {
+      waypointCount: formattedWaypoints.length,
+      photoCount: totalStats.photoCount || formattedWaypoints.length,
+      totalDistanceMeters: totalStats.distance || 0,
+      totalFlightTimeSeconds: totalStats.flightTimeSeconds || 0,
+      flightTimeFormatted: totalStats.timeStr || '',
+      estimatedBatteries: Math.ceil((totalStats.flightTimeSeconds || 0) / (maxFlightTimeMinutes * 60)) || 1
+    } : {
+      waypointCount: formattedWaypoints.length
+    },
+    waypoints: formattedWaypoints
+  };
+}
+
+function exportMissionPlanJSON(customWps = null) {
+  const plan = buildMissionPlanJSON(customWps);
+  const jsonStr = JSON.stringify(plan, null, 2);
+  let blob = null;
+  if (typeof Blob !== 'undefined') {
+    blob = new Blob([jsonStr], { type: "application/json" });
+  }
+
+  const storedUuid = typeof getRC2UUID === 'function' ? getRC2UUID() : null;
+  let downloadBase = "";
+  const isoTimestamp = formatISO8601ForFilename();
+  if (typeof importedFileName !== 'undefined' && importedFileName) {
+    downloadBase = importedFileName.replace(/\.kmz$/i, "");
+  } else if (storedUuid && typeof RC2_UUID_PATTERN !== 'undefined' && RC2_UUID_PATTERN.test(storedUuid)) {
+    downloadBase = storedUuid;
+  } else {
+    const altitude = parseFloat(document.getElementById('altitude')?.value) || 50;
+    downloadBase = `GridMission_Alt${altitude}m_${isoTimestamp}`;
+  }
+
+  if (blob && typeof document !== 'undefined' && document.createElement) {
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${downloadBase}_plan.json`;
+    link.click();
+  }
+
+  return { plan, blob, jsonStr };
 }
 
 // Generate KMZ Blob in-memory
@@ -6811,7 +6985,9 @@ const FlightDiagnostics = {
       const blob = new Blob([JSON.stringify(geojson, null, 2)], { type: "application/json" });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = `FlightRecord_${new Date().toISOString().slice(0, 10)}_Track.geojson`;
+      const flightDate = this.telemetryData?.flightDate || new Date();
+      const iso8601 = formatISO8601ForFilename(flightDate);
+      link.download = `FlightRecord_${iso8601}_Track.geojson`;
       link.click();
     }
   },

@@ -3742,6 +3742,88 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
     }
   });
 
+  test('formatISO8601ForFilename generates valid filesystem-safe ISO 8601 timestamps', () => {
+    const fn = vm.runInThisContext('formatISO8601ForFilename');
+    assert.strictEqual(typeof fn, 'function');
+
+    // 1. Fixed Date object
+    const fixedDate = new Date('2026-08-20T19:42:28.000Z');
+    const res1 = fn(fixedDate);
+    assert.strictEqual(res1, '2026-08-20T19-42-28Z');
+
+    // 2. ISO String input
+    const res2 = fn('2026-08-29T13:00:45.500Z');
+    assert.strictEqual(res2, '2026-08-29T13-00-45Z');
+
+    // 3. Epoch timestamp
+    const res3 = fn(fixedDate.getTime());
+    assert.strictEqual(res3, '2026-08-20T19-42-28Z');
+
+    // 4. Default / no args
+    const res4 = fn();
+    assert.match(res4, /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z$/);
+
+    // 5. Invalid date fallback
+    const res5 = fn('invalid-date-string');
+    assert.match(res5, /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z$/);
+
+    // 6. Verify no illegal filename characters exist
+    assert.strictEqual(/[:\\/?*<>"|]/.test(res1), false);
+  });
+
+  test('FlightDiagnostics exportGeoJSON uses filesystem-safe ISO 8601 in download filename', () => {
+    let triggeredDownload = null;
+    const origDoc = global.document;
+    const origCreateElement = global.document ? global.document.createElement : null;
+    const mockLink = {
+      href: '',
+      download: '',
+      click() {
+        triggeredDownload = this.download;
+      }
+    };
+
+    if (global.document) {
+      global.document.createElement = function(tag) {
+        if (tag === 'a') return mockLink;
+        return origCreateElement ? origCreateElement.call(global.document, tag) : {};
+      };
+    }
+    const origURL = global.URL;
+    global.URL = {
+      createObjectURL: () => 'blob:mock'
+    };
+
+    try {
+      vm.runInThisContext(`
+        FlightDiagnostics.telemetryData = {
+          droneModel: 'DJI Mini 4 Pro',
+          durationFormatted: '04m 12s',
+          totalDistance: 820,
+          maxAltitude: 21,
+          flightDate: '2026-08-20T19:42:28.000Z',
+          points: [{ lon: -83.17, lat: 40.01, alt: 21 }]
+        };
+        FlightDiagnostics.exportGeoJSON();
+      `);
+      assert.ok(triggeredDownload);
+      assert.strictEqual(triggeredDownload, 'FlightRecord_2026-08-20T19-42-28Z_Track.geojson');
+    } finally {
+      if (global.document && origCreateElement) {
+        global.document.createElement = origCreateElement;
+      }
+      global.document = origDoc;
+      global.URL = origURL;
+    }
+  });
+
+  test('log_decoder.js exports formatISO8601ForFilename complying with ISO 8601', () => {
+    const { formatISO8601ForFilename: decoderFn } = require('./tools/companion/log_decoder.js');
+    assert.strictEqual(typeof decoderFn, 'function');
+    const fixed = new Date('2026-08-20T19:42:28.000Z');
+    assert.strictEqual(decoderFn(fixed), '2026-08-20T19-42-28Z');
+  });
+
   test('Remote ID ASTM F3411 decoder correctly parses Basic ID, Location, and System messages', () => {
     const {
       decodeOdidMessage,
