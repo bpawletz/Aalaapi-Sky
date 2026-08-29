@@ -19,7 +19,7 @@ const os = require('node:os');
 const readline = require('node:readline');
 const { execFile, spawn, execFileSync } = require('node:child_process');
 
-const VERSION = '1.48.3';
+const VERSION = '1.48.4';
 const PORT = process.env.AALAAPI_PORT ? parseInt(process.env.AALAAPI_PORT, 10) : 8765;
 const STAGING_DIR = path.resolve(__dirname, '../../scratch/companion_staging');
 const LATEST_DIR = path.resolve(__dirname, '../../scratch/latest_flight');

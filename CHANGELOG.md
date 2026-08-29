@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.48.4] - 2026-08-28
+
+### Added & Improved
+- **High-Visibility Weather Station UI & Map Bounds Focus:**
+  - Added station ICAO code and distance directly into the top weather status line (`Last Polled: ... • 📡 KOSU (5.2 km)`) so station info is immediately visible without scrolling.
+  - Added header quick-action button `[📍 KOSU (5.2 km)]` next to the Refresh button.
+  - Configured `focusWeatherStationOnMap()` to dynamically fit map bounds (`map.fitBounds`) around both the mission center and weather station, making the station marker and distance instantly visible on map even when zoomed into a tight flight grid.
+  - Rendered dashed connector line (`weatherStationLine`) linking mission center to the reporting weather station with live drag synchronization.
+  - Added unit tests for weather station header button, status label, and dashed connector line.
+
 ## [1.48.3] - 2026-08-28
 
 ### Added & Improved

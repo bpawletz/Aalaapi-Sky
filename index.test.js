@@ -3340,12 +3340,12 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     }
   });
 
-  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.48.3', () => {
+  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.48.4', () => {
     const companion = require('./tools/companion/server.js');
     assert.strictEqual(typeof companion.stopScanners, 'function');
     assert.strictEqual(typeof companion.killExistingCompanion, 'function');
     assert.strictEqual(typeof companion.pullFromRc2, 'function');
-    assert.strictEqual(companion.VERSION, '1.48.3');
+    assert.strictEqual(companion.VERSION, '1.48.4');
   });
 
   test('pullFromRC2 fetches mission from companion and triggers parseWPML', async () => {
@@ -4498,6 +4498,174 @@ describe('Weather Station Display and Map Marker Tests (v1.48.3)', () => {
       delete global.testWeatherMap;
       delete global.testWeatherL;
       delete global.testWeatherStationLayer;
+    }
+  });
+
+  test('updateWeatherPanelUI updates stat-weather-window and header locate button for immediate visibility', () => {
+    let windowChildren = [];
+    let locateBtnText = '';
+    let locateBtnHidden = true;
+
+    const mockLocateBtn = {
+      set textContent(v) { locateBtnText = v; },
+      get textContent() { return locateBtnText; },
+      classList: {
+        add: (cls) => { if (cls === 'hidden') locateBtnHidden = true; },
+        remove: (cls) => { if (cls === 'hidden') locateBtnHidden = false; }
+      }
+    };
+
+    const mockWindow = {
+      replaceChildren: () => { windowChildren = []; },
+      appendChild: (c) => { windowChildren.push(c); },
+      title: ''
+    };
+
+    const mockDirs = {
+      replaceChildren: () => {},
+      appendChild: () => {},
+      classList: { add: () => {}, remove: () => {} }
+    };
+
+    const origGetElementById = global.document.getElementById;
+    const origCreateElement = global.document.createElement;
+
+    global.document.getElementById = (id) => {
+      if (id === 'btn-locate-weather-station') return mockLocateBtn;
+      if (id === 'stat-weather-window') return mockWindow;
+      if (id === 'stat-weather-dirs') return mockDirs;
+      return null;
+    };
+
+    global.document.createElement = (tag) => {
+      return {
+        tagName: tag.toUpperCase(),
+        style: {},
+        classList: { add: () => {}, remove: () => {} },
+        childrenAdded: [],
+        appendChild: function(c) { this.childrenAdded.push(c); }
+      };
+    };
+
+    try {
+      const directions = {
+        closest: {
+          icaoId: 'KOSU',
+          name: 'Ohio State University Airport',
+          distance: 5.2,
+          lat: 40.0798,
+          lon: -83.0730,
+          fltCat: 'VFR',
+          timestamp: '2026-08-28T20:00:00Z'
+        }
+      };
+
+      vm.runInThisContext(`
+        updateWeatherPanelUI(${JSON.stringify(directions)}, null, false);
+      `);
+
+      // 1. Header button is populated and visible
+      assert.strictEqual(locateBtnHidden, false, 'Locate button should be unhidden');
+      assert.ok(locateBtnText.includes('KOSU'), 'Locate button should contain station ICAO');
+      assert.ok(locateBtnText.includes('5.2 km'), 'Locate button should contain distance');
+
+      // 2. Window timeDiv (second child of windowEl) contains station ID & distance
+      assert.strictEqual(windowChildren.length, 2);
+      const timeDiv = windowChildren[1];
+      assert.ok(timeDiv.textContent.includes('KOSU'), 'timeDiv should contain station ICAO');
+      assert.ok(timeDiv.textContent.includes('5.2 km'), 'timeDiv should contain station distance');
+    } finally {
+      global.document.getElementById = origGetElementById;
+      global.document.createElement = origCreateElement;
+    }
+  });
+
+  test('updateWeatherStationMarker creates connecting dashed polyline between centerMarker and weather station', () => {
+    let polylinePoints = null;
+    let polylineOpts = null;
+
+    const mockCenter = {
+      getLatLng: () => ({ lat: 40.0, lng: -83.0 })
+    };
+
+    const mockPolyline = {
+      setLatLngs: (pts) => { polylinePoints = pts; },
+      setStyle: () => {},
+      bindTooltip: () => {}
+    };
+
+    const mockL = {
+      marker: () => ({
+        bindPopup: () => {},
+        bindTooltip: () => {}
+      }),
+      divIcon: (o) => o,
+      polyline: (pts, opts) => {
+        polylinePoints = pts;
+        polylineOpts = opts;
+        return mockPolyline;
+      }
+    };
+
+    const mockLayerGroup = {
+      addLayer: () => {},
+      removeLayer: () => {},
+      hasLayer: () => false
+    };
+
+    const mockMap = {
+      addLayer: () => {},
+      removeLayer: () => {},
+      hasLayer: () => true
+    };
+
+    vm.runInThisContext(`
+      centerMarker = global.testCenterMarker;
+      map = global.testMapLine;
+      L = global.testLLine;
+      weatherStationLayer = global.testStationLayerLine;
+      weatherStationMarker = null;
+      weatherStationLine = null;
+    `);
+
+    global.testCenterMarker = mockCenter;
+    global.testMapLine = mockMap;
+    global.testLLine = mockL;
+    global.testStationLayerLine = mockLayerGroup;
+
+    try {
+      vm.runInThisContext(`
+        centerMarker = global.testCenterMarker;
+        map = global.testMapLine;
+        L = global.testLLine;
+        weatherStationLayer = global.testStationLayerLine;
+        updateWeatherStationMarker({
+          icaoId: 'KOSU',
+          name: 'Ohio State University Airport',
+          distance: 5.2,
+          lat: 40.0798,
+          lon: -83.0730,
+          fltCat: 'VFR'
+        });
+      `);
+
+      assert.ok(polylinePoints, 'Connecting line polyline should be created');
+      assert.deepStrictEqual(polylinePoints[0], { lat: 40.0, lng: -83.0 });
+      assert.deepStrictEqual(polylinePoints[1], [40.0798, -83.0730]);
+      assert.ok(polylineOpts && polylineOpts.dashArray, 'Polyline should be dashed');
+    } finally {
+      vm.runInThisContext(`
+        centerMarker = null;
+        map = null;
+        L = null;
+        weatherStationLayer = null;
+        weatherStationMarker = null;
+        weatherStationLine = null;
+      `);
+      delete global.testCenterMarker;
+      delete global.testMapLine;
+      delete global.testLLine;
+      delete global.testStationLayerLine;
     }
   });
 });
