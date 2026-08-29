@@ -1442,6 +1442,34 @@ html, body {
   animation: pulseRadarDot 1.6s infinite ease-in-out;
 }
 
+/* Remote ID Drone Hover Tooltip */
+.leaflet-tooltip.remote-id-tooltip {
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 18px rgba(239, 68, 68, 0.3);
+  color: #f1f5f9;
+  padding: 10px 14px;
+  font-family: inherit;
+  pointer-events: none;
+  z-index: 1200;
+  min-width: 200px;
+}
+
+.leaflet-tooltip.remote-id-tooltip::before {
+  border-top-color: rgba(15, 23, 42, 0.95);
+}
+
+.remote-id-drone-marker {
+  cursor: pointer;
+}
+
+.remote-id-drone-marker:hover svg {
+  filter: drop-shadow(0 0 8px #ef4444);
+}
+
 /* ─── RC 2 Sync Box Offline & Guide Modal Tabs ─────────────────────────── */
 
 #companion-sync-container.is-offline {

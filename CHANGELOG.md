@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.48.0] - 2026-08-28
+
+### Added & Improved
+- **Live Drone REST API Locate on Map & Auto-Tracking:**
+  - Added companion bridge endpoints `GET/POST /api/drone/locate` and `GET/POST /api/remote-id/locate` supporting real-time drone geo location queries and external position injection.
+  - Clicking the floating `#remote-id-badge` pill locks onto the detected drone, centering and zooming the Leaflet map on its live coordinates (`[latitude, longitude]`).
+  - As new geo location coordinates arrive via REST polling, the map smoothly updates and auto-follows the active drone location, updating breadcrumbs and heading orientation.
+- **Interactive Drone Hover Info HUD Tooltip:**
+  - Hovering the mouse over any located or detected drone marker on the map displays an interactive glassmorphic HUD card with real-time drone telemetry:
+    - Model and ANSI/CTA-2063-A UAS ID (e.g. `DJI Mini 4 Pro [1581F...]`).
+    - Precise latitude and longitude coordinates.
+    - Geodetic MSL altitude and AGL height (metric and imperial).
+    - Horizontal ground speed (m/s and mph).
+    - Compass track heading orientation.
+    - Radio link transport (Dual-band Wi-Fi 2.4/5.8 GHz, BLE) and signal RSSI (dBm).
+    - Active flight uptime and ingested packet counters.
+    - Pilot / GCS operator coordinates if broadcast.
+  - Dynamically updates tooltip contents as new telemetry packets stream into the browser.
+
 ## [1.47.1] - 2026-08-28
 
 ### Fixed

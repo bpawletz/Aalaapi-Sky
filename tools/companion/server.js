@@ -19,7 +19,7 @@ const os = require('node:os');
 const readline = require('node:readline');
 const { execFile, spawn, execFileSync } = require('node:child_process');
 
-const VERSION = '1.47.1';
+const VERSION = '1.48.0';
 const PORT = process.env.AALAAPI_PORT ? parseInt(process.env.AALAAPI_PORT, 10) : 8765;
 const STAGING_DIR = path.resolve(__dirname, '../../scratch/companion_staging');
 const LATEST_DIR = path.resolve(__dirname, '../../scratch/latest_flight');
@@ -843,6 +843,7 @@ function printStartupBanner() {
   console.log(`  ${colors.green}${colors.bold}POST /api/flight-telemetry${colors.reset} ${colors.gray}3D flight trajectory solver, photo markers & variances${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /api/latest-flight${colors.reset}    ${colors.gray}Auto-extract latest flight log & KMZ over USB MTP${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /api/remote-id/drones${colors.reset} ${colors.gray}Live ASTM F3411 Remote ID detected drones in airspace${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}POST /api/drone/locate${colors.reset}    ${colors.gray}Rest API locate drone & inject live geo coordinates${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}POST /api/shutdown${colors.reset}         ${colors.gray}Cleanly terminate running companion bridge process${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /health${colors.reset}               ${colors.gray}Service heartbeat and status ping${colors.reset}`);
 
@@ -1042,8 +1043,8 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // 6. Remote ID Airspace Drones Endpoint
-    if (pathname === '/api/remote-id/drones' && req.method === 'GET') {
+    // 6. Remote ID Airspace Drones Endpoint & Drone Locate REST API
+    if ((pathname === '/api/remote-id/drones' || pathname === '/api/drones') && req.method === 'GET') {
       const activeDrones = airspaceTracker.getActiveDrones();
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
@@ -1052,6 +1053,70 @@ const server = http.createServer(async (req, res) => {
         totalPackets: airspaceTracker.totalPackets,
         drones: activeDrones
       }));
+      return;
+    }
+
+    // 6b. Drone Locate REST API (GET returns latest located drone with geo coordinates; POST updates/injects new geo location)
+    if ((pathname === '/api/drone/locate' || pathname === '/api/remote-id/locate' || pathname === '/api/drone/position') && req.method === 'GET') {
+      const activeDrones = airspaceTracker.getActiveDrones();
+      const locatedWithGeo = activeDrones.find(d => d.latitude !== null && d.longitude !== null) || activeDrones[0] || null;
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: !!locatedWithGeo,
+        located: !!(locatedWithGeo && locatedWithGeo.latitude !== null),
+        drone: locatedWithGeo,
+        count: activeDrones.length,
+        drones: activeDrones
+      }));
+      return;
+    }
+
+    if ((pathname === '/api/drone/locate' || pathname === '/api/remote-id/locate' || pathname === '/api/drone/position') && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const payload = body ? JSON.parse(body) : {};
+          const lat = payload.latitude !== undefined ? parseFloat(payload.latitude) : (payload.lat !== undefined ? parseFloat(payload.lat) : 40.0130);
+          const lon = payload.longitude !== undefined ? parseFloat(payload.longitude) : (payload.lon !== undefined ? parseFloat(payload.lon) : -83.1765);
+          const alt = payload.altitude !== undefined ? parseFloat(payload.altitude) : (payload.alt !== undefined ? parseFloat(payload.alt) : 25.0);
+          const speed = payload.speed !== undefined ? parseFloat(payload.speed) : 4.0;
+          const heading = payload.heading !== undefined ? parseFloat(payload.heading) : 90;
+          const uasId = payload.uasId || payload.serialNumber || '1581F4TEST998877';
+
+          const syntheticBytes = createSyntheticOdidPayload({
+            uasId,
+            lat,
+            lon,
+            alt,
+            speed,
+            heading,
+            opLat: payload.operatorLatitude || lat - 0.0002,
+            opLon: payload.operatorLongitude || lon - 0.0001
+          });
+
+          const drone = airspaceTracker.processAdvertisement({
+            mac: payload.mac || 'FA:0B:BC:15:81:F4',
+            rssi: payload.rssi || -58,
+            rawPayload: syntheticBytes
+          });
+
+          if (payload.model) drone.model = payload.model;
+          if (payload.status) drone.status = payload.status;
+
+          logSuccess('[DRONE REST LOCATE]', `Updated drone geo location for ${drone.uasId} (${drone.model}) at [${drone.latitude}, ${drone.longitude}], alt: ${drone.altitudeGeodetic}m`);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            success: true,
+            located: true,
+            drone
+          }));
+        } catch (e) {
+          logError('[DRONE REST LOCATE ERROR]', e.message);
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: e.message }));
+        }
+      });
       return;
     }
 

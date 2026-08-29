@@ -5642,32 +5642,109 @@ function initRC2Controls() {
 
 const RemoteIdRadar = {
   activeDrones: [],
-  markers: new Map(), // droneId -> { marker, line }
+  markers: new Map(), // droneId -> { marker, line, drone }
   layerGroup: null,
+  locatedDroneId: null,
+  isFollowing: false,
 
   init() {
-    if (typeof L !== 'undefined' && typeof map !== 'undefined' && map) {
-      if (!this.layerGroup && map.addLayer) {
-        this.layerGroup = L.layerGroup().addTo(map);
-      }
+    const leaflet = (typeof L !== 'undefined' && L) || (typeof window !== 'undefined' && window.L) || (typeof global !== 'undefined' && global.L);
+    const m = (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map) || (typeof global !== 'undefined' && global.map);
+    if (leaflet && m && !this.layerGroup && m.addLayer && leaflet.layerGroup) {
+      this.layerGroup = leaflet.layerGroup().addTo(m);
     }
+    if (m && m.on) {
+      m.on('dragstart', () => {
+        if (this.isFollowing) {
+          this.isFollowing = false;
+          this.updateRadarUI();
+        }
+      });
+    }
+
     const badge = typeof document !== 'undefined' ? document.getElementById('remote-id-badge') : null;
     if (badge) {
       badge.addEventListener('click', () => {
-        if (this.activeDrones.length > 0 && typeof map !== 'undefined' && map && map.setView) {
-          const d = this.activeDrones[0];
-          if (d.latitude && d.longitude) {
-            map.setView([d.latitude, d.longitude], 18);
+        if (this.activeDrones.length > 0) {
+          const target = this.activeDrones.find(d => d.latitude && d.longitude) || this.activeDrones[0];
+          if (target && target.latitude && target.longitude) {
+            this.locateDrone(target.id);
           }
         }
       });
     }
   },
 
+  locateDrone(droneId) {
+    const target = this.activeDrones.find(d => d.id === droneId) || this.activeDrones.find(d => d.latitude && d.longitude);
+    if (!target || !target.latitude || !target.longitude) return false;
+
+    this.locatedDroneId = target.id;
+    this.isFollowing = true;
+
+    const m = (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map) || (typeof global !== 'undefined' && global.map);
+    if (m && m.setView) {
+      const zoom = m.getZoom ? Math.max(m.getZoom(), 17) : 18;
+      m.setView([target.latitude, target.longitude], zoom);
+    }
+
+    const entry = this.markers.get(target.id);
+    if (entry && entry.marker) {
+      if (entry.marker.openTooltip) entry.marker.openTooltip();
+    }
+
+    this.updateRadarUI();
+    return true;
+  },
+
+  formatDroneTooltip(drone) {
+    const altText = drone.altitudeGeodetic !== null ? `${drone.altitudeGeodetic}m (${Math.round(drone.altitudeGeodetic * 3.28084)}ft MSL)` : 'Alt N/A';
+    const speedText = drone.speedHorizontal !== null ? `${drone.speedHorizontal} m/s (${(drone.speedHorizontal * 2.23694).toFixed(1)} mph)` : 'Speed N/A';
+    const heading = drone.trackDirection !== null ? `${Math.round(drone.trackDirection)}°` : '0°';
+    const coordsText = (drone.latitude && drone.longitude) ? `${drone.latitude.toFixed(6)}, ${drone.longitude.toFixed(6)}` : 'Awaiting GPS Fix';
+    const transport = drone.transport || 'Direct';
+    const rssiText = drone.rssi ? `${drone.rssi} dBm` : 'N/A';
+    const statusColor = drone.status === 'Airborne' ? '#22c55e' : (drone.status === 'Emergency' ? '#ef4444' : '#eab308');
+
+    return `
+      <div class="remote-id-hover-hud" style="font-family: inherit; font-size: 0.78rem; line-height: 1.35; min-width: 215px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 5px; margin-bottom: 6px;">
+          <div style="display: flex; align-items: center; gap: 6px; font-weight: 700; color: #f87171;">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 6px #ef4444;"></span>
+            <span>${drone.model || 'Drone'}</span>
+          </div>
+          <span style="font-size: 0.65rem; background: ${statusColor}22; border: 1px solid ${statusColor}66; color: ${statusColor}; border-radius: 4px; padding: 1px 4px; font-weight: 600;">
+            ${drone.status || 'Airborne'}
+          </span>
+        </div>
+        <div style="color: #94a3b8; font-size: 0.72rem; margin-bottom: 6px; font-family: monospace;">
+          ID: <span style="color: #cbd5e1;">${drone.uasId || 'Unknown'}</span>
+        </div>
+        <div style="display: grid; grid-template-columns: auto 1fr; gap: 3px 8px; font-size: 0.75rem; color: #e2e8f0;">
+          <span style="color: #94a3b8;">📍 Geo:</span>
+          <span style="font-family: monospace; color: #38bdf8; font-weight: 600;">${coordsText}</span>
+          <span style="color: #94a3b8;">⛰️ Alt:</span>
+          <span style="font-weight: 600;">${altText}</span>
+          <span style="color: #94a3b8;">⚡ Speed:</span>
+          <span style="font-weight: 600;">${speedText}</span>
+          <span style="color: #94a3b8;">🧭 Track:</span>
+          <span style="font-weight: 600;">${heading}</span>
+          <span style="color: #94a3b8;">📶 Link:</span>
+          <span>${transport} (${rssiText})</span>
+        </div>
+        ${drone.operatorLatitude ? `<div style="margin-top: 6px; padding-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); font-size: 0.7rem; color: #38bdf8;">📍 Pilot: ${drone.operatorLatitude.toFixed(6)}, ${drone.operatorLongitude.toFixed(6)}</div>` : ''}
+        <div style="margin-top: 6px; font-size: 0.66rem; color: #64748b; text-align: right;">
+          Click to Track • ASTM F3411 Live
+        </div>
+      </div>
+    `;
+  },
+
   async pollAirspace() {
     if (typeof fetch === 'undefined') return;
     try {
-      const res = await fetch(`http://127.0.0.1:8765/api/remote-id/drones`);
+      const apiBase = typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765';
+      const res = await fetch(`${apiBase}/api/remote-id/drones`);
       if (res.ok) {
         const data = await res.json();
         if (data.success && Array.isArray(data.drones)) {
@@ -5681,6 +5758,18 @@ const RemoteIdRadar = {
       this.activeDrones = [];
       this.updateRadarUI();
     }
+  },
+
+  updateDroneLocation(droneData) {
+    if (!droneData || !droneData.id) return;
+    const existingIdx = this.activeDrones.findIndex(d => d.id === droneData.id);
+    if (existingIdx >= 0) {
+      this.activeDrones[existingIdx] = { ...this.activeDrones[existingIdx], ...droneData };
+    } else {
+      this.activeDrones.push(droneData);
+    }
+    this.updateMapMarkers();
+    this.updateRadarUI();
   },
 
   updateMapMarkers() {
@@ -5708,8 +5797,7 @@ const RemoteIdRadar = {
       let entry = this.markers.get(drone.id);
 
       const heading = drone.trackDirection || 0;
-      const altText = drone.altitudeGeodetic !== null ? `${drone.altitudeGeodetic}m (${Math.round(drone.altitudeGeodetic * 3.28084)}ft)` : 'Alt N/A';
-      const speedText = drone.speedHorizontal !== null ? `${drone.speedHorizontal} m/s` : 'Speed N/A';
+      const tooltipHtml = this.formatDroneTooltip(drone);
 
       const iconHtml = `
         <div style="position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">
@@ -5729,28 +5817,25 @@ const RemoteIdRadar = {
         iconAnchor: [18, 18]
       }) : null;
 
-      const transportBadge = drone.transport ? `<div style="margin-top: 3px; font-size: 0.72rem; color: #8b5cf6; font-weight: 600;">📻 Radio: ${drone.transport}</div>` : '';
-
-      const popupContent = `
-        <div style="font-family: sans-serif; font-size: 0.8rem; line-height: 1.4; color: var(--text-main, #333);">
-          <div style="display: flex; align-items: center; gap: 6px; font-weight: bold; color: #ef4444;">
-            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ef4444;"></span>
-            <span>${drone.model} [${drone.uasId}]</span>
-          </div>
-          ${transportBadge}
-          <div style="margin-top: 4px; font-size: 0.75rem; color: #64748b;">
-            Type: ${drone.uaType} • Status: ${drone.status}<br>
-            Alt: <b>${altText}</b> • Speed: <b>${speedText}</b><br>
-            Active: <b>${drone.uptimeFormatted || ((drone.uptimeSec || 0) + 's')}</b> (${drone.packetCount || 1} pkts) • Signal: <b>${drone.rssi} dBm</b>
-          </div>
-          ${drone.operatorLatitude ? `<div style="margin-top: 4px; font-size: 0.72rem; color: #0284c7;">📍 Operator: [${drone.operatorLatitude.toFixed(6)}, ${drone.operatorLongitude.toFixed(6)}]</div>` : ''}
-        </div>
-      `;
-
       if (!entry) {
         const marker = (leaflet && leaflet.marker && customIcon) ? leaflet.marker([drone.latitude, drone.longitude], { icon: customIcon }) : null;
         if (marker) {
-          if (marker.bindPopup) marker.bindPopup(popupContent);
+          if (marker.bindTooltip) {
+            marker.bindTooltip(tooltipHtml, {
+              direction: 'top',
+              offset: [0, -16],
+              className: 'remote-id-tooltip',
+              opacity: 0.96
+            });
+          }
+          if (marker.bindPopup) {
+            marker.bindPopup(tooltipHtml);
+          }
+          if (marker.on) {
+            marker.on('mouseover', () => { if (marker.openTooltip) marker.openTooltip(); });
+            marker.on('mouseout', () => { if (marker.closeTooltip) marker.closeTooltip(); });
+            marker.on('click', () => { this.locateDrone(drone.id); });
+          }
           this.layerGroup.addLayer(marker);
         }
 
@@ -5760,12 +5845,14 @@ const RemoteIdRadar = {
           this.layerGroup.addLayer(line);
         }
 
-        this.markers.set(drone.id, { marker, line });
+        this.markers.set(drone.id, { marker, line, drone });
       } else {
+        // Update existing marker position with new geo location
         if (entry.marker) {
           if (entry.marker.setLatLng) entry.marker.setLatLng([drone.latitude, drone.longitude]);
           if (customIcon && entry.marker.setIcon) entry.marker.setIcon(customIcon);
-          if (entry.marker.setPopupContent) entry.marker.setPopupContent(popupContent);
+          if (entry.marker.setTooltipContent) entry.marker.setTooltipContent(tooltipHtml);
+          if (entry.marker.setPopupContent) entry.marker.setPopupContent(tooltipHtml);
         }
 
         if (drone.breadcrumbs && drone.breadcrumbs.length > 1) {
@@ -5776,6 +5863,12 @@ const RemoteIdRadar = {
             this.layerGroup.addLayer(entry.line);
           }
         }
+        entry.drone = drone;
+      }
+
+      // If this drone is actively tracked/located and auto-follow is active, center/pan map on new coordinates
+      if (this.isFollowing && this.locatedDroneId === drone.id && m && m.panTo) {
+        m.panTo([drone.latitude, drone.longitude], { animate: true });
       }
     }
   },
@@ -5784,16 +5877,26 @@ const RemoteIdRadar = {
     if (typeof document === 'undefined') return;
     const badge = document.getElementById('remote-id-badge');
     const badgeText = document.getElementById('remote-id-badge-text');
+    const locateLabel = document.getElementById('remote-id-locate-label');
     if (badge) {
       if (this.activeDrones.length > 0) {
         badge.style.display = 'inline-flex';
         badge.classList.remove('hidden');
         const count = this.activeDrones.length;
         const first = this.activeDrones[0];
+
         let label = `📡 ${count} Drone${count > 1 ? 's' : ''} in Airspace`;
-        if (count === 1 && !first.latitude) {
-          label = `📡 ${first.model} Detected (${first.rssi} dBm)`;
+        if (this.isFollowing && this.locatedDroneId) {
+          const located = this.activeDrones.find(d => d.id === this.locatedDroneId) || first;
+          label = `📡 Tracking ${located.model || 'Drone'}`;
+          if (locateLabel) locateLabel.textContent = 'Following 📍';
+        } else {
+          if (count === 1 && !first.latitude) {
+            label = `📡 ${first.model} Detected (${first.rssi} dBm)`;
+          }
+          if (locateLabel) locateLabel.textContent = 'Locate';
         }
+
         if (badgeText) {
           badgeText.textContent = label;
         } else {
@@ -5806,6 +5909,10 @@ const RemoteIdRadar = {
     }
   }
 };
+
+if (typeof window !== 'undefined') {
+  window.RemoteIdRadar = RemoteIdRadar;
+}
 
 // ─── Flight Diagnostics & 3D Telemetry Replay Engine ──────────────────────────
 

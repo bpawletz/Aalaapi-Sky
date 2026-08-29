@@ -3340,12 +3340,12 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     }
   });
 
-  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.47.1', () => {
+  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.48.0', () => {
     const companion = require('./tools/companion/server.js');
     assert.strictEqual(typeof companion.stopScanners, 'function');
     assert.strictEqual(typeof companion.killExistingCompanion, 'function');
     assert.strictEqual(typeof companion.pullFromRc2, 'function');
-    assert.strictEqual(companion.VERSION, '1.47.1');
+    assert.strictEqual(companion.VERSION, '1.48.0');
   });
 
   test('pullFromRC2 fetches mission from companion and triggers parseWPML', async () => {
@@ -4002,6 +4002,183 @@ describe('DJI RC 2 / DJI Fly Execution Validation Tests (v1.47.1 Regression Fix)
       assert.ok(hoverPos < photoPos, 'hover must precede takePhoto');
     } finally {
       global.document.getElementById = originalGetElementById;
+    }
+  });
+});
+
+describe('Drone REST API Locate & Hover Tooltip Tests (v1.48.0)', () => {
+  test('RemoteIdRadar.formatDroneTooltip generates rich HUD tooltip with coordinates, telemetry, and link info', () => {
+    const radar = vm.runInThisContext(`RemoteIdRadar`);
+    assert.ok(radar, 'RemoteIdRadar must exist');
+
+    const drone = {
+      id: 'FA:0B:BC:15:81:F4',
+      uasId: '1581F4TEST998877',
+      model: 'DJI Mini 4 Pro',
+      status: 'Airborne',
+      latitude: 40.013245,
+      longitude: -83.176812,
+      altitudeGeodetic: 35.4,
+      speedHorizontal: 5.2,
+      trackDirection: 135,
+      transport: 'Wi-Fi 5.8 GHz',
+      rssi: -56,
+      operatorLatitude: 40.0130,
+      operatorLongitude: -83.1765
+    };
+
+    const tooltipHtml = radar.formatDroneTooltip(drone);
+    assert.ok(tooltipHtml.includes('DJI Mini 4 Pro'), 'Must contain drone model');
+    assert.ok(tooltipHtml.includes('1581F4TEST998877'), 'Must contain UAS ID');
+    assert.ok(tooltipHtml.includes('40.013245, -83.176812'), 'Must contain precise coordinates');
+    assert.ok(tooltipHtml.includes('35.4m'), 'Must contain metric altitude');
+    assert.ok(tooltipHtml.includes('5.2 m/s'), 'Must contain horizontal speed');
+    assert.ok(tooltipHtml.includes('135°'), 'Must contain heading/track');
+    assert.ok(tooltipHtml.includes('Wi-Fi 5.8 GHz'), 'Must contain transport link');
+    assert.ok(tooltipHtml.includes('-56 dBm'), 'Must contain signal RSSI');
+    assert.ok(tooltipHtml.includes('Airborne'), 'Must contain operational status');
+  });
+
+  test('RemoteIdRadar binds hover tooltip, updates marker coordinates on new geo location, and auto-follows when located', () => {
+    const radar = vm.runInThisContext(`RemoteIdRadar`);
+
+    let tooltipsBound = [];
+    let tooltipsOpened = 0;
+    let tooltipsClosed = 0;
+    let mapPanCalls = [];
+    let mapSetViewCalls = [];
+    let markerLatLngUpdates = [];
+    let markerTooltipUpdates = [];
+
+    const mockMarker = {
+      bindTooltip(content, opts) {
+        tooltipsBound.push({ content, opts });
+      },
+      openTooltip() {
+        tooltipsOpened++;
+      },
+      closeTooltip() {
+        tooltipsClosed++;
+      },
+      bindPopup() {},
+      on(event, handler) {
+        if (event === 'mouseover') this._onMouseover = handler;
+        if (event === 'mouseout') this._onMouseout = handler;
+      },
+      setLatLng(latlng) {
+        markerLatLngUpdates.push(latlng);
+      },
+      setIcon() {},
+      setTooltipContent(content) {
+        markerTooltipUpdates.push(content);
+      },
+      setPopupContent() {}
+    };
+
+    const mockLayerGroup = {
+      addLayer() {},
+      removeLayer() {}
+    };
+
+    const mockMap = {
+      addLayer() {},
+      setView(coords, zoom) {
+        mapSetViewCalls.push({ coords, zoom });
+      },
+      panTo(coords, opts) {
+        mapPanCalls.push({ coords, opts });
+      },
+      getZoom() { return 18; },
+      on() {}
+    };
+
+    const mockLeaflet = {
+      layerGroup() { return mockLayerGroup; },
+      marker() { return mockMarker; },
+      divIcon() { return {}; },
+      polyline() { return { setLatLngs() {} }; }
+    };
+
+    global._testMap = mockMap;
+    global._testL = mockLeaflet;
+    vm.runInThisContext(`
+      map = global._testMap;
+      L = global._testL;
+    `);
+
+    radar.layerGroup = mockLayerGroup;
+    radar.markers.clear();
+    radar.activeDrones = [];
+    radar.locatedDroneId = null;
+    radar.isFollowing = false;
+
+    try {
+      // 1. Initial drone ingestion
+      const drone1 = {
+        id: 'drone-1',
+        uasId: '1581F4TEST998877',
+        model: 'DJI Mini 4 Pro',
+        status: 'Airborne',
+        latitude: 40.0130,
+        longitude: -83.1765,
+        altitudeGeodetic: 25.0,
+        speedHorizontal: 4.0,
+        trackDirection: 90
+      };
+
+      radar.activeDrones = [drone1];
+      radar.updateMapMarkers();
+
+      assert.strictEqual(tooltipsBound.length, 1, 'Marker must have hover tooltip bound');
+      assert.strictEqual(tooltipsBound[0].opts.className, 'remote-id-tooltip', 'Tooltip must use remote-id-tooltip class');
+      assert.ok(tooltipsBound[0].content.includes('DJI Mini 4 Pro'), 'Tooltip content must include model');
+
+      // Test hover handlers
+      assert.ok(typeof mockMarker._onMouseover === 'function', 'Must have mouseover listener');
+      mockMarker._onMouseover();
+      assert.strictEqual(tooltipsOpened, 1, 'Mouseover must trigger openTooltip()');
+      mockMarker._onMouseout();
+      assert.strictEqual(tooltipsClosed, 1, 'Mouseout must trigger closeTooltip()');
+
+      // 2. Locate drone
+      const located = radar.locateDrone('drone-1');
+      assert.strictEqual(located, true, 'locateDrone must return true');
+      assert.strictEqual(radar.locatedDroneId, 'drone-1', 'locatedDroneId must be set');
+      assert.strictEqual(radar.isFollowing, true, 'isFollowing must be true');
+      assert.strictEqual(mapSetViewCalls.length, 1, 'map.setView must be called');
+      assert.deepStrictEqual(mapSetViewCalls[0].coords, [40.0130, -83.1765], 'map.setView must target drone geo location');
+
+      // 3. New geo location arrives via REST API
+      const updatedDrone = {
+        ...drone1,
+        latitude: 40.0135,
+        longitude: -83.1760,
+        altitudeGeodetic: 30.0,
+        speedHorizontal: 6.0,
+        trackDirection: 45
+      };
+
+      radar.activeDrones = [updatedDrone];
+      radar.updateMapMarkers();
+
+      // Marker must update position to new coordinates
+      assert.ok(markerLatLngUpdates.length > 0, 'Marker position must update on map');
+      assert.deepStrictEqual(markerLatLngUpdates[markerLatLngUpdates.length - 1], [40.0135, -83.1760]);
+
+      // Tooltip must update with fresh altitude & speed
+      assert.ok(markerTooltipUpdates.length > 0, 'Tooltip content must update');
+      assert.ok(markerTooltipUpdates[markerTooltipUpdates.length - 1].includes('30m'), 'Tooltip must reflect new altitude');
+
+      // Map must auto-pan to follow the new geo location
+      assert.strictEqual(mapPanCalls.length, 1, 'Map must panTo new drone coordinates');
+      assert.deepStrictEqual(mapPanCalls[0].coords, [40.0135, -83.1760]);
+    } finally {
+      vm.runInThisContext(`
+        map = null;
+        L = null;
+      `);
+      delete global._testMap;
+      delete global._testL;
     }
   });
 });
