@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.52.0] - 2026-08-29
+
+### Added & Improved
+- **Filesystem-Safe ISO 8601 Filename Timestamps:**
+  - Added `formatISO8601ForFilename()` utility providing standardized, filesystem-safe ISO 8601 timestamps (`YYYY-MM-DDTHH-mm-ssZ`) for exported files across Windows, macOS, Linux, and Android/FAT32 systems.
+  - Upgraded **KMZ Mission Downloads (`downloadKMZ`)** to include full ISO 8601 timestamps in default filenames (e.g. `GridMission_Alt50m_2026-08-29T13-00-45Z.kmz`), preventing file collisions when exporting multiple missions on the same day.
+  - Aligned associated mission route preview thumbnails (`.jpg`) and flight plan descriptors (`_plan.json`) to use the identical ISO 8601 base filename.
+  - Upgraded **Mission Plan JSON Exports (`exportMissionPlanJSON`)** to utilize filesystem-safe ISO 8601 timestamps.
+  - Upgraded **Flight Diagnostics GeoJSON Exports (`exportGeoJSON`)** to embed the recorded flight's precise ISO 8601 timestamp (e.g. `FlightRecord_2026-08-20T19-42-28Z_Track.geojson`) instead of a generic date.
+  - Added dedicated unit tests asserting ISO 8601 timestamp compliance, fallback handling, and export filename structures.
+
 ## [1.51.0] - 2026-08-29
 
 ### Added & Improved
