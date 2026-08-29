@@ -3340,12 +3340,12 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     }
   });
 
-  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.48.2', () => {
+  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.48.3', () => {
     const companion = require('./tools/companion/server.js');
     assert.strictEqual(typeof companion.stopScanners, 'function');
     assert.strictEqual(typeof companion.killExistingCompanion, 'function');
     assert.strictEqual(typeof companion.pullFromRc2, 'function');
-    assert.strictEqual(companion.VERSION, '1.48.2');
+    assert.strictEqual(companion.VERSION, '1.48.3');
   });
 
   test('pullFromRC2 fetches mission from companion and triggers parseWPML', async () => {
@@ -4313,6 +4313,195 @@ describe('GitHub Pages and Actions .nojekyll Compliance Tests (v1.48.2)', () => 
     assert.ok(deployPagesContent.includes('.nojekyll'), 'deploy-pages.yml must ensure .nojekyll is present');
   });
 });
+
+// ─── Weather Observation Station Display & Map Marker Tests (v1.48.3) ─────────
+describe('Weather Station Display and Map Marker Tests (v1.48.3)', () => {
+  test('updateWeatherPanelUI renders reporting station info card with distance and locate button', () => {
+    let dirsChildren = [];
+    const mockDirs = {
+      replaceChildren: () => { dirsChildren = []; },
+      appendChild: (c) => { dirsChildren.push(c); },
+      classList: { add: () => {}, remove: () => {} }
+    };
+    const mockWindow = {
+      replaceChildren: () => {},
+      appendChild: () => {},
+      title: ''
+    };
+
+    const origGetElementById = global.document.getElementById;
+    const origCreateElement = global.document.createElement;
+
+    global.document.getElementById = (id) => {
+      if (id === 'stat-weather-dirs') return mockDirs;
+      if (id === 'stat-weather-window') return mockWindow;
+      return null;
+    };
+
+    global.document.createElement = (tag) => {
+      return {
+        tagName: tag.toUpperCase(),
+        style: {},
+        classList: { add: () => {}, remove: () => {} },
+        childrenAdded: [],
+        appendChild: function(c) { this.childrenAdded.push(c); }
+      };
+    };
+
+    try {
+      const directions = {
+        closest: {
+          icaoId: 'KOSU',
+          name: 'Columbus, Ohio State University Airport',
+          distance: 5.2,
+          lat: 40.0798,
+          lon: -83.0730,
+          fltCat: 'VFR',
+          visibilitySM: 10,
+          ceilingFt: 5000,
+          timestamp: '2026-08-28T20:00:00Z',
+          raw: 'KOSU 282000Z 00000KT 10SM CLR 24/16 A3002'
+        }
+      };
+
+      vm.runInThisContext(`
+        updateWeatherPanelUI(${JSON.stringify(directions)}, null, false);
+      `);
+
+      assert.strictEqual(dirsChildren.length, 1, 'Should append container to dirsEl');
+      const container = dirsChildren[0];
+      assert.ok(container.childrenAdded.length >= 4, 'Container should have title, vis, ceil, cat, and station card');
+
+      // The last element added to container is stationSection
+      const stationSection = container.childrenAdded[container.childrenAdded.length - 1];
+      assert.strictEqual(stationSection.className, 'weather-station-info-card');
+      assert.strictEqual(stationSection.childrenAdded.length, 3, 'Station section should have header, name, and distance');
+
+      // Station header contains title and locate button
+      const stationHeader = stationSection.childrenAdded[0];
+      const stationTitle = stationHeader.childrenAdded[0];
+      const locateBtn = stationHeader.childrenAdded[1];
+
+      assert.ok(stationTitle.textContent.includes('KOSU'), 'Station title should include ICAO code');
+      assert.strictEqual(locateBtn.textContent, '📍 Locate on Map');
+
+      // Station name
+      const stationNameDiv = stationSection.childrenAdded[1];
+      assert.strictEqual(stationNameDiv.textContent, 'Columbus, Ohio State University Airport');
+
+      // Station distance
+      const distDiv = stationSection.childrenAdded[2];
+      assert.ok(distDiv.textContent.includes('5.2 km'), 'Distance div should include distance in km');
+      assert.ok(distDiv.textContent.includes('3.2 mi'), 'Distance div should include distance in mi');
+    } finally {
+      global.document.getElementById = origGetElementById;
+      global.document.createElement = origCreateElement;
+    }
+  });
+
+  test('updateWeatherStationMarker creates and updates map marker with rich popup and tooltip', () => {
+    let markerCreated = null;
+    let markerLatLng = null;
+    let markerPopup = null;
+    let markerTooltip = null;
+    let layerAdded = null;
+    let flyToCalled = null;
+
+    const mockMarker = {
+      setLatLng: (latlng) => { markerLatLng = latlng; },
+      setIcon: () => {},
+      setPopupContent: (p) => { markerPopup = p; },
+      setTooltipContent: (t) => { markerTooltip = t; },
+      bindPopup: (p) => { markerPopup = p; },
+      bindTooltip: (t) => { markerTooltip = t; },
+      openPopup: () => {},
+      getLatLng: () => markerLatLng
+    };
+
+    const mockLayerGroup = {
+      addLayer: (m) => { layerAdded = m; },
+      removeLayer: () => {},
+      hasLayer: (m) => m === markerCreated
+    };
+
+    const mockMap = {
+      addLayer: () => {},
+      removeLayer: () => {},
+      hasLayer: () => true,
+      flyTo: (latlng, zoom) => { flyToCalled = { latlng, zoom }; },
+      getZoom: () => 14
+    };
+
+    const mockL = {
+      marker: (latlng, opts) => {
+        markerLatLng = latlng;
+        markerCreated = mockMarker;
+        return mockMarker;
+      },
+      divIcon: (opts) => opts
+    };
+
+    vm.runInThisContext(`
+      map = global.testWeatherMap;
+      L = global.testWeatherL;
+      weatherStationLayer = global.testWeatherStationLayer;
+      weatherStationMarker = null;
+    `);
+
+    global.testWeatherMap = mockMap;
+    global.testWeatherL = mockL;
+    global.testWeatherStationLayer = mockLayerGroup;
+
+    try {
+      vm.runInThisContext(`
+        map = global.testWeatherMap;
+        L = global.testWeatherL;
+        weatherStationLayer = global.testWeatherStationLayer;
+        updateWeatherStationMarker({
+          icaoId: 'KOSU',
+          name: 'Ohio State University Airport',
+          distance: 5.2,
+          lat: 40.0798,
+          lon: -83.0730,
+          fltCat: 'VFR',
+          visibilitySM: 10,
+          ceilingFt: 5000
+        });
+      `);
+
+      assert.ok(markerCreated, 'Weather station marker should be created');
+      assert.deepStrictEqual(markerLatLng, [40.0798, -83.0730]);
+      assert.ok(markerTooltip.includes('KOSU'), 'Tooltip should include ICAO code');
+      assert.ok(markerPopup.includes('Ohio State University Airport'), 'Popup should include station name');
+      assert.ok(markerPopup.includes('5.2 km'), 'Popup should include distance');
+
+      // Test focusWeatherStationOnMap
+      vm.runInThisContext(`
+        focusWeatherStationOnMap();
+      `);
+      assert.ok(flyToCalled, 'focusWeatherStationOnMap should call map.flyTo');
+      assert.deepStrictEqual(flyToCalled.latlng, [40.0798, -83.0730]);
+
+      // Test clear/null removes marker
+      vm.runInThisContext(`
+        updateWeatherStationMarker(null);
+      `);
+      const markerVal = vm.runInThisContext(`weatherStationMarker`);
+      assert.strictEqual(markerVal, null, 'Null closest station should clear weatherStationMarker');
+    } finally {
+      vm.runInThisContext(`
+        map = null;
+        L = null;
+        weatherStationLayer = null;
+        weatherStationMarker = null;
+      `);
+      delete global.testWeatherMap;
+      delete global.testWeatherL;
+      delete global.testWeatherStationLayer;
+    }
+  });
+});
+
 
 
 

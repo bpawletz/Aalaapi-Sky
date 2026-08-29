@@ -249,6 +249,8 @@ const POWER_LINES_MIN_ZOOM = 11; // only load power lines at this zoom level or 
 // NOAA Weather Overlays
 let weatherRadarLayer;
 let weatherWarningsLayer;
+let weatherStationLayer;
+let weatherStationMarker = null;
 
 // Initialize the application when the DOM is fully loaded
 document.addEventListener("DOMContentLoaded", () => {
@@ -497,6 +499,8 @@ function initMap() {
   if (powerLinesLayer) overlays["Power Lines (HIFLD) (US Only)"] = powerLinesLayer;
   
   // Weather Overlays
+  weatherStationLayer = L.layerGroup().addTo(map);
+  overlays["Weather Observation Station (NWS)"] = weatherStationLayer;
   overlays["Weather Radar (NEXRAD) (US Only)"] = weatherRadarLayer;
   overlays["Weather Warnings (NWS Hazards) (US Only)"] = weatherWarningsLayer;
 
@@ -12228,6 +12232,114 @@ async function fetchAndProcessWeather(centerLat, centerLon) {
 
 
 
+function updateWeatherStationMarker(closest) {
+  if (typeof map === 'undefined' || !map || typeof L === 'undefined') return;
+
+  if (!closest || closest.lat == null || closest.lon == null) {
+    if (weatherStationMarker) {
+      if (weatherStationLayer && typeof weatherStationLayer.removeLayer === 'function') {
+        try { weatherStationLayer.removeLayer(weatherStationMarker); } catch (e) {}
+      } else if (map && typeof map.removeLayer === 'function') {
+        try { map.removeLayer(weatherStationMarker); } catch (e) {}
+      }
+      weatherStationMarker = null;
+    }
+    return;
+  }
+
+  const icao = closest.icaoId || 'NWS';
+  const name = closest.name || 'Observation Station';
+  const distKm = (closest.distance != null) ? Number(closest.distance).toFixed(1) : '-';
+  const distMi = (closest.distance != null) ? (Number(closest.distance) * 0.621371).toFixed(1) : '-';
+  const fltCat = closest.fltCat || 'VFR';
+
+  let badgeColor = '#10b981'; // VFR
+  if (fltCat === 'MVFR') badgeColor = '#f59e0b';
+  else if (fltCat === 'IFR' || fltCat === 'LIFR') badgeColor = '#ef4444';
+
+  const iconHtml = `
+    <div class="weather-station-pin" style="position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer; user-select: none;">
+      <div style="background: rgba(15, 23, 42, 0.92); border: 2px solid ${badgeColor}; box-shadow: 0 0 10px ${badgeColor}99; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="${badgeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+        </svg>
+      </div>
+      <span style="background: rgba(15, 23, 42, 0.9); color: #f8fafc; border: 1px solid ${badgeColor}80; font-size: 0.62rem; font-weight: 700; padding: 1px 4px; border-radius: 3px; margin-top: 2px; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.6);">
+        ${icao}
+      </span>
+    </div>
+  `;
+
+  let weatherIcon;
+  if (typeof L.divIcon === 'function') {
+    weatherIcon = L.divIcon({
+      className: 'custom-weather-station-marker',
+      html: iconHtml,
+      iconSize: [36, 44],
+      iconAnchor: [18, 20],
+      popupAnchor: [0, -18]
+    });
+  }
+
+  const popupHtml = `
+    <div style="min-width: 220px; font-family: inherit; font-size: 0.8rem; color: #f8fafc; line-height: 1.4;">
+      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 5px; margin-bottom: 6px;">
+        <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 4px;">🌤️ ${icao}</strong>
+        <span style="background: ${badgeColor}25; color: ${badgeColor}; border: 1px solid ${badgeColor}60; font-size: 0.65rem; font-weight: 700; padding: 1px 6px; border-radius: 999px;">${fltCat}</span>
+      </div>
+      <div style="font-weight: 600; color: #f1f5f9; margin-bottom: 4px;">${name}</div>
+      <div style="color: #94a3b8; font-size: 0.75rem; margin-bottom: 6px;">
+        Distance: <b>${distKm} km</b> (${distMi} mi) from center
+      </div>
+      <div style="background: rgba(255,255,255,0.06); padding: 6px 8px; border-radius: 4px; font-size: 0.72rem; line-height: 1.45; margin-bottom: 8px;">
+        <div>Visibility: <b>${closest.visibilitySM != null ? Number(closest.visibilitySM).toFixed(1) + ' SM' : 'Unknown'}</b></div>
+        <div>Ceiling: <b>${closest.ceilingFt != null ? (closest.ceilingFt >= 99999 ? 'Clear' : Number(closest.ceilingFt).toFixed(0) + ' ft') : 'Clear / Unknown'}</b></div>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
+        <span style="font-size: 0.65rem; color: #64748b;">NWS Observation</span>
+        <button type="button" class="btn-sm" style="padding: 2px 6px; font-size: 0.68rem; background: rgba(6,182,212,0.2); color: #22d3ee; border: 1px solid rgba(6,182,212,0.4); border-radius: 3px; cursor: pointer;" onclick="if (typeof centerMarker !== 'undefined' && centerMarker && typeof map !== 'undefined' && map && typeof map.flyTo === 'function') { map.flyTo(centerMarker.getLatLng(), typeof map.getZoom === 'function' ? map.getZoom() : 14); }">
+          ✈️ Return to Center
+        </button>
+      </div>
+    </div>
+  `;
+
+  if (!weatherStationMarker) {
+    if (typeof L.marker !== 'function') return;
+    weatherStationMarker = L.marker([closest.lat, closest.lon], { icon: weatherIcon, zIndexOffset: 850 });
+    if (typeof weatherStationMarker.bindPopup === 'function') weatherStationMarker.bindPopup(popupHtml, { className: 'weather-station-popup' });
+    if (typeof weatherStationMarker.bindTooltip === 'function') weatherStationMarker.bindTooltip(`🌤️ Weather Station: ${icao} (${name})`, { direction: 'top', offset: [0, -18] });
+    if (weatherStationLayer && typeof weatherStationLayer.addLayer === 'function') {
+      weatherStationLayer.addLayer(weatherStationMarker);
+    } else if (map && typeof map.addLayer === 'function') {
+      map.addLayer(weatherStationMarker);
+    }
+  } else {
+    if (typeof weatherStationMarker.setLatLng === 'function') weatherStationMarker.setLatLng([closest.lat, closest.lon]);
+    if (weatherIcon && typeof weatherStationMarker.setIcon === 'function') weatherStationMarker.setIcon(weatherIcon);
+    if (typeof weatherStationMarker.setPopupContent === 'function') weatherStationMarker.setPopupContent(popupHtml);
+    if (typeof weatherStationMarker.setTooltipContent === 'function') weatherStationMarker.setTooltipContent(`🌤️ Weather Station: ${icao} (${name})`);
+    if (weatherStationLayer && typeof weatherStationLayer.hasLayer === 'function' && !weatherStationLayer.hasLayer(weatherStationMarker)) {
+      if (typeof weatherStationLayer.addLayer === 'function') weatherStationLayer.addLayer(weatherStationMarker);
+    }
+  }
+}
+
+function focusWeatherStationOnMap() {
+  if (typeof map === 'undefined' || !map) return;
+  if (weatherStationMarker) {
+    if (weatherStationLayer && typeof map.hasLayer === 'function' && !map.hasLayer(weatherStationLayer)) {
+      if (typeof map.addLayer === 'function') map.addLayer(weatherStationLayer);
+    }
+    if (typeof map.flyTo === 'function') {
+      map.flyTo(weatherStationMarker.getLatLng(), Math.max(typeof map.getZoom === 'function' ? map.getZoom() : 12, 12));
+    }
+    if (typeof weatherStationMarker.openPopup === 'function') {
+      weatherStationMarker.openPopup();
+    }
+  }
+}
+
 function updateWeatherPanelUI(directions, statusMsg, isLoading) {
   const windowEl = document.getElementById('stat-weather-window');
   const dirsEl = document.getElementById('stat-weather-dirs');
@@ -12239,6 +12351,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     windowEl.style.color = "var(--text-secondary)";
     if (typeof dirsEl.replaceChildren === 'function') dirsEl.replaceChildren(); else dirsEl.innerHTML = '';
     dirsEl.classList.add("hidden");
+    updateWeatherStationMarker(null);
     return;
   }
 
@@ -12247,6 +12360,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     windowEl.style.color = "var(--error-color)";
     if (typeof dirsEl.replaceChildren === 'function') dirsEl.replaceChildren(); else dirsEl.innerHTML = '';
     dirsEl.classList.add("hidden");
+    updateWeatherStationMarker(null);
     return;
   }
 
@@ -12291,7 +12405,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
   timeDiv.textContent = `Last Polled: ${timeString}`;
   windowEl.appendChild(timeDiv);
 
-  windowEl.title = `Closest: ${closest.name} (${closest.distance.toFixed(1)}km)\nRaw: ${closest.raw}`;
+  windowEl.title = `Closest: ${closest.name || 'Station'} (${closest.distance != null ? Number(closest.distance).toFixed(1) : '-'}km)\nRaw: ${closest.raw || ''}`;
 
   if (typeof dirsEl.replaceChildren === 'function') dirsEl.replaceChildren(); else dirsEl.innerHTML = '';
   const container = document.createElement("div");
@@ -12355,8 +12469,53 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     container.appendChild(catSection);
   }
 
+  // Reporting Observation Station Info Section
+  const stationSection = document.createElement("div");
+  stationSection.className = "weather-station-info-card";
+  stationSection.style.cssText = "margin-top: 8px; padding: 8px 10px; background: rgba(56, 189, 248, 0.07); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 6px; font-size: 0.75rem; color: var(--text-main); display: flex; flex-direction: column; gap: 4px;";
+
+  const stationHeader = document.createElement("div");
+  stationHeader.style.cssText = "display: flex; align-items: center; justify-content: space-between; gap: 6px;";
+
+  const stationTitle = document.createElement("div");
+  stationTitle.style.cssText = "font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 4px;";
+  stationTitle.textContent = `📡 Station: ${closest.icaoId || 'NWS'}`;
+  stationHeader.appendChild(stationTitle);
+
+  const locateBtn = document.createElement("button");
+  locateBtn.className = "btn-sm weather-station-locate-btn";
+  locateBtn.type = "button";
+  locateBtn.style.cssText = "padding: 1px 6px; font-size: 0.68rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 4px; cursor: pointer;";
+  locateBtn.textContent = "📍 Locate on Map";
+  locateBtn.title = "Pan map to weather station location";
+  locateBtn.onclick = (e) => {
+    e.stopPropagation();
+    if (typeof focusWeatherStationOnMap === 'function') {
+      focusWeatherStationOnMap();
+    }
+  };
+  stationHeader.appendChild(locateBtn);
+  stationSection.appendChild(stationHeader);
+
+  const stationNameDiv = document.createElement("div");
+  stationNameDiv.style.cssText = "color: var(--text-primary); font-size: 0.72rem; line-height: 1.3;";
+  stationNameDiv.textContent = closest.name || "Observation Station";
+  stationSection.appendChild(stationNameDiv);
+
+  const distKm = closest.distance != null ? Number(closest.distance).toFixed(1) : '-';
+  const distMi = closest.distance != null ? (Number(closest.distance) * 0.621371).toFixed(1) : '-';
+  const distDiv = document.createElement("div");
+  distDiv.style.cssText = "color: var(--text-muted); font-size: 0.7rem;";
+  distDiv.textContent = `Distance: ${distKm} km (${distMi} mi) from mission center`;
+  stationSection.appendChild(distDiv);
+
+  container.appendChild(stationSection);
+
   dirsEl.appendChild(container);
   dirsEl.classList.remove("hidden");
+
+  // Update map marker
+  updateWeatherStationMarker(closest);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
