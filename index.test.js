@@ -2692,7 +2692,8 @@ describe('RC2 WPML Compliance Tests', () => {
       assert.ok(placemarkXml.includes('<wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>'));
       assert.ok(placemarkXml.includes('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>'));
       assert.ok(placemarkXml.includes('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>'));
-      assert.ok(placemarkXml.includes('<wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>'));
+      assert.ok(placemarkXml.includes('<wpml:actionGroupMode>sequence</wpml:actionGroupMode>'), 'Multi-action waypoint group must execute sequentially in sequence mode');
+      assert.strictEqual(placemarkXml.includes('<wpml:useGlobalPayloadLensIndex>'), false, 'Mini 4 Pro / consumer drones must not contain useGlobalPayloadLensIndex (causes Error performing flight)');
     } finally {
       global.document.getElementById = originalGetElementById;
     }
@@ -3339,12 +3340,12 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     }
   });
 
-  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.47.0', () => {
+  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.47.1', () => {
     const companion = require('./tools/companion/server.js');
     assert.strictEqual(typeof companion.stopScanners, 'function');
     assert.strictEqual(typeof companion.killExistingCompanion, 'function');
     assert.strictEqual(typeof companion.pullFromRc2, 'function');
-    assert.strictEqual(companion.VERSION, '1.47.0');
+    assert.strictEqual(companion.VERSION, '1.47.1');
   });
 
   test('pullFromRC2 fetches mission from companion and triggers parseWPML', async () => {
@@ -3951,6 +3952,57 @@ describe('Initial Acceptance Modal Safety & Disclaimer Tests', () => {
 
     // Assert obsolete active development error notice is removed
     assert.strictEqual(content.includes('are not working properly on export'), false, 'Obsolete export failure notice must be removed');
+  });
+});
+
+describe('DJI RC 2 / DJI Fly Execution Validation Tests (v1.47.1 Regression Fix)', () => {
+  test('buildWaylinesWpml exports actionGroupMode as sequence and omits useGlobalPayloadLensIndex for consumer drones', () => {
+    const originalGetElementById = global.document.getElementById;
+    try {
+      global.document.getElementById = (id) => {
+        const valMap = {
+          'drone-model': '68', // DJI Mini 4 Pro
+          'signal-lost-action': 'goBack',
+          'camera-zoom': '1.0',
+          'global-hover-time': '2',
+          'grid-type': 'single',
+          'grid-rotation': '0',
+          'heading-mode': 'followWayline',
+        };
+        return { value: valMap[id] || '', checked: false };
+      };
+
+      const wps = [
+        { lat: 40.01, lon: -83.17, alt: 32, heading: 45, pitch: -90, hoverTime: 2 },
+        { lat: 40.02, lon: -83.17, alt: 32, heading: 45, pitch: -90, hoverTime: 2 }
+      ];
+
+      const xml = vm.runInThisContext(`
+        buildWaylinesWpml(${JSON.stringify(wps)}, 32, 4, 'followWayline', 'goHome', -90, 'stopAndShoot', 'curved')
+      `);
+
+      // Verify sequence execution mode
+      assert.ok(xml.includes('<wpml:actionGroupMode>sequence</wpml:actionGroupMode>'),
+        'Action group mode must be sequence to avoid actuator conflict');
+      assert.strictEqual(xml.includes('<wpml:actionGroupMode>parallel</wpml:actionGroupMode>'), false,
+        'Parallel mode is invalid for grouped gimbalRotate/hover/takePhoto');
+
+      // Verify no invalid enterprise multi-lens tag on Mini 4 Pro
+      assert.strictEqual(xml.includes('<wpml:useGlobalPayloadLensIndex>'), false,
+        'useGlobalPayloadLensIndex must not be present on Mini 4 Pro (causes Error performing flight)');
+
+      // Verify action sequence order inside Placemark 0: gimbalRotate -> hover -> takePhoto
+      const pm0 = xml.match(/<Placemark>[\s\S]*?<\/Placemark>/)[0];
+      const gimbalPos = pm0.indexOf('<wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>');
+      const hoverPos = pm0.indexOf('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>');
+      const photoPos = pm0.indexOf('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>');
+
+      assert.ok(gimbalPos !== -1 && hoverPos !== -1 && photoPos !== -1, 'All three actions must be present at WP 0');
+      assert.ok(gimbalPos < hoverPos, 'gimbalRotate must precede hover');
+      assert.ok(hoverPos < photoPos, 'hover must precede takePhoto');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
   });
 });
 

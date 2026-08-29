@@ -4701,7 +4701,6 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
             </wpml:actionActuatorFuncParam>
           </wpml:action>`);
     }
@@ -4715,7 +4714,6 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
             </wpml:actionActuatorFuncParam>
           </wpml:action>`);
       } else if (perWpAction === 'startRecord') {
@@ -4755,7 +4753,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
           <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
           <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
           <wpml:actionGroupEndIndex>${idx}</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
           <wpml:actionTrigger>
             <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
           </wpml:actionTrigger>

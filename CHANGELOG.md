@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.47.1] - 2026-08-28
+
+### Fixed
+- **DJI RC 2 / DJI Fly "Error Performing Flight" Fix:**
+  - **Sequential Action Execution (`actionGroupMode: sequence`):** Updated the consolidated `<wpml:actionGroup>` in `buildWaylinesWpml` to use `<wpml:actionGroupMode>sequence</wpml:actionGroupMode>` instead of `parallel`. When multiple actions (gimbal pitch rotation, 2-second stabilization hover, and camera photo trigger) are grouped at a waypoint, parallel execution commanded conflicting simultaneous actuator functions, causing the flight controller to abort flight execution. In sequence mode, the drone rotates the gimbal, hovers to settle, and then triggers the camera in clean sequential order.
+  - **Removed Invalid `useGlobalPayloadLensIndex` on Consumer Drones:** Stripped `<wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>` from `takePhoto` actions. The DJI Mini 4 Pro and Air 3 use single fixed-lens cameras; multi-lens index tags are only supported on Enterprise multi-sensor payloads (e.g., Matrice H20T) and cause DJI Fly pre-flight validation on the RC 2 to reject the mission with "Error performing flight".
+
 ## [1.47.0] - 2026-08-28
 
 ### Added & Improved
