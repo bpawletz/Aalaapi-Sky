@@ -246,6 +246,9 @@ let powerLinesLayer;
 let powerLinesEnabled = false; // tracks layer-control checkbox state
 const POWER_LINES_MIN_ZOOM = 11; // only load power lines at this zoom level or above
 
+// Remote ID Airspace Overlay
+let remoteIdAirspaceLayer;
+
 // NOAA Weather Overlays
 let weatherRadarLayer;
 let weatherWarningsLayer;
@@ -507,6 +510,13 @@ function initMap() {
   overlays["Weather Observation Station (NWS)"] = weatherStationLayer;
   overlays["Weather Radar (NEXRAD) (US Only)"] = weatherRadarLayer;
   overlays["Weather Warnings (NWS Hazards) (US Only)"] = weatherWarningsLayer;
+
+  // Live Remote ID Airspace Overlay (Drones & Takeoff Locations)
+  remoteIdAirspaceLayer = L.layerGroup().addTo(map);
+  overlays["Live Remote ID Airspace (Drone & Takeoff)"] = remoteIdAirspaceLayer;
+  if (typeof RemoteIdRadar !== 'undefined' && RemoteIdRadar) {
+    RemoteIdRadar.layerGroup = remoteIdAirspaceLayer;
+  }
 
   L.control.layers(baseMaps, overlays, { position: 'topleft' }).addTo(map);
 
@@ -5675,7 +5685,7 @@ function initRC2Controls() {
 
 const RemoteIdRadar = {
   activeDrones: [],
-  markers: new Map(), // droneId -> { marker, line, drone }
+  markers: new Map(), // droneId -> { marker, takeoffMarker, homeVectorLine, line, drone }
   layerGroup: null,
   locatedDroneId: null,
   isFollowing: false,
@@ -5683,7 +5693,9 @@ const RemoteIdRadar = {
   init() {
     const leaflet = (typeof L !== 'undefined' && L) || (typeof window !== 'undefined' && window.L) || (typeof global !== 'undefined' && global.L);
     const m = (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map) || (typeof global !== 'undefined' && global.map);
-    if (leaflet && m && !this.layerGroup && m.addLayer && leaflet.layerGroup) {
+    if (typeof remoteIdAirspaceLayer !== 'undefined' && remoteIdAirspaceLayer) {
+      this.layerGroup = remoteIdAirspaceLayer;
+    } else if (leaflet && m && !this.layerGroup && m.addLayer && leaflet.layerGroup) {
       this.layerGroup = leaflet.layerGroup().addTo(m);
     }
     if (m && m.on) {
@@ -5715,10 +5727,19 @@ const RemoteIdRadar = {
     this.locatedDroneId = target.id;
     this.isFollowing = true;
 
+    const leaflet = (typeof L !== 'undefined' && L) || (typeof window !== 'undefined' && window.L) || (typeof global !== 'undefined' && global.L);
     const m = (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map) || (typeof global !== 'undefined' && global.map);
-    if (m && m.setView) {
-      const zoom = m.getZoom ? Math.max(m.getZoom(), 17) : 18;
-      m.setView([target.latitude, target.longitude], zoom);
+    if (m) {
+      if (target.operatorLatitude && target.operatorLongitude && m.fitBounds && leaflet && leaflet.latLngBounds) {
+        const bounds = leaflet.latLngBounds([
+          [target.latitude, target.longitude],
+          [target.operatorLatitude, target.operatorLongitude]
+        ]);
+        m.fitBounds(bounds, { padding: [70, 70], maxZoom: 18 });
+      } else if (m.setView) {
+        const zoom = m.getZoom ? Math.max(m.getZoom(), 17) : 18;
+        m.setView([target.latitude, target.longitude], zoom);
+      }
     }
 
     const entry = this.markers.get(target.id);
@@ -5765,7 +5786,7 @@ const RemoteIdRadar = {
           <span style="color: #94a3b8;">📶 Link:</span>
           <span>${transport} (${rssiText})</span>
         </div>
-        ${drone.operatorLatitude ? `<div style="margin-top: 6px; padding-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); font-size: 0.7rem; color: #38bdf8;">📍 Pilot: ${drone.operatorLatitude.toFixed(6)}, ${drone.operatorLongitude.toFixed(6)}</div>` : ''}
+        ${drone.operatorLatitude ? `<div style="margin-top: 6px; padding-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); font-size: 0.7rem; color: #38bdf8;">🛫 Takeoff: ${drone.operatorLatitude.toFixed(6)}, ${drone.operatorLongitude.toFixed(6)}</div>` : ''}
         <div style="margin-top: 6px; font-size: 0.66rem; color: #64748b; text-align: right;">
           Click to Track • ASTM F3411 Live
         </div>
@@ -5808,7 +5829,9 @@ const RemoteIdRadar = {
   updateMapMarkers() {
     const leaflet = (typeof L !== 'undefined' && L) || (typeof window !== 'undefined' && window.L) || (typeof global !== 'undefined' && global.L);
     const m = (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map) || (typeof global !== 'undefined' && global.map);
-    if (!this.layerGroup && m && m.addLayer && leaflet && leaflet.layerGroup) {
+    if (!this.layerGroup && typeof remoteIdAirspaceLayer !== 'undefined' && remoteIdAirspaceLayer) {
+      this.layerGroup = remoteIdAirspaceLayer;
+    } else if (!this.layerGroup && m && m.addLayer && leaflet && leaflet.layerGroup) {
       this.layerGroup = leaflet.layerGroup().addTo(m);
     }
     if (!this.layerGroup) return;
@@ -5819,15 +5842,30 @@ const RemoteIdRadar = {
     for (const [id, entry] of this.markers.entries()) {
       if (!currentDroneIds.has(id)) {
         if (entry.marker && this.layerGroup.removeLayer) this.layerGroup.removeLayer(entry.marker);
+        if (entry.takeoffMarker && this.layerGroup.removeLayer) this.layerGroup.removeLayer(entry.takeoffMarker);
+        if (entry.homeVectorLine && this.layerGroup.removeLayer) this.layerGroup.removeLayer(entry.homeVectorLine);
         if (entry.line && this.layerGroup.removeLayer) this.layerGroup.removeLayer(entry.line);
         this.markers.delete(id);
       }
     }
 
+    // Helper for distance calculation
+    const calcDistanceStr = (lat1, lon1, lat2, lon2) => {
+      const R = 6371000;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const dist = R * c;
+      return dist >= 1000 ? `${(dist / 1000).toFixed(2)} km` : `${Math.round(dist)} m`;
+    };
+
     // Add or update active markers
     for (const drone of this.activeDrones) {
       if (!drone.latitude || !drone.longitude) continue;
-      let entry = this.markers.get(drone.id);
+      let entry = this.markers.get(drone.id) || { marker: null, takeoffMarker: null, homeVectorLine: null, line: null, drone: null };
 
       const heading = drone.trackDirection || 0;
       const tooltipHtml = this.formatDroneTooltip(drone);
@@ -5850,8 +5888,9 @@ const RemoteIdRadar = {
         iconAnchor: [18, 18]
       }) : null;
 
-      if (!entry) {
-        const marker = (leaflet && leaflet.marker && customIcon) ? leaflet.marker([drone.latitude, drone.longitude], { icon: customIcon }) : null;
+      // 1. Drone Live Position Marker
+      if (!entry.marker) {
+        const marker = (leaflet && leaflet.marker && customIcon) ? leaflet.marker([drone.latitude, drone.longitude], { icon: customIcon, zIndexOffset: 1000 }) : null;
         if (marker) {
           if (marker.bindTooltip) {
             marker.bindTooltip(tooltipHtml, {
@@ -5871,33 +5910,120 @@ const RemoteIdRadar = {
           }
           this.layerGroup.addLayer(marker);
         }
-
-        let line = null;
-        if (drone.breadcrumbs && drone.breadcrumbs.length > 1 && leaflet && leaflet.polyline) {
-          line = leaflet.polyline(drone.breadcrumbs.map(b => [b.lat, b.lon]), { color: '#ef4444', weight: 2, dashArray: '4,4', opacity: 0.7 });
-          this.layerGroup.addLayer(line);
-        }
-
-        this.markers.set(drone.id, { marker, line, drone });
+        entry.marker = marker;
       } else {
-        // Update existing marker position with new geo location
-        if (entry.marker) {
-          if (entry.marker.setLatLng) entry.marker.setLatLng([drone.latitude, drone.longitude]);
-          if (customIcon && entry.marker.setIcon) entry.marker.setIcon(customIcon);
-          if (entry.marker.setTooltipContent) entry.marker.setTooltipContent(tooltipHtml);
-          if (entry.marker.setPopupContent) entry.marker.setPopupContent(tooltipHtml);
+        if (entry.marker.setLatLng) entry.marker.setLatLng([drone.latitude, drone.longitude]);
+        if (customIcon && entry.marker.setIcon) entry.marker.setIcon(customIcon);
+        if (entry.marker.setTooltipContent) entry.marker.setTooltipContent(tooltipHtml);
+        if (entry.marker.setPopupContent) entry.marker.setPopupContent(tooltipHtml);
+      }
+
+      // 2. Takeoff / Home Location Marker & Home Vector Line
+      const hasTakeoff = drone.operatorLatitude !== null && drone.operatorLatitude !== undefined &&
+                         drone.operatorLongitude !== null && drone.operatorLongitude !== undefined;
+
+      if (hasTakeoff) {
+        const rangeStr = calcDistanceStr(drone.operatorLatitude, drone.operatorLongitude, drone.latitude, drone.longitude);
+        const takeoffIconHtml = `
+          <div class="remote-id-takeoff-pin" style="position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer; user-select: none;">
+            <div style="background: rgba(15, 23, 42, 0.92); border: 2px solid #38bdf8; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);">
+              <span style="color: #38bdf8; font-size: 0.72rem; font-weight: 800; font-family: monospace; line-height: 1;">H</span>
+            </div>
+            <span style="background: rgba(15, 23, 42, 0.88); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); font-size: 0.58rem; font-weight: 700; padding: 1px 4px; border-radius: 3px; margin-top: 1px; white-space: nowrap;">
+              Takeoff
+            </span>
+          </div>
+        `;
+
+        const takeoffIcon = (leaflet && leaflet.divIcon) ? leaflet.divIcon({
+          html: takeoffIconHtml,
+          className: 'remote-id-takeoff-marker',
+          iconSize: [36, 42],
+          iconAnchor: [18, 20],
+          popupAnchor: [0, -18]
+        }) : null;
+
+        const takeoffTooltipHtml = `
+          <div class="remote-id-takeoff-tooltip" style="font-family: inherit; font-size: 0.76rem; line-height: 1.35; min-width: 200px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 4px; margin-bottom: 5px;">
+              <strong style="color: #38bdf8;">🛫 Takeoff / Home Location</strong>
+              <span style="font-size: 0.62rem; color: #94a3b8;">${drone.operatorLocationType || 'Takeoff'}</span>
+            </div>
+            <div style="color: #cbd5e1; font-weight: 600; margin-bottom: 3px;">${drone.model || 'Drone'} [${drone.uasId || 'RID'}]</div>
+            <div style="display: grid; grid-template-columns: auto 1fr; gap: 2px 6px; font-size: 0.72rem; color: #94a3b8;">
+              <span>📍 Geo:</span>
+              <span style="color: #f8fafc; font-family: monospace;">${drone.operatorLatitude.toFixed(6)}, ${drone.operatorLongitude.toFixed(6)}</span>
+              ${drone.operatorAltitude !== null && drone.operatorAltitude !== undefined ? `<span>⛰️ Alt:</span><span style="color: #f8fafc;">${drone.operatorAltitude}m (${Math.round(drone.operatorAltitude * 3.28084)}ft)</span>` : ''}
+              <span>📏 Range:</span>
+              <span style="color: #38bdf8; font-weight: 700;">${rangeStr} to Drone</span>
+            </div>
+          </div>
+        `;
+
+        if (!entry.takeoffMarker) {
+          const tMarker = (leaflet && leaflet.marker && takeoffIcon) ? leaflet.marker([drone.operatorLatitude, drone.operatorLongitude], { icon: takeoffIcon, zIndexOffset: 950 }) : null;
+          if (tMarker) {
+            if (tMarker.bindTooltip) tMarker.bindTooltip(takeoffTooltipHtml, { direction: 'top', offset: [0, -18], className: 'remote-id-tooltip', opacity: 0.96 });
+            if (tMarker.bindPopup) tMarker.bindPopup(takeoffTooltipHtml);
+            if (tMarker.on) {
+              tMarker.on('click', () => { this.locateDrone(drone.id); });
+            }
+            this.layerGroup.addLayer(tMarker);
+          }
+          entry.takeoffMarker = tMarker;
+        } else {
+          if (entry.takeoffMarker.setLatLng) entry.takeoffMarker.setLatLng([drone.operatorLatitude, drone.operatorLongitude]);
+          if (takeoffIcon && entry.takeoffMarker.setIcon) entry.takeoffMarker.setIcon(takeoffIcon);
+          if (entry.takeoffMarker.setTooltipContent) entry.takeoffMarker.setTooltipContent(takeoffTooltipHtml);
+          if (entry.takeoffMarker.setPopupContent) entry.takeoffMarker.setPopupContent(takeoffTooltipHtml);
         }
 
-        if (drone.breadcrumbs && drone.breadcrumbs.length > 1) {
-          if (entry.line && entry.line.setLatLngs) {
-            entry.line.setLatLngs(drone.breadcrumbs.map(b => [b.lat, b.lon]));
-          } else if (leaflet && leaflet.polyline) {
-            entry.line = leaflet.polyline(drone.breadcrumbs.map(b => [b.lat, b.lon]), { color: '#ef4444', weight: 2, dashArray: '4,4', opacity: 0.7 });
-            this.layerGroup.addLayer(entry.line);
+        // Connecting Home Vector Line
+        const vectorPoints = [
+          [drone.operatorLatitude, drone.operatorLongitude],
+          [drone.latitude, drone.longitude]
+        ];
+
+        if (!entry.homeVectorLine) {
+          if (leaflet && leaflet.polyline) {
+            entry.homeVectorLine = leaflet.polyline(vectorPoints, {
+              color: '#38bdf8',
+              weight: 2,
+              dashArray: '6, 6',
+              opacity: 0.85
+            });
+            if (entry.homeVectorLine.bindTooltip) {
+              entry.homeVectorLine.bindTooltip(`Home Vector: ${rangeStr} (${drone.uasId || 'Drone'})`, { sticky: true });
+            }
+            this.layerGroup.addLayer(entry.homeVectorLine);
           }
+        } else {
+          if (entry.homeVectorLine.setLatLngs) entry.homeVectorLine.setLatLngs(vectorPoints);
+          if (entry.homeVectorLine.setTooltipContent) entry.homeVectorLine.setTooltipContent(`Home Vector: ${rangeStr} (${drone.uasId || 'Drone'})`);
         }
-        entry.drone = drone;
+      } else {
+        if (entry.takeoffMarker && this.layerGroup.removeLayer) {
+          this.layerGroup.removeLayer(entry.takeoffMarker);
+          entry.takeoffMarker = null;
+        }
+        if (entry.homeVectorLine && this.layerGroup.removeLayer) {
+          this.layerGroup.removeLayer(entry.homeVectorLine);
+          entry.homeVectorLine = null;
+        }
       }
+
+      // 3. Historical Breadcrumbs Line
+      if (drone.breadcrumbs && drone.breadcrumbs.length > 1) {
+        if (!entry.line && leaflet && leaflet.polyline) {
+          entry.line = leaflet.polyline(drone.breadcrumbs.map(b => [b.lat, b.lon]), { color: '#ef4444', weight: 2, dashArray: '4,4', opacity: 0.7 });
+          this.layerGroup.addLayer(entry.line);
+        } else if (entry.line && entry.line.setLatLngs) {
+          entry.line.setLatLngs(drone.breadcrumbs.map(b => [b.lat, b.lon]));
+        }
+      }
+
+      entry.drone = drone;
+      this.markers.set(drone.id, entry);
 
       // If this drone is actively tracked/located and auto-follow is active, center/pan map on new coordinates
       if (this.isFollowing && this.locatedDroneId === drone.id && m && m.panTo) {
