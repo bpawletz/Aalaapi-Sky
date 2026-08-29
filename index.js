@@ -881,18 +881,60 @@ function initUIEventListeners() {
     });
   }
 
+  const companionConfigHostBtn = document.getElementById('companion-config-host-btn');
+  const companionHostPanel = document.getElementById('companion-host-panel');
+  const companionHostInput = document.getElementById('companion-host-input');
+  const companionHostSaveBtn = document.getElementById('companion-host-save-btn');
+  const companionHostResetBtn = document.getElementById('companion-host-reset-btn');
+
+  if (companionConfigHostBtn && companionHostPanel && companionHostInput) {
+    companionHostInput.value = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+    companionConfigHostBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isHidden = companionHostPanel.style.display === 'none' || !companionHostPanel.style.display;
+      companionHostPanel.style.display = isHidden ? 'flex' : 'none';
+      if (isHidden) {
+        companionHostInput.value = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+        companionHostInput.focus();
+      }
+    });
+
+    if (companionHostSaveBtn) {
+      companionHostSaveBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const val = companionHostInput.value.trim();
+        if (typeof setCompanionApiBase === 'function') setCompanionApiBase(val);
+        companionHostPanel.style.display = 'none';
+      });
+    }
+
+    if (companionHostResetBtn) {
+      companionHostResetBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (typeof setCompanionApiBase === 'function') setCompanionApiBase('');
+        companionHostInput.value = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+        companionHostPanel.style.display = 'none';
+      });
+    }
+  }
+
   const companionSyncContainer = document.getElementById('companion-sync-container');
   if (companionSyncContainer) {
     companionSyncContainer.addEventListener('click', (e) => {
+      if (e.target && e.target.closest && (
+        e.target.closest('#open-diagnostics-btn') ||
+        e.target.closest('#direct-rc2-sync-btn') ||
+        e.target.closest('#direct-rc2-pull-btn') ||
+        e.target.closest('#companion-service-help-btn') ||
+        e.target.closest('#companion-usb-help-btn') ||
+        e.target.closest('#companion-config-host-btn') ||
+        e.target.closest('#companion-host-panel')
+      )) {
+        return;
+      }
       if (!isCompanionOnline) {
-        if (e.target && e.target.closest && (e.target.closest('#open-diagnostics-btn') || e.target.closest('#direct-rc2-sync-btn') || e.target.closest('#direct-rc2-pull-btn') || e.target.closest('#companion-service-help-btn') || e.target.closest('#companion-usb-help-btn'))) {
-          return;
-        }
         openRC2GuideModal('service');
       } else if (!isRc2MtpConnected) {
-        if (e.target && e.target.closest && (e.target.closest('#open-diagnostics-btn') || e.target.closest('#direct-rc2-sync-btn') || e.target.closest('#direct-rc2-pull-btn') || e.target.closest('#companion-service-help-btn') || e.target.closest('#companion-usb-help-btn'))) {
-          return;
-        }
         openRC2GuideModal('usb');
       }
     });
@@ -5157,7 +5199,8 @@ function exportKMZ() {
 
       // Automatically archive diagnostics to local Companion SQLite service if running
       if (typeof fetch !== 'undefined') {
-        fetch('http://127.0.0.1:8765/api/diagnostics/archive', {
+        const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+        fetch(`${apiBase}/api/diagnostics/archive`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(diagData)
@@ -5411,7 +5454,8 @@ function exportFlightDiagnosticsJSON(customWps = null, options = {}) {
 
   // Also notify companion archive service
   if (typeof fetch !== 'undefined') {
-    fetch('http://127.0.0.1:8765/api/diagnostics/archive', {
+    const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+    fetch(`${apiBase}/api/diagnostics/archive`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(diagData)
@@ -5555,9 +5599,80 @@ function generateMissionPreviewBlob(waypoints, width = 400, height = 300) {
 
 // ─── DJI RC 2 Companion Bridge & Direct Sync ────────────────────────────────
 
-const COMPANION_API_BASE = (typeof window !== 'undefined' && window.location && (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost'))
-  ? (window.location.port ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}` : window.location.origin)
-  : 'http://127.0.0.1:8765';
+function getCompanionApiBase() {
+  // 1. Check URL query parameter (?companion=http://...)
+  if (typeof window !== 'undefined' && window.location && window.location.search) {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const queryHost = params.get('companion');
+      if (queryHost && queryHost.trim()) {
+        const cleaned = queryHost.trim().replace(/\/+$/, '');
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('aalaapi-companion-host', cleaned);
+        }
+        return cleaned;
+      }
+    } catch (e) {}
+  }
+
+  // 2. Check localStorage saved companion host
+  if (typeof localStorage !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('aalaapi-companion-host');
+      if (stored && stored.trim()) {
+        return stored.trim().replace(/\/+$/, '');
+      }
+    } catch (e) {}
+  }
+
+  // 3. Same-origin check: if loaded on port 8765, use current origin (works on any LAN IP!)
+  if (typeof window !== 'undefined' && window.location) {
+    if (window.location.port === '8765' || window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') {
+      return window.location.port
+        ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}`
+        : window.location.origin;
+    }
+  }
+
+  // 4. Default fallback
+  return 'http://127.0.0.1:8765';
+}
+
+function setCompanionApiBase(newHost) {
+  if (typeof window !== 'undefined' && window.location && window.location.search) {
+    if (window.history && window.history.replaceState) {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('companion');
+        window.history.replaceState({}, '', url.toString());
+      } catch (e) {}
+    } else {
+      window.location.search = '';
+    }
+  }
+
+  if (!newHost || !newHost.trim()) {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('aalaapi-companion-host');
+    }
+  } else {
+    let cleaned = newHost.trim().replace(/\/+$/, '');
+    if (!/^https?:\/\//i.test(cleaned)) {
+      cleaned = `http://${cleaned}`;
+    }
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('aalaapi-companion-host', cleaned);
+    }
+  }
+  COMPANION_API_BASE = getCompanionApiBase();
+  const hostInput = typeof document !== 'undefined' ? document.getElementById('companion-host-input') : null;
+  if (hostInput) hostInput.value = COMPANION_API_BASE;
+  if (typeof pollCompanionStatus === 'function') {
+    pollCompanionStatus();
+  }
+}
+
+let COMPANION_API_BASE = getCompanionApiBase();
 let isCompanionOnline = false;
 let isRc2MtpConnected = false;
 let rc2MtpActiveUUID = '';
@@ -6585,10 +6700,11 @@ const FlightDiagnostics = {
     if (!flightSel || typeof fetch === 'undefined') return;
 
     try {
+      const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : 'http://127.0.0.1:8765';
       // 1. Fetch raw RC 2 flight logs
       let rc2Flights = [];
       try {
-        const res = await fetch('http://127.0.0.1:8765/api/flights', {
+        const res = await fetch(`${apiBase}/api/flights`, {
           signal: AbortSignal.timeout ? AbortSignal.timeout(1500) : undefined
         });
         if (res.ok) {
@@ -6602,7 +6718,7 @@ const FlightDiagnostics = {
       // 2. Fetch saved SQLite mission diagnostics
       let savedMissions = [];
       try {
-        const resDiag = await fetch('http://127.0.0.1:8765/api/diagnostics/history', {
+        const resDiag = await fetch(`${apiBase}/api/diagnostics/history`, {
           signal: AbortSignal.timeout ? AbortSignal.timeout(1500) : undefined
         });
         if (resDiag.ok) {
@@ -6672,6 +6788,7 @@ const FlightDiagnostics = {
     const altitude = (typeof document !== 'undefined' && parseFloat(document.getElementById('altitude')?.value)) || 21.0;
     const speed = (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) || 4.0;
     const gimbalPitch = (typeof document !== 'undefined' && parseFloat(document.getElementById('gimbal-pitch')?.value)) || -60.0;
+    const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : 'http://127.0.0.1:8765';
 
     if (flightId === 'active-mission') {
       this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId: 'active-mission', isSimulation: true });
@@ -6679,7 +6796,7 @@ const FlightDiagnostics = {
     } else if (flightId.startsWith('diag:')) {
       const uuid = flightId.replace('diag:', '').trim();
       try {
-        const res = await fetch(`http://127.0.0.1:8765/api/diagnostics/${encodeURIComponent(uuid)}`, {
+        const res = await fetch(`${apiBase}/api/diagnostics/${encodeURIComponent(uuid)}`, {
           signal: AbortSignal.timeout ? AbortSignal.timeout(2000) : undefined
         });
         if (res.ok) {
@@ -6705,7 +6822,7 @@ const FlightDiagnostics = {
       }
     } else {
       try {
-        const res = await fetch(`http://127.0.0.1:8765/api/flight-telemetry?file=${encodeURIComponent(flightId)}`, {
+        const res = await fetch(`${apiBase}/api/flight-telemetry?file=${encodeURIComponent(flightId)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           signal: AbortSignal.timeout ? AbortSignal.timeout(1500) : undefined,

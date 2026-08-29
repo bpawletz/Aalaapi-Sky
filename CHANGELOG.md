@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.54.0] - 2026-08-29
+
+### Added & Improved
+- **Remote Companion Host & Multi-Device LAN Discovery:**
+  - Upgraded Companion Bridge (`tools/companion/server.js`) to listen on all network interfaces (`0.0.0.0`) instead of localhost only, allowing tablets, phones, and other computers on the local Wi-Fi to connect.
+  - Added automatic detection and console printing of all active local IPv4 addresses (e.g. `http://192.168.1.50:8765`) in the startup banner.
+  - Added REST endpoint `GET /api/network` returning server port, localhost URL, and list of all active LAN interface URLs.
+  - Implemented dynamic companion base URL resolution (`getCompanionApiBase()`): automatically uses same-origin when visiting the app on port 8765 from any LAN device.
+  - Added URL parameter support (`?companion=http://<ip>:8765`) and `localStorage` persistence (`aalaapi-companion-host`).
+  - Added an interactive **Remote Companion Host** configuration panel (⚙️) directly in the sidebar sync container.
+
 ## [1.53.1] - 2026-08-29
 
 ### Added & Improved

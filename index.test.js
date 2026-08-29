@@ -3344,12 +3344,80 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     }
   });
 
-  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.53.1', () => {
+  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, getLanAddresses, and VERSION 1.54.0', () => {
     const companion = require('./tools/companion/server.js');
     assert.strictEqual(typeof companion.stopScanners, 'function');
     assert.strictEqual(typeof companion.killExistingCompanion, 'function');
     assert.strictEqual(typeof companion.pullFromRc2, 'function');
-    assert.strictEqual(companion.VERSION, '1.53.1');
+    assert.strictEqual(typeof companion.getLanAddresses, 'function');
+    assert.strictEqual(companion.VERSION, '1.54.0');
+
+    const addrs = companion.getLanAddresses();
+    assert.ok(Array.isArray(addrs));
+  });
+
+  test('getCompanionApiBase dynamically resolves URL parameter, localStorage, same-origin, and default', () => {
+    const fn = vm.runInThisContext('getCompanionApiBase');
+    const setFn = vm.runInThisContext('setCompanionApiBase');
+    assert.strictEqual(typeof fn, 'function');
+    assert.strictEqual(typeof setFn, 'function');
+
+    const origWindow = global.window;
+    const origStorage = global.localStorage;
+
+    try {
+      let store = {};
+      global.localStorage = {
+        getItem: (k) => store[k] || null,
+        setItem: (k, v) => { store[k] = v; },
+        removeItem: (k) => { delete store[k]; }
+      };
+
+      // 1. Fallback default
+      global.window = { location: { hostname: 'example.com', port: '80', origin: 'http://example.com' } };
+      assert.strictEqual(fn(), 'http://127.0.0.1:8765');
+
+      // 2. Same-origin on port 8765
+      global.window = { location: { hostname: '192.168.1.50', port: '8765', protocol: 'http:', origin: 'http://192.168.1.50:8765' } };
+      assert.strictEqual(fn(), 'http://192.168.1.50:8765');
+
+      // 3. localStorage saved host
+      global.localStorage.setItem('aalaapi-companion-host', 'http://10.0.0.25:8765/');
+      global.window = { location: { hostname: 'example.com', port: '80', origin: 'http://example.com' } };
+      assert.strictEqual(fn(), 'http://10.0.0.25:8765');
+
+      // 4. URL query param overrides and saves to storage
+      global.window = {
+        location: {
+          hostname: 'example.com',
+          port: '80',
+          origin: 'http://example.com',
+          search: '?companion=http://tablet.local:8765/'
+        }
+      };
+      assert.strictEqual(fn(), 'http://tablet.local:8765');
+      assert.strictEqual(global.localStorage.getItem('aalaapi-companion-host'), 'http://tablet.local:8765');
+
+      // 5. setCompanionApiBase adds protocol if missing and strips trailing slashes
+      setFn('192.168.2.100:8765/');
+      assert.strictEqual(global.localStorage.getItem('aalaapi-companion-host'), 'http://192.168.2.100:8765');
+
+      // 6. setCompanionApiBase('') resets to default
+      setFn('');
+      assert.strictEqual(global.localStorage.getItem('aalaapi-companion-host'), null);
+    } finally {
+      global.window = origWindow;
+      global.localStorage = origStorage;
+    }
+  });
+
+  test('index_template.html contains remote companion host config controls', () => {
+    const html = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf-8');
+    assert.ok(html.includes('id="companion-config-host-btn"'), 'Must contain host configuration button');
+    assert.ok(html.includes('id="companion-host-panel"'), 'Must contain host config panel');
+    assert.ok(html.includes('id="companion-host-input"'), 'Must contain host input element');
+    assert.ok(html.includes('id="companion-host-save-btn"'), 'Must contain host save button');
+    assert.ok(html.includes('id="companion-host-reset-btn"'), 'Must contain host reset button');
   });
 
   test('FlightDiagnostics.refreshFlightList queries SQLite diagnostics history and populates dropdown optgroups', async () => {

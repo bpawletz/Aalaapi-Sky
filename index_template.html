@@ -69,7 +69,7 @@
               <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
               <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
             </svg>
-            <h1 style="display: inline-flex; align-items: center; gap: 4px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.53.1</span><span style="font-size: 0.48rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 3px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
+            <h1 style="display: inline-flex; align-items: center; gap: 4px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.54.0</span><span style="font-size: 0.48rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 3px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
           </div>
           <div class="header-actions" style="display: flex; gap: 5px; align-items: center;">
             <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" title="Configuration Settings">
@@ -651,8 +651,21 @@
               </span>
               <span style="display: inline-flex; align-items: center; gap: 6px;">
                 <span id="companion-service-label" style="color: var(--text-muted); font-size: 0.68rem;">start-companion.bat</span>
+                <button id="companion-config-host-btn" class="companion-help-circle-btn" type="button" title="Configure Remote Companion IP / Host" style="font-size: 0.65rem;">⚙️</button>
                 <button id="companion-service-help-btn" class="companion-help-circle-btn" type="button" title="How to start Bridge Service">?</button>
               </span>
+            </div>
+            <!-- Host Config Panel (Expandable) -->
+            <div id="companion-host-panel" style="display: none; padding: 6px 8px; background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; font-size: 0.72rem; flex-direction: column; gap: 4px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 600; color: var(--text-main); font-size: 0.72rem;">Remote Bridge Host / IP:</span>
+                <button id="companion-host-reset-btn" type="button" style="background: none; border: none; color: #38bdf8; cursor: pointer; font-size: 0.68rem; text-decoration: underline; padding: 0;">Reset</button>
+              </div>
+              <div style="display: flex; gap: 4px; align-items: center;">
+                <input id="companion-host-input" type="text" placeholder="http://127.0.0.1:8765" style="flex: 1; font-size: 0.72rem; padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.06); color: var(--text-main);" />
+                <button id="companion-host-save-btn" type="button" class="btn-primary" style="padding: 4px 8px; font-size: 0.7rem; line-height: 1; white-space: nowrap;">Save</button>
+              </div>
+              <div id="companion-host-hint" style="color: var(--text-muted); font-size: 0.65rem; line-height: 1.2;">Enter remote PC IP (e.g. <code>http://192.168.1.50:8765</code>) or use URL param <code>?companion=...</code></div>
             </div>
             <!-- USB Link Status Row -->
             <div class="companion-status-row" id="companion-usb-row">
@@ -917,6 +930,7 @@
               <ul style="margin: 6px 0 0 16px; padding: 0; list-style-type: disc; color: var(--text-muted); font-size: 0.8rem; line-height: 1.5;">
                 <li>Ensure <strong>Node.js</strong> (v18 or higher) is installed on your computer.</li>
                 <li>If port 8765 is occupied or the service fails to start, run <code>npm run companion:stop</code> or terminate lingering Node processes.</li>
+                <li><strong>Remote LAN Access (Tablets &amp; Phones):</strong> The companion service binds to all network interfaces (0.0.0.0). Look at your terminal startup log for your Wi-Fi IP (e.g. <code>http://192.168.1.50:8765</code>) and open that URL directly in your tablet's browser, or click the ⚙️ icon beside Bridge Service in the sidebar to configure the host IP.</li>
                 <li>Browser Private Network Access: If your browser prompts for local network permissions, select "Allow".</li>
               </ul>
             </li>
@@ -1197,7 +1211,7 @@
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.53.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.54.0</span>
             </div>
           </div>
         </div>
@@ -1261,6 +1275,12 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.54.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Remote Companion Host &amp; LAN Auto-Discovery:</strong> Upgraded Companion Bridge to bind on <code>0.0.0.0</code> and automatically print all local network IP addresses on startup. Enhanced Aalaapi Sky with dynamic same-origin resolution for remote tablets/phones (zero-config when visiting <code>http://&lt;lan-ip&gt;:8765</code>), URL parameter support (<code>?companion=...</code>), and an in-sidebar Host Configuration panel with <code>localStorage</code> persistence.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.53.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Saved Diagnostics 3D Replay &amp; SQLite History Integration:</strong> Added automatic retrieval of saved mission diagnostics from SQLite in <code>FlightDiagnostics.refreshFlightList()</code>. Saved diagnostics appear directly in the Flight selector dropdown grouped alongside RC 2 logs, allowing instant 3D telemetry visualization, waypoint comparison, and stats replay. Added <code>_diag.json</code> recognition to file import.</li>
