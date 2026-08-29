@@ -5752,30 +5752,33 @@ const RemoteIdRadar = {
   },
 
   formatDroneTooltip(drone) {
+    const isSignalLost = !!(drone.signalLost || (drone.ageSec !== undefined && drone.ageSec > 15));
     const altText = drone.altitudeGeodetic !== null ? `${drone.altitudeGeodetic}m (${Math.round(drone.altitudeGeodetic * 3.28084)}ft MSL)` : 'Alt N/A';
     const speedText = drone.speedHorizontal !== null ? `${drone.speedHorizontal} m/s (${(drone.speedHorizontal * 2.23694).toFixed(1)} mph)` : 'Speed N/A';
     const heading = drone.trackDirection !== null ? `${Math.round(drone.trackDirection)}°` : '0°';
     const coordsText = (drone.latitude && drone.longitude) ? `${drone.latitude.toFixed(6)}, ${drone.longitude.toFixed(6)}` : 'Awaiting GPS Fix';
     const transport = drone.transport || 'Direct';
     const rssiText = drone.rssi ? `${drone.rssi} dBm` : 'N/A';
-    const statusColor = drone.status === 'Airborne' ? '#22c55e' : (drone.status === 'Emergency' ? '#ef4444' : '#eab308');
+    const statusText = isSignalLost ? `Signal Lost (${drone.lastSeenFormatted || 'Past'})` : (drone.status || 'Airborne');
+    const statusColor = isSignalLost ? '#f59e0b' : (drone.status === 'Airborne' ? '#22c55e' : (drone.status === 'Emergency' ? '#ef4444' : '#eab308'));
+    const themeColor = isSignalLost ? '#f59e0b' : '#ef4444';
 
     return `
-      <div class="remote-id-hover-hud" style="font-family: inherit; font-size: 0.78rem; line-height: 1.35; min-width: 215px;">
+      <div class="remote-id-hover-hud" style="font-family: inherit; font-size: 0.78rem; line-height: 1.35; min-width: 220px;">
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 5px; margin-bottom: 6px;">
-          <div style="display: flex; align-items: center; gap: 6px; font-weight: 700; color: #f87171;">
-            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 6px #ef4444;"></span>
+          <div style="display: flex; align-items: center; gap: 6px; font-weight: 700; color: ${themeColor};">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${themeColor}; box-shadow: 0 0 6px ${themeColor};"></span>
             <span>${drone.model || 'Drone'}</span>
           </div>
           <span style="font-size: 0.65rem; background: ${statusColor}22; border: 1px solid ${statusColor}66; color: ${statusColor}; border-radius: 4px; padding: 1px 4px; font-weight: 600;">
-            ${drone.status || 'Airborne'}
+            ${isSignalLost ? '⚠️ ' : ''}${statusText}
           </span>
         </div>
         <div style="color: #94a3b8; font-size: 0.72rem; margin-bottom: 6px; font-family: monospace;">
           ID: <span style="color: #cbd5e1;">${drone.uasId || 'Unknown'}</span>
         </div>
         <div style="display: grid; grid-template-columns: auto 1fr; gap: 3px 8px; font-size: 0.75rem; color: #e2e8f0;">
-          <span style="color: #94a3b8;">📍 Geo:</span>
+          <span style="color: #94a3b8;">${isSignalLost ? '📍 LKP:' : '📍 Geo:'}</span>
           <span style="font-family: monospace; color: #38bdf8; font-weight: 600;">${coordsText}</span>
           <span style="color: #94a3b8;">⛰️ Alt:</span>
           <span style="font-weight: 600;">${altText}</span>
@@ -5787,8 +5790,8 @@ const RemoteIdRadar = {
           <span>${transport} (${rssiText})</span>
         </div>
         ${drone.operatorLatitude ? `<div style="margin-top: 6px; padding-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); font-size: 0.7rem; color: #38bdf8;">🛫 Takeoff: ${drone.operatorLatitude.toFixed(6)}, ${drone.operatorLongitude.toFixed(6)}</div>` : ''}
-        <div style="margin-top: 6px; font-size: 0.66rem; color: #64748b; text-align: right;">
-          Click to Track • ASTM F3411 Live
+        <div style="margin-top: 6px; font-size: 0.66rem; color: ${isSignalLost ? '#f59e0b' : '#64748b'}; text-align: right; font-weight: ${isSignalLost ? '600' : 'normal'};">
+          ${isSignalLost ? '⚠️ Last Known Position (LKP)' : 'Click to Track • ASTM F3411 Live'}
         </div>
       </div>
     `;
@@ -5867,10 +5870,21 @@ const RemoteIdRadar = {
       if (!drone.latitude || !drone.longitude) continue;
       let entry = this.markers.get(drone.id) || { marker: null, takeoffMarker: null, homeVectorLine: null, line: null, drone: null };
 
+      const isSignalLost = !!(drone.signalLost || (drone.ageSec !== undefined && drone.ageSec > 15));
       const heading = drone.trackDirection || 0;
       const tooltipHtml = this.formatDroneTooltip(drone);
 
-      const iconHtml = `
+      const iconHtml = isSignalLost ? `
+        <div style="position: relative; width: 38px; height: 38px; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.94;">
+          <div style="position: absolute; width: 34px; height: 34px; border-radius: 50%; background: rgba(245, 158, 11, 0.22); border: 2px dashed #f59e0b; box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);"></div>
+          <div style="transform: rotate(${heading}deg); transition: transform 0.3s ease;">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="#f59e0b" stroke="#0f172a" stroke-width="1.5">
+              <path d="M12 2L19 21L12 17L5 21L12 2Z"/>
+            </svg>
+          </div>
+          <span style="position: absolute; bottom: -6px; background: rgba(15, 23, 42, 0.95); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.6); font-size: 0.52rem; font-weight: 800; padding: 0 3px; border-radius: 3px; line-height: 1.1; letter-spacing: 0.04em;">LKP</span>
+        </div>
+      ` : `
         <div style="position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">
           <div style="position: absolute; width: 32px; height: 32px; border-radius: 50%; background: rgba(239, 68, 68, 0.25); border: 1.5px solid #ef4444;"></div>
           <div style="transform: rotate(${heading}deg); transition: transform 0.3s ease;">
@@ -5883,14 +5897,14 @@ const RemoteIdRadar = {
 
       const customIcon = (leaflet && leaflet.divIcon) ? leaflet.divIcon({
         html: iconHtml,
-        className: 'remote-id-drone-marker',
-        iconSize: [36, 36],
-        iconAnchor: [18, 18]
+        className: isSignalLost ? 'remote-id-drone-marker remote-id-lkp-marker' : 'remote-id-drone-marker',
+        iconSize: [38, 38],
+        iconAnchor: [19, 19]
       }) : null;
 
-      // 1. Drone Live Position Marker
+      // 1. Drone Position Marker (Live or LKP)
       if (!entry.marker) {
-        const marker = (leaflet && leaflet.marker && customIcon) ? leaflet.marker([drone.latitude, drone.longitude], { icon: customIcon, zIndexOffset: 1000 }) : null;
+        const marker = (leaflet && leaflet.marker && customIcon) ? leaflet.marker([drone.latitude, drone.longitude], { icon: customIcon, zIndexOffset: isSignalLost ? 800 : 1000 }) : null;
         if (marker) {
           if (marker.bindTooltip) {
             marker.bindTooltip(tooltipHtml, {
@@ -5955,7 +5969,7 @@ const RemoteIdRadar = {
               <span style="color: #f8fafc; font-family: monospace;">${drone.operatorLatitude.toFixed(6)}, ${drone.operatorLongitude.toFixed(6)}</span>
               ${drone.operatorAltitude !== null && drone.operatorAltitude !== undefined ? `<span>⛰️ Alt:</span><span style="color: #f8fafc;">${drone.operatorAltitude}m (${Math.round(drone.operatorAltitude * 3.28084)}ft)</span>` : ''}
               <span>📏 Range:</span>
-              <span style="color: #38bdf8; font-weight: 700;">${rangeStr} to Drone</span>
+              <span style="color: #38bdf8; font-weight: 700;">${rangeStr} to ${isSignalLost ? 'LKP' : 'Drone'}</span>
             </div>
           </div>
         `;
@@ -5983,23 +5997,28 @@ const RemoteIdRadar = {
           [drone.operatorLatitude, drone.operatorLongitude],
           [drone.latitude, drone.longitude]
         ];
+        const lineColor = isSignalLost ? '#f59e0b' : '#38bdf8';
+        const lineTooltip = isSignalLost 
+          ? `Last Vector: ${rangeStr} from Takeoff (Signal Lost ${drone.lastSeenFormatted || ''})`
+          : `Home Vector: ${rangeStr} (${drone.uasId || 'Drone'})`;
 
         if (!entry.homeVectorLine) {
           if (leaflet && leaflet.polyline) {
             entry.homeVectorLine = leaflet.polyline(vectorPoints, {
-              color: '#38bdf8',
+              color: lineColor,
               weight: 2,
               dashArray: '6, 6',
-              opacity: 0.85
+              opacity: isSignalLost ? 0.75 : 0.85
             });
             if (entry.homeVectorLine.bindTooltip) {
-              entry.homeVectorLine.bindTooltip(`Home Vector: ${rangeStr} (${drone.uasId || 'Drone'})`, { sticky: true });
+              entry.homeVectorLine.bindTooltip(lineTooltip, { sticky: true });
             }
             this.layerGroup.addLayer(entry.homeVectorLine);
           }
         } else {
           if (entry.homeVectorLine.setLatLngs) entry.homeVectorLine.setLatLngs(vectorPoints);
-          if (entry.homeVectorLine.setTooltipContent) entry.homeVectorLine.setTooltipContent(`Home Vector: ${rangeStr} (${drone.uasId || 'Drone'})`);
+          if (entry.homeVectorLine.setStyle) entry.homeVectorLine.setStyle({ color: lineColor, opacity: isSignalLost ? 0.75 : 0.85 });
+          if (entry.homeVectorLine.setTooltipContent) entry.homeVectorLine.setTooltipContent(lineTooltip);
         }
       } else {
         if (entry.takeoffMarker && this.layerGroup.removeLayer) {
@@ -6014,11 +6033,13 @@ const RemoteIdRadar = {
 
       // 3. Historical Breadcrumbs Line
       if (drone.breadcrumbs && drone.breadcrumbs.length > 1) {
+        const bcColor = isSignalLost ? '#f59e0b' : '#ef4444';
         if (!entry.line && leaflet && leaflet.polyline) {
-          entry.line = leaflet.polyline(drone.breadcrumbs.map(b => [b.lat, b.lon]), { color: '#ef4444', weight: 2, dashArray: '4,4', opacity: 0.7 });
+          entry.line = leaflet.polyline(drone.breadcrumbs.map(b => [b.lat, b.lon]), { color: bcColor, weight: 2, dashArray: '4,4', opacity: isSignalLost ? 0.65 : 0.7 });
           this.layerGroup.addLayer(entry.line);
-        } else if (entry.line && entry.line.setLatLngs) {
-          entry.line.setLatLngs(drone.breadcrumbs.map(b => [b.lat, b.lon]));
+        } else if (entry.line) {
+          if (entry.line.setLatLngs) entry.line.setLatLngs(drone.breadcrumbs.map(b => [b.lat, b.lon]));
+          if (entry.line.setStyle) entry.line.setStyle({ color: bcColor, opacity: isSignalLost ? 0.65 : 0.7 });
         }
       }
 
@@ -6042,14 +6063,22 @@ const RemoteIdRadar = {
         badge.style.display = 'inline-flex';
         badge.classList.remove('hidden');
         const count = this.activeDrones.length;
+        const liveCount = this.activeDrones.filter(d => !d.signalLost && (d.ageSec === undefined || d.ageSec <= 15)).length;
+        const lostCount = count - liveCount;
         const first = this.activeDrones[0];
 
-        let label = `📡 ${count} Drone${count > 1 ? 's' : ''} in Airspace`;
+        let label = '';
         if (this.isFollowing && this.locatedDroneId) {
           const located = this.activeDrones.find(d => d.id === this.locatedDroneId) || first;
-          label = `📡 Tracking ${located.model || 'Drone'}`;
-          if (locateLabel) locateLabel.textContent = 'Following 📍';
+          const isLocatedLost = !!(located.signalLost || (located.ageSec !== undefined && located.ageSec > 15));
+          label = isLocatedLost ? `⚠️ LKP: ${located.model || 'Drone'} (${located.lastSeenFormatted || 'Lost'})` : `📡 Tracking ${located.model || 'Drone'}`;
+          if (locateLabel) locateLabel.textContent = isLocatedLost ? 'LKP 📍' : 'Following 📍';
         } else {
+          if (liveCount > 0) {
+            label = `📡 ${liveCount} Live${lostCount > 0 ? ` + ${lostCount} LKP` : ''}`;
+          } else {
+            label = `⚠️ ${lostCount} Last Known (LKP)`;
+          }
           if (count === 1 && !first.latitude) {
             label = `📡 ${first.model} Detected (${first.rssi} dBm)`;
           }

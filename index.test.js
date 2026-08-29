@@ -3342,12 +3342,12 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     }
   });
 
-  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.50.0', () => {
+  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.51.0', () => {
     const companion = require('./tools/companion/server.js');
     assert.strictEqual(typeof companion.stopScanners, 'function');
     assert.strictEqual(typeof companion.killExistingCompanion, 'function');
     assert.strictEqual(typeof companion.pullFromRc2, 'function');
-    assert.strictEqual(companion.VERSION, '1.50.0');
+    assert.strictEqual(companion.VERSION, '1.51.0');
   });
 
   test('pullFromRC2 fetches mission from companion and triggers parseWPML', async () => {
@@ -4818,12 +4818,146 @@ describe('Weather Station Display and Map Marker Tests (v1.48.3)', () => {
       vm.runInThisContext(`
         RemoteIdRadar.markers.clear();
         RemoteIdRadar.activeDrones = [];
+        RemoteIdRadar.isFollowing = false;
+        RemoteIdRadar.locatedDroneId = null;
         RemoteIdRadar.layerGroup = null;
         remoteIdAirspaceLayer = null;
       `);
       delete global.testMockRadarMap;
       delete global.testMockRadarL;
       delete global.testMockRadarLayer;
+    }
+  });
+
+  test('RemoteIdAirspaceTracker flags signalLost: true and preserves drones during 15-minute retention window', () => {
+    const { RemoteIdAirspaceTracker, createSyntheticOdidPayload } = require('./tools/companion/remote_id_decoder.js');
+    const tracker = new RemoteIdAirspaceTracker(15, 900); // 15s active timeout, 900s retention
+    const payload = createSyntheticOdidPayload({ uasId: '2003F100000000001146', lat: 40.0127, lon: -83.1771 });
+
+    const t0 = 1000000;
+    tracker.processAdvertisement({ mac: '0C:3D:5E:B4:A9:E4', rssi: -30, rawPayload: payload, timestamp: t0 });
+
+    // Live at t0 + 5s
+    const liveDrones = tracker.getActiveDrones(t0 + 5000);
+    assert.strictEqual(liveDrones.length, 1);
+    assert.strictEqual(liveDrones[0].isLive, true);
+    assert.strictEqual(liveDrones[0].signalLost, false);
+
+    // Non-broadcasting (signal lost) at t0 + 25s
+    const staleDrones = tracker.getActiveDrones(t0 + 25000);
+    assert.strictEqual(staleDrones.length, 1, 'Drone should NOT be deleted after 25s; retained in memory');
+    assert.strictEqual(staleDrones[0].signalLost, true, 'Drone should be marked signalLost: true');
+
+    // Purged only after 901 seconds (15 minutes)
+    tracker.cleanup(t0 + 901000);
+    assert.strictEqual(tracker.drones.size, 0, 'Drone should be deleted only after 15m retention window');
+  });
+
+  test('RemoteIdRadar renders amber LKP marker, preserves takeoff pin, and updates vector line style when signal is lost', () => {
+    let addedLayers = [];
+    const mockLayerGroup = {
+      addLayer: (layer) => { addedLayers.push(layer); },
+      removeLayer: () => {}
+    };
+
+    let createdIconOpts = [];
+    let vectorLineOpts = null;
+
+    const mockL = {
+      marker: (latlng, opts) => ({
+        latlng,
+        opts,
+        bindTooltip: () => {},
+        bindPopup: () => {},
+        setLatLng: () => {},
+        setIcon: () => {},
+        setTooltipContent: () => {},
+        setPopupContent: () => {},
+        on: () => {}
+      }),
+      divIcon: (opts) => {
+        createdIconOpts.push(opts);
+        return opts;
+      },
+      polyline: (pts, opts) => {
+        vectorLineOpts = opts;
+        return {
+          pts,
+          opts,
+          bindTooltip: () => {},
+          setLatLngs: () => {},
+          setStyle: () => {},
+          setTooltipContent: () => {}
+        };
+      },
+      latLngBounds: (pts) => pts
+    };
+
+    global.testMockRadarMap = { addLayer: () => {}, removeLayer: () => {}, fitBounds: () => {}, setView: () => {}, panTo: () => {} };
+    global.testMockRadarL = mockL;
+    global.testMockRadarLayer = mockLayerGroup;
+
+    const mockBadge = { style: {}, classList: { remove: () => {}, add: () => {} } };
+    const mockBadgeText = { textContent: '' };
+    global._stubElements = {
+      ...(global._stubElements || {}),
+      'remote-id-badge': mockBadge,
+      'remote-id-badge-text': mockBadgeText
+    };
+
+    try {
+      vm.runInThisContext(`
+        map = global.testMockRadarMap;
+        L = global.testMockRadarL;
+        remoteIdAirspaceLayer = global.testMockRadarLayer;
+        RemoteIdRadar.layerGroup = global.testMockRadarLayer;
+        RemoteIdRadar.markers.clear();
+
+        RemoteIdRadar.activeDrones = [{
+          id: '0C:3D:5E:B4:A9:E4',
+          model: 'Holyton HSRID02',
+          uasId: '2003F100000000001146',
+          latitude: 40.0127595,
+          longitude: -83.1771417,
+          operatorLatitude: 40.0125000,
+          operatorLongitude: -83.1770000,
+          altitudeGeodetic: 213.5,
+          speedHorizontal: 0,
+          trackDirection: 180,
+          status: 'Ground',
+          signalLost: true,
+          lastSeenFormatted: '2m 15s ago'
+        }];
+
+        RemoteIdRadar.updateMapMarkers();
+        RemoteIdRadar.updateRadarUI();
+      `);
+
+      // 1. Icon should have LKP marker class and dashed styling
+      const droneDivIcon = createdIconOpts.find(o => o.className && o.className.includes('remote-id-lkp-marker'));
+      assert.ok(droneDivIcon, 'DivIcon should include remote-id-lkp-marker class for non-broadcasting drone');
+      assert.ok(droneDivIcon.html.includes('LKP'), 'DivIcon HTML should include LKP tag');
+
+      // 2. Vector line should use amber color for signal lost
+      assert.ok(vectorLineOpts, 'Vector line should be created');
+      assert.strictEqual(vectorLineOpts.color, '#f59e0b', 'Vector line should be amber #f59e0b when signal is lost');
+
+      // 3. Badge UI should show Last Known (LKP)
+      assert.ok(mockBadgeText.textContent.includes('Last Known (LKP)'), 'Badge should show Last Known (LKP)');
+    } finally {
+      vm.runInThisContext(`
+        RemoteIdRadar.markers.clear();
+        RemoteIdRadar.activeDrones = [];
+        RemoteIdRadar.isFollowing = false;
+        RemoteIdRadar.locatedDroneId = null;
+        RemoteIdRadar.layerGroup = null;
+        remoteIdAirspaceLayer = null;
+      `);
+      delete global.testMockRadarMap;
+      delete global.testMockRadarL;
+      delete global.testMockRadarLayer;
+      delete global._stubElements['remote-id-badge'];
+      delete global._stubElements['remote-id-badge-text'];
     }
   });
 

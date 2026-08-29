@@ -19,7 +19,7 @@ const os = require('node:os');
 const readline = require('node:readline');
 const { execFile, spawn, execFileSync } = require('node:child_process');
 
-const VERSION = '1.50.0';
+const VERSION = '1.51.0';
 const PORT = process.env.AALAAPI_PORT ? parseInt(process.env.AALAAPI_PORT, 10) : 8765;
 const STAGING_DIR = path.resolve(__dirname, '../../scratch/companion_staging');
 const LATEST_DIR = path.resolve(__dirname, '../../scratch/latest_flight');
@@ -1053,6 +1053,14 @@ const server = http.createServer(async (req, res) => {
         totalPackets: airspaceTracker.totalPackets,
         drones: activeDrones
       }));
+      return;
+    }
+
+    // 6a. Clear Inactive / Signal-Lost Drones
+    if ((pathname === '/api/remote-id/clear-inactive' || pathname === '/api/drones/clear-inactive') && req.method === 'POST') {
+      airspaceTracker.clearInactive();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, count: airspaceTracker.getActiveDrones().length }));
       return;
     }
 
