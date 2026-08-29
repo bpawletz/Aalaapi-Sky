@@ -23,6 +23,20 @@ function formatTime(totalSec) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
+// Formats a Date object, ISO string, or timestamp into a filesystem-safe ISO 8601 timestamp string.
+// Format: YYYY-MM-DDTHH-mm-ssZ (filesystem safe, standard ISO 8601)
+function formatISO8601ForFilename(date = new Date()) {
+  try {
+    const d = (date instanceof Date) ? date : new Date(date);
+    if (isNaN(d.getTime())) {
+      return new Date().toISOString().replace(/:/g, '-').replace(/\.\d{3}/, '');
+    }
+    return d.toISOString().replace(/:/g, '-').replace(/\.\d{3}/, '');
+  } catch (e) {
+    return new Date().toISOString().replace(/:/g, '-').replace(/\.\d{3}/, '');
+  }
+}
+
 /**
  * Generates high-fidelity simulated/interpolated flight telemetry matching
  * an executed WPML mission with realistic sensor noise, speed curves,
@@ -810,6 +824,7 @@ if (typeof module !== 'undefined') {
     computeFlightComparison,
     parseKmlOrWpmlTelemetry,
     parseGpxTelemetry,
-    formatTime
+    formatTime,
+    formatISO8601ForFilename
   };
 }
