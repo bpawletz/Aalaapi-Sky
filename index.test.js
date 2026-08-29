@@ -4008,7 +4008,7 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
 
     const diag = fn(testWps, { altitude: 50, speed: 5, gimbalPitch: -60, uuid: 'test_uuid_diag_123' });
     assert.ok(diag);
-    assert.strictEqual(diag.schemaVersion, '1.53.0');
+    assert.strictEqual(diag.schemaVersion, '1.56.0');
     assert.strictEqual(diag.uuid, 'test_uuid_diag_123');
     assert.ok(diag.userAgent, 'Must include userAgent object');
     assert.strictEqual(typeof diag.userAgent.raw, 'string');
@@ -5453,6 +5453,131 @@ describe('Pre-Flight KMZ Validator & DJI Fly Go Linter Tests (v1.55.0)', () => {
     assert.strictEqual(report.valid, true, 'Stock reference structure must validate cleanly');
   });
 });
+
+describe('Bad KMZ History Recording & Antigravity Triage Tests (v1.56.0)', () => {
+  test('DiagnosticsDatabase stores and retrieves bad missions and execution errors', () => {
+    const { DiagnosticsDatabase } = require('./tools/companion/diagnostics_db.js');
+    const db = new DiagnosticsDatabase(':memory:');
+
+    // Save a bad mission
+    const badUuid = 'test_bad_mission_123';
+    const badPayload = {
+      uuid: badUuid,
+      filename: 'BadMission.kmz',
+      flightPattern: 'double',
+      altitude: 45,
+      speed: 5,
+      gimbalPitch: -45,
+      waypointCount: 12,
+      photoCount: 24,
+      totalDistance: 500,
+      estimatedDuration: 120,
+      isValid: false,
+      validationRulesPassed: 8,
+      validationErrors: ['Rule 1: Intermediate waypoint 3 has headingAngleEnable=1', 'Rule 4: Point coordinates contain 3 values'],
+      validationWarnings: ['Rule 9: Spacing warning'],
+      wpmlXml: '<kml><Placemark><Point><coordinates>-83.1,40.0,50</coordinates></Point></Placemark></kml>',
+      templateXml: '<kml><template/></kml>'
+    };
+
+    const res = db.saveDiagnostic(badPayload);
+    assert.strictEqual(res.success, true);
+
+    // Save a valid mission
+    const validUuid = 'test_valid_mission_456';
+    db.saveDiagnostic({
+      uuid: validUuid,
+      filename: 'ValidMission.kmz',
+      isValid: true,
+      validationRulesPassed: 10,
+      validationErrors: [],
+      executionStatus: 'success'
+    });
+
+    // Query bad missions
+    const badList = db.getBadMissions();
+    assert.strictEqual(badList.length, 1);
+    assert.strictEqual(badList[0].uuid, badUuid);
+    assert.strictEqual(badList[0].is_valid, 0);
+    assert.strictEqual(badList[0].validation_rules_passed, 8);
+    assert.strictEqual(badList[0].validation_errors.length, 2);
+
+    // Query latest bad mission
+    const latest = db.getLatestBadMission();
+    assert.ok(latest);
+    assert.strictEqual(latest.uuid, badUuid);
+    assert.strictEqual(latest.validationErrors.length, 2);
+    assert.ok(latest.wpml_xml.includes('<coordinates>-83.1,40.0,50</coordinates>'));
+
+    // Report execution failure on previously valid mission
+    const reportRes = db.reportExecutionFailure(validUuid, 'Waypoint Flight Suspended at WP 5');
+    assert.strictEqual(reportRes.success, true);
+
+    const updatedBadList = db.getBadMissions();
+    assert.strictEqual(updatedBadList.length, 2, 'Should now have 2 bad/suspended missions');
+    assert.ok(updatedBadList.some(m => m.uuid === validUuid && m.execution_status === 'suspended'));
+
+    db.close();
+  });
+
+  test('buildFlightDiagnosticsJSON records validation health, errors, and WPML XML', () => {
+    const fn = vm.runInThisContext('buildFlightDiagnosticsJSON');
+    const dummyWps = [{ lat: 40.01, lon: -83.17, altitude: 50 }];
+    const diag = fn(dummyWps, {
+      uuid: 'diag_test_uuid_999',
+      isValid: false,
+      validationRulesPassed: 7,
+      validationErrors: ['Rule 1 Violation', 'Rule 3 Violation', 'Rule 4 Violation'],
+      validationWarnings: ['Rule 9 Spacing'],
+      wpmlXml: '<wpml:testXml/>'
+    });
+
+    assert.strictEqual(diag.schemaVersion, '1.56.0');
+    assert.strictEqual(diag.isValid, false);
+    assert.strictEqual(diag.validationRulesPassed, 7);
+    assert.strictEqual(diag.validationErrors.length, 3);
+    assert.strictEqual(diag.executionStatus, 'invalid');
+    assert.strictEqual(diag.wpmlXml, '<wpml:testXml/>');
+    assert.ok(diag.executionError.includes('Rule 1 Violation'));
+  });
+
+  test('KMZInspector.generateAntigravityPrompt creates structured bug report markdown', () => {
+    const prompt = vm.runInThisContext(`
+      (function() {
+        const dummyReport = {
+          valid: false,
+          rulesPassed: 8,
+          errors: ['Intermediate waypoint has headingAngleEnable=1', 'Coordinates contain 3 values'],
+          warnings: ['Spacing below 2m']
+        };
+        const dummyWpml = '<kml><Placemark><Point><coordinates>-83.177,40.012,50</coordinates></Point></Placemark></kml>';
+        const dummyWps = [{ lat: 40.012, lon: -83.177, altitude: 50, heading: 0, turnMode: 'pass' }];
+        return KMZInspector.generateAntigravityPrompt(dummyReport, dummyWpml, dummyWps);
+      })()
+    `);
+
+    assert.ok(prompt.includes('### 🤖 ANTIGRAVITY BUG REPORT'), 'Must contain Antigravity header');
+    assert.ok(prompt.includes('8/10 Passed (Invalid)'), 'Must contain score');
+    assert.ok(prompt.includes('Intermediate waypoint has headingAngleEnable=1'), 'Must include errors');
+    assert.ok(prompt.includes('Antigravity Instructions:'), 'Must include instruction steps');
+  });
+
+  test('index_template.html and index.html contain Antigravity prompt copy buttons', () => {
+    const fs = require('fs');
+    ['index_template.html', 'index.html'].forEach(filename => {
+      const content = fs.readFileSync(filename, 'utf8');
+      assert.ok(content.includes('id="inspector-copy-antigravity-btn"'), `Must include inspector-copy-antigravity-btn in ${filename}`);
+      assert.ok(content.includes('id="diag-copy-antigravity-btn"'), `Must include diag-copy-antigravity-btn in ${filename}`);
+    });
+  });
+
+  test('tools/inspect_failed_mission.js CLI executes cleanly', () => {
+    const { execSync } = require('child_process');
+    const out = execSync('node tools/inspect_failed_mission.js list', { encoding: 'utf8' });
+    assert.ok(out.includes('missions recorded') || out.includes('BAD / SUSPENDED KMZ MISSIONS'), 'CLI list must execute');
+  });
+});
+
 
 
 
