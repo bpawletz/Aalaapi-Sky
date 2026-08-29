@@ -874,12 +874,15 @@ html, body {
     padding: 8px 12px !important;
     border-radius: 12px !important;
     background: rgba(15, 23, 42, 0.95) !important;
-    max-height: 320px;
+    max-height: 65vh;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .stats-panel.collapsed {
     max-height: 38px !important;
     padding-bottom: 6px !important;
+    overflow: hidden !important;
   }
 
   .stats-panel-header h3 {
@@ -951,8 +954,23 @@ html, body {
 /* Collapsible Stats Panel */
 .stats-panel {
   transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease, bottom 0.3s ease !important;
-  max-height: 450px;
-  overflow: hidden;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.stats-panel::-webkit-scrollbar {
+  width: 4px;
+}
+.stats-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+.stats-panel::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+.stats-panel::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .stats-panel.on-top {
@@ -962,6 +980,7 @@ html, body {
 .stats-panel.collapsed {
   max-height: 44px !important;
   padding-bottom: 8px !important;
+  overflow: hidden !important;
 }
 
 .stats-panel-header {
