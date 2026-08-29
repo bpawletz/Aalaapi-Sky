@@ -1,6 +1,7 @@
 const { test, describe, mock } = require('node:test');
 const assert = require('node:assert');
 const fs = require('node:fs');
+const path = require('node:path');
 const vm = require('node:vm');
 
 // --- Global Stubbing Setup ---
@@ -3340,12 +3341,12 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     }
   });
 
-  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.48.4', () => {
+  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.48.5', () => {
     const companion = require('./tools/companion/server.js');
     assert.strictEqual(typeof companion.stopScanners, 'function');
     assert.strictEqual(typeof companion.killExistingCompanion, 'function');
     assert.strictEqual(typeof companion.pullFromRc2, 'function');
-    assert.strictEqual(companion.VERSION, '1.48.4');
+    assert.strictEqual(companion.VERSION, '1.48.5');
   });
 
   test('pullFromRC2 fetches mission from companion and triggers parseWPML', async () => {
@@ -4667,6 +4668,12 @@ describe('Weather Station Display and Map Marker Tests (v1.48.3)', () => {
       delete global.testLLine;
       delete global.testStationLayerLine;
     }
+  });
+
+  test('stats-panel CSS uses calc(100vh - 48px) and overflow-y auto to prevent weather clipping', () => {
+    const cssContent = fs.readFileSync(path.resolve(__dirname, 'index.css'), 'utf-8');
+    assert.ok(cssContent.includes('max-height: calc(100vh - 48px);'), 'index.css must allow stats-panel to expand without cutting off');
+    assert.ok(cssContent.includes('overflow-y: auto;'), 'index.css must allow vertical scroll when content exceeds viewport');
   });
 });
 

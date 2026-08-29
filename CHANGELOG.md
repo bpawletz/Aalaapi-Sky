@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.48.5] - 2026-08-28
+
+### Fixed
+- **Floating Stats Panel Weather Cutoff:**
+  - Removed fixed `max-height: 450px` constraint on `.stats-panel` that clipped the bottom of the flight conditions checklist and weather reporting station card.
+  - Configured responsive `max-height: calc(100vh - 48px)` with transparent smooth vertical scrolling (`overflow-y: auto`) to ensure all weather details, checklist items, and station metadata remain completely visible.
+  - Added dedicated unit tests asserting `.stats-panel` scrollable CSS rules.
+
 ## [1.48.4] - 2026-08-28
 
 ### Added & Improved
