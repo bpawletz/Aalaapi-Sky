@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.55.0] - 2026-08-29
+
+### Added & Fixed
+- **Resolved KMZ Flight Path Failures on Pressing "Go" in DJI Fly:**
+  - **`waypointHeadingAngleEnable: 1` Conflict Fix:** Corrected `waypointHeadingAngleEnable` in `buildWaylinesWpml` to strictly `0` when `waypointHeadingMode` is `followWayline`, `manually`, or `towardPOI`. Setting enable to 1 previously caused an internal contradiction in DJI Fly's waypoint compiler, triggering flight suspensions on "Go".
+  - **Endpoint Stop-Turn Enforcement:** Enforced mandatory stop-turn modes (`toPointAndStopWithContinuityCurvature` / `toPointAndStopWithDiscontinuityCurvature`) on Waypoint `0` and Waypoint `N-1`. DJI Fly's B-spline trajectory solver cannot calculate pass-through tangents without entry/exit waypoints.
+  - **Strict 2D Coordinates in `<Point><coordinates>`:** Aligned coordinates under `relativeToStartPoint` to strictly `lon,lat` matching native DJI Fly RC 2 format, preventing height dimension ambiguity with `<wpml:executeHeight>`.
+  - **POI Coordinate Ordering Correction:** Corrected `<wpml:waypointPoiPoint>` order to `lat,lon,alt` (was `lon,lat,alt`), preventing out-of-bounds latitude aborts.
+  - **Consumer Drone Model Default:** Defaulted `drone-model` to `68` (DJI Mini 4 Pro) instead of `77` (Mavic 3 Enterprise), preventing injection of unsupported Enterprise `<wpml:payloadParam>` tags.
+- **Automated Pre-Flight KMZ Validation & Inspection Engine:**
+  - Added `validateWpmlMission()` and `validateAndFixWpml()` static linters auditing all 10 DJI Fly "Golden Tag" firmware rules.
+  - Added live **Pre-Flight Health Badge** in the sidebar showing `DJI Fly Pre-Flight: 10/10 Rules Verified`.
+  - Added dedicated **Pre-Flight KMZ Audit & DJI Fly Go Inspector Modal** (`#kmz-inspector-modal`) with interactive 10-point checklist, mission summary stats, XML viewer, and drag-and-drop file audit tool for testing external KMZs.
+
 ## [1.54.0] - 2026-08-29
 
 ### Added & Improved
