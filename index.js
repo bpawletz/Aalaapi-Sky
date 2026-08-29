@@ -4963,8 +4963,41 @@ ${waypointActions.join('\n')}
       }
     }
 
+    // Single Grid Golden Rule: Lawnmower grid patterns must strictly use followWayline (unless towardPOI or explicit per-waypoint custom heading is selected).
+    // smoothTransition in a single grid produces spline discontinuities on parallel turnaround turns that cause DJI Fly to suspend the mission.
+    if (gridType === 'single' && headingMode !== 'towardPOI' && wpMode !== 'towardPOI' && wpMode !== 'custom') {
+      actualHeadingMode = 'followWayline';
+    }
+
     if (actualHeadingMode === 'followWayline') {
-      if (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
+      if (gridType === 'single' && wpMode !== 'custom') {
+        // In Single Grid, compute bearing strictly along the wayline flight path so entry/exit tangents match flight direction
+        let fromWp, toWp;
+        if (idx < waypoints.length - 1) {
+          fromWp = waypoints[idx];
+          toWp = waypoints[idx + 1];
+        } else if (idx > 0) {
+          fromWp = waypoints[idx - 1];
+          toWp = waypoints[idx];
+        }
+        if (toWp && fromWp &&
+            fromWp.lat !== undefined && fromWp.lon !== undefined &&
+            toWp.lat !== undefined && toWp.lon !== undefined) {
+          const lat1 = fromWp.lat * Math.PI / 180;
+          const lat2 = toWp.lat * Math.PI / 180;
+          const dLon = (toWp.lon - fromWp.lon) * Math.PI / 180;
+          const y = Math.sin(dLon) * Math.cos(lat2);
+          const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+          let bearing = Math.atan2(y, x) * 180 / Math.PI;
+          if (bearing < 0) bearing += 360;
+          actualHeadingAngle = bearing;
+        } else {
+          const gridRotEl = document.getElementById('grid-rotation');
+          const gridRot = gridRotEl ? parseFloat(gridRotEl.value) : 0;
+          const h = getDefaultHeading(idx, waypoints, gridRot);
+          actualHeadingAngle = isNaN(h) ? 0 : h;
+        }
+      } else if (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
         actualHeadingAngle = wp.heading;
       } else {
         // Compute bearing from lat/lon to avoid NaN when x/y offsets are not set
@@ -5155,16 +5188,21 @@ function validateWpmlMission(wpmlXml, templateXml = '', options = {}) {
   // ── RULE 1: Heading Mode & waypointHeadingAngleEnable Coherence ────────────
   let r1Passed = true;
   let r1Msg = 'Heading modes properly assign waypointHeadingAngleEnable (intermediate followWayline waypoints use 0, endpoints use 1)';
+  const isSinglePattern = (options && (options.gridType === 'single' || options.pattern === 'single'));
   placemarks.forEach((pm, idx) => {
     const modeMatch = pm.match(/<wpml:waypointHeadingMode>([^<]+)<\/wpml:waypointHeadingMode>/);
     const enableMatch = pm.match(/<wpml:waypointHeadingAngleEnable>([^<]+)<\/wpml:waypointHeadingAngleEnable>/);
-    if (modeMatch && enableMatch) {
+    if (modeMatch) {
       const mode = modeMatch[1].trim();
-      const enable = enableMatch[1].trim();
+      const enable = enableMatch ? enableMatch[1].trim() : '0';
       const isEndpoint = (idx === 0 || idx === placemarks.length - 1);
       if (mode === 'followWayline' && !isEndpoint && enable === '1') {
         r1Passed = false;
         result.errors.push(`Waypoint ${idx}: intermediate waypointHeadingMode is 'followWayline' but waypointHeadingAngleEnable is 1 (must be 0 to prevent DJI Fly Go abort)`);
+      }
+      if (isSinglePattern && mode === 'smoothTransition' && (idx === 0 || placemarks.length <= 2)) {
+        r1Passed = false;
+        result.errors.push(`Waypoint ${idx}: Single grid pattern cannot use 'smoothTransition' (must use 'followWayline' to prevent DJI Fly Go abort on parallel flight lines)`);
       }
     }
   });
@@ -5340,6 +5378,26 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
     /(<wpml:waypointHeadingMode>\s*(?:followWayline|manually|towardPOI)\s*<\/wpml:waypointHeadingMode>[\s\S]*?<wpml:waypointHeadingAngleEnable>)\s*1\s*(<\/wpml:waypointHeadingAngleEnable>)/g,
     '$10$2'
   );
+
+  // 1b. Fix smoothTransition in single grid pattern -> change to followWayline
+  const isSingle = (options && (options.gridType === 'single' || options.pattern === 'single'));
+  if (isSingle) {
+    fixedWpml = fixedWpml.replace(
+      /<wpml:waypointHeadingMode>\s*smoothTransition\s*<\/wpml:waypointHeadingMode>/g,
+      '<wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>'
+    );
+    // Ensure intermediate waypoints in followWayline have headingAngleEnable: 0
+    const pms = fixedWpml.split('<Placemark>');
+    if (pms.length > 2) {
+      for (let i = 2; i < pms.length - 1; i++) {
+        pms[i] = pms[i].replace(
+          /(<wpml:waypointHeadingAngleEnable>)\s*1\s*(<\/wpml:waypointHeadingAngleEnable>)/g,
+          '$10$2'
+        );
+      }
+      fixedWpml = pms.join('<Placemark>');
+    }
+  }
 
   // 2. Fix 3D coordinates to 2D
   fixedWpml = fixedWpml.replace(
@@ -6102,8 +6160,9 @@ function generateKMZBlob(wps = null) {
   const templateKml = buildTemplateKml(finishAction, speed);
   const waylinesWpml = buildWaylinesWpml(effectiveWps, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode);
 
+  const currentGridType = document.getElementById('grid-type')?.value || 'single';
   // Auto-audit and fix subtle firmware incompatibilities
-  const fixed = validateAndFixWpml(waylinesWpml, templateKml, { waypoints: effectiveWps });
+  const fixed = validateAndFixWpml(waylinesWpml, templateKml, { waypoints: effectiveWps, gridType: currentGridType });
   const finalWpml = fixed.wpmlXml;
   const finalTemplate = fixed.templateXml;
   const validation = fixed.validation;

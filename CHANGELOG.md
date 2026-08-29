@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.58.1] - 2026-08-29
+
+### Fixed
+- **Single Grid Oblique Pitch WPML Heading Enforcement:**
+  - Fixed an issue where Single Grid missions generated with oblique gimbal pitch (-60°) or inherited custom waypoint headings could export `<wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>`. In a parallel lawnmower pattern, `smoothTransition` causes yaw rate discontinuities and impossible splines at line-end 180° turnaround points, causing DJI Fly to suspend the mission at "Go" press.
+  - Enforced strict `followWayline` mode for all Single Grid patterns (unless explicitly configured as `towardPOI`).
+  - Guaranteed endpoint waypoints (0 and N-1) compute tangent flight line bearings rather than using center-inward radial angles.
+  - Added Single Grid `smoothTransition` detection to `validateWpmlMission` and automated sanitization in `validateAndFixWpml`.
+
 ## [1.58.0] - 2026-08-29
 
 ### Added & Improved
