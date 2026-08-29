@@ -19,7 +19,7 @@ const os = require('node:os');
 const readline = require('node:readline');
 const { execFile, spawn, execFileSync } = require('node:child_process');
 
-const VERSION = '1.53.1';
+const VERSION = '1.54.0';
 const PORT = process.env.AALAAPI_PORT ? parseInt(process.env.AALAAPI_PORT, 10) : 8765;
 const STAGING_DIR = path.resolve(__dirname, '../../scratch/companion_staging');
 const LATEST_DIR = path.resolve(__dirname, '../../scratch/latest_flight');
@@ -810,6 +810,19 @@ if ($dji) {
   return await runMtpScript(psScript);
 }
 
+function getLanAddresses() {
+  const nets = os.networkInterfaces();
+  const lan = [];
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      if (net.family === 'IPv4' && !net.internal) {
+        lan.push({ name, address: net.address, url: `http://${net.address}:${PORT}` });
+      }
+    }
+  }
+  return lan;
+}
+
 // Format Startup Banner with System & Port Diagnostics
 function printStartupBanner() {
   console.log(`${colors.cyan}${colors.bold}`);
@@ -822,7 +835,13 @@ function printStartupBanner() {
   console.log(`${colors.bold}📌 System & Environment:${colors.reset}`);
   logDetail('Bridge Version', `v${VERSION} (Node.js ${process.version})`);
   logDetail('Operating Host', `${os.type()} ${os.release()} (${os.arch()})`);
-  logDetail('Web Interface', `http://127.0.0.1:${PORT}`);
+  logDetail('Localhost URL', `http://127.0.0.1:${PORT}`);
+  const lanAddrs = getLanAddresses();
+  if (lanAddrs.length > 0) {
+    lanAddrs.forEach(l => {
+      logDetail(`Network (${l.name})`, `${l.url} (open on tablet/phone)`);
+    });
+  }
   logDetail('Local Endpoint', `http://127.0.0.1:${PORT}/api/status`);
   logDetail('Staging Path', STAGING_DIR);
   logDetail('Flight Logs', LATEST_DIR);
@@ -1018,6 +1037,24 @@ const server = http.createServer(async (req, res) => {
         res.end(JSON.stringify({ success: true, flights: flightList }));
       } catch (err) {
         logError('[FLIGHTS ERROR]', err.message);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+      return;
+    }
+
+    // 3.5 Network Interfaces Endpoint (for LAN/Remote Discovery)
+    if (pathname === '/api/network' && req.method === 'GET') {
+      try {
+        const lan = getLanAddresses();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: true,
+          port: PORT,
+          localhost: `http://127.0.0.1:${PORT}`,
+          lan
+        }));
+      } catch (err) {
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: false, error: err.message }));
       }
@@ -1463,8 +1500,8 @@ if (require.main === module) {
     startBleScanner();
     startWifiScanner();
 
-    // Start Server
-    server.listen(PORT, '127.0.0.1', () => {
+    // Start Server on all network interfaces (0.0.0.0) so LAN tablets/phones can connect
+    server.listen(PORT, '0.0.0.0', () => {
       printStartupBanner();
     });
   })();
@@ -1478,6 +1515,7 @@ module.exports = {
   pullFromRc2,
   stopScanners,
   killExistingCompanion,
+  getLanAddresses,
   VERSION,
   PORT
 };
