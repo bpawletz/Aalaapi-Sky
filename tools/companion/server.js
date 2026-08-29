@@ -19,10 +19,15 @@ const os = require('node:os');
 const readline = require('node:readline');
 const { execFile, spawn, execFileSync } = require('node:child_process');
 
-const VERSION = '1.51.0';
+const VERSION = '1.53.0';
 const PORT = process.env.AALAAPI_PORT ? parseInt(process.env.AALAAPI_PORT, 10) : 8765;
 const STAGING_DIR = path.resolve(__dirname, '../../scratch/companion_staging');
 const LATEST_DIR = path.resolve(__dirname, '../../scratch/latest_flight');
+const ARCHIVE_DIR = path.resolve(__dirname, '../../scratch/mission_archives');
+if (!fs.existsSync(ARCHIVE_DIR)) fs.mkdirSync(ARCHIVE_DIR, { recursive: true });
+
+const { DiagnosticsDatabase } = require('./diagnostics_db.js');
+const diagDb = new DiagnosticsDatabase();
 
 const {
   RemoteIdAirspaceTracker,
@@ -922,6 +927,69 @@ const server = http.createServer(async (req, res) => {
           res.end(JSON.stringify({ success: false, error: err.message }));
         }
       });
+      return;
+    }
+
+    // 2.5 Diagnostics Archival & History API (SQLite + Disk Backup)
+    if (pathname === '/api/diagnostics/archive' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const payload = body ? JSON.parse(body) : {};
+          const result = diagDb.saveDiagnostic(payload);
+
+          // Also save backup JSON on disk in scratch/mission_archives/
+          try {
+            const uuid = payload.uuid || payload.metadata?.uuid || `mission_${Date.now()}`;
+            const iso = (payload.createdAt || new Date().toISOString()).replace(/:/g, '-').replace(/\.\d{3}/, '');
+            const filePath = path.join(ARCHIVE_DIR, `${iso}_${uuid}_diag.json`);
+            fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), 'utf-8');
+          } catch (fileErr) {
+            logError('[DIAG FILE BACKUP ERROR]', fileErr.message);
+          }
+
+          logSuccess('[DIAG ARCHIVE]', `Archived diagnostics for ${payload.uuid || 'mission'} in SQLite DB`);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(result));
+        } catch (err) {
+          logError('[DIAG ARCHIVE ERROR]', err.message);
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    if (pathname === '/api/diagnostics/history' && req.method === 'GET') {
+      try {
+        const limit = parseInt(url.searchParams.get('limit') || '50', 10);
+        const offset = parseInt(url.searchParams.get('offset') || '0', 10);
+        const history = diagDb.getHistory(limit, offset);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, count: history.length, missions: history }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+      return;
+    }
+
+    if (pathname.startsWith('/api/diagnostics/') && req.method === 'GET') {
+      try {
+        const uuid = pathname.replace('/api/diagnostics/', '').trim();
+        const record = diagDb.getByUuid(uuid);
+        if (record) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, mission: record }));
+        } else {
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: 'Mission not found' }));
+        }
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
       return;
     }
 

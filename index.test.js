@@ -3287,10 +3287,12 @@ describe('Companion Bridge & Direct Sync Tests', () => {
 
     let fetchPayload = null;
     global.fetch = (url, opts) => {
-      fetchPayload = JSON.parse(opts.body);
+      if (url && url.includes('/api/sync')) {
+        fetchPayload = JSON.parse(opts.body);
+      }
       return Promise.resolve({
         ok: true,
-        json: () => Promise.resolve({ success: true, data: { uuid: fetchPayload.uuid } })
+        json: () => Promise.resolve({ success: true, data: { uuid: fetchPayload ? fetchPayload.uuid : '354A8F93-759C-42C3-A8D5-746F79C7622A' } })
       });
     };
 
@@ -3342,12 +3344,12 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     }
   });
 
-  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.51.0', () => {
+  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.53.0', () => {
     const companion = require('./tools/companion/server.js');
     assert.strictEqual(typeof companion.stopScanners, 'function');
     assert.strictEqual(typeof companion.killExistingCompanion, 'function');
     assert.strictEqual(typeof companion.pullFromRc2, 'function');
-    assert.strictEqual(companion.VERSION, '1.51.0');
+    assert.strictEqual(companion.VERSION, '1.53.0');
   });
 
   test('pullFromRC2 fetches mission from companion and triggers parseWPML', async () => {
@@ -3828,8 +3830,88 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
     const html = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf-8');
     assert.ok(html.includes('id="action-diagnostics-btn"'), 'Must contain action-diagnostics-btn in primary actions row');
     assert.ok(html.includes('id="open-diagnostics-btn"'), 'Must preserve open-diagnostics-btn');
+    assert.ok(html.includes('id="diag-export-json-btn"'), 'Must contain diag-export-json-btn in FlightDiagnostics modal');
     assert.strictEqual(html.includes('id="header-diagnostics-btn"'), false, 'Must not place diagnostics in header toolbar');
     assert.strictEqual(html.includes('id="stats-diagnostics-btn"'), false, 'Must not place diagnostics in floating stats panel');
+  });
+
+  test('buildFlightDiagnosticsJSON compiles complete diagnostics payload with User Agent details', () => {
+    const fn = vm.runInThisContext('buildFlightDiagnosticsJSON');
+    assert.strictEqual(typeof fn, 'function');
+
+    const testWps = [
+      { lat: 40.012, lon: -83.176, alt: 50, pitch: -60, heading: 90 },
+      { lat: 40.013, lon: -83.176, alt: 50, pitch: -60, heading: 90 }
+    ];
+
+    const diag = fn(testWps, { altitude: 50, speed: 5, gimbalPitch: -60, uuid: 'test_uuid_diag_123' });
+    assert.ok(diag);
+    assert.strictEqual(diag.schemaVersion, '1.53.0');
+    assert.strictEqual(diag.uuid, 'test_uuid_diag_123');
+    assert.ok(diag.userAgent, 'Must include userAgent object');
+    assert.strictEqual(typeof diag.userAgent.raw, 'string');
+    assert.strictEqual(typeof diag.userAgent.platform, 'string');
+    assert.strictEqual(typeof diag.userAgent.language, 'string');
+    assert.strictEqual(diag.summary.waypointCount, 2);
+    assert.ok(diag.summary.totalDistance >= 0);
+    assert.strictEqual(isNaN(diag.summary.totalDistance), false);
+    assert.ok(diag.diagnostics);
+    assert.ok(Array.isArray(diag.diagnostics.points));
+    assert.strictEqual(diag.diagnostics.points.length >= 2, true);
+  });
+
+  test('DiagnosticsDatabase stores and retrieves diagnostics records using SQLite', () => {
+    const { DiagnosticsDatabase } = require('./tools/companion/diagnostics_db.js');
+    const db = new DiagnosticsDatabase(':memory:');
+    assert.ok(db);
+
+    const testMission = {
+      uuid: 'mission_sql_test_999',
+      filename: 'mission_sql_test_999.kmz',
+      createdAt: '2026-08-29T13:00:00Z',
+      flightPattern: 'double',
+      altitude: 45,
+      speed: 4.5,
+      gimbalPitch: -60,
+      waypointCount: 16,
+      photoCount: 16,
+      totalDistance: 520.5,
+      estimatedDuration: 130.0,
+      userAgent: {
+        raw: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        platform: 'Win32',
+        language: 'en-US'
+      },
+      plan: { pattern: 'double', altitude: 45 },
+      diagnostics: { points: [{ lat: 40.0, lon: -83.0, alt: 45 }] }
+    };
+
+    const saveResult = db.saveDiagnostic(testMission);
+    assert.strictEqual(saveResult.success, true);
+    assert.strictEqual(saveResult.uuid, 'mission_sql_test_999');
+
+    const retrieved = db.getByUuid('mission_sql_test_999');
+    assert.ok(retrieved);
+    assert.strictEqual(retrieved.uuid, 'mission_sql_test_999');
+    assert.strictEqual(retrieved.altitude, 45);
+    assert.strictEqual(retrieved.userAgent.platform, 'Win32');
+    assert.strictEqual(retrieved.plan.pattern, 'double');
+    assert.strictEqual(retrieved.diagnostics.points.length, 1);
+
+    // Link actual flight
+    const linked = db.linkActualFlight('mission_sql_test_999', 'FlightRecord_2026-08-29.txt', { varianceMeters: 0.8 });
+    assert.strictEqual(linked, true);
+    const updated = db.getByUuid('mission_sql_test_999');
+    assert.strictEqual(updated.has_actual_flight, 1);
+    assert.strictEqual(updated.actual_flight_file, 'FlightRecord_2026-08-29.txt');
+    assert.strictEqual(updated.variance.varianceMeters, 0.8);
+
+    const history = db.getHistory();
+    assert.ok(Array.isArray(history));
+    assert.strictEqual(history.length, 1);
+    assert.strictEqual(history[0].uuid, 'mission_sql_test_999');
+
+    db.close();
   });
 
   test('Remote ID ASTM F3411 decoder correctly parses Basic ID, Location, and System messages', () => {
