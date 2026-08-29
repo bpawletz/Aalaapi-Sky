@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.53.0] - 2026-08-29
+
+### Added & Improved
+- **Automatic Diagnostics File Export on Every Mission:**
+  - Standardized every mission export (`downloadKMZ()`) to automatically generate and download the companion Flight Diagnostics file (`_diag.json`) containing complete mission plan parameters, simulated 3D flight trajectory points, photo capture events, and summary statistics.
+  - Captured comprehensive client environment and User Agent specs (`navigator.userAgent`, platform, language, display screen resolution, viewport, and application version) in every diagnostic record for forensic and debugging reliability.
+- **Local SQLite Diagnostics Archival Service (`node:sqlite`):**
+  - Integrated a zero-dependency SQLite database storage engine in the Companion Bridge Service (`scratch/missions.db` via `node:sqlite` `DatabaseSync`).
+  - Added `POST /api/diagnostics/archive`, `GET /api/diagnostics/history`, and `GET /api/diagnostics/:uuid` endpoints to automatically archive and index all exported and RC 2-synced missions.
+  - Automatically saves on-disk JSON backups in `scratch/mission_archives/` alongside the indexed SQLite database.
+- **Flight Diagnostics Modal Export:**
+  - Added dedicated **"Export Diag JSON"** button in the Flight Diagnostics & 3D Replay modal alongside GeoJSON export.
+
 ## [1.52.2] - 2026-08-29
 
 ### Added & Improved
