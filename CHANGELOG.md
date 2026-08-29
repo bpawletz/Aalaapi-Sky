@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.48.1] - 2026-08-28
+
+### Fixed
+- **Double Grid & Freeform "Error Performing Flight" on Go:**
+  - Resolved DJI Fly trajectory validator conflict where Double Grid (oblique pitch) exported inward/center-pointing heading angles under `followWayline` mode. Now dynamically switches to `smoothTransition` mode when headings differ from wayline tangent vector.
+  - Resolved Freeform flight execution suspension when custom per-waypoint headings are specified by switching to `smoothTransition` mode.
+  - Fixed DJI Fly zero-angle flight suspension bug by normalizing heading angles and clamping strictly 0.0° custom angles to 0.1° in exported WPML.
+  - Added dedicated unit and Playwright E2E UI tests asserting valid WPML heading mode generation across single 2D grid, double grid, and freeform flight paths.
+
 ## [1.48.0] - 2026-08-28
 
 ### Added & Improved

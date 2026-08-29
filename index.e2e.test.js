@@ -1271,7 +1271,80 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
     assert.ok(locateResult.success, `Drone REST locate E2E test failed: ${JSON.stringify(locateResult)}`);
   });
+
+  test('Double Grid and Freeform generate valid WPML with smoothTransition for non-tangential headings', async () => {
+    const wpmlResult = await page.evaluate(async () => {
+      // 1. Double Grid with oblique pitch
+      const gridTypeSelect = document.getElementById('grid-type');
+      if (gridTypeSelect) {
+        gridTypeSelect.value = 'double';
+        gridTypeSelect.dispatchEvent(new Event('change'));
+      }
+      const pitchInput = document.getElementById('gimbal-pitch');
+      if (pitchInput) {
+        pitchInput.value = '-60';
+        pitchInput.dispatchEvent(new Event('input'));
+      }
+
+      if (typeof updateGrid === 'function') updateGrid();
+
+      const doubleWps = typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null;
+      let doubleXml = '';
+      if (doubleWps && doubleWps.length > 0 && typeof buildWaylinesWpml === 'function') {
+        doubleXml = buildWaylinesWpml(doubleWps, 30, 4, 'followWayline', 'goHome', -60, 'stopAndShoot', 'curved');
+      }
+
+      const hasDoubleSmoothTransition = doubleXml.includes('<wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>');
+      const noDoubleFollowConflict = !doubleXml.includes('<wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>');
+
+      // 2. Freeform with manual waypoints
+      if (gridTypeSelect) {
+        gridTypeSelect.value = 'freeform';
+        gridTypeSelect.dispatchEvent(new Event('change'));
+      }
+
+      if (typeof addFreeformWaypoint === 'function') {
+        addFreeformWaypoint(40.0125, -83.1770);
+        addFreeformWaypoint(40.0135, -83.1770);
+      }
+
+      const freeformWps = typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null;
+      let freeformXml = '';
+      if (freeformWps && freeformWps.length > 0 && typeof buildWaylinesWpml === 'function') {
+        freeformXml = buildWaylinesWpml(freeformWps, 30, 4, 'followWayline', 'goHome', -90, 'stopAndShoot', 'curved');
+      }
+
+      const hasFreeformFollowWayline = freeformXml.includes('<wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>');
+      const hasHeadingAngleEnable = freeformXml.includes('<wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>');
+
+      // Switch back to single 2D grid
+      if (gridTypeSelect) {
+        gridTypeSelect.value = 'single';
+        gridTypeSelect.dispatchEvent(new Event('change'));
+      }
+      if (pitchInput) {
+        pitchInput.value = '-90';
+        pitchInput.dispatchEvent(new Event('input'));
+      }
+      if (typeof updateGrid === 'function') updateGrid();
+
+      return {
+        hasDoubleSmoothTransition,
+        noDoubleFollowConflict,
+        hasFreeformFollowWayline,
+        hasHeadingAngleEnable,
+        doubleWpsCount: doubleWps ? doubleWps.length : 0,
+        freeformWpsCount: freeformWps ? freeformWps.length : 0
+      };
+    });
+
+    assert.ok(wpmlResult.hasDoubleSmoothTransition, 'Double Grid with oblique pitch must use smoothTransition heading mode');
+    assert.ok(wpmlResult.noDoubleFollowConflict, 'Double Grid with oblique pitch must not have followWayline conflicts');
+    assert.ok(wpmlResult.hasFreeformFollowWayline, 'Freeform without custom headings should follow wayline path');
+    assert.ok(wpmlResult.hasHeadingAngleEnable, 'Freeform should have headingAngleEnable=1');
+  });
 });
+
 
 
 
