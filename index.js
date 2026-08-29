@@ -251,7 +251,10 @@ let weatherRadarLayer;
 let weatherWarningsLayer;
 let weatherStationLayer;
 let weatherStationMarker = null;
+let weatherStationMarkers = [];
 let weatherStationLine = null;
+let currentWeatherDirections = null;
+let activeWeatherStationIndex = 0;
 
 // Initialize the application when the DOM is fully loaded
 document.addEventListener("DOMContentLoaded", () => {
@@ -12140,90 +12143,105 @@ async function fetchAndProcessWeather(centerLat, centerLon) {
     const stationsData = await stationsRes.json();
 
     const stations = stationsData.features || [];
+    if (!stations.length) throw new Error("No stations found");
 
-    // We only need the closest station to avoid API rate limits
-    let closestStation = null;
-    let minD = Infinity;
-
-    stations.forEach(f => {
+    // Sort all stations by distance from mission center
+    const sortedStations = stations.map(f => {
       const slon = f.geometry.coordinates[0];
       const slat = f.geometry.coordinates[1];
       const d = calculateDistance(centerLat, centerLon, slat, slon);
-      if (d < minD) {
-        minD = d;
-        closestStation = {
-          id: f.properties.stationIdentifier,
-          name: f.properties.name,
-          lat: slat,
-          lon: slon,
-          dist: d
-        };
-      }
-    });
+      return {
+        id: f.properties.stationIdentifier,
+        name: f.properties.name,
+        lat: slat,
+        lon: slon,
+        dist: d
+      };
+    }).sort((a, b) => a.dist - b.dist);
 
-    if (!closestStation) throw new Error("No stations found");
+    const topStations = sortedStations.slice(0, 3);
 
-    // 3. Fetch latest observation for the closest station
-    const obsRes = await fetch(`https://api.weather.gov/stations/${closestStation.id}/observations/latest`, { headers });
-    if (!obsRes.ok) throw new Error("Failed to fetch METAR");
-    const obsData = await obsRes.json();
+    // 3. Fetch latest observations for top nearby stations in parallel
+    const obsResults = await Promise.allSettled(
+      topStations.map(st =>
+        fetch(`https://api.weather.gov/stations/${st.id}/observations/latest`, { headers })
+          .then(res => res.ok ? res.json() : null)
+          .catch(() => null)
+      )
+    );
 
-    let directions = null;
-    if (obsData && obsData.properties) {
-      let fltCat = obsData.properties.flightCategory;
+    const stationDataList = [];
+    topStations.forEach((st, idx) => {
+      const res = obsResults[idx];
+      const obsData = (res && res.status === 'fulfilled' && res.value) ? res.value : null;
+
+      let fltCat = null;
       let visSM = null;
       let ceilingFt = null;
 
-      if (obsData.properties.visibility && obsData.properties.visibility.value != null) {
-        visSM = obsData.properties.visibility.value / 1609.34;
-      }
+      if (obsData && obsData.properties) {
+        fltCat = obsData.properties.flightCategory;
 
-      if (Array.isArray(obsData.properties.cloudLayers)) {
-        for (let layer of obsData.properties.cloudLayers) {
-          if (layer.amount === 'OVC' || layer.amount === 'BKN' || layer.amount === 'VV') {
-            if (layer.base && layer.base.value != null) {
-              let baseFt = layer.base.value * 3.28084;
-              if (ceilingFt === null || baseFt < ceilingFt) {
-                ceilingFt = baseFt;
+        if (obsData.properties.visibility && obsData.properties.visibility.value != null) {
+          visSM = obsData.properties.visibility.value / 1609.34;
+        }
+
+        if (Array.isArray(obsData.properties.cloudLayers)) {
+          for (let layer of obsData.properties.cloudLayers) {
+            if (layer.amount === 'OVC' || layer.amount === 'BKN' || layer.amount === 'VV') {
+              if (layer.base && layer.base.value != null) {
+                let baseFt = layer.base.value * 3.28084;
+                if (ceilingFt === null || baseFt < ceilingFt) {
+                  ceilingFt = baseFt;
+                }
               }
+            }
+          }
+        }
+
+        if (!fltCat) {
+          if (visSM !== null || ceilingFt !== null) {
+            let v = visSM !== null ? visSM : 99;
+            let c = ceilingFt !== null ? ceilingFt : 99999;
+
+            if (v < 1 || c < 500) {
+              fltCat = "LIFR";
+            } else if (v < 3 || c < 1000) {
+              fltCat = "IFR";
+            } else if (v <= 5 || c <= 3000) {
+              fltCat = "MVFR";
+            } else {
+              fltCat = "VFR";
             }
           }
         }
       }
 
-      if (!fltCat) {
-        if (visSM !== null || ceilingFt !== null) {
-          let v = visSM !== null ? visSM : 99;
-          let c = ceilingFt !== null ? ceilingFt : 99999;
+      if (!fltCat) fltCat = "VFR";
 
-          if (v < 1 || c < 500) {
-            fltCat = "LIFR";
-          } else if (v < 3 || c < 1000) {
-            fltCat = "IFR";
-          } else if (v <= 5 || c <= 3000) {
-            fltCat = "MVFR";
-          } else {
-            fltCat = "VFR";
-          }
-        }
-      }
+      stationDataList.push({
+        icaoId: st.id,
+        name: st.name,
+        lat: st.lat,
+        lon: st.lon,
+        distance: st.dist,
+        fltCat: fltCat,
+        visibilitySM: visSM,
+        ceilingFt: ceilingFt,
+        timestamp: obsData?.properties?.timestamp || null,
+        raw: obsData?.properties?.rawMessage || obsData?.properties?.textDescription || "No raw METAR"
+      });
+    });
 
-      if (fltCat) {
-        directions = {
-          closest: {
-             icaoId: closestStation.id,
-             name: closestStation.name,
-             lat: closestStation.lat,
-             lon: closestStation.lon,
-             distance: closestStation.dist,
-             fltCat: fltCat,
-             visibilitySM: visSM,
-             ceilingFt: ceilingFt,
-             timestamp: obsData.properties.timestamp,
-             raw: obsData.properties.rawMessage || obsData.properties.textDescription || "No raw METAR"
-          }
-        };
-      }
+    let directions = null;
+    if (stationDataList.length > 0) {
+      directions = {
+        closest: stationDataList[0],
+        stations: stationDataList,
+        activeIndex: 0
+      };
+      currentWeatherDirections = directions;
+      activeWeatherStationIndex = 0;
     }
 
     updateWeatherPanelUI(directions, null, false);
@@ -12236,10 +12254,14 @@ async function fetchAndProcessWeather(centerLat, centerLon) {
 
 
 
-function updateWeatherStationMarker(closest) {
+function updateWeatherStationMarker(closest, allStations, activeIdx) {
   if (typeof map === 'undefined' || !map || typeof L === 'undefined') return;
 
-  if (!closest || closest.lat == null || closest.lon == null) {
+  const currentStations = Array.isArray(allStations) ? allStations : (closest ? [closest] : []);
+  const currentIdx = (typeof activeIdx === 'number' && activeIdx >= 0 && activeIdx < currentStations.length) ? activeIdx : 0;
+  const activeStation = currentStations[currentIdx] || closest;
+
+  if (!activeStation || activeStation.lat == null || activeStation.lon == null) {
     if (weatherStationMarker) {
       if (weatherStationLayer && typeof weatherStationLayer.removeLayer === 'function') {
         try { weatherStationLayer.removeLayer(weatherStationMarker); } catch (e) {}
@@ -12247,6 +12269,16 @@ function updateWeatherStationMarker(closest) {
         try { map.removeLayer(weatherStationMarker); } catch (e) {}
       }
       weatherStationMarker = null;
+    }
+    if (Array.isArray(weatherStationMarkers)) {
+      weatherStationMarkers.forEach(m => {
+        if (weatherStationLayer && typeof weatherStationLayer.removeLayer === 'function') {
+          try { weatherStationLayer.removeLayer(m); } catch (e) {}
+        } else if (map && typeof map.removeLayer === 'function') {
+          try { map.removeLayer(m); } catch (e) {}
+        }
+      });
+      weatherStationMarkers = [];
     }
     if (weatherStationLine) {
       if (weatherStationLayer && typeof weatherStationLayer.removeLayer === 'function') {
@@ -12259,19 +12291,33 @@ function updateWeatherStationMarker(closest) {
     return;
   }
 
-  const icao = closest.icaoId || 'NWS';
-  const name = closest.name || 'Observation Station';
-  const distKm = (closest.distance != null) ? Number(closest.distance).toFixed(1) : '-';
-  const distMi = (closest.distance != null) ? (Number(closest.distance) * 0.621371).toFixed(1) : '-';
-  const fltCat = closest.fltCat || 'VFR';
+  // Clear previous secondary markers
+  if (Array.isArray(weatherStationMarkers)) {
+    weatherStationMarkers.forEach(m => {
+      if (m !== weatherStationMarker) {
+        if (weatherStationLayer && typeof weatherStationLayer.removeLayer === 'function') {
+          try { weatherStationLayer.removeLayer(m); } catch (e) {}
+        } else if (map && typeof map.removeLayer === 'function') {
+          try { map.removeLayer(m); } catch (e) {}
+        }
+      }
+    });
+    weatherStationMarkers = [];
+  }
+
+  const icao = activeStation.icaoId || 'NWS';
+  const name = activeStation.name || 'Observation Station';
+  const distKm = (activeStation.distance != null) ? Number(activeStation.distance).toFixed(1) : '-';
+  const distMi = (activeStation.distance != null) ? (Number(activeStation.distance) * 0.621371).toFixed(1) : '-';
+  const fltCat = activeStation.fltCat || 'VFR';
 
   let badgeColor = '#10b981'; // VFR
   if (fltCat === 'MVFR') badgeColor = '#f59e0b';
   else if (fltCat === 'IFR' || fltCat === 'LIFR') badgeColor = '#ef4444';
 
   const iconHtml = `
-    <div class="weather-station-pin" style="position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer; user-select: none;">
-      <div style="background: rgba(15, 23, 42, 0.92); border: 2px solid ${badgeColor}; box-shadow: 0 0 10px ${badgeColor}99; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+    <div class="weather-station-pin active-station" style="position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer; user-select: none;">
+      <div style="background: rgba(15, 23, 42, 0.92); border: 2px solid ${badgeColor}; box-shadow: 0 0 12px ${badgeColor}; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="${badgeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
         </svg>
@@ -12287,7 +12333,7 @@ function updateWeatherStationMarker(closest) {
     weatherIcon = L.divIcon({
       className: 'custom-weather-station-marker',
       html: iconHtml,
-      iconSize: [36, 44],
+      iconSize: [36, 46],
       iconAnchor: [18, 20],
       popupAnchor: [0, -18]
     });
@@ -12304,8 +12350,8 @@ function updateWeatherStationMarker(closest) {
         Distance: <b>${distKm} km</b> (${distMi} mi) from center
       </div>
       <div style="background: rgba(255,255,255,0.06); padding: 6px 8px; border-radius: 4px; font-size: 0.72rem; line-height: 1.45; margin-bottom: 8px;">
-        <div>Visibility: <b>${closest.visibilitySM != null ? Number(closest.visibilitySM).toFixed(1) + ' SM' : 'Unknown'}</b></div>
-        <div>Ceiling: <b>${closest.ceilingFt != null ? (closest.ceilingFt >= 99999 ? 'Clear' : Number(closest.ceilingFt).toFixed(0) + ' ft') : 'Clear / Unknown'}</b></div>
+        <div>Visibility: <b>${activeStation.visibilitySM != null ? Number(activeStation.visibilitySM).toFixed(1) + ' SM' : 'Unknown'}</b></div>
+        <div>Ceiling: <b>${activeStation.ceilingFt != null ? (activeStation.ceilingFt >= 99999 ? 'Clear' : Number(activeStation.ceilingFt).toFixed(0) + ' ft') : 'Clear / Unknown'}</b></div>
       </div>
       <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
         <span style="font-size: 0.65rem; color: #64748b;">NWS Observation</span>
@@ -12318,7 +12364,7 @@ function updateWeatherStationMarker(closest) {
 
   if (!weatherStationMarker) {
     if (typeof L.marker !== 'function') return;
-    weatherStationMarker = L.marker([closest.lat, closest.lon], { icon: weatherIcon, zIndexOffset: 850 });
+    weatherStationMarker = L.marker([activeStation.lat, activeStation.lon], { icon: weatherIcon, zIndexOffset: 850 });
     if (typeof weatherStationMarker.bindPopup === 'function') weatherStationMarker.bindPopup(popupHtml, { className: 'weather-station-popup' });
     if (typeof weatherStationMarker.bindTooltip === 'function') weatherStationMarker.bindTooltip(`🌤️ Weather Station: ${icao} (${name})`, { direction: 'top', offset: [0, -18] });
     if (weatherStationLayer && typeof weatherStationLayer.addLayer === 'function') {
@@ -12327,7 +12373,7 @@ function updateWeatherStationMarker(closest) {
       map.addLayer(weatherStationMarker);
     }
   } else {
-    if (typeof weatherStationMarker.setLatLng === 'function') weatherStationMarker.setLatLng([closest.lat, closest.lon]);
+    if (typeof weatherStationMarker.setLatLng === 'function') weatherStationMarker.setLatLng([activeStation.lat, activeStation.lon]);
     if (weatherIcon && typeof weatherStationMarker.setIcon === 'function') weatherStationMarker.setIcon(weatherIcon);
     if (typeof weatherStationMarker.setPopupContent === 'function') weatherStationMarker.setPopupContent(popupHtml);
     if (typeof weatherStationMarker.setTooltipContent === 'function') weatherStationMarker.setTooltipContent(`🌤️ Weather Station: ${icao} (${name})`);
@@ -12335,11 +12381,76 @@ function updateWeatherStationMarker(closest) {
       if (typeof weatherStationLayer.addLayer === 'function') weatherStationLayer.addLayer(weatherStationMarker);
     }
   }
+  weatherStationMarkers.push(weatherStationMarker);
 
-  // Update connecting line between mission center and weather station
+  // Plot secondary nearby stations
+  if (currentStations.length > 1 && typeof L.marker === 'function' && typeof L.divIcon === 'function') {
+    currentStations.forEach((st, sIdx) => {
+      if (sIdx === currentIdx || st.lat == null || st.lon == null) return;
+      const sIcao = st.icaoId || 'NWS';
+      const sName = st.name || 'Observation Station';
+      const sDistKm = (st.distance != null) ? Number(st.distance).toFixed(1) : '-';
+      const sCat = st.fltCat || 'VFR';
+      let sColor = '#10b981';
+      if (sCat === 'MVFR') sColor = '#f59e0b';
+      else if (sCat === 'IFR' || sCat === 'LIFR') sColor = '#ef4444';
+
+      const secIconHtml = `
+        <div class="weather-station-pin secondary-station" style="position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer; user-select: none; opacity: 0.85;">
+          <div style="background: rgba(15, 23, 42, 0.9); border: 1.5px solid ${sColor}; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="${sColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+            </svg>
+          </div>
+          <span style="background: rgba(15, 23, 42, 0.85); color: #cbd5e1; border: 1px solid ${sColor}60; font-size: 0.58rem; font-weight: 600; padding: 1px 3px; border-radius: 3px; margin-top: 1px; white-space: nowrap;">
+            ${sIcao}
+          </span>
+        </div>
+      `;
+
+      const secIcon = L.divIcon({
+        className: 'custom-weather-station-marker-sec',
+        html: secIconHtml,
+        iconSize: [32, 40],
+        iconAnchor: [16, 18],
+        popupAnchor: [0, -16]
+      });
+
+      const secPopupHtml = `
+        <div style="min-width: 200px; font-family: inherit; font-size: 0.78rem; color: #f8fafc; line-height: 1.4;">
+          <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 4px; margin-bottom: 5px;">
+            <strong style="color: #38bdf8;">🌤️ ${sIcao}</strong>
+            <span style="background: ${sColor}25; color: ${sColor}; border: 1px solid ${sColor}60; font-size: 0.62rem; font-weight: 700; padding: 1px 5px; border-radius: 999px;">${sCat}</span>
+          </div>
+          <div style="font-weight: 600; margin-bottom: 2px;">${sName}</div>
+          <div style="color: #94a3b8; font-size: 0.72rem; margin-bottom: 6px;">Distance: <b>${sDistKm} km</b> from center</div>
+          <button type="button" class="btn-sm" style="width: 100%; padding: 4px 8px; font-size: 0.72rem; background: rgba(56,189,248,0.2); color: #38bdf8; border: 1px solid #38bdf8; border-radius: 4px; cursor: pointer;" onclick="if (typeof selectActiveWeatherStation === 'function') { selectActiveWeatherStation(${sIdx}); }">
+            Select This Station
+          </button>
+        </div>
+      `;
+
+      const secMarker = L.marker([st.lat, st.lon], { icon: secIcon, zIndexOffset: 800 });
+      if (typeof secMarker.bindPopup === 'function') secMarker.bindPopup(secPopupHtml, { className: 'weather-station-popup' });
+      if (typeof secMarker.bindTooltip === 'function') secMarker.bindTooltip(`🌤️ Weather Station: ${sIcao} (${sName}) - ${sDistKm} km`, { direction: 'top', offset: [0, -16] });
+      secMarker.on('click', () => {
+        if (typeof selectActiveWeatherStation === 'function') {
+          selectActiveWeatherStation(sIdx);
+        }
+      });
+      if (weatherStationLayer && typeof weatherStationLayer.addLayer === 'function') {
+        weatherStationLayer.addLayer(secMarker);
+      } else if (map && typeof map.addLayer === 'function') {
+        map.addLayer(secMarker);
+      }
+      weatherStationMarkers.push(secMarker);
+    });
+  }
+
+  // Update connecting line between mission center and active weather station
   if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function' && typeof L.polyline === 'function') {
     const centerLatLng = centerMarker.getLatLng();
-    const stationLatLng = [closest.lat, closest.lon];
+    const stationLatLng = [activeStation.lat, activeStation.lon];
     if (!weatherStationLine) {
       weatherStationLine = L.polyline([centerLatLng, stationLatLng], {
         color: badgeColor,
@@ -12362,25 +12473,62 @@ function updateWeatherStationMarker(closest) {
       if (typeof weatherStationLine.setStyle === 'function') {
         weatherStationLine.setStyle({ color: badgeColor });
       }
+      if (typeof weatherStationLine.setTooltipContent === 'function') {
+        weatherStationLine.setTooltipContent(`Weather Station: ${icao} (${distKm} km)`);
+      }
     }
   }
 }
 
-function focusWeatherStationOnMap() {
+function selectActiveWeatherStation(idx) {
+  if (!currentWeatherDirections || !Array.isArray(currentWeatherDirections.stations)) return;
+  if (idx < 0 || idx >= currentWeatherDirections.stations.length) return;
+
+  activeWeatherStationIndex = idx;
+  currentWeatherDirections.activeIndex = idx;
+  currentWeatherDirections.closest = currentWeatherDirections.stations[idx];
+
+  updateWeatherPanelUI(currentWeatherDirections, null, false);
+  focusWeatherStationOnMap(currentWeatherDirections.stations[idx]);
+}
+
+function toggleWeatherDetails(forceState) {
+  const dirsEl = document.getElementById('stat-weather-dirs');
+  const toggleBtn = document.getElementById('btn-toggle-weather-details');
+  if (!dirsEl) return;
+
+  const isCurrentlyHidden = dirsEl.classList.contains('hidden');
+  const shouldShow = (typeof forceState === 'boolean') ? forceState : isCurrentlyHidden;
+
+  if (shouldShow) {
+    dirsEl.classList.remove('hidden');
+    if (toggleBtn) toggleBtn.textContent = '▴ Details';
+    try { localStorage.setItem('aalaapi_weather_details_expanded', 'true'); } catch (e) {}
+  } else {
+    dirsEl.classList.add('hidden');
+    if (toggleBtn) toggleBtn.textContent = '▾ Details';
+    try { localStorage.setItem('aalaapi_weather_details_expanded', 'false'); } catch (e) {}
+  }
+}
+
+function focusWeatherStationOnMap(targetStation) {
   if (typeof map === 'undefined' || !map) return;
-  if (weatherStationMarker) {
-    if (weatherStationLayer && typeof map.hasLayer === 'function' && !map.hasLayer(weatherStationLayer)) {
-      if (typeof map.addLayer === 'function') map.addLayer(weatherStationLayer);
-    }
-    if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function' && typeof L.latLngBounds === 'function' && typeof map.fitBounds === 'function') {
-      const bounds = L.latLngBounds([centerMarker.getLatLng(), weatherStationMarker.getLatLng()]);
-      map.fitBounds(bounds, { padding: [70, 70], maxZoom: 15 });
-    } else if (typeof map.flyTo === 'function') {
-      map.flyTo(weatherStationMarker.getLatLng(), Math.max(typeof map.getZoom === 'function' ? map.getZoom() : 12, 12));
-    }
-    if (typeof weatherStationMarker.openPopup === 'function') {
-      weatherStationMarker.openPopup();
-    }
+  const target = targetStation || (currentWeatherDirections && currentWeatherDirections.closest);
+  if (!target || target.lat == null || target.lon == null) return;
+
+  if (weatherStationLayer && typeof map.hasLayer === 'function' && !map.hasLayer(weatherStationLayer)) {
+    if (typeof map.addLayer === 'function') map.addLayer(weatherStationLayer);
+  }
+
+  if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function' && typeof L.latLngBounds === 'function' && typeof map.fitBounds === 'function') {
+    const bounds = L.latLngBounds([centerMarker.getLatLng(), [target.lat, target.lon]]);
+    map.fitBounds(bounds, { padding: [70, 70], maxZoom: 15 });
+  } else if (typeof map.flyTo === 'function') {
+    map.flyTo([target.lat, target.lon], Math.max(typeof map.getZoom === 'function' ? map.getZoom() : 12, 12));
+  }
+
+  if (weatherStationMarker && typeof weatherStationMarker.openPopup === 'function') {
+    weatherStationMarker.openPopup();
   }
 }
 
@@ -12388,6 +12536,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
   const windowEl = document.getElementById('stat-weather-window');
   const dirsEl = document.getElementById('stat-weather-dirs');
   const locateHeaderBtn = document.getElementById('btn-locate-weather-station');
+  const toggleBtn = document.getElementById('btn-toggle-weather-details');
 
   if (!windowEl || !dirsEl) return;
 
@@ -12397,6 +12546,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     if (typeof dirsEl.replaceChildren === 'function') dirsEl.replaceChildren(); else dirsEl.innerHTML = '';
     dirsEl.classList.add("hidden");
     if (locateHeaderBtn) locateHeaderBtn.classList.add('hidden');
+    if (toggleBtn) toggleBtn.textContent = '▾ Details';
     updateWeatherStationMarker(null);
     return;
   }
@@ -12407,13 +12557,15 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     if (typeof dirsEl.replaceChildren === 'function') dirsEl.replaceChildren(); else dirsEl.innerHTML = '';
     dirsEl.classList.add("hidden");
     if (locateHeaderBtn) locateHeaderBtn.classList.add('hidden');
+    if (toggleBtn) toggleBtn.textContent = '▾ Details';
     updateWeatherStationMarker(null);
     return;
   }
 
-  // Evaluate flight condition based on closest station
-  // Part 107 generally requires 3 SM visibility and clear of clouds (VFR)
-  // Marginal VFR (MVFR) might be allowed but risky. IFR/LIFR are definitely blocked.
+  // Store active directions
+  currentWeatherDirections = directions;
+
+  // Evaluate flight condition based on closest / active station
   const closest = directions.closest;
   let isAllowed = false;
   let statusText = "";
@@ -12456,7 +12608,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
   timeDiv.textContent = `Last Polled: ${timeString}${stationLabel}`;
   windowEl.appendChild(timeDiv);
 
-  windowEl.title = `Station: ${closest.icaoId || 'NWS'} - ${closest.name || 'Station'} (${distKm}km / ${distMi}mi)\nRaw: ${closest.raw || ''}`;
+  windowEl.title = `Station: ${closest.icaoId || 'NWS'} - ${closest.name || 'Station'} (${distKm}km / ${distMi}mi)\nRaw: ${closest.raw || ''}\nClick to toggle checklist`;
 
   if (locateHeaderBtn) {
     if (closest.icaoId) {
@@ -12472,7 +12624,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
   container.style.cssText = "font-size: 0.8rem; line-height: 1.4;";
 
   const titleDiv = document.createElement("div");
-  titleDiv.style.cssText = "margin-bottom: 4px; font-weight: bold; color: var(--text-primary)";
+  titleDiv.style.cssText = "margin-bottom: 4px; font-weight: bold; color: var(--text-primary); display: flex; justify-content: space-between; align-items: center;";
   titleDiv.textContent = "Flight Conditions Checklist";
   container.appendChild(titleDiv);
 
@@ -12551,7 +12703,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
   locateBtn.onclick = (e) => {
     e.stopPropagation();
     if (typeof focusWeatherStationOnMap === 'function') {
-      focusWeatherStationOnMap();
+      focusWeatherStationOnMap(closest);
     }
   };
   stationHeader.appendChild(locateBtn);
@@ -12567,13 +12719,56 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
   distDiv.textContent = `Distance: ${distKm} km (${distMi} mi) from mission center`;
   stationSection.appendChild(distDiv);
 
-  container.appendChild(stationSection);
+  // If multiple stations are available, render station switcher tabs
+  if (directions.stations && directions.stations.length > 1) {
+    const multiStationsBar = document.createElement("div");
+    multiStationsBar.className = "multi-station-switcher";
+    multiStationsBar.style.cssText = "display: flex; gap: 4px; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.08); flex-wrap: wrap;";
 
+    directions.stations.forEach((st, sIdx) => {
+      const tabBtn = document.createElement("button");
+      tabBtn.type = "button";
+      tabBtn.className = `btn-sm station-tab-btn ${sIdx === (directions.activeIndex || 0) ? 'active' : ''}`;
+      const isActive = sIdx === (directions.activeIndex || 0);
+      tabBtn.style.cssText = `padding: 2px 6px; font-size: 0.68rem; border-radius: 4px; cursor: pointer; ${
+        isActive
+          ? 'background: rgba(56, 189, 248, 0.25); color: #38bdf8; border: 1px solid #38bdf8; font-weight: 700;'
+          : 'background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.15);'
+      }`;
+      const sDist = st.distance != null ? `${Number(st.distance).toFixed(1)} km` : '';
+      tabBtn.textContent = `${st.icaoId} (${sDist})`;
+      tabBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (typeof selectActiveWeatherStation === 'function') {
+          selectActiveWeatherStation(sIdx);
+        }
+      };
+      multiStationsBar.appendChild(tabBtn);
+    });
+
+    stationSection.appendChild(multiStationsBar);
+  }
+
+  container.appendChild(stationSection);
   dirsEl.appendChild(container);
-  dirsEl.classList.remove("hidden");
+
+  // Check saved preference: default to expanded unless user explicitly minimized
+  let shouldExpand = true;
+  try {
+    const saved = localStorage.getItem('aalaapi_weather_details_expanded');
+    if (saved === 'false') shouldExpand = false;
+  } catch (e) {}
+
+  if (shouldExpand) {
+    dirsEl.classList.remove("hidden");
+    if (toggleBtn) toggleBtn.textContent = '▴ Details';
+  } else {
+    dirsEl.classList.add("hidden");
+    if (toggleBtn) toggleBtn.textContent = '▾ Details';
+  }
 
   // Update map marker
-  updateWeatherStationMarker(closest);
+  updateWeatherStationMarker(closest, directions.stations, directions.activeIndex || 0);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -12585,6 +12780,22 @@ document.addEventListener('DOMContentLoaded', () => {
         lastWeatherFetchCenter = null;
         fetchAndProcessWeather(centerMarker.getLatLng().lat, centerMarker.getLatLng().lng);
       }
+    });
+  }
+
+  const toggleBtn = document.getElementById('btn-toggle-weather-details');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleWeatherDetails();
+    });
+  }
+
+  const weatherWindow = document.getElementById('stat-weather-window');
+  if (weatherWindow) {
+    weatherWindow.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleWeatherDetails();
     });
   }
 
