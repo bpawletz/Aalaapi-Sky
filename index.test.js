@@ -3340,12 +3340,12 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     }
   });
 
-  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.48.1', () => {
+  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.48.2', () => {
     const companion = require('./tools/companion/server.js');
     assert.strictEqual(typeof companion.stopScanners, 'function');
     assert.strictEqual(typeof companion.killExistingCompanion, 'function');
     assert.strictEqual(typeof companion.pullFromRc2, 'function');
-    assert.strictEqual(companion.VERSION, '1.48.1');
+    assert.strictEqual(companion.VERSION, '1.48.2');
   });
 
   test('pullFromRC2 fetches mission from companion and triggers parseWPML', async () => {
@@ -4287,6 +4287,33 @@ describe('v1.48.1 Double Grid and Freeform WPML Flight Execution Fixes', () => {
     }
   });
 });
+
+// ─── GitHub Pages .nojekyll Compliance Tests ────────────────────────────────────
+describe('GitHub Pages and Actions .nojekyll Compliance Tests (v1.48.2)', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+
+  test('.nojekyll file exists at repository root to bypass Jekyll processing', () => {
+    const nojekyllPath = path.resolve(__dirname, '.nojekyll');
+    assert.ok(fs.existsSync(nojekyllPath), '.nojekyll file must exist in repository root for GitHub Pages');
+  });
+
+  test('scratch/build.py contains logic ensuring .nojekyll is created during build', () => {
+    const buildPyContent = fs.readFileSync(path.resolve(__dirname, 'scratch/build.py'), 'utf-8');
+    assert.ok(buildPyContent.includes('.nojekyll'), 'scratch/build.py must check and ensure .nojekyll exists');
+  });
+
+  test('GitHub Actions workflows stage or touch .nojekyll', () => {
+    const buildCommitWorkflow = fs.readFileSync(path.resolve(__dirname, '.github/workflows/build-and-commit.yml'), 'utf-8');
+    assert.ok(buildCommitWorkflow.includes('.nojekyll'), 'build-and-commit.yml must stage .nojekyll');
+
+    const deployPagesWorkflowPath = path.resolve(__dirname, '.github/workflows/deploy-pages.yml');
+    assert.ok(fs.existsSync(deployPagesWorkflowPath), 'deploy-pages.yml workflow must exist');
+    const deployPagesContent = fs.readFileSync(deployPagesWorkflowPath, 'utf-8');
+    assert.ok(deployPagesContent.includes('.nojekyll'), 'deploy-pages.yml must ensure .nojekyll is present');
+  });
+});
+
 
 
 

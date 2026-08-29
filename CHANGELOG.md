@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.48.2] - 2026-08-28
+
+### Added & Fixed
+- **GitHub Pages & Actions .nojekyll Support:**
+  - Added `.nojekyll` to repository root to disable default Jekyll processing on GitHub Pages deployments.
+  - Updated `scratch/build.py` to ensure `.nojekyll` is automatically generated and preserved on bundle compilation.
+  - Updated `.github/workflows/build-and-commit.yml` to stage `.nojekyll` alongside `index.html`.
+  - Added `.github/workflows/deploy-pages.yml` for automated GitHub Pages static artifact deployment via GitHub Actions.
+  - Added dedicated unit tests asserting `.nojekyll` existence and workflow configuration.
+
 ## [1.48.1] - 2026-08-28
 
 ### Fixed
