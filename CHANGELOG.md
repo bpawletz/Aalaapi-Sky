@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.49.0] - 2026-08-28
+
+### Added & Improved
+- **Collapsible Weather Details:**
+  - Added dedicated toggle button (`[▾ Details]` / `[▴ Details]`) in the weather header and enabled clicking the status row to minimize or expand the weather checklist.
+  - Keeps the Mission Details HUD compact by default while allowing pilot expansion on demand, saving user toggle preference to local storage.
+- **De-Duplicated Station Display:**
+  - Eliminated redundant location button in the header in favor of a single clear station pill in the subtitle (`Last Polled: ... • 📡 KOSU (11.1 km)`).
+- **Multi-Station Support & Map Visualization:**
+  - Discovers the top 3 nearest reporting weather stations from the NWS API and queries their observations in parallel.
+  - Added interactive station switcher tabs in the flight conditions checklist to easily toggle between nearby stations.
+  - Plotted all nearby stations on the map with active vs. secondary visual hierarchy and click-to-switch capability.
+  - Added comprehensive unit tests for multi-station tabs, collapsible toggle, and marker generation.
+
 ## [1.48.5] - 2026-08-28
 
 ### Fixed
