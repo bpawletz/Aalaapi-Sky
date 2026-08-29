@@ -251,6 +251,7 @@ let weatherRadarLayer;
 let weatherWarningsLayer;
 let weatherStationLayer;
 let weatherStationMarker = null;
+let weatherStationLine = null;
 
 // Initialize the application when the DOM is fully loaded
 document.addEventListener("DOMContentLoaded", () => {
@@ -1877,6 +1878,9 @@ function setGridCenter(lat, lng) {
         const latlng = centerMarker.getLatLng();
         pois[0].lat = latlng.lat;
         pois[0].lon = latlng.lng;
+      }
+      if (weatherStationLine && weatherStationMarker && typeof weatherStationLine.setLatLngs === 'function') {
+        weatherStationLine.setLatLngs([centerMarker.getLatLng(), weatherStationMarker.getLatLng()]);
       }
       updateGrid();
     });
@@ -12244,6 +12248,14 @@ function updateWeatherStationMarker(closest) {
       }
       weatherStationMarker = null;
     }
+    if (weatherStationLine) {
+      if (weatherStationLayer && typeof weatherStationLayer.removeLayer === 'function') {
+        try { weatherStationLayer.removeLayer(weatherStationLine); } catch (e) {}
+      } else if (map && typeof map.removeLayer === 'function') {
+        try { map.removeLayer(weatherStationLine); } catch (e) {}
+      }
+      weatherStationLine = null;
+    }
     return;
   }
 
@@ -12323,6 +12335,35 @@ function updateWeatherStationMarker(closest) {
       if (typeof weatherStationLayer.addLayer === 'function') weatherStationLayer.addLayer(weatherStationMarker);
     }
   }
+
+  // Update connecting line between mission center and weather station
+  if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function' && typeof L.polyline === 'function') {
+    const centerLatLng = centerMarker.getLatLng();
+    const stationLatLng = [closest.lat, closest.lon];
+    if (!weatherStationLine) {
+      weatherStationLine = L.polyline([centerLatLng, stationLatLng], {
+        color: badgeColor,
+        weight: 2,
+        dashArray: '6, 8',
+        opacity: 0.75
+      });
+      if (typeof weatherStationLine.bindTooltip === 'function') {
+        weatherStationLine.bindTooltip(`Weather Station: ${icao} (${distKm} km)`, { sticky: true });
+      }
+      if (weatherStationLayer && typeof weatherStationLayer.addLayer === 'function') {
+        weatherStationLayer.addLayer(weatherStationLine);
+      } else if (map && typeof map.addLayer === 'function') {
+        map.addLayer(weatherStationLine);
+      }
+    } else {
+      if (typeof weatherStationLine.setLatLngs === 'function') {
+        weatherStationLine.setLatLngs([centerLatLng, stationLatLng]);
+      }
+      if (typeof weatherStationLine.setStyle === 'function') {
+        weatherStationLine.setStyle({ color: badgeColor });
+      }
+    }
+  }
 }
 
 function focusWeatherStationOnMap() {
@@ -12331,7 +12372,10 @@ function focusWeatherStationOnMap() {
     if (weatherStationLayer && typeof map.hasLayer === 'function' && !map.hasLayer(weatherStationLayer)) {
       if (typeof map.addLayer === 'function') map.addLayer(weatherStationLayer);
     }
-    if (typeof map.flyTo === 'function') {
+    if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function' && typeof L.latLngBounds === 'function' && typeof map.fitBounds === 'function') {
+      const bounds = L.latLngBounds([centerMarker.getLatLng(), weatherStationMarker.getLatLng()]);
+      map.fitBounds(bounds, { padding: [70, 70], maxZoom: 15 });
+    } else if (typeof map.flyTo === 'function') {
       map.flyTo(weatherStationMarker.getLatLng(), Math.max(typeof map.getZoom === 'function' ? map.getZoom() : 12, 12));
     }
     if (typeof weatherStationMarker.openPopup === 'function') {
@@ -12343,6 +12387,7 @@ function focusWeatherStationOnMap() {
 function updateWeatherPanelUI(directions, statusMsg, isLoading) {
   const windowEl = document.getElementById('stat-weather-window');
   const dirsEl = document.getElementById('stat-weather-dirs');
+  const locateHeaderBtn = document.getElementById('btn-locate-weather-station');
 
   if (!windowEl || !dirsEl) return;
 
@@ -12351,6 +12396,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     windowEl.style.color = "var(--text-secondary)";
     if (typeof dirsEl.replaceChildren === 'function') dirsEl.replaceChildren(); else dirsEl.innerHTML = '';
     dirsEl.classList.add("hidden");
+    if (locateHeaderBtn) locateHeaderBtn.classList.add('hidden');
     updateWeatherStationMarker(null);
     return;
   }
@@ -12360,6 +12406,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     windowEl.style.color = "var(--error-color)";
     if (typeof dirsEl.replaceChildren === 'function') dirsEl.replaceChildren(); else dirsEl.innerHTML = '';
     dirsEl.classList.add("hidden");
+    if (locateHeaderBtn) locateHeaderBtn.classList.add('hidden');
     updateWeatherStationMarker(null);
     return;
   }
@@ -12394,6 +12441,9 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     }
   }
 
+  const distKm = closest.distance != null ? Number(closest.distance).toFixed(1) : '-';
+  const distMi = closest.distance != null ? (Number(closest.distance) * 0.621371).toFixed(1) : '-';
+
   if (typeof windowEl.replaceChildren === 'function') windowEl.replaceChildren(); else windowEl.innerHTML = '';
   const statusSpan = document.createElement("span");
   statusSpan.style.color = color;
@@ -12402,10 +12452,20 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
 
   const timeDiv = document.createElement("div");
   timeDiv.style.cssText = "font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;";
-  timeDiv.textContent = `Last Polled: ${timeString}`;
+  const stationLabel = closest.icaoId ? ` • 📡 ${closest.icaoId} (${distKm} km)` : '';
+  timeDiv.textContent = `Last Polled: ${timeString}${stationLabel}`;
   windowEl.appendChild(timeDiv);
 
-  windowEl.title = `Closest: ${closest.name || 'Station'} (${closest.distance != null ? Number(closest.distance).toFixed(1) : '-'}km)\nRaw: ${closest.raw || ''}`;
+  windowEl.title = `Station: ${closest.icaoId || 'NWS'} - ${closest.name || 'Station'} (${distKm}km / ${distMi}mi)\nRaw: ${closest.raw || ''}`;
+
+  if (locateHeaderBtn) {
+    if (closest.icaoId) {
+      locateHeaderBtn.textContent = `📍 ${closest.icaoId} (${distKm} km)`;
+      locateHeaderBtn.classList.remove('hidden');
+    } else {
+      locateHeaderBtn.classList.add('hidden');
+    }
+  }
 
   if (typeof dirsEl.replaceChildren === 'function') dirsEl.replaceChildren(); else dirsEl.innerHTML = '';
   const container = document.createElement("div");
@@ -12487,7 +12547,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
   locateBtn.type = "button";
   locateBtn.style.cssText = "padding: 1px 6px; font-size: 0.68rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 4px; cursor: pointer;";
   locateBtn.textContent = "📍 Locate on Map";
-  locateBtn.title = "Pan map to weather station location";
+  locateBtn.title = "Show weather station and mission center on map";
   locateBtn.onclick = (e) => {
     e.stopPropagation();
     if (typeof focusWeatherStationOnMap === 'function') {
@@ -12502,8 +12562,6 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
   stationNameDiv.textContent = closest.name || "Observation Station";
   stationSection.appendChild(stationNameDiv);
 
-  const distKm = closest.distance != null ? Number(closest.distance).toFixed(1) : '-';
-  const distMi = closest.distance != null ? (Number(closest.distance) * 0.621371).toFixed(1) : '-';
   const distDiv = document.createElement("div");
   distDiv.style.cssText = "color: var(--text-muted); font-size: 0.7rem;";
   distDiv.textContent = `Distance: ${distKm} km (${distMi} mi) from mission center`;
@@ -12527,6 +12585,14 @@ document.addEventListener('DOMContentLoaded', () => {
         lastWeatherFetchCenter = null;
         fetchAndProcessWeather(centerMarker.getLatLng().lat, centerMarker.getLatLng().lng);
       }
+    });
+  }
+
+  const locateBtn = document.getElementById('btn-locate-weather-station');
+  if (locateBtn) {
+    locateBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      focusWeatherStationOnMap();
     });
   }
 });
