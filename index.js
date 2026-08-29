@@ -6507,6 +6507,75 @@ async function pullFromRC2() {
   }
 }
 
+async function pullFlightLogFromRC2(targetBtn = null) {
+  const btn = targetBtn || document.getElementById('diag-pull-rc2-btn') || document.getElementById('direct-rc2-pull-log-btn');
+  const originalContent = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span>⏳ Pulling Log...</span>`;
+  }
+
+  try {
+    const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
+    const res = await fetch(`${apiBase}/api/latest-flight`);
+    const data = await res.json();
+
+    if (data.success && data.data && (data.data.latestLog || data.data.latestKmz)) {
+      const logName = data.data.latestLog;
+      if (btn) {
+        btn.innerHTML = `<span>✅ Pulled ${logName ? logName.substring(0, 16) + '...' : 'Flight'}</span>`;
+        btn.style.color = '#38bdf8';
+      }
+
+      // Refresh the Flight Diagnostics flight list
+      if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.refreshFlightList) {
+        await FlightDiagnostics.refreshFlightList();
+        if (logName) {
+          const sel = document.getElementById('diag-flight-selector');
+          if (sel) {
+            sel.value = logName;
+          }
+          if (FlightDiagnostics.loadSelectedFlight) {
+            FlightDiagnostics.loadSelectedFlight(logName);
+          }
+        }
+      }
+
+      // If triggered from the sidebar, open the Diagnostics modal to show the pulled flight!
+      if (btn && btn.id === 'direct-rc2-pull-log-btn') {
+        if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.open) {
+          FlightDiagnostics.open();
+        }
+      }
+
+      setTimeout(() => {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalContent;
+          btn.style.color = '';
+        }
+      }, 3500);
+      return { success: true, logName };
+    } else {
+      throw new Error(data.error || (data.data && data.data.error) || 'No new flight logs found on connected DJI RC 2');
+    }
+  } catch (err) {
+    console.error('Pull Flight Log Error:', err);
+    if (btn) {
+      btn.innerHTML = `<span>❌ Pull Failed / Offline</span>`;
+      btn.style.color = '#f87171';
+      setTimeout(() => {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalContent;
+          btn.style.color = '';
+        }
+      }, 3000);
+    }
+    return { success: false, error: err.message };
+  }
+}
+
 async function sendDirectlyToRC2() {
   const directBtn = document.getElementById('direct-rc2-sync-btn');
   if (!directBtn || !isRc2MtpConnected) return;
@@ -6727,6 +6796,12 @@ function initRC2Controls() {
   const directPullBtn = document.getElementById('direct-rc2-pull-btn');
   if (directPullBtn) {
     directPullBtn.addEventListener('click', pullFromRC2);
+  }
+
+  // Direct RC 2 pull flight log button
+  const directPullLogBtn = document.getElementById('direct-rc2-pull-log-btn');
+  if (directPullLogBtn) {
+    directPullLogBtn.addEventListener('click', () => pullFlightLogFromRC2(directPullLogBtn));
   }
 
   // Initialize Flight Diagnostics Engine
@@ -7316,6 +7391,12 @@ const FlightDiagnostics = {
     // Center 2D Map button
     const centerMapBtn = document.getElementById('diag-center-map-btn');
     if (centerMapBtn) centerMapBtn.addEventListener('click', () => this.centerMapOnFlight());
+
+    // Pull from RC 2 button in diagnostics header
+    const diagPullBtn = document.getElementById('diag-pull-rc2-btn');
+    if (diagPullBtn) {
+      diagPullBtn.addEventListener('click', () => pullFlightLogFromRC2(diagPullBtn));
+    }
 
     // Load file button
     const loadBtn = document.getElementById('diag-load-file-btn');
