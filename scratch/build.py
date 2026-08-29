@@ -50,6 +50,12 @@ def build():
     with open(output_path, 'wb') as f:
         f.write(modified)
 
+    # Ensure .nojekyll exists in project root for GitHub Pages (bypasses Jekyll processing)
+    nojekyll_path = os.path.join(project_dir, '.nojekyll')
+    if not os.path.exists(nojekyll_path):
+        with open(nojekyll_path, 'wb') as f:
+            f.write(b'# Disable Jekyll on GitHub Pages\n')
+
     size_kb = len(modified) // 1024
     print(f"Build complete! ({size_kb} KB)")
 
