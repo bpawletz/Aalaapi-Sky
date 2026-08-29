@@ -3344,12 +3344,85 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     }
   });
 
-  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.53.0', () => {
+  test('companion server exports stopScanners, killExistingCompanion, pullFromRc2, and VERSION 1.53.1', () => {
     const companion = require('./tools/companion/server.js');
     assert.strictEqual(typeof companion.stopScanners, 'function');
     assert.strictEqual(typeof companion.killExistingCompanion, 'function');
     assert.strictEqual(typeof companion.pullFromRc2, 'function');
-    assert.strictEqual(companion.VERSION, '1.53.0');
+    assert.strictEqual(companion.VERSION, '1.53.1');
+  });
+
+  test('FlightDiagnostics.refreshFlightList queries SQLite diagnostics history and populates dropdown optgroups', async () => {
+    const origFetch = global.fetch;
+    const origGetElementById = global.document ? global.document.getElementById : null;
+
+    let selectorOptions = [];
+    const mockFlightSel = {
+      value: '',
+      innerHTML: '',
+      options: [],
+      appendChild(node) {
+        if (node.tagName === 'OPTGROUP' || node.label) {
+          if (node.children) {
+            node.children.forEach(c => selectorOptions.push(c));
+          }
+        } else {
+          selectorOptions.push(node);
+        }
+      }
+    };
+
+    global.document.createElement = (tag) => {
+      const el = {
+        tagName: tag.toUpperCase(),
+        children: [],
+        appendChild(child) { this.children.push(child); selectorOptions.push(child); }
+      };
+      return el;
+    };
+
+    global.document.getElementById = (id) => {
+      if (id === 'diag-flight-selector') return mockFlightSel;
+      return origGetElementById ? origGetElementById(id) : null;
+    };
+
+    global.fetch = (url) => {
+      if (url.includes('/api/flights')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            success: true,
+            flights: [{ filename: 'FlightRecord_2026-08-20.txt', label: 'Flight 1 (2026-08-20)' }]
+          })
+        });
+      }
+      if (url.includes('/api/diagnostics/history')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            success: true,
+            missions: [{
+              uuid: 'saved_uuid_456',
+              filename: 'GridMission_Alt50m.kmz',
+              waypoint_count: 24,
+              created_at: '2026-08-29T14:00:00Z'
+            }]
+          })
+        });
+      }
+      return Promise.resolve({ ok: false });
+    };
+
+    try {
+      await vm.runInThisContext('FlightDiagnostics.refreshFlightList()');
+      const hasSavedOpt = selectorOptions.some(o => o.value === 'diag:saved_uuid_456');
+      assert.strictEqual(hasSavedOpt, true, 'Flight selector should contain saved diagnostic option');
+      const hasRc2Opt = selectorOptions.some(o => o.value === 'FlightRecord_2026-08-20.txt');
+      assert.strictEqual(hasRc2Opt, true, 'Flight selector should contain RC 2 flight log option');
+    } finally {
+      global.fetch = origFetch;
+      global.document.getElementById = origGetElementById;
+    }
   });
 
   test('pullFromRC2 fetches mission from companion and triggers parseWPML', async () => {

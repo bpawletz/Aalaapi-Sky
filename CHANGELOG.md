@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.53.1] - 2026-08-29
+
+### Added & Improved
+- **Saved Diagnostics in 3D Flight Replay Selector:**
+  - Upgraded `FlightDiagnostics.refreshFlightList()` to query both raw DJI RC 2 flight logs (`/api/flights`) and the SQLite mission archive (`/api/diagnostics/history`).
+  - Added an organized `<optgroup>` in the flight selector dropdown displaying all saved mission diagnostics with waypoint count and timestamps (e.g. `💾 Mission: GridMission_Alt50m (16 wps • 2026-08-29 13:00 UTC)`).
+  - Wired `FlightDiagnostics.loadSelectedFlight()` to fetch and load saved diagnostics records (`GET /api/diagnostics/:uuid`), rendering the exact 3D trajectory simulation, photo points, and comparison stats.
+  - Enabled direct opening and replay of imported `_diag.json` files in `handleLogFileImport()`.
+
 ## [1.53.0] - 2026-08-29
 
 ### Added & Improved
