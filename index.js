@@ -1103,6 +1103,7 @@ function initUIEventListeners() {
   // Download Mission file
   document.getElementById('download-btn').addEventListener('click', exportKMZ);
   initRC2Controls();
+  initMultiVendorToggle();
 
   // Import KMZ triggers
   const importBtn = document.getElementById('import-btn');
@@ -5593,6 +5594,232 @@ function exportKMZ() {
     Logger.error("ZIP creation failed:", err);
     alert("An error occurred while creating the KMZ file. Check console for details.");
   });
+}
+
+// ─── Multi-Vendor Autopilot Generators & Exporters ──────────────────────────
+
+function buildQgcMissionPlan(waypoints, options = {}) {
+  const cruiseSpeed = options.speed || 4.0;
+  const hoverSpeed = 3.0;
+  const defaultAlt = options.altitude || 50.0;
+  const globalPitch = options.gimbalPitch !== undefined ? options.gimbalPitch : -90.0;
+  const home = options.homePosition || (waypoints && waypoints.length > 0 ? [waypoints[0].lat, waypoints[0].lon, defaultAlt] : [0, 0, 0]);
+
+  const items = [];
+  let seq = 1;
+
+  // 1. Takeoff Command (Command 22 = MAV_CMD_NAV_TAKEOFF)
+  items.push({
+    AMSLAltAboveTerrain: null,
+    Altitude: defaultAlt,
+    AltitudeMode: 1,
+    autoContinue: true,
+    command: 22,
+    doJumpId: seq,
+    frame: 3,
+    params: [15, 0, 0, null, home[0], home[1], defaultAlt],
+    type: "SimpleItem"
+  });
+  seq++;
+
+  // 2. Set Gimbal Pitch (Command 205 = MAV_CMD_DO_MOUNT_CONTROL)
+  items.push({
+    AMSLAltAboveTerrain: null,
+    Altitude: defaultAlt,
+    AltitudeMode: 1,
+    autoContinue: true,
+    command: 205,
+    doJumpId: seq,
+    frame: 2,
+    params: [globalPitch, 0, 0, 0, 0, 0, 2],
+    type: "SimpleItem"
+  });
+  seq++;
+
+  // 3. Waypoint Items (Command 16 = MAV_CMD_NAV_WAYPOINT)
+  (waypoints || []).forEach((wp) => {
+    const lat = wp.lat;
+    const lon = wp.lon;
+    const alt = wp.alt !== undefined ? wp.alt : (wp.altitude !== undefined ? wp.altitude : defaultAlt);
+    const yaw = wp.heading !== undefined ? wp.heading : null;
+    const hoverTime = wp.hoverTime !== undefined ? wp.hoverTime : (wp.isPhoto ? 2 : 0);
+
+    items.push({
+      AMSLAltAboveTerrain: null,
+      Altitude: alt,
+      AltitudeMode: 1,
+      autoContinue: true,
+      command: 16,
+      doJumpId: seq,
+      frame: 3,
+      params: [hoverTime, 2, 0, yaw, lat, lon, alt],
+      type: "SimpleItem"
+    });
+    seq++;
+
+    if (wp.isPhoto) {
+      // Camera shutter trigger (Command 203 = MAV_CMD_DO_DIGICAM_CONTROL)
+      items.push({
+        AMSLAltAboveTerrain: null,
+        Altitude: alt,
+        AltitudeMode: 1,
+        autoContinue: true,
+        command: 203,
+        doJumpId: seq,
+        frame: 2,
+        params: [0, 0, 0, 0, 1, 0, 0],
+        type: "SimpleItem"
+      });
+      seq++;
+    }
+  });
+
+  // 4. Return To Launch (Command 20 = MAV_CMD_NAV_RETURN_TO_LAUNCH)
+  items.push({
+    AMSLAltAboveTerrain: null,
+    Altitude: defaultAlt,
+    AltitudeMode: 1,
+    autoContinue: true,
+    command: 20,
+    doJumpId: seq,
+    frame: 2,
+    params: [0, 0, 0, 0, 0, 0, 0],
+    type: "SimpleItem"
+  });
+
+  return {
+    fileType: "Plan",
+    geoFence: { circles: [], polygons: [], version: 2 },
+    groundStation: "QGroundControl",
+    mission: {
+      cruiseSpeed: cruiseSpeed,
+      firmwareType: 12,
+      hoverSpeed: hoverSpeed,
+      items: items,
+      plannedHomePosition: home,
+      vehicleType: 2,
+      version: 2
+    },
+    rallyPoints: { points: [], version: 2 },
+    version: 1
+  };
+}
+
+function buildAutelMissionKml(waypoints, options = {}) {
+  const name = options.name || 'Autel_Mission';
+  const speed = options.speed || 4.0;
+  const defaultAlt = options.altitude || 50.0;
+  const gimbalPitch = options.gimbalPitch !== undefined ? options.gimbalPitch : -90.0;
+
+  let placemarksXml = '';
+  (waypoints || []).forEach((wp, idx) => {
+    const lat = wp.lat;
+    const lon = wp.lon;
+    const alt = wp.alt !== undefined ? wp.alt : (wp.altitude !== undefined ? wp.altitude : defaultAlt);
+    const pitch = wp.pitch !== undefined ? wp.pitch : (wp.gimbalPitch !== undefined ? wp.gimbalPitch : gimbalPitch);
+    const heading = wp.heading !== undefined ? wp.heading : 0;
+
+    placemarksXml += `
+        <Placemark>
+          <name>Waypoint ${idx + 1}</name>
+          <description>Autel Waypoint ${idx + 1}</description>
+          <Point>
+            <altitudeMode>relativeToGround</altitudeMode>
+            <coordinates>${lon},${lat},${alt}</coordinates>
+          </Point>
+          <ExtendedData>
+            <Data name="speed"><value>${speed}</value></Data>
+            <Data name="gimbalPitch"><value>${pitch}</value></Data>
+            <Data name="heading"><value>${heading}</value></Data>
+            <Data name="action"><value>${wp.isPhoto ? 'takePhoto' : 'none'}</value></Data>
+          </ExtendedData>
+        </Placemark>`;
+  });
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>${name}</name>
+    <Folder>
+      <name>Waypoints</name>${placemarksXml}
+    </Folder>
+  </Document>
+</kml>`;
+}
+
+function exportQgcPlan() {
+  const currentWps = typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : [];
+  if (!currentWps || currentWps.length === 0) {
+    alert("Please select or generate waypoints first.");
+    return;
+  }
+  const speed = parseFloat(document.getElementById('speed')?.value) || 4.0;
+  const altitude = parseFloat(document.getElementById('altitude')?.value) || 50.0;
+  const gimbalPitch = parseFloat(document.getElementById('gimbal-pitch')?.value) || -90.0;
+
+  const plan = buildQgcMissionPlan(currentWps, { speed, altitude, gimbalPitch });
+  const blob = new Blob([JSON.stringify(plan, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const ts = typeof formatISO8601ForFilename === 'function' ? formatISO8601ForFilename() : new Date().toISOString().replace(/:/g, '-');
+  a.download = `Mission_QGC_${ts}.plan`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function exportAutelKml() {
+  const currentWps = typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : [];
+  if (!currentWps || currentWps.length === 0) {
+    alert("Please select or generate waypoints first.");
+    return;
+  }
+  const speed = parseFloat(document.getElementById('speed')?.value) || 4.0;
+  const altitude = parseFloat(document.getElementById('altitude')?.value) || 50.0;
+  const gimbalPitch = parseFloat(document.getElementById('gimbal-pitch')?.value) || -90.0;
+
+  const kml = buildAutelMissionKml(currentWps, { speed, altitude, gimbalPitch });
+  const blob = new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const ts = typeof formatISO8601ForFilename === 'function' ? formatISO8601ForFilename() : new Date().toISOString().replace(/:/g, '-');
+  a.download = `Mission_Autel_${ts}.kml`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function initMultiVendorToggle() {
+  const toggle = document.getElementById('multivendor-toggle');
+  const exportContainer = document.getElementById('multivendor-export-container');
+  const qgcBtn = document.getElementById('export-qgc-btn');
+  const autelBtn = document.getElementById('export-autel-btn');
+
+  const updateState = (enabled) => {
+    if (toggle) toggle.checked = enabled;
+    if (exportContainer) {
+      exportContainer.style.display = enabled ? 'flex' : 'none';
+    }
+    try {
+      localStorage.setItem('aalaapi-multivendor-enabled', enabled ? 'true' : 'false');
+    } catch (e) {}
+  };
+
+  const isEnabled = typeof localStorage !== 'undefined' && localStorage.getItem('aalaapi-multivendor-enabled') === 'true';
+  updateState(isEnabled);
+
+  if (toggle) {
+    toggle.addEventListener('change', () => {
+      updateState(toggle.checked);
+    });
+  }
+
+  if (qgcBtn) qgcBtn.addEventListener('click', exportQgcPlan);
+  if (autelBtn) autelBtn.addEventListener('click', exportAutelKml);
 }
 
 // ─── Settings & Mission Plan JSON Builder & Exporter ──────────────────────────
