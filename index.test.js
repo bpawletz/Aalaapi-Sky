@@ -3824,6 +3824,14 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
     assert.strictEqual(decoderFn(fixed), '2026-08-20T19-42-28Z');
   });
 
+  test('index_template.html includes high-visibility Flight Diagnostics buttons in header, actions row, and stats panel', () => {
+    const html = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf-8');
+    assert.ok(html.includes('id="header-diagnostics-btn"'), 'Must contain header-diagnostics-btn');
+    assert.ok(html.includes('id="action-diagnostics-btn"'), 'Must contain action-diagnostics-btn');
+    assert.ok(html.includes('id="stats-diagnostics-btn"'), 'Must contain stats-diagnostics-btn');
+    assert.ok(html.includes('id="open-diagnostics-btn"'), 'Must preserve open-diagnostics-btn');
+  });
+
   test('Remote ID ASTM F3411 decoder correctly parses Basic ID, Location, and System messages', () => {
     const {
       decodeOdidMessage,

@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.52.1] - 2026-08-29
+
+### Added & Improved
+- **High-Visibility Flight Diagnostics Access:**
+  - Added a dedicated **"Flight Diag"** amber button directly in the top header action toolbar for instant one-click access without needing to scroll.
+  - Added an amber **"Flight Diag"** button directly alongside **"3D View"** and **"Export KMZ"** in the main mission actions row.
+  - Added a **"Flight Diag"** launch button in the floating Mission Details map panel header.
+  - Connected all entry points to `FlightDiagnostics.open()` so pilots can launch 3D playback and telemetry comparisons from anywhere on screen.
+
 ## [1.52.0] - 2026-08-29
 
 ### Added & Improved

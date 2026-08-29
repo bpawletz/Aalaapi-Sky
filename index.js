@@ -6340,8 +6340,15 @@ const FlightDiagnostics = {
 
   init() {
     if (typeof document === 'undefined') return;
-    const openBtn = document.getElementById('open-diagnostics-btn');
-    if (openBtn) openBtn.addEventListener('click', () => this.open());
+    const openBtns = [
+      document.getElementById('open-diagnostics-btn'),
+      document.getElementById('header-diagnostics-btn'),
+      document.getElementById('action-diagnostics-btn'),
+      document.getElementById('stats-diagnostics-btn')
+    ];
+    openBtns.forEach(btn => {
+      if (btn) btn.addEventListener('click', () => this.open());
+    });
 
     const closeBtn = document.getElementById('diag-close-btn');
     if (closeBtn) closeBtn.addEventListener('click', () => this.close());
