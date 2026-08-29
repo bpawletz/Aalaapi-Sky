@@ -1343,6 +1343,61 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(wpmlResult.hasFreeformFollowWayline, 'Freeform without custom headings should follow wayline path');
     assert.ok(wpmlResult.hasHeadingAngleEnable, 'Freeform should have headingAngleEnable=1');
   });
+
+  test('E2E: Pre-Flight KMZ Audit modal opens, renders 10-point checklist, and can be dismissed', async () => {
+    const modalState = await page.evaluate(async () => {
+      const auditBtn = document.getElementById('kmz-audit-btn');
+      const modal = document.getElementById('kmz-inspector-modal');
+      const closeBtn = document.getElementById('close-kmz-inspector-btn');
+      const checklist = document.getElementById('inspector-checklist-container');
+      const score = document.getElementById('inspector-rules-score');
+
+      if (!auditBtn || !modal) return { success: false, reason: 'Elements not found' };
+
+      // Initial state
+      const initialHidden = modal.classList.contains('hidden');
+
+      // Click Audit KMZ button
+      let clickErr = null;
+      try {
+        auditBtn.click();
+      } catch (e) {
+        clickErr = e.message + '\n' + e.stack;
+      }
+      const openAfterClick = !modal.classList.contains('hidden');
+
+      // Verify checklist items rendered
+      const itemsCount = checklist ? checklist.children.length : 0;
+      const scoreText = score ? score.textContent : '';
+
+      // Close modal
+      if (closeBtn) closeBtn.click();
+      const closedAfterClick = modal.classList.contains('hidden');
+
+      return {
+        success: true,
+        initialHidden,
+        openAfterClick,
+        itemsCount,
+        scoreText,
+        closedAfterClick,
+        clickErr,
+        hasInspector: typeof KMZInspector !== 'undefined',
+        hasActiveReport: typeof KMZInspector !== 'undefined' ? !!KMZInspector.activeReport : false,
+        reportRulesLength: (typeof KMZInspector !== 'undefined' && KMZInspector.activeReport && KMZInspector.activeReport.rules) ? KMZInspector.activeReport.rules.length : -1,
+        lastAuditError: typeof KMZInspector !== 'undefined' ? KMZInspector.lastAuditError : null
+      };
+    });
+
+    assert.strictEqual(modalState.clickErr, null, 'Clicking audit button should not throw');
+
+    assert.ok(modalState.success, 'Inspector modal elements should exist');
+    assert.ok(modalState.initialHidden, 'Modal should be initially hidden');
+    assert.ok(modalState.openAfterClick, 'Modal should open when Audit KMZ button is clicked');
+    assert.strictEqual(modalState.itemsCount, 10, 'Modal checklist should contain all 10 golden rules');
+    assert.ok(modalState.scoreText.includes('/10 Passed'), `Modal score should show passed rules count, got: '${modalState.scoreText}'`);
+    assert.ok(modalState.closedAfterClick, 'Modal should close when close button is clicked');
+  });
 });
 
 

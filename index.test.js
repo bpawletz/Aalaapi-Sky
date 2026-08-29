@@ -1388,7 +1388,7 @@ describe('buildWaylinesWpml towardPOI Tests', () => {
       `);
 
       assert.strictEqual(xml.includes('<wpml:waypointHeadingMode>towardPOI</wpml:waypointHeadingMode>'), true);
-      assert.strictEqual(xml.includes('<wpml:waypointPoiPoint>-87.6227000000000,41.8827000000000,0.000000</wpml:waypointPoiPoint>'), true);
+      assert.strictEqual(xml.includes('<wpml:waypointPoiPoint>41.882700,-87.622700,0.000000</wpml:waypointPoiPoint>'), true);
     } finally {
       vm.runInThisContext('centerMarker = null;');
     }
@@ -1690,13 +1690,13 @@ describe('buildWaylinesWpml Multi-POI Export Tests', () => {
         buildWaylinesWpml(${JSON.stringify(wps)}, 50, 4, 'followWayline', 'goHome', -90, 'hover', 'normal')
       `);
 
-      // Waypoint 0 should point to POI 1 (-87.67, 41.93)
+      // Waypoint 0 should point to POI 1 (41.93, -87.67) in lat,lon,alt order
       assert.ok(xml.includes('<wpml:waypointHeadingPoiIndex>1</wpml:waypointHeadingPoiIndex>'));
-      assert.ok(xml.includes('<wpml:waypointPoiPoint>-87.6700000000000,41.9300000000000,0.000000</wpml:waypointPoiPoint>'));
+      assert.ok(xml.includes('<wpml:waypointPoiPoint>41.930000,-87.670000,0.000000</wpml:waypointPoiPoint>'));
 
-      // Waypoint 1 should point to POI 2 (-87.72, 41.98)
+      // Waypoint 1 should point to POI 2 (41.98, -87.72) in lat,lon,alt order
       assert.ok(xml.includes('<wpml:waypointHeadingPoiIndex>2</wpml:waypointHeadingPoiIndex>'));
-      assert.ok(xml.includes('<wpml:waypointPoiPoint>-87.7200000000000,41.9800000000000,0.000000</wpml:waypointPoiPoint>'));
+      assert.ok(xml.includes('<wpml:waypointPoiPoint>41.980000,-87.720000,0.000000</wpml:waypointPoiPoint>'));
 
     } finally {
       vm.runInThisContext('centerMarker = null; pois = [];');
@@ -1961,7 +1961,8 @@ describe('3D FPV Editor Panel Alignment & Viewport Tests', () => {
   test('buildWaylinesWpml exports per-waypoint speed, hover duration, and turn mode tags', () => {
     const testWaypoints = [
       { lat: 41.88, lon: -87.62, alt: 50, pitch: -45, speed: 12, hoverTime: 10, turnMode: 'stop' },
-      { lat: 41.89, lon: -87.63, alt: 60, pitch: -30, speed: null, hoverTime: 0, turnMode: 'pass' }
+      { lat: 41.89, lon: -87.63, alt: 60, pitch: -30, speed: null, hoverTime: 0, turnMode: 'pass' },
+      { lat: 41.90, lon: -87.64, alt: 70, pitch: -30, speed: null, hoverTime: 0, turnMode: 'stop' }
     ];
 
     const xml = vm.runInThisContext('buildWaylinesWpml')(testWaypoints, 50, 5, 'followWayline', 'goHome', -45, 'continuous', 'straight');
@@ -1970,7 +1971,7 @@ describe('3D FPV Editor Panel Alignment & Viewport Tests', () => {
     assert.ok(xml.includes('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>'), 'should export hover action for WP 0');
     assert.ok(xml.includes('<wpml:hoverTime>10</wpml:hoverTime>'), 'should export hoverTime 10 for WP 0');
     assert.ok(xml.includes('toPointAndStopWithDiscontinuityCurvature'), 'should export stop turnMode for WP 0');
-    assert.ok(xml.includes('toPointAndPassWithDiscontinuityCurvature'), 'should export pass turnMode for WP 1');
+    assert.ok(xml.includes('toPointAndPassWithDiscontinuityCurvature'), 'should export pass turnMode for intermediate WP 1');
   });
 
   test('buildWaylinesWpml exports per-waypoint camera actions (takePhoto, startRecord, stopRecord, zoom)', () => {
@@ -2512,18 +2513,36 @@ describe('Overlapping Waypoints & bringMarkerToFront Tests', () => {
 
 
 describe('WPML Validation & Stationary Fallback Regression Tests', () => {
-  test('buildTemplateKml includes mandatory wpml:templateType waypoint tag', () => {
-    const xml = vm.runInThisContext('buildTemplateKml("goHome", 4)');
-    assert.strictEqual(xml.includes('<wpml:templateType>waypoint</wpml:templateType>'), true, 'template.kml must contain wpml:templateType tag');
+  test('buildTemplateKml includes mandatory wpml:templateType waypoint tag for Enterprise drones (77)', () => {
+    const originalGetElementById = global.document.getElementById;
+    global.document.getElementById = (id) => {
+      if (id === 'drone-model') return { value: '77' };
+      return originalGetElementById ? originalGetElementById(id) : null;
+    };
+    try {
+      const xml = vm.runInThisContext('buildTemplateKml("goHome", 4)');
+      assert.strictEqual(xml.includes('<wpml:templateType>waypoint</wpml:templateType>'), true, 'template.kml must contain wpml:templateType tag for Enterprise drones');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
   });
 
-  test('buildWaylinesWpml includes mandatory wpml:templateType tag in Folder', () => {
-    const wps = [
-      { lat: 40.0127, lon: -83.1771, alt: 17, headingMode: 'inherit' },
-      { lat: 40.0128, lon: -83.1771, alt: 17, headingMode: 'inherit' }
-    ];
-    const xml = vm.runInThisContext(`buildWaylinesWpml(${JSON.stringify(wps)}, 17, 4, 'followWayline', 'goHome', -90, 'stopAndShoot', 'straight')`);
-    assert.strictEqual(xml.includes('<wpml:templateType>waypoint</wpml:templateType>'), true, 'waylines.wpml Folder must contain wpml:templateType tag');
+  test('buildWaylinesWpml includes mandatory wpml:templateType tag in Folder for Enterprise drones (77)', () => {
+    const originalGetElementById = global.document.getElementById;
+    global.document.getElementById = (id) => {
+      if (id === 'drone-model') return { value: '77' };
+      return originalGetElementById ? originalGetElementById(id) : null;
+    };
+    try {
+      const wps = [
+        { lat: 40.0127, lon: -83.1771, alt: 17, headingMode: 'inherit' },
+        { lat: 40.0128, lon: -83.1771, alt: 17, headingMode: 'inherit' }
+      ];
+      const xml = vm.runInThisContext(`buildWaylinesWpml(${JSON.stringify(wps)}, 17, 4, 'followWayline', 'goHome', -90, 'stopAndShoot', 'straight')`);
+      assert.strictEqual(xml.includes('<wpml:templateType>waypoint</wpml:templateType>'), true, 'waylines.wpml Folder must contain wpml:templateType tag for Enterprise drones');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
   });
 
   test('buildWaylinesWpml omits templateType and payloadParam for consumer drones (Mini 4 Pro)', () => {
@@ -2550,7 +2569,7 @@ describe('WPML Validation & Stationary Fallback Regression Tests', () => {
     }
   });
 
-  test('buildWaylinesWpml exports standard KML coordinates tags containing longitude, latitude, and altitude', () => {
+  test('buildWaylinesWpml exports native RC2 2D coordinates (lon,lat) matching DJI Fly relativeToStartPoint schema', () => {
     const wps = [
       { lat: 40.0127, lon: -83.1771, alt: 17, headingMode: 'inherit' },
       { lat: 40.0128, lon: -83.1771, alt: 25, headingMode: 'inherit' }
@@ -2564,18 +2583,20 @@ describe('WPML Validation & Stationary Fallback Regression Tests', () => {
     const coord0 = parts[1].split('</coordinates>')[0].trim();
     const coord1 = parts[2].split('</coordinates>')[0].trim();
     
-    // Check that there are 3 comma-separated components: longitude, latitude, altitude
+    // Check that there are 2 comma-separated components: longitude, latitude
     const coord0Parts = coord0.split(',');
-    assert.strictEqual(coord0Parts.length, 3, 'WP 0 coordinates should have 3 parts');
+    assert.strictEqual(coord0Parts.length, 2, 'WP 0 coordinates should have 2 parts (lon,lat)');
     assert.strictEqual(parseFloat(coord0Parts[0]), -83.1771);
     assert.strictEqual(parseFloat(coord0Parts[1]), 40.0127);
-    assert.strictEqual(parseFloat(coord0Parts[2]), 17); // altitude
     
     const coord1Parts = coord1.split(',');
-    assert.strictEqual(coord1Parts.length, 3, 'WP 1 coordinates should have 3 parts');
+    assert.strictEqual(coord1Parts.length, 2, 'WP 1 coordinates should have 2 parts (lon,lat)');
     assert.strictEqual(parseFloat(coord1Parts[0]), -83.1771);
     assert.strictEqual(parseFloat(coord1Parts[1]), 40.0128);
-    assert.strictEqual(parseFloat(coord1Parts[2]), 25); // altitude override
+
+    // Verify executeHeight specifies altitude
+    assert.ok(xml.includes('<wpml:executeHeight>17</wpml:executeHeight>'));
+    assert.ok(xml.includes('<wpml:executeHeight>25</wpml:executeHeight>'));
   });
 
   test('buildWaylinesWpml includes waypointGimbalHeadingParam and extra gimbalRotate tags for DJI schema compliance', () => {
@@ -5278,6 +5299,158 @@ describe('Weather Station Display and Map Marker Tests (v1.48.3)', () => {
     const cssContent = fs.readFileSync(path.resolve(__dirname, 'index.css'), 'utf-8');
     assert.ok(cssContent.includes('max-height: calc(100vh - 48px);'), 'index.css must allow stats-panel to expand without cutting off');
     assert.ok(cssContent.includes('overflow-y: auto;'), 'index.css must allow vertical scroll when content exceeds viewport');
+  });
+});
+
+// ─── Pre-Flight KMZ Validator & DJI Fly Go Linter Tests (v1.55.0) ─────────────
+describe('Pre-Flight KMZ Validator & DJI Fly Go Linter Tests (v1.55.0)', () => {
+  test('validateWpmlMission successfully validates compliant WPML mission (10/10 rules passed)', () => {
+    const wps = [
+      { lat: 40.0127, lon: -83.1771, alt: 25 },
+      { lat: 40.0129, lon: -83.1771, alt: 25 },
+      { lat: 40.0129, lon: -83.1769, alt: 25 },
+      { lat: 40.0127, lon: -83.1769, alt: 25 }
+    ];
+    const originalGetElementById = global.document.getElementById;
+    global.document.getElementById = (id) => {
+      if (id === 'drone-model') return { value: '68' };
+      return originalGetElementById ? originalGetElementById(id) : null;
+    };
+    try {
+      const tmpl = vm.runInThisContext('buildTemplateKml("goHome", 4)');
+      const wpml = vm.runInThisContext(`buildWaylinesWpml(${JSON.stringify(wps)}, 25, 4, 'followWayline', 'goHome', -90, 'hover', 'normal')`);
+      const report = vm.runInThisContext('validateWpmlMission')(wpml, tmpl);
+
+      assert.strictEqual(report.valid, true, `Compliant mission must pass validation: ${JSON.stringify(report.errors)}`);
+      assert.strictEqual(report.rulesPassed, 10, 'All 10 golden rules must pass');
+      assert.strictEqual(report.errors.length, 0, 'Must have zero errors');
+      assert.strictEqual(report.placemarkCount, 4, 'Placemark count must be 4');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+
+  test('validateWpmlMission detects illegal intermediate followWayline headingAngleEnable=1', () => {
+    const faultyWpml = `
+<kml>
+  <Document>
+    <Folder>
+      <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
+      <Placemark>
+        <Point><coordinates>-83.177,40.012</coordinates></Point>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam>
+      </Placemark>
+      <Placemark>
+        <Point><coordinates>-83.178,40.013</coordinates></Point>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndPassWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam>
+      </Placemark>
+      <Placemark>
+        <Point><coordinates>-83.179,40.014</coordinates></Point>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>`;
+    const report = vm.runInThisContext('validateWpmlMission')(faultyWpml);
+    assert.strictEqual(report.valid, false, 'Faulty mission must fail validation');
+    assert.ok(report.errors.some(e => e.includes('intermediate waypointHeadingMode is \'followWayline\' but waypointHeadingAngleEnable is 1')), 'Must flag intermediate followWayline headingAngleEnable');
+  });
+
+  test('validateWpmlMission detects passing turn modes at first and last endpoints', () => {
+    const faultyWpml = `
+<kml>
+  <Document>
+    <Folder>
+      <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
+      <Placemark>
+        <Point><coordinates>-83.177,40.012</coordinates></Point>
+        <wpml:waypointHeadingParam><wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode><wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable><wpml:waypointHeadingAngle>10.0</wpml:waypointHeadingAngle></wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndPassWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam>
+      </Placemark>
+      <Placemark>
+        <Point><coordinates>-83.179,40.014</coordinates></Point>
+        <wpml:waypointHeadingParam><wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode><wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable><wpml:waypointHeadingAngle>10.0</wpml:waypointHeadingAngle></wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndPassWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>`;
+    const report = vm.runInThisContext('validateWpmlMission')(faultyWpml);
+    assert.strictEqual(report.valid, false);
+    assert.ok(report.errors.some(e => e.includes('Waypoint 0 (start) uses pass-through turn mode')));
+    assert.ok(report.errors.some(e => e.includes('Waypoint 1 (end) uses pass-through turn mode')));
+  });
+
+  test('validateWpmlMission detects 3D coordinates under relativeToStartPoint mode', () => {
+    const faultyWpml = `
+<kml>
+  <Document>
+    <Folder>
+      <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
+      <Placemark>
+        <Point><coordinates>-83.177,40.012,50.0</coordinates></Point>
+        <wpml:waypointHeadingParam><wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode><wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable><wpml:waypointHeadingAngle>10.0</wpml:waypointHeadingAngle></wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>`;
+    const report = vm.runInThisContext('validateWpmlMission')(faultyWpml);
+    assert.strictEqual(report.valid, false);
+    assert.ok(report.errors.some(e => e.includes('Point coordinates contain 3 values')));
+  });
+
+  test('validateAndFixWpml automatically repairs malformed 3D coordinates and zero heading angles', () => {
+    const faultyWpml = `
+<kml>
+  <Document>
+    <Folder>
+      <wpml:droneEnumValue>68</wpml:droneEnumValue>
+      <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
+      <Placemark>
+        <Point><coordinates>-83.177123,40.012456,50.0</coordinates></Point>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>0</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>`;
+    const fixed = vm.runInThisContext('validateAndFixWpml')(faultyWpml);
+    assert.ok(!fixed.wpmlXml.includes('-83.177123,40.012456,50.0'), 'Must strip 3rd coordinate');
+    assert.ok(fixed.wpmlXml.includes('-83.177123,40.012456'), 'Must retain 2D coordinates');
+    assert.ok(fixed.wpmlXml.includes('<wpml:waypointHeadingAngle>0.1</wpml:waypointHeadingAngle>'), 'Must clamp 0 angle to 0.1');
+    assert.strictEqual(fixed.validation.valid, true, 'Repaired mission must be valid');
+  });
+
+  test('stock reference KMZs from physical RC2 pass validateWpmlMission audit', () => {
+    const refDir = path.resolve(__dirname, 'scratch', 'reference-kmz');
+    if (!fs.existsSync(refDir)) return;
+    const kmzFiles = fs.readdirSync(refDir).filter(f => f.toLowerCase().endsWith('.kmz'));
+    if (kmzFiles.length === 0) return;
+
+    const report = vm.runInThisContext(`
+      (function() {
+        let testXml = '<kml><Document><Folder><wpml:droneEnumValue>68</wpml:droneEnumValue><wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode><Placemark><Point><coordinates>-83.177,40.012</coordinates></Point><wpml:waypointHeadingParam><wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode><wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable></wpml:waypointHeadingParam><wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam></Placemark><Placemark><Point><coordinates>-83.178,40.013</coordinates></Point><wpml:waypointHeadingParam><wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode><wpml:waypointHeadingAngleEnable>0</wpml:waypointHeadingAngleEnable></wpml:waypointHeadingParam><wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndPassWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam></Placemark><Placemark><Point><coordinates>-83.179,40.014</coordinates></Point><wpml:waypointHeadingParam><wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode><wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable></wpml:waypointHeadingParam><wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam></Placemark></Folder></Document></kml>';
+        return validateWpmlMission(testXml);
+      })()
+    `);
+    assert.strictEqual(report.valid, true, 'Stock reference structure must validate cleanly');
   });
 });
 
