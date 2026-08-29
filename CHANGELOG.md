@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.52.2] - 2026-08-29
+
+### Added & Improved
+- **Clean Flight Diag Action Placement:**
+  - Placed the dedicated **"Flight Diag"** amber button cleanly inside the primary mission action row beside **"3D View"** and **"Export KMZ"**.
+  - Removed redundant buttons from the top header toolbar and the floating map panel per user preference to preserve a distraction-free toolbar and HUD.
+
 ## [1.52.1] - 2026-08-29
 
 ### Added & Improved
