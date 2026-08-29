@@ -1726,7 +1726,7 @@ html, body {
               <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
               <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
             </svg>
-            <h1 style="display: inline-flex; align-items: center; gap: 4px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.58.0</span><span style="font-size: 0.48rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 3px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
+            <h1 style="display: inline-flex; align-items: center; gap: 4px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.58.1</span><span style="font-size: 0.48rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 3px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
           </div>
           <div class="header-actions" style="display: flex; gap: 5px; align-items: center;">
             <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" title="Configuration Settings">
@@ -2913,7 +2913,7 @@ html, body {
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.58.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.58.1</span>
             </div>
           </div>
         </div>
@@ -2977,6 +2977,12 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.58.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Single Grid Oblique Pitch Heading Enforcement:</strong> Enforced strict <code>followWayline</code> heading mode for Single Grid missions regardless of gimbal pitch angle, preventing yaw rate discontinuities and DJI Fly Go execution aborts. Added validation rule and automatic repair in KMZ pre-flight checks.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.58.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Direct USB Flight Log Pulling:</strong> Added dedicated "📥 Pull from RC 2" button in the Flight Diagnostics modal header and "📥 Pull Flight Log" action button in the sidebar. Allows 1-click on-demand extraction of <code>FlightRecord_*.txt</code> files over USB MTP directly from the HTML UI with automatic 3D replay decoding.</li>
@@ -9863,8 +9869,41 @@ ${waypointActions.join('\n')}
       }
     }
 
+    // Single Grid Golden Rule: Lawnmower grid patterns must strictly use followWayline (unless towardPOI or explicit per-waypoint custom heading is selected).
+    // smoothTransition in a single grid produces spline discontinuities on parallel turnaround turns that cause DJI Fly to suspend the mission.
+    if (gridType === 'single' && headingMode !== 'towardPOI' && wpMode !== 'towardPOI' && wpMode !== 'custom') {
+      actualHeadingMode = 'followWayline';
+    }
+
     if (actualHeadingMode === 'followWayline') {
-      if (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
+      if (gridType === 'single' && wpMode !== 'custom') {
+        // In Single Grid, compute bearing strictly along the wayline flight path so entry/exit tangents match flight direction
+        let fromWp, toWp;
+        if (idx < waypoints.length - 1) {
+          fromWp = waypoints[idx];
+          toWp = waypoints[idx + 1];
+        } else if (idx > 0) {
+          fromWp = waypoints[idx - 1];
+          toWp = waypoints[idx];
+        }
+        if (toWp && fromWp &&
+            fromWp.lat !== undefined && fromWp.lon !== undefined &&
+            toWp.lat !== undefined && toWp.lon !== undefined) {
+          const lat1 = fromWp.lat * Math.PI / 180;
+          const lat2 = toWp.lat * Math.PI / 180;
+          const dLon = (toWp.lon - fromWp.lon) * Math.PI / 180;
+          const y = Math.sin(dLon) * Math.cos(lat2);
+          const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+          let bearing = Math.atan2(y, x) * 180 / Math.PI;
+          if (bearing < 0) bearing += 360;
+          actualHeadingAngle = bearing;
+        } else {
+          const gridRotEl = document.getElementById('grid-rotation');
+          const gridRot = gridRotEl ? parseFloat(gridRotEl.value) : 0;
+          const h = getDefaultHeading(idx, waypoints, gridRot);
+          actualHeadingAngle = isNaN(h) ? 0 : h;
+        }
+      } else if (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
         actualHeadingAngle = wp.heading;
       } else {
         // Compute bearing from lat/lon to avoid NaN when x/y offsets are not set
@@ -10055,16 +10094,21 @@ function validateWpmlMission(wpmlXml, templateXml = '', options = {}) {
   // ── RULE 1: Heading Mode & waypointHeadingAngleEnable Coherence ────────────
   let r1Passed = true;
   let r1Msg = 'Heading modes properly assign waypointHeadingAngleEnable (intermediate followWayline waypoints use 0, endpoints use 1)';
+  const isSinglePattern = (options && (options.gridType === 'single' || options.pattern === 'single'));
   placemarks.forEach((pm, idx) => {
     const modeMatch = pm.match(/<wpml:waypointHeadingMode>([^<]+)<\/wpml:waypointHeadingMode>/);
     const enableMatch = pm.match(/<wpml:waypointHeadingAngleEnable>([^<]+)<\/wpml:waypointHeadingAngleEnable>/);
-    if (modeMatch && enableMatch) {
+    if (modeMatch) {
       const mode = modeMatch[1].trim();
-      const enable = enableMatch[1].trim();
+      const enable = enableMatch ? enableMatch[1].trim() : '0';
       const isEndpoint = (idx === 0 || idx === placemarks.length - 1);
       if (mode === 'followWayline' && !isEndpoint && enable === '1') {
         r1Passed = false;
         result.errors.push(`Waypoint ${idx}: intermediate waypointHeadingMode is 'followWayline' but waypointHeadingAngleEnable is 1 (must be 0 to prevent DJI Fly Go abort)`);
+      }
+      if (isSinglePattern && mode === 'smoothTransition' && (idx === 0 || placemarks.length <= 2)) {
+        r1Passed = false;
+        result.errors.push(`Waypoint ${idx}: Single grid pattern cannot use 'smoothTransition' (must use 'followWayline' to prevent DJI Fly Go abort on parallel flight lines)`);
       }
     }
   });
@@ -10240,6 +10284,26 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
     /(<wpml:waypointHeadingMode>\s*(?:followWayline|manually|towardPOI)\s*<\/wpml:waypointHeadingMode>[\s\S]*?<wpml:waypointHeadingAngleEnable>)\s*1\s*(<\/wpml:waypointHeadingAngleEnable>)/g,
     '$10$2'
   );
+
+  // 1b. Fix smoothTransition in single grid pattern -> change to followWayline
+  const isSingle = (options && (options.gridType === 'single' || options.pattern === 'single'));
+  if (isSingle) {
+    fixedWpml = fixedWpml.replace(
+      /<wpml:waypointHeadingMode>\s*smoothTransition\s*<\/wpml:waypointHeadingMode>/g,
+      '<wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>'
+    );
+    // Ensure intermediate waypoints in followWayline have headingAngleEnable: 0
+    const pms = fixedWpml.split('<Placemark>');
+    if (pms.length > 2) {
+      for (let i = 2; i < pms.length - 1; i++) {
+        pms[i] = pms[i].replace(
+          /(<wpml:waypointHeadingAngleEnable>)\s*1\s*(<\/wpml:waypointHeadingAngleEnable>)/g,
+          '$10$2'
+        );
+      }
+      fixedWpml = pms.join('<Placemark>');
+    }
+  }
 
   // 2. Fix 3D coordinates to 2D
   fixedWpml = fixedWpml.replace(
@@ -11002,8 +11066,9 @@ function generateKMZBlob(wps = null) {
   const templateKml = buildTemplateKml(finishAction, speed);
   const waylinesWpml = buildWaylinesWpml(effectiveWps, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode);
 
+  const currentGridType = document.getElementById('grid-type')?.value || 'single';
   // Auto-audit and fix subtle firmware incompatibilities
-  const fixed = validateAndFixWpml(waylinesWpml, templateKml, { waypoints: effectiveWps });
+  const fixed = validateAndFixWpml(waylinesWpml, templateKml, { waypoints: effectiveWps, gridType: currentGridType });
   const finalWpml = fixed.wpmlXml;
   const finalTemplate = fixed.templateXml;
   const validation = fixed.validation;
