@@ -3824,12 +3824,12 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
     assert.strictEqual(decoderFn(fixed), '2026-08-20T19-42-28Z');
   });
 
-  test('index_template.html includes high-visibility Flight Diagnostics buttons in header, actions row, and stats panel', () => {
+  test('index_template.html includes Flight Diagnostics button in action row without toolbar/panel clutter', () => {
     const html = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf-8');
-    assert.ok(html.includes('id="header-diagnostics-btn"'), 'Must contain header-diagnostics-btn');
-    assert.ok(html.includes('id="action-diagnostics-btn"'), 'Must contain action-diagnostics-btn');
-    assert.ok(html.includes('id="stats-diagnostics-btn"'), 'Must contain stats-diagnostics-btn');
+    assert.ok(html.includes('id="action-diagnostics-btn"'), 'Must contain action-diagnostics-btn in primary actions row');
     assert.ok(html.includes('id="open-diagnostics-btn"'), 'Must preserve open-diagnostics-btn');
+    assert.strictEqual(html.includes('id="header-diagnostics-btn"'), false, 'Must not place diagnostics in header toolbar');
+    assert.strictEqual(html.includes('id="stats-diagnostics-btn"'), false, 'Must not place diagnostics in floating stats panel');
   });
 
   test('Remote ID ASTM F3411 decoder correctly parses Basic ID, Location, and System messages', () => {

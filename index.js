@@ -6341,10 +6341,8 @@ const FlightDiagnostics = {
   init() {
     if (typeof document === 'undefined') return;
     const openBtns = [
-      document.getElementById('open-diagnostics-btn'),
-      document.getElementById('header-diagnostics-btn'),
       document.getElementById('action-diagnostics-btn'),
-      document.getElementById('stats-diagnostics-btn')
+      document.getElementById('open-diagnostics-btn')
     ];
     openBtns.forEach(btn => {
       if (btn) btn.addEventListener('click', () => this.open());
