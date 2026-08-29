@@ -6585,31 +6585,76 @@ const FlightDiagnostics = {
     if (!flightSel || typeof fetch === 'undefined') return;
 
     try {
-      const res = await fetch('http://127.0.0.1:8765/api/flights', {
-        signal: AbortSignal.timeout ? AbortSignal.timeout(1500) : undefined
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.flights && data.flights.length > 0) {
-          const currentVal = flightSel.value;
-          flightSel.innerHTML = '';
-          data.flights.forEach((f, idx) => {
-            const opt = document.createElement('option');
-            opt.value = f.filename;
-            opt.textContent = f.label;
-            flightSel.appendChild(opt);
-          });
-          const planOpt = document.createElement('option');
-          planOpt.value = 'active-mission';
-          planOpt.textContent = 'Planned Mission Simulation';
-          flightSel.appendChild(planOpt);
-
-          if (currentVal && Array.from(flightSel.options).some(o => o.value === currentVal)) {
-            flightSel.value = currentVal;
-          } else {
-            flightSel.selectedIndex = 0;
+      // 1. Fetch raw RC 2 flight logs
+      let rc2Flights = [];
+      try {
+        const res = await fetch('http://127.0.0.1:8765/api/flights', {
+          signal: AbortSignal.timeout ? AbortSignal.timeout(1500) : undefined
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.flights)) {
+            rc2Flights = data.flights;
           }
         }
+      } catch (e) {}
+
+      // 2. Fetch saved SQLite mission diagnostics
+      let savedMissions = [];
+      try {
+        const resDiag = await fetch('http://127.0.0.1:8765/api/diagnostics/history', {
+          signal: AbortSignal.timeout ? AbortSignal.timeout(1500) : undefined
+        });
+        if (resDiag.ok) {
+          const dataDiag = await resDiag.json();
+          if (dataDiag.success && Array.isArray(dataDiag.missions)) {
+            savedMissions = dataDiag.missions;
+          }
+        }
+      } catch (e) {}
+
+      if (rc2Flights.length === 0 && savedMissions.length === 0) return;
+
+      const currentVal = flightSel.value;
+      flightSel.innerHTML = '';
+
+      // Active Mission Simulation
+      const planOpt = document.createElement('option');
+      planOpt.value = 'active-mission';
+      planOpt.textContent = '🎯 Planned Mission Simulation (Active Workspace)';
+      flightSel.appendChild(planOpt);
+
+      // Saved Mission Diagnostics from SQLite Archive
+      if (savedMissions.length > 0) {
+        const groupSaved = document.createElement('optgroup');
+        groupSaved.label = 'Saved Mission Diagnostics (SQLite Archive)';
+        savedMissions.forEach((m, idx) => {
+          const opt = document.createElement('option');
+          opt.value = `diag:${m.uuid}`;
+          const dateClean = (m.created_at || '').replace('T', ' ').replace(/\..+/, '').replace('Z', ' UTC');
+          opt.textContent = `💾 ${m.filename || m.uuid} (${m.waypoint_count || 0} wps • ${dateClean})`;
+          groupSaved.appendChild(opt);
+        });
+        flightSel.appendChild(groupSaved);
+      }
+
+      // RC 2 Recorded Flights
+      if (rc2Flights.length > 0) {
+        const groupRc2 = document.createElement('optgroup');
+        groupRc2.label = 'DJI RC 2 Flight Logs (Actual Recorded Flights)';
+        rc2Flights.forEach(f => {
+          const opt = document.createElement('option');
+          opt.value = f.filename;
+          opt.textContent = `🛰️ ${f.label}`;
+          groupRc2.appendChild(opt);
+        });
+        flightSel.appendChild(groupRc2);
+      }
+
+      if (currentVal && Array.from(flightSel.options).some(o => o.value === currentVal)) {
+        flightSel.value = currentVal;
+      } else {
+        flightSel.selectedIndex = 0;
       }
     } catch (e) {
       // Keep existing options
@@ -6631,6 +6676,33 @@ const FlightDiagnostics = {
     if (flightId === 'active-mission') {
       this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId: 'active-mission', isSimulation: true });
       this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
+    } else if (flightId.startsWith('diag:')) {
+      const uuid = flightId.replace('diag:', '').trim();
+      try {
+        const res = await fetch(`http://127.0.0.1:8765/api/diagnostics/${encodeURIComponent(uuid)}`, {
+          signal: AbortSignal.timeout ? AbortSignal.timeout(2000) : undefined
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.mission && data.mission.diagnostics) {
+            this.telemetryData = data.mission.diagnostics;
+            const plannedStats = data.mission.plan?.statistics || {
+              waypointCount: data.mission.waypoint_count,
+              altitude: data.mission.altitude,
+              totalDistance: data.mission.total_distance
+            };
+            this.comparisonData = computeFlightComparison(plannedStats, this.telemetryData);
+          } else {
+            throw new Error('Diagnostics data missing in mission payload');
+          }
+        } else {
+          throw new Error('Companion offline');
+        }
+      } catch (err) {
+        console.warn('Failed to load saved diagnostic by uuid:', err);
+        this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId });
+        this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
+      }
     } else {
       try {
         const res = await fetch(`http://127.0.0.1:8765/api/flight-telemetry?file=${encodeURIComponent(flightId)}`, {
@@ -7165,7 +7237,11 @@ const FlightDiagnostics = {
         const lowerName = file.name.toLowerCase();
         if (lowerName.endsWith('.json') || lowerName.endsWith('.geojson')) {
           const parsed = JSON.parse(text);
-          importedTelemetry = parseGeoJsonTelemetry(parsed, flightId);
+          if (parsed && parsed.diagnostics && parsed.diagnostics.points) {
+            importedTelemetry = parsed.diagnostics;
+          } else {
+            importedTelemetry = parseGeoJsonTelemetry(parsed, flightId);
+          }
         } else if (lowerName.endsWith('.csv')) {
           importedTelemetry = parseCsvTelemetry(text, flightId);
         } else if (lowerName.endsWith('.kml') || lowerName.endsWith('.wpml')) {
