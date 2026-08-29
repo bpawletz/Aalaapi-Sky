@@ -1707,7 +1707,7 @@ html, body {
               <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
               <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
             </svg>
-            <h1 style="display: inline-flex; align-items: center; gap: 4px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.48.0</span><span style="font-size: 0.48rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 3px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
+            <h1 style="display: inline-flex; align-items: center; gap: 4px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.48.1</span><span style="font-size: 0.48rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 3px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
           </div>
           <div class="header-actions" style="display: flex; gap: 5px; align-items: center;">
             <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" title="Configuration Settings">
@@ -2821,7 +2821,7 @@ html, body {
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.48.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.48.1</span>
             </div>
           </div>
         </div>
@@ -2885,6 +2885,13 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.48.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Double Grid Flight Execution Fix:</strong> Resolved "Error performing flight" on Double Grid missions by dynamically assigning <code>smoothTransition</code> mode for oblique camera passes so center-pointing heading angles never conflict with wayline trajectory validators.</li>
+              <li><strong>Freeform Flight Plan Fix:</strong> Switched custom waypoint headings to <code>smoothTransition</code> and clamped strictly 0.0° angles away from zero to prevent the DJI Fly firmware waypoint flight suspension bug.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.48.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Live Drone REST API Locate on Map:</strong> Integrated <code>GET/POST /api/drone/locate</code> and <code>/api/remote-id/locate</code> endpoints in companion bridge. When located, new geo location coordinates automatically update the drone marker position, breadcrumbs, and map center in real time.</li>
@@ -6991,9 +6998,11 @@ function updateGrid() {
         const pitch = pt.pitch !== undefined ? pt.pitch : defaultGimbalPitch;
 
         let finalHeading = pt.heading;
+        let finalHeadingMode = pt.headingMode || null;
         if (gridType === 'double' && pitch !== -90) {
           finalHeading = Math.atan2(-pt.x, -pt.y) * (180.0 / Math.PI);
           if (finalHeading < 0) finalHeading += 360;
+          finalHeadingMode = 'smoothTransition';
         }
 
         if (finalHeading !== null && finalHeading !== undefined) {
@@ -7018,6 +7027,7 @@ function updateGrid() {
           alt: alt,
           pitch: pitch,
           heading: finalHeading,
+          headingMode: finalHeadingMode,
           speed: pt.speed !== undefined ? pt.speed : null,
           hoverTime: pt.hoverTime !== undefined ? pt.hoverTime : null,
           turnMode: pt.turnMode || 'inherit',
@@ -9362,18 +9372,28 @@ ${waypointActions.join('\n')}
         }
       }
     } else {
-      if (headingMode === 'towardPOI') {
-        let targetPoi = pois[targetPoiIndex] || pois[0];
-        if (!targetPoi && targetPoiIndex === 0 && typeof centerMarker !== 'undefined' && centerMarker) {
-          const latlng = centerMarker.getLatLng();
-          targetPoi = { lat: latlng.lat, lon: latlng.lng };
-        }
-        if (targetPoi) {
-          poiPoint = `${targetPoi.lon.toFixed(13)},${targetPoi.lat.toFixed(13)},0.000000`;
-        }
-      } else if (headingMode === 'custom') {
+      if (gridType === 'double' && effectivePitch !== -90 && wp.heading !== null && wp.heading !== undefined) {
+        // In Double Grid with oblique pitch, headings point toward the center, which requires smoothTransition
         actualHeadingMode = 'smoothTransition';
-        actualHeadingAngle = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
+        actualHeadingAngle = wp.heading;
+      } else if (gridType === 'freeform' && wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
+        // In Freeform with custom per-waypoint heading, use smoothTransition
+        actualHeadingMode = 'smoothTransition';
+        actualHeadingAngle = wp.heading;
+      } else {
+        if (headingMode === 'towardPOI') {
+          let targetPoi = pois[targetPoiIndex] || pois[0];
+          if (!targetPoi && targetPoiIndex === 0 && typeof centerMarker !== 'undefined' && centerMarker) {
+            const latlng = centerMarker.getLatLng();
+            targetPoi = { lat: latlng.lat, lon: latlng.lng };
+          }
+          if (targetPoi) {
+            poiPoint = `${targetPoi.lon.toFixed(13)},${targetPoi.lat.toFixed(13)},0.000000`;
+          }
+        } else if (headingMode === 'custom') {
+          actualHeadingMode = 'smoothTransition';
+          actualHeadingAngle = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
+        }
       }
     }
 
@@ -9412,6 +9432,15 @@ ${waypointActions.join('\n')}
 
     if (isNaN(actualHeadingAngle) || actualHeadingAngle === null || actualHeadingAngle === undefined) {
       actualHeadingAngle = 0;
+    }
+
+    // Normalize angle into [0, 360)
+    actualHeadingAngle = ((actualHeadingAngle % 360) + 360) % 360;
+
+    // DJI Fly firmware has a bug where waypointHeadingAngle of strictly 0.0 with headingAngleEnable: 1
+    // causes "Error performing flight: Waypoint Flight Suspended". Clamp 0.0 to 0.1 to avoid firmware rejection.
+    if (actualHeadingMode !== 'followWayline' && (actualHeadingAngle === 0 || Math.abs(actualHeadingAngle) < 0.05)) {
+      actualHeadingAngle = 0.1;
     }
 
     const headingAngleEnable = 1;
