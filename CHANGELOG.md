@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.51.0] - 2026-08-29
+
+### Added & Improved
+- **Last Known Position (LKP) & Flight Persistence for Non-Broadcasting Drones:**
+  - Extended Remote ID airspace retention window to 15 minutes, ensuring drones that stop transmitting (landing, battery cutoff, out of range, or signal loss) do not vanish from the map.
+  - Automatically transitions non-broadcasting drones to a distinct **Last Known Position (LKP)** state when packets stop for > 15s.
+  - Rendered high-visibility amber warning halo and `"LKP"` badge with time elapsed (`Signal Lost • 2m 15s ago`).
+  - Preserved the full historical flight breadcrumbs route, the Takeoff / Launch marker (`[H] Takeoff`), and the home vector range line.
+  - Updated map airspace pill to indicate `⚠️ X Last Known (LKP)` or mixed `📡 X Live + Y LKP`, with smart camera focus on the last known coordinates.
+  - Added REST endpoint `POST /api/remote-id/clear-inactive` to allow manual purging of stale drones.
+  - Added comprehensive unit tests for retention timing, LKP marker generation, and breadcrumb preservation.
+
 ## [1.50.0] - 2026-08-29
 
 ### Added & Improved

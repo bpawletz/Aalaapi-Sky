@@ -333,8 +333,11 @@ function formatDuration(ms) {
  * State manager aggregating decoded Remote ID messages for active drones in airspace.
  */
 class RemoteIdAirspaceTracker {
-  constructor(timeoutSec = 30) {
-    this.timeoutMs = timeoutSec * 1000;
+  constructor(activeTimeoutSec = 15, retentionSec = 900) {
+    this.activeTimeoutMs = activeTimeoutSec * 1000;
+    this.retentionMs = retentionSec * 1000;
+    // Backward-compatibility: timeoutMs alias for activeTimeoutMs
+    this.timeoutMs = this.activeTimeoutMs;
     this.drones = new Map(); // key: mac or uasId -> DroneState
     this.totalPackets = 0;
   }
@@ -536,28 +539,46 @@ class RemoteIdAirspaceTracker {
   }
 
   /**
-   * Remove stale drones that haven't broadcast within timeout.
+   * Remove stale drones that haven't broadcast within the full retention window (default 15 mins).
    */
   cleanup(now = Date.now()) {
     for (const [key, drone] of this.drones.entries()) {
-      if (now - drone.lastSeen > this.timeoutMs) {
+      if (now - drone.lastSeen > this.retentionMs) {
         this.drones.delete(key);
       }
     }
   }
 
   /**
-   * Get list of active drones.
+   * Manually clear inactive/lost-signal drones from tracker.
    */
-  getActiveDrones() {
-    this.cleanup();
-    const now = Date.now();
-    return Array.from(this.drones.values()).map(d => ({
-      ...d,
-      ageSec: Math.round((now - d.lastSeen) / 1000),
-      uptimeSec: Math.round((now - d.firstSeen) / 1000),
-      uptimeFormatted: formatDuration(now - d.firstSeen)
-    }));
+  clearInactive(now = Date.now()) {
+    for (const [key, drone] of this.drones.entries()) {
+      if (now - drone.lastSeen > this.activeTimeoutMs) {
+        this.drones.delete(key);
+      }
+    }
+  }
+
+  /**
+   * Get list of drones in airspace (both active live and preserved last-known).
+   */
+  getActiveDrones(now = Date.now()) {
+    this.cleanup(now);
+    return Array.from(this.drones.values()).map(d => {
+      const ageSec = Math.round((now - d.lastSeen) / 1000);
+      const isLive = ageSec <= Math.round(this.activeTimeoutMs / 1000);
+      const lastSeenFormatted = ageSec < 60 ? `${ageSec}s ago` : `${Math.floor(ageSec / 60)}m ${ageSec % 60}s ago`;
+      return {
+        ...d,
+        ageSec,
+        isLive,
+        signalLost: !isLive,
+        lastSeenFormatted,
+        uptimeSec: Math.round((now - d.firstSeen) / 1000),
+        uptimeFormatted: formatDuration(now - d.firstSeen)
+      };
+    });
   }
 
   /**
