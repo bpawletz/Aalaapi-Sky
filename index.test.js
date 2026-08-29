@@ -5734,6 +5734,89 @@ describe('Multi-Vendor Autopilots (PX4 / MAVLink / Autel) & Open MCP Server Test
   });
 });
 
+describe('Direct USB Flight Log Pulling UI Tests (v1.58.0)', () => {
+  test('index_template.html and index.html contain direct flight log pull buttons', () => {
+    const fs = require('fs');
+    ['index_template.html', 'index.html'].forEach(filename => {
+      const content = fs.readFileSync(filename, 'utf8');
+      assert.ok(content.includes('id="direct-rc2-pull-log-btn"'), `Must include direct-rc2-pull-log-btn in ${filename}`);
+      assert.ok(content.includes('id="diag-pull-rc2-btn"'), `Must include diag-pull-rc2-btn in ${filename}`);
+      assert.ok(content.includes('v1.58.0'), `Must include v1.58.0 in ${filename}`);
+    });
+  });
+
+  test('pullFlightLogFromRC2 is defined in index.js and handles fetch errors gracefully', async () => {
+    const fn = vm.runInThisContext('pullFlightLogFromRC2');
+    assert.strictEqual(typeof fn, 'function', 'pullFlightLogFromRC2 must be a defined function');
+
+    // Simulate mock button
+    const mockBtn = {
+      disabled: false,
+      innerHTML: 'Pull',
+      style: {}
+    };
+
+    // Test with offline / failing fetch
+    global.fetch = async () => {
+      return {
+        ok: false,
+        json: async () => ({ success: false, error: 'RC 2 not connected over MTP' })
+      };
+    };
+
+    const res = await fn(mockBtn);
+    assert.strictEqual(res.success, false);
+    assert.ok(mockBtn.innerHTML.includes('Pull Failed') || mockBtn.innerHTML.includes('Offline'));
+  });
+
+  test('pullFlightLogFromRC2 handles successful flight log extraction and updates UI', async () => {
+    const fn = vm.runInThisContext('pullFlightLogFromRC2');
+    const fd = vm.runInThisContext('FlightDiagnostics');
+
+    let refreshed = false;
+    let loadedFlight = null;
+    const origRefresh = fd.refreshFlightList;
+    const origLoad = fd.loadSelectedFlight;
+
+    fd.refreshFlightList = async () => { refreshed = true; };
+    fd.loadSelectedFlight = (id) => { loadedFlight = id; };
+
+    const mockBtn = {
+      id: 'diag-pull-rc2-btn',
+      disabled: false,
+      innerHTML: 'Pull',
+      style: {}
+    };
+
+    global.fetch = async (url) => {
+      if (url.includes('/api/latest-flight')) {
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            data: {
+              latestLog: 'FlightRecord_2026-08-29_[19-15-00].txt',
+              latestKmz: '354A8F93-759C-42C3-A8D5-746F79C7622A.kmz'
+            }
+          })
+        };
+      }
+      return { ok: false };
+    };
+
+    const res = await fn(mockBtn);
+    assert.strictEqual(res.success, true);
+    assert.strictEqual(res.logName, 'FlightRecord_2026-08-29_[19-15-00].txt');
+    assert.strictEqual(refreshed, true, 'Must trigger FlightDiagnostics.refreshFlightList()');
+    assert.strictEqual(loadedFlight, 'FlightRecord_2026-08-29_[19-15-00].txt', 'Must load selected flight');
+
+    // Restore
+    fd.refreshFlightList = origRefresh;
+    fd.loadSelectedFlight = origLoad;
+  });
+});
+
+
 
 
 

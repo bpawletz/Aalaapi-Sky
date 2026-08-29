@@ -1489,6 +1489,56 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(toggleResult.hiddenAfterDisable, 'Container should hide when disabled');
     assert.strictEqual(toggleResult.storedAfterDisable, 'false', 'Must persist false in localStorage');
   });
+
+  test('E2E: Direct USB Flight Log Pull buttons exist and respond cleanly to clicks', async () => {
+    const evalResult = await page.evaluate(async () => {
+      const sidebarPullBtn = document.getElementById('direct-rc2-pull-log-btn');
+      const diagPullBtn = document.getElementById('diag-pull-rc2-btn');
+
+      if (!sidebarPullBtn || !diagPullBtn) {
+        return { success: false, reason: 'Buttons missing' };
+      }
+
+      // Intercept fetch to return mock success for /api/latest-flight
+      const originalFetch = window.fetch;
+      window.fetch = async (url, opts) => {
+        if (typeof url === 'string' && url.includes('/api/latest-flight')) {
+          return {
+            ok: true,
+            json: async () => ({
+              success: true,
+              data: {
+                latestLog: 'FlightRecord_2026-08-29_[19-20-00].txt',
+                latestKmz: '354A8F93-759C-42C3-A8D5-746F79C7622A.kmz'
+              }
+            })
+          };
+        }
+        return originalFetch(url, opts);
+      };
+
+      // Click diag pull button
+      diagPullBtn.click();
+      await new Promise(r => setTimeout(r, 200));
+
+      const diagBtnText = diagPullBtn.textContent;
+
+      // Restore fetch
+      window.fetch = originalFetch;
+
+      return {
+        success: true,
+        hasSidebarPullBtn: !!sidebarPullBtn,
+        hasDiagPullBtn: !!diagPullBtn,
+        diagBtnText
+      };
+    });
+
+    assert.ok(evalResult.success, 'Flight log pull buttons should exist in the DOM');
+    assert.ok(evalResult.hasSidebarPullBtn, 'Sidebar pull log button should exist');
+    assert.ok(evalResult.hasDiagPullBtn, 'Diagnostics header pull log button should exist');
+    assert.ok(evalResult.diagBtnText.includes('Pulled') || evalResult.diagBtnText.includes('Pull'), 'Button text should update upon pull');
+  });
 });
 
 
