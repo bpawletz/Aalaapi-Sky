@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.56.0] - 2026-08-29
+
+### Added & Improved
+- **Bad KMZ Mission History Recording & Automated Antigravity Triage:**
+  - **SQLite Diagnostics Health Schema:** Extended `mission_diagnostics` table in `scratch/missions.db` with `is_valid`, `validation_rules_passed`, `validation_errors_count`, `validation_errors_json`, `validation_warnings_json`, `validation_report_json`, `wpml_xml`, `template_xml`, and `execution_status`.
+  - **Automated Antigravity CLI Tool (`tools/inspect_failed_mission.js`):** Added a dedicated command-line triage tool for Antigravity (`node tools/inspect_failed_mission.js latest | list | <uuid>`) that instantly retrieves bad KMZ records from SQLite, formats rule violations, prints waypoints, extracts offending XML placemarks, and recommends regression assertions.
+  - **One-Click Antigravity Fix Prompt:** Added "📋 Copy Antigravity Fix Prompt" buttons in both the Pre-Flight KMZ Inspector and Flight Diagnostics modals, copying a comprehensive reproduction prompt straight to the clipboard for zero-effort debugging with Antigravity.
+  - **Bad KMZ Triage Category in Flight Diagnostics:** Updated the flight selector dropdown to group bad or suspended KMZs under a dedicated `⚠️ Bad / Suspended KMZs (Antigravity Triage)` optgroup.
+  - **LocalStorage & Download Fallback:** Persists bad KMZ diagnostics to `localStorage` (`aalaapi_bad_kmz_history`) and includes complete validation metrics in auto-downloaded `_diag.json` files when running offline.
+
 ## [1.55.0] - 2026-08-29
 
 ### Added & Fixed

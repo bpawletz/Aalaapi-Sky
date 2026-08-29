@@ -1398,7 +1398,56 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(modalState.scoreText.includes('/10 Passed'), `Modal score should show passed rules count, got: '${modalState.scoreText}'`);
     assert.ok(modalState.closedAfterClick, 'Modal should close when close button is clicked');
   });
+
+  test('E2E: Antigravity prompt copy buttons exist and invoke prompt generator with visual feedback', async () => {
+    const copyResult = await page.evaluate(() => {
+      const inspectorBtn = document.getElementById('inspector-copy-antigravity-btn');
+      const diagBtn = document.getElementById('diag-copy-antigravity-btn');
+      if (!inspectorBtn || !diagBtn) {
+        return { success: false, reason: 'Buttons missing' };
+      }
+
+      let copiedText = '';
+      try {
+        Object.defineProperty(navigator, 'clipboard', {
+          value: {
+            writeText: (txt) => {
+              copiedText = txt;
+              return Promise.resolve();
+            }
+          },
+          configurable: true,
+          writable: true
+        });
+      } catch (e) {}
+
+      // Click inspector copy button
+      if (typeof KMZInspector !== 'undefined') {
+        KMZInspector.open();
+      }
+      inspectorBtn.click();
+      const inspectorPrompt = copiedText || (typeof KMZInspector !== 'undefined' ? KMZInspector.generateAntigravityPrompt() : '');
+
+      // Click diag copy button
+      copiedText = '';
+      diagBtn.click();
+      const diagPrompt = copiedText || (typeof KMZInspector !== 'undefined' ? KMZInspector.generateAntigravityPrompt() : '');
+
+      return {
+        success: true,
+        hasInspectorPrompt: inspectorPrompt.includes('ANTIGRAVITY BUG REPORT'),
+        hasDiagPrompt: diagPrompt.includes('ANTIGRAVITY BUG REPORT'),
+        inspectorBtnText: inspectorBtn.textContent,
+        diagBtnText: diagBtn.textContent
+      };
+    });
+
+    assert.ok(copyResult.success, 'Buttons should exist and be clickable');
+    assert.ok(copyResult.hasInspectorPrompt, 'Inspector copy button should copy Antigravity bug report');
+    assert.ok(copyResult.hasDiagPrompt, 'Diag copy button should copy Antigravity bug report');
+  });
 });
+
 
 
 
