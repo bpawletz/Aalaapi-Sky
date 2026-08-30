@@ -69,7 +69,7 @@
               <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
               <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
             </svg>
-            <h1 style="display: inline-flex; align-items: center; gap: 4px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.60.1</span><span style="font-size: 0.48rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 3px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
+            <h1 style="display: inline-flex; align-items: center; gap: 4px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.61.0</span><span style="font-size: 0.48rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 3px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
           </div>
           <div class="header-actions" style="display: flex; gap: 5px; align-items: center;">
             <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" title="Configuration Settings">
@@ -744,12 +744,93 @@
     <main class="main-map-container">
       <div id="map"></div>
 
-      <!-- Floating Live Remote ID Airspace Radar Pill on Map -->
-      <button id="remote-id-badge" class="remote-id-map-pill hidden" type="button" title="Live ASTM Remote ID Drone Detected • Click to Center Map">
-        <span class="pulsing-beacon-dot"></span>
-        <span id="remote-id-badge-text">📡 1 Drone in Airspace</span>
-        <span id="remote-id-locate-label" style="font-size: 0.68rem; background: rgba(239, 68, 68, 0.25); border: 1px solid rgba(239, 68, 68, 0.4); padding: 2px 7px; border-radius: 12px; color: #fca5a5; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;">Locate</span>
-      </button>
+      <!-- Floating Live Remote ID Airspace Radar & Calibration HUD on Map -->
+      <div id="remote-id-airspace-hud" class="remote-id-airspace-hud hidden">
+        <div class="remote-id-pill-row">
+          <button id="remote-id-badge" class="remote-id-map-pill hidden" type="button" title="Live ASTM Remote ID Drone Detected • Click to Center Map">
+            <span class="pulsing-beacon-dot"></span>
+            <span id="remote-id-badge-text">📡 1 Drone in Airspace</span>
+            <span id="remote-id-locate-label" style="font-size: 0.68rem; background: rgba(239, 68, 68, 0.25); border: 1px solid rgba(239, 68, 68, 0.4); padding: 2px 7px; border-radius: 12px; color: #fca5a5; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;">Locate</span>
+          </button>
+          <button id="remote-id-calibrate-btn" class="remote-id-action-pill hidden" type="button" title="Calibrate &amp; Align Remote ID with Map (Compensate Satellite Shift / GNSS Drift)" aria-label="Calibrate Remote ID Alignment">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="2" x2="12" y2="6"/>
+              <line x1="12" y1="18" x2="12" y2="22"/>
+              <line x1="2" y1="12" x2="6" y2="12"/>
+              <line x1="18" y1="12" x2="22" y2="12"/>
+            </svg>
+            <span>Align</span>
+            <span id="remote-id-cal-active-dot" class="remote-id-cal-active-dot hidden"></span>
+          </button>
+        </div>
+
+        <!-- Calibration Popover Panel -->
+        <div id="remote-id-calibration-panel" class="remote-id-calibration-panel hidden">
+          <div class="remote-id-cal-header">
+            <div class="remote-id-cal-title">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="2" x2="12" y2="6"/>
+                <line x1="12" y1="18" x2="12" y2="22"/>
+                <line x1="2" y1="12" x2="6" y2="12"/>
+                <line x1="18" y1="12" x2="22" y2="12"/>
+              </svg>
+              <span>Map &amp; Remote ID Alignment</span>
+            </div>
+            <button id="remote-id-cal-close-btn" class="remote-id-cal-close-btn" type="button" aria-label="Close Calibration Panel" title="Close Alignment Panel">✕</button>
+          </div>
+
+          <p class="remote-id-cal-desc">
+            Compensate for satellite imagery georeferencing shifts or civilian GPS drift by fine-tuning the Remote ID overlay.
+          </p>
+
+          <div class="remote-id-cal-body">
+            <!-- Nudge Crosshair D-Pad -->
+            <div class="remote-id-cal-dpad">
+              <div class="dpad-row">
+                <button id="remote-id-cal-nudge-n" class="dpad-btn" type="button" title="Nudge North">▲ N</button>
+              </div>
+              <div class="dpad-row dpad-middle">
+                <button id="remote-id-cal-nudge-w" class="dpad-btn" type="button" title="Nudge West">◀ W</button>
+                <div class="dpad-center-indicator" title="Current Step Size">
+                  <span id="remote-id-cal-step-indicator">1.0m</span>
+                </div>
+                <button id="remote-id-cal-nudge-e" class="dpad-btn" type="button" title="Nudge East">E ▶</button>
+              </div>
+              <div class="dpad-row">
+                <button id="remote-id-cal-nudge-s" class="dpad-btn" type="button" title="Nudge South">▼ S</button>
+              </div>
+            </div>
+
+            <!-- Step selector & Drag mode -->
+            <div class="remote-id-cal-controls">
+              <div class="cal-control-row">
+                <span class="cal-control-lbl">Nudge Step:</span>
+                <div class="cal-step-group">
+                  <button class="cal-step-btn" data-step="0.5" type="button" title="0.5 meter steps">0.5m</button>
+                  <button class="cal-step-btn active" data-step="1.0" type="button" title="1.0 meter steps">1m</button>
+                  <button class="cal-step-btn" data-step="5.0" type="button" title="5.0 meter steps">5m</button>
+                </div>
+              </div>
+
+              <button id="remote-id-cal-drag-btn" class="btn-cal-drag" type="button" title="Drag the drone marker on the satellite map to align with launchpad">
+                <span class="drag-icon">🎯</span>
+                <span id="remote-id-cal-drag-text">Enable Drag to Align</span>
+              </button>
+
+              <div class="cal-offset-row">
+                <span class="cal-offset-lbl">Offset:</span>
+                <span id="remote-id-cal-offset-text" class="cal-offset-val">0.0m (Aligned)</span>
+              </div>
+
+              <div class="cal-action-row">
+                <button id="remote-id-cal-reset-btn" class="btn-cal-reset" type="button" title="Reset offset to raw broadcast GPS coordinates">Reset to GPS (0m)</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- Floating Stats Panel -->
       <div class="stats-panel glass" id="stats-panel">
@@ -1237,7 +1318,7 @@
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.60.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.61.0</span>
             </div>
           </div>
         </div>
@@ -1307,6 +1388,20 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.61.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Map &amp; Remote ID Alignment Calibration:</strong> Added an interactive Remote ID &amp; Map Alignment tool to compensate for satellite imagery georeferencing shifts and non-RTK GNSS drift. Includes directional nudge buttons (<code>▲ N</code>, <code>▼ S</code>, <code>◀ W</code>, <code>E ▶</code>) with configurable step sizing (<code>0.5m</code>, <code>1m</code>, <code>5m</code>), interactive <em>Drag Drone on Map to Align</em> mode, 1-click GPS reset, and persistent <code>localStorage</code> offset memory.</li>
+              <li><strong>Marker Anchor &amp; Icon Centering:</strong> Mathematically centered the live Remote ID drone marker divIcon at <code>[19, 19]</code> and the Takeoff/Home ("H") badge at <code>[18, 13]</code>, eliminating visual subpixel displacement.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.60.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Retain Multiple Exports per RC 2 Slot:</strong> Upgraded SQLite diagnostics engine to key by unique export archive IDs instead of strict UUID constraints. Exporting multiple revisions for the same DJI RC 2 slot preserves all flights in SQLite history and auto-restores prior disk archives.</li>
+              <li><strong>Flight Diagnostics Modal Close Shortcuts:</strong> Added keyboard <code>Escape</code> (<code>Esc</code>) and backdrop click-to-close listeners to the Flight Diagnostics window.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.60.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Section 4 Sidebar Simplification:</strong> Completely removed the green pre-flight compliance banner (<code>DJI Fly Pre-Flight: 10/10 Rules Verified</code>) from the visible sidebar. The toolbar now exclusively displays the 3 primary control buttons (<code>3D View</code>, <code>Flight Diag</code>, <code>Export KMZ</code>), with pre-flight checklist audits housed inside the Flight Diagnostics center.</li>

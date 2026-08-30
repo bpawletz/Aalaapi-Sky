@@ -6245,15 +6245,281 @@ describe('Consolidated Diagnostics Center & Streamlined Section 4 Tests (v1.60.0
   });
 });
 
+describe('Multiple Mission Exports & Modal Close Shortcuts Tests (v1.60.2)', () => {
+  test('DiagnosticsDatabase retains multiple missions exported for the identical RC 2 UUID', () => {
+    const { DiagnosticsDatabase } = require('./tools/companion/diagnostics_db.js');
+    const db = new DiagnosticsDatabase(':memory:');
+    assert.ok(db);
 
+    const rc2Uuid = '354A8F93-759C-42C3-A8D5-746F79C7622A';
 
+    // Export 1: 2 waypoints at 23:11:46 UTC
+    const exp1 = {
+      uuid: rc2Uuid,
+      filename: `${rc2Uuid}.kmz`,
+      createdAt: '2026-08-29T23:11:46.729Z',
+      waypointCount: 2,
+      altitude: 21.0,
+      plan: { waypoints: [{ lat: 40.0, lon: -83.0 }, { lat: 40.01, lon: -83.01 }] }
+    };
+    const res1 = db.saveDiagnostic(exp1);
+    assert.strictEqual(res1.success, true);
+    assert.strictEqual(res1.uuid, rc2Uuid);
 
+    // Export 2: 16 waypoints at 23:29:34 UTC (same RC 2 slot UUID)
+    const exp2 = {
+      uuid: rc2Uuid,
+      filename: `${rc2Uuid}.kmz`,
+      createdAt: '2026-08-29T23:29:34.206Z',
+      waypointCount: 16,
+      altitude: 25.0,
+      plan: { waypoints: new Array(16).fill({ lat: 40.0, lon: -83.0 }) }
+    };
+    const res2 = db.saveDiagnostic(exp2);
+    assert.strictEqual(res2.success, true);
+    assert.strictEqual(res2.uuid, rc2Uuid);
 
+    // Verify history contains BOTH distinct exports instead of overwriting
+    const history = db.getHistory();
+    assert.strictEqual(history.length, 2, 'History must contain 2 separate records for the same RC 2 UUID');
+    assert.strictEqual(history[0].waypoint_count, 16);
+    assert.strictEqual(history[1].waypoint_count, 2);
 
+    // Lookup by archive_id
+    const retrieved1 = db.getByIdOrArchiveIdOrUuid(res1.archiveId);
+    assert.ok(retrieved1);
+    assert.strictEqual(retrieved1.waypoint_count, 2);
 
+    const retrieved2 = db.getByIdOrArchiveIdOrUuid(res2.archiveId);
+    assert.ok(retrieved2);
+    assert.strictEqual(retrieved2.waypoint_count, 16);
 
+    // Lookup by uuid returns newest
+    const latest = db.getByUuid(rc2Uuid);
+    assert.ok(latest);
+    assert.strictEqual(latest.waypoint_count, 16);
 
+    db.close();
+  });
 
+  test('DiagnosticsDatabase restores disk archives into SQLite history', () => {
+    const { DiagnosticsDatabase } = require('./tools/companion/diagnostics_db.js');
+    const path = require('path');
+    const db = new DiagnosticsDatabase(':memory:');
+    
+    const archiveDir = path.resolve(__dirname, 'scratch/mission_archives');
+    const restored = db.restoreFromDiskArchives(archiveDir);
+    assert.strictEqual(restored >= 3, true, 'Must restore at least 3 disk archives');
 
+    const history = db.getHistory();
+    assert.strictEqual(history.length >= 3, true);
+    assert.ok(history.some(h => h.waypoint_count === 2));
+    assert.ok(history.some(h => h.waypoint_count === 16));
 
+    db.close();
+  });
 
+  test('FlightDiagnostics modal handles Escape key and backdrop click closing', () => {
+    let closed = false;
+    const origClose = FlightDiagnostics.close;
+    FlightDiagnostics.close = () => { closed = true; };
+
+    // Simulate keydown Escape when isOpen is true
+    FlightDiagnostics.isOpen = true;
+    assert.strictEqual(typeof FlightDiagnostics.close, 'function');
+    FlightDiagnostics.close();
+    assert.strictEqual(closed, true);
+
+    FlightDiagnostics.close = origClose;
+    FlightDiagnostics.isOpen = false;
+  });
+});
+
+describe('Map & Remote ID Alignment Calibration Tests (v1.61.0)', () => {
+  test('RemoteIdRadar applyOffset and calculateOffsetFromTarget accurately compute geodetic offsets', () => {
+    const radar = vm.runInThisContext(`RemoteIdRadar`);
+    assert.ok(radar, 'RemoteIdRadar must exist');
+
+    radar.resetOffset();
+    assert.strictEqual(radar.offsetMeters.north, 0);
+    assert.strictEqual(radar.offsetMeters.east, 0);
+
+    const baseLat = 40.0;
+    const baseLon = -83.0;
+
+    // With 0 offset, applied position is identical
+    const unshifted = radar.applyOffset(baseLat, baseLon);
+    assert.strictEqual(unshifted.lat, baseLat);
+    assert.strictEqual(unshifted.lon, baseLon);
+
+    // Set offset of 15.0m North, -25.0m East (25m West)
+    radar.setOffset(15.0, -25.0);
+    assert.strictEqual(radar.offsetMeters.north, 15.0);
+    assert.strictEqual(radar.offsetMeters.east, -25.0);
+
+    const shifted = radar.applyOffset(baseLat, baseLon);
+    assert.ok(shifted.lat > baseLat, 'North offset must increase latitude');
+    assert.ok(shifted.lon < baseLon, 'West offset must decrease longitude');
+
+    // Inverse roundtrip calculation
+    const computed = radar.calculateOffsetFromTarget(baseLat, baseLon, shifted.lat, shifted.lon);
+    assert.strictEqual(computed.north, 15.0, 'Calculated North offset must roundtrip');
+    assert.strictEqual(computed.east, -25.0, 'Calculated East offset must roundtrip');
+
+    radar.resetOffset();
+  });
+
+  test('RemoteIdRadar nudgeOffset and resetOffset update offsets and formatDroneTooltip status cleanly', () => {
+    const radar = vm.runInThisContext(`RemoteIdRadar`);
+    radar.resetOffset();
+
+    // Nudge North by 1.0m, then East by 0.5m
+    radar.nudgeOffset(1.0, 0);
+    assert.strictEqual(radar.offsetMeters.north, 1.0);
+    assert.strictEqual(radar.offsetMeters.east, 0.0);
+
+    radar.nudgeOffset(0, 0.5);
+    assert.strictEqual(radar.offsetMeters.north, 1.0);
+    assert.strictEqual(radar.offsetMeters.east, 0.5);
+
+    const drone = {
+      id: 'CAL-TEST-01',
+      uasId: 'RID-CAL-9988',
+      model: 'DJI Mini 4 Pro',
+      status: 'Airborne',
+      latitude: 40.0,
+      longitude: -83.0,
+      altitudeGeodetic: 20.0,
+      speedHorizontal: 3.0,
+      trackDirection: 90,
+      transport: 'Wi-Fi 2.4 GHz',
+      rssi: -60
+    };
+
+    const tooltip = radar.formatDroneTooltip(drone);
+    assert.ok(tooltip.includes('Offset: +1m N, +0.5m E'), 'Tooltip must reflect active calibration offset');
+
+    // Reset offset
+    radar.resetOffset();
+    assert.strictEqual(radar.offsetMeters.north, 0);
+    assert.strictEqual(radar.offsetMeters.east, 0);
+
+    const cleanTooltip = radar.formatDroneTooltip(drone);
+    assert.ok(!cleanTooltip.includes('Offset:'), 'Tooltip must not contain offset tag when offset is 0m');
+  });
+
+  test('RemoteIdRadar updateMapMarkers shifts drone and takeoff coordinates synchronously and uses centered divIcon anchors', () => {
+    const radar = vm.runInThisContext(`RemoteIdRadar`);
+    const origLayerGroup = radar.layerGroup;
+
+    let addedLayers = [];
+    let removedLayers = [];
+    let iconOptionsCreated = [];
+
+    const mockLayerGroup = {
+      addLayer(layer) { addedLayers.push(layer); },
+      removeLayer(layer) { removedLayers.push(layer); }
+    };
+
+    const origL = global.L;
+    global.L = {
+      divIcon(opts) {
+        iconOptionsCreated.push(opts);
+        return opts;
+      },
+      marker(latlng, opts) {
+        return {
+          latlng,
+          opts,
+          setLatLng(newPos) { this.latlng = newPos; },
+          setIcon(newIcon) { this.opts.icon = newIcon; },
+          setTooltipContent() {},
+          setPopupContent() {},
+          bindTooltip() {},
+          bindPopup() {},
+          on() {},
+          dragging: {
+            enable() { this.enabled = true; },
+            disable() { this.enabled = false; }
+          }
+        };
+      },
+      polyline(pts, opts) {
+        return {
+          pts,
+          opts,
+          setLatLngs(newPts) { this.pts = newPts; },
+          setStyle() {},
+          bindTooltip() {}
+        };
+      }
+    };
+
+    try {
+      radar.layerGroup = mockLayerGroup;
+      radar.markers.clear();
+      radar.setOffset(10.0, 20.0);
+
+      const rawLat = 40.0;
+      const rawLon = -83.0;
+      const takeoffLat = 39.999;
+      const takeoffLon = -83.001;
+
+      radar.activeDrones = [{
+        id: 'ALIGN-SYNC-DRONE',
+        uasId: 'RID-SYNC-01',
+        model: 'DJI Air 3',
+        latitude: rawLat,
+        longitude: rawLon,
+        operatorLatitude: takeoffLat,
+        operatorLongitude: takeoffLon,
+        status: 'Airborne'
+      }];
+
+      radar.updateMapMarkers();
+
+      const entry = radar.markers.get('ALIGN-SYNC-DRONE');
+      assert.ok(entry, 'Marker entry must exist');
+      assert.ok(entry.marker, 'Drone marker must exist');
+      assert.ok(entry.takeoffMarker, 'Takeoff marker must exist');
+
+      // Verify drone marker position is shifted by applyOffset
+      const expectedDronePos = radar.applyOffset(rawLat, rawLon);
+      assert.strictEqual(entry.marker.latlng[0], expectedDronePos.lat);
+      assert.strictEqual(entry.marker.latlng[1], expectedDronePos.lon);
+
+      // Verify takeoff marker position is shifted by applyOffset
+      const expectedTakeoffPos = radar.applyOffset(takeoffLat, takeoffLon);
+      assert.strictEqual(entry.takeoffMarker.latlng[0], expectedTakeoffPos.lat);
+      assert.strictEqual(entry.takeoffMarker.latlng[1], expectedTakeoffPos.lon);
+
+      // Verify divIcon anchor centering
+      const droneIcon = iconOptionsCreated.find(o => o.className && o.className.includes('remote-id-drone-marker'));
+      assert.ok(droneIcon, 'Drone divIcon must be created');
+      assert.deepStrictEqual(droneIcon.iconSize, [38, 38]);
+      assert.deepStrictEqual(droneIcon.iconAnchor, [19, 19], 'Drone icon anchor must be centered at [19, 19]');
+
+      const takeoffIcon = iconOptionsCreated.find(o => o.className && o.className.includes('remote-id-takeoff-marker'));
+      assert.ok(takeoffIcon, 'Takeoff divIcon must be created');
+      assert.deepStrictEqual(takeoffIcon.iconSize, [36, 44]);
+      assert.deepStrictEqual(takeoffIcon.iconAnchor, [18, 13], 'Takeoff "H" badge circle must be centered at [18, 13]');
+
+      // Test drag calibration toggle
+      assert.strictEqual(radar.isCalibrating, false);
+      radar.toggleDragCalibration(true);
+      assert.strictEqual(radar.isCalibrating, true);
+      assert.strictEqual(entry.marker.dragging.enabled, true);
+
+      radar.toggleDragCalibration(false);
+      assert.strictEqual(radar.isCalibrating, false);
+      assert.strictEqual(entry.marker.dragging.enabled, false);
+
+    } finally {
+      radar.resetOffset();
+      radar.markers.clear();
+      radar.activeDrones = [];
+      radar.layerGroup = origLayerGroup;
+      global.L = origL;
+    }
+  });
+});

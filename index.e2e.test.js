@@ -1272,6 +1272,113 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(locateResult.success, `Drone REST locate E2E test failed: ${JSON.stringify(locateResult)}`);
   });
 
+  test('E2E: Map & Remote ID Alignment Calibration panel, nudge D-Pad, and GPS reset (v1.61.0)', async () => {
+    const calResult = await page.evaluate(async () => {
+      if (!window.RemoteIdRadar) return { error: 'RemoteIdRadar not found' };
+
+      // Ingest test drone
+      const testDrone = {
+        id: 'e2e-cal-drone',
+        uasId: 'RID-CAL-E2E-123',
+        model: 'DJI Mini 4 Pro',
+        status: 'Airborne',
+        latitude: 40.0125,
+        longitude: -83.1760,
+        altitudeGeodetic: 30.0,
+        operatorLatitude: 40.0120,
+        operatorLongitude: -83.1765
+      };
+
+      window.RemoteIdRadar.updateDroneLocation(testDrone);
+
+      // Verify alignment button is visible
+      const calBtn = document.getElementById('remote-id-calibrate-btn');
+      const calBtnVisible = calBtn && !calBtn.classList.contains('hidden') && calBtn.style.display !== 'none';
+
+      // Open calibration panel
+      calBtn.click();
+      const calPanel = document.getElementById('remote-id-calibration-panel');
+      const panelOpenAfterClick = calPanel && !calPanel.classList.contains('hidden') && calPanel.style.display !== 'none';
+
+      // Verify initial offset text is 0.0m
+      const offsetText = document.getElementById('remote-id-cal-offset-text');
+      const initialZero = offsetText && offsetText.textContent.includes('0.0m');
+
+      // Click Nudge North button twice (step is 1.0m default -> 2.0m)
+      const nudgeN = document.getElementById('remote-id-cal-nudge-n');
+      if (nudgeN) {
+        nudgeN.click();
+        nudgeN.click();
+      }
+
+      // Click Nudge East button once (step is 1.0m default -> 1.0m)
+      const nudgeE = document.getElementById('remote-id-cal-nudge-e');
+      if (nudgeE) {
+        nudgeE.click();
+      }
+
+      const offsetAfterNudge = window.RemoteIdRadar.offsetMeters;
+      const northMatches = offsetAfterNudge && Math.abs(offsetAfterNudge.north - 2.0) < 0.01;
+      const eastMatches = offsetAfterNudge && Math.abs(offsetAfterNudge.east - 1.0) < 0.01;
+      const offsetTextAfterNudge = offsetText ? offsetText.textContent : '';
+      const textHasOffsets = offsetTextAfterNudge.includes('+2.0m N') && offsetTextAfterNudge.includes('+1.0m E');
+
+      // Verify marker position on map shifted
+      const markerEntry = window.RemoteIdRadar.markers.get('e2e-cal-drone');
+      const markerLatLng = markerEntry && markerEntry.marker ? markerEntry.marker.getLatLng() : null;
+      const markerShiftedNorth = markerLatLng ? markerLatLng.lat > 40.0125 : false;
+      const markerShiftedEast = markerLatLng ? markerLatLng.lng > -83.1760 : false;
+
+      // Click Reset to GPS button
+      const resetBtn = document.getElementById('remote-id-cal-reset-btn');
+      if (resetBtn) {
+        resetBtn.click();
+      }
+
+      const offsetAfterReset = window.RemoteIdRadar.offsetMeters;
+      const resetToZero = offsetAfterReset && offsetAfterReset.north === 0 && offsetAfterReset.east === 0;
+      const textReset = offsetText && offsetText.textContent.includes('0.0m');
+
+      const markerResetLatLng = markerEntry && markerEntry.marker ? markerEntry.marker.getLatLng() : null;
+      const markerReset = markerResetLatLng ? (Math.abs(markerResetLatLng.lat - 40.0125) < 0.00001 && Math.abs(markerResetLatLng.lng - (-83.1760)) < 0.00001) : false;
+
+      // Close panel
+      const closeBtn = document.getElementById('remote-id-cal-close-btn');
+      if (closeBtn) closeBtn.click();
+      const panelClosedAfterClose = calPanel && (calPanel.classList.contains('hidden') || calPanel.style.display === 'none');
+
+      // Cleanup
+      if (window.RemoteIdRadar.layerGroup && markerEntry && markerEntry.marker) {
+        window.RemoteIdRadar.layerGroup.removeLayer(markerEntry.marker);
+      }
+      if (window.RemoteIdRadar.layerGroup && markerEntry && markerEntry.takeoffMarker) {
+        window.RemoteIdRadar.layerGroup.removeLayer(markerEntry.takeoffMarker);
+      }
+      window.RemoteIdRadar.markers.delete('e2e-cal-drone');
+      window.RemoteIdRadar.activeDrones = [];
+      window.RemoteIdRadar.resetOffset();
+      window.RemoteIdRadar.updateRadarUI();
+
+      return {
+        success: calBtnVisible && panelOpenAfterClick && initialZero && northMatches && eastMatches && textHasOffsets && markerShiftedNorth && markerShiftedEast && resetToZero && textReset && markerReset && panelClosedAfterClose,
+        calBtnVisible,
+        panelOpenAfterClick,
+        initialZero,
+        northMatches,
+        eastMatches,
+        textHasOffsets,
+        markerShiftedNorth,
+        markerShiftedEast,
+        resetToZero,
+        textReset,
+        markerReset,
+        panelClosedAfterClose
+      };
+    });
+
+    assert.ok(calResult.success, `Map & Remote ID Alignment E2E test failed: ${JSON.stringify(calResult)}`);
+  });
+
   test('Double Grid and Freeform generate valid WPML with smoothTransition for non-tangential headings', async () => {
     const wpmlResult = await page.evaluate(async () => {
       // 1. Double Grid with oblique pitch

@@ -5571,6 +5571,7 @@ function exportKMZ() {
             const rawHist = localStorage.getItem('aalaapi_bad_kmz_history');
             const badHist = rawHist ? JSON.parse(rawHist) : [];
             badHist.unshift({
+              archive_id: diagData.archiveId || `${diagData.uuid}_${diagData.createdAt}`,
               uuid: diagData.uuid,
               filename: diagData.filename,
               created_at: diagData.createdAt,
@@ -6026,10 +6027,14 @@ function buildFlightDiagnosticsJSON(customWps = null, options = {}) {
   const validationWarnings = options.validationWarnings || options.validation?.warnings || [];
   const validationRulesPassed = options.validationRulesPassed ?? options.validation?.rulesPassed ?? (isValid ? 10 : 10 - validationErrors.length);
 
+  const createdAt = options.createdAt || new Date().toISOString();
+  const archiveId = options.archiveId || `${uuid}_${createdAt}`;
+
   return {
     schemaVersion: '1.56.0',
+    archiveId,
     uuid,
-    createdAt: new Date().toISOString(),
+    createdAt,
     filename: options.filename || `${uuid}.kmz`,
     flightPattern: plan?.geometry?.pattern || 'single',
     altitude,
@@ -6851,6 +6856,10 @@ const RemoteIdRadar = {
   layerGroup: null,
   locatedDroneId: null,
   isFollowing: false,
+  offsetMeters: { north: 0, east: 0 },
+  calibrationStep: 1.0,
+  isCalibrating: false,
+  isPanelOpen: false,
 
   init() {
     const leaflet = (typeof L !== 'undefined' && L) || (typeof window !== 'undefined' && window.L) || (typeof global !== 'undefined' && global.L);
@@ -6869,6 +6878,22 @@ const RemoteIdRadar = {
       });
     }
 
+    // Load saved calibration offset from localStorage
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const saved = localStorage.getItem('aalaapi_remoteid_offset');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed.north === 'number' && typeof parsed.east === 'number') {
+            this.offsetMeters = {
+              north: Math.round(parsed.north * 10) / 10,
+              east: Math.round(parsed.east * 10) / 10
+            };
+          }
+        }
+      }
+    } catch (e) {}
+
     const badge = typeof document !== 'undefined' ? document.getElementById('remote-id-badge') : null;
     if (badge) {
       badge.addEventListener('click', () => {
@@ -6881,6 +6906,217 @@ const RemoteIdRadar = {
           }
         }
       });
+    }
+
+    // Calibration UI Bindings
+    if (typeof document !== 'undefined') {
+      const calBtn = document.getElementById('remote-id-calibrate-btn');
+      if (calBtn) {
+        calBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.toggleCalibrationPanel();
+        });
+      }
+
+      const closeBtn = document.getElementById('remote-id-cal-close-btn');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.toggleCalibrationPanel(false);
+        });
+      }
+
+      const dragBtn = document.getElementById('remote-id-cal-drag-btn');
+      if (dragBtn) {
+        dragBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.toggleDragCalibration();
+        });
+      }
+
+      const nudgeN = document.getElementById('remote-id-cal-nudge-n');
+      if (nudgeN) {
+        nudgeN.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.nudgeOffset(this.calibrationStep, 0);
+        });
+      }
+
+      const nudgeS = document.getElementById('remote-id-cal-nudge-s');
+      if (nudgeS) {
+        nudgeS.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.nudgeOffset(-this.calibrationStep, 0);
+        });
+      }
+
+      const nudgeE = document.getElementById('remote-id-cal-nudge-e');
+      if (nudgeE) {
+        nudgeE.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.nudgeOffset(0, this.calibrationStep);
+        });
+      }
+
+      const nudgeW = document.getElementById('remote-id-cal-nudge-w');
+      if (nudgeW) {
+        nudgeW.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.nudgeOffset(0, -this.calibrationStep);
+        });
+      }
+
+      const resetBtn = document.getElementById('remote-id-cal-reset-btn');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.resetOffset();
+        });
+      }
+
+      const stepBtns = document.querySelectorAll('.cal-step-btn');
+      stepBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          stepBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const val = parseFloat(btn.getAttribute('data-step'));
+          if (!isNaN(val) && val > 0) {
+            this.calibrationStep = val;
+            const ind = document.getElementById('remote-id-cal-step-indicator');
+            if (ind) ind.textContent = `${val.toFixed(1)}m`;
+          }
+        });
+      });
+    }
+
+    this.updateCalibrationUI();
+  },
+
+  applyOffset(lat, lon) {
+    if (lat === null || lat === undefined || lon === null || lon === undefined) {
+      return { lat, lon };
+    }
+    if (!this.offsetMeters || (this.offsetMeters.north === 0 && this.offsetMeters.east === 0)) {
+      return { lat, lon };
+    }
+    const deltaLat = this.offsetMeters.north / 111132.95;
+    const cosLat = Math.cos((lat * Math.PI) / 180);
+    const deltaLon = cosLat !== 0 ? this.offsetMeters.east / (111132.95 * cosLat) : 0;
+    return {
+      lat: lat + deltaLat,
+      lon: lon + deltaLon
+    };
+  },
+
+  calculateOffsetFromTarget(rawLat, rawLon, targetLat, targetLon) {
+    const dLat = targetLat - rawLat;
+    const dLon = targetLon - rawLon;
+    const north = dLat * 111132.95;
+    const cosLat = Math.cos((rawLat * Math.PI) / 180);
+    const east = dLon * (111132.95 * cosLat);
+    return {
+      north: Math.round(north * 10) / 10,
+      east: Math.round(east * 10) / 10
+    };
+  },
+
+  setOffset(northMeters, eastMeters) {
+    this.offsetMeters = {
+      north: Math.round(northMeters * 10) / 10,
+      east: Math.round(eastMeters * 10) / 10
+    };
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('aalaapi_remoteid_offset', JSON.stringify(this.offsetMeters));
+      }
+    } catch (e) {}
+    this.updateMapMarkers();
+    this.updateCalibrationUI();
+  },
+
+  nudgeOffset(deltaNorth, deltaEast) {
+    this.setOffset(this.offsetMeters.north + deltaNorth, this.offsetMeters.east + deltaEast);
+  },
+
+  resetOffset() {
+    this.setOffset(0, 0);
+  },
+
+  toggleCalibrationPanel(forceState) {
+    this.isPanelOpen = typeof forceState === 'boolean' ? forceState : !this.isPanelOpen;
+    if (typeof document === 'undefined') return;
+    const panel = document.getElementById('remote-id-calibration-panel');
+    const btn = document.getElementById('remote-id-calibrate-btn');
+    if (panel) {
+      if (this.isPanelOpen) {
+        panel.style.display = 'flex';
+        panel.classList.remove('hidden');
+        if (btn) btn.classList.add('active');
+      } else {
+        panel.style.display = 'none';
+        panel.classList.add('hidden');
+        if (btn) btn.classList.remove('active');
+        if (this.isCalibrating) {
+          this.toggleDragCalibration(false);
+        }
+      }
+    }
+    this.updateCalibrationUI();
+  },
+
+  toggleDragCalibration(forceState) {
+    this.isCalibrating = typeof forceState === 'boolean' ? forceState : !this.isCalibrating;
+    for (const [, entry] of this.markers.entries()) {
+      if (entry.marker && entry.marker.dragging) {
+        if (this.isCalibrating) {
+          entry.marker.dragging.enable();
+        } else {
+          entry.marker.dragging.disable();
+        }
+      }
+    }
+    this.updateCalibrationUI();
+  },
+
+  updateCalibrationUI() {
+    if (typeof document === 'undefined') return;
+    const offsetTextEl = document.getElementById('remote-id-cal-offset-text');
+    const activeDot = document.getElementById('remote-id-cal-active-dot');
+    const dragBtn = document.getElementById('remote-id-cal-drag-btn');
+    const dragText = document.getElementById('remote-id-cal-drag-text');
+    const stepIndicator = document.getElementById('remote-id-cal-step-indicator');
+
+    const hasOffset = this.offsetMeters && (this.offsetMeters.north !== 0 || this.offsetMeters.east !== 0);
+    const nSign = (this.offsetMeters && this.offsetMeters.north >= 0) ? '+' : '';
+    const eSign = (this.offsetMeters && this.offsetMeters.east >= 0) ? '+' : '';
+    const offsetStr = hasOffset
+      ? `${nSign}${this.offsetMeters.north.toFixed(1)}m N, ${eSign}${this.offsetMeters.east.toFixed(1)}m E`
+      : '0.0m (Aligned)';
+
+    if (offsetTextEl) offsetTextEl.textContent = offsetStr;
+    if (activeDot) {
+      if (hasOffset) {
+        activeDot.classList.remove('hidden');
+        activeDot.style.display = 'inline-block';
+      } else {
+        activeDot.classList.add('hidden');
+        activeDot.style.display = 'none';
+      }
+    }
+
+    if (dragBtn && dragText) {
+      if (this.isCalibrating) {
+        dragBtn.classList.add('active');
+        dragText.textContent = '🎯 Dragging Active (Click to Lock)';
+      } else {
+        dragBtn.classList.remove('active');
+        dragText.textContent = '🎯 Enable Drag to Align';
+      }
+    }
+
+    if (stepIndicator) {
+      stepIndicator.textContent = `${this.calibrationStep.toFixed(1)}m`;
     }
   },
 
@@ -6897,15 +7133,17 @@ const RemoteIdRadar = {
     const leaflet = (typeof L !== 'undefined' && L) || (typeof window !== 'undefined' && window.L) || (typeof global !== 'undefined' && global.L);
     const m = (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map) || (typeof global !== 'undefined' && global.map);
     if (m) {
+      const offsetDrone = this.applyOffset(target.latitude, target.longitude);
       if (target.operatorLatitude && target.operatorLongitude && m.fitBounds && leaflet && leaflet.latLngBounds) {
+        const offsetTakeoff = this.applyOffset(target.operatorLatitude, target.operatorLongitude);
         const bounds = leaflet.latLngBounds([
-          [target.latitude, target.longitude],
-          [target.operatorLatitude, target.operatorLongitude]
+          [offsetDrone.lat, offsetDrone.lon],
+          [offsetTakeoff.lat, offsetTakeoff.lon]
         ]);
         m.fitBounds(bounds, { padding: [70, 70], maxZoom: 18 });
       } else if (m.setView) {
         const zoom = m.getZoom ? Math.max(m.getZoom(), 17) : 18;
-        m.setView([target.latitude, target.longitude], zoom);
+        m.setView([offsetDrone.lat, offsetDrone.lon], zoom);
       }
     }
 
@@ -6929,6 +7167,11 @@ const RemoteIdRadar = {
     const statusText = isSignalLost ? `Signal Lost (${drone.lastSeenFormatted || 'Past'})` : (drone.status || 'Airborne');
     const statusColor = isSignalLost ? '#f59e0b' : (drone.status === 'Airborne' ? '#22c55e' : (drone.status === 'Emergency' ? '#ef4444' : '#eab308'));
     const themeColor = isSignalLost ? '#f59e0b' : '#ef4444';
+
+    const hasOffset = this.offsetMeters && (this.offsetMeters.north !== 0 || this.offsetMeters.east !== 0);
+    const nSign = (this.offsetMeters && this.offsetMeters.north >= 0) ? '+' : '';
+    const eSign = (this.offsetMeters && this.offsetMeters.east >= 0) ? '+' : '';
+    const offsetTag = hasOffset ? ` • Offset: ${nSign}${this.offsetMeters.north}m N, ${eSign}${this.offsetMeters.east}m E` : '';
 
     return `
       <div class="remote-id-hover-hud" style="font-family: inherit; font-size: 0.78rem; line-height: 1.35; min-width: 220px;">
@@ -6958,7 +7201,7 @@ const RemoteIdRadar = {
         </div>
         ${drone.operatorLatitude ? `<div style="margin-top: 6px; padding-top: 4px; border-top: 1px dashed rgba(255,255,255,0.1); font-size: 0.7rem; color: #38bdf8;">🛫 Takeoff: ${drone.operatorLatitude.toFixed(6)}, ${drone.operatorLongitude.toFixed(6)}</div>` : ''}
         <div style="margin-top: 6px; font-size: 0.66rem; color: ${isSignalLost ? '#f59e0b' : '#64748b'}; text-align: right; font-weight: ${isSignalLost ? '600' : 'normal'};">
-          ${isSignalLost ? '⚠️ Last Known Position (LKP)' : 'Click to Track • ASTM F3411 Live'}
+          ${isSignalLost ? '⚠️ Last Known Position (LKP)' : `Click to Track • ASTM F3411 Live${offsetTag}`}
         </div>
       </div>
     `;
@@ -7046,7 +7289,7 @@ const RemoteIdRadar = {
       const iconHtml = isSignalLost ? `
         <div style="position: relative; width: 38px; height: 38px; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.94;">
           <div style="position: absolute; width: 34px; height: 34px; border-radius: 50%; background: rgba(245, 158, 11, 0.22); border: 2px dashed #f59e0b; box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);"></div>
-          <div style="transform: rotate(${heading}deg); transition: transform 0.3s ease;">
+          <div style="transform: rotate(${heading}deg); transition: transform 0.3s ease; display: flex; align-items: center; justify-content: center;">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="#f59e0b" stroke="#0f172a" stroke-width="1.5">
               <path d="M12 2L19 21L12 17L5 21L12 2Z"/>
             </svg>
@@ -7054,9 +7297,9 @@ const RemoteIdRadar = {
           <span style="position: absolute; bottom: -6px; background: rgba(15, 23, 42, 0.95); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.6); font-size: 0.52rem; font-weight: 800; padding: 0 3px; border-radius: 3px; line-height: 1.1; letter-spacing: 0.04em;">LKP</span>
         </div>
       ` : `
-        <div style="position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">
-          <div style="position: absolute; width: 32px; height: 32px; border-radius: 50%; background: rgba(239, 68, 68, 0.25); border: 1.5px solid #ef4444;"></div>
-          <div style="transform: rotate(${heading}deg); transition: transform 0.3s ease;">
+        <div style="position: relative; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;">
+          <div style="position: absolute; width: 34px; height: 34px; border-radius: 50%; background: rgba(239, 68, 68, 0.25); border: 1.5px solid #ef4444;"></div>
+          <div style="transform: rotate(${heading}deg); transition: transform 0.3s ease; display: flex; align-items: center; justify-content: center;">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="#ef4444" stroke="#ffffff" stroke-width="1.5">
               <path d="M12 2L19 21L12 17L5 21L12 2Z"/>
             </svg>
@@ -7071,9 +7314,12 @@ const RemoteIdRadar = {
         iconAnchor: [19, 19]
       }) : null;
 
+      // Apply calibration offset to coordinates
+      const offsetDrone = this.applyOffset(drone.latitude, drone.longitude);
+
       // 1. Drone Position Marker (Live or LKP)
       if (!entry.marker) {
-        const marker = (leaflet && leaflet.marker && customIcon) ? leaflet.marker([drone.latitude, drone.longitude], { icon: customIcon, zIndexOffset: isSignalLost ? 800 : 1000 }) : null;
+        const marker = (leaflet && leaflet.marker && customIcon) ? leaflet.marker([offsetDrone.lat, offsetDrone.lon], { icon: customIcon, zIndexOffset: isSignalLost ? 800 : 1000 }) : null;
         if (marker) {
           if (marker.bindTooltip) {
             marker.bindTooltip(tooltipHtml, {
@@ -7090,15 +7336,33 @@ const RemoteIdRadar = {
             marker.on('mouseover', () => { if (marker.openTooltip) marker.openTooltip(); });
             marker.on('mouseout', () => { if (marker.closeTooltip) marker.closeTooltip(); });
             marker.on('click', () => { this.locateDrone(drone.id); });
+            marker.on('dragend', (e) => {
+              const pos = (e && e.target && e.target.getLatLng) ? e.target.getLatLng() : (marker.getLatLng ? marker.getLatLng() : null);
+              if (pos) {
+                const raw = this.activeDrones.find(d => d.id === drone.id) || drone;
+                const newOff = this.calculateOffsetFromTarget(raw.latitude, raw.longitude, pos.lat, pos.lng);
+                this.setOffset(newOff.north, newOff.east);
+              }
+            });
+          }
+          if (this.isCalibrating && marker.dragging) {
+            marker.dragging.enable();
           }
           this.layerGroup.addLayer(marker);
         }
         entry.marker = marker;
       } else {
-        if (entry.marker.setLatLng) entry.marker.setLatLng([drone.latitude, drone.longitude]);
+        if (entry.marker.setLatLng) entry.marker.setLatLng([offsetDrone.lat, offsetDrone.lon]);
         if (customIcon && entry.marker.setIcon) entry.marker.setIcon(customIcon);
         if (entry.marker.setTooltipContent) entry.marker.setTooltipContent(tooltipHtml);
         if (entry.marker.setPopupContent) entry.marker.setPopupContent(tooltipHtml);
+        if (entry.marker.dragging) {
+          if (this.isCalibrating) {
+            entry.marker.dragging.enable();
+          } else {
+            entry.marker.dragging.disable();
+          }
+        }
       }
 
       // 2. Takeoff / Home Location Marker & Home Vector Line
@@ -7106,9 +7370,10 @@ const RemoteIdRadar = {
                          drone.operatorLongitude !== null && drone.operatorLongitude !== undefined;
 
       if (hasTakeoff) {
+        const offsetTakeoff = this.applyOffset(drone.operatorLatitude, drone.operatorLongitude);
         const rangeStr = calcDistanceStr(drone.operatorLatitude, drone.operatorLongitude, drone.latitude, drone.longitude);
         const takeoffIconHtml = `
-          <div class="remote-id-takeoff-pin" style="position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer; user-select: none;">
+          <div class="remote-id-takeoff-pin" style="position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer; user-select: none; width: 36px;">
             <div style="background: rgba(15, 23, 42, 0.92); border: 2px solid #38bdf8; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);">
               <span style="color: #38bdf8; font-size: 0.72rem; font-weight: 800; font-family: monospace; line-height: 1;">H</span>
             </div>
@@ -7121,9 +7386,9 @@ const RemoteIdRadar = {
         const takeoffIcon = (leaflet && leaflet.divIcon) ? leaflet.divIcon({
           html: takeoffIconHtml,
           className: 'remote-id-takeoff-marker',
-          iconSize: [36, 42],
-          iconAnchor: [18, 20],
-          popupAnchor: [0, -18]
+          iconSize: [36, 44],
+          iconAnchor: [18, 13],
+          popupAnchor: [0, -14]
         }) : null;
 
         const takeoffTooltipHtml = `
@@ -7144,9 +7409,9 @@ const RemoteIdRadar = {
         `;
 
         if (!entry.takeoffMarker) {
-          const tMarker = (leaflet && leaflet.marker && takeoffIcon) ? leaflet.marker([drone.operatorLatitude, drone.operatorLongitude], { icon: takeoffIcon, zIndexOffset: 950 }) : null;
+          const tMarker = (leaflet && leaflet.marker && takeoffIcon) ? leaflet.marker([offsetTakeoff.lat, offsetTakeoff.lon], { icon: takeoffIcon, zIndexOffset: 950 }) : null;
           if (tMarker) {
-            if (tMarker.bindTooltip) tMarker.bindTooltip(takeoffTooltipHtml, { direction: 'top', offset: [0, -18], className: 'remote-id-tooltip', opacity: 0.96 });
+            if (tMarker.bindTooltip) tMarker.bindTooltip(takeoffTooltipHtml, { direction: 'top', offset: [0, -14], className: 'remote-id-tooltip', opacity: 0.96 });
             if (tMarker.bindPopup) tMarker.bindPopup(takeoffTooltipHtml);
             if (tMarker.on) {
               tMarker.on('click', () => { this.locateDrone(drone.id); });
@@ -7155,7 +7420,7 @@ const RemoteIdRadar = {
           }
           entry.takeoffMarker = tMarker;
         } else {
-          if (entry.takeoffMarker.setLatLng) entry.takeoffMarker.setLatLng([drone.operatorLatitude, drone.operatorLongitude]);
+          if (entry.takeoffMarker.setLatLng) entry.takeoffMarker.setLatLng([offsetTakeoff.lat, offsetTakeoff.lon]);
           if (takeoffIcon && entry.takeoffMarker.setIcon) entry.takeoffMarker.setIcon(takeoffIcon);
           if (entry.takeoffMarker.setTooltipContent) entry.takeoffMarker.setTooltipContent(takeoffTooltipHtml);
           if (entry.takeoffMarker.setPopupContent) entry.takeoffMarker.setPopupContent(takeoffTooltipHtml);
@@ -7163,8 +7428,8 @@ const RemoteIdRadar = {
 
         // Connecting Home Vector Line
         const vectorPoints = [
-          [drone.operatorLatitude, drone.operatorLongitude],
-          [drone.latitude, drone.longitude]
+          [offsetTakeoff.lat, offsetTakeoff.lon],
+          [offsetDrone.lat, offsetDrone.lon]
         ];
         const lineColor = isSignalLost ? '#f59e0b' : '#38bdf8';
         const lineTooltip = isSignalLost 
@@ -7203,11 +7468,15 @@ const RemoteIdRadar = {
       // 3. Historical Breadcrumbs Line
       if (drone.breadcrumbs && drone.breadcrumbs.length > 1) {
         const bcColor = isSignalLost ? '#f59e0b' : '#ef4444';
+        const bcPoints = drone.breadcrumbs.map(b => {
+          const off = this.applyOffset(b.lat, b.lon);
+          return [off.lat, off.lon];
+        });
         if (!entry.line && leaflet && leaflet.polyline) {
-          entry.line = leaflet.polyline(drone.breadcrumbs.map(b => [b.lat, b.lon]), { color: bcColor, weight: 2, dashArray: '4,4', opacity: isSignalLost ? 0.65 : 0.7 });
+          entry.line = leaflet.polyline(bcPoints, { color: bcColor, weight: 2, dashArray: '4,4', opacity: isSignalLost ? 0.65 : 0.7 });
           this.layerGroup.addLayer(entry.line);
         } else if (entry.line) {
-          if (entry.line.setLatLngs) entry.line.setLatLngs(drone.breadcrumbs.map(b => [b.lat, b.lon]));
+          if (entry.line.setLatLngs) entry.line.setLatLngs(bcPoints);
           if (entry.line.setStyle) entry.line.setStyle({ color: bcColor, opacity: isSignalLost ? 0.65 : 0.7 });
         }
       }
@@ -7217,55 +7486,80 @@ const RemoteIdRadar = {
 
       // If this drone is actively tracked/located and auto-follow is active, center/pan map on new coordinates
       if (this.isFollowing && this.locatedDroneId === drone.id && m && m.panTo) {
-        m.panTo([drone.latitude, drone.longitude], { animate: true });
+        m.panTo([offsetDrone.lat, offsetDrone.lon], { animate: true });
       }
     }
   },
 
   updateRadarUI() {
     if (typeof document === 'undefined') return;
+    const hud = document.getElementById('remote-id-airspace-hud');
     const badge = document.getElementById('remote-id-badge');
     const badgeText = document.getElementById('remote-id-badge-text');
     const locateLabel = document.getElementById('remote-id-locate-label');
-    if (badge) {
-      if (this.activeDrones.length > 0) {
+    const calBtn = document.getElementById('remote-id-calibrate-btn');
+
+    if (this.activeDrones.length > 0) {
+      if (hud) {
+        hud.style.display = 'flex';
+        hud.classList.remove('hidden');
+      }
+      if (badge) {
         badge.style.display = 'inline-flex';
         badge.classList.remove('hidden');
-        const count = this.activeDrones.length;
-        const liveCount = this.activeDrones.filter(d => !d.signalLost && (d.ageSec === undefined || d.ageSec <= 15)).length;
-        const lostCount = count - liveCount;
-        const first = this.activeDrones.find(d => d.latitude && d.longitude && !d.signalLost) ||
-                      this.activeDrones.find(d => d.latitude && d.longitude) ||
-                      this.activeDrones[0];
+      }
+      if (calBtn) {
+        calBtn.style.display = 'inline-flex';
+        calBtn.classList.remove('hidden');
+      }
+      const count = this.activeDrones.length;
+      const liveCount = this.activeDrones.filter(d => !d.signalLost && (d.ageSec === undefined || d.ageSec <= 15)).length;
+      const lostCount = count - liveCount;
+      const first = this.activeDrones.find(d => d.latitude && d.longitude && !d.signalLost) ||
+                    this.activeDrones.find(d => d.latitude && d.longitude) ||
+                    this.activeDrones[0];
 
-        let label = '';
-        if (this.isFollowing && this.locatedDroneId) {
-          const located = this.activeDrones.find(d => d.id === this.locatedDroneId) || first;
-          const isLocatedLost = !!(located.signalLost || (located.ageSec !== undefined && located.ageSec > 15));
-          label = isLocatedLost ? `⚠️ LKP: ${located.model || 'Drone'} (${located.lastSeenFormatted || 'Lost'})` : `📡 Tracking ${located.model || 'Drone'}`;
-          if (locateLabel) locateLabel.textContent = isLocatedLost ? 'LKP 📍' : 'Following 📍';
-        } else {
-          if (liveCount > 0) {
-            label = `📡 ${liveCount} Live${lostCount > 0 ? ` + ${lostCount} LKP` : ''}`;
-          } else {
-            label = `⚠️ ${lostCount} Last Known (LKP)`;
-          }
-          if (count === 1 && !first.latitude) {
-            label = `📡 ${first.model} Detected (${first.rssi} dBm)`;
-          }
-          if (locateLabel) locateLabel.textContent = 'Locate';
-        }
-
-        if (badgeText) {
-          badgeText.textContent = label;
-        } else {
-          badge.textContent = label;
-        }
+      let label = '';
+      if (this.isFollowing && this.locatedDroneId) {
+        const located = this.activeDrones.find(d => d.id === this.locatedDroneId) || first;
+        const isLocatedLost = !!(located.signalLost || (located.ageSec !== undefined && located.ageSec > 15));
+        label = isLocatedLost ? `⚠️ LKP: ${located.model || 'Drone'} (${located.lastSeenFormatted || 'Lost'})` : `📡 Tracking ${located.model || 'Drone'}`;
+        if (locateLabel) locateLabel.textContent = isLocatedLost ? 'LKP 📍' : 'Following 📍';
       } else {
+        if (liveCount > 0) {
+          label = `📡 ${liveCount} Live${lostCount > 0 ? ` + ${lostCount} LKP` : ''}`;
+        } else {
+          label = `⚠️ ${lostCount} Last Known (LKP)`;
+        }
+        if (count === 1 && !first.latitude) {
+          label = `📡 ${first.model} Detected (${first.rssi} dBm)`;
+        }
+        if (locateLabel) locateLabel.textContent = 'Locate';
+      }
+
+      if (badgeText) {
+        badgeText.textContent = label;
+      } else if (badge) {
+        badge.textContent = label;
+      }
+    } else {
+      if (hud) {
+        hud.style.display = 'none';
+        hud.classList.add('hidden');
+      }
+      if (badge) {
         badge.style.display = 'none';
         badge.classList.add('hidden');
       }
+      if (calBtn) {
+        calBtn.style.display = 'none';
+        calBtn.classList.add('hidden');
+      }
+      if (this.isPanelOpen) {
+        this.toggleCalibrationPanel(false);
+      }
     }
+    this.updateCalibrationUI();
   }
 };
 
@@ -7411,6 +7705,21 @@ const FlightDiagnostics = {
 
     const closeBtn = document.getElementById('diag-close-btn');
     if (closeBtn) closeBtn.addEventListener('click', () => this.close());
+
+    const modalOverlay = document.getElementById('flight-diagnostics-modal');
+    if (modalOverlay) {
+      modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) this.close();
+      });
+    }
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && this.isOpen) {
+          this.close();
+        }
+      });
+    }
 
     const tab3dBtn = document.getElementById('diag-nav-3d-btn');
     if (tab3dBtn) tab3dBtn.addEventListener('click', () => this.switchTab('3d'));
@@ -7613,7 +7922,8 @@ const FlightDiagnostics = {
       // Combine bad missions from SQLite and localStorage
       const combinedBad = [...badSaved];
       localBadMissions.forEach(lm => {
-        if (!combinedBad.some(b => b.uuid === lm.uuid)) {
+        const key = lm.archive_id || lm.uuid;
+        if (!combinedBad.some(b => (b.archive_id || b.uuid) === key)) {
           combinedBad.push(lm);
         }
       });
@@ -7624,7 +7934,8 @@ const FlightDiagnostics = {
         groupBad.label = '⚠️ Bad / Suspended KMZs (Antigravity Triage)';
         combinedBad.forEach(m => {
           const opt = document.createElement('option');
-          opt.value = `diag:${m.uuid}`;
+          const identifier = m.archive_id || m.id || m.uuid;
+          opt.value = `diag:${identifier}`;
           const dateClean = (m.created_at || '').replace('T', ' ').replace(/\..+/, '').replace('Z', ' UTC');
           const errCount = m.validation_errors ? m.validation_errors.length : (m.validation_errors_count || 0);
           opt.textContent = `❌ [FAIL: ${errCount} Issues] ${m.filename || m.uuid} (${dateClean})`;
@@ -7639,7 +7950,8 @@ const FlightDiagnostics = {
         groupSaved.label = 'Saved Mission Diagnostics (SQLite Archive)';
         validSaved.forEach((m) => {
           const opt = document.createElement('option');
-          opt.value = `diag:${m.uuid}`;
+          const identifier = m.archive_id || m.id || m.uuid;
+          opt.value = `diag:${identifier}`;
           const dateClean = (m.created_at || '').replace('T', ' ').replace(/\..+/, '').replace('Z', ' UTC');
           opt.textContent = `💾 ${m.filename || m.uuid} (${m.waypoint_count || 0} wps • ${dateClean})`;
           groupSaved.appendChild(opt);
@@ -7688,9 +8000,9 @@ const FlightDiagnostics = {
       this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId: 'active-mission', isSimulation: true });
       this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
     } else if (flightId.startsWith('diag:')) {
-      const uuid = flightId.replace('diag:', '').trim();
+      const identifier = flightId.replace('diag:', '').trim();
       try {
-        const res = await fetch(`${apiBase}/api/diagnostics/${encodeURIComponent(uuid)}`, {
+        const res = await fetch(`${apiBase}/api/diagnostics/${encodeURIComponent(identifier)}`, {
           signal: AbortSignal.timeout ? AbortSignal.timeout(2000) : undefined
         });
         if (res.ok) {

@@ -1413,13 +1413,36 @@ html, body {
   text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
 }
 
-/* Remote ID Live Airspace Floating Pill */
-.remote-id-map-pill {
+/* Remote ID Live Airspace Floating HUD & Pills */
+.remote-id-airspace-hud {
   position: absolute;
   top: 16px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.remote-id-airspace-hud.hidden {
+  display: none !important;
+}
+
+.remote-id-airspace-hud > * {
+  pointer-events: auto;
+}
+
+.remote-id-pill-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.remote-id-map-pill {
+  position: relative;
   background: rgba(15, 23, 42, 0.88);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -1443,7 +1466,279 @@ html, body {
   background: rgba(15, 23, 42, 0.96);
   border-color: rgba(239, 68, 68, 0.7);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(239, 68, 68, 0.4);
-  transform: translateX(-50%) translateY(-2px);
+  transform: translateY(-2px);
+}
+
+.remote-id-action-pill {
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5), 0 0 12px rgba(56, 189, 248, 0.15);
+  padding: 6px 12px;
+  border-radius: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: #38bdf8;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: inherit;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.remote-id-action-pill:hover,
+.remote-id-action-pill.active {
+  background: rgba(15, 23, 42, 0.96);
+  border-color: rgba(56, 189, 248, 0.75);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), 0 0 18px rgba(56, 189, 248, 0.35);
+  transform: translateY(-2px);
+}
+
+.remote-id-cal-active-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #38bdf8;
+  box-shadow: 0 0 6px #38bdf8;
+  display: inline-block;
+}
+
+/* Remote ID Alignment Calibration Popover Panel */
+.remote-id-calibration-panel {
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  border-radius: 12px;
+  padding: 12px 14px;
+  min-width: 290px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 16px rgba(56, 189, 248, 0.15);
+  color: #f1f5f9;
+  font-size: 0.76rem;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: auto;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.remote-id-calibration-panel.hidden {
+  display: none !important;
+}
+
+.remote-id-cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 6px;
+}
+
+.remote-id-cal-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: #38bdf8;
+  font-size: 0.8rem;
+}
+
+.remote-id-cal-close-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 2px 5px;
+  line-height: 1;
+  border-radius: 4px;
+}
+
+.remote-id-cal-close-btn:hover {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.remote-id-cal-desc {
+  color: #94a3b8;
+  font-size: 0.7rem;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.remote-id-cal-body {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.remote-id-cal-dpad {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  user-select: none;
+}
+
+.dpad-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.dpad-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #f1f5f9;
+  border-radius: 6px;
+  width: 38px;
+  height: 28px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dpad-btn:hover {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: #38bdf8;
+  color: #38bdf8;
+  transform: scale(1.05);
+}
+
+.dpad-btn:active {
+  transform: scale(0.95);
+}
+
+.dpad-center-indicator {
+  width: 38px;
+  height: 28px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px dashed rgba(56, 189, 248, 0.3);
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  color: #38bdf8;
+  font-weight: 700;
+  font-family: monospace;
+}
+
+.remote-id-cal-controls {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cal-control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.cal-control-lbl {
+  color: #94a3b8;
+  font-size: 0.7rem;
+}
+
+.cal-step-group {
+  display: flex;
+  gap: 2px;
+}
+
+.cal-step-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cal-step-btn:hover {
+  color: #f1f5f9;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.cal-step-btn.active {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
+.btn-cal-drag {
+  width: 100%;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-cal-drag:hover,
+.btn-cal-drag.active {
+  background: rgba(56, 189, 248, 0.25);
+  border-color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+.cal-offset-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.cal-offset-lbl {
+  color: #94a3b8;
+}
+
+.cal-offset-val {
+  color: #38bdf8;
+  font-family: monospace;
+  font-weight: 700;
+}
+
+.btn-cal-reset {
+  width: 100%;
+  background: none;
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  color: #94a3b8;
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 0.68rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-cal-reset:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
 }
 
 @keyframes pulseRadarDot {
@@ -1483,6 +1778,11 @@ html, body {
 
 .remote-id-drone-marker {
   cursor: pointer;
+}
+
+.remote-id-drone-marker.leaflet-drag-target,
+.remote-id-drone-marker:active {
+  cursor: grab !important;
 }
 
 .remote-id-drone-marker:hover svg {
