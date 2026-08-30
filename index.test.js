@@ -3151,6 +3151,88 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     }
   });
 
+  test('FlightDiagnostics loadSelectedFlight uses saved mission waypoints not active workspace when diagnostics blob is missing', async () => {
+    // Regression test: missions without embedded diag_json must use data.mission.plan.waypoints,
+    // not the current workspace wps, so different saved missions replay distinctly.
+    const elements = {};
+    const origGetElementById = global.document.getElementById;
+    const origFetch = global.fetch;
+
+    // A saved mission with distinct waypoints (different lat/lon from default workspace)
+    const savedMissionWps = [
+      { lat: 35.6762, lon: 139.6503, alt: 50 },
+      { lat: 35.6800, lon: 139.6550, alt: 50 },
+      { lat: 35.6850, lon: 139.6600, alt: 50 }
+    ];
+    const savedMissionResponse = {
+      success: true,
+      mission: {
+        id: 1,
+        archive_id: 'test-archive-id-1',
+        uuid: 'test-uuid-1',
+        filename: 'SavedMission_2026-01-01.kmz',
+        altitude: 30,
+        speed: 6,
+        gimbal_pitch: -45,
+        waypoint_count: savedMissionWps.length,
+        total_distance: 500,
+        diagnostics: null, // No embedded diagnostics — this is the bug scenario
+        plan: { waypoints: savedMissionWps, statistics: { waypointCount: 3, altitude: 30, totalDistance: 500 } }
+      }
+    };
+
+    global.fetch = () => Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve(savedMissionResponse)
+    });
+    global.document.getElementById = (id) => {
+      if (!elements[id]) {
+        elements[id] = {
+          classList: { add() {}, remove() {} },
+          style: {},
+          textContent: '',
+          value: '0',
+          max: '0',
+          addEventListener() {}
+        };
+      }
+      return elements[id];
+    };
+
+    try {
+      // Intercept generateTelemetryFromWaypoints to capture what waypoints were passed
+      vm.runInThisContext(`
+        var _origGTFW = generateTelemetryFromWaypoints;
+        var _capturedWps = null;
+        generateTelemetryFromWaypoints = function(wps, opts) {
+          _capturedWps = wps;
+          return _origGTFW(wps, opts);
+        };
+      `);
+
+      await vm.runInThisContext(`
+        (async () => { await FlightDiagnostics.loadSelectedFlight('diag:test-archive-id-1'); })()
+      `);
+
+      // Wait for the async to settle
+      await new Promise(r => setTimeout(r, 50));
+
+      const capturedWps = vm.runInThisContext('_capturedWps');
+      assert.ok(capturedWps !== null, 'generateTelemetryFromWaypoints must have been called');
+      assert.ok(Array.isArray(capturedWps), 'Captured waypoints must be an array');
+      // Must use the SAVED mission's waypoints (Tokyo area), not the default workspace (Columbus, OH)
+      assert.ok(capturedWps.length === 3, `Must use saved mission's 3 waypoints, got ${capturedWps?.length}`);
+      assert.ok(
+        Math.abs(capturedWps[0].lat - 35.6762) < 0.001,
+        `Waypoints must be from saved mission (lat ~35.67), got ${capturedWps[0]?.lat}`
+      );
+    } finally {
+      global.document.getElementById = origGetElementById;
+      global.fetch = origFetch;
+      vm.runInThisContext('generateTelemetryFromWaypoints = _origGTFW;');
+    }
+  });
+
   test('pollCompanionStatus updates both service and USB link indicators for connected and unplugged states', async () => {
     let sDot = { style: { background: '' } };
     let sText = { textContent: '', style: { color: '' } };

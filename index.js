@@ -7962,8 +7962,13 @@ const FlightDiagnostics = {
               };
               this.comparisonData = computeFlightComparison(plannedStats, this.telemetryData);
             } else {
-              this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId });
-              this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
+              // Use the saved mission's own waypoints and flight params, not the current workspace
+              const missionWps = data.mission.plan?.waypoints || wps;
+              const missionAlt = data.mission.altitude || altitude;
+              const missionSpeed = data.mission.speed || speed;
+              const missionGimbal = data.mission.gimbal_pitch || gimbalPitch;
+              this.telemetryData = generateTelemetryFromWaypoints(missionWps, { altitude: missionAlt, speed: missionSpeed, gimbalPitch: missionGimbal, flightId });
+              this.comparisonData = computeFlightComparison({ waypointCount: missionWps.length, altitude: missionAlt, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
             }
           } else {
             throw new Error('Diagnostics data missing in mission payload');
