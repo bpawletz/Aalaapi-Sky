@@ -410,26 +410,65 @@ class RemoteIdAirspaceTracker {
         else drone.model = `Drone (${msg.uaType})`;
       } else if (msg.msgType === 1) { // Location / Vector
         drone.status = msg.status;
-        drone.latitude = msg.latitude;
-        drone.longitude = msg.longitude;
-        drone.altitudeGeodetic = msg.altitudeGeodetic;
-        drone.altitudePressure = msg.altitudePressure;
-        drone.heightAgl = msg.heightAgl;
-        drone.speedHorizontal = msg.speedHorizontal;
-        drone.speedVertical = msg.speedVertical;
-        drone.trackDirection = msg.trackDirection;
+        if (msg.latitude !== null && msg.longitude !== null) {
+          drone.latitude = msg.latitude;
+          drone.longitude = msg.longitude;
+          drone.lastPositionUpdate = timestamp;
+        } else if (drone.latitude === null) {
+          drone.latitude = null;
+          drone.longitude = null;
+        }
+        drone.altitudeGeodetic = msg.altitudeGeodetic !== null ? msg.altitudeGeodetic : drone.altitudeGeodetic;
+        drone.altitudePressure = msg.altitudePressure !== null ? msg.altitudePressure : drone.altitudePressure;
+        drone.heightAgl = msg.heightAgl !== null ? msg.heightAgl : drone.heightAgl;
+        drone.speedHorizontal = msg.speedHorizontal !== null ? msg.speedHorizontal : drone.speedHorizontal;
+        drone.speedVertical = msg.speedVertical !== null ? msg.speedVertical : drone.speedVertical;
+        drone.trackDirection = msg.trackDirection !== null ? msg.trackDirection : drone.trackDirection;
 
         if (msg.latitude && msg.longitude) {
-          // Add breadcrumb
-          const bc = { lat: msg.latitude, lon: msg.longitude, alt: msg.altitudeGeodetic, time: timestamp };
-          drone.breadcrumbs.push(bc);
-          if (drone.breadcrumbs.length > 50) drone.breadcrumbs.shift();
+          // Add breadcrumb if moved or new
+          const lastBc = drone.breadcrumbs[drone.breadcrumbs.length - 1];
+          if (!lastBc || lastBc.lat !== msg.latitude || lastBc.lon !== msg.longitude) {
+            const bc = { lat: msg.latitude, lon: msg.longitude, alt: msg.altitudeGeodetic, time: timestamp };
+            drone.breadcrumbs.push(bc);
+            if (drone.breadcrumbs.length > 50) drone.breadcrumbs.shift();
+          }
         }
       } else if (msg.msgType === 4) { // System
         drone.operatorLatitude = msg.operatorLatitude;
         drone.operatorLongitude = msg.operatorLongitude;
         drone.operatorAltitude = msg.operatorAltitude;
         drone.operatorLocationType = msg.operatorLocationType;
+      }
+    }
+
+    // Deduplicate / correlate across MAC address rotation or multiple radio paths (same UAS ID)
+    if (drone.uasId && drone.uasId !== 'Awaiting ID...') {
+      for (const [existingKey, existingDrone] of this.drones.entries()) {
+        if (existingKey !== key && (existingDrone.uasId === drone.uasId || (existingDrone.serialNumber && existingDrone.serialNumber === drone.serialNumber))) {
+          // Merge historical breadcrumbs
+          if (existingDrone.breadcrumbs && existingDrone.breadcrumbs.length > 0) {
+            const combined = [...existingDrone.breadcrumbs, ...(drone.breadcrumbs || [])];
+            drone.breadcrumbs = combined.slice(-50);
+          }
+          if (existingDrone.firstSeen && existingDrone.firstSeen < drone.firstSeen) {
+            drone.firstSeen = existingDrone.firstSeen;
+          }
+          // If current packet didn't have location yet, inherit recent location from prior MAC
+          if (drone.latitude === null && existingDrone.latitude !== null && (timestamp - existingDrone.lastSeen < this.activeTimeoutMs)) {
+            drone.latitude = existingDrone.latitude;
+            drone.longitude = existingDrone.longitude;
+            drone.altitudeGeodetic = existingDrone.altitudeGeodetic;
+            drone.lastPositionUpdate = existingDrone.lastPositionUpdate || existingDrone.lastSeen;
+          }
+          if (drone.operatorLatitude === null && existingDrone.operatorLatitude !== null) {
+            drone.operatorLatitude = existingDrone.operatorLatitude;
+            drone.operatorLongitude = existingDrone.operatorLongitude;
+            drone.operatorAltitude = existingDrone.operatorAltitude;
+          }
+          // Remove obsolete entry to prevent ghost drones with old coordinates
+          this.drones.delete(existingKey);
+        }
       }
     }
 
@@ -522,15 +561,40 @@ class RemoteIdAirspaceTracker {
           drone.uasId = msg.uasId;
           drone.serialNumber = msg.uasId;
         } else if (msg.msgType === 1) {
-          drone.latitude = msg.latitude;
-          drone.longitude = msg.longitude;
-          drone.altitudeGeodetic = msg.altitudeGeodetic;
-          drone.speedHorizontal = msg.speedHorizontal;
-          drone.trackDirection = msg.trackDirection;
+          if (msg.latitude !== null && msg.longitude !== null) {
+            drone.latitude = msg.latitude;
+            drone.longitude = msg.longitude;
+            drone.lastPositionUpdate = timestamp;
+          }
+          drone.altitudeGeodetic = msg.altitudeGeodetic !== null ? msg.altitudeGeodetic : drone.altitudeGeodetic;
+          drone.speedHorizontal = msg.speedHorizontal !== null ? msg.speedHorizontal : drone.speedHorizontal;
+          drone.trackDirection = msg.trackDirection !== null ? msg.trackDirection : drone.trackDirection;
           drone.status = msg.status;
         } else if (msg.msgType === 4) {
           drone.operatorLatitude = msg.operatorLatitude;
           drone.operatorLongitude = msg.operatorLongitude;
+        }
+      }
+    }
+
+    // Deduplicate / correlate across MAC address rotation or multiple radio paths (same UAS ID)
+    if (drone.uasId && drone.uasId !== 'Awaiting ID...' && drone.uasId !== 'DJI Drone') {
+      for (const [existingKey, existingDrone] of this.drones.entries()) {
+        if (existingKey !== key && (existingDrone.uasId === drone.uasId || (existingDrone.serialNumber && existingDrone.serialNumber === drone.serialNumber))) {
+          if (existingDrone.breadcrumbs && existingDrone.breadcrumbs.length > 0) {
+            const combined = [...existingDrone.breadcrumbs, ...(drone.breadcrumbs || [])];
+            drone.breadcrumbs = combined.slice(-50);
+          }
+          if (existingDrone.firstSeen && existingDrone.firstSeen < drone.firstSeen) {
+            drone.firstSeen = existingDrone.firstSeen;
+          }
+          if (drone.latitude === null && existingDrone.latitude !== null && (timestamp - existingDrone.lastSeen < this.activeTimeoutMs)) {
+            drone.latitude = existingDrone.latitude;
+            drone.longitude = existingDrone.longitude;
+            drone.altitudeGeodetic = existingDrone.altitudeGeodetic;
+            drone.lastPositionUpdate = existingDrone.lastPositionUpdate || existingDrone.lastSeen;
+          }
+          this.drones.delete(existingKey);
         }
       }
     }
@@ -562,6 +626,7 @@ class RemoteIdAirspaceTracker {
 
   /**
    * Get list of drones in airspace (both active live and preserved last-known).
+   * Sorted with live broadcasting drones and newest GPS locations first.
    */
   getActiveDrones(now = Date.now()) {
     this.cleanup(now);
@@ -578,6 +643,15 @@ class RemoteIdAirspaceTracker {
         uptimeSec: Math.round((now - d.firstSeen) / 1000),
         uptimeFormatted: formatDuration(now - d.firstSeen)
       };
+    }).sort((a, b) => {
+      // 1. Live broadcasting drones first over lost-signal/LKP drones
+      if (a.isLive !== b.isLive) return a.isLive ? -1 : 1;
+      // 2. Drones with active geo coordinates first
+      const aHasGeo = (a.latitude !== null && a.longitude !== null);
+      const bHasGeo = (b.latitude !== null && b.longitude !== null);
+      if (aHasGeo !== bHasGeo) return aHasGeo ? -1 : 1;
+      // 3. Freshest telemetry first (newest timestamp)
+      return (b.lastSeen || 0) - (a.lastSeen || 0);
     });
   }
 

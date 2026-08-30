@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.59.1] - 2026-08-29
+
+### Fixed & Performance
+- **Companion Bridge Performance & Drone Location Freshness:**
+  - **BLE Sniffer Output Pre-Filtering (`tools/companion/ble_scanner.cs`):** Eliminated heavy stdout pipe saturation and buffer lag by enforcing strict in-memory pre-filtering for ASTM F3411 Remote ID (UUID `0xFFFA`, DataType `0x16`), DJI Manufacturer Data (`0x0888`/`0x8808`), and OpenDroneID message pack frames (`0xF0`..`0xF2`). Drops thousands of irrelevant ambient Bluetooth packets (Apple iBeacons, audio devices, smartwatches) directly in C# without string allocation or pipe writes, reducing packet stdout spam from >500 lines/3s down to 0 garbage lines.
+  - **Live Drone Telemetry Freshness & Sorting (`tools/companion/remote_id_decoder.js`):** Fixed an issue where `RemoteIdAirspaceTracker.getActiveDrones()` returned drones in Map insertion order (oldest first). If an older drone or prior session was retained in memory, `.find()` in `/api/drone/locate` and `index.js` repeatedly returned stale coordinates. `getActiveDrones()` now strictly sorts live broadcasting drones first, followed by valid geo coordinates, and newest `lastSeen` timestamp.
+  - **UAS ID Correlation & MAC Rotation Deduplication:** Correlated Remote ID frames by `uasId` and serial number across BLE MAC address rotations and dual-mode (Wi-Fi + BLE) paths, merging historical breadcrumbs and pruning duplicate ghost drone entries.
+  - **MTP Background CPU Optimization (`tools/companion/server.js`):** Replaced continuous 3.5s `powershell.exe` polling with adaptive 8s (connected) / 12s (disconnected) intervals. Added support for on-demand refresh (`GET /api/status?refresh=1`), reducing companion bridge CPU utilization from ~87% down to under 15%.
+  - **Fast Scanner Process Management & Auto-Recompilation:** Added automated source timestamp checks (`mtime`) in `server.js` to automatically recompile `BleScanner.exe` and `WifiScanner.exe` when `.cs` source changes, and automatically terminate orphaned scanner processes on launch.
+  - **Resilient UI Polling & Map Panning (`index.js`):** Added `AbortController` (2.5s) timeout to `RemoteIdRadar.pollAirspace()` with graceful fallback to retain last known positions on transient network delays, tuned radar polling to 1.5s for fluid drone tracking on the Leaflet map, and relaxed USB MTP status checks to 6s.
+
+## [1.59.0] - 2026-08-29
+
+### Removed & Streamlined
+- **Native Breakpoint Resume & Flight Controls Streamlining:**
+  - Removed redundant "Max Flight Time" slider and artificial battery count calculations from the planner interface in favor of DJI's native Breakpoint Resume architecture.
+  - Eliminated simulated battery split waypoints, legacy multi-battery alert banners, and export warning modals; total flight time is now displayed directly as-is in the stats panel.
+  - Added dedicated Multi-Battery & Breakpoint Resume safety advisories to both the Initial Safety Disclaimer modal and the About & Changelog modal, explaining how DJI Fly automatically handles low-battery Return-to-Home and resumes missions seamlessly after battery swaps.
+  - Cleaned up state persistence, schema outputs, and 2D/3D waypoint renderers.
+
 ## [1.58.2] - 2026-08-29
 
 ### Fixed
