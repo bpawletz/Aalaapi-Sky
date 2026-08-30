@@ -6504,15 +6504,10 @@ describe('Map & Remote ID Alignment Calibration Tests (v1.61.0)', () => {
       assert.deepStrictEqual(takeoffIcon.iconSize, [36, 44]);
       assert.deepStrictEqual(takeoffIcon.iconAnchor, [18, 13], 'Takeoff "H" badge circle must be centered at [18, 13]');
 
-      // Test drag calibration toggle
-      assert.strictEqual(radar.isCalibrating, false);
-      radar.toggleDragCalibration(true);
-      assert.strictEqual(radar.isCalibrating, true);
-      assert.strictEqual(entry.marker.dragging.enabled, true);
-
-      radar.toggleDragCalibration(false);
-      assert.strictEqual(radar.isCalibrating, false);
-      assert.strictEqual(entry.marker.dragging.enabled, false);
+      // Assert drag-to-align is removed to prevent map drag conflicts (v1.61.1)
+      assert.strictEqual(radar.isCalibrating, undefined);
+      assert.strictEqual(radar.toggleDragCalibration, undefined);
+      assert.strictEqual(entry.marker.dragging.enabled, undefined, 'Marker dragging must not be enabled');
 
     } finally {
       radar.resetOffset();

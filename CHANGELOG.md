@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.61.1] - 2026-08-29
+
+### Fixed & Streamlined
+- **Streamlined Nudge Alignment Controls & Removed Drag-to-Align:**
+  - Removed marker drag-to-align functionality (`#remote-id-cal-drag-btn` and marker drag listeners) in `RemoteIdRadar` to eliminate drag event conflicts with Leaflet map panning.
+  - Standardized airspace and satellite imagery alignment exclusively on the reliable, high-precision 4-way Nudge D-Pad (`▲ N`, `▼ S`, `◀ W`, `E ▶`) with configurable meter step increments (`0.5m`, `1.0m`, `5.0m`), 1-click GPS reset, and `localStorage` persistence.
+
 ## [1.61.0] - 2026-08-29
 
 ### Added & Enhanced
