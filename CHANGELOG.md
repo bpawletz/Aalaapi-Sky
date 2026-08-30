@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.58.2] - 2026-08-29
+
+### Fixed
+- **Consumer Drone (Mini 4 Pro / Air 3) Turn Mode & StraightLine XML Compliance:**
+  - Resolved DJI Fly "Waypoint Flight Suspended / Error performing flight" aborts on consumer drones (DJI Mini 4 Pro - enum 68, Air 3 - enum 89) caused by Enterprise-only `DiscontinuityCurvature` turn modes and `<wpml:useStraightLine>1</wpml:useStraightLine>`.
+  - Enforced `toPointAndStopWithContinuityCurvature` / `toPointAndPassWithContinuityCurvature` and `<wpml:useStraightLine>0</wpml:useStraightLine>` for consumer target drones, achieving 100% parity with stock DJI RC 2 firmware output.
+  - Added Enterprise turn mode and straight line compliance checks to Rule 8 of `validateWpmlMission` and automated sanitization in `validateAndFixWpml`.
+  - Fixed pattern selector lookup in `KMZInspector.generateAntigravityPrompt` to correctly read from `#grid-type`.
+
 ## [1.58.1] - 2026-08-29
 
 ### Fixed
