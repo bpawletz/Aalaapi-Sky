@@ -6177,6 +6177,7 @@ describe('Consolidated Diagnostics Center & Streamlined Section 4 Tests (v1.60.0
     assert.ok(html.includes('id="kmz-audit-btn"'), 'Must preserve kmz-audit-btn ID for backward compatibility');
     assert.ok(html.includes('id="action-diagnostics-btn"'), 'Must include action-diagnostics-btn');
     assert.ok(html.includes('id="download-btn"'), 'Must include download-btn');
+    assert.ok(html.includes('id="kmz-preflight-status-badge"') && html.includes('display: none !important;'), 'Pre-flight status badge must be hidden from visible sidebar');
   });
 
   test('FlightDiagnostics switchTab correctly toggles active tab view and DOM classes', () => {

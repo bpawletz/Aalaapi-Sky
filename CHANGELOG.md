@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.60.1] - 2026-08-29
+
+### Removed & Streamlined
+- **Section 4 Sidebar Toolbar Simplification:**
+  - Fully removed the redundant green pre-flight compliance banner (`DJI Fly Pre-Flight: 10/10 Rules Verified`) from the visible sidebar interface.
+  - Section 4 now cleanly features only the 3 primary flight control buttons (`[3D View]`, `[Flight Diag]`, `[Export KMZ]`).
+  - Pre-flight firmware audit metrics, 10-point checklist rules, and XML inspectors are accessible via the `🛡️ Pre-Flight KMZ Audit` tab within the unified Flight Diagnostics modal.
+  - Preserved backward-compatible DOM bindings for headless testing and external callers.
+
 ## [1.60.0] - 2026-08-29
 
 ### Added & Streamlined
