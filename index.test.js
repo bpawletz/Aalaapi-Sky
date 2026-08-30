@@ -5946,6 +5946,134 @@ describe('v1.58.1 Single Grid Oblique Pitch WPML Heading Enforcement', () => {
   });
 });
 
+describe('v1.58.2 Consumer Drone (Mini 4 Pro / Air 3) Turn Mode & StraightLine XML Compliance', () => {
+  test('DJI Mini 4 Pro (68) strictly exports ContinuityCurvature and useStraightLine: 0 even with straight pathMode', () => {
+    global._stubElements = { 'drone-model': { value: '68' } };
+    const waypoints = [
+      { index: 0, lat: 40.012751644699264, lon: -83.17711399670902, alt: '22', heading: 45, turnMode: 'inherit' },
+      { index: 1, lat: 40.01293130775609, lon: -83.17711399670902, alt: '22', heading: 135, turnMode: 'inherit' },
+      { index: 2, lat: 40.01293130775609, lon: -83.17703580418052, alt: '22', heading: 161.565, turnMode: 'inherit' },
+      { index: 3, lat: 40.012751644699264, lon: -83.17703580418052, alt: '22', heading: 18.435, turnMode: 'inherit' }
+    ];
+
+    const xml = vm.runInThisContext(`
+      buildWaylinesWpml(${JSON.stringify(waypoints)}, 22, 4, 'followWayline', 'goHome', -60, 'stopAndShoot', 'straight')
+    `);
+    global._stubElements = {};
+
+    assert.ok(!xml.includes('DiscontinuityCurvature'), 'Consumer drone must not contain DiscontinuityCurvature');
+    assert.ok(xml.includes('toPointAndStopWithContinuityCurvature'), 'Consumer drone must use toPointAndStopWithContinuityCurvature');
+    assert.ok(xml.includes('<wpml:useStraightLine>0</wpml:useStraightLine>'), 'Consumer drone must use <wpml:useStraightLine>0</wpml:useStraightLine>');
+    assert.ok(!xml.includes('<wpml:useStraightLine>1</wpml:useStraightLine>'), 'Consumer drone must not use <wpml:useStraightLine>1</wpml:useStraightLine>');
+  });
+
+  test('validateWpmlMission Rule 8 catches DiscontinuityCurvature and useStraightLine: 1 on consumer drone', () => {
+    const offendingXml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/1.0.6">
+  <Document>
+    <wpml:droneEnumValue>68</wpml:droneEnumValue>
+    <Folder>
+      <Placemark>
+        <Point><coordinates>-83.177113,40.012751</coordinates></Point>
+        <wpml:index>0</wpml:index>
+        <wpml:executeHeight>22</wpml:executeHeight>
+        <wpml:waypointSpeed>4</wpml:waypointSpeed>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>0.1</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam>
+          <wpml:waypointTurnMode>toPointAndStopWithDiscontinuityCurvature</wpml:waypointTurnMode>
+        </wpml:waypointTurnParam>
+        <wpml:useStraightLine>1</wpml:useStraightLine>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>`;
+
+    const res = vm.runInThisContext(`validateWpmlMission(\`${offendingXml}\`, '', {})`);
+    assert.strictEqual(res.valid, false, 'Should fail validation due to consumer drone Enterprise tags');
+    const r8 = res.rules.find(r => r.id === 8);
+    assert.strictEqual(r8.passed, false, 'Rule 8 must fail');
+    assert.ok(res.errors.some(e => e.includes('DiscontinuityCurvature')), 'Must report DiscontinuityCurvature error');
+    assert.ok(res.errors.some(e => e.includes('useStraightLine>1')), 'Must report useStraightLine>1 error');
+  });
+
+  test('validateAndFixWpml automatically sanitizes DiscontinuityCurvature and useStraightLine for consumer drones', () => {
+    const offendingXml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/1.0.6">
+  <Document>
+    <wpml:droneEnumValue>68</wpml:droneEnumValue>
+    <Folder>
+      <Placemark>
+        <Point><coordinates>-83.177113,40.012751</coordinates></Point>
+        <wpml:index>0</wpml:index>
+        <wpml:executeHeight>22</wpml:executeHeight>
+        <wpml:waypointSpeed>4</wpml:waypointSpeed>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>0.1</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam>
+          <wpml:waypointTurnMode>toPointAndStopWithDiscontinuityCurvature</wpml:waypointTurnMode>
+        </wpml:waypointTurnParam>
+        <wpml:useStraightLine>1</wpml:useStraightLine>
+      </Placemark>
+      <Placemark>
+        <Point><coordinates>-83.177113,40.012931</coordinates></Point>
+        <wpml:index>1</wpml:index>
+        <wpml:executeHeight>22</wpml:executeHeight>
+        <wpml:waypointSpeed>4</wpml:waypointSpeed>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>0.1</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingAngleEnable>0</wpml:waypointHeadingAngleEnable>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam>
+          <wpml:waypointTurnMode>toPointAndPassWithDiscontinuityCurvature</wpml:waypointTurnMode>
+        </wpml:waypointTurnParam>
+        <wpml:useStraightLine>1</wpml:useStraightLine>
+      </Placemark>
+      <Placemark>
+        <Point><coordinates>-83.177035,40.012931</coordinates></Point>
+        <wpml:index>2</wpml:index>
+        <wpml:executeHeight>22</wpml:executeHeight>
+        <wpml:waypointSpeed>4</wpml:waypointSpeed>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>0.1</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam>
+          <wpml:waypointTurnMode>toPointAndStopWithDiscontinuityCurvature</wpml:waypointTurnMode>
+        </wpml:waypointTurnParam>
+        <wpml:useStraightLine>1</wpml:useStraightLine>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>`;
+
+    const res = vm.runInThisContext(`validateAndFixWpml(\`${offendingXml}\`, '', {})`);
+    assert.ok(!res.wpmlXml.includes('DiscontinuityCurvature'), 'DiscontinuityCurvature must be eliminated');
+    assert.ok(res.wpmlXml.includes('toPointAndStopWithContinuityCurvature'), 'Should be sanitized to ContinuityCurvature');
+    assert.ok(res.wpmlXml.includes('toPointAndPassWithContinuityCurvature'), 'Pass point should be sanitized to ContinuityCurvature');
+    assert.ok(!res.wpmlXml.includes('<wpml:useStraightLine>1</wpml:useStraightLine>'), 'useStraightLine 1 must be eliminated');
+    assert.ok(res.wpmlXml.includes('<wpml:useStraightLine>0</wpml:useStraightLine>'), 'useStraightLine 0 must be present');
+    assert.strictEqual(res.validation.valid, true, 'Sanitized XML must pass validation');
+  });
+
+  test('KMZInspector.generateAntigravityPrompt reads pattern from grid-type', () => {
+    global._stubElements = { 'grid-type': { value: 'double' } };
+    const prompt = vm.runInThisContext(`
+      KMZInspector.generateAntigravityPrompt({ rulesPassed: 10, valid: true }, '', [])
+    `);
+    global._stubElements = {};
+    assert.ok(prompt.includes('Pattern:** double'), 'Prompt should correctly display Pattern: double when grid-type is double');
+  });
+});
+
 
 
 
