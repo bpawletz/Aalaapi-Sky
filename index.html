@@ -1695,29 +1695,6 @@ html, body {
   color: #38bdf8;
 }
 
-.btn-cal-drag {
-  width: 100%;
-  background: rgba(56, 189, 248, 0.12);
-  border: 1px solid rgba(56, 189, 248, 0.35);
-  color: #38bdf8;
-  border-radius: 6px;
-  padding: 4px 8px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.btn-cal-drag:hover,
-.btn-cal-drag.active {
-  background: rgba(56, 189, 248, 0.25);
-  border-color: #38bdf8;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
-}
 
 .cal-offset-row {
   display: flex;
@@ -1797,10 +1774,6 @@ html, body {
   cursor: pointer;
 }
 
-.remote-id-drone-marker.leaflet-drag-target,
-.remote-id-drone-marker:active {
-  cursor: grab !important;
-}
 
 .remote-id-drone-marker:hover svg {
   filter: drop-shadow(0 0 8px #ef4444);
@@ -2026,7 +1999,7 @@ html, body {
               <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
               <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
             </svg>
-            <h1 style="display: inline-flex; align-items: center; gap: 4px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.61.0</span><span style="font-size: 0.48rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 3px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
+            <h1 style="display: inline-flex; align-items: center; gap: 4px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.61.1</span><span style="font-size: 0.48rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 3px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
           </div>
           <div class="header-actions" style="display: flex; gap: 5px; align-items: center;">
             <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" title="Configuration Settings">
@@ -2760,7 +2733,7 @@ html, body {
               </div>
             </div>
 
-            <!-- Step selector & Drag mode -->
+            <!-- Step selector & Nudge controls -->
             <div class="remote-id-cal-controls">
               <div class="cal-control-row">
                 <span class="cal-control-lbl">Nudge Step:</span>
@@ -2770,11 +2743,6 @@ html, body {
                   <button class="cal-step-btn" data-step="5.0" type="button" title="5.0 meter steps">5m</button>
                 </div>
               </div>
-
-              <button id="remote-id-cal-drag-btn" class="btn-cal-drag" type="button" title="Drag the drone marker on the satellite map to align with launchpad">
-                <span class="drag-icon">🎯</span>
-                <span id="remote-id-cal-drag-text">Enable Drag to Align</span>
-              </button>
 
               <div class="cal-offset-row">
                 <span class="cal-offset-lbl">Offset:</span>
@@ -3275,7 +3243,7 @@ html, body {
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.61.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.61.1</span>
             </div>
           </div>
         </div>
@@ -3345,9 +3313,15 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.61.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Streamlined Nudge Alignment Controls:</strong> Removed unreliable marker drag-to-align interaction to prevent map drag conflicts, standardizing Remote ID and satellite imagery calibration exclusively on the robust, predictable 4-way Nudge D-Pad (<code>▲ N</code>, <code>▼ S</code>, <code>◀ W</code>, <code>E ▶</code>) with 1-click GPS reset and persistent <code>localStorage</code> offset memory.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.61.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
-              <li><strong>Map &amp; Remote ID Alignment Calibration:</strong> Added an interactive Remote ID &amp; Map Alignment tool to compensate for satellite imagery georeferencing shifts and non-RTK GNSS drift. Includes directional nudge buttons (<code>▲ N</code>, <code>▼ S</code>, <code>◀ W</code>, <code>E ▶</code>) with configurable step sizing (<code>0.5m</code>, <code>1m</code>, <code>5m</code>), interactive <em>Drag Drone on Map to Align</em> mode, 1-click GPS reset, and persistent <code>localStorage</code> offset memory.</li>
+              <li><strong>Map &amp; Remote ID Alignment Calibration:</strong> Added an interactive Remote ID &amp; Map Alignment tool to compensate for satellite imagery georeferencing shifts and non-RTK GNSS drift. Includes directional nudge buttons (<code>▲ N</code>, <code>▼ S</code>, <code>◀ W</code>, <code>E ▶</code>) with configurable step sizing (<code>0.5m</code>, <code>1m</code>, <code>5m</code>), 1-click GPS reset, and persistent <code>localStorage</code> offset memory.</li>
               <li><strong>Marker Anchor &amp; Icon Centering:</strong> Mathematically centered the live Remote ID drone marker divIcon at <code>[19, 19]</code> and the Takeoff/Home ("H") badge at <code>[18, 13]</code>, eliminating visual subpixel displacement.</li>
             </ul>
           </div>
@@ -12171,7 +12145,6 @@ const RemoteIdRadar = {
   isFollowing: false,
   offsetMeters: { north: 0, east: 0 },
   calibrationStep: 1.0,
-  isCalibrating: false,
   isPanelOpen: false,
 
   init() {
@@ -12236,14 +12209,6 @@ const RemoteIdRadar = {
         closeBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           this.toggleCalibrationPanel(false);
-        });
-      }
-
-      const dragBtn = document.getElementById('remote-id-cal-drag-btn');
-      if (dragBtn) {
-        dragBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.toggleDragCalibration();
         });
       }
 
@@ -12370,23 +12335,6 @@ const RemoteIdRadar = {
         panel.style.display = 'none';
         panel.classList.add('hidden');
         if (btn) btn.classList.remove('active');
-        if (this.isCalibrating) {
-          this.toggleDragCalibration(false);
-        }
-      }
-    }
-    this.updateCalibrationUI();
-  },
-
-  toggleDragCalibration(forceState) {
-    this.isCalibrating = typeof forceState === 'boolean' ? forceState : !this.isCalibrating;
-    for (const [, entry] of this.markers.entries()) {
-      if (entry.marker && entry.marker.dragging) {
-        if (this.isCalibrating) {
-          entry.marker.dragging.enable();
-        } else {
-          entry.marker.dragging.disable();
-        }
       }
     }
     this.updateCalibrationUI();
@@ -12396,8 +12344,6 @@ const RemoteIdRadar = {
     if (typeof document === 'undefined') return;
     const offsetTextEl = document.getElementById('remote-id-cal-offset-text');
     const activeDot = document.getElementById('remote-id-cal-active-dot');
-    const dragBtn = document.getElementById('remote-id-cal-drag-btn');
-    const dragText = document.getElementById('remote-id-cal-drag-text');
     const stepIndicator = document.getElementById('remote-id-cal-step-indicator');
 
     const hasOffset = this.offsetMeters && (this.offsetMeters.north !== 0 || this.offsetMeters.east !== 0);
@@ -12649,17 +12595,6 @@ const RemoteIdRadar = {
             marker.on('mouseover', () => { if (marker.openTooltip) marker.openTooltip(); });
             marker.on('mouseout', () => { if (marker.closeTooltip) marker.closeTooltip(); });
             marker.on('click', () => { this.locateDrone(drone.id); });
-            marker.on('dragend', (e) => {
-              const pos = (e && e.target && e.target.getLatLng) ? e.target.getLatLng() : (marker.getLatLng ? marker.getLatLng() : null);
-              if (pos) {
-                const raw = this.activeDrones.find(d => d.id === drone.id) || drone;
-                const newOff = this.calculateOffsetFromTarget(raw.latitude, raw.longitude, pos.lat, pos.lng);
-                this.setOffset(newOff.north, newOff.east);
-              }
-            });
-          }
-          if (this.isCalibrating && marker.dragging) {
-            marker.dragging.enable();
           }
           this.layerGroup.addLayer(marker);
         }
@@ -12669,13 +12604,6 @@ const RemoteIdRadar = {
         if (customIcon && entry.marker.setIcon) entry.marker.setIcon(customIcon);
         if (entry.marker.setTooltipContent) entry.marker.setTooltipContent(tooltipHtml);
         if (entry.marker.setPopupContent) entry.marker.setPopupContent(tooltipHtml);
-        if (entry.marker.dragging) {
-          if (this.isCalibrating) {
-            entry.marker.dragging.enable();
-          } else {
-            entry.marker.dragging.disable();
-          }
-        }
       }
 
       // 2. Takeoff / Home Location Marker & Home Vector Line
