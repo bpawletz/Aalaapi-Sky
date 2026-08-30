@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.61.2] - 2026-08-29
+
+### Fixed
+- **Mission Replay Showing Same Route for All Missions:** Fixed a bug in `FlightDiagnostics.loadSelectedFlight` where saved missions without an embedded diagnostics blob (`diag_json`) would always fall back to generating telemetry from the **current active workspace waypoints**, causing every selected saved mission to replay identically. The fallback now correctly uses the saved mission's own `plan.waypoints`, `altitude`, `speed`, and `gimbal_pitch` from the fetched record, ensuring each historical mission replays its unique flight path.
+
 ## [1.61.1] - 2026-08-29
 
 ### Fixed & Streamlined
