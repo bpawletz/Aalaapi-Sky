@@ -1050,9 +1050,9 @@ const server = http.createServer(async (req, res) => {
       req.on('end', () => {
         try {
           const payload = body ? JSON.parse(body) : {};
-          const uuid = payload.uuid;
+          const identifier = payload.id || payload.archiveId || payload.uuid;
           const errorMsg = payload.error || payload.errorMessage || 'Waypoint Flight Suspended';
-          const result = diagDb.reportExecutionFailure(uuid, errorMsg);
+          const result = diagDb.reportExecutionFailure(identifier, errorMsg);
           res.writeHead(result.success ? 200 : 400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify(result));
         } catch (err) {
@@ -1065,8 +1065,8 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname.startsWith('/api/diagnostics/') && req.method === 'GET') {
       try {
-        const uuid = pathname.replace('/api/diagnostics/', '').trim();
-        const record = diagDb.getByUuid(uuid);
+        const identifier = pathname.replace('/api/diagnostics/', '').trim();
+        const record = diagDb.getByIdOrArchiveIdOrUuid(identifier);
         if (record) {
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ success: true, mission: record }));

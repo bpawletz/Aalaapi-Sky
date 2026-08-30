@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.61.0] - 2026-08-29
+
+### Added & Enhanced
+- **Interactive Map & Remote ID Alignment Calibration:**
+  - **Satellite Georeferencing & GNSS Drift Compensation:** Added full fine-tuning alignment controls to `RemoteIdRadar` (`index.js`, `index_template.html`, `index.css`) to eliminate discrepancies between real-world drone positions and satellite imagery basemaps (Esri World Imagery, OpenStreetMap).
+  - **Directional Nudge D-Pad:** Added 4-way nudge buttons (`▲ N`, `▼ S`, `◀ W`, `E ▶`) on `#remote-id-calibration-panel` with selectable step sizes (`0.5m`, `1.0m`, `5.0m`) for granular real-time position calibration.
+  - **Interactive Drag-to-Align Mode:** Added a 1-click `🎯 Enable Drag to Align` tool that makes the Leaflet drone marker draggable directly on the satellite map. Dropping the marker over the known visual launch location (e.g. driveway, runway, or landing pad) automatically computes the exact north/east offset vector in meters.
+  - **Rigid Frame Coordinate Translation:** Calibrated offsets synchronously translate the live drone position, takeoff/home location marker, connecting home vector lines, and historical telemetry breadcrumbs together.
+  - **HUD Readout, Reset & LocalStorage Persistence:** Displays applied offset in real time (e.g. `Offset: +2.5m N, -1.0m E`) with a 1-click `Reset to GPS (0m)` button and persistence across browser sessions via `localStorage`.
+  - **Raw vs Calibrated Telemetry Transparency:** Hover HUD and tooltips clearly display raw broadcast GPS coordinates alongside active calibration offsets so telemetry integrity is never obscured.
+- **Marker Anchor & Icon Subpixel Centering:**
+  - Fixed Leaflet `divIcon` centering on the live drone marker (`iconSize: [38, 38]`, `iconAnchor: [19, 19]`) and takeoff/home marker (`iconSize: [36, 44]`, `iconAnchor: [18, 13]`), aligning the 26px "H" circular badge center to the coordinate point.
+
+## [1.60.2] - 2026-08-29
+
+### Fixed & Enhanced
+- **Retain Multiple Exports per RC 2 Slot in Flight Diagnostics:**
+  - **Archive ID Keying & Safe Migration (`tools/companion/diagnostics_db.js`):** Migrated the SQLite `mission_diagnostics` table to key unique mission archives by `archive_id` (`${uuid}_${createdAt}`) instead of enforcing a strict `uuid UNIQUE` constraint. Exporting multiple revisions or missions using the same RC 2 UUID now correctly preserves every flight in SQLite history instead of overwriting previous records.
+  - **Automatic Disk Archive Synchronization:** Added automatic recovery from `scratch/mission_archives/` on database startup, restoring previous export JSON files into SQLite.
+  - **Distinct Dropdown Options (`FlightDiagnostics.refreshFlightList`):** Updated the Flight Diagnostics dropdown options to key off distinct `diag:${archive_id || id || uuid}` identifiers, allowing pilots to independently select, review, and replay each export iteration.
+- **Flight Diagnostics Modal Close Shortcuts:**
+  - Added keyboard **`Escape` (`Esc`)** key listener and backdrop click-to-close behavior on `#flight-diagnostics-modal` for effortless closing alongside the existing top-right `×` close button.
+
 ## [1.60.1] - 2026-08-29
 
 ### Removed & Streamlined
