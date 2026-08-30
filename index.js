@@ -991,7 +991,8 @@ function initUIEventListeners() {
   const inspectorFileInput = document.getElementById('inspector-file-input');
 
   if (kmzAuditBtn) {
-    kmzAuditBtn.addEventListener('click', () => {
+    kmzAuditBtn.addEventListener('click', (e) => {
+      if (e && e.stopPropagation) e.stopPropagation();
       KMZInspector.open();
     });
   }
@@ -7334,6 +7335,69 @@ const FlightDiagnostics = {
   plannedLineMesh: null,
   photoMarkers: [],
   currentLoadedMission: null,
+  activeTab: '3d',
+
+  switchTab(tabName) {
+    this.activeTab = tabName || '3d';
+    const tab3dBtn = document.getElementById('diag-nav-3d-btn');
+    const tabAuditBtn = document.getElementById('diag-nav-audit-btn');
+    const pane3d = document.getElementById('diag-pane-3d');
+    const paneAudit = document.getElementById('kmz-inspector-modal');
+    const flightMeta = document.getElementById('diag-flight-meta');
+    const flightControls = document.getElementById('diag-header-flight-controls');
+
+    if (this.activeTab === 'audit') {
+      if (tab3dBtn) {
+        tab3dBtn.classList.remove('active');
+        tab3dBtn.style.background = 'transparent';
+        tab3dBtn.style.borderColor = 'transparent';
+        tab3dBtn.style.color = 'var(--text-muted)';
+      }
+      if (tabAuditBtn) {
+        tabAuditBtn.classList.add('active');
+        tabAuditBtn.style.background = 'rgba(16, 185, 129, 0.2)';
+        tabAuditBtn.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+        tabAuditBtn.style.color = '#34d399';
+      }
+      if (pane3d) pane3d.classList.add('hidden');
+      if (paneAudit) paneAudit.classList.remove('hidden');
+      if (flightControls) flightControls.style.display = 'none';
+      if (flightMeta) flightMeta.textContent = 'Pre-Flight Schema & Firmware Compliance Linter';
+      if (typeof KMZInspector !== 'undefined' && KMZInspector.runCurrentWorkspaceAudit) {
+        KMZInspector.runCurrentWorkspaceAudit();
+      }
+    } else {
+      if (tabAuditBtn) {
+        tabAuditBtn.classList.remove('active');
+        tabAuditBtn.style.background = 'transparent';
+        tabAuditBtn.style.borderColor = 'transparent';
+        tabAuditBtn.style.color = 'var(--text-muted)';
+      }
+      if (tab3dBtn) {
+        tab3dBtn.classList.add('active');
+        tab3dBtn.style.background = 'rgba(6, 182, 212, 0.2)';
+        tab3dBtn.style.borderColor = 'rgba(6, 182, 212, 0.4)';
+        tab3dBtn.style.color = '#22d3ee';
+      }
+      if (paneAudit) paneAudit.classList.add('hidden');
+      if (pane3d) pane3d.classList.remove('hidden');
+      if (flightControls) flightControls.style.display = 'flex';
+      if (this.telemetryData && flightMeta) {
+        const flightName = this.selectedFlightId || 'FlightRecord_2026-08-20_[19-42-28].txt';
+        flightMeta.textContent = `Telemetry Log: ${flightName} • Duration: ${this.telemetryData.durationFormatted}`;
+      }
+      if (this.threeRenderer && this.threeCamera) {
+        const container = document.getElementById('diag-3d-canvas-container');
+        if (container) {
+          const width = container.clientWidth || 800;
+          const height = container.clientHeight || 500;
+          this.threeRenderer.setSize(width, height);
+          this.threeCamera.aspect = width / height;
+          this.threeCamera.updateProjectionMatrix();
+        }
+      }
+    }
+  },
 
   init() {
     if (typeof document === 'undefined') return;
@@ -7347,6 +7411,12 @@ const FlightDiagnostics = {
 
     const closeBtn = document.getElementById('diag-close-btn');
     if (closeBtn) closeBtn.addEventListener('click', () => this.close());
+
+    const tab3dBtn = document.getElementById('diag-nav-3d-btn');
+    if (tab3dBtn) tab3dBtn.addEventListener('click', () => this.switchTab('3d'));
+
+    const tabAuditBtn = document.getElementById('diag-nav-audit-btn');
+    if (tabAuditBtn) tabAuditBtn.addEventListener('click', () => this.switchTab('audit'));
 
     const playBtn = document.getElementById('diag-play-btn');
     if (playBtn) playBtn.addEventListener('click', (e) => {
@@ -7718,34 +7788,49 @@ const FlightDiagnostics = {
     return new THREE.Vector3(x, y, z);
   },
 
-  async open(customData = null) {
+  async open(customDataOrTab = null, maybeTab = null) {
+    let customData = null;
+    let targetTab = '3d';
+    if (typeof customDataOrTab === 'string') {
+      targetTab = customDataOrTab;
+    } else if (customDataOrTab && typeof customDataOrTab === 'object') {
+      customData = customDataOrTab;
+      if (maybeTab) targetTab = maybeTab;
+    }
+
     const modal = document.getElementById('flight-diagnostics-modal');
     if (!modal) return;
     modal.classList.remove('hidden');
     this.isOpen = true;
 
-    await this.refreshFlightList();
+    this.switchTab(targetTab);
 
-    const flightSel = document.getElementById('diag-flight-selector');
-    const selectedFlightId = flightSel ? flightSel.value : (this.selectedFlightId || 'FlightRecord_2026-08-20_[19-42-28].txt');
+    if (targetTab === '3d') {
+      await this.refreshFlightList();
 
-    if (customData) {
-      this.selectedFlightId = customData.flightId || selectedFlightId;
-      this.telemetryData = customData.telemetry;
-      this.comparisonData = customData.comparison;
-      this.updateStatsUI();
-      this.init3DScene();
-      this.playbackFractionalIndex = 0.0;
-      this.seekTo(0, true, true);
-      this.pause();
-    } else {
-      await this.loadSelectedFlight(selectedFlightId);
+      const flightSel = document.getElementById('diag-flight-selector');
+      const selectedFlightId = flightSel ? flightSel.value : (this.selectedFlightId || 'FlightRecord_2026-08-20_[19-42-28].txt');
+
+      if (customData) {
+        this.selectedFlightId = customData.flightId || selectedFlightId;
+        this.telemetryData = customData.telemetry;
+        this.comparisonData = customData.comparison;
+        this.updateStatsUI();
+        this.init3DScene();
+        this.playbackFractionalIndex = 0.0;
+        this.seekTo(0, true, true);
+        this.pause();
+      } else {
+        await this.loadSelectedFlight(selectedFlightId);
+      }
     }
   },
 
   close() {
     const modal = document.getElementById('flight-diagnostics-modal');
     if (modal) modal.classList.add('hidden');
+    const auditPane = document.getElementById('kmz-inspector-modal');
+    if (auditPane) auditPane.classList.add('hidden');
     this.isOpen = false;
     this.pause();
     if (this.animFrameId) {
@@ -8253,9 +8338,11 @@ const KMZInspector = {
   activeTemplateXml: '',
 
   open(auditReport = null, wpmlXml = '', templateXml = '') {
+    if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.open) {
+      FlightDiagnostics.open('audit');
+    }
     const modal = document.getElementById('kmz-inspector-modal');
-    if (!modal) return;
-    modal.classList.remove('hidden');
+    if (modal) modal.classList.remove('hidden');
 
     if (auditReport) {
       this.activeReport = auditReport;
@@ -8270,6 +8357,9 @@ const KMZInspector = {
   close() {
     const modal = document.getElementById('kmz-inspector-modal');
     if (modal) modal.classList.add('hidden');
+    if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.close) {
+      FlightDiagnostics.close();
+    }
   },
 
   runCurrentWorkspaceAudit() {

@@ -6167,6 +6167,83 @@ describe('Companion Bridge Performance & Drone Location Freshness Tests (v1.59.1
   });
 });
 
+describe('Consolidated Diagnostics Center & Streamlined Section 4 Tests (v1.60.0)', () => {
+  test('index_template.html contains unified diagnostics tabs and streamlined 3-button Section 4', () => {
+    const html = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(html.includes('id="diag-nav-3d-btn"'), 'Must include 3D Telemetry Replay tab button');
+    assert.ok(html.includes('id="diag-nav-audit-btn"'), 'Must include Pre-Flight KMZ Audit tab button');
+    assert.ok(html.includes('id="diag-pane-3d"'), 'Must include 3D viewport pane container');
+    assert.ok(html.includes('id="kmz-inspector-modal"'), 'Must include embedded kmz inspector modal pane');
+    assert.ok(html.includes('id="kmz-audit-btn"'), 'Must preserve kmz-audit-btn ID for backward compatibility');
+    assert.ok(html.includes('id="action-diagnostics-btn"'), 'Must include action-diagnostics-btn');
+    assert.ok(html.includes('id="download-btn"'), 'Must include download-btn');
+  });
+
+  test('FlightDiagnostics switchTab correctly toggles active tab view and DOM classes', () => {
+    const pane3d = { classList: { add: mock.fn(), remove: mock.fn() } };
+    const paneAudit = { classList: { add: mock.fn(), remove: mock.fn() } };
+    const tab3dBtn = { classList: { add: mock.fn(), remove: mock.fn() }, style: {} };
+    const tabAuditBtn = { classList: { add: mock.fn(), remove: mock.fn() }, style: {} };
+    const flightMeta = { textContent: '' };
+    const flightControls = { style: {} };
+
+    global._stubElements = global._stubElements || {};
+    global._stubElements['diag-pane-3d'] = pane3d;
+    global._stubElements['kmz-inspector-modal'] = paneAudit;
+    global._stubElements['diag-nav-3d-btn'] = tab3dBtn;
+    global._stubElements['diag-nav-audit-btn'] = tabAuditBtn;
+    global._stubElements['diag-flight-meta'] = flightMeta;
+    global._stubElements['diag-header-flight-controls'] = flightControls;
+
+    const diag = Object.create(FlightDiagnostics);
+
+    // Switch to audit
+    diag.switchTab('audit');
+    assert.strictEqual(diag.activeTab, 'audit');
+    assert.ok(pane3d.classList.add.mock.calls.some(c => c.arguments[0] === 'hidden'));
+    assert.ok(paneAudit.classList.remove.mock.calls.some(c => c.arguments[0] === 'hidden'));
+    assert.strictEqual(flightControls.style.display, 'none');
+
+    // Switch back to 3d
+    diag.switchTab('3d');
+    assert.strictEqual(diag.activeTab, '3d');
+    assert.ok(paneAudit.classList.add.mock.calls.some(c => c.arguments[0] === 'hidden'));
+    assert.ok(pane3d.classList.remove.mock.calls.some(c => c.arguments[0] === 'hidden'));
+    assert.strictEqual(flightControls.style.display, 'flex');
+
+    delete global._stubElements['diag-pane-3d'];
+    delete global._stubElements['kmz-inspector-modal'];
+    delete global._stubElements['diag-nav-3d-btn'];
+    delete global._stubElements['diag-nav-audit-btn'];
+    delete global._stubElements['diag-flight-meta'];
+    delete global._stubElements['diag-header-flight-controls'];
+  });
+
+  test('KMZInspector open delegates to FlightDiagnostics audit tab and unhides inspector pane', () => {
+    let diagOpenedWith = null;
+    const origDiagOpen = FlightDiagnostics.open;
+    FlightDiagnostics.open = (tab) => { diagOpenedWith = tab; };
+
+    const modal = { classList: { remove: mock.fn(), add: mock.fn() } };
+    global._stubElements = global._stubElements || {};
+    global._stubElements['kmz-inspector-modal'] = modal;
+
+    try {
+      const origRun = KMZInspector.runCurrentWorkspaceAudit;
+      KMZInspector.runCurrentWorkspaceAudit = mock.fn();
+
+      KMZInspector.open();
+      assert.strictEqual(diagOpenedWith, 'audit', 'KMZInspector.open must invoke FlightDiagnostics.open with "audit"');
+      assert.ok(modal.classList.remove.mock.calls.some(c => c.arguments[0] === 'hidden'), 'Must unhide kmz-inspector-modal');
+
+      KMZInspector.runCurrentWorkspaceAudit = origRun;
+    } finally {
+      FlightDiagnostics.open = origDiagOpen;
+      delete global._stubElements['kmz-inspector-modal'];
+    }
+  });
+});
+
 
 
 
