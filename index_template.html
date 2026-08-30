@@ -69,7 +69,7 @@
               <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
               <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
             </svg>
-            <h1 style="display: inline-flex; align-items: center; gap: 4px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.58.2</span><span style="font-size: 0.48rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 3px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
+            <h1 style="display: inline-flex; align-items: center; gap: 4px;">Aalaapi Sky <span style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; vertical-align: middle;"><span class="header-version-badge" style="font-size: 0.62rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.59.1</span><span style="font-size: 0.48rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 1px 3px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Beta</span></span></h1>
           </div>
           <div class="header-actions" style="display: flex; gap: 5px; align-items: center;">
             <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" title="Configuration Settings">
@@ -472,21 +472,6 @@
             <input type="range" id="speed" min="1" max="15" value="4" class="slider" aria-label="Flight speed">
           </div>
 
-          <div class="control-group">
-            <div class="control-label">
-              <span style="display: inline-flex; align-items: center; gap: 6px;">
-                <svg viewBox="0 0 24 24" width="16" height="16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
-                  <circle cx="12" cy="12" r="9" stroke="#06b6d4" fill="none"/>
-                  <polyline points="12 6 12 12 16 14" stroke="#c2622d"/>
-                </svg>
-                Max Flight Time
-              </span>
-              <span class="value-display"><span id="max-flight-time-val">20</span> min</span>
-            </div>
-            <input type="range" id="max-flight-time" min="5" max="45" value="20" class="slider" aria-label="Max flight time">
-            <p class="help-text">Missions exceeding this time will be split into multiple waypoint files on export.</p>
-          </div>
-
           <div class="control-group" id="heading-mode-container">
             <div class="control-label" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
               <span style="display: inline-flex; align-items: center; gap: 6px;">
@@ -884,6 +869,12 @@
             <span style="color: #fb923c; font-weight: 700; font-size: 0.72rem;">Know Your Emergency Abort</span>
             <span style="color: #fb923c;">Know how to abort &amp; resume manual control. Configure RTH altitude &amp; signal-loss fail-safes before flight.</span>
           </div>
+
+          <div style="background: rgba(16, 185, 129, 0.07); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; grid-column: span 2;">
+            <span style="font-size: 1.25rem; line-height: 1;">🔋</span>
+            <span style="color: #34d399; font-weight: 700; font-size: 0.72rem;">Multi-Battery Flights &amp; Native Breakpoint Resume</span>
+            <span style="color: #34d399;">For long missions exceeding a single battery, rely on DJI Fly's native Breakpoint Resume. When battery runs low, allow Return-to-Home, swap the battery, and tap &quot;Resume from Breakpoint&quot; on the RC 2 to continue.</span>
+          </div>
         </div>
 
         <p style="font-style: italic; border-top: 1px solid var(--border-color); padding-top: 10px; margin: 0; color: var(--text-muted); font-size: 0.76rem;">
@@ -1256,7 +1247,7 @@
               "Look in a particular direction, observe" (Myaamia / Miami-Illinois)
             </div>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.58.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.59.1</span>
             </div>
           </div>
         </div>
@@ -1315,11 +1306,29 @@
               <span style="color: #fb923c; font-weight: 700; font-size: 0.72rem;">Know Your Emergency Abort</span>
               <span style="color: #fb923c;">Know how to abort & resume manual control. Configure RTH altitude & signal-loss fail-safes before flight.</span>
             </div>
+
+            <div style="background: rgba(16, 185, 129, 0.07); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; grid-column: span 2;">
+              <span style="font-size: 1.25rem; line-height: 1;">🔋</span>
+              <span style="color: #34d399; font-weight: 700; font-size: 0.72rem;">Multi-Battery Flights & Native Breakpoint Resume</span>
+              <span style="color: #34d399;">For long missions exceeding a single battery, rely on DJI Fly's native Breakpoint Resume. When battery runs low, allow Return-to-Home, swap the battery, and tap &quot;Resume from Breakpoint&quot; on the RC 2 to continue.</span>
+            </div>
           </div>
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.59.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Companion Bridge Performance &amp; Telemetry Freshness:</strong> Eliminated ambient BLE sniffer stdout flooding in C# via ASTM F3411 Remote ID / DJI pre-filtering. Sorted drone telemetry to prioritize live broadcasting drones and newest GPS locations over stale Map insertion order. Added UAS ID correlation across MAC rotations and tuned background MTP polling to eliminate companion CPU spikes.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.59.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Native Breakpoint Resume &amp; Flight Controls Streamlining:</strong> Removed redundant "Max Flight Time" slider and artificial multi-battery count estimations in favor of DJI RC 2's native Breakpoint Resume architecture. Display total flight time directly in the stats panel. Added dedicated Multi-Battery Breakpoint Resume safety advisories to the Initial Disclaimer and About modals.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.58.2):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Consumer Drone (Mini 4 Pro / Air 3) Turn Mode & StraightLine XML Compliance:</strong> Enforced <code>toPointAndStopWithContinuityCurvature</code> and <code>&lt;wpml:useStraightLine&gt;0&lt;/wpml:useStraightLine&gt;</code> for consumer drones, preventing DJI Fly "Waypoint Flight Suspended" errors caused by Enterprise-only tags. Fixed pattern reporting in bug report generator.</li>

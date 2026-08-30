@@ -858,63 +858,37 @@ describe('calculateStats Tests', () => {
     }
   });
 
-  test('calculates flight time and parts count correctly', () => {
-    const originalGetElementById = global.document.getElementById;
-    const originalSplitWaypointsIntoParts = global.splitWaypointsIntoParts;
+  test('calculates flight time accurately for hover and stopAndShoot modes', () => {
+    // Simple waypoints: distance 50 meters
+    const waypoints = [
+      { x: 0, y: 0, z: 0, lat: 0, lon: 0 },
+      { x: 50, y: 0, z: 0, lat: 0, lon: 0 }
+    ];
 
-    try {
-      // Mock max-flight-time element
-      global.document.getElementById = (id) => {
-        if (id === 'max-flight-time') {
-          return { value: '2' }; // 2 minutes = 120 seconds max flight time
-        }
-        return originalGetElementById(id);
-      };
+    const photoLocations = [{}, {}, {}]; // 3 photos
+    const speed = 10; // 50 / 10 = 5 seconds flight time
 
-      // Mock splitWaypointsIntoParts
-      global.splitWaypointsIntoParts = () => {
-        return [{}, {}]; // Return 2 parts
-      };
+    // Capture mode 'hover'
+    // Flight time = 5 (distance/speed) + 45 (base) = 50 seconds.
+    const statsHover = calculateStats(waypoints, photoLocations, speed, 10, 10, 'hover');
+    assert.strictEqual(statsHover.flightTimeSeconds, 50);
+    assert.strictEqual(statsHover.photoCount, 3);
+    assert.strictEqual(statsHover.timeStr, '0m 50s');
 
-      // Simple waypoints: distance 50 meters
-      const waypoints = [
-        { x: 0, y: 0, z: 0, lat: 0, lon: 0 },
-        { x: 50, y: 0, z: 0, lat: 0, lon: 0 }
-      ];
+    // Capture mode 'stopAndShoot'
+    // Flight time = 5 (distance/speed) + 3*4.5 (photos) + 45 (base) + 2 (auto-settling) = 65.5 seconds.
+    const statsStop = calculateStats(waypoints, photoLocations, speed, 10, 10, 'stopAndShoot');
+    assert.strictEqual(statsStop.flightTimeSeconds, 65.5);
+    assert.strictEqual(statsStop.timeStr, '1m 6s'); // 65.5s -> 1m 6s (rounded)
 
-      const photoLocations = [{}, {}, {}]; // 3 photos
-      const speed = 10; // 50 / 10 = 5 seconds flight time
-
-      // Capture mode 'hover'
-      // Flight time = 5 (distance/speed) + 45 (base) = 50 seconds.
-      // Max flight time = 120 seconds.
-      const statsHover = calculateStats(waypoints, photoLocations, speed, 10, 10, 'hover');
-      assert.strictEqual(statsHover.flightTimeSeconds, 50);
-      assert.strictEqual(statsHover.isOverMaxFlightTime, false);
-      assert.strictEqual(statsHover.partsCount, 1);
-      assert.strictEqual(statsHover.photoCount, 3);
-      assert.strictEqual(statsHover.timeStr, '0m 50s');
-
-      // Capture mode 'stopAndShoot'
-      // Flight time = 5 (distance/speed) + 3*4.5 (photos) + 45 (base) + 2 (auto-settling) = 65.5 seconds.
-      const statsStop = calculateStats(waypoints, photoLocations, speed, 10, 10, 'stopAndShoot');
-      assert.strictEqual(statsStop.flightTimeSeconds, 65.5);
-      assert.strictEqual(statsStop.timeStr, '1m 6s'); // 65.5s -> 1m 6s (rounded)
-
-      // Change distance to 2000m (2000/10 = 200s + 45 = 245s). Max is 120s.
-      const waypointsLong = [
-        { x: 0, y: 0, z: 0, lat: 0, lon: 0 },
-        { x: 2000, y: 0, z: 0, lat: 0, lon: 0 }
-      ];
-      const statsLong = calculateStats(waypointsLong, [], speed, 10, 10, 'hover');
-      assert.strictEqual(statsLong.flightTimeSeconds, 245);
-      assert.strictEqual(statsLong.isOverMaxFlightTime, true);
-      assert.strictEqual(statsLong.partsCount, 2); // since we mocked splitWaypointsIntoParts to return array of length 2
-
-    } finally {
-      global.document.getElementById = originalGetElementById;
-      global.splitWaypointsIntoParts = originalSplitWaypointsIntoParts;
-    }
+    // Change distance to 2000m (2000/10 = 200s + 45 = 245s).
+    const waypointsLong = [
+      { x: 0, y: 0, z: 0, lat: 0, lon: 0 },
+      { x: 2000, y: 0, z: 0, lat: 0, lon: 0 }
+    ];
+    const statsLong = calculateStats(waypointsLong, [], speed, 10, 10, 'hover');
+    assert.strictEqual(statsLong.flightTimeSeconds, 245);
+    assert.strictEqual(statsLong.timeStr, '4m 5s');
   });
 });
 
@@ -2122,7 +2096,6 @@ describe('3D FPV Editor Panel Alignment & Viewport Tests', () => {
       global._stubElements = {
         'camera-zoom': { value: '1.0' },
         'global-hover-time': { value: '0' },
-        'max-flight-time': { value: '20' },
         'grid-rotation': { value: '0' },
         'heading-mode': { value: 'custom' }
       };
@@ -6072,7 +6045,128 @@ describe('v1.58.2 Consumer Drone (Mini 4 Pro / Air 3) Turn Mode & StraightLine X
     global._stubElements = {};
     assert.ok(prompt.includes('Pattern:** double'), 'Prompt should correctly display Pattern: double when grid-type is double');
   });
+
+  test('Native Breakpoint Resume: max-flight-time slider removed and advisories present', () => {
+    const fs = require('fs');
+    const templateHtml = fs.readFileSync('index_template.html', 'utf-8');
+
+    // 1. Assert max-flight-time is removed from template HTML
+    assert.ok(!templateHtml.includes('id="max-flight-time"'), '#max-flight-time slider must be removed from HTML template');
+    assert.ok(!templateHtml.includes('id="max-flight-time-val"'), '#max-flight-time-val must be removed from HTML template');
+
+    // 2. Assert CONTROLS_LIST does not contain max-flight-time
+    const controlsList = vm.runInThisContext('CONTROLS_LIST');
+    assert.ok(!controlsList.includes('max-flight-time'), 'CONTROLS_LIST must not contain max-flight-time');
+
+    // 3. Assert disclaimer modal has native Breakpoint Resume card
+    assert.ok(templateHtml.includes('Multi-Battery Flights &amp; Native Breakpoint Resume'), 'Disclaimer modal must include Breakpoint Resume card');
+    assert.ok(templateHtml.includes('Resume from Breakpoint'), 'Disclaimer modal must explain Breakpoint Resume workflow');
+
+    // 4. Assert calculateStats returns clean stats without isOverMaxFlightTime or partsCount
+    const wps = [
+      { x: 0, y: 0, lat: 40.0, lon: -80.0 },
+      { x: 100, y: 100, lat: 40.001, lon: -80.001 }
+    ];
+    const stats = calculateStats(wps, [], 5, 20, 20, 'hover');
+    assert.strictEqual(stats.isOverMaxFlightTime, undefined, 'isOverMaxFlightTime must be removed from stats');
+    assert.strictEqual(stats.partsCount, undefined, 'partsCount must be removed from stats');
+    assert.ok(typeof stats.timeStr === 'string' && stats.timeStr.length > 0, 'timeStr should be calculated');
+  });
 });
+
+describe('Companion Bridge Performance & Drone Location Freshness Tests (v1.59.1)', () => {
+  const { RemoteIdAirspaceTracker, createSyntheticOdidPayload } = require('./tools/companion/remote_id_decoder.js');
+
+  test('RemoteIdAirspaceTracker getActiveDrones prioritizes live drones and newest telemetry over stale insertion order', () => {
+    const tracker = new RemoteIdAirspaceTracker(15, 900); // 15s active timeout, 900s retention
+
+    const t0 = 1000000;
+    const oldPayload = createSyntheticOdidPayload({ uasId: '1581F4OLD-DRONE', lat: 39.9990, lon: -83.1700 });
+    const newPayload = createSyntheticOdidPayload({ uasId: '1581F4NEW-DRONE', lat: 40.0150, lon: -83.1750 });
+
+    // Ingest old drone first at t0
+    tracker.processAdvertisement({ mac: '11:22:33:44:55:66', rssi: -75, rawPayload: oldPayload, timestamp: t0 });
+
+    // Ingest new drone 50 seconds later at t0 + 50000
+    tracker.processAdvertisement({ mac: 'AA:BB:CC:DD:EE:FF', rssi: -50, rawPayload: newPayload, timestamp: t0 + 50000 });
+
+    // At t0 + 52000:
+    // Old drone age is 52s (> 15s active timeout -> signalLost: true)
+    // New drone age is 2s (<= 15s active timeout -> isLive: true)
+    const activeDrones = tracker.getActiveDrones(t0 + 52000);
+
+    assert.strictEqual(activeDrones.length, 2, 'Both drones should be present in memory');
+    // Live drone MUST be sorted first regardless of Map insertion order!
+    assert.strictEqual(activeDrones[0].uasId, '1581F4NEW-DRONE', 'Freshest live drone must be index 0');
+    assert.strictEqual(activeDrones[0].isLive, true);
+    assert.strictEqual(activeDrones[0].latitude, 40.015);
+
+    assert.strictEqual(activeDrones[1].uasId, '1581F4OLD-DRONE', 'Stale/LKP drone must be index 1');
+    assert.strictEqual(activeDrones[1].isLive, false);
+    assert.strictEqual(activeDrones[1].signalLost, true);
+  });
+
+  test('RemoteIdAirspaceTracker seamlessly merges and deduplicates drones across BLE MAC address rotation', () => {
+    const tracker = new RemoteIdAirspaceTracker(15, 900);
+
+    const t0 = 2000000;
+    const initialPayload = createSyntheticOdidPayload({ uasId: '1581F4ROTATING-DRONE', lat: 40.0110, lon: -83.1710, alt: 20.0 });
+    const rotatedPayload = createSyntheticOdidPayload({ uasId: '1581F4ROTATING-DRONE', lat: 40.0118, lon: -83.1715, alt: 28.0 });
+
+    // Packet from initial MAC address
+    tracker.processAdvertisement({ mac: 'E1:22:33:AA:BB:CC', rssi: -62, rawPayload: initialPayload, timestamp: t0 });
+    assert.strictEqual(tracker.drones.size, 1);
+    assert.strictEqual(tracker.drones.get('E1:22:33:AA:BB:CC').latitude, 40.011);
+
+    // Drone rotates its BLE MAC address to a new private address 10 seconds later
+    tracker.processAdvertisement({ mac: 'F9:88:77:66:55:44', rssi: -58, rawPayload: rotatedPayload, timestamp: t0 + 10000 });
+
+    // Should NOT create duplicate ghost drones in the airspace tracker
+    assert.strictEqual(tracker.drones.size, 1, 'Old MAC entry must be cleaned up upon UAS ID correlation');
+    assert.strictEqual(tracker.drones.has('E1:22:33:AA:BB:CC'), false, 'Old MAC must be removed');
+    assert.strictEqual(tracker.drones.has('F9:88:77:66:55:44'), true, 'New MAC must be active');
+
+    const drone = tracker.drones.get('F9:88:77:66:55:44');
+    assert.strictEqual(drone.latitude, 40.0118, 'Updated latitude must be reflected');
+    assert.strictEqual(drone.breadcrumbs.length, 2, 'Historical breadcrumbs must be merged across MAC rotations');
+    assert.strictEqual(drone.firstSeen, t0, 'Original firstSeen timestamp must be preserved');
+  });
+
+  test('BleScanner source code enforces Remote ID and DJI pre-filters to prevent stdout saturation', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const csContent = fs.readFileSync(path.join(__dirname, 'tools/companion/ble_scanner.cs'), 'utf8');
+
+    // Assert C# code includes pre-filter rules
+    assert.ok(csContent.includes('sec.DataType != 0x16 && sec.DataType != 0xFF'), 'BleScanner must filter data section types');
+    assert.ok(csContent.includes('0xFFFA') || csContent.includes('0xFA') && csContent.includes('0xFF'), 'BleScanner must check for OpenDroneID UUID 0xFFFA');
+    assert.ok(csContent.includes('0x0888') || csContent.includes('0x8808'), 'BleScanner must check for DJI company ID 0x0888');
+  });
+
+  test('RemoteIdRadar locateDrone and badge click select the freshest live drone with geo coordinates', () => {
+    global._stubElements = global._stubElements || {};
+    global._stubElements['remote-id-badge'] = { style: {}, classList: { add: () => {}, remove: () => {} }, textContent: '' };
+    global._stubElements['remote-id-badge-text'] = { textContent: '' };
+    global._stubElements['remote-id-locate-label'] = { textContent: '' };
+
+    const radar = Object.create(RemoteIdRadar);
+    radar.markers = new Map();
+    radar.activeDrones = [
+      { id: 'OLD-LKP', uasId: '1581F4OLD', latitude: 39.99, longitude: -83.17, signalLost: true, isLive: false },
+      { id: 'FRESH-LIVE', uasId: '1581F4LIVE', latitude: 40.01, longitude: -83.18, signalLost: false, isLive: true }
+    ];
+
+    // Calling locateDrone without argument should prefer FRESH-LIVE over OLD-LKP
+    const res = radar.locateDrone();
+    assert.strictEqual(res, true);
+    assert.strictEqual(radar.locatedDroneId, 'FRESH-LIVE', 'locateDrone must select the live drone with coordinates');
+
+    delete global._stubElements['remote-id-badge'];
+    delete global._stubElements['remote-id-badge-text'];
+    delete global._stubElements['remote-id-locate-label'];
+  });
+});
+
 
 
 
