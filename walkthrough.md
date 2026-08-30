@@ -122,3 +122,18 @@ When weather overlays are active, a unified **Map Overlays** legend is displayed
 Below is a live screenshot of the application running on Chrome (loaded via localhost web server) confirming that the Leaflet map and satellite layers are loading successfully:
 
 ![Aalaapi Sky loaded on local server](/C:\Users\bpawl\.gemini\antigravity\brain\93596695-ae89-4291-bd63-28c2b6eefd09\sample_screenshot.png)
+
+---
+
+## 6. Map & Remote ID Alignment Calibration (v1.61.0)
+
+When monitoring live ASTM F3411 Remote ID broadcasts from consumer drones (e.g. DJI Mini 4 Pro, Air 3, Mavic 3), small visual shifts (typically 1–5 meters) can occur between physical landing positions and satellite imagery basemaps (Esri World Imagery, OpenStreetMap) due to aerial photography orthorectification offsets and civilian GNSS variance.
+
+### Features Added
+- **Floating Alignment Control (`#remote-id-calibrate-btn`):** Appears beside the airspace radar pill whenever a Remote ID drone is detected.
+- **Directional Nudge D-Pad:** 4-way nudge buttons (`▲ N`, `▼ S`, `◀ W`, `E ▶`) with selectable step sizes (`0.5m`, `1.0m`, `5.0m`) to nudge overlay positions in real-time.
+- **Interactive Drag-to-Align Mode (`🎯 Enable Drag to Align`):** Allows pilots to drag the live drone marker directly on the satellite map to align with a visible landmark (driveway, runway, or landing pad). Dropping the marker automatically computes the exact north/east offset vector.
+- **Synchronous Rigid-Frame Translation:** Drone marker, takeoff/home location pin, connecting home vector lines, and historical breadcrumbs all shift synchronously without distortion.
+- **LocalStorage Persistence & 1-Click Reset:** Saves active site offsets automatically in `localStorage`, with a 1-click `Reset to GPS (0m)` button to restore pure broadcast coordinates.
+- **Marker Anchor Centering:** Corrected Leaflet `divIcon` centering on the drone marker (`[19, 19]`) and takeoff pin (`[18, 13]`), eliminating subpixel visual offset artifacts.
+
