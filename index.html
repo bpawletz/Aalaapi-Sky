@@ -12364,16 +12364,6 @@ const RemoteIdRadar = {
       }
     }
 
-    if (dragBtn && dragText) {
-      if (this.isCalibrating) {
-        dragBtn.classList.add('active');
-        dragText.textContent = '🎯 Dragging Active (Click to Lock)';
-      } else {
-        dragBtn.classList.remove('active');
-        dragText.textContent = '🎯 Enable Drag to Align';
-      }
-    }
-
     if (stepIndicator) {
       stepIndicator.textContent = `${this.calibrationStep.toFixed(1)}m`;
     }
