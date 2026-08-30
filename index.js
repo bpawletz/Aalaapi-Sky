@@ -4731,11 +4731,23 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
   const globalHoverEl = document.getElementById('global-hover-time');
   const globalHoverTime = globalHoverEl ? parseInt(globalHoverEl.value) : 0;
 
+  const droneModelEl = document.getElementById('drone-model');
+  const parsedDroneVal = droneModelEl ? parseInt(droneModelEl.value, 10) : NaN;
+  const droneEnumValue = !isNaN(parsedDroneVal) ? parsedDroneVal : 68;
+  const isConsumer = (parsedDroneVal === 68 || parsedDroneVal === 89);
+
   // Build XML Placemark tags (waypoints)
   let placemarksXml = '';
   let turnMode;
   let useStraightLine;
-  if (pathMode === 'straight') {
+  if (isConsumer) {
+    // Consumer Drone Golden Rule: DJI Fly for Mini 4 Pro / Air 3 strictly requires ContinuityCurvature
+    // and useStraightLine: 0. DiscontinuityCurvature and useStraightLine: 1 cause immediate "Waypoint Flight Suspended" aborts.
+    turnMode = captureMode === 'stopAndShoot' 
+      ? 'toPointAndStopWithContinuityCurvature' 
+      : 'toPointAndPassWithContinuityCurvature';
+    useStraightLine = 0;
+  } else if (pathMode === 'straight') {
     turnMode = captureMode === 'stopAndShoot' 
       ? 'toPointAndStopWithDiscontinuityCurvature' 
       : 'toPointAndPassWithDiscontinuityCurvature';
@@ -5057,7 +5069,11 @@ ${waypointActions.join('\n')}
     const actualSpeed = (wp.speed !== undefined && wp.speed !== null && !isNaN(wp.speed)) ? wp.speed : speed;
     let actualTurnMode = turnMode;
     if (wp.turnMode && wp.turnMode !== 'inherit') {
-      if (pathMode === 'straight') {
+      if (isConsumer) {
+        actualTurnMode = wp.turnMode === 'stop'
+          ? 'toPointAndStopWithContinuityCurvature'
+          : 'toPointAndPassWithContinuityCurvature';
+      } else if (pathMode === 'straight') {
         actualTurnMode = wp.turnMode === 'stop'
           ? 'toPointAndStopWithDiscontinuityCurvature'
           : 'toPointAndPassWithDiscontinuityCurvature';
@@ -5071,9 +5087,9 @@ ${waypointActions.join('\n')}
     // Endpoint Rule: Waypoint 0 (start) and Waypoint N-1 (end) MUST ALWAYS be stop points!
     // Passing turn modes at endpoints have no entry/exit tangent vectors and trigger "Error performing flight" in DJI Fly.
     if (idx === 0 || idx === waypoints.length - 1) {
-      actualTurnMode = (pathMode === 'straight' || actualTurnMode.includes('Discontinuity'))
-        ? 'toPointAndStopWithDiscontinuityCurvature'
-        : 'toPointAndStopWithContinuityCurvature';
+      actualTurnMode = (isConsumer || pathMode !== 'straight' && !actualTurnMode.includes('Discontinuity'))
+        ? 'toPointAndStopWithContinuityCurvature'
+        : 'toPointAndStopWithDiscontinuityCurvature';
     }
 
     placemarksXml += `      <Placemark>
@@ -5104,10 +5120,6 @@ ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
         </wpml:waypointGimbalHeadingParam>
       </Placemark>\n`;
   });
-
-  const droneModelEl = document.getElementById('drone-model');
-  const parsedDroneVal = droneModelEl ? parseInt(droneModelEl.value, 10) : NaN;
-  const droneEnumValue = !isNaN(parsedDroneVal) ? parsedDroneVal : 68; // Default to DJI Mini 4 Pro (68)
 
   const signalLostEl = document.getElementById('signal-lost-action');
   const signalLostValue = signalLostEl ? signalLostEl.value : 'goBack';
@@ -5328,6 +5340,14 @@ function validateWpmlMission(wpmlXml, templateXml = '', options = {}) {
       r8Passed = false;
       result.errors.push('Enterprise-only <wpml:templateType> detected on consumer drone mission');
     }
+    if (wpmlXml.includes('DiscontinuityCurvature')) {
+      r8Passed = false;
+      result.errors.push('Enterprise-only DiscontinuityCurvature turn mode detected on consumer drone mission (must use ContinuityCurvature for Mini 4 Pro / Air 3)');
+    }
+    if (/<wpml:useStraightLine>\s*1\s*<\/wpml:useStraightLine>/.test(wpmlXml)) {
+      r8Passed = false;
+      result.errors.push('Enterprise-only <wpml:useStraightLine>1</wpml:useStraightLine> detected on consumer drone mission (must be 0 for Mini 4 Pro / Air 3)');
+    }
   }
   if (!r8Passed) result.valid = false; else result.rulesPassed++;
   result.rules.push({ id: 8, name: 'Consumer Drone Model XML Compliance', passed: r8Passed, message: r8Msg });
@@ -5416,6 +5436,9 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
   if (isConsumer) {
     fixedWpml = fixedWpml.replace(/\s*<wpml:templateType>waypoint<\/wpml:templateType>/g, '');
     fixedWpml = fixedWpml.replace(/\s*<wpml:payloadParam>[\s\S]*?<\/wpml:payloadParam>/g, '');
+    fixedWpml = fixedWpml.replace(/toPointAndStopWithDiscontinuityCurvature/g, 'toPointAndStopWithContinuityCurvature');
+    fixedWpml = fixedWpml.replace(/toPointAndPassWithDiscontinuityCurvature/g, 'toPointAndPassWithContinuityCurvature');
+    fixedWpml = fixedWpml.replace(/<wpml:useStraightLine>\s*1\s*<\/wpml:useStraightLine>/g, '<wpml:useStraightLine>0</wpml:useStraightLine>');
     if (fixedTemplate) {
       fixedTemplate = fixedTemplate.replace(/\s*<Folder>[\s\S]*?<\/Folder>/g, '');
     }
@@ -8398,7 +8421,7 @@ const KMZInspector = {
         if (droneEl && droneEl.options && droneEl.selectedIndex >= 0 && droneEl.options[droneEl.selectedIndex]) {
           drone = droneEl.options[droneEl.selectedIndex].text || drone;
         }
-        pattern = document.getElementById('flight-pattern')?.value || pattern;
+        pattern = document.getElementById('grid-type')?.value || document.getElementById('flight-pattern')?.value || pattern;
         alt = document.getElementById('altitude')?.value || alt;
         speed = document.getElementById('speed')?.value || speed;
         pitch = document.getElementById('gimbal-pitch')?.value || pitch;
