@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.60.0] - 2026-08-29
+
+### Added & Streamlined
+- **Consolidated Flight Diagnostics & Pre-Flight Audit Center:**
+  - **Unified Modal Architecture (`#flight-diagnostics-modal`):** Consolidated the standalone Pre-Flight KMZ Audit modal and 3D Telemetry Replay dashboard into a single, cohesive Flight Diagnostics & Telemetry Center. Pilots can seamlessly switch between interactive post-flight 3D telemetry replays and pre-flight firmware XML linting within the same window.
+  - **Tabbed Diagnostics Navigation:** Added intuitive header tabs (`📊 3D Telemetry Replay` and `🛡️ Pre-Flight KMZ Audit`) with automatic view-state synchronization, responsive Three.js viewport resizing, and direct workspace audit triggering.
+  - **Streamlined Section 4 Action Row:** Reduced redundant button clutter in the sidebar by replacing the 4-button cluster with an airy, balanced 3-button row (`[3D View]`, `[Flight Diag]`, `[Export KMZ]`).
+  - **Integrated Pre-Flight Audit Badge:** Converted the green Pre-Flight compliance bar directly beneath the toolbar into a high-visibility, 1-click launcher that opens the Diagnostics Center directly on the Pre-Flight KMZ Audit tab, preserving `#kmz-audit-btn` compatibility for automated workflows.
+
 ## [1.59.1] - 2026-08-29
 
 ### Fixed & Performance
