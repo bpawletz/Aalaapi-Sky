@@ -62,8 +62,7 @@ Toggleable aviation overlays mapped from official FAA REST endpoints (covers the
 - **Power Transmission Lines:** Electric utility lines sourced from HIFLD, loading dynamically at zoom levels 11 and above with detailed info popups.
 
 ### 6. Auto-Plan Calculator & Intelligent Export
-- **Structure-Aware Auto-Plan:** Computes optimal altitude and overlap settings based on target structure height.
-- **Mission Splitting:** Automatically slices large missions exceeding a target **Max Flight Time** into multiple sequenced KMZ files, packaged inside a single ZIP download.
+- **Native Breakpoint Resume Support:** Missions spanning multiple batteries seamlessly utilize DJI RC 2's native Breakpoint Resume. When the battery reaches RTH threshold, the drone returns to home; after a quick battery swap, DJI Fly prompts to continue from the exact breakpoint.
 - **DJI RC2 Support:** Generates controller-compatible KMZ outputs with detailed on-screen setup instructions.
 
 ---

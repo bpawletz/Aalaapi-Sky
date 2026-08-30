@@ -52,11 +52,15 @@ function startBleScanner() {
     return;
   }
   const exePath = path.join(__dirname, 'BleScanner.exe');
-  if (!fs.existsSync(exePath)) {
+  const csPath = path.join(__dirname, 'ble_scanner.cs');
+  const needsCompile = !fs.existsSync(exePath) || (fs.existsSync(csPath) && fs.statSync(csPath).mtimeMs > fs.statSync(exePath).mtimeMs);
+
+  if (needsCompile) {
     try {
       const cscPath = 'C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe';
-      if (fs.existsSync(cscPath)) {
-        const csPath = path.join(__dirname, 'ble_scanner.cs');
+      if (fs.existsSync(cscPath) && fs.existsSync(csPath)) {
+        // Stop any running scanner first to allow overwrite
+        try { execSync('taskkill /F /IM BleScanner.exe', { stdio: 'ignore' }); } catch (e) {}
         const args = [
           '/noconfig', '/target:exe', `/out:${exePath}`,
           '/r:C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\mscorlib.dll',
@@ -83,6 +87,8 @@ function startBleScanner() {
   }
 
   try {
+    // Kill any existing orphaned BleScanner process before spawning
+    try { execSync('taskkill /F /IM BleScanner.exe', { stdio: 'ignore' }); } catch (e) {}
     bleScannerProc = spawn(exePath, [], { stdio: ['pipe', 'pipe', 'ignore'] });
     bleScannerActive = true;
 
@@ -96,6 +102,11 @@ function startBleScanner() {
         const rssi = parseInt(parts[2], 10) || -70;
         const typeHex = parts[3];
         const payloadHex = parts[4];
+
+        // Fast pre-filter before buffer decoding
+        if (payloadHex.length < 40 && !payloadHex.includes('FAFF') && !payloadHex.includes('FFFA') && !payloadHex.startsWith('8808') && !payloadHex.startsWith('0888') && !payloadHex.startsWith('F0') && !payloadHex.startsWith('F1') && !payloadHex.startsWith('F2')) {
+          return;
+        }
 
         // Decode ASTM Remote ID frame
         const msgs = parseRemoteIdPayload(payloadHex, typeHex);
@@ -143,11 +154,14 @@ function startWifiScanner() {
     return;
   }
   const exePath = path.join(__dirname, 'WifiScanner.exe');
-  if (!fs.existsSync(exePath)) {
+  const csPath = path.join(__dirname, 'wifi_scanner.cs');
+  const needsCompile = !fs.existsSync(exePath) || (fs.existsSync(csPath) && fs.statSync(csPath).mtimeMs > fs.statSync(exePath).mtimeMs);
+
+  if (needsCompile) {
     try {
       const cscPath = 'C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe';
-      if (fs.existsSync(cscPath)) {
-        const csPath = path.join(__dirname, 'wifi_scanner.cs');
+      if (fs.existsSync(cscPath) && fs.existsSync(csPath)) {
+        try { execSync('taskkill /F /IM WifiScanner.exe', { stdio: 'ignore' }); } catch (e) {}
         const args = [
           '/noconfig', '/target:exe', `/out:${exePath}`,
           '/r:C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\mscorlib.dll',
@@ -168,6 +182,7 @@ function startWifiScanner() {
   }
 
   try {
+    try { execSync('taskkill /F /IM WifiScanner.exe', { stdio: 'ignore' }); } catch (e) {}
     wifiScannerProc = spawn(exePath, [], { stdio: ['pipe', 'pipe', 'ignore'] });
     wifiScannerActive = true;
 
@@ -894,8 +909,12 @@ const server = http.createServer(async (req, res) => {
   const pathname = url.pathname;
 
   try {
-    // 1. Controller Status Endpoint
+    // 1. Controller Status Endpoint (returns cached status instantly; supports ?refresh=true on-demand)
     if (pathname === '/api/status' && req.method === 'GET') {
+      const forceRefresh = url.searchParams.get('refresh') === 'true' || url.searchParams.get('refresh') === '1';
+      if (forceRefresh && !isCheckingStatus && (Date.now() - cachedRc2Status.lastCheck > 2500)) {
+        await updateRc2Status();
+      }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(cachedRc2Status));
       return;
@@ -1222,14 +1241,18 @@ const server = http.createServer(async (req, res) => {
     // 6b. Drone Locate REST API (GET returns latest located drone with geo coordinates; POST updates/injects new geo location)
     if ((pathname === '/api/drone/locate' || pathname === '/api/remote-id/locate' || pathname === '/api/drone/position') && req.method === 'GET') {
       const activeDrones = airspaceTracker.getActiveDrones();
-      const locatedWithGeo = activeDrones.find(d => d.latitude !== null && d.longitude !== null) || activeDrones[0] || null;
+      // Prefer live broadcasting drone with valid geo coordinates, otherwise most recently updated drone with geo
+      const locatedWithGeo = activeDrones.find(d => d.latitude !== null && d.longitude !== null && d.isLive) ||
+                             activeDrones.find(d => d.latitude !== null && d.longitude !== null) ||
+                             activeDrones[0] || null;
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         success: !!locatedWithGeo,
         located: !!(locatedWithGeo && locatedWithGeo.latitude !== null),
         drone: locatedWithGeo,
         count: activeDrones.length,
-        drones: activeDrones
+        drones: activeDrones,
+        timestamp: Date.now()
       }));
       return;
     }
@@ -1542,9 +1565,18 @@ if (require.main === module) {
     // Check and kill any previously running companion instance on the target port
     await killExistingCompanion(PORT);
 
-    // Initial status check & background polling every 3.5s
+    // Initial status check & adaptive background polling
+    // 8s when RC 2 is connected, 12s when unplugged (prevents continuous powershell.exe CPU saturation)
     updateRc2Status();
-    setInterval(updateRc2Status, 3500);
+    let statusPollingTimer = null;
+    const scheduleNextStatusCheck = () => {
+      const intervalMs = (cachedRc2Status && cachedRc2Status.connected) ? 8000 : 12000;
+      statusPollingTimer = setTimeout(async () => {
+        await updateRc2Status();
+        scheduleNextStatusCheck();
+      }, intervalMs);
+    };
+    scheduleNextStatusCheck();
 
     // Launch Live WinRT Bluetooth LE and Wi-Fi Remote ID scanners
     startBleScanner();

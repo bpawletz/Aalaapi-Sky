@@ -605,7 +605,7 @@ const CONTROLS_LIST = [
   'grid-type', 'grid-width', 'grid-height', 'grid-rotation',
   'front-overlap', 'side-overlap', 'gimbal-pitch',
   'altitude', 'speed', 'heading-mode', 'finish-action', 'capture-mode', 'path-mode', 'signal-lost-action',
-  'max-flight-time', 'camera-model', 'drone-model', 'camera-zoom', 'camera-hfov', 'camera-vfov', 'road-offset',
+  'camera-model', 'drone-model', 'camera-zoom', 'camera-hfov', 'camera-vfov', 'road-offset',
   'global-hover-time'
 ];
 
@@ -1703,13 +1703,6 @@ function syncDisplayValues() {
   } else {
     document.getElementById('speed-val').textContent = speedVal;
     document.getElementById('speed-unit').textContent = "m/s";
-  }
-
-  // Update Max Flight Time
-  const maxFlightTimeEl = document.getElementById('max-flight-time');
-  const maxFlightTimeValEl = document.getElementById('max-flight-time-val');
-  if (maxFlightTimeEl && maxFlightTimeValEl) {
-    maxFlightTimeValEl.textContent = maxFlightTimeEl.value;
   }
 
   // Update Global Hover Time
@@ -3033,13 +3026,14 @@ function getMarkerIcon(wp, idx, waypoints, rotationDeg, tempHeading, tempPitch, 
   const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value);
 
   const isModified = isTempModified || wp.isModified;
-  const isSplitStart = activeSplitStartIndices && activeSplitStartIndices.has(wp.idx !== undefined ? wp.idx : idx);
+  const isStart = idx === 0;
+  const isEnd = idx === waypoints.length - 1;
 
   let color = '#06b6d4'; // default cyan
   if (isModified) {
     color = '#ec4899'; // Hot pink for modified waypoints
-  } else if (isSplitStart) {
-    color = '#10b981'; // Emerald Green for all starting/takeoff points
+  } else if (isStart) {
+    color = '#10b981'; // Emerald Green for starting point
   } else if (isMultiOrbit || isCombo || isMultiCombo || importedWaypoints) {
     if (wp.ringIndex === 0) color = '#a855f7';
     else if (wp.ringIndex === 1) color = '#06b6d4';
@@ -3047,11 +3041,9 @@ function getMarkerIcon(wp, idx, waypoints, rotationDeg, tempHeading, tempPitch, 
     else if (wp.ringIndex === 3) color = '#3b82f6';
   }
 
-  const isStart = idx === 0;
-  const isEnd = idx === waypoints.length - 1;
-  const radius = isStart || isEnd || isSplitStart ? 6 : 4;
-  const borderWeight = isStart || isEnd || isSplitStart ? 2 : 1;
-  const borderColor = (isStart || isSplitStart) ? '#10b981' : (isEnd ? '#ef4444' : '#ffffff');
+  const radius = isStart || isEnd ? 6 : 4;
+  const borderWeight = isStart || isEnd ? 2 : 1;
+  const borderColor = isStart ? '#10b981' : (isEnd ? '#ef4444' : '#ffffff');
 
   // Heading calculation
   let heading = 0;
@@ -4102,22 +4094,7 @@ function splitWaypointsIntoParts(waypoints, maxFlightTimeMinutes, speed, capture
 }
 
 function recalculateSplitStarts() {
-  const waypoints = getCurrentWaypoints();
-  if (!waypoints || waypoints.length < 2) {
-    activeSplitStartIndices = new Set();
-    return;
-  }
-  const maxFlightTimeEl = document.getElementById('max-flight-time');
-  const maxFlightTimeMinutes = maxFlightTimeEl ? parseFloat(maxFlightTimeEl.value) : 20;
-  const speed = parseFloat(document.getElementById('speed').value);
-  const captureMode = document.getElementById('capture-mode').value;
-  
-  const parts = splitWaypointsIntoParts(waypoints, maxFlightTimeMinutes, speed, captureMode);
-  const starts = new Set();
-  if (parts.length > 1) {
-    parts.forEach(part => starts.add(part.startIdx));
-  }
-  activeSplitStartIndices = starts;
+  activeSplitStartIndices = new Set();
 }
 
 function addFreeformWaypoint(lat, lng) {
@@ -4518,17 +4495,6 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
   const min = Math.floor(flightTimeSeconds / 60);
   const sec = Math.round(flightTimeSeconds % 60);
 
-  const maxFlightTimeEl = document.getElementById('max-flight-time');
-  const maxFlightTimeMinutes = maxFlightTimeEl ? parseFloat(maxFlightTimeEl.value) : 20;
-  const maxFlightTimeSeconds = maxFlightTimeMinutes * 60;
-  const isOverMaxFlightTime = flightTimeSeconds > maxFlightTimeSeconds;
-  
-  let partsCount = 1;
-  if (isOverMaxFlightTime && waypoints.length > 1) {
-    const parts = splitWaypointsIntoParts(waypoints, maxFlightTimeMinutes, speed, captureMode);
-    partsCount = parts.length;
-  }
-
   return {
     waypointsCount: waypoints.length,
     photoCount: photoCount,
@@ -4537,9 +4503,6 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
     distance: totalDistance,
     timeStr: `${min}m ${sec}s`,
     flightTimeSeconds: flightTimeSeconds,
-    isOverMaxFlightTime: isOverMaxFlightTime,
-    maxFlightTimeMinutes: maxFlightTimeMinutes,
-    partsCount: partsCount,
     maxNearestNeighborDist: maxNearestNeighborDist,
     hasIsolatedWaypoint: hasIsolatedWaypoint,
     isFarFromTakeoff: isFarFromTakeoff,
@@ -4624,18 +4587,6 @@ function updateStatsPanel(stats) {
       div.appendChild(document.createTextNode('⚠️ '));
       div.appendChild(strong);
       div.appendChild(document.createTextNode(` Waypoints are isolated (>${limitStr} from any other)! (Max gap: ${formattedGap})`));
-      warningsEl.appendChild(div);
-      hasWarnings = true;
-    }
-
-    // Check max flight time limit (Multi-battery estimate)
-    if (stats.isOverMaxFlightTime) {
-      const div = document.createElement('div');
-      const strong = document.createElement('strong');
-      strong.textContent = 'Multi-Battery Flight:';
-      div.appendChild(document.createTextNode('🔋 '));
-      div.appendChild(strong);
-      div.appendChild(document.createTextNode(` Mission duration (${stats.timeStr}) exceeds single-battery limit (${stats.maxFlightTimeMinutes} min). Requires ~${stats.partsCount} batteries. The RC 2 will prompt to Resume from Breakpoint after battery swap.`));
       warningsEl.appendChild(div);
       hasWarnings = true;
     }
@@ -5556,14 +5507,6 @@ function exportKMZ() {
     warningMessage += `• Geolocation Check: Your current pilot position is more than ${limitStr} away from the takeoff area (Takeoff distance: ${formattedDist}). Please ensure you are at the correct flight location.\n\n`;
   }
 
-  const maxFlightTimeEl = document.getElementById('max-flight-time');
-  const maxFlightTimeMinutes = maxFlightTimeEl ? parseFloat(maxFlightTimeEl.value) : 20;
-  const maxFlightTimeSeconds = maxFlightTimeMinutes * 60;
-  
-  // Calculate total stats to check flight duration
-  const totalStats = calculateStats(waypoints, getCurrentPhotos(), speed, null, null, captureMode);
-  const totalDurationSeconds = totalStats ? totalStats.flightTimeSeconds : 0;
-
   // Always define the "Press Go" warning
   const pressGoWarning = 
     `⚠️ "Press Go" Upload Checklist:\n` +
@@ -5573,16 +5516,9 @@ function exportKMZ() {
     `  3. You are too far away from the first waypoint.\n` +
     `  4. The flight area lies within an unauthorized NFZ / Geozone.\n\n`;
 
-  // Multi-battery flight notification
-  let multiBatteryNote = "";
-  if (totalDurationSeconds > maxFlightTimeSeconds && waypoints.length > 1) {
-    const estBatteries = Math.ceil(totalDurationSeconds / maxFlightTimeSeconds);
-    multiBatteryNote = `• Multi-Battery Mission: Estimated duration (${totalStats.timeStr}) exceeds single-battery limit (${maxFlightTimeMinutes} min) and will require ~${estBatteries} batteries. DJI RC 2 automatically supports Breakpoint Resume after battery swaps.\n\n`;
-  }
-
   let confirmMessage = "";
-  if (warningMessage || multiBatteryNote) {
-    confirmMessage = `Warning Details:\n\n${warningMessage || ''}${multiBatteryNote}${pressGoWarning}Do you acknowledge these safety details and want to export the mission?`;
+  if (warningMessage) {
+    confirmMessage = `Warning Details:\n\n${warningMessage}${pressGoWarning}Do you acknowledge these safety details and want to export the mission?`;
   } else {
     confirmMessage = `${pressGoWarning}Do you want to proceed and export the mission?`;
   }
@@ -5930,7 +5866,6 @@ function buildMissionPlanJSON(customWps = null) {
 
   const altitude = parseFloat(document.getElementById('altitude')?.value) || 50;
   const speed = parseFloat(document.getElementById('speed')?.value) || 4;
-  const maxFlightTimeMinutes = parseFloat(document.getElementById('max-flight-time')?.value) || 20;
   const headingMode = document.getElementById('heading-mode')?.value || 'followWayline';
   const finishAction = document.getElementById('finish-action')?.value || 'goHome';
   const signalLostAction = document.getElementById('signal-lost-action')?.value || 'goBack';
@@ -5965,7 +5900,7 @@ function buildMissionPlanJSON(customWps = null) {
   return {
     schemaVersion: "1.0.0",
     generator: "Aalaapi Sky",
-    version: "1.52.0",
+    version: "1.59.0",
     exportedAt: new Date().toISOString(),
     mission: {
       uuid: storedUuid || null,
@@ -5995,7 +5930,6 @@ function buildMissionPlanJSON(customWps = null) {
       flight: {
         altitude,
         speed,
-        maxFlightTimeMinutes,
         headingMode,
         finishAction,
         signalLostAction,
@@ -6010,8 +5944,7 @@ function buildMissionPlanJSON(customWps = null) {
       photoCount: totalStats.photoCount || formattedWaypoints.length,
       totalDistanceMeters: totalStats.distance || 0,
       totalFlightTimeSeconds: totalStats.flightTimeSeconds || 0,
-      flightTimeFormatted: totalStats.timeStr || '',
-      estimatedBatteries: Math.ceil((totalStats.flightTimeSeconds || 0) / (maxFlightTimeMinutes * 60)) || 1
+      flightTimeFormatted: totalStats.timeStr || ''
     } : {
       waypointCount: formattedWaypoints.length
     },
@@ -6896,10 +6829,16 @@ function initRC2Controls() {
   pollCompanionStatus();
   RemoteIdRadar.pollAirspace();
   if (!companionPollInterval && typeof window !== 'undefined' && window.setInterval) {
+    let tickCount = 0;
     companionPollInterval = setInterval(() => {
-      pollCompanionStatus();
+      tickCount++;
+      // Poll drone airspace radar every 1.5s for low-latency live GPS telemetry
       RemoteIdRadar.pollAirspace();
-    }, 3000);
+      // Poll controller USB link status every 6s (every 4th tick) to minimize CPU load
+      if (tickCount % 4 === 0) {
+        pollCompanionStatus();
+      }
+    }, 1500);
   }
 }
 
@@ -6933,7 +6872,9 @@ const RemoteIdRadar = {
     if (badge) {
       badge.addEventListener('click', () => {
         if (this.activeDrones.length > 0) {
-          const target = this.activeDrones.find(d => d.latitude && d.longitude) || this.activeDrones[0];
+          const target = this.activeDrones.find(d => d.latitude && d.longitude && !d.signalLost) ||
+                         this.activeDrones.find(d => d.latitude && d.longitude) ||
+                         this.activeDrones[0];
           if (target && target.latitude && target.longitude) {
             this.locateDrone(target.id);
           }
@@ -6943,7 +6884,10 @@ const RemoteIdRadar = {
   },
 
   locateDrone(droneId) {
-    const target = this.activeDrones.find(d => d.id === droneId) || this.activeDrones.find(d => d.latitude && d.longitude);
+    const target = (droneId ? this.activeDrones.find(d => d.id === droneId) : null) ||
+                   this.activeDrones.find(d => d.latitude && d.longitude && !d.signalLost) ||
+                   this.activeDrones.find(d => d.latitude && d.longitude) ||
+                   this.activeDrones[0];
     if (!target || !target.latitude || !target.longitude) return false;
 
     this.locatedDroneId = target.id;
@@ -7023,7 +6967,10 @@ const RemoteIdRadar = {
     if (typeof fetch === 'undefined') return;
     try {
       const apiBase = typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765';
-      const res = await fetch(`${apiBase}/api/remote-id/drones`);
+      const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+      const timeoutId = controller ? setTimeout(() => controller.abort(), 2500) : null;
+      const res = await fetch(`${apiBase}/api/remote-id/drones`, controller ? { signal: controller.signal } : {});
+      if (timeoutId) clearTimeout(timeoutId);
       if (res.ok) {
         const data = await res.json();
         if (data.success && Array.isArray(data.drones)) {
@@ -7033,8 +6980,7 @@ const RemoteIdRadar = {
         }
       }
     } catch (e) {
-      // Companion offline
-      this.activeDrones = [];
+      // Gracefully retain last known positions during transient network latency
       this.updateRadarUI();
     }
   },
@@ -7287,7 +7233,9 @@ const RemoteIdRadar = {
         const count = this.activeDrones.length;
         const liveCount = this.activeDrones.filter(d => !d.signalLost && (d.ageSec === undefined || d.ageSec <= 15)).length;
         const lostCount = count - liveCount;
-        const first = this.activeDrones[0];
+        const first = this.activeDrones.find(d => d.latitude && d.longitude && !d.signalLost) ||
+                      this.activeDrones.find(d => d.latitude && d.longitude) ||
+                      this.activeDrones[0];
 
         let label = '';
         if (this.isFollowing && this.locatedDroneId) {
@@ -11302,15 +11250,13 @@ function recreate3DWaypointsAndPaths() {
     const isStart = idx === 0;
     const isEnd = idx === waypoints.length - 1;
 
-    const isSplitStart = activeSplitStartIndices && activeSplitStartIndices.has(wp.idx !== undefined ? wp.idx : idx);
-
     // Plot Waypoint Sphere
     let r = 1.8;
     let colorHex = 0x06b6d4; // Default cyan
 
-    if (isStart || isSplitStart) {
+    if (isStart) {
       r = 3.0;
-      colorHex = 0x10b981; // Green for all split starts
+      colorHex = 0x10b981; // Green for start
     } else if (isEnd) {
       r = 3.0;
       colorHex = 0xef4444; // Red
@@ -11326,7 +11272,7 @@ function recreate3DWaypointsAndPaths() {
 
     if (showDroneModels) {
       const hp = getWaypointHeadingAndPitch(idx, waypoints);
-      const droneScale = (isStart || isEnd || isSplitStart) ? 0.55 : 0.4;
+      const droneScale = (isStart || isEnd) ? 0.55 : 0.4;
       const droneMesh = create3DDroneMesh(colorHex, droneScale);
       droneMesh.position.set(x3d, y3d, z3d);
 

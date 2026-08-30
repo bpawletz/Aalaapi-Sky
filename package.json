@@ -4,7 +4,7 @@
     "playwright": "^1.61.1"
   },
   "name": "app",
-  "version": "1.58.2",
+  "version": "1.59.1",
   "description": "**Drone Waypoint Mission Planner**",
   "main": "index.js",
   "scripts": {
