@@ -1678,29 +1678,6 @@ html, body {
   color: #38bdf8;
 }
 
-.btn-cal-drag {
-  width: 100%;
-  background: rgba(56, 189, 248, 0.12);
-  border: 1px solid rgba(56, 189, 248, 0.35);
-  color: #38bdf8;
-  border-radius: 6px;
-  padding: 4px 8px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.btn-cal-drag:hover,
-.btn-cal-drag.active {
-  background: rgba(56, 189, 248, 0.25);
-  border-color: #38bdf8;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
-}
 
 .cal-offset-row {
   display: flex;
@@ -1780,10 +1757,6 @@ html, body {
   cursor: pointer;
 }
 
-.remote-id-drone-marker.leaflet-drag-target,
-.remote-id-drone-marker:active {
-  cursor: grab !important;
-}
 
 .remote-id-drone-marker:hover svg {
   filter: drop-shadow(0 0 8px #ef4444);

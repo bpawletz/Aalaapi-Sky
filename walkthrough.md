@@ -125,14 +125,14 @@ Below is a live screenshot of the application running on Chrome (loaded via loca
 
 ---
 
-## 6. Map & Remote ID Alignment Calibration (v1.61.0)
+## 6. Map & Remote ID Alignment Calibration (v1.61.0 - v1.61.1)
 
 When monitoring live ASTM F3411 Remote ID broadcasts from consumer drones (e.g. DJI Mini 4 Pro, Air 3, Mavic 3), small visual shifts (typically 1–5 meters) can occur between physical landing positions and satellite imagery basemaps (Esri World Imagery, OpenStreetMap) due to aerial photography orthorectification offsets and civilian GNSS variance.
 
-### Features Added
+### Features
 - **Floating Alignment Control (`#remote-id-calibrate-btn`):** Appears beside the airspace radar pill whenever a Remote ID drone is detected.
 - **Directional Nudge D-Pad:** 4-way nudge buttons (`▲ N`, `▼ S`, `◀ W`, `E ▶`) with selectable step sizes (`0.5m`, `1.0m`, `5.0m`) to nudge overlay positions in real-time.
-- **Interactive Drag-to-Align Mode (`🎯 Enable Drag to Align`):** Allows pilots to drag the live drone marker directly on the satellite map to align with a visible landmark (driveway, runway, or landing pad). Dropping the marker automatically computes the exact north/east offset vector.
+- **Streamlined Nudge-Only Architecture (v1.61.1):** Standardized purely on the reliable, high-precision Nudge D-Pad controls and eliminated marker drag-to-align interaction to prevent map drag conflicts and ensure rock-solid responsiveness on touchscreen and desktop mice alike.
 - **Synchronous Rigid-Frame Translation:** Drone marker, takeoff/home location pin, connecting home vector lines, and historical breadcrumbs all shift synchronously without distortion.
 - **LocalStorage Persistence & 1-Click Reset:** Saves active site offsets automatically in `localStorage`, with a 1-click `Reset to GPS (0m)` button to restore pure broadcast coordinates.
 - **Marker Anchor Centering:** Corrected Leaflet `divIcon` centering on the drone marker (`[19, 19]`) and takeoff pin (`[18, 13]`), eliminating subpixel visual offset artifacts.

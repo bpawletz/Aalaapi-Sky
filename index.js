@@ -6858,7 +6858,6 @@ const RemoteIdRadar = {
   isFollowing: false,
   offsetMeters: { north: 0, east: 0 },
   calibrationStep: 1.0,
-  isCalibrating: false,
   isPanelOpen: false,
 
   init() {
@@ -6923,14 +6922,6 @@ const RemoteIdRadar = {
         closeBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           this.toggleCalibrationPanel(false);
-        });
-      }
-
-      const dragBtn = document.getElementById('remote-id-cal-drag-btn');
-      if (dragBtn) {
-        dragBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.toggleDragCalibration();
         });
       }
 
@@ -7057,23 +7048,6 @@ const RemoteIdRadar = {
         panel.style.display = 'none';
         panel.classList.add('hidden');
         if (btn) btn.classList.remove('active');
-        if (this.isCalibrating) {
-          this.toggleDragCalibration(false);
-        }
-      }
-    }
-    this.updateCalibrationUI();
-  },
-
-  toggleDragCalibration(forceState) {
-    this.isCalibrating = typeof forceState === 'boolean' ? forceState : !this.isCalibrating;
-    for (const [, entry] of this.markers.entries()) {
-      if (entry.marker && entry.marker.dragging) {
-        if (this.isCalibrating) {
-          entry.marker.dragging.enable();
-        } else {
-          entry.marker.dragging.disable();
-        }
       }
     }
     this.updateCalibrationUI();
@@ -7083,8 +7057,6 @@ const RemoteIdRadar = {
     if (typeof document === 'undefined') return;
     const offsetTextEl = document.getElementById('remote-id-cal-offset-text');
     const activeDot = document.getElementById('remote-id-cal-active-dot');
-    const dragBtn = document.getElementById('remote-id-cal-drag-btn');
-    const dragText = document.getElementById('remote-id-cal-drag-text');
     const stepIndicator = document.getElementById('remote-id-cal-step-indicator');
 
     const hasOffset = this.offsetMeters && (this.offsetMeters.north !== 0 || this.offsetMeters.east !== 0);
@@ -7336,17 +7308,6 @@ const RemoteIdRadar = {
             marker.on('mouseover', () => { if (marker.openTooltip) marker.openTooltip(); });
             marker.on('mouseout', () => { if (marker.closeTooltip) marker.closeTooltip(); });
             marker.on('click', () => { this.locateDrone(drone.id); });
-            marker.on('dragend', (e) => {
-              const pos = (e && e.target && e.target.getLatLng) ? e.target.getLatLng() : (marker.getLatLng ? marker.getLatLng() : null);
-              if (pos) {
-                const raw = this.activeDrones.find(d => d.id === drone.id) || drone;
-                const newOff = this.calculateOffsetFromTarget(raw.latitude, raw.longitude, pos.lat, pos.lng);
-                this.setOffset(newOff.north, newOff.east);
-              }
-            });
-          }
-          if (this.isCalibrating && marker.dragging) {
-            marker.dragging.enable();
           }
           this.layerGroup.addLayer(marker);
         }
@@ -7356,13 +7317,6 @@ const RemoteIdRadar = {
         if (customIcon && entry.marker.setIcon) entry.marker.setIcon(customIcon);
         if (entry.marker.setTooltipContent) entry.marker.setTooltipContent(tooltipHtml);
         if (entry.marker.setPopupContent) entry.marker.setPopupContent(tooltipHtml);
-        if (entry.marker.dragging) {
-          if (this.isCalibrating) {
-            entry.marker.dragging.enable();
-          } else {
-            entry.marker.dragging.disable();
-          }
-        }
       }
 
       // 2. Takeoff / Home Location Marker & Home Vector Line
