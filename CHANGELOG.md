@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.72.0] - 2026-09-03
+
+### Changed
+- **Separated Global Mission Failsafes from Layer Properties:**
+  - Extracted global failsafes, heading modes, connection path types, global hover time, global exclusion detour strategy, and drone/camera hardware settings out of Section 2 into a dedicated **Section 3: Mission Failsafes & Defaults** (`#mission-failsafes-section`).
+  - Section 2 is now dedicated strictly to **Layer Properties** (`#grid-geometry-section`), with a dynamic pattern badge indicating the active pattern type (e.g. `Road Following`, `3D Double Grid`, `Exclusion (Polygon)`).
+  - Renamed the actions block to **Section 4: Actions & Live Sync** (`#actions-and-sync-section`).
+
 ## [1.71.2] - 2026-09-03
 
 ### Changed

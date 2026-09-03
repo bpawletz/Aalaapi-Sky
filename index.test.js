@@ -7662,7 +7662,8 @@ describe('Section 2 Exclusion Settings Visibility Tests (v1.63.3)', () => {
         contains(c) { return this._classes.has(c); }
       }
     };
-    const mockTitle = { textContent: '' };
+    const mockTitle = { textContent: '', querySelector: () => null };
+    const mockPatternBadge = { textContent: '' };
     const mockFreeformNote = {
       classList: {
         _classes: new Set(['hidden']),
@@ -7692,6 +7693,7 @@ describe('Section 2 Exclusion Settings Visibility Tests (v1.63.3)', () => {
     global.document.getElementById = (id) => {
       if (id === 'grid-geometry-section') return mockGridGeometrySection;
       if (id === 'grid-geometry-title') return mockTitle;
+      if (id === 'active-layer-pattern-badge') return mockPatternBadge;
       if (id === 'exclusion-freeform-note') return mockFreeformNote;
       if (id === 'exclusion-altitude-container') return mockAltContainer;
       if (id === 'grid-type') return mockGridType;
@@ -7706,7 +7708,8 @@ describe('Section 2 Exclusion Settings Visibility Tests (v1.63.3)', () => {
 
       assert.strictEqual(mockGridGeometrySection.style.display, 'block', 'Section 2 should be displayed for exclusion-freeform');
       assert.strictEqual(mockGridGeometrySection.classList.contains('collapsed'), false, 'Section 2 should be uncollapsed');
-      assert.strictEqual(mockTitle.textContent, '2. Exclusion Polygon Settings', 'Title should reflect polygon settings');
+      assert.strictEqual(mockTitle.textContent, '2. Layer Properties', 'Title should reflect Layer Properties');
+      assert.strictEqual(mockPatternBadge.textContent, 'Exclusion (Polygon)', 'Pattern badge should show Exclusion (Polygon)');
       assert.strictEqual(mockFreeformNote.classList.contains('hidden'), false, 'Freeform note should not be hidden');
       assert.strictEqual(mockAltContainer.classList.contains('hidden'), false, 'Exclusion altitude container should not be hidden');
 
@@ -7716,7 +7719,8 @@ describe('Section 2 Exclusion Settings Visibility Tests (v1.63.3)', () => {
 
       assert.strictEqual(mockGridGeometrySection.style.display, 'block', 'Section 2 should be displayed for exclusion-box');
       assert.strictEqual(mockGridGeometrySection.classList.contains('collapsed'), false, 'Section 2 should be uncollapsed');
-      assert.strictEqual(mockTitle.textContent, '2. Exclusion Box Settings', 'Title should reflect box settings');
+      assert.strictEqual(mockTitle.textContent, '2. Layer Properties', 'Title should reflect Layer Properties');
+      assert.strictEqual(mockPatternBadge.textContent, 'Exclusion (Box)', 'Pattern badge should show Exclusion (Box)');
       assert.strictEqual(mockFreeformNote.classList.contains('hidden'), true, 'Freeform note should be hidden for box');
       assert.strictEqual(mockAltContainer.classList.contains('hidden'), false, 'Exclusion altitude container should not be hidden');
     } finally {
