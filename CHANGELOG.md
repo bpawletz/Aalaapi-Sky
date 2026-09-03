@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.71.2] - 2026-09-03
+
+### Changed
+- **Streamlined Pattern Layers Stack Header UI:**
+  - Removed the redundant `→ Transitions` button from the Section 1 Pattern Layers Stack header.
+  - Inter-layer flight transitions are now accessed directly and contextually via the interactive in-situ connector pills (`🔗 Direct Transit ⚙️`) located between layer cards.
+
 ## [1.71.1] - 2026-09-03
 
 ### Fixed
