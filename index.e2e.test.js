@@ -1675,14 +1675,31 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       if (configTransBtn) configTransBtn.click();
       await new Promise(r => setTimeout(r, 100));
 
-      const modalVisible = modal && !modal.classList.contains('hidden');
+       const modalVisible = modal && !modal.classList.contains('hidden');
+      const innerRect = modal ? modal.querySelector('.modal').getBoundingClientRect() : { width: 0, height: 0 };
 
-      // Close modal
+      // Close modal via top close button
       const closeBtn = document.getElementById('close-transitions-modal-btn');
       if (closeBtn) closeBtn.click();
       await new Promise(r => setTimeout(r, 50));
 
       const modalHidden = modal && modal.classList.contains('hidden');
+
+      // Click the intermediate transition-pill
+      const pill = container.querySelector('.transition-pill');
+      if (pill) pill.click();
+      await new Promise(r => setTimeout(r, 100));
+
+      const modalReopened = modal && !modal.classList.contains('hidden');
+      const pillInnerRect = modal ? modal.querySelector('.modal').getBoundingClientRect() : { width: 0, height: 0 };
+      const highlightedCard = modal ? modal.querySelector('.transition-rule-card[style*="accent-cyan"]') : null;
+
+      // Close modal via Done footer button
+      const footerDoneBtn = document.getElementById('close-transitions-footer-btn');
+      if (footerDoneBtn) footerDoneBtn.click();
+      await new Promise(r => setTimeout(r, 50));
+
+      const modalClosedFinal = modal && modal.classList.contains('hidden');
 
       return {
         success: true,
@@ -1690,7 +1707,13 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         afterAddCount: afterAddCards.length,
         countText,
         modalVisible,
-        modalHidden
+        modalWidth: innerRect.width,
+        modalHeight: innerRect.height,
+        modalHidden,
+        modalReopened,
+        pillModalWidth: pillInnerRect.width,
+        hasHighlight: !!highlightedCard,
+        modalClosedFinal
       };
     });
 
@@ -1698,8 +1721,14 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(evalResult.initialCount, 1, 'Should have 1 layer initially');
     assert.strictEqual(evalResult.afterAddCount, 2, 'Should have 2 layers after clicking Add Layer');
     assert.ok(evalResult.countText.includes('2 Layers'), 'Badge should show 2 Layers');
-    assert.strictEqual(evalResult.modalVisible, true, 'Transitions modal should open when configured');
+    assert.strictEqual(evalResult.modalVisible, true, 'Transitions modal should open when Transitions button clicked');
+    assert.ok(evalResult.modalWidth > 0, 'Transitions modal should have non-zero width');
+    assert.ok(evalResult.modalHeight > 0, 'Transitions modal should have non-zero height');
     assert.strictEqual(evalResult.modalHidden, true, 'Transitions modal should close when close button clicked');
+    assert.strictEqual(evalResult.modalReopened, true, 'Transitions modal should open when Direct Transit connector pill clicked');
+    assert.ok(evalResult.pillModalWidth > 0, 'Transitions modal opened via pill should have non-zero width');
+    assert.strictEqual(evalResult.hasHighlight, true, 'Transitions modal card should be highlighted when opened via pill');
+    assert.strictEqual(evalResult.modalClosedFinal, true, 'Transitions modal should close when Done footer button clicked');
   });
 
   test('E2E: Sidebar Section 1 (Pattern Layers & Location) header is visible and can be expanded and collapsed', async () => {
