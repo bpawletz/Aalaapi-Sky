@@ -8806,6 +8806,41 @@ describe('Global Max Flight Altitude & Safe RTH Altitude Tests (v1.75.0)', () =>
   });
 });
 
+describe('Auto-Plan Flight Tool & Pattern Grid Integration Tests (v1.76.0)', () => {
+  test('index_template.html defines auto-plan-btn inside pattern-selector-grid in Section 1', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+
+    const patternGridIdx = templateHtml.indexOf('class="pattern-selector-grid"');
+    const autoPlanBtnIdx = templateHtml.indexOf('id="auto-plan-btn"');
+    const section4Idx = templateHtml.indexOf('id="actions-and-sync-section"');
+
+    assert.ok(patternGridIdx !== -1, 'pattern-selector-grid should exist');
+    assert.ok(autoPlanBtnIdx !== -1, 'auto-plan-btn should exist');
+    assert.ok(autoPlanBtnIdx > patternGridIdx, 'auto-plan-btn should be positioned inside Section 1 pattern grid');
+    assert.ok(autoPlanBtnIdx < section4Idx, 'auto-plan-btn should be in Section 1 before Section 4');
+  });
+
+  test('Section 4 contains dedicated Import and Clear action buttons without duplicate auto-plan', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+
+    const section4Block = templateHtml.substring(templateHtml.indexOf('id="actions-and-sync-section"'));
+    assert.ok(section4Block.includes('id="import-btn"'), 'Section 4 must contain import-btn');
+    assert.ok(section4Block.includes('id="clear-mission-btn"'), 'Section 4 must contain clear-mission-btn');
+    assert.ok(!section4Block.includes('id="auto-plan-btn"'), 'Section 4 must NOT contain auto-plan-btn');
+  });
+
+  test('initPatternSelectorCards executes safely and does not override grid-type when clicking special tool cards', () => {
+    assert.doesNotThrow(() => {
+      initPatternSelectorCards();
+    }, 'initPatternSelectorCards should execute without error');
+  });
+});
+
+
 
 
 

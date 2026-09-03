@@ -308,6 +308,7 @@ function initGeolocation() {
 
 
 function initPatternSelectorCards() {
+  if (typeof document === 'undefined' || typeof document.querySelectorAll !== 'function') return;
   const cards = document.querySelectorAll('.pattern-card');
   const selectEl = document.getElementById('grid-type');
   if (!selectEl) return;
@@ -315,12 +316,15 @@ function initPatternSelectorCards() {
   cards.forEach(card => {
     card.addEventListener('click', () => {
       const val = card.getAttribute('data-value');
+      if (!val) return; // Special tool cards (such as #auto-plan-btn) manage their own actions
       
       // Update select value
       selectEl.value = val;
       
       // Sync active state in UI
-      cards.forEach(c => c.classList.remove('active'));
+      cards.forEach(c => {
+        if (c.getAttribute('data-value')) c.classList.remove('active');
+      });
       card.classList.add('active');
       
       // Dispatch change event to trigger existing app listeners
@@ -333,7 +337,9 @@ function initPatternSelectorCards() {
   const syncCardsFromSelect = () => {
     const val = selectEl.value;
     cards.forEach(card => {
-      if (card.getAttribute('data-value') === val) {
+      const cardVal = card.getAttribute('data-value');
+      if (!cardVal) return;
+      if (cardVal === val) {
         card.classList.add('active');
       } else {
         card.classList.remove('active');
@@ -3129,7 +3135,7 @@ const TOUR_STEPS = [
     targetId: 'layers-and-location-section',
     fallbackTargetId: 'grid-type',
     title: '2. Pattern Tools & Layers Stack',
-    desc: 'Select flight patterns (2D Grid, Double Grid, Orbit, Freeform) or 3D Exclusion Zones. Add multiple layers for complex missions.',
+    desc: 'Select flight patterns (2D Grid, Double Grid, Orbit, Freeform, Auto-Plan) or 3D Exclusion Zones. Add multiple layers for complex missions.',
     position: 'right'
   },
   {
@@ -3149,8 +3155,8 @@ const TOUR_STEPS = [
   {
     targetId: 'actions-and-sync-section',
     fallbackTargetId: 'download-btn',
-    title: '5. Auto-Plan, 3D Replay & RC 2 Sync',
-    desc: 'Auto-bound areas, preview in 3D, export DJI-compliant KMZ, or send directly to your connected DJI RC 2 over USB.',
+    title: '5. Actions, 3D Replay & RC 2 Sync',
+    desc: 'Preview in 3D, export DJI-compliant KMZ, or send directly to your connected DJI RC 2 over USB.',
     position: 'right'
   }
 ];
@@ -16962,6 +16968,8 @@ function initAutoPlan() {
 
 function enterAutoPlanMode() {
   autoPlanActive = true;
+  const autoPlanBtn = document.getElementById('auto-plan-btn');
+  if (autoPlanBtn) autoPlanBtn.classList.add('active');
 
   // Clear any existing mission so the user starts fresh
   if (centerMarker) { map.removeLayer(centerMarker); centerMarker = null; }
@@ -17012,6 +17020,8 @@ function enterAutoPlanMode() {
 
 function exitAutoPlanMode() {
   autoPlanActive = false;
+  const autoPlanBtn = document.getElementById('auto-plan-btn');
+  if (autoPlanBtn) autoPlanBtn.classList.remove('active');
   const banner = document.getElementById('auto-plan-banner');
   if (banner) banner.classList.add('hidden');
   const mapContainer = document.getElementById('map');
