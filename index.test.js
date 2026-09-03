@@ -8882,14 +8882,14 @@ describe('Map Zoom Marker Anchoring & Unified Pitch Badge Tests (v1.76.2)', () =
     }
   });
 
-  test('CSS rules enforce transition: none on leaflet markers to prevent zoom drift lag', () => {
+  test('CSS rules preserve Leaflet transform transitions for synchronized zoom animation (v1.76.3)', () => {
     const fs = require('fs');
     const path = require('path');
     const cssContent = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
 
-    assert.ok(cssContent.includes('.leaflet-marker-icon'), 'CSS must target .leaflet-marker-icon');
     assert.ok(cssContent.includes('.custom-wp-marker'), 'CSS must target .custom-wp-marker');
-    assert.ok(cssContent.includes('transition: none !important;'), 'Marker classes must enforce transition: none !important;');
+    // Markers must not override Leaflet's zoom animation transition with transition: none
+    assert.ok(!cssContent.includes('.custom-wp-marker {\n  background: none !important;\n  border: none !important;\n  transition: none !important;'), 'Marker must not disable Leaflet zoom transition');
   });
 
   test('applyZoomGates cleanly toggles wp-zoomed-out class on mapContainer without throwing', () => {

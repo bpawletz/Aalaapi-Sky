@@ -1018,7 +1018,6 @@ html, body {
 .custom-wp-marker {
   background: none !important;
   border: none !important;
-  transition: none !important;
 }
 
 .wp-marker-wrapper {
@@ -1030,7 +1029,6 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: none !important;
 }
 
 .wp-camera-cone {
@@ -1054,7 +1052,6 @@ html, body {
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
   z-index: 4;
   box-sizing: border-box;
-  transition: none !important;
 }
 
 .wp-arrow {
@@ -1079,7 +1076,6 @@ html, body {
   justify-content: center;
   pointer-events: auto;
   z-index: 3;
-  transition: none !important;
 }
 
 .wp-pitch-label {
@@ -1098,7 +1094,6 @@ html, body {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
   font-family: var(--font-secondary);
   pointer-events: none;
-  transition: none !important;
 }
 
 /* Hide pitch labels and camera cones when zoomed out far — prevents them from
@@ -1107,15 +1102,6 @@ html, body {
 .leaflet-container.wp-zoomed-out .wp-camera-cone,
 .leaflet-container.wp-zoomed-out .wp-arrow {
   display: none !important;
-}
-
-/* Ensure Leaflet marker pane and icons never have CSS transition lag during map zoom */
-.leaflet-marker-icon,
-.custom-wp-marker,
-.custom-center-marker,
-.custom-poi-marker,
-.road-waypoint-icon {
-  transition: none !important;
 }
 
 .marker-selected {
