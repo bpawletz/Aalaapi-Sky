@@ -1470,23 +1470,39 @@ html, body {
   border-radius: 0 !important;
 }
 
-/* Auto-Plan Styles */
-#auto-plan-btn {
-  background: linear-gradient(135deg, var(--accent-cyan) 0%, #0369a1 100%);
-  color: #fff;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 10px;
-  border: none;
-  box-shadow: 0 4px 15px rgba(6, 182, 212, 0.2);
+/* Auto-Plan Tool Card in Pattern Grid (v1.76.0) */
+.pattern-card.auto-plan-card,
+#auto-plan-btn.pattern-card {
+  background: rgba(6, 182, 212, 0.08);
+  border: 1px solid rgba(6, 182, 212, 0.35);
+  box-shadow: none;
+  margin: 0;
 }
 
-#auto-plan-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4);
+.pattern-card.auto-plan-card:hover,
+#auto-plan-btn.pattern-card:hover {
+  background: rgba(6, 182, 212, 0.2);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+  transform: translateY(-1px);
+}
+
+.pattern-card.auto-plan-card.active,
+#auto-plan-btn.pattern-card.active {
+  background: rgba(6, 182, 212, 0.25);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.4);
+}
+
+.pattern-card.auto-plan-card .pattern-icon,
+#auto-plan-btn.pattern-card .pattern-icon {
+  color: var(--accent-cyan);
+}
+
+.pattern-card.auto-plan-card span,
+#auto-plan-btn.pattern-card span {
+  color: #38bdf8;
+  font-weight: 600;
 }
 
 .map-crosshair {
@@ -2715,7 +2731,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.75.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.76.0</span></h1>
         </div>
       </div>
 
@@ -2881,6 +2897,16 @@ html, body {
                   <path d="M5 19l7-13 7 9" stroke-dasharray="2,2"/>
                 </svg>
                 <span>Freeform</span>
+              </div>
+              <div class="pattern-card auto-plan-card" id="auto-plan-btn" title="Auto-Plan Tool: Drag to Box & Survey Area">
+                <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="22" y1="12" x2="18" y2="12"></line>
+                  <line x1="6" y1="12" x2="2" y2="12"></line>
+                  <line x1="12" y1="6" x2="12" y2="2"></line>
+                  <line x1="12" y1="22" x2="12" y2="18"></line>
+                </svg>
+                <span>Auto-Plan</span>
               </div>
               <div class="pattern-card exclusion-card" data-value="exclusion-box" title="Exclusion Zone (Rectangular Box)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -3406,17 +3432,7 @@ html, body {
 
           <!-- Canvas Action Buttons Row -->
           <div style="display: flex; gap: 6px; margin-bottom: 8px;">
-            <button id="auto-plan-btn" class="btn-primary" type="button" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 4px; font-size: 0.75rem; font-weight: 700; margin: 0;">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="22" y1="12" x2="18" y2="12"></line>
-                <line x1="6" y1="12" x2="2" y2="12"></line>
-                <line x1="12" y1="6" x2="12" y2="2"></line>
-                <line x1="12" y1="22" x2="12" y2="18"></line>
-              </svg>
-              Auto-Plan
-            </button>
-            <button id="import-btn" class="btn-secondary" type="button" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 8px 4px; font-size: 0.75rem; margin: 0;">
+            <button id="import-btn" class="btn-secondary" type="button" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 10px; font-size: 0.78rem; font-weight: 600; margin: 0;">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="17 8 12 3 7 8"/>
@@ -3425,12 +3441,12 @@ html, body {
               Import KMZ
             </button>
             <input type="file" id="import-file-input" accept=".kmz" style="display: none;">
-            <button id="clear-mission-btn" class="btn-secondary" type="button" style="padding: 8px 8px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; color: var(--accent-red); border-color: rgba(239, 68, 68, 0.3); margin: 0; font-size: 0.75rem;" title="Clear Map Mission">
+            <button id="clear-mission-btn" class="btn-secondary" type="button" style="flex: 1; padding: 8px 10px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; color: var(--accent-red); border-color: rgba(239, 68, 68, 0.3); margin: 0; font-size: 0.78rem; font-weight: 600;" title="Clear Map Mission">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
               </svg>
-              Clear
+              Clear Mission
             </button>
             <button id="clear-imported-btn" class="btn-secondary hidden" type="button" style="color: var(--accent-red); border-color: rgba(239, 68, 68, 0.3); padding: 8px;">✕</button>
           </div>
@@ -4400,7 +4416,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.75.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.76.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -4468,6 +4484,12 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.76.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Unified Flight Planning Tools in Section 1:</strong> Moved <strong>Auto-Plan</strong> into Section 1 as an interactive flight tool card alongside all flight patterns, and streamlined Section 4 to full-width Import &amp; Clear action buttons.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.75.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Global Max Flight Altitude &amp; Safe RTH Altitude:</strong> Added dedicated Max Flight Altitude (Ceiling Cap) and Safe RTH Altitude sliders to Section 3 (Mission Failsafes &amp; Defaults). Enforces 120m/400ft regulatory ceiling alerts and safe return heights in WPML (<code>wpml:takeOffSecurityHeight</code>).</li>
@@ -7086,6 +7108,7 @@ function initGeolocation() {
 
 
 function initPatternSelectorCards() {
+  if (typeof document === 'undefined' || typeof document.querySelectorAll !== 'function') return;
   const cards = document.querySelectorAll('.pattern-card');
   const selectEl = document.getElementById('grid-type');
   if (!selectEl) return;
@@ -7093,12 +7116,15 @@ function initPatternSelectorCards() {
   cards.forEach(card => {
     card.addEventListener('click', () => {
       const val = card.getAttribute('data-value');
+      if (!val) return; // Special tool cards (such as #auto-plan-btn) manage their own actions
       
       // Update select value
       selectEl.value = val;
       
       // Sync active state in UI
-      cards.forEach(c => c.classList.remove('active'));
+      cards.forEach(c => {
+        if (c.getAttribute('data-value')) c.classList.remove('active');
+      });
       card.classList.add('active');
       
       // Dispatch change event to trigger existing app listeners
@@ -7111,7 +7137,9 @@ function initPatternSelectorCards() {
   const syncCardsFromSelect = () => {
     const val = selectEl.value;
     cards.forEach(card => {
-      if (card.getAttribute('data-value') === val) {
+      const cardVal = card.getAttribute('data-value');
+      if (!cardVal) return;
+      if (cardVal === val) {
         card.classList.add('active');
       } else {
         card.classList.remove('active');
@@ -9907,7 +9935,7 @@ const TOUR_STEPS = [
     targetId: 'layers-and-location-section',
     fallbackTargetId: 'grid-type',
     title: '2. Pattern Tools & Layers Stack',
-    desc: 'Select flight patterns (2D Grid, Double Grid, Orbit, Freeform) or 3D Exclusion Zones. Add multiple layers for complex missions.',
+    desc: 'Select flight patterns (2D Grid, Double Grid, Orbit, Freeform, Auto-Plan) or 3D Exclusion Zones. Add multiple layers for complex missions.',
     position: 'right'
   },
   {
@@ -9927,8 +9955,8 @@ const TOUR_STEPS = [
   {
     targetId: 'actions-and-sync-section',
     fallbackTargetId: 'download-btn',
-    title: '5. Auto-Plan, 3D Replay & RC 2 Sync',
-    desc: 'Auto-bound areas, preview in 3D, export DJI-compliant KMZ, or send directly to your connected DJI RC 2 over USB.',
+    title: '5. Actions, 3D Replay & RC 2 Sync',
+    desc: 'Preview in 3D, export DJI-compliant KMZ, or send directly to your connected DJI RC 2 over USB.',
     position: 'right'
   }
 ];
@@ -23740,6 +23768,8 @@ function initAutoPlan() {
 
 function enterAutoPlanMode() {
   autoPlanActive = true;
+  const autoPlanBtn = document.getElementById('auto-plan-btn');
+  if (autoPlanBtn) autoPlanBtn.classList.add('active');
 
   // Clear any existing mission so the user starts fresh
   if (centerMarker) { map.removeLayer(centerMarker); centerMarker = null; }
@@ -23790,6 +23820,8 @@ function enterAutoPlanMode() {
 
 function exitAutoPlanMode() {
   autoPlanActive = false;
+  const autoPlanBtn = document.getElementById('auto-plan-btn');
+  if (autoPlanBtn) autoPlanBtn.classList.remove('active');
   const banner = document.getElementById('auto-plan-banner');
   if (banner) banner.classList.add('hidden');
   const mapContainer = document.getElementById('map');
