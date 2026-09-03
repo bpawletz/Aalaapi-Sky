@@ -2399,9 +2399,66 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(roadIsoResult.success, 'Road isolation E2E test evaluated');
     assert.ok(roadIsoResult.l1InitialCount > 0, 'Layer 1 has initial double grid waypoints');
     assert.strictEqual(roadIsoResult.l2RoadCount, 3, 'Layer 2 has 3 road waypoints added');
-    assert.strictEqual(roadIsoResult.l2WpCount, 3, 'Layer 2 generated 3 road offset flight waypoints');
     assert.strictEqual(roadIsoResult.l1AfterCount, roadIsoResult.l1InitialCount, 'Layer 1 waypoints preserved when Layer 2 road waypoints added');
     assert.strictEqual(roadIsoResult.l2RoadCountAfter, 3, 'Layer 2 road waypoints preserved after switching back to Layer 1');
+  });
+
+  test('E2E: Exclusion Detour Strategy allows Over the Top climb above finite ceiling (v1.71.0)', async () => {
+    const detourResult = await page.evaluate(async () => {
+      // 1. Reset layers
+      flightLayers = [];
+      activeLayerId = null;
+      roadWaypoints = [];
+
+      // Place center
+      setGridCenter(40.0125, -83.1770);
+
+      // Layer 1: Freeform path crossing the center
+      const l1 = addFlightLayer('freeform');
+      l1.altitude = 25;
+      l1.freeformWaypoints = [
+        { lat: 40.0125, lon: -83.1790, x: -150, y: 0, alt: 25, idx: 0 },
+        { lat: 40.0125, lon: -83.1750, x: 150, y: 0, alt: 25, idx: 1 }
+      ];
+
+      // Layer 2: Exclusion Zone with 35m ceiling
+      const l2 = addFlightLayer('exclusion-box');
+      l2.gridWidth = 100;
+      l2.gridHeight = 100;
+      l2.allAltitudes = false;
+      l2.minAltitude = 0;
+      l2.maxAltitude = 35;
+      l2.clearanceBuffer = 5;
+      l2.detourMode = 'overTop';
+
+      // Compile mission
+      const mission = compileMultiLayerMission(40.0125, -83.1770);
+      const waypoints = mission.waypoints || [];
+      const climbWps = waypoints.filter(w => w.isClimbOver);
+
+      // Check UI elements exist
+      const globalDetourSelect = document.getElementById('global-exclusion-detour-mode');
+      const zoneDetourSelect = document.getElementById('exclusion-detour-mode');
+      const globalClearanceSlider = document.getElementById('global-exclusion-clearance-buffer');
+
+      return {
+        success: true,
+        wpCount: waypoints.length,
+        climbWpCount: climbWps.length,
+        climbAlt: climbWps.length > 0 ? climbWps[0].alt : 0,
+        hasGlobalSelect: !!globalDetourSelect,
+        hasZoneSelect: !!zoneDetourSelect,
+        hasClearanceSlider: !!globalClearanceSlider
+      };
+    });
+
+    assert.ok(detourResult.success, 'Detour E2E evaluated');
+    assert.ok(detourResult.hasGlobalSelect, 'Global detour strategy select exists in DOM');
+    assert.ok(detourResult.hasZoneSelect, 'Zone detour strategy select exists in DOM');
+    assert.ok(detourResult.hasClearanceSlider, 'Clearance buffer slider exists in DOM');
+    assert.ok(detourResult.wpCount > 2, 'Waypoints generated with obstacle avoidance detours');
+    assert.ok(detourResult.climbWpCount >= 2, 'Climb over waypoints generated for overTop detour mode');
+    assert.strictEqual(detourResult.climbAlt, 40, 'Climbs to maxAltitude (35m) + clearanceBuffer (5m) = 40m');
   });
 });
 

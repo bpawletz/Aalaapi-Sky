@@ -2625,7 +2625,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.70.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.71.0</span></h1>
         </div>
       </div>
 
@@ -2948,6 +2948,17 @@ html, body {
               <p class="help-text" id="exclusion-alt-hint" style="margin: 4px 0 0 0; font-size: 0.72rem; color: #fca5a5;">
                 Restricts all drone flights across the entire vertical airspace of this zone.
               </p>
+              <div id="exclusion-detour-options" style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed rgba(239, 68, 68, 0.25);">
+                <div class="control-label" style="margin-bottom: 3px;">
+                  <span style="font-size: 0.75rem; font-weight: 600; color: #f87171;">Detour Routing Strategy</span>
+                </div>
+                <select id="exclusion-detour-mode" class="form-select" style="font-size: 0.75rem; padding: 4px 8px; width: 100%; border-radius: 6px; background: rgba(15, 23, 42, 0.6); color: var(--text-main); border: 1px solid rgba(239, 68, 68, 0.3);">
+                  <option value="inherit">🌐 Inherit Global Preference</option>
+                  <option value="perimeter">↩️ Around Perimeter (Horizontal)</option>
+                  <option value="overTop">⬆️ Over the Top (Climb Above Ceiling)</option>
+                  <option value="smart">⚡ Smart / Shortest 3D Path</option>
+                </select>
+              </div>
             </div>
 
             <div class="control-group" id="altitude-control-group" style="margin-top: 8px;">
@@ -3143,6 +3154,23 @@ html, body {
                 <input type="range" id="global-hover-time" class="form-range" min="0" max="60" step="1" value="0" style="flex: 1;">
                 <span style="min-width: 32px; text-align: right; font-weight: 600; color: var(--accent-cyan);"><span id="global-hover-time-val">0</span>s</span>
               </div>
+            </div>
+
+            <div class="control-group" id="global-exclusion-detour-container">
+              <label for="global-exclusion-detour-mode">Exclusion Detour Strategy</label>
+              <select id="global-exclusion-detour-mode" class="form-select">
+                <option value="perimeter" selected>Around Perimeter (Horizontal Bypass)</option>
+                <option value="overTop">Over the Top (Climb Above Ceiling)</option>
+                <option value="smart">Smart / Shortest 3D Path</option>
+              </select>
+              <div id="global-clearance-wrapper" style="margin-top: 6px;">
+                <div class="control-label" style="margin-bottom: 2px;">
+                  <span style="font-size: 0.72rem; color: var(--text-muted);">Ceiling Clearance Buffer</span>
+                  <span class="value-display"><span id="global-exclusion-clearance-val">5</span> <span id="global-exclusion-clearance-unit">m</span></span>
+                </div>
+                <input type="range" id="global-exclusion-clearance-buffer" min="1" max="25" step="1" value="5" class="slider" aria-label="Ceiling Clearance Buffer">
+              </div>
+              <p class="help-text" style="margin-top: 3px; margin-bottom: 0;">Global default for routing flights around or over restricted airspace.</p>
             </div>
 
             <div class="control-group">
@@ -4179,7 +4207,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.70.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.71.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -4200,7 +4228,7 @@ html, body {
           <li>Preserve imported filename and structure on KMZ exports.</li>
           <li>Procedural flight generation: 2D Nadir Grid, 3D Double Grid, Oblique Orbits, and Multi-Tier Hybrid passes.</li>
           <li>Multi-Layer Missions: Combine multiple independent pattern layers with customizable inter-layer transitions.</li>
-          <li>3D Exclusion Zones &amp; Automated Detour Routing: Define restricted no-fly volumes with 3D altitude bounds and automatic obstacle avoidance routing around restricted airspace.</li>
+          <li>3D Exclusion Zones &amp; Automated Detour Routing: Define restricted no-fly volumes with 3D altitude bounds and automatic obstacle avoidance routing (Perimeter, Over-the-Top Climb, or Smart 3D).</li>
         </ul>
 
         <!-- Legal Disclaimer Alert - icon card grid -->
@@ -4244,6 +4272,12 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.71.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Global &amp; Per-Zone Exclusion Detour Strategy:</strong> Added configurable detour routing options: Around Perimeter (Horizontal), Over the Top (Vertical Climb Above Ceiling), and Smart / Shortest 3D Path. Automatically calculates climb-over waypoints with customizable clearance buffers.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.70.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Road Follow Multi-Layer Isolation &amp; State Encapsulation:</strong> Isolated Road Following (<code>road-following</code>) strictly inside each layer's own data model. Adding, moving, or deleting road nodes on a road layer no longer impacts or mutates other layers in the multi-layer sequence.</li>
@@ -6780,6 +6814,10 @@ let roadPathGroup = null;
 let isRouting = false;
 let isChangingPattern = false;
 
+// Global Exclusion Detour Settings (v1.71.0)
+let globalExclusionDetourMode = 'perimeter'; // 'perimeter', 'overTop', 'smart'
+let globalExclusionClearanceBuffer = 5; // meters above ceiling
+
 // ==========================================================================
 // Flight Pattern Layers & Multi-Layer Mission Manager (v1.62.0)
 // ==========================================================================
@@ -6848,6 +6886,8 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     allAltitudes: true,
     minAltitude: 0,
     maxAltitude: 60,
+    detourMode: 'inherit', // 'inherit', 'perimeter', 'overTop', 'smart'
+    clearanceBuffer: 5,
     polygonVertices: [],
     filteredCount: 0,
     gridWidth: 100,
@@ -6922,6 +6962,11 @@ function saveActiveLayerFromUi() {
   const exclMinAltEl = document.getElementById('exclusion-min-alt');
   const exclMaxAltEl = document.getElementById('exclusion-max-alt');
 
+  const exclDetourModeEl = document.getElementById('exclusion-detour-mode');
+  const exclClearanceEl = document.getElementById('exclusion-clearance-buffer');
+  const globalDetourModeEl = document.getElementById('global-exclusion-detour-mode');
+  const globalClearanceEl = document.getElementById('global-exclusion-clearance-buffer');
+
   if (gridTypeEl && gridTypeEl.value) {
     layer.pattern = gridTypeEl.value;
     layer.isExclusionZone = (layer.pattern === 'exclusion-box' || layer.pattern === 'exclusion-freeform');
@@ -6944,6 +6989,15 @@ function saveActiveLayerFromUi() {
   if (exclAllAltEl) layer.allAltitudes = exclAllAltEl.checked;
   if (exclMinAltEl) layer.minAltitude = parseFloat(exclMinAltEl.value) || 0;
   if (exclMaxAltEl) layer.maxAltitude = parseFloat(exclMaxAltEl.value) || 60;
+  if (exclDetourModeEl && exclDetourModeEl.value) layer.detourMode = exclDetourModeEl.value;
+  if (exclClearanceEl) layer.clearanceBuffer = parseFloat(exclClearanceEl.value) || 5;
+
+  if (globalDetourModeEl && globalDetourModeEl.value) {
+    globalExclusionDetourMode = globalDetourModeEl.value;
+  }
+  if (globalClearanceEl) {
+    globalExclusionClearanceBuffer = parseFloat(globalClearanceEl.value) || 5;
+  }
 }
 
 function syncUiWithActiveLayer() {
@@ -6972,6 +7026,10 @@ function syncUiWithActiveLayer() {
   setVal('road-offset', layer.roadOffset);
   setVal('exclusion-min-alt', layer.minAltitude !== undefined ? layer.minAltitude : 0);
   setVal('exclusion-max-alt', layer.maxAltitude !== undefined ? layer.maxAltitude : 60);
+  setVal('exclusion-detour-mode', layer.detourMode || 'inherit');
+  setVal('exclusion-clearance-buffer', layer.clearanceBuffer !== undefined ? layer.clearanceBuffer : 5);
+  setVal('global-exclusion-detour-mode', globalExclusionDetourMode);
+  setVal('global-exclusion-clearance-buffer', globalExclusionClearanceBuffer);
 
   const exclAllAltEl = document.getElementById('exclusion-all-altitudes');
   if (exclAllAltEl) exclAllAltEl.checked = (layer.allAltitudes !== false);
@@ -7170,6 +7228,23 @@ function doSegmentsIntersect(A, B, C, D) {
     return false;
   }
   return (ccw(A, C, D) !== ccw(B, C, D)) && (ccw(A, B, C) !== ccw(A, B, D));
+}
+
+function getSegmentIntersection(A, B, C, D) {
+  const denom = (A.x - B.x) * (C.y - D.y) - (A.y - B.y) * (C.x - D.x);
+  if (Math.abs(denom) < 1e-9) return null;
+
+  const t = ((A.x - C.x) * (C.y - D.y) - (A.y - C.y) * (C.x - D.x)) / denom;
+  const u = -((A.x - B.x) * (A.y - C.y) - (A.y - B.y) * (A.x - C.x)) / denom;
+
+  if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+    return {
+      x: A.x + t * (B.x - A.x),
+      y: A.y + t * (B.y - A.y),
+      t: t
+    };
+  }
+  return null;
 }
 
 function isPointInPolygon(px, py, polyPoints) {
@@ -7414,6 +7489,139 @@ function findDetourPathAroundZone(p1, p2, zone, centerLat, centerLon, bufferMete
   return detourWaypoints;
 }
 
+function calculate3DPathDistance(p1, p2, detourWps) {
+  const fullSeq = [p1, ...(detourWps || []), p2];
+  let totalDist = 0;
+  for (let k = 0; k < fullSeq.length - 1; k++) {
+    const a = fullSeq[k];
+    const b = fullSeq[k + 1];
+    const dx = (b.x !== undefined ? b.x : 0) - (a.x !== undefined ? a.x : 0);
+    const dy = (b.y !== undefined ? b.y : 0) - (a.y !== undefined ? a.y : 0);
+    const dz = (b.alt !== undefined ? b.alt : 50) - (a.alt !== undefined ? a.alt : 50);
+    totalDist += Math.sqrt(dx * dx + dy * dy + dz * dz);
+  }
+  return totalDist;
+}
+
+function findDetourPathOverZone(p1, p2, zone, centerLat, centerLon, bufferMeters = 4, clearanceBuffer = 5) {
+  const zoneCenterLat = (zone.centerLat !== undefined && zone.centerLat !== null) ? zone.centerLat : centerLat;
+  const zoneCenterLon = (zone.centerLon !== undefined && zone.centerLon !== null) ? zone.centerLon : centerLon;
+
+  const buffPoly = getExclusionZonePolygon(zone, zoneCenterLat, zoneCenterLon, bufferMeters);
+  if (!buffPoly || buffPoly.length < 3) return [];
+
+  const p1Local = (p1.x !== undefined && p1.y !== undefined)
+    ? { x: p1.x, y: p1.y, alt: p1.alt }
+    : { ...geodeticToLocal(p1.lat, p1.lon, zoneCenterLat, zoneCenterLon), alt: p1.alt };
+
+  const p2Local = (p2.x !== undefined && p2.y !== undefined)
+    ? { x: p2.x, y: p2.y, alt: p2.alt }
+    : { ...geodeticToLocal(p2.lat, p2.lon, zoneCenterLat, zoneCenterLon), alt: p2.alt };
+
+  const zoneMaxAlt = (zone.maxAltitude !== undefined && zone.maxAltitude !== null) ? zone.maxAltitude : 60;
+  const cBuffer = (clearanceBuffer !== undefined && clearanceBuffer !== null) ? clearanceBuffer : (globalExclusionClearanceBuffer || 5);
+  const targetClimbAlt = zoneMaxAlt + cBuffer;
+
+  // Find line segment (p1, p2) intersections with buffered zone polygon edges
+  const intersections = [];
+  for (let i = 0, j = buffPoly.length - 1; i < buffPoly.length; j = i++) {
+    const inter = getSegmentIntersection(p1Local, p2Local, buffPoly[j], buffPoly[i]);
+    if (inter) {
+      intersections.push(inter);
+    }
+  }
+
+  // Sort intersections along line segment from p1 (t=0) to p2 (t=1)
+  intersections.sort((a, b) => a.t - b.t);
+
+  const detourWaypoints = [];
+  const speedVal = p1.speed !== undefined ? p1.speed : 5;
+  const pitchVal = p1.pitch !== undefined ? p1.pitch : -60;
+  const headingVal = p1.heading !== undefined ? p1.heading : 0;
+
+  if (intersections.length >= 2) {
+    const entryPt = intersections[0];
+    const exitPt = intersections[intersections.length - 1];
+
+    const entryGeo = localToGeodetic(entryPt.x, entryPt.y, zoneCenterLat, zoneCenterLon);
+    const exitGeo = localToGeodetic(exitPt.x, exitPt.y, zoneCenterLat, zoneCenterLon);
+
+    // 1. Entry climb waypoint (reaches clearance altitude right as entering zone boundary)
+    detourWaypoints.push({
+      lat: entryGeo.lat,
+      lon: entryGeo.lon,
+      x: entryPt.x,
+      y: entryPt.y,
+      alt: targetClimbAlt,
+      speed: speedVal,
+      pitch: pitchVal,
+      heading: headingVal,
+      isDetour: true,
+      isAvoidance: true,
+      isPhoto: false,
+      isExclusionDetour: true,
+      isClimbOver: true
+    });
+
+    // 2. Exit cruise waypoint (maintains clearance altitude until leaving zone boundary)
+    detourWaypoints.push({
+      lat: exitGeo.lat,
+      lon: exitGeo.lon,
+      x: exitPt.x,
+      y: exitPt.y,
+      alt: targetClimbAlt,
+      speed: speedVal,
+      pitch: pitchVal,
+      heading: headingVal,
+      isDetour: true,
+      isAvoidance: true,
+      isPhoto: false,
+      isExclusionDetour: true,
+      isClimbOver: true
+    });
+  } else if (intersections.length === 1) {
+    const pt = intersections[0];
+    const geo = localToGeodetic(pt.x, pt.y, zoneCenterLat, zoneCenterLon);
+    detourWaypoints.push({
+      lat: geo.lat,
+      lon: geo.lon,
+      x: pt.x,
+      y: pt.y,
+      alt: targetClimbAlt,
+      speed: speedVal,
+      pitch: pitchVal,
+      heading: headingVal,
+      isDetour: true,
+      isAvoidance: true,
+      isPhoto: false,
+      isExclusionDetour: true,
+      isClimbOver: true
+    });
+  } else {
+    // If segment intersects without edge hits (e.g. within zone)
+    const midX = (p1Local.x + p2Local.x) / 2.0;
+    const midY = (p1Local.y + p2Local.y) / 2.0;
+    const geo = localToGeodetic(midX, midY, zoneCenterLat, zoneCenterLon);
+    detourWaypoints.push({
+      lat: geo.lat,
+      lon: geo.lon,
+      x: midX,
+      y: midY,
+      alt: targetClimbAlt,
+      speed: speedVal,
+      pitch: pitchVal,
+      heading: headingVal,
+      isDetour: true,
+      isAvoidance: true,
+      isPhoto: false,
+      isExclusionDetour: true,
+      isClimbOver: true
+    });
+  }
+
+  return detourWaypoints;
+}
+
 function routeWaypointsAroundExclusionZones(waypoints, activeZones, centerLat, centerLon) {
   if (!waypoints || waypoints.length < 2 || !activeZones || activeZones.length === 0) {
     return waypoints || [];
@@ -7452,7 +7660,36 @@ function routeWaypointsAroundExclusionZones(waypoints, activeZones, centerLat, c
         if (isSegmentInZoneAltitude(p1, p2, zone)) {
           const zonePoly = getExclusionZonePolygon(zone, zoneCenterLat, zoneCenterLon, 0);
           if (isSegmentCollidingWithPolygon(p1Local, p2Local, zonePoly)) {
-            const detours = findDetourPathAroundZone(p1Local, p2Local, zone, zoneCenterLat, zoneCenterLon, 4);
+            const isAllAlt = zone.allAltitudes !== false;
+            let effectiveMode = (zone.detourMode && zone.detourMode !== 'inherit')
+              ? zone.detourMode
+              : (typeof globalExclusionDetourMode !== 'undefined' ? globalExclusionDetourMode : 'perimeter');
+
+            // If zone has infinite ceiling (All Altitudes), overTop is impossible -> force perimeter
+            if (isAllAlt && (effectiveMode === 'overTop' || effectiveMode === 'smart')) {
+              effectiveMode = 'perimeter';
+            }
+
+            const clearance = (zone.clearanceBuffer !== undefined && zone.clearanceBuffer !== null)
+              ? zone.clearanceBuffer
+              : (typeof globalExclusionClearanceBuffer !== 'undefined' ? globalExclusionClearanceBuffer : 5);
+
+            let detours = [];
+            if (effectiveMode === 'overTop') {
+              detours = findDetourPathOverZone(p1Local, p2Local, zone, zoneCenterLat, zoneCenterLon, 4, clearance);
+            } else if (effectiveMode === 'smart') {
+              const overDetours = findDetourPathOverZone(p1Local, p2Local, zone, zoneCenterLat, zoneCenterLon, 4, clearance);
+              const aroundDetours = findDetourPathAroundZone(p1Local, p2Local, zone, zoneCenterLat, zoneCenterLon, 4);
+
+              const distOver = calculate3DPathDistance(p1, p2, overDetours);
+              const distAround = calculate3DPathDistance(p1, p2, aroundDetours);
+
+              detours = (distOver <= distAround && overDetours.length > 0) ? overDetours : aroundDetours;
+            } else {
+              // 'perimeter'
+              detours = findDetourPathAroundZone(p1Local, p2Local, zone, zoneCenterLat, zoneCenterLon, 4);
+            }
+
             if (detours.length > 0) {
               detours.forEach(dwp => newWps.push(dwp));
               modified = true;
@@ -8723,7 +8960,7 @@ const CONTROLS_LIST = [
   'front-overlap', 'side-overlap', 'gimbal-pitch',
   'altitude', 'speed', 'heading-mode', 'finish-action', 'capture-mode', 'path-mode', 'signal-lost-action',
   'camera-model', 'drone-model', 'camera-zoom', 'camera-hfov', 'camera-vfov', 'road-offset',
-  'global-hover-time'
+  'global-hover-time', 'global-exclusion-detour-mode', 'global-exclusion-clearance-buffer'
 ];
 
 function saveAllSettingsToLocalStorage() {
@@ -9107,6 +9344,36 @@ function initUIEventListeners() {
       }
       syncDisplayValues();
       updateGrid();
+    });
+  }
+
+  const exclDetourModeEl = document.getElementById('exclusion-detour-mode');
+  if (exclDetourModeEl) {
+    exclDetourModeEl.addEventListener('change', () => {
+      const activeLayer = getActiveLayer();
+      if (activeLayer) {
+        activeLayer.detourMode = exclDetourModeEl.value;
+      }
+      updateGrid();
+    });
+  }
+
+  const globalDetourModeEl = document.getElementById('global-exclusion-detour-mode');
+  if (globalDetourModeEl) {
+    globalDetourModeEl.addEventListener('change', () => {
+      globalExclusionDetourMode = globalDetourModeEl.value;
+      updateGrid();
+      saveAllSettingsToLocalStorage();
+    });
+  }
+
+  const globalClearanceEl = document.getElementById('global-exclusion-clearance-buffer');
+  if (globalClearanceEl) {
+    globalClearanceEl.addEventListener('input', () => {
+      globalExclusionClearanceBuffer = parseFloat(globalClearanceEl.value) || 5;
+      syncDisplayValues();
+      updateGrid();
+      saveAllSettingsToLocalStorage();
     });
   }
 
@@ -10408,6 +10675,21 @@ function syncDisplayValues() {
         const maxFormatted = (typeof formatDistance === 'function') ? formatDistance(maxMeters) : `${maxMeters} m`;
         exclHint.textContent = `Restricts flights between ${minFormatted} and ${maxFormatted}. Flights outside this envelope are permitted.`;
       }
+    }
+  }
+
+  // Sync Global Exclusion Detour Clearance Buffer Display
+  const globalClearanceSlider = document.getElementById('global-exclusion-clearance-buffer');
+  const globalClearanceValEl = document.getElementById('global-exclusion-clearance-val');
+  const globalClearanceUnitEl = document.getElementById('global-exclusion-clearance-unit');
+  if (globalClearanceSlider && globalClearanceValEl && globalClearanceUnitEl) {
+    const cVal = parseFloat(globalClearanceSlider.value) || 5;
+    if (unit === 'imperial') {
+      globalClearanceValEl.textContent = Math.round(cVal * M_TO_FT);
+      globalClearanceUnitEl.textContent = "ft";
+    } else {
+      globalClearanceValEl.textContent = cVal;
+      globalClearanceUnitEl.textContent = "m";
     }
   }
 }

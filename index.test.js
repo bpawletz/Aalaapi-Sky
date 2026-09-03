@@ -8458,6 +8458,170 @@ describe('v1.70.1 Road Follow Layer Isolation & Multi-Layer Independence', () =>
   });
 });
 
+describe('v1.71.0 Exclusion Detour Strategy (Perimeter vs. Over the Top vs. Smart 3D)', () => {
+  test('getSegmentIntersection accurately calculates intersection coordinates and parameter t', () => {
+    const A = { x: -50, y: 0 };
+    const B = { x: 50, y: 0 };
+    const C = { x: 0, y: -50 };
+    const D = { x: 0, y: 50 };
+
+    const inter = getSegmentIntersection(A, B, C, D);
+    assert.ok(inter, 'Should detect intersection');
+    assert.strictEqual(Math.abs(inter.x) < 0.001, true);
+    assert.strictEqual(Math.abs(inter.y) < 0.001, true);
+    assert.strictEqual(Math.abs(inter.t - 0.5) < 0.001, true);
+
+    // Parallel segments
+    const E = { x: -50, y: 10 };
+    const F = { x: 50, y: 10 };
+    assert.strictEqual(getSegmentIntersection(A, B, E, F), null, 'Parallel segments do not intersect');
+  });
+
+  test('findDetourPathOverZone creates climb-over waypoints at ceiling + clearanceBuffer', () => {
+    const zone = {
+      id: 'excl-1',
+      pattern: 'exclusion-box',
+      gridWidth: 100,
+      gridHeight: 100,
+      gridRotation: 0,
+      allAltitudes: false,
+      minAltitude: 0,
+      maxAltitude: 40,
+      clearanceBuffer: 8,
+      centerLat: 40.0,
+      centerLon: -83.0,
+      enabled: true
+    };
+
+    const p1 = { lat: 40.0, lon: -83.002, x: -150, y: 0, alt: 25, speed: 5, pitch: -60, heading: 90 };
+    const p2 = { lat: 40.0, lon: -82.998, x: 150, y: 0, alt: 25, speed: 5, pitch: -60, heading: 90 };
+
+    const detours = findDetourPathOverZone(p1, p2, zone, 40.0, -83.0, 4, 8);
+    assert.ok(detours.length >= 2, 'Should generate entry and exit climb waypoints');
+    assert.strictEqual(detours[0].alt, 48, 'Entry waypoint should climb to maxAltitude 40 + clearanceBuffer 8 = 48m');
+    assert.strictEqual(detours[1].alt, 48, 'Exit waypoint should maintain 48m');
+    assert.strictEqual(detours[0].isClimbOver, true);
+    assert.strictEqual(detours[0].isExclusionDetour, true);
+  });
+
+  test('routeWaypointsAroundExclusionZones obeys overTop mode to fly over low ceiling exclusion', () => {
+    const zone = {
+      id: 'excl-box-1',
+      pattern: 'exclusion-box',
+      gridWidth: 100,
+      gridHeight: 100,
+      gridRotation: 0,
+      allAltitudes: false,
+      minAltitude: 0,
+      maxAltitude: 30,
+      clearanceBuffer: 5,
+      detourMode: 'overTop',
+      centerLat: 40.0,
+      centerLon: -83.0,
+      enabled: true
+    };
+
+    const wps = [
+      { lat: 40.0, lon: -83.002, x: -150, y: 0, alt: 20 },
+      { lat: 40.0, lon: -82.998, x: 150, y: 0, alt: 20 }
+    ];
+
+    const routed = routeWaypointsAroundExclusionZones(wps, [zone], 40.0, -83.0);
+    assert.ok(routed.length > 2, 'Should insert detour climb waypoints');
+    const climbWps = routed.filter(w => w.isClimbOver);
+    assert.ok(climbWps.length >= 2, 'Should contain climb-over detour waypoints');
+    assert.strictEqual(climbWps[0].alt, 35, 'Climbs to 30m + 5m = 35m');
+    // Horizontal positions should remain along the direct path (y ≈ 0)
+    assert.ok(Math.abs(climbWps[0].y) < 1.0, 'Over-the-top climb maintains direct horizontal path');
+  });
+
+  test('Zones with allAltitudes: true fall back to perimeter detour even if overTop is requested', () => {
+    const zone = {
+      id: 'excl-box-infinite',
+      pattern: 'exclusion-box',
+      gridWidth: 100,
+      gridHeight: 100,
+      gridRotation: 0,
+      allAltitudes: true, // Infinite vertical ceiling
+      detourMode: 'overTop',
+      centerLat: 40.0,
+      centerLon: -83.0,
+      enabled: true
+    };
+
+    const wps = [
+      { lat: 40.0, lon: -83.002, x: -150, y: 0, alt: 20 },
+      { lat: 40.0, lon: -82.998, x: 150, y: 0, alt: 20 }
+    ];
+
+    const routed = routeWaypointsAroundExclusionZones(wps, [zone], 40.0, -83.0);
+    assert.ok(routed.length > 2);
+    // Should divert around perimeter (non-zero y offset) and NOT have isClimbOver
+    const detours = routed.filter(w => w.isExclusionDetour);
+    assert.ok(detours.length > 0);
+    assert.strictEqual(detours.some(w => w.isClimbOver), false, 'Infinite ceiling must not attempt climb-over');
+    assert.ok(detours.some(w => Math.abs(w.y) > 20), 'Diverts around horizontal perimeter');
+  });
+
+  test('Per-zone detourMode overrides globalExclusionDetourMode', () => {
+    globalExclusionDetourMode = 'perimeter';
+
+    const zone = {
+      id: 'excl-box-override',
+      pattern: 'exclusion-box',
+      gridWidth: 100,
+      gridHeight: 100,
+      gridRotation: 0,
+      allAltitudes: false,
+      minAltitude: 0,
+      maxAltitude: 25,
+      clearanceBuffer: 5,
+      detourMode: 'overTop', // Override global perimeter
+      centerLat: 40.0,
+      centerLon: -83.0,
+      enabled: true
+    };
+
+    const wps = [
+      { lat: 40.0, lon: -83.002, x: -150, y: 0, alt: 20 },
+      { lat: 40.0, lon: -82.998, x: 150, y: 0, alt: 20 }
+    ];
+
+    const routed = routeWaypointsAroundExclusionZones(wps, [zone], 40.0, -83.0);
+    const climbWps = routed.filter(w => w.isClimbOver);
+    assert.ok(climbWps.length >= 2, 'Per-zone overTop override successfully applied');
+  });
+
+  test('smart detour mode picks overTop for wide low zones and perimeter for tall narrow zones', () => {
+    // Wide zone with low 20m ceiling: climbing over (300m direct + 10m climb) is shorter than 600m perimeter detour
+    const wideLowZone = {
+      id: 'wide-low-zone',
+      pattern: 'exclusion-box',
+      gridWidth: 100,
+      gridHeight: 500, // Very wide in Y
+      gridRotation: 0,
+      allAltitudes: false,
+      minAltitude: 0,
+      maxAltitude: 20,
+      clearanceBuffer: 5,
+      detourMode: 'smart',
+      centerLat: 40.0,
+      centerLon: -83.0,
+      enabled: true
+    };
+
+    const wps = [
+      { lat: 40.0, lon: -83.002, x: -150, y: 0, alt: 15 },
+      { lat: 40.0, lon: -82.998, x: 150, y: 0, alt: 15 }
+    ];
+
+    const routed = routeWaypointsAroundExclusionZones(wps, [wideLowZone], 40.0, -83.0);
+    const climbWps = routed.filter(w => w.isClimbOver);
+    assert.ok(climbWps.length >= 2, 'Smart mode selects overTop for wide zone with low ceiling');
+  });
+});
+
+
 
 
 

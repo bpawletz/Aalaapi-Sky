@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.71.0] - 2026-09-03
+
+### Added
+- **Global & Per-Zone Exclusion Detour Strategy (Perimeter vs. Over the Top Vertical Climb vs. Smart 3D Path):**
+  - Added configurable obstacle avoidance routing strategies:
+    - `Around Perimeter (Horizontal Bypass)`: Maintains current flight altitude and safely diverts around 2D boundary perimeters.
+    - `Over the Top (Vertical Climb Above Ceiling)`: Automatically calculates entrance and exit boundary coordinates, climbs smoothly to a clearance altitude above the zone's ceiling (`zone.maxAltitude + clearanceBuffer`), cruises over the restricted volume, and descends back to layer flight altitude once clear.
+    - `Smart / Shortest 3D Path`: Dynamically computes total 3D Euclidean flight path distances between climbing over vs. diverting around, automatically selecting the most efficient path.
+  - Added global mission preference (`#global-exclusion-detour-mode`) and ceiling clearance buffer slider (`#global-exclusion-clearance-buffer`).
+  - Added per-zone detour routing override selector (`#exclusion-detour-mode`) in Section 2 Exclusion Settings.
+  - Zones configured with `All Altitudes (0m – ∞)` automatically and safely fall back to horizontal perimeter detour.
+
 ## [1.70.1] - 2026-09-03
 
 ### Fixed
