@@ -2742,6 +2742,51 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(autoPlanTest.isBannerHiddenAfterCancel, true, 'Banner must hide upon cancel');
     assert.strictEqual(autoPlanTest.isBtnInactiveAfterCancel, true, 'Active class must clear upon cancel');
   });
+
+  test('E2E: Auto-Plan Auto-Selected Pattern Highlighting & Uniform Icon Boldness (v1.76.1)', async () => {
+    const highlightTest = await page.evaluate(async () => {
+      // 1. Check computed style / font-weight of auto-plan vs other cards
+      const autoPlanBtn = document.getElementById('auto-plan-btn');
+      const singleCard = document.querySelector('.pattern-card[data-value="single"]');
+      const autoPlanSpan = autoPlanBtn?.querySelector('span');
+      const singleSpan = singleCard?.querySelector('span');
+
+      const autoPlanWeight = window.getComputedStyle(autoPlanSpan).fontWeight;
+      const singleWeight = window.getComputedStyle(singleSpan).fontWeight;
+
+      // 2. Simulate applying Auto-Plan result with double grid pattern
+      if (typeof applyAutoPlanLive === 'function') {
+        window.autoPlanBounds = L.latLngBounds([41.3, -89.0], [41.31, -88.99]);
+        applyAutoPlanLive({
+          pattern: 'double',
+          altitude: 45,
+          width: 80,
+          height: 80,
+          gimbalPitch: -70,
+          frontOverlap: 75,
+          sideOverlap: 65
+        });
+      }
+      await new Promise(r => setTimeout(r, 60));
+
+      const doubleCard = document.querySelector('.pattern-card[data-value="double"]');
+      const isDoubleActive = doubleCard && doubleCard.classList.contains('active');
+      const isSingleActive = singleCard && singleCard.classList.contains('active');
+
+      return {
+        success: true,
+        autoPlanWeight,
+        singleWeight,
+        isDoubleActive,
+        isSingleActive
+      };
+    });
+
+    assert.ok(highlightTest.success, 'Highlight evaluation should succeed');
+    assert.strictEqual(highlightTest.autoPlanWeight, highlightTest.singleWeight, 'Auto-Plan text font weight must match standard pattern cards');
+    assert.strictEqual(highlightTest.isDoubleActive, true, 'Double Grid pattern card must be highlighted active when auto-selected');
+    assert.strictEqual(highlightTest.isSingleActive, false, 'Inactive pattern cards must not have active class');
+  });
 });
 
 

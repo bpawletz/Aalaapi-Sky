@@ -8838,6 +8838,17 @@ describe('Auto-Plan Flight Tool & Pattern Grid Integration Tests (v1.76.0)', () 
       initPatternSelectorCards();
     }, 'initPatternSelectorCards should execute without error');
   });
+
+  test('Auto-Plan icon SVG uses stroke-width 2 and normalized optical geometry (v1.76.1)', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+
+    const autoPlanCardMatch = templateHtml.match(/<div class="pattern-card auto-plan-card"[\s\S]*?<\/div>/);
+    assert.ok(autoPlanCardMatch, 'auto-plan-card should be found in template');
+    assert.ok(autoPlanCardMatch[0].includes('stroke-width="2"'), 'auto-plan-btn icon must use standard stroke-width 2');
+    assert.ok(autoPlanCardMatch[0].includes('<circle cx="12" cy="12" r="7"/>'), 'auto-plan-btn icon must use standard optical circle geometry');
+  });
 });
 
 

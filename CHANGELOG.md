@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.76.1] - 2026-09-03
+
+### Fixed
+- **Auto-Plan Flight Pattern Highlighting & Icon Visual Normalization:**
+  - Fixed auto-selected flight plan card highlight in `.pattern-selector-grid` upon generating/applying an Auto-Plan mission.
+  - Normalized Auto-Plan icon geometry and stroke weight to match all other flight pattern cards with standard 500-weight muted typography and optical stroke balance.
+
 ## [1.76.0] - 2026-09-03
 
 ### Changed

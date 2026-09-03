@@ -1470,39 +1470,11 @@ html, body {
   border-radius: 0 !important;
 }
 
-/* Auto-Plan Tool Card in Pattern Grid (v1.76.0) */
+/* Auto-Plan Tool Card in Pattern Grid (v1.76.1) */
 .pattern-card.auto-plan-card,
 #auto-plan-btn.pattern-card {
-  background: rgba(6, 182, 212, 0.08);
-  border: 1px solid rgba(6, 182, 212, 0.35);
   box-shadow: none;
   margin: 0;
-}
-
-.pattern-card.auto-plan-card:hover,
-#auto-plan-btn.pattern-card:hover {
-  background: rgba(6, 182, 212, 0.2);
-  border-color: var(--accent-cyan);
-  box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
-  transform: translateY(-1px);
-}
-
-.pattern-card.auto-plan-card.active,
-#auto-plan-btn.pattern-card.active {
-  background: rgba(6, 182, 212, 0.25);
-  border-color: var(--accent-cyan);
-  box-shadow: 0 0 12px rgba(6, 182, 212, 0.4);
-}
-
-.pattern-card.auto-plan-card .pattern-icon,
-#auto-plan-btn.pattern-card .pattern-icon {
-  color: var(--accent-cyan);
-}
-
-.pattern-card.auto-plan-card span,
-#auto-plan-btn.pattern-card span {
-  color: #38bdf8;
-  font-weight: 600;
 }
 
 .map-crosshair {
@@ -2731,7 +2703,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.76.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.76.1</span></h1>
         </div>
       </div>
 
@@ -2900,11 +2872,12 @@ html, body {
               </div>
               <div class="pattern-card auto-plan-card" id="auto-plan-btn" title="Auto-Plan Tool: Drag to Box & Survey Area">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="22" y1="12" x2="18" y2="12"></line>
-                  <line x1="6" y1="12" x2="2" y2="12"></line>
-                  <line x1="12" y1="6" x2="12" y2="2"></line>
-                  <line x1="12" y1="22" x2="12" y2="18"></line>
+                  <circle cx="12" cy="12" r="7"/>
+                  <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+                  <line x1="12" y1="2" x2="12" y2="5"/>
+                  <line x1="12" y1="19" x2="12" y2="22"/>
+                  <line x1="2" y1="12" x2="5" y2="12"/>
+                  <line x1="19" y1="12" x2="22" y2="12"/>
                 </svg>
                 <span>Auto-Plan</span>
               </div>
@@ -4416,7 +4389,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.76.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.76.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -4484,6 +4457,12 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.76.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Auto-Plan Selected Pattern Highlight &amp; Icon Normalization:</strong> Fixed automatic highlighting of the recommended flight pattern card when generating an Auto-Plan mission, and normalized the Auto-Plan icon stroke and font styling to match all other flight pattern cards.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.76.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Unified Flight Planning Tools in Section 1:</strong> Moved <strong>Auto-Plan</strong> into Section 1 as an interactive flight tool card alongside all flight patterns, and streamlined Section 4 to full-width Import &amp; Clear action buttons.</li>
@@ -7111,7 +7090,7 @@ function initPatternSelectorCards() {
   if (typeof document === 'undefined' || typeof document.querySelectorAll !== 'function') return;
   const cards = document.querySelectorAll('.pattern-card');
   const selectEl = document.getElementById('grid-type');
-  if (!selectEl) return;
+  if (!selectEl || typeof selectEl.addEventListener !== 'function') return;
 
   cards.forEach(card => {
     card.addEventListener('click', () => {
@@ -7151,6 +7130,18 @@ function initPatternSelectorCards() {
   
   // Initial sync
   syncCardsFromSelect();
+}
+
+if (typeof window !== 'undefined') {
+  window.initPatternSelectorCards = initPatternSelectorCards;
+}
+
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPatternSelectorCards);
+  } else {
+    initPatternSelectorCards();
+  }
 }
 
 // State variables for imported KMZ missions
@@ -24052,7 +24043,15 @@ function restoreOriginalSettings() {
   if (!originalMissionSettings) return;
 
   const gridTypeEl = document.getElementById('grid-type');
-  if (gridTypeEl) gridTypeEl.value = originalMissionSettings.gridType;
+  if (gridTypeEl) {
+    gridTypeEl.value = originalMissionSettings.gridType;
+    gridTypeEl.dispatchEvent(new Event('change'));
+  }
+
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  if (activeLayer && originalMissionSettings.gridType) {
+    activeLayer.pattern = originalMissionSettings.gridType;
+  }
   
   const altitudeEl = document.getElementById('altitude');
   if (altitudeEl) altitudeEl.value = originalMissionSettings.altitude;
@@ -24104,10 +24103,44 @@ function restoreOriginalSettings() {
 }
 
 function applyAutoPlanLive(plan) {
+  if (!autoPlanBounds && (typeof window !== 'undefined' && window.autoPlanBounds)) {
+    autoPlanBounds = window.autoPlanBounds;
+  }
   if (!autoPlanBounds) return;
 
   const gridTypeEl = document.getElementById('grid-type');
-  if (gridTypeEl) gridTypeEl.value = plan.pattern;
+  if (gridTypeEl) {
+    gridTypeEl.value = plan.pattern;
+    gridTypeEl.dispatchEvent(new Event('change'));
+  }
+
+  // Explicitly sync pattern selector cards highlight
+  if (typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
+    const cards = document.querySelectorAll('.pattern-card');
+    cards.forEach(card => {
+      const cardVal = card.getAttribute('data-value');
+      if (!cardVal) {
+        card.classList.remove('active');
+        return;
+      }
+      if (cardVal === plan.pattern) {
+        card.classList.add('active');
+      } else {
+        card.classList.remove('active');
+      }
+    });
+  }
+
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  if (activeLayer) {
+    activeLayer.pattern = plan.pattern;
+    activeLayer.altitude = Math.round(plan.altitude);
+    activeLayer.width = Math.round(plan.width);
+    activeLayer.height = Math.round(plan.height);
+    activeLayer.gimbalPitch = plan.gimbalPitch;
+    activeLayer.overlapFront = plan.frontOverlap;
+    activeLayer.overlapSide = plan.sideOverlap;
+  }
 
   const altitudeEl = document.getElementById('altitude');
   if (altitudeEl) altitudeEl.value = Math.round(plan.altitude);
