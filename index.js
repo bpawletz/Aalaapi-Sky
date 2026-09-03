@@ -3017,6 +3017,27 @@ function initUIEventListeners() {
 
 
 
+  // Gimbal Pitch Preset Chips
+  const presetChips = document.querySelectorAll('.gimbal-preset-chip');
+  if (presetChips && presetChips.forEach) {
+    presetChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        const pitch = parseFloat(chip.dataset ? chip.dataset.pitch : chip.getAttribute('data-pitch'));
+        const gimbalSlider = document.getElementById('gimbal-pitch');
+        if (gimbalSlider) {
+          gimbalSlider.value = pitch;
+          const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+          if (activeLayer) {
+            activeLayer.gimbalPitch = pitch;
+          }
+          syncDisplayValues();
+          updateGrid();
+          saveAllSettingsToLocalStorage();
+        }
+      });
+    });
+  }
+
   // Header Telemetry & Weather Popover toggle
   const telemetryPill = document.getElementById('header-telemetry-pill');
   const telemetryPopover = document.getElementById('telemetry-weather-popover');
@@ -4054,6 +4075,165 @@ function togglePatternParameters() {
   }
 }
 
+// // Helper to get descriptive flight purpose and styling for a gimbal pitch angle
+function getGimbalPitchDescription(pitch) {
+  const p = Math.round(pitch);
+  if (p <= -85) {
+    return {
+      text: '📐 True Nadir (Orthomosaic 2D Mapping)',
+      bg: 'rgba(6, 182, 212, 0.12)',
+      border: 'rgba(6, 182, 212, 0.3)',
+      color: 'var(--accent-cyan)'
+    };
+  } else if (p <= -70) {
+    return {
+      text: '🏠 Steep Oblique (Rooftops & Footprints)',
+      bg: 'rgba(16, 185, 129, 0.12)',
+      border: 'rgba(16, 185, 129, 0.3)',
+      color: '#34d399'
+    };
+  } else if (p <= -45) {
+    return {
+      text: '✨ 3D Oblique (Gaussian Splats & Photogrammetry)',
+      bg: 'rgba(168, 85, 247, 0.15)',
+      border: 'rgba(168, 85, 247, 0.35)',
+      color: '#c084fc'
+    };
+  } else if (p < 0) {
+    return {
+      text: '🎥 Shallow Oblique (Cinematic & Facades)',
+      bg: 'rgba(245, 158, 11, 0.12)',
+      border: 'rgba(245, 158, 11, 0.3)',
+      color: '#fbbf24'
+    };
+  } else {
+    return {
+      text: '🔭 Level Horizon (Inspection & Panoramic)',
+      bg: 'rgba(249, 115, 22, 0.12)',
+      border: 'rgba(249, 115, 22, 0.3)',
+      color: '#fb923c'
+    };
+  }
+}
+
+// Dynamically update the live Gimbal Pitch diagram, FOV sight cone, preset chips, and badge
+function updateGimbalPitchVisualizer(pitch) {
+  if (typeof document === 'undefined' || !document || !document.getElementById) return;
+  const pVal = isNaN(pitch) ? -60 : parseFloat(pitch);
+  const beta = -pVal; // Downward angle in degrees: 0° (horizon) to 90° (straight down)
+
+  // 1. Update Purpose Badge
+  const purposeBadge = document.getElementById('gimbal-pitch-purpose-badge');
+  if (purposeBadge) {
+    const desc = getGimbalPitchDescription(pVal);
+    purposeBadge.textContent = desc.text;
+    purposeBadge.style.backgroundColor = desc.bg;
+    purposeBadge.style.borderColor = desc.border;
+    purposeBadge.style.color = desc.color;
+  }
+
+  // 2. Highlight matching preset chip
+  const chips = (typeof document.querySelectorAll === 'function') ? document.querySelectorAll('.gimbal-preset-chip') : [];
+  if (chips && chips.forEach) {
+    chips.forEach(chip => {
+      const targetPitch = parseFloat(chip.dataset ? chip.dataset.pitch : chip.getAttribute('data-pitch'));
+      if (Math.abs(targetPitch - pVal) < 1.0) {
+        if (chip.classList && chip.classList.add) chip.classList.add('active');
+        if (chip.style) {
+          chip.style.backgroundColor = 'rgba(6, 182, 212, 0.15)';
+          chip.style.borderColor = 'rgba(6, 182, 212, 0.4)';
+          chip.style.color = 'var(--accent-cyan)';
+        }
+      } else {
+        if (chip.classList && chip.classList.remove) chip.classList.remove('active');
+        if (chip.style) {
+          chip.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+          chip.style.borderColor = 'var(--border-color)';
+          chip.style.color = 'var(--text-muted)';
+        }
+      }
+    });
+  }
+
+  // 3. Update Camera Gimbal Node Rotation
+  const cameraNode = document.getElementById('gimbal-camera-node');
+  if (cameraNode && cameraNode.setAttribute) {
+    cameraNode.setAttribute('transform', `translate(48, 38) rotate(${beta})`);
+  }
+
+  // 4. Update Optical Sight Ray and Sight Cone
+  const x0 = 48;
+  const y0 = 38;
+  const groundY = 82;
+  const rad = (beta * Math.PI) / 180;
+  const dx = Math.cos(rad);
+  const dy = Math.sin(rad);
+
+  const tCenter = dy > 0.001 ? Math.min(180, (groundY - y0) / dy) : 160;
+  const xCenter = Math.min(210, x0 + tCenter * dx);
+  const yCenter = Math.min(groundY, y0 + tCenter * dy);
+
+  const sightRay = document.getElementById('gimbal-sight-ray');
+  if (sightRay && sightRay.setAttribute) {
+    sightRay.setAttribute('x1', x0.toString());
+    sightRay.setAttribute('y1', y0.toString());
+    sightRay.setAttribute('x2', xCenter.toFixed(1));
+    sightRay.setAttribute('y2', yCenter.toFixed(1));
+  }
+
+  // Calculate FOV cone spread (half angle approx 20°)
+  const beta1 = Math.max(0, beta - 20);
+  const beta2 = Math.min(90, beta + 20);
+  const r1 = (beta1 * Math.PI) / 180;
+  const r2 = (beta2 * Math.PI) / 180;
+
+  const dx1 = Math.cos(r1);
+  const dy1 = Math.sin(r1);
+  const t1 = dy1 > 0.001 ? Math.min(180, (groundY - y0) / dy1) : 160;
+  const x1 = Math.min(210, x0 + t1 * dx1);
+  const y1 = Math.min(groundY, y0 + t1 * dy1);
+
+  const dx2 = Math.cos(r2);
+  const dy2 = Math.sin(r2);
+  const t2 = dy2 > 0.001 ? Math.min(180, (groundY - y0) / dy2) : 160;
+  const x2 = Math.min(210, x0 + t2 * dx2);
+  const y2 = Math.min(groundY, y0 + t2 * dy2);
+
+  const fovCone = document.getElementById('gimbal-fov-cone');
+  if (fovCone && fovCone.setAttribute) {
+    fovCone.setAttribute('points', `${x0},${y0} ${x1.toFixed(1)},${y1.toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)}`);
+  }
+
+  // 5. Update Angle Arc & Angle Text
+  const arcEl = document.getElementById('gimbal-angle-arc');
+  const angleTextEl = document.getElementById('gimbal-angle-text');
+
+  if (arcEl && angleTextEl && arcEl.setAttribute && angleTextEl.setAttribute) {
+    if (beta > 4) {
+      const arcR = 24;
+      const xArc = x0 + arcR * Math.cos(rad);
+      const yArc = y0 + arcR * Math.sin(rad);
+      arcEl.setAttribute('d', `M ${x0 + arcR},${y0} A ${arcR},${arcR} 0 0,1 ${xArc.toFixed(1)},${yArc.toFixed(1)}`);
+      arcEl.style.display = 'block';
+
+      const midRad = (rad / 2);
+      const textR = 34;
+      const xText = x0 + textR * Math.cos(midRad);
+      const yText = y0 + textR * Math.sin(midRad) + 3;
+      angleTextEl.setAttribute('x', xText.toFixed(1));
+      angleTextEl.setAttribute('y', yText.toFixed(1));
+      angleTextEl.textContent = `${Math.round(pVal)}°`;
+      angleTextEl.style.display = 'block';
+    } else {
+      arcEl.style.display = 'none';
+      angleTextEl.setAttribute('x', '80');
+      angleTextEl.setAttribute('y', '34');
+      angleTextEl.textContent = '0° (Horizon)';
+      angleTextEl.style.display = 'block';
+    }
+  }
+}
+
 // Sync slider labels with actual slider values
 function syncDisplayValues() {
   if (typeof document === 'undefined' || !document || !document.getElementById) return;
@@ -4095,18 +4275,14 @@ function syncDisplayValues() {
     document.getElementById('width-unit').textContent = "m";
   }
 
-  // Update Grid Height if it exists and is visible
-  const heightValEl = document.getElementById('height-val');
-  if (heightValEl) {
-    const heightSlider = document.getElementById('grid-height');
-    const heightVal = heightSlider ? parseFloat(heightSlider.value) : 100;
-    if (unit === 'imperial') {
-      heightValEl.textContent = Math.round(heightVal * M_TO_FT);
-      document.getElementById('height-unit').textContent = "ft";
-    } else {
-      heightValEl.textContent = heightVal;
-      document.getElementById('height-unit').textContent = "m";
-    }
+  // Update Grid Height
+  const heightVal = parseFloat(document.getElementById('grid-height')?.value) || 100;
+  if (unit === 'imperial') {
+    document.getElementById('height-val').textContent = Math.round(heightVal * M_TO_FT);
+    document.getElementById('height-unit').textContent = "ft";
+  } else {
+    document.getElementById('height-val').textContent = heightVal;
+    document.getElementById('height-unit').textContent = "m";
   }
 
   // Update Rotation
@@ -4116,9 +4292,17 @@ function syncDisplayValues() {
   }
 
   // Update Overlaps and Gimbal Pitch
-  document.getElementById('front-overlap-val').textContent = document.getElementById('front-overlap').value;
-  document.getElementById('side-overlap-val').textContent = document.getElementById('side-overlap').value;
-  document.getElementById('gimbal-pitch-val').textContent = document.getElementById('gimbal-pitch').value;
+  const frontOverlapEl = document.getElementById('front-overlap');
+  if (frontOverlapEl) document.getElementById('front-overlap-val').textContent = frontOverlapEl.value;
+  const sideOverlapEl = document.getElementById('side-overlap');
+  if (sideOverlapEl) document.getElementById('side-overlap-val').textContent = sideOverlapEl.value;
+  
+  const gimbalPitchEl = document.getElementById('gimbal-pitch');
+  if (gimbalPitchEl) {
+    const pitchVal = parseFloat(gimbalPitchEl.value);
+    document.getElementById('gimbal-pitch-val').textContent = gimbalPitchEl.value;
+    updateGimbalPitchVisualizer(pitchVal);
+  }
 
   // Sync Camera HFOV and VFOV variables and displays
   const hfovSlider = document.getElementById('camera-hfov');

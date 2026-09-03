@@ -436,13 +436,15 @@ html, body {
   border-left: 1px solid var(--border-color);
 }
 
-.inspector-tab-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
+.gimbal-preset-chip:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: var(--text-main) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
 }
 
-.inspector-tab-btn.active {
-  background: rgba(6, 182, 212, 0.2) !important;
-  border: 1px solid rgba(6, 182, 212, 0.4) !important;
+.gimbal-preset-chip.active {
+  background: rgba(6, 182, 212, 0.18) !important;
+  border: 1px solid rgba(6, 182, 212, 0.45) !important;
   color: var(--accent-cyan) !important;
 }
 
@@ -2625,7 +2627,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.72.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.73.0</span></h1>
         </div>
       </div>
 
@@ -3005,7 +3007,7 @@ html, body {
             <input type="range" id="side-overlap" min="50" max="95" value="75" class="slider" aria-label="Side overlap percentage">
           </div>
 
-          <div class="control-group">
+          <div class="control-group" id="gimbal-pitch-control-group">
             <div class="control-label">
               <span style="display: inline-flex; align-items: center; gap: 6px;">
                 <circle cx="8" cy="8" r="3" stroke="#c2622d" fill="none"/>
@@ -3017,7 +3019,82 @@ html, body {
               <span class="value-display"><span id="gimbal-pitch-val">-60</span>&deg;</span>
             </div>
             <input type="range" id="gimbal-pitch" min="-90" max="0" value="-60" class="slider" aria-label="Camera gimbal pitch angle">
-            <p class="help-text">-90&deg; nadir, -60&deg; to -45&deg; oblique for 3D Gaussian Splats.</p>
+
+            <!-- Quick Preset Chips -->
+            <div id="gimbal-preset-chips" style="display: flex; gap: 4px; margin-top: 6px;">
+              <button type="button" class="gimbal-preset-chip" data-pitch="-90" style="flex: 1; padding: 3px 2px; font-size: 0.68rem; font-weight: 600; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer; transition: all 0.2s;">-90° Nadir</button>
+              <button type="button" class="gimbal-preset-chip active" data-pitch="-60" style="flex: 1; padding: 3px 2px; font-size: 0.68rem; font-weight: 600; border-radius: 4px; background: rgba(6,182,212,0.15); border: 1px solid rgba(6,182,212,0.4); color: var(--accent-cyan); cursor: pointer; transition: all 0.2s;">-60° 3D</button>
+              <button type="button" class="gimbal-preset-chip" data-pitch="-45" style="flex: 1; padding: 3px 2px; font-size: 0.68rem; font-weight: 600; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer; transition: all 0.2s;">-45° Oblique</button>
+              <button type="button" class="gimbal-preset-chip" data-pitch="0" style="flex: 1; padding: 3px 2px; font-size: 0.68rem; font-weight: 600; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer; transition: all 0.2s;">0° Level</button>
+            </div>
+
+            <!-- Dynamic Purpose Badge -->
+            <div id="gimbal-pitch-purpose-container" style="margin-top: 6px; display: flex; align-items: center; justify-content: space-between;">
+              <span id="gimbal-pitch-purpose-badge" style="font-size: 0.72rem; font-weight: 600; color: var(--accent-cyan); background: rgba(6,182,212,0.12); border: 1px solid rgba(6,182,212,0.25); padding: 2px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; width: 100%;">
+                ✨ 3D Oblique (Gaussian Splats &amp; Photogrammetry)
+              </span>
+            </div>
+
+            <!-- Live SVG Visualizer Card -->
+            <div id="gimbal-pitch-visualizer" style="position: relative; width: 100%; height: 95px; background: rgba(5, 8, 15, 0.55); border: 1px solid var(--border-color); border-radius: 8px; margin-top: 6px; overflow: hidden;">
+              <svg id="gimbal-svg" viewBox="0 0 220 95" style="width: 100%; height: 100%; display: block;">
+                <defs>
+                  <linearGradient id="fov-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.45" />
+                    <stop offset="100%" stop-color="#06b6d4" stop-opacity="0.08" />
+                  </linearGradient>
+                </defs>
+
+                <!-- Ground Plane Reference -->
+                <line x1="10" y1="82" x2="210" y2="82" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" />
+                <path d="M10,82 L5,88 M30,82 L25,88 M50,82 L45,88 M70,82 L65,88 M90,82 L85,88 M110,82 L105,88 M130,82 L125,88 M150,82 L145,88 M170,82 L165,88 M190,82 L185,88 M210,82 L205,88" stroke="rgba(255,255,255,0.08)" stroke-width="1" />
+                <text x="206" y="78" fill="var(--text-muted)" font-size="7" text-anchor="end" font-family="sans-serif">Ground Plane</text>
+
+                <!-- Horizontal Horizon 0° Reference (Dashed) -->
+                <line x1="48" y1="38" x2="200" y2="38" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3,3" />
+                <text x="198" y="34" fill="var(--text-muted)" font-size="6.5" text-anchor="end" font-family="sans-serif">0° Horizon</text>
+
+                <!-- Dynamic Camera FOV Sight Cone -->
+                <polygon id="gimbal-fov-cone" points="48,38 75,82 120,82" fill="url(#fov-gradient)" stroke="rgba(6,182,212,0.5)" stroke-width="1" />
+
+                <!-- Central Sight Ray / Optical Axis -->
+                <line id="gimbal-sight-ray" x1="48" y1="38" x2="97.5" y2="82" stroke="#06b6d4" stroke-width="1.2" stroke-dasharray="2,2" />
+
+                <!-- Angle Arc -->
+                <path id="gimbal-angle-arc" d="M 68,38 A 20,20 0 0,1 58,55" fill="none" stroke="#f59e0b" stroke-width="1.2" />
+                <text id="gimbal-angle-text" x="72" y="52" fill="#fbbf24" font-size="8" font-weight="700" font-family="sans-serif">-60°</text>
+
+                <!-- Hovering Drone Silhouette (Side View) -->
+                <g id="gimbal-drone-silhouette" transform="translate(18, 20)">
+                  <!-- Motor Arms & Propellers -->
+                  <line x1="8" y1="12" x2="52" y2="12" stroke="#64748b" stroke-width="2" stroke-linecap="round" />
+                  <ellipse cx="8" cy="8" rx="10" ry="1.5" fill="rgba(255,255,255,0.25)" />
+                  <ellipse cx="52" cy="8" rx="10" ry="1.5" fill="rgba(255,255,255,0.25)" />
+                  <rect x="6" y="9" width="4" height="4" rx="1" fill="#38bdf8" />
+                  <rect x="50" y="9" width="4" height="4" rx="1" fill="#38bdf8" />
+
+                  <!-- Fuselage -->
+                  <path d="M18,12 Q30,6 42,12 Q44,18 30,19 Q16,18 18,12 Z" fill="#0f172a" stroke="#38bdf8" stroke-width="1.2" />
+                  <!-- Status LED -->
+                  <circle cx="22" cy="15" r="1.2" fill="#10b981" />
+
+                  <!-- Landing Struts -->
+                  <path d="M22,18 L18,25 M38,18 L42,25" stroke="#64748b" stroke-width="1.2" stroke-linecap="round" />
+                </g>
+
+                <!-- Pivoting Gimbal & Camera Lens -->
+                <g id="gimbal-camera-node" transform="translate(48, 38) rotate(-60)">
+                  <!-- Gimbal Arm Mount -->
+                  <circle cx="0" cy="0" r="2.5" fill="#f5f0e8" />
+                  <!-- Camera Body -->
+                  <rect x="-3" y="-2" width="10" height="7" rx="1.5" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.8" />
+                  <!-- Lens Barrel -->
+                  <rect x="7" y="-0.5" width="4" height="4" rx="0.5" fill="#06b6d4" stroke="#f5f0e8" stroke-width="0.6" />
+                  <!-- Lens Glass Reflection -->
+                  <line x1="11" y1="0.5" x2="11" y2="2.5" stroke="#fff" stroke-width="0.8" />
+                </g>
+              </svg>
+            </div>
           </div>
 
           <div class="control-group">
@@ -4198,7 +4275,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.72.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.73.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -4220,6 +4297,7 @@ html, body {
           <li>Procedural flight generation: 2D Nadir Grid, 3D Double Grid, Oblique Orbits, and Multi-Tier Hybrid passes.</li>
           <li>Multi-Layer Missions: Combine multiple independent pattern layers with customizable inter-layer transitions.</li>
           <li>3D Exclusion Zones &amp; Automated Detour Routing: Define restricted no-fly volumes with 3D altitude bounds and automatic obstacle avoidance routing (Perimeter, Over-the-Top Climb, or Smart 3D).</li>
+          <li>Interactive Gimbal Pitch Visualizer: Live side-profile drone FOV cone ray-casting, angle classification badges, and quick-set presets.</li>
         </ul>
 
         <!-- Legal Disclaimer Alert - icon card grid -->
@@ -4263,6 +4341,12 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.73.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Interactive Live Gimbal Pitch Visualizer &amp; Angle Guide:</strong> Added a real-time side-profile flight diagram with pivoting camera gimbal, optical sight ray, and ground-casting FOV cone. Includes dynamic purpose badges (e.g. Nadir vs 3D Splat vs Horizon) and quick-select presets.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.72.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Separated Global Mission Failsafes from Layer Properties:</strong> Extracted global failsafes, heading modes, connection path types, global hover time, global exclusion detour strategy, and hardware settings into a dedicated <strong>Section 3: Mission Failsafes &amp; Defaults</strong>. Section 2 is dedicated strictly to <strong>Layer Properties</strong> with dynamic pattern badges.</li>
@@ -9481,6 +9565,27 @@ function initUIEventListeners() {
 
 
 
+  // Gimbal Pitch Preset Chips
+  const presetChips = document.querySelectorAll('.gimbal-preset-chip');
+  if (presetChips && presetChips.forEach) {
+    presetChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        const pitch = parseFloat(chip.dataset ? chip.dataset.pitch : chip.getAttribute('data-pitch'));
+        const gimbalSlider = document.getElementById('gimbal-pitch');
+        if (gimbalSlider) {
+          gimbalSlider.value = pitch;
+          const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+          if (activeLayer) {
+            activeLayer.gimbalPitch = pitch;
+          }
+          syncDisplayValues();
+          updateGrid();
+          saveAllSettingsToLocalStorage();
+        }
+      });
+    });
+  }
+
   // Header Telemetry & Weather Popover toggle
   const telemetryPill = document.getElementById('header-telemetry-pill');
   const telemetryPopover = document.getElementById('telemetry-weather-popover');
@@ -10518,6 +10623,165 @@ function togglePatternParameters() {
   }
 }
 
+// // Helper to get descriptive flight purpose and styling for a gimbal pitch angle
+function getGimbalPitchDescription(pitch) {
+  const p = Math.round(pitch);
+  if (p <= -85) {
+    return {
+      text: '📐 True Nadir (Orthomosaic 2D Mapping)',
+      bg: 'rgba(6, 182, 212, 0.12)',
+      border: 'rgba(6, 182, 212, 0.3)',
+      color: 'var(--accent-cyan)'
+    };
+  } else if (p <= -70) {
+    return {
+      text: '🏠 Steep Oblique (Rooftops & Footprints)',
+      bg: 'rgba(16, 185, 129, 0.12)',
+      border: 'rgba(16, 185, 129, 0.3)',
+      color: '#34d399'
+    };
+  } else if (p <= -45) {
+    return {
+      text: '✨ 3D Oblique (Gaussian Splats & Photogrammetry)',
+      bg: 'rgba(168, 85, 247, 0.15)',
+      border: 'rgba(168, 85, 247, 0.35)',
+      color: '#c084fc'
+    };
+  } else if (p < 0) {
+    return {
+      text: '🎥 Shallow Oblique (Cinematic & Facades)',
+      bg: 'rgba(245, 158, 11, 0.12)',
+      border: 'rgba(245, 158, 11, 0.3)',
+      color: '#fbbf24'
+    };
+  } else {
+    return {
+      text: '🔭 Level Horizon (Inspection & Panoramic)',
+      bg: 'rgba(249, 115, 22, 0.12)',
+      border: 'rgba(249, 115, 22, 0.3)',
+      color: '#fb923c'
+    };
+  }
+}
+
+// Dynamically update the live Gimbal Pitch diagram, FOV sight cone, preset chips, and badge
+function updateGimbalPitchVisualizer(pitch) {
+  if (typeof document === 'undefined' || !document || !document.getElementById) return;
+  const pVal = isNaN(pitch) ? -60 : parseFloat(pitch);
+  const beta = -pVal; // Downward angle in degrees: 0° (horizon) to 90° (straight down)
+
+  // 1. Update Purpose Badge
+  const purposeBadge = document.getElementById('gimbal-pitch-purpose-badge');
+  if (purposeBadge) {
+    const desc = getGimbalPitchDescription(pVal);
+    purposeBadge.textContent = desc.text;
+    purposeBadge.style.backgroundColor = desc.bg;
+    purposeBadge.style.borderColor = desc.border;
+    purposeBadge.style.color = desc.color;
+  }
+
+  // 2. Highlight matching preset chip
+  const chips = (typeof document.querySelectorAll === 'function') ? document.querySelectorAll('.gimbal-preset-chip') : [];
+  if (chips && chips.forEach) {
+    chips.forEach(chip => {
+      const targetPitch = parseFloat(chip.dataset ? chip.dataset.pitch : chip.getAttribute('data-pitch'));
+      if (Math.abs(targetPitch - pVal) < 1.0) {
+        if (chip.classList && chip.classList.add) chip.classList.add('active');
+        if (chip.style) {
+          chip.style.backgroundColor = 'rgba(6, 182, 212, 0.15)';
+          chip.style.borderColor = 'rgba(6, 182, 212, 0.4)';
+          chip.style.color = 'var(--accent-cyan)';
+        }
+      } else {
+        if (chip.classList && chip.classList.remove) chip.classList.remove('active');
+        if (chip.style) {
+          chip.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+          chip.style.borderColor = 'var(--border-color)';
+          chip.style.color = 'var(--text-muted)';
+        }
+      }
+    });
+  }
+
+  // 3. Update Camera Gimbal Node Rotation
+  const cameraNode = document.getElementById('gimbal-camera-node');
+  if (cameraNode && cameraNode.setAttribute) {
+    cameraNode.setAttribute('transform', `translate(48, 38) rotate(${beta})`);
+  }
+
+  // 4. Update Optical Sight Ray and Sight Cone
+  const x0 = 48;
+  const y0 = 38;
+  const groundY = 82;
+  const rad = (beta * Math.PI) / 180;
+  const dx = Math.cos(rad);
+  const dy = Math.sin(rad);
+
+  const tCenter = dy > 0.001 ? Math.min(180, (groundY - y0) / dy) : 160;
+  const xCenter = Math.min(210, x0 + tCenter * dx);
+  const yCenter = Math.min(groundY, y0 + tCenter * dy);
+
+  const sightRay = document.getElementById('gimbal-sight-ray');
+  if (sightRay && sightRay.setAttribute) {
+    sightRay.setAttribute('x1', x0.toString());
+    sightRay.setAttribute('y1', y0.toString());
+    sightRay.setAttribute('x2', xCenter.toFixed(1));
+    sightRay.setAttribute('y2', yCenter.toFixed(1));
+  }
+
+  // Calculate FOV cone spread (half angle approx 20°)
+  const beta1 = Math.max(0, beta - 20);
+  const beta2 = Math.min(90, beta + 20);
+  const r1 = (beta1 * Math.PI) / 180;
+  const r2 = (beta2 * Math.PI) / 180;
+
+  const dx1 = Math.cos(r1);
+  const dy1 = Math.sin(r1);
+  const t1 = dy1 > 0.001 ? Math.min(180, (groundY - y0) / dy1) : 160;
+  const x1 = Math.min(210, x0 + t1 * dx1);
+  const y1 = Math.min(groundY, y0 + t1 * dy1);
+
+  const dx2 = Math.cos(r2);
+  const dy2 = Math.sin(r2);
+  const t2 = dy2 > 0.001 ? Math.min(180, (groundY - y0) / dy2) : 160;
+  const x2 = Math.min(210, x0 + t2 * dx2);
+  const y2 = Math.min(groundY, y0 + t2 * dy2);
+
+  const fovCone = document.getElementById('gimbal-fov-cone');
+  if (fovCone && fovCone.setAttribute) {
+    fovCone.setAttribute('points', `${x0},${y0} ${x1.toFixed(1)},${y1.toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)}`);
+  }
+
+  // 5. Update Angle Arc & Angle Text
+  const arcEl = document.getElementById('gimbal-angle-arc');
+  const angleTextEl = document.getElementById('gimbal-angle-text');
+
+  if (arcEl && angleTextEl && arcEl.setAttribute && angleTextEl.setAttribute) {
+    if (beta > 4) {
+      const arcR = 24;
+      const xArc = x0 + arcR * Math.cos(rad);
+      const yArc = y0 + arcR * Math.sin(rad);
+      arcEl.setAttribute('d', `M ${x0 + arcR},${y0} A ${arcR},${arcR} 0 0,1 ${xArc.toFixed(1)},${yArc.toFixed(1)}`);
+      arcEl.style.display = 'block';
+
+      const midRad = (rad / 2);
+      const textR = 34;
+      const xText = x0 + textR * Math.cos(midRad);
+      const yText = y0 + textR * Math.sin(midRad) + 3;
+      angleTextEl.setAttribute('x', xText.toFixed(1));
+      angleTextEl.setAttribute('y', yText.toFixed(1));
+      angleTextEl.textContent = `${Math.round(pVal)}°`;
+      angleTextEl.style.display = 'block';
+    } else {
+      arcEl.style.display = 'none';
+      angleTextEl.setAttribute('x', '80');
+      angleTextEl.setAttribute('y', '34');
+      angleTextEl.textContent = '0° (Horizon)';
+      angleTextEl.style.display = 'block';
+    }
+  }
+}
+
 // Sync slider labels with actual slider values
 function syncDisplayValues() {
   if (typeof document === 'undefined' || !document || !document.getElementById) return;
@@ -10559,18 +10823,14 @@ function syncDisplayValues() {
     document.getElementById('width-unit').textContent = "m";
   }
 
-  // Update Grid Height if it exists and is visible
-  const heightValEl = document.getElementById('height-val');
-  if (heightValEl) {
-    const heightSlider = document.getElementById('grid-height');
-    const heightVal = heightSlider ? parseFloat(heightSlider.value) : 100;
-    if (unit === 'imperial') {
-      heightValEl.textContent = Math.round(heightVal * M_TO_FT);
-      document.getElementById('height-unit').textContent = "ft";
-    } else {
-      heightValEl.textContent = heightVal;
-      document.getElementById('height-unit').textContent = "m";
-    }
+  // Update Grid Height
+  const heightVal = parseFloat(document.getElementById('grid-height')?.value) || 100;
+  if (unit === 'imperial') {
+    document.getElementById('height-val').textContent = Math.round(heightVal * M_TO_FT);
+    document.getElementById('height-unit').textContent = "ft";
+  } else {
+    document.getElementById('height-val').textContent = heightVal;
+    document.getElementById('height-unit').textContent = "m";
   }
 
   // Update Rotation
@@ -10580,9 +10840,17 @@ function syncDisplayValues() {
   }
 
   // Update Overlaps and Gimbal Pitch
-  document.getElementById('front-overlap-val').textContent = document.getElementById('front-overlap').value;
-  document.getElementById('side-overlap-val').textContent = document.getElementById('side-overlap').value;
-  document.getElementById('gimbal-pitch-val').textContent = document.getElementById('gimbal-pitch').value;
+  const frontOverlapEl = document.getElementById('front-overlap');
+  if (frontOverlapEl) document.getElementById('front-overlap-val').textContent = frontOverlapEl.value;
+  const sideOverlapEl = document.getElementById('side-overlap');
+  if (sideOverlapEl) document.getElementById('side-overlap-val').textContent = sideOverlapEl.value;
+  
+  const gimbalPitchEl = document.getElementById('gimbal-pitch');
+  if (gimbalPitchEl) {
+    const pitchVal = parseFloat(gimbalPitchEl.value);
+    document.getElementById('gimbal-pitch-val').textContent = gimbalPitchEl.value;
+    updateGimbalPitchVisualizer(pitchVal);
+  }
 
   // Sync Camera HFOV and VFOV variables and displays
   const hfovSlider = document.getElementById('camera-hfov');

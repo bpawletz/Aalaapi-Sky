@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.73.0] - 2026-09-03
+
+### Added
+- **Interactive Live Gimbal Pitch Visualizer & Dynamic Angle Guide:**
+  - Added real-time SVG side-profile flight diagram showing drone silhouette, pivoting camera gimbal, optical sight ray, and translucent Field-of-View (FOV) projection cone casting to the ground plane.
+  - Added dynamic application purpose badge categorizing pitch angles in real time (e.g. `📐 True Nadir`, `🏠 Steep Oblique`, `✨ 3D Oblique`, `🎥 Shallow Oblique`, `🔭 Level Horizon`).
+  - Added quick-select preset chips (`[-90° Nadir]`, `[-60° 3D]`, `[-45° Oblique]`, `[0° Level]`) for single-click standard angle selection.
+
 ## [1.72.0] - 2026-09-03
 
 ### Changed

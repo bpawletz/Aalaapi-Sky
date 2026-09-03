@@ -2463,6 +2463,93 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(detourResult.climbWpCount >= 2, 'Climb over waypoints generated for overTop detour mode');
     assert.strictEqual(detourResult.climbAlt, 40, 'Climbs to maxAltitude (35m) + clearanceBuffer (5m) = 40m');
   });
+
+  test('E2E: Gimbal Pitch Visualizer, Dynamic Angle Guides, and Preset Chips (v1.73.0)', async () => {
+    const visualizerResult = await page.evaluate(async () => {
+      const slider = document.getElementById('gimbal-pitch');
+      const valDisplay = document.getElementById('gimbal-pitch-val');
+      const purposeBadge = document.getElementById('gimbal-pitch-purpose-badge');
+      const visualizer = document.getElementById('gimbal-pitch-visualizer');
+      const cameraNode = document.getElementById('gimbal-camera-node');
+      const angleText = document.getElementById('gimbal-angle-text');
+      const chips = document.querySelectorAll('.gimbal-preset-chip');
+
+      if (!slider || !purposeBadge || !visualizer || !cameraNode) {
+        return { success: false, reason: 'Gimbal visualizer DOM elements missing' };
+      }
+
+      // Initial state (-60)
+      const initialVal = slider.value;
+      const initialBadge = purposeBadge.textContent;
+      const initialTransform = cameraNode.getAttribute('transform');
+
+      // Click -90° Nadir preset chip
+      const nadirChip = Array.from(chips).find(c => c.dataset.pitch === '-90');
+      if (nadirChip) nadirChip.click();
+      await new Promise(r => setTimeout(r, 50));
+
+      const afterNadirVal = slider.value;
+      const afterNadirBadge = purposeBadge.textContent;
+      const afterNadirTransform = cameraNode.getAttribute('transform');
+      const isNadirChipActive = nadirChip ? nadirChip.classList.contains('active') : false;
+
+      // Click 0° Level preset chip
+      const levelChip = Array.from(chips).find(c => c.dataset.pitch === '0');
+      if (levelChip) levelChip.click();
+      await new Promise(r => setTimeout(r, 50));
+
+      const afterLevelVal = slider.value;
+      const afterLevelBadge = purposeBadge.textContent;
+      const afterLevelTransform = cameraNode.getAttribute('transform');
+      const isLevelChipActive = levelChip ? levelChip.classList.contains('active') : false;
+
+      // Drag slider back to -45°
+      slider.value = -45;
+      slider.dispatchEvent(new Event('input'));
+      await new Promise(r => setTimeout(r, 50));
+
+      const afterDragVal = slider.value;
+      const afterDragBadge = purposeBadge.textContent;
+      const afterDragTransform = cameraNode.getAttribute('transform');
+
+      return {
+        success: true,
+        initialVal,
+        initialBadge,
+        initialTransform,
+        afterNadirVal,
+        afterNadirBadge,
+        afterNadirTransform,
+        isNadirChipActive,
+        afterLevelVal,
+        afterLevelBadge,
+        afterLevelTransform,
+        isLevelChipActive,
+        afterDragVal,
+        afterDragBadge,
+        afterDragTransform
+      };
+    });
+
+    assert.ok(visualizerResult.success, 'Gimbal visualizer evaluation should succeed');
+    assert.strictEqual(visualizerResult.initialVal, '-60', 'Default pitch is -60');
+    assert.ok(visualizerResult.initialBadge.includes('3D Oblique'), 'Default badge describes 3D Oblique');
+    assert.ok(visualizerResult.initialTransform.includes('rotate(60)'), 'Camera node rotates to downward 60 deg');
+
+    assert.strictEqual(visualizerResult.afterNadirVal, '-90', 'Clicking -90 chip sets slider to -90');
+    assert.ok(visualizerResult.afterNadirBadge.includes('True Nadir'), 'Badge updates to True Nadir');
+    assert.ok(visualizerResult.afterNadirTransform.includes('rotate(90)'), 'Camera node rotates to downward 90 deg');
+    assert.strictEqual(visualizerResult.isNadirChipActive, true, 'Nadir chip becomes active');
+
+    assert.strictEqual(visualizerResult.afterLevelVal, '0', 'Clicking 0 chip sets slider to 0');
+    assert.ok(visualizerResult.afterLevelBadge.includes('Level Horizon'), 'Badge updates to Level Horizon');
+    assert.ok(visualizerResult.afterLevelTransform.includes('rotate(0)'), 'Camera node rotates to horizontal 0 deg');
+    assert.strictEqual(visualizerResult.isLevelChipActive, true, 'Level chip becomes active');
+
+    assert.strictEqual(visualizerResult.afterDragVal, '-45', 'Dragging slider sets value to -45');
+    assert.ok(visualizerResult.afterDragBadge.includes('3D Oblique'), 'Badge updates to 3D Oblique');
+    assert.ok(visualizerResult.afterDragTransform.includes('rotate(45)'), 'Camera node rotates to downward 45 deg');
+  });
 });
 
 
