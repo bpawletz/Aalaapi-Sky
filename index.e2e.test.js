@@ -1846,7 +1846,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(evalResult.activeLayerIsExcl, true, 'Active layer isExclusionZone should be true');
   });
 
-  test('E2E: App Header Search, Topbar Telemetry HUD, and Dual-Tab Inspector (v1.65.0)', async () => {
+  test('E2E: App Header Search, Topbar Telemetry HUD, Layer Properties & Mission Failsafes Sections (v1.72.0)', async () => {
     const uiResult = await page.evaluate(async () => {
       // 1. Verify App Header Search elements exist and work
       const searchInput = document.getElementById('location-input');
@@ -1855,29 +1855,14 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
       const headerSearchExists = searchInput !== null && searchBtn !== null && locateBtn !== null;
 
-      // 2. Verify Dual-Tab Inspector buttons switch panes
-      const tabLayer = document.getElementById('inspector-tab-layer');
-      const tabFailsafes = document.getElementById('inspector-tab-failsafes');
-      const layerPane = document.getElementById('inspector-layer-pane');
-      const failsafesPane = document.getElementById('inspector-failsafes-pane');
+      // 2. Verify Section 2 (Layer Properties) and Section 3 (Mission Failsafes) exist independently
+      const layerSection = document.getElementById('grid-geometry-section');
+      const failsafesSection = document.getElementById('mission-failsafes-section');
+      const patternBadge = document.getElementById('active-layer-pattern-badge');
 
-      const initialLayerVisible = !layerPane.classList.contains('hidden');
-      const initialFailsafesHidden = failsafesPane.classList.contains('hidden');
-
-      // Click failsafes tab
-      tabFailsafes.click();
-      await new Promise(r => setTimeout(r, 40));
-
-      const afterFailsafesTabLayerHidden = layerPane.classList.contains('hidden');
-      const afterFailsafesTabVisible = !failsafesPane.classList.contains('hidden');
-      const failsafesTabActive = tabFailsafes.classList.contains('active');
-
-      // Click layer properties tab back
-      tabLayer.click();
-      await new Promise(r => setTimeout(r, 40));
-
-      const finalLayerVisible = !layerPane.classList.contains('hidden');
-      const layerTabActive = tabLayer.classList.contains('active');
+      const layerSectionExists = layerSection !== null;
+      const failsafesSectionExists = failsafesSection !== null;
+      const badgeText = patternBadge ? patternBadge.textContent : '';
 
       // 3. Verify Topbar Telemetry HUD Pill & Popover toggle
       const telemetryPill = document.getElementById('header-telemetry-pill');
@@ -1908,13 +1893,9 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       return {
         success: true,
         headerSearchExists,
-        initialLayerVisible,
-        initialFailsafesHidden,
-        afterFailsafesTabLayerHidden,
-        afterFailsafesTabVisible,
-        failsafesTabActive,
-        finalLayerVisible,
-        layerTabActive,
+        layerSectionExists,
+        failsafesSectionExists,
+        badgeText,
         popoverInitiallyHidden,
         popoverOpenAfterClick,
         popoverClosedAfterBtn,
@@ -1925,12 +1906,9 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
     assert.ok(uiResult.success, 'Evaluation should succeed');
     assert.strictEqual(uiResult.headerSearchExists, true, 'Header search elements must exist');
-    assert.strictEqual(uiResult.initialLayerVisible, true, 'Layer pane should be visible by default');
-    assert.strictEqual(uiResult.initialFailsafesHidden, true, 'Failsafes pane should be hidden by default');
-    assert.strictEqual(uiResult.afterFailsafesTabVisible, true, 'Failsafes pane should be visible after clicking tab');
-    assert.strictEqual(uiResult.failsafesTabActive, true, 'Failsafes tab button should have active class');
-    assert.strictEqual(uiResult.finalLayerVisible, true, 'Layer pane should be visible after switching back');
-    assert.strictEqual(uiResult.layerTabActive, true, 'Layer tab button should have active class');
+    assert.strictEqual(uiResult.layerSectionExists, true, 'Layer Properties section must exist');
+    assert.strictEqual(uiResult.failsafesSectionExists, true, 'Mission Failsafes section must exist');
+    assert.ok(uiResult.badgeText.length > 0, 'Active layer pattern badge should display pattern name');
     assert.strictEqual(uiResult.popoverInitiallyHidden, true, 'Telemetry popover should be hidden initially');
     assert.strictEqual(uiResult.popoverOpenAfterClick, true, 'Telemetry popover should open on pill click');
     assert.strictEqual(uiResult.popoverClosedAfterBtn, true, 'Telemetry popover should close on close btn click');
