@@ -311,7 +311,7 @@ function initPatternSelectorCards() {
   if (typeof document === 'undefined' || typeof document.querySelectorAll !== 'function') return;
   const cards = document.querySelectorAll('.pattern-card');
   const selectEl = document.getElementById('grid-type');
-  if (!selectEl) return;
+  if (!selectEl || typeof selectEl.addEventListener !== 'function') return;
 
   cards.forEach(card => {
     card.addEventListener('click', () => {
@@ -351,6 +351,18 @@ function initPatternSelectorCards() {
   
   // Initial sync
   syncCardsFromSelect();
+}
+
+if (typeof window !== 'undefined') {
+  window.initPatternSelectorCards = initPatternSelectorCards;
+}
+
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPatternSelectorCards);
+  } else {
+    initPatternSelectorCards();
+  }
 }
 
 // State variables for imported KMZ missions
@@ -17252,7 +17264,15 @@ function restoreOriginalSettings() {
   if (!originalMissionSettings) return;
 
   const gridTypeEl = document.getElementById('grid-type');
-  if (gridTypeEl) gridTypeEl.value = originalMissionSettings.gridType;
+  if (gridTypeEl) {
+    gridTypeEl.value = originalMissionSettings.gridType;
+    gridTypeEl.dispatchEvent(new Event('change'));
+  }
+
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  if (activeLayer && originalMissionSettings.gridType) {
+    activeLayer.pattern = originalMissionSettings.gridType;
+  }
   
   const altitudeEl = document.getElementById('altitude');
   if (altitudeEl) altitudeEl.value = originalMissionSettings.altitude;
@@ -17304,10 +17324,44 @@ function restoreOriginalSettings() {
 }
 
 function applyAutoPlanLive(plan) {
+  if (!autoPlanBounds && (typeof window !== 'undefined' && window.autoPlanBounds)) {
+    autoPlanBounds = window.autoPlanBounds;
+  }
   if (!autoPlanBounds) return;
 
   const gridTypeEl = document.getElementById('grid-type');
-  if (gridTypeEl) gridTypeEl.value = plan.pattern;
+  if (gridTypeEl) {
+    gridTypeEl.value = plan.pattern;
+    gridTypeEl.dispatchEvent(new Event('change'));
+  }
+
+  // Explicitly sync pattern selector cards highlight
+  if (typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
+    const cards = document.querySelectorAll('.pattern-card');
+    cards.forEach(card => {
+      const cardVal = card.getAttribute('data-value');
+      if (!cardVal) {
+        card.classList.remove('active');
+        return;
+      }
+      if (cardVal === plan.pattern) {
+        card.classList.add('active');
+      } else {
+        card.classList.remove('active');
+      }
+    });
+  }
+
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  if (activeLayer) {
+    activeLayer.pattern = plan.pattern;
+    activeLayer.altitude = Math.round(plan.altitude);
+    activeLayer.width = Math.round(plan.width);
+    activeLayer.height = Math.round(plan.height);
+    activeLayer.gimbalPitch = plan.gimbalPitch;
+    activeLayer.overlapFront = plan.frontOverlap;
+    activeLayer.overlapSide = plan.sideOverlap;
+  }
 
   const altitudeEl = document.getElementById('altitude');
   if (altitudeEl) altitudeEl.value = Math.round(plan.altitude);
