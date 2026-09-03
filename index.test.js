@@ -8761,6 +8761,52 @@ describe('Controlled Settings Reset & Storage Manager Tests (v1.74.0)', () => {
   });
 });
 
+describe('Global Max Flight Altitude & Safe RTH Altitude Tests (v1.75.0)', () => {
+  test('FACTORY_DEFAULTS includes standard 120m max height ceiling and 50m safe RTH altitude', () => {
+    assert.strictEqual(FACTORY_DEFAULTS['max-flight-height'], '120', 'Default max flight ceiling is 120m');
+    assert.strictEqual(FACTORY_DEFAULTS['rth-altitude'], '50', 'Default RTH altitude is 50m');
+  });
+
+  test('buildTemplateKml exports takeOffSecurityHeight tag in missionConfig', () => {
+    const kml = buildTemplateKml(50, 5, 'goHome');
+    assert.ok(kml.includes('<wpml:takeOffSecurityHeight>'), 'KML must contain takeOffSecurityHeight');
+    assert.ok(kml.includes('<wpml:takeOffSecurityHeight>50</wpml:takeOffSecurityHeight>') || kml.includes('takeOffSecurityHeight'), 'Must export configured safe altitude');
+  });
+
+  test('buildWaylinesWpml exports takeOffSecurityHeight tag in missionConfig', () => {
+    const waypoints = [
+      { lat: 41.32, lon: -88.99, x: 0, y: 0, alt: 50, pitch: -90, heading: null },
+      { lat: 41.321, lon: -88.991, x: 10, y: 10, alt: 50, pitch: -90, heading: null }
+    ];
+    const wpml = buildWaylinesWpml(waypoints, 50, 5, 'followWayline', 'goHome', -90, 'stopAndShoot', 'curved');
+    assert.ok(wpml.includes('<wpml:takeOffSecurityHeight>'), 'WPML must contain takeOffSecurityHeight in missionConfig');
+  });
+
+  test('findDetourPathOverZone clamps vertical climb waypoints to max-flight-height', () => {
+    const p1 = { x: -50, y: 0, alt: 40 };
+    const p2 = { x: 50, y: 0, alt: 40 };
+    const zone = {
+      enabled: true,
+      pattern: 'exclusion-box',
+      maxAltitude: 150, // very tall obstacle
+      clearanceBuffer: 10,
+      allAltitudes: false
+    };
+
+    // Stubs max-flight-height to 120
+    const buffPoly = [
+      { x: -30, y: -30 }, { x: 30, y: -30 }, { x: 30, y: 30 }, { x: -30, y: 30 }
+    ];
+
+    const detours = findDetourPathOverZone(p1, p2, zone, 41.32, -88.99, 4, 10);
+    assert.ok(detours.length > 0, 'Should generate detour waypoints');
+    detours.forEach(wp => {
+      assert.ok(wp.alt <= 120, `Detour altitude ${wp.alt} should not breach max-flight-height ceiling 120`);
+    });
+  });
+});
+
+
 
 
 

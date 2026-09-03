@@ -2642,6 +2642,16 @@ html, body {
   border: 1px solid rgba(148, 163, 184, 0.2);
 }
 
+.legal-ceiling-notice {
+  animation: fadeInNotice 0.25s ease-out;
+}
+
+@keyframes fadeInNotice {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
 
 
 
@@ -2705,7 +2715,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.74.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.75.0</span></h1>
         </div>
       </div>
 
@@ -3219,6 +3229,42 @@ html, body {
               <option value="landing">Auto Land</option>
               <option value="goContinue">Continue Mission</option>
             </select>
+          </div>
+
+          <!-- Max Flight Altitude Limit (Global Ceiling) -->
+          <div class="control-group" id="max-height-control-group">
+            <div class="control-label">
+              <span style="display: inline-flex; align-items: center; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
+                  <line x1="3" y1="3" x2="21" y2="3" stroke="#f59e0b"/>
+                  <path d="M12 21v-14M8 11l4-4 4 4" stroke="#06b6d4" fill="none"/>
+                  <circle cx="12" cy="18" r="1.5" fill="#f5f0e8"/>
+                </svg>
+                Max Flight Altitude (Ceiling)
+              </span>
+              <span class="value-display"><span id="max-height-val">120</span> <span id="max-height-unit">m</span></span>
+            </div>
+            <input type="range" id="max-flight-height" min="20" max="500" step="5" value="120" class="slider" aria-label="Maximum flight altitude ceiling">
+            <div id="max-height-legal-warning" class="legal-ceiling-notice" style="display: none; margin-top: 6px; padding: 6px 8px; border-radius: 6px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); font-size: 0.72rem; color: #fbbf24; line-height: 1.35;">
+              ⚠️ <strong>Above 120m / 400ft Standard Regulatory Ceiling</strong> (FAA Part 107 / EASA / UK CAA). Ensure flight waiver or airspace authorization.
+            </div>
+            <p class="help-text" style="margin-top: 3px; margin-bottom: 0;">Hard ceiling cap for layer waypoints and obstacle climb detours.</p>
+          </div>
+
+          <!-- Safe Return-to-Home Altitude -->
+          <div class="control-group" id="rth-altitude-control-group">
+            <div class="control-label">
+              <span style="display: inline-flex; align-items: center; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="#06b6d4" fill="none"/>
+                  <polyline points="9 22 9 12 15 12 15 22" stroke="#c2622d" fill="none"/>
+                </svg>
+                Safe RTH Altitude
+              </span>
+              <span class="value-display"><span id="rth-altitude-val">50</span> <span id="rth-altitude-unit">m</span></span>
+            </div>
+            <input type="range" id="rth-altitude" min="20" max="150" step="5" value="50" class="slider" aria-label="Safe Return-to-Home altitude">
+            <p class="help-text" style="margin-top: 3px; margin-bottom: 0;">Climb altitude before initiating Return-to-Home or Signal Loss failsafe.</p>
           </div>
 
           <div class="control-group" id="heading-mode-container">
@@ -4354,7 +4400,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.74.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.75.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -4378,6 +4424,7 @@ html, body {
           <li>3D Exclusion Zones &amp; Automated Detour Routing: Define restricted no-fly volumes with 3D altitude bounds and automatic obstacle avoidance routing (Perimeter, Over-the-Top Climb, or Smart 3D).</li>
           <li>Interactive Gimbal Pitch Visualizer &amp; Upward Tilt: Full $-90^\circ$ to $+60^\circ$ tilt range support with live FOV cone diagram and angle guides.</li>
           <li>Controlled Settings Reset &amp; Storage Manager: Selectively manage and restore saved browser settings with minimalist indicator dots on modified controls.</li>
+          <li>Global Max Flight Ceiling &amp; Safe RTH Altitude: Enforce legal altitude caps (120m/400ft) and configure safe obstacle-clearing return heights.</li>
         </ul>
 
         <!-- Legal Disclaimer Alert - icon card grid -->
@@ -4421,6 +4468,12 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.75.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Global Max Flight Altitude &amp; Safe RTH Altitude:</strong> Added dedicated Max Flight Altitude (Ceiling Cap) and Safe RTH Altitude sliders to Section 3 (Mission Failsafes &amp; Defaults). Enforces 120m/400ft regulatory ceiling alerts and safe return heights in WPML (<code>wpml:takeOffSecurityHeight</code>).</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.74.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Controlled Settings Reset &amp; Storage Manager:</strong> Added granular reset capabilities across 5 distinct domains (Flight, Map/GPS, UI, Hardware, Onboarding) with 1-click Factory Reset and minimalist indicator dots (<code>●</code>) on modified controls.</li>
@@ -7792,7 +7845,10 @@ function findDetourPathOverZone(p1, p2, zone, centerLat, centerLon, bufferMeters
 
   const zoneMaxAlt = (zone.maxAltitude !== undefined && zone.maxAltitude !== null) ? zone.maxAltitude : 60;
   const cBuffer = (clearanceBuffer !== undefined && clearanceBuffer !== null) ? clearanceBuffer : (globalExclusionClearanceBuffer || 5);
-  const targetClimbAlt = zoneMaxAlt + cBuffer;
+  const maxCeiling = (typeof document !== 'undefined' && document.getElementById && document.getElementById('max-flight-height'))
+    ? (parseFloat(document.getElementById('max-flight-height').value) || 120)
+    : 120;
+  const targetClimbAlt = Math.min(maxCeiling, zoneMaxAlt + cBuffer);
 
   // Find line segment (p1, p2) intersections with buffered zone polygon edges
   const intersections = [];
@@ -9246,10 +9302,11 @@ const CONTROLS_LIST = [
   'front-overlap', 'side-overlap', 'gimbal-pitch',
   'altitude', 'speed', 'heading-mode', 'finish-action', 'capture-mode', 'path-mode', 'signal-lost-action',
   'camera-model', 'drone-model', 'camera-zoom', 'camera-hfov', 'camera-vfov', 'road-offset',
-  'global-hover-time', 'global-exclusion-detour-mode', 'global-exclusion-clearance-buffer'
+  'global-hover-time', 'global-exclusion-detour-mode', 'global-exclusion-clearance-buffer',
+  'max-flight-height', 'rth-altitude'
 ];
 
-// Factory Defaults Schema for Reset & Modified Detection (v1.74.0)
+// Factory Defaults Schema for Reset & Modified Detection (v1.75.0)
 const FACTORY_DEFAULTS = {
   // Flight & Layer Parameters
   'altitude': '50',
@@ -9277,6 +9334,7 @@ const FACTORY_DEFAULTS = {
   'road-action': 'none',
   'road-snap': false,
   // Section 3: Mission Failsafes & Defaults
+  'max-flight-height': '120',
   'rth-altitude': '50',
   'signal-lost-action': 'goHome',
   'exit-on-rc-lost': 'executeLostAction',
@@ -9367,7 +9425,7 @@ function getModifiedSettingsState() {
     'multi-orbit-radius', 'multi-orbit-tiers', 'multi-orbit-bottom-alt',
     'multi-orbit-top-alt', 'multi-orbit-pitch-bottom', 'multi-orbit-pitch-top',
     'multi-orbit-wps', 'multi-orbit-speed', 'road-offset',
-    'rth-altitude', 'signal-lost-action', 'exit-on-rc-lost', 'flight-path-mode',
+    'max-flight-height', 'rth-altitude', 'signal-lost-action', 'exit-on-rc-lost', 'flight-path-mode',
     'heading-mode', 'drone-model', 'finish-action', 'capture-mode', 'path-mode',
     'global-exclusion-detour-mode', 'global-exclusion-clearance-buffer', 'max-flight-time'
   ];
@@ -9600,7 +9658,7 @@ function resetStoredSettings(options = {}) {
       'multi-orbit-radius', 'multi-orbit-tiers', 'multi-orbit-bottom-alt',
       'multi-orbit-top-alt', 'multi-orbit-pitch-bottom', 'multi-orbit-pitch-top',
       'multi-orbit-wps', 'multi-orbit-speed', 'road-offset',
-      'rth-altitude', 'signal-lost-action', 'exit-on-rc-lost', 'flight-path-mode',
+      'max-flight-height', 'rth-altitude', 'signal-lost-action', 'exit-on-rc-lost', 'flight-path-mode',
       'heading-mode', 'drone-model', 'finish-action', 'capture-mode', 'path-mode',
       'global-exclusion-detour-mode', 'global-exclusion-clearance-buffer', 'max-flight-time'
     ];
@@ -11692,6 +11750,38 @@ function syncDisplayValues() {
     } else {
       globalClearanceValEl.textContent = cVal;
       globalClearanceUnitEl.textContent = "m";
+    }
+  }
+
+  // Sync Max Flight Altitude Ceiling Display
+  const maxHeightSlider = document.getElementById('max-flight-height');
+  const maxHeightValEl = document.getElementById('max-height-val');
+  const maxHeightUnitEl = document.getElementById('max-height-unit');
+  const legalWarningEl = document.getElementById('max-height-legal-warning');
+  if (maxHeightSlider) {
+    const mhVal = parseFloat(maxHeightSlider.value) || 120;
+    if (maxHeightValEl) {
+      maxHeightValEl.textContent = (unit === 'imperial') ? Math.round(mhVal * M_TO_FT) : mhVal;
+    }
+    if (maxHeightUnitEl) {
+      maxHeightUnitEl.textContent = distUnitStr;
+    }
+    if (legalWarningEl) {
+      legalWarningEl.style.display = (mhVal > 120) ? 'block' : 'none';
+    }
+  }
+
+  // Sync Safe RTH Altitude Display
+  const rthAltSlider = document.getElementById('rth-altitude');
+  const rthAltValEl = document.getElementById('rth-altitude-val');
+  const rthAltUnitEl = document.getElementById('rth-altitude-unit');
+  if (rthAltSlider) {
+    const rthVal = parseFloat(rthAltSlider.value) || 50;
+    if (rthAltValEl) {
+      rthAltValEl.textContent = (unit === 'imperial') ? Math.round(rthVal * M_TO_FT) : rthVal;
+    }
+    if (rthAltUnitEl) {
+      rthAltUnitEl.textContent = distUnitStr;
     }
   }
 }
@@ -14586,6 +14676,9 @@ function buildTemplateKml(finishAction, speed) {
     executeRCLostAction = 'goBack';
   }
 
+  const rthAltEl = document.getElementById('rth-altitude');
+  const rthAltitude = rthAltEl ? (parseFloat(rthAltEl.value) || 50) : 50;
+
   const isEnterprise = (droneEnumValue !== 68 && droneEnumValue !== 89);
   let folderXml = '';
   if (isEnterprise) {
@@ -14616,6 +14709,7 @@ function buildTemplateKml(finishAction, speed) {
       <wpml:finishAction>${finishAction}</wpml:finishAction>
       <wpml:exitOnRCLost>${exitOnRCLost}</wpml:exitOnRCLost>
       <wpml:executeRCLostAction>${executeRCLostAction}</wpml:executeRCLostAction>
+      <wpml:takeOffSecurityHeight>${rthAltitude}</wpml:takeOffSecurityHeight>
       <wpml:globalTransitionalSpeed>${speed}</wpml:globalTransitionalSpeed>
       <wpml:droneInfo>
         <wpml:droneEnumValue>${droneEnumValue}</wpml:droneEnumValue>
@@ -15010,6 +15104,9 @@ ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
     executeRCLostAction = 'goBack';
   }
 
+  const rthAltEl = document.getElementById('rth-altitude');
+  const rthAltitude = rthAltEl ? (parseFloat(rthAltEl.value) || 50) : 50;
+
   const isEnterprise = (droneEnumValue !== 68 && droneEnumValue !== 89);
   let templateTypeXml = isEnterprise ? '      <wpml:templateType>waypoint</wpml:templateType>\n' : '';
   let payloadParamXml = isEnterprise ? `      <wpml:payloadParam>
@@ -15025,6 +15122,7 @@ ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
       <wpml:finishAction>${finishAction}</wpml:finishAction>
       <wpml:exitOnRCLost>${exitOnRCLost}</wpml:exitOnRCLost>
       <wpml:executeRCLostAction>${executeRCLostAction}</wpml:executeRCLostAction>
+      <wpml:takeOffSecurityHeight>${rthAltitude}</wpml:takeOffSecurityHeight>
       <wpml:globalTransitionalSpeed>${speed}</wpml:globalTransitionalSpeed>
       <wpml:droneInfo>
         <wpml:droneEnumValue>${droneEnumValue}</wpml:droneEnumValue>

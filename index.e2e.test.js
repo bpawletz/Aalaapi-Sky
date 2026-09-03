@@ -2644,6 +2644,62 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(resetResult.afterResetHardware, '354A8F93-759C-42C3-A8D5-746F79C7622A', 'Hardware domain was unchecked and untouched');
     assert.strictEqual(resetResult.afterDotClickAlt, '50', 'Clicking setting dot resets single input to default (50m)');
   });
+
+  test('E2E: Section 3 Global Max Flight Altitude Ceiling & Safe RTH Altitude (v1.75.0)', async () => {
+    const altitudeTest = await page.evaluate(async () => {
+      // 1. Expand Section 3
+      const section3 = document.getElementById('mission-failsafes-section');
+      if (section3 && section3.classList.contains('collapsed')) {
+        const header = section3.querySelector('h3');
+        if (header) header.click();
+        await new Promise(r => setTimeout(r, 50));
+      }
+
+      const maxHeightSlider = document.getElementById('max-flight-height');
+      const maxHeightVal = document.getElementById('max-height-val')?.textContent;
+      const legalWarning = document.getElementById('max-height-legal-warning');
+      const initialWarningDisplay = legalWarning ? legalWarning.style.display : null;
+
+      const rthSlider = document.getElementById('rth-altitude');
+      const rthVal = document.getElementById('rth-altitude-val')?.textContent;
+
+      // 2. Increase Max Height above 120m to trigger regulatory warning
+      if (maxHeightSlider) {
+        maxHeightSlider.value = '150';
+        maxHeightSlider.dispatchEvent(new Event('input', { bubbles: true }));
+        maxHeightSlider.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      await new Promise(r => setTimeout(r, 50));
+
+      const afterMaxHeightVal = document.getElementById('max-height-val')?.textContent;
+      const afterWarningDisplay = legalWarning ? legalWarning.style.display : null;
+
+      // 3. Adjust RTH Altitude
+      if (rthSlider) {
+        rthSlider.value = '65';
+        rthSlider.dispatchEvent(new Event('input', { bubbles: true }));
+        rthSlider.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      await new Promise(r => setTimeout(r, 50));
+      const afterRthVal = document.getElementById('rth-altitude-val')?.textContent;
+
+      return {
+        success: true,
+        initialMaxVal: maxHeightVal,
+        initialWarningDisplay,
+        initialRthVal: rthVal,
+        afterMaxHeightVal,
+        afterWarningDisplay,
+        afterRthVal
+      };
+    });
+
+    assert.ok(altitudeTest.success, 'Altitude evaluation should succeed');
+    assert.strictEqual(altitudeTest.initialWarningDisplay, 'none', 'Warning hidden at standard 120m default');
+    assert.strictEqual(altitudeTest.afterWarningDisplay, 'block', 'Warning shown when ceiling > 120m');
+    assert.ok(altitudeTest.afterRthVal === '65' || altitudeTest.afterRthVal === '213', 'RTH altitude updates with unit conversion (65m / 213ft)');
+    assert.ok(altitudeTest.afterMaxHeightVal === '150' || altitudeTest.afterMaxHeightVal === '492', 'Max height updates with unit conversion (150m / 492ft)');
+  });
 });
 
 
