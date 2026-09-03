@@ -8658,14 +8658,23 @@ describe('Gimbal Pitch Visualizer & Dynamic Angle Classification Tests (v1.73.0)
     // Horizon
     const horizon0 = getGimbalPitchDescription(0);
     assert.ok(horizon0.text.includes('Level Horizon'), '0 should be classified as Level Horizon');
+
+    // Upward Tilt
+    const upward20 = getGimbalPitchDescription(20);
+    assert.ok(upward20.text.includes('Upward Tilt'), '+20 should be classified as Upward Tilt');
+
+    const upward60 = getGimbalPitchDescription(60);
+    assert.ok(upward60.text.includes('Upward Tilt'), '+60 should be classified as Upward Tilt');
   });
 
-  test('updateGimbalPitchVisualizer executes cleanly without throwing when DOM elements are present or absent', () => {
+  test('updateGimbalPitchVisualizer executes cleanly without throwing when DOM elements are present or absent across -90 to +60', () => {
     assert.doesNotThrow(() => {
       updateGimbalPitchVisualizer(-90);
       updateGimbalPitchVisualizer(-60);
       updateGimbalPitchVisualizer(-45);
       updateGimbalPitchVisualizer(0);
+      updateGimbalPitchVisualizer(20);
+      updateGimbalPitchVisualizer(60);
     }, 'Visualizer update should execute without throwing');
   });
 });

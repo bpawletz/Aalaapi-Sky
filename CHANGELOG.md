@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.73.1] - 2026-09-03
+
+### Added
+- **Full Upward Gimbal Tilt Support ($-90^\circ$ to $+60^\circ$):**
+  - Expanded the Gimbal Pitch slider to support positive upward angles up to $+60^\circ$ for DJI Mini 4 Pro, Mini 3 Pro, Air 3, and Mavic 3 extended tilt hardware.
+  - Added upward camera FOV ray-casting towards the sky/horizon in the live SVG flight diagram.
+  - Added `🏗️ Upward Tilt (Bridge, Tower & Canopy Inspection)` dynamic application classification badge.
+  - Added quick-select `[+20° Up]` preset chip.
+
 ## [1.73.0] - 2026-09-03
 
 ### Added

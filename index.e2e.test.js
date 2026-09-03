@@ -2503,6 +2503,16 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       const afterLevelTransform = cameraNode.getAttribute('transform');
       const isLevelChipActive = levelChip ? levelChip.classList.contains('active') : false;
 
+      // Click +20° Up preset chip
+      const upChip = Array.from(chips).find(c => c.dataset.pitch === '20');
+      if (upChip) upChip.click();
+      await new Promise(r => setTimeout(r, 50));
+
+      const afterUpVal = slider.value;
+      const afterUpBadge = purposeBadge.textContent;
+      const afterUpTransform = cameraNode.getAttribute('transform');
+      const isUpChipActive = upChip ? upChip.classList.contains('active') : false;
+
       // Drag slider back to -45°
       slider.value = -45;
       slider.dispatchEvent(new Event('input'));
@@ -2525,6 +2535,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         afterLevelBadge,
         afterLevelTransform,
         isLevelChipActive,
+        afterUpVal,
+        afterUpBadge,
+        afterUpTransform,
+        isUpChipActive,
         afterDragVal,
         afterDragBadge,
         afterDragTransform
@@ -2545,6 +2559,11 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(visualizerResult.afterLevelBadge.includes('Level Horizon'), 'Badge updates to Level Horizon');
     assert.ok(visualizerResult.afterLevelTransform.includes('rotate(0)'), 'Camera node rotates to horizontal 0 deg');
     assert.strictEqual(visualizerResult.isLevelChipActive, true, 'Level chip becomes active');
+
+    assert.strictEqual(visualizerResult.afterUpVal, '20', 'Clicking +20 chip sets slider to 20');
+    assert.ok(visualizerResult.afterUpBadge.includes('Upward Tilt'), 'Badge updates to Upward Tilt');
+    assert.ok(visualizerResult.afterUpTransform.includes('rotate(-20)'), 'Camera node rotates to upward 20 deg (rotate(-20))');
+    assert.strictEqual(visualizerResult.isUpChipActive, true, '+20 chip becomes active');
 
     assert.strictEqual(visualizerResult.afterDragVal, '-45', 'Dragging slider sets value to -45');
     assert.ok(visualizerResult.afterDragBadge.includes('3D Oblique'), 'Badge updates to 3D Oblique');
