@@ -5,6 +5,100 @@ const Logger = {
   error: (msg, ...args) => console.error(`[ERROR] ${msg}`, ...args)
 };
 
+// Centralized Extensible Flight Tool Registry Schema
+const FLIGHT_TOOLS = {
+  'single': {
+    id: 'single',
+    label: '2D Grid',
+    category: 'photogrammetry',
+    icon: 'single',
+    shortcut: '1',
+    description: '2D Nadir Grid orthomosaic mapping pattern',
+    propertyGroups: ['geometry', 'overlaps', 'altitude', 'speed', 'camera']
+  },
+  'double': {
+    id: 'double',
+    label: 'Double Grid',
+    category: 'splats',
+    icon: 'double',
+    shortcut: '2',
+    description: '3D Splat crosshatch double-grid pattern',
+    propertyGroups: ['geometry', 'overlaps', 'altitude', 'speed', 'camera']
+  },
+  'orbit': {
+    id: 'orbit',
+    label: 'Orbit',
+    category: 'inspection',
+    icon: 'orbit',
+    shortcut: '3',
+    description: '3D Object circular orbit pattern',
+    propertyGroups: ['orbit-geometry', 'speed', 'altitude', 'camera']
+  },
+  'multi-orbit': {
+    id: 'multi-orbit',
+    label: 'Multi-Orbit',
+    category: 'inspection',
+    icon: 'multi-orbit',
+    shortcut: '4',
+    description: '3D Object multi-tiered orbit pattern',
+    propertyGroups: ['multi-orbit-geometry', 'speed', 'altitude', 'camera']
+  },
+  'grid-orbit-combo': {
+    id: 'grid-orbit-combo',
+    label: 'Hybrid Combo',
+    category: 'hybrid',
+    icon: 'grid-orbit-combo',
+    shortcut: '5',
+    description: '2D Grid + Circular Orbit hybrid pattern',
+    propertyGroups: ['geometry', 'overlaps', 'altitude', 'speed', 'camera']
+  },
+  'grid-multi-orbit-combo': {
+    id: 'grid-multi-orbit-combo',
+    label: 'Multi-Hybrid',
+    category: 'hybrid',
+    icon: 'grid-multi-orbit-combo',
+    shortcut: '6',
+    description: '2D Grid + Multi-Tiered Orbit hybrid pattern',
+    propertyGroups: ['geometry', 'overlaps', 'altitude', 'speed', 'camera']
+  },
+  'road-following': {
+    id: 'road-following',
+    label: 'Road Follow',
+    category: 'corridor',
+    icon: 'road-following',
+    shortcut: 'R',
+    description: 'Road following with offset flight paths',
+    propertyGroups: ['road-geometry', 'altitude', 'speed', 'camera']
+  },
+  'freeform': {
+    id: 'freeform',
+    label: 'Freeform',
+    category: 'manual',
+    icon: 'freeform',
+    shortcut: 'F',
+    description: 'Freeform flight plan with manual waypoints',
+    propertyGroups: ['freeform-actions', 'altitude', 'speed', 'camera']
+  },
+  'exclusion-box': {
+    id: 'exclusion-box',
+    label: 'Exclusion (Box)',
+    category: 'safety',
+    icon: 'exclusion-box',
+    shortcut: 'E',
+    description: '3D Exclusion Zone rectangular boundary',
+    propertyGroups: ['geometry', 'exclusion-altitude']
+  },
+  'exclusion-freeform': {
+    id: 'exclusion-freeform',
+    label: 'Exclusion (Poly)',
+    category: 'safety',
+    icon: 'exclusion-freeform',
+    shortcut: 'P',
+    description: '3D Exclusion Zone freeform polygon boundary',
+    propertyGroups: ['exclusion-freeform-note', 'exclusion-altitude']
+  }
+};
+
 // Global state variables
 let map;
 let centerMarker = null;
@@ -14,6 +108,7 @@ let gridBoundsPolygon = null;
 let waypointMarkersGroup = null;
 let pitchLabelsGroup = null; // Separate layer for pitch labels — avoids ghost-dot artifacts in marker pane during zoom
 let photoMarkersGroup = null;
+let exclusionZonesGroup = null;
 let isAnyPopupOpen = false;
 let isLegendCollapsed = false;
 let originalMissionSettings = null;
@@ -73,6 +168,60 @@ function formatDistance(meters, decimalPlaces = 1) {
   }
   return `${meters.toFixed(decimalPlaces)} m`;
 }
+
+// Theme Manager (Light & Dark Field Mode)
+const THEME_STORAGE_KEY = 'aalaapi_sky_theme';
+
+function getAppTheme() {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      return localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
+    }
+  } catch (e) {}
+  return 'dark';
+}
+
+function setAppTheme(theme) {
+  const current = theme === 'light' ? 'light' : 'dark';
+  if (typeof document !== 'undefined' && document.documentElement) {
+    document.documentElement.setAttribute('data-theme', current);
+  }
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(THEME_STORAGE_KEY, current);
+    }
+  } catch (e) {}
+
+  if (typeof document !== 'undefined') {
+    const themeBtn = document.getElementById('theme-toggle-btn');
+    if (themeBtn) {
+      themeBtn.textContent = current === 'light' ? '🌙' : '☀️';
+      themeBtn.title = current === 'light' ? 'Switch to Dark Mode' : 'Switch to Light (Field) Mode';
+    }
+  }
+  return current;
+}
+
+function toggleAppTheme() {
+  const current = getAppTheme();
+  const next = current === 'light' ? 'dark' : 'light';
+  setAppTheme(next);
+  return next;
+}
+
+function initTheme() {
+  const saved = getAppTheme();
+  setAppTheme(saved);
+}
+
+// Attach to window for inline onclick handlers
+if (typeof window !== 'undefined') {
+  window.getAppTheme = getAppTheme;
+  window.setAppTheme = setAppTheme;
+  window.toggleAppTheme = toggleAppTheme;
+  window.initTheme = initTheme;
+}
+
 function initGeolocation() {
   const btn = document.getElementById('locate-me-btn');
   const label = document.getElementById('locate-me-label');
@@ -81,7 +230,7 @@ function initGeolocation() {
   // Helper — applies a location object {lat, lon} to app state and flies map
   function applyLocation(loc, isCached) {
     userLocation = { lat: loc.lat, lon: loc.lon };
-    if (label) label.textContent = isCached ? '📍 Cached Location' : '✓ Located';
+    if (label) label.textContent = isCached ? 'Cached' : 'Located';
     if (btn) {
       btn.style.color = isCached ? 'var(--accent-cyan, #06b6d4)' : 'var(--accent-green, #10b981)';
       btn.style.borderColor = isCached ? 'rgba(6, 182, 212, 0.4)' : 'rgba(16, 185, 129, 0.4)';
@@ -212,6 +361,1413 @@ let roadPathGroup = null;
 let isRouting = false;
 let isChangingPattern = false;
 
+// ==========================================================================
+// Flight Pattern Layers & Multi-Layer Mission Manager (v1.62.0)
+// ==========================================================================
+
+const LAYER_COLORS = [
+  { name: 'Cyan', hex: '#06b6d4', bg: 'rgba(6, 182, 212, 0.15)', border: 'rgba(6, 182, 212, 0.4)' },
+  { name: 'Purple', hex: '#a855f7', bg: 'rgba(168, 85, 247, 0.15)', border: 'rgba(168, 85, 247, 0.4)' },
+  { name: 'Amber', hex: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', border: 'rgba(245, 158, 11, 0.4)' },
+  { name: 'Emerald', hex: '#10b981', bg: 'rgba(16, 185, 129, 0.15)', border: 'rgba(16, 185, 129, 0.4)' },
+  { name: 'Pink', hex: '#ec4899', bg: 'rgba(236, 72, 153, 0.15)', border: 'rgba(236, 72, 153, 0.4)' },
+  { name: 'Blue', hex: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)', border: 'rgba(59, 130, 246, 0.4)' },
+  { name: 'Rose', hex: '#f43f5e', bg: 'rgba(244, 63, 94, 0.15)', border: 'rgba(244, 63, 94, 0.4)' }
+];
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/[&<>"']/g, m => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[m]));
+}
+
+function getPatternDisplayName(pattern) {
+  const map = {
+    'single': '2D Nadir Grid',
+    'double': '3D Double Grid',
+    'orbit': '3D Orbit',
+    'multi-orbit': 'Multi-Orbit',
+    'grid-orbit-combo': 'Hybrid Combo',
+    'grid-multi-orbit-combo': 'Multi-Hybrid',
+    'freeform': 'Freeform Plan',
+    'road-following': 'Road Follow',
+    'exclusion-box': '🚫 Exclusion (Box)',
+    'exclusion-freeform': '🚫 Exclusion (Poly)'
+  };
+  return map[pattern] || pattern || 'Double Grid';
+}
+
+function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', centerLat = null, centerLon = null) {
+  const isExcl = (pattern === 'exclusion-box' || pattern === 'exclusion-freeform');
+  const colorObj = isExcl
+    ? { name: 'Crimson', hex: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)', border: 'rgba(239, 68, 68, 0.4)' }
+    : LAYER_COLORS[colorIndex % LAYER_COLORS.length];
+
+  let cLat = centerLat;
+  let cLon = centerLon;
+  if (cLat === null && typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+    const cur = centerMarker.getLatLng();
+    cLat = cur.lat;
+    cLon = cur.lng;
+  }
+
+  return {
+    id: id || `layer-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    name: name || `Layer ${colorIndex + 1}: ${getPatternDisplayName(pattern)}`,
+    enabled: true,
+    color: colorObj.hex,
+    colorName: colorObj.name,
+    pattern: pattern,
+    centerLat: cLat,
+    centerLon: cLon,
+    isExclusionZone: isExcl,
+    allAltitudes: true,
+    minAltitude: 0,
+    maxAltitude: 60,
+    polygonVertices: [],
+    filteredCount: 0,
+    gridWidth: 100,
+    gridHeight: 100,
+    gridRotation: 0,
+    frontOverlap: 80,
+    sideOverlap: 75,
+    gimbalPitch: -60,
+    altitude: 50,
+    speed: 4,
+    headingMode: 'followWayline',
+    pathMode: 'curved',
+    captureMode: 'stopAndShoot',
+    hoverTime: 0,
+    cameraZoom: 1.0,
+    roadOffset: 15,
+    roadSnap: true,
+    freeformWaypoints: [],
+    freeformPhotos: [],
+    roadWaypoints: [],
+    waypoints: [],
+    photos: [],
+    transition: {
+      type: 'direct', // 'direct', 'climbFirst', 'safeAltitude'
+      safeAltitude: 60,
+      speed: null,
+      dwellTime: 0,
+      cameraAction: 'none'
+    }
+  };
+}
+
+let flightLayers = [createDefaultLayer('layer-1', 'Layer 1: 3D Double Grid', 0, 'double')];
+let activeLayerId = flightLayers[0].id;
+
+function getActiveLayer() {
+  const found = flightLayers.find(l => l.id === activeLayerId);
+  if (found) return found;
+  if (flightLayers.length > 0) {
+    activeLayerId = flightLayers[0].id;
+    return flightLayers[0];
+  }
+  const fallback = createDefaultLayer('layer-1', 'Layer 1: 3D Double Grid', 0, 'double');
+  flightLayers.push(fallback);
+  activeLayerId = fallback.id;
+  return fallback;
+}
+
+function saveActiveLayerFromUi() {
+  const layer = getActiveLayer();
+  if (!layer) return;
+
+  if (typeof document === 'undefined') return;
+
+  const gridTypeEl = document.getElementById('grid-type');
+  const gridWidthEl = document.getElementById('grid-width');
+  const gridHeightEl = document.getElementById('grid-height');
+  const gridRotationEl = document.getElementById('grid-rotation');
+  const frontOverlapEl = document.getElementById('front-overlap');
+  const sideOverlapEl = document.getElementById('side-overlap');
+  const altitudeEl = document.getElementById('altitude');
+  const speedEl = document.getElementById('speed');
+  const gimbalPitchEl = document.getElementById('gimbal-pitch');
+  const headingModeEl = document.getElementById('heading-mode');
+  const pathModeEl = document.getElementById('path-mode');
+  const captureModeEl = document.getElementById('capture-mode');
+  const hoverTimeEl = document.getElementById('global-hover-time');
+  const cameraZoomEl = document.getElementById('camera-zoom');
+  const roadOffsetEl = document.getElementById('road-offset');
+  const roadSnapEl = document.getElementById('road-snap');
+  const exclAllAltEl = document.getElementById('exclusion-all-altitudes');
+  const exclMinAltEl = document.getElementById('exclusion-min-alt');
+  const exclMaxAltEl = document.getElementById('exclusion-max-alt');
+
+  if (gridTypeEl && gridTypeEl.value) {
+    layer.pattern = gridTypeEl.value;
+    layer.isExclusionZone = (layer.pattern === 'exclusion-box' || layer.pattern === 'exclusion-freeform');
+  }
+  if (gridWidthEl) layer.gridWidth = parseFloat(gridWidthEl.value) || 100;
+  if (gridHeightEl) layer.gridHeight = parseFloat(gridHeightEl.value) || 100;
+  if (gridRotationEl) layer.gridRotation = parseFloat(gridRotationEl.value) || 0;
+  if (frontOverlapEl) layer.frontOverlap = parseFloat(frontOverlapEl.value) || 80;
+  if (sideOverlapEl) layer.sideOverlap = parseFloat(sideOverlapEl.value) || 75;
+  if (altitudeEl) layer.altitude = parseFloat(altitudeEl.value) || 50;
+  if (speedEl) layer.speed = parseFloat(speedEl.value) || 4;
+  if (gimbalPitchEl) layer.gimbalPitch = parseFloat(gimbalPitchEl.value) || -60;
+  if (headingModeEl && headingModeEl.value) layer.headingMode = headingModeEl.value;
+  if (pathModeEl && pathModeEl.value) layer.pathMode = pathModeEl.value;
+  if (captureModeEl && captureModeEl.value) layer.captureMode = captureModeEl.value;
+  if (hoverTimeEl) layer.hoverTime = parseInt(hoverTimeEl.value, 10) || 0;
+  if (cameraZoomEl) layer.cameraZoom = parseFloat(cameraZoomEl.value) || 1.0;
+  if (roadOffsetEl) layer.roadOffset = parseFloat(roadOffsetEl.value) || 15;
+  if (roadSnapEl) layer.roadSnap = roadSnapEl.checked;
+  if (exclAllAltEl) layer.allAltitudes = exclAllAltEl.checked;
+  if (exclMinAltEl) layer.minAltitude = parseFloat(exclMinAltEl.value) || 0;
+  if (exclMaxAltEl) layer.maxAltitude = parseFloat(exclMaxAltEl.value) || 60;
+}
+
+function syncUiWithActiveLayer() {
+  const layer = getActiveLayer();
+  if (!layer || typeof document === 'undefined') return;
+
+  const setVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (el && val !== undefined && val !== null) el.value = val;
+  };
+
+  setVal('grid-type', layer.pattern);
+  setVal('grid-width', layer.gridWidth);
+  setVal('grid-height', layer.gridHeight);
+  setVal('grid-rotation', layer.gridRotation);
+  setVal('front-overlap', layer.frontOverlap);
+  setVal('side-overlap', layer.sideOverlap);
+  setVal('altitude', layer.altitude);
+  setVal('speed', layer.speed);
+  setVal('gimbal-pitch', layer.gimbalPitch);
+  setVal('heading-mode', layer.headingMode);
+  setVal('path-mode', layer.pathMode);
+  setVal('capture-mode', layer.captureMode);
+  setVal('global-hover-time', layer.hoverTime);
+  setVal('camera-zoom', layer.cameraZoom);
+  setVal('road-offset', layer.roadOffset);
+  setVal('exclusion-min-alt', layer.minAltitude !== undefined ? layer.minAltitude : 0);
+  setVal('exclusion-max-alt', layer.maxAltitude !== undefined ? layer.maxAltitude : 60);
+
+  const exclAllAltEl = document.getElementById('exclusion-all-altitudes');
+  if (exclAllAltEl) exclAllAltEl.checked = (layer.allAltitudes !== false);
+
+  const roadSnapEl = document.getElementById('road-snap');
+  if (roadSnapEl) roadSnapEl.checked = !!layer.roadSnap;
+
+  const activeNameEl = document.getElementById('active-layer-name-indicator');
+  if (activeNameEl) {
+    activeNameEl.textContent = layer.name;
+    activeNameEl.style.color = layer.color;
+  }
+
+  // Sync Pattern Cards in UI
+  if (typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
+    const cards = document.querySelectorAll('.pattern-card');
+    if (cards && typeof cards.forEach === 'function') {
+      cards.forEach(card => {
+        if (card.getAttribute('data-value') === layer.pattern) {
+          card.classList.add('active');
+        } else {
+          card.classList.remove('active');
+        }
+      });
+    }
+  }
+
+  if (typeof syncDisplayValues === 'function') {
+    syncDisplayValues();
+  }
+  if (typeof togglePatternParameters === 'function') {
+    togglePatternParameters();
+  }
+}
+
+function setActiveLayer(layerId) {
+  if (layerId === activeLayerId) return;
+  saveActiveLayerFromUi();
+  const found = flightLayers.find(l => l.id === layerId);
+  if (found) {
+    activeLayerId = layerId;
+    syncUiWithActiveLayer();
+
+    // Dynamically sync centerMarker to the newly active layer's center
+    if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.setLatLng === 'function') {
+      if (found.centerLat !== null && found.centerLat !== undefined && found.centerLon !== null && found.centerLon !== undefined) {
+        centerMarker.setLatLng([found.centerLat, found.centerLon]);
+        if (typeof pois !== 'undefined' && pois && pois[0]) {
+          pois[0].lat = found.centerLat;
+          pois[0].lon = found.centerLon;
+        }
+      }
+    }
+
+    if (typeof updateGrid === 'function') updateGrid();
+    renderLayersList();
+  }
+}
+
+function addFlightLayer(pattern = 'double') {
+  saveActiveLayerFromUi();
+  const newIndex = flightLayers.length;
+
+  let initCenterLat = null;
+  let initCenterLon = null;
+  if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+    const cur = centerMarker.getLatLng();
+    initCenterLat = cur.lat;
+    initCenterLon = cur.lng;
+  } else if (flightLayers.length > 0 && flightLayers[0].centerLat !== null && flightLayers[0].centerLat !== undefined) {
+    initCenterLat = flightLayers[0].centerLat;
+    initCenterLon = flightLayers[0].centerLon;
+  }
+
+  const newLayer = createDefaultLayer(
+    `layer-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    `Layer ${newIndex + 1}: ${getPatternDisplayName(pattern)}`,
+    newIndex,
+    pattern,
+    initCenterLat,
+    initCenterLon
+  );
+  flightLayers.push(newLayer);
+  activeLayerId = newLayer.id;
+  syncUiWithActiveLayer();
+  if (typeof updateGrid === 'function') updateGrid();
+  renderLayersList();
+  return newLayer;
+}
+
+function duplicateFlightLayer(layerId) {
+  saveActiveLayerFromUi();
+  const idx = flightLayers.findIndex(l => l.id === layerId);
+  if (idx === -1) return;
+  const orig = flightLayers[idx];
+  const clone = JSON.parse(JSON.stringify(orig));
+  clone.id = `layer-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  clone.name = `Copy of ${orig.name}`;
+  const colorObj = LAYER_COLORS[(flightLayers.length) % LAYER_COLORS.length];
+  clone.color = colorObj.hex;
+  clone.colorName = colorObj.name;
+  flightLayers.splice(idx + 1, 0, clone);
+  activeLayerId = clone.id;
+  syncUiWithActiveLayer();
+  if (typeof updateGrid === 'function') updateGrid();
+  renderLayersList();
+}
+
+function deleteFlightLayer(layerId) {
+  const idx = flightLayers.findIndex(l => l.id === layerId);
+  if (idx === -1) return;
+
+  if (flightLayers.length <= 1) {
+    // Single layer deletion: clear its waypoints & disable it so all waypoints are removed from map
+    const single = flightLayers[0];
+    single.freeformWaypoints = [];
+    single.freeformPhotos = [];
+    single.roadWaypoints = [];
+    single.waypoints = [];
+    single.photos = [];
+    single.enabled = false;
+    generatedWaypoints = [];
+    generatedPhotos = [];
+    roadWaypoints = [];
+  } else {
+    const deleted = flightLayers.splice(idx, 1)[0];
+    if (deleted) {
+      deleted.waypoints = [];
+      deleted.photos = [];
+      deleted.freeformWaypoints = [];
+      deleted.freeformPhotos = [];
+      deleted.roadWaypoints = [];
+    }
+    if (activeLayerId === layerId) {
+      activeLayerId = flightLayers[Math.max(0, idx - 1)].id;
+      syncUiWithActiveLayer();
+    }
+  }
+  if (typeof updateGrid === 'function') updateGrid();
+  renderLayersList();
+}
+
+function reorderFlightLayers(fromIndex, toIndex) {
+  if (fromIndex < 0 || fromIndex >= flightLayers.length || toIndex < 0 || toIndex >= flightLayers.length) return;
+  const item = flightLayers.splice(fromIndex, 1)[0];
+  flightLayers.splice(toIndex, 0, item);
+  if (typeof updateGrid === 'function') updateGrid();
+  renderLayersList();
+}
+
+function toggleFlightLayerVisibility(layerId) {
+  const layer = flightLayers.find(l => l.id === layerId);
+  if (!layer) return;
+  layer.enabled = !layer.enabled;
+  if (typeof updateGrid === 'function') updateGrid();
+  renderLayersList();
+}
+
+function updateLayerTransition(fromLayerId, transitionSettings) {
+  const layer = flightLayers.find(l => l.id === fromLayerId);
+  if (!layer) return;
+  layer.transition = {
+    ...layer.transition,
+    ...transitionSettings
+  };
+  if (typeof updateGrid === 'function') updateGrid();
+  renderLayersList();
+}
+
+function formatTransitionSummary(t) {
+  if (!t || t.type === 'direct') return 'Direct Transit';
+  if (t.type === 'climbFirst') return 'Climb / Descend First';
+  if (t.type === 'safeAltitude') return `Safe Alt (${t.safeAltitude || 60}m)`;
+  return 'Direct Transit';
+}
+
+function ccw(A, B, C) {
+  return (C.y - A.y) * (B.x - A.x) > (B.y - A.y) * (C.x - A.x);
+}
+
+function doSegmentsIntersect(A, B, C, D) {
+  if (Math.max(A.x, B.x) < Math.min(C.x, D.x) || Math.min(A.x, B.x) > Math.max(C.x, D.x) ||
+      Math.max(A.y, B.y) < Math.min(C.y, D.y) || Math.min(A.y, B.y) > Math.max(C.y, D.y)) {
+    return false;
+  }
+  return (ccw(A, C, D) !== ccw(B, C, D)) && (ccw(A, B, C) !== ccw(A, B, D));
+}
+
+function isPointInPolygon(px, py, polyPoints) {
+  if (!polyPoints || polyPoints.length < 3) return false;
+  let inside = false;
+  for (let i = 0, j = polyPoints.length - 1; i < polyPoints.length; j = i++) {
+    const xi = polyPoints[i].x, yi = polyPoints[i].y;
+    const xj = polyPoints[j].x, yj = polyPoints[j].y;
+    const intersect = ((yi > py) !== (yj > py)) &&
+      (px < (xj - xi) * (py - yi) / ((yj - yi) || 0.000001) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+function getExclusionZonePolygon(zone, globalCenterLat, globalCenterLon, bufferMeters = 0) {
+  if (!zone) return [];
+  const centerLat = (zone.centerLat !== undefined && zone.centerLat !== null) ? zone.centerLat : globalCenterLat;
+  const centerLon = (zone.centerLon !== undefined && zone.centerLon !== null) ? zone.centerLon : globalCenterLon;
+  const pattern = zone.pattern;
+
+  if (pattern === 'exclusion-box') {
+    const width = (zone.gridWidth !== undefined ? zone.gridWidth : 100) + (bufferMeters * 2);
+    const height = (zone.gridHeight !== undefined ? zone.gridHeight : 100) + (bufferMeters * 2);
+    const rotDeg = zone.gridRotation !== undefined ? zone.gridRotation : 0;
+    const rotRad = (rotDeg * Math.PI / 180.0);
+
+    const halfW = width / 2.0;
+    const halfH = height / 2.0;
+
+    // 4 corners of box in counter-clockwise order
+    const corners = [
+      { x: -halfW, y: -halfH },
+      { x: halfW, y: -halfH },
+      { x: halfW, y: halfH },
+      { x: -halfW, y: halfH }
+    ];
+
+    return corners.map(c => ({
+      x: c.x * Math.cos(rotRad) - c.y * Math.sin(rotRad),
+      y: c.x * Math.sin(rotRad) + c.y * Math.cos(rotRad)
+    }));
+
+  } else if (pattern === 'exclusion-freeform') {
+    const rawVertices = (zone.freeformWaypoints && zone.freeformWaypoints.length > 0)
+      ? zone.freeformWaypoints
+      : (zone.polygonVertices && zone.polygonVertices.length > 0 ? zone.polygonVertices : []);
+
+    if (rawVertices.length < 3) return [];
+
+    const localPoly = rawVertices.map(v => {
+      if (v.x !== undefined && v.y !== undefined) return { x: v.x, y: v.y };
+      return geodeticToLocal(v.lat, v.lon, centerLat, centerLon);
+    });
+
+    if (bufferMeters <= 0) return localPoly;
+
+    // Expand polygon outward from centroid
+    let sumX = 0, sumY = 0;
+    for (let i = 0; i < localPoly.length; i++) {
+      sumX += localPoly[i].x;
+      sumY += localPoly[i].y;
+    }
+    const cX = sumX / localPoly.length;
+    const cY = sumY / localPoly.length;
+
+    return localPoly.map(v => {
+      const dx = v.x - cX;
+      const dy = v.y - cY;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 0.001) return { x: v.x, y: v.y };
+      return {
+        x: v.x + (dx / dist) * bufferMeters,
+        y: v.y + (dy / dist) * bufferMeters
+      };
+    });
+  }
+
+  return [];
+}
+
+function isSegmentCollidingWithPolygon(p1, p2, poly) {
+  if (!poly || poly.length < 3) return false;
+
+  // 1. Check if either endpoint is inside the polygon
+  if (isPointInPolygon(p1.x, p1.y, poly) || isPointInPolygon(p2.x, p2.y, poly)) {
+    return true;
+  }
+
+  // 2. Check if segment intersects any edge of the polygon
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    if (doSegmentsIntersect(p1, p2, poly[i], poly[j])) {
+      return true;
+    }
+  }
+
+  // 3. Check sample points along the segment (midpoint, 25%, 75%)
+  const midX = (p1.x + p2.x) / 2.0;
+  const midY = (p1.y + p2.y) / 2.0;
+  if (isPointInPolygon(midX, midY, poly)) return true;
+
+  const q1X = p1.x * 0.75 + p2.x * 0.25;
+  const q1Y = p1.y * 0.75 + p2.y * 0.25;
+  if (isPointInPolygon(q1X, q1Y, poly)) return true;
+
+  const q3X = p1.x * 0.25 + p2.x * 0.75;
+  const q3Y = p1.y * 0.25 + p2.y * 0.75;
+  if (isPointInPolygon(q3X, q3Y, poly)) return true;
+
+  return false;
+}
+
+function isSegmentInZoneAltitude(p1, p2, zone) {
+  const isAllAlt = zone.allAltitudes !== false;
+  if (isAllAlt) return true;
+
+  const alt1 = (p1.alt !== undefined && p1.alt !== null) ? p1.alt : 50;
+  const alt2 = (p2.alt !== undefined && p2.alt !== null) ? p2.alt : 50;
+  const minWpAlt = Math.min(alt1, alt2);
+  const maxWpAlt = Math.max(alt1, alt2);
+
+  const minZoneAlt = zone.minAltitude !== undefined ? zone.minAltitude : 0;
+  const maxZoneAlt = zone.maxAltitude !== undefined ? zone.maxAltitude : 60;
+
+  if (maxWpAlt < minZoneAlt || minWpAlt > maxZoneAlt) {
+    return false; // Passes safely above or below
+  }
+  return true;
+}
+
+function findDetourPathAroundZone(p1, p2, zone, centerLat, centerLon, bufferMeters = 4) {
+  const zoneCenterLat = (zone.centerLat !== undefined && zone.centerLat !== null) ? zone.centerLat : centerLat;
+  const zoneCenterLon = (zone.centerLon !== undefined && zone.centerLon !== null) ? zone.centerLon : centerLon;
+
+  const origPoly = getExclusionZonePolygon(zone, zoneCenterLat, zoneCenterLon, 0);
+  const buffPoly = getExclusionZonePolygon(zone, zoneCenterLat, zoneCenterLon, bufferMeters);
+  if (!origPoly || origPoly.length < 3 || !buffPoly || buffPoly.length < 3) return [];
+
+  const p1Local = (p1.x !== undefined && p1.y !== undefined)
+    ? { x: p1.x, y: p1.y }
+    : geodeticToLocal(p1.lat, p1.lon, zoneCenterLat, zoneCenterLon);
+
+  const p2Local = (p2.x !== undefined && p2.y !== undefined)
+    ? { x: p2.x, y: p2.y }
+    : geodeticToLocal(p2.lat, p2.lon, zoneCenterLat, zoneCenterLon);
+
+  // Nodes in visibility graph: [p1Local, ...buffPoly, p2Local]
+  const nodes = [
+    { x: p1Local.x, y: p1Local.y },
+    ...buffPoly,
+    { x: p2Local.x, y: p2Local.y }
+  ];
+  const n = nodes.length;
+  const startIndex = 0;
+  const endIndex = n - 1;
+
+  const dist = new Array(n).fill(Infinity);
+  const prev = new Array(n).fill(null);
+  const visited = new Array(n).fill(false);
+
+  dist[startIndex] = 0;
+
+  for (let iter = 0; iter < n; iter++) {
+    let u = -1;
+    let minDist = Infinity;
+    for (let i = 0; i < n; i++) {
+      if (!visited[i] && dist[i] < minDist) {
+        minDist = dist[i];
+        u = i;
+      }
+    }
+
+    if (u === -1 || u === endIndex) break;
+    visited[u] = true;
+
+    for (let v = 0; v < n; v++) {
+      if (u === v || visited[v]) continue;
+
+      const nodeU = nodes[u];
+      const nodeV = nodes[v];
+
+      // For adjacent vertices on the buffered polygon perimeter, allow traversal directly
+      const isBuffNeighbor = (u >= 1 && u <= buffPoly.length && v >= 1 && v <= buffPoly.length &&
+        (Math.abs(u - v) === 1 || Math.abs(u - v) === buffPoly.length - 1));
+
+      let hasCollision = false;
+      if (!isBuffNeighbor) {
+        hasCollision = isSegmentCollidingWithPolygon(nodeU, nodeV, origPoly);
+      }
+
+      if (!hasCollision) {
+        const edgeWeight = Math.hypot(nodeU.x - nodeV.x, nodeU.y - nodeV.y);
+        const newDist = dist[u] + edgeWeight;
+        if (newDist < dist[v]) {
+          dist[v] = newDist;
+          prev[v] = u;
+        }
+      }
+    }
+  }
+
+  if (dist[endIndex] === Infinity || prev[endIndex] === null) {
+    return [];
+  }
+
+  // Reconstruct shortest detour path
+  const pathIndices = [];
+  let curr = endIndex;
+  while (curr !== null) {
+    pathIndices.unshift(curr);
+    curr = prev[curr];
+  }
+
+  // Convert intermediate nodes to detour waypoints
+  const detourWaypoints = [];
+  const alt1 = (p1.alt !== undefined && p1.alt !== null) ? p1.alt : 50;
+  const alt2 = (p2.alt !== undefined && p2.alt !== null) ? p2.alt : 50;
+
+  for (let k = 1; k < pathIndices.length - 1; k++) {
+    const nodeIdx = pathIndices[k];
+    const node = nodes[nodeIdx];
+    const geo = localToGeodetic(node.x, node.y, zoneCenterLat, zoneCenterLon);
+    const progress = k / (pathIndices.length - 1);
+    const interpAlt = alt1 + (alt2 - alt1) * progress;
+
+    detourWaypoints.push({
+      lat: geo.lat,
+      lon: geo.lon,
+      x: node.x,
+      y: node.y,
+      alt: interpAlt,
+      speed: p1.speed !== undefined ? p1.speed : 5,
+      pitch: p1.pitch !== undefined ? p1.pitch : -60,
+      heading: p1.heading !== undefined ? p1.heading : 0,
+      isDetour: true,
+      isAvoidance: true,
+      isPhoto: false,
+      isExclusionDetour: true
+    });
+  }
+
+  return detourWaypoints;
+}
+
+function routeWaypointsAroundExclusionZones(waypoints, activeZones, centerLat, centerLon) {
+  if (!waypoints || waypoints.length < 2 || !activeZones || activeZones.length === 0) {
+    return waypoints || [];
+  }
+
+  let result = [...waypoints];
+  let maxPasses = 3;
+  let modified = true;
+
+  while (modified && maxPasses > 0) {
+    modified = false;
+    maxPasses--;
+    const newWps = [];
+
+    for (let i = 0; i < result.length; i++) {
+      newWps.push(result[i]);
+      if (i === result.length - 1) break;
+
+      const p1 = result[i];
+      const p2 = result[i + 1];
+
+      for (let z = 0; z < activeZones.length; z++) {
+        const zone = activeZones[z];
+        if (!zone || !zone.enabled) continue;
+
+        const zoneCenterLat = (zone.centerLat !== undefined && zone.centerLat !== null) ? zone.centerLat : centerLat;
+        const zoneCenterLon = (zone.centerLon !== undefined && zone.centerLon !== null) ? zone.centerLon : centerLon;
+
+        const p1Local = (p1.lat !== undefined && p1.lon !== undefined && (p1.lat !== zoneCenterLat || p1.lon !== zoneCenterLon || (p1.x === undefined && p1.y === undefined)))
+          ? geodeticToLocal(p1.lat, p1.lon, zoneCenterLat, zoneCenterLon)
+          : { x: p1.x || 0, y: p1.y || 0 };
+        const p2Local = (p2.lat !== undefined && p2.lon !== undefined && (p2.lat !== zoneCenterLat || p2.lon !== zoneCenterLon || (p2.x === undefined && p2.y === undefined)))
+          ? geodeticToLocal(p2.lat, p2.lon, zoneCenterLat, zoneCenterLon)
+          : { x: p2.x || 0, y: p2.y || 0 };
+
+        if (isSegmentInZoneAltitude(p1, p2, zone)) {
+          const zonePoly = getExclusionZonePolygon(zone, zoneCenterLat, zoneCenterLon, 0);
+          if (isSegmentCollidingWithPolygon(p1Local, p2Local, zonePoly)) {
+            const detours = findDetourPathAroundZone(p1Local, p2Local, zone, zoneCenterLat, zoneCenterLon, 4);
+            if (detours.length > 0) {
+              detours.forEach(dwp => newWps.push(dwp));
+              modified = true;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    result = newWps;
+  }
+
+  return result;
+}
+
+function isPointInExclusionZone(wp, zone, globalCenterLat, globalCenterLon) {
+  if (!zone || !zone.enabled || (!zone.isExclusionZone && zone.pattern !== 'exclusion-box' && zone.pattern !== 'exclusion-freeform')) {
+    return false;
+  }
+
+  const centerLat = (zone.centerLat !== undefined && zone.centerLat !== null) ? zone.centerLat : globalCenterLat;
+  const centerLon = (zone.centerLon !== undefined && zone.centerLon !== null) ? zone.centerLon : globalCenterLon;
+
+  const wpAlt = (wp.alt !== undefined && wp.alt !== null) ? wp.alt : 50;
+  const isAllAlt = zone.allAltitudes !== false;
+  const minAlt = isAllAlt ? -9999 : (zone.minAltitude !== undefined ? zone.minAltitude : 0);
+  const maxAlt = isAllAlt ? 999999 : (zone.maxAltitude !== undefined ? zone.maxAltitude : 60);
+
+  // 1D Altitude Envelope Check
+  if (wpAlt < minAlt || wpAlt > maxAlt) {
+    return false;
+  }
+
+  // 2D Spatial Envelope Check - strictly project lat/lon relative to zone's center
+  const wpOffsets = (wp.lat !== undefined && wp.lon !== undefined && (wp.lat !== centerLat || wp.lon !== centerLon || (wp.x === undefined && wp.y === undefined)))
+    ? geodeticToLocal(wp.lat, wp.lon, centerLat, centerLon)
+    : { x: wp.x || 0, y: wp.y || 0 };
+
+  const pattern = zone.pattern;
+
+  if (pattern === 'exclusion-box') {
+    const width = zone.gridWidth !== undefined ? zone.gridWidth : 100;
+    const height = zone.gridHeight !== undefined ? zone.gridHeight : 100;
+    const rotDeg = zone.gridRotation !== undefined ? zone.gridRotation : 0;
+    const rotRad = -(rotDeg * Math.PI / 180.0);
+
+    // Rotate waypoint coordinates backwards by -rotDeg
+    const rx = wpOffsets.x * Math.cos(rotRad) - wpOffsets.y * Math.sin(rotRad);
+    const ry = wpOffsets.x * Math.sin(rotRad) + wpOffsets.y * Math.cos(rotRad);
+
+    const halfW = width / 2.0;
+    const halfH = height / 2.0;
+    return Math.abs(rx) <= halfW && Math.abs(ry) <= halfH;
+
+  } else if (pattern === 'exclusion-freeform') {
+    const rawVertices = (zone.freeformWaypoints && zone.freeformWaypoints.length > 0)
+      ? zone.freeformWaypoints
+      : (zone.polygonVertices && zone.polygonVertices.length > 0 ? zone.polygonVertices : []);
+
+    if (rawVertices.length < 3) return false;
+
+    const localPoly = rawVertices.map(v => {
+      if (v.lat !== undefined && v.lon !== undefined && (v.lat !== centerLat || v.lon !== centerLon || (v.x === undefined && v.y === undefined))) {
+        return geodeticToLocal(v.lat, v.lon, centerLat, centerLon);
+      }
+      return { x: v.x || 0, y: v.y || 0 };
+    });
+
+    return isPointInPolygon(wpOffsets.x, wpOffsets.y, localPoly);
+  }
+
+  return false;
+}
+
+function filterWaypointsByExclusionZones(waypoints, photos, activeZones, centerLat, centerLon) {
+  if (!activeZones || activeZones.length === 0 || !waypoints || waypoints.length === 0) {
+    return { waypoints: waypoints || [], photos: photos || [] };
+  }
+
+  const validWaypoints = [];
+  const validPhotos = [];
+
+  for (let i = 0; i < waypoints.length; i++) {
+    const wp = waypoints[i];
+    let blockedByZone = null;
+
+    for (let z = 0; z < activeZones.length; z++) {
+      const zone = activeZones[z];
+      if (isPointInExclusionZone(wp, zone, centerLat, centerLon)) {
+        blockedByZone = zone;
+        break;
+      }
+    }
+
+    if (blockedByZone) {
+      blockedByZone.filteredCount = (blockedByZone.filteredCount || 0) + 1;
+    } else {
+      validWaypoints.push(wp);
+    }
+  }
+
+  // Route any flight segments that cross exclusion zones around the zones
+  const routedWaypoints = routeWaypointsAroundExclusionZones(validWaypoints, activeZones, centerLat, centerLon);
+
+  if (photos && photos.length > 0) {
+    for (let i = 0; i < photos.length; i++) {
+      const pt = photos[i];
+      let blocked = false;
+      for (let z = 0; z < activeZones.length; z++) {
+        const zone = activeZones[z];
+        if (isPointInExclusionZone(pt, zone, centerLat, centerLon)) {
+          blocked = true;
+          break;
+        }
+      }
+      if (!blocked) {
+        validPhotos.push(pt);
+      }
+    }
+  }
+
+  return {
+    waypoints: routedWaypoints,
+    photos: validPhotos
+  };
+}
+
+function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
+  if (!layer || !layer.enabled) return { waypoints: [], photos: [] };
+  if (layer.isExclusionZone || layer.pattern === 'exclusion-box' || layer.pattern === 'exclusion-freeform') {
+    return { waypoints: [], photos: [], isExclusionZone: true };
+  }
+
+  const centerLat = (layer.centerLat !== undefined && layer.centerLat !== null) ? layer.centerLat : globalCenterLat;
+  const centerLon = (layer.centerLon !== undefined && layer.centerLon !== null) ? layer.centerLon : globalCenterLon;
+
+  const gridWidth = layer.gridWidth !== undefined ? layer.gridWidth : 100;
+  const gridHeight = layer.gridHeight !== undefined ? layer.gridHeight : 100;
+  const rotation = layer.gridRotation !== undefined ? layer.gridRotation : 0;
+  const gridType = layer.pattern || 'double';
+  const overlapFront = (layer.frontOverlap !== undefined ? layer.frontOverlap : 80) / 100.0;
+  const overlapSide = (layer.sideOverlap !== undefined ? layer.sideOverlap : 75) / 100.0;
+  const altitude = layer.altitude !== undefined ? layer.altitude : 50;
+  const speed = layer.speed !== undefined ? layer.speed : 4;
+  const captureMode = layer.captureMode || 'stopAndShoot';
+  const defaultGimbalPitch = layer.gimbalPitch !== undefined ? layer.gimbalPitch : -60;
+  const headingMode = layer.headingMode || 'followWayline';
+  const hoverTime = layer.hoverTime || 0;
+  const cameraZoom = layer.cameraZoom || 1.0;
+
+  let waypoints = [];
+  let photos = [];
+  let sLine = null;
+  let sPhoto = null;
+  let actualRotation = rotation;
+
+  if (gridType === 'freeform') {
+    const rawWps = (layer.freeformWaypoints && Array.isArray(layer.freeformWaypoints)) ? layer.freeformWaypoints : [];
+    const rawPhotos = (layer.freeformPhotos && Array.isArray(layer.freeformPhotos)) ? layer.freeformPhotos : [];
+    layer.freeformWaypoints = rawWps;
+    layer.freeformPhotos = rawPhotos;
+
+    rawWps.forEach((wp, idx) => {
+      const offsets = geodeticToLocal(wp.lat, wp.lon, centerLat, centerLon);
+      wp.x = offsets.x;
+      wp.y = offsets.y;
+      wp.idx = idx;
+    });
+    rawPhotos.forEach((pt) => {
+      const offsets = geodeticToLocal(pt.lat, pt.lon, centerLat, centerLon);
+      pt.x = offsets.x;
+      pt.y = offsets.y;
+    });
+    waypoints = rawWps;
+    photos = rawPhotos;
+  } else if (gridType === 'road-following') {
+    const rawRoad = layer.roadWaypoints || roadWaypoints || [];
+    if (rawRoad && rawRoad.length > 0) {
+      const offsetDist = layer.roadOffset !== undefined ? layer.roadOffset : 15;
+      if (typeof computeRoadOffsetPolyline === 'function' && typeof generateRoadFlightWaypoints === 'function') {
+        const offsetPath = computeRoadOffsetPolyline(rawRoad, offsetDist);
+        const generated = generateRoadFlightWaypoints(offsetPath, rawRoad, altitude, defaultGimbalPitch, speed, captureMode);
+        waypoints = generated.waypoints;
+        photos = generated.photos;
+      }
+    }
+  } else {
+    const hfov = (typeof CAMERA_HFOV === 'number' && !isNaN(CAMERA_HFOV) && CAMERA_HFOV > 0) ? CAMERA_HFOV : 69.7;
+    const vfov = (typeof CAMERA_VFOV === 'number' && !isNaN(CAMERA_VFOV) && CAMERA_VFOV > 0) ? CAMERA_VFOV : 55.2;
+    const wFoot = 2.0 * altitude * Math.tan((hfov / 2.0) * Math.PI / 180.0);
+    const lFoot = 2.0 * altitude * Math.tan((vfov / 2.0) * Math.PI / 180.0);
+    sLine = wFoot * (1.0 - overlapSide);
+    sPhoto = lFoot * (1.0 - overlapFront);
+
+    actualRotation = (gridType === 'orbit' || gridType === 'multi-orbit') ? 0 : rotation;
+
+    let gridData;
+    if (gridType === 'orbit') {
+      gridData = generateOrbitCoordinates(gridWidth, sPhoto, altitude, defaultGimbalPitch);
+    } else if (gridType === 'multi-orbit') {
+      gridData = generateMultiOrbitCoordinates(gridWidth, sPhoto, altitude, defaultGimbalPitch);
+    } else if (gridType === 'grid-orbit-combo') {
+      gridData = generateGridOrbitComboCoordinates(gridWidth, actualRotation, captureMode, sLine, sPhoto, altitude, defaultGimbalPitch);
+    } else if (gridType === 'grid-multi-orbit-combo') {
+      gridData = generateGridMultiOrbitComboCoordinates(gridWidth, actualRotation, captureMode, sLine, sPhoto, altitude, defaultGimbalPitch);
+    } else {
+      gridData = generateGridCoordinates(gridWidth, gridHeight, actualRotation, gridType, captureMode, sLine, sPhoto);
+    }
+
+    waypoints = gridData.waypoints.map((pt, idx) => {
+      const geo = localToGeodetic(pt.x, pt.y, centerLat, centerLon, actualRotation);
+      const alt = pt.alt !== undefined ? pt.alt : altitude;
+      const pitch = pt.pitch !== undefined ? pt.pitch : defaultGimbalPitch;
+      let finalHeading = pt.heading;
+      let finalHeadingMode = pt.headingMode || headingMode || null;
+      if (finalHeading !== null && finalHeading !== undefined) {
+        finalHeading = (finalHeading + actualRotation) % 360;
+      }
+      return {
+        ...geo,
+        alt: alt,
+        pitch: pitch,
+        heading: finalHeading,
+        headingMode: finalHeadingMode,
+        speed: pt.speed !== undefined ? pt.speed : speed,
+        hoverTime: pt.hoverTime !== undefined ? pt.hoverTime : hoverTime,
+        turnMode: pt.turnMode || 'inherit',
+        cameraAction: pt.cameraAction || 'inherit',
+        zoom: pt.zoom !== undefined ? pt.zoom : cameraZoom,
+        isRingStart: pt.isRingStart || false,
+        ringIndex: pt.ringIndex !== undefined ? pt.ringIndex : null,
+        isModified: false,
+        origLat: geo.lat,
+        origLon: geo.lon,
+        origX: pt.x,
+        origY: pt.y,
+        origAlt: alt,
+        origPitch: pitch,
+        origHeading: finalHeading
+      };
+    });
+
+    photos = gridData.photos.map(pt => {
+      const geo = localToGeodetic(pt.x, pt.y, centerLat, centerLon, actualRotation);
+      const alt = pt.alt !== undefined ? pt.alt : altitude;
+      const pitch = pt.pitch !== undefined ? pt.pitch : defaultGimbalPitch;
+      let finalHeading = pt.heading;
+      if (finalHeading !== null && finalHeading !== undefined) {
+        finalHeading = (finalHeading + actualRotation) % 360;
+      }
+      return {
+        ...geo,
+        alt: alt,
+        pitch: pitch,
+        heading: finalHeading,
+        origLat: geo.lat,
+        origLon: geo.lon,
+        origX: pt.x,
+        origY: pt.y,
+        origAlt: alt,
+        origPitch: pitch,
+        origHeading: finalHeading
+      };
+    });
+  }
+
+  waypoints.forEach((wp, wIdx) => {
+    wp.layerId = layer.id;
+    wp.layerName = layer.name;
+    wp.layerColor = layer.color;
+    wp.layerWaypointIndex = wIdx;
+    if (wIdx === 0) {
+      wp.isLayerStart = true;
+      wp.isRingStart = true;
+    }
+  });
+
+  photos.forEach((pt) => {
+    pt.layerId = layer.id;
+    pt.layerName = layer.name;
+    pt.layerColor = layer.color;
+  });
+
+  layer.waypoints = waypoints;
+  layer.photos = photos;
+
+  return { waypoints, photos, sLine, sPhoto };
+}
+
+function generateTransitionWaypoints(prevLayer, prevLastWp, nextLayer, nextFirstWp, centerLat, centerLon) {
+  const transition = (prevLayer && prevLayer.transition) || { type: 'direct' };
+  const type = transition.type || 'direct';
+  const transitionSpeed = transition.speed || nextLayer.speed || prevLayer.speed || 4;
+  const dwellTime = transition.dwellTime || 0;
+  const nextPitch = nextLayer.gimbalPitch !== undefined ? nextLayer.gimbalPitch : -60;
+
+  const result = [];
+
+  if (type === 'climbFirst') {
+    if (nextLayer.altitude > prevLayer.altitude) {
+      result.push({
+        lat: prevLastWp.lat,
+        lon: prevLastWp.lon,
+        x: prevLastWp.x,
+        y: prevLastWp.y,
+        alt: nextLayer.altitude,
+        pitch: nextPitch,
+        heading: null,
+        headingMode: 'followWayline',
+        speed: transitionSpeed,
+        hoverTime: dwellTime,
+        turnMode: 'stop',
+        cameraAction: 'none',
+        zoom: 1.0,
+        isTransition: true,
+        transitionFrom: prevLayer.id,
+        transitionTo: nextLayer.id,
+        layerId: prevLayer.id,
+        layerName: `Transition: ${prevLayer.name} → ${nextLayer.name}`,
+        layerColor: '#a855f7'
+      });
+    } else if (nextLayer.altitude < prevLayer.altitude) {
+      result.push({
+        lat: nextFirstWp.lat,
+        lon: nextFirstWp.lon,
+        x: nextFirstWp.x,
+        y: nextFirstWp.y,
+        alt: prevLayer.altitude,
+        pitch: nextPitch,
+        heading: null,
+        headingMode: 'followWayline',
+        speed: transitionSpeed,
+        hoverTime: dwellTime,
+        turnMode: 'stop',
+        cameraAction: 'none',
+        zoom: 1.0,
+        isTransition: true,
+        transitionFrom: prevLayer.id,
+        transitionTo: nextLayer.id,
+        layerId: prevLayer.id,
+        layerName: `Transition: ${prevLayer.name} → ${nextLayer.name}`,
+        layerColor: '#a855f7'
+      });
+    }
+  } else if (type === 'safeAltitude') {
+    const safeAlt = Math.max(prevLayer.altitude || 50, nextLayer.altitude || 50, transition.safeAltitude || 60);
+    result.push({
+      lat: prevLastWp.lat,
+      lon: prevLastWp.lon,
+      x: prevLastWp.x,
+      y: prevLastWp.y,
+      alt: safeAlt,
+      pitch: nextPitch,
+      heading: null,
+      headingMode: 'followWayline',
+      speed: transitionSpeed,
+      hoverTime: dwellTime,
+      turnMode: 'stop',
+      cameraAction: 'none',
+      zoom: 1.0,
+      isTransition: true,
+      transitionFrom: prevLayer.id,
+      transitionTo: nextLayer.id,
+      layerId: prevLayer.id,
+      layerName: `Transition Climb: ${prevLayer.name} → Safe Alt (${safeAlt}m)`,
+      layerColor: '#a855f7'
+    });
+    result.push({
+      lat: nextFirstWp.lat,
+      lon: nextFirstWp.lon,
+      x: nextFirstWp.x,
+      y: nextFirstWp.y,
+      alt: safeAlt,
+      pitch: nextPitch,
+      heading: null,
+      headingMode: 'followWayline',
+      speed: transitionSpeed,
+      hoverTime: dwellTime,
+      turnMode: 'stop',
+      cameraAction: 'none',
+      zoom: 1.0,
+      isTransition: true,
+      transitionFrom: prevLayer.id,
+      transitionTo: nextLayer.id,
+      layerId: prevLayer.id,
+      layerName: `Transition Cruise: Safe Alt (${safeAlt}m) → ${nextLayer.name}`,
+      layerColor: '#a855f7'
+    });
+  }
+
+  return result;
+}
+
+function compileMultiLayerMission(centerLat, centerLon) {
+  if (importedWaypoints) {
+    return {
+      waypoints: importedWaypoints,
+      photos: importedPhotos || [],
+      sLine: null,
+      sPhoto: null,
+      layers: []
+    };
+  }
+
+  const allWaypoints = [];
+  const allPhotos = [];
+  let sLine = null;
+  let sPhoto = null;
+
+  const enabledLayers = flightLayers.filter(l => l.enabled);
+  const activeExclusionZones = enabledLayers.filter(l => l.pattern === 'exclusion-box' || l.pattern === 'exclusion-freeform' || l.isExclusionZone);
+  activeExclusionZones.forEach(z => { z.filteredCount = 0; });
+
+  const flightLayersOnly = enabledLayers.filter(l => l.pattern !== 'exclusion-box' && l.pattern !== 'exclusion-freeform' && !l.isExclusionZone);
+
+  for (let i = 0; i < flightLayersOnly.length; i++) {
+    const currentLayer = flightLayersOnly[i];
+    const layerCenterLat = (currentLayer.centerLat !== undefined && currentLayer.centerLat !== null) ? currentLayer.centerLat : centerLat;
+    const layerCenterLon = (currentLayer.centerLon !== undefined && currentLayer.centerLon !== null) ? currentLayer.centerLon : centerLon;
+
+    const layerResult = generateLayerWaypoints(currentLayer, layerCenterLat, layerCenterLon);
+    if (!sLine && layerResult.sLine) sLine = layerResult.sLine;
+    if (!sPhoto && layerResult.sPhoto) sPhoto = layerResult.sPhoto;
+
+    // Filter candidate waypoints & photos against all active exclusion zones
+    const rawWps = layerResult.waypoints || [];
+    const rawPhotos = layerResult.photos || [];
+    const filtered = filterWaypointsByExclusionZones(rawWps, rawPhotos, activeExclusionZones, layerCenterLat, layerCenterLon);
+
+    const currentWps = filtered.waypoints;
+    const currentPhotos = filtered.photos;
+    currentLayer.waypoints = currentWps;
+    currentLayer.photos = currentPhotos;
+
+    if (allWaypoints.length > 0 && currentWps.length > 0) {
+      const prevLastWp = allWaypoints[allWaypoints.length - 1];
+      const nextFirstWp = currentWps[0];
+      const prevLayer = flightLayersOnly[i - 1];
+
+      const rawTransitionWps = generateTransitionWaypoints(prevLayer, prevLastWp, currentLayer, nextFirstWp, layerCenterLat, layerCenterLon);
+      const filteredTrans = filterWaypointsByExclusionZones(rawTransitionWps, [], activeExclusionZones, layerCenterLat, layerCenterLon);
+      filteredTrans.waypoints.forEach(twp => allWaypoints.push(twp));
+    }
+
+    currentWps.forEach(wp => allWaypoints.push(wp));
+    currentPhotos.forEach(pt => allPhotos.push(pt));
+  }
+
+  const finalRoutedWps = routeWaypointsAroundExclusionZones(allWaypoints, activeExclusionZones, centerLat, centerLon);
+
+  finalRoutedWps.forEach((wp, idx) => {
+    wp.idx = idx;
+  });
+
+  return {
+    waypoints: finalRoutedWps,
+    photos: allPhotos,
+    sLine,
+    sPhoto,
+    layers: enabledLayers,
+    exclusionZones: activeExclusionZones
+  };
+}
+
+function renderLayersList() {
+  if (typeof document === 'undefined') return;
+  const container = document.getElementById('layers-list-container');
+  const countBadge = document.getElementById('layer-count-badge');
+  if (!container) return;
+
+  if (countBadge) {
+    const count = flightLayers.length;
+    countBadge.textContent = `${count} ${count === 1 ? 'Layer' : 'Layers'}`;
+  }
+
+  container.innerHTML = '';
+
+  flightLayers.forEach((layer, idx) => {
+    const isActive = layer.id === activeLayerId;
+    const isExcl = (layer.pattern === 'exclusion-box' || layer.pattern === 'exclusion-freeform' || layer.isExclusionZone);
+    const card = document.createElement('div');
+    card.className = `layer-card${isExcl ? ' exclusion-zone' : ''}${isActive ? ' active' : ''}`;
+    if (card.setAttribute) card.setAttribute('data-layer-id', layer.id);
+
+    const isFirst = idx === 0;
+    const isLast = idx === flightLayers.length - 1;
+    const wCount = (layer.waypoints && layer.waypoints.length) ? layer.waypoints.length : 0;
+
+    const detailsHtml = isExcl
+      ? `<span>Envelope: ${layer.allAltitudes !== false ? 'All Altitudes (0m – ∞)' : `${layer.minAltitude || 0}m – ${layer.maxAltitude || 60}m`}</span>
+         <span style="color: ${layer.enabled ? '#f87171' : '#ef4444'}; font-weight: 600;">
+           ${layer.enabled ? (layer.filteredCount ? `🚫 ${layer.filteredCount} wps blocked` : '🚫 Active Zone') : 'Disabled'}
+         </span>`
+      : `<span>Alt: ${layer.altitude}m &bull; Spd: ${layer.speed}m/s &bull; Pitch: ${layer.gimbalPitch}&deg;</span>
+         <span style="color: ${layer.enabled ? 'var(--text-muted)' : '#ef4444'}; font-weight: 500;">
+           ${layer.enabled ? `${wCount} wps` : 'Disabled'}
+         </span>`;
+
+    card.innerHTML = `
+      <div class="layer-card-header">
+        <div class="layer-card-info">
+          <span class="layer-color-dot" style="background-color: ${layer.color}; color: ${layer.color};"></span>
+          <span class="layer-card-name" title="Click to select layer">${escapeHtml(layer.name)}</span>
+          <span class="layer-card-badge">${escapeHtml(getPatternDisplayName(layer.pattern))}</span>
+        </div>
+        <div class="layer-card-actions">
+          <button type="button" class="layer-action-btn toggle-visibility-btn" title="${layer.enabled ? 'Disable / Hide Layer' : 'Enable / Show Layer'}">
+            ${layer.enabled ? '👁️' : '👁️‍🗨️'}
+          </button>
+          <button type="button" class="layer-action-btn move-up-btn" title="Move Up" ${isFirst ? 'disabled style="opacity:0.3;cursor:default;"' : ''}>
+            ▲
+          </button>
+          <button type="button" class="layer-action-btn move-down-btn" title="Move Down" ${isLast ? 'disabled style="opacity:0.3;cursor:default;"' : ''}>
+            ▼
+          </button>
+          <button type="button" class="layer-action-btn duplicate-btn" title="Duplicate Layer">
+            📑
+          </button>
+          <button type="button" class="layer-action-btn delete-btn" title="Delete Layer">
+            ✕
+          </button>
+        </div>
+      </div>
+      <div class="layer-card-details">
+        ${detailsHtml}
+      </div>
+    `;
+
+    if (card.addEventListener) {
+      card.addEventListener('click', (e) => {
+        if (e.target && e.target.closest && e.target.closest('.layer-action-btn')) return;
+        setActiveLayer(layer.id);
+      });
+    }
+
+    if (card.querySelector) {
+      const visBtn = card.querySelector('.toggle-visibility-btn');
+      if (visBtn && visBtn.addEventListener) {
+        visBtn.addEventListener('click', (e) => {
+          if (e.stopPropagation) e.stopPropagation();
+          toggleFlightLayerVisibility(layer.id);
+        });
+      }
+
+      const upBtn = card.querySelector('.move-up-btn');
+      if (upBtn && !isFirst && upBtn.addEventListener) {
+        upBtn.addEventListener('click', (e) => {
+          if (e.stopPropagation) e.stopPropagation();
+          reorderFlightLayers(idx, idx - 1);
+        });
+      }
+
+      const downBtn = card.querySelector('.move-down-btn');
+      if (downBtn && !isLast && downBtn.addEventListener) {
+        downBtn.addEventListener('click', (e) => {
+          if (e.stopPropagation) e.stopPropagation();
+          reorderFlightLayers(idx, idx + 1);
+        });
+      }
+
+      const dupBtn = card.querySelector('.duplicate-btn');
+      if (dupBtn && dupBtn.addEventListener) {
+        dupBtn.addEventListener('click', (e) => {
+          if (e.stopPropagation) e.stopPropagation();
+          duplicateFlightLayer(layer.id);
+        });
+      }
+
+      const delBtn = card.querySelector('.delete-btn');
+      if (delBtn && delBtn.addEventListener) {
+        delBtn.addEventListener('click', (e) => {
+          if (e.stopPropagation) e.stopPropagation();
+          deleteFlightLayer(layer.id);
+        });
+      }
+    }
+
+    container.appendChild(card);
+
+    // If not last, add transition connector divider
+    if (!isLast) {
+      const divider = document.createElement('div');
+      divider.className = 'layer-transition-divider';
+      const summary = formatTransitionSummary(layer.transition);
+      divider.innerHTML = `
+        <span class="transition-pill" data-from-layer="${layer.id}" title="Click to configure transition to next layer">
+          🔗 ${escapeHtml(summary)} ⚙️
+        </span>
+      `;
+      if (divider.querySelector) {
+        const pill = divider.querySelector('.transition-pill');
+        if (pill && pill.addEventListener) {
+          pill.addEventListener('click', (e) => {
+            if (e.stopPropagation) e.stopPropagation();
+            openTransitionsModal(layer.id);
+          });
+        }
+      }
+      container.appendChild(divider);
+    }
+  });
+}
+
+function openTransitionsModal(targetFromLayerId = null) {
+  if (typeof document === 'undefined') return;
+  const modal = document.getElementById('layer-transitions-modal');
+  if (!modal) return;
+  renderTransitionsModalContent(targetFromLayerId);
+  if (modal.classList) modal.classList.remove('hidden');
+}
+
+function closeTransitionsModal() {
+  if (typeof document === 'undefined') return;
+  const modal = document.getElementById('layer-transitions-modal');
+  if (modal && modal.classList) modal.classList.add('hidden');
+}
+
+function renderTransitionsModalContent(targetFromLayerId = null) {
+  if (typeof document === 'undefined') return;
+  const container = document.getElementById('transition-rules-container');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  if (flightLayers.length <= 1) {
+    container.innerHTML = '<div style="font-size: 0.82rem; color: var(--text-muted); padding: 12px; text-align: center;">Add 2 or more layers to configure inter-layer flight transitions.</div>';
+    return;
+  }
+
+  for (let i = 0; i < flightLayers.length - 1; i++) {
+    const fromLayer = flightLayers[i];
+    const toLayer = flightLayers[i + 1];
+    const transition = fromLayer.transition || { type: 'direct', safeAltitude: 60, speed: null, dwellTime: 0 };
+
+    const card = document.createElement('div');
+    card.className = 'transition-rule-card';
+    card.innerHTML = `
+      <div class="transition-rule-header">
+        <span style="display: flex; align-items: center; gap: 6px;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background-color: ${fromLayer.color};"></span>
+          <span>${escapeHtml(fromLayer.name)}</span>
+          <span style="color: var(--accent-cyan); font-weight: 700;">&rarr;</span>
+          <span style="width: 8px; height: 8px; border-radius: 50%; background-color: ${toLayer.color};"></span>
+          <span>${escapeHtml(toLayer.name)}</span>
+        </span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 6px;">
+        <div>
+          <label style="display: block; font-size: 0.75rem; color: var(--text-main); margin-bottom: 4px; font-weight: 600;">
+            Transition Altitude Strategy
+          </label>
+          <select class="form-select transition-type-select" data-from-id="${fromLayer.id}">
+            <option value="direct" ${transition.type === 'direct' ? 'selected' : ''}>Direct Linear Path (Continuous 3D vector)</option>
+            <option value="climbFirst" ${transition.type === 'climbFirst' ? 'selected' : ''}>Climb / Descend First (Adjust altitude in-place)</option>
+            <option value="safeAltitude" ${transition.type === 'safeAltitude' ? 'selected' : ''}>Safe Transit Altitude (Climb to clearance altitude)</option>
+          </select>
+        </div>
+
+        <div class="safe-alt-group ${transition.type === 'safeAltitude' ? '' : 'hidden'}">
+          <label style="display: block; font-size: 0.75rem; color: var(--text-main); margin-bottom: 4px;">
+            Safe Transit Altitude (Clearance Height)
+          </label>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="range" class="slider transition-safe-alt-slider" min="20" max="120" value="${transition.safeAltitude || 60}" data-from-id="${fromLayer.id}" style="flex: 1;">
+            <span class="safe-alt-val" style="font-size: 0.75rem; min-width: 38px; color: var(--accent-cyan); font-weight: 600;">${transition.safeAltitude || 60}m</span>
+          </div>
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 0.75rem; color: var(--text-main); margin-bottom: 4px;">
+            Dwell / Settle Time at Transition Points
+          </label>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="range" class="slider transition-dwell-slider" min="0" max="10" value="${transition.dwellTime || 0}" data-from-id="${fromLayer.id}" style="flex: 1;">
+            <span class="dwell-val" style="font-size: 0.75rem; min-width: 28px; color: var(--accent-cyan); font-weight: 600;">${transition.dwellTime || 0}s</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    if (card.querySelector) {
+      const typeSelect = card.querySelector('.transition-type-select');
+      const safeAltGroup = card.querySelector('.safe-alt-group');
+      const safeAltSlider = card.querySelector('.transition-safe-alt-slider');
+      const safeAltVal = card.querySelector('.safe-alt-val');
+      const dwellSlider = card.querySelector('.transition-dwell-slider');
+      const dwellVal = card.querySelector('.dwell-val');
+
+      if (typeSelect && typeSelect.addEventListener) {
+        typeSelect.addEventListener('change', (e) => {
+          const val = e.target.value;
+          if (safeAltGroup && safeAltGroup.classList) {
+            if (val === 'safeAltitude') safeAltGroup.classList.remove('hidden');
+            else safeAltGroup.classList.add('hidden');
+          }
+          updateLayerTransition(fromLayer.id, { type: val });
+        });
+      }
+
+      if (safeAltSlider && safeAltVal && safeAltSlider.addEventListener) {
+        safeAltSlider.addEventListener('input', (e) => {
+          const val = parseInt(e.target.value, 10);
+          safeAltVal.textContent = `${val}m`;
+          updateLayerTransition(fromLayer.id, { safeAltitude: val });
+        });
+      }
+
+      if (dwellSlider && dwellVal && dwellSlider.addEventListener) {
+        dwellSlider.addEventListener('input', (e) => {
+          const val = parseInt(e.target.value, 10);
+          dwellVal.textContent = `${val}s`;
+          updateLayerTransition(fromLayer.id, { dwellTime: val });
+        });
+      }
+    }
+
+    container.appendChild(card);
+  }
+}
+
+function initLayerManager() {
+  if (typeof document === 'undefined') return;
+
+  const addLayerBtn = document.getElementById('add-layer-btn');
+  if (addLayerBtn) {
+    addLayerBtn.addEventListener('click', () => {
+      addFlightLayer('double');
+    });
+  }
+
+  const configTransBtn = document.getElementById('configure-transitions-btn');
+  if (configTransBtn) {
+    configTransBtn.addEventListener('click', () => {
+      openTransitionsModal();
+    });
+  }
+
+  const closeTransBtn = document.getElementById('close-transitions-modal-btn');
+  const closeTransFooterBtn = document.getElementById('close-transitions-footer-btn');
+  if (closeTransBtn) closeTransBtn.addEventListener('click', closeTransitionsModal);
+  if (closeTransFooterBtn) closeTransFooterBtn.addEventListener('click', closeTransitionsModal);
+
+  renderLayersList();
+}
+
 // Helpers to get currently active mission data
 function getCurrentWaypoints() {
   return importedWaypoints || generatedWaypoints;
@@ -261,6 +1817,9 @@ let activeWeatherStationIndex = 0;
 
 // Initialize the application when the DOM is fully loaded
 document.addEventListener("DOMContentLoaded", () => {
+  // Initialize Theme (Light / Dark)
+  initTheme();
+
   // Safety Disclaimer Check
   const accepted = localStorage.getItem('aalaapi_sky_disclaimer_accepted');
   const disclaimerModal = document.getElementById('disclaimer-modal');
@@ -288,7 +1847,10 @@ document.addEventListener("DOMContentLoaded", () => {
     proceedBtn.addEventListener('click', () => {
       localStorage.setItem('aalaapi_sky_disclaimer_accepted', 'true');
       disclaimerModal.classList.add('hidden');
+      showWelcomeTourBanner();
     });
+  } else if (accepted === 'true') {
+    showWelcomeTourBanner();
   }
 
   // Restore unit system selection
@@ -561,6 +2123,7 @@ function initMap() {
 
   // Layer groups for flight paths and markers
   flightPathPolyline = L.layerGroup().addTo(map);
+  exclusionZonesGroup = L.layerGroup().addTo(map);
   waypointMarkersGroup = L.layerGroup().addTo(map);
   pitchLabelsGroup = L.layerGroup().addTo(map); // Above waypointMarkersGroup
   photoMarkersGroup = L.layerGroup().addTo(map);
@@ -587,7 +2150,7 @@ function initMap() {
       return;
     }
     const gridType = document.getElementById('grid-type').value;
-    if (gridType === 'freeform') {
+    if (gridType === 'freeform' || gridType === 'exclusion-freeform') {
       addFreeformWaypoint(e.latlng.lat, e.latlng.lng);
     } else if (gridType === 'road-following') {
       addRoadWaypoint(e.latlng.lat, e.latlng.lng);
@@ -681,8 +2244,240 @@ function openRC2GuideModal(targetTab = 'service') {
   }
 }
 
+// ─── 3-Tier Intro Guide Hub & Spotlight Tour Helpers ─────────────────────────
+
+let currentTourStep = 0;
+const TOUR_STEPS = [
+  {
+    targetId: 'location-input',
+    fallbackTargetId: 'header-search-container',
+    title: '1. Search & Takeoff Location',
+    desc: 'Search any address or coordinate, or tap Locate to pin your drone takeoff coordinates.',
+    position: 'bottom'
+  },
+  {
+    targetId: 'layers-and-location-section',
+    fallbackTargetId: 'grid-type',
+    title: '2. Pattern Tools & Layers Stack',
+    desc: 'Select flight patterns (2D Grid, Double Grid, Orbit, Freeform) or 3D Exclusion Zones. Add multiple layers for complex missions.',
+    position: 'right'
+  },
+  {
+    targetId: 'properties-and-failsafes-section',
+    fallbackTargetId: 'inspector-tab-layer',
+    title: '3. Layer Properties & Failsafes',
+    desc: 'Tune altitude, speed, and gimbal pitch in Layer Properties. Set Return-to-Home and Signal Loss actions in Mission Failsafes.',
+    position: 'right'
+  },
+  {
+    targetId: 'header-telemetry-pill',
+    fallbackTargetId: 'stats-panel',
+    title: '4. Live Telemetry & Weather HUD',
+    desc: 'Check estimated flight duration, distance, and photo count. Tap the pill to view live NOAA ceiling and visibility data.',
+    position: 'bottom'
+  },
+  {
+    targetId: 'actions-and-sync-section',
+    fallbackTargetId: 'download-btn',
+    title: '5. Auto-Plan, 3D Replay & RC 2 Sync',
+    desc: 'Auto-bound areas, preview in 3D, export DJI-compliant KMZ, or send directly to your connected DJI RC 2 over USB.',
+    position: 'right'
+  }
+];
+
+function switchIntroTab(tabName) {
+  if (typeof document === 'undefined') return;
+  const tabs = ['workflow', 'features', 'tips'];
+  tabs.forEach(t => {
+    const btn = document.getElementById(`intro-tab-${t}`);
+    const pane = document.getElementById(`intro-pane-${t}`);
+    if (btn) {
+      if (t === tabName) {
+        btn.classList.add('active');
+        btn.style.background = 'rgba(6, 182, 212, 0.15)';
+        btn.style.borderColor = 'rgba(6, 182, 212, 0.4)';
+        btn.style.borderBottom = '2px solid var(--accent-cyan)';
+        btn.style.color = 'var(--accent-cyan)';
+        btn.style.fontWeight = '700';
+      } else {
+        btn.classList.remove('active');
+        btn.style.background = 'transparent';
+        btn.style.borderColor = 'transparent';
+        btn.style.borderBottom = '1px solid transparent';
+        btn.style.color = 'var(--text-muted)';
+        btn.style.fontWeight = '600';
+      }
+    }
+    if (pane) {
+      if (t === tabName) {
+        pane.classList.remove('hidden');
+      } else {
+        pane.classList.add('hidden');
+      }
+    }
+  });
+}
+
+function openIntroModal(targetTab = 'workflow') {
+  if (typeof document === 'undefined') return;
+  const canonicalTab = (typeof targetTab === 'string') ? targetTab : 'workflow';
+  const modal = document.getElementById('quickstart-modal');
+  if (!modal) return;
+  switchIntroTab(canonicalTab);
+  modal.classList.remove('hidden');
+  if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+    const sidebar = document.querySelector('.sidebar');
+    if (sidebar) sidebar.classList.remove('open');
+  }
+}
+
+function closeIntroModal() {
+  if (typeof document === 'undefined') return;
+  const modal = document.getElementById('quickstart-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function showWelcomeTourBanner() {
+  if (typeof document === 'undefined') return;
+  const dismissed = localStorage.getItem('aalaapi_intro_banner_dismissed');
+  if (dismissed === 'true') return;
+  const banner = document.getElementById('welcome-tour-banner');
+  if (banner) {
+    banner.classList.remove('hidden');
+  }
+}
+
+function dismissWelcomeTourBanner() {
+  if (typeof document === 'undefined') return;
+  const banner = document.getElementById('welcome-tour-banner');
+  if (banner) banner.classList.add('hidden');
+  localStorage.setItem('aalaapi_intro_banner_dismissed', 'true');
+}
+
+if (typeof window !== 'undefined') {
+  window.openIntroModal = openIntroModal;
+  window.closeIntroModal = closeIntroModal;
+  window.switchIntroTab = switchIntroTab;
+  window.startInteractiveUITour = startInteractiveUITour;
+}
+
+function positionTourSpotlight(stepIndex) {
+  if (typeof document === 'undefined') return;
+  if (stepIndex < 0 || stepIndex >= TOUR_STEPS.length) return;
+  const step = TOUR_STEPS[stepIndex];
+  let el = document.getElementById(step.targetId);
+  if (!el && step.fallbackTargetId) {
+    el = document.getElementById(step.fallbackTargetId);
+  }
+
+  const highlightBox = document.getElementById('tour-highlight-box');
+  const tooltip = document.getElementById('tour-tooltip-card');
+
+  if (!el) {
+    if (tooltip) {
+      tooltip.style.top = '50%';
+      tooltip.style.left = '50%';
+      tooltip.style.transform = 'translate(-50%, -50%)';
+    }
+    return;
+  }
+
+  // Auto-scroll element into view
+  if (typeof el.scrollIntoView === 'function') {
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  if (typeof el.getBoundingClientRect === 'function') {
+    const rect = el.getBoundingClientRect();
+    const pad = 6;
+    if (highlightBox) {
+      highlightBox.style.top = `${Math.max(0, rect.top - pad)}px`;
+      highlightBox.style.left = `${Math.max(0, rect.left - pad)}px`;
+      highlightBox.style.width = `${rect.width + pad * 2}px`;
+      highlightBox.style.height = `${rect.height + pad * 2}px`;
+    }
+
+    if (tooltip) {
+      const viewportWidth = (typeof window !== 'undefined') ? window.innerWidth : 1200;
+      const viewportHeight = (typeof window !== 'undefined') ? window.innerHeight : 800;
+      const tooltipWidth = 320;
+      const tooltipHeight = 160;
+
+      let top = rect.bottom + 12;
+      let left = rect.left;
+
+      if (step.position === 'right' && rect.right + tooltipWidth + 20 < viewportWidth) {
+        top = Math.max(16, rect.top);
+        left = rect.right + 16;
+      } else if (top + tooltipHeight > viewportHeight) {
+        top = Math.max(16, rect.top - tooltipHeight - 12);
+      }
+
+      if (left + tooltipWidth > viewportWidth - 16) {
+        left = Math.max(16, viewportWidth - tooltipWidth - 16);
+      }
+
+      tooltip.style.top = `${top}px`;
+      tooltip.style.left = `${left}px`;
+      tooltip.style.transform = 'none';
+    }
+  }
+
+  // Update step text
+  const stepBadge = document.getElementById('tour-step-badge');
+  const stepTitle = document.getElementById('tour-step-title');
+  const stepDesc = document.getElementById('tour-step-desc');
+  const prevBtn = document.getElementById('tour-prev-btn');
+  const nextBtn = document.getElementById('tour-next-btn');
+
+  if (stepBadge) stepBadge.textContent = `Step ${stepIndex + 1} of ${TOUR_STEPS.length}`;
+  if (stepTitle) stepTitle.textContent = step.title;
+  if (stepDesc) stepDesc.textContent = step.desc;
+
+  if (prevBtn) {
+    prevBtn.style.display = (stepIndex === 0) ? 'none' : 'inline-block';
+  }
+  if (nextBtn) {
+    nextBtn.textContent = (stepIndex === TOUR_STEPS.length - 1) ? 'Finish ✓' : 'Next ›';
+  }
+}
+
+function startInteractiveUITour() {
+  closeIntroModal();
+  dismissWelcomeTourBanner();
+  const overlay = document.getElementById('tour-overlay-container');
+  if (!overlay) return;
+  currentTourStep = 0;
+  overlay.classList.remove('hidden');
+  positionTourSpotlight(currentTourStep);
+}
+
+function nextTourStep() {
+  if (currentTourStep < TOUR_STEPS.length - 1) {
+    currentTourStep++;
+    positionTourSpotlight(currentTourStep);
+  } else {
+    exitInteractiveUITour();
+  }
+}
+
+function prevTourStep() {
+  if (currentTourStep > 0) {
+    currentTourStep--;
+    positionTourSpotlight(currentTourStep);
+  }
+}
+
+function exitInteractiveUITour() {
+  if (typeof document === 'undefined') return;
+  const overlay = document.getElementById('tour-overlay-container');
+  if (overlay) overlay.classList.add('hidden');
+}
+
 // Setup Event Listeners for UI controls
 function initUIEventListeners() {
+  initLayerManager();
+
   // Get all controls
   const controls = [...CONTROLS_LIST];
 
@@ -708,6 +2503,56 @@ function initUIEventListeners() {
     roadSnapEl.addEventListener('change', () => {
       updateGrid();
       saveAllSettingsToLocalStorage();
+    });
+  }
+
+  // Exclusion Zone Altitude Event Listeners
+  const exclAllAltEl = document.getElementById('exclusion-all-altitudes');
+  const exclMinAltEl = document.getElementById('exclusion-min-alt');
+  const exclMaxAltEl = document.getElementById('exclusion-max-alt');
+
+  if (exclAllAltEl) {
+    exclAllAltEl.addEventListener('change', () => {
+      const activeLayer = getActiveLayer();
+      if (activeLayer) {
+        activeLayer.allAltitudes = exclAllAltEl.checked;
+      }
+      syncDisplayValues();
+      updateGrid();
+    });
+  }
+
+  if (exclMinAltEl) {
+    exclMinAltEl.addEventListener('input', () => {
+      const minVal = parseFloat(exclMinAltEl.value) || 0;
+      const maxVal = parseFloat(exclMaxAltEl?.value) || 60;
+      if (minVal > maxVal && exclMaxAltEl) {
+        exclMaxAltEl.value = minVal;
+      }
+      const activeLayer = getActiveLayer();
+      if (activeLayer) {
+        activeLayer.minAltitude = minVal;
+        if (exclMaxAltEl) activeLayer.maxAltitude = parseFloat(exclMaxAltEl.value) || 60;
+      }
+      syncDisplayValues();
+      updateGrid();
+    });
+  }
+
+  if (exclMaxAltEl) {
+    exclMaxAltEl.addEventListener('input', () => {
+      const maxVal = parseFloat(exclMaxAltEl.value) || 60;
+      const minVal = parseFloat(exclMinAltEl?.value) || 0;
+      if (maxVal < minVal && exclMinAltEl) {
+        exclMinAltEl.value = maxVal;
+      }
+      const activeLayer = getActiveLayer();
+      if (activeLayer) {
+        activeLayer.maxAltitude = maxVal;
+        if (exclMinAltEl) activeLayer.minAltitude = parseFloat(exclMinAltEl.value) || 0;
+      }
+      syncDisplayValues();
+      updateGrid();
     });
   }
 
@@ -777,12 +2622,103 @@ function initUIEventListeners() {
   });
 
   // Search Address button
-  document.getElementById('search-btn').addEventListener('click', searchAddress);
-  document.getElementById('location-input').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      searchAddress();
+  const searchBtn = document.getElementById('search-btn');
+  const locInput = document.getElementById('location-input');
+  if (searchBtn) searchBtn.addEventListener('click', searchAddress);
+  if (locInput) {
+    locInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        searchAddress();
+      }
+    });
+  }
+
+  // Inspector Dual Tabs switching
+  const tabLayerBtn = document.getElementById('inspector-tab-layer');
+  const tabFailsafesBtn = document.getElementById('inspector-tab-failsafes');
+  const layerPane = document.getElementById('inspector-layer-pane');
+  const failsafesPane = document.getElementById('inspector-failsafes-pane');
+
+  if (tabLayerBtn && tabFailsafesBtn && layerPane && failsafesPane) {
+    tabLayerBtn.addEventListener('click', () => {
+      tabLayerBtn.classList.add('active');
+      tabFailsafesBtn.classList.remove('active');
+      tabLayerBtn.style.background = 'rgba(6, 182, 212, 0.2)';
+      tabLayerBtn.style.borderColor = 'rgba(6, 182, 212, 0.4)';
+      tabLayerBtn.style.color = 'var(--accent-cyan)';
+      tabLayerBtn.style.fontWeight = '700';
+      tabFailsafesBtn.style.background = 'transparent';
+      tabFailsafesBtn.style.borderColor = 'transparent';
+      tabFailsafesBtn.style.color = 'var(--text-muted)';
+      tabFailsafesBtn.style.fontWeight = '600';
+      layerPane.classList.remove('hidden');
+      failsafesPane.classList.add('hidden');
+    });
+
+    tabFailsafesBtn.addEventListener('click', () => {
+      tabFailsafesBtn.classList.add('active');
+      tabLayerBtn.classList.remove('active');
+      tabFailsafesBtn.style.background = 'rgba(6, 182, 212, 0.2)';
+      tabFailsafesBtn.style.borderColor = 'rgba(6, 182, 212, 0.4)';
+      tabFailsafesBtn.style.color = 'var(--accent-cyan)';
+      tabFailsafesBtn.style.fontWeight = '700';
+      tabLayerBtn.style.background = 'transparent';
+      tabLayerBtn.style.borderColor = 'transparent';
+      tabLayerBtn.style.color = 'var(--text-muted)';
+      tabLayerBtn.style.fontWeight = '600';
+      layerPane.classList.add('hidden');
+      failsafesPane.classList.remove('hidden');
+    });
+  }
+
+  // Header Telemetry & Weather Popover toggle
+  const telemetryPill = document.getElementById('header-telemetry-pill');
+  const telemetryPopover = document.getElementById('telemetry-weather-popover');
+  const telemetryCloseBtn = document.getElementById('telemetry-popover-close-btn');
+  const sidebarSummaryStrip = document.getElementById('sidebar-summary-strip');
+  const popRefreshWeather = document.getElementById('pop-btn-refresh-weather');
+
+  if (telemetryPill && telemetryPopover) {
+    telemetryPill.addEventListener('click', (e) => {
+      e.stopPropagation();
+      telemetryPopover.classList.toggle('hidden');
+    });
+  }
+  if (sidebarSummaryStrip && telemetryPopover) {
+    sidebarSummaryStrip.addEventListener('click', (e) => {
+      e.stopPropagation();
+      telemetryPopover.classList.toggle('hidden');
+    });
+  }
+  if (telemetryCloseBtn && telemetryPopover) {
+    telemetryCloseBtn.addEventListener('click', () => {
+      telemetryPopover.classList.add('hidden');
+    });
+  }
+  if (popRefreshWeather) {
+    popRefreshWeather.addEventListener('click', () => {
+      if (typeof centerMarker !== 'undefined' && centerMarker) {
+        fetchAndProcessWeather(centerMarker.getLatLng().lat, centerMarker.getLatLng().lng);
+      }
+    });
+  }
+  document.addEventListener('click', (e) => {
+    if (telemetryPopover && !telemetryPopover.classList.contains('hidden')) {
+      if (!telemetryPopover.contains(e.target) && !telemetryPill?.contains(e.target) && !sidebarSummaryStrip?.contains(e.target)) {
+        telemetryPopover.classList.add('hidden');
+      }
     }
   });
+
+  // Navigation Layout setting
+  const navLayoutSelect = document.getElementById('nav-layout-select');
+  if (navLayoutSelect) {
+    const savedLayout = localStorage.getItem('aalaapi_nav_layout') || 'header';
+    navLayoutSelect.value = savedLayout;
+    navLayoutSelect.addEventListener('change', () => {
+      localStorage.setItem('aalaapi_nav_layout', navLayoutSelect.value);
+    });
+  }
 
   // Add POI button
   const addPoiBtn = document.getElementById('add-poi-btn');
@@ -981,6 +2917,88 @@ function initUIEventListeners() {
     if (closeLinksBtn) closeLinksBtn.addEventListener('click', toggleLinksModal);
     if (closeLinksFooterBtn) closeLinksFooterBtn.addEventListener('click', toggleLinksModal);
   }
+
+  // 3-Tier Intro Guide Hub & Spotlight Tour controls
+  const introTourBtn = document.getElementById('intro-tour-btn');
+  const closeQuickstartBtn = document.getElementById('close-quickstart-btn');
+  const closeQuickstartFooterBtn = document.getElementById('close-quickstart-footer-btn');
+  const startInteractiveTourBtn = document.getElementById('start-interactive-tour-btn');
+  const welcomeTourStartBtn = document.getElementById('welcome-tour-start-btn');
+  const welcomeTourDismissBtn = document.getElementById('welcome-tour-dismiss-btn');
+  const welcomeTourSkipBtn = document.getElementById('welcome-tour-skip-btn');
+
+  if (introTourBtn) {
+    introTourBtn.addEventListener('click', () => openIntroModal('workflow'));
+  }
+  if (closeQuickstartBtn) {
+    closeQuickstartBtn.addEventListener('click', closeIntroModal);
+  }
+  if (closeQuickstartFooterBtn) {
+    closeQuickstartFooterBtn.addEventListener('click', closeIntroModal);
+  }
+  if (startInteractiveTourBtn) {
+    startInteractiveTourBtn.addEventListener('click', startInteractiveUITour);
+  }
+  if (welcomeTourStartBtn) {
+    welcomeTourStartBtn.addEventListener('click', () => {
+      dismissWelcomeTourBanner();
+      openIntroModal('workflow');
+    });
+  }
+  if (welcomeTourDismissBtn) {
+    welcomeTourDismissBtn.addEventListener('click', dismissWelcomeTourBanner);
+  }
+  if (welcomeTourSkipBtn) {
+    welcomeTourSkipBtn.addEventListener('click', dismissWelcomeTourBanner);
+  }
+
+  const quickstartModal = document.getElementById('quickstart-modal');
+  if (quickstartModal) {
+    quickstartModal.addEventListener('click', (e) => {
+      if (e.target === quickstartModal) {
+        closeIntroModal();
+      }
+    });
+  }
+
+  // Wire up Intro modal tabs
+  const tabWorkflowBtn = document.getElementById('intro-tab-workflow');
+  const tabFeaturesBtn = document.getElementById('intro-tab-features');
+  const tabTipsBtn = document.getElementById('intro-tab-tips');
+
+  if (tabWorkflowBtn) tabWorkflowBtn.addEventListener('click', () => switchIntroTab('workflow'));
+  if (tabFeaturesBtn) tabFeaturesBtn.addEventListener('click', () => switchIntroTab('features'));
+  if (tabTipsBtn) tabTipsBtn.addEventListener('click', () => switchIntroTab('tips'));
+
+  // Wire up Spotlight Tour controls
+  const tourNextBtn = document.getElementById('tour-next-btn');
+  const tourPrevBtn = document.getElementById('tour-prev-btn');
+  const tourSkipBtn = document.getElementById('tour-skip-btn');
+  const tourCloseBtn = document.getElementById('tour-close-btn');
+
+  if (tourNextBtn) tourNextBtn.addEventListener('click', nextTourStep);
+  if (tourPrevBtn) tourPrevBtn.addEventListener('click', prevTourStep);
+  if (tourSkipBtn) tourSkipBtn.addEventListener('click', exitInteractiveUITour);
+  if (tourCloseBtn) tourCloseBtn.addEventListener('click', exitInteractiveUITour);
+
+  // Keyboard navigation for Tour and Modals
+  document.addEventListener('keydown', (e) => {
+    const tourOverlay = document.getElementById('tour-overlay-container');
+    if (tourOverlay && !tourOverlay.classList.contains('hidden')) {
+      if (e.key === 'Escape') {
+        exitInteractiveUITour();
+      } else if (e.key === 'ArrowRight' || e.key === 'Enter') {
+        nextTourStep();
+      } else if (e.key === 'ArrowLeft') {
+        prevTourStep();
+      }
+    } else {
+      const quickstartModal = document.getElementById('quickstart-modal');
+      if (quickstartModal && !quickstartModal.classList.contains('hidden') && e.key === 'Escape') {
+        closeIntroModal();
+      }
+    }
+  });
 
   // Pre-Flight KMZ Inspector controls
   const kmzAuditBtn = document.getElementById('kmz-audit-btn');
@@ -1244,7 +3262,11 @@ function initUIEventListeners() {
           section.classList.remove('collapsed');
         }
       } else {
-        section.classList.add('collapsed');
+        if (sectionIndex === 0) {
+          section.classList.remove('collapsed');
+        } else {
+          section.classList.add('collapsed');
+        }
       }
 
       header.addEventListener('click', () => {
@@ -1427,7 +3449,10 @@ function initUIEventListeners() {
 
 // Dynamically hide/show sliders and change labels based on chosen flight pattern
 function togglePatternParameters() {
-  const gridType = document.getElementById('grid-type').value;
+  if (typeof document === 'undefined' || !document || !document.getElementById) return;
+  const gridTypeEl = document.getElementById('grid-type');
+  if (!gridTypeEl) return;
+  const gridType = gridTypeEl.value;
 
   // Transition out of Imported KMZ mode if active
   if (importedWaypoints) {
@@ -1481,9 +3506,73 @@ function togglePatternParameters() {
   const gridGeometrySection = document.getElementById('grid-geometry-section');
   const gridGeometryTitle = document.getElementById('grid-geometry-title');
 
-  const widthLabel = widthContainer.querySelector('.control-label > span');
+  const widthLabel = (widthContainer && widthContainer.querySelector) ? widthContainer.querySelector('.control-label > span') : null;
+  const isExclusion = (gridType === 'exclusion-box' || gridType === 'exclusion-freeform');
+  const exclusionInstructions = document.getElementById('exclusion-instructions');
+  const exclusionAltContainer = document.getElementById('exclusion-altitude-container');
+  const exclusionFreeformNote = document.getElementById('exclusion-freeform-note');
+  const altitudeControlGroup = document.getElementById('altitude-control-group');
 
-  if (gridType === 'freeform') {
+  if (exclusionInstructions) {
+    if (isExclusion) {
+      exclusionInstructions.classList.remove('hidden');
+    } else {
+      exclusionInstructions.classList.add('hidden');
+    }
+  }
+
+  if (exclusionAltContainer) {
+    if (isExclusion) {
+      exclusionAltContainer.classList.remove('hidden');
+    } else {
+      exclusionAltContainer.classList.add('hidden');
+    }
+  }
+
+  if (altitudeControlGroup) {
+    if (isExclusion) {
+      altitudeControlGroup.style.display = 'none';
+    } else {
+      altitudeControlGroup.style.display = 'block';
+    }
+  }
+
+  if (gridType === 'exclusion-freeform') {
+    roadWaypoints = [];
+    if (gridGeometrySection) {
+      gridGeometrySection.style.display = 'block';
+      gridGeometrySection.classList.remove('collapsed');
+    }
+    if (gridGeometryTitle) gridGeometryTitle.textContent = "2. Exclusion Polygon Settings";
+    if (exclusionFreeformNote) exclusionFreeformNote.classList.remove('hidden');
+    if (widthContainer) widthContainer.style.display = 'none';
+    if (heightContainer) heightContainer.style.display = 'none';
+    if (rotationContainer) rotationContainer.style.display = 'none';
+    if (frontOverlapContainer) frontOverlapContainer.style.display = 'none';
+    if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
+    if (freeformInstructions) freeformInstructions.classList.add('hidden');
+    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
+    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
+
+  } else if (gridType === 'exclusion-box') {
+    roadWaypoints = [];
+    if (gridGeometrySection) {
+      gridGeometrySection.style.display = 'block';
+      gridGeometrySection.classList.remove('collapsed');
+    }
+    if (gridGeometryTitle) gridGeometryTitle.textContent = "2. Exclusion Box Settings";
+    if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
+    if (widthLabel) widthLabel.textContent = "Box Width";
+    if (widthContainer) widthContainer.style.display = 'block';
+    if (heightContainer) heightContainer.style.display = 'block';
+    if (rotationContainer) rotationContainer.style.display = 'block';
+    if (frontOverlapContainer) frontOverlapContainer.style.display = 'none';
+    if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
+    if (freeformInstructions) freeformInstructions.classList.add('hidden');
+    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
+    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
+
+  } else if (gridType === 'freeform') {
     roadWaypoints = []; // Clear road nodes
     if (gridGeometrySection) gridGeometrySection.style.display = 'none';
     if (widthContainer) widthContainer.style.display = 'none';
@@ -1492,8 +3581,11 @@ function togglePatternParameters() {
     if (frontOverlapContainer) frontOverlapContainer.style.display = 'none';
     if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
     if (freeformInstructions) {
-      freeformInstructions.querySelector('span').textContent = "ℹ️ Click on the map to add custom waypoints. Drag waypoints to move them. Click a waypoint to delete or edit it.";
-      freeformInstructions.classList.remove('hidden');
+      if (freeformInstructions.querySelector) {
+        const span = freeformInstructions.querySelector('span');
+        if (span) span.textContent = "ℹ️ Click on the map to add custom waypoints. Drag waypoints to move them. Click a waypoint to delete or edit it.";
+      }
+      if (freeformInstructions.classList) freeformInstructions.classList.remove('hidden');
     }
     if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
     if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
@@ -1612,16 +3704,19 @@ function togglePatternParameters() {
 
 // Sync slider labels with actual slider values
 function syncDisplayValues() {
-  const gridType = document.getElementById('grid-type').value;
-  const unit = getUnitSystem();
+  if (typeof document === 'undefined' || !document || !document.getElementById) return;
+  const gridTypeEl = document.getElementById('grid-type');
+  if (!gridTypeEl) return;
+  const gridType = gridTypeEl.value;
+  const unit = (typeof getUnitSystem === 'function') ? getUnitSystem() : 'metric';
   
   const distUnitStr = unit === 'imperial' ? 'ft' : 'm';
   const speedUnitStr = unit === 'imperial' ? 'mph' : 'm/s';
 
-  const widthVal = parseFloat(document.getElementById('grid-width').value);
-  const rotationVal = parseFloat(document.getElementById('grid-rotation').value);
-  const altitudeVal = parseFloat(document.getElementById('altitude').value);
-  const speedVal = parseFloat(document.getElementById('speed').value);
+  const widthVal = parseFloat(document.getElementById('grid-width')?.value) || 100;
+  const rotationVal = parseFloat(document.getElementById('grid-rotation')?.value) || 0;
+  const altitudeVal = parseFloat(document.getElementById('altitude')?.value) || 50;
+  const speedVal = parseFloat(document.getElementById('speed')?.value) || 4;
 
   // Update additional units
   const spacingUnitEl = document.getElementById('grid-spacing-unit');
@@ -1678,10 +3773,14 @@ function syncDisplayValues() {
   const vfovSlider = document.getElementById('camera-vfov');
   const zoomSlider = document.getElementById('camera-zoom');
   if (hfovSlider && vfovSlider) {
-    CAMERA_HFOV = parseFloat(hfovSlider.value);
-    CAMERA_VFOV = parseFloat(vfovSlider.value);
-    document.getElementById('camera-hfov-val').textContent = hfovSlider.value;
-    document.getElementById('camera-vfov-val').textContent = vfovSlider.value;
+    const parsedH = parseFloat(hfovSlider.value);
+    const parsedV = parseFloat(vfovSlider.value);
+    if (!isNaN(parsedH) && parsedH > 0) CAMERA_HFOV = parsedH;
+    if (!isNaN(parsedV) && parsedV > 0) CAMERA_VFOV = parsedV;
+    const hValEl = document.getElementById('camera-hfov-val');
+    const vValEl = document.getElementById('camera-vfov-val');
+    if (hValEl) hValEl.textContent = hfovSlider.value;
+    if (vValEl) vValEl.textContent = vfovSlider.value;
   }
   if (zoomSlider) {
     document.getElementById('camera-zoom-val').textContent = parseFloat(zoomSlider.value).toFixed(1);
@@ -1725,6 +3824,49 @@ function syncDisplayValues() {
     } else {
       roadOffsetValEl.textContent = offsetVal;
       roadOffsetUnitEl.textContent = "m";
+    }
+  }
+
+  // Sync 3D Exclusion Zone Altitudes
+  const exclAllAltEl = document.getElementById('exclusion-all-altitudes');
+  const exclAllAltLabel = document.getElementById('exclusion-all-alt-label');
+  const exclSliders = document.getElementById('exclusion-altitude-sliders');
+  const exclHint = document.getElementById('exclusion-alt-hint');
+  const exclMinValEl = document.getElementById('exclusion-min-alt-val');
+  const exclMaxValEl = document.getElementById('exclusion-max-alt-val');
+  const exclMinUnitEl = document.getElementById('exclusion-min-alt-unit');
+  const exclMaxUnitEl = document.getElementById('exclusion-max-alt-unit');
+  const exclMinInput = document.getElementById('exclusion-min-alt');
+  const exclMaxInput = document.getElementById('exclusion-max-alt');
+
+  if (exclAllAltEl && exclSliders && exclHint) {
+    const zeroFormatted = (typeof formatDistance === 'function') ? formatDistance(0) : (unit === 'imperial' ? '0 ft' : '0 m');
+    if (exclAllAltLabel) {
+      exclAllAltLabel.textContent = `All Altitudes (${zeroFormatted} – ∞)`;
+    }
+    if (exclAllAltEl.checked) {
+      exclSliders.classList.add('hidden');
+      exclHint.textContent = `Restricts all drone flights across the entire vertical airspace (${zeroFormatted} – ∞).`;
+    } else {
+      exclSliders.classList.remove('hidden');
+      if (exclMinInput && exclMaxInput) {
+        const minMeters = parseFloat(exclMinInput.value) || 0;
+        const maxMeters = parseFloat(exclMaxInput.value) || 60;
+        if (unit === 'imperial') {
+          if (exclMinValEl) exclMinValEl.textContent = Math.round(minMeters * M_TO_FT);
+          if (exclMaxValEl) exclMaxValEl.textContent = Math.round(maxMeters * M_TO_FT);
+          if (exclMinUnitEl) exclMinUnitEl.textContent = "ft";
+          if (exclMaxUnitEl) exclMaxUnitEl.textContent = "ft";
+        } else {
+          if (exclMinValEl) exclMinValEl.textContent = minMeters;
+          if (exclMaxValEl) exclMaxValEl.textContent = maxMeters;
+          if (exclMinUnitEl) exclMinUnitEl.textContent = "m";
+          if (exclMaxUnitEl) exclMaxUnitEl.textContent = "m";
+        }
+        const minFormatted = (typeof formatDistance === 'function') ? formatDistance(minMeters) : `${minMeters} m`;
+        const maxFormatted = (typeof formatDistance === 'function') ? formatDistance(maxMeters) : `${maxMeters} m`;
+        exclHint.textContent = `Restricts flights between ${minFormatted} and ${maxFormatted}. Flights outside this envelope are permitted.`;
+      }
     }
   }
 }
@@ -1974,6 +4116,12 @@ function clearWaypointCustomModifications() {
 // Position the grid center marker
 function setGridCenter(lat, lng) {
   clearWaypointCustomModifications();
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  if (activeLayer) {
+    activeLayer.centerLat = lat;
+    activeLayer.centerLon = lng;
+  }
+
   if (centerMarker) {
     centerMarker.setLatLng([lat, lng]);
     if (pois[0]) {
@@ -2005,8 +4153,13 @@ function setGridCenter(lat, lng) {
       clearWaypointCustomModifications();
     });
     centerMarker.on('drag', () => {
+      const curLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      const latlng = centerMarker.getLatLng();
+      if (curLayer) {
+        curLayer.centerLat = latlng.lat;
+        curLayer.centerLon = latlng.lng;
+      }
       if (pois[0]) {
-        const latlng = centerMarker.getLatLng();
         pois[0].lat = latlng.lat;
         pois[0].lon = latlng.lng;
       }
@@ -2436,16 +4589,12 @@ function updateGrid() {
   const centerLon = centerLatLng.lng;
 
   // Retrieve slider values
-  const gridWidth = parseFloat(document.getElementById('grid-width').value);
-  const gridHeight = parseFloat(document.getElementById('grid-height').value);
-  const rotation = parseFloat(document.getElementById('grid-rotation').value);
-  const gridType = document.getElementById('grid-type').value;
-  const overlapFront = parseFloat(document.getElementById('front-overlap').value) / 100.0;
-  const overlapSide = parseFloat(document.getElementById('side-overlap').value) / 100.0;
-  const altitude = parseFloat(document.getElementById('altitude').value);
-  const speed = parseFloat(document.getElementById('speed').value);
-  const captureMode = document.getElementById('capture-mode').value;
-  const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value);
+  const gridWidth = parseFloat(document.getElementById('grid-width')?.value) || 100;
+  const gridHeight = parseFloat(document.getElementById('grid-height')?.value) || 100;
+  const rotation = parseFloat(document.getElementById('grid-rotation')?.value) || 0;
+  const speed = parseFloat(document.getElementById('speed')?.value) || 4;
+  const captureMode = document.getElementById('capture-mode')?.value || 'stopAndShoot';
+  const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch')?.value) || -60;
 
   // If imported mission is active, use imported waypoints instead of generating
   let waypoints = [];
@@ -2479,171 +4628,15 @@ function updateGrid() {
 
     waypoints = importedWaypoints;
     photoLocations = importedPhotos;
-  } else if (gridType === 'freeform') {
-    // Freeform mode: do not procedurally overwrite waypoints.
-    // Instead, recalculate local offsets (x, y) relative to the current centerLat, centerLon
-    if (!generatedWaypoints) {
-      generatedWaypoints = [];
-    }
-    if (!generatedPhotos) {
-      generatedPhotos = [];
-    }
-
-    generatedWaypoints.forEach((wp, idx) => {
-      const offsets = geodeticToLocal(wp.lat, wp.lon, centerLat, centerLon);
-      wp.x = offsets.x;
-      wp.y = offsets.y;
-      wp.idx = idx;
-    });
-
-    generatedPhotos.forEach((pt) => {
-      const offsets = geodeticToLocal(pt.lat, pt.lon, centerLat, centerLon);
-      pt.x = offsets.x;
-      pt.y = offsets.y;
-    });
-
-    waypoints = generatedWaypoints;
-    photoLocations = generatedPhotos;
-  } else if (gridType === 'road-following') {
-    if (!roadWaypoints) {
-      roadWaypoints = [];
-    }
-    roadWaypoints.forEach((wp, idx) => {
-      const offsets = geodeticToLocal(wp.lat, wp.lon, centerLat, centerLon);
-      wp.x = offsets.x;
-      wp.y = offsets.y;
-      wp.idx = idx;
-    });
-
-    recalculateRoadOffsetPath(centerLat, centerLon);
-    waypoints = generatedWaypoints;
-    photoLocations = generatedPhotos;
   } else {
-    if (isChangingPattern && generatedWaypoints && generatedWaypoints.length > 0) {
-      waypoints = generatedWaypoints;
-      photoLocations = generatedPhotos;
-    } else {
-      // 1. Calculate camera ground footprints
-      const wFoot = 2.0 * altitude * Math.tan((CAMERA_HFOV / 2.0) * Math.PI / 180.0);
-      const lFoot = 2.0 * altitude * Math.tan((CAMERA_VFOV / 2.0) * Math.PI / 180.0);
-
-      // 2. Spacings
-      sLine = wFoot * (1.0 - overlapSide);   // Across-track line spacing
-      sPhoto = lFoot * (1.0 - overlapFront); // Along-track photo spacing
-
-      // 3. Grid / Orbit Generation
-      let gridData;
-      actualRotation = (gridType === 'orbit' || gridType === 'multi-orbit') ? 0 : rotation;
-
-      if (gridType === 'orbit') {
-        gridData = generateOrbitCoordinates(gridWidth, sPhoto, altitude, defaultGimbalPitch);
-      } else if (gridType === 'multi-orbit') {
-        gridData = generateMultiOrbitCoordinates(gridWidth, sPhoto, altitude, defaultGimbalPitch);
-      } else if (gridType === 'grid-orbit-combo') {
-        gridData = generateGridOrbitComboCoordinates(gridWidth, actualRotation, captureMode, sLine, sPhoto, altitude, defaultGimbalPitch);
-      } else if (gridType === 'grid-multi-orbit-combo') {
-        gridData = generateGridMultiOrbitComboCoordinates(gridWidth, actualRotation, captureMode, sLine, sPhoto, altitude, defaultGimbalPitch);
-      } else {
-        gridData = generateGridCoordinates(gridWidth, gridHeight, actualRotation, gridType, captureMode, sLine, sPhoto);
-      }
-      
-      waypoints = gridData.waypoints.map((pt, idx) => {
-        const existingGwp = (generatedWaypoints && generatedWaypoints[idx]) ? generatedWaypoints[idx] : null;
-        const geo = localToGeodetic(pt.x, pt.y, centerLat, centerLon, actualRotation);
-        const alt = pt.alt !== undefined ? pt.alt : altitude;
-        const pitch = pt.pitch !== undefined ? pt.pitch : defaultGimbalPitch;
-
-        let finalHeading = pt.heading;
-        let finalHeadingMode = pt.headingMode || null;
-        if (gridType === 'double' && pitch !== -90) {
-          finalHeading = Math.atan2(-pt.x, -pt.y) * (180.0 / Math.PI);
-          if (finalHeading < 0) finalHeading += 360;
-          finalHeadingMode = 'smoothTransition';
-        }
-
-        if (finalHeading !== null && finalHeading !== undefined) {
-          finalHeading = (finalHeading + actualRotation) % 360;
-        }
-
-        if (existingGwp && existingGwp.isModified) {
-          return {
-            ...existingGwp,
-            origLat: (existingGwp.origLat !== undefined && existingGwp.origLat !== null) ? existingGwp.origLat : geo.lat,
-            origLon: (existingGwp.origLon !== undefined && existingGwp.origLon !== null) ? existingGwp.origLon : geo.lon,
-            origX: (existingGwp.origX !== undefined && existingGwp.origX !== null) ? existingGwp.origX : pt.x,
-            origY: (existingGwp.origY !== undefined && existingGwp.origY !== null) ? existingGwp.origY : pt.y,
-            origAlt: (existingGwp.origAlt !== undefined && existingGwp.origAlt !== null) ? existingGwp.origAlt : alt,
-            origPitch: (existingGwp.origPitch !== undefined && existingGwp.origPitch !== null) ? existingGwp.origPitch : pitch,
-            origHeading: (existingGwp.origHeading !== undefined) ? existingGwp.origHeading : finalHeading
-          };
-        }
-
-        return {
-          ...geo,
-          alt: alt,
-          pitch: pitch,
-          heading: finalHeading,
-          headingMode: finalHeadingMode,
-          speed: pt.speed !== undefined ? pt.speed : null,
-          hoverTime: pt.hoverTime !== undefined ? pt.hoverTime : null,
-          turnMode: pt.turnMode || 'inherit',
-          cameraAction: pt.cameraAction || 'inherit',
-          zoom: pt.zoom !== undefined ? pt.zoom : 1.0,
-          isRingStart: pt.isRingStart || false,
-          ringIndex: pt.ringIndex !== undefined ? pt.ringIndex : null,
-          isModified: false,
-          origLat: geo.lat,
-          origLon: geo.lon,
-          origX: pt.x,
-          origY: pt.y,
-          origAlt: alt,
-          origPitch: pitch,
-          origHeading: finalHeading,
-          origSpeed: pt.speed !== undefined ? pt.speed : null,
-          origHoverTime: pt.hoverTime !== undefined ? pt.hoverTime : null,
-          origTurnMode: pt.turnMode || 'inherit',
-          origCameraAction: pt.cameraAction || 'inherit',
-          origZoom: pt.zoom !== undefined ? pt.zoom : 1.0,
-          origIsRingStart: pt.isRingStart || false,
-          origIsModified: false
-        };
-      });
-      
-      photoLocations = gridData.photos.map(pt => {
-        const geo = localToGeodetic(pt.x, pt.y, centerLat, centerLon, actualRotation);
-        const alt = pt.alt !== undefined ? pt.alt : altitude;
-        const pitch = pt.pitch !== undefined ? pt.pitch : defaultGimbalPitch;
-
-        let finalHeading = pt.heading;
-        if (gridType === 'double' && pitch !== -90) {
-          finalHeading = Math.atan2(-pt.x, -pt.y) * (180.0 / Math.PI);
-          if (finalHeading < 0) finalHeading += 360;
-        }
-
-        if (finalHeading !== null && finalHeading !== undefined) {
-          finalHeading = (finalHeading + actualRotation) % 360;
-        }
-
-        return {
-          ...geo,
-          alt: alt,
-          pitch: pitch,
-          heading: finalHeading,
-          origLat: geo.lat,
-          origLon: geo.lon,
-          origX: pt.x,
-          origY: pt.y,
-          origAlt: alt,
-          origPitch: pitch,
-          origHeading: finalHeading,
-          origIsRingStart: false,
-          origIsModified: false
-        };
-      });
-
-      generatedWaypoints = waypoints;
-      generatedPhotos = photoLocations;
-    }
+    saveActiveLayerFromUi();
+    const compiled = compileMultiLayerMission(centerLat, centerLon);
+    waypoints = compiled.waypoints;
+    photoLocations = compiled.photos;
+    sLine = compiled.sLine;
+    sPhoto = compiled.sPhoto;
+    generatedWaypoints = waypoints;
+    generatedPhotos = photoLocations;
   }
 
   // 4. Update Map Drawings
@@ -2652,6 +4645,9 @@ function updateGrid() {
   // 5. Update Stats Panel
   const stats = calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, captureMode);
   updateStatsPanel(stats);
+
+  // 6. Update Layers List UI
+  renderLayersList();
 }
 
 function redrawCurrentMission() {
@@ -3020,21 +5016,28 @@ function getDefaultHeading(idx, waypoints, rotationDeg) {
 
 // Generate Leaflet divIcon with color and rotation logic
 function getMarkerIcon(wp, idx, waypoints, rotationDeg, tempHeading, tempPitch, isTempModified) {
-  const gridType = document.getElementById('grid-type').value;
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const gridType = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('grid-type'))
+    ? document.getElementById('grid-type').value
+    : (activeLayer ? activeLayer.pattern : 'double');
   const isMultiOrbit = gridType === 'multi-orbit';
   const isCombo = gridType === 'grid-orbit-combo';
   const isMultiCombo = gridType === 'grid-multi-orbit-combo';
-  const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value);
+  const defaultGimbalPitch = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('gimbal-pitch'))
+    ? parseFloat(document.getElementById('gimbal-pitch').value)
+    : (activeLayer && activeLayer.gimbalPitch !== undefined ? activeLayer.gimbalPitch : -60);
 
   const isModified = isTempModified || wp.isModified;
   const isStart = idx === 0;
   const isEnd = idx === waypoints.length - 1;
 
-  let color = '#06b6d4'; // default cyan
+  let color = wp.layerColor || '#06b6d4'; // default cyan or layer color
   if (isModified) {
     color = '#ec4899'; // Hot pink for modified waypoints
   } else if (isStart) {
     color = '#10b981'; // Emerald Green for starting point
+  } else if (wp.isTransition) {
+    color = '#a855f7'; // Purple for transition points
   } else if (isMultiOrbit || isCombo || isMultiCombo || importedWaypoints) {
     if (wp.ringIndex === 0) color = '#a855f7';
     else if (wp.ringIndex === 1) color = '#06b6d4';
@@ -3132,12 +5135,17 @@ function drawFlightPathLines(waypoints, gridType) {
     const latlngs = [[p1.lat, p1.lon], [p2.lat, p2.lon]];
     const dist = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
 
-    let color = '#06b6d4'; // default cyan
+    let color = p2.layerColor || '#06b6d4'; // default cyan or layer color
     let dashArray = null;
     let weight = 3.5;
     let opacity = 0.85;
 
-    if (dist > 100.0) {
+    if (p2.isTransition || p1.isTransition || (p1.layerId && p2.layerId && p1.layerId !== p2.layerId)) {
+      color = '#a855f7'; // Purple transition vector
+      dashArray = '6, 6';
+      weight = 3.5;
+      opacity = 0.9;
+    } else if (dist > 100.0) {
       color = '#ef4444'; // Red warning
       dashArray = '5, 5'; // Dashed segment
       weight = 4.5;
@@ -3155,10 +5163,114 @@ function drawFlightPathLines(waypoints, gridType) {
       weight: weight,
       opacity: opacity,
       dashArray: dashArray,
-      className: dist > 100.0 ? '' : 'flight-path-line',
+      className: (dist > 100.0 || p2.isTransition) ? '' : 'flight-path-line',
       interactive: false
     }).addTo(flightPathPolyline);
   }
+}
+
+function drawExclusionZones(globalCenterLat, globalCenterLon) {
+  if (!exclusionZonesGroup || typeof L === 'undefined' || !map) return;
+  exclusionZonesGroup.clearLayers();
+
+  const enabledZones = flightLayers.filter(l => l.enabled && (l.pattern === 'exclusion-box' || l.pattern === 'exclusion-freeform' || l.isExclusionZone));
+
+  enabledZones.forEach(zone => {
+    const centerLat = (zone.centerLat !== undefined && zone.centerLat !== null) ? zone.centerLat : globalCenterLat;
+    const centerLon = (zone.centerLon !== undefined && zone.centerLon !== null) ? zone.centerLon : globalCenterLon;
+    const isBox = zone.pattern === 'exclusion-box';
+    const isPoly = zone.pattern === 'exclusion-freeform';
+    const zeroFormatted = (typeof formatDistance === 'function') ? formatDistance(0) : '0m';
+    const altLabel = (zone.allAltitudes !== false)
+      ? `All Altitudes (${zeroFormatted} – ∞)`
+      : `${formatDistance(zone.minAltitude || 0)} – ${formatDistance(zone.maxAltitude || 60)}`;
+    const tooltipText = `🚫 <strong>${escapeHtml(zone.name)}</strong><br>3D Envelope: ${altLabel}${zone.filteredCount ? `<br>Blocked: ${zone.filteredCount} waypoints` : ''}`;
+
+    if (isBox) {
+      const halfW = (zone.gridWidth !== undefined ? zone.gridWidth : 100) / 2.0;
+      const halfH = (zone.gridHeight !== undefined ? zone.gridHeight : 100) / 2.0;
+      const rotDeg = zone.gridRotation !== undefined ? zone.gridRotation : 0;
+      const corners = [
+        localToGeodetic(-halfW, halfH, centerLat, centerLon, rotDeg),
+        localToGeodetic(halfW, halfH, centerLat, centerLon, rotDeg),
+        localToGeodetic(halfW, -halfH, centerLat, centerLon, rotDeg),
+        localToGeodetic(-halfW, -halfH, centerLat, centerLon, rotDeg)
+      ];
+      const latlngs = corners.map(c => [c.lat, c.lon]);
+
+      const poly = L.polygon(latlngs, {
+        color: '#ef4444',
+        weight: 2.5,
+        dashArray: '6, 6',
+        fillColor: '#ef4444',
+        fillOpacity: 0.22,
+        className: 'exclusion-zone-polygon'
+      }).addTo(exclusionZonesGroup);
+
+      poly.bindTooltip(tooltipText, { direction: 'center', permanent: false });
+
+    } else if (isPoly) {
+      const vertices = (zone.freeformWaypoints && zone.freeformWaypoints.length > 0)
+        ? zone.freeformWaypoints
+        : (zone.polygonVertices && zone.polygonVertices.length > 0 ? zone.polygonVertices : []);
+
+      if (vertices.length >= 3) {
+        const latlngs = vertices.map(v => [v.lat, v.lon]);
+        const poly = L.polygon(latlngs, {
+          color: '#ef4444',
+          weight: 2.5,
+          dashArray: '6, 6',
+          fillColor: '#ef4444',
+          fillOpacity: 0.22,
+          className: 'exclusion-zone-polygon'
+        }).addTo(exclusionZonesGroup);
+
+        poly.bindTooltip(tooltipText, { direction: 'center', permanent: false });
+      } else if (vertices.length === 2) {
+        const latlngs = vertices.map(v => [v.lat, v.lon]);
+        L.polyline(latlngs, {
+          color: '#ef4444',
+          weight: 2,
+          dashArray: '4, 4',
+          opacity: 0.7
+        }).addTo(exclusionZonesGroup);
+      }
+
+      // Render draggable vertex handles if this zone is the active layer
+      if (zone.id === activeLayerId) {
+        vertices.forEach((v, vIdx) => {
+          const nodeIcon = L.divIcon({
+            className: 'exclusion-node-icon-wrapper',
+            html: `<div class="exclusion-node-icon" title="Exclusion Vertex ${vIdx + 1} (Drag to move, click to remove)">${vIdx + 1}</div>`,
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
+          });
+
+          const nodeMarker = L.marker([v.lat, v.lon], {
+            icon: nodeIcon,
+            draggable: true
+          }).addTo(exclusionZonesGroup);
+
+          nodeMarker.on('drag', (e) => {
+            const newLatLng = e.target.getLatLng();
+            const offsets = geodeticToLocal(newLatLng.lat, newLatLng.lng, centerLat, centerLon);
+            v.lat = newLatLng.lat;
+            v.lon = newLatLng.lng;
+            v.x = offsets.x;
+            v.y = offsets.y;
+            updateGrid();
+          });
+
+          nodeMarker.on('click', (e) => {
+            if (e.originalEvent && e.originalEvent.stopPropagation) e.originalEvent.stopPropagation();
+            if (zone.freeformWaypoints) zone.freeformWaypoints.splice(vIdx, 1);
+            if (zone.polygonVertices) zone.polygonVertices.splice(vIdx, 1);
+            updateGrid();
+          });
+        });
+      }
+    }
+  });
 }
 
 // Render bounding box, flight path, and markers on Leaflet
@@ -3166,20 +5278,29 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
   recalculateSplitStarts();
   // 1. Clear previous layers
   if (flightPathPolyline) flightPathPolyline.clearLayers();
+  if (exclusionZonesGroup) exclusionZonesGroup.clearLayers();
   if (gridBoundsPolygon) map.removeLayer(gridBoundsPolygon);
   waypointMarkersGroup.clearLayers();
   if (pitchLabelsGroup) pitchLabelsGroup.clearLayers();
   photoMarkersGroup.clearLayers();
   if (roadPathGroup) roadPathGroup.clearLayers();
 
-  const gridType = document.getElementById('grid-type').value;
+  // Draw 3D Exclusion Zones
+  drawExclusionZones(centerLat, centerLon);
+
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const gridType = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('grid-type'))
+    ? document.getElementById('grid-type').value
+    : (activeLayer ? activeLayer.pattern : 'double');
+  const activeCenterLat = (activeLayer && activeLayer.centerLat !== null && activeLayer.centerLat !== undefined) ? activeLayer.centerLat : centerLat;
+  const activeCenterLon = (activeLayer && activeLayer.centerLon !== null && activeLayer.centerLon !== undefined) ? activeLayer.centerLon : centerLon;
 
   // 2. Draw boundary overlay
-  if (gridType === 'road-following' || gridType === 'freeform') {
-    // No boundary overlay for road-following or freeform
+  if (waypoints.length === 0 || gridType === 'road-following' || gridType === 'freeform' || gridType === 'exclusion-box' || gridType === 'exclusion-freeform') {
+    // No boundary overlay when no waypoints are active or for road-following/freeform/exclusion
   } else if (gridType === 'orbit' || gridType === 'multi-orbit' || gridType === 'grid-orbit-combo' || gridType === 'grid-multi-orbit-combo') {
     const maxRadius = (gridType === 'multi-orbit' || gridType === 'grid-multi-orbit-combo') ? gridWidth * 1.1 : gridWidth;
-    gridBoundsPolygon = L.circle([centerLat, centerLon], {
+    gridBoundsPolygon = L.circle([activeCenterLat, activeCenterLon], {
       radius: maxRadius,
       color: '#f59e0b',
       weight: 2,
@@ -3192,10 +5313,10 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
     const halfW = gridWidth / 2.0;
     const halfH = gridHeight / 2.0;
     const corners = [
-      localToGeodetic(-halfW, halfH, centerLat, centerLon, rotationDeg), // TL
-      localToGeodetic(halfW, halfH, centerLat, centerLon, rotationDeg),  // TR
-      localToGeodetic(halfW, -halfH, centerLat, centerLon, rotationDeg), // BR
-      localToGeodetic(-halfW, -halfH, centerLat, centerLon, rotationDeg) // BL
+      localToGeodetic(-halfW, halfH, activeCenterLat, activeCenterLon, rotationDeg), // TL
+      localToGeodetic(halfW, halfH, activeCenterLat, activeCenterLon, rotationDeg),  // TR
+      localToGeodetic(halfW, -halfH, activeCenterLat, activeCenterLon, rotationDeg), // BR
+      localToGeodetic(-halfW, -halfH, activeCenterLat, activeCenterLon, rotationDeg) // BL
     ];
     
     const polygonLatLngs = corners.map(c => [c.lat, c.lon]);
@@ -3215,7 +5336,9 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
   const isMultiOrbit = gridType === 'multi-orbit';
   const isCombo = gridType === 'grid-orbit-combo';
   const isMultiCombo = gridType === 'grid-multi-orbit-combo';
-  const gimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value);
+  const gimbalPitch = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('gimbal-pitch'))
+    ? parseFloat(document.getElementById('gimbal-pitch').value)
+    : (activeLayer && activeLayer.gimbalPitch !== undefined ? activeLayer.gimbalPitch : -60);
 
   if (gridType === 'road-following') {
     // Render road path and draggable road markers
@@ -3484,7 +5607,9 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
   }
 
   // 5. Draw Photo trigger markers (yellow dots) in continuous mode
-  const captureMode = document.getElementById('capture-mode').value;
+  const captureMode = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('capture-mode'))
+    ? document.getElementById('capture-mode').value
+    : (activeLayer ? activeLayer.captureMode : 'stopAndShoot');
   if (captureMode === 'continuous') {
     photoLocations.forEach((pt, idx) => {
       L.circleMarker([pt.lat, pt.lon], {
@@ -3509,12 +5634,16 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
 // Add Map Legend for Multi-Orbit altitudes
 let mapLegend = null;
 function updateMapLegend() {
+  if (typeof map === 'undefined' || !map) return;
   if (mapLegend) {
     map.removeControl(mapLegend);
     mapLegend = null;
   }
 
-  const gridType = document.getElementById('grid-type').value;
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const gridType = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('grid-type'))
+    ? document.getElementById('grid-type').value
+    : (activeLayer ? activeLayer.pattern : 'double');
 
   if (importedWaypoints) {
     mapLegend = L.control({ position: 'bottomright' });
@@ -3623,7 +5752,9 @@ function updateMapLegend() {
     return;
   }
 
-  const altitudeVal = parseFloat(document.getElementById('altitude').value);
+  const altitudeVal = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('altitude'))
+    ? parseFloat(document.getElementById('altitude').value)
+    : (activeLayer && activeLayer.altitude !== undefined ? activeLayer.altitude : 50);
 
   mapLegend = L.control({ position: 'bottomright' });
 
@@ -4101,16 +6232,16 @@ function recalculateSplitStarts() {
 function addFreeformWaypoint(lat, lng) {
   if (!centerMarker) {
     setGridCenter(lat, lng);
-    return;
   }
 
-  const centerLatLng = centerMarker.getLatLng();
+  const centerLatLng = centerMarker ? centerMarker.getLatLng() : { lat, lng };
   const offsets = geodeticToLocal(lat, lng, centerLatLng.lat, centerLatLng.lng);
-  const altitude = parseFloat(document.getElementById('altitude').value);
-  const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value);
+  const altitude = parseFloat(document.getElementById('altitude')?.value) || 50;
+  const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch')?.value) || -60;
 
-  const activeWps = getCurrentWaypoints() || [];
-  const idx = activeWps.length;
+  const activeLayer = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+  const currentFreeformList = activeLayer ? (activeLayer.freeformWaypoints || []) : [];
+  const idx = currentFreeformList.length;
 
   const wp = {
     lat: lat,
@@ -4156,11 +6287,13 @@ function addFreeformWaypoint(lat, lng) {
   if (importedWaypoints) {
     importedWaypoints.push(wp);
     importedPhotos.push(pt);
-  } else {
-    if (!generatedWaypoints) generatedWaypoints = [];
-    if (!generatedPhotos) generatedPhotos = [];
-    generatedWaypoints.push(wp);
-    generatedPhotos.push(pt);
+  } else if (activeLayer) {
+    if (!activeLayer.freeformWaypoints) activeLayer.freeformWaypoints = [];
+    if (!activeLayer.freeformPhotos) activeLayer.freeformPhotos = [];
+    activeLayer.freeformWaypoints.push(wp);
+    activeLayer.freeformPhotos.push(pt);
+    if (!activeLayer.polygonVertices) activeLayer.polygonVertices = [];
+    activeLayer.polygonVertices.push({ lat, lon: lng, x: offsets.x, y: offsets.y });
   }
 
   updateGrid();
@@ -4513,45 +6646,60 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
 
 // Update stats panel UI elements
 function updateStatsPanel(stats) {
-  if (centerMarker) {
+  if (typeof document === 'undefined' || !document || !document.getElementById) return;
+  if (centerMarker && typeof centerMarker.getLatLng === 'function') {
     fetchAndProcessWeather(centerMarker.getLatLng().lat, centerMarker.getLatLng().lng);
   }
   const warningsEl = document.getElementById('stats-warnings');
+  const headerSummaryEl = document.getElementById('header-telemetry-summary');
+  const sidebarSummaryText = document.getElementById('sidebar-summary-text');
+  const popWaypoints = document.getElementById('pop-stat-waypoints');
+  const popPhotos = document.getElementById('pop-stat-photos');
+  const popDistance = document.getElementById('pop-stat-distance');
+  const popTime = document.getElementById('pop-stat-time');
+  const popSpacing = document.getElementById('pop-stat-line-spacing');
+  const popInterval = document.getElementById('pop-stat-photo-interval');
+
+  const statWps = document.getElementById('stat-waypoints');
+  const statPhotos = document.getElementById('stat-photos');
+  const statLineSpacing = document.getElementById('stat-line-spacing');
+  const statPhotoInterval = document.getElementById('stat-photo-interval');
+  const statDistance = document.getElementById('stat-distance');
+  const statFlightTime = document.getElementById('stat-flight-time');
+
   if (!stats) {
-    document.getElementById('stat-waypoints').textContent = "-";
-    document.getElementById('stat-photos').textContent = "-";
-    document.getElementById('stat-line-spacing').textContent = "-";
-    document.getElementById('stat-photo-interval').textContent = "-";
-    document.getElementById('stat-distance').textContent = "-";
-    document.getElementById('stat-flight-time').textContent = "-";
+    if (statWps) statWps.textContent = "-";
+    if (statPhotos) statPhotos.textContent = "-";
+    if (statLineSpacing) statLineSpacing.textContent = "-";
+    if (statPhotoInterval) statPhotoInterval.textContent = "-";
+    if (statDistance) statDistance.textContent = "-";
+    if (statFlightTime) statFlightTime.textContent = "-";
+    if (headerSummaryEl) headerSummaryEl.textContent = "0 WPs • 0.0 km • 0m 0s";
+    if (sidebarSummaryText) sidebarSummaryText.textContent = "⚡ 0 WPs • 0.0 km • 0m 0s • ☀️ Weather";
+    if (popWaypoints) popWaypoints.textContent = "-";
+    if (popPhotos) popPhotos.textContent = "-";
+    if (popDistance) popDistance.textContent = "-";
+    if (popTime) popTime.textContent = "-";
+    if (popSpacing) popSpacing.textContent = "-";
+    if (popInterval) popInterval.textContent = "-";
     if (warningsEl) {
       warningsEl.classList.add('hidden');
     }
     return;
   }
 
-  const unit = getUnitSystem();
+  const unit = (typeof getUnitSystem === 'function') ? getUnitSystem() : 'metric';
 
-  document.getElementById('stat-waypoints').textContent = stats.waypointsCount;
-  const captureMode = document.getElementById('capture-mode').value;
-  if (captureMode === 'video') {
-    document.getElementById('stat-photos').textContent = "Video (Record)";
-  } else {
-    document.getElementById('stat-photos').textContent = stats.photoCount;
-  }
+  if (statWps) statWps.textContent = stats.waypointsCount;
+  const captureMode = document.getElementById('capture-mode')?.value || 'stopAndShoot';
+  const photoText = (captureMode === 'video') ? "Video (Record)" : stats.photoCount;
+  if (statPhotos) statPhotos.textContent = photoText;
 
   // Format spacing
-  if (stats.lineSpacing !== null && stats.lineSpacing !== undefined) {
-    document.getElementById('stat-line-spacing').textContent = formatDistance(stats.lineSpacing);
-  } else {
-    document.getElementById('stat-line-spacing').textContent = "N/A";
-  }
-
-  if (stats.photoSpacing !== null && stats.photoSpacing !== undefined) {
-    document.getElementById('stat-photo-interval').textContent = formatDistance(stats.photoSpacing);
-  } else {
-    document.getElementById('stat-photo-interval').textContent = "N/A";
-  }
+  const lineSpacingStr = (stats.lineSpacing !== null && stats.lineSpacing !== undefined) ? formatDistance(stats.lineSpacing) : "N/A";
+  const photoSpacingStr = (stats.photoSpacing !== null && stats.photoSpacing !== undefined) ? formatDistance(stats.photoSpacing) : "N/A";
+  if (statLineSpacing) statLineSpacing.textContent = lineSpacingStr;
+  if (statPhotoInterval) statPhotoInterval.textContent = photoSpacingStr;
 
   // Format total distance
   let distStr = "";
@@ -4569,8 +6717,22 @@ function updateStatsPanel(stats) {
       distStr = `${Math.round(stats.distance)} m`;
     }
   }
-  document.getElementById('stat-distance').textContent = distStr;
-  document.getElementById('stat-flight-time').textContent = stats.timeStr;
+  if (statDistance) statDistance.textContent = distStr;
+  if (statFlightTime) statFlightTime.textContent = stats.timeStr;
+
+  // Sync Header & Popover Telemetry
+  const summaryStr = `${stats.waypointsCount} WPs • ${distStr} • ${stats.timeStr}`;
+  if (headerSummaryEl) headerSummaryEl.textContent = summaryStr;
+  if (sidebarSummaryText) {
+    const weatherSnippet = document.getElementById('header-weather-summary')?.textContent || '☀️ Weather';
+    sidebarSummaryText.textContent = `⚡ ${summaryStr} • ${weatherSnippet}`;
+  }
+  if (popWaypoints) popWaypoints.textContent = stats.waypointsCount;
+  if (popPhotos) popPhotos.textContent = photoText;
+  if (popDistance) popDistance.textContent = distStr;
+  if (popTime) popTime.textContent = stats.timeStr;
+  if (popSpacing) popSpacing.textContent = lineSpacingStr;
+  if (popInterval) popInterval.textContent = photoSpacingStr;
 
   // Warnings display
   if (warningsEl) {
@@ -4901,11 +7063,7 @@ ${waypointActions.join('\n')}
         }
       }
     } else {
-      if (gridType === 'double' && effectivePitch !== -90 && wp.heading !== null && wp.heading !== undefined) {
-        // In Double Grid with oblique pitch, headings point toward the center, which requires smoothTransition
-        actualHeadingMode = 'smoothTransition';
-        actualHeadingAngle = wp.heading;
-      } else if (gridType === 'freeform' && wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
+      if (gridType === 'freeform' && wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
         // In Freeform with custom per-waypoint heading, use smoothTransition
         actualHeadingMode = 'smoothTransition';
         actualHeadingAngle = wp.heading;
@@ -4927,78 +7085,48 @@ ${waypointActions.join('\n')}
       }
     }
 
-    // Single Grid Golden Rule: Lawnmower grid patterns must strictly use followWayline (unless towardPOI or explicit per-waypoint custom heading is selected).
-    // smoothTransition in a single grid produces spline discontinuities on parallel turnaround turns that cause DJI Fly to suspend the mission.
-    if (gridType === 'single' && headingMode !== 'towardPOI' && wpMode !== 'towardPOI' && wpMode !== 'custom') {
+    // Lawnmower Grid Golden Rule: Lawnmower grid patterns (Single & Double Grid) must strictly use followWayline (unless towardPOI or explicit per-waypoint custom heading is selected).
+    // smoothTransition in a grid produces spline discontinuities on parallel turnaround turns that cause DJI Fly to suspend the mission.
+    if ((gridType === 'single' || gridType === 'double') && headingMode !== 'towardPOI' && wpMode !== 'towardPOI' && wpMode !== 'custom') {
       actualHeadingMode = 'followWayline';
     }
 
-    if (actualHeadingMode === 'followWayline') {
-      if (gridType === 'single' && wpMode !== 'custom') {
-        // In Single Grid, compute bearing strictly along the wayline flight path so entry/exit tangents match flight direction
-        let fromWp, toWp;
-        if (idx < waypoints.length - 1) {
-          fromWp = waypoints[idx];
-          toWp = waypoints[idx + 1];
-        } else if (idx > 0) {
-          fromWp = waypoints[idx - 1];
-          toWp = waypoints[idx];
-        }
-        if (toWp && fromWp &&
-            fromWp.lat !== undefined && fromWp.lon !== undefined &&
-            toWp.lat !== undefined && toWp.lon !== undefined) {
-          const lat1 = fromWp.lat * Math.PI / 180;
-          const lat2 = toWp.lat * Math.PI / 180;
-          const dLon = (toWp.lon - fromWp.lon) * Math.PI / 180;
-          const y = Math.sin(dLon) * Math.cos(lat2);
-          const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
-          let bearing = Math.atan2(y, x) * 180 / Math.PI;
-          if (bearing < 0) bearing += 360;
-          actualHeadingAngle = bearing;
-        } else {
-          const gridRotEl = document.getElementById('grid-rotation');
-          const gridRot = gridRotEl ? parseFloat(gridRotEl.value) : 0;
-          const h = getDefaultHeading(idx, waypoints, gridRot);
-          actualHeadingAngle = isNaN(h) ? 0 : h;
-        }
-      } else if (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
-        actualHeadingAngle = wp.heading;
+    if (actualHeadingMode === 'followWayline' || actualHeadingMode === 'towardPOI') {
+      actualHeadingAngle = 0;
+    } else if (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
+      actualHeadingAngle = wp.heading;
+    } else {
+      // Compute bearing from lat/lon to avoid NaN when x/y offsets are not set
+      let fromWp, toWp;
+      if (idx < waypoints.length - 1) {
+        fromWp = waypoints[idx];
+        toWp = waypoints[idx + 1];
+      } else if (idx > 0) {
+        fromWp = waypoints[idx - 1];
+        toWp = waypoints[idx];
+      }
+      if (toWp && fromWp &&
+          fromWp.lat !== undefined && fromWp.lon !== undefined &&
+          toWp.lat !== undefined && toWp.lon !== undefined) {
+        const lat1 = fromWp.lat * Math.PI / 180;
+        const lat2 = toWp.lat * Math.PI / 180;
+        const dLon = (toWp.lon - fromWp.lon) * Math.PI / 180;
+        const y = Math.sin(dLon) * Math.cos(lat2);
+        const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+        let bearing = Math.atan2(y, x) * 180 / Math.PI;
+        if (bearing < 0) bearing += 360;
+        actualHeadingAngle = bearing;
       } else {
-        // Compute bearing from lat/lon to avoid NaN when x/y offsets are not set
-        let fromWp, toWp;
-        if (idx < waypoints.length - 1) {
-          fromWp = waypoints[idx];
-          toWp = waypoints[idx + 1];
-        } else if (idx > 0) {
-          fromWp = waypoints[idx - 1];
-          toWp = waypoints[idx];
-        }
-        if (toWp && fromWp &&
-            fromWp.lat !== undefined && fromWp.lon !== undefined &&
-            toWp.lat !== undefined && toWp.lon !== undefined) {
-          const lat1 = fromWp.lat * Math.PI / 180;
-          const lat2 = toWp.lat * Math.PI / 180;
-          const dLon = (toWp.lon - fromWp.lon) * Math.PI / 180;
-          const y = Math.sin(dLon) * Math.cos(lat2);
-          const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
-          let bearing = Math.atan2(y, x) * 180 / Math.PI;
-          if (bearing < 0) bearing += 360;
-          actualHeadingAngle = bearing;
-        } else {
-          const gridRotEl = document.getElementById('grid-rotation');
-          const gridRot = gridRotEl ? parseFloat(gridRotEl.value) : 0;
-          const h = getDefaultHeading(idx, waypoints, gridRot);
-          actualHeadingAngle = isNaN(h) ? 0 : h;
-        }
+        const gridRotEl = document.getElementById('grid-rotation');
+        const gridRot = gridRotEl ? parseFloat(gridRotEl.value) : 0;
+        const h = getDefaultHeading(idx, waypoints, gridRot);
+        actualHeadingAngle = isNaN(h) ? 0 : h;
       }
     }
 
     if (isNaN(actualHeadingAngle) || actualHeadingAngle === null || actualHeadingAngle === undefined) {
       actualHeadingAngle = 0;
     }
-
-    // Normalize angle into [0, 360)
-    actualHeadingAngle = ((actualHeadingAngle % 360) + 360) % 360;
 
     // DJI RC 2 Golden Rule: Waypoint 0 (entry) and Waypoint N-1 (exit) have enable=1;
     // all intermediate waypoints in followWayline and towardPOI have enable=0 to allow dynamic heading tracking!
@@ -5011,10 +7139,18 @@ ${waypointActions.join('\n')}
       headingAngleEnable = 0;
     }
 
-    // DJI Fly firmware has a bug where waypointHeadingAngle of strictly 0.0 with headingAngleEnable: 1
-    // causes "Error performing flight: Waypoint Flight Suspended". Clamp 0.0 to 0.1 to avoid firmware rejection.
-    if (headingAngleEnable === 1 && (actualHeadingAngle === 0 || Math.abs(actualHeadingAngle) < 0.05)) {
-      actualHeadingAngle = 0.1;
+    if (actualHeadingMode === 'followWayline' || actualHeadingMode === 'towardPOI') {
+      // Stock DJI Fly strictly enforces waypointHeadingAngle: 0 for followWayline and towardPOI
+      actualHeadingAngle = 0;
+    } else {
+      // Normalize custom angle into [-180, 180] per DJI WPML schema
+      actualHeadingAngle = ((actualHeadingAngle % 360) + 360) % 360;
+      if (actualHeadingAngle > 180) actualHeadingAngle -= 360;
+      // DJI Fly firmware has a bug in smoothTransition where waypointHeadingAngle of strictly 0.0 with headingAngleEnable: 1
+      // causes "Error performing flight: Waypoint Flight Suspended". Clamp 0.0 to 0.1 to avoid firmware rejection.
+      if (headingAngleEnable === 1 && (actualHeadingAngle === 0 || Math.abs(actualHeadingAngle) < 0.05)) {
+        actualHeadingAngle = 0.1;
+      }
     }
 
     const currentAltitude = wp.alt !== undefined ? wp.alt : altitude;
@@ -5055,7 +7191,7 @@ ${waypointActions.join('\n')}
         <wpml:waypointSpeed>${actualSpeed}</wpml:waypointSpeed>
         <wpml:waypointHeadingParam>
           <wpml:waypointHeadingMode>${actualHeadingMode}</wpml:waypointHeadingMode>
-          <wpml:waypointHeadingAngle>${actualHeadingAngle.toFixed(1)}</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingAngle>${actualHeadingAngle === 0 ? '0' : actualHeadingAngle.toFixed(1)}</wpml:waypointHeadingAngle>
           <wpml:waypointPoiPoint>${poiPoint}</wpml:waypointPoiPoint>
           <wpml:waypointHeadingAngleEnable>${headingAngleEnable}</wpml:waypointHeadingAngleEnable>
           <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
@@ -5153,6 +7289,7 @@ function validateWpmlMission(wpmlXml, templateXml = '', options = {}) {
   let r1Passed = true;
   let r1Msg = 'Heading modes properly assign waypointHeadingAngleEnable (intermediate followWayline waypoints use 0, endpoints use 1)';
   const isSinglePattern = (options && (options.gridType === 'single' || options.pattern === 'single'));
+  const isDoublePattern = (options && (options.gridType === 'double' || options.pattern === 'double'));
   placemarks.forEach((pm, idx) => {
     const modeMatch = pm.match(/<wpml:waypointHeadingMode>([^<]+)<\/wpml:waypointHeadingMode>/);
     const enableMatch = pm.match(/<wpml:waypointHeadingAngleEnable>([^<]+)<\/wpml:waypointHeadingAngleEnable>/);
@@ -5160,13 +7297,23 @@ function validateWpmlMission(wpmlXml, templateXml = '', options = {}) {
       const mode = modeMatch[1].trim();
       const enable = enableMatch ? enableMatch[1].trim() : '0';
       const isEndpoint = (idx === 0 || idx === placemarks.length - 1);
-      if (mode === 'followWayline' && !isEndpoint && enable === '1') {
-        r1Passed = false;
-        result.errors.push(`Waypoint ${idx}: intermediate waypointHeadingMode is 'followWayline' but waypointHeadingAngleEnable is 1 (must be 0 to prevent DJI Fly Go abort)`);
+      if (mode === 'followWayline') {
+        if (!isEndpoint && enable === '1') {
+          r1Passed = false;
+          result.errors.push(`Waypoint ${idx}: intermediate waypointHeadingMode is 'followWayline' but waypointHeadingAngleEnable is 1 (must be 0 to prevent DJI Fly Go abort)`);
+        }
+        if (isEndpoint && enable === '0') {
+          r1Passed = false;
+          result.errors.push(`Waypoint ${idx}: endpoint waypointHeadingMode is 'followWayline' but waypointHeadingAngleEnable is 0 (must be 1 to define initial wayline entry heading for DJI Fly)`);
+        }
       }
       if (isSinglePattern && mode === 'smoothTransition' && (idx === 0 || placemarks.length <= 2)) {
         r1Passed = false;
         result.errors.push(`Waypoint ${idx}: Single grid pattern cannot use 'smoothTransition' (must use 'followWayline' to prevent DJI Fly Go abort on parallel flight lines)`);
+      }
+      if (isDoublePattern && mode === 'smoothTransition' && (idx === 0 || placemarks.length <= 2)) {
+        r1Passed = false;
+        result.errors.push(`Waypoint ${idx}: Double grid pattern cannot use 'smoothTransition' (must use 'followWayline' to prevent DJI Fly Go abort on parallel flight lines)`);
       }
     }
   });
@@ -5177,6 +7324,11 @@ function validateWpmlMission(wpmlXml, templateXml = '', options = {}) {
   let r2Passed = true;
   let r2Msg = 'All custom heading angles are normalized and strictly non-zero (>= 0.1°) to avoid DJI Fly 0.0° suspend bug';
   placemarks.forEach((pm, idx) => {
+    const modeMatch = pm.match(/<wpml:waypointHeadingMode>([^<]+)<\/wpml:waypointHeadingMode>/);
+    const mode = modeMatch ? modeMatch[1].trim() : '';
+    // followWayline and towardPOI strictly use 0 in stock DJI RC 2 WPML
+    if (mode === 'followWayline' || mode === 'towardPOI') return;
+
     const enableMatch = pm.match(/<wpml:waypointHeadingAngleEnable>([^<]+)<\/wpml:waypointHeadingAngleEnable>/);
     const angleMatch = pm.match(/<wpml:waypointHeadingAngle>([^<]+)<\/wpml:waypointHeadingAngle>/);
     if (enableMatch && enableMatch[1].trim() === '1' && angleMatch) {
@@ -5252,11 +7404,11 @@ function validateWpmlMission(wpmlXml, templateXml = '', options = {}) {
 
   // ── RULE 6: Action Group Allocation & ID Limits ────────────────────────────
   let r6Passed = true;
-  let r6Msg = 'Action group count is within DJI Fly memory limits (< 65 total action groups)';
+  let r6Msg = 'Action group count is within DJI Fly memory limits (<= 500 total action groups)';
   const actionGroupCount = (wpmlXml.match(/<wpml:actionGroup>/g) || []).length;
-  if (actionGroupCount >= 65) {
+  if (actionGroupCount > 500) {
     r6Passed = false;
-    result.errors.push(`Total action groups (${actionGroupCount}) exceeds DJI Fly limit of 65. Consolidate actions.`);
+    result.errors.push(`Total action groups (${actionGroupCount}) exceeds DJI Fly limit of 500. Consolidate actions.`);
   }
   if (!r6Passed) result.valid = false; else result.rulesPassed++;
   result.rules.push({ id: 6, name: 'Action Group Allocation & ID Uniqueness', passed: r6Passed, message: r6Msg });
@@ -5345,30 +7497,47 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
   let fixedWpml = wpmlXml;
   let fixedTemplate = templateXml;
 
-  // 1. Fix followWayline with headingAngleEnable: 1 -> change to 0
-  fixedWpml = fixedWpml.replace(
-    /(<wpml:waypointHeadingMode>\s*(?:followWayline|manually|towardPOI)\s*<\/wpml:waypointHeadingMode>[\s\S]*?<wpml:waypointHeadingAngleEnable>)\s*1\s*(<\/wpml:waypointHeadingAngleEnable>)/g,
-    '$10$2'
-  );
-
-  // 1b. Fix smoothTransition in single grid pattern -> change to followWayline
-  const isSingle = (options && (options.gridType === 'single' || options.pattern === 'single'));
-  if (isSingle) {
+  // 1. Heading Mode & Angle Enable Coherence Sanitization
+  // Lawnmower grids (single and double) must strictly use followWayline
+  const isLawnmowerGrid = (options && (
+    options.gridType === 'single' || options.pattern === 'single' ||
+    options.gridType === 'double' || options.pattern === 'double'
+  ));
+  if (isLawnmowerGrid) {
     fixedWpml = fixedWpml.replace(
       /<wpml:waypointHeadingMode>\s*smoothTransition\s*<\/wpml:waypointHeadingMode>/g,
       '<wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>'
     );
-    // Ensure intermediate waypoints in followWayline have headingAngleEnable: 0
-    const pms = fixedWpml.split('<Placemark>');
-    if (pms.length > 2) {
-      for (let i = 2; i < pms.length - 1; i++) {
+  }
+
+  // Ensure followWayline has waypointHeadingAngle: 0, endpoints have headingAngleEnable: 1, and intermediate have 0
+  const pms = fixedWpml.split('<Placemark>');
+  if (pms.length > 1) {
+    for (let i = 1; i < pms.length; i++) {
+      const isEndpoint = (i === 1 || i === pms.length - 1);
+      const modeMatch = pms[i].match(/<wpml:waypointHeadingMode>([^<]+)<\/wpml:waypointHeadingMode>/);
+      const mode = modeMatch ? modeMatch[1].trim() : '';
+      if (mode === 'followWayline' || mode === 'towardPOI') {
         pms[i] = pms[i].replace(
-          /(<wpml:waypointHeadingAngleEnable>)\s*1\s*(<\/wpml:waypointHeadingAngleEnable>)/g,
+          /(<wpml:waypointHeadingAngle>)[^<]+(<\/wpml:waypointHeadingAngle>)/g,
           '$10$2'
         );
+        if (mode === 'followWayline') {
+          if (!isEndpoint) {
+            pms[i] = pms[i].replace(
+              /(<wpml:waypointHeadingAngleEnable>)\s*1\s*(<\/wpml:waypointHeadingAngleEnable>)/g,
+              '$10$2'
+            );
+          } else {
+            pms[i] = pms[i].replace(
+              /(<wpml:waypointHeadingAngleEnable>)\s*0\s*(<\/wpml:waypointHeadingAngleEnable>)/g,
+              '$11$2'
+            );
+          }
+        }
       }
-      fixedWpml = pms.join('<Placemark>');
     }
+    fixedWpml = pms.join('<Placemark>');
   }
 
   // 2. Fix 3D coordinates to 2D
@@ -5377,9 +7546,9 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
     '$1$2,$3$4'
   );
 
-  // 3. Fix 0.0 heading angle with enable=1 -> clamp to 0.1
+  // 3. Fix 0.0 custom heading angle with enable=1 -> clamp to 0.1 (only for smoothTransition / custom / fixed)
   fixedWpml = fixedWpml.replace(
-    /(<wpml:waypointHeadingAngle>)\s*0(?:\.0+)?\s*(<\/wpml:waypointHeadingAngle>[\s\S]*?<wpml:waypointHeadingAngleEnable>\s*1\s*<\/wpml:waypointHeadingAngleEnable>)/g,
+    /(<wpml:waypointHeadingMode>\s*(?:smoothTransition|custom|fixed)\s*<\/wpml:waypointHeadingMode>[\s\S]*?<wpml:waypointHeadingAngle>)\s*0(?:\.0+)?\s*(<\/wpml:waypointHeadingAngle>[\s\S]*?<wpml:waypointHeadingAngleEnable>\s*1\s*<\/wpml:waypointHeadingAngleEnable>)/g,
     (match, p1, p2) => `${p1}0.1${p2}`
   );
 
@@ -6036,7 +8205,7 @@ function buildFlightDiagnosticsJSON(customWps = null, options = {}) {
     uuid,
     createdAt,
     filename: options.filename || `${uuid}.kmz`,
-    flightPattern: plan?.geometry?.pattern || 'single',
+    flightPattern: options.flightPattern || options.pattern || (typeof document !== 'undefined' && document.getElementById('grid-type')?.value) || plan?.geometry?.pattern || 'single',
     altitude,
     speed,
     gimbalPitch,
@@ -6551,22 +8720,32 @@ async function pullFlightLogFromRC2(targetBtn = null) {
       // Refresh the Flight Diagnostics flight list
       if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.refreshFlightList) {
         await FlightDiagnostics.refreshFlightList();
-        if (logName) {
-          const sel = document.getElementById('diag-flight-selector');
-          if (sel) {
-            sel.value = logName;
+      }
+      if (logName) {
+        const sel = document.getElementById('diag-flight-selector');
+        if (sel) {
+          const optionsList = (sel.options && typeof sel.options[Symbol.iterator] === 'function')
+            ? Array.from(sel.options)
+            : (Array.isArray(sel.options) ? sel.options : []);
+          const exists = optionsList.some(o => o.value === logName);
+          if (!exists && typeof document !== 'undefined' && document.createElement) {
+            try {
+              const opt = document.createElement('option');
+              opt.value = logName;
+              opt.textContent = `🛰️ ${logName}`;
+              sel.appendChild(opt);
+            } catch (e) {}
           }
-          if (FlightDiagnostics.loadSelectedFlight) {
-            FlightDiagnostics.loadSelectedFlight(logName);
-          }
+          sel.value = logName;
+        }
+        if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.loadSelectedFlight) {
+          FlightDiagnostics.loadSelectedFlight(logName);
         }
       }
 
       // If triggered from the sidebar, open the Diagnostics modal to show the pulled flight!
-      if (btn && btn.id === 'direct-rc2-pull-log-btn') {
-        if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.open) {
-          FlightDiagnostics.open();
-        }
+      if (btn && btn.id === 'direct-rc2-pull-log-btn' && typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.open) {
+        FlightDiagnostics.open();
       }
 
       setTimeout(() => {
@@ -6637,10 +8816,22 @@ async function sendDirectlyToRC2() {
     const uuid = getRC2UUID() || rc2MtpActiveUUID || '354A8F93-759C-42C3-A8D5-746F79C7622A';
     const kmzBase64 = await blobToBase64(result.blob);
 
+    const diagData = buildFlightDiagnosticsJSON(waypoints, {
+      altitude: parseFloat(document.getElementById('altitude')?.value) || 50,
+      speed,
+      gimbalPitch,
+      uuid,
+      filename: `${uuid}.kmz`,
+      validation: result.validation,
+      isValid: result.validation ? result.validation.valid : true,
+      wpmlXml: result.waylinesWpml,
+      templateXml: result.templateKml
+    });
+
     const res = await fetch(`${COMPANION_API_BASE}/api/sync`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uuid, kmzBase64 })
+      body: JSON.stringify({ uuid, kmzBase64, diagData })
     });
 
     const data = await res.json();
@@ -6652,18 +8843,6 @@ async function sendDirectlyToRC2() {
 
       // Also archive the mission diagnostics in SQLite
       try {
-        const diagData = buildFlightDiagnosticsJSON(waypoints, {
-          altitude: parseFloat(document.getElementById('altitude')?.value) || 50,
-          speed,
-          gimbalPitch,
-          uuid,
-          filename: `${uuid}.kmz`,
-          validation: result.validation,
-          isValid: result.validation ? result.validation.valid : true,
-          wpmlXml: result.waylinesWpml,
-          templateXml: result.templateKml
-        });
-
         if (diagData && (!diagData.isValid || (diagData.validationErrors && diagData.validationErrors.length > 0))) {
           try {
             if (typeof localStorage !== 'undefined') {
@@ -6685,11 +8864,15 @@ async function sendDirectlyToRC2() {
           } catch (storageErr) {}
         }
 
-        fetch(`${COMPANION_API_BASE}/api/diagnostics/archive`, {
+        await fetch(`${COMPANION_API_BASE}/api/diagnostics/archive`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(diagData)
         }).catch(() => {});
+
+        if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.refreshFlightList) {
+          FlightDiagnostics.refreshFlightList();
+        }
       } catch (e) {}
       setTimeout(() => {
         directBtn.disabled = false;
@@ -7882,7 +10065,7 @@ const FlightDiagnostics = {
           opt.value = `diag:${identifier}`;
           const dateClean = (m.created_at || '').replace('T', ' ').replace(/\..+/, '').replace('Z', ' UTC');
           const errCount = m.validation_errors ? m.validation_errors.length : (m.validation_errors_count || 0);
-          opt.textContent = `❌ [FAIL: ${errCount} Issues] ${m.filename || m.uuid} (${dateClean})`;
+          opt.textContent = `❌ [FAIL: ${errCount} Issues] ${m.filename || m.uuid} (${m.waypoint_count || 0} wps • ${dateClean})`;
           groupBad.appendChild(opt);
         });
         flightSel.appendChild(groupBad);
@@ -10086,6 +12269,16 @@ function clearMap() {
     roadWaypoints = [];
     activeSplitStartIndices = new Set();
 
+    if (typeof flightLayers !== 'undefined' && flightLayers) {
+      flightLayers.forEach(l => {
+        l.freeformWaypoints = [];
+        l.freeformPhotos = [];
+        l.roadWaypoints = [];
+        l.waypoints = [];
+        l.photos = [];
+      });
+    }
+
     if (flightPathPolyline) flightPathPolyline.clearLayers();
     if (roadPathGroup) roadPathGroup.clearLayers();
     if (gridBoundsPolygon) {
@@ -11240,6 +13433,16 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
             generatedWaypoints.forEach((w, newIdx) => { w.idx = newIdx; });
           }
         } else {
+          const activeLayer = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+          if (activeLayer && activeLayer.pattern === 'freeform' && activeLayer.freeformWaypoints) {
+            if (activeLayer.freeformWaypoints[idx]) {
+              activeLayer.freeformWaypoints.splice(idx, 1);
+              activeLayer.freeformWaypoints.forEach((w, newIdx) => { w.idx = newIdx; });
+            }
+            if (activeLayer.freeformPhotos && activeLayer.freeformPhotos[idx]) {
+              activeLayer.freeformPhotos.splice(idx, 1);
+            }
+          }
           const activeWps = getCurrentWaypoints();
           const activePts = getCurrentPhotos();
           if (activeWps && activeWps[idx]) {
@@ -14285,7 +16488,8 @@ async function fetchAndProcessWeather(centerLat, centerLon) {
         }
       }
 
-      if (!fltCat) fltCat = "VFR";
+      const bearing = getCompassBearing(centerLat, centerLon, st.lat, st.lon);
+      const compassDir = bearingToCompassDirection(bearing);
 
       stationDataList.push({
         icaoId: st.id,
@@ -14293,6 +16497,8 @@ async function fetchAndProcessWeather(centerLat, centerLon) {
         lat: st.lat,
         lon: st.lon,
         distance: st.dist,
+        bearing: bearing,
+        compassDir: compassDir,
         fltCat: fltCat,
         visibilitySM: visSM,
         ceilingFt: ceilingFt,
@@ -14375,8 +16581,10 @@ function updateWeatherStationMarker(closest, allStations, activeIdx) {
 
   const icao = activeStation.icaoId || 'NWS';
   const name = activeStation.name || 'Observation Station';
+  const cDir = activeStation.compassDir || (typeof centerMarker !== 'undefined' && centerMarker && typeof getCompassBearing === 'function' ? bearingToCompassDirection(getCompassBearing(centerMarker.getLatLng().lat, centerMarker.getLatLng().lng, activeStation.lat, activeStation.lon)) : '');
   const distKm = (activeStation.distance != null) ? Number(activeStation.distance).toFixed(1) : '-';
   const distMi = (activeStation.distance != null) ? (Number(activeStation.distance) * 0.621371).toFixed(1) : '-';
+  const formattedDist = (typeof formatWeatherDistance === 'function') ? formatWeatherDistance(activeStation.distance, cDir) : `${distKm} km${cDir ? ' ' + cDir : ''}`;
   const fltCat = activeStation.fltCat || 'VFR';
 
   let badgeColor = '#10b981'; // VFR
@@ -14391,7 +16599,7 @@ function updateWeatherStationMarker(closest, allStations, activeIdx) {
         </svg>
       </div>
       <span style="background: rgba(15, 23, 42, 0.9); color: #f8fafc; border: 1px solid ${badgeColor}80; font-size: 0.62rem; font-weight: 700; padding: 1px 4px; border-radius: 3px; margin-top: 2px; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.6);">
-        ${icao}
+        ${icao}${cDir ? ` (${cDir})` : ''}
       </span>
     </div>
   `;
@@ -14415,7 +16623,7 @@ function updateWeatherStationMarker(closest, allStations, activeIdx) {
       </div>
       <div style="font-weight: 600; color: #f1f5f9; margin-bottom: 4px;">${name}</div>
       <div style="color: #94a3b8; font-size: 0.75rem; margin-bottom: 6px;">
-        Distance: <b>${distKm} km</b> (${distMi} mi) from center
+        Distance: <b>${formattedDist}</b> (${distKm} km / ${distMi} mi) from center
       </div>
       <div style="background: rgba(255,255,255,0.06); padding: 6px 8px; border-radius: 4px; font-size: 0.72rem; line-height: 1.45; margin-bottom: 8px;">
         <div>Visibility: <b>${activeStation.visibilitySM != null ? Number(activeStation.visibilitySM).toFixed(1) + ' SM' : 'Unknown'}</b></div>
@@ -14434,7 +16642,7 @@ function updateWeatherStationMarker(closest, allStations, activeIdx) {
     if (typeof L.marker !== 'function') return;
     weatherStationMarker = L.marker([activeStation.lat, activeStation.lon], { icon: weatherIcon, zIndexOffset: 850 });
     if (typeof weatherStationMarker.bindPopup === 'function') weatherStationMarker.bindPopup(popupHtml, { className: 'weather-station-popup' });
-    if (typeof weatherStationMarker.bindTooltip === 'function') weatherStationMarker.bindTooltip(`🌤️ Weather Station: ${icao} (${name})`, { direction: 'top', offset: [0, -18] });
+    if (typeof weatherStationMarker.bindTooltip === 'function') weatherStationMarker.bindTooltip(`🌤️ Weather Station: ${icao} (${name}) • ${formattedDist}`, { direction: 'top', offset: [0, -18] });
     if (weatherStationLayer && typeof weatherStationLayer.addLayer === 'function') {
       weatherStationLayer.addLayer(weatherStationMarker);
     } else if (map && typeof map.addLayer === 'function') {
@@ -14444,7 +16652,7 @@ function updateWeatherStationMarker(closest, allStations, activeIdx) {
     if (typeof weatherStationMarker.setLatLng === 'function') weatherStationMarker.setLatLng([activeStation.lat, activeStation.lon]);
     if (weatherIcon && typeof weatherStationMarker.setIcon === 'function') weatherStationMarker.setIcon(weatherIcon);
     if (typeof weatherStationMarker.setPopupContent === 'function') weatherStationMarker.setPopupContent(popupHtml);
-    if (typeof weatherStationMarker.setTooltipContent === 'function') weatherStationMarker.setTooltipContent(`🌤️ Weather Station: ${icao} (${name})`);
+    if (typeof weatherStationMarker.setTooltipContent === 'function') weatherStationMarker.setTooltipContent(`🌤️ Weather Station: ${icao} (${name}) • ${formattedDist}`);
     if (weatherStationLayer && typeof weatherStationLayer.hasLayer === 'function' && !weatherStationLayer.hasLayer(weatherStationMarker)) {
       if (typeof weatherStationLayer.addLayer === 'function') weatherStationLayer.addLayer(weatherStationMarker);
     }
@@ -14457,6 +16665,8 @@ function updateWeatherStationMarker(closest, allStations, activeIdx) {
       if (sIdx === currentIdx || st.lat == null || st.lon == null) return;
       const sIcao = st.icaoId || 'NWS';
       const sName = st.name || 'Observation Station';
+      const sCDir = st.compassDir || (typeof centerMarker !== 'undefined' && centerMarker && typeof getCompassBearing === 'function' ? bearingToCompassDirection(getCompassBearing(centerMarker.getLatLng().lat, centerMarker.getLatLng().lng, st.lat, st.lon)) : '');
+      const sDistFormatted = (typeof formatWeatherDistance === 'function') ? formatWeatherDistance(st.distance, sCDir) : `${st.distance != null ? Number(st.distance).toFixed(1) + ' km' : ''}`;
       const sDistKm = (st.distance != null) ? Number(st.distance).toFixed(1) : '-';
       const sCat = st.fltCat || 'VFR';
       let sColor = '#10b981';
@@ -14471,7 +16681,7 @@ function updateWeatherStationMarker(closest, allStations, activeIdx) {
             </svg>
           </div>
           <span style="background: rgba(15, 23, 42, 0.85); color: #cbd5e1; border: 1px solid ${sColor}60; font-size: 0.58rem; font-weight: 600; padding: 1px 3px; border-radius: 3px; margin-top: 1px; white-space: nowrap;">
-            ${sIcao}
+            ${sIcao}${sCDir ? ` (${sCDir})` : ''}
           </span>
         </div>
       `;
@@ -14491,7 +16701,7 @@ function updateWeatherStationMarker(closest, allStations, activeIdx) {
             <span style="background: ${sColor}25; color: ${sColor}; border: 1px solid ${sColor}60; font-size: 0.62rem; font-weight: 700; padding: 1px 5px; border-radius: 999px;">${sCat}</span>
           </div>
           <div style="font-weight: 600; margin-bottom: 2px;">${sName}</div>
-          <div style="color: #94a3b8; font-size: 0.72rem; margin-bottom: 6px;">Distance: <b>${sDistKm} km</b> from center</div>
+          <div style="color: #94a3b8; font-size: 0.72rem; margin-bottom: 6px;">Distance: <b>${sDistFormatted}</b> (${sDistKm} km) from center</div>
           <button type="button" class="btn-sm" style="width: 100%; padding: 4px 8px; font-size: 0.72rem; background: rgba(56,189,248,0.2); color: #38bdf8; border: 1px solid #38bdf8; border-radius: 4px; cursor: pointer;" onclick="if (typeof selectActiveWeatherStation === 'function') { selectActiveWeatherStation(${sIdx}); }">
             Select This Station
           </button>
@@ -14500,7 +16710,7 @@ function updateWeatherStationMarker(closest, allStations, activeIdx) {
 
       const secMarker = L.marker([st.lat, st.lon], { icon: secIcon, zIndexOffset: 800 });
       if (typeof secMarker.bindPopup === 'function') secMarker.bindPopup(secPopupHtml, { className: 'weather-station-popup' });
-      if (typeof secMarker.bindTooltip === 'function') secMarker.bindTooltip(`🌤️ Weather Station: ${sIcao} (${sName}) - ${sDistKm} km`, { direction: 'top', offset: [0, -16] });
+      if (typeof secMarker.bindTooltip === 'function') secMarker.bindTooltip(`🌤️ Weather Station: ${sIcao} (${sName}) • ${sDistFormatted}`, { direction: 'top', offset: [0, -16] });
       secMarker.on('click', () => {
         if (typeof selectActiveWeatherStation === 'function') {
           selectActiveWeatherStation(sIdx);
@@ -14527,7 +16737,7 @@ function updateWeatherStationMarker(closest, allStations, activeIdx) {
         opacity: 0.75
       });
       if (typeof weatherStationLine.bindTooltip === 'function') {
-        weatherStationLine.bindTooltip(`Weather Station: ${icao} (${distKm} km)`, { sticky: true });
+        weatherStationLine.bindTooltip(`Weather Station: ${icao} (${formattedDist})`, { sticky: true });
       }
       if (weatherStationLayer && typeof weatherStationLayer.addLayer === 'function') {
         weatherStationLayer.addLayer(weatherStationLine);
@@ -14542,7 +16752,7 @@ function updateWeatherStationMarker(closest, allStations, activeIdx) {
         weatherStationLine.setStyle({ color: badgeColor });
       }
       if (typeof weatherStationLine.setTooltipContent === 'function') {
-        weatherStationLine.setTooltipContent(`Weather Station: ${icao} (${distKm} km)`);
+        weatherStationLine.setTooltipContent(`Weather Station: ${icao} (${formattedDist})`);
       }
     }
   }
@@ -14661,8 +16871,10 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     }
   }
 
+  const cDir = closest.compassDir || (typeof centerMarker !== 'undefined' && centerMarker && typeof getCompassBearing === 'function' ? bearingToCompassDirection(getCompassBearing(centerMarker.getLatLng().lat, centerMarker.getLatLng().lng, closest.lat, closest.lon)) : '');
   const distKm = closest.distance != null ? Number(closest.distance).toFixed(1) : '-';
   const distMi = closest.distance != null ? (Number(closest.distance) * 0.621371).toFixed(1) : '-';
+  const formattedDist = (typeof formatWeatherDistance === 'function') ? formatWeatherDistance(closest.distance, cDir) : `${distKm} km${cDir ? ' ' + cDir : ''}`;
 
   if (typeof windowEl.replaceChildren === 'function') windowEl.replaceChildren(); else windowEl.innerHTML = '';
   const statusSpan = document.createElement("span");
@@ -14672,15 +16884,15 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
 
   const timeDiv = document.createElement("div");
   timeDiv.style.cssText = "font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;";
-  const stationLabel = closest.icaoId ? ` • 📡 ${closest.icaoId} (${distKm} km)` : '';
+  const stationLabel = closest.icaoId ? ` • 📡 ${closest.icaoId} (${formattedDist})` : '';
   timeDiv.textContent = `Last Polled: ${timeString}${stationLabel}`;
   windowEl.appendChild(timeDiv);
 
-  windowEl.title = `Station: ${closest.icaoId || 'NWS'} - ${closest.name || 'Station'} (${distKm}km / ${distMi}mi)\nRaw: ${closest.raw || ''}\nClick to toggle checklist`;
+  windowEl.title = `Station: ${closest.icaoId || 'NWS'} - ${closest.name || 'Station'} (${formattedDist})\nRaw: ${closest.raw || ''}\nClick to toggle checklist`;
 
   if (locateHeaderBtn) {
     if (closest.icaoId) {
-      locateHeaderBtn.textContent = `📍 ${closest.icaoId} (${distKm} km)`;
+      locateHeaderBtn.textContent = `📍 ${closest.icaoId} (${formattedDist})`;
       locateHeaderBtn.classList.remove('hidden');
     } else {
       locateHeaderBtn.classList.add('hidden');
@@ -14759,7 +16971,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
 
   const stationTitle = document.createElement("div");
   stationTitle.style.cssText = "font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 4px;";
-  stationTitle.textContent = `📡 Station: ${closest.icaoId || 'NWS'}`;
+  stationTitle.textContent = `📡 Station: ${closest.icaoId || 'NWS'}${cDir ? ` (${cDir})` : ''}`;
   stationHeader.appendChild(stationTitle);
 
   const locateBtn = document.createElement("button");
@@ -14784,7 +16996,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
 
   const distDiv = document.createElement("div");
   distDiv.style.cssText = "color: var(--text-muted); font-size: 0.7rem;";
-  distDiv.textContent = `Distance: ${distKm} km (${distMi} mi) from mission center`;
+  distDiv.textContent = `Distance: ${formattedDist} (${distKm} km / ${distMi} mi) from mission center`;
   stationSection.appendChild(distDiv);
 
   // If multiple stations are available, render station switcher tabs
@@ -14803,8 +17015,9 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
           ? 'background: rgba(56, 189, 248, 0.25); color: #38bdf8; border: 1px solid #38bdf8; font-weight: 700;'
           : 'background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.15);'
       }`;
-      const sDist = st.distance != null ? `${Number(st.distance).toFixed(1)} km` : '';
-      tabBtn.textContent = `${st.icaoId} (${sDist})`;
+      const sCDir = st.compassDir || (typeof centerMarker !== 'undefined' && centerMarker && typeof getCompassBearing === 'function' ? bearingToCompassDirection(getCompassBearing(centerMarker.getLatLng().lat, centerMarker.getLatLng().lng, st.lat, st.lon)) : '');
+      const sDistFormatted = (typeof formatWeatherDistance === 'function') ? formatWeatherDistance(st.distance, sCDir) : `${st.distance != null ? Number(st.distance).toFixed(1) + ' km' : ''}`;
+      tabBtn.textContent = `${st.icaoId} (${sDistFormatted})`;
       tabBtn.onclick = (e) => {
         e.stopPropagation();
         if (typeof selectActiveWeatherStation === 'function') {
@@ -14835,8 +17048,107 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     if (toggleBtn) toggleBtn.textContent = '▾ Details';
   }
 
+  // Sync Header Telemetry Pill Weather & Popover Card
+  const headerWeatherSummary = document.getElementById('header-weather-summary');
+  const sidebarSummaryText = document.getElementById('sidebar-summary-text');
+  const popWeatherSummary = document.getElementById('pop-weather-summary');
+  const popWeatherDetails = document.getElementById('pop-weather-details');
+
+  const weatherPillText = `${statusText.split(' ')[0]} ${closest.fltCat || 'VFR'} (${closest.icaoId || 'Station'})`;
+  if (headerWeatherSummary) {
+    headerWeatherSummary.textContent = weatherPillText;
+    headerWeatherSummary.style.color = color;
+  }
+  if (sidebarSummaryText) {
+    const telemText = document.getElementById('header-telemetry-summary')?.textContent || '0 WPs • 0.0 km • 0m 0s';
+    sidebarSummaryText.textContent = `⚡ ${telemText} • ${weatherPillText}`;
+  }
+  if (popWeatherSummary) {
+    popWeatherSummary.textContent = `${statusText} • ${closest.icaoId || 'NWS Station'} (${formattedDist})`;
+    popWeatherSummary.style.color = color;
+  }
+  if (popWeatherDetails) {
+    let multiStationsHtml = '';
+    if (directions.stations && directions.stations.length > 1) {
+      multiStationsHtml = `
+        <div class="pop-station-switcher" style="display: flex; gap: 4px; margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.08); flex-wrap: wrap;">
+          ${directions.stations.map((st, sIdx) => {
+            const isActive = sIdx === (directions.activeIndex || 0);
+            const sCDir = st.compassDir || (typeof centerMarker !== 'undefined' && centerMarker && typeof getCompassBearing === 'function' ? bearingToCompassDirection(getCompassBearing(centerMarker.getLatLng().lat, centerMarker.getLatLng().lng, st.lat, st.lon)) : '');
+            const sDist = (typeof formatWeatherDistance === 'function') ? formatWeatherDistance(st.distance, sCDir) : `${st.distance != null ? Number(st.distance).toFixed(1) + ' km' : ''}`;
+            const sCat = st.fltCat || 'VFR';
+            let catDot = '🟢';
+            if (sCat === 'MVFR') catDot = '🟡';
+            else if (sCat === 'IFR' || sCat === 'LIFR') catDot = '🔴';
+            return `
+              <button type="button" class="btn-sm pop-station-tab-btn ${isActive ? 'active' : ''}" 
+                style="padding: 3px 8px; font-size: 0.68rem; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; ${
+                  isActive
+                    ? 'background: rgba(56, 189, 248, 0.25); color: #38bdf8; border: 1px solid #38bdf8; font-weight: 700;'
+                    : 'background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.15);'
+                }" onclick="if (typeof selectActiveWeatherStation === 'function') { selectActiveWeatherStation(${sIdx}); }">
+                <span>${catDot}</span>
+                <span>${escapeHtml(st.icaoId)}</span>
+                <span style="opacity: 0.75; font-size: 0.62rem;">(${sDist})</span>
+              </button>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    popWeatherDetails.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+        <div>
+          <div>Visibility: <b>${closest.visibilitySM != null ? Number(closest.visibilitySM).toFixed(1) + ' SM' : 'Unknown'}</b> • Ceiling: <b>${closest.ceilingFt != null ? (closest.ceilingFt >= 99999 ? 'Clear' : Number(closest.ceilingFt).toFixed(0) + ' ft') : 'Clear'}</b></div>
+          <div style="color: var(--text-muted); font-size: 0.68rem; margin-top: 2px;">Station: ${escapeHtml(closest.name || closest.icaoId || 'NWS')}${cDir ? ` (${cDir})` : ''} • Last polled: ${timeString}</div>
+        </div>
+        <button type="button" class="btn-sm pop-locate-weather-btn" style="padding: 2px 6px; font-size: 0.66rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 4px; cursor: pointer; white-space: nowrap;" onclick="if (typeof focusWeatherStationOnMap === 'function') { focusWeatherStationOnMap(); }" title="Locate weather station on map">📍 Map</button>
+      </div>
+      ${multiStationsHtml}
+    `;
+  }
+
   // Update map marker
   updateWeatherStationMarker(closest, directions.stations, directions.activeIndex || 0);
+}
+
+function getCompassBearing(fromLat, fromLon, toLat, toLon) {
+  if (fromLat == null || fromLon == null || toLat == null || toLon == null) return 0;
+  const dLon = (toLon - fromLon) * Math.PI / 180.0;
+  const lat1 = fromLat * Math.PI / 180.0;
+  const lat2 = toLat * Math.PI / 180.0;
+  const y = Math.sin(dLon) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+  let brng = Math.atan2(y, x) * 180.0 / Math.PI;
+  brng = (brng + 360) % 360;
+  return brng;
+}
+
+function bearingToCompassDirection(bearingDeg) {
+  if (bearingDeg == null || isNaN(bearingDeg)) return '';
+  const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+  const index = Math.round(bearingDeg / 22.5) % 16;
+  return directions[index];
+}
+
+function formatWeatherDistance(distKm, compassDir = '') {
+  if (distKm === null || distKm === undefined || isNaN(distKm)) return '-';
+  const unit = (typeof getUnitSystem === 'function') ? getUnitSystem() : 'imperial';
+  const dirSuffix = compassDir ? ` ${compassDir}` : '';
+  if (unit === 'imperial') {
+    const mi = Number(distKm) * 0.621371;
+    return `${mi.toFixed(1)} mi${dirSuffix}`;
+  }
+  return `${Number(distKm).toFixed(1)} km${dirSuffix}`;
+}
+
+if (typeof window !== 'undefined') {
+  window.selectActiveWeatherStation = selectActiveWeatherStation;
+  window.focusWeatherStationOnMap = focusWeatherStationOnMap;
+  window.formatWeatherDistance = formatWeatherDistance;
+  window.getCompassBearing = getCompassBearing;
+  window.bearingToCompassDirection = bearingToCompassDirection;
 }
 
 document.addEventListener('DOMContentLoaded', () => {

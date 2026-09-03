@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Extracts the latest flight records and waypoint missions from both Downloads and a connected DJI RC 2.
 .DESCRIPTION
@@ -94,6 +94,12 @@ if (-not $rc2Device) {
                         $latestLog = $logItems | Sort-Object Name -Descending | Select-Object -First 1
                         Write-Host "  [V] Latest RC 2 Flight Log: $($latestLog.Name)" -ForegroundColor Green
                         $shell.Namespace($OutputDir).CopyHere($latestLog, 16)
+                        $swLog = [System.Diagnostics.Stopwatch]::StartNew()
+                        while ($swLog.Elapsed.TotalSeconds -lt 20) {
+                            Start-Sleep -Milliseconds 300
+                            $copiedLog = @(Get-ChildItem -Path $OutputDir -Filter $latestLog.Name -File -ErrorAction SilentlyContinue)
+                            if ($copiedLog.Count -gt 0 -and $copiedLog[0].Length -gt 0) { break }
+                        }
                     } else {
                         Write-Host "  [-] No FlightRecord_*.txt logs found in DJI Fly directory." -ForegroundColor Gray
                     }
@@ -111,6 +117,12 @@ if (-not $rc2Device) {
                             $missionOutDir = "$OutputDir\rc2_waypoint\$($missionFolder.Name)"
                             if (-not (Test-Path $missionOutDir)) { New-Item -ItemType Directory -Path $missionOutDir -Force | Out-Null }
                             $shell.Namespace($missionOutDir).CopyHere($activeKmz, 16)
+                            $swKmz = [System.Diagnostics.Stopwatch]::StartNew()
+                            while ($swKmz.Elapsed.TotalSeconds -lt 15) {
+                                Start-Sleep -Milliseconds 300
+                                $copiedKmz = @(Get-ChildItem -Path $missionOutDir -Filter $activeKmz.Name -File -ErrorAction SilentlyContinue)
+                                if ($copiedKmz.Count -gt 0 -and $copiedKmz[0].Length -gt 0) { break }
+                            }
 
                             # Also grab image / ShotSnap.json if present
                             $imgFolder = Get-MTPFolderItem $missionFolder "image"

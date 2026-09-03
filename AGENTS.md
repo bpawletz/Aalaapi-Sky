@@ -53,7 +53,11 @@ npm test
 
 All unit and E2E tests must pass before the task can be marked complete.
 
-## 5. Automated Build, Test & Push Workflow
+## 5. In-App Intro Guide & Feature Highlights Maintenance
+Aalaapi Sky includes an interactive **Intro Guide Hub (`#quickstart-modal`)** with a dedicated **"What's New & Feature Highlights"** tab (`#intro-tab-features` / `#intro-pane-features`).
+- Whenever you introduce a major user-facing feature, workflow improvement, or new flight pattern, you **MUST** review and update the feature bullet points in the "What's New" pane inside `index_template.html` (and recompile `index.html`) so that pilots and field operators always see current capabilities.
+
+## 6. Automated Build, Test & Push Workflow
 To automate building, verifying unit and E2E tests, committing, and pushing changes to the remote repository, you can use the included convenience scripts:
 
 - **Git Bash / Linux / macOS:**

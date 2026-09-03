@@ -3,9 +3,9 @@
     "jsdom": "^29.1.1",
     "playwright": "^1.61.1"
   },
-  "name": "app",
-  "version": "1.61.2",
-  "description": "**Drone Waypoint Mission Planner**",
+  "name": "aalaapi-sky",
+  "version": "1.70.0",
+  "description": "Waypoint Mission Generator & Editor for DJI Fly",
   "main": "index.js",
   "scripts": {
     "companion": "node tools/companion/server.js",
