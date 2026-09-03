@@ -4075,43 +4075,50 @@ function togglePatternParameters() {
   }
 }
 
-// // Helper to get descriptive flight purpose and styling for a gimbal pitch angle
+// Helper to get descriptive flight purpose and styling for a gimbal pitch angle
 function getGimbalPitchDescription(pitch) {
   const p = Math.round(pitch);
-  if (p <= -85) {
+  if (p > 0) {
     return {
-      text: '📐 True Nadir (Orthomosaic 2D Mapping)',
-      bg: 'rgba(6, 182, 212, 0.12)',
-      border: 'rgba(6, 182, 212, 0.3)',
-      color: 'var(--accent-cyan)'
+      text: '🏗️ Upward Tilt (Bridge, Tower & Canopy Inspection)',
+      bg: 'rgba(59, 130, 246, 0.15)',
+      border: 'rgba(59, 130, 246, 0.35)',
+      color: '#60a5fa'
     };
-  } else if (p <= -70) {
+  } else if (p === 0) {
     return {
-      text: '🏠 Steep Oblique (Rooftops & Footprints)',
-      bg: 'rgba(16, 185, 129, 0.12)',
-      border: 'rgba(16, 185, 129, 0.3)',
-      color: '#34d399'
+      text: '🔭 Level Horizon (Inspection & Panoramic)',
+      bg: 'rgba(249, 115, 22, 0.12)',
+      border: 'rgba(249, 115, 22, 0.3)',
+      color: '#fb923c'
     };
-  } else if (p <= -45) {
-    return {
-      text: '✨ 3D Oblique (Gaussian Splats & Photogrammetry)',
-      bg: 'rgba(168, 85, 247, 0.15)',
-      border: 'rgba(168, 85, 247, 0.35)',
-      color: '#c084fc'
-    };
-  } else if (p < 0) {
+  } else if (p >= -44) {
     return {
       text: '🎥 Shallow Oblique (Cinematic & Facades)',
       bg: 'rgba(245, 158, 11, 0.12)',
       border: 'rgba(245, 158, 11, 0.3)',
       color: '#fbbf24'
     };
+  } else if (p >= -69) {
+    return {
+      text: '✨ 3D Oblique (Gaussian Splats & Photogrammetry)',
+      bg: 'rgba(168, 85, 247, 0.15)',
+      border: 'rgba(168, 85, 247, 0.35)',
+      color: '#c084fc'
+    };
+  } else if (p >= -84) {
+    return {
+      text: '🏠 Steep Oblique (Rooftops & Footprints)',
+      bg: 'rgba(16, 185, 129, 0.12)',
+      border: 'rgba(16, 185, 129, 0.3)',
+      color: '#34d399'
+    };
   } else {
     return {
-      text: '🔭 Level Horizon (Inspection & Panoramic)',
-      bg: 'rgba(249, 115, 22, 0.12)',
-      border: 'rgba(249, 115, 22, 0.3)',
-      color: '#fb923c'
+      text: '📐 True Nadir (Orthomosaic 2D Mapping)',
+      bg: 'rgba(6, 182, 212, 0.12)',
+      border: 'rgba(6, 182, 212, 0.3)',
+      color: 'var(--accent-cyan)'
     };
   }
 }
@@ -4120,7 +4127,7 @@ function getGimbalPitchDescription(pitch) {
 function updateGimbalPitchVisualizer(pitch) {
   if (typeof document === 'undefined' || !document || !document.getElementById) return;
   const pVal = isNaN(pitch) ? -60 : parseFloat(pitch);
-  const beta = -pVal; // Downward angle in degrees: 0° (horizon) to 90° (straight down)
+  const beta = -pVal; // Downward angle in degrees: negative beta is upward, positive is downward
 
   // 1. Update Purpose Badge
   const purposeBadge = document.getElementById('gimbal-pitch-purpose-badge');
@@ -4165,13 +4172,22 @@ function updateGimbalPitchVisualizer(pitch) {
   const x0 = 48;
   const y0 = 38;
   const groundY = 82;
+  const skyY = 6;
+  const rightX = 210;
   const rad = (beta * Math.PI) / 180;
   const dx = Math.cos(rad);
   const dy = Math.sin(rad);
 
-  const tCenter = dy > 0.001 ? Math.min(180, (groundY - y0) / dy) : 160;
-  const xCenter = Math.min(210, x0 + tCenter * dx);
-  const yCenter = Math.min(groundY, y0 + tCenter * dy);
+  let tCenter;
+  if (dy > 0.001) {
+    tCenter = Math.min(180, (groundY - y0) / dy, (rightX - x0) / Math.max(0.001, dx));
+  } else if (dy < -0.001) {
+    tCenter = Math.min(180, (skyY - y0) / dy, (rightX - x0) / Math.max(0.001, dx));
+  } else {
+    tCenter = (rightX - x0);
+  }
+  const xCenter = Math.min(rightX, Math.max(10, x0 + tCenter * dx));
+  const yCenter = Math.min(groundY, Math.max(skyY, y0 + tCenter * dy));
 
   const sightRay = document.getElementById('gimbal-sight-ray');
   if (sightRay && sightRay.setAttribute) {
@@ -4182,22 +4198,36 @@ function updateGimbalPitchVisualizer(pitch) {
   }
 
   // Calculate FOV cone spread (half angle approx 20°)
-  const beta1 = Math.max(0, beta - 20);
-  const beta2 = Math.min(90, beta + 20);
+  const beta1 = beta - 20;
+  const beta2 = beta + 20;
   const r1 = (beta1 * Math.PI) / 180;
   const r2 = (beta2 * Math.PI) / 180;
 
   const dx1 = Math.cos(r1);
   const dy1 = Math.sin(r1);
-  const t1 = dy1 > 0.001 ? Math.min(180, (groundY - y0) / dy1) : 160;
-  const x1 = Math.min(210, x0 + t1 * dx1);
-  const y1 = Math.min(groundY, y0 + t1 * dy1);
+  let t1;
+  if (dy1 > 0.001) {
+    t1 = Math.min(180, (groundY - y0) / dy1, (rightX - x0) / Math.max(0.001, dx1));
+  } else if (dy1 < -0.001) {
+    t1 = Math.min(180, (skyY - y0) / dy1, (rightX - x0) / Math.max(0.001, dx1));
+  } else {
+    t1 = (rightX - x0);
+  }
+  const x1 = Math.min(rightX, Math.max(10, x0 + t1 * dx1));
+  const y1 = Math.min(groundY, Math.max(skyY, y0 + t1 * dy1));
 
   const dx2 = Math.cos(r2);
   const dy2 = Math.sin(r2);
-  const t2 = dy2 > 0.001 ? Math.min(180, (groundY - y0) / dy2) : 160;
-  const x2 = Math.min(210, x0 + t2 * dx2);
-  const y2 = Math.min(groundY, y0 + t2 * dy2);
+  let t2;
+  if (dy2 > 0.001) {
+    t2 = Math.min(180, (groundY - y0) / dy2, (rightX - x0) / Math.max(0.001, dx2));
+  } else if (dy2 < -0.001) {
+    t2 = Math.min(180, (skyY - y0) / dy2, (rightX - x0) / Math.max(0.001, dx2));
+  } else {
+    t2 = (rightX - x0);
+  }
+  const x2 = Math.min(rightX, Math.max(10, x0 + t2 * dx2));
+  const y2 = Math.min(groundY, Math.max(skyY, y0 + t2 * dy2));
 
   const fovCone = document.getElementById('gimbal-fov-cone');
   if (fovCone && fovCone.setAttribute) {
@@ -4209,20 +4239,21 @@ function updateGimbalPitchVisualizer(pitch) {
   const angleTextEl = document.getElementById('gimbal-angle-text');
 
   if (arcEl && angleTextEl && arcEl.setAttribute && angleTextEl.setAttribute) {
-    if (beta > 4) {
+    if (Math.abs(beta) > 4) {
       const arcR = 24;
       const xArc = x0 + arcR * Math.cos(rad);
       const yArc = y0 + arcR * Math.sin(rad);
-      arcEl.setAttribute('d', `M ${x0 + arcR},${y0} A ${arcR},${arcR} 0 0,1 ${xArc.toFixed(1)},${yArc.toFixed(1)}`);
+      const sweepFlag = beta > 0 ? 1 : 0;
+      arcEl.setAttribute('d', `M ${x0 + arcR},${y0} A ${arcR},${arcR} 0 0,${sweepFlag} ${xArc.toFixed(1)},${yArc.toFixed(1)}`);
       arcEl.style.display = 'block';
 
       const midRad = (rad / 2);
       const textR = 34;
       const xText = x0 + textR * Math.cos(midRad);
-      const yText = y0 + textR * Math.sin(midRad) + 3;
+      const yText = y0 + textR * Math.sin(midRad) + (beta > 0 ? 3 : -2);
       angleTextEl.setAttribute('x', xText.toFixed(1));
       angleTextEl.setAttribute('y', yText.toFixed(1));
-      angleTextEl.textContent = `${Math.round(pVal)}°`;
+      angleTextEl.textContent = `${pVal > 0 ? '+' : ''}${Math.round(pVal)}°`;
       angleTextEl.style.display = 'block';
     } else {
       arcEl.style.display = 'none';
