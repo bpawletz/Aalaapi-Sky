@@ -2615,10 +2615,10 @@ const TOUR_STEPS = [
     position: 'right'
   },
   {
-    targetId: 'properties-and-failsafes-section',
-    fallbackTargetId: 'inspector-tab-layer',
+    targetId: 'grid-geometry-section',
+    fallbackTargetId: 'grid-geometry-title',
     title: '3. Layer Properties & Failsafes',
-    desc: 'Tune altitude, speed, and gimbal pitch in Layer Properties. Set Return-to-Home and Signal Loss actions in Mission Failsafes.',
+    desc: 'Tune altitude, speed, and gimbal pitch in Layer Properties. Configure Return-to-Home, Signal Loss actions, and hardware in Mission Failsafes.',
     position: 'right'
   },
   {
@@ -3015,43 +3015,7 @@ function initUIEventListeners() {
     });
   }
 
-  // Inspector Dual Tabs switching
-  const tabLayerBtn = document.getElementById('inspector-tab-layer');
-  const tabFailsafesBtn = document.getElementById('inspector-tab-failsafes');
-  const layerPane = document.getElementById('inspector-layer-pane');
-  const failsafesPane = document.getElementById('inspector-failsafes-pane');
 
-  if (tabLayerBtn && tabFailsafesBtn && layerPane && failsafesPane) {
-    tabLayerBtn.addEventListener('click', () => {
-      tabLayerBtn.classList.add('active');
-      tabFailsafesBtn.classList.remove('active');
-      tabLayerBtn.style.background = 'rgba(6, 182, 212, 0.2)';
-      tabLayerBtn.style.borderColor = 'rgba(6, 182, 212, 0.4)';
-      tabLayerBtn.style.color = 'var(--accent-cyan)';
-      tabLayerBtn.style.fontWeight = '700';
-      tabFailsafesBtn.style.background = 'transparent';
-      tabFailsafesBtn.style.borderColor = 'transparent';
-      tabFailsafesBtn.style.color = 'var(--text-muted)';
-      tabFailsafesBtn.style.fontWeight = '600';
-      layerPane.classList.remove('hidden');
-      failsafesPane.classList.add('hidden');
-    });
-
-    tabFailsafesBtn.addEventListener('click', () => {
-      tabFailsafesBtn.classList.add('active');
-      tabLayerBtn.classList.remove('active');
-      tabFailsafesBtn.style.background = 'rgba(6, 182, 212, 0.2)';
-      tabFailsafesBtn.style.borderColor = 'rgba(6, 182, 212, 0.4)';
-      tabFailsafesBtn.style.color = 'var(--accent-cyan)';
-      tabFailsafesBtn.style.fontWeight = '700';
-      tabLayerBtn.style.background = 'transparent';
-      tabLayerBtn.style.borderColor = 'transparent';
-      tabLayerBtn.style.color = 'var(--text-muted)';
-      tabLayerBtn.style.fontWeight = '600';
-      layerPane.classList.add('hidden');
-      failsafesPane.classList.remove('hidden');
-    });
-  }
 
   // Header Telemetry & Weather Popover toggle
   const telemetryPill = document.getElementById('header-telemetry-pill');
@@ -3919,6 +3883,37 @@ function togglePatternParameters() {
     }
   }
 
+  const patternLabels = {
+    'single': '2D Nadir Grid',
+    'double': '3D Double Grid',
+    'orbit': 'Circular Orbit',
+    'multi-orbit': 'Multi-Tier Orbit',
+    'grid-orbit-combo': '2D+3D Hybrid',
+    'grid-multi-orbit-combo': 'Multi-Tier Hybrid',
+    'freeform': 'Freeform Flight Plan',
+    'road-following': 'Road Following',
+    'exclusion-box': 'Exclusion (Box)',
+    'exclusion-freeform': 'Exclusion (Polygon)'
+  };
+
+  const activePatternBadge = document.getElementById('active-layer-pattern-badge');
+  if (activePatternBadge) {
+    activePatternBadge.textContent = patternLabels[gridType] || 'Layer Settings';
+  }
+
+  if (gridGeometryTitle) {
+    if (typeof gridGeometryTitle.querySelector === 'function') {
+      const titleSpan = gridGeometryTitle.querySelector('span:first-child');
+      if (titleSpan) {
+        titleSpan.textContent = "2. Layer Properties";
+      } else if (!gridGeometryTitle.querySelector('#active-layer-pattern-badge')) {
+        gridGeometryTitle.textContent = "2. Layer Properties";
+      }
+    } else {
+      gridGeometryTitle.textContent = "2. Layer Properties";
+    }
+  }
+
   if (gridType === 'exclusion-freeform') {
     const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
     if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
@@ -3926,7 +3921,6 @@ function togglePatternParameters() {
       gridGeometrySection.style.display = 'block';
       gridGeometrySection.classList.remove('collapsed');
     }
-    if (gridGeometryTitle) gridGeometryTitle.textContent = "2. Exclusion Polygon Settings";
     if (exclusionFreeformNote) exclusionFreeformNote.classList.remove('hidden');
     if (widthContainer) widthContainer.style.display = 'none';
     if (heightContainer) heightContainer.style.display = 'none';
@@ -3944,7 +3938,6 @@ function togglePatternParameters() {
       gridGeometrySection.style.display = 'block';
       gridGeometrySection.classList.remove('collapsed');
     }
-    if (gridGeometryTitle) gridGeometryTitle.textContent = "2. Exclusion Box Settings";
     if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
     if (widthLabel) widthLabel.textContent = "Box Width";
     if (widthContainer) widthContainer.style.display = 'block';
@@ -3978,7 +3971,6 @@ function togglePatternParameters() {
 
   } else if (gridType === 'road-following') {
     if (gridGeometrySection) gridGeometrySection.style.display = 'block';
-    if (gridGeometryTitle) gridGeometryTitle.textContent = "2. Road Settings";
     if (widthContainer) widthContainer.style.display = 'none';
     if (heightContainer) heightContainer.style.display = 'none';
     if (rotationContainer) rotationContainer.style.display = 'none';
@@ -4004,15 +3996,6 @@ function togglePatternParameters() {
 
   } else {
     if (gridGeometrySection) gridGeometrySection.style.display = 'block';
-    if (gridGeometryTitle) {
-      if (gridType === 'orbit' || gridType === 'multi-orbit') {
-        gridGeometryTitle.textContent = "2. Orbit Geometry";
-      } else if (gridType === 'grid-orbit-combo' || gridType === 'grid-multi-orbit-combo') {
-        gridGeometryTitle.textContent = "2. Hybrid Geometry";
-      } else {
-        gridGeometryTitle.textContent = "2. Grid Geometry";
-      }
-    }
     if (widthContainer) widthContainer.style.display = 'block';
     if (frontOverlapContainer) frontOverlapContainer.style.display = 'block';
     if (sideOverlapContainer) sideOverlapContainer.style.display = 'block';
