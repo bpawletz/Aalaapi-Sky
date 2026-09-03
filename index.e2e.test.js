@@ -2569,6 +2569,81 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(visualizerResult.afterDragBadge.includes('3D Oblique'), 'Badge updates to 3D Oblique');
     assert.ok(visualizerResult.afterDragTransform.includes('rotate(45)'), 'Camera node rotates to downward 45 deg');
   });
+
+  test('E2E: Controlled Settings Reset & Storage Manager (v1.74.0)', async () => {
+    const resetResult = await page.evaluate(async () => {
+      // 1. Mutate settings in localStorage and on inputs
+      localStorage.setItem('aalaapi_sky_theme', 'light');
+      localStorage.setItem('aalaapi-rc2-uuid', '354A8F93-759C-42C3-A8D5-746F79C7622A');
+      localStorage.setItem('aalaapi_sky_last_location', JSON.stringify({ lat: 41.32, lon: -88.99 }));
+      
+      const altInput = document.getElementById('altitude');
+      if (altInput) {
+        altInput.value = '85';
+        altInput.dispatchEvent(new Event('input', { bubbles: true }));
+        altInput.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+
+      // 2. Open Config Modal
+      const configBtn = document.getElementById('config-btn');
+      if (configBtn) configBtn.click();
+      await new Promise(r => setTimeout(r, 50));
+
+      const configModal = document.getElementById('config-modal');
+      const isModalOpen = configModal ? !configModal.classList.contains('hidden') : false;
+
+      // 3. Inspect modified state & badges
+      const flightBadge = document.getElementById('badge-count-flight')?.textContent;
+      const hardwareBadge = document.getElementById('badge-count-hardware')?.textContent;
+      const altDot = altInput?.closest('.control-group')?.querySelector('.setting-modified-dot');
+      const hasAltDot = altDot ? altDot.style.display !== 'none' : false;
+
+      // 4. Click Reset Selected (with flight and UI checked)
+      const chkFlight = document.getElementById('reset-chk-flight');
+      if (chkFlight) chkFlight.checked = true;
+      const btnResetSelected = document.getElementById('config-reset-selected-btn');
+      if (btnResetSelected) btnResetSelected.click();
+      await new Promise(r => setTimeout(r, 100));
+
+      const afterResetAlt = altInput ? altInput.value : null;
+      const afterResetTheme = localStorage.getItem('aalaapi_sky_theme');
+      const afterResetHardware = localStorage.getItem('aalaapi-rc2-uuid');
+
+      // 5. Test individual dot click revert on an edited input
+      if (altInput) {
+        altInput.value = '110';
+        altInput.dispatchEvent(new Event('input', { bubbles: true }));
+        altInput.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      await new Promise(r => setTimeout(r, 50));
+      const newAltDot = altInput?.closest('.control-group')?.querySelector('.setting-modified-dot');
+      if (newAltDot) newAltDot.click();
+      await new Promise(r => setTimeout(r, 50));
+      const afterDotClickAlt = altInput ? altInput.value : null;
+
+      return {
+        success: true,
+        isModalOpen,
+        flightBadge,
+        hardwareBadge,
+        hasAltDot,
+        afterResetAlt,
+        afterResetTheme,
+        afterResetHardware,
+        afterDotClickAlt
+      };
+    });
+
+    assert.ok(resetResult.success, 'Evaluation should succeed');
+    assert.strictEqual(resetResult.isModalOpen, true, 'Config modal should open');
+    assert.ok(resetResult.flightBadge.includes('Custom'), 'Flight badge should show custom count');
+    assert.ok(resetResult.hardwareBadge.includes('Custom'), 'Hardware badge should show custom count');
+    assert.strictEqual(resetResult.hasAltDot, true, 'Modified dot should appear on modified altitude slider');
+    assert.strictEqual(resetResult.afterResetAlt, '50', 'Altitude should reset to factory default (50m)');
+    assert.strictEqual(resetResult.afterResetTheme, null, 'Theme preference should be cleared');
+    assert.strictEqual(resetResult.afterResetHardware, '354A8F93-759C-42C3-A8D5-746F79C7622A', 'Hardware domain was unchecked and untouched');
+    assert.strictEqual(resetResult.afterDotClickAlt, '50', 'Clicking setting dot resets single input to default (50m)');
+  });
 });
 
 

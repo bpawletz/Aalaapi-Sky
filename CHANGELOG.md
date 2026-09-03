@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.74.0] - 2026-09-03
+
+### Added
+- **Controlled Settings Reset & Storage Manager (`#config-modal`):**
+  - Added a dedicated Storage & Controlled Reset manager inside Configuration Settings to view, manage, and selectively reset stored browser settings.
+  - Granular reset support across 5 distinct storage domains:
+    1. 🛩️ **Flight & Layer Parameters** (speeds, altitudes, overlaps, gimbal pitches, failsafes, detour modes).
+    2. 🗺️ **Map Calibration & GPS Cache** (georeferencing D-Pad offsets to 0m and cached last location).
+    3. 🎨 **UI, Theme & Layout Preferences** (dark mode, header search, imperial units, accordion mode).
+    4. 🔌 **Hardware & Remote Links** (DJI RC 2 UUID, Companion Bridge host IP, Multi-Vendor toggles).
+    5. 🎓 **Onboarding & Tour States** (welcome toast prompt and spotlight tour completion flags).
+  - Added **`[Select All]`**, **`[Clear]`**, and **`[🔄 Reset Selected]`** actions with instant live UI synchronization.
+  - Added **`[⚠️ Factory Reset]`** action with confirmation dialog for a clean 1-click restore to out-of-the-box defaults.
+- **Minimalist Modified Setting Dot Indicators (`●`):**
+  - Added a subtle 4px cyan indicator dot (`.setting-modified-dot`) next to slider/dropdown labels when customized from factory defaults.
+  - Clicking any indicator dot immediately reverts that single input to its factory default value.
+  - Added section header indicator dots (`.section-modified-dot`) on `2. Layer Properties` and `3. Mission Failsafes`.
+  - Added dynamic count badges on Reset Manager category cards (e.g. `💾 4 Custom Values` vs `✓ Default`).
+
 ## [1.73.1] - 2026-09-03
 
 ### Added

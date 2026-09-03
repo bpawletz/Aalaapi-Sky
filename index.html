@@ -2565,6 +2565,84 @@ html, body {
   cursor: pointer;
 }
 
+/* --- Controlled Settings Reset & Modified Indicators (v1.74.0) --- */
+.setting-modified-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: var(--accent-cyan);
+  box-shadow: 0 0 6px var(--accent-cyan);
+  margin-left: 5px;
+  vertical-align: middle;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.setting-modified-dot:hover {
+  transform: scale(1.6);
+  background-color: #38bdf8;
+}
+
+.section-modified-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--accent-cyan);
+  box-shadow: 0 0 6px var(--accent-cyan);
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.storage-reset-card {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  cursor: pointer;
+}
+
+.storage-reset-card:hover {
+  background: rgba(15, 23, 42, 0.75);
+  border-color: rgba(6, 182, 212, 0.4);
+}
+
+.storage-reset-card input[type="checkbox"] {
+  margin-top: 3px;
+  accent-color: var(--accent-cyan);
+  cursor: pointer;
+  width: 15px;
+  height: 15px;
+}
+
+.storage-count-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.storage-count-badge.custom {
+  background: rgba(6, 182, 212, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(6, 182, 212, 0.35);
+}
+
+.storage-count-badge.default {
+  background: rgba(148, 163, 184, 0.1);
+  color: var(--text-muted);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+
 
 
 
@@ -2627,7 +2705,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.73.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.74.0</span></h1>
         </div>
       </div>
 
@@ -4276,7 +4354,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.73.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.74.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -4299,6 +4377,7 @@ html, body {
           <li>Multi-Layer Missions: Combine multiple independent pattern layers with customizable inter-layer transitions.</li>
           <li>3D Exclusion Zones &amp; Automated Detour Routing: Define restricted no-fly volumes with 3D altitude bounds and automatic obstacle avoidance routing (Perimeter, Over-the-Top Climb, or Smart 3D).</li>
           <li>Interactive Gimbal Pitch Visualizer &amp; Upward Tilt: Full $-90^\circ$ to $+60^\circ$ tilt range support with live FOV cone diagram and angle guides.</li>
+          <li>Controlled Settings Reset &amp; Storage Manager: Selectively manage and restore saved browser settings with minimalist indicator dots on modified controls.</li>
         </ul>
 
         <!-- Legal Disclaimer Alert - icon card grid -->
@@ -4342,6 +4421,12 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.74.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Controlled Settings Reset &amp; Storage Manager:</strong> Added granular reset capabilities across 5 distinct domains (Flight, Map/GPS, UI, Hardware, Onboarding) with 1-click Factory Reset and minimalist indicator dots (<code>●</code>) on modified controls.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.73.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Full Upward Gimbal Tilt Range ($-90^\circ$ to $+60^\circ$):</strong> Extended pitch controls and live FOV ray-casting for DJI Mini 4 Pro, Air 3, and Mavic 3 upward inspections (bridges, towers, canopies) with a new <code>[+20° Up]</code> preset chip.</li>
@@ -5828,6 +5913,91 @@ html, body {
               <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
             </label>
           </div>
+        </div>
+
+        <!-- Controlled Settings Reset & Storage Manager -->
+        <div style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--text-main); margin: 0; text-transform: uppercase; letter-spacing: 0.5px;">Storage &amp; Controlled Reset</h3>
+            <div style="display: flex; gap: 6px;">
+              <button id="reset-select-all-btn" type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 0.7rem; font-weight: 600; margin: 0;">Select All</button>
+              <button id="reset-clear-all-btn" type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 0.7rem; font-weight: 600; margin: 0;">Clear</button>
+            </div>
+          </div>
+          <p class="help-text" style="margin-bottom: 10px;">Select which categories of saved browser settings and cached states to selectively restore to factory defaults.</p>
+          
+          <div id="storage-reset-categories-container" style="display: flex; flex-direction: column; gap: 8px;">
+            <!-- Category 1: Flight & Layer Parameters -->
+            <label class="storage-reset-card" for="reset-chk-flight">
+              <input type="checkbox" id="reset-chk-flight" checked>
+              <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <strong style="font-size: 0.82rem; color: var(--text-main);">🛩️ Flight &amp; Layer Parameters</strong>
+                  <span id="badge-count-flight" class="storage-count-badge custom">Checking...</span>
+                </div>
+                <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 2px;">Altitudes, speeds, overlaps, gimbal pitches, failsafes, and detour modes</span>
+              </div>
+            </label>
+
+            <!-- Category 2: Map Calibration & Location Cache -->
+            <label class="storage-reset-card" for="reset-chk-map">
+              <input type="checkbox" id="reset-chk-map" checked>
+              <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <strong style="font-size: 0.82rem; color: var(--text-main);">🗺️ Map Calibration &amp; GPS Cache</strong>
+                  <span id="badge-count-map" class="storage-count-badge default">Checking...</span>
+                </div>
+                <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 2px;">Georeferencing D-Pad nudge calibration (0m N/E) and last known takeoff GPS fix</span>
+              </div>
+            </label>
+
+            <!-- Category 3: UI & Layout Preferences -->
+            <label class="storage-reset-card" for="reset-chk-ui">
+              <input type="checkbox" id="reset-chk-ui" checked>
+              <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <strong style="font-size: 0.82rem; color: var(--text-main);">🎨 UI, Theme &amp; Layout Preferences</strong>
+                  <span id="badge-count-ui" class="storage-count-badge custom">Checking...</span>
+                </div>
+                <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 2px;">Theme (Dark), Search Layout, Measurement Units (Imperial), Accordion mode</span>
+              </div>
+            </label>
+
+            <!-- Category 4: Hardware & Remote Links -->
+            <label class="storage-reset-card" for="reset-chk-hardware">
+              <input type="checkbox" id="reset-chk-hardware">
+              <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <strong style="font-size: 0.82rem; color: var(--text-main);">🔌 Hardware &amp; Remote Links</strong>
+                  <span id="badge-count-hardware" class="storage-count-badge default">Checking...</span>
+                </div>
+                <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 2px;">Stored DJI RC 2 UUID, Companion Bridge host IP, and Multi-Vendor toggles</span>
+              </div>
+            </label>
+
+            <!-- Category 5: Onboarding & Tour State -->
+            <label class="storage-reset-card" for="reset-chk-onboarding">
+              <input type="checkbox" id="reset-chk-onboarding">
+              <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <strong style="font-size: 0.82rem; color: var(--text-main);">🎓 Onboarding &amp; Tour States</strong>
+                  <span id="badge-count-onboarding" class="storage-count-badge default">Checking...</span>
+                </div>
+                <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 2px;">Re-enable first-time welcome toast and interactive spotlight tour flags</span>
+              </div>
+            </label>
+          </div>
+
+          <!-- Reset Action Buttons -->
+          <div style="display: flex; gap: 8px; margin-top: 12px;">
+            <button id="config-reset-selected-btn" class="btn-secondary" type="button" style="flex: 1; padding: 8px 12px; font-size: 0.75rem; font-weight: 700; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.12); display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+              <span>🔄 Reset Selected</span>
+            </button>
+            <button id="config-factory-reset-btn" class="btn-secondary" type="button" style="padding: 8px 12px; font-size: 0.75rem; font-weight: 700; color: #f87171; border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.12); display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+              <span>⚠️ Factory Reset</span>
+            </button>
+          </div>
+          <div id="reset-feedback-toast" style="display: none; margin-top: 8px; padding: 6px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; text-align: center; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35);"></div>
         </div>
 
       </div>
@@ -9079,6 +9249,61 @@ const CONTROLS_LIST = [
   'global-hover-time', 'global-exclusion-detour-mode', 'global-exclusion-clearance-buffer'
 ];
 
+// Factory Defaults Schema for Reset & Modified Detection (v1.74.0)
+const FACTORY_DEFAULTS = {
+  // Flight & Layer Parameters
+  'altitude': '50',
+  'speed': '4',
+  'grid-width': '100',
+  'grid-height': '100',
+  'grid-rotation': '0',
+  'front-overlap': '75',
+  'side-overlap': '75',
+  'gimbal-pitch': '-60',
+  'camera-action': 'none',
+  'orbit-radius': '50',
+  'orbit-waypoints': '12',
+  'orbit-speed': '3',
+  'multi-orbit-radius': '50',
+  'multi-orbit-tiers': '3',
+  'multi-orbit-bottom-alt': '30',
+  'multi-orbit-top-alt': '90',
+  'multi-orbit-pitch-bottom': '-30',
+  'multi-orbit-pitch-top': '-60',
+  'multi-orbit-wps': '8',
+  'multi-orbit-speed': '3',
+  'road-offset': '10',
+  'road-turn-mode': 'toPointAndStopWithDiscontinuitySlightlyRounded',
+  'road-action': 'none',
+  'road-snap': false,
+  // Section 3: Mission Failsafes & Defaults
+  'rth-altitude': '50',
+  'signal-lost-action': 'goHome',
+  'exit-on-rc-lost': 'executeLostAction',
+  'flight-path-mode': 'goToFirstWaypoint',
+  'heading-mode': 'followWayline',
+  'drone-model': 'mini4pro',
+  'finish-action': 'goHome',
+  'capture-mode': 'time',
+  'path-mode': 'smoothTransition',
+  'camera-model': 'mini4pro',
+  'camera-zoom': '1',
+  'camera-hfov': '69.7',
+  'camera-vfov': '55.2',
+  'global-hover-time': '0',
+  'global-exclusion-detour-mode': 'perimeter',
+  'global-exclusion-clearance-buffer': '10',
+  'max-flight-time': '25',
+  // UI & Layout Preferences
+  'unit-system': 'imperial',
+  'theme': 'dark',
+  'nav-layout-select': 'header',
+  'accordion-mode-toggle': true,
+  'minimize-sidebar-toggle': false,
+  'multivendor-toggle': false,
+  'companion-host': 'http://localhost:8765'
+};
+
 function saveAllSettingsToLocalStorage() {
   const settings = {};
   CONTROLS_LIST.forEach(id => {
@@ -9091,11 +9316,17 @@ function saveAllSettingsToLocalStorage() {
   if (roadSnapEl) {
     settings['road-snap'] = roadSnapEl.checked;
   }
-  localStorage.setItem('aalaapi_sky_input_settings', JSON.stringify(settings));
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('aalaapi_sky_input_settings', JSON.stringify(settings));
+    }
+  } catch (e) {}
+  updateModifiedSettingsIndicators();
 }
 
 function restoreSettingsFromLocalStorage() {
   try {
+    if (typeof localStorage === 'undefined') return;
     const saved = localStorage.getItem('aalaapi_sky_input_settings');
     if (!saved) return;
     const settings = JSON.parse(saved);
@@ -9115,6 +9346,458 @@ function restoreSettingsFromLocalStorage() {
     Logger.error("Failed to restore settings from localStorage:", err);
   }
 }
+
+// Computes current state of modified settings across all 5 domains
+function getModifiedSettingsState() {
+  const state = {
+    flight: { count: 0, items: [] },
+    map: { count: 0, items: [] },
+    ui: { count: 0, items: [] },
+    hardware: { count: 0, items: [] },
+    onboarding: { count: 0, items: [] }
+  };
+
+  if (typeof document === 'undefined') return state;
+
+  // 1. Flight Parameters
+  const flightControlIds = [
+    'altitude', 'speed', 'grid-width', 'grid-height', 'grid-rotation',
+    'front-overlap', 'side-overlap', 'gimbal-pitch', 'camera-action',
+    'orbit-radius', 'orbit-waypoints', 'orbit-speed',
+    'multi-orbit-radius', 'multi-orbit-tiers', 'multi-orbit-bottom-alt',
+    'multi-orbit-top-alt', 'multi-orbit-pitch-bottom', 'multi-orbit-pitch-top',
+    'multi-orbit-wps', 'multi-orbit-speed', 'road-offset',
+    'rth-altitude', 'signal-lost-action', 'exit-on-rc-lost', 'flight-path-mode',
+    'heading-mode', 'drone-model', 'finish-action', 'capture-mode', 'path-mode',
+    'global-exclusion-detour-mode', 'global-exclusion-clearance-buffer', 'max-flight-time'
+  ];
+
+  flightControlIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const defaultVal = FACTORY_DEFAULTS[id];
+    if (defaultVal === undefined) return;
+    let isModified = false;
+    if (el.type === 'checkbox') {
+      isModified = Boolean(el.checked) !== Boolean(defaultVal);
+    } else {
+      isModified = String(el.value) !== String(defaultVal);
+    }
+    if (isModified) {
+      state.flight.count++;
+      state.flight.items.push(id);
+    }
+  });
+
+  // 2. Map Calibration & Location Cache
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const lastLoc = localStorage.getItem('aalaapi_sky_last_location');
+      const offN = parseFloat(localStorage.getItem('aalaapi_sky_remote_id_offset_n')) || 0;
+      const offE = parseFloat(localStorage.getItem('aalaapi_sky_remote_id_offset_e')) || 0;
+      if (lastLoc) {
+        state.map.count++;
+        state.map.items.push('Cached GPS Location');
+      }
+      if (Math.abs(offN) > 0.01 || Math.abs(offE) > 0.01) {
+        state.map.count++;
+        state.map.items.push('D-Pad Alignment Offset');
+      }
+    }
+  } catch (e) {}
+
+  // 3. UI, Theme & Layout
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const theme = localStorage.getItem('aalaapi_sky_theme');
+      if (theme && theme !== 'dark') {
+        state.ui.count++;
+        state.ui.items.push('Theme (Light)');
+      }
+      const nav = localStorage.getItem('aalaapi_nav_layout');
+      if (nav && nav !== 'header') {
+        state.ui.count++;
+        state.ui.items.push('Nav Layout');
+      }
+      const units = localStorage.getItem('aalaapi_sky_unit_system');
+      if (units && units !== 'imperial') {
+        state.ui.count++;
+        state.ui.items.push('Units (Metric)');
+      }
+      const accordion = localStorage.getItem('aalaapi_sky_accordion_mode');
+      if (accordion !== null && accordion !== 'true') {
+        state.ui.count++;
+        state.ui.items.push('Accordion Mode');
+      }
+      const sidebarMin = localStorage.getItem('aalaapi_sky_sidebar_minimized');
+      if (sidebarMin === 'true') {
+        state.ui.count++;
+        state.ui.items.push('Sidebar Minimized');
+      }
+    }
+  } catch (e) {}
+
+  // 4. Hardware & Remote Links
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const rc2Uuid = localStorage.getItem('aalaapi-rc2-uuid');
+      if (rc2Uuid) {
+        state.hardware.count++;
+        state.hardware.items.push('DJI RC 2 UUID');
+      }
+      const compHost = localStorage.getItem('aalaapi-companion-host');
+      if (compHost && compHost !== 'http://localhost:8765') {
+        state.hardware.count++;
+        state.hardware.items.push('Companion Host');
+      }
+      const multiVendor = localStorage.getItem('aalaapi-multivendor-enabled');
+      if (multiVendor === 'true') {
+        state.hardware.count++;
+        state.hardware.items.push('Multi-Vendor Autopilots');
+      }
+    }
+  } catch (e) {}
+
+  // 5. Onboarding & Tour
+  try {
+    if (typeof localStorage !== 'undefined') {
+      if (localStorage.getItem('aalaapi_intro_banner_dismissed') === 'true') {
+        state.onboarding.count++;
+        state.onboarding.items.push('Welcome Banner Dismissed');
+      }
+      if (localStorage.getItem('aalaapi_sky_tour_completed') === 'true') {
+        state.onboarding.count++;
+        state.onboarding.items.push('Tour Completed');
+      }
+    }
+  } catch (e) {}
+
+  return state;
+}
+
+// Live update of minimalist dot indicators and storage reset badges
+function updateModifiedSettingsIndicators() {
+  if (typeof document === 'undefined') return;
+  const state = getModifiedSettingsState();
+
+  // 1. Update Storage Modal Badges
+  const updateBadge = (id, count, defaultLabel = '✓ Default') => {
+    const badge = document.getElementById(id);
+    if (!badge) return;
+    if (count > 0) {
+      badge.textContent = `💾 ${count} Custom`;
+      badge.className = 'storage-count-badge custom';
+    } else {
+      badge.textContent = defaultLabel;
+      badge.className = 'storage-count-badge default';
+    }
+  };
+
+  updateBadge('badge-count-flight', state.flight.count);
+  updateBadge('badge-count-map', state.map.count, '✓ Default (0m)');
+  updateBadge('badge-count-ui', state.ui.count);
+  updateBadge('badge-count-hardware', state.hardware.count);
+  updateBadge('badge-count-onboarding', state.onboarding.count);
+
+  // 2. Update Inline Setting Dots (Minimalist 4px dots next to input labels)
+  Object.keys(FACTORY_DEFAULTS).forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const defaultVal = FACTORY_DEFAULTS[id];
+    let isModified = false;
+    if (el.type === 'checkbox') {
+      isModified = Boolean(el.checked) !== Boolean(defaultVal);
+    } else {
+      isModified = String(el.value) !== String(defaultVal);
+    }
+
+    const group = (typeof el.closest === 'function') ? (el.closest('.control-group') || el.parentElement) : el.parentElement;
+    const label = group ? ((typeof group.querySelector === 'function' ? group.querySelector('.control-label') : null) || (typeof group.querySelector === 'function' ? group.querySelector('label') : null)) : null;
+    if (!label) return;
+
+    let dot = (typeof label.querySelector === 'function') ? label.querySelector('.setting-modified-dot') : null;
+    if (isModified) {
+      if (!dot && typeof document.createElement === 'function') {
+        dot = document.createElement('span');
+        dot.className = 'setting-modified-dot';
+        dot.dataset.targetId = id;
+        if (typeof dot.addEventListener === 'function') {
+          dot.addEventListener('click', (e) => {
+            if (e.stopPropagation) e.stopPropagation();
+            if (e.preventDefault) e.preventDefault();
+            if (el.type === 'checkbox') {
+              el.checked = defaultVal;
+            } else {
+              el.value = defaultVal;
+            }
+            if (typeof el.dispatchEvent === 'function') {
+              el.dispatchEvent(new Event('input', { bubbles: true }));
+              el.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            if (typeof syncDisplayValues === 'function') syncDisplayValues();
+            if (typeof updateGrid === 'function') updateGrid();
+            updateModifiedSettingsIndicators();
+          });
+        }
+        if (typeof label.appendChild === 'function') label.appendChild(dot);
+      }
+      if (dot) {
+        dot.title = `Custom value saved (Default: ${defaultVal}) • Click to reset`;
+        if (dot.style) dot.style.display = 'inline-block';
+      }
+    } else if (dot && dot.style) {
+      dot.style.display = 'none';
+    }
+  });
+
+  // 3. Update Section Header Dots
+  const updateSectionDot = (sectionId, hasModifications) => {
+    if (typeof document === 'undefined' || typeof document.getElementById !== 'function') return;
+    const section = document.getElementById(sectionId);
+    if (!section || typeof section.querySelector !== 'function') return;
+    const header = section.querySelector('h3');
+    if (!header) return;
+    let dot = typeof header.querySelector === 'function' ? header.querySelector('.section-modified-dot') : null;
+    if (hasModifications) {
+      if (!dot && typeof document.createElement === 'function') {
+        dot = document.createElement('span');
+        dot.className = 'section-modified-dot';
+        dot.title = 'Contains custom settings';
+        if (typeof header.appendChild === 'function') header.appendChild(dot);
+      }
+      if (dot && dot.style) dot.style.display = 'inline-block';
+    } else if (dot && dot.style) {
+      dot.style.display = 'none';
+    }
+  };
+
+  const layerSectionModified = state.flight.items.some(id => ['altitude', 'speed', 'grid-width', 'grid-height', 'grid-rotation', 'front-overlap', 'side-overlap', 'gimbal-pitch'].includes(id));
+  const failsafesSectionModified = state.flight.items.some(id => ['rth-altitude', 'signal-lost-action', 'exit-on-rc-lost', 'flight-path-mode', 'heading-mode', 'drone-model'].includes(id));
+
+  updateSectionDot('layer-parameters-section', layerSectionModified);
+  updateSectionDot('mission-failsafes-section', failsafesSectionModified);
+}
+
+// Executes controlled or factory settings reset
+function resetStoredSettings(options = {}) {
+  const opts = {
+    flightParams: true,
+    mapCalibration: true,
+    uiPreferences: true,
+    hardwareLinks: false,
+    onboarding: false,
+    ...options
+  };
+
+  const resetDomains = [];
+
+  // 1. Flight Parameters
+  if (opts.flightParams) {
+    const flightControlIds = [
+      'altitude', 'speed', 'grid-width', 'grid-height', 'grid-rotation',
+      'front-overlap', 'side-overlap', 'gimbal-pitch', 'camera-action',
+      'orbit-radius', 'orbit-waypoints', 'orbit-speed',
+      'multi-orbit-radius', 'multi-orbit-tiers', 'multi-orbit-bottom-alt',
+      'multi-orbit-top-alt', 'multi-orbit-pitch-bottom', 'multi-orbit-pitch-top',
+      'multi-orbit-wps', 'multi-orbit-speed', 'road-offset',
+      'rth-altitude', 'signal-lost-action', 'exit-on-rc-lost', 'flight-path-mode',
+      'heading-mode', 'drone-model', 'finish-action', 'capture-mode', 'path-mode',
+      'global-exclusion-detour-mode', 'global-exclusion-clearance-buffer', 'max-flight-time'
+    ];
+    flightControlIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && FACTORY_DEFAULTS[id] !== undefined) {
+        if (el.type === 'checkbox') {
+          el.checked = FACTORY_DEFAULTS[id];
+        } else {
+          el.value = FACTORY_DEFAULTS[id];
+        }
+      }
+    });
+
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer) {
+      activeLayer.altitude = parseFloat(FACTORY_DEFAULTS['altitude']);
+      activeLayer.speed = parseFloat(FACTORY_DEFAULTS['speed']);
+      activeLayer.overlapFront = parseFloat(FACTORY_DEFAULTS['overlap-front']);
+      activeLayer.overlapSide = parseFloat(FACTORY_DEFAULTS['overlap-side']);
+      activeLayer.gimbalPitch = parseFloat(FACTORY_DEFAULTS['gimbal-pitch']);
+      activeLayer.gridAngle = parseFloat(FACTORY_DEFAULTS['grid-rotation']);
+    }
+
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('aalaapi_sky_input_settings');
+      }
+    } catch (e) {}
+
+    if (typeof syncDisplayValues === 'function') syncDisplayValues();
+    if (typeof updateGimbalPitchVisualizer === 'function') updateGimbalPitchVisualizer(parseFloat(FACTORY_DEFAULTS['gimbal-pitch']));
+    if (typeof updateGrid === 'function') updateGrid();
+    resetDomains.push('Flight Parameters');
+  }
+
+  // 2. Map Calibration & GPS Cache
+  if (opts.mapCalibration) {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('aalaapi_sky_last_location');
+        localStorage.removeItem('aalaapi_sky_remote_id_offset_n');
+        localStorage.removeItem('aalaapi_sky_remote_id_offset_e');
+      }
+    } catch (e) {}
+    if (typeof remoteIdOffsetN !== 'undefined') remoteIdOffsetN = 0;
+    if (typeof remoteIdOffsetE !== 'undefined') remoteIdOffsetE = 0;
+    if (typeof updateRemoteIdAlignmentHUD === 'function') updateRemoteIdAlignmentHUD();
+    resetDomains.push('Map Calibration & GPS');
+  }
+
+  // 3. UI, Theme & Layout
+  if (opts.uiPreferences) {
+    if (typeof setAppTheme === 'function') setAppTheme('dark');
+    if (typeof setNavLayout === 'function') setNavLayout('header');
+
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('aalaapi_sky_theme');
+        localStorage.removeItem('aalaapi_nav_layout');
+        localStorage.removeItem('aalaapi_sky_unit_system');
+        localStorage.removeItem('aalaapi_sky_accordion_mode');
+        localStorage.removeItem('aalaapi_sky_sidebar_minimized');
+        for (let i = 0; i < 10; i++) {
+          localStorage.removeItem(`aalaapi_sky_section_${i}_collapsed`);
+        }
+      }
+    } catch (e) {}
+    
+    const unitSelect = document.getElementById('unit-system');
+    if (unitSelect) unitSelect.value = 'imperial';
+    cachedUnitSystem = 'imperial';
+
+    const accordionToggle = document.getElementById('accordion-mode-toggle');
+    if (accordionToggle) accordionToggle.checked = true;
+
+    const sidebarMinToggle = document.getElementById('minimize-sidebar-toggle');
+    if (sidebarMinToggle) sidebarMinToggle.checked = false;
+    if (typeof document !== 'undefined' && typeof document.querySelector === 'function') {
+      document.querySelector('.sidebar')?.classList.remove('minimized');
+    }
+
+    if (typeof syncDisplayValues === 'function') syncDisplayValues();
+    resetDomains.push('UI Preferences');
+  }
+
+  // 4. Hardware & Remote Links
+  if (opts.hardwareLinks) {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('aalaapi-rc2-uuid');
+        localStorage.removeItem('aalaapi-companion-host');
+        localStorage.removeItem('aalaapi-multivendor-enabled');
+      }
+    } catch (e) {}
+
+    const multiVendorToggle = document.getElementById('multivendor-toggle');
+    if (multiVendorToggle) {
+      multiVendorToggle.checked = false;
+      multiVendorToggle.dispatchEvent(new Event('change'));
+    }
+
+    resetDomains.push('Hardware Links');
+  }
+
+  // 5. Onboarding & Tour
+  if (opts.onboarding) {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('aalaapi_intro_banner_dismissed');
+        localStorage.removeItem('aalaapi_sky_tour_completed');
+      }
+    } catch (e) {}
+    const welcomeBanner = document.getElementById('welcome-tour-banner');
+    if (welcomeBanner) welcomeBanner.classList.remove('hidden');
+    resetDomains.push('Onboarding States');
+  }
+
+  updateModifiedSettingsIndicators();
+  return { success: true, resetDomains };
+}
+
+// Initialize Controlled Reset Manager Event Listeners
+function initControlledResetManager() {
+  if (typeof document === 'undefined') return;
+
+  const btnResetSelected = document.getElementById('config-reset-selected-btn');
+  const btnFactoryReset = document.getElementById('config-factory-reset-btn');
+  const btnSelectAll = document.getElementById('reset-select-all-btn');
+  const btnClearAll = document.getElementById('reset-clear-all-btn');
+  const toast = document.getElementById('reset-feedback-toast');
+
+  const showToast = (msg, isSuccess = true) => {
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.style.display = 'block';
+    toast.style.background = isSuccess ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+    toast.style.color = isSuccess ? '#34d399' : '#f87171';
+    toast.style.borderColor = isSuccess ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)';
+    setTimeout(() => {
+      if (toast) toast.style.display = 'none';
+    }, 3000);
+  };
+
+  if (btnSelectAll) {
+    btnSelectAll.addEventListener('click', () => {
+      ['reset-chk-flight', 'reset-chk-map', 'reset-chk-ui', 'reset-chk-hardware', 'reset-chk-onboarding'].forEach(id => {
+        const chk = document.getElementById(id);
+        if (chk) chk.checked = true;
+      });
+    });
+  }
+
+  if (btnClearAll) {
+    btnClearAll.addEventListener('click', () => {
+      ['reset-chk-flight', 'reset-chk-map', 'reset-chk-ui', 'reset-chk-hardware', 'reset-chk-onboarding'].forEach(id => {
+        const chk = document.getElementById(id);
+        if (chk) chk.checked = false;
+      });
+    });
+  }
+
+  if (btnResetSelected) {
+    btnResetSelected.addEventListener('click', () => {
+      const flightParams = Boolean(document.getElementById('reset-chk-flight')?.checked);
+      const mapCalibration = Boolean(document.getElementById('reset-chk-map')?.checked);
+      const uiPreferences = Boolean(document.getElementById('reset-chk-ui')?.checked);
+      const hardwareLinks = Boolean(document.getElementById('reset-chk-hardware')?.checked);
+      const onboarding = Boolean(document.getElementById('reset-chk-onboarding')?.checked);
+
+      if (!flightParams && !mapCalibration && !uiPreferences && !hardwareLinks && !onboarding) {
+        showToast('⚠️ Please select at least one category to reset.', false);
+        return;
+      }
+
+      const res = resetStoredSettings({ flightParams, mapCalibration, uiPreferences, hardwareLinks, onboarding });
+      showToast(`✅ Reset complete: ${res.resetDomains.join(', ')}`);
+    });
+  }
+
+  if (btnFactoryReset) {
+    btnFactoryReset.addEventListener('click', () => {
+      const confirmed = typeof confirm === 'function' ? confirm('⚠️ Full Factory Reset:\n\nThis will restore all flight parameters, UI preferences, map calibrations, hardware links, and tutorial states to stock defaults.\n\nProceed?') : true;
+      if (confirmed) {
+        const res = resetStoredSettings({
+          flightParams: true,
+          mapCalibration: true,
+          uiPreferences: true,
+          hardwareLinks: true,
+          onboarding: true
+        });
+        showToast('✅ Full Factory Reset successfully completed.');
+      }
+    });
+  }
+}
+
 
 // ─── RC 2 Guide Modal & Guidance Helpers ────────────────────────────────────
 
@@ -10107,6 +10790,7 @@ function initUIEventListeners() {
       configModal.classList.toggle('hidden');
       if (!configModal.classList.contains('hidden')) {
         if (unitSystemEl) unitSystemEl.value = getUnitSystem();
+        if (typeof updateModifiedSettingsIndicators === 'function') updateModifiedSettingsIndicators();
         if (window.innerWidth <= 768) {
           document.querySelector('.sidebar')?.classList.remove('open');
         }
@@ -10121,6 +10805,10 @@ function initUIEventListeners() {
       }
     });
   }
+
+  // Initialize Controlled Reset Manager (v1.74.0)
+  initControlledResetManager();
+  updateModifiedSettingsIndicators();
 
   // Minimize Sidebar Toggle checkbox handler
   if (minimizeSidebarToggle && sidebarElement) {
