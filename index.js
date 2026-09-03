@@ -2524,6 +2524,61 @@ const CONTROLS_LIST = [
   'global-hover-time', 'global-exclusion-detour-mode', 'global-exclusion-clearance-buffer'
 ];
 
+// Factory Defaults Schema for Reset & Modified Detection (v1.74.0)
+const FACTORY_DEFAULTS = {
+  // Flight & Layer Parameters
+  'altitude': '50',
+  'speed': '4',
+  'grid-width': '100',
+  'grid-height': '100',
+  'grid-rotation': '0',
+  'front-overlap': '75',
+  'side-overlap': '75',
+  'gimbal-pitch': '-60',
+  'camera-action': 'none',
+  'orbit-radius': '50',
+  'orbit-waypoints': '12',
+  'orbit-speed': '3',
+  'multi-orbit-radius': '50',
+  'multi-orbit-tiers': '3',
+  'multi-orbit-bottom-alt': '30',
+  'multi-orbit-top-alt': '90',
+  'multi-orbit-pitch-bottom': '-30',
+  'multi-orbit-pitch-top': '-60',
+  'multi-orbit-wps': '8',
+  'multi-orbit-speed': '3',
+  'road-offset': '10',
+  'road-turn-mode': 'toPointAndStopWithDiscontinuitySlightlyRounded',
+  'road-action': 'none',
+  'road-snap': false,
+  // Section 3: Mission Failsafes & Defaults
+  'rth-altitude': '50',
+  'signal-lost-action': 'goHome',
+  'exit-on-rc-lost': 'executeLostAction',
+  'flight-path-mode': 'goToFirstWaypoint',
+  'heading-mode': 'followWayline',
+  'drone-model': 'mini4pro',
+  'finish-action': 'goHome',
+  'capture-mode': 'time',
+  'path-mode': 'smoothTransition',
+  'camera-model': 'mini4pro',
+  'camera-zoom': '1',
+  'camera-hfov': '69.7',
+  'camera-vfov': '55.2',
+  'global-hover-time': '0',
+  'global-exclusion-detour-mode': 'perimeter',
+  'global-exclusion-clearance-buffer': '10',
+  'max-flight-time': '25',
+  // UI & Layout Preferences
+  'unit-system': 'imperial',
+  'theme': 'dark',
+  'nav-layout-select': 'header',
+  'accordion-mode-toggle': true,
+  'minimize-sidebar-toggle': false,
+  'multivendor-toggle': false,
+  'companion-host': 'http://localhost:8765'
+};
+
 function saveAllSettingsToLocalStorage() {
   const settings = {};
   CONTROLS_LIST.forEach(id => {
@@ -2536,11 +2591,17 @@ function saveAllSettingsToLocalStorage() {
   if (roadSnapEl) {
     settings['road-snap'] = roadSnapEl.checked;
   }
-  localStorage.setItem('aalaapi_sky_input_settings', JSON.stringify(settings));
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('aalaapi_sky_input_settings', JSON.stringify(settings));
+    }
+  } catch (e) {}
+  updateModifiedSettingsIndicators();
 }
 
 function restoreSettingsFromLocalStorage() {
   try {
+    if (typeof localStorage === 'undefined') return;
     const saved = localStorage.getItem('aalaapi_sky_input_settings');
     if (!saved) return;
     const settings = JSON.parse(saved);
@@ -2560,6 +2621,458 @@ function restoreSettingsFromLocalStorage() {
     Logger.error("Failed to restore settings from localStorage:", err);
   }
 }
+
+// Computes current state of modified settings across all 5 domains
+function getModifiedSettingsState() {
+  const state = {
+    flight: { count: 0, items: [] },
+    map: { count: 0, items: [] },
+    ui: { count: 0, items: [] },
+    hardware: { count: 0, items: [] },
+    onboarding: { count: 0, items: [] }
+  };
+
+  if (typeof document === 'undefined') return state;
+
+  // 1. Flight Parameters
+  const flightControlIds = [
+    'altitude', 'speed', 'grid-width', 'grid-height', 'grid-rotation',
+    'front-overlap', 'side-overlap', 'gimbal-pitch', 'camera-action',
+    'orbit-radius', 'orbit-waypoints', 'orbit-speed',
+    'multi-orbit-radius', 'multi-orbit-tiers', 'multi-orbit-bottom-alt',
+    'multi-orbit-top-alt', 'multi-orbit-pitch-bottom', 'multi-orbit-pitch-top',
+    'multi-orbit-wps', 'multi-orbit-speed', 'road-offset',
+    'rth-altitude', 'signal-lost-action', 'exit-on-rc-lost', 'flight-path-mode',
+    'heading-mode', 'drone-model', 'finish-action', 'capture-mode', 'path-mode',
+    'global-exclusion-detour-mode', 'global-exclusion-clearance-buffer', 'max-flight-time'
+  ];
+
+  flightControlIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const defaultVal = FACTORY_DEFAULTS[id];
+    if (defaultVal === undefined) return;
+    let isModified = false;
+    if (el.type === 'checkbox') {
+      isModified = Boolean(el.checked) !== Boolean(defaultVal);
+    } else {
+      isModified = String(el.value) !== String(defaultVal);
+    }
+    if (isModified) {
+      state.flight.count++;
+      state.flight.items.push(id);
+    }
+  });
+
+  // 2. Map Calibration & Location Cache
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const lastLoc = localStorage.getItem('aalaapi_sky_last_location');
+      const offN = parseFloat(localStorage.getItem('aalaapi_sky_remote_id_offset_n')) || 0;
+      const offE = parseFloat(localStorage.getItem('aalaapi_sky_remote_id_offset_e')) || 0;
+      if (lastLoc) {
+        state.map.count++;
+        state.map.items.push('Cached GPS Location');
+      }
+      if (Math.abs(offN) > 0.01 || Math.abs(offE) > 0.01) {
+        state.map.count++;
+        state.map.items.push('D-Pad Alignment Offset');
+      }
+    }
+  } catch (e) {}
+
+  // 3. UI, Theme & Layout
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const theme = localStorage.getItem('aalaapi_sky_theme');
+      if (theme && theme !== 'dark') {
+        state.ui.count++;
+        state.ui.items.push('Theme (Light)');
+      }
+      const nav = localStorage.getItem('aalaapi_nav_layout');
+      if (nav && nav !== 'header') {
+        state.ui.count++;
+        state.ui.items.push('Nav Layout');
+      }
+      const units = localStorage.getItem('aalaapi_sky_unit_system');
+      if (units && units !== 'imperial') {
+        state.ui.count++;
+        state.ui.items.push('Units (Metric)');
+      }
+      const accordion = localStorage.getItem('aalaapi_sky_accordion_mode');
+      if (accordion !== null && accordion !== 'true') {
+        state.ui.count++;
+        state.ui.items.push('Accordion Mode');
+      }
+      const sidebarMin = localStorage.getItem('aalaapi_sky_sidebar_minimized');
+      if (sidebarMin === 'true') {
+        state.ui.count++;
+        state.ui.items.push('Sidebar Minimized');
+      }
+    }
+  } catch (e) {}
+
+  // 4. Hardware & Remote Links
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const rc2Uuid = localStorage.getItem('aalaapi-rc2-uuid');
+      if (rc2Uuid) {
+        state.hardware.count++;
+        state.hardware.items.push('DJI RC 2 UUID');
+      }
+      const compHost = localStorage.getItem('aalaapi-companion-host');
+      if (compHost && compHost !== 'http://localhost:8765') {
+        state.hardware.count++;
+        state.hardware.items.push('Companion Host');
+      }
+      const multiVendor = localStorage.getItem('aalaapi-multivendor-enabled');
+      if (multiVendor === 'true') {
+        state.hardware.count++;
+        state.hardware.items.push('Multi-Vendor Autopilots');
+      }
+    }
+  } catch (e) {}
+
+  // 5. Onboarding & Tour
+  try {
+    if (typeof localStorage !== 'undefined') {
+      if (localStorage.getItem('aalaapi_intro_banner_dismissed') === 'true') {
+        state.onboarding.count++;
+        state.onboarding.items.push('Welcome Banner Dismissed');
+      }
+      if (localStorage.getItem('aalaapi_sky_tour_completed') === 'true') {
+        state.onboarding.count++;
+        state.onboarding.items.push('Tour Completed');
+      }
+    }
+  } catch (e) {}
+
+  return state;
+}
+
+// Live update of minimalist dot indicators and storage reset badges
+function updateModifiedSettingsIndicators() {
+  if (typeof document === 'undefined') return;
+  const state = getModifiedSettingsState();
+
+  // 1. Update Storage Modal Badges
+  const updateBadge = (id, count, defaultLabel = '✓ Default') => {
+    const badge = document.getElementById(id);
+    if (!badge) return;
+    if (count > 0) {
+      badge.textContent = `💾 ${count} Custom`;
+      badge.className = 'storage-count-badge custom';
+    } else {
+      badge.textContent = defaultLabel;
+      badge.className = 'storage-count-badge default';
+    }
+  };
+
+  updateBadge('badge-count-flight', state.flight.count);
+  updateBadge('badge-count-map', state.map.count, '✓ Default (0m)');
+  updateBadge('badge-count-ui', state.ui.count);
+  updateBadge('badge-count-hardware', state.hardware.count);
+  updateBadge('badge-count-onboarding', state.onboarding.count);
+
+  // 2. Update Inline Setting Dots (Minimalist 4px dots next to input labels)
+  Object.keys(FACTORY_DEFAULTS).forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const defaultVal = FACTORY_DEFAULTS[id];
+    let isModified = false;
+    if (el.type === 'checkbox') {
+      isModified = Boolean(el.checked) !== Boolean(defaultVal);
+    } else {
+      isModified = String(el.value) !== String(defaultVal);
+    }
+
+    const group = (typeof el.closest === 'function') ? (el.closest('.control-group') || el.parentElement) : el.parentElement;
+    const label = group ? ((typeof group.querySelector === 'function' ? group.querySelector('.control-label') : null) || (typeof group.querySelector === 'function' ? group.querySelector('label') : null)) : null;
+    if (!label) return;
+
+    let dot = (typeof label.querySelector === 'function') ? label.querySelector('.setting-modified-dot') : null;
+    if (isModified) {
+      if (!dot && typeof document.createElement === 'function') {
+        dot = document.createElement('span');
+        dot.className = 'setting-modified-dot';
+        dot.dataset.targetId = id;
+        if (typeof dot.addEventListener === 'function') {
+          dot.addEventListener('click', (e) => {
+            if (e.stopPropagation) e.stopPropagation();
+            if (e.preventDefault) e.preventDefault();
+            if (el.type === 'checkbox') {
+              el.checked = defaultVal;
+            } else {
+              el.value = defaultVal;
+            }
+            if (typeof el.dispatchEvent === 'function') {
+              el.dispatchEvent(new Event('input', { bubbles: true }));
+              el.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            if (typeof syncDisplayValues === 'function') syncDisplayValues();
+            if (typeof updateGrid === 'function') updateGrid();
+            updateModifiedSettingsIndicators();
+          });
+        }
+        if (typeof label.appendChild === 'function') label.appendChild(dot);
+      }
+      if (dot) {
+        dot.title = `Custom value saved (Default: ${defaultVal}) • Click to reset`;
+        if (dot.style) dot.style.display = 'inline-block';
+      }
+    } else if (dot && dot.style) {
+      dot.style.display = 'none';
+    }
+  });
+
+  // 3. Update Section Header Dots
+  const updateSectionDot = (sectionId, hasModifications) => {
+    if (typeof document === 'undefined' || typeof document.getElementById !== 'function') return;
+    const section = document.getElementById(sectionId);
+    if (!section || typeof section.querySelector !== 'function') return;
+    const header = section.querySelector('h3');
+    if (!header) return;
+    let dot = typeof header.querySelector === 'function' ? header.querySelector('.section-modified-dot') : null;
+    if (hasModifications) {
+      if (!dot && typeof document.createElement === 'function') {
+        dot = document.createElement('span');
+        dot.className = 'section-modified-dot';
+        dot.title = 'Contains custom settings';
+        if (typeof header.appendChild === 'function') header.appendChild(dot);
+      }
+      if (dot && dot.style) dot.style.display = 'inline-block';
+    } else if (dot && dot.style) {
+      dot.style.display = 'none';
+    }
+  };
+
+  const layerSectionModified = state.flight.items.some(id => ['altitude', 'speed', 'grid-width', 'grid-height', 'grid-rotation', 'front-overlap', 'side-overlap', 'gimbal-pitch'].includes(id));
+  const failsafesSectionModified = state.flight.items.some(id => ['rth-altitude', 'signal-lost-action', 'exit-on-rc-lost', 'flight-path-mode', 'heading-mode', 'drone-model'].includes(id));
+
+  updateSectionDot('layer-parameters-section', layerSectionModified);
+  updateSectionDot('mission-failsafes-section', failsafesSectionModified);
+}
+
+// Executes controlled or factory settings reset
+function resetStoredSettings(options = {}) {
+  const opts = {
+    flightParams: true,
+    mapCalibration: true,
+    uiPreferences: true,
+    hardwareLinks: false,
+    onboarding: false,
+    ...options
+  };
+
+  const resetDomains = [];
+
+  // 1. Flight Parameters
+  if (opts.flightParams) {
+    const flightControlIds = [
+      'altitude', 'speed', 'grid-width', 'grid-height', 'grid-rotation',
+      'front-overlap', 'side-overlap', 'gimbal-pitch', 'camera-action',
+      'orbit-radius', 'orbit-waypoints', 'orbit-speed',
+      'multi-orbit-radius', 'multi-orbit-tiers', 'multi-orbit-bottom-alt',
+      'multi-orbit-top-alt', 'multi-orbit-pitch-bottom', 'multi-orbit-pitch-top',
+      'multi-orbit-wps', 'multi-orbit-speed', 'road-offset',
+      'rth-altitude', 'signal-lost-action', 'exit-on-rc-lost', 'flight-path-mode',
+      'heading-mode', 'drone-model', 'finish-action', 'capture-mode', 'path-mode',
+      'global-exclusion-detour-mode', 'global-exclusion-clearance-buffer', 'max-flight-time'
+    ];
+    flightControlIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && FACTORY_DEFAULTS[id] !== undefined) {
+        if (el.type === 'checkbox') {
+          el.checked = FACTORY_DEFAULTS[id];
+        } else {
+          el.value = FACTORY_DEFAULTS[id];
+        }
+      }
+    });
+
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer) {
+      activeLayer.altitude = parseFloat(FACTORY_DEFAULTS['altitude']);
+      activeLayer.speed = parseFloat(FACTORY_DEFAULTS['speed']);
+      activeLayer.overlapFront = parseFloat(FACTORY_DEFAULTS['overlap-front']);
+      activeLayer.overlapSide = parseFloat(FACTORY_DEFAULTS['overlap-side']);
+      activeLayer.gimbalPitch = parseFloat(FACTORY_DEFAULTS['gimbal-pitch']);
+      activeLayer.gridAngle = parseFloat(FACTORY_DEFAULTS['grid-rotation']);
+    }
+
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('aalaapi_sky_input_settings');
+      }
+    } catch (e) {}
+
+    if (typeof syncDisplayValues === 'function') syncDisplayValues();
+    if (typeof updateGimbalPitchVisualizer === 'function') updateGimbalPitchVisualizer(parseFloat(FACTORY_DEFAULTS['gimbal-pitch']));
+    if (typeof updateGrid === 'function') updateGrid();
+    resetDomains.push('Flight Parameters');
+  }
+
+  // 2. Map Calibration & GPS Cache
+  if (opts.mapCalibration) {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('aalaapi_sky_last_location');
+        localStorage.removeItem('aalaapi_sky_remote_id_offset_n');
+        localStorage.removeItem('aalaapi_sky_remote_id_offset_e');
+      }
+    } catch (e) {}
+    if (typeof remoteIdOffsetN !== 'undefined') remoteIdOffsetN = 0;
+    if (typeof remoteIdOffsetE !== 'undefined') remoteIdOffsetE = 0;
+    if (typeof updateRemoteIdAlignmentHUD === 'function') updateRemoteIdAlignmentHUD();
+    resetDomains.push('Map Calibration & GPS');
+  }
+
+  // 3. UI, Theme & Layout
+  if (opts.uiPreferences) {
+    if (typeof setAppTheme === 'function') setAppTheme('dark');
+    if (typeof setNavLayout === 'function') setNavLayout('header');
+
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('aalaapi_sky_theme');
+        localStorage.removeItem('aalaapi_nav_layout');
+        localStorage.removeItem('aalaapi_sky_unit_system');
+        localStorage.removeItem('aalaapi_sky_accordion_mode');
+        localStorage.removeItem('aalaapi_sky_sidebar_minimized');
+        for (let i = 0; i < 10; i++) {
+          localStorage.removeItem(`aalaapi_sky_section_${i}_collapsed`);
+        }
+      }
+    } catch (e) {}
+    
+    const unitSelect = document.getElementById('unit-system');
+    if (unitSelect) unitSelect.value = 'imperial';
+    cachedUnitSystem = 'imperial';
+
+    const accordionToggle = document.getElementById('accordion-mode-toggle');
+    if (accordionToggle) accordionToggle.checked = true;
+
+    const sidebarMinToggle = document.getElementById('minimize-sidebar-toggle');
+    if (sidebarMinToggle) sidebarMinToggle.checked = false;
+    if (typeof document !== 'undefined' && typeof document.querySelector === 'function') {
+      document.querySelector('.sidebar')?.classList.remove('minimized');
+    }
+
+    if (typeof syncDisplayValues === 'function') syncDisplayValues();
+    resetDomains.push('UI Preferences');
+  }
+
+  // 4. Hardware & Remote Links
+  if (opts.hardwareLinks) {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('aalaapi-rc2-uuid');
+        localStorage.removeItem('aalaapi-companion-host');
+        localStorage.removeItem('aalaapi-multivendor-enabled');
+      }
+    } catch (e) {}
+
+    const multiVendorToggle = document.getElementById('multivendor-toggle');
+    if (multiVendorToggle) {
+      multiVendorToggle.checked = false;
+      multiVendorToggle.dispatchEvent(new Event('change'));
+    }
+
+    resetDomains.push('Hardware Links');
+  }
+
+  // 5. Onboarding & Tour
+  if (opts.onboarding) {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('aalaapi_intro_banner_dismissed');
+        localStorage.removeItem('aalaapi_sky_tour_completed');
+      }
+    } catch (e) {}
+    const welcomeBanner = document.getElementById('welcome-tour-banner');
+    if (welcomeBanner) welcomeBanner.classList.remove('hidden');
+    resetDomains.push('Onboarding States');
+  }
+
+  updateModifiedSettingsIndicators();
+  return { success: true, resetDomains };
+}
+
+// Initialize Controlled Reset Manager Event Listeners
+function initControlledResetManager() {
+  if (typeof document === 'undefined') return;
+
+  const btnResetSelected = document.getElementById('config-reset-selected-btn');
+  const btnFactoryReset = document.getElementById('config-factory-reset-btn');
+  const btnSelectAll = document.getElementById('reset-select-all-btn');
+  const btnClearAll = document.getElementById('reset-clear-all-btn');
+  const toast = document.getElementById('reset-feedback-toast');
+
+  const showToast = (msg, isSuccess = true) => {
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.style.display = 'block';
+    toast.style.background = isSuccess ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+    toast.style.color = isSuccess ? '#34d399' : '#f87171';
+    toast.style.borderColor = isSuccess ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)';
+    setTimeout(() => {
+      if (toast) toast.style.display = 'none';
+    }, 3000);
+  };
+
+  if (btnSelectAll) {
+    btnSelectAll.addEventListener('click', () => {
+      ['reset-chk-flight', 'reset-chk-map', 'reset-chk-ui', 'reset-chk-hardware', 'reset-chk-onboarding'].forEach(id => {
+        const chk = document.getElementById(id);
+        if (chk) chk.checked = true;
+      });
+    });
+  }
+
+  if (btnClearAll) {
+    btnClearAll.addEventListener('click', () => {
+      ['reset-chk-flight', 'reset-chk-map', 'reset-chk-ui', 'reset-chk-hardware', 'reset-chk-onboarding'].forEach(id => {
+        const chk = document.getElementById(id);
+        if (chk) chk.checked = false;
+      });
+    });
+  }
+
+  if (btnResetSelected) {
+    btnResetSelected.addEventListener('click', () => {
+      const flightParams = Boolean(document.getElementById('reset-chk-flight')?.checked);
+      const mapCalibration = Boolean(document.getElementById('reset-chk-map')?.checked);
+      const uiPreferences = Boolean(document.getElementById('reset-chk-ui')?.checked);
+      const hardwareLinks = Boolean(document.getElementById('reset-chk-hardware')?.checked);
+      const onboarding = Boolean(document.getElementById('reset-chk-onboarding')?.checked);
+
+      if (!flightParams && !mapCalibration && !uiPreferences && !hardwareLinks && !onboarding) {
+        showToast('⚠️ Please select at least one category to reset.', false);
+        return;
+      }
+
+      const res = resetStoredSettings({ flightParams, mapCalibration, uiPreferences, hardwareLinks, onboarding });
+      showToast(`✅ Reset complete: ${res.resetDomains.join(', ')}`);
+    });
+  }
+
+  if (btnFactoryReset) {
+    btnFactoryReset.addEventListener('click', () => {
+      const confirmed = typeof confirm === 'function' ? confirm('⚠️ Full Factory Reset:\n\nThis will restore all flight parameters, UI preferences, map calibrations, hardware links, and tutorial states to stock defaults.\n\nProceed?') : true;
+      if (confirmed) {
+        const res = resetStoredSettings({
+          flightParams: true,
+          mapCalibration: true,
+          uiPreferences: true,
+          hardwareLinks: true,
+          onboarding: true
+        });
+        showToast('✅ Full Factory Reset successfully completed.');
+      }
+    });
+  }
+}
+
 
 // ─── RC 2 Guide Modal & Guidance Helpers ────────────────────────────────────
 
@@ -3552,6 +4065,7 @@ function initUIEventListeners() {
       configModal.classList.toggle('hidden');
       if (!configModal.classList.contains('hidden')) {
         if (unitSystemEl) unitSystemEl.value = getUnitSystem();
+        if (typeof updateModifiedSettingsIndicators === 'function') updateModifiedSettingsIndicators();
         if (window.innerWidth <= 768) {
           document.querySelector('.sidebar')?.classList.remove('open');
         }
@@ -3566,6 +4080,10 @@ function initUIEventListeners() {
       }
     });
   }
+
+  // Initialize Controlled Reset Manager (v1.74.0)
+  initControlledResetManager();
+  updateModifiedSettingsIndicators();
 
   // Minimize Sidebar Toggle checkbox handler
   if (minimizeSidebarToggle && sidebarElement) {

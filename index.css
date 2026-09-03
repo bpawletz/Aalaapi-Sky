@@ -2548,6 +2548,84 @@ html, body {
   cursor: pointer;
 }
 
+/* --- Controlled Settings Reset & Modified Indicators (v1.74.0) --- */
+.setting-modified-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: var(--accent-cyan);
+  box-shadow: 0 0 6px var(--accent-cyan);
+  margin-left: 5px;
+  vertical-align: middle;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.setting-modified-dot:hover {
+  transform: scale(1.6);
+  background-color: #38bdf8;
+}
+
+.section-modified-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--accent-cyan);
+  box-shadow: 0 0 6px var(--accent-cyan);
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.storage-reset-card {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  cursor: pointer;
+}
+
+.storage-reset-card:hover {
+  background: rgba(15, 23, 42, 0.75);
+  border-color: rgba(6, 182, 212, 0.4);
+}
+
+.storage-reset-card input[type="checkbox"] {
+  margin-top: 3px;
+  accent-color: var(--accent-cyan);
+  cursor: pointer;
+  width: 15px;
+  height: 15px;
+}
+
+.storage-count-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.storage-count-badge.custom {
+  background: rgba(6, 182, 212, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(6, 182, 212, 0.35);
+}
+
+.storage-count-badge.default {
+  background: rgba(148, 163, 184, 0.1);
+  color: var(--text-muted);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+
 
 
 
