@@ -1453,39 +1453,11 @@ html, body {
   border-radius: 0 !important;
 }
 
-/* Auto-Plan Tool Card in Pattern Grid (v1.76.0) */
+/* Auto-Plan Tool Card in Pattern Grid (v1.76.1) */
 .pattern-card.auto-plan-card,
 #auto-plan-btn.pattern-card {
-  background: rgba(6, 182, 212, 0.08);
-  border: 1px solid rgba(6, 182, 212, 0.35);
   box-shadow: none;
   margin: 0;
-}
-
-.pattern-card.auto-plan-card:hover,
-#auto-plan-btn.pattern-card:hover {
-  background: rgba(6, 182, 212, 0.2);
-  border-color: var(--accent-cyan);
-  box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
-  transform: translateY(-1px);
-}
-
-.pattern-card.auto-plan-card.active,
-#auto-plan-btn.pattern-card.active {
-  background: rgba(6, 182, 212, 0.25);
-  border-color: var(--accent-cyan);
-  box-shadow: 0 0 12px rgba(6, 182, 212, 0.4);
-}
-
-.pattern-card.auto-plan-card .pattern-icon,
-#auto-plan-btn.pattern-card .pattern-icon {
-  color: var(--accent-cyan);
-}
-
-.pattern-card.auto-plan-card span,
-#auto-plan-btn.pattern-card span {
-  color: #38bdf8;
-  font-weight: 600;
 }
 
 .map-crosshair {
