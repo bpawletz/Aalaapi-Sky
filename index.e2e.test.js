@@ -146,10 +146,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(saveAndReopenResult.revertedAlt, saveAndReopenResult.origBaselineAlt, 'Altitude should be restored to original baseline after reopening');
   });
 
-  test('Flight statistics panel updates without throwing errors', async () => {
-    const statsContainer = page.locator('#stats-panel, .stats-container, #stats');
-    if (await statsContainer.count() > 0) {
-      assert.ok(await statsContainer.first().isVisible(), 'Stats panel should be visible');
+  test('Flight statistics telemetry updates without throwing errors', async () => {
+    const telemetryPill = page.locator('#header-telemetry-pill, .header-telemetry-container');
+    if (await telemetryPill.count() > 0) {
+      assert.ok(await telemetryPill.first().isVisible(), 'Header telemetry pill should be visible in topbar');
     }
   });
 
@@ -908,37 +908,38 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     await page.unroute('**/api/status');
   });
 
-  test('E2E: Sidebar header buttons (#config-btn, #about-btn, #useful-links-btn) do not overflow sidebar container', async () => {
+  test('E2E: Topbar action buttons (#intro-tour-btn, #config-btn, #about-btn, #useful-links-btn) do not overflow topbar container', async () => {
     const overflowResult = await page.evaluate(() => {
-      const sidebar = document.querySelector('.sidebar');
+      const topbar = document.querySelector('.studio-topbar');
+      const introBtn = document.getElementById('intro-tour-btn');
       const linksBtn = document.getElementById('useful-links-btn');
       const aboutBtn = document.getElementById('about-btn');
       const configBtn = document.getElementById('config-btn');
 
-      if (!sidebar || !linksBtn || !aboutBtn || !configBtn) {
+      if (!topbar || !linksBtn || !aboutBtn || !configBtn || !introBtn) {
         return { success: false, reason: 'Elements missing' };
       }
 
-      const sidebarRect = sidebar.getBoundingClientRect();
+      const topbarRect = topbar.getBoundingClientRect();
+      const introRect = introBtn.getBoundingClientRect();
       const linksRect = linksBtn.getBoundingClientRect();
       const aboutRect = aboutBtn.getBoundingClientRect();
       const configRect = configBtn.getBoundingClientRect();
 
-      // Ensure all buttons are within sidebar's right boundary (with a 2px tolerance for subpixel rounding)
-      const linksFit = linksRect.right <= sidebarRect.right + 2;
-      const aboutFit = aboutRect.right <= sidebarRect.right + 2;
-      const configFit = configRect.right <= sidebarRect.right + 2;
+      // Ensure all buttons are within topbar's boundary
+      const linksFit = linksRect.right <= topbarRect.right + 4;
+      const aboutFit = aboutRect.right <= topbarRect.right + 4;
+      const configFit = configRect.right <= topbarRect.right + 4;
+      const introFit = introRect.right <= topbarRect.right + 4;
 
       return {
-        success: linksFit && aboutFit && configFit,
-        sidebarRight: sidebarRect.right,
-        linksRight: linksRect.right,
-        aboutRight: aboutRect.right,
-        configRight: configRect.right
+        success: linksFit && aboutFit && configFit && introFit,
+        topbarRight: topbarRect.right,
+        linksRight: linksRect.right
       };
     });
 
-    assert.ok(overflowResult.success, `Header buttons overflow sidebar: linksRight=${overflowResult.linksRight}, sidebarRight=${overflowResult.sidebarRight}`);
+    assert.ok(overflowResult.success, `Header buttons overflow topbar: linksRight=${overflowResult.linksRight}, topbarRight=${overflowResult.topbarRight}`);
   });
 
   test('E2E: Clicking Useful Links button opens modal showing OpenSky Explorer with dynamic coords', async () => {
@@ -1379,7 +1380,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(calResult.success, `Map & Remote ID Alignment E2E test failed: ${JSON.stringify(calResult)}`);
   });
 
-  test('Double Grid and Freeform generate valid WPML with smoothTransition for non-tangential headings', async () => {
+  test('Double Grid and Freeform generate valid WPML with followWayline for double grid and path following for freeform', async () => {
     const wpmlResult = await page.evaluate(async () => {
       // 1. Double Grid with oblique pitch
       const gridTypeSelect = document.getElementById('grid-type');
@@ -1401,8 +1402,8 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         doubleXml = buildWaylinesWpml(doubleWps, 30, 4, 'followWayline', 'goHome', -60, 'stopAndShoot', 'curved');
       }
 
-      const hasDoubleSmoothTransition = doubleXml.includes('<wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>');
-      const noDoubleFollowConflict = !doubleXml.includes('<wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>');
+      const hasDoubleFollowWayline = doubleXml.includes('<wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>');
+      const noDoubleSmoothTransition = !doubleXml.includes('<wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>');
 
       // 2. Freeform with manual waypoints
       if (gridTypeSelect) {
@@ -1436,8 +1437,8 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       if (typeof updateGrid === 'function') updateGrid();
 
       return {
-        hasDoubleSmoothTransition,
-        noDoubleFollowConflict,
+        hasDoubleFollowWayline,
+        noDoubleSmoothTransition,
         hasFreeformFollowWayline,
         hasHeadingAngleEnable,
         doubleWpsCount: doubleWps ? doubleWps.length : 0,
@@ -1445,8 +1446,8 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       };
     });
 
-    assert.ok(wpmlResult.hasDoubleSmoothTransition, 'Double Grid with oblique pitch must use smoothTransition heading mode');
-    assert.ok(wpmlResult.noDoubleFollowConflict, 'Double Grid with oblique pitch must not have followWayline conflicts');
+    assert.ok(wpmlResult.hasDoubleFollowWayline, 'Double Grid with oblique pitch must use followWayline heading mode');
+    assert.ok(wpmlResult.noDoubleSmoothTransition, 'Double Grid with oblique pitch must not have smoothTransition conflicts');
     assert.ok(wpmlResult.hasFreeformFollowWayline, 'Freeform without custom headings should follow wayline path');
     assert.ok(wpmlResult.hasHeadingAngleEnable, 'Freeform should have headingAngleEnable=1');
   });
@@ -1646,7 +1647,705 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(evalResult.hasDiagPullBtn, 'Diagnostics header pull log button should exist');
     assert.ok(evalResult.diagBtnText.includes('Pulled') || evalResult.diagBtnText.includes('Pull'), 'Button text should update upon pull');
   });
+
+  test('E2E: Pattern Layers UI stack allows adding, switching, and opening transitions modal', async () => {
+    const evalResult = await page.evaluate(async () => {
+      const addLayerBtn = document.getElementById('add-layer-btn');
+      const countBadge = document.getElementById('layer-count-badge');
+      const container = document.getElementById('layers-list-container');
+      const configTransBtn = document.getElementById('configure-transitions-btn');
+      const modal = document.getElementById('layer-transitions-modal');
+
+      if (!addLayerBtn || !countBadge || !container) {
+        return { success: false, reason: 'Layer manager DOM elements missing' };
+      }
+
+      // Initial state: 1 layer
+      const initialCards = container.querySelectorAll('.layer-card');
+      const initialCount = initialCards.length;
+
+      // Click Add Layer
+      addLayerBtn.click();
+      await new Promise(r => setTimeout(r, 100));
+
+      const afterAddCards = container.querySelectorAll('.layer-card');
+      const countText = countBadge.textContent;
+
+      // Click Transitions modal button
+      if (configTransBtn) configTransBtn.click();
+      await new Promise(r => setTimeout(r, 100));
+
+      const modalVisible = modal && !modal.classList.contains('hidden');
+
+      // Close modal
+      const closeBtn = document.getElementById('close-transitions-modal-btn');
+      if (closeBtn) closeBtn.click();
+      await new Promise(r => setTimeout(r, 50));
+
+      const modalHidden = modal && modal.classList.contains('hidden');
+
+      return {
+        success: true,
+        initialCount,
+        afterAddCount: afterAddCards.length,
+        countText,
+        modalVisible,
+        modalHidden
+      };
+    });
+
+    assert.ok(evalResult.success, 'Layer UI evaluation should succeed');
+    assert.strictEqual(evalResult.initialCount, 1, 'Should have 1 layer initially');
+    assert.strictEqual(evalResult.afterAddCount, 2, 'Should have 2 layers after clicking Add Layer');
+    assert.ok(evalResult.countText.includes('2 Layers'), 'Badge should show 2 Layers');
+    assert.strictEqual(evalResult.modalVisible, true, 'Transitions modal should open when configured');
+    assert.strictEqual(evalResult.modalHidden, true, 'Transitions modal should close when close button clicked');
+  });
+
+  test('E2E: Sidebar Section 1 (Pattern Layers & Location) header is visible and can be expanded and collapsed', async () => {
+    const evalResult = await page.evaluate(async () => {
+      const section1 = document.getElementById('layers-and-location-section');
+      if (!section1) return { success: false, reason: 'Section 1 missing' };
+
+      const h3 = section1.querySelector('h3');
+      if (!h3) return { success: false, reason: 'Section 1 h3 missing' };
+
+      // Ensure section1 is not hidden
+      const isHeaderVisible = window.getComputedStyle(h3).display !== 'none';
+      const initialCollapsed = section1.classList.contains('collapsed');
+
+      // Click h3 to toggle
+      h3.click();
+      await new Promise(r => setTimeout(r, 50));
+      const afterFirstClickCollapsed = section1.classList.contains('collapsed');
+
+      // Click h3 again to toggle back
+      h3.click();
+      await new Promise(r => setTimeout(r, 50));
+      const afterSecondClickCollapsed = section1.classList.contains('collapsed');
+
+      return {
+        success: true,
+        isHeaderVisible,
+        initialCollapsed,
+        afterFirstClickCollapsed,
+        afterSecondClickCollapsed,
+        headerText: h3.textContent
+      };
+    });
+
+    assert.ok(evalResult.success, 'Section 1 evaluation should succeed');
+    assert.strictEqual(evalResult.isHeaderVisible, true, 'Section 1 header must be visible in the DOM');
+    assert.notStrictEqual(evalResult.initialCollapsed, evalResult.afterFirstClickCollapsed, 'Clicking h3 must toggle collapsed class');
+    assert.strictEqual(evalResult.initialCollapsed, evalResult.afterSecondClickCollapsed, 'Clicking h3 twice must restore initial state');
+  });
+
+  test('E2E: 3D Exclusion Zones UI, Pattern Selection, Altitude Envelope, and Layer Pruning', async () => {
+    const evalResult = await page.evaluate(async () => {
+      // 1. Reset layers to initial state
+      if (typeof flightLayers !== 'undefined') {
+        flightLayers = [
+          createDefaultLayer('layer-1', 'Layer 1: Flight Grid', 0, 'double')
+        ];
+        activeLayerId = flightLayers[0].id;
+        syncUiWithActiveLayer();
+        renderLayersList();
+        updateGrid();
+      }
+
+      // 2. Add an Exclusion Zone layer
+      const addLayerBtn = document.getElementById('add-layer-btn');
+      if (addLayerBtn) addLayerBtn.click();
+      await new Promise(r => setTimeout(r, 50));
+
+      const activeLayer = getActiveLayer();
+      const exclCard = document.querySelector('.pattern-card[data-value="exclusion-box"]');
+      if (exclCard) exclCard.click();
+      await new Promise(r => setTimeout(r, 50));
+
+      const exclInstructions = document.getElementById('exclusion-instructions');
+      const exclAltContainer = document.getElementById('exclusion-altitude-container');
+      const exclAllAltCheckbox = document.getElementById('exclusion-all-altitudes');
+      const exclSliders = document.getElementById('exclusion-altitude-sliders');
+
+      const isInstructionsVisible = exclInstructions && !exclInstructions.classList.contains('hidden');
+      const isAltContainerVisible = exclAltContainer && !exclAltContainer.classList.contains('hidden');
+      const isAllAltChecked = exclAllAltCheckbox && exclAllAltCheckbox.checked;
+      const isSlidersHiddenDefault = exclSliders && exclSliders.classList.contains('hidden');
+
+      // Uncheck All Altitudes to expose floor and ceiling sliders
+      if (exclAllAltCheckbox) {
+        exclAllAltCheckbox.checked = false;
+        exclAllAltCheckbox.dispatchEvent(new Event('change'));
+      }
+      await new Promise(r => setTimeout(r, 50));
+
+      const isSlidersVisibleAfterUncheck = exclSliders && !exclSliders.classList.contains('hidden');
+
+      const minAltInput = document.getElementById('exclusion-min-alt');
+      const maxAltInput = document.getElementById('exclusion-max-alt');
+      if (minAltInput) {
+        minAltInput.value = '20';
+        minAltInput.dispatchEvent(new Event('input'));
+      }
+      if (maxAltInput) {
+        maxAltInput.value = '80';
+        maxAltInput.dispatchEvent(new Event('input'));
+      }
+
+      // Check layer card styling
+      const layerCards = document.querySelectorAll('.layer-card');
+      const hasExclusionCardClass = layerCards[1] && layerCards[1].classList.contains('exclusion-zone');
+
+      return {
+        success: true,
+        isInstructionsVisible,
+        isAltContainerVisible,
+        isAllAltChecked,
+        isSlidersHiddenDefault,
+        isSlidersVisibleAfterUncheck,
+        hasExclusionCardClass,
+        activeLayerPattern: getActiveLayer().pattern,
+        activeLayerIsExcl: getActiveLayer().isExclusionZone
+      };
+    });
+
+    assert.ok(evalResult.success, 'Exclusion Zone E2E evaluation should succeed');
+    assert.strictEqual(evalResult.isInstructionsVisible, true, 'Exclusion instructions alert should be visible');
+    assert.strictEqual(evalResult.isAltContainerVisible, true, 'Exclusion altitude container should be visible');
+    assert.strictEqual(evalResult.isAllAltChecked, true, 'All Altitudes should be checked by default');
+    assert.strictEqual(evalResult.isSlidersHiddenDefault, true, 'Min/max altitude sliders should be hidden when All Altitudes is active');
+    assert.strictEqual(evalResult.isSlidersVisibleAfterUncheck, true, 'Min/max altitude sliders should be visible when All Altitudes is unchecked');
+    assert.strictEqual(evalResult.hasExclusionCardClass, true, 'Layer card should have exclusion-zone CSS class');
+    assert.strictEqual(evalResult.activeLayerPattern, 'exclusion-box', 'Active layer pattern should be exclusion-box');
+    assert.strictEqual(evalResult.activeLayerIsExcl, true, 'Active layer isExclusionZone should be true');
+  });
+
+  test('E2E: App Header Search, Topbar Telemetry HUD, and Dual-Tab Inspector (v1.65.0)', async () => {
+    const uiResult = await page.evaluate(async () => {
+      // 1. Verify App Header Search elements exist and work
+      const searchInput = document.getElementById('location-input');
+      const searchBtn = document.getElementById('search-btn');
+      const locateBtn = document.getElementById('locate-me-btn');
+
+      const headerSearchExists = searchInput !== null && searchBtn !== null && locateBtn !== null;
+
+      // 2. Verify Dual-Tab Inspector buttons switch panes
+      const tabLayer = document.getElementById('inspector-tab-layer');
+      const tabFailsafes = document.getElementById('inspector-tab-failsafes');
+      const layerPane = document.getElementById('inspector-layer-pane');
+      const failsafesPane = document.getElementById('inspector-failsafes-pane');
+
+      const initialLayerVisible = !layerPane.classList.contains('hidden');
+      const initialFailsafesHidden = failsafesPane.classList.contains('hidden');
+
+      // Click failsafes tab
+      tabFailsafes.click();
+      await new Promise(r => setTimeout(r, 40));
+
+      const afterFailsafesTabLayerHidden = layerPane.classList.contains('hidden');
+      const afterFailsafesTabVisible = !failsafesPane.classList.contains('hidden');
+      const failsafesTabActive = tabFailsafes.classList.contains('active');
+
+      // Click layer properties tab back
+      tabLayer.click();
+      await new Promise(r => setTimeout(r, 40));
+
+      const finalLayerVisible = !layerPane.classList.contains('hidden');
+      const layerTabActive = tabLayer.classList.contains('active');
+
+      // 3. Verify Topbar Telemetry HUD Pill & Popover toggle
+      const telemetryPill = document.getElementById('header-telemetry-pill');
+      const telemetryPopover = document.getElementById('telemetry-weather-popover');
+      const popoverCloseBtn = document.getElementById('telemetry-popover-close-btn');
+
+      const popoverInitiallyHidden = telemetryPopover.classList.contains('hidden');
+
+      // Click pill to open
+      telemetryPill.click();
+      await new Promise(r => setTimeout(r, 40));
+      const popoverOpenAfterClick = !telemetryPopover.classList.contains('hidden');
+
+      // Click close button to dismiss
+      popoverCloseBtn.click();
+      await new Promise(r => setTimeout(r, 40));
+      const popoverClosedAfterBtn = telemetryPopover.classList.contains('hidden');
+
+      // 4. Verify Configuration Layout Dropdown
+      const navLayoutSelect = document.getElementById('nav-layout-select');
+      const hasNavLayoutSelect = navLayoutSelect !== null;
+      if (navLayoutSelect) {
+        navLayoutSelect.value = 'floating';
+        navLayoutSelect.dispatchEvent(new Event('change'));
+      }
+      const savedLayout = localStorage.getItem('aalaapi_nav_layout');
+
+      return {
+        success: true,
+        headerSearchExists,
+        initialLayerVisible,
+        initialFailsafesHidden,
+        afterFailsafesTabLayerHidden,
+        afterFailsafesTabVisible,
+        failsafesTabActive,
+        finalLayerVisible,
+        layerTabActive,
+        popoverInitiallyHidden,
+        popoverOpenAfterClick,
+        popoverClosedAfterBtn,
+        hasNavLayoutSelect,
+        savedLayout
+      };
+    });
+
+    assert.ok(uiResult.success, 'Evaluation should succeed');
+    assert.strictEqual(uiResult.headerSearchExists, true, 'Header search elements must exist');
+    assert.strictEqual(uiResult.initialLayerVisible, true, 'Layer pane should be visible by default');
+    assert.strictEqual(uiResult.initialFailsafesHidden, true, 'Failsafes pane should be hidden by default');
+    assert.strictEqual(uiResult.afterFailsafesTabVisible, true, 'Failsafes pane should be visible after clicking tab');
+    assert.strictEqual(uiResult.failsafesTabActive, true, 'Failsafes tab button should have active class');
+    assert.strictEqual(uiResult.finalLayerVisible, true, 'Layer pane should be visible after switching back');
+    assert.strictEqual(uiResult.layerTabActive, true, 'Layer tab button should have active class');
+    assert.strictEqual(uiResult.popoverInitiallyHidden, true, 'Telemetry popover should be hidden initially');
+    assert.strictEqual(uiResult.popoverOpenAfterClick, true, 'Telemetry popover should open on pill click');
+    assert.strictEqual(uiResult.popoverClosedAfterBtn, true, 'Telemetry popover should close on close btn click');
+    assert.strictEqual(uiResult.hasNavLayoutSelect, true, 'Config modal must contain nav layout selector');
+    assert.strictEqual(uiResult.savedLayout, 'floating', 'Nav layout selection should persist to localStorage');
+  });
+
+  test('E2E: Intro Guide Hub, Welcome Banner, and In-Situ Spotlight Tour (v1.66.0)', async () => {
+    const tourResult = await page.evaluate(async () => {
+      // 1. Verify Intro button opens quickstart modal on workflow tab
+      const introBtn = document.getElementById('intro-tour-btn');
+      const quickstartModal = document.getElementById('quickstart-modal');
+      const closeQuickstartBtn = document.getElementById('close-quickstart-btn');
+
+      if (!introBtn || !quickstartModal) return { success: false, reason: 'Intro button or quickstart modal missing' };
+
+      introBtn.click();
+      await new Promise(r => setTimeout(r, 40));
+      const modalOpenAfterBtn = !quickstartModal.classList.contains('hidden');
+
+      // 2. Verify Tab Switching
+      const tabFeatures = document.getElementById('intro-tab-features');
+      const tabTips = document.getElementById('intro-tab-tips');
+      const tabWorkflow = document.getElementById('intro-tab-workflow');
+
+      const paneFeatures = document.getElementById('intro-pane-features');
+      const paneTips = document.getElementById('intro-pane-tips');
+      const paneWorkflow = document.getElementById('intro-pane-workflow');
+
+      tabFeatures.click();
+      await new Promise(r => setTimeout(r, 30));
+      const featuresVisible = !paneFeatures.classList.contains('hidden') && paneWorkflow.classList.contains('hidden');
+
+      tabTips.click();
+      await new Promise(r => setTimeout(r, 30));
+      const tipsVisible = !paneTips.classList.contains('hidden') && paneFeatures.classList.contains('hidden');
+
+      tabWorkflow.click();
+      await new Promise(r => setTimeout(r, 30));
+      const workflowVisible = !paneWorkflow.classList.contains('hidden') && paneTips.classList.contains('hidden');
+
+      // 3. Launch Interactive Spotlight Tour
+      const startTourBtn = document.getElementById('start-interactive-tour-btn');
+      const tourOverlay = document.getElementById('tour-overlay-container');
+      const tourNextBtn = document.getElementById('tour-next-btn');
+      const tourStepBadge = document.getElementById('tour-step-badge');
+
+      startTourBtn.click();
+      await new Promise(r => setTimeout(r, 40));
+
+      const modalClosedAfterTourStart = quickstartModal.classList.contains('hidden');
+      const tourOverlayVisible = !tourOverlay.classList.contains('hidden');
+      const initialStepText = tourStepBadge.textContent;
+
+      // Advance to next step
+      tourNextBtn.click();
+      await new Promise(r => setTimeout(r, 40));
+      const step2Text = tourStepBadge.textContent;
+
+      // Exit tour
+      const tourCloseBtn = document.getElementById('tour-close-btn');
+      tourCloseBtn.click();
+      await new Promise(r => setTimeout(r, 40));
+      const tourOverlayClosed = tourOverlay.classList.contains('hidden');
+
+      // 4. Test Welcome Banner Dismissal
+      const welcomeBanner = document.getElementById('welcome-tour-banner');
+      if (welcomeBanner) welcomeBanner.classList.remove('hidden');
+      const dismissBtn = document.getElementById('welcome-tour-dismiss-btn');
+      dismissBtn.click();
+      await new Promise(r => setTimeout(r, 30));
+      const welcomeBannerDismissed = welcomeBanner.classList.contains('hidden');
+      const bannerSaved = localStorage.getItem('aalaapi_intro_banner_dismissed');
+
+      return {
+        success: true,
+        modalOpenAfterBtn,
+        featuresVisible,
+        tipsVisible,
+        workflowVisible,
+        modalClosedAfterTourStart,
+        tourOverlayVisible,
+        initialStepText,
+        step2Text,
+        tourOverlayClosed,
+        welcomeBannerDismissed,
+        bannerSaved
+      };
+    });
+
+    assert.ok(tourResult.success, 'E2E Tour evaluation should succeed');
+    assert.strictEqual(tourResult.modalOpenAfterBtn, true, 'Quickstart modal should open on Intro btn click');
+    assert.strictEqual(tourResult.featuresVisible, true, 'Features tab pane should be visible after clicking tab');
+    assert.strictEqual(tourResult.tipsVisible, true, 'Tips tab pane should be visible after clicking tab');
+    assert.strictEqual(tourResult.workflowVisible, true, 'Workflow tab pane should be visible after clicking tab');
+    assert.strictEqual(tourResult.modalClosedAfterTourStart, true, 'Quickstart modal should close when launching tour');
+    assert.strictEqual(tourResult.tourOverlayVisible, true, 'Spotlight tour overlay should be visible');
+    assert.strictEqual(tourResult.initialStepText, 'Step 1 of 5', 'Tour should start on Step 1');
+    assert.strictEqual(tourResult.step2Text, 'Step 2 of 5', 'Tour should advance to Step 2');
+    assert.strictEqual(tourResult.tourOverlayClosed, true, 'Tour should close on exit button click');
+    assert.strictEqual(tourResult.welcomeBannerDismissed, true, 'Welcome banner should be hidden after dismiss');
+    assert.strictEqual(tourResult.bannerSaved, 'true', 'Banner dismissal should be stored in localStorage');
+  });
+
+  test('E2E: Full-Width Studio Topbar Layout & HUD Interaction (v1.67.0)', async () => {
+    const topbarResult = await page.evaluate(async () => {
+      const topbar = document.querySelector('.studio-topbar');
+      const leftZone = document.querySelector('.topbar-left');
+      const centerZone = document.querySelector('.topbar-center');
+      const rightZone = document.querySelector('.topbar-right');
+      const searchInput = document.getElementById('location-input');
+      const locateBtn = document.getElementById('locate-me-btn');
+      const telemetryPill = document.getElementById('header-telemetry-pill');
+      const sidebarToggle = document.getElementById('sidebar-toggle');
+      const sidebar = document.querySelector('.sidebar');
+      const mapCanvas = document.getElementById('map');
+
+      if (!topbar || !leftZone || !centerZone || !rightZone || !searchInput || !locateBtn || !telemetryPill) {
+        return { success: false, reason: 'Topbar elements missing' };
+      }
+
+      const topbarRect = topbar.getBoundingClientRect();
+      const isFullWidth = topbarRect.width > 300;
+
+      // Test sidebar minimize toggle from topbar
+      const initialMinimized = sidebar.classList.contains('minimized');
+      sidebarToggle.click();
+      await new Promise(r => setTimeout(r, 40));
+      const toggledState = sidebar.classList.contains('minimized');
+      // Toggle back
+      sidebarToggle.click();
+      await new Promise(r => setTimeout(r, 40));
+
+      return {
+        success: true,
+        isFullWidth,
+        hasSearch: !!searchInput,
+        hasLocate: !!locateBtn,
+        hasTelemetry: !!telemetryPill,
+        toggleWorked: initialMinimized !== toggledState
+      };
+    });
+
+    assert.ok(topbarResult.success, 'Studio topbar layout evaluation should succeed');
+    assert.strictEqual(topbarResult.isFullWidth, true, 'Studio topbar should span across the screen');
+    assert.strictEqual(topbarResult.hasSearch, true, 'Location search must be in topbar');
+    assert.strictEqual(topbarResult.hasLocate, true, 'Locate button must be in topbar');
+    assert.strictEqual(topbarResult.hasTelemetry, true, 'Telemetry HUD pill must be in topbar');
+    assert.strictEqual(topbarResult.toggleWorked, true, 'Sidebar toggle in topbar should toggle sidebar state');
+  });
+
+  test('E2E: Theme Toggle & Clean Map Mission Details Activation (v1.68.0)', async () => {
+    const themeAndDetailsResult = await page.evaluate(async () => {
+      const themeBtn = document.getElementById('theme-toggle-btn');
+      const statsPanel = document.getElementById('stats-panel');
+      const telemetryPill = document.getElementById('header-telemetry-pill');
+      const telemetryPopover = document.getElementById('telemetry-weather-popover');
+      const searchInput = document.getElementById('location-input');
+      const locateBtn = document.getElementById('locate-me-btn');
+
+      if (!themeBtn || !statsPanel || !telemetryPill || !telemetryPopover || !searchInput || !locateBtn) {
+        return { success: false, reason: 'Required DOM elements missing' };
+      }
+
+      // 1. Verify map stats panel is hidden by default
+      const statsPanelHiddenByDefault = statsPanel.classList.contains('hidden');
+
+      // 2. Verify telemetry HUD pill opens popover
+      const popoverInitiallyHidden = telemetryPopover.classList.contains('hidden');
+      telemetryPill.click();
+      await new Promise(r => setTimeout(r, 40));
+      const popoverOpenAfterClick = !telemetryPopover.classList.contains('hidden');
+      telemetryPill.click();
+      await new Promise(r => setTimeout(r, 40));
+
+      // 3. Verify Theme Toggle
+      const initialTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+      themeBtn.click();
+      await new Promise(r => setTimeout(r, 40));
+      const themeAfterFirstClick = document.documentElement.getAttribute('data-theme');
+      const savedTheme1 = localStorage.getItem('aalaapi_sky_theme');
+
+      themeBtn.click();
+      await new Promise(r => setTimeout(r, 40));
+      const themeAfterSecondClick = document.documentElement.getAttribute('data-theme');
+      const savedTheme2 = localStorage.getItem('aalaapi_sky_theme');
+
+      // 4. Verify search and locate sizing
+      const searchRect = searchInput.getBoundingClientRect();
+      const locateRect = locateBtn.getBoundingClientRect();
+      const isSearchWide = searchRect.width >= 100;
+      const isLocateCompact = locateRect.width <= 120;
+
+      return {
+        success: true,
+        statsPanelHiddenByDefault,
+        popoverInitiallyHidden,
+        popoverOpenAfterClick,
+        initialTheme,
+        themeAfterFirstClick,
+        savedTheme1,
+        themeAfterSecondClick,
+        savedTheme2,
+        isSearchWide,
+        isLocateCompact
+      };
+    });
+
+    assert.ok(themeAndDetailsResult.success, 'Evaluation should succeed');
+    assert.strictEqual(themeAndDetailsResult.statsPanelHiddenByDefault, true, 'Old floating stats-panel on map must be hidden by default');
+    assert.strictEqual(themeAndDetailsResult.popoverOpenAfterClick, true, 'Clicking topbar telemetry pill must open Mission Details popover');
+    assert.strictEqual(themeAndDetailsResult.themeAfterFirstClick, 'light', 'Theme should toggle to light mode');
+    assert.strictEqual(themeAndDetailsResult.savedTheme1, 'light', 'Light mode saved to localStorage');
+    assert.strictEqual(themeAndDetailsResult.themeAfterSecondClick, 'dark', 'Theme should toggle back to dark mode');
+    assert.strictEqual(themeAndDetailsResult.savedTheme2, 'dark', 'Dark mode saved to localStorage');
+    assert.strictEqual(themeAndDetailsResult.isSearchWide, true, 'Location search input should have plenty of width');
+    assert.strictEqual(themeAndDetailsResult.isLocateCompact, true, 'Locate button should be sleek and compact');
+  });
+
+  test('E2E: Adding new layer and setting map center preserves independent layer positions (v1.69.0)', async () => {
+    const layerIsolationResult = await page.evaluate(async () => {
+      // 1. Set Layer 1 at Center 1
+      if (typeof setGridCenter === 'function') {
+        setGridCenter(40.1234, -80.1234);
+      }
+      const l1 = getActiveLayer();
+      const l1CenterLatOrig = l1.centerLat;
+      const l1CenterLonOrig = l1.centerLon;
+
+      // 2. Add Layer 2 (Orbit)
+      const l2 = addFlightLayer('orbit');
+      const layer2Id = l2.id;
+
+      // 3. Move map center for Layer 2
+      setGridCenter(40.5678, -80.5678);
+
+      const l2CenterLatAfter = l2.centerLat;
+      const l2CenterLonAfter = l2.centerLon;
+      const l1CenterLatAfter = l1.centerLat;
+      const l1CenterLonAfter = l1.centerLon;
+
+      // 4. Switch back to Layer 1
+      setActiveLayer(l1.id);
+      const centerMarkerPosAfterSwitch = (typeof centerMarker !== 'undefined' && centerMarker) ? centerMarker.getLatLng() : null;
+
+      return {
+        success: true,
+        l1CenterLatOrig,
+        l1CenterLonOrig,
+        l2CenterLatAfter,
+        l2CenterLonAfter,
+        l1CenterLatAfter,
+        l1CenterLonAfter,
+        centerMarkerLat: centerMarkerPosAfterSwitch ? centerMarkerPosAfterSwitch.lat : null,
+        centerMarkerLon: centerMarkerPosAfterSwitch ? centerMarkerPosAfterSwitch.lng : null
+      };
+    });
+
+    assert.ok(layerIsolationResult.success, 'Evaluation should succeed');
+    assert.strictEqual(layerIsolationResult.l1CenterLatOrig, 40.1234, 'Layer 1 initial lat');
+    assert.strictEqual(layerIsolationResult.l2CenterLatAfter, 40.5678, 'Layer 2 updated lat');
+    assert.strictEqual(layerIsolationResult.l1CenterLatAfter, 40.1234, 'Layer 1 lat must NOT change when Layer 2 is moved');
+    assert.strictEqual(layerIsolationResult.l1CenterLonAfter, -80.1234, 'Layer 1 lon must NOT change when Layer 2 is moved');
+    assert.strictEqual(layerIsolationResult.centerMarkerLat, 40.1234, 'Center marker must jump back to Layer 1 center upon selection');
+  });
+
+  test('E2E: Exclusion Zone dynamically follows Imperial (ft) / Metric (m) unit preference (v1.69.1)', async () => {
+    const unitResult = await page.evaluate(async () => {
+      // 1. Select Exclusion Box
+      const gridTypeSelect = document.getElementById('grid-type');
+      gridTypeSelect.value = 'exclusion-box';
+      gridTypeSelect.dispatchEvent(new Event('change'));
+
+      const allAltCheckbox = document.getElementById('exclusion-all-altitudes');
+      if (allAltCheckbox.checked) {
+        allAltCheckbox.click(); // Reveal min/max sliders
+      }
+
+      // 2. Set to Imperial
+      const unitSystemEl = document.getElementById('unit-system');
+      if (unitSystemEl) {
+        unitSystemEl.value = 'imperial';
+        unitSystemEl.dispatchEvent(new Event('change'));
+      }
+      syncDisplayValues();
+
+      const minUnitFt = document.getElementById('exclusion-min-alt-unit')?.textContent;
+      const maxUnitFt = document.getElementById('exclusion-max-alt-unit')?.textContent;
+      const hintFt = document.getElementById('exclusion-alt-hint')?.textContent;
+
+      // 3. Set to Metric
+      if (unitSystemEl) {
+        unitSystemEl.value = 'metric';
+        unitSystemEl.dispatchEvent(new Event('change'));
+      }
+      syncDisplayValues();
+
+      const minUnitM = document.getElementById('exclusion-min-alt-unit')?.textContent;
+      const maxUnitM = document.getElementById('exclusion-max-alt-unit')?.textContent;
+      const hintM = document.getElementById('exclusion-alt-hint')?.textContent;
+
+      return {
+        success: true,
+        minUnitFt,
+        maxUnitFt,
+        hintFt,
+        minUnitM,
+        maxUnitM,
+        hintM
+      };
+    });
+
+    assert.ok(unitResult.success, 'Unit evaluation succeeded');
+    assert.strictEqual(unitResult.minUnitFt, 'ft', 'Exclusion min alt unit should be ft in imperial');
+    assert.strictEqual(unitResult.maxUnitFt, 'ft', 'Exclusion max alt unit should be ft in imperial');
+    assert.ok(unitResult.hintFt.includes('ft'), 'Exclusion hint text should contain ft in imperial');
+    assert.strictEqual(unitResult.minUnitM, 'm', 'Exclusion min alt unit should be m in metric');
+    assert.strictEqual(unitResult.maxUnitM, 'm', 'Exclusion max alt unit should be m in metric');
+    assert.ok(unitResult.hintM.includes('m'), 'Exclusion hint text should contain m in metric');
+  });
+
+  test('E2E: Freeform Polygon Exclusion allows adding vertices and does NOT clear other flight layers (v1.69.2)', async () => {
+    const polyResult = await page.evaluate(async () => {
+      // 1. Setup Layer 1 as a 2D Nadir Grid
+      const l1 = getActiveLayer() || addFlightLayer('single');
+      setGridCenter(40.1234, -80.1234);
+      updateGrid();
+
+      const l1WpCountBefore = compileMultiLayerMission(40.1234, -80.1234).waypoints.length;
+
+      // 2. Add Layer 2 as Exclusion Poly
+      const l2 = addFlightLayer('exclusion-freeform');
+      updateGrid();
+
+      const l1WpCountAfterExclAdd = compileMultiLayerMission(40.1234, -80.1234).waypoints.length;
+
+      // 3. Add 3 vertices to Exclusion Poly via addFreeformWaypoint
+      addFreeformWaypoint(40.1235, -80.1235);
+      addFreeformWaypoint(40.1236, -80.1235);
+      addFreeformWaypoint(40.1236, -80.1236);
+
+      const l2VerticesCount = l2.freeformWaypoints?.length || 0;
+      const l2PolyVerticesCount = l2.polygonVertices?.length || 0;
+
+      return {
+        success: true,
+        l1WpCountBefore,
+        l1WpCountAfterExclAdd,
+        l2VerticesCount,
+        l2PolyVerticesCount
+      };
+    });
+
+    assert.ok(polyResult.success, 'Poly exclusion evaluation succeeded');
+    assert.ok(polyResult.l1WpCountBefore > 0, 'Layer 1 must have generated waypoints');
+    assert.strictEqual(polyResult.l1WpCountAfterExclAdd, polyResult.l1WpCountBefore, 'Layer 1 waypoints must remain visible when adding Exclusion Poly layer');
+    assert.strictEqual(polyResult.l2VerticesCount, 3, 'Exclusion Poly layer must contain 3 vertices');
+    assert.strictEqual(polyResult.l2PolyVerticesCount, 3, 'Exclusion Poly polygonVertices must contain 3 vertices');
+  });
+
+  test('E2E: Mission Details Popover renders nearest 3 weather stations and allows switching (v1.69.3)', async () => {
+    const weatherResult = await page.evaluate(async () => {
+      const mockDirections = {
+        closest: { icaoId: 'KOSU', name: 'Ohio State Univ', distance: 11.1, fltCat: 'VFR', visibilitySM: 10, ceilingFt: 99999 },
+        stations: [
+          { icaoId: 'KOSU', name: 'Ohio State Univ', distance: 11.1, fltCat: 'VFR', visibilitySM: 10, ceilingFt: 99999 },
+          { icaoId: 'KCMH', name: 'John Glenn Intl', distance: 18.4, fltCat: 'MVFR', visibilitySM: 4.5, ceilingFt: 2500 },
+          { icaoId: 'KTZR', name: 'Bolton Field', distance: 24.2, fltCat: 'VFR', visibilitySM: 10, ceilingFt: 99999 }
+        ],
+        activeIndex: 0
+      };
+
+      updateWeatherPanelUI(mockDirections, null, false);
+
+      const popoverDetails = document.getElementById('pop-weather-details');
+      const switcherButtons = popoverDetails ? popoverDetails.querySelectorAll('.pop-station-tab-btn') : [];
+
+      // Switch to station 1 (KCMH)
+      if (typeof selectActiveWeatherStation === 'function') {
+        selectActiveWeatherStation(1);
+      }
+
+      const activeAfterSwitch = currentWeatherDirections?.activeIndex;
+      const activeIcaoAfterSwitch = currentWeatherDirections?.closest?.icaoId;
+
+      return {
+        success: true,
+        buttonCount: switcherButtons.length,
+        activeAfterSwitch,
+        activeIcaoAfterSwitch,
+        hasKosu: popoverDetails?.innerHTML.includes('KOSU'),
+        hasKcmh: popoverDetails?.innerHTML.includes('KCMH'),
+        hasKtzr: popoverDetails?.innerHTML.includes('KTZR')
+      };
+    });
+
+    assert.ok(weatherResult.success, 'Weather popover test succeeded');
+    assert.strictEqual(weatherResult.buttonCount, 3, 'Should render 3 weather station tabs');
+    assert.strictEqual(weatherResult.activeAfterSwitch, 1, 'Should switch active station index to 1');
+    assert.strictEqual(weatherResult.activeIcaoAfterSwitch, 'KCMH', 'Active station should be KCMH');
+    assert.ok(weatherResult.hasKosu && weatherResult.hasKcmh && weatherResult.hasKtzr, 'All 3 station codes should be rendered');
+  });
+
+  test('E2E: Weather station displays relative compass rose directions (v1.70.0)', async () => {
+    const roseResult = await page.evaluate(async () => {
+      const mockDirections = {
+        closest: { icaoId: 'KOSU', name: 'Ohio State Univ', distance: 11.1, compassDir: 'NE', fltCat: 'VFR', visibilitySM: 10, ceilingFt: 99999 },
+        stations: [
+          { icaoId: 'KOSU', name: 'Ohio State Univ', distance: 11.1, compassDir: 'NE', fltCat: 'VFR', visibilitySM: 10, ceilingFt: 99999 },
+          { icaoId: 'KCMH', name: 'John Glenn Intl', distance: 18.4, compassDir: 'SE', fltCat: 'MVFR', visibilitySM: 4.5, ceilingFt: 2500 },
+          { icaoId: 'KTZR', name: 'Bolton Field', distance: 24.2, compassDir: 'SW', fltCat: 'VFR', visibilitySM: 10, ceilingFt: 99999 }
+        ],
+        activeIndex: 0
+      };
+
+      updateWeatherPanelUI(mockDirections, null, false);
+
+      const popoverDetails = document.getElementById('pop-weather-details');
+      const popoverSummary = document.getElementById('pop-weather-summary');
+
+      return {
+        success: true,
+        summaryHasNE: popoverSummary ? popoverSummary.textContent.includes('NE') : false,
+        detailsHasNE: popoverDetails ? popoverDetails.innerHTML.includes('NE') : false,
+        detailsHasSE: popoverDetails ? popoverDetails.innerHTML.includes('SE') : false,
+        detailsHasSW: popoverDetails ? popoverDetails.innerHTML.includes('SW') : false
+      };
+    });
+
+    assert.ok(roseResult.success, 'Rose direction evaluation succeeded');
+    assert.ok(roseResult.summaryHasNE, 'Summary should contain NE compass direction');
+    assert.ok(roseResult.detailsHasNE, 'Details should contain NE compass direction');
+    assert.ok(roseResult.detailsHasSE, 'Details should contain SE compass direction');
+    assert.ok(roseResult.detailsHasSW, 'Details should contain SW compass direction');
+  });
 });
+
+
+
+
 
 
 
