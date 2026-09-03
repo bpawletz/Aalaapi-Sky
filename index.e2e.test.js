@@ -1648,12 +1648,11 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(evalResult.diagBtnText.includes('Pulled') || evalResult.diagBtnText.includes('Pull'), 'Button text should update upon pull');
   });
 
-  test('E2E: Pattern Layers UI stack allows adding, switching, and opening transitions modal', async () => {
+  test('E2E: Pattern Layers UI stack allows adding, switching, and opening transitions modal via connector pill', async () => {
     const evalResult = await page.evaluate(async () => {
       const addLayerBtn = document.getElementById('add-layer-btn');
       const countBadge = document.getElementById('layer-count-badge');
       const container = document.getElementById('layers-list-container');
-      const configTransBtn = document.getElementById('configure-transitions-btn');
       const modal = document.getElementById('layer-transitions-modal');
 
       if (!addLayerBtn || !countBadge || !container) {
@@ -1671,12 +1670,14 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       const afterAddCards = container.querySelectorAll('.layer-card');
       const countText = countBadge.textContent;
 
-      // Click Transitions modal button
-      if (configTransBtn) configTransBtn.click();
+      // Click the intermediate transition-pill
+      const pill = container.querySelector('.transition-pill');
+      if (pill) pill.click();
       await new Promise(r => setTimeout(r, 100));
 
-       const modalVisible = modal && !modal.classList.contains('hidden');
+      const modalVisible = modal && !modal.classList.contains('hidden');
       const innerRect = modal ? modal.querySelector('.modal').getBoundingClientRect() : { width: 0, height: 0 };
+      const highlightedCard = modal ? modal.querySelector('.transition-rule-card[style*="accent-cyan"]') : null;
 
       // Close modal via top close button
       const closeBtn = document.getElementById('close-transitions-modal-btn');
@@ -1685,14 +1686,11 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
       const modalHidden = modal && modal.classList.contains('hidden');
 
-      // Click the intermediate transition-pill
-      const pill = container.querySelector('.transition-pill');
+      // Reopen modal via transition-pill
       if (pill) pill.click();
       await new Promise(r => setTimeout(r, 100));
 
       const modalReopened = modal && !modal.classList.contains('hidden');
-      const pillInnerRect = modal ? modal.querySelector('.modal').getBoundingClientRect() : { width: 0, height: 0 };
-      const highlightedCard = modal ? modal.querySelector('.transition-rule-card[style*="accent-cyan"]') : null;
 
       // Close modal via Done footer button
       const footerDoneBtn = document.getElementById('close-transitions-footer-btn');
@@ -1709,10 +1707,9 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         modalVisible,
         modalWidth: innerRect.width,
         modalHeight: innerRect.height,
+        hasHighlight: !!highlightedCard,
         modalHidden,
         modalReopened,
-        pillModalWidth: pillInnerRect.width,
-        hasHighlight: !!highlightedCard,
         modalClosedFinal
       };
     });
@@ -1721,13 +1718,12 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(evalResult.initialCount, 1, 'Should have 1 layer initially');
     assert.strictEqual(evalResult.afterAddCount, 2, 'Should have 2 layers after clicking Add Layer');
     assert.ok(evalResult.countText.includes('2 Layers'), 'Badge should show 2 Layers');
-    assert.strictEqual(evalResult.modalVisible, true, 'Transitions modal should open when Transitions button clicked');
+    assert.strictEqual(evalResult.modalVisible, true, 'Transitions modal should open when Direct Transit connector pill clicked');
     assert.ok(evalResult.modalWidth > 0, 'Transitions modal should have non-zero width');
     assert.ok(evalResult.modalHeight > 0, 'Transitions modal should have non-zero height');
-    assert.strictEqual(evalResult.modalHidden, true, 'Transitions modal should close when close button clicked');
-    assert.strictEqual(evalResult.modalReopened, true, 'Transitions modal should open when Direct Transit connector pill clicked');
-    assert.ok(evalResult.pillModalWidth > 0, 'Transitions modal opened via pill should have non-zero width');
     assert.strictEqual(evalResult.hasHighlight, true, 'Transitions modal card should be highlighted when opened via pill');
+    assert.strictEqual(evalResult.modalHidden, true, 'Transitions modal should close when close button clicked');
+    assert.strictEqual(evalResult.modalReopened, true, 'Transitions modal should reopen when connector pill clicked');
     assert.strictEqual(evalResult.modalClosedFinal, true, 'Transitions modal should close when Done footer button clicked');
   });
 
