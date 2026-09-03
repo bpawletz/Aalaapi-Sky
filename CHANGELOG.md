@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.76.0] - 2026-09-03
+
+### Changed
+- **Unified Flight Planning Tools in Section 1 (`#layers-and-location-section`):**
+  - Relocated **Auto-Plan** from Section 4 (Actions & Live Sync) into Section 1 alongside the full suite of flight pattern tools (`.pattern-selector-grid`).
+  - Styled `#auto-plan-btn` as an interactive `.pattern-card.auto-plan-card` with active state illumination while drag-drawing bounding survey footprints.
+  - Streamlined Section 4 (Actions & Live Sync) top row to dedicated full-width `Import KMZ` and `Clear Mission` action buttons.
+
 ## [1.75.0] - 2026-09-03
 
 ### Added

@@ -2700,6 +2700,48 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(altitudeTest.afterRthVal === '65' || altitudeTest.afterRthVal === '213', 'RTH altitude updates with unit conversion (65m / 213ft)');
     assert.ok(altitudeTest.afterMaxHeightVal === '150' || altitudeTest.afterMaxHeightVal === '492', 'Max height updates with unit conversion (150m / 492ft)');
   });
+
+  test('E2E: Auto-Plan Flight Tool in Section 1 Pattern Grid (v1.76.0)', async () => {
+    const autoPlanTest = await page.evaluate(async () => {
+      const autoPlanBtn = document.getElementById('auto-plan-btn');
+      const isInsidePatternGrid = autoPlanBtn && autoPlanBtn.closest('.pattern-selector-grid') !== null;
+      const isPatternCard = autoPlanBtn && autoPlanBtn.classList.contains('pattern-card');
+
+      // Click Auto-Plan button to enter drawing mode
+      if (autoPlanBtn) autoPlanBtn.click();
+      await new Promise(r => setTimeout(r, 60));
+
+      const banner = document.getElementById('auto-plan-banner');
+      const isBannerVisible = banner && !banner.classList.contains('hidden');
+      const isBtnActive = autoPlanBtn && autoPlanBtn.classList.contains('active');
+
+      // Cancel drawing mode
+      const cancelBtn = document.getElementById('cancel-draw-btn');
+      if (cancelBtn) cancelBtn.click();
+      await new Promise(r => setTimeout(r, 60));
+
+      const isBannerHiddenAfterCancel = banner && banner.classList.contains('hidden');
+      const isBtnInactiveAfterCancel = autoPlanBtn && !autoPlanBtn.classList.contains('active');
+
+      return {
+        success: true,
+        isInsidePatternGrid,
+        isPatternCard,
+        isBannerVisible,
+        isBtnActive,
+        isBannerHiddenAfterCancel,
+        isBtnInactiveAfterCancel
+      };
+    });
+
+    assert.ok(autoPlanTest.success, 'Auto-Plan test evaluation should succeed');
+    assert.strictEqual(autoPlanTest.isInsidePatternGrid, true, 'Auto-Plan button must be inside pattern-selector-grid in Section 1');
+    assert.strictEqual(autoPlanTest.isPatternCard, true, 'Auto-Plan button must have pattern-card class');
+    assert.strictEqual(autoPlanTest.isBannerVisible, true, 'Auto-Plan banner must be visible on activation');
+    assert.strictEqual(autoPlanTest.isBtnActive, true, 'Auto-Plan card must illuminate active class during drawing mode');
+    assert.strictEqual(autoPlanTest.isBannerHiddenAfterCancel, true, 'Banner must hide upon cancel');
+    assert.strictEqual(autoPlanTest.isBtnInactiveAfterCancel, true, 'Active class must clear upon cancel');
+  });
 });
 
 
