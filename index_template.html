@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.73.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.74.0</span></h1>
         </div>
       </div>
 
@@ -1716,7 +1716,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.73.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.74.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -1739,6 +1739,7 @@
           <li>Multi-Layer Missions: Combine multiple independent pattern layers with customizable inter-layer transitions.</li>
           <li>3D Exclusion Zones &amp; Automated Detour Routing: Define restricted no-fly volumes with 3D altitude bounds and automatic obstacle avoidance routing (Perimeter, Over-the-Top Climb, or Smart 3D).</li>
           <li>Interactive Gimbal Pitch Visualizer &amp; Upward Tilt: Full $-90^\circ$ to $+60^\circ$ tilt range support with live FOV cone diagram and angle guides.</li>
+          <li>Controlled Settings Reset &amp; Storage Manager: Selectively manage and restore saved browser settings with minimalist indicator dots on modified controls.</li>
         </ul>
 
         <!-- Legal Disclaimer Alert - icon card grid -->
@@ -1782,6 +1783,12 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.74.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Controlled Settings Reset &amp; Storage Manager:</strong> Added granular reset capabilities across 5 distinct domains (Flight, Map/GPS, UI, Hardware, Onboarding) with 1-click Factory Reset and minimalist indicator dots (<code>●</code>) on modified controls.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.73.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Full Upward Gimbal Tilt Range ($-90^\circ$ to $+60^\circ$):</strong> Extended pitch controls and live FOV ray-casting for DJI Mini 4 Pro, Air 3, and Mavic 3 upward inspections (bridges, towers, canopies) with a new <code>[+20° Up]</code> preset chip.</li>
@@ -3268,6 +3275,91 @@
               <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
             </label>
           </div>
+        </div>
+
+        <!-- Controlled Settings Reset & Storage Manager -->
+        <div style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--text-main); margin: 0; text-transform: uppercase; letter-spacing: 0.5px;">Storage &amp; Controlled Reset</h3>
+            <div style="display: flex; gap: 6px;">
+              <button id="reset-select-all-btn" type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 0.7rem; font-weight: 600; margin: 0;">Select All</button>
+              <button id="reset-clear-all-btn" type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 0.7rem; font-weight: 600; margin: 0;">Clear</button>
+            </div>
+          </div>
+          <p class="help-text" style="margin-bottom: 10px;">Select which categories of saved browser settings and cached states to selectively restore to factory defaults.</p>
+          
+          <div id="storage-reset-categories-container" style="display: flex; flex-direction: column; gap: 8px;">
+            <!-- Category 1: Flight & Layer Parameters -->
+            <label class="storage-reset-card" for="reset-chk-flight">
+              <input type="checkbox" id="reset-chk-flight" checked>
+              <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <strong style="font-size: 0.82rem; color: var(--text-main);">🛩️ Flight &amp; Layer Parameters</strong>
+                  <span id="badge-count-flight" class="storage-count-badge custom">Checking...</span>
+                </div>
+                <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 2px;">Altitudes, speeds, overlaps, gimbal pitches, failsafes, and detour modes</span>
+              </div>
+            </label>
+
+            <!-- Category 2: Map Calibration & Location Cache -->
+            <label class="storage-reset-card" for="reset-chk-map">
+              <input type="checkbox" id="reset-chk-map" checked>
+              <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <strong style="font-size: 0.82rem; color: var(--text-main);">🗺️ Map Calibration &amp; GPS Cache</strong>
+                  <span id="badge-count-map" class="storage-count-badge default">Checking...</span>
+                </div>
+                <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 2px;">Georeferencing D-Pad nudge calibration (0m N/E) and last known takeoff GPS fix</span>
+              </div>
+            </label>
+
+            <!-- Category 3: UI & Layout Preferences -->
+            <label class="storage-reset-card" for="reset-chk-ui">
+              <input type="checkbox" id="reset-chk-ui" checked>
+              <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <strong style="font-size: 0.82rem; color: var(--text-main);">🎨 UI, Theme &amp; Layout Preferences</strong>
+                  <span id="badge-count-ui" class="storage-count-badge custom">Checking...</span>
+                </div>
+                <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 2px;">Theme (Dark), Search Layout, Measurement Units (Imperial), Accordion mode</span>
+              </div>
+            </label>
+
+            <!-- Category 4: Hardware & Remote Links -->
+            <label class="storage-reset-card" for="reset-chk-hardware">
+              <input type="checkbox" id="reset-chk-hardware">
+              <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <strong style="font-size: 0.82rem; color: var(--text-main);">🔌 Hardware &amp; Remote Links</strong>
+                  <span id="badge-count-hardware" class="storage-count-badge default">Checking...</span>
+                </div>
+                <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 2px;">Stored DJI RC 2 UUID, Companion Bridge host IP, and Multi-Vendor toggles</span>
+              </div>
+            </label>
+
+            <!-- Category 5: Onboarding & Tour State -->
+            <label class="storage-reset-card" for="reset-chk-onboarding">
+              <input type="checkbox" id="reset-chk-onboarding">
+              <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <strong style="font-size: 0.82rem; color: var(--text-main);">🎓 Onboarding &amp; Tour States</strong>
+                  <span id="badge-count-onboarding" class="storage-count-badge default">Checking...</span>
+                </div>
+                <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 2px;">Re-enable first-time welcome toast and interactive spotlight tour flags</span>
+              </div>
+            </label>
+          </div>
+
+          <!-- Reset Action Buttons -->
+          <div style="display: flex; gap: 8px; margin-top: 12px;">
+            <button id="config-reset-selected-btn" class="btn-secondary" type="button" style="flex: 1; padding: 8px 12px; font-size: 0.75rem; font-weight: 700; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.12); display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+              <span>🔄 Reset Selected</span>
+            </button>
+            <button id="config-factory-reset-btn" class="btn-secondary" type="button" style="padding: 8px 12px; font-size: 0.75rem; font-weight: 700; color: #f87171; border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.12); display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+              <span>⚠️ Factory Reset</span>
+            </button>
+          </div>
+          <div id="reset-feedback-toast" style="display: none; margin-top: 8px; padding: 6px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; text-align: center; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35);"></div>
         </div>
 
       </div>

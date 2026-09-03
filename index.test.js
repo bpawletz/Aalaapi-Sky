@@ -8679,6 +8679,89 @@ describe('Gimbal Pitch Visualizer & Dynamic Angle Classification Tests (v1.73.0)
   });
 });
 
+describe('Controlled Settings Reset & Storage Manager Tests (v1.74.0)', () => {
+  let localStorageStore = {};
+
+  beforeEach(() => {
+    localStorageStore = {};
+    global.localStorage = {
+      getItem: (key) => localStorageStore[key] || null,
+      setItem: (key, val) => { localStorageStore[key] = String(val); },
+      removeItem: (key) => { delete localStorageStore[key]; },
+      clear: () => { localStorageStore = {}; }
+    };
+  });
+
+  test('FACTORY_DEFAULTS defines standard initial values across core settings', () => {
+    assert.strictEqual(typeof FACTORY_DEFAULTS, 'object', 'FACTORY_DEFAULTS must be defined');
+    assert.strictEqual(FACTORY_DEFAULTS['altitude'], '50', 'Default altitude is 50m');
+    assert.strictEqual(FACTORY_DEFAULTS['gimbal-pitch'], '-60', 'Default pitch is -60 deg');
+    assert.strictEqual(FACTORY_DEFAULTS['theme'], 'dark', 'Default theme is dark');
+    assert.strictEqual(FACTORY_DEFAULTS['unit-system'], 'imperial', 'Default unit system is imperial');
+  });
+
+  test('getModifiedSettingsState detects modified localStorage keys across domains', () => {
+    global.localStorage.setItem('aalaapi_sky_theme', 'light');
+    global.localStorage.setItem('aalaapi-rc2-uuid', '354A8F93-759C-42C3-A8D5-746F79C7622A');
+    global.localStorage.setItem('aalaapi_sky_last_location', JSON.stringify({ lat: 41.3, lon: -88.9 }));
+
+    const state = getModifiedSettingsState();
+    assert.ok(state.ui.count >= 1, 'Should detect UI theme customization');
+    assert.ok(state.hardware.count >= 1, 'Should detect RC2 UUID customization');
+    assert.ok(state.map.count >= 1, 'Should detect cached GPS location');
+  });
+
+  test('resetStoredSettings performs selective reset on specific domains without wiping others', () => {
+    global.localStorage.setItem('aalaapi_sky_theme', 'light');
+    global.localStorage.setItem('aalaapi-rc2-uuid', 'TEST-UUID-123');
+    global.localStorage.setItem('aalaapi_sky_last_location', JSON.stringify({ lat: 41.3, lon: -88.9 }));
+
+    // Reset only UI preferences
+    const res = resetStoredSettings({
+      flightParams: false,
+      mapCalibration: false,
+      uiPreferences: true,
+      hardwareLinks: false,
+      onboarding: false
+    });
+
+    assert.ok(res.success, 'Reset must succeed');
+    assert.strictEqual(global.localStorage.getItem('aalaapi_sky_theme'), null, 'Theme key should be cleared');
+    assert.strictEqual(global.localStorage.getItem('aalaapi-rc2-uuid'), 'TEST-UUID-123', 'Hardware UUID should remain untouched');
+    assert.ok(global.localStorage.getItem('aalaapi_sky_last_location') !== null, 'Map location should remain untouched');
+  });
+
+  test('resetStoredSettings with all domains resets all stored state and restores defaults', () => {
+    global.localStorage.setItem('aalaapi_sky_theme', 'light');
+    global.localStorage.setItem('aalaapi-rc2-uuid', 'TEST-UUID-123');
+    global.localStorage.setItem('aalaapi_sky_last_location', JSON.stringify({ lat: 41.3, lon: -88.9 }));
+    global.localStorage.setItem('aalaapi_sky_remote_id_offset_n', '5.5');
+    global.localStorage.setItem('aalaapi_intro_banner_dismissed', 'true');
+
+    const res = resetStoredSettings({
+      flightParams: true,
+      mapCalibration: true,
+      uiPreferences: true,
+      hardwareLinks: true,
+      onboarding: true
+    });
+
+    assert.ok(res.success, 'Factory reset must succeed');
+    assert.strictEqual(global.localStorage.getItem('aalaapi_sky_theme'), null);
+    assert.strictEqual(global.localStorage.getItem('aalaapi-rc2-uuid'), null);
+    assert.strictEqual(global.localStorage.getItem('aalaapi_sky_last_location'), null);
+    assert.strictEqual(global.localStorage.getItem('aalaapi_sky_remote_id_offset_n'), null);
+    assert.strictEqual(global.localStorage.getItem('aalaapi_intro_banner_dismissed'), null);
+  });
+
+  test('updateModifiedSettingsIndicators executes safely without throwing', () => {
+    assert.doesNotThrow(() => {
+      updateModifiedSettingsIndicators();
+    }, 'Indicators update should execute without throwing');
+  });
+});
+
+
 
 
 
