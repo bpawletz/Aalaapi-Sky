@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.76.3] - 2026-09-03
+
+### Fixed
+- **Double Grid Zoom Animation Synchronization & Marker Lockstep:**
+  - Removed explicit CSS `transition: none !important;` overrides on `.leaflet-marker-icon` and `.custom-wp-marker` that were suppressing Leaflet's built-in `.leaflet-zoom-anim .leaflet-zoom-animated` CSS transform interpolation.
+  - Restored full animation lockstep between waypoint markers (`.leaflet-marker-pane`) and double grid flight polylines (`.leaflet-overlay-pane`), preventing markers from detaching or lagging during zoom transitions.
+
 ## [1.76.2] - 2026-09-03
 
 ### Fixed
