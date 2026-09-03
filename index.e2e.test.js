@@ -2787,7 +2787,72 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(highlightTest.isDoubleActive, true, 'Double Grid pattern card must be highlighted active when auto-selected');
     assert.strictEqual(highlightTest.isSingleActive, false, 'Inactive pattern cards must not have active class');
   });
+
+  test('Waypoint markers remain synchronously anchored with no count duplication or detached drift during zoom in/out (v1.76.2)', async () => {
+    const zoomTestResult = await page.evaluate(async () => {
+      // 1. Place double grid center
+      if (typeof setGridCenter === 'function') {
+        setGridCenter(41.88, -87.62);
+      }
+      if (typeof updateGrid === 'function') {
+        updateGrid();
+      }
+      await new Promise(r => setTimeout(r, 100));
+
+      const countMarkers = () => document.querySelectorAll('.leaflet-marker-pane .custom-wp-marker').length;
+      const getContainerClass = () => map.getContainer().className;
+
+      // Initial state at zoom 17
+      map.setView(map.getCenter(), 17, { animate: false });
+      if (typeof applyZoomGates === 'function') applyZoomGates();
+      await new Promise(r => setTimeout(r, 60));
+      const initialCount = countMarkers();
+      const isZoomedOut17 = getContainerClass().includes('wp-zoomed-out');
+
+      // Zoom out to 15 (below WP_DETAIL_MIN_ZOOM 18)
+      map.setView(map.getCenter(), 15, { animate: false });
+      if (typeof applyZoomGates === 'function') applyZoomGates();
+      await new Promise(r => setTimeout(r, 60));
+      const zoomOutCount = countMarkers();
+      const isZoomedOut15 = getContainerClass().includes('wp-zoomed-out');
+
+      // Zoom in to 19 (above WP_DETAIL_MIN_ZOOM 18)
+      map.setView(map.getCenter(), 19, { animate: false });
+      if (typeof applyZoomGates === 'function') applyZoomGates();
+      await new Promise(r => setTimeout(r, 60));
+      const zoomInCount = countMarkers();
+      const isZoomedOut19 = getContainerClass().includes('wp-zoomed-out');
+
+      // Check first marker contains integrated pitch label
+      const firstWpMarker = document.querySelector('.leaflet-marker-pane .custom-wp-marker');
+      const pitchLabel = firstWpMarker?.querySelector('.wp-pitch-label');
+      const hasPitchLabel = !!pitchLabel;
+      const pitchDisplayAt19 = pitchLabel ? window.getComputedStyle(pitchLabel).display : 'none';
+
+      return {
+        success: true,
+        initialCount,
+        zoomOutCount,
+        zoomInCount,
+        isZoomedOut17,
+        isZoomedOut15,
+        isZoomedOut19,
+        hasPitchLabel,
+        pitchDisplayAt19
+      };
+    });
+
+    assert.ok(zoomTestResult.success, 'Zoom test evaluation should succeed');
+    assert.ok(zoomTestResult.initialCount > 0, 'Initial waypoint markers must exist');
+    assert.strictEqual(zoomTestResult.zoomOutCount, zoomTestResult.initialCount, 'Marker count must not change or duplicate on zoom out');
+    assert.strictEqual(zoomTestResult.zoomInCount, zoomTestResult.initialCount, 'Marker count must remain constant without duplicate ghost markers on zoom in');
+    assert.strictEqual(zoomTestResult.isZoomedOut15, true, 'At zoom 15 container must have wp-zoomed-out class');
+    assert.strictEqual(zoomTestResult.isZoomedOut19, false, 'At zoom 19 container must NOT have wp-zoomed-out class');
+    assert.strictEqual(zoomTestResult.hasPitchLabel, true, 'Waypoint marker must contain integrated pitch label');
+    assert.notStrictEqual(zoomTestResult.pitchDisplayAt19, 'none', 'Pitch label should be visible at close zoom 19');
+  });
 });
+
 
 
 

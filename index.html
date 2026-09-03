@@ -1031,10 +1031,11 @@ html, body {
   display: inline-block;
 }
 
-/* Custom Waypoint Marker with Directional Arrow */
+/* Custom Waypoint Marker with Directional Arrow & Integrated Pitch Label */
 .custom-wp-marker {
   background: none !important;
   border: none !important;
+  transition: none !important;
 }
 
 .wp-marker-wrapper {
@@ -1046,6 +1047,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: none !important;
 }
 
 .wp-camera-cone {
@@ -1069,6 +1071,7 @@ html, body {
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
   z-index: 4;
   box-sizing: border-box;
+  transition: none !important;
 }
 
 .wp-arrow {
@@ -1093,11 +1096,12 @@ html, body {
   justify-content: center;
   pointer-events: auto;
   z-index: 3;
+  transition: none !important;
 }
 
 .wp-pitch-label {
   position: absolute;
-  bottom: -15px; /* Position below the marker dot */
+  top: 24px; /* Positioned directly beneath the 24px marker center */
   left: 50%;
   transform: translateX(-50%);
   background: rgba(15, 23, 42, 0.85);
@@ -1111,7 +1115,7 @@ html, body {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
   font-family: var(--font-secondary);
   pointer-events: none;
-  transition: opacity 0.15s ease;
+  transition: none !important;
 }
 
 /* Hide pitch labels and camera cones when zoomed out far — prevents them from
@@ -1122,11 +1126,13 @@ html, body {
   display: none !important;
 }
 
-/* Separate pitch label marker (lives in pitchLabelsGroup, not marker pane) */
-.wp-pitch-label-marker {
-  background: none !important;
-  border: none !important;
-  pointer-events: none !important;
+/* Ensure Leaflet marker pane and icons never have CSS transition lag during map zoom */
+.leaflet-marker-icon,
+.custom-wp-marker,
+.custom-center-marker,
+.custom-poi-marker,
+.road-waypoint-icon {
+  transition: none !important;
 }
 
 .marker-selected {
@@ -2703,7 +2709,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.76.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.76.2</span></h1>
         </div>
       </div>
 
@@ -4389,7 +4395,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.76.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.76.2</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -4457,6 +4463,12 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.76.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Map Zoom Marker Anchoring &amp; Dot Synchronization:</strong> Unified waypoint pitch badges (<code>.wp-pitch-label</code>) directly inside the single waypoint marker container, eliminating redundant marker creation, detached label ghosting, and CSS transition drift during map zoom level changes.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.76.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Auto-Plan Selected Pattern Highlight &amp; Icon Normalization:</strong> Fixed automatic highlighting of the recommended flight pattern card when generating an Auto-Plan mission, and normalized the Auto-Plan icon stroke and font styling to match all other flight pattern cards.</li>
@@ -13036,6 +13048,7 @@ function getMarkerIcon(wp, idx, waypoints, rotationDeg, tempHeading, tempPitch, 
       </div>
       <div class="wp-static-container">
         <div class="wp-dot" style="background-color: ${color}; border-color: ${borderColor}; width: ${radius * 2}px; height: ${radius * 2}px; border-width: ${borderWeight}px;"></div>
+        <div class="wp-pitch-label">${pitch}°</div>
       </div>
     `,
     iconSize: [24, 24],
@@ -13473,22 +13486,6 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
 
       wp.mapMarker = marker;
       marker.addTo(waypointMarkersGroup);
-
-      if (pitchLabelsGroup) {
-        const labelIcon = L.divIcon({
-          className: 'wp-pitch-label-marker',
-          html: `<div class="wp-pitch-label">${pitch}°</div>`,
-          iconSize: [30, 14],
-          iconAnchor: [15, -6] // Centered horizontally, positioned below the dot
-        });
-        const labelMarker = L.marker([wp.lat, wp.lon], {
-          icon: labelIcon,
-          interactive: false,
-          zIndexOffset: -100
-        });
-        wp.pitchLabelMarker = labelMarker;
-        labelMarker.addTo(pitchLabelsGroup);
-      }
     }
   });
 
@@ -13979,6 +13976,7 @@ function updateAirspaceLegend(e) {
 // Uses setWhere('1=0') to suppress all network requests when zoomed out,
 // and setWhere('') to restore normal queries when zoomed in enough.
 function applyZoomGates() {
+  if (typeof map === 'undefined' || !map || typeof map.getZoom !== 'function') return;
   const zoom = map.getZoom();
 
   if (uasFacilityMapLayer && uasFacilityMapEnabled) {
@@ -14013,20 +14011,12 @@ function applyZoomGates() {
   // These elements extend outside the 24x24 iconSize box (overflow: visible),
   // so at low zoom they appear detached. Hide them below zoom 18.
   const WP_DETAIL_MIN_ZOOM = 18;
-  const mapContainer = map.getContainer();
+  const mapContainer = (typeof map !== 'undefined' && map && typeof map.getContainer === 'function') ? map.getContainer() : null;
   if (mapContainer) {
     if (zoom >= WP_DETAIL_MIN_ZOOM) {
       mapContainer.classList.remove('wp-zoomed-out');
-      // Show pitch label layer
-      if (pitchLabelsGroup && !map.hasLayer(pitchLabelsGroup)) {
-        pitchLabelsGroup.addTo(map);
-      }
     } else {
       mapContainer.classList.add('wp-zoomed-out');
-      // Hide pitch label layer entirely — removes all label markers from pane, no ghost dots
-      if (pitchLabelsGroup && map.hasLayer(pitchLabelsGroup)) {
-        map.removeLayer(pitchLabelsGroup);
-      }
     }
   }
 }
