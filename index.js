@@ -1067,7 +1067,10 @@ function findDetourPathOverZone(p1, p2, zone, centerLat, centerLon, bufferMeters
 
   const zoneMaxAlt = (zone.maxAltitude !== undefined && zone.maxAltitude !== null) ? zone.maxAltitude : 60;
   const cBuffer = (clearanceBuffer !== undefined && clearanceBuffer !== null) ? clearanceBuffer : (globalExclusionClearanceBuffer || 5);
-  const targetClimbAlt = zoneMaxAlt + cBuffer;
+  const maxCeiling = (typeof document !== 'undefined' && document.getElementById && document.getElementById('max-flight-height'))
+    ? (parseFloat(document.getElementById('max-flight-height').value) || 120)
+    : 120;
+  const targetClimbAlt = Math.min(maxCeiling, zoneMaxAlt + cBuffer);
 
   // Find line segment (p1, p2) intersections with buffered zone polygon edges
   const intersections = [];
@@ -2521,10 +2524,11 @@ const CONTROLS_LIST = [
   'front-overlap', 'side-overlap', 'gimbal-pitch',
   'altitude', 'speed', 'heading-mode', 'finish-action', 'capture-mode', 'path-mode', 'signal-lost-action',
   'camera-model', 'drone-model', 'camera-zoom', 'camera-hfov', 'camera-vfov', 'road-offset',
-  'global-hover-time', 'global-exclusion-detour-mode', 'global-exclusion-clearance-buffer'
+  'global-hover-time', 'global-exclusion-detour-mode', 'global-exclusion-clearance-buffer',
+  'max-flight-height', 'rth-altitude'
 ];
 
-// Factory Defaults Schema for Reset & Modified Detection (v1.74.0)
+// Factory Defaults Schema for Reset & Modified Detection (v1.75.0)
 const FACTORY_DEFAULTS = {
   // Flight & Layer Parameters
   'altitude': '50',
@@ -2552,6 +2556,7 @@ const FACTORY_DEFAULTS = {
   'road-action': 'none',
   'road-snap': false,
   // Section 3: Mission Failsafes & Defaults
+  'max-flight-height': '120',
   'rth-altitude': '50',
   'signal-lost-action': 'goHome',
   'exit-on-rc-lost': 'executeLostAction',
@@ -2642,7 +2647,7 @@ function getModifiedSettingsState() {
     'multi-orbit-radius', 'multi-orbit-tiers', 'multi-orbit-bottom-alt',
     'multi-orbit-top-alt', 'multi-orbit-pitch-bottom', 'multi-orbit-pitch-top',
     'multi-orbit-wps', 'multi-orbit-speed', 'road-offset',
-    'rth-altitude', 'signal-lost-action', 'exit-on-rc-lost', 'flight-path-mode',
+    'max-flight-height', 'rth-altitude', 'signal-lost-action', 'exit-on-rc-lost', 'flight-path-mode',
     'heading-mode', 'drone-model', 'finish-action', 'capture-mode', 'path-mode',
     'global-exclusion-detour-mode', 'global-exclusion-clearance-buffer', 'max-flight-time'
   ];
@@ -2875,7 +2880,7 @@ function resetStoredSettings(options = {}) {
       'multi-orbit-radius', 'multi-orbit-tiers', 'multi-orbit-bottom-alt',
       'multi-orbit-top-alt', 'multi-orbit-pitch-bottom', 'multi-orbit-pitch-top',
       'multi-orbit-wps', 'multi-orbit-speed', 'road-offset',
-      'rth-altitude', 'signal-lost-action', 'exit-on-rc-lost', 'flight-path-mode',
+      'max-flight-height', 'rth-altitude', 'signal-lost-action', 'exit-on-rc-lost', 'flight-path-mode',
       'heading-mode', 'drone-model', 'finish-action', 'capture-mode', 'path-mode',
       'global-exclusion-detour-mode', 'global-exclusion-clearance-buffer', 'max-flight-time'
     ];
@@ -4967,6 +4972,38 @@ function syncDisplayValues() {
     } else {
       globalClearanceValEl.textContent = cVal;
       globalClearanceUnitEl.textContent = "m";
+    }
+  }
+
+  // Sync Max Flight Altitude Ceiling Display
+  const maxHeightSlider = document.getElementById('max-flight-height');
+  const maxHeightValEl = document.getElementById('max-height-val');
+  const maxHeightUnitEl = document.getElementById('max-height-unit');
+  const legalWarningEl = document.getElementById('max-height-legal-warning');
+  if (maxHeightSlider) {
+    const mhVal = parseFloat(maxHeightSlider.value) || 120;
+    if (maxHeightValEl) {
+      maxHeightValEl.textContent = (unit === 'imperial') ? Math.round(mhVal * M_TO_FT) : mhVal;
+    }
+    if (maxHeightUnitEl) {
+      maxHeightUnitEl.textContent = distUnitStr;
+    }
+    if (legalWarningEl) {
+      legalWarningEl.style.display = (mhVal > 120) ? 'block' : 'none';
+    }
+  }
+
+  // Sync Safe RTH Altitude Display
+  const rthAltSlider = document.getElementById('rth-altitude');
+  const rthAltValEl = document.getElementById('rth-altitude-val');
+  const rthAltUnitEl = document.getElementById('rth-altitude-unit');
+  if (rthAltSlider) {
+    const rthVal = parseFloat(rthAltSlider.value) || 50;
+    if (rthAltValEl) {
+      rthAltValEl.textContent = (unit === 'imperial') ? Math.round(rthVal * M_TO_FT) : rthVal;
+    }
+    if (rthAltUnitEl) {
+      rthAltUnitEl.textContent = distUnitStr;
     }
   }
 }
@@ -7861,6 +7898,9 @@ function buildTemplateKml(finishAction, speed) {
     executeRCLostAction = 'goBack';
   }
 
+  const rthAltEl = document.getElementById('rth-altitude');
+  const rthAltitude = rthAltEl ? (parseFloat(rthAltEl.value) || 50) : 50;
+
   const isEnterprise = (droneEnumValue !== 68 && droneEnumValue !== 89);
   let folderXml = '';
   if (isEnterprise) {
@@ -7891,6 +7931,7 @@ function buildTemplateKml(finishAction, speed) {
       <wpml:finishAction>${finishAction}</wpml:finishAction>
       <wpml:exitOnRCLost>${exitOnRCLost}</wpml:exitOnRCLost>
       <wpml:executeRCLostAction>${executeRCLostAction}</wpml:executeRCLostAction>
+      <wpml:takeOffSecurityHeight>${rthAltitude}</wpml:takeOffSecurityHeight>
       <wpml:globalTransitionalSpeed>${speed}</wpml:globalTransitionalSpeed>
       <wpml:droneInfo>
         <wpml:droneEnumValue>${droneEnumValue}</wpml:droneEnumValue>
@@ -8285,6 +8326,9 @@ ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
     executeRCLostAction = 'goBack';
   }
 
+  const rthAltEl = document.getElementById('rth-altitude');
+  const rthAltitude = rthAltEl ? (parseFloat(rthAltEl.value) || 50) : 50;
+
   const isEnterprise = (droneEnumValue !== 68 && droneEnumValue !== 89);
   let templateTypeXml = isEnterprise ? '      <wpml:templateType>waypoint</wpml:templateType>\n' : '';
   let payloadParamXml = isEnterprise ? `      <wpml:payloadParam>
@@ -8300,6 +8344,7 @@ ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
       <wpml:finishAction>${finishAction}</wpml:finishAction>
       <wpml:exitOnRCLost>${exitOnRCLost}</wpml:exitOnRCLost>
       <wpml:executeRCLostAction>${executeRCLostAction}</wpml:executeRCLostAction>
+      <wpml:takeOffSecurityHeight>${rthAltitude}</wpml:takeOffSecurityHeight>
       <wpml:globalTransitionalSpeed>${speed}</wpml:globalTransitionalSpeed>
       <wpml:droneInfo>
         <wpml:droneEnumValue>${droneEnumValue}</wpml:droneEnumValue>
