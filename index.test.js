@@ -8346,6 +8346,118 @@ describe('v1.70.0 Relative Compass Rose Directions for Weather Stations', () => 
   });
 });
 
+describe('v1.70.1 Road Follow Layer Isolation & Multi-Layer Independence', () => {
+  beforeEach(() => {
+    flightLayers = [];
+    activeLayerId = null;
+    roadWaypoints = [];
+    generatedWaypoints = [];
+    generatedPhotos = [];
+    importedWaypoints = null;
+    importedPhotos = null;
+  });
+
+  test('generateRoadFlightWaypoints generates offset drone positions and road-facing yaw headings', () => {
+    const roadNodes = [
+      { lat: 40.0, lon: -83.0, alt: 50 },
+      { lat: 40.001, lon: -83.0, alt: 50 },
+      { lat: 40.002, lon: -83.0, alt: 50 }
+    ];
+
+    const result = generateRoadFlightWaypoints(roadNodes, 15, 50, -60, 4, 'stopAndShoot', 40.0, -83.0, 'followWayline');
+    assert.ok(result);
+    assert.strictEqual(result.waypoints.length, 3);
+    assert.strictEqual(result.photos.length, 3);
+
+    // Each waypoint should be marked as road drone waypoint and have valid coordinates
+    result.waypoints.forEach((wp, idx) => {
+      assert.ok(wp.lat !== null && !isNaN(wp.lat));
+      assert.ok(wp.lon !== null && !isNaN(wp.lon));
+      assert.strictEqual(wp.isRoadDroneWaypoint, true);
+      assert.strictEqual(wp.idx, idx);
+    });
+  });
+
+  test('addRoadWaypoint stores waypoints strictly in activeLayer.roadWaypoints without polluting other layers', () => {
+    centerMarker = {
+      getLatLng: () => ({ lat: 40.0, lng: -83.0 })
+    };
+
+    // Layer 1: Double Grid
+    const l1 = createDefaultLayer('layer-1', 'Layer 1: 3D Double Grid', 0, 'double', 40.0, -83.0);
+    // Layer 2: Road Following
+    const l2 = createDefaultLayer('layer-2', 'Layer 2: Road Following', 1, 'road-following', 40.0, -83.0);
+    l2.roadSnap = false;
+    flightLayers = [l1, l2];
+    activeLayerId = l2.id;
+    roadWaypoints = l2.roadWaypoints;
+
+    // Add road nodes to Layer 2 (with roadSnap false for immediate direct node placement)
+    addRoadWaypoint(40.001, -83.001);
+    addRoadWaypoint(40.002, -83.002);
+
+    assert.strictEqual(l2.roadWaypoints.length, 2);
+    assert.strictEqual(l1.roadWaypoints.length, 0);
+
+    // Compile multi-layer mission
+    const compiled = compileMultiLayerMission(40.0, -83.0);
+    assert.ok(compiled);
+    assert.ok(compiled.waypoints.length > 0);
+
+    // Layer 1 has standard grid waypoints, Layer 2 has road waypoints
+    const l1Wps = compiled.waypoints.filter(w => w.layerId === l1.id);
+    const l2Wps = compiled.waypoints.filter(w => w.layerId === l2.id);
+
+    assert.ok(l1Wps.length > 0);
+    assert.strictEqual(l2Wps.length, 2);
+    assert.strictEqual(l2Wps[0].isRoadDroneWaypoint, true);
+  });
+
+  test('Adding a new road-following layer starts with 0 road nodes and does not copy prior layer waypoints', () => {
+    centerMarker = {
+      getLatLng: () => ({ lat: 40.0, lng: -83.0 })
+    };
+
+    const l1 = createDefaultLayer('layer-1', 'Layer 1: 3D Double Grid', 0, 'double', 40.0, -83.0);
+    flightLayers = [l1];
+    activeLayerId = l1.id;
+
+    // Generate layer 1 waypoints
+    compileMultiLayerMission(40.0, -83.0);
+
+    // Add Layer 2: road-following
+    const l2 = addFlightLayer('road-following');
+    assert.strictEqual(l2.roadWaypoints.length, 0);
+    assert.strictEqual(roadWaypoints.length, 0);
+  });
+
+  test('Switching active layer preserves each layer road waypoints independently', () => {
+    centerMarker = {
+      getLatLng: () => ({ lat: 40.0, lng: -83.0 })
+    };
+
+    const l1 = createDefaultLayer('layer-1', 'Layer 1: Road Following A', 0, 'road-following', 40.0, -83.0);
+    const l2 = createDefaultLayer('layer-2', 'Layer 2: Road Following B', 1, 'road-following', 40.0, -83.0);
+    l1.roadWaypoints = [{ lat: 40.01, lon: -83.01, x: 10, y: 10, idx: 0 }];
+    l2.roadWaypoints = [{ lat: 40.02, lon: -83.02, x: 20, y: 20, idx: 0 }, { lat: 40.03, lon: -83.03, x: 30, y: 30, idx: 1 }];
+    flightLayers = [l1, l2];
+
+    setActiveLayer(l1.id);
+    assert.strictEqual(roadWaypoints.length, 1);
+    assert.strictEqual(roadWaypoints[0].lat, 40.01);
+
+    setActiveLayer(l2.id);
+    assert.strictEqual(roadWaypoints.length, 2);
+    assert.strictEqual(roadWaypoints[0].lat, 40.02);
+    assert.strictEqual(roadWaypoints[1].lat, 40.03);
+
+    // Switch back to l1
+    setActiveLayer(l1.id);
+    assert.strictEqual(roadWaypoints.length, 1);
+    assert.strictEqual(roadWaypoints[0].lat, 40.01);
+  });
+});
+
 
 
 

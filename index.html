@@ -2625,7 +2625,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.70.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.70.1</span></h1>
         </div>
       </div>
 
@@ -4179,7 +4179,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.70.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.70.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -4244,6 +4244,13 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.70.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Road Follow Multi-Layer Isolation &amp; State Encapsulation:</strong> Isolated Road Following (<code>road-following</code>) strictly inside each layer's own data model. Adding, moving, or deleting road nodes on a road layer no longer impacts or mutates other layers in the multi-layer sequence.</li>
+              <li><strong>Independent Road Node &amp; Waypoint Rendering:</strong> Road polylines and draggable node markers are rendered independently per road layer, preserving directional arrow markers and yaw headings for other flight layers.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.70.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Relative Compass Rose Directions for Weather Stations:</strong> All weather station badges, switcher tabs, map pins, and HUD summaries now display their relative compass bearing from the mission center (e.g. <code>N</code>, <code>NE</code>, <code>ENE</code>, <code>E</code>, <code>SE</code>, <code>SW</code>, <code>NW</code>), providing instant spatial situational awareness.</li>
@@ -7006,6 +7013,12 @@ function setActiveLayer(layerId) {
   const found = flightLayers.find(l => l.id === layerId);
   if (found) {
     activeLayerId = layerId;
+    if (found.pattern === 'road-following') {
+      if (!found.roadWaypoints) found.roadWaypoints = [];
+      roadWaypoints = found.roadWaypoints;
+    } else {
+      roadWaypoints = [];
+    }
     syncUiWithActiveLayer();
 
     // Dynamically sync centerMarker to the newly active layer's center
@@ -7049,6 +7062,12 @@ function addFlightLayer(pattern = 'double') {
   );
   flightLayers.push(newLayer);
   activeLayerId = newLayer.id;
+  if (pattern === 'road-following') {
+    if (!newLayer.roadWaypoints) newLayer.roadWaypoints = [];
+    roadWaypoints = newLayer.roadWaypoints;
+  } else {
+    roadWaypoints = [];
+  }
   syncUiWithActiveLayer();
   if (typeof updateGrid === 'function') updateGrid();
   renderLayersList();
@@ -7562,6 +7581,132 @@ function filterWaypointsByExclusionZones(waypoints, photos, activeZones, centerL
   };
 }
 
+function generateRoadFlightWaypoints(rawRoad, offsetDist, altitude, defaultGimbalPitch, speed, captureMode, centerLat, centerLon, headingMode) {
+  if (!rawRoad || !Array.isArray(rawRoad) || rawRoad.length === 0) {
+    return { waypoints: [], photos: [] };
+  }
+
+  const D = offsetDist !== undefined ? offsetDist : 15;
+  const MIN_DIST = 10.0;
+
+  rawRoad.forEach((rn, idx) => {
+    if (rn.lat != null && rn.lon != null) {
+      const offsets = geodeticToLocal(rn.lat, rn.lon, centerLat, centerLon);
+      rn.x = offsets.x;
+      rn.y = offsets.y;
+      rn.idx = idx;
+    }
+  });
+
+  const waypoints = rawRoad.map((roadNode, idx) => {
+    let tx = 0;
+    let ty = 1;
+
+    if (rawRoad.length > 1) {
+      const rIdx = idx;
+      let prev = rawRoad[rIdx];
+      let next = rawRoad[rIdx];
+
+      for (let i = rIdx - 1; i >= 0; i--) {
+        const dx = rawRoad[i].x - rawRoad[rIdx].x;
+        const dy = rawRoad[i].y - rawRoad[rIdx].y;
+        if (Math.sqrt(dx * dx + dy * dy) >= MIN_DIST) {
+          prev = rawRoad[i];
+          break;
+        }
+      }
+      if (prev === rawRoad[rIdx] && rIdx > 0) {
+        prev = rawRoad[0];
+      }
+
+      for (let i = rIdx + 1; i < rawRoad.length; i++) {
+        const dx = rawRoad[i].x - rawRoad[rIdx].x;
+        const dy = rawRoad[i].y - rawRoad[rIdx].y;
+        if (Math.sqrt(dx * dx + dy * dy) >= MIN_DIST) {
+          next = rawRoad[i];
+          break;
+        }
+      }
+      if (next === rawRoad[rIdx] && rIdx < rawRoad.length - 1) {
+        next = rawRoad[rawRoad.length - 1];
+      }
+
+      let vx = next.x - prev.x;
+      let vy = next.y - prev.y;
+
+      if (vx === 0 && vy === 0) {
+        if (idx === 0 && rawRoad.length > 1) {
+          vx = rawRoad[1].x - rawRoad[0].x;
+          vy = rawRoad[1].y - rawRoad[0].y;
+        } else if (idx === rawRoad.length - 1 && rawRoad.length > 1) {
+          vx = rawRoad[rawRoad.length - 1].x - rawRoad[rawRoad.length - 2].x;
+          vy = rawRoad[rawRoad.length - 1].y - rawRoad[rawRoad.length - 2].y;
+        } else if (rawRoad.length > idx + 1 && idx > 0) {
+          vx = rawRoad[idx + 1].x - rawRoad[idx - 1].x;
+          vy = rawRoad[idx + 1].y - rawRoad[idx - 1].y;
+        }
+      }
+
+      const len = Math.sqrt(vx * vx + vy * vy);
+      if (len > 0) {
+        tx = vx / len;
+        ty = vy / len;
+      }
+    }
+
+    const droneX = roadNode.x + D * ty;
+    const droneY = roadNode.y - D * tx;
+    const geo = localToGeodetic(droneX, droneY, centerLat, centerLon, 0);
+
+    const altVal = roadNode.alt !== undefined && roadNode.alt !== null ? roadNode.alt : altitude;
+    let pitchVal = roadNode.pitch;
+    if (pitchVal === null || pitchVal === undefined) {
+      pitchVal = (defaultGimbalPitch !== undefined && defaultGimbalPitch !== null) ? defaultGimbalPitch : -Math.round(Math.atan2(altVal, Math.max(Math.abs(D), 1)) * (180.0 / Math.PI));
+    }
+
+    let standardRoadFacing;
+    if (Math.abs(D) < 0.01) {
+      standardRoadFacing = Math.atan2(tx, ty) * (180.0 / Math.PI);
+    } else {
+      standardRoadFacing = Math.atan2(roadNode.x - droneX, roadNode.y - droneY) * (180.0 / Math.PI);
+    }
+    standardRoadFacing = (standardRoadFacing + 360) % 360;
+
+    let headingVal = standardRoadFacing;
+    if (headingMode === 'followWayline') {
+      headingVal = (Math.atan2(tx, ty) * (180.0 / Math.PI) + 360) % 360;
+    } else if (headingMode === 'fixed') {
+      headingVal = 0;
+    } else if (roadNode.heading !== null && roadNode.heading !== undefined) {
+      headingVal = roadNode.heading;
+    }
+
+    return {
+      lat: geo.lat,
+      lon: geo.lon,
+      x: droneX,
+      y: droneY,
+      alt: altVal,
+      pitch: pitchVal,
+      heading: headingVal,
+      headingMode: headingMode || 'followWayline',
+      speed: speed,
+      idx: idx,
+      isRoadDroneWaypoint: true
+    };
+  });
+
+  const photos = waypoints.map((wp, idx) => ({
+    lat: wp.lat,
+    lon: wp.lon,
+    x: wp.x,
+    y: wp.y,
+    idx: idx
+  }));
+
+  return { waypoints, photos };
+}
+
 function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
   if (!layer || !layer.enabled) return { waypoints: [], photos: [] };
   if (layer.isExclusionZone || layer.pattern === 'exclusion-box' || layer.pattern === 'exclusion-freeform') {
@@ -7611,15 +7756,12 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     waypoints = rawWps;
     photos = rawPhotos;
   } else if (gridType === 'road-following') {
-    const rawRoad = layer.roadWaypoints || roadWaypoints || [];
+    const rawRoad = (layer.roadWaypoints && Array.isArray(layer.roadWaypoints)) ? layer.roadWaypoints : (layer.id === activeLayerId ? (roadWaypoints || []) : []);
     if (rawRoad && rawRoad.length > 0) {
       const offsetDist = layer.roadOffset !== undefined ? layer.roadOffset : 15;
-      if (typeof computeRoadOffsetPolyline === 'function' && typeof generateRoadFlightWaypoints === 'function') {
-        const offsetPath = computeRoadOffsetPolyline(rawRoad, offsetDist);
-        const generated = generateRoadFlightWaypoints(offsetPath, rawRoad, altitude, defaultGimbalPitch, speed, captureMode);
-        waypoints = generated.waypoints;
-        photos = generated.photos;
-      }
+      const generated = generateRoadFlightWaypoints(rawRoad, offsetDist, altitude, defaultGimbalPitch, speed, captureMode, centerLat, centerLon, headingMode);
+      waypoints = generated.waypoints;
+      photos = generated.photos;
     }
   } else {
     const hfov = (typeof CAMERA_HFOV === 'number' && !isNaN(CAMERA_HFOV) && CAMERA_HFOV > 0) ? CAMERA_HFOV : 69.7;
@@ -9950,7 +10092,8 @@ function togglePatternParameters() {
   }
 
   if (gridType === 'exclusion-freeform') {
-    roadWaypoints = [];
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
     if (gridGeometrySection) {
       gridGeometrySection.style.display = 'block';
       gridGeometrySection.classList.remove('collapsed');
@@ -9967,7 +10110,8 @@ function togglePatternParameters() {
     if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
 
   } else if (gridType === 'exclusion-box') {
-    roadWaypoints = [];
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
     if (gridGeometrySection) {
       gridGeometrySection.style.display = 'block';
       gridGeometrySection.classList.remove('collapsed');
@@ -9985,7 +10129,8 @@ function togglePatternParameters() {
     if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
 
   } else if (gridType === 'freeform') {
-    roadWaypoints = []; // Clear road nodes
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
     if (gridGeometrySection) gridGeometrySection.style.display = 'none';
     if (widthContainer) widthContainer.style.display = 'none';
     if (heightContainer) heightContainer.style.display = 'none';
@@ -10012,36 +10157,21 @@ function togglePatternParameters() {
     if (frontOverlapContainer) frontOverlapContainer.style.display = 'none';
     if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
     if (freeformInstructions) {
-      freeformInstructions.querySelector('span').textContent = "ℹ️ Click on the map to define the road path. Drag points to adjust the road. The drone flight path will automatically offset left/right based on the slider.";
+      const span = freeformInstructions.querySelector('span');
+      if (span) span.textContent = "ℹ️ Click on the map to define the road path. Drag points to adjust the road. The drone flight path will automatically offset left/right based on the slider.";
       freeformInstructions.classList.remove('hidden');
     }
     if (roadOffsetContainer) roadOffsetContainer.classList.remove('hidden');
     if (roadSnapContainer) roadSnapContainer.classList.remove('hidden');
 
-    // If we have active waypoints, but no road waypoints yet, convert them to road waypoints
-    const activeWps = getCurrentWaypoints();
-    if (roadWaypoints.length === 0 && activeWps && activeWps.length > 0) {
-      const altitude = parseFloat(document.getElementById('altitude').value);
-      roadWaypoints = activeWps.map((wp, idx) => ({
-        lat: wp.lat,
-        lon: wp.lon,
-        x: wp.x,
-        y: wp.y,
-        alt: wp.alt || altitude,
-        pitch: wp.pitch || null,
-        heading: wp.heading || null,
-        isRingStart: wp.isRingStart || false,
-        ringIndex: wp.ringIndex || null,
-        isClicked: true,
-        idx: idx
-      }));
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer) {
+      if (!activeLayer.roadWaypoints) activeLayer.roadWaypoints = [];
+      roadWaypoints = activeLayer.roadWaypoints;
     }
 
-    // roadWaypoints are always preserved — never overwritten when switching modes.
     syncDisplayValues();
-    if (roadWaypoints.length > 0) {
-      updateGrid(); // Recalculate offset path from road waypoints and draw everything
-    }
+    updateGrid();
     return;
 
   } else {
@@ -10105,8 +10235,7 @@ function togglePatternParameters() {
 
   const isProcedural = (gridType !== 'freeform' && gridType !== 'road-following');
   if (isProcedural) {
-    roadWaypoints = []; // Clear road nodes
-    updateGrid(); // Regenerate procedural grid/orbit from scratch
+    updateGrid();
   } else {
     isChangingPattern = true;
     updateGrid();
@@ -11744,139 +11873,103 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
   // 3. Draw flight path line segments
   drawFlightPathLines(waypoints, gridType);
 
-  // 4. Draw Waypoint Markers (with direction arrows and detailed camera specs)
-  const isMultiOrbit = gridType === 'multi-orbit';
-  const isCombo = gridType === 'grid-orbit-combo';
-  const isMultiCombo = gridType === 'grid-multi-orbit-combo';
+  // 4. Draw Road Paths & Road Nodes for all enabled road-following layers
+  if (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) {
+    flightLayers.forEach(l => {
+      if (l.enabled && l.pattern === 'road-following') {
+        const roadNodes = (l.roadWaypoints && Array.isArray(l.roadWaypoints) && l.roadWaypoints.length > 0)
+          ? l.roadWaypoints
+          : (l.id === activeLayerId && Array.isArray(roadWaypoints) ? roadWaypoints : []);
+        if (roadNodes && roadNodes.length > 0) {
+          const isActive = (l.id === activeLayerId);
+          const roadColor = l.color || '#f59e0b';
+          const roadLatLngs = roadNodes.map(wp => [wp.lat, wp.lon]);
+          L.polyline(roadLatLngs, {
+            color: roadColor,
+            weight: 3,
+            dashArray: '6, 6',
+            opacity: isActive ? 0.9 : 0.6,
+            interactive: false
+          }).addTo(roadPathGroup);
+
+          roadNodes.forEach((wp, idx) => {
+            const roadIcon = L.divIcon({
+              className: 'road-waypoint-icon',
+              html: `<div style="background-color: ${roadColor}; width: 18px; height: 18px; border-radius: 50%; border: 2px solid #ffffff; box-shadow: 0 0 6px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; font-weight: bold; cursor: ${isActive ? 'pointer' : 'default'};">${idx}</div>`,
+              iconSize: [24, 24],
+              iconAnchor: [12, 12]
+            });
+
+            const marker = L.marker([wp.lat, wp.lon], {
+              icon: roadIcon,
+              draggable: isActive
+            });
+
+            wp.roadMarker = marker;
+            marker.bindTooltip(`${l.name} Road Node ${idx}`, { direction: 'top', offset: [0, -10] });
+
+            if (isActive) {
+              marker.on('drag', (e) => {
+                const newLatLng = e.target.getLatLng();
+                const layerCenterLat = (l.centerLat !== undefined && l.centerLat !== null) ? l.centerLat : centerLat;
+                const layerCenterLon = (l.centerLon !== undefined && l.centerLon !== null) ? l.centerLon : centerLon;
+                const offsets = geodeticToLocal(newLatLng.lat, newLatLng.lng, layerCenterLat, layerCenterLon);
+                wp.lat = newLatLng.lat;
+                wp.lon = newLatLng.lng;
+                wp.x = offsets.x;
+                wp.y = offsets.y;
+                wp.isModified = true;
+                updateGrid();
+              });
+
+              marker.on('click', (e) => {
+                L.DomEvent.stopPropagation(e);
+                marker.openPopup();
+              });
+
+              marker.bindPopup(() => {
+                return createWaypointEditorDOM(wp, idx, marker);
+              }, {
+                maxWidth: 240,
+                minWidth: 230,
+                offset: [0, -20]
+              });
+            }
+
+            marker.addTo(roadPathGroup);
+          });
+        }
+      }
+    });
+  }
+
+  // 5. Draw Waypoint Markers
   const gimbalPitch = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('gimbal-pitch'))
     ? parseFloat(document.getElementById('gimbal-pitch').value)
     : (activeLayer && activeLayer.gimbalPitch !== undefined ? activeLayer.gimbalPitch : -60);
 
-  if (gridType === 'road-following') {
-    // Render road path and draggable road markers
-    if (roadWaypoints && roadWaypoints.length > 0) {
-      const roadLatLngs = roadWaypoints.map(wp => [wp.lat, wp.lon]);
-      const roadPolyline = L.polyline(roadLatLngs, {
-        color: '#f59e0b', // Amber yellow
-        weight: 3,
-        dashArray: '6, 6',
-        opacity: 0.8,
-        interactive: false
-      }).addTo(roadPathGroup);
+  waypoints.forEach((wp, idx) => {
+    const isRoadWp = wp.isRoadDroneWaypoint || wp.layerPattern === 'road-following';
 
-      roadWaypoints.forEach((wp, idx) => {
-        const roadIcon = L.divIcon({
-          className: 'road-waypoint-icon',
-          html: `<div style="background-color: #f59e0b; width: 18px; height: 18px; border-radius: 50%; border: 2px solid #ffffff; box-shadow: 0 0 6px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; font-weight: bold; cursor: pointer;">${idx}</div>`,
-          iconSize: [24, 24],
-          iconAnchor: [12, 12]
-        });
-
-        const marker = L.marker([wp.lat, wp.lon], {
-          icon: roadIcon,
-          draggable: true
-        });
-
-        wp.roadMarker = marker; // Save reference to road marker
-
-        marker.bindTooltip(`Road Node ${idx}`, { direction: 'top', offset: [0, -10] });
-
-        marker.on('drag', (e) => {
-          const newLatLng = e.target.getLatLng();
-          const offsets = geodeticToLocal(newLatLng.lat, newLatLng.lng, centerLat, centerLon);
-          wp.lat = newLatLng.lat;
-          wp.lon = newLatLng.lng;
-          wp.x = offsets.x;
-          wp.y = offsets.y;
-          wp.isModified = true;
-          
-          roadPolyline.setLatLngs(roadWaypoints.map(w => [w.lat, w.lon]));
-
-          recalculateRoadOffsetPath(centerLat, centerLon);
-
-          updatePathLinesAndStats(generatedWaypoints, generatedPhotos, centerLat, centerLon, gridWidth, gridHeight, rotationDeg);
-
-          // gimbalPitch is already calculated at the top of the function
-          generatedWaypoints.forEach((gwp) => {
-            if (gwp.mapMarker) {
-              gwp.mapMarker.setLatLng([gwp.lat, gwp.lon]);
-              const gPitch = gwp.pitch !== undefined && gwp.pitch !== null ? gwp.pitch : gimbalPitch;
-              const headingDisplay = (gwp.heading !== null && gwp.heading !== undefined && !isNaN(gwp.heading)) ? gwp.heading.toFixed(0) : '—';
-              const tooltipContent = `Drone Waypoint ${gwp.idx}<br>Height: ${formatDistance(gwp.alt, 0)}<br>Yaw: ${headingDisplay}°<br>Pitch: ${gPitch}°`;
-              gwp.mapMarker.setTooltipContent(tooltipContent);
-            }
-          });
-        });
-
-        marker.on('dragstart', () => {
-          bringMarkerToFront(marker);
-          if (typeof map !== 'undefined' && map && map.closePopup) {
-            map.closePopup();
-          }
-          if (wp.origLat === undefined || wp.origLat === null) {
-            wp.origLat = wp.lat;
-            wp.origLon = wp.lon;
-            wp.origX = wp.x;
-            wp.origY = wp.y;
-          }
-        });
-
-        marker.on('dragend', () => {
-          redrawCurrentMission();
-          if (wp.roadMarker) bringMarkerToFront(wp.roadMarker);
-        });
-
-        marker.on('dragstart', () => {
-          bringMarkerToFront(marker);
-          if (typeof map !== 'undefined' && map && map.closePopup) {
-            map.closePopup();
-          }
-        });
-        marker.on('popupopen', () => bringMarkerToFront(marker));
-        marker.on('click', (e) => {
-          L.DomEvent.stopPropagation(e);
-          const items = getOverlappingItemsAt(marker.getLatLng());
-          if (items.length > 1 && currentlySelectedMarker !== marker) {
-            openDisambiguationPopup(marker.getLatLng(), items);
-          } else {
-            bringMarkerToFront(marker, idx);
-            marker.openPopup();
-          }
-        });
-
-        marker.bindPopup(() => {
-          return createWaypointEditorDOM(wp, idx, marker);
-        }, {
-          maxWidth: 240,
-          minWidth: 230,
-          offset: [0, -20]
-        });
-
-        marker.addTo(roadPathGroup);
-      });
-    }
-
-    // Render drone waypoints as small, non-draggable cyan circles
-    waypoints.forEach((wp, idx) => {
+    if (isRoadWp) {
       const droneMarker = L.circleMarker([wp.lat, wp.lon], {
         radius: 5,
-        color: 'rgba(6, 182, 212, 0.2)', // Semi-transparent glow
-        fillColor: '#06b6d4',
+        color: wp.layerColor ? `${wp.layerColor}40` : 'rgba(6, 182, 212, 0.2)',
+        fillColor: wp.layerColor || '#06b6d4',
         fillOpacity: 0.9,
-        weight: 8 // Large weight for easy click target
+        weight: 8
       });
 
       wp.droneMarker = droneMarker;
+      wp.mapMarker = droneMarker;
 
       const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch;
       const headingDisplay = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading.toFixed(0) : '—';
       const tooltipContent = `Drone Waypoint ${idx}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${headingDisplay}°<br>Pitch: ${pitch}°`;
       droneMarker.bindTooltip(tooltipContent, { direction: 'top', offset: [0, -5] });
 
-      wp.mapMarker = droneMarker;
       droneMarker.addTo(waypointMarkersGroup);
 
-      // Make drone waypoints interactive to select/edit/delete
       droneMarker.bindPopup(() => {
         return createWaypointEditorDOM(wp, idx, droneMarker);
       }, {
@@ -11896,33 +11989,27 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
           droneMarker.openPopup();
         }
       });
-    });
 
-  } else {
-    // Render standard waypoints
-    waypoints.forEach((wp, idx) => {
+    } else {
+      // Standard waypoint marker rendering with directional icon, dragging, etc.
       const isStart = idx === 0;
       const isEnd = idx === waypoints.length - 1;
-      
-      // Generate icon using helper
       const markerIcon = getMarkerIcon(wp, idx, waypoints, rotationDeg);
 
-      // Calculate heading/yaw direction for the tooltip
       let heading = 0;
       if (wp.heading !== null && wp.heading !== undefined) {
         heading = wp.heading;
       } else {
         heading = getDefaultHeading(idx, waypoints, rotationDeg);
       }
-      
+
       const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch;
       const title = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${heading.toFixed(0)}°<br>Pitch: ${pitch}°`;
 
-      const isDraggable = true; // Dragging is enabled for all waypoints!
-
-      const marker = L.marker([wp.lat, wp.lon], { 
-        icon: markerIcon, 
-        draggable: isDraggable 
+      const isDraggable = true;
+      const marker = L.marker([wp.lat, wp.lon], {
+        icon: markerIcon,
+        draggable: isDraggable
       });
 
       marker.bindTooltip(title, { direction: 'top', offset: [0, -10] });
@@ -11941,19 +12028,19 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
           }
           wp.isModified = true;
         });
+
         marker.on('drag', (e) => {
           const newLatLng = e.target.getLatLng();
-          const offsets = geodeticToLocal(newLatLng.lat, newLatLng.lng, centerLat, centerLon);
-          
-          // Update coordinates in the global array
+          const layerCenterLat = (wp.layerId && flightLayers.find(l => l.id === wp.layerId)?.centerLat) || centerLat;
+          const layerCenterLon = (wp.layerId && flightLayers.find(l => l.id === wp.layerId)?.centerLon) || centerLon;
+          const offsets = geodeticToLocal(newLatLng.lat, newLatLng.lng, layerCenterLat, layerCenterLon);
+
           wp.lat = newLatLng.lat;
           wp.lon = newLatLng.lng;
           wp.x = offsets.x;
           wp.y = offsets.y;
-          
-          wp.isModified = true; // Mark as modified!
+          wp.isModified = true;
 
-          // Update photo location if there's a corresponding one
           const activePhotos = getCurrentPhotos();
           if (activePhotos && activePhotos[idx]) {
             activePhotos[idx].lat = newLatLng.lat;
@@ -11962,12 +12049,10 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
             activePhotos[idx].y = offsets.y;
           }
 
-          // Redraw lines and stats in real-time
           updatePathLinesAndStats(waypoints, photoLocations, centerLat, centerLon, gridWidth, gridHeight, rotationDeg);
         });
 
         marker.on('dragend', () => {
-          // Redraw completely to update headings and tooltips
           redrawCurrentMission();
           if (wp.mapMarker) bringMarkerToFront(wp.mapMarker, idx);
         });
@@ -11996,10 +12081,6 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
       wp.mapMarker = marker;
       marker.addTo(waypointMarkersGroup);
 
-      // Add pitch label as a SEPARATE marker in pitchLabelsGroup.
-      // This avoids the ghost-dot artifact: labels inside divIcons use overflow:visible
-      // which causes them to render outside the icon's composited layer during zoom animations.
-      // A dedicated label marker lives in its own pane and is properly repositioned on zoom.
       if (pitchLabelsGroup) {
         const labelIcon = L.divIcon({
           className: 'wp-pitch-label-marker',
@@ -12015,8 +12096,8 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
         wp.pitchLabelMarker = labelMarker;
         labelMarker.addTo(pitchLabelsGroup);
       }
-    });
-  }
+    }
+  });
 
   // 5. Draw Photo trigger markers (yellow dots) in continuous mode
   const captureMode = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('capture-mode'))
@@ -12817,14 +12898,24 @@ function addRoadWaypoint(lat, lng) {
     return;
   }
 
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
   const centerLatLng = centerMarker.getLatLng();
-  const altitude = parseFloat(document.getElementById('altitude').value);
+  const layerCenterLat = (activeLayer && activeLayer.centerLat !== null && activeLayer.centerLat !== undefined) ? activeLayer.centerLat : centerLatLng.lat;
+  const layerCenterLon = (activeLayer && activeLayer.centerLon !== null && activeLayer.centerLon !== undefined) ? activeLayer.centerLon : centerLatLng.lng;
+  const altitude = (activeLayer && activeLayer.altitude !== undefined) ? activeLayer.altitude : parseFloat(document.getElementById('altitude').value);
 
   const roadSnapCheckbox = document.getElementById('road-snap');
-  const snapToRoad = roadSnapCheckbox ? roadSnapCheckbox.checked : true;
+  const snapToRoad = roadSnapCheckbox ? roadSnapCheckbox.checked : (activeLayer ? !!activeLayer.roadSnap : true);
+
+  if (activeLayer) {
+    if (!activeLayer.roadWaypoints) activeLayer.roadWaypoints = [];
+    roadWaypoints = activeLayer.roadWaypoints;
+  } else {
+    if (!roadWaypoints) roadWaypoints = [];
+  }
 
   if (roadWaypoints.length === 0 || !snapToRoad) {
-    const offsets = geodeticToLocal(lat, lng, centerLatLng.lat, centerLatLng.lng);
+    const offsets = geodeticToLocal(lat, lng, layerCenterLat, layerCenterLon);
     const wp = {
       lat: lat,
       lon: lng,
@@ -12848,6 +12939,7 @@ function addRoadWaypoint(lat, lng) {
       origIsModified: false
     };
     roadWaypoints.push(wp);
+    if (activeLayer) activeLayer.roadWaypoints = roadWaypoints;
     updateGrid();
     return;
   }
@@ -12859,8 +12951,8 @@ function addRoadWaypoint(lat, lng) {
   let originalAlertText = "";
   if (freeformInstructions) {
     const span = freeformInstructions.querySelector('span');
-    originalAlertText = span.textContent;
-    span.textContent = "⏳ Snapping to road via OpenStreetMap routing service...";
+    originalAlertText = span ? span.textContent : '';
+    if (span) span.textContent = "⏳ Snapping to road via OpenStreetMap routing service...";
     freeformInstructions.style.background = "rgba(245, 158, 11, 0.15)";
     freeformInstructions.style.borderColor = "rgba(245, 158, 11, 0.3)";
     freeformInstructions.style.color = "#f59e0b";
@@ -12874,7 +12966,8 @@ function addRoadWaypoint(lat, lng) {
       isRouting = false;
       
       if (freeformInstructions) {
-        freeformInstructions.querySelector('span').textContent = originalAlertText;
+        const span = freeformInstructions.querySelector('span');
+        if (span) span.textContent = originalAlertText;
         freeformInstructions.style.background = "";
         freeformInstructions.style.borderColor = "";
         freeformInstructions.style.color = "";
@@ -12886,7 +12979,7 @@ function addRoadWaypoint(lat, lng) {
           for (let i = 1; i < coords.length; i++) {
             const ptLon = coords[i][0];
             const ptLat = coords[i][1];
-            const offsets = geodeticToLocal(ptLat, ptLon, centerLatLng.lat, centerLatLng.lng);
+            const offsets = geodeticToLocal(ptLat, ptLon, layerCenterLat, layerCenterLon);
             
             const wp = {
               lat: ptLat,
@@ -12914,6 +13007,7 @@ function addRoadWaypoint(lat, lng) {
           }
           
           roadWaypoints = removeBacktrackingSpurs(roadWaypoints);
+          if (activeLayer) activeLayer.roadWaypoints = roadWaypoints;
           updateGrid();
           return;
         }
@@ -12925,7 +13019,8 @@ function addRoadWaypoint(lat, lng) {
     .catch(err => {
       isRouting = false;
       if (freeformInstructions) {
-        freeformInstructions.querySelector('span').textContent = originalAlertText;
+        const span = freeformInstructions.querySelector('span');
+        if (span) span.textContent = originalAlertText;
         freeformInstructions.style.background = "";
         freeformInstructions.style.borderColor = "";
         freeformInstructions.style.color = "";
@@ -12935,7 +13030,7 @@ function addRoadWaypoint(lat, lng) {
     });
 
   function fallbackDirectLine() {
-    const offsets = geodeticToLocal(lat, lng, centerLatLng.lat, centerLatLng.lng);
+    const offsets = geodeticToLocal(lat, lng, layerCenterLat, layerCenterLon);
     const wp = {
       lat: lat,
       lon: lng,
@@ -12960,6 +13055,7 @@ function addRoadWaypoint(lat, lng) {
     };
     roadWaypoints.push(wp);
     roadWaypoints = removeBacktrackingSpurs(roadWaypoints);
+    if (activeLayer) activeLayer.roadWaypoints = roadWaypoints;
     updateGrid();
   }
 }
@@ -18838,7 +18934,12 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       if (deleteBtn) {
         deleteBtn.addEventListener('click', () => {
           if (confirm(`Are you sure you want to delete Road Node ${idx}?`)) {
-            if (roadWaypoints && roadWaypoints.length > idx) {
+            const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+            if (activeLayer && activeLayer.roadWaypoints && activeLayer.roadWaypoints.length > idx) {
+              activeLayer.roadWaypoints.splice(idx, 1);
+              activeLayer.roadWaypoints.forEach((w, newIdx) => { w.idx = newIdx; });
+              roadWaypoints = activeLayer.roadWaypoints;
+            } else if (roadWaypoints && roadWaypoints.length > idx) {
               roadWaypoints.splice(idx, 1);
               roadWaypoints.forEach((w, newIdx) => { w.idx = newIdx; });
             }
