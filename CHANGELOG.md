@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.70.1] - 2026-09-03
+
+### Fixed
+- **Road Follow Multi-Layer Isolation & State Encapsulation:** Isolated the Road Following pattern (`road-following`) strictly within each layer's own `layer.roadWaypoints` array. Adding, modifying, dragging, or deleting road nodes on a road follow layer no longer pollutes or mutates other layers in the multi-layer stack.
+- **Independent Road Node & Waypoint Rendering:** Road polylines and draggable road nodes are now drawn independently per road layer, preserving standard directional arrows, yaw headings, and custom styling for procedural and freeform layers.
+
 ## [1.70.0] - 2026-09-03
 
 ### Added

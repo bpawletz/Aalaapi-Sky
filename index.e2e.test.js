@@ -2341,6 +2341,68 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(roseResult.detailsHasSE, 'Details should contain SE compass direction');
     assert.ok(roseResult.detailsHasSW, 'Details should contain SW compass direction');
   });
+
+  test('E2E: Road Follow layer operates independently without mutating other layers (v1.70.1)', async () => {
+    const roadIsoResult = await page.evaluate(async () => {
+      // 1. Reset layers
+      flightLayers = [];
+      activeLayerId = null;
+      roadWaypoints = [];
+
+      const gridTypeSelect = document.getElementById('grid-type');
+      if (gridTypeSelect) {
+        gridTypeSelect.value = 'double';
+        gridTypeSelect.dispatchEvent(new Event('change'));
+      }
+
+      // Place center
+      setGridCenter(40.0125, -83.1770);
+      updateGrid();
+
+      // Layer 1: Double Grid
+      const l1 = flightLayers[0];
+      const l1InitialCount = l1 && l1.waypoints ? l1.waypoints.length : 0;
+
+      // Layer 2: Road Following
+      const l2 = addFlightLayer('road-following');
+      l2.roadSnap = false;
+      const roadSnapCheckbox = document.getElementById('road-snap');
+      if (roadSnapCheckbox) roadSnapCheckbox.checked = false;
+      
+      // Add road waypoints to Layer 2
+      addRoadWaypoint(40.0130, -83.1770);
+      addRoadWaypoint(40.0140, -83.1770);
+      addRoadWaypoint(40.0150, -83.1770);
+
+      const l2RoadCount = l2.roadWaypoints.length;
+      const l2WpCount = l2.waypoints ? l2.waypoints.length : 0;
+      const l1AfterCount = l1.waypoints ? l1.waypoints.length : 0;
+
+      // Switch back to Layer 1
+      setActiveLayer(l1.id);
+      const activeAfterSwitch = activeLayerId;
+      const l1WpCountAfter = l1.waypoints ? l1.waypoints.length : 0;
+      const l2RoadCountAfter = l2.roadWaypoints ? l2.roadWaypoints.length : 0;
+
+      return {
+        success: true,
+        l1InitialCount,
+        l2RoadCount,
+        l2WpCount,
+        l1AfterCount,
+        activeAfterSwitch,
+        l1WpCountAfter,
+        l2RoadCountAfter
+      };
+    });
+
+    assert.ok(roadIsoResult.success, 'Road isolation E2E test evaluated');
+    assert.ok(roadIsoResult.l1InitialCount > 0, 'Layer 1 has initial double grid waypoints');
+    assert.strictEqual(roadIsoResult.l2RoadCount, 3, 'Layer 2 has 3 road waypoints added');
+    assert.strictEqual(roadIsoResult.l2WpCount, 3, 'Layer 2 generated 3 road offset flight waypoints');
+    assert.strictEqual(roadIsoResult.l1AfterCount, roadIsoResult.l1InitialCount, 'Layer 1 waypoints preserved when Layer 2 road waypoints added');
+    assert.strictEqual(roadIsoResult.l2RoadCountAfter, 3, 'Layer 2 road waypoints preserved after switching back to Layer 1');
+  });
 });
 
 
