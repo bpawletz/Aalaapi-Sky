@@ -8625,6 +8625,52 @@ describe('v1.71.0 Exclusion Detour Strategy (Perimeter vs. Over the Top vs. Smar
   });
 });
 
+describe('Gimbal Pitch Visualizer & Dynamic Angle Classification Tests (v1.73.0)', () => {
+  test('getGimbalPitchDescription correctly classifies pitch angles across the full range', () => {
+    // Nadir
+    const nadir90 = getGimbalPitchDescription(-90);
+    assert.ok(nadir90.text.includes('True Nadir'), '-90 should be classified as True Nadir');
+
+    const nadir85 = getGimbalPitchDescription(-85);
+    assert.ok(nadir85.text.includes('True Nadir'), '-85 should be classified as True Nadir');
+
+    // Steep Oblique
+    const steep80 = getGimbalPitchDescription(-80);
+    assert.ok(steep80.text.includes('Steep Oblique'), '-80 should be classified as Steep Oblique');
+
+    const steep70 = getGimbalPitchDescription(-70);
+    assert.ok(steep70.text.includes('Steep Oblique'), '-70 should be classified as Steep Oblique');
+
+    // 3D Oblique
+    const oblique60 = getGimbalPitchDescription(-60);
+    assert.ok(oblique60.text.includes('3D Oblique'), '-60 should be classified as 3D Oblique');
+
+    const oblique45 = getGimbalPitchDescription(-45);
+    assert.ok(oblique45.text.includes('3D Oblique'), '-45 should be classified as 3D Oblique');
+
+    // Shallow Oblique
+    const shallow30 = getGimbalPitchDescription(-30);
+    assert.ok(shallow30.text.includes('Shallow Oblique'), '-30 should be classified as Shallow Oblique');
+
+    const shallow10 = getGimbalPitchDescription(-10);
+    assert.ok(shallow10.text.includes('Shallow Oblique'), '-10 should be classified as Shallow Oblique');
+
+    // Horizon
+    const horizon0 = getGimbalPitchDescription(0);
+    assert.ok(horizon0.text.includes('Level Horizon'), '0 should be classified as Level Horizon');
+  });
+
+  test('updateGimbalPitchVisualizer executes cleanly without throwing when DOM elements are present or absent', () => {
+    assert.doesNotThrow(() => {
+      updateGimbalPitchVisualizer(-90);
+      updateGimbalPitchVisualizer(-60);
+      updateGimbalPitchVisualizer(-45);
+      updateGimbalPitchVisualizer(0);
+    }, 'Visualizer update should execute without throwing');
+  });
+});
+
+
 
 
 
