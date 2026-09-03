@@ -361,6 +361,10 @@ let roadPathGroup = null;
 let isRouting = false;
 let isChangingPattern = false;
 
+// Global Exclusion Detour Settings (v1.71.0)
+let globalExclusionDetourMode = 'perimeter'; // 'perimeter', 'overTop', 'smart'
+let globalExclusionClearanceBuffer = 5; // meters above ceiling
+
 // ==========================================================================
 // Flight Pattern Layers & Multi-Layer Mission Manager (v1.62.0)
 // ==========================================================================
@@ -429,6 +433,8 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     allAltitudes: true,
     minAltitude: 0,
     maxAltitude: 60,
+    detourMode: 'inherit', // 'inherit', 'perimeter', 'overTop', 'smart'
+    clearanceBuffer: 5,
     polygonVertices: [],
     filteredCount: 0,
     gridWidth: 100,
@@ -503,6 +509,11 @@ function saveActiveLayerFromUi() {
   const exclMinAltEl = document.getElementById('exclusion-min-alt');
   const exclMaxAltEl = document.getElementById('exclusion-max-alt');
 
+  const exclDetourModeEl = document.getElementById('exclusion-detour-mode');
+  const exclClearanceEl = document.getElementById('exclusion-clearance-buffer');
+  const globalDetourModeEl = document.getElementById('global-exclusion-detour-mode');
+  const globalClearanceEl = document.getElementById('global-exclusion-clearance-buffer');
+
   if (gridTypeEl && gridTypeEl.value) {
     layer.pattern = gridTypeEl.value;
     layer.isExclusionZone = (layer.pattern === 'exclusion-box' || layer.pattern === 'exclusion-freeform');
@@ -525,6 +536,15 @@ function saveActiveLayerFromUi() {
   if (exclAllAltEl) layer.allAltitudes = exclAllAltEl.checked;
   if (exclMinAltEl) layer.minAltitude = parseFloat(exclMinAltEl.value) || 0;
   if (exclMaxAltEl) layer.maxAltitude = parseFloat(exclMaxAltEl.value) || 60;
+  if (exclDetourModeEl && exclDetourModeEl.value) layer.detourMode = exclDetourModeEl.value;
+  if (exclClearanceEl) layer.clearanceBuffer = parseFloat(exclClearanceEl.value) || 5;
+
+  if (globalDetourModeEl && globalDetourModeEl.value) {
+    globalExclusionDetourMode = globalDetourModeEl.value;
+  }
+  if (globalClearanceEl) {
+    globalExclusionClearanceBuffer = parseFloat(globalClearanceEl.value) || 5;
+  }
 }
 
 function syncUiWithActiveLayer() {
@@ -553,6 +573,10 @@ function syncUiWithActiveLayer() {
   setVal('road-offset', layer.roadOffset);
   setVal('exclusion-min-alt', layer.minAltitude !== undefined ? layer.minAltitude : 0);
   setVal('exclusion-max-alt', layer.maxAltitude !== undefined ? layer.maxAltitude : 60);
+  setVal('exclusion-detour-mode', layer.detourMode || 'inherit');
+  setVal('exclusion-clearance-buffer', layer.clearanceBuffer !== undefined ? layer.clearanceBuffer : 5);
+  setVal('global-exclusion-detour-mode', globalExclusionDetourMode);
+  setVal('global-exclusion-clearance-buffer', globalExclusionClearanceBuffer);
 
   const exclAllAltEl = document.getElementById('exclusion-all-altitudes');
   if (exclAllAltEl) exclAllAltEl.checked = (layer.allAltitudes !== false);
@@ -751,6 +775,23 @@ function doSegmentsIntersect(A, B, C, D) {
     return false;
   }
   return (ccw(A, C, D) !== ccw(B, C, D)) && (ccw(A, B, C) !== ccw(A, B, D));
+}
+
+function getSegmentIntersection(A, B, C, D) {
+  const denom = (A.x - B.x) * (C.y - D.y) - (A.y - B.y) * (C.x - D.x);
+  if (Math.abs(denom) < 1e-9) return null;
+
+  const t = ((A.x - C.x) * (C.y - D.y) - (A.y - C.y) * (C.x - D.x)) / denom;
+  const u = -((A.x - B.x) * (A.y - C.y) - (A.y - B.y) * (A.x - C.x)) / denom;
+
+  if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+    return {
+      x: A.x + t * (B.x - A.x),
+      y: A.y + t * (B.y - A.y),
+      t: t
+    };
+  }
+  return null;
 }
 
 function isPointInPolygon(px, py, polyPoints) {
@@ -995,6 +1036,139 @@ function findDetourPathAroundZone(p1, p2, zone, centerLat, centerLon, bufferMete
   return detourWaypoints;
 }
 
+function calculate3DPathDistance(p1, p2, detourWps) {
+  const fullSeq = [p1, ...(detourWps || []), p2];
+  let totalDist = 0;
+  for (let k = 0; k < fullSeq.length - 1; k++) {
+    const a = fullSeq[k];
+    const b = fullSeq[k + 1];
+    const dx = (b.x !== undefined ? b.x : 0) - (a.x !== undefined ? a.x : 0);
+    const dy = (b.y !== undefined ? b.y : 0) - (a.y !== undefined ? a.y : 0);
+    const dz = (b.alt !== undefined ? b.alt : 50) - (a.alt !== undefined ? a.alt : 50);
+    totalDist += Math.sqrt(dx * dx + dy * dy + dz * dz);
+  }
+  return totalDist;
+}
+
+function findDetourPathOverZone(p1, p2, zone, centerLat, centerLon, bufferMeters = 4, clearanceBuffer = 5) {
+  const zoneCenterLat = (zone.centerLat !== undefined && zone.centerLat !== null) ? zone.centerLat : centerLat;
+  const zoneCenterLon = (zone.centerLon !== undefined && zone.centerLon !== null) ? zone.centerLon : centerLon;
+
+  const buffPoly = getExclusionZonePolygon(zone, zoneCenterLat, zoneCenterLon, bufferMeters);
+  if (!buffPoly || buffPoly.length < 3) return [];
+
+  const p1Local = (p1.x !== undefined && p1.y !== undefined)
+    ? { x: p1.x, y: p1.y, alt: p1.alt }
+    : { ...geodeticToLocal(p1.lat, p1.lon, zoneCenterLat, zoneCenterLon), alt: p1.alt };
+
+  const p2Local = (p2.x !== undefined && p2.y !== undefined)
+    ? { x: p2.x, y: p2.y, alt: p2.alt }
+    : { ...geodeticToLocal(p2.lat, p2.lon, zoneCenterLat, zoneCenterLon), alt: p2.alt };
+
+  const zoneMaxAlt = (zone.maxAltitude !== undefined && zone.maxAltitude !== null) ? zone.maxAltitude : 60;
+  const cBuffer = (clearanceBuffer !== undefined && clearanceBuffer !== null) ? clearanceBuffer : (globalExclusionClearanceBuffer || 5);
+  const targetClimbAlt = zoneMaxAlt + cBuffer;
+
+  // Find line segment (p1, p2) intersections with buffered zone polygon edges
+  const intersections = [];
+  for (let i = 0, j = buffPoly.length - 1; i < buffPoly.length; j = i++) {
+    const inter = getSegmentIntersection(p1Local, p2Local, buffPoly[j], buffPoly[i]);
+    if (inter) {
+      intersections.push(inter);
+    }
+  }
+
+  // Sort intersections along line segment from p1 (t=0) to p2 (t=1)
+  intersections.sort((a, b) => a.t - b.t);
+
+  const detourWaypoints = [];
+  const speedVal = p1.speed !== undefined ? p1.speed : 5;
+  const pitchVal = p1.pitch !== undefined ? p1.pitch : -60;
+  const headingVal = p1.heading !== undefined ? p1.heading : 0;
+
+  if (intersections.length >= 2) {
+    const entryPt = intersections[0];
+    const exitPt = intersections[intersections.length - 1];
+
+    const entryGeo = localToGeodetic(entryPt.x, entryPt.y, zoneCenterLat, zoneCenterLon);
+    const exitGeo = localToGeodetic(exitPt.x, exitPt.y, zoneCenterLat, zoneCenterLon);
+
+    // 1. Entry climb waypoint (reaches clearance altitude right as entering zone boundary)
+    detourWaypoints.push({
+      lat: entryGeo.lat,
+      lon: entryGeo.lon,
+      x: entryPt.x,
+      y: entryPt.y,
+      alt: targetClimbAlt,
+      speed: speedVal,
+      pitch: pitchVal,
+      heading: headingVal,
+      isDetour: true,
+      isAvoidance: true,
+      isPhoto: false,
+      isExclusionDetour: true,
+      isClimbOver: true
+    });
+
+    // 2. Exit cruise waypoint (maintains clearance altitude until leaving zone boundary)
+    detourWaypoints.push({
+      lat: exitGeo.lat,
+      lon: exitGeo.lon,
+      x: exitPt.x,
+      y: exitPt.y,
+      alt: targetClimbAlt,
+      speed: speedVal,
+      pitch: pitchVal,
+      heading: headingVal,
+      isDetour: true,
+      isAvoidance: true,
+      isPhoto: false,
+      isExclusionDetour: true,
+      isClimbOver: true
+    });
+  } else if (intersections.length === 1) {
+    const pt = intersections[0];
+    const geo = localToGeodetic(pt.x, pt.y, zoneCenterLat, zoneCenterLon);
+    detourWaypoints.push({
+      lat: geo.lat,
+      lon: geo.lon,
+      x: pt.x,
+      y: pt.y,
+      alt: targetClimbAlt,
+      speed: speedVal,
+      pitch: pitchVal,
+      heading: headingVal,
+      isDetour: true,
+      isAvoidance: true,
+      isPhoto: false,
+      isExclusionDetour: true,
+      isClimbOver: true
+    });
+  } else {
+    // If segment intersects without edge hits (e.g. within zone)
+    const midX = (p1Local.x + p2Local.x) / 2.0;
+    const midY = (p1Local.y + p2Local.y) / 2.0;
+    const geo = localToGeodetic(midX, midY, zoneCenterLat, zoneCenterLon);
+    detourWaypoints.push({
+      lat: geo.lat,
+      lon: geo.lon,
+      x: midX,
+      y: midY,
+      alt: targetClimbAlt,
+      speed: speedVal,
+      pitch: pitchVal,
+      heading: headingVal,
+      isDetour: true,
+      isAvoidance: true,
+      isPhoto: false,
+      isExclusionDetour: true,
+      isClimbOver: true
+    });
+  }
+
+  return detourWaypoints;
+}
+
 function routeWaypointsAroundExclusionZones(waypoints, activeZones, centerLat, centerLon) {
   if (!waypoints || waypoints.length < 2 || !activeZones || activeZones.length === 0) {
     return waypoints || [];
@@ -1033,7 +1207,36 @@ function routeWaypointsAroundExclusionZones(waypoints, activeZones, centerLat, c
         if (isSegmentInZoneAltitude(p1, p2, zone)) {
           const zonePoly = getExclusionZonePolygon(zone, zoneCenterLat, zoneCenterLon, 0);
           if (isSegmentCollidingWithPolygon(p1Local, p2Local, zonePoly)) {
-            const detours = findDetourPathAroundZone(p1Local, p2Local, zone, zoneCenterLat, zoneCenterLon, 4);
+            const isAllAlt = zone.allAltitudes !== false;
+            let effectiveMode = (zone.detourMode && zone.detourMode !== 'inherit')
+              ? zone.detourMode
+              : (typeof globalExclusionDetourMode !== 'undefined' ? globalExclusionDetourMode : 'perimeter');
+
+            // If zone has infinite ceiling (All Altitudes), overTop is impossible -> force perimeter
+            if (isAllAlt && (effectiveMode === 'overTop' || effectiveMode === 'smart')) {
+              effectiveMode = 'perimeter';
+            }
+
+            const clearance = (zone.clearanceBuffer !== undefined && zone.clearanceBuffer !== null)
+              ? zone.clearanceBuffer
+              : (typeof globalExclusionClearanceBuffer !== 'undefined' ? globalExclusionClearanceBuffer : 5);
+
+            let detours = [];
+            if (effectiveMode === 'overTop') {
+              detours = findDetourPathOverZone(p1Local, p2Local, zone, zoneCenterLat, zoneCenterLon, 4, clearance);
+            } else if (effectiveMode === 'smart') {
+              const overDetours = findDetourPathOverZone(p1Local, p2Local, zone, zoneCenterLat, zoneCenterLon, 4, clearance);
+              const aroundDetours = findDetourPathAroundZone(p1Local, p2Local, zone, zoneCenterLat, zoneCenterLon, 4);
+
+              const distOver = calculate3DPathDistance(p1, p2, overDetours);
+              const distAround = calculate3DPathDistance(p1, p2, aroundDetours);
+
+              detours = (distOver <= distAround && overDetours.length > 0) ? overDetours : aroundDetours;
+            } else {
+              // 'perimeter'
+              detours = findDetourPathAroundZone(p1Local, p2Local, zone, zoneCenterLat, zoneCenterLon, 4);
+            }
+
             if (detours.length > 0) {
               detours.forEach(dwp => newWps.push(dwp));
               modified = true;
@@ -2304,7 +2507,7 @@ const CONTROLS_LIST = [
   'front-overlap', 'side-overlap', 'gimbal-pitch',
   'altitude', 'speed', 'heading-mode', 'finish-action', 'capture-mode', 'path-mode', 'signal-lost-action',
   'camera-model', 'drone-model', 'camera-zoom', 'camera-hfov', 'camera-vfov', 'road-offset',
-  'global-hover-time'
+  'global-hover-time', 'global-exclusion-detour-mode', 'global-exclusion-clearance-buffer'
 ];
 
 function saveAllSettingsToLocalStorage() {
@@ -2688,6 +2891,36 @@ function initUIEventListeners() {
       }
       syncDisplayValues();
       updateGrid();
+    });
+  }
+
+  const exclDetourModeEl = document.getElementById('exclusion-detour-mode');
+  if (exclDetourModeEl) {
+    exclDetourModeEl.addEventListener('change', () => {
+      const activeLayer = getActiveLayer();
+      if (activeLayer) {
+        activeLayer.detourMode = exclDetourModeEl.value;
+      }
+      updateGrid();
+    });
+  }
+
+  const globalDetourModeEl = document.getElementById('global-exclusion-detour-mode');
+  if (globalDetourModeEl) {
+    globalDetourModeEl.addEventListener('change', () => {
+      globalExclusionDetourMode = globalDetourModeEl.value;
+      updateGrid();
+      saveAllSettingsToLocalStorage();
+    });
+  }
+
+  const globalClearanceEl = document.getElementById('global-exclusion-clearance-buffer');
+  if (globalClearanceEl) {
+    globalClearanceEl.addEventListener('input', () => {
+      globalExclusionClearanceBuffer = parseFloat(globalClearanceEl.value) || 5;
+      syncDisplayValues();
+      updateGrid();
+      saveAllSettingsToLocalStorage();
     });
   }
 
@@ -3989,6 +4222,21 @@ function syncDisplayValues() {
         const maxFormatted = (typeof formatDistance === 'function') ? formatDistance(maxMeters) : `${maxMeters} m`;
         exclHint.textContent = `Restricts flights between ${minFormatted} and ${maxFormatted}. Flights outside this envelope are permitted.`;
       }
+    }
+  }
+
+  // Sync Global Exclusion Detour Clearance Buffer Display
+  const globalClearanceSlider = document.getElementById('global-exclusion-clearance-buffer');
+  const globalClearanceValEl = document.getElementById('global-exclusion-clearance-val');
+  const globalClearanceUnitEl = document.getElementById('global-exclusion-clearance-unit');
+  if (globalClearanceSlider && globalClearanceValEl && globalClearanceUnitEl) {
+    const cVal = parseFloat(globalClearanceSlider.value) || 5;
+    if (unit === 'imperial') {
+      globalClearanceValEl.textContent = Math.round(cVal * M_TO_FT);
+      globalClearanceUnitEl.textContent = "ft";
+    } else {
+      globalClearanceValEl.textContent = cVal;
+      globalClearanceUnitEl.textContent = "m";
     }
   }
 }
