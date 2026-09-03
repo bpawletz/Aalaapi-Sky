@@ -1,5 +1,162 @@
 # Changelog
 
+## [1.70.0] - 2026-09-03
+
+### Added
+- **Relative Compass Rose Directions for Weather Stations:** All weather station badges, selector tabs, map pins, and HUD summaries now show their relative compass bearing from the mission center (e.g. `N`, `NE`, `ENE`, `E`, `SE`, `SSW`, `SW`, `W`, `NW`), providing immediate situational awareness on where observation stations are positioned relative to the flight area.
+
+## [1.69.3] - 2026-09-03
+
+### Added
+- **Multi-Station Live Weather Selector in Mission Details Popover:** Restored the nearby 3 observation weather stations switcher tabs (with flight category indicator dots, ICAO codes, and unit-aware distance badges) and direct "📍 Map" station locator inside the Topbar Mission Details & Live Weather popover.
+
+## [1.69.2] - 2026-09-03
+
+### Fixed
+- **Freeform Polygon Exclusion Zone Rendering & Point Placement (`exclusion-freeform`):** Fixed an `isPoly` undefined reference error in `drawExclusionZones()` that broke map rendering, caused subsequent flight layers to disappear, and prevented adding freeform polygon vertices when selecting the Exclusion (Poly) tool. Added 2-vertex dashed preview lines and unified vertex sync.
+
+## [1.69.1] - 2026-09-03
+
+### Fixed
+- **Multi-Layer 3D Exclusion Zone Projection:** Fixed exclusion zone spatial filtering and detour routing across distinct layer centers by strictly projecting waypoint and detour coordinates (`geodeticToLocal`) relative to each zone's specific center anchor.
+- **Exclusion Zone Imperial (ft) Unit Support:** Exclusion zone floor/ceiling sliders, value badges, hints, and map tooltips now dynamically follow the Metric (m) / Imperial (ft) unit system settings.
+
+## [1.69.0] - 2026-09-03
+
+### Added
+- **Independent Per-Layer Center Coordinates & Isolation:** Each flight layer now retains its own independent geographical center anchor (`layer.centerLat`, `layer.centerLon`). Adding a new layer or clicking/dragging on the map only positions the active layer, leaving all other layers firmly pinned at their respective locations.
+- **Dynamic Active Layer Center Synchronization:** Switching active layers dynamically centers the interactive mission center marker at the selected layer's location, allowing multi-site procedural surveys across distinct geographic targets in a single unified mission.
+
+## [1.68.1] - 2026-09-03
+
+### Fixed
+- **Dark Mode Topbar Telemetry HUD Pill Styling:** Added explicit cyber-dark styling (`.header-telemetry-pill`) so the telemetry pill respects dark/light theme variables and never falls back to light browser defaults.
+- **Search Go Button Styling:** Styled `.btn-search-icon` with dark cyan glass accents.
+
+## [1.68.0] - 2026-09-03
+
+### Added
+- **Light & Dark Mode Theme Switcher (`#theme-toggle-btn`):** Added a topbar theme toggle button (`☀️ / 🌙`) with full support for high-contrast daylight field mode (`data-theme="light"`) and sleek cyber dark mode (`data-theme="dark"`), persisted in `localStorage`.
+- **Top Nav Mission Details & Clean Map Canvas:** Hidden the default floating map stats panel to provide a 100% clean, unobstructed map view. Full mission metrics and live NOAA weather condition checklists are now activated directly from the topbar HUD pill popover (`#header-telemetry-pill`).
+- **Compact GPS Locate & Proportional Search Sizing:** Fixed locate button text stretching (`'Cached'` / `'Located'`) and enforced responsive flex boundaries so the location search input always maintains prominent sizing without being squeezed.
+
+## [1.67.0] - 2026-09-03
+
+### Added
+- **Full-Width Studio Topbar (`.studio-topbar`, `100vw`):** Elevated the header out of the left navigation sidebar into a dedicated full-width topbar spanning across the entire browser viewport above both the tools palette and the map canvas.
+- **Horizontal 3-Zone Header Layout:**
+  - **Left Brand & Drawer Zone:** Sidebar toggle `[≡]`, Aalaapi rosette SVG logo, and version badge (`v1.67.0`).
+  - **Center Search & Telemetry HUD Zone:** Location search input with Go action, GPS quick-locate button, and Topbar Telemetry & Weather HUD Pill with dropdown condition popover.
+  - **Right Action Links Zone:** `🎓 Intro` Guide Hub, `⚙️ Config`, `About`, and `Links` buttons.
+- **Dedicated Sidebar Tools Palette:** The left sidebar is now 100% focused on mission layers, inspector properties, and export sync, starting immediately with Section 1 (Pattern Tools & Layers Stack).
+
+## [1.66.0] - 2026-09-03
+
+### Added
+- **3-Tier Intro Guide Hub (`#quickstart-modal`):** Added a comprehensive in-app guide accessible via the header (`🎓 Intro`), organized into three dedicated tabs:
+  - **Quickstart Workflow:** A 4-step illustrated card walkthrough guiding pilots through the core mission planning lifecycle (Locate & Patterns &rarr; Properties & Failsafes &rarr; Telemetry & Weather &rarr; Auto-Plan & RC 2 Export).
+  - **What's New & Feature Highlights:** Highlights recent major capabilities including 3D Exclusion Zones with perimeter detour routing, Topbar Telemetry HUD, Dual-Tab Inspector, Remote ID radar calibration, and multi-vendor autopilot exports.
+  - **Pro Pilot Tips & Best Practices:** Practical guidance on Breakpoint Resume for multi-battery missions, oblique angles for 3D Gaussian Splats, Stop-and-Shoot vs Continuous flight, and safe layer transitions.
+- **Interactive In-Situ UI Spotlight Tour:** Added a step-by-step UI highlighter that walks users through real sidebar and header controls on the screen with backdrop cutouts, floating tooltip cards, and keyboard navigation.
+- **Non-Intrusive Welcome Banner:** First-time pilots receive a subtle, opt-in toast prompt (*"Welcome! Would you like a 1-minute quickstart tour?"*) upon accepting the safety disclaimer rather than being forced into a modal.
+
+## [1.65.0] - 2026-09-03
+
+### Added
+- **Extensible Flight Tool Registry (`FLIGHT_TOOLS`):** Centralized flight pattern, safety brush, and drawing mode definitions into an extensible descriptor registry for seamless integration of future patterns.
+- **Topbar Flight Telemetry & Weather HUD:** Relocated mission statistics (waypoints, photos, distance, estimated flight time) and live NOAA/Open-Meteo weather station information to an interactive Topbar HUD Pill (`#header-telemetry-pill`) with a detailed glassmorphic dropdown popover, keeping the map canvas 100% clean and unobstructed.
+- **Dual-Tab Contextual Properties Inspector:** Redesigned the sidebar inspector with two functional tabs—`[ 🎯 Layer Properties ]` for context-sensitive active pattern geometry/sliders and `[ 🌐 Mission Failsafes ]` for global mission-wide safety settings (RTH, Loss of Signal, Airspace Ceiling, Drone Target, Path Mode).
+- **App Header Search & Quick Locate Integration:** Moved address/coordinate search (`#location-input`, `#search-btn`) and GPS quick locate (`#locate-me-btn`) directly into the app header with customizable layout preference settings in Configuration.
+- **Responsive Mobile & Small-Screen Ergonomics:** Optimized touch targets (44px min), auto-collapsing drawer transitions, and responsive header wrapping for effortless planning on field tablets and mobile devices.
+
+## [1.64.0] - 2026-09-03
+
+### Added
+- **Automated 3D Exclusion Zone Detour Routing:** Flight paths connecting waypoints on opposite sides of an exclusion zone no longer cut straight through restricted airspace. The planner computes the shortest collision-free perimeter bypass around Box and Freeform Polygon restricted volumes with a 4m safety buffer, synthesizing detour waypoints for seamless 2D/3D map visualization and WPML execution.
+
+## [1.63.3] - 2026-09-03
+
+### Fixed
+- **Section 2 Exclusion Settings Visibility:** Fixed an HTML nesting issue where the exclusion altitude container was accidentally encapsulated inside a hidden toggle label. Added an informative boundary guide for freeform exclusion zones, ensuring all altitude and geometry settings render visibly in Section 2.
+
+## [1.63.2] - 2026-09-02
+
+### Changed
+- **Exclusion Zone Altitude Controls in Sidebar Menu:** Relocated the 3D Exclusion Zone Altitude settings card directly into Section 2 ("2. Exclusion Zone Settings") so that min/max altitude bounds and the 1-click "All Altitudes" toggle are immediately visible and auto-expanded when configuring an exclusion layer.
+
+## [1.63.1] - 2026-09-02
+
+### Fixed
+- **Freeform Pattern Waypoints & Layer Isolation:** Fixed an issue where selecting the Freeform flight plan pattern unexpectedly inherited/copied the previous procedural grid waypoints (`generatedWaypoints`) into `layer.freeformWaypoints`. Freeform layers now start cleanly with 0 waypoints and add manual waypoints on click.
+- **Initial Freeform Placement:** Fixed `addFreeformWaypoint` to immediately place and record the first clicked coordinate as Waypoint 0 even when `centerMarker` was not previously initialized.
+- **Layer Waypoint Reset on Clear:** Updated `clearMap()` and waypoint deletion popup to cleanly reset and splice layer-isolated `freeformWaypoints` and `freeformPhotos`.
+
+## [1.63.0] - 2026-09-02
+
+### Added
+- **3D Exclusion Zones (No-Fly Volumes) as Pattern Layers:**
+  - Added support for configuring layers as 3D Exclusion Zones with Box (rectangular) or Freeform (polygon) boundary geometries.
+  - Added 3D vertical envelope controls with customizable **Min Altitude** (floor) and **Max Altitude** (ceiling) sliders, alongside a 1-click **All Altitudes (0m – ∞)** quick toggle for full airspace exclusion.
+  - Integrated dynamic 3D spatial filtering into multi-layer mission compilation (`compileMultiLayerMission`): waypoints, photo capture triggers, and inter-layer transition points from other active flight layers that fall within an active exclusion zone are automatically pruned.
+  - Added real-time hazard map rendering on Leaflet with red diagonal styling, dashed boundary lines, altitude envelope badges, and draggable polygon vertex handles.
+  - Added exclusion zone indicators and blocked waypoint counters (`🚫 N waypoints blocked`) on Section 1 layer cards.
+
+## [1.62.2] - 2026-09-02
+
+### Fixed
+- **Sidebar Section 1 Visibility & Collapsible Header Hierarchy:** Fixed an issue where Section 1 ("1. Pattern Layers & Location") was hidden and could not be expanded after a page reload because the `<h3>` header was placed inside an auxiliary wrapper div, which was targeted by `.control-section.collapsed > *:not(h3)`. Restructured the header hierarchy so `<h3>` is a direct child of the section, ensuring Section 1 remains visible and collapsible, and defaults to expanded on initial load.
+
+## [1.62.1] - 2026-09-02
+
+### Fixed
+- **Flight Pattern Layer Deletion & Waypoint Cleanup:** Fixed layer deletion behavior so deleting any layer immediately removes its waypoints from the flight mission, Leaflet map, and statistics panel. Enabled single-layer deletion/clearing so deleting the last remaining layer resets and clears all waypoints cleanly.
+- **Layer Disable/Enable Visibility Toggle:** Fixed layer visibility toggling by removing forced fallback re-enabling in `compileMultiLayerMission`. Disabling a layer now reliably hides its flight path and excludes its waypoints and photos from the compiled mission.
+- **Boundary Overlay Suppression:** Suppressed map boundary polygon rendering when no waypoints or layers are active.
+
+## [1.62.0] - 2026-09-02
+
+### Added
+- **Flight Pattern Layers & Multi-Layer Mission Management:**
+  - Added support for creating, configuring, duplicating, reordering, and combining multiple independent Flight Pattern Layers (e.g. Nadir Grid + Oblique Orbit + Freeform Path + Road Follow) into a single unified drone mission.
+  - Each layer maintains its own independent pattern type, geometric bounds (width, height, rotation), flight parameters (altitude, speed, gimbal pitch, overlap percentages), heading modes, and capture modes.
+  - Added dynamic sidebar Layer Manager UI with active layer selection, layer visibility toggles, color badges, waypoint counters, and instant UI synchronization.
+- **Inter-Layer Joining & Configurable Transition Engine:**
+  - Added configurable transition strategies between sequential layers:
+    - `Direct`: Straight-line continuous transition from the exit waypoint of Layer $N$ to the entry waypoint of Layer $N+1$.
+    - `Climb / Descend First`: Adjusts flight altitude in-place before traversing horizontally across layers.
+    - `Safe Transit Altitude`: Automatically climbs to a designated safety altitude, cruises between layer boundaries, and descends smoothly into the next pattern.
+  - Added customizable transition speed, dwell/hover settling delays, and camera action controls at layer transition boundaries.
+  - Added visual transition indicators and connecting vector line styling on the Leaflet map with informative transition tooltips.
+- **Multi-Layer WPML & Diagnostics Export:**
+  - Updated WPML mission generator, DJI RC 2 export, and Diagnostics JSON export to compile the complete joined multi-layer sequence with seamless gimbal pitch rotation and waypoint indexing.
+
+## [1.61.6] - 2026-08-30
+
+### Fixed
+- **DJI RC 2 USB MTP Flight Log Extraction:** Fixed an issue in `extractLatestFlight` where Windows Shell COM `CopyHere` aborted before copying telemetry files over USB because the PowerShell script terminated prematurely and `$outDir` path formatting was corrupted by escaping. Fixed Shell namespace directory resolution and added a completion polling wait loop to ensure `FlightRecord_*.txt` telemetry logs and `.kmz` missions are completely transferred and verified on disk.
+- **Pre-Flight Linter Rule 6 Capacity Alignment (108+ Waypoints):** Corrected Rule 6 action group limit from an obsolete 65 limit to 500 (matching DJI Fly's maximum waypoint mission limit). Waypoint missions with 108 waypoints now correctly pass validation (10/10 rules passed) with `is_valid: 1` in SQLite history.
+- **SQLite Mission Archiving on Direct Sync:** Added automatic SQLite database diagnostics recording directly inside `/api/sync` on the Companion Bridge, ensuring missions transferred to the RC 2 are immediately archived in SQLite even if browser clients disconnect.
+- **Flight Diagnostics Dropdown Waypoint Counts:** Added waypoint count indicators (`X wps`) to all mission options in the Flight Diagnostics selector, ensuring historical missions are immediately recognizable.
+
+## [1.61.5] - 2026-08-30
+
+### Fixed
+- **followWayline waypointHeadingAngle: 0 Schema Alignment:** Fixed critical issue where `buildWaylinesWpml` generated arbitrary bearing angles (e.g. 263.0°, 353.0°) into `waypointHeadingAngle` for `followWayline` missions, which violated DJI WPML schema bounds (`[-180, 180]`) and conflicted with DJI Fly's trajectory engine ("Failed to go"). Aligned with native DJI RC 2 schema where `followWayline` and `towardPOI` missions strictly enforce `waypointHeadingAngle: 0` across all waypoints.
+- **Rule 2 Zero-Heading Validation Fix:** Restricted Rule 2 0.0° zero-heading check exclusively to custom heading modes (`smoothTransition`, `custom`, `fixed`), eliminating false alarms and improper clamping on native `followWayline` and `towardPOI` missions.
+- **Sanitization Heading Preservation:** Updated `validateAndFixWpml` to preserve `waypointHeadingAngle: 0` for `followWayline` and `towardPOI` missions without improper 0.1° clamping.
+
+## [1.61.4] - 2026-08-30
+
+### Fixed
+- **followWayline Endpoint Heading Angle Enable Preservation:** Fixed critical issue where `validateAndFixWpml` globally sanitized `waypointHeadingAngleEnable: 1` to `0` across the entire document, stripping entry heading angle constraints on Waypoint 0 and Waypoint N-1 and causing DJI Fly to reject forward-facing missions ("does not go"). Sanitization now preserves and enforces `headingAngleEnable: 1` on endpoints while strictly zeroing intermediate points.
+- **Rule 1 Endpoint Heading Angle Validation:** Extended Rule 1 in `validateWpmlMission` to verify that `followWayline` mission endpoints (Waypoint 0 and Waypoint N-1) strictly maintain `headingAngleEnable: 1` to define the initial flight entry tangent.
+- **Double Grid Forward-Facing Flight Path Headings:** Removed legacy center-pointing POI heading calculation (`Math.atan2(-pt.x, -pt.y)`) in `generateGridWaypoints`, ensuring double grid waypoints calculate forward-facing headings along flight lines.
+
+## [1.61.3] - 2026-08-30
+
+### Fixed
+- **Double Grid Oblique Pitch followWayline Compliance:** Enforced strict `followWayline` heading mode and flight path line bearings for Double Grid missions with oblique gimbal pitch angles (e.g. -60°), preventing spline discontinuities on turnaround turns and eliminating DJI Fly "Waypoint Flight Suspended" errors. Extended Rule 1 in `validateWpmlMission` and auto-sanitization in `validateAndFixWpml` to cover double grid patterns.
+
 ## [1.61.2] - 2026-08-29
 
 ### Fixed

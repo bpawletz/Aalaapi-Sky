@@ -773,7 +773,7 @@ function Get-SubItem($folderItem, $name) {
     return $folder.Items() | Where-Object { $_.Name -eq $name } | Select-Object -First 1
 }
 
-$outDir = "${LATEST_DIR.replace(/\\/g, '\\\\')}"
+$outDir = '${LATEST_DIR}'
 $latestLogName = $null
 $latestKmzName = $null
 
@@ -787,26 +787,39 @@ if ($dji) {
         $files   = Get-SubItem $djiApp "files"
 
         if ($files) {
+            $outFolder = $shell.Namespace($outDir)
             # Flight logs
             $fl = Get-SubItem $files "FlightRecord"
-            if ($fl) {
+            if ($fl -and $outFolder) {
                 $logs = @($fl.GetFolder.Items() | Where-Object { $_.Name -like "FlightRecord_*.txt" } | Sort-Object Name -Descending)
                 if ($logs.Count -gt 0) {
                     $latestLog = $logs[0]
                     $latestLogName = $latestLog.Name
-                    $shell.Namespace($outDir).CopyHere($latestLog, 16)
+                    $outFolder.CopyHere($latestLog, 16)
+                    $swLog = [System.Diagnostics.Stopwatch]::StartNew()
+                    while ($swLog.Elapsed.TotalSeconds -lt 8) {
+                        Start-Sleep -Milliseconds 300
+                        $copiedLog = @(Get-ChildItem -Path $outDir -Filter $latestLogName -File -ErrorAction SilentlyContinue)
+                        if ($copiedLog.Count -gt 0 -and $copiedLog[0].Length -gt 0) { break }
+                    }
                 }
             }
 
-            # Waypoints
+            # Waypoints (pull only the latest active mission)
             $wp = Get-SubItem $files "waypoint"
-            if ($wp) {
-                $missions = @($wp.GetFolder.Items() | Where-Object { $_.IsFolder -and $_.Name -match "^[A-F0-9]{8}-" })
-                foreach ($m in $missions) {
-                    $kmz = @($m.GetFolder.Items() | Where-Object { $_.Name -like "*.kmz" -and $_.Name -notlike "_old_*" }) | Select-Object -First 1
+            if ($wp -and $outFolder) {
+                $latestMission = @($wp.GetFolder.Items() | Where-Object { $_.IsFolder -and $_.Name -match "^[A-F0-9]{8}-" } | Sort-Object Name -Descending) | Select-Object -First 1
+                if ($latestMission) {
+                    $kmz = @($latestMission.GetFolder.Items() | Where-Object { $_.Name -like "*.kmz" -and $_.Name -notlike "_old_*" }) | Select-Object -First 1
                     if ($kmz) {
                         $latestKmzName = $kmz.Name
-                        $shell.Namespace($outDir).CopyHere($kmz, 16)
+                        $outFolder.CopyHere($kmz, 16)
+                        $swKmz = [System.Diagnostics.Stopwatch]::StartNew()
+                        while ($swKmz.Elapsed.TotalSeconds -lt 5) {
+                            Start-Sleep -Milliseconds 300
+                            $copiedKmz = @(Get-ChildItem -Path $outDir -Filter $latestKmzName -File -ErrorAction SilentlyContinue)
+                            if ($copiedKmz.Count -gt 0 -and $copiedKmz[0].Length -gt 0) { break }
+                        }
                     }
                 }
             }
@@ -951,6 +964,18 @@ const server = http.createServer(async (req, res) => {
           if (isSuccess) {
             logSuccess('[SYNC SUCCESS]', `Mission ${targetSlot} transferred to DJI RC 2 in ${duration}ms!`);
             logDetailLast('Result', resData.message || 'Complete');
+
+            // Automatically persist diagnostics to SQLite DB if diagnostics payload provided
+            if (payload.diagData || payload.diagnostics) {
+              try {
+                const diagPayload = payload.diagData || payload.diagnostics;
+                diagDb.saveDiagnostic(diagPayload);
+                logSuccess('[SYNC ARCHIVE]', `Archived diagnostics for synced mission ${targetSlot} in SQLite DB`);
+              } catch (diagErr) {
+                logError('[SYNC ARCHIVE ERROR]', diagErr.message);
+              }
+            }
+
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ success: true, uuid: targetSlot, message: resData.message }));
           } else {
@@ -1595,6 +1620,7 @@ module.exports = {
   checkRc2Status,
   transferToRc2,
   pullFromRc2,
+  extractLatestFlight,
   stopScanners,
   killExistingCompanion,
   getLanAddresses,
