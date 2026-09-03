@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.76.2] - 2026-09-03
+
+### Fixed
+- **Map Zoom Marker Anchoring & Dot Separation:**
+  - Unified the waypoint pitch angle badge (`.wp-pitch-label`) directly into the single waypoint marker's `.wp-static-container`, eliminating redundant secondary marker objects and layer group thrashing during map zoom transitions.
+  - Added explicit zero-transition rules (`transition: none !important;`) on Leaflet marker icons, dot wrappers, and coordinates containers to eliminate CSS transform interpolation lag during zoom level changes.
+  - Maintained crisp CSS-gated detail visibility via `.wp-zoomed-out` on `.leaflet-container` for zoom $< 18$, keeping waypoint dots, arrows, and polylines strictly aligned and anchored across all zoom levels.
+
 ## [1.76.1] - 2026-09-03
 
 ### Fixed

@@ -6257,6 +6257,7 @@ function getMarkerIcon(wp, idx, waypoints, rotationDeg, tempHeading, tempPitch, 
       </div>
       <div class="wp-static-container">
         <div class="wp-dot" style="background-color: ${color}; border-color: ${borderColor}; width: ${radius * 2}px; height: ${radius * 2}px; border-width: ${borderWeight}px;"></div>
+        <div class="wp-pitch-label">${pitch}°</div>
       </div>
     `,
     iconSize: [24, 24],
@@ -6694,22 +6695,6 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
 
       wp.mapMarker = marker;
       marker.addTo(waypointMarkersGroup);
-
-      if (pitchLabelsGroup) {
-        const labelIcon = L.divIcon({
-          className: 'wp-pitch-label-marker',
-          html: `<div class="wp-pitch-label">${pitch}°</div>`,
-          iconSize: [30, 14],
-          iconAnchor: [15, -6] // Centered horizontally, positioned below the dot
-        });
-        const labelMarker = L.marker([wp.lat, wp.lon], {
-          icon: labelIcon,
-          interactive: false,
-          zIndexOffset: -100
-        });
-        wp.pitchLabelMarker = labelMarker;
-        labelMarker.addTo(pitchLabelsGroup);
-      }
     }
   });
 
@@ -7200,6 +7185,7 @@ function updateAirspaceLegend(e) {
 // Uses setWhere('1=0') to suppress all network requests when zoomed out,
 // and setWhere('') to restore normal queries when zoomed in enough.
 function applyZoomGates() {
+  if (typeof map === 'undefined' || !map || typeof map.getZoom !== 'function') return;
   const zoom = map.getZoom();
 
   if (uasFacilityMapLayer && uasFacilityMapEnabled) {
@@ -7234,20 +7220,12 @@ function applyZoomGates() {
   // These elements extend outside the 24x24 iconSize box (overflow: visible),
   // so at low zoom they appear detached. Hide them below zoom 18.
   const WP_DETAIL_MIN_ZOOM = 18;
-  const mapContainer = map.getContainer();
+  const mapContainer = (typeof map !== 'undefined' && map && typeof map.getContainer === 'function') ? map.getContainer() : null;
   if (mapContainer) {
     if (zoom >= WP_DETAIL_MIN_ZOOM) {
       mapContainer.classList.remove('wp-zoomed-out');
-      // Show pitch label layer
-      if (pitchLabelsGroup && !map.hasLayer(pitchLabelsGroup)) {
-        pitchLabelsGroup.addTo(map);
-      }
     } else {
       mapContainer.classList.add('wp-zoomed-out');
-      // Hide pitch label layer entirely — removes all label markers from pane, no ghost dots
-      if (pitchLabelsGroup && map.hasLayer(pitchLabelsGroup)) {
-        map.removeLayer(pitchLabelsGroup);
-      }
     }
   }
 }

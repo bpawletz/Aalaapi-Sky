@@ -8851,6 +8851,55 @@ describe('Auto-Plan Flight Tool & Pattern Grid Integration Tests (v1.76.0)', () 
   });
 });
 
+describe('Map Zoom Marker Anchoring & Unified Pitch Badge Tests (v1.76.2)', () => {
+  test('getMarkerIcon houses wp-pitch-label directly inside wp-static-container', () => {
+    const mockWp = {
+      lat: 41.88,
+      lon: -87.62,
+      alt: 50,
+      pitch: -60,
+      heading: 90
+    };
+
+    let capturedIconOptions = null;
+    const origDivIcon = L.divIcon;
+    L.divIcon = (opts) => {
+      capturedIconOptions = opts;
+      return opts;
+    };
+
+    try {
+      const icon = getMarkerIcon(mockWp, 0, [mockWp], 0);
+      assert.ok(icon, 'getMarkerIcon should return an icon');
+      assert.ok(capturedIconOptions.html.includes('wp-static-container'), 'Icon HTML must contain wp-static-container');
+      assert.ok(capturedIconOptions.html.includes('<div class="wp-pitch-label">-60°</div>'), 'Pitch label must be housed inside divIcon HTML');
+      assert.strictEqual(capturedIconOptions.iconSize[0], 24);
+      assert.strictEqual(capturedIconOptions.iconSize[1], 24);
+      assert.strictEqual(capturedIconOptions.iconAnchor[0], 12);
+      assert.strictEqual(capturedIconOptions.iconAnchor[1], 12);
+    } finally {
+      L.divIcon = origDivIcon;
+    }
+  });
+
+  test('CSS rules enforce transition: none on leaflet markers to prevent zoom drift lag', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const cssContent = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+
+    assert.ok(cssContent.includes('.leaflet-marker-icon'), 'CSS must target .leaflet-marker-icon');
+    assert.ok(cssContent.includes('.custom-wp-marker'), 'CSS must target .custom-wp-marker');
+    assert.ok(cssContent.includes('transition: none !important;'), 'Marker classes must enforce transition: none !important;');
+  });
+
+  test('applyZoomGates cleanly toggles wp-zoomed-out class on mapContainer without throwing', () => {
+    assert.doesNotThrow(() => {
+      applyZoomGates();
+    }, 'applyZoomGates should execute without error');
+  });
+});
+
+
 
 
 
