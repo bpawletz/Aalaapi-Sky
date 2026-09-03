@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.75.0] - 2026-09-03
+
+### Added
+- **Global Max Flight Altitude & Safe RTH Altitude Controls (`#mission-failsafes-section`):**
+  - Added a dedicated **Max Flight Altitude Limit** slider (`#max-flight-height`, 20m–500m / 65ft–1640ft, default **120m / 394ft**) to Section 3 (Mission Failsafes & Defaults).
+  - Enforces a global ceiling cap for procedural layer waypoints, multi-tier orbits, and obstacle detour climbs (`findDetourPathOverZone`), ensuring missions never breach airspace restrictions.
+  - Added an inline dynamic regulatory warning badge (`#max-height-legal-warning`) that appears when configured above standard regulatory ceilings ($> 120\text{ m} / 400\text{ ft}$ AGL per FAA Part 107, EASA, and UK CAA).
+  - Added a dedicated **Safe Return-to-Home (RTH) Altitude** slider (`#rth-altitude`, 20m–150m / 65ft–492ft, default **50m / 164ft**) in Section 3, specifying climb height prior to RTH or Signal Loss failsafes.
+  - Exported `<wpml:takeOffSecurityHeight>` in `missionConfig` for both `template.kml` and `waylines.wpml`.
+  - Full integration with the Controlled Settings Reset & Storage Manager and live Imperial/Metric unit conversions.
+
 ## [1.74.0] - 2026-09-03
 
 ### Added
