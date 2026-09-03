@@ -1986,17 +1986,25 @@ function renderTransitionsModalContent(targetFromLayerId = null) {
   container.innerHTML = '';
 
   if (flightLayers.length <= 1) {
-    container.innerHTML = '<div style="font-size: 0.82rem; color: var(--text-muted); padding: 12px; text-align: center;">Add 2 or more layers to configure inter-layer flight transitions.</div>';
+    container.innerHTML = '<div style="font-size: 0.82rem; color: var(--text-muted); padding: 16px; text-align: center; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px dashed var(--border-color);">Add 2 or more layers in the Pattern Layers Stack to configure inter-layer flight transitions.</div>';
     return;
   }
+
+  const unit = (typeof getUnitSystem === 'function') ? getUnitSystem() : 'metric';
 
   for (let i = 0; i < flightLayers.length - 1; i++) {
     const fromLayer = flightLayers[i];
     const toLayer = flightLayers[i + 1];
     const transition = fromLayer.transition || { type: 'direct', safeAltitude: 60, speed: null, dwellTime: 0 };
+    const safeAltFormatted = (typeof formatDistance === 'function') ? formatDistance(transition.safeAltitude || 60) : `${transition.safeAltitude || 60}m`;
+    const isTarget = targetFromLayerId && fromLayer.id === targetFromLayerId;
 
     const card = document.createElement('div');
     card.className = 'transition-rule-card';
+    if (isTarget) {
+      card.style.borderColor = 'var(--accent-cyan)';
+      card.style.boxShadow = '0 0 12px rgba(6, 182, 212, 0.25)';
+    }
     card.innerHTML = `
       <div class="transition-rule-header">
         <span style="display: flex; align-items: center; gap: 6px;">
@@ -2025,7 +2033,7 @@ function renderTransitionsModalContent(targetFromLayerId = null) {
           </label>
           <div style="display: flex; align-items: center; gap: 8px;">
             <input type="range" class="slider transition-safe-alt-slider" min="20" max="120" value="${transition.safeAltitude || 60}" data-from-id="${fromLayer.id}" style="flex: 1;">
-            <span class="safe-alt-val" style="font-size: 0.75rem; min-width: 38px; color: var(--accent-cyan); font-weight: 600;">${transition.safeAltitude || 60}m</span>
+            <span class="safe-alt-val" style="font-size: 0.75rem; min-width: 44px; color: var(--accent-cyan); font-weight: 600;">${safeAltFormatted}</span>
           </div>
         </div>
 
@@ -2063,7 +2071,7 @@ function renderTransitionsModalContent(targetFromLayerId = null) {
       if (safeAltSlider && safeAltVal && safeAltSlider.addEventListener) {
         safeAltSlider.addEventListener('input', (e) => {
           const val = parseInt(e.target.value, 10);
-          safeAltVal.textContent = `${val}m`;
+          safeAltVal.textContent = (typeof formatDistance === 'function') ? formatDistance(val) : `${val}m`;
           updateLayerTransition(fromLayer.id, { safeAltitude: val });
         });
       }
@@ -2100,8 +2108,14 @@ function initLayerManager() {
 
   const closeTransBtn = document.getElementById('close-transitions-modal-btn');
   const closeTransFooterBtn = document.getElementById('close-transitions-footer-btn');
+  const transModal = document.getElementById('layer-transitions-modal');
   if (closeTransBtn) closeTransBtn.addEventListener('click', closeTransitionsModal);
   if (closeTransFooterBtn) closeTransFooterBtn.addEventListener('click', closeTransitionsModal);
+  if (transModal) {
+    transModal.addEventListener('click', (e) => {
+      if (e.target === transModal) closeTransitionsModal();
+    });
+  }
 
   renderLayersList();
 }
