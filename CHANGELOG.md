@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.71.1] - 2026-09-03
+
+### Fixed
+- **Inter-Layer Transitions Modal Rendering & Dialog Polish (`#layer-transitions-modal`):**
+  - Restructured `#layer-transitions-modal` to standard `.modal.glass` markup with dark elevation background, consistent with all other application dialogs.
+  - Increased `.modal-overlay` `z-index` to `10000` so modal dialogs reliably render above the Topbar and Leaflet map control containers.
+  - Added backdrop click-to-dismiss behavior and unit-aware formatting (`m` / `ft`) for Safe Transit Clearance altitude sliders and badges.
+  - Added targeted card highlighting when opening transitions via intermediate layer connector pills (`🔗 Direct Transit ⚙️`).
+
 ## [1.71.0] - 2026-09-03
 
 ### Added

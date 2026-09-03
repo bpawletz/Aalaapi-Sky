@@ -799,7 +799,7 @@ html, body {
   height: 100dvh;
   background: rgba(5, 8, 15, 0.6);
   backdrop-filter: blur(8px);
-  z-index: 100;
+  z-index: 10000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2625,7 +2625,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.71.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.71.1</span></h1>
         </div>
       </div>
 
@@ -4207,7 +4207,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.71.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.71.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -4272,6 +4272,12 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.71.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Inter-Layer Transitions Modal Rendering &amp; Dialog Polish:</strong> Standardized the Transitions configuration dialog to use elevated glass styling, added backdrop click-to-dismiss, unit-aware clearance formatting (<code>m</code> / <code>ft</code>), and highlighted transition cards when opening from inter-layer connector pills.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.71.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Global &amp; Per-Zone Exclusion Detour Strategy:</strong> Added configurable detour routing options: Around Perimeter (Horizontal), Over the Top (Vertical Climb Above Ceiling), and Smart / Shortest 3D Path. Automatically calculates climb-over waypoints with customizable clearance buffers.</li>
@@ -6406,16 +6412,16 @@ html, body {
       </div>
     </div>
   <!-- Inter-Layer Transitions Configuration Modal -->
-  <div id="layer-transitions-modal" class="modal-overlay hidden" style="z-index: 10001; background: rgba(5, 8, 16, 0.85); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center;">
-    <div class="modal-card" style="max-width: 580px; width: 90vw; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); display: flex; flex-direction: column; max-height: 85vh; overflow: hidden;">
-      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--border-color);">
-        <h4 style="margin: 0; display: flex; align-items: center; gap: 8px; font-size: 1rem; color: var(--text-main);">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+  <div id="layer-transitions-modal" class="modal-overlay hidden">
+    <div class="modal glass" style="max-width: 580px; width: 90vw;">
+      <header class="modal-header">
+        <h2 style="display: flex; align-items: center; gap: 8px; font-size: 1.1rem; margin: 0;">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           Inter-Layer Flight Transitions
-        </h4>
-        <button id="close-transitions-modal-btn" class="modal-close-btn" type="button" style="background: none; border: none; color: var(--text-muted); font-size: 1.25rem; cursor: pointer; line-height: 1;">&times;</button>
-      </div>
-      <div class="modal-body" style="padding: 16px 18px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px;">
+        </h2>
+        <button id="close-transitions-modal-btn" class="close-btn" type="button" aria-label="Close transitions">&times;</button>
+      </header>
+      <div class="modal-content" style="display: flex; flex-direction: column; gap: 14px;">
         <p class="help-text" style="margin: 0; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">
           Configure how the drone connects and transitions when flying between consecutive pattern layers.
         </p>
@@ -6423,9 +6429,9 @@ html, body {
           <!-- Dynamically populated per layer transition pair -->
         </div>
       </div>
-      <div class="modal-footer" style="padding: 12px 18px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 8px; background: rgba(255, 255, 255, 0.02);">
+      <footer class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px;">
         <button id="close-transitions-footer-btn" type="button" class="btn-primary" style="padding: 6px 16px; font-size: 0.8rem; font-weight: 600;">Done</button>
-      </div>
+      </footer>
     </div>
   </div>
 
@@ -8439,17 +8445,25 @@ function renderTransitionsModalContent(targetFromLayerId = null) {
   container.innerHTML = '';
 
   if (flightLayers.length <= 1) {
-    container.innerHTML = '<div style="font-size: 0.82rem; color: var(--text-muted); padding: 12px; text-align: center;">Add 2 or more layers to configure inter-layer flight transitions.</div>';
+    container.innerHTML = '<div style="font-size: 0.82rem; color: var(--text-muted); padding: 16px; text-align: center; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px dashed var(--border-color);">Add 2 or more layers in the Pattern Layers Stack to configure inter-layer flight transitions.</div>';
     return;
   }
+
+  const unit = (typeof getUnitSystem === 'function') ? getUnitSystem() : 'metric';
 
   for (let i = 0; i < flightLayers.length - 1; i++) {
     const fromLayer = flightLayers[i];
     const toLayer = flightLayers[i + 1];
     const transition = fromLayer.transition || { type: 'direct', safeAltitude: 60, speed: null, dwellTime: 0 };
+    const safeAltFormatted = (typeof formatDistance === 'function') ? formatDistance(transition.safeAltitude || 60) : `${transition.safeAltitude || 60}m`;
+    const isTarget = targetFromLayerId && fromLayer.id === targetFromLayerId;
 
     const card = document.createElement('div');
     card.className = 'transition-rule-card';
+    if (isTarget) {
+      card.style.borderColor = 'var(--accent-cyan)';
+      card.style.boxShadow = '0 0 12px rgba(6, 182, 212, 0.25)';
+    }
     card.innerHTML = `
       <div class="transition-rule-header">
         <span style="display: flex; align-items: center; gap: 6px;">
@@ -8478,7 +8492,7 @@ function renderTransitionsModalContent(targetFromLayerId = null) {
           </label>
           <div style="display: flex; align-items: center; gap: 8px;">
             <input type="range" class="slider transition-safe-alt-slider" min="20" max="120" value="${transition.safeAltitude || 60}" data-from-id="${fromLayer.id}" style="flex: 1;">
-            <span class="safe-alt-val" style="font-size: 0.75rem; min-width: 38px; color: var(--accent-cyan); font-weight: 600;">${transition.safeAltitude || 60}m</span>
+            <span class="safe-alt-val" style="font-size: 0.75rem; min-width: 44px; color: var(--accent-cyan); font-weight: 600;">${safeAltFormatted}</span>
           </div>
         </div>
 
@@ -8516,7 +8530,7 @@ function renderTransitionsModalContent(targetFromLayerId = null) {
       if (safeAltSlider && safeAltVal && safeAltSlider.addEventListener) {
         safeAltSlider.addEventListener('input', (e) => {
           const val = parseInt(e.target.value, 10);
-          safeAltVal.textContent = `${val}m`;
+          safeAltVal.textContent = (typeof formatDistance === 'function') ? formatDistance(val) : `${val}m`;
           updateLayerTransition(fromLayer.id, { safeAltitude: val });
         });
       }
@@ -8553,8 +8567,14 @@ function initLayerManager() {
 
   const closeTransBtn = document.getElementById('close-transitions-modal-btn');
   const closeTransFooterBtn = document.getElementById('close-transitions-footer-btn');
+  const transModal = document.getElementById('layer-transitions-modal');
   if (closeTransBtn) closeTransBtn.addEventListener('click', closeTransitionsModal);
   if (closeTransFooterBtn) closeTransFooterBtn.addEventListener('click', closeTransitionsModal);
+  if (transModal) {
+    transModal.addEventListener('click', (e) => {
+      if (e.target === transModal) closeTransitionsModal();
+    });
+  }
 
   renderLayersList();
 }
