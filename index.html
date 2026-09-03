@@ -2627,7 +2627,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.73.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.73.1</span></h1>
         </div>
       </div>
 
@@ -3018,14 +3018,15 @@ html, body {
               </span>
               <span class="value-display"><span id="gimbal-pitch-val">-60</span>&deg;</span>
             </div>
-            <input type="range" id="gimbal-pitch" min="-90" max="0" value="-60" class="slider" aria-label="Camera gimbal pitch angle">
+            <input type="range" id="gimbal-pitch" min="-90" max="60" value="-60" class="slider" aria-label="Camera gimbal pitch angle">
 
             <!-- Quick Preset Chips -->
             <div id="gimbal-preset-chips" style="display: flex; gap: 4px; margin-top: 6px;">
-              <button type="button" class="gimbal-preset-chip" data-pitch="-90" style="flex: 1; padding: 3px 2px; font-size: 0.68rem; font-weight: 600; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer; transition: all 0.2s;">-90° Nadir</button>
-              <button type="button" class="gimbal-preset-chip active" data-pitch="-60" style="flex: 1; padding: 3px 2px; font-size: 0.68rem; font-weight: 600; border-radius: 4px; background: rgba(6,182,212,0.15); border: 1px solid rgba(6,182,212,0.4); color: var(--accent-cyan); cursor: pointer; transition: all 0.2s;">-60° 3D</button>
-              <button type="button" class="gimbal-preset-chip" data-pitch="-45" style="flex: 1; padding: 3px 2px; font-size: 0.68rem; font-weight: 600; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer; transition: all 0.2s;">-45° Oblique</button>
-              <button type="button" class="gimbal-preset-chip" data-pitch="0" style="flex: 1; padding: 3px 2px; font-size: 0.68rem; font-weight: 600; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer; transition: all 0.2s;">0° Level</button>
+              <button type="button" class="gimbal-preset-chip" data-pitch="-90" style="flex: 1; padding: 3px 1px; font-size: 0.65rem; font-weight: 600; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer; transition: all 0.2s;">-90° Nadir</button>
+              <button type="button" class="gimbal-preset-chip active" data-pitch="-60" style="flex: 1; padding: 3px 1px; font-size: 0.65rem; font-weight: 600; border-radius: 4px; background: rgba(6,182,212,0.15); border: 1px solid rgba(6,182,212,0.4); color: var(--accent-cyan); cursor: pointer; transition: all 0.2s;">-60° 3D</button>
+              <button type="button" class="gimbal-preset-chip" data-pitch="-45" style="flex: 1; padding: 3px 1px; font-size: 0.65rem; font-weight: 600; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer; transition: all 0.2s;">-45° Oblique</button>
+              <button type="button" class="gimbal-preset-chip" data-pitch="0" style="flex: 1; padding: 3px 1px; font-size: 0.65rem; font-weight: 600; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer; transition: all 0.2s;">0° Level</button>
+              <button type="button" class="gimbal-preset-chip" data-pitch="20" style="flex: 1; padding: 3px 1px; font-size: 0.65rem; font-weight: 600; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer; transition: all 0.2s;">+20° Up</button>
             </div>
 
             <!-- Dynamic Purpose Badge -->
@@ -4275,7 +4276,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.73.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.73.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -4297,7 +4298,7 @@ html, body {
           <li>Procedural flight generation: 2D Nadir Grid, 3D Double Grid, Oblique Orbits, and Multi-Tier Hybrid passes.</li>
           <li>Multi-Layer Missions: Combine multiple independent pattern layers with customizable inter-layer transitions.</li>
           <li>3D Exclusion Zones &amp; Automated Detour Routing: Define restricted no-fly volumes with 3D altitude bounds and automatic obstacle avoidance routing (Perimeter, Over-the-Top Climb, or Smart 3D).</li>
-          <li>Interactive Gimbal Pitch Visualizer: Live side-profile drone FOV cone ray-casting, angle classification badges, and quick-set presets.</li>
+          <li>Interactive Gimbal Pitch Visualizer &amp; Upward Tilt: Full $-90^\circ$ to $+60^\circ$ tilt range support with live FOV cone diagram and angle guides.</li>
         </ul>
 
         <!-- Legal Disclaimer Alert - icon card grid -->
@@ -4341,6 +4342,12 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.73.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Full Upward Gimbal Tilt Range ($-90^\circ$ to $+60^\circ$):</strong> Extended pitch controls and live FOV ray-casting for DJI Mini 4 Pro, Air 3, and Mavic 3 upward inspections (bridges, towers, canopies) with a new <code>[+20° Up]</code> preset chip.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.73.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Interactive Live Gimbal Pitch Visualizer &amp; Angle Guide:</strong> Added a real-time side-profile flight diagram with pivoting camera gimbal, optical sight ray, and ground-casting FOV cone. Includes dynamic purpose badges (e.g. Nadir vs 3D Splat vs Horizon) and quick-select presets.</li>
@@ -10623,43 +10630,50 @@ function togglePatternParameters() {
   }
 }
 
-// // Helper to get descriptive flight purpose and styling for a gimbal pitch angle
+// Helper to get descriptive flight purpose and styling for a gimbal pitch angle
 function getGimbalPitchDescription(pitch) {
   const p = Math.round(pitch);
-  if (p <= -85) {
+  if (p > 0) {
     return {
-      text: '📐 True Nadir (Orthomosaic 2D Mapping)',
-      bg: 'rgba(6, 182, 212, 0.12)',
-      border: 'rgba(6, 182, 212, 0.3)',
-      color: 'var(--accent-cyan)'
+      text: '🏗️ Upward Tilt (Bridge, Tower & Canopy Inspection)',
+      bg: 'rgba(59, 130, 246, 0.15)',
+      border: 'rgba(59, 130, 246, 0.35)',
+      color: '#60a5fa'
     };
-  } else if (p <= -70) {
+  } else if (p === 0) {
     return {
-      text: '🏠 Steep Oblique (Rooftops & Footprints)',
-      bg: 'rgba(16, 185, 129, 0.12)',
-      border: 'rgba(16, 185, 129, 0.3)',
-      color: '#34d399'
+      text: '🔭 Level Horizon (Inspection & Panoramic)',
+      bg: 'rgba(249, 115, 22, 0.12)',
+      border: 'rgba(249, 115, 22, 0.3)',
+      color: '#fb923c'
     };
-  } else if (p <= -45) {
-    return {
-      text: '✨ 3D Oblique (Gaussian Splats & Photogrammetry)',
-      bg: 'rgba(168, 85, 247, 0.15)',
-      border: 'rgba(168, 85, 247, 0.35)',
-      color: '#c084fc'
-    };
-  } else if (p < 0) {
+  } else if (p >= -44) {
     return {
       text: '🎥 Shallow Oblique (Cinematic & Facades)',
       bg: 'rgba(245, 158, 11, 0.12)',
       border: 'rgba(245, 158, 11, 0.3)',
       color: '#fbbf24'
     };
+  } else if (p >= -69) {
+    return {
+      text: '✨ 3D Oblique (Gaussian Splats & Photogrammetry)',
+      bg: 'rgba(168, 85, 247, 0.15)',
+      border: 'rgba(168, 85, 247, 0.35)',
+      color: '#c084fc'
+    };
+  } else if (p >= -84) {
+    return {
+      text: '🏠 Steep Oblique (Rooftops & Footprints)',
+      bg: 'rgba(16, 185, 129, 0.12)',
+      border: 'rgba(16, 185, 129, 0.3)',
+      color: '#34d399'
+    };
   } else {
     return {
-      text: '🔭 Level Horizon (Inspection & Panoramic)',
-      bg: 'rgba(249, 115, 22, 0.12)',
-      border: 'rgba(249, 115, 22, 0.3)',
-      color: '#fb923c'
+      text: '📐 True Nadir (Orthomosaic 2D Mapping)',
+      bg: 'rgba(6, 182, 212, 0.12)',
+      border: 'rgba(6, 182, 212, 0.3)',
+      color: 'var(--accent-cyan)'
     };
   }
 }
@@ -10668,7 +10682,7 @@ function getGimbalPitchDescription(pitch) {
 function updateGimbalPitchVisualizer(pitch) {
   if (typeof document === 'undefined' || !document || !document.getElementById) return;
   const pVal = isNaN(pitch) ? -60 : parseFloat(pitch);
-  const beta = -pVal; // Downward angle in degrees: 0° (horizon) to 90° (straight down)
+  const beta = -pVal; // Downward angle in degrees: negative beta is upward, positive is downward
 
   // 1. Update Purpose Badge
   const purposeBadge = document.getElementById('gimbal-pitch-purpose-badge');
@@ -10713,13 +10727,22 @@ function updateGimbalPitchVisualizer(pitch) {
   const x0 = 48;
   const y0 = 38;
   const groundY = 82;
+  const skyY = 6;
+  const rightX = 210;
   const rad = (beta * Math.PI) / 180;
   const dx = Math.cos(rad);
   const dy = Math.sin(rad);
 
-  const tCenter = dy > 0.001 ? Math.min(180, (groundY - y0) / dy) : 160;
-  const xCenter = Math.min(210, x0 + tCenter * dx);
-  const yCenter = Math.min(groundY, y0 + tCenter * dy);
+  let tCenter;
+  if (dy > 0.001) {
+    tCenter = Math.min(180, (groundY - y0) / dy, (rightX - x0) / Math.max(0.001, dx));
+  } else if (dy < -0.001) {
+    tCenter = Math.min(180, (skyY - y0) / dy, (rightX - x0) / Math.max(0.001, dx));
+  } else {
+    tCenter = (rightX - x0);
+  }
+  const xCenter = Math.min(rightX, Math.max(10, x0 + tCenter * dx));
+  const yCenter = Math.min(groundY, Math.max(skyY, y0 + tCenter * dy));
 
   const sightRay = document.getElementById('gimbal-sight-ray');
   if (sightRay && sightRay.setAttribute) {
@@ -10730,22 +10753,36 @@ function updateGimbalPitchVisualizer(pitch) {
   }
 
   // Calculate FOV cone spread (half angle approx 20°)
-  const beta1 = Math.max(0, beta - 20);
-  const beta2 = Math.min(90, beta + 20);
+  const beta1 = beta - 20;
+  const beta2 = beta + 20;
   const r1 = (beta1 * Math.PI) / 180;
   const r2 = (beta2 * Math.PI) / 180;
 
   const dx1 = Math.cos(r1);
   const dy1 = Math.sin(r1);
-  const t1 = dy1 > 0.001 ? Math.min(180, (groundY - y0) / dy1) : 160;
-  const x1 = Math.min(210, x0 + t1 * dx1);
-  const y1 = Math.min(groundY, y0 + t1 * dy1);
+  let t1;
+  if (dy1 > 0.001) {
+    t1 = Math.min(180, (groundY - y0) / dy1, (rightX - x0) / Math.max(0.001, dx1));
+  } else if (dy1 < -0.001) {
+    t1 = Math.min(180, (skyY - y0) / dy1, (rightX - x0) / Math.max(0.001, dx1));
+  } else {
+    t1 = (rightX - x0);
+  }
+  const x1 = Math.min(rightX, Math.max(10, x0 + t1 * dx1));
+  const y1 = Math.min(groundY, Math.max(skyY, y0 + t1 * dy1));
 
   const dx2 = Math.cos(r2);
   const dy2 = Math.sin(r2);
-  const t2 = dy2 > 0.001 ? Math.min(180, (groundY - y0) / dy2) : 160;
-  const x2 = Math.min(210, x0 + t2 * dx2);
-  const y2 = Math.min(groundY, y0 + t2 * dy2);
+  let t2;
+  if (dy2 > 0.001) {
+    t2 = Math.min(180, (groundY - y0) / dy2, (rightX - x0) / Math.max(0.001, dx2));
+  } else if (dy2 < -0.001) {
+    t2 = Math.min(180, (skyY - y0) / dy2, (rightX - x0) / Math.max(0.001, dx2));
+  } else {
+    t2 = (rightX - x0);
+  }
+  const x2 = Math.min(rightX, Math.max(10, x0 + t2 * dx2));
+  const y2 = Math.min(groundY, Math.max(skyY, y0 + t2 * dy2));
 
   const fovCone = document.getElementById('gimbal-fov-cone');
   if (fovCone && fovCone.setAttribute) {
@@ -10757,20 +10794,21 @@ function updateGimbalPitchVisualizer(pitch) {
   const angleTextEl = document.getElementById('gimbal-angle-text');
 
   if (arcEl && angleTextEl && arcEl.setAttribute && angleTextEl.setAttribute) {
-    if (beta > 4) {
+    if (Math.abs(beta) > 4) {
       const arcR = 24;
       const xArc = x0 + arcR * Math.cos(rad);
       const yArc = y0 + arcR * Math.sin(rad);
-      arcEl.setAttribute('d', `M ${x0 + arcR},${y0} A ${arcR},${arcR} 0 0,1 ${xArc.toFixed(1)},${yArc.toFixed(1)}`);
+      const sweepFlag = beta > 0 ? 1 : 0;
+      arcEl.setAttribute('d', `M ${x0 + arcR},${y0} A ${arcR},${arcR} 0 0,${sweepFlag} ${xArc.toFixed(1)},${yArc.toFixed(1)}`);
       arcEl.style.display = 'block';
 
       const midRad = (rad / 2);
       const textR = 34;
       const xText = x0 + textR * Math.cos(midRad);
-      const yText = y0 + textR * Math.sin(midRad) + 3;
+      const yText = y0 + textR * Math.sin(midRad) + (beta > 0 ? 3 : -2);
       angleTextEl.setAttribute('x', xText.toFixed(1));
       angleTextEl.setAttribute('y', yText.toFixed(1));
-      angleTextEl.textContent = `${Math.round(pVal)}°`;
+      angleTextEl.textContent = `${pVal > 0 ? '+' : ''}${Math.round(pVal)}°`;
       angleTextEl.style.display = 'block';
     } else {
       arcEl.style.display = 'none';
