@@ -546,6 +546,11 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     targetHeight: 8,
     targetCullingMode: 'smartTrim', // 'smartTrim', 'pruneOnly', 'convergent'
     targetGridPass: 'double', // 'double' or 'single'
+    targetPerimeterPass: false, // Enable perimeter orbit pass
+    targetPerimeterStandoff: 8, // Meters outside polygon/radius boundary
+    targetPerimeterAltitude: null, // null = auto (65% of grid alt)
+    targetPerimeterPitch: -55, // Gimbal pitch for facade orbit
+    targetPerimeterSpeed: null, // null = inherit layer speed
     targetPrunedCount: 0,
     targetSavedPercent: 0,
     freeformWaypoints: [],
@@ -644,6 +649,18 @@ function saveActiveLayerFromUi() {
   if (targetCullingEl && targetCullingEl.value) layer.targetCullingMode = targetCullingEl.value;
   if (targetGridPassEl && targetGridPassEl.value) layer.targetGridPass = targetGridPassEl.value;
 
+  const perimPassEl = document.getElementById('target-perimeter-pass');
+  const perimStandoffEl = document.getElementById('target-perimeter-standoff');
+  const perimAltEl = document.getElementById('target-perimeter-alt');
+  const perimPitchEl = document.getElementById('target-perimeter-pitch');
+  if (perimPassEl) layer.targetPerimeterPass = perimPassEl.checked;
+  if (perimStandoffEl) layer.targetPerimeterStandoff = parseFloat(perimStandoffEl.value) || 8;
+  if (perimAltEl) {
+    const rawAlt = parseFloat(perimAltEl.value);
+    layer.targetPerimeterAltitude = (rawAlt === 0 || isNaN(rawAlt)) ? null : rawAlt;
+  }
+  if (perimPitchEl) layer.targetPerimeterPitch = parseFloat(perimPitchEl.value) || -55;
+
   if (globalDetourModeEl && globalDetourModeEl.value) {
     globalExclusionDetourMode = globalDetourModeEl.value;
   }
@@ -687,10 +704,32 @@ function syncUiWithActiveLayer() {
   setVal('target-splat-culling-mode', layer.targetCullingMode || 'smartTrim');
   setVal('target-splat-grid-pass', layer.targetGridPass || 'double');
 
+  // Perimeter orbit controls
+  const perimPassEl = document.getElementById('target-perimeter-pass');
+  const perimControls = document.getElementById('target-perimeter-controls');
+  if (perimPassEl) {
+    perimPassEl.checked = !!(layer.targetPerimeterPass);
+    if (perimControls) {
+      if (layer.targetPerimeterPass) perimControls.classList.remove('hidden');
+      else perimControls.classList.add('hidden');
+    }
+  }
+  setVal('target-perimeter-standoff', layer.targetPerimeterStandoff !== undefined ? layer.targetPerimeterStandoff : 8);
+  setVal('target-perimeter-alt', (layer.targetPerimeterAltitude !== null && layer.targetPerimeterAltitude !== undefined) ? layer.targetPerimeterAltitude : 0);
+  setVal('target-perimeter-pitch', layer.targetPerimeterPitch !== undefined ? layer.targetPerimeterPitch : -55);
+
+  // Unit-aware display values for radius/height (will be updated by syncDisplayValues too)
+  const _unitForLoad = (typeof getUnitSystem === 'function') ? getUnitSystem() : 'metric';
   const radVal = document.getElementById('target-radius-val');
-  if (radVal) radVal.textContent = layer.targetRadius !== undefined ? layer.targetRadius : 25;
+  const radUnitEl = document.getElementById('target-radius-unit');
+  const rMeters = layer.targetRadius !== undefined ? layer.targetRadius : 25;
+  if (radVal) radVal.textContent = _unitForLoad === 'imperial' ? Math.round(rMeters * M_TO_FT) : rMeters;
+  if (radUnitEl) radUnitEl.textContent = _unitForLoad === 'imperial' ? 'ft' : 'm';
   const hVal = document.getElementById('target-height-val');
-  if (hVal) hVal.textContent = layer.targetHeight !== undefined ? layer.targetHeight : 8;
+  const hUnitEl = document.getElementById('target-height-unit');
+  const hMeters = layer.targetHeight !== undefined ? layer.targetHeight : 8;
+  if (hVal) hVal.textContent = _unitForLoad === 'imperial' ? Math.round(hMeters * M_TO_FT) : hMeters;
+  if (hUnitEl) hUnitEl.textContent = _unitForLoad === 'imperial' ? 'ft' : 'm';
 
   const polyBtn = document.getElementById('target-mode-poly-btn');
   const radBtn = document.getElementById('target-mode-radius-btn');
@@ -3716,6 +3755,57 @@ function initUIEventListeners() {
     });
   }
 
+  // Perimeter Orbit Pass toggle & controls
+  const perimCheckEl = document.getElementById('target-perimeter-pass');
+  const perimControlsDiv = document.getElementById('target-perimeter-controls');
+  if (perimCheckEl) {
+    perimCheckEl.addEventListener('change', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) activeLayer.targetPerimeterPass = perimCheckEl.checked;
+      if (perimControlsDiv) {
+        if (perimCheckEl.checked) perimControlsDiv.classList.remove('hidden');
+        else perimControlsDiv.classList.add('hidden');
+      }
+      updateGrid();
+      saveAllSettingsToLocalStorage();
+    });
+  }
+
+  const perimStandoffSlider = document.getElementById('target-perimeter-standoff');
+  if (perimStandoffSlider) {
+    perimStandoffSlider.addEventListener('input', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) activeLayer.targetPerimeterStandoff = parseFloat(perimStandoffSlider.value) || 8;
+      syncDisplayValues();
+      updateGrid();
+      saveAllSettingsToLocalStorage();
+    });
+  }
+
+  const perimAltSlider = document.getElementById('target-perimeter-alt');
+  if (perimAltSlider) {
+    perimAltSlider.addEventListener('input', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      const rawAlt = parseFloat(perimAltSlider.value);
+      const altVal = (rawAlt === 0 || isNaN(rawAlt)) ? null : rawAlt;
+      if (activeLayer) activeLayer.targetPerimeterAltitude = altVal;
+      syncDisplayValues();
+      updateGrid();
+      saveAllSettingsToLocalStorage();
+    });
+  }
+
+  const perimPitchSlider = document.getElementById('target-perimeter-pitch');
+  if (perimPitchSlider) {
+    perimPitchSlider.addEventListener('input', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) activeLayer.targetPerimeterPitch = parseFloat(perimPitchSlider.value) || -55;
+      syncDisplayValues();
+      updateGrid();
+      saveAllSettingsToLocalStorage();
+    });
+  }
+
   // Handle Camera Model preset change
   const cameraModelEl = document.getElementById('camera-model');
   const droneModelEl = document.getElementById('drone-model');
@@ -5300,18 +5390,53 @@ function syncDisplayValues() {
     }
   }
 
-  // Sync Target Splat Radius & Height Display (v1.77.0)
+  // Sync Target Splat Radius & Height Display + units (v1.77.0, fixed v1.77.4)
   const targetRadSlider = document.getElementById('target-splat-radius');
   const targetRadValEl = document.getElementById('target-radius-val');
+  const targetRadUnitEl = document.getElementById('target-radius-unit');
   if (targetRadSlider && targetRadValEl) {
     const rVal = parseFloat(targetRadSlider.value) || 25;
     targetRadValEl.textContent = (unit === 'imperial') ? Math.round(rVal * M_TO_FT) : rVal;
   }
+  if (targetRadUnitEl) targetRadUnitEl.textContent = distUnitStr;
+
   const targetHeightSlider = document.getElementById('target-splat-height');
   const targetHeightValEl = document.getElementById('target-height-val');
+  const targetHeightUnitEl = document.getElementById('target-height-unit');
   if (targetHeightSlider && targetHeightValEl) {
     const hVal = parseFloat(targetHeightSlider.value) || 8;
     targetHeightValEl.textContent = (unit === 'imperial') ? Math.round(hVal * M_TO_FT) : hVal;
+  }
+  if (targetHeightUnitEl) targetHeightUnitEl.textContent = distUnitStr;
+
+  // Sync Perimeter Orbit Pass Display (v1.77.4)
+  const perimStandoffSlider = document.getElementById('target-perimeter-standoff');
+  const perimStandoffValEl = document.getElementById('target-perimeter-standoff-val');
+  const perimStandoffUnitEl = document.getElementById('target-perimeter-standoff-unit');
+  if (perimStandoffSlider && perimStandoffValEl) {
+    const sVal = parseFloat(perimStandoffSlider.value) || 8;
+    perimStandoffValEl.textContent = (unit === 'imperial') ? Math.round(sVal * M_TO_FT) : sVal;
+  }
+  if (perimStandoffUnitEl) perimStandoffUnitEl.textContent = distUnitStr;
+
+  const perimAltSlider = document.getElementById('target-perimeter-alt');
+  const perimAltValEl = document.getElementById('target-perimeter-alt-val');
+  const perimAltUnitEl = document.getElementById('target-perimeter-alt-unit');
+  if (perimAltSlider && perimAltValEl) {
+    const aRaw = parseFloat(perimAltSlider.value);
+    if (aRaw === 0 || isNaN(aRaw)) {
+      perimAltValEl.textContent = 'Auto';
+      if (perimAltUnitEl) perimAltUnitEl.textContent = '';
+    } else {
+      perimAltValEl.textContent = (unit === 'imperial') ? Math.round(aRaw * M_TO_FT) : aRaw;
+      if (perimAltUnitEl) perimAltUnitEl.textContent = distUnitStr;
+    }
+  }
+
+  const perimPitchSlider = document.getElementById('target-perimeter-pitch');
+  const perimPitchValEl = document.getElementById('target-perimeter-pitch-val');
+  if (perimPitchSlider && perimPitchValEl) {
+    perimPitchValEl.textContent = perimPitchSlider.value;
   }
 }
 
@@ -6767,6 +6892,96 @@ function generateTargetSplatCoordinates(width, height, rotation, captureMode, sL
     layer.targetSavedPercent = totalCandidates > 0 ? Math.round((layer.targetPrunedCount / totalCandidates) * 100) : 0;
   }
 
+  // Perimeter Orbit Pass (v1.77.4)
+  if (layer && layer.targetPerimeterPass) {
+    const standoff = parseFloat(layer.targetPerimeterStandoff) || 8;
+    const orbitAlt = (layer.targetPerimeterAltitude !== null && layer.targetPerimeterAltitude !== undefined)
+      ? parseFloat(layer.targetPerimeterAltitude)
+      : (altitude * 0.65);
+    const orbitPitch = parseFloat(layer.targetPerimeterPitch) || -55;
+    const perimResult = generateTargetPerimeterOrbit(layer, standoff, orbitAlt, orbitPitch, sPhoto, centroidX, centroidY, localTargetPoly, altitude);
+    perimResult.waypoints.forEach(wp => waypoints.push(wp));
+    perimResult.photos.forEach(p => photos.push(p));
+  }
+
+  return { waypoints, photos };
+}
+
+// Generate perimeter orbit waypoints around the target polygon at a given standoff distance.
+// Each waypoint faces inward toward the polygon centroid (convergent heading).
+// For radius mode or when no polygon exists, falls back to a circular orbit.
+// (v1.77.4)
+function generateTargetPerimeterOrbit(layer, standoffMeters, orbitAlt, orbitPitch, sPhoto, centroidX, centroidY, localTargetPoly, gridAlt) {
+  const waypoints = [];
+  const photos = [];
+
+  // Build offset polygon: each vertex pushed outward from centroid by standoffMeters
+  let offsetPoly = [];
+
+  if (localTargetPoly && localTargetPoly.length >= 3) {
+    // Polygon mode: expand each vertex outward from centroid
+    offsetPoly = localTargetPoly.map(v => {
+      const dx = v.x - centroidX;
+      const dy = v.y - centroidY;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 0.001) return { x: v.x + standoffMeters, y: v.y };
+      return {
+        x: v.x + (dx / dist) * standoffMeters,
+        y: v.y + (dy / dist) * standoffMeters
+      };
+    });
+  } else {
+    // Radius mode: generate circle from targetRadius + standoff
+    const r = (layer && layer.targetRadius ? parseFloat(layer.targetRadius) : 25) + standoffMeters;
+    const nPts = Math.max(8, Math.round((2 * Math.PI * r) / Math.max(1, sPhoto)));
+    for (let i = 0; i < nPts; i++) {
+      const theta = (i / nPts) * 2 * Math.PI;
+      offsetPoly.push({ x: centroidX + r * Math.cos(theta), y: centroidY + r * Math.sin(theta) });
+    }
+  }
+
+  if (offsetPoly.length < 2) return { waypoints, photos };
+
+  // Walk the offset polygon edges, placing one waypoint every ~sPhoto meters
+  const effectiveAlt = (orbitAlt !== null && orbitAlt !== undefined && !isNaN(orbitAlt) && orbitAlt > 0)
+    ? orbitAlt
+    : ((gridAlt || 50) * 0.65);
+
+  // Close the polygon
+  const polyPts = [...offsetPoly, offsetPoly[0]];
+
+  for (let i = 0; i < polyPts.length - 1; i++) {
+    const a = polyPts[i];
+    const b = polyPts[i + 1];
+    const segLen = Math.hypot(b.x - a.x, b.y - a.y);
+    if (segLen < 0.01) continue;
+
+    const nSteps = Math.max(1, Math.round(segLen / Math.max(0.5, sPhoto)));
+    for (let s = 0; s < nSteps; s++) {
+      const t = s / nSteps;
+      const px = a.x + t * (b.x - a.x);
+      const py = a.y + t * (b.y - a.y);
+
+      // Heading: point inward toward centroid
+      const dxC = centroidX - px;
+      const dyC = centroidY - py;
+      let heading = Math.atan2(dxC, dyC) * (180.0 / Math.PI);
+      if (heading < 0) heading += 360;
+
+      const pt = {
+        x: px,
+        y: py,
+        alt: effectiveAlt,
+        pitch: orbitPitch,
+        heading: heading,
+        headingMode: 'smoothTransition',
+        isPerimeterOrbit: true
+      };
+      waypoints.push(pt);
+      photos.push({ x: px, y: py, heading: heading, pitch: orbitPitch });
+    }
+  }
+
   return { waypoints, photos };
 }
 
@@ -7217,6 +7432,51 @@ function drawTargetSplatOverlay(layer, centerLat, centerLon, rotationDeg) {
         updateGrid();
       });
     });
+  }
+
+  // Draw Perimeter Orbit ring preview (amber dashed) when enabled (v1.77.4)
+  if (layer.targetPerimeterPass) {
+    const localTargetPoly = getLocalTargetPolygon(layer, centerLat, centerLon, rotationDeg);
+    const centroidX = localTargetPoly.length ? localTargetPoly.reduce((s, v) => s + v.x, 0) / localTargetPoly.length : 0;
+    const centroidY = localTargetPoly.length ? localTargetPoly.reduce((s, v) => s + v.y, 0) / localTargetPoly.length : 0;
+    const standoff = parseFloat(layer.targetPerimeterStandoff) || 8;
+
+    let offsetPoly = [];
+    if (localTargetPoly.length >= 3) {
+      offsetPoly = localTargetPoly.map(v => {
+        const dx = v.x - centroidX, dy = v.y - centroidY;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 0.001) return { x: v.x + standoff, y: v.y };
+        return { x: v.x + (dx / dist) * standoff, y: v.y + (dy / dist) * standoff };
+      });
+    } else {
+      const r = (layer.targetRadius || 25) + standoff;
+      const nPts = Math.max(16, Math.round((2 * Math.PI * r) / 3));
+      for (let i = 0; i < nPts; i++) {
+        const theta = (i / nPts) * 2 * Math.PI;
+        offsetPoly.push({ x: centroidX + r * Math.cos(theta), y: centroidY + r * Math.sin(theta) });
+      }
+    }
+
+    if (offsetPoly.length >= 2) {
+      const R = 6378137.0;
+      const cosLat = Math.cos(centerLat * Math.PI / 180.0);
+      const orbitLatLngs = offsetPoly.map(pt => {
+        const rotRad = (rotationDeg || 0) * Math.PI / 180.0;
+        const rx = pt.x * Math.cos(rotRad) - pt.y * Math.sin(rotRad);
+        const ry = pt.x * Math.sin(rotRad) + pt.y * Math.cos(rotRad);
+        const lat = centerLat + (ry / R) * (180.0 / Math.PI);
+        const lon = centerLon + ((rx / R) * (180.0 / Math.PI)) / cosLat;
+        return [lat, lon];
+      });
+      orbitLatLngs.push(orbitLatLngs[0]); // Close ring
+      L.polyline(orbitLatLngs, {
+        color: '#f59e0b',
+        weight: 2,
+        dashArray: '6, 5',
+        opacity: 0.85
+      }).addTo(targetPolygonGroup).bindTooltip('🔄 Perimeter Orbit Path', { direction: 'top', sticky: true });
+    }
   }
 
   // Update saved photos pill in UI
