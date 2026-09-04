@@ -2644,13 +2644,16 @@ function initMap() {
       return;
     }
     const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
-    const isTargetSplatPoly = (gridType === 'target-splat') && (
+    const gridTypeEl = (typeof document !== 'undefined' && document) ? document.getElementById('grid-type') : null;
+    const currentPattern = gridTypeEl ? gridTypeEl.value : (activeLayer ? activeLayer.pattern : 'double');
+
+    const isTargetSplatPoly = (currentPattern === 'target-splat') && (
       isTargetPolyEditActive || (activeLayer && activeLayer.targetMode === 'polygon' && (!activeLayer.targetPoly || activeLayer.targetPoly.length < 3))
     );
 
-    if (gridType === 'freeform' || gridType === 'exclusion-freeform') {
+    if (currentPattern === 'freeform' || currentPattern === 'exclusion-freeform') {
       addFreeformWaypoint(e.latlng.lat, e.latlng.lng);
-    } else if (gridType === 'road-following') {
+    } else if (currentPattern === 'road-following') {
       addRoadWaypoint(e.latlng.lat, e.latlng.lng);
     } else if (isTargetSplatPoly) {
       addTargetPolygonPoint(e.latlng.lat, e.latlng.lng);
@@ -7094,6 +7097,12 @@ function addTargetPolygonPoint(lat, lng) {
   const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
   if (!activeLayer) return;
   if (!activeLayer.targetPoly) activeLayer.targetPoly = [];
+
+  // If no center marker exists yet, place one at this first click so updateGrid() won't bail out early
+  if (typeof centerMarker === 'undefined' || !centerMarker) {
+    setGridCenter(lat, lng);
+  }
+
   const cLat = (activeLayer.centerLat !== undefined && activeLayer.centerLat !== null) ? activeLayer.centerLat : lat;
   const cLon = (activeLayer.centerLon !== undefined && activeLayer.centerLon !== null) ? activeLayer.centerLon : lng;
   const offsets = geodeticToLocal(lat, lng, cLat, cLon);

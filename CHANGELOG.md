@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.77.3] - 2026-09-03
+
+### Fixed
+- **Target Splat Freeform Polygon Perimeter — Map Click Broken (`ReferenceError: gridType is not defined`):**
+  - Fixed a critical bug inside `map.on('click')` inside `initMap()` where `gridType` was referenced as an undeclared variable. This caused a silent `ReferenceError` every time the map was clicked, aborting the entire click handler. As a result, clicking on the map in Target Splat Polygon mode never added perimeter vertices — it simply did nothing.
+  - Replaced the undeclared `gridType` identifier with a safe read: `document.getElementById('grid-type')?.value`, falling back to `activeLayer.pattern`, consistent with how all other functions in the codebase read this value.
+  - Added a guard in `addTargetPolygonPoint()` so that if no center marker has been placed yet (e.g. user opens Target Splat and immediately clicks corners), a center marker is automatically initialized at the first vertex click — preventing `updateGrid()` from returning early and ensuring the overlay renders immediately.
+
 ## [1.77.2] - 2026-09-03
 
 ### Fixed
