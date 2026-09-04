@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.77.4] - 2026-09-04
+
+### Fixed
+- **Target Splat: Radius & Height unit labels always show `m` regardless of unit system:**
+  - Added unique IDs (`target-radius-unit`, `target-height-unit`) to the previously anonymous `<span class="unit-dist">` elements inside the Target Splat radius and height displays.
+  - Updated `syncDisplayValues()` to update these unit labels to `ft`/`m` alongside the numeric conversion that was already working.
+  - Updated `loadLayerToUi()` to apply `M_TO_FT` conversion to initial numeric display values when the unit system is imperial, so the correct value shows on layer load.
+
+### Added
+- **Target Splat: Perimeter Orbit Pass** — a new optional pass that appends convergent facade-orbit waypoints after the overhead grid, capturing vertical walls, windows, and doors missed by top-down photography:
+  - Toggle checkbox **🔄 Perimeter Orbit Pass** inside the Target Splat panel (below Grid Passes).
+  - **Standoff Distance** slider (3–30 m/ft): how far outside the building polygon the drone flies.
+  - **Facade Altitude** slider (0–80 m, 0 = Auto = 65% of grid altitude): orbit flight height.
+  - **Facade Pitch** slider (-30° to -80°, default -55°): gimbal angle for wall coverage.
+  - Polygon mode: orbit follows the actual building shape (not a circle) using centroid-expansion offset matching the road-follow standoff algorithm, maintaining consistent standoff from every facade.
+  - Radius mode: orbit follows a circle of `targetRadius + standoff`.
+  - All new sliders respect the metric/imperial unit system setting.
+  - An amber dashed ring is drawn on the map showing the orbit flight path preview.
+  - New layer fields: `targetPerimeterPass`, `targetPerimeterStandoff`, `targetPerimeterAltitude`, `targetPerimeterPitch`, `targetPerimeterSpeed` (all persisted to localStorage).
+
 ## [1.77.3] - 2026-09-03
 
 ### Fixed

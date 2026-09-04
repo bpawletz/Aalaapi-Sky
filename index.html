@@ -2736,7 +2736,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.77.3</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.77.4</span></h1>
         </div>
       </div>
 
@@ -3078,7 +3078,7 @@ html, body {
             <div id="target-radius-controls" style="margin-bottom: 10px;">
               <div class="control-label" style="margin-bottom: 2px;">
                 <span style="font-size: 0.75rem; color: var(--text-muted);">Target Object Radius</span>
-                <span class="value-display" style="font-size: 0.75rem;"><span id="target-radius-val">25</span> <span class="unit-dist">m</span></span>
+                <span class="value-display" style="font-size: 0.75rem;"><span id="target-radius-val">25</span> <span id="target-radius-unit">m</span></span>
               </div>
               <input type="range" id="target-splat-radius" min="5" max="150" value="25" class="slider" aria-label="Target Radius">
             </div>
@@ -3090,7 +3090,7 @@ html, body {
                   Structure Height (Roof Peak)
                   <span style="cursor: help; color: var(--accent-cyan);">ⓘ</span>
                 </span>
-                <span class="value-display" style="font-size: 0.75rem;"><span id="target-height-val">8</span> <span class="unit-dist">m</span></span>
+                <span class="value-display" style="font-size: 0.75rem;"><span id="target-height-val">8</span> <span id="target-height-unit">m</span></span>
               </div>
               <input type="range" id="target-splat-height" min="0" max="35" value="8" class="slider" aria-label="Target Object Height">
               <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 2px;">
@@ -3109,14 +3109,53 @@ html, body {
             </div>
 
             <!-- Grid Passes for Target Splat -->
-            <div>
+            <div style="margin-bottom: 10px;">
               <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 3px;">Grid Passes</label>
               <select id="target-splat-grid-pass" class="form-select" style="font-size: 0.75rem; padding: 4px 8px; width: 100%; border-radius: 6px; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main);">
                 <option value="double" selected>Double Grid (Crosshatch - Recommended for 3D Splats)</option>
                 <option value="single">Single Grid (Parallel Passes)</option>
               </select>
             </div>
+
+            <!-- Perimeter Orbit Pass -->
+            <div style="border-top: 1px solid rgba(16, 185, 129, 0.2); padding-top: 10px; margin-top: 2px;">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; margin-bottom: 6px;">
+                <input type="checkbox" id="target-perimeter-pass" style="accent-color: #10b981; width: 14px; height: 14px;">
+                <span style="font-size: 0.75rem; color: var(--text-main); font-weight: 600;">🔄 Perimeter Orbit Pass</span>
+              </label>
+              <div style="font-size: 0.68rem; color: var(--text-muted); margin-bottom: 6px; line-height: 1.35;">
+                Flies a convergent orbit around the building perimeter at facade altitude. Captures vertical walls, windows &amp; doors missed by the overhead grid.
+              </div>
+              <div id="target-perimeter-controls" class="hidden" style="display: flex; flex-direction: column; gap: 8px; padding: 8px; background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.18); border-radius: 6px;">
+                <!-- Standoff Distance -->
+                <div>
+                  <div class="control-label" style="margin-bottom: 2px;">
+                    <span style="font-size: 0.74rem; color: var(--text-muted);" title="Distance the drone flies outside the polygon/radius boundary during the orbit pass.">Standoff Distance <span style="cursor:help;color:var(--accent-cyan);">ⓘ</span></span>
+                    <span class="value-display" style="font-size: 0.74rem;"><span id="target-perimeter-standoff-val">8</span> <span id="target-perimeter-standoff-unit">m</span></span>
+                  </div>
+                  <input type="range" id="target-perimeter-standoff" min="3" max="30" value="8" step="1" class="slider" aria-label="Perimeter Standoff Distance">
+                </div>
+                <!-- Facade Altitude -->
+                <div>
+                  <div class="control-label" style="margin-bottom: 2px;">
+                    <span style="font-size: 0.74rem; color: var(--text-muted);" title="Flight altitude for the orbit pass. 'Auto' = 65% of grid altitude (mid-facade level).">Facade Altitude <span style="cursor:help;color:var(--accent-cyan);">ⓘ</span></span>
+                    <span class="value-display" style="font-size: 0.74rem;"><span id="target-perimeter-alt-val">Auto</span> <span id="target-perimeter-alt-unit"></span></span>
+                  </div>
+                  <input type="range" id="target-perimeter-alt" min="0" max="80" value="0" step="5" class="slider" aria-label="Perimeter Orbit Altitude">
+                  <div style="font-size: 0.67rem; color: var(--text-muted); margin-top: 1px;">Set to 0 for Auto (65% of grid altitude)</div>
+                </div>
+                <!-- Gimbal Pitch -->
+                <div>
+                  <div class="control-label" style="margin-bottom: 2px;">
+                    <span style="font-size: 0.74rem; color: var(--text-muted);">Facade Pitch</span>
+                    <span class="value-display" style="font-size: 0.74rem;"><span id="target-perimeter-pitch-val">-55</span>°</span>
+                  </div>
+                  <input type="range" id="target-perimeter-pitch" min="-80" max="-30" value="-55" step="5" class="slider" aria-label="Perimeter Orbit Gimbal Pitch">
+                </div>
+              </div>
+            </div>
           </div>
+
 
           <div id="exclusion-altitude-container" class="control-group hidden" style="background: rgba(239, 68, 68, 0.06); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 10px; margin-top: 10px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -4523,7 +4562,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.77.3</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.77.4</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -4591,6 +4630,13 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.77.4):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Perimeter Orbit Pass (Target Splat):</strong> New optional pass that flies an inward-convergent orbit around the traced building polygon at facade altitude — captures walls, windows &amp; doors missed by the overhead grid. Toggle, standoff distance, facade altitude (Auto or manual), and pitch are all configurable.</li>
+              <li><strong>Target Splat Unit Labels Fixed:</strong> Radius and Structure Height labels now correctly switch between m/ft when the unit system is changed, matching all other distance displays in the app.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.77.3):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Target Splat Freeform Polygon Map Clicks Fixed:</strong> Resolved a critical <code>ReferenceError: gridType is not defined</code> inside the map click handler that silently prevented all polygon corner placement — clicking the map in Target Splat Polygon mode now correctly adds perimeter vertices.</li>
@@ -7515,6 +7561,11 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     targetHeight: 8,
     targetCullingMode: 'smartTrim', // 'smartTrim', 'pruneOnly', 'convergent'
     targetGridPass: 'double', // 'double' or 'single'
+    targetPerimeterPass: false, // Enable perimeter orbit pass
+    targetPerimeterStandoff: 8, // Meters outside polygon/radius boundary
+    targetPerimeterAltitude: null, // null = auto (65% of grid alt)
+    targetPerimeterPitch: -55, // Gimbal pitch for facade orbit
+    targetPerimeterSpeed: null, // null = inherit layer speed
     targetPrunedCount: 0,
     targetSavedPercent: 0,
     freeformWaypoints: [],
@@ -7613,6 +7664,18 @@ function saveActiveLayerFromUi() {
   if (targetCullingEl && targetCullingEl.value) layer.targetCullingMode = targetCullingEl.value;
   if (targetGridPassEl && targetGridPassEl.value) layer.targetGridPass = targetGridPassEl.value;
 
+  const perimPassEl = document.getElementById('target-perimeter-pass');
+  const perimStandoffEl = document.getElementById('target-perimeter-standoff');
+  const perimAltEl = document.getElementById('target-perimeter-alt');
+  const perimPitchEl = document.getElementById('target-perimeter-pitch');
+  if (perimPassEl) layer.targetPerimeterPass = perimPassEl.checked;
+  if (perimStandoffEl) layer.targetPerimeterStandoff = parseFloat(perimStandoffEl.value) || 8;
+  if (perimAltEl) {
+    const rawAlt = parseFloat(perimAltEl.value);
+    layer.targetPerimeterAltitude = (rawAlt === 0 || isNaN(rawAlt)) ? null : rawAlt;
+  }
+  if (perimPitchEl) layer.targetPerimeterPitch = parseFloat(perimPitchEl.value) || -55;
+
   if (globalDetourModeEl && globalDetourModeEl.value) {
     globalExclusionDetourMode = globalDetourModeEl.value;
   }
@@ -7656,10 +7719,32 @@ function syncUiWithActiveLayer() {
   setVal('target-splat-culling-mode', layer.targetCullingMode || 'smartTrim');
   setVal('target-splat-grid-pass', layer.targetGridPass || 'double');
 
+  // Perimeter orbit controls
+  const perimPassEl = document.getElementById('target-perimeter-pass');
+  const perimControls = document.getElementById('target-perimeter-controls');
+  if (perimPassEl) {
+    perimPassEl.checked = !!(layer.targetPerimeterPass);
+    if (perimControls) {
+      if (layer.targetPerimeterPass) perimControls.classList.remove('hidden');
+      else perimControls.classList.add('hidden');
+    }
+  }
+  setVal('target-perimeter-standoff', layer.targetPerimeterStandoff !== undefined ? layer.targetPerimeterStandoff : 8);
+  setVal('target-perimeter-alt', (layer.targetPerimeterAltitude !== null && layer.targetPerimeterAltitude !== undefined) ? layer.targetPerimeterAltitude : 0);
+  setVal('target-perimeter-pitch', layer.targetPerimeterPitch !== undefined ? layer.targetPerimeterPitch : -55);
+
+  // Unit-aware display values for radius/height (will be updated by syncDisplayValues too)
+  const _unitForLoad = (typeof getUnitSystem === 'function') ? getUnitSystem() : 'metric';
   const radVal = document.getElementById('target-radius-val');
-  if (radVal) radVal.textContent = layer.targetRadius !== undefined ? layer.targetRadius : 25;
+  const radUnitEl = document.getElementById('target-radius-unit');
+  const rMeters = layer.targetRadius !== undefined ? layer.targetRadius : 25;
+  if (radVal) radVal.textContent = _unitForLoad === 'imperial' ? Math.round(rMeters * M_TO_FT) : rMeters;
+  if (radUnitEl) radUnitEl.textContent = _unitForLoad === 'imperial' ? 'ft' : 'm';
   const hVal = document.getElementById('target-height-val');
-  if (hVal) hVal.textContent = layer.targetHeight !== undefined ? layer.targetHeight : 8;
+  const hUnitEl = document.getElementById('target-height-unit');
+  const hMeters = layer.targetHeight !== undefined ? layer.targetHeight : 8;
+  if (hVal) hVal.textContent = _unitForLoad === 'imperial' ? Math.round(hMeters * M_TO_FT) : hMeters;
+  if (hUnitEl) hUnitEl.textContent = _unitForLoad === 'imperial' ? 'ft' : 'm';
 
   const polyBtn = document.getElementById('target-mode-poly-btn');
   const radBtn = document.getElementById('target-mode-radius-btn');
@@ -10685,6 +10770,57 @@ function initUIEventListeners() {
     });
   }
 
+  // Perimeter Orbit Pass toggle & controls
+  const perimCheckEl = document.getElementById('target-perimeter-pass');
+  const perimControlsDiv = document.getElementById('target-perimeter-controls');
+  if (perimCheckEl) {
+    perimCheckEl.addEventListener('change', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) activeLayer.targetPerimeterPass = perimCheckEl.checked;
+      if (perimControlsDiv) {
+        if (perimCheckEl.checked) perimControlsDiv.classList.remove('hidden');
+        else perimControlsDiv.classList.add('hidden');
+      }
+      updateGrid();
+      saveAllSettingsToLocalStorage();
+    });
+  }
+
+  const perimStandoffSlider = document.getElementById('target-perimeter-standoff');
+  if (perimStandoffSlider) {
+    perimStandoffSlider.addEventListener('input', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) activeLayer.targetPerimeterStandoff = parseFloat(perimStandoffSlider.value) || 8;
+      syncDisplayValues();
+      updateGrid();
+      saveAllSettingsToLocalStorage();
+    });
+  }
+
+  const perimAltSlider = document.getElementById('target-perimeter-alt');
+  if (perimAltSlider) {
+    perimAltSlider.addEventListener('input', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      const rawAlt = parseFloat(perimAltSlider.value);
+      const altVal = (rawAlt === 0 || isNaN(rawAlt)) ? null : rawAlt;
+      if (activeLayer) activeLayer.targetPerimeterAltitude = altVal;
+      syncDisplayValues();
+      updateGrid();
+      saveAllSettingsToLocalStorage();
+    });
+  }
+
+  const perimPitchSlider = document.getElementById('target-perimeter-pitch');
+  if (perimPitchSlider) {
+    perimPitchSlider.addEventListener('input', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) activeLayer.targetPerimeterPitch = parseFloat(perimPitchSlider.value) || -55;
+      syncDisplayValues();
+      updateGrid();
+      saveAllSettingsToLocalStorage();
+    });
+  }
+
   // Handle Camera Model preset change
   const cameraModelEl = document.getElementById('camera-model');
   const droneModelEl = document.getElementById('drone-model');
@@ -12269,18 +12405,53 @@ function syncDisplayValues() {
     }
   }
 
-  // Sync Target Splat Radius & Height Display (v1.77.0)
+  // Sync Target Splat Radius & Height Display + units (v1.77.0, fixed v1.77.4)
   const targetRadSlider = document.getElementById('target-splat-radius');
   const targetRadValEl = document.getElementById('target-radius-val');
+  const targetRadUnitEl = document.getElementById('target-radius-unit');
   if (targetRadSlider && targetRadValEl) {
     const rVal = parseFloat(targetRadSlider.value) || 25;
     targetRadValEl.textContent = (unit === 'imperial') ? Math.round(rVal * M_TO_FT) : rVal;
   }
+  if (targetRadUnitEl) targetRadUnitEl.textContent = distUnitStr;
+
   const targetHeightSlider = document.getElementById('target-splat-height');
   const targetHeightValEl = document.getElementById('target-height-val');
+  const targetHeightUnitEl = document.getElementById('target-height-unit');
   if (targetHeightSlider && targetHeightValEl) {
     const hVal = parseFloat(targetHeightSlider.value) || 8;
     targetHeightValEl.textContent = (unit === 'imperial') ? Math.round(hVal * M_TO_FT) : hVal;
+  }
+  if (targetHeightUnitEl) targetHeightUnitEl.textContent = distUnitStr;
+
+  // Sync Perimeter Orbit Pass Display (v1.77.4)
+  const perimStandoffSlider = document.getElementById('target-perimeter-standoff');
+  const perimStandoffValEl = document.getElementById('target-perimeter-standoff-val');
+  const perimStandoffUnitEl = document.getElementById('target-perimeter-standoff-unit');
+  if (perimStandoffSlider && perimStandoffValEl) {
+    const sVal = parseFloat(perimStandoffSlider.value) || 8;
+    perimStandoffValEl.textContent = (unit === 'imperial') ? Math.round(sVal * M_TO_FT) : sVal;
+  }
+  if (perimStandoffUnitEl) perimStandoffUnitEl.textContent = distUnitStr;
+
+  const perimAltSlider = document.getElementById('target-perimeter-alt');
+  const perimAltValEl = document.getElementById('target-perimeter-alt-val');
+  const perimAltUnitEl = document.getElementById('target-perimeter-alt-unit');
+  if (perimAltSlider && perimAltValEl) {
+    const aRaw = parseFloat(perimAltSlider.value);
+    if (aRaw === 0 || isNaN(aRaw)) {
+      perimAltValEl.textContent = 'Auto';
+      if (perimAltUnitEl) perimAltUnitEl.textContent = '';
+    } else {
+      perimAltValEl.textContent = (unit === 'imperial') ? Math.round(aRaw * M_TO_FT) : aRaw;
+      if (perimAltUnitEl) perimAltUnitEl.textContent = distUnitStr;
+    }
+  }
+
+  const perimPitchSlider = document.getElementById('target-perimeter-pitch');
+  const perimPitchValEl = document.getElementById('target-perimeter-pitch-val');
+  if (perimPitchSlider && perimPitchValEl) {
+    perimPitchValEl.textContent = perimPitchSlider.value;
   }
 }
 
@@ -13736,6 +13907,96 @@ function generateTargetSplatCoordinates(width, height, rotation, captureMode, sL
     layer.targetSavedPercent = totalCandidates > 0 ? Math.round((layer.targetPrunedCount / totalCandidates) * 100) : 0;
   }
 
+  // Perimeter Orbit Pass (v1.77.4)
+  if (layer && layer.targetPerimeterPass) {
+    const standoff = parseFloat(layer.targetPerimeterStandoff) || 8;
+    const orbitAlt = (layer.targetPerimeterAltitude !== null && layer.targetPerimeterAltitude !== undefined)
+      ? parseFloat(layer.targetPerimeterAltitude)
+      : (altitude * 0.65);
+    const orbitPitch = parseFloat(layer.targetPerimeterPitch) || -55;
+    const perimResult = generateTargetPerimeterOrbit(layer, standoff, orbitAlt, orbitPitch, sPhoto, centroidX, centroidY, localTargetPoly, altitude);
+    perimResult.waypoints.forEach(wp => waypoints.push(wp));
+    perimResult.photos.forEach(p => photos.push(p));
+  }
+
+  return { waypoints, photos };
+}
+
+// Generate perimeter orbit waypoints around the target polygon at a given standoff distance.
+// Each waypoint faces inward toward the polygon centroid (convergent heading).
+// For radius mode or when no polygon exists, falls back to a circular orbit.
+// (v1.77.4)
+function generateTargetPerimeterOrbit(layer, standoffMeters, orbitAlt, orbitPitch, sPhoto, centroidX, centroidY, localTargetPoly, gridAlt) {
+  const waypoints = [];
+  const photos = [];
+
+  // Build offset polygon: each vertex pushed outward from centroid by standoffMeters
+  let offsetPoly = [];
+
+  if (localTargetPoly && localTargetPoly.length >= 3) {
+    // Polygon mode: expand each vertex outward from centroid
+    offsetPoly = localTargetPoly.map(v => {
+      const dx = v.x - centroidX;
+      const dy = v.y - centroidY;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 0.001) return { x: v.x + standoffMeters, y: v.y };
+      return {
+        x: v.x + (dx / dist) * standoffMeters,
+        y: v.y + (dy / dist) * standoffMeters
+      };
+    });
+  } else {
+    // Radius mode: generate circle from targetRadius + standoff
+    const r = (layer && layer.targetRadius ? parseFloat(layer.targetRadius) : 25) + standoffMeters;
+    const nPts = Math.max(8, Math.round((2 * Math.PI * r) / Math.max(1, sPhoto)));
+    for (let i = 0; i < nPts; i++) {
+      const theta = (i / nPts) * 2 * Math.PI;
+      offsetPoly.push({ x: centroidX + r * Math.cos(theta), y: centroidY + r * Math.sin(theta) });
+    }
+  }
+
+  if (offsetPoly.length < 2) return { waypoints, photos };
+
+  // Walk the offset polygon edges, placing one waypoint every ~sPhoto meters
+  const effectiveAlt = (orbitAlt !== null && orbitAlt !== undefined && !isNaN(orbitAlt) && orbitAlt > 0)
+    ? orbitAlt
+    : ((gridAlt || 50) * 0.65);
+
+  // Close the polygon
+  const polyPts = [...offsetPoly, offsetPoly[0]];
+
+  for (let i = 0; i < polyPts.length - 1; i++) {
+    const a = polyPts[i];
+    const b = polyPts[i + 1];
+    const segLen = Math.hypot(b.x - a.x, b.y - a.y);
+    if (segLen < 0.01) continue;
+
+    const nSteps = Math.max(1, Math.round(segLen / Math.max(0.5, sPhoto)));
+    for (let s = 0; s < nSteps; s++) {
+      const t = s / nSteps;
+      const px = a.x + t * (b.x - a.x);
+      const py = a.y + t * (b.y - a.y);
+
+      // Heading: point inward toward centroid
+      const dxC = centroidX - px;
+      const dyC = centroidY - py;
+      let heading = Math.atan2(dxC, dyC) * (180.0 / Math.PI);
+      if (heading < 0) heading += 360;
+
+      const pt = {
+        x: px,
+        y: py,
+        alt: effectiveAlt,
+        pitch: orbitPitch,
+        heading: heading,
+        headingMode: 'smoothTransition',
+        isPerimeterOrbit: true
+      };
+      waypoints.push(pt);
+      photos.push({ x: px, y: py, heading: heading, pitch: orbitPitch });
+    }
+  }
+
   return { waypoints, photos };
 }
 
@@ -14186,6 +14447,51 @@ function drawTargetSplatOverlay(layer, centerLat, centerLon, rotationDeg) {
         updateGrid();
       });
     });
+  }
+
+  // Draw Perimeter Orbit ring preview (amber dashed) when enabled (v1.77.4)
+  if (layer.targetPerimeterPass) {
+    const localTargetPoly = getLocalTargetPolygon(layer, centerLat, centerLon, rotationDeg);
+    const centroidX = localTargetPoly.length ? localTargetPoly.reduce((s, v) => s + v.x, 0) / localTargetPoly.length : 0;
+    const centroidY = localTargetPoly.length ? localTargetPoly.reduce((s, v) => s + v.y, 0) / localTargetPoly.length : 0;
+    const standoff = parseFloat(layer.targetPerimeterStandoff) || 8;
+
+    let offsetPoly = [];
+    if (localTargetPoly.length >= 3) {
+      offsetPoly = localTargetPoly.map(v => {
+        const dx = v.x - centroidX, dy = v.y - centroidY;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 0.001) return { x: v.x + standoff, y: v.y };
+        return { x: v.x + (dx / dist) * standoff, y: v.y + (dy / dist) * standoff };
+      });
+    } else {
+      const r = (layer.targetRadius || 25) + standoff;
+      const nPts = Math.max(16, Math.round((2 * Math.PI * r) / 3));
+      for (let i = 0; i < nPts; i++) {
+        const theta = (i / nPts) * 2 * Math.PI;
+        offsetPoly.push({ x: centroidX + r * Math.cos(theta), y: centroidY + r * Math.sin(theta) });
+      }
+    }
+
+    if (offsetPoly.length >= 2) {
+      const R = 6378137.0;
+      const cosLat = Math.cos(centerLat * Math.PI / 180.0);
+      const orbitLatLngs = offsetPoly.map(pt => {
+        const rotRad = (rotationDeg || 0) * Math.PI / 180.0;
+        const rx = pt.x * Math.cos(rotRad) - pt.y * Math.sin(rotRad);
+        const ry = pt.x * Math.sin(rotRad) + pt.y * Math.cos(rotRad);
+        const lat = centerLat + (ry / R) * (180.0 / Math.PI);
+        const lon = centerLon + ((rx / R) * (180.0 / Math.PI)) / cosLat;
+        return [lat, lon];
+      });
+      orbitLatLngs.push(orbitLatLngs[0]); // Close ring
+      L.polyline(orbitLatLngs, {
+        color: '#f59e0b',
+        weight: 2,
+        dashArray: '6, 5',
+        opacity: 0.85
+      }).addTo(targetPolygonGroup).bindTooltip('🔄 Perimeter Orbit Path', { direction: 'top', sticky: true });
+    }
   }
 
   // Update saved photos pill in UI
