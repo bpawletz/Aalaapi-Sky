@@ -6745,10 +6745,10 @@ function generateTargetSplatCoordinates(width, height, rotation, captureMode, sL
         const distToCenter = Math.max(1.0, Math.sqrt(dx * dx + dy * dy));
         let centYaw = Math.atan2(dx, dy) * (180.0 / Math.PI);
         if (centYaw < 0) centYaw += 360;
-        effectiveHeading = centYaw;
+        effectiveHeading = Math.round(centYaw * 10) / 10;
         const deltaZ = Math.max(2.0, (altitude || 50) - (objectHeight * 0.5));
         effectivePitch = -Math.atan2(deltaZ, distToCenter) * (180.0 / Math.PI);
-        effectivePitch = Math.max(-85, Math.min(-15, effectivePitch));
+        effectivePitch = Math.round(Math.max(-85, Math.min(-15, effectivePitch)));
         pt.heading = effectiveHeading;
         pt.pitch = effectivePitch;
         isVisible = true; // Always pointed at target
@@ -6967,18 +6967,20 @@ function generateTargetPerimeterOrbit(layer, standoffMeters, orbitAlt, orbitPitc
       const dyC = centroidY - py;
       let heading = Math.atan2(dxC, dyC) * (180.0 / Math.PI);
       if (heading < 0) heading += 360;
+      heading = Math.round(heading * 10) / 10;
+      const effectiveOrbitPitch = Math.round(orbitPitch);
 
       const pt = {
         x: px,
         y: py,
         alt: effectiveAlt,
-        pitch: orbitPitch,
+        pitch: effectiveOrbitPitch,
         heading: heading,
         headingMode: 'smoothTransition',
         isPerimeterOrbit: true
       };
       waypoints.push(pt);
-      photos.push({ x: px, y: py, heading: heading, pitch: orbitPitch });
+      photos.push({ x: px, y: py, heading: heading, pitch: effectiveOrbitPitch });
     }
   }
 
@@ -7122,9 +7124,12 @@ function getMarkerIcon(wp, idx, waypoints, rotationDeg, tempHeading, tempPitch, 
   const dotHtml = isSkipped
     ? `<div class="wp-dot wp-dot-skipped" style="background-color: ${color}; border-color: ${borderColor}; width: ${radius * 2}px; height: ${radius * 2}px; border-width: ${borderWeight}px; border-style: dashed;"></div>`
     : `<div class="wp-dot" style="background-color: ${color}; border-color: ${borderColor}; width: ${radius * 2}px; height: ${radius * 2}px; border-width: ${borderWeight}px;"></div>`;
+  const displayPitch = (typeof pitch === 'number' && !isNaN(pitch))
+    ? Math.round(pitch)
+    : (pitch !== undefined && pitch !== null ? (isNaN(parseFloat(pitch)) ? pitch : Math.round(parseFloat(pitch))) : defaultGimbalPitch);
   const pitchHtml = isSkipped
-    ? `<div class="wp-pitch-label wp-pitch-skipped" style="opacity: 0.55;">${pitch}°</div>`
-    : `<div class="wp-pitch-label">${pitch}°</div>`;
+    ? `<div class="wp-pitch-label wp-pitch-skipped" style="opacity: 0.55;">${displayPitch}°</div>`
+    : `<div class="wp-pitch-label">${displayPitch}°</div>`;
   const markerClass = isSkipped ? 'custom-wp-marker wp-marker-skipped' : 'custom-wp-marker';
 
   return L.divIcon({
@@ -7657,8 +7662,9 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
       wp.mapMarker = droneMarker;
 
       const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch;
+      const displayPitch = (typeof pitch === 'number' && !isNaN(pitch)) ? Math.round(pitch) : pitch;
       const headingDisplay = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading.toFixed(0) : '—';
-      const tooltipContent = `Drone Waypoint ${idx}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${headingDisplay}°<br>Pitch: ${pitch}°`;
+      const tooltipContent = `Drone Waypoint ${idx}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${headingDisplay}°<br>Pitch: ${displayPitch}°`;
       droneMarker.bindTooltip(tooltipContent, { direction: 'top', offset: [0, -5] });
 
       droneMarker.addTo(waypointMarkersGroup);
@@ -7697,13 +7703,14 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
       }
 
       const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch;
+      const displayPitch = (typeof pitch === 'number' && !isNaN(pitch)) ? Math.round(pitch) : pitch;
       let photoStatusHtml = '';
       if (wp.skipPhoto === true) {
         photoStatusHtml = '<br><span style="color: #94a3b8; font-weight: 600;">📷 Photo: Skipped (Transit Only)</span>';
       } else if (activeLayer && activeLayer.pattern === 'target-splat') {
         photoStatusHtml = '<br><span style="color: #10b981; font-weight: 600;">📷 Photo: Active (Target in View)</span>';
       }
-      const title = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${heading.toFixed(0)}°<br>Pitch: ${pitch}°${photoStatusHtml}`;
+      const title = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${heading.toFixed(0)}°<br>Pitch: ${displayPitch}°${photoStatusHtml}`;
 
       const isDraggable = true;
       const marker = L.marker([wp.lat, wp.lon], {
@@ -14623,6 +14630,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     } else {
       const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value);
       const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : defaultGimbalPitch;
+      const displayPitch = (typeof pitch === 'number' && !isNaN(pitch)) ? Math.round(pitch) : pitch;
       const headingDisplay = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading.toFixed(0) : '—';
 
       popupContent.innerHTML = `
@@ -14632,7 +14640,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
         <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px; display: flex; flex-direction: column; gap: 4px;">
           <div><strong>Height:</strong> ${formatDistance(wp.alt, 0)}</div>
           <div><strong>Yaw:</strong> ${headingDisplay}°</div>
-          <div><strong>Gimbal Pitch:</strong> ${pitch}°</div>
+          <div><strong>Gimbal Pitch:</strong> ${displayPitch}°</div>
         </div>
         <div style="background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.25); padding: 8px; border-radius: 6px; font-size: 0.75rem; color: #cbd5e1; margin-bottom: 10px; line-height: 1.35;">
           ℹ️ Road Follow waypoints are automatically calculated relative to the road offset.<br><br>
@@ -14656,7 +14664,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
   }
 
   const headingVal = (wp.heading !== undefined && wp.heading !== null) ? wp.heading.toFixed(0) : '';
-  const pitchVal = (wp.pitch !== undefined && wp.pitch !== null) ? wp.pitch : -45;
+  const pitchVal = (wp.pitch !== undefined && wp.pitch !== null) ? Math.round(wp.pitch) : -45;
 
   if (typeof fpvProgressIndex !== 'undefined' && idx !== null && idx !== undefined) {
     fpvProgressIndex = idx;
@@ -15000,8 +15008,9 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
           if (gwp.mapMarker) {
             gwp.mapMarker.setLatLng([gwp.lat, gwp.lon]);
             const gPitch = gwp.pitch !== undefined && gwp.pitch !== null ? gwp.pitch : defaultGimbalPitch;
+            const displayGPitch = (typeof gPitch === 'number' && !isNaN(gPitch)) ? Math.round(gPitch) : gPitch;
             const headingDisplay = (gwp.heading !== null && gwp.heading !== undefined && !isNaN(gwp.heading)) ? gwp.heading.toFixed(0) : '—';
-            const tooltipContent = `Drone Waypoint ${gwp.idx}<br>Height: ${formatDistance(gwp.alt, 0)}<br>Yaw: ${headingDisplay}°<br>Pitch: ${gPitch}°`;
+            const tooltipContent = `Drone Waypoint ${gwp.idx}<br>Height: ${formatDistance(gwp.alt, 0)}<br>Yaw: ${headingDisplay}°<br>Pitch: ${displayGPitch}°`;
             gwp.mapMarker.setTooltipContent(tooltipContent);
           }
         });
@@ -15032,7 +15041,8 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       const isStart = idx === 0;
       const isEnd = idx === getCurrentWaypoints().length - 1;
       const yawDisplay = (tempHeading !== null && !isNaN(tempHeading)) ? tempHeading.toFixed(0) : '—';
-      const newTitle = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(tempAlt, 0)}<br>Yaw: ${yawDisplay}°<br>Pitch: ${tempPitch}°`;
+      const displayTempPitch = (typeof tempPitch === 'number' && !isNaN(tempPitch)) ? Math.round(tempPitch) : tempPitch;
+      const newTitle = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(tempAlt, 0)}<br>Yaw: ${yawDisplay}°<br>Pitch: ${displayTempPitch}°`;
       if (marker.getTooltip()) marker.getTooltip().setContent(newTitle);
     } else {
       // Keep simple tooltip for road nodes
@@ -15324,8 +15334,9 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       } else {
         const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value);
         const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : defaultGimbalPitch;
+        const displayPitch = (typeof pitch === 'number' && !isNaN(pitch)) ? Math.round(pitch) : pitch;
         const headingDisplay = (wp.heading !== null && wp.heading !== undefined) ? wp.heading.toFixed(0) : '—';
-        const tooltipContent = `Drone Waypoint ${idx}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${headingDisplay}°<br>Pitch: ${pitch}°`;
+        const tooltipContent = `Drone Waypoint ${idx}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${headingDisplay}°<br>Pitch: ${displayPitch}°`;
         if (marker.getTooltip()) marker.getTooltip().setContent(tooltipContent);
       }
       redrawCurrentMission();
@@ -15339,7 +15350,8 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
         heading = getDefaultHeading(idx, getCurrentWaypoints(), rotationDeg);
       }
       const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : parseFloat(document.getElementById('gimbal-pitch').value);
-      const originalTitle = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${heading.toFixed(0)}°<br>Pitch: ${pitch}°`;
+      const displayPitch = (typeof pitch === 'number' && !isNaN(pitch)) ? Math.round(pitch) : pitch;
+      const originalTitle = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${heading.toFixed(0)}°<br>Pitch: ${displayPitch}°`;
       if (marker.getTooltip()) marker.getTooltip().setContent(originalTitle);
 
       // Redraw lines and stats
