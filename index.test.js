@@ -1,4 +1,4 @@
-const { test, describe, mock, beforeEach } = require('node:test');
+﻿const { test, describe, mock, beforeEach } = require('node:test');
 const assert = require('node:assert');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -9611,3 +9611,80 @@ describe('Target Splat Unit Label Fix (v1.77.4)', () => {
     }
   });
 });
+
+// ============================================================
+// v1.77.5: Convergent Pitch & Heading Decimal Overflow Fix
+// ============================================================
+
+describe('Convergent Mode Decimal Overflow Fix (v1.77.5)', () => {
+  test('generateTargetSplatCoordinates produces integer pitch and clean heading in convergent mode', () => {
+    const layer = {
+      centerLat: 40.0,
+      centerLon: -85.0,
+      targetMode: 'radius',
+      targetRadius: 20,
+      targetHeight: 6,
+      targetCullingMode: 'convergent',
+      targetGridPass: 'single',
+      targetPoly: [],
+      targetPerimeterPass: false
+    };
+
+    const result = generateTargetSplatCoordinates(60, 60, 0, 'photo', 8, 8, 40, -60, layer);
+    assert.ok(result.waypoints.length > 0, 'Should generate waypoints');
+
+    result.waypoints.forEach((wp, idx) => {
+      // Pitch must be an integer (no decimal places like -52.07353767327851)
+      assert.strictEqual(Number.isInteger(wp.pitch), true, `Waypoint ${idx} pitch ${wp.pitch} must be an integer`);
+      assert.ok(wp.pitch >= -85 && wp.pitch <= -15, `Waypoint ${idx} pitch ${wp.pitch} must be within [-85, -15]`);
+
+      // Heading must have at most 1 decimal place
+      const headingDecimals = (wp.heading.toString().split('.')[1] || '').length;
+      assert.ok(headingDecimals <= 1, `Waypoint ${idx} heading ${wp.heading} should have at most 1 decimal place, had ${headingDecimals}`);
+    });
+  });
+
+  test('getMarkerIcon formats pitch as integer in wp-pitch-label even if float is supplied', () => {
+    let capturedOpts = null;
+    const origDivIcon = global.L.divIcon;
+    try {
+      global.L.divIcon = (opts) => {
+        capturedOpts = opts;
+        return { options: opts };
+      };
+
+      const wp = {
+        lat: 40.0,
+        lon: -85.0,
+        alt: 40,
+        pitch: -52.07353767327851,
+        heading: 45.12345
+      };
+
+      const icon = getMarkerIcon(wp, 0, [wp], 0);
+      assert.ok(capturedOpts && capturedOpts.html, 'Icon options must have html');
+      assert.ok(capturedOpts.html.includes('-52'), 'Label must display rounded integer pitch -52');
+      assert.ok(!capturedOpts.html.includes('-52.073'), 'Label must not contain long decimal precision');
+    } finally {
+      global.L.divIcon = origDivIcon;
+    }
+  });
+
+  test('generateTargetPerimeterOrbit produces clean integer pitch and 1-decimal heading', () => {
+    const layer = { targetMode: 'polygon', targetRadius: 25 };
+    const squarePoly = [
+      { x: -10, y: -10 },
+      { x: 10, y: -10 },
+      { x: 10, y: 10 },
+      { x: -10, y: 10 }
+    ];
+    const result = generateTargetPerimeterOrbit(layer, 5, 18, -55.4, 3, 0, 0, squarePoly, 50);
+
+    result.waypoints.forEach((wp, idx) => {
+      assert.strictEqual(Number.isInteger(wp.pitch), true, `Perimeter waypoint ${idx} pitch ${wp.pitch} must be an integer`);
+      const headingDecimals = (wp.heading.toString().split('.')[1] || '').length;
+      assert.ok(headingDecimals <= 1, `Perimeter waypoint ${idx} heading ${wp.heading} must have at most 1 decimal place`);
+    });
+  });
+});
+

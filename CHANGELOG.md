@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.77.5] - 2026-09-04
+
+### Fixed
+- **Target Splat Convergent Mode Decimal Overflow on Pitch Labels & Tooltips:**
+  - Resolved an issue where convergent tracking calculated raw trigonometric floating-point angles (e.g. `-52.07353767327851°`), resulting in massive decimal precision labels overflowing waypoint markers on the map, tooltip popups, and the waypoint editor dialog.
+  - Formatted gimbal pitch with `Math.round()` to integer degrees across `generateTargetSplatCoordinates`, `generateTargetPerimeterOrbit`, `getMarkerIcon`, and all tooltip/dialog views, matching standard DJI gimbal degree increments.
+  - Formatted convergent yaw headings to 1 decimal place.
+
 ## [1.77.4] - 2026-09-04
 
 ### Fixed
