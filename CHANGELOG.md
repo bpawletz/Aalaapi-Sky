@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.77.6] - 2026-09-04
+
+### Fixed
+- **Stuck Waypoints & Leaflet Zoom Animation Crash After Nudge:**
+  - Resolved an issue where nudging a waypoint caused markers to freeze and fail to update their transforms during map zoom transitions.
+  - Identified root cause: Calling `popup.off('remove')` and `marker.off('popupclose')` without passing specific handler callbacks stripped Leaflet's internal layer removal listeners from `Popup`. When the popup was subsequently closed or cleared by `waypointMarkersGroup.clearLayers()`, Leaflet failed to clean up the popup's listener from `map._events['zoomanim']`. When map zoom was triggered, Leaflet invoked `popup._animateZoom`, which threw an uncaught `TypeError: Cannot read properties of null (reading '_latLngToNewLayerPoint')`, crashing the animation pipeline and leaving markers stuck in place.
+  - Replaced indiscriminate `.off('remove')` and `.off('popupclose')` with targeted handler tracking (`marker._revertHandler`), preserving Leaflet's lifecycle management.
+  - Added defensive guards in `L.Popup.prototype._animateZoom` and `L.Tooltip.prototype._animateZoom` to safely return if `!this._map`.
+  - Ensured `map.closePopup()` runs before clearing layers in `drawFlightPath()`.
+  - Updated real-time marker offset and Save button offset calculations in `createWaypointEditorDOM` to use the layer's center (`wpLayer.centerLat/Lon`) instead of strictly global `centerMarker`.
+  - Preserved modified waypoints (`isModified: true`) across multi-layer regenerations in `generateLayerWaypoints`.
+
 ## [1.77.5] - 2026-09-04
 
 ### Fixed
