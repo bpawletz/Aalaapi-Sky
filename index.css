@@ -1096,6 +1096,16 @@ html, body {
   pointer-events: none;
 }
 
+.wp-dot.wp-dot-skipped {
+  opacity: 0.75;
+  border-style: dashed !important;
+}
+
+.wp-pitch-label.wp-pitch-skipped {
+  opacity: 0.55;
+  color: #94a3b8;
+}
+
 /* Hide pitch labels and camera cones when zoomed out far — prevents them from
    visually floating detached from their map-anchored dot position */
 .leaflet-container.wp-zoomed-out .wp-pitch-label,
@@ -2613,6 +2623,37 @@ html, body {
   from { opacity: 0; transform: translateY(-3px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Target Splat 3D Frustum & Polygon Styles (v1.77.0) */
+.btn-tool {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-tool:hover {
+  background: rgba(30, 41, 59, 0.9);
+  color: var(--text-main);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+.btn-tool.active {
+  background: rgba(16, 185, 129, 0.2) !important;
+  border-color: #10b981 !important;
+  color: #34d399 !important;
+  font-weight: 600;
+}
+.target-poly-node-icon {
+  background: #10b981;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.8);
+  cursor: grab;
+}
+.target-poly-node-icon:active {
+  cursor: grabbing;
+}
+
 
 
 

@@ -25,6 +25,15 @@ const FLIGHT_TOOLS = {
     description: '3D Splat crosshatch double-grid pattern',
     propertyGroups: ['geometry', 'overlaps', 'altitude', 'speed', 'camera']
   },
+  'target-splat': {
+    id: 'target-splat',
+    label: 'Target Splat',
+    category: 'splats',
+    icon: 'target-splat',
+    shortcut: 'T',
+    description: 'Target-Aware Oblique Grid with 3D Frustum Culling & Smart Trimming',
+    propertyGroups: ['geometry', 'target-splat-geometry', 'overlaps', 'altitude', 'speed', 'camera']
+  },
   'orbit': {
     id: 'orbit',
     label: 'Orbit',
@@ -109,9 +118,70 @@ let waypointMarkersGroup = null;
 let pitchLabelsGroup = null; // Separate layer for pitch labels — avoids ghost-dot artifacts in marker pane during zoom
 let photoMarkersGroup = null;
 let exclusionZonesGroup = null;
+let targetPolygonGroup = null;
+let isTargetPolyEditActive = false;
 let isAnyPopupOpen = false;
 let isLegendCollapsed = false;
 let originalMissionSettings = null;
+
+function setTargetPolyEditMode(active) {
+  isTargetPolyEditActive = !!active;
+  if (typeof document === 'undefined') return;
+
+  const btn = document.getElementById('target-poly-draw-toggle');
+  const statusEl = document.getElementById('target-poly-status-text');
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const polyLen = (activeLayer && activeLayer.targetPoly) ? activeLayer.targetPoly.length : 0;
+
+  if (typeof map !== 'undefined' && map && map.getContainer) {
+    try {
+      const container = map.getContainer();
+      if (container) {
+        container.style.cursor = isTargetPolyEditActive ? 'crosshair' : '';
+      }
+    } catch (e) {}
+  }
+
+  if (btn) {
+    if (isTargetPolyEditActive) {
+      btn.textContent = '🛑 Done Tracing';
+      btn.style.background = 'rgba(16, 185, 129, 0.35)';
+      btn.style.borderColor = '#10b981';
+      btn.style.color = '#34d399';
+    } else {
+      btn.textContent = polyLen >= 3 ? '✏️ Edit Target Polygon' : '✏️ Mark Target Perimeter';
+      btn.style.background = '';
+      btn.style.borderColor = '';
+      btn.style.color = '';
+    }
+  }
+
+  if (statusEl) {
+    if (isTargetPolyEditActive) {
+      if (polyLen === 0) {
+        statusEl.textContent = '🎯 Click on map to place Corner 1 of house perimeter.';
+      } else if (polyLen === 1) {
+        statusEl.textContent = '🎯 Corner 1 placed. Click to place Corner 2.';
+      } else if (polyLen === 2) {
+        statusEl.textContent = '🎯 2 corners placed. Click to place Corner 3 to close polygon.';
+      } else {
+        statusEl.textContent = `🎯 ${polyLen} corners placed. Click more corners, or click "Done Tracing" to generate grid.`;
+      }
+      statusEl.style.color = '#34d399';
+      statusEl.style.fontWeight = '600';
+    } else {
+      if (polyLen >= 3) {
+        statusEl.textContent = `🎯 Target Polygon (${polyLen} corners). Click "Edit" or drag markers to adjust.`;
+        statusEl.style.color = '#a7f3d0';
+        statusEl.style.fontWeight = 'normal';
+      } else {
+        statusEl.textContent = 'Click on map to place perimeter vertices around the house. Drag markers to adjust.';
+        statusEl.style.color = '#a7f3d0';
+        statusEl.style.fontWeight = 'normal';
+      }
+    }
+  }
+}
 
 // Geolocation state
 let userLocation = null;
@@ -470,6 +540,14 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     cameraZoom: 1.0,
     roadOffset: 15,
     roadSnap: true,
+    targetPoly: [],
+    targetMode: 'radius', // 'polygon' or 'radius'
+    targetRadius: 25,
+    targetHeight: 8,
+    targetCullingMode: 'smartTrim', // 'smartTrim', 'pruneOnly', 'convergent'
+    targetGridPass: 'double', // 'double' or 'single'
+    targetPrunedCount: 0,
+    targetSavedPercent: 0,
     freeformWaypoints: [],
     freeformPhotos: [],
     roadWaypoints: [],
@@ -557,6 +635,15 @@ function saveActiveLayerFromUi() {
   if (exclDetourModeEl && exclDetourModeEl.value) layer.detourMode = exclDetourModeEl.value;
   if (exclClearanceEl) layer.clearanceBuffer = parseFloat(exclClearanceEl.value) || 5;
 
+  const targetRadiusEl = document.getElementById('target-splat-radius');
+  const targetHeightEl = document.getElementById('target-splat-height');
+  const targetCullingEl = document.getElementById('target-splat-culling-mode');
+  const targetGridPassEl = document.getElementById('target-splat-grid-pass');
+  if (targetRadiusEl) layer.targetRadius = parseFloat(targetRadiusEl.value) || 25;
+  if (targetHeightEl) layer.targetHeight = parseFloat(targetHeightEl.value) || 8;
+  if (targetCullingEl && targetCullingEl.value) layer.targetCullingMode = targetCullingEl.value;
+  if (targetGridPassEl && targetGridPassEl.value) layer.targetGridPass = targetGridPassEl.value;
+
   if (globalDetourModeEl && globalDetourModeEl.value) {
     globalExclusionDetourMode = globalDetourModeEl.value;
   }
@@ -595,6 +682,35 @@ function syncUiWithActiveLayer() {
   setVal('exclusion-clearance-buffer', layer.clearanceBuffer !== undefined ? layer.clearanceBuffer : 5);
   setVal('global-exclusion-detour-mode', globalExclusionDetourMode);
   setVal('global-exclusion-clearance-buffer', globalExclusionClearanceBuffer);
+  setVal('target-splat-radius', layer.targetRadius !== undefined ? layer.targetRadius : 25);
+  setVal('target-splat-height', layer.targetHeight !== undefined ? layer.targetHeight : 8);
+  setVal('target-splat-culling-mode', layer.targetCullingMode || 'smartTrim');
+  setVal('target-splat-grid-pass', layer.targetGridPass || 'double');
+
+  const radVal = document.getElementById('target-radius-val');
+  if (radVal) radVal.textContent = layer.targetRadius !== undefined ? layer.targetRadius : 25;
+  const hVal = document.getElementById('target-height-val');
+  if (hVal) hVal.textContent = layer.targetHeight !== undefined ? layer.targetHeight : 8;
+
+  const polyBtn = document.getElementById('target-mode-poly-btn');
+  const radBtn = document.getElementById('target-mode-radius-btn');
+  const polyControls = document.getElementById('target-poly-controls');
+  const radControls = document.getElementById('target-radius-controls');
+  const isPolyMode = (layer.targetMode !== 'radius');
+  if (polyBtn && radBtn) {
+    if (isPolyMode) {
+      polyBtn.classList.add('active');
+      radBtn.classList.remove('active');
+      if (polyControls) polyControls.classList.remove('hidden');
+      if (radControls) radControls.classList.add('hidden');
+    } else {
+      polyBtn.classList.remove('active');
+      radBtn.classList.add('active');
+      if (polyControls) polyControls.classList.add('hidden');
+      if (radControls) radControls.classList.remove('hidden');
+    }
+    setTargetPolyEditMode(isPolyMode && isTargetPolyEditActive);
+  }
 
   const exclAllAltEl = document.getElementById('exclusion-all-altitudes');
   if (exclAllAltEl) exclAllAltEl.checked = (layer.allAltitudes !== false);
@@ -1587,6 +1703,8 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
       gridData = generateGridOrbitComboCoordinates(gridWidth, actualRotation, captureMode, sLine, sPhoto, altitude, defaultGimbalPitch);
     } else if (gridType === 'grid-multi-orbit-combo') {
       gridData = generateGridMultiOrbitComboCoordinates(gridWidth, actualRotation, captureMode, sLine, sPhoto, altitude, defaultGimbalPitch);
+    } else if (gridType === 'target-splat') {
+      gridData = generateTargetSplatCoordinates(gridWidth, gridHeight, actualRotation, captureMode, sLine, sPhoto, altitude, defaultGimbalPitch, layer);
     } else {
       gridData = generateGridCoordinates(gridWidth, gridHeight, actualRotation, gridType, captureMode, sLine, sPhoto);
     }
@@ -1614,6 +1732,8 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
         isRingStart: pt.isRingStart || false,
         ringIndex: pt.ringIndex !== undefined ? pt.ringIndex : null,
         isModified: false,
+        skipPhoto: pt.skipPhoto || false,
+        targetVisible: pt.targetVisible !== undefined ? pt.targetVisible : true,
         origLat: geo.lat,
         origLon: geo.lon,
         origX: pt.x,
@@ -2501,6 +2621,7 @@ function initMap() {
   pitchLabelsGroup = L.layerGroup().addTo(map); // Above waypointMarkersGroup
   photoMarkersGroup = L.layerGroup().addTo(map);
   roadPathGroup = L.layerGroup().addTo(map);
+  targetPolygonGroup = L.layerGroup().addTo(map);
 
   // No default center marker — map starts clean; user clicks to place grid center
 
@@ -2522,11 +2643,17 @@ function initMap() {
     if (isAnyPopupOpen || autoPlanActive || isRouting) {
       return;
     }
-    const gridType = document.getElementById('grid-type').value;
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    const isTargetSplatPoly = (gridType === 'target-splat') && (
+      isTargetPolyEditActive || (activeLayer && activeLayer.targetMode === 'polygon' && (!activeLayer.targetPoly || activeLayer.targetPoly.length < 3))
+    );
+
     if (gridType === 'freeform' || gridType === 'exclusion-freeform') {
       addFreeformWaypoint(e.latlng.lat, e.latlng.lng);
     } else if (gridType === 'road-following') {
       addRoadWaypoint(e.latlng.lat, e.latlng.lng);
+    } else if (isTargetSplatPoly) {
+      addTargetPolygonPoint(e.latlng.lat, e.latlng.lng);
     } else {
       setGridCenter(e.latlng.lat, e.latlng.lng);
     }
@@ -2543,7 +2670,8 @@ const CONTROLS_LIST = [
   'altitude', 'speed', 'heading-mode', 'finish-action', 'capture-mode', 'path-mode', 'signal-lost-action',
   'camera-model', 'drone-model', 'camera-zoom', 'camera-hfov', 'camera-vfov', 'road-offset',
   'global-hover-time', 'global-exclusion-detour-mode', 'global-exclusion-clearance-buffer',
-  'max-flight-height', 'rth-altitude'
+  'max-flight-height', 'rth-altitude',
+  'target-splat-radius', 'target-splat-height', 'target-splat-culling-mode', 'target-splat-grid-pass'
 ];
 
 // Factory Defaults Schema for Reset & Modified Detection (v1.75.0)
@@ -2557,6 +2685,10 @@ const FACTORY_DEFAULTS = {
   'front-overlap': '75',
   'side-overlap': '75',
   'gimbal-pitch': '-60',
+  'target-splat-radius': '25',
+  'target-splat-height': '8',
+  'target-splat-culling-mode': 'smartTrim',
+  'target-splat-grid-pass': 'double',
   'camera-action': 'none',
   'orbit-radius': '50',
   'orbit-waypoints': '12',
@@ -3469,6 +3601,113 @@ function initUIEventListeners() {
     globalClearanceEl.addEventListener('input', () => {
       globalExclusionClearanceBuffer = parseFloat(globalClearanceEl.value) || 5;
       syncDisplayValues();
+      updateGrid();
+      saveAllSettingsToLocalStorage();
+    });
+  }
+
+  // Target Splat UI Event Listeners (v1.77.0)
+  const targetModePolyBtn = document.getElementById('target-mode-poly-btn');
+  const targetModeRadBtn = document.getElementById('target-mode-radius-btn');
+  const targetPolyControls = document.getElementById('target-poly-controls');
+  const targetRadiusControls = document.getElementById('target-radius-controls');
+  const targetDrawToggleBtn = document.getElementById('target-poly-draw-toggle');
+  const targetClearBtn = document.getElementById('target-poly-clear-btn');
+
+  if (targetModePolyBtn && targetModeRadBtn) {
+    targetModePolyBtn.addEventListener('click', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) activeLayer.targetMode = 'polygon';
+      targetModePolyBtn.classList.add('active');
+      targetModeRadBtn.classList.remove('active');
+      if (targetPolyControls) targetPolyControls.classList.remove('hidden');
+      if (targetRadiusControls) targetRadiusControls.classList.add('hidden');
+      if (!activeLayer || !activeLayer.targetPoly || activeLayer.targetPoly.length < 3) {
+        setTargetPolyEditMode(true);
+      } else {
+        setTargetPolyEditMode(false);
+      }
+      updateGrid();
+      saveAllSettingsToLocalStorage();
+    });
+
+    targetModeRadBtn.addEventListener('click', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) activeLayer.targetMode = 'radius';
+      targetModeRadBtn.classList.add('active');
+      targetModePolyBtn.classList.remove('active');
+      if (targetPolyControls) targetPolyControls.classList.add('hidden');
+      if (targetRadiusControls) targetRadiusControls.classList.remove('hidden');
+      setTargetPolyEditMode(false);
+      updateGrid();
+      saveAllSettingsToLocalStorage();
+    });
+  }
+
+  if (targetDrawToggleBtn) {
+    targetDrawToggleBtn.addEventListener('click', () => {
+      setTargetPolyEditMode(!isTargetPolyEditActive);
+      updateGrid();
+    });
+  }
+
+  if (targetClearBtn) {
+    targetClearBtn.addEventListener('click', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.targetPoly = [];
+      }
+      setTargetPolyEditMode(true);
+      updateGrid();
+      saveAllSettingsToLocalStorage();
+    });
+  }
+
+  const targetRadEl = document.getElementById('target-splat-radius');
+  if (targetRadEl) {
+    targetRadEl.addEventListener('input', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.targetRadius = parseFloat(targetRadEl.value) || 25;
+      }
+      syncDisplayValues();
+      updateGrid();
+      saveAllSettingsToLocalStorage();
+    });
+  }
+
+  const targetHtEl = document.getElementById('target-splat-height');
+  if (targetHtEl) {
+    targetHtEl.addEventListener('input', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.targetHeight = parseFloat(targetHtEl.value) || 8;
+      }
+      syncDisplayValues();
+      updateGrid();
+      saveAllSettingsToLocalStorage();
+    });
+  }
+
+  const targetCullEl = document.getElementById('target-splat-culling-mode');
+  if (targetCullEl) {
+    targetCullEl.addEventListener('change', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.targetCullingMode = targetCullEl.value;
+      }
+      updateGrid();
+      saveAllSettingsToLocalStorage();
+    });
+  }
+
+  const targetPassEl = document.getElementById('target-splat-grid-pass');
+  if (targetPassEl) {
+    targetPassEl.addEventListener('change', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.targetGridPass = targetPassEl.value;
+      }
       updateGrid();
       saveAllSettingsToLocalStorage();
     });
@@ -4448,6 +4687,7 @@ function togglePatternParameters() {
   const patternLabels = {
     'single': '2D Nadir Grid',
     'double': '3D Double Grid',
+    'target-splat': 'Target Splat Grid',
     'orbit': 'Circular Orbit',
     'multi-orbit': 'Multi-Tier Orbit',
     'grid-orbit-combo': '2D+3D Hybrid',
@@ -4457,6 +4697,8 @@ function togglePatternParameters() {
     'exclusion-box': 'Exclusion (Box)',
     'exclusion-freeform': 'Exclusion (Polygon)'
   };
+
+  const targetSplatContainer = document.getElementById('target-splat-container');
 
   const activePatternBadge = document.getElementById('active-layer-pattern-badge');
   if (activePatternBadge) {
@@ -4476,7 +4718,37 @@ function togglePatternParameters() {
     }
   }
 
-  if (gridType === 'exclusion-freeform') {
+  if (targetSplatContainer) {
+    if (gridType === 'target-splat') {
+      targetSplatContainer.classList.remove('hidden');
+    } else {
+      targetSplatContainer.classList.add('hidden');
+    }
+  }
+
+  if (gridType === 'target-splat') {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
+    if (gridGeometrySection) {
+      gridGeometrySection.style.display = 'block';
+      gridGeometrySection.classList.remove('collapsed');
+    }
+    if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
+    if (targetSplatContainer) targetSplatContainer.classList.remove('hidden');
+    if (widthLabel) widthLabel.textContent = "Survey Width";
+    if (widthContainer) widthContainer.style.display = 'block';
+    if (heightContainer) heightContainer.style.display = 'block';
+    if (rotationContainer) rotationContainer.style.display = 'block';
+    if (frontOverlapContainer) frontOverlapContainer.style.display = 'block';
+    if (sideOverlapContainer) sideOverlapContainer.style.display = 'block';
+    if (freeformInstructions) freeformInstructions.classList.add('hidden');
+    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
+    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
+    if (gimbalPitchSlider && (!gimbalPitchSlider.value || parseFloat(gimbalPitchSlider.value) === -90)) {
+      gimbalPitchSlider.value = -45;
+    }
+
+  } else if (gridType === 'exclusion-freeform') {
     const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
     if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
     if (gridGeometrySection) {
@@ -5023,6 +5295,20 @@ function syncDisplayValues() {
     if (rthAltUnitEl) {
       rthAltUnitEl.textContent = distUnitStr;
     }
+  }
+
+  // Sync Target Splat Radius & Height Display (v1.77.0)
+  const targetRadSlider = document.getElementById('target-splat-radius');
+  const targetRadValEl = document.getElementById('target-radius-val');
+  if (targetRadSlider && targetRadValEl) {
+    const rVal = parseFloat(targetRadSlider.value) || 25;
+    targetRadValEl.textContent = (unit === 'imperial') ? Math.round(rVal * M_TO_FT) : rVal;
+  }
+  const targetHeightSlider = document.getElementById('target-splat-height');
+  const targetHeightValEl = document.getElementById('target-height-val');
+  if (targetHeightSlider && targetHeightValEl) {
+    const hVal = parseFloat(targetHeightSlider.value) || 8;
+    targetHeightValEl.textContent = (unit === 'imperial') ? Math.round(hVal * M_TO_FT) : hVal;
   }
 }
 
@@ -5851,15 +6137,16 @@ function generateGridCoordinates(width, height, rotation, gridType, captureMode,
   for (let i = 0; i < nLines; i++) {
     const x = -width / 2.0 + i * dxLine;
     const startFromSouth = (i % 2 === 0);
+    const lineHeading = startFromSouth ? 0 : 180;
     const linePoints = [];
 
     for (let j = 0; j < nPhotos; j++) {
       const yIdx = startFromSouth ? j : (nPhotos - 1 - j);
       const y = -height / 2.0 + yIdx * dyPhoto;
-      linePoints.push({ x: x, y: y });
+      linePoints.push({ x: x, y: y, heading: lineHeading });
       
       // Save photo representation
-      photos.push({ x: x, y: y });
+      photos.push({ x: x, y: y, heading: lineHeading });
     }
 
     if (captureMode === 'continuous' || captureMode === 'video') {
@@ -5880,27 +6167,46 @@ function generateGridCoordinates(width, height, rotation, gridType, captureMode,
     const dyLine2 = nLines2 > 1 ? height / (nLines2 - 1) : 0;
     const dxPhoto2 = nPhotos2 > 1 ? width / (nPhotos2 - 1) : 0;
 
+    // Check where Pass 1 ended to connect Pass 2 seamlessly without deadhead transit across the field
+    // Pass 1 lines end at x = +width/2.
+    // If (nLines - 1) is even (0, 2, 4...), Pass 1 ended at North (y = +height/2).
+    // If (nLines - 1) is odd (1, 3, 5...), Pass 1 ended at South (y = -height/2).
+    const pass1EndsAtNorth = ((nLines - 1) % 2 === 0);
+
     for (let i = 0; i < nLines2; i++) {
-      const y = -height / 2.0 + i * dyLine2;
-      const startFromWest = (i % 2 === 0);
+      const y = pass1EndsAtNorth
+        ? (height / 2.0 - i * dyLine2)
+        : (-height / 2.0 + i * dyLine2);
+
+      // Line 0 starts at East (x = +width/2) to connect directly to Pass 1 end.
+      // Even lines (0, 2, 4...) start from East and fly West (heading 270°).
+      // Odd lines (1, 3, 5...) start from West and fly East (heading 90°).
+      const startFromWest = (i % 2 === 1);
+      const lineHeading2 = startFromWest ? 90 : 270;
       const linePoints = [];
 
       for (let j = 0; j < nPhotos2; j++) {
+        // Skip duplicate coordinate at the exact Pass 1 -> Pass 2 junction point
+        if (i === 0 && j === 0) {
+          continue;
+        }
         const xIdx = startFromWest ? j : (nPhotos2 - 1 - j);
         const x = -width / 2.0 + xIdx * dxPhoto2;
-        linePoints.push({ x: x, y: y });
+        linePoints.push({ x: x, y: y, heading: lineHeading2 });
 
         // Save photo representation
-        photos.push({ x: x, y: y });
+        photos.push({ x: x, y: y, heading: lineHeading2 });
       }
 
-      if (captureMode === 'continuous' || captureMode === 'video') {
-        // Continuous/video flight waypoints
-        waypoints.push(linePoints[0]);
-        waypoints.push(linePoints[linePoints.length - 1]);
-      } else {
-        // Stop & Shoot waypoints
-        linePoints.forEach(pt => waypoints.push(pt));
+      if (linePoints.length > 0) {
+        if (captureMode === 'continuous' || captureMode === 'video') {
+          // Continuous/video flight waypoints
+          waypoints.push(linePoints[0]);
+          waypoints.push(linePoints[linePoints.length - 1]);
+        } else {
+          // Stop & Shoot waypoints
+          linePoints.forEach(pt => waypoints.push(pt));
+        }
       }
     }
   }
@@ -6007,6 +6313,7 @@ function generateCircularGridCoordinates(radius, sLine, sPhoto, captureMode) {
     if (yMax < 5.0) continue;
 
     const startFromSouth = (i % 2 === 0);
+    const lineHeading = startFromSouth ? 0 : 180;
     const linePoints = [];
 
     const nPhotos = Math.max(2, Math.round((2 * yMax) / sPhoto) + 1);
@@ -6016,8 +6323,8 @@ function generateCircularGridCoordinates(radius, sLine, sPhoto, captureMode) {
       const yIdx = startFromSouth ? j : (nPhotos - 1 - j);
       const y = -yMax + yIdx * dyPhoto;
       
-      linePoints.push({ x: x, y: y });
-      photos.push({ x: x, y: y });
+      linePoints.push({ x: x, y: y, heading: lineHeading });
+      photos.push({ x: x, y: y, heading: lineHeading });
     }
 
     if (captureMode === 'continuous' || captureMode === 'video') {
@@ -6131,6 +6438,335 @@ function generateGridMultiOrbitComboCoordinates(radius, rotation, captureMode, s
   return { waypoints, photos };
 }
 
+// ============================================================================
+// Target Splat 3D Frustum Culling & Geometry Engine (v1.77.0)
+// ============================================================================
+
+function calculateCameraGroundFrustum(droneX, droneY, alt, headingDeg, pitchDeg, hfov, vfov, zPlane = 0) {
+  const deltaH = Math.max(1.0, (alt || 50) - (zPlane || 0));
+  const headingRad = ((headingDeg || 0) * Math.PI) / 180.0;
+  
+  // u = unit vector forward along flight heading
+  const ux = Math.sin(headingRad);
+  const uy = Math.cos(headingRad);
+  // r = unit vector right lateral
+  const rx = Math.cos(headingRad);
+  const ry = -Math.sin(headingRad);
+
+  // Pitch convention: -90 is nadir, -45 is 45 deg forward-down. Enforce negative downward pitch
+  const effectivePitch = -Math.abs(pitchDeg !== undefined && pitchDeg !== null ? pitchDeg : -60);
+  const clampedPitch = Math.max(-90.0, Math.min(-5.0, effectivePitch));
+  const alphaDeg = 90.0 + clampedPitch;
+  const hfovVal = (hfov && !isNaN(hfov) && hfov > 0) ? hfov : 69.7;
+  const vfovVal = (vfov && !isNaN(vfov) && vfov > 0) ? vfov : 55.2;
+
+  // Angular bounds along vertical field of view
+  const alphaNearDeg = Math.max(-85.0, Math.min(85.0, alphaDeg - vfovVal / 2.0));
+  const alphaFarDeg = Math.max(-85.0, Math.min(85.0, alphaDeg + vfovVal / 2.0));
+
+  const dNear = deltaH * Math.tan((alphaNearDeg * Math.PI) / 180.0);
+  const dFar = deltaH * Math.tan((alphaFarDeg * Math.PI) / 180.0);
+
+  const slantNear = Math.sqrt(deltaH * deltaH + dNear * dNear);
+  const slantFar = Math.sqrt(deltaH * deltaH + dFar * dFar);
+
+  const halfWNear = slantNear * Math.tan(((hfovVal / 2.0) * Math.PI) / 180.0);
+  const halfWFar = slantFar * Math.tan(((hfovVal / 2.0) * Math.PI) / 180.0);
+
+  return [
+    { x: droneX + dNear * ux - halfWNear * rx, y: droneY + dNear * uy - halfWNear * ry }, // Near-Left
+    { x: droneX + dNear * ux + halfWNear * rx, y: droneY + dNear * uy + halfWNear * ry }, // Near-Right
+    { x: droneX + dFar * ux + halfWFar * rx,   y: droneY + dFar * uy + halfWFar * ry },   // Far-Right
+    { x: droneX + dFar * ux - halfWFar * rx,   y: droneY + dFar * uy - halfWFar * ry }    // Far-Left
+  ];
+}
+
+function isPointInPolygon2D(px, py, poly) {
+  if (!poly || poly.length < 3) return false;
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const xi = poly[i].x, yi = poly[i].y;
+    const xj = poly[j].x, yj = poly[j].y;
+    const intersect = ((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+function segmentsIntersect2D(p1, p2, p3, p4) {
+  function ccw(a, b, c) {
+    return (c.y - a.y) * (b.x - a.x) > (b.y - a.y) * (c.x - a.x);
+  }
+  return (ccw(p1, p3, p4) !== ccw(p2, p3, p4)) && (ccw(p1, p2, p3) !== ccw(p1, p2, p4));
+}
+
+function doPolygonsIntersect2D(polyA, polyB) {
+  if (!polyA || polyA.length < 3 || !polyB || polyB.length < 3) return false;
+  for (let i = 0; i < polyA.length; i++) {
+    if (isPointInPolygon2D(polyA[i].x, polyA[i].y, polyB)) return true;
+  }
+  for (let i = 0; i < polyB.length; i++) {
+    if (isPointInPolygon2D(polyB[i].x, polyB[i].y, polyA)) return true;
+  }
+  for (let i = 0; i < polyA.length; i++) {
+    const nextA = (i + 1) % polyA.length;
+    for (let j = 0; j < polyB.length; j++) {
+      const nextB = (j + 1) % polyB.length;
+      if (segmentsIntersect2D(polyA[i], polyA[nextA], polyB[j], polyB[nextB])) return true;
+    }
+  }
+  return false;
+}
+
+function isTargetVisibleInFrustum(droneX, droneY, alt, headingDeg, pitchDeg, hfov, vfov, targetPoly, objectHeight = 0) {
+  if (!targetPoly || targetPoly.length < 3) return true;
+  // Test ground footprint (Z = 0)
+  const groundFrustum = calculateCameraGroundFrustum(droneX, droneY, alt, headingDeg, pitchDeg, hfov, vfov, 0);
+  if (doPolygonsIntersect2D(groundFrustum, targetPoly)) return true;
+
+  // Test extruded roof level (Z = objectHeight) to protect rooflines & chimneys
+  if (objectHeight > 0 && alt > objectHeight) {
+    const roofFrustum = calculateCameraGroundFrustum(droneX, droneY, alt, headingDeg, pitchDeg, hfov, vfov, objectHeight);
+    if (doPolygonsIntersect2D(roofFrustum, targetPoly)) return true;
+  }
+  return false;
+}
+
+function getLocalTargetPolygon(layer, centerLat, centerLon, rotationDeg) {
+  let rawPoly = [];
+  const targetMode = layer ? layer.targetMode : 'polygon';
+  const targetRadius = (layer && layer.targetRadius > 0) ? layer.targetRadius : 25;
+
+  if (targetMode === 'radius' || !layer || !layer.targetPoly || layer.targetPoly.length < 3) {
+    // Generate regular N-gon circle around local origin (0, 0)
+    const nPts = 16;
+    for (let k = 0; k < nPts; k++) {
+      const angle = (k / nPts) * 2 * Math.PI;
+      rawPoly.push({
+        x: targetRadius * Math.cos(angle),
+        y: targetRadius * Math.sin(angle)
+      });
+    }
+  } else {
+    // Convert lat/lon polygon vertices to local meter coordinates relative to center
+    rawPoly = layer.targetPoly.map(pt => {
+      if (pt.lat !== undefined && pt.lon !== undefined && centerLat && centerLon) {
+        return geodeticToLocal(pt.lat, pt.lon, centerLat, centerLon);
+      }
+      if (pt.x !== undefined && pt.y !== undefined) {
+        return { x: pt.x, y: pt.y };
+      }
+      return { x: 0, y: 0 };
+    });
+  }
+
+  // Rotate polygon into grid-local coordinate space (-rotationDeg)
+  const rotRad = (-(rotationDeg || 0) * Math.PI) / 180.0;
+  const cosR = Math.cos(rotRad);
+  const sinR = Math.sin(rotRad);
+  return rawPoly.map(pt => ({
+    x: pt.x * cosR - pt.y * sinR,
+    y: pt.x * sinR + pt.y * cosR
+  }));
+}
+
+function generateTargetSplatCoordinates(width, height, rotation, captureMode, sLine, sPhoto, altitude, defaultGimbalPitch, layer) {
+  const waypoints = [];
+  const photos = [];
+
+  const hfov = (typeof CAMERA_HFOV === 'number' && !isNaN(CAMERA_HFOV) && CAMERA_HFOV > 0) ? CAMERA_HFOV : 69.7;
+  const vfov = (typeof CAMERA_VFOV === 'number' && !isNaN(CAMERA_VFOV) && CAMERA_VFOV > 0) ? CAMERA_VFOV : 55.2;
+
+  const cullingMode = layer ? (layer.targetCullingMode || 'smartTrim') : 'smartTrim';
+  const gridPass = layer ? (layer.targetGridPass || 'double') : 'double';
+  const objectHeight = layer ? (parseFloat(layer.targetHeight) || 8) : 8;
+
+  const centerLat = layer ? layer.centerLat : 0;
+  const centerLon = layer ? layer.centerLon : 0;
+  const localTargetPoly = getLocalTargetPolygon(layer, centerLat, centerLon, rotation);
+
+  // Compute centroid of target polygon in grid-local space
+  let centroidX = 0, centroidY = 0;
+  if (localTargetPoly.length > 0) {
+    localTargetPoly.forEach(pt => {
+      centroidX += pt.x;
+      centroidY += pt.y;
+    });
+    centroidX /= localTargetPoly.length;
+    centroidY /= localTargetPoly.length;
+  }
+
+  let totalCandidates = 0;
+  let activePhotosCount = 0;
+
+  // Helper to process a single flight line of points
+  function processFlightLine(linePoints, isContinuous) {
+    if (!linePoints || linePoints.length === 0) return;
+    totalCandidates += linePoints.length;
+
+    // Evaluate visibility for each candidate point
+    linePoints.forEach(pt => {
+      let isVisible = false;
+      let effectivePitch = (pt.pitch !== undefined && pt.pitch !== null) ? pt.pitch : defaultGimbalPitch;
+      let effectiveHeading = pt.heading;
+
+      if (cullingMode === 'convergent') {
+        // Compute yaw and pitch to point directly at target centroid
+        const dx = centroidX - pt.x;
+        const dy = centroidY - pt.y;
+        const distToCenter = Math.max(1.0, Math.sqrt(dx * dx + dy * dy));
+        let centYaw = Math.atan2(dx, dy) * (180.0 / Math.PI);
+        if (centYaw < 0) centYaw += 360;
+        effectiveHeading = centYaw;
+        const deltaZ = Math.max(2.0, (altitude || 50) - (objectHeight * 0.5));
+        effectivePitch = -Math.atan2(deltaZ, distToCenter) * (180.0 / Math.PI);
+        effectivePitch = Math.max(-85, Math.min(-15, effectivePitch));
+        pt.heading = effectiveHeading;
+        pt.pitch = effectivePitch;
+        isVisible = true; // Always pointed at target
+      } else {
+        isVisible = isTargetVisibleInFrustum(pt.x, pt.y, altitude, pt.heading, effectivePitch, hfov, vfov, localTargetPoly, objectHeight);
+      }
+
+      pt.targetVisible = isVisible;
+    });
+
+    if (cullingMode === 'smartTrim') {
+      // Find first and last indices where target is visible
+      let firstVisible = -1;
+      let lastVisible = -1;
+      for (let k = 0; k < linePoints.length; k++) {
+        if (linePoints[k].targetVisible) {
+          if (firstVisible === -1) firstVisible = k;
+          lastVisible = k;
+        }
+      }
+
+      if (firstVisible === -1) {
+        // No photos on this entire line see the target; skip line entirely
+        return;
+      }
+
+      // Add a 1-point margin for smooth turnaround lead-in/out
+      const startIdx = Math.max(0, firstVisible - 1);
+      const endIdx = Math.min(linePoints.length - 1, lastVisible + 1);
+
+      const trimmedPoints = linePoints.slice(startIdx, endIdx + 1);
+
+      trimmedPoints.forEach(pt => {
+        if (pt.targetVisible) {
+          photos.push({ x: pt.x, y: pt.y, heading: pt.heading, pitch: pt.pitch });
+          activePhotosCount++;
+        }
+      });
+
+      if (isContinuous) {
+        waypoints.push(trimmedPoints[0]);
+        if (trimmedPoints.length > 1) {
+          waypoints.push(trimmedPoints[trimmedPoints.length - 1]);
+        }
+      } else {
+        trimmedPoints.forEach(pt => {
+          pt.skipPhoto = !pt.targetVisible;
+          waypoints.push(pt);
+        });
+      }
+
+    } else if (cullingMode === 'pruneOnly') {
+      // Keep entire flight line but only trigger photos when target is visible
+      linePoints.forEach(pt => {
+        if (pt.targetVisible) {
+          photos.push({ x: pt.x, y: pt.y, heading: pt.heading, pitch: pt.pitch });
+          activePhotosCount++;
+        }
+      });
+
+      if (isContinuous) {
+        waypoints.push(linePoints[0]);
+        waypoints.push(linePoints[linePoints.length - 1]);
+      } else {
+        linePoints.forEach(pt => {
+          pt.skipPhoto = !pt.targetVisible;
+          waypoints.push(pt);
+        });
+      }
+
+    } else { // convergent
+      linePoints.forEach(pt => {
+        photos.push({ x: pt.x, y: pt.y, heading: pt.heading, pitch: pt.pitch });
+        activePhotosCount++;
+      });
+
+      if (isContinuous) {
+        waypoints.push(linePoints[0]);
+        waypoints.push(linePoints[linePoints.length - 1]);
+      } else {
+        linePoints.forEach(pt => waypoints.push(pt));
+      }
+    }
+  }
+
+  // Pass 1: North-South flight lines
+  const nLines = Math.max(2, Math.round(width / sLine) + 1);
+  const nPhotos = Math.max(2, Math.round(height / sPhoto) + 1);
+  const dxLine = nLines > 1 ? width / (nLines - 1) : 0;
+  const dyPhoto = nPhotos > 1 ? height / (nPhotos - 1) : 0;
+  const isContinuous = (captureMode === 'continuous' || captureMode === 'video');
+
+  for (let i = 0; i < nLines; i++) {
+    const x = -width / 2.0 + i * dxLine;
+    const startFromSouth = (i % 2 === 0);
+    const lineHeading = startFromSouth ? 0 : 180;
+    const linePoints = [];
+
+    for (let j = 0; j < nPhotos; j++) {
+      const yIdx = startFromSouth ? j : (nPhotos - 1 - j);
+      const y = -height / 2.0 + yIdx * dyPhoto;
+      linePoints.push({ x: x, y: y, heading: lineHeading, pitch: defaultGimbalPitch });
+    }
+
+    processFlightLine(linePoints, isContinuous);
+  }
+
+  // Pass 2: Perpendicular lines (East-West) if Double Grid
+  if (gridPass === 'double') {
+    const nLines2 = Math.max(2, Math.round(height / sLine) + 1);
+    const nPhotos2 = Math.max(2, Math.round(width / sPhoto) + 1);
+    const dyLine2 = nLines2 > 1 ? height / (nLines2 - 1) : 0;
+    const dxPhoto2 = nPhotos2 > 1 ? width / (nPhotos2 - 1) : 0;
+
+    const pass1EndsAtNorth = ((nLines - 1) % 2 === 0);
+
+    for (let i = 0; i < nLines2; i++) {
+      const y = pass1EndsAtNorth
+        ? (height / 2.0 - i * dyLine2)
+        : (-height / 2.0 + i * dyLine2);
+
+      const startFromWest = (i % 2 === 1);
+      const lineHeading2 = startFromWest ? 90 : 270;
+      const linePoints2 = [];
+
+      for (let j = 0; j < nPhotos2; j++) {
+        const xIdx = startFromWest ? j : (nPhotos2 - 1 - j);
+        const x = -width / 2.0 + xIdx * dxPhoto2;
+        linePoints2.push({ x: x, y: y, heading: lineHeading2, pitch: defaultGimbalPitch });
+      }
+
+      processFlightLine(linePoints2, isContinuous);
+    }
+  }
+
+  // Save metrics to layer
+  if (layer) {
+    layer.targetCandidatePhotos = totalCandidates;
+    layer.targetActivePhotos = activePhotosCount;
+    layer.targetPrunedCount = Math.max(0, totalCandidates - activePhotosCount);
+    layer.targetSavedPercent = totalCandidates > 0 ? Math.round((layer.targetPrunedCount / totalCandidates) * 100) : 0;
+  }
+
+  return { waypoints, photos };
+}
+
 // Convert relative coordinates (meters) to geodesic coordinates (Lat/Lon)
 // Handles rotation (heading in degrees) relative to North
 function localToGeodetic(x, y, centerLat, centerLon, rotationDeg) {
@@ -6157,6 +6793,12 @@ function localToGeodetic(x, y, centerLat, centerLon, rotationDeg) {
 
 // Calculate the default path-following heading for a waypoint
 function getDefaultHeading(idx, waypoints, rotationDeg) {
+  if (waypoints && waypoints[idx]) {
+    const wp = waypoints[idx];
+    if (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
+      return ((wp.heading % 360) + 360) % 360;
+    }
+  }
   let heading = 0;
   if (idx < waypoints.length - 1) {
     const nextWp = waypoints[idx + 1];
@@ -6186,11 +6828,15 @@ function getMarkerIcon(wp, idx, waypoints, rotationDeg, tempHeading, tempPitch, 
   const isStart = idx === 0;
   const isEnd = idx === waypoints.length - 1;
 
+  const isSkipped = (wp.skipPhoto === true);
+
   let color = wp.layerColor || '#06b6d4'; // default cyan or layer color
   if (isModified) {
     color = '#ec4899'; // Hot pink for modified waypoints
   } else if (isStart) {
     color = '#10b981'; // Emerald Green for starting point
+  } else if (isSkipped) {
+    color = '#64748b'; // Muted slate gray for transit-only waypoints where photo is skipped
   } else if (wp.isTransition) {
     color = '#a855f7'; // Purple for transition points
   } else if (isMultiOrbit || isCombo || isMultiCombo || importedWaypoints) {
@@ -6200,9 +6846,9 @@ function getMarkerIcon(wp, idx, waypoints, rotationDeg, tempHeading, tempPitch, 
     else if (wp.ringIndex === 3) color = '#3b82f6';
   }
 
-  const radius = isStart || isEnd ? 6 : 4;
+  const radius = isStart || isEnd ? 6 : (isSkipped ? 3.5 : 4);
   const borderWeight = isStart || isEnd ? 2 : 1;
-  const borderColor = isStart ? '#10b981' : (isEnd ? '#ef4444' : '#ffffff');
+  const borderColor = isStart ? '#10b981' : (isEnd ? '#ef4444' : (isSkipped ? '#94a3b8' : '#ffffff'));
 
   // Heading calculation
   let heading = 0;
@@ -6248,16 +6894,31 @@ function getMarkerIcon(wp, idx, waypoints, rotationDeg, tempHeading, tempPitch, 
     else if (wp.ringIndex === 3) coneColor = 'rgba(59, 130, 246, 0.2)';
   }
 
+  const showCone = !isSkipped;
+  const coneHtml = showCone
+    ? `<div class="wp-camera-cone" style="border-top-color: ${coneColor};"></div>`
+    : '';
+  const arrowStyle = isSkipped
+    ? `border-bottom-color: #64748b; opacity: 0.5;`
+    : `border-bottom-color: ${color};`;
+  const dotHtml = isSkipped
+    ? `<div class="wp-dot wp-dot-skipped" style="background-color: ${color}; border-color: ${borderColor}; width: ${radius * 2}px; height: ${radius * 2}px; border-width: ${borderWeight}px; border-style: dashed;"></div>`
+    : `<div class="wp-dot" style="background-color: ${color}; border-color: ${borderColor}; width: ${radius * 2}px; height: ${radius * 2}px; border-width: ${borderWeight}px;"></div>`;
+  const pitchHtml = isSkipped
+    ? `<div class="wp-pitch-label wp-pitch-skipped" style="opacity: 0.55;">${pitch}°</div>`
+    : `<div class="wp-pitch-label">${pitch}°</div>`;
+  const markerClass = isSkipped ? 'custom-wp-marker wp-marker-skipped' : 'custom-wp-marker';
+
   return L.divIcon({
-    className: 'custom-wp-marker',
+    className: markerClass,
     html: `
       <div class="wp-marker-wrapper" style="transform: rotate(${heading}deg);">
-        <div class="wp-camera-cone" style="border-top-color: ${coneColor};"></div>
-        <div class="wp-arrow" style="border-bottom-color: ${color};"></div>
+        ${coneHtml}
+        <div class="wp-arrow" style="${arrowStyle}"></div>
       </div>
       <div class="wp-static-container">
-        <div class="wp-dot" style="background-color: ${color}; border-color: ${borderColor}; width: ${radius * 2}px; height: ${radius * 2}px; border-width: ${borderWeight}px;"></div>
-        <div class="wp-pitch-label">${pitch}°</div>
+        ${dotHtml}
+        ${pitchHtml}
       </div>
     `,
     iconSize: [24, 24],
@@ -6429,12 +7090,145 @@ function drawExclusionZones(globalCenterLat, globalCenterLon) {
   });
 }
 
+function addTargetPolygonPoint(lat, lng) {
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  if (!activeLayer) return;
+  if (!activeLayer.targetPoly) activeLayer.targetPoly = [];
+  const cLat = (activeLayer.centerLat !== undefined && activeLayer.centerLat !== null) ? activeLayer.centerLat : lat;
+  const cLon = (activeLayer.centerLon !== undefined && activeLayer.centerLon !== null) ? activeLayer.centerLon : lng;
+  const offsets = geodeticToLocal(lat, lng, cLat, cLon);
+  activeLayer.targetPoly.push({ lat: lat, lon: lng, x: offsets.x, y: offsets.y });
+  activeLayer.targetMode = 'polygon';
+
+  // Automatically compute centroid and center grid when at least 3 vertices are defined
+  if (activeLayer.targetPoly.length >= 3) {
+    let sumLat = 0, sumLon = 0;
+    activeLayer.targetPoly.forEach(p => {
+      sumLat += p.lat;
+      sumLon += p.lon;
+    });
+    const avgLat = sumLat / activeLayer.targetPoly.length;
+    const avgLon = sumLon / activeLayer.targetPoly.length;
+    activeLayer.centerLat = avgLat;
+    activeLayer.centerLon = avgLon;
+    // Recompute offsets relative to the new centroid
+    activeLayer.targetPoly.forEach(p => {
+      const off = geodeticToLocal(p.lat, p.lon, avgLat, avgLon);
+      p.x = off.x;
+      p.y = off.y;
+    });
+    if (typeof centerLat !== 'undefined' && typeof centerLon !== 'undefined') {
+      centerLat = avgLat;
+      centerLon = avgLon;
+    }
+  }
+
+  setTargetPolyEditMode(true);
+  updateGrid();
+}
+
+function drawTargetSplatOverlay(layer, centerLat, centerLon, rotationDeg) {
+  if (!targetPolygonGroup || typeof map === 'undefined' || !map) return;
+  const targetMode = layer.targetMode || 'polygon';
+  const targetRadius = (layer.targetRadius > 0) ? layer.targetRadius : 25;
+  const targetHeight = (layer.targetHeight !== undefined && layer.targetHeight !== null) ? layer.targetHeight : 8;
+
+  if (targetMode === 'radius') {
+    const circle = L.circle([centerLat, centerLon], {
+      radius: targetRadius,
+      color: '#10b981',
+      weight: 2.5,
+      dashArray: '6, 6',
+      fillColor: '#10b981',
+      fillOpacity: 0.15
+    }).addTo(targetPolygonGroup);
+    circle.bindTooltip(`🎯 Target Object (Radius: ${targetRadius}m, Height: ${targetHeight}m)`, { direction: 'center', permanent: false });
+
+  } else {
+    // Polygon Mode
+    const vertices = layer.targetPoly || [];
+    if (vertices.length >= 3) {
+      const latlngs = vertices.map(v => [v.lat, v.lon]);
+      const poly = L.polygon(latlngs, {
+        color: '#10b981',
+        weight: 2.5,
+        dashArray: '6, 6',
+        fillColor: '#10b981',
+        fillOpacity: 0.18
+      }).addTo(targetPolygonGroup);
+      poly.bindTooltip(`🎯 Target House Polygon (${vertices.length} vertices, Roof Height: ${targetHeight}m)`, { direction: 'center', permanent: false });
+    } else if (vertices.length === 2) {
+      const latlngs = vertices.map(v => [v.lat, v.lon]);
+      L.polyline(latlngs, {
+        color: '#10b981',
+        weight: 2.5,
+        dashArray: '4, 4'
+      }).addTo(targetPolygonGroup);
+    } else if (vertices.length === 0 && !isTargetPolyEditActive) {
+      // Show default circular envelope placeholder only if not actively tracing
+      const circle = L.circle([centerLat, centerLon], {
+        radius: targetRadius,
+        color: '#10b981',
+        weight: 2,
+        dashArray: '4, 4',
+        fillColor: '#10b981',
+        fillOpacity: 0.08
+      }).addTo(targetPolygonGroup);
+      circle.bindTooltip(`🎯 Target Envelope (${targetRadius}m - Click 'Edit Target Polygon' to trace house)`, { direction: 'center', permanent: false });
+    }
+
+    // Render numbered draggable vertex markers for all vertices (1, 2, 3...)
+    vertices.forEach((v, vIdx) => {
+      const nodeIcon = L.divIcon({
+        className: 'target-poly-node-icon-wrapper',
+        html: `<div class="target-poly-node-icon" style="width: 22px; height: 22px; background: #10b981; color: white; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; cursor: grab;" title="Target Corner ${vIdx + 1} (Drag to adjust, click to remove)">${vIdx + 1}</div>`,
+        iconSize: [22, 22],
+        iconAnchor: [11, 11]
+      });
+
+      const nodeMarker = L.marker([v.lat, v.lon], {
+        icon: nodeIcon,
+        draggable: true
+      }).addTo(targetPolygonGroup);
+
+      nodeMarker.on('drag', (e) => {
+        const newLatLng = e.target.getLatLng();
+        const offsets = geodeticToLocal(newLatLng.lat, newLatLng.lng, centerLat, centerLon);
+        v.lat = newLatLng.lat;
+        v.lon = newLatLng.lng;
+        v.x = offsets.x;
+        v.y = offsets.y;
+        updateGrid();
+      });
+
+      nodeMarker.on('click', (e) => {
+        if (e.originalEvent && e.originalEvent.stopPropagation) e.originalEvent.stopPropagation();
+        vertices.splice(vIdx, 1);
+        setTargetPolyEditMode(isTargetPolyEditActive || vertices.length < 3);
+        updateGrid();
+      });
+    });
+  }
+
+  // Update saved photos pill in UI
+  const savedPill = document.getElementById('target-splat-saved-pill');
+  if (savedPill) {
+    if (layer.targetPrunedCount && layer.targetPrunedCount > 0) {
+      savedPill.textContent = `${layer.targetPrunedCount} pruned (${layer.targetSavedPercent || 0}% saved)`;
+      savedPill.style.display = 'inline-block';
+    } else {
+      savedPill.style.display = 'none';
+    }
+  }
+}
+
 // Render bounding box, flight path, and markers on Leaflet
 function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWidth, gridHeight, rotationDeg) {
   recalculateSplitStarts();
   // 1. Clear previous layers
   if (flightPathPolyline) flightPathPolyline.clearLayers();
   if (exclusionZonesGroup) exclusionZonesGroup.clearLayers();
+  if (targetPolygonGroup) targetPolygonGroup.clearLayers();
   if (gridBoundsPolygon) map.removeLayer(gridBoundsPolygon);
   waypointMarkersGroup.clearLayers();
   if (pitchLabelsGroup) pitchLabelsGroup.clearLayers();
@@ -6450,6 +7244,21 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
     : (activeLayer ? activeLayer.pattern : 'double');
   const activeCenterLat = (activeLayer && activeLayer.centerLat !== null && activeLayer.centerLat !== undefined) ? activeLayer.centerLat : centerLat;
   const activeCenterLon = (activeLayer && activeLayer.centerLon !== null && activeLayer.centerLon !== undefined) ? activeLayer.centerLon : centerLon;
+
+  // Draw Target Splat Object Boundary / Polygon Overlay
+  if (activeLayer && activeLayer.pattern === 'target-splat') {
+    drawTargetSplatOverlay(activeLayer, activeCenterLat, activeCenterLon, rotationDeg);
+  }
+
+  // When tracing target house polygon perimeter, hide flight path waypoints & cones so user can mark corners cleanly
+  const isTargetTracingActive = (activeLayer && activeLayer.pattern === 'target-splat' && (
+    isTargetPolyEditActive || (activeLayer.targetMode === 'polygon' && (!activeLayer.targetPoly || activeLayer.targetPoly.length < 3))
+  ));
+
+  if (isTargetTracingActive) {
+    updateStatsPanel(null);
+    return;
+  }
 
   // 2. Draw boundary overlay
   if (waypoints.length === 0 || gridType === 'road-following' || gridType === 'freeform' || gridType === 'exclusion-box' || gridType === 'exclusion-freeform') {
@@ -6619,7 +7428,13 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
       }
 
       const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch;
-      const title = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${heading.toFixed(0)}°<br>Pitch: ${pitch}°`;
+      let photoStatusHtml = '';
+      if (wp.skipPhoto === true) {
+        photoStatusHtml = '<br><span style="color: #94a3b8; font-weight: 600;">📷 Photo: Skipped (Transit Only)</span>';
+      } else if (activeLayer && activeLayer.pattern === 'target-splat') {
+        photoStatusHtml = '<br><span style="color: #10b981; font-weight: 600;">📷 Photo: Active (Target in View)</span>';
+      }
+      const title = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${heading.toFixed(0)}°<br>Pitch: ${pitch}°${photoStatusHtml}`;
 
       const isDraggable = true;
       const marker = L.marker([wp.lat, wp.lon], {
@@ -6899,6 +7714,13 @@ function updateMapLegend() {
       itemsHtml = `
         <div class="legend-item"><span class="legend-color" style="background-color: #f59e0b; border: 1px dashed rgba(255,255,255,0.4);"></span> Road Path</div>
         <div class="legend-item"><span class="legend-color" style="background-color: #06b6d4;"></span> Drone Path (Offset)</div>
+      `;
+    } else if (gridType === 'target-splat') {
+      title = "Target Splat";
+      itemsHtml = `
+        <div class="legend-item"><span class="legend-color" style="background-color: #06b6d4;"></span> Photo Waypoint: ${formatDistance(altitudeVal, 1)}</div>
+        <div class="legend-item"><span class="legend-color" style="background-color: #64748b; border: 1px dashed #94a3b8;"></span> Transit Waypoint (No Photo)</div>
+        <div class="legend-item"><span class="legend-color" style="background-color: rgba(16, 185, 129, 0.4); border: 1px dashed #10b981;"></span> Target Object Boundary</div>
       `;
     } else {
       title = "Altitude Layers";
@@ -8074,7 +8896,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     }
 
     // 5. If Stop & Shoot is active, also add photo trigger at this waypoint
-    if (captureMode === 'stopAndShoot') {
+    if (captureMode === 'stopAndShoot' && wp.skipPhoto !== true) {
       waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
@@ -8168,31 +8990,28 @@ ${waypointActions.join('\n')}
       }
     } else {
       if (gridType === 'freeform' && wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
-        // In Freeform with custom per-waypoint heading, use smoothTransition
         actualHeadingMode = 'smoothTransition';
         actualHeadingAngle = wp.heading;
-      } else {
-        if (headingMode === 'towardPOI') {
-          let targetPoi = pois[targetPoiIndex] || pois[0];
-          if (!targetPoi && targetPoiIndex === 0 && typeof centerMarker !== 'undefined' && centerMarker) {
-            const latlng = centerMarker.getLatLng();
-            targetPoi = { lat: latlng.lat, lon: latlng.lng };
-          }
-          if (targetPoi) {
-            // DJI WPML requires latitude,longitude,altitude for waypointPoiPoint
-            poiPoint = `${targetPoi.lat.toFixed(6)},${targetPoi.lon.toFixed(6)},0.000000`;
-          }
-        } else if (headingMode === 'custom') {
-          actualHeadingMode = 'smoothTransition';
-          actualHeadingAngle = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
+      } else if (headingMode === 'towardPOI') {
+        actualHeadingMode = 'towardPOI';
+        let targetPoi = pois[targetPoiIndex] || pois[0];
+        if (!targetPoi && targetPoiIndex === 0 && typeof centerMarker !== 'undefined' && centerMarker) {
+          const latlng = centerMarker.getLatLng();
+          targetPoi = { lat: latlng.lat, lon: latlng.lng };
         }
+        if (targetPoi) {
+          poiPoint = `${targetPoi.lat.toFixed(6)},${targetPoi.lon.toFixed(6)},0.000000`;
+        }
+      } else if (headingMode === 'custom' || headingMode === 'smoothTransition') {
+        actualHeadingMode = 'smoothTransition';
+        actualHeadingAngle = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
+      } else if (headingMode === 'fixed') {
+        actualHeadingMode = 'smoothTransition';
+        actualHeadingAngle = 0.1;
+      } else {
+        // Default followWayline
+        actualHeadingMode = 'followWayline';
       }
-    }
-
-    // Lawnmower Grid Golden Rule: Lawnmower grid patterns (Single & Double Grid) must strictly use followWayline (unless towardPOI or explicit per-waypoint custom heading is selected).
-    // smoothTransition in a grid produces spline discontinuities on parallel turnaround turns that cause DJI Fly to suspend the mission.
-    if ((gridType === 'single' || gridType === 'double') && headingMode !== 'towardPOI' && wpMode !== 'towardPOI' && wpMode !== 'custom') {
-      actualHeadingMode = 'followWayline';
     }
 
     if (actualHeadingMode === 'followWayline' || actualHeadingMode === 'towardPOI') {
@@ -8415,14 +9234,6 @@ function validateWpmlMission(wpmlXml, templateXml = '', options = {}) {
           result.errors.push(`Waypoint ${idx}: endpoint waypointHeadingMode is 'followWayline' but waypointHeadingAngleEnable is 0 (must be 1 to define initial wayline entry heading for DJI Fly)`);
         }
       }
-      if (isSinglePattern && mode === 'smoothTransition' && (idx === 0 || placemarks.length <= 2)) {
-        r1Passed = false;
-        result.errors.push(`Waypoint ${idx}: Single grid pattern cannot use 'smoothTransition' (must use 'followWayline' to prevent DJI Fly Go abort on parallel flight lines)`);
-      }
-      if (isDoublePattern && mode === 'smoothTransition' && (idx === 0 || placemarks.length <= 2)) {
-        r1Passed = false;
-        result.errors.push(`Waypoint ${idx}: Double grid pattern cannot use 'smoothTransition' (must use 'followWayline' to prevent DJI Fly Go abort on parallel flight lines)`);
-      }
     }
   });
   if (!r1Passed) result.valid = false; else result.rulesPassed++;
@@ -8606,18 +9417,6 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
   let fixedTemplate = templateXml;
 
   // 1. Heading Mode & Angle Enable Coherence Sanitization
-  // Lawnmower grids (single and double) must strictly use followWayline
-  const isLawnmowerGrid = (options && (
-    options.gridType === 'single' || options.pattern === 'single' ||
-    options.gridType === 'double' || options.pattern === 'double'
-  ));
-  if (isLawnmowerGrid) {
-    fixedWpml = fixedWpml.replace(
-      /<wpml:waypointHeadingMode>\s*smoothTransition\s*<\/wpml:waypointHeadingMode>/g,
-      '<wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>'
-    );
-  }
-
   // Ensure followWayline has waypointHeadingAngle: 0, endpoints have headingAngleEnable: 1, and intermediate have 0
   const pms = fixedWpml.split('<Placemark>');
   if (pms.length > 1) {
@@ -13384,11 +14183,14 @@ function clearMap() {
         l.roadWaypoints = [];
         l.waypoints = [];
         l.photos = [];
+        l.targetPoly = [];
       });
     }
 
     if (flightPathPolyline) flightPathPolyline.clearLayers();
     if (roadPathGroup) roadPathGroup.clearLayers();
+    if (targetPolygonGroup) targetPolygonGroup.clearLayers();
+    setTargetPolyEditMode(false);
     if (gridBoundsPolygon) {
       map.removeLayer(gridBoundsPolygon);
       gridBoundsPolygon = null;
