@@ -5950,7 +5950,7 @@ describe('v1.58.1 Single Grid Oblique Pitch WPML Heading Enforcement', () => {
     }
   });
 
-  test('validateWpmlMission catches and flags smoothTransition in single grid missions', () => {
+  test('validateWpmlMission catches and flags invalid enable flag on intermediate followWayline in single grid', () => {
     const offendingXml = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">
   <Document>
@@ -5963,43 +5963,12 @@ describe('v1.58.1 Single Grid Oblique Pitch WPML Heading Enforcement', () => {
         <wpml:executeHeight>22</wpml:executeHeight>
         <wpml:waypointSpeed>4</wpml:waypointSpeed>
         <wpml:waypointHeadingParam>
-          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
-          <wpml:waypointHeadingAngle>45.0</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>0</wpml:waypointHeadingAngle>
           <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
         </wpml:waypointHeadingParam>
         <wpml:waypointTurnParam>
-          <wpml:waypointTurnMode>toPointAndStopWithDiscontinuityCurvature</wpml:waypointTurnMode>
-        </wpml:waypointTurnParam>
-      </Placemark>
-    </Folder>
-  </Document>
-</kml>`;
-
-    const val = vm.runInThisContext(`validateWpmlMission(\`${offendingXml}\`, '', { gridType: 'single' })`);
-    assert.strictEqual(val.valid, false, 'Should fail validation when smoothTransition is present in single grid');
-    assert.ok(val.errors.some(e => e.includes('Single grid pattern cannot use \'smoothTransition\'')),
-      'Should report Single grid smoothTransition error in Rule 1');
-  });
-
-  test('validateAndFixWpml automatically repairs smoothTransition to followWayline for single grid', () => {
-    const offendingXml = `<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">
-  <Document>
-    <wpml:missionConfig><wpml:droneEnumValue>68</wpml:droneEnumValue></wpml:missionConfig>
-    <Folder>
-      <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
-      <Placemark>
-        <Point><coordinates>-83.177105,40.012774</coordinates></Point>
-        <wpml:index>0</wpml:index>
-        <wpml:executeHeight>22</wpml:executeHeight>
-        <wpml:waypointSpeed>4</wpml:waypointSpeed>
-        <wpml:waypointHeadingParam>
-          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
-          <wpml:waypointHeadingAngle>45.0</wpml:waypointHeadingAngle>
-          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
-        </wpml:waypointHeadingParam>
-        <wpml:waypointTurnParam>
-          <wpml:waypointTurnMode>toPointAndStopWithDiscontinuityCurvature</wpml:waypointTurnMode>
+          <wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode>
         </wpml:waypointTurnParam>
       </Placemark>
       <Placemark>
@@ -6008,23 +5977,92 @@ describe('v1.58.1 Single Grid Oblique Pitch WPML Heading Enforcement', () => {
         <wpml:executeHeight>22</wpml:executeHeight>
         <wpml:waypointSpeed>4</wpml:waypointSpeed>
         <wpml:waypointHeadingParam>
-          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
-          <wpml:waypointHeadingAngle>135.0</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>0</wpml:waypointHeadingAngle>
           <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
         </wpml:waypointHeadingParam>
         <wpml:waypointTurnParam>
-          <wpml:waypointTurnMode>toPointAndStopWithDiscontinuityCurvature</wpml:waypointTurnMode>
+          <wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode>
+        </wpml:waypointTurnParam>
+      </Placemark>
+      <Placemark>
+        <Point><coordinates>-83.177105,40.013153</coordinates></Point>
+        <wpml:index>2</wpml:index>
+        <wpml:executeHeight>22</wpml:executeHeight>
+        <wpml:waypointSpeed>4</wpml:waypointSpeed>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>0</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam>
+          <wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode>
         </wpml:waypointTurnParam>
       </Placemark>
     </Folder>
   </Document>
 </kml>`;
 
-    const res = vm.runInThisContext(`validateAndFixWpml(\`${offendingXml}\`, '', { gridType: 'single' })`);
-    assert.ok(res.wpmlXml.includes('<wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>'),
-      'Must sanitize smoothTransition to followWayline');
-    assert.ok(!res.wpmlXml.includes('<wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>'),
-      'Must no longer contain smoothTransition');
+    const val = validateWpmlMission(offendingXml, '', { gridType: 'single' });
+    assert.strictEqual(val.valid, false, 'Should fail validation when intermediate followWayline has enable=1');
+    assert.ok(val.errors.some(e => e.includes("intermediate waypointHeadingMode is 'followWayline' but waypointHeadingAngleEnable is 1")),
+      'Should report intermediate followWayline enable=1 error in Rule 1');
+  });
+
+  test('validateAndFixWpml automatically repairs intermediate followWayline enable flags for single grid', () => {
+    const offendingXml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">
+  <Document>
+    <wpml:missionConfig><wpml:droneEnumValue>68</wpml:droneEnumValue></wpml:missionConfig>
+    <Folder>
+      <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
+      <Placemark>
+        <Point><coordinates>-83.177105,40.012774</coordinates></Point>
+        <wpml:index>0</wpml:index>
+        <wpml:executeHeight>22</wpml:executeHeight>
+        <wpml:waypointSpeed>4</wpml:waypointSpeed>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>0</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam>
+          <wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode>
+        </wpml:waypointTurnParam>
+      </Placemark>
+      <Placemark>
+        <Point><coordinates>-83.177105,40.012953</coordinates></Point>
+        <wpml:index>1</wpml:index>
+        <wpml:executeHeight>22</wpml:executeHeight>
+        <wpml:waypointSpeed>4</wpml:waypointSpeed>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>0</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam>
+          <wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode>
+        </wpml:waypointTurnParam>
+      </Placemark>
+      <Placemark>
+        <Point><coordinates>-83.177105,40.013153</coordinates></Point>
+        <wpml:index>2</wpml:index>
+        <wpml:executeHeight>22</wpml:executeHeight>
+        <wpml:waypointSpeed>4</wpml:waypointSpeed>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>0</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam>
+          <wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode>
+        </wpml:waypointTurnParam>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>`;
+
+    const res = validateAndFixWpml(offendingXml, '', { gridType: 'single' });
     assert.strictEqual(res.validation.valid, true, 'Sanitized XML must pass validation');
   });
 });
@@ -6684,7 +6722,7 @@ describe('v1.61.3 Double Grid Oblique Pitch followWayline Compliance (Antigravit
     }
   });
 
-  test('validateWpmlMission catches and flags smoothTransition in double grid missions', () => {
+  test('validateWpmlMission catches and flags invalid enable flag on intermediate followWayline in single grid', () => {
     const offendingXml = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">
   <Document>
@@ -6692,91 +6730,111 @@ describe('v1.61.3 Double Grid Oblique Pitch followWayline Compliance (Antigravit
     <Folder>
       <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
       <Placemark>
-        <Point><coordinates>-83.1768686817087,40.0127468275585</coordinates></Point>
+        <Point><coordinates>-83.177105,40.012774</coordinates></Point>
         <wpml:index>0</wpml:index>
         <wpml:executeHeight>22</wpml:executeHeight>
         <wpml:waypointSpeed>4</wpml:waypointSpeed>
         <wpml:waypointHeadingParam>
-          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
-          <wpml:waypointHeadingAngle>142.0</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>0</wpml:waypointHeadingAngle>
           <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
         </wpml:waypointHeadingParam>
         <wpml:waypointTurnParam>
           <wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode>
         </wpml:waypointTurnParam>
-        <wpml:useStraightLine>0</wpml:useStraightLine>
-      </Placemark>
-    </Folder>
-  </Document>
-</kml>`;
-
-    const val = vm.runInThisContext(`validateWpmlMission(\`${offendingXml}\`, '', { gridType: 'double' })`);
-    assert.strictEqual(val.valid, false, 'Should fail validation when smoothTransition is present in double grid');
-    assert.ok(val.errors.some(e => e.includes('Double grid pattern cannot use \'smoothTransition\'')),
-      'Should report Double grid smoothTransition error in Rule 1');
-  });
-
-  test('validateAndFixWpml automatically repairs smoothTransition to followWayline for double grid', () => {
-    const offendingXml = `<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">
-  <Document>
-    <wpml:missionConfig><wpml:droneEnumValue>68</wpml:droneEnumValue></wpml:missionConfig>
-    <Folder>
-      <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
-      <Placemark>
-        <Point><coordinates>-83.1768686817087,40.0127468275585</coordinates></Point>
-        <wpml:index>0</wpml:index>
-        <wpml:executeHeight>22</wpml:executeHeight>
-        <wpml:waypointSpeed>4</wpml:waypointSpeed>
-        <wpml:waypointHeadingParam>
-          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
-          <wpml:waypointHeadingAngle>142.0</wpml:waypointHeadingAngle>
-          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
-        </wpml:waypointHeadingParam>
-        <wpml:waypointTurnParam>
-          <wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode>
-        </wpml:waypointTurnParam>
-        <wpml:useStraightLine>0</wpml:useStraightLine>
       </Placemark>
       <Placemark>
-        <Point><coordinates>-83.1771015107324,40.0127249321397</coordinates></Point>
+        <Point><coordinates>-83.177105,40.012953</coordinates></Point>
         <wpml:index>1</wpml:index>
         <wpml:executeHeight>22</wpml:executeHeight>
         <wpml:waypointSpeed>4</wpml:waypointSpeed>
         <wpml:waypointHeadingParam>
-          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
-          <wpml:waypointHeadingAngle>232.0</wpml:waypointHeadingAngle>
-          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
-        </wpml:waypointHeadingParam>
-        <wpml:waypointTurnParam>
-          <wpml:waypointTurnMode>toPointAndPassWithContinuityCurvature</wpml:waypointTurnMode>
-        </wpml:waypointTurnParam>
-        <wpml:useStraightLine>0</wpml:useStraightLine>
-      </Placemark>
-      <Placemark>
-        <Point><coordinates>-83.1771110400022,40.0127843734316</coordinates></Point>
-        <wpml:index>2</wpml:index>
-        <wpml:executeHeight>22</wpml:executeHeight>
-        <wpml:waypointSpeed>4</wpml:waypointSpeed>
-        <wpml:waypointHeadingParam>
-          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
-          <wpml:waypointHeadingAngle>258.6</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>0</wpml:waypointHeadingAngle>
           <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
         </wpml:waypointHeadingParam>
         <wpml:waypointTurnParam>
           <wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode>
         </wpml:waypointTurnParam>
-        <wpml:useStraightLine>0</wpml:useStraightLine>
+      </Placemark>
+      <Placemark>
+        <Point><coordinates>-83.177105,40.013153</coordinates></Point>
+        <wpml:index>2</wpml:index>
+        <wpml:executeHeight>22</wpml:executeHeight>
+        <wpml:waypointSpeed>4</wpml:waypointSpeed>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>0</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam>
+          <wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode>
+        </wpml:waypointTurnParam>
       </Placemark>
     </Folder>
   </Document>
 </kml>`;
 
-    const res = vm.runInThisContext(`validateAndFixWpml(\`${offendingXml}\`, '', { gridType: 'double' })`);
-    assert.ok(res.wpmlXml.includes('<wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>'),
-      'Must sanitize smoothTransition to followWayline');
-    assert.ok(!res.wpmlXml.includes('<wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>'),
-      'Must no longer contain smoothTransition');
+    const val = vm.runInThisContext(`validateWpmlMission(\`${offendingXml}\`, '', { gridType: 'single' })`);
+    assert.strictEqual(val.valid, false, 'Should fail validation when intermediate followWayline has enable=1');
+    assert.ok(val.errors.some(e => e.includes('intermediate waypointHeadingMode is \'followWayline\' but waypointHeadingAngleEnable is 1')),
+      'Should report intermediate followWayline enable=1 error in Rule 1');
+  });
+
+  test('validateAndFixWpml automatically repairs intermediate followWayline enable flags for single grid', () => {
+    const offendingXml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">
+  <Document>
+    <wpml:missionConfig><wpml:droneEnumValue>68</wpml:droneEnumValue></wpml:missionConfig>
+    <Folder>
+      <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
+      <Placemark>
+        <Point><coordinates>-83.177105,40.012774</coordinates></Point>
+        <wpml:index>0</wpml:index>
+        <wpml:executeHeight>22</wpml:executeHeight>
+        <wpml:waypointSpeed>4</wpml:waypointSpeed>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>0</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam>
+          <wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode>
+        </wpml:waypointTurnParam>
+      </Placemark>
+      <Placemark>
+        <Point><coordinates>-83.177105,40.012953</coordinates></Point>
+        <wpml:index>1</wpml:index>
+        <wpml:executeHeight>22</wpml:executeHeight>
+        <wpml:waypointSpeed>4</wpml:waypointSpeed>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>0</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam>
+          <wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode>
+        </wpml:waypointTurnParam>
+      </Placemark>
+      <Placemark>
+        <Point><coordinates>-83.177105,40.013153</coordinates></Point>
+        <wpml:index>2</wpml:index>
+        <wpml:executeHeight>22</wpml:executeHeight>
+        <wpml:waypointSpeed>4</wpml:waypointSpeed>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>0</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam>
+          <wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode>
+        </wpml:waypointTurnParam>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>`;
+
+    const res = vm.runInThisContext(`validateAndFixWpml(\`${offendingXml}\`, '', { gridType: 'single' })`);
     assert.strictEqual(res.validation.valid, true, 'Sanitized XML must pass validation');
   });
 });
@@ -8898,6 +8956,458 @@ describe('Map Zoom Marker Anchoring & Unified Pitch Badge Tests (v1.76.2)', () =
     }, 'applyZoomGates should execute without error');
   });
 });
+
+describe('Double Grid Flight Line Camera Heading & Turn Alignment Tests (v1.76.4)', () => {
+  test('generateGridCoordinates assigns dedicated flight-line headings and connects Pass 2 seamlessly', () => {
+    // 5 lines x 11 photos in Pass 1 (55 wps), 6 lines x 10 photos in Pass 2 (59 wps with junction deduplication) = 114 waypoints
+    const grid = generateGridCoordinates(23.4, 27.5, 0, 'double', 'stopAndShoot', 5.85, 2.75);
+    assert.strictEqual(grid.waypoints.length, 114, 'Must generate 114 waypoints');
+
+    // Pass 1: North-South lines (11 photos per line)
+    // Leg 1 (WP 0..10): flying North -> heading 0°
+    for (let i = 0; i <= 10; i++) {
+      assert.strictEqual(grid.waypoints[i].heading, 0, `WP ${i} on Leg 1 (Northbound) must have heading 0°`);
+    }
+
+    // Leg 2 (WP 11..21): flying South -> heading 180°
+    for (let i = 11; i <= 21; i++) {
+      assert.strictEqual(grid.waypoints[i].heading, 180, `WP ${i} on Leg 2 (Southbound) must have heading 180°`);
+    }
+
+    // Leg 3 (WP 22..32): flying North -> heading 0°
+    for (let i = 22; i <= 32; i++) {
+      assert.strictEqual(grid.waypoints[i].heading, 0, `WP ${i} on Leg 3 (Northbound) must have heading 0°`);
+    }
+
+    // Pass 2 seamlessly starts at Pass 1 end (North-East) and flies West on Leg 1
+    // Pass 2 Leg 1 (WP 55..63): flying West -> heading 270°
+    for (let i = 55; i <= 63; i++) {
+      assert.strictEqual(grid.waypoints[i].heading, 270, `WP ${i} on Pass 2 Leg 1 (Westbound) must have heading 270°`);
+    }
+
+    // Pass 2 Leg 2 (WP 64..73): flying East -> heading 90°
+    for (let i = 64; i <= 73; i++) {
+      assert.strictEqual(grid.waypoints[i].heading, 90, `WP ${i} on Pass 2 Leg 2 (Eastbound) must have heading 90°`);
+    }
+
+    // Verify distance between Pass 1 end and Pass 2 start is a valid non-zero step (> 0.5m)
+    const p1End = grid.waypoints[54];
+    const p2Start = grid.waypoints[55];
+    const junctionDist = Math.hypot(p2Start.x - p1End.x, p2Start.y - p1End.y);
+    assert.ok(junctionDist > 0.5, `Junction distance (${junctionDist.toFixed(2)}m) must be > 0.5m`);
+  });
+
+  test('getDefaultHeading respects pre-assigned waypoint heading and maintains leg alignment', () => {
+    const grid = generateGridCoordinates(23.4, 27.5, 0, 'double', 'stopAndShoot', 5.85, 2.75);
+    const wps = grid.waypoints;
+
+    // WP 10 is the end of Leg 1 (turnaround point)
+    const h10 = getDefaultHeading(10, wps, 0);
+    assert.strictEqual(h10, 0, 'Turnaround point at end of Leg 1 must face 0° (along Leg 1) not 90°');
+
+    // WP 11 is the start of Leg 2
+    const h11 = getDefaultHeading(11, wps, 0);
+    assert.strictEqual(h11, 180, 'Start of Leg 2 must face 180° (along Leg 2)');
+  });
+
+  test('137-waypoint Double Grid mission at 16m/2ms/-45deg on Mini 4 Pro exports locked flight-line headings in smoothTransition mode', () => {
+    const originalGetElementById = global.document.getElementById;
+    try {
+      global.document.getElementById = (id) => ({
+        value: {
+          'drone-model': '68',
+          'signal-lost-action': 'goBack',
+          'camera-zoom': '1.0',
+          'global-hover-time': '2',
+          'grid-type': 'double',
+          'flight-pattern': 'double',
+          'altitude': '16',
+          'speed': '2',
+          'gimbal-pitch': '-45',
+          'heading-mode': 'smoothTransition',
+          'grid-width': '27.5',
+          'grid-height': '29',
+          'grid-rotation': '0',
+          'front-overlap': '80',
+          'side-overlap': '70',
+          'capture-mode': 'stopAndShoot'
+        }[id] || '',
+        checked: false
+      });
+
+      const grid = generateGridCoordinates(27.5, 29, 0, 'double', 'stopAndShoot', 5.5, 2.75);
+      assert.strictEqual(grid.waypoints.length, 137, 'Must generate exactly 137 waypoints');
+
+      const sampleWps = grid.waypoints.map((pt, i) => {
+        const geo = localToGeodetic(pt.x, pt.y, 40.01284102456845, -83.17713611362149, 0);
+        return {
+          index: i,
+          lat: geo.lat,
+          lon: geo.lon,
+          alt: 16,
+          speed: 2,
+          pitch: -45,
+          turnMode: 'inherit',
+          heading: pt.heading
+        };
+      });
+
+      const xml = vm.runInThisContext(`
+        buildWaylinesWpml(${JSON.stringify(sampleWps)}, 16, 2, 'smoothTransition', 'goHome', -45, 'stopAndShoot', 'straight')
+      `);
+
+      assert.ok(xml.includes('<wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>'),
+        'Double grid with assigned flight-line headings must export smoothTransition mode');
+      assert.ok(xml.includes('<wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>'),
+        'Must enable waypointHeadingAngleEnable to lock camera on axis');
+      assert.ok(xml.includes('<wpml:droneEnumValue>68</wpml:droneEnumValue>'),
+        'Target drone must be Mini 4 Pro (68)');
+
+      const val = vm.runInThisContext(`
+        validateWpmlMission(\`${xml}\`, '', { gridType: 'double' })
+      `);
+      assert.strictEqual(val.valid, true, 'Must pass all validation rules');
+      assert.strictEqual(val.rulesPassed, 10, 'Health score must be 10/10');
+      assert.strictEqual(val.errors.length, 0, 'Must have zero validation errors');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+});
+
+describe('Target Splat Grid & 3D Frustum Culling Tests (v1.77.0)', () => {
+  test('calculateCameraGroundFrustum accurately projects 4-point ground footprint', () => {
+    // Altitude 30m, heading 0 (North), pitch -45 deg, HFOV 70, VFOV 55
+    const frustum = calculateCameraGroundFrustum(0, 0, 30, 0, -45, 70, 55, 0);
+    assert.strictEqual(frustum.length, 4, 'Must return 4 polygon vertices');
+    
+    // At pitch -45 deg facing North, all Y coordinates of the footprint should be positive (ahead of drone)
+    assert.ok(frustum[0].y > -15, 'Near edge should be forward relative to nadir');
+    assert.ok(frustum[2].y > frustum[0].y, 'Far edge should be further North than near edge');
+    // Near-Left X should be negative (West), Near-Right X should be positive (East)
+    assert.ok(frustum[0].x < 0, 'Near-Left vertex should be to the West');
+    assert.ok(frustum[1].x > 0, 'Near-Right vertex should be to the East');
+  });
+
+  test('doPolygonsIntersect2D accurately detects overlap and disjoint polygons', () => {
+    const boxA = [{ x: -10, y: -10 }, { x: 10, y: -10 }, { x: 10, y: 10 }, { x: -10, y: 10 }];
+    const boxB_overlapping = [{ x: 5, y: 5 }, { x: 25, y: 5 }, { x: 25, y: 25 }, { x: 5, y: 25 }];
+    const boxC_disjoint = [{ x: 50, y: 50 }, { x: 70, y: 50 }, { x: 70, y: 70 }, { x: 50, y: 70 }];
+    const boxD_inside = [{ x: -2, y: -2 }, { x: 2, y: -2 }, { x: 2, y: 2 }, { x: -2, y: 2 }];
+
+    assert.strictEqual(doPolygonsIntersect2D(boxA, boxB_overlapping), true, 'Overlapping polygons must intersect');
+    assert.strictEqual(doPolygonsIntersect2D(boxA, boxC_disjoint), false, 'Disjoint polygons must not intersect');
+    assert.strictEqual(doPolygonsIntersect2D(boxA, boxD_inside), true, 'Nested polygon must intersect');
+  });
+
+  test('isTargetVisibleInFrustum culls photos after drone flies past the house', () => {
+    // House is a 20m x 20m square centered at (0, 0)
+    const housePoly = [
+      { x: -10, y: -10 },
+      { x: 10, y: -10 },
+      { x: 10, y: 10 },
+      { x: -10, y: 10 }
+    ];
+
+    // Drone flying North (heading 0) at altitude 30m, pitch -45 deg
+    // Approaching from South: y = -40, -20, 0 -> house in view!
+    assert.strictEqual(isTargetVisibleInFrustum(0, -40, 30, 0, -45, 70, 55, housePoly, 8), true, 'Approaching drone sees house');
+    assert.strictEqual(isTargetVisibleInFrustum(0, -20, 30, 0, -45, 70, 55, housePoly, 8), true, 'Near drone sees house');
+    assert.strictEqual(isTargetVisibleInFrustum(0, 0, 30, 0, -45, 70, 55, housePoly, 8), true, 'Drone directly over house sees house');
+
+    // Flying past house towards North boundary: y = +25, +45 -> camera looks ahead into empty ground!
+    assert.strictEqual(isTargetVisibleInFrustum(0, 25, 30, 0, -45, 70, 55, housePoly, 8), false, 'Drone past house facing away must be culled');
+    assert.strictEqual(isTargetVisibleInFrustum(0, 45, 30, 0, -45, 70, 55, housePoly, 8), false, 'Far drone facing away must be culled');
+
+    // Symmetrical test: Drone flying South (heading 180) from North
+    assert.strictEqual(isTargetVisibleInFrustum(0, 40, 30, 180, -45, 70, 55, housePoly, 8), true, 'Southbound approach sees house');
+    assert.strictEqual(isTargetVisibleInFrustum(0, -30, 30, 180, -45, 70, 55, housePoly, 8), false, 'Southbound past house must be culled');
+  });
+
+  test('3D Object Height preserves visibility of tall roof apex and chimneys', () => {
+    const housePoly = [
+      { x: -10, y: -10 },
+      { x: 10, y: -10 },
+      { x: 10, y: 10 },
+      { x: -10, y: 10 }
+    ];
+
+    // Position (y = 2) where ground plane is just outside FOV, but roof plane (12m height) is inside FOV
+    const groundOnly = isTargetVisibleInFrustum(0, 2, 30, 0, -45, 70, 55, housePoly, 0);
+    const withRoofHeight = isTargetVisibleInFrustum(0, 2, 30, 0, -45, 70, 55, housePoly, 12);
+    assert.strictEqual(groundOnly, false, 'Ground footprint at y=2 has cleared the house');
+    assert.strictEqual(withRoofHeight, true, 'Roof plane at 12m height must remain visible when close to property edge');
+  });
+
+  test('generateTargetSplatCoordinates in smartTrim mode trims lines and counts pruned photos', () => {
+    const mockLayer = {
+      targetPoly: [
+        { x: -15, y: -15 },
+        { x: 15, y: -15 },
+        { x: 15, y: 15 },
+        { x: -15, y: 15 }
+      ],
+      targetMode: 'polygon',
+      targetRadius: 25,
+      targetHeight: 8,
+      targetCullingMode: 'smartTrim',
+      targetGridPass: 'double',
+      centerLat: 40.0,
+      centerLon: -85.0
+    };
+
+    // 100m x 100m grid with 15m line spacing and 10m photo spacing
+    const result = generateTargetSplatCoordinates(100, 100, 0, 'stopAndShoot', 15, 10, 30, -45, mockLayer);
+
+    assert.ok(result.waypoints.length > 0, 'Must generate waypoints');
+    assert.ok(result.photos.length > 0, 'Must generate active photos');
+    assert.ok(mockLayer.targetPrunedCount > 0, 'Must record pruned photo count');
+    assert.ok(mockLayer.targetSavedPercent >= 20, 'Must save at least 20% of wasted photos on a 100m grid around a 30m house');
+    assert.ok(result.photos.length < mockLayer.targetCandidatePhotos, 'Active photos must be less than unpruned total candidate photos');
+  });
+
+  test('generateTargetSplatCoordinates in pruneOnly mode marks off-target waypoints with skipPhoto: true', () => {
+    const mockLayer = {
+      targetPoly: [
+        { x: -10, y: -10 },
+        { x: 10, y: -10 },
+        { x: 10, y: 10 },
+        { x: -10, y: 10 }
+      ],
+      targetMode: 'polygon',
+      targetRadius: 20,
+      targetHeight: 6,
+      targetCullingMode: 'pruneOnly',
+      targetGridPass: 'single',
+      centerLat: 40.0,
+      centerLon: -85.0
+    };
+
+    const result = generateTargetSplatCoordinates(80, 80, 0, 'stopAndShoot', 20, 10, 30, -45, mockLayer);
+
+    assert.ok(result.waypoints.length > 0, 'Must generate full grid waypoints');
+    const skippedWps = result.waypoints.filter(wp => wp.skipPhoto === true);
+    assert.ok(skippedWps.length > 0, 'Off-target waypoints must be flagged with skipPhoto: true');
+
+    // Build WPML and verify skipped waypoints do not emit takePhoto actions
+    const sampleWpActive = { lat: 40.0, lon: -85.0, alt: 30, pitch: -45, skipPhoto: false };
+    const sampleWpSkipped = { lat: 40.001, lon: -85.001, alt: 30, pitch: -45, skipPhoto: true };
+    const wpmlXml = buildWaylinesWpml([sampleWpActive, sampleWpSkipped], 30, 4, 'smoothTransition', 'goHome', -45, 'stopAndShoot', 'straight');
+
+    const takePhotoMatches = (wpmlXml.match(/<wpml:actionActuatorFunc>takePhoto<\/wpml:actionActuatorFunc>/g) || []).length;
+    assert.strictEqual(takePhotoMatches, 1, 'Only active waypoint must emit takePhoto action; skipped waypoint must be omitted');
+  });
+
+  test('Standard grid patterns (single and double) remain completely unaffected', () => {
+    const singleGrid = generateGridCoordinates(60, 60, 0, 'single', 'stopAndShoot', 15, 15);
+    const doubleGrid = generateGridCoordinates(60, 60, 0, 'double', 'stopAndShoot', 15, 15);
+
+    assert.strictEqual(singleGrid.waypoints.length, 25, 'Single grid 60x60 @ 15m must yield 25 points');
+    assert.strictEqual(doubleGrid.waypoints.length, 49, 'Double grid 60x60 @ 15m must yield 49 points (Pass 1 + Pass 2 seamless)');
+    assert.strictEqual(singleGrid.waypoints.every(wp => !wp.skipPhoto), true, 'Standard grid waypoints must not have skipPhoto flag');
+  });
+});
+
+describe('Target Splat Grid Waypoint & Marker Synchronization Regression Tests (v1.77.1)', () => {
+  test('generateLayerWaypoints propagates skipPhoto and targetVisible flags to returned waypoints', () => {
+    const mockLayer = {
+      id: 'target-layer-1',
+      name: 'Target Splat Layer',
+      enabled: true,
+      pattern: 'target-splat',
+      gridWidth: 80,
+      gridHeight: 80,
+      gridRotation: 0,
+      altitude: 30,
+      speed: 4,
+      captureMode: 'stopAndShoot',
+      gimbalPitch: -45,
+      targetRadius: 15,
+      targetHeight: 6,
+      targetMode: 'radius',
+      targetCullingMode: 'pruneOnly',
+      targetGridPass: 'single',
+      centerLat: 40.0,
+      centerLon: -85.0
+    };
+
+    const res = generateLayerWaypoints(mockLayer, 40.0, -85.0);
+    assert.ok(res.waypoints.length > 0, 'Must generate waypoints');
+
+    const skippedWps = res.waypoints.filter(wp => wp.skipPhoto === true);
+    const activeWps = res.waypoints.filter(wp => wp.skipPhoto === false);
+
+    assert.ok(skippedWps.length > 0, 'generateLayerWaypoints must retain skipPhoto: true on off-target waypoints');
+    assert.ok(activeWps.length > 0, 'generateLayerWaypoints must retain skipPhoto: false on active photo waypoints');
+    assert.strictEqual(skippedWps[0].targetVisible, false, 'Skipped waypoints must have targetVisible: false');
+    assert.strictEqual(activeWps[0].targetVisible, true, 'Active waypoints must have targetVisible: true');
+  });
+
+  test('getMarkerIcon renders muted styling, dashed border, and hides camera cone when wp.skipPhoto is true', () => {
+    const activeWp = {
+      lat: 40.0,
+      lon: -85.0,
+      alt: 30,
+      pitch: -45,
+      heading: 0,
+      skipPhoto: false
+    };
+
+    const skippedWp = {
+      lat: 40.001,
+      lon: -85.0,
+      alt: 30,
+      pitch: -45,
+      heading: 0,
+      skipPhoto: true
+    };
+
+    const waypoints = [activeWp, skippedWp, { lat: 40.002, lon: -85.0, alt: 30, pitch: -45, heading: 0 }];
+
+    const origDivIcon = L.divIcon;
+    try {
+      L.divIcon = (opts) => ({ options: opts });
+
+      // Active marker
+      const activeIcon = getMarkerIcon(activeWp, 0, waypoints, 0);
+      assert.ok(!activeIcon.options.className.includes('wp-marker-skipped'), 'Active icon must not have wp-marker-skipped class');
+      assert.ok(activeIcon.options.html.includes('wp-camera-cone'), 'Active icon must show camera cone');
+
+      // Skipped marker
+      const skippedIcon = getMarkerIcon(skippedWp, 1, waypoints, 0);
+      assert.ok(skippedIcon.options.className.includes('wp-marker-skipped'), 'Skipped icon must have wp-marker-skipped class');
+      assert.ok(!skippedIcon.options.html.includes('wp-camera-cone'), 'Skipped icon must NOT show camera cone');
+      assert.ok(skippedIcon.options.html.includes('wp-dot-skipped'), 'Skipped icon must have wp-dot-skipped class');
+      assert.ok(skippedIcon.options.html.includes('border-style: dashed'), 'Skipped icon must have dashed border');
+      assert.ok(skippedIcon.options.html.includes('#64748b'), 'Skipped icon must use muted slate gray color');
+    } finally {
+      L.divIcon = origDivIcon;
+    }
+  });
+
+  test('calculateCameraGroundFrustum normalizes positive pitch angles to downward negative pitch', () => {
+    const footprintNegative = calculateCameraGroundFrustum(0, 0, 30, 0, -45, 70, 55, 0);
+    const footprintPositive = calculateCameraGroundFrustum(0, 0, 30, 0, 45, 70, 55, 0);
+
+    assert.strictEqual(footprintNegative.length, 4);
+    assert.strictEqual(footprintPositive.length, 4);
+    assert.strictEqual(
+      footprintNegative[0].y.toFixed(3),
+      footprintPositive[0].y.toFixed(3),
+      'Positive pitch (+45) must be normalized to downward (-45) footprint'
+    );
+  });
+
+  test('getLocalTargetPolygon recomputes coordinates from geodetic lat/lon relative to center', () => {
+    // 0.0001 deg latitude offset is roughly 11.1 meters North
+    const mockLayer = {
+      targetMode: 'polygon',
+      targetPoly: [
+        { lat: 40.0001, lon: -85.0, x: 9999, y: 9999 }, // has stale x/y
+        { lat: 40.0, lon: -85.0001, x: 9999, y: 9999 },
+        { lat: 39.9999, lon: -85.0, x: 9999, y: 9999 }
+      ]
+    };
+
+    const poly = getLocalTargetPolygon(mockLayer, 40.0, -85.0, 0);
+    assert.strictEqual(poly.length, 3);
+    assert.ok(Math.abs(poly[0].y - 11.1) < 1.0, `Expected Y offset near 11.1m, got ${poly[0].y}`);
+    assert.ok(poly[0].y < 50, 'Must not use stale 9999m value');
+  });
+});
+
+describe('Target Splat Freeform Polygon Perimeter Tracing & Suppression Tests (v1.77.2)', () => {
+  test('setTargetPolyEditMode toggles editing state, button labels, and map crosshair cursor', () => {
+    // Check that helper functions exist in global context
+    assert.strictEqual(typeof setTargetPolyEditMode, 'function');
+    
+    // Activating edit mode
+    setTargetPolyEditMode(true);
+    assert.strictEqual(isTargetPolyEditActive, true);
+    if (typeof map !== 'undefined' && map && map.getContainer) {
+      assert.strictEqual(map.getContainer().style.cursor, 'crosshair');
+    }
+
+    // Deactivating edit mode
+    setTargetPolyEditMode(false);
+    assert.strictEqual(isTargetPolyEditActive, false);
+    if (typeof map !== 'undefined' && map && map.getContainer) {
+      assert.strictEqual(map.getContainer().style.cursor, '');
+    }
+  });
+
+  test('addTargetPolygonPoint computes polygon centroid and re-centers grid when >= 3 points placed', () => {
+    const layer = {
+      id: 'target-layer-test',
+      pattern: 'target-splat',
+      targetMode: 'polygon',
+      targetPoly: [],
+      centerLat: 40.0,
+      centerLon: -85.0
+    };
+
+    const prevGetActiveLayer = global.getActiveLayer;
+    global.getActiveLayer = () => layer;
+
+    try {
+      // Add Corner 1: (40.001, -85.001)
+      addTargetPolygonPoint(40.001, -85.001);
+      assert.strictEqual(layer.targetPoly.length, 1);
+      assert.strictEqual(isTargetPolyEditActive, true);
+
+      // Add Corner 2: (40.001, -84.999)
+      addTargetPolygonPoint(40.001, -84.999);
+      assert.strictEqual(layer.targetPoly.length, 2);
+
+      // Add Corner 3: (39.999, -85.000)
+      addTargetPolygonPoint(39.999, -85.000);
+      assert.strictEqual(layer.targetPoly.length, 3);
+
+      // Centroid should be avg latitude: (40.001 + 40.001 + 39.999) / 3 = 40.000333...
+      // and avg longitude: (-85.001 + -84.999 + -85.000) / 3 = -85.0
+      assert.ok(Math.abs(layer.centerLat - 40.000333) < 0.0001, `Centroid Lat should be ~40.000333, got ${layer.centerLat}`);
+      assert.ok(Math.abs(layer.centerLon - -85.0) < 0.0001, `Centroid Lon should be ~-85.0, got ${layer.centerLon}`);
+    } finally {
+      global.getActiveLayer = prevGetActiveLayer;
+      setTargetPolyEditMode(false);
+    }
+  });
+
+  test('drawFlightPath suppresses waypoints when isTargetTracingActive is true', () => {
+    const layer = {
+      id: 'target-suppress-test',
+      pattern: 'target-splat',
+      targetMode: 'polygon',
+      targetPoly: [{ lat: 40.0, lon: -85.0 }], // < 3 points
+      centerLat: 40.0,
+      centerLon: -85.0
+    };
+
+    const prevGetActiveLayer = global.getActiveLayer;
+    global.getActiveLayer = () => layer;
+
+    try {
+      let statsUpdatedWithNull = false;
+      const prevUpdateStatsPanel = global.updateStatsPanel;
+      global.updateStatsPanel = (stats) => {
+        if (stats === null) statsUpdatedWithNull = true;
+      };
+
+      const dummyWps = [{ lat: 40.0, lon: -85.0, alt: 20 }];
+      const dummyPhotos = [{ lat: 40.0, lon: -85.0 }];
+
+      // Tracing active because targetMode is 'polygon' and targetPoly.length < 3
+      drawFlightPath(dummyWps, dummyPhotos, 40.0, -85.0, 100, 100, 0);
+      assert.strictEqual(statsUpdatedWithNull, true, 'drawFlightPath must exit early and clear stats when tracing');
+
+      global.updateStatsPanel = prevUpdateStatsPanel;
+    } finally {
+      global.getActiveLayer = prevGetActiveLayer;
+    }
+  });
+});
+
+
 
 
 

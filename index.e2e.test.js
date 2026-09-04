@@ -2851,17 +2851,76 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(zoomTestResult.hasPitchLabel, true, 'Waypoint marker must contain integrated pitch label');
     assert.notStrictEqual(zoomTestResult.pitchDisplayAt19, 'none', 'Pitch label should be visible at close zoom 19');
   });
+
+  test('E2E: Target Splat Grid pattern selection toggles target-splat-container and updates active layer', async () => {
+    const result = await page.evaluate(async () => {
+      const card = document.querySelector('.pattern-card[data-value="target-splat"]');
+      const container = document.getElementById('target-splat-container');
+      const gridSelect = document.getElementById('grid-type');
+
+      if (!card || !container || !gridSelect) {
+        return { success: false, reason: 'Target splat card, container, or select missing' };
+      }
+
+      // 1. Click target-splat pattern card
+      card.click();
+      await new Promise(r => setTimeout(r, 60));
+
+      const isCardActive = card.classList.contains('active');
+      const selectValue = gridSelect.value;
+      const containerDisplay = window.getComputedStyle(container).display;
+
+      // 2. Test strategy change with real element ID target-splat-culling-mode
+      const strategySelect = document.getElementById('target-splat-culling-mode');
+      if (strategySelect) {
+        strategySelect.value = 'pruneOnly';
+        strategySelect.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+
+      // 3. Test object height slider with real element ID target-splat-height
+      const heightInput = document.getElementById('target-splat-height');
+      if (heightInput) {
+        heightInput.value = '12';
+        heightInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+
+      // 4. Test radius slider
+      const radiusInput = document.getElementById('target-splat-radius');
+      if (radiusInput) {
+        radiusInput.value = '20';
+        radiusInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+
+      await new Promise(r => setTimeout(r, 60));
+
+      const activeLayer = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+      const skippedMarkers = document.querySelectorAll('.custom-wp-marker.wp-marker-skipped');
+      const skippedDots = document.querySelectorAll('.wp-dot-skipped');
+      const savedPill = document.getElementById('target-splat-saved-pill');
+      const pillVisible = savedPill && window.getComputedStyle(savedPill).display !== 'none';
+
+      return {
+        success: isCardActive && selectValue === 'target-splat' && containerDisplay !== 'none' &&
+                 activeLayer && activeLayer.targetCullingMode === 'pruneOnly' &&
+                 activeLayer.targetHeight === 12 && activeLayer.targetRadius === 20 &&
+                 skippedMarkers.length > 0 && skippedDots.length > 0,
+        isCardActive,
+        selectValue,
+        containerDisplay,
+        activeLayerPattern: activeLayer ? activeLayer.pattern : null,
+        targetCullingMode: activeLayer ? activeLayer.targetCullingMode : null,
+        targetHeight: activeLayer ? activeLayer.targetHeight : null,
+        targetRadius: activeLayer ? activeLayer.targetRadius : null,
+        skippedMarkersCount: skippedMarkers.length,
+        skippedDotsCount: skippedDots.length,
+        pillVisible
+      };
+    });
+
+    assert.ok(result.success, `Target Splat Grid E2E UI selection failed: ${JSON.stringify(result)}`);
+    assert.strictEqual(result.selectValue, 'target-splat');
+    assert.strictEqual(result.activeLayerPattern, 'target-splat');
+    assert.strictEqual(result.targetCullingMode, 'pruneOnly');
+    assert.ok(result.skippedMarkersCount > 0, 'Must have skipped markers in DOM');
+  });
 });
-
-
-
-
-
-
-
-
-
-
-
-
-

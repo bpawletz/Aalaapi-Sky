@@ -1,5 +1,55 @@
 # Changelog
 
+## [1.77.2] - 2026-09-03
+
+### Fixed
+- **Target Splat Freeform Polygon Perimeter Tracing & Grid Suppression:**
+  - Resolved an issue where flight grid waypoints, camera sight cones, and lines remained on screen while attempting to trace a freeform house perimeter polygon, obscuring rooflines and property lines.
+  - While actively tracing (`isTargetPolyEditActive` or polygon mode with $< 3$ vertices), flight waypoints and lines are cleanly hidden, and the map cursor switches to a precision `crosshair`.
+  - Fixed map click handler so clicking on the map immediately adds polygon corner points instead of moving the grid center.
+  - Enhanced real-time guidance text (`#target-poly-status-text`) to guide pilots step-by-step through marking Corner 1, Corner 2, and Corner 3+.
+  - Added visible, numbered green circular badges (`1`, `2`, `3`...) connected by dashed lines for every placed corner, with drag-to-adjust and click-to-delete support.
+  - Clicking "Clear" resets the perimeter and immediately re-enters precision tracing mode.
+  - Placing $\ge 3$ vertices automatically computes the polygon centroid, centers the survey grid directly over the house, and regenerates the flight plan upon completion.
+
+## [1.77.1] - 2026-09-03
+
+### Fixed
+- **Target Splat Waypoint & Photo Pruning Synchronization:**
+  - Preserved `skipPhoto` and `targetVisible` flags in `generateLayerWaypoints` so that waypoint mapping accurately identifies transit-only vs active photo waypoints.
+  - Resolved an issue where off-target waypoints in Photo Pruning mode still generated photo triggers in DJI WPML missions; skipped waypoints are now correctly excluded from camera trigger actions.
+  - Updated waypoint marker rendering in `getMarkerIcon` to visually distinguish skipped transit waypoints (rendered in muted slate gray `#64748b` with a dashed border, dimmed pitch label, and no camera cone) from active photo waypoints (vibrant cyan with forward-projecting camera cone).
+  - Enhanced waypoint map tooltips to explicitly indicate `📷 Photo: Active (Target in View)` or `📷 Photo: Skipped (Transit Only)`.
+- **Target Splat Reactive Controls & Geodetics:**
+  - Bound real-time `input` and `change` event listeners for Target Splat Radius (`#target-splat-radius`), Object Height (`#target-splat-height`), Culling Strategy (`#target-splat-culling-mode`), and Grid Passes (`#target-splat-grid-pass`) to update active layer settings and regenerate flight paths immediately.
+  - Enforced dynamic geodetic conversion relative to the active grid center in `getLocalTargetPolygon` to eliminate stale coordinate drift.
+  - Normalized camera gimbal pitch angles in `calculateCameraGroundFrustum` (`-Math.abs(...)`) to guarantee downward frustum projection.
+  - Added dedicated Target Splat legend entry in the map legend distinguishing photo waypoints, skipped transit waypoints, and the target boundary overlay.
+
+## [1.77.0] - 2026-09-03
+
+### Added
+- **Target Splat Grid (Target-Aware 3D Frustum Culling & Smart Trimming):** Introduced a dedicated photogrammetry and Gaussian Splatting flight pattern (`target-splat`) specifically optimized for houses and single-property structures.
+  - **Geometric 3D Frustum Calculation:** Evaluates the camera's real-time 3D field of view (HFOV, VFOV) and projected ground footprint at each candidate trigger point across all flight legs based on altitude, heading, and oblique gimbal pitch (e.g. $-45^\circ$, $-60^\circ$).
+  - **Smart Line Trimming & Photo Pruning:** Automatically detects when the camera points away into empty background or neighboring parcels after passing the house. Supports **Smart Line Trimming** (shortens flight lines to turn around early, saving 30%–50% flight time and battery) and **Photo Pruning Only** (skips camera triggers for off-target waypoints).
+  - **3D Object Height Envelope:** Incorporates an adjustable structure height ($H_{obj}$) slider (0m–35m) to project against both ground ($Z=0$) and roof ($Z=H_{obj}$) planes, preventing rooflines, dormers, and chimneys from premature clipping at oblique angles.
+  - **Interactive Target Polygon & Radius:** Allows pilots to click on the map to define custom house/parcel perimeter polygons with draggable vertex handles, or use an adjustable center radius circle.
+  - **Clean COLMAP & Splat Datasets:** Eliminates off-target background clutter, significantly reducing floaters and reconstruction artifacts in 3D Gaussian Splatting, NeRF, and photogrammetry pipelines.
+
+## [1.76.5] - 2026-09-03
+
+### Fixed
+- **On-Axis Turn Flight Line Headings & C-Shape Curve Elimination:** Resolved an issue where Double and Single Grid missions exported with `followWayline` mode dynamically tracked spline curve tangents through turns, causing the drone to arc in a C-shape and capture turn photos at diagonal angles. Grid missions now export locked flight-line headings under `smoothTransition` mode with `waypointHeadingAngleEnable: 1`, ensuring the drone executes precise on-axis $90^\circ$ turns and captures every image aligned with its flight line ($0.1^\circ, 180^\circ, 90^\circ, 270^\circ$).
+- **WPML Sanitizer & Validation Coherence:** Removed legacy `followWayline` overrides from `validateAndFixWpml` and updated `validateWpmlMission` Rule 1 to validate non-zero clamped `smoothTransition` headings across all grid patterns.
+
+## [1.76.4] - 2026-09-03
+
+### Fixed
+- **Double Grid Flight Line Camera Heading & Turn Alignment:**
+  - Assigned explicit flight-line headings in `generateGridCoordinates` and `generateCircularGridCoordinates` for each leg (Pass 1: North $0^\circ$/South $180^\circ$; Pass 2: East $90^\circ$/West $270^\circ$).
+  - Fixed turnaround waypoint heading calculation in `getDefaultHeading` and 2D/3D FPV visualizations so that turnaround photos at the end of flight legs continue facing along the flight line rather than snapping sideways ($90^\circ$) to the turnaround connector segment.
+  - Ensured full DJI WPML compliance for Mini 4 Pro ($68$) missions with `toPointAndStopWithContinuityCurvature` and `followWayline`.
+
 ## [1.76.3] - 2026-09-03
 
 ### Fixed
