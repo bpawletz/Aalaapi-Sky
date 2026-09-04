@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.76.3</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.77.2</span></h1>
         </div>
       </div>
 
@@ -157,6 +157,7 @@
             <select id="grid-type" class="form-select" style="display: none;">
               <option value="single">2D Map (Nadir Grid)</option>
               <option value="double" selected>3D Splat (Double Grid)</option>
+              <option value="target-splat">Target Splat (Frustum Grid)</option>
               <option value="orbit">3D Object (Circular Orbit)</option>
               <option value="multi-orbit">3D Object (Multi-Tiered Orbit)</option>
               <option value="grid-orbit-combo">2D + 3D Hybrid (Grid + Orbit Combo)</option>
@@ -184,6 +185,14 @@
                   <line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/>
                 </svg>
                 <span>Double Grid</span>
+              </div>
+              <div class="pattern-card" data-value="target-splat" title="Target Splat (3D Frustum-Pruned Grid)">
+                <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="8" stroke-dasharray="2,2"/>
+                  <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+                  <rect x="9" y="9" width="6" height="6" rx="1" fill="currentColor"/>
+                </svg>
+                <span>Target Splat</span>
               </div>
               <div class="pattern-card" data-value="orbit" title="3D Object (Circular Orbit)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -355,6 +364,89 @@
               <input type="checkbox" id="road-snap" checked style="opacity: 0; width: 0; height: 0;">
               <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
             </label>
+          </div>
+
+          <!-- Target Splat 3D Frustum Culling & Target Envelope Controls -->
+          <div id="target-splat-container" class="control-group hidden" style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 8px; padding: 12px; margin-top: 10px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="8"/>
+                  <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+                  <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                </svg>
+                Target Object &amp; 3D Frustum Filter
+              </strong>
+              <span id="target-splat-saved-pill" class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 0.68rem; padding: 2px 6px; border-radius: 4px; display: none;">0 pruned</span>
+            </div>
+
+            <!-- Boundary Mode Switcher -->
+            <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+              <button type="button" id="target-mode-poly-btn" class="btn-tool" style="flex: 1; padding: 5px 8px; font-size: 0.72rem; border-radius: 6px;">
+                📍 Freeform Polygon
+              </button>
+              <button type="button" id="target-mode-radius-btn" class="btn-tool active" style="flex: 1; padding: 5px 8px; font-size: 0.72rem; border-radius: 6px;">
+                ⭕ Center Radius
+              </button>
+            </div>
+
+            <!-- Polygon Drawing & Actions -->
+            <div id="target-poly-controls" class="hidden" style="margin-bottom: 10px;">
+              <div style="font-size: 0.74rem; color: #a7f3d0; line-height: 1.35; margin-bottom: 6px;">
+                <span id="target-poly-status-text">Click on map to place perimeter vertices around the house. Drag markers to adjust.</span>
+              </div>
+              <div style="display: flex; gap: 6px;">
+                <button type="button" id="target-poly-draw-toggle" class="btn-secondary" style="flex: 1; padding: 4px 8px; font-size: 0.7rem; border-radius: 4px;">
+                  ✏️ Edit Target Polygon
+                </button>
+                <button type="button" id="target-poly-clear-btn" class="btn-secondary" style="padding: 4px 8px; font-size: 0.7rem; border-radius: 4px; color: #f87171;">
+                  🗑️ Clear
+                </button>
+              </div>
+            </div>
+
+            <!-- Center Radius Slider (Radius Mode) -->
+            <div id="target-radius-controls" style="margin-bottom: 10px;">
+              <div class="control-label" style="margin-bottom: 2px;">
+                <span style="font-size: 0.75rem; color: var(--text-muted);">Target Object Radius</span>
+                <span class="value-display" style="font-size: 0.75rem;"><span id="target-radius-val">25</span> <span class="unit-dist">m</span></span>
+              </div>
+              <input type="range" id="target-splat-radius" min="5" max="150" value="25" class="slider" aria-label="Target Radius">
+            </div>
+
+            <!-- Object Height Slider (Prevents Roof Clipping) -->
+            <div style="margin-bottom: 10px;">
+              <div class="control-label" style="margin-bottom: 2px;">
+                <span style="font-size: 0.75rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 4px;" title="Height of house/structure from ground to roof peak. Used to prevent roof clipping at oblique camera pitch.">
+                  Structure Height (Roof Peak)
+                  <span style="cursor: help; color: var(--accent-cyan);">ⓘ</span>
+                </span>
+                <span class="value-display" style="font-size: 0.75rem;"><span id="target-height-val">8</span> <span class="unit-dist">m</span></span>
+              </div>
+              <input type="range" id="target-splat-height" min="0" max="35" value="8" class="slider" aria-label="Target Object Height">
+              <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 2px;">
+                Guarantees 3D roofline &amp; chimneys stay in view without premature clipping.
+              </div>
+            </div>
+
+            <!-- Culling Strategy -->
+            <div style="margin-bottom: 10px;">
+              <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 3px;">Optimization Strategy</label>
+              <select id="target-splat-culling-mode" class="form-select" style="font-size: 0.75rem; padding: 4px 8px; width: 100%; border-radius: 6px; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main);">
+                <option value="smartTrim" selected>Smart Line Trimming (Turn early, save 30-50% flight time)</option>
+                <option value="pruneOnly">Photo Pruning Only (Fly full grid, skip off-target shots)</option>
+                <option value="convergent">Convergent Tracking (Aim camera at target centroid)</option>
+              </select>
+            </div>
+
+            <!-- Grid Passes for Target Splat -->
+            <div>
+              <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 3px;">Grid Passes</label>
+              <select id="target-splat-grid-pass" class="form-select" style="font-size: 0.75rem; padding: 4px 8px; width: 100%; border-radius: 6px; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main);">
+                <option value="double" selected>Double Grid (Crosshatch - Recommended for 3D Splats)</option>
+                <option value="single">Single Grid (Parallel Passes)</option>
+              </select>
+            </div>
           </div>
 
           <div id="exclusion-altitude-container" class="control-group hidden" style="background: rgba(239, 68, 68, 0.06); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 10px; margin-top: 10px;">
@@ -1273,6 +1365,15 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🎯 Target Splat Grid (3D Frustum Culling &amp; Smart Trimming)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Eliminates off-target, empty background photos for 3D Gaussian Splatting and house photogrammetry. Real-time 3D camera frustums intersect target polygons and 3D rooflines to prune wasted shots, prevent background floaters in COLMAP, and trim flight lines to save 30%–50% flight time.
+            </p>
+          </div>
+
           <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;">
             <strong style="color: var(--accent-cyan); font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🛡️ 3D Exclusion Zones &amp; Perimeter Detour Routing
@@ -1753,7 +1854,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.76.3</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.77.2</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -1821,6 +1922,43 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.77.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Target Splat Clean Perimeter Tracing &amp; Grid Suppression:</strong> Automatically hides flight grid waypoints, camera cones, and path lines while tracing a house perimeter so satellite imagery remains unobstructed.</li>
+              <li><strong>Direct Map Click Corner Placement:</strong> Enables instant map-click vertex placement with precision crosshair cursor and dynamic step-by-step guidance text for each corner.</li>
+              <li><strong>Numbered Drag &amp; Drop Vertices:</strong> Renders green numbered badges (1, 2, 3...) connected by dashed lines for every corner, with drag-to-adjust and click-to-delete support.</li>
+              <li><strong>Automatic Centroid Alignment:</strong> Automatically computes house centroid from placed corners, aligns the survey grid directly over the structure, and regenerates waypoints on completion.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.77.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Target Splat Waypoint &amp; Photo Pruning Fixes:</strong> Preserved <code>skipPhoto</code> and <code>targetVisible</code> flags across layer waypoint generation so WPML export excludes camera triggers on off-target waypoints in Photo Pruning mode.</li>
+              <li><strong>Visual Skipped Waypoint Distinction:</strong> Rendered transit-only waypoints with muted slate gray dots, dashed borders, dimmed pitch labels, and hidden camera cones to immediately identify skipped shots on the map.</li>
+              <li><strong>Reactive Controls &amp; Dynamic Geodetics:</strong> Added instant-update listeners for radius, height, culling mode, and pass dropdowns, normalized pitch angles, and ensured accurate polygon geodetics.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.77.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Target Splat Grid (3D Frustum Culling &amp; Smart Trimming):</strong> Dedicated photogrammetry pattern for Gaussian Splatting and house modeling. Computes real-time 3D camera frustums to cull empty off-target photos and trim flight lines, eliminating background floaters in COLMAP and saving 30%–50% flight time.</li>
+              <li><strong>Interactive Target Polygon &amp; 3D Object Height:</strong> Click map to define custom house/parcel perimeter polygons with draggable handles or use center radius. Includes structure height ($H_{obj}$) slider to guarantee 3D roofline and chimney coverage without premature clipping at oblique angles.</li>
+              <li><strong>Multi-Mode Optimization:</strong> Choose between Smart Line Trimming, Photo Pruning Only, or Convergent Target Centroid Tracking with single or double grid passes.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.76.5):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>On-Axis Turn Flight Line Headings:</strong> Grid missions now export locked flight-line headings under <code>smoothTransition</code> mode with <code>waypointHeadingAngleEnable: 1</code>, ensuring the drone executes precise on-axis 90&deg; turns and captures every image aligned with its flight line (0.1&deg;, 180&deg;, 90&deg;, 270&deg;) without diagonal curve arcing.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.76.4):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Double Grid Flight Line Camera Heading &amp; Turn Alignment:</strong> Assigned dedicated flight-line headings in <code>generateGridCoordinates</code> for each leg, ensuring turnaround waypoint photos at the end of flight legs continue facing along the flight line rather than snapping sideways (90&deg;) to the turnaround connector.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.76.3):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Double Grid Zoom Animation Synchronization &amp; Marker Lockstep:</strong> Preserved Leaflet's built-in CSS transform zoom animations on marker icons and waypoint containers, ensuring waypoint markers and flight polylines remain in 100% animated lockstep during zoom level transitions.</li>
