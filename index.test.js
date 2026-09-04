@@ -9427,3 +9427,187 @@ describe('Target Splat Freeform Polygon Perimeter Tracing & Suppression Tests (v
 
 
 
+
+// ============================================================
+// v1.77.4: generateTargetPerimeterOrbit & unit label regression tests
+// ============================================================
+
+describe('generateTargetPerimeterOrbit (v1.77.4)', () => {
+  function squarePoly(half = 10) {
+    return [
+      { x: -half, y: -half },
+      { x:  half, y: -half },
+      { x:  half, y:  half },
+      { x: -half, y:  half }
+    ];
+  }
+
+  test('returns non-empty waypoints and photos for polygon mode', () => {
+    const layer = { targetMode: 'polygon', targetRadius: 25 };
+    const result = generateTargetPerimeterOrbit(layer, 5, 20, -55, 3, 0, 0, squarePoly(10), 50);
+    assert.ok(result.waypoints.length > 0, 'Should produce waypoints');
+    assert.ok(result.photos.length > 0, 'Should produce photos');
+    assert.strictEqual(result.waypoints.length, result.photos.length, 'waypoints and photos equal length');
+  });
+
+  test('all waypoints farther from centroid than original polygon vertices', () => {
+    const layer = { targetMode: 'polygon', targetRadius: 25 };
+    const result = generateTargetPerimeterOrbit(layer, 5, 20, -55, 3, 0, 0, squarePoly(10), 50);
+    result.waypoints.forEach(wp => {
+      const dist = Math.hypot(wp.x, wp.y);
+      assert.ok(dist >= 10 - 0.1, `Waypoint dist ${dist.toFixed(2)} should be >= 10m from centroid`);
+    });
+  });
+
+  test('all waypoints have inward-facing heading pointing toward centroid', () => {
+    const layer = { targetMode: 'polygon', targetRadius: 25 };
+    const result = generateTargetPerimeterOrbit(layer, 5, 20, -55, 3, 0, 0, squarePoly(10), 50);
+    result.waypoints.forEach(wp => {
+      const expectedRad = Math.atan2(-wp.x, -wp.y) * (180.0 / Math.PI);
+      const expected = ((expectedRad % 360) + 360) % 360;
+      const actual = ((wp.heading % 360) + 360) % 360;
+      const diff = Math.min(Math.abs(expected - actual), 360 - Math.abs(expected - actual));
+      assert.ok(diff < 1.0, `Heading ${actual.toFixed(1)} should be ~${expected.toFixed(1)} (inward)`);
+    });
+  });
+
+  test('all waypoints have correct altitude and pitch', () => {
+    const layer = { targetMode: 'polygon', targetRadius: 25 };
+    const result = generateTargetPerimeterOrbit(layer, 5, 18, -65, 3, 0, 0, squarePoly(10), 50);
+    result.waypoints.forEach(wp => {
+      assert.strictEqual(wp.alt, 18, 'Altitude should match');
+      assert.strictEqual(wp.pitch, -65, 'Pitch should match');
+    });
+  });
+
+  test('auto altitude defaults to 65% of grid altitude when orbitAlt is null', () => {
+    const layer = { targetMode: 'polygon', targetRadius: 25 };
+    const result = generateTargetPerimeterOrbit(layer, 5, null, -55, 3, 0, 0, squarePoly(10), 50);
+    result.waypoints.forEach(wp => {
+      assert.ok(Math.abs(wp.alt - 32.5) < 0.001, `Auto alt should be 32.5, got ${wp.alt}`);
+    });
+  });
+
+  test('radius mode returns circular orbit at targetRadius + standoff', () => {
+    const layer = { targetMode: 'radius', targetRadius: 20 };
+    const result = generateTargetPerimeterOrbit(layer, 5, 20, -55, 3, 0, 0, [], 50);
+    assert.ok(result.waypoints.length > 0, 'Should produce waypoints for radius mode');
+    result.waypoints.forEach(wp => {
+      const dist = Math.hypot(wp.x, wp.y);
+      assert.ok(Math.abs(dist - 25) < 2.0, `Radius mode dist ${dist.toFixed(2)} should be ~25m`);
+    });
+  });
+
+  test('all waypoints have isPerimeterOrbit: true', () => {
+    const layer = { targetMode: 'polygon', targetRadius: 25 };
+    const result = generateTargetPerimeterOrbit(layer, 5, 20, -55, 3, 0, 0, squarePoly(10), 50);
+    result.waypoints.forEach(wp => {
+      assert.strictEqual(wp.isPerimeterOrbit, true, 'isPerimeterOrbit flag should be true');
+    });
+  });
+
+  test('generateTargetSplatCoordinates with targetPerimeterPass false produces no orbit waypoints', () => {
+    const layer = {
+      centerLat: 40.0, centerLon: -85.0,
+      targetMode: 'radius', targetRadius: 20, targetHeight: 6,
+      targetCullingMode: 'convergent', targetGridPass: 'single',
+      targetPoly: [], targetPerimeterPass: false
+    };
+    const result = generateTargetSplatCoordinates(60, 60, 0, 'photo', 8, 8, 40, -60, layer);
+    const orbitWps = result.waypoints.filter(wp => wp.isPerimeterOrbit === true);
+    assert.strictEqual(orbitWps.length, 0, 'No orbit waypoints when targetPerimeterPass is false');
+  });
+
+  test('generateTargetSplatCoordinates with targetPerimeterPass true appends orbit waypoints', () => {
+    const layer = {
+      centerLat: 40.0, centerLon: -85.0,
+      targetMode: 'radius', targetRadius: 20, targetHeight: 6,
+      targetCullingMode: 'convergent', targetGridPass: 'single',
+      targetPoly: [],
+      targetPerimeterPass: true, targetPerimeterStandoff: 8,
+      targetPerimeterAltitude: null, targetPerimeterPitch: -55
+    };
+    const result = generateTargetSplatCoordinates(60, 60, 0, 'photo', 8, 8, 40, -60, layer);
+    const orbitWps = result.waypoints.filter(wp => wp.isPerimeterOrbit === true);
+    assert.ok(orbitWps.length > 0, 'Should append orbit waypoints when targetPerimeterPass is true');
+  });
+});
+
+describe('Target Splat Unit Label Fix (v1.77.4)', () => {
+  test('syncDisplayValues sets target-radius-unit to ft in imperial mode', () => {
+    const elements = {};
+    const makeEl = () => ({ value: '', textContent: '', checked: false, classList: { add: ()=>{}, remove: ()=>{} }, style: {} });
+    const prevGetById = global.document.getElementById;
+    // Stub updateGimbalPitchVisualizer to avoid unrelated DOM dependency
+    const prevVisualizer = global.updateGimbalPitchVisualizer;
+    global.updateGimbalPitchVisualizer = () => {};
+    global.document.getElementById = (id) => {
+      if (!elements[id]) elements[id] = makeEl();
+      return elements[id];
+    };
+    elements['unit-system'] = { value: 'imperial' };
+    cachedUnitSystem = null;
+    elements['target-splat-radius'] = { value: '25' };
+    elements['target-radius-val'] = makeEl();
+    elements['target-radius-unit'] = { textContent: 'm' };
+    elements['target-splat-height'] = { value: '8' };
+    elements['target-height-val'] = makeEl();
+    elements['target-height-unit'] = { textContent: 'm' };
+    elements['target-perimeter-standoff'] = { value: '8' };
+    elements['target-perimeter-standoff-val'] = makeEl();
+    elements['target-perimeter-standoff-unit'] = { textContent: 'm' };
+    elements['target-perimeter-alt'] = { value: '0' };
+    elements['target-perimeter-alt-val'] = makeEl();
+    elements['target-perimeter-alt-unit'] = makeEl();
+    elements['target-perimeter-pitch'] = { value: '-55' };
+    elements['target-perimeter-pitch-val'] = makeEl();
+    try {
+      syncDisplayValues();
+      assert.strictEqual(elements['target-radius-unit'].textContent, 'ft', 'target-radius-unit should be ft');
+      assert.strictEqual(elements['target-height-unit'].textContent, 'ft', 'target-height-unit should be ft');
+      assert.strictEqual(elements['target-perimeter-standoff-unit'].textContent, 'ft', 'perimeter standoff unit should be ft');
+      assert.strictEqual(elements['target-perimeter-alt-val'].textContent, 'Auto', 'Altitude display should be Auto when 0');
+    } finally {
+      global.document.getElementById = prevGetById;
+      global.updateGimbalPitchVisualizer = prevVisualizer;
+      cachedUnitSystem = null;
+    }
+  });
+
+  test('syncDisplayValues sets target-radius-unit to m in metric mode', () => {
+    const elements = {};
+    const makeEl = () => ({ value: '', textContent: '', checked: false, classList: { add: ()=>{}, remove: ()=>{} }, style: {} });
+    const prevGetById = global.document.getElementById;
+    const prevVisualizer = global.updateGimbalPitchVisualizer;
+    global.updateGimbalPitchVisualizer = () => {};
+    global.document.getElementById = (id) => {
+      if (!elements[id]) elements[id] = makeEl();
+      return elements[id];
+    };
+    elements['unit-system'] = { value: 'metric' };
+    cachedUnitSystem = null;
+    elements['target-splat-radius'] = { value: '25' };
+    elements['target-radius-val'] = makeEl();
+    elements['target-radius-unit'] = { textContent: 'ft' };
+    elements['target-splat-height'] = { value: '8' };
+    elements['target-height-val'] = makeEl();
+    elements['target-height-unit'] = { textContent: 'ft' };
+    elements['target-perimeter-standoff'] = { value: '8' };
+    elements['target-perimeter-standoff-val'] = makeEl();
+    elements['target-perimeter-standoff-unit'] = { textContent: 'ft' };
+    elements['target-perimeter-alt'] = { value: '0' };
+    elements['target-perimeter-alt-val'] = makeEl();
+    elements['target-perimeter-alt-unit'] = makeEl();
+    elements['target-perimeter-pitch'] = { value: '-55' };
+    elements['target-perimeter-pitch-val'] = makeEl();
+    try {
+      syncDisplayValues();
+      assert.strictEqual(elements['target-radius-unit'].textContent, 'm', 'target-radius-unit should be m');
+      assert.strictEqual(elements['target-height-unit'].textContent, 'm', 'target-height-unit should be m');
+    } finally {
+      global.document.getElementById = prevGetById;
+      global.updateGimbalPitchVisualizer = prevVisualizer;
+      cachedUnitSystem = null;
+    }
+  });
+});
