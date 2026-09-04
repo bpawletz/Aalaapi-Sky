@@ -1783,6 +1783,33 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
       };
     });
 
+    // Preserve custom modified/nudged waypoints from existing layer state
+    if (layer.waypoints && Array.isArray(layer.waypoints)) {
+      layer.waypoints.forEach((oldWp, oldIdx) => {
+        if (oldWp && oldWp.isModified && waypoints[oldIdx]) {
+          waypoints[oldIdx].lat = oldWp.lat;
+          waypoints[oldIdx].lon = oldWp.lon;
+          waypoints[oldIdx].x = oldWp.x;
+          waypoints[oldIdx].y = oldWp.y;
+          if (oldWp.alt !== undefined) waypoints[oldIdx].alt = oldWp.alt;
+          if (oldWp.pitch !== undefined) waypoints[oldIdx].pitch = oldWp.pitch;
+          if (oldWp.heading !== undefined) waypoints[oldIdx].heading = oldWp.heading;
+          if (oldWp.headingMode !== undefined) waypoints[oldIdx].headingMode = oldWp.headingMode;
+          if (oldWp.poiIndex !== undefined) waypoints[oldIdx].poiIndex = oldWp.poiIndex;
+          if (oldWp.speed !== undefined) waypoints[oldIdx].speed = oldWp.speed;
+          if (oldWp.hoverTime !== undefined) waypoints[oldIdx].hoverTime = oldWp.hoverTime;
+          if (oldWp.turnMode !== undefined) waypoints[oldIdx].turnMode = oldWp.turnMode;
+          if (oldWp.cameraAction !== undefined) waypoints[oldIdx].cameraAction = oldWp.cameraAction;
+          if (oldWp.zoom !== undefined) waypoints[oldIdx].zoom = oldWp.zoom;
+          waypoints[oldIdx].isModified = true;
+          waypoints[oldIdx].origLat = oldWp.origLat !== undefined ? oldWp.origLat : waypoints[oldIdx].origLat;
+          waypoints[oldIdx].origLon = oldWp.origLon !== undefined ? oldWp.origLon : waypoints[oldIdx].origLon;
+          waypoints[oldIdx].origX = oldWp.origX !== undefined ? oldWp.origX : waypoints[oldIdx].origX;
+          waypoints[oldIdx].origY = oldWp.origY !== undefined ? oldWp.origY : waypoints[oldIdx].origY;
+        }
+      });
+    }
+
     photos = gridData.photos.map(pt => {
       const geo = localToGeodetic(pt.x, pt.y, centerLat, centerLon, actualRotation);
       const alt = pt.alt !== undefined ? pt.alt : altitude;
@@ -2432,6 +2459,37 @@ function initMap() {
 
   // Add zoom control to top-left
   L.control.zoom({ position: 'topleft' }).addTo(map);
+
+  // Defensive guard for Leaflet zoom animations: prevent 'Cannot read properties of null (reading _latLngToNewLayerPoint)'
+  // if a popup or tooltip was detached or unmapped while a zoom animation fired.
+  if (typeof L !== 'undefined') {
+    if (L.Popup && L.Popup.prototype && L.Popup.prototype._animateZoom) {
+      const _origPopupAnimateZoom = L.Popup.prototype._animateZoom;
+      L.Popup.prototype._animateZoom = function(opt) {
+        if (!this._map) {
+          if (this._source && this._source._map) {
+            this._map = this._source._map;
+          } else {
+            return;
+          }
+        }
+        return _origPopupAnimateZoom.call(this, opt);
+      };
+    }
+    if (L.Tooltip && L.Tooltip.prototype && L.Tooltip.prototype._animateZoom) {
+      const _origTooltipAnimateZoom = L.Tooltip.prototype._animateZoom;
+      L.Tooltip.prototype._animateZoom = function(opt) {
+        if (!this._map) {
+          if (this._source && this._source._map) {
+            this._map = this._source._map;
+          } else {
+            return;
+          }
+        }
+        return _origTooltipAnimateZoom.call(this, opt);
+      };
+    }
+  }
 
   // Setup Tile Layers
   streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -7500,6 +7558,9 @@ function drawTargetSplatOverlay(layer, centerLat, centerLon, rotationDeg) {
 function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWidth, gridHeight, rotationDeg) {
   recalculateSplitStarts();
   // 1. Clear previous layers
+  if (typeof map !== 'undefined' && map && typeof map.closePopup === 'function') {
+    map.closePopup();
+  }
   if (flightPathPolyline) flightPathPolyline.clearLayers();
   if (exclusionZonesGroup) exclusionZonesGroup.clearLayers();
   if (targetPolygonGroup) targetPolygonGroup.clearLayers();
@@ -14951,8 +15012,10 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       marker.setLatLng([latVal, lonVal]);
       
       // Update global wp temporary values for real-time path updates
-      const centerLatLng = centerMarker.getLatLng();
-      const offsets = geodeticToLocal(latVal, lonVal, centerLatLng.lat, centerLatLng.lng);
+      const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : null;
+      const centerLat = (wpLayer && wpLayer.centerLat !== null && wpLayer.centerLat !== undefined) ? wpLayer.centerLat : (centerMarker ? centerMarker.getLatLng().lat : (pois[0] ? pois[0].lat : latVal));
+      const centerLon = (wpLayer && wpLayer.centerLon !== null && wpLayer.centerLon !== undefined) ? wpLayer.centerLon : (centerMarker ? centerMarker.getLatLng().lng : (pois[0] ? pois[0].lon : lonVal));
+      const offsets = geodeticToLocal(latVal, lonVal, centerLat, centerLon);
       if (wp.origLat === undefined || wp.origLat === null) {
         wp.origLat = wp.lat;
         wp.origLon = wp.lon;
@@ -15355,24 +15418,31 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       if (marker.getTooltip()) marker.getTooltip().setContent(originalTitle);
 
       // Redraw lines and stats
-      const centerLatLng = centerMarker.getLatLng();
-      updatePathLinesAndStats(getCurrentWaypoints(), getCurrentPhotos(), centerLatLng.lat, centerLatLng.lng, parseFloat(document.getElementById('grid-width').value), parseFloat(document.getElementById('grid-height').value), rotationDeg);
+      const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : null;
+      const centerLat = (wpLayer && wpLayer.centerLat !== null && wpLayer.centerLat !== undefined) ? wpLayer.centerLat : (centerMarker ? centerMarker.getLatLng().lat : 0);
+      const centerLon = (wpLayer && wpLayer.centerLon !== null && wpLayer.centerLon !== undefined) ? wpLayer.centerLon : (centerMarker ? centerMarker.getLatLng().lng : 0);
+      updatePathLinesAndStats(getCurrentWaypoints(), getCurrentPhotos(), centerLat, centerLon, parseFloat(document.getElementById('grid-width').value), parseFloat(document.getElementById('grid-height').value), rotationDeg);
     }
   };
 
   const popupObj = popupMarker ? (typeof popupMarker.getPopup === 'function' ? popupMarker.getPopup() : null) : (marker && typeof marker.getPopup === 'function' ? marker.getPopup() : null);
 
-  // Clear ALL previously accumulated popupclose listeners before adding new one.
-  // Each popup open creates a new revertChanges closure; without this, old closures
-  // (with isSaved=false) accumulate on the marker and fire on close, overwriting saves/reverts.
-  if (marker && typeof marker.off === 'function') marker.off('popupclose');
-  if (popupObj && typeof popupObj.off === 'function') popupObj.off('remove');
+  // Clear only previously accumulated revertChanges listener on this marker/popup.
+  // Never call marker.off('popupclose') or popupObj.off('remove') without the specific listener,
+  // as doing so strips Leaflet's internal removal/cleanup handlers, orphaning zoom listeners.
+  if (marker && marker._revertHandler) {
+    if (typeof marker.off === 'function') marker.off('popupclose', marker._revertHandler);
+    if (popupObj && typeof popupObj.off === 'function') popupObj.off('remove', marker._revertHandler);
+    marker._revertHandler = null;
+  }
 
   const unbindRevert = () => {
     isSaved = true; // Prevent revert from firing
     if (popupObj && typeof popupObj.off === 'function') popupObj.off('remove', revertChanges);
     if (marker && typeof marker.off === 'function') marker.off('popupclose', revertChanges);
+    if (marker) marker._revertHandler = null;
   };
+  if (marker) marker._revertHandler = revertChanges;
   if (popupObj && typeof popupObj.on === 'function') popupObj.on('remove', revertChanges);
   if (marker && typeof marker.on === 'function') marker.on('popupclose', revertChanges);
 
@@ -15420,8 +15490,9 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
 
         wp.lat = latVal;
         wp.lon = lonVal;
-        const centerLat = centerMarker ? centerMarker.getLatLng().lat : (pois[0] ? pois[0].lat : latVal);
-        const centerLon = centerMarker ? centerMarker.getLatLng().lng : (pois[0] ? pois[0].lon : lonVal);
+        const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : null;
+        const centerLat = (wpLayer && wpLayer.centerLat !== null && wpLayer.centerLat !== undefined) ? wpLayer.centerLat : (centerMarker ? centerMarker.getLatLng().lat : (pois[0] ? pois[0].lat : latVal));
+        const centerLon = (wpLayer && wpLayer.centerLon !== null && wpLayer.centerLon !== undefined) ? wpLayer.centerLon : (centerMarker ? centerMarker.getLatLng().lng : (pois[0] ? pois[0].lon : lonVal));
         const offsets = geodeticToLocal(latVal, lonVal, centerLat, centerLon);
         wp.x = offsets.x;
         wp.y = offsets.y;

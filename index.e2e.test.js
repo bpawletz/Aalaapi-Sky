@@ -806,6 +806,82 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       'isModified should be false after Revert, even after multiple popup opens');
   });
 
+  test('E2E: Nudging a waypoint and saving does not crash Leaflet zoom or cause stuck markers', async () => {
+    const nudgeZoomResult = await page.evaluate(async () => {
+      // 1. Ensure grid center and waypoints exist
+      if (typeof setGridCenter === 'function') {
+        setGridCenter(41.88, -87.62);
+      }
+      const wps = typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : [];
+      if (!wps || wps.length === 0) return { success: false, reason: 'No waypoints found', zoomErrors: [], orphanedZoomanimCount: -1 };
+
+      // 2. Find a marker from waypointMarkersGroup or generatedWaypoints
+      let targetMarker = null;
+      if (typeof waypointMarkersGroup !== 'undefined' && waypointMarkersGroup) {
+        waypointMarkersGroup.eachLayer(l => {
+          if (!targetMarker && l.getPopup && l.getPopup()) {
+            targetMarker = l;
+          }
+        });
+      }
+      if (!targetMarker && wps[0] && wps[0].mapMarker) {
+        targetMarker = wps[0].mapMarker;
+      }
+
+      if (!targetMarker) {
+        return { success: false, reason: 'No marker with popup found', zoomErrors: [], orphanedZoomanimCount: -1 };
+      }
+
+      // 3. Open the marker popup
+      targetMarker.openPopup();
+      const popup = targetMarker.getPopup();
+      const popupContent = popup ? (popup.getElement ? popup.getElement() : null) : null;
+      if (!popupContent) return { success: false, reason: 'Popup element not rendered', zoomErrors: [], orphanedZoomanimCount: -1 };
+
+      // 4. Click a nudge button (#nudge-n-btn)
+      const northBtn = popupContent.querySelector('#nudge-n-btn');
+      if (!northBtn) return { success: false, reason: 'North nudge button not found', zoomErrors: [], orphanedZoomanimCount: -1 };
+      northBtn.click();
+
+      // 5. Click Save button (#save-wp-btn)
+      const saveBtn = popupContent.querySelector('#save-wp-btn');
+      if (!saveBtn) return { success: false, reason: 'Save button not found', zoomErrors: [], orphanedZoomanimCount: -1 };
+      saveBtn.click();
+
+      // 6. Check zoomanim listeners on map
+      let zoomanimListeners = [];
+      if (map && map._events && map._events['zoomanim']) {
+        zoomanimListeners = map._events['zoomanim'];
+      }
+      const orphanedZoomanimCount = zoomanimListeners.filter(h => h.ctx && h.ctx._map === null).length;
+
+      // 7. Trigger map zoom transitions
+      let zoomErrors = [];
+      try {
+        const currentZoom = map.getZoom();
+        map.setZoom(currentZoom + 1, { animate: false });
+        map.fire('zoomanim', { center: map.getCenter(), zoom: currentZoom + 1 });
+        map.setZoom(currentZoom, { animate: false });
+        map.fire('zoomanim', { center: map.getCenter(), zoom: currentZoom });
+      } catch (err) {
+        zoomErrors.push(err.message);
+      }
+
+      const wpAfterNudge = (getCurrentWaypoints() || [])[0];
+
+      return {
+        success: zoomErrors.length === 0 && orphanedZoomanimCount === 0,
+        zoomErrors,
+        orphanedZoomanimCount,
+        isModified: wpAfterNudge ? wpAfterNudge.isModified : null
+      };
+    });
+
+    assert.strictEqual(nudgeZoomResult.success, true, `Nudge test failed: ${nudgeZoomResult.reason || ''} errors: ${nudgeZoomResult.zoomErrors?.join(', ')}`);
+    assert.strictEqual(nudgeZoomResult.zoomErrors.length, 0, `Zoom produced errors: ${nudgeZoomResult.zoomErrors.join(', ')}`);
+    assert.strictEqual(nudgeZoomResult.orphanedZoomanimCount, 0, `Found orphaned zoomanim listeners: ${nudgeZoomResult.orphanedZoomanimCount}`);
+  });
+
   test('E2E: Global Hover Time slider persists value and includes hover action tags in WPML export', async () => {
     const hoverTestResult = await page.evaluate(() => {
       const globalHoverInput = document.getElementById('global-hover-time');
