@@ -1,5 +1,145 @@
 # Changelog
 
+## [1.81.0] - 2026-09-05
+
+### Added & Architectural Enhancements
+- **Three-Tier Architectural Hierarchy (Global → Layer → Waypoint):**
+  - Established a formal 3-tier cascade across the entire mission planning engine:
+    - **Tier 1 (Global Defaults):** `#mission-failsafes-section` (Section 3) defines mission-wide fallback defaults (Capture Mode, Connection Path Type, Heading Mode, Hover Time, and Baseline Shutter Pause).
+    - **Tier 2 (Layer Properties & Dynamics):** `#pattern-settings-section` (Section 2) provides per-layer overrides defaulting to `🌐 Inherit Global`. Pilots can configure Capture Mode, Connection Path Type, Heading Mode, Target POI, Hover Dwell, Turnaround Dynamics, and Auto-Settling per layer.
+    - **Tier 3 (Individual Waypoints):** Both 2D Map Waypoint Popups and 3D FPV HUD Editors now default to `🌐 Inherit Layer (${value})`, allowing granular waypoint-specific overrides that take precedence during WPML compilation.
+- **Per-Layer Capture Mode & Connection Path Type:**
+  - Each layer can now operate with independent capture modes (`Stop & Shoot`, `Continuous Flight`, `Video Mode`) and turn types (`Curved Path`, `Straight Lines`).
+  - KMZ exporter (`buildWaylinesWpml`) compiles placemark action groups per-layer: injecting `takePhoto` and hover pauses for Stop & Shoot layers, scoping `startRecord` and `stopRecord` to the boundaries of Video layers, and emitting straight or curved waypoint turn parameters per layer while strictly enforcing consumer drone Golden Rules (`useStraightLine: 0` on Mini 4 Pro / Air 3).
+- **Universal Auto-Settling Delays for All Flight Plans:**
+  - Removed technical debt where graduated settling delays were gated behind `isTargetSplat`.
+  - Applied the physical settling hierarchy universally across all flight patterns in Stop & Shoot mode:
+    - **Straight Flight Line Waypoints:** 2.0s baseline shutter pause (prevents RC 2 gimbal motor overload and motion blur).
+    - **Gimbal Pitch Tilt ($\ge 5^\circ$):** 3.0s motor stabilization pause (Multi-Orbit rings, inspection angles, splats).
+    - **Moderate Turn ($25^\circ \le \Delta\theta < 60^\circ$):** 4.0s yaw stabilization pause (road bends, perimeter arcs).
+    - **Major Turn / Turnaround ($\Delta\theta \ge 60^\circ$):** 5.0s yaw dampening pause (180° grid turnarounds, 90° corner transitions).
+  - Exposed these controls in an expandable "Advanced Flight Dynamics & Stabilization" drawer in Section 2, and dynamically updated 2D popup/3D FPV warnings to reflect the exact active settling delay in real time.
+- **Turnaround Overshoot & High-Speed Turnaround Transit:**
+  - Added **Turnaround Overshoot Margin** (`0m`, `5m`, `10m`, `15m`) extending grid flight lines beyond the survey boundary so 180° turns occur outside the mapping area, guaranteeing that 100% of photos within the survey polygon are captured on steady, level flight lines.
+  - Added **Turnaround Transit Speed** (`🌐 Inherit Layer Speed` vs `6–12 m/s`) to accelerate non-mapping turnaround loops, cutting mission duration and preserving battery life.
+  - Added **Corner Damping Distance** (`0m` to `5m`) for customizable corner rounding arcs.
+- **Accurate Multi-Tier Flight Time & Battery Calculations:**
+  - Updated `calculateStats` and `getSubMissionFlightTime` to evaluate the 3-tier cascade and universal settling delays segment-by-segment, accurately predicting mission flight time for mixed-mode missions.
+
+## [1.80.3] - 2026-09-05
+
+### Fixed & Improved
+- **Dynamic Heading-Opposite Pitch Label Positioning:**
+  - Resolved visual overlap where waypoint pitch badges (`-90°` / `-60°`) covered camera sight cones and directional arrows on Southbound/downward flight legs.
+  - Implemented dynamic hemisphere positioning in `getMarkerIcon`:
+    - **Northbound / Upward Headings ($heading < 75^\circ$ or $heading > 285^\circ$)**: Pitch badge anchors cleanly below the waypoint dot (`wp-pitch-pos-bottom`, `top: var(--wp-pitch-top)`).
+    - **Southbound / Downward Headings ($75^\circ \le heading \le 285^\circ$)**: Pitch badge automatically flips above the waypoint dot (`wp-pitch-pos-top`, `bottom: var(--wp-pitch-top)`), leaving the downward-facing camera cone and arrow completely unobstructed.
+  - Coordinated with the zoom gating system: pitch labels are cleanly hidden below zoom 18 (`.wp-zoom-pitch-hidden`), ensuring the flipped badges only appear when close-up cone details are active.
+
+## [1.80.2] - 2026-09-05
+
+### Fixed & Improved
+- **Continuous Smooth Camera Cone, Pitch Badge & Arrow Zoom Scaling:**
+  - Replaced stepped integer thresholds with continuous interpolation via CSS custom properties (`--wp-cone-scale`, `--wp-pitch-scale`, `--wp-pitch-top`, `--wp-arrow-scale`) driven by exact floating-point map zoom levels.
+  - Waypoint pitch labels (`-60°`) now scale smoothly in lockstep from 0.65 to 1.0 (top offset adjusted from 16px to 24px), completely preventing black box collisions and overlap along adjacent flight lines.
+  - Lowered minimum detail zoom threshold from 18 to 16: micro-cones (scale 0.18–0.38) and directional arrows remain visible across zoom 16–18 for full heading orientation while hiding pitch numbers (`.wp-zoom-pitch-hidden`) to keep the working flight view clean and readable.
+  - Cones and pitch labels scale smoothly and continuously during trackpad pinch and mouse wheel zooms without discrete popping.
+
+## [1.80.1] - 2026-09-05
+
+### Fixed & Improved
+- **Zoom-Responsive Camera FOV Sight Cone Scaling & Anti-Crowding:**
+  - Resolved visual clutter and overlapping cones when zooming out on medium and dense waypoint grids.
+  - Implemented tiered zoom-responsive scaling for `.wp-camera-cone` and `.wp-pitch-label`:
+    - **High Zoom (zoom $\ge$ 20)**: Full-size 26px height $\times$ 28px width spotlight cones (`.wp-zoom-high`, scale 1.0) and full-size pitch labels.
+    - **Mid Zoom (zoom 19)**: Proportional scaling (`.wp-zoom-mid`, scale 0.68 / ~17px) ensuring adjacent cones never collide or touch.
+    - **Compact Zoom (zoom 18)**: Micro-cones (`.wp-zoom-compact`, scale 0.42 / ~11px) and compact pitch labels (`scale 0.82`), eliminating visual crowding and badge collisions in dense grids.
+    - **Macro Overview (zoom $<$ 18)**: Clean waypoint dots and flight lines without cone or label clutter (`.wp-zoomed-out`).
+  - Added continuous real-time zoom listener (`map.on('zoom', ...)`) for immediate, lag-free scaling during wheel scrolling and pinch-zooming.
+
+## [1.80.0] - 2026-09-05
+
+### Added
+- **High-Contrast Camera Direction & Configurable Visual Color Palettes:**
+  - Resolved camera heading ambiguity against dashed flight path lines. Directional arrows (`.wp-arrow`) now feature an enlarged geometry (10px base, 8px height) and a multi-stop dark drop-shadow outline (`filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.9)) drop-shadow(0 0 1px rgba(0, 0, 0, 0.85))`) ensuring crisp, unmistakable heading visibility across satellite imagery, terrain, and animated dashed path lines.
+  - Significantly enhanced camera field-of-view sight cones (`.wp-camera-cone`) with enlarged geometry (26px height, 28px width), a soft depth filter, and increased opacity (0.38 vs faint 0.15) creating a distinctive illuminated camera spotlight beam.
+  - Added a dedicated "Map & Camera Visuals" section in Configuration Settings (`#config-modal`) featuring:
+    - 6 selectable color palettes: **High-Viz Amber** (recommended default: cyan path + amber camera), **Electric Lime** (azure path + neon lime camera), **Coral Crimson** (cyan path + coral camera), **Neon Magenta** (emerald path + vivid magenta camera), **Solar Yellow** (cobalt path + solar yellow camera), and **Monochrome Classic** (legacy matched hue).
+    - Dynamic dual-swatch preview badge (`#palette-swatch-preview`) displaying path and camera colors in real-time.
+    - Independent **Camera Sight Cones** toggle (`#camera-cones-toggle`) allowing pilots to display or hide FOV sight cones without affecting heading arrows.
+  - Integrated full persistence across browser sessions via `localStorage` (`aalaapi_sky_camera_palette`, `aalaapi_sky_camera_cones`) and added factory restoration to Category 3 (UI Preferences) in the Controlled Reset Manager.
+
+## [1.79.0] - 2026-09-04
+
+### Added
+- **Interactive Click-to-Convert Measurement Units (Imperial / Metric):**
+  - Enabled direct 1-click toggling between Imperial (`ft`, `mph`) and Metric (`m`, `m/s`) by clicking directly on any unit badge (`#width-unit`, `#height-unit`, `#altitude-unit`, `#speed-unit`, `#road-offset-unit`, `#target-radius-unit`, `#target-height-unit`, `#target-perimeter-standoff-unit`, `#target-perimeter-alt-unit`, `#exclusion-min-alt-unit`, `#exclusion-max-alt-unit`, `#global-exclusion-clearance-unit`, `#max-height-unit`, `#rth-altitude-unit`, `#ap-height-unit`, `#ap-clearance-unit`, `#fpv-edit-alt-unit`).
+  - Added `.clickable-unit` hover styling with subtle cyan highlight, border, and tooltip guide (`Click to switch units (Imperial / Metric)`).
+  - Added a dedicated top navigation bar quick switcher button (`#header-unit-toggle-btn` / `#header-unit-badge`) showing `FT / MPH` or `M / M/S` next to the Theme toggle, providing at-a-glance unit status and 1-click global switching.
+  - Implemented centralized `setUnitSystem(newUnit)` and `toggleUnitSystem()` helper functions exported to `window` for reliable, synchronized state management across UI controls, `localStorage` (`aalaapi_sky_unit_system`), and map mission recalculations (`updateGrid` / `redrawCurrentMission`).
+
+## [1.78.0] - 2026-09-04
+
+### Added
+- **Click-to-Type Numerical Value Editing Across All Sidebar Controls:**
+  - Added interactive inline numerical editing to all value displays on the left sidebar navigation (`#speed-val`, `#altitude-val`, `#width-val`, `#height-val`, `#rotation-val`, `#front-overlap-val`, `#side-overlap-val`, `#gimbal-pitch-val`, `#target-radius-val`, `#target-height-val`, `#target-perimeter-standoff-val`, `#target-perimeter-alt-val`, `#target-perimeter-pitch-val`, `#road-offset-val`, `#exclusion-min-alt-val`, `#exclusion-max-alt-val`, `#global-exclusion-clearance-val`, `#max-height-val`, `#rth-altitude-val`, and `#global-hover-time-val`).
+  - Clicking any value number instantly switches it into a focused, selected inline input box where pilots can type exact numbers in their active unit system (e.g. `1.5 mph`, `164 ft`, `85%`, `-45°`).
+  - Pressing `Enter` or blurring commits the value with bounds clamping, automatic unit conversion (converting imperial input back to metric storage), live mission updates (`updateGrid`), and persistence to `localStorage`. Pressing `Escape` cancels editing.
+- **Slow Speed Support for 3D Gaussian Splats & Precision Photogrammetry:**
+  - Lowered the minimum flight speed floor from $1.0\text{ m/s}$ ($2.2\text{ mph}$) down to $0.2\text{ m/s}$ (~$0.4\text{ mph}$) with fine $0.1\text{ m/s}$ resolution on `#speed` and `#edit-wp-speed`.
+  - Enables ultra-slow, blur-free image acquisition and cinematic fly-bys for small-structure Gaussian splatting and low-light inspection missions on DJI Mini 4 Pro, Air 3, and Enterprise drones.
+
+## [1.77.10] - 2026-09-04
+
+### Fixed
+- **Target Splat & Exclusion Zone Vertex Pin Dragging Responsiveness:**
+  - Resolved an issue where attempting to drag a perimeter vertex pin moved only 1–2 pixels before dropping the pin, requiring repeated clicks and micro-drags to reposition boundaries.
+  - Identified root cause: The Leaflet marker `drag` event listeners previously invoked `updateGrid()`, which called `drawFlightPath()` and `targetPolygonGroup.clearLayers()`. Clearing and recreating Leaflet map layers mid-drag destroyed the active marker and its DOM nodes out from under Leaflet while the user's mouse/touch was actively held down, immediately terminating Leaflet's internal pointer capture and drag session.
+  - Decoupled continuous dragging from procedural grid regeneration:
+    - On continuous `drag`, vertex coordinates (`lat`, `lon`, `x`, `y`) update dynamically, and boundary shapes (`poly.setLatLngs`, `polyline.setLatLngs`, `exclusionPoly.setLatLngs`, and the amber perimeter orbit preview ring) update in real-time with zero lag or marker tearing.
+    - Full grid regeneration, centroid recalculation (`recomputeTargetPolygonCentroid`), flight statistics, and wayline recalculation are cleanly deferred to the `dragend` event when the user releases the pin.
+
+## [1.77.9] - 2026-09-04
+
+### Fixed
+- **MTP Companion Flight Log Pull Hang & Shell COM Deadlock:**
+  - Resolved an issue where clicking "📥 Pull Flight Log" remained indefinitely stuck in the "⏳ Pulling Log..." state even after the flight log was downloaded to disk.
+  - Identified root causes:
+    1. **OneDrive COM Lockup:** Writing directly from MTP Shell COM into `scratch/latest_flight` inside the user's active OneDrive sync repository triggered OneDrive hydration/sync lock interception, freezing Explorer COM in background PowerShell sessions. Resolved by adopting a two-stage extraction process: transferring the MTP file to the local non-synced temp directory (`$env:TEMP\aalaapi_mtp_temp`), verifying file completion and lock release via Win32 FileStream, and copying into destination via standard `Copy-Item -Force`.
+    2. **Concurrent MTP Transfer Collision:** Sequentially decoupled waypoint KMZ extraction from flight log extraction, preventing DJI RC 2 single-stream MTP driver collisions and deadlocks.
+    3. **Process Timeout & Client Abort Signal:** Added a 25-second execution timeout to `runMtpScript` in `tools/companion/server.js` and a 20-second `AbortSignal.timeout` to client-side fetches in `index.js`.
+    4. **Button State Synchronization & Safe Error-Handling:** Synchronized button states across both `#diag-pull-rc2-btn` and `#direct-rc2-pull-log-btn`, wrapping modal and selector operations in isolated `try/catch` blocks and guaranteeing UI button state restoration.
+
+## [1.77.8] - 2026-09-04
+
+### Fixed
+- **Target Splat Turn Steadying & In-Flight Settling Hovers:**
+  - Resolved an issue in live flight testing on DJI Mini 4 Pro where photos taken immediately following sharp waypoint turns were captured before aircraft yaw oscillation, rotational inertia, and prop wash had settled.
+  - Implemented automatic settling delays in `stopAndShoot` mode for Target Splat missions:
+    - Major turns (heading difference $\ge 60^\circ$, including $90^\circ$ and $180^\circ$ turnaround transitions between flight lines): enforced a minimum hover of 5 seconds to ensure complete dampening of rotational momentum and camera gimbal stabilization prior to shutter release.
+    - Moderate turns (heading difference $\ge 25^\circ$): enforced a minimum hover of 4 seconds.
+    - Gimbal pitch adjustments (pitch change $\ge 5^\circ$): enforced a minimum hover of 3 seconds.
+  - Synchronized flight time estimations in `calculateStats` and `getSubMissionFlightTime` to account for turn settling hovers.
+  - Enforced `gimbalRotate` execution action whenever gimbal pitch transitions between waypoints (`reposInfo.isGimbalChanged`).
+
+- **Perimeter Orbit Entry Obstacle Warning & Safe Transit Waypoint:**
+  - Resolved an APAS obstacle avoidance false alert and brake triggered when transitioning from the overhead lawnmower grid pass down to the perimeter facade orbit.
+  - Identified root cause: The drone was previously commanded to dive diagonally downward directly from the final overhead grid point (at roof height) toward the first perimeter orbit point, causing DJI Mini 4 Pro forward and downward vision sensors to detect approaching eaves, gutters, and roof peaks along the descent path.
+  - Injected an automatic safe horizontal clearance transit waypoint (`isTransition: true`, `skipPhoto: true`, `turnMode: 'stop'`) at safe grid altitude (`Math.max(gridAlt, orbitAlt)`) directly above the first orbit waypoint, allowing the drone to transit horizontally into open air beyond the building envelope before descending vertically to facade altitude.
+  - Reordered perimeter orbit vertices to dynamically begin at the waypoint closest to the final grid point, minimizing cross-property transit.
+  - Enforced a safe auto altitude floor for perimeter orbits: $\max(12\text{m}, \text{targetHeight} + 3\text{m})$, preventing dangerous proximity to rooflines and trees.
+
+## [1.77.7] - 2026-09-04
+
+### Fixed
+- **Target Splat First Waypoint Stuck Bug & WPML Heading Mode Lock:**
+  - Resolved an issue where a 106-waypoint Target Splat mission (16m altitude, 1m/s speed, -45° gimbal pitch, stop-and-shoot) on DJI Mini 4 Pro became stuck at Waypoint 0 during live flight execution and failed to advance.
+  - Identified root cause: Waypoints generated by `generateTargetSplatCoordinates` did not set `headingMode: 'smoothTransition'`, causing `buildWaylinesWpml` to fall back to `followWayline` mode. In `followWayline` mode, Waypoint 0 was emitted with `headingAngleEnable: 1` and `waypointHeadingAngle: 0.0`, while intermediate waypoints had `headingAngleEnable: 0`. At a stop waypoint (`toPointAndStopWithContinuityCurvature`) with velocity = 0 and 1 m/s transitional speed, DJI Fly's trajectory solver cannot resolve the tangent vector in `followWayline` when transitioning from a stopped point with zero-angle attitude convergence, causing the drone to remain indefinitely at Waypoint 0.
+  - Updated `generateTargetSplatCoordinates` and `generateTargetPerimeterOrbit` to explicitly set `headingMode: 'smoothTransition'` and `gridType: 'target-splat'` on all generated grid and orbit waypoints.
+  - Updated `buildWaylinesWpml` to route all Target Splat waypoints into `smoothTransition` mode with `headingAngleEnable: 1`, normalizing angles and clamping 0.0° headings to 0.1° to prevent DJI Fly zero-angle firmware suspension.
+  - Extended Pre-Flight Validator Rule 1 (`validateWpmlMission`) to flag any Target Splat mission configured with `followWayline` as invalid.
+  - Updated `validateAndFixWpml` to automatically sanitize and repair legacy Target Splat missions from `followWayline` to `smoothTransition` with locked headings and clamped 0.1° angles.
+
 ## [1.77.6] - 2026-09-04
 
 ### Fixed

@@ -2999,4 +2999,457 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(result.targetCullingMode, 'pruneOnly');
     assert.ok(result.skippedMarkersCount > 0, 'Must have skipped markers in DOM');
   });
+
+  test('E2E: Click-to-type numerical editing on sidebar value displays (#speed-val and #altitude-val)', async () => {
+    const editResult = await page.evaluate(async () => {
+      const speedValEl = document.getElementById('speed-val');
+      const altitudeValEl = document.getElementById('altitude-val');
+      const speedSlider = document.getElementById('speed');
+      const altitudeSlider = document.getElementById('altitude');
+
+      if (!speedValEl || !altitudeValEl || !speedSlider || !altitudeSlider) {
+        return { success: false, reason: 'Elements not found' };
+      }
+
+      // Ensure imperial mode for typing 1.5 mph and 85 ft
+      const unitSystemEl = document.getElementById('unit-system');
+      if (unitSystemEl && unitSystemEl.value !== 'imperial') {
+        unitSystemEl.value = 'imperial';
+        unitSystemEl.dispatchEvent(new Event('change'));
+        if (typeof syncDisplayValues === 'function') syncDisplayValues();
+      }
+
+      // 1. Click speed-val to activate inline editing
+      speedValEl.click();
+      const speedInput = speedValEl.querySelector('input');
+      if (!speedInput) {
+        return { success: false, reason: 'Speed input did not appear on click' };
+      }
+
+      // 2. Type 2.2 mph (which corresponds to 1.0 m/s)
+      speedInput.value = '2.2';
+      speedInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      await new Promise(r => setTimeout(r, 60));
+
+      const updatedSpeedVal = speedValEl.textContent.trim();
+      const sliderSpeedVal = parseFloat(speedSlider.value);
+
+      // 3. Click altitude-val to activate inline editing
+      altitudeValEl.click();
+      const altInput = altitudeValEl.querySelector('input');
+      if (!altInput) {
+        return { success: false, reason: 'Altitude input did not appear on click' };
+      }
+
+      // 4. Type 85 ft
+      altInput.value = '85';
+      altInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      await new Promise(r => setTimeout(r, 60));
+
+      const updatedAltVal = altitudeValEl.textContent.trim();
+      const sliderAltVal = parseFloat(altitudeSlider.value);
+
+      return {
+        success: updatedSpeedVal.includes('2.2') && updatedAltVal.includes('85'),
+        updatedSpeedVal,
+        sliderSpeedVal,
+        updatedAltVal,
+        sliderAltVal
+      };
+    });
+
+    assert.ok(editResult.success, `Click-to-type E2E test failed: ${JSON.stringify(editResult)}`);
+    assert.ok(editResult.updatedSpeedVal.includes('2.2'), `Expected speed-val to include 2.2, got: ${editResult.updatedSpeedVal}`);
+    assert.ok(editResult.updatedAltVal.includes('85'), `Expected altitude-val to include 85, got: ${editResult.updatedAltVal}`);
+  });
+
+  test('E2E: Interactive unit toggle converts between Imperial and Metric via unit label and header button (v1.79.0)', async () => {
+    const toggleResult = await page.evaluate(async () => {
+      // 1. Ensure initial state is imperial
+      setUnitSystem('imperial');
+      await new Promise(r => setTimeout(r, 60));
+
+      const initialUnit = getUnitSystem();
+      const altUnitEl = document.getElementById('altitude-unit');
+      const speedUnitEl = document.getElementById('speed-unit');
+      const headerUnitBadge = document.getElementById('header-unit-badge');
+      const headerUnitBtn = document.getElementById('header-unit-toggle-btn');
+      const altValEl = document.getElementById('altitude-val');
+
+      const initialAltUnit = altUnitEl.textContent.trim();
+      const initialSpeedUnit = speedUnitEl.textContent.trim();
+      const initialHeaderBadge = headerUnitBadge.textContent.trim();
+      const initialAltVal = altValEl.textContent.trim();
+
+      // 2. Click on altitude unit badge on left nav to toggle to metric
+      altUnitEl.click();
+      await new Promise(r => setTimeout(r, 60));
+
+      const afterLabelClickUnit = getUnitSystem();
+      const metricAltUnit = altUnitEl.textContent.trim();
+      const metricSpeedUnit = speedUnitEl.textContent.trim();
+      const metricHeaderBadge = headerUnitBadge.textContent.trim();
+      const metricAltVal = altValEl.textContent.trim();
+
+      // 3. Click header unit toggle button to toggle back to imperial
+      headerUnitBtn.click();
+      await new Promise(r => setTimeout(r, 60));
+
+      const afterHeaderClickUnit = getUnitSystem();
+      const restoredAltUnit = altUnitEl.textContent.trim();
+      const restoredSpeedUnit = speedUnitEl.textContent.trim();
+      const restoredHeaderBadge = headerUnitBadge.textContent.trim();
+      const restoredAltVal = altValEl.textContent.trim();
+
+      return {
+        success: initialUnit === 'imperial' &&
+                 afterLabelClickUnit === 'metric' &&
+                 metricAltUnit === 'm' &&
+                 metricSpeedUnit === 'm/s' &&
+                 metricHeaderBadge === 'M / M/S' &&
+                 afterHeaderClickUnit === 'imperial' &&
+                 restoredAltUnit === 'ft' &&
+                 restoredSpeedUnit === 'mph' &&
+                 restoredHeaderBadge === 'FT / MPH',
+        initialUnit,
+        initialAltUnit,
+        initialSpeedUnit,
+        initialHeaderBadge,
+        initialAltVal,
+        afterLabelClickUnit,
+        metricAltUnit,
+        metricSpeedUnit,
+        metricHeaderBadge,
+        metricAltVal,
+        afterHeaderClickUnit,
+        restoredAltUnit,
+        restoredSpeedUnit,
+        restoredHeaderBadge,
+        restoredAltVal
+      };
+    });
+
+    assert.ok(toggleResult.success, `Unit toggle E2E test failed: ${JSON.stringify(toggleResult)}`);
+    assert.strictEqual(toggleResult.metricAltUnit, 'm');
+    assert.strictEqual(toggleResult.metricSpeedUnit, 'm/s');
+    assert.strictEqual(toggleResult.metricHeaderBadge, 'M / M/S');
+    assert.strictEqual(toggleResult.restoredAltUnit, 'ft');
+    assert.strictEqual(toggleResult.restoredSpeedUnit, 'mph');
+    assert.strictEqual(toggleResult.restoredHeaderBadge, 'FT / MPH');
+  });
+
+  test('E2E: Camera Direction & Visual Palettes Modal Selection and Live Map Updates (v1.80.0)', async () => {
+    const paletteResult = await page.evaluate(async () => {
+      // 1. Open config modal
+      const configBtn = document.getElementById('config-btn');
+      const configModal = document.getElementById('config-modal');
+      configBtn.click();
+      await new Promise(r => setTimeout(r, 60));
+
+      const camPalSelect = document.getElementById('camera-palette-select');
+      const camConesToggle = document.getElementById('camera-cones-toggle');
+      const swatchPreview = document.getElementById('palette-swatch-preview');
+
+      const initialPalette = camPalSelect ? camPalSelect.value : null;
+      const initialConesChecked = camConesToggle ? camConesToggle.checked : null;
+      const optionsCount = camPalSelect ? camPalSelect.options.length : 0;
+
+      // 2. Change palette to electric-lime
+      camPalSelect.value = 'electric-lime';
+      camPalSelect.dispatchEvent(new Event('change'));
+      await new Promise(r => setTimeout(r, 60));
+
+      const activePalAfterChange = getActiveCameraPalette().id;
+      const chipsAfterChange = swatchPreview ? swatchPreview.querySelectorAll('.palette-swatch-chip').length : 0;
+
+      // Inspect map waypoint arrows
+      const arrows = document.querySelectorAll('.wp-arrow');
+      let arrowHasLime = false;
+      arrows.forEach(a => {
+        if (a.style.borderBottomColor.includes('34, 197, 94') || a.style.borderBottomColor.includes('#22c55e')) {
+          arrowHasLime = true;
+        }
+      });
+
+      // 3. Toggle sight cones off
+      camConesToggle.checked = false;
+      camConesToggle.dispatchEvent(new Event('change'));
+      await new Promise(r => setTimeout(r, 60));
+
+      const conesAfterDisable = document.querySelectorAll('.wp-camera-cone').length;
+
+      // 4. Toggle sight cones back on
+      camConesToggle.checked = true;
+      camConesToggle.dispatchEvent(new Event('change'));
+      await new Promise(r => setTimeout(r, 60));
+
+      const conesAfterEnable = document.querySelectorAll('.wp-camera-cone').length;
+
+      // 5. Restore to high-viz-amber
+      camPalSelect.value = 'high-viz-amber';
+      camPalSelect.dispatchEvent(new Event('change'));
+      await new Promise(r => setTimeout(r, 60));
+
+      const closeBtn = document.getElementById('close-config-btn');
+      if (closeBtn) closeBtn.click();
+      await new Promise(r => setTimeout(r, 60));
+
+      return {
+        success: optionsCount === 6 &&
+                 initialPalette === 'high-viz-amber' &&
+                 initialConesChecked === true &&
+                 activePalAfterChange === 'electric-lime' &&
+                 chipsAfterChange === 2 &&
+                 arrowHasLime &&
+                 conesAfterDisable === 0 &&
+                 conesAfterEnable > 0,
+        optionsCount,
+        initialPalette,
+        initialConesChecked,
+        activePalAfterChange,
+        chipsAfterChange,
+        arrowHasLime,
+        conesAfterDisable,
+        conesAfterEnable
+      };
+    });
+
+    assert.ok(paletteResult.success, `Camera palette E2E test failed: ${JSON.stringify(paletteResult)}`);
+    assert.strictEqual(paletteResult.optionsCount, 6);
+    assert.strictEqual(paletteResult.activePalAfterChange, 'electric-lime');
+    assert.strictEqual(paletteResult.conesAfterDisable, 0);
+    assert.strictEqual(paletteResult.arrowHasLime, true);
+  });
+
+  test('E2E: Continuous Smooth Zoom-Responsive Camera Sight Cone & Pitch Scaling (v1.80.2)', async () => {
+    const zoomScalingResult = await page.evaluate(async () => {
+      const activeMap = (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map);
+      if (!activeMap) return { success: false, reason: 'no map' };
+
+      const container = activeMap.getContainer();
+      const initialZoom = activeMap.getZoom();
+
+      // 1. Zoom 21 -> wp-zoom-high, scale 1.0
+      activeMap.setView(activeMap.getCenter(), 21, { animate: false });
+      if (typeof applyZoomGates === 'function') applyZoomGates();
+      await new Promise(r => setTimeout(r, 60));
+      const isZoom21High = container.classList.contains('wp-zoom-high');
+      const coneScale21 = container.style.getPropertyValue('--wp-cone-scale');
+      const pitchScale21 = container.style.getPropertyValue('--wp-pitch-scale');
+
+      // 2. Zoom 19 -> wp-zoom-mid, compact scale
+      activeMap.setView(activeMap.getCenter(), 19, { animate: false });
+      if (typeof applyZoomGates === 'function') applyZoomGates();
+      await new Promise(r => setTimeout(r, 60));
+      const isZoom19Mid = container.classList.contains('wp-zoom-mid');
+      const coneScale19 = parseFloat(container.style.getPropertyValue('--wp-cone-scale'));
+      const pitchScale19 = parseFloat(container.style.getPropertyValue('--wp-pitch-scale'));
+
+      // 3. Zoom 18 -> wp-zoom-compact
+      activeMap.setView(activeMap.getCenter(), 18, { animate: false });
+      if (typeof applyZoomGates === 'function') applyZoomGates();
+      await new Promise(r => setTimeout(r, 60));
+      const isZoom18Compact = container.classList.contains('wp-zoom-compact');
+      const coneScale18 = container.style.getPropertyValue('--wp-cone-scale');
+      const isPitchHidden18 = container.classList.contains('wp-zoom-pitch-hidden');
+
+      // 4. Zoom 17 -> Working view (micro-cones active, pitch hidden, NOT zoomed out)
+      activeMap.setView(activeMap.getCenter(), 17, { animate: false });
+      if (typeof applyZoomGates === 'function') applyZoomGates();
+      await new Promise(r => setTimeout(r, 60));
+      const isZoom17Visible = !container.classList.contains('wp-zoomed-out');
+      const isPitchHidden17 = container.classList.contains('wp-zoom-pitch-hidden');
+      const coneScale17 = container.style.getPropertyValue('--wp-cone-scale');
+
+      // 5. Zoom 15 -> Macro overview (wp-zoomed-out)
+      activeMap.setView(activeMap.getCenter(), 15, { animate: false });
+      if (typeof applyZoomGates === 'function') applyZoomGates();
+      await new Promise(r => setTimeout(r, 60));
+      const isZoom15Out = container.classList.contains('wp-zoomed-out');
+
+      // 6. Restore initial zoom
+      activeMap.setView(activeMap.getCenter(), initialZoom || 19, { animate: false });
+      if (typeof applyZoomGates === 'function') applyZoomGates();
+      await new Promise(r => setTimeout(r, 60));
+
+      return {
+        success: isZoom21High && isZoom19Mid && isZoom18Compact && isZoom17Visible && isPitchHidden17 && isZoom15Out,
+        isZoom21High,
+        coneScale21,
+        pitchScale21,
+        isZoom19Mid,
+        coneScale19,
+        pitchScale19,
+        isZoom18Compact,
+        coneScale18,
+        isPitchHidden18,
+        isZoom17Visible,
+        isPitchHidden17,
+        coneScale17,
+        isZoom15Out
+      };
+    });
+
+    assert.ok(zoomScalingResult.success, `Zoom scaling E2E test failed: ${JSON.stringify(zoomScalingResult)}`);
+    assert.strictEqual(zoomScalingResult.isZoom21High, true);
+    assert.strictEqual(zoomScalingResult.coneScale21, '1.000');
+    assert.strictEqual(zoomScalingResult.pitchScale21, '1.000');
+    assert.strictEqual(zoomScalingResult.isZoom19Mid, true);
+    assert.ok(zoomScalingResult.coneScale19 < 0.70, 'Zoom 19 cone scale must be compact');
+    assert.ok(zoomScalingResult.pitchScale19 < 0.85, 'Zoom 19 pitch scale must be compact');
+    assert.strictEqual(zoomScalingResult.isZoom18Compact, true);
+    assert.strictEqual(zoomScalingResult.coneScale18, '0.380');
+    assert.strictEqual(zoomScalingResult.isPitchHidden18, false);
+    assert.strictEqual(zoomScalingResult.isZoom17Visible, true);
+    assert.strictEqual(zoomScalingResult.isPitchHidden17, true);
+    assert.strictEqual(zoomScalingResult.coneScale17, '0.280');
+    assert.strictEqual(zoomScalingResult.isZoom15Out, true);
+  });
+
+  test('E2E: Dynamic Heading-Opposite Pitch Label Positioning on Map (v1.80.3)', async () => {
+    const pitchPosResult = await page.evaluate(async () => {
+      const activeMap = (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map);
+      if (!activeMap) return { success: false, reason: 'no map' };
+
+      // Set zoom to 20 so markers and pitch labels are fully active and visible
+      activeMap.setView(activeMap.getCenter(), 20, { animate: false });
+      if (typeof applyZoomGates === 'function') applyZoomGates();
+      await new Promise(r => setTimeout(r, 60));
+
+      // Clear existing layers and place a double grid (which has alternating 0° and 180° legs)
+      if (typeof clearAllLayers === 'function') clearAllLayers();
+      const center = activeMap.getCenter();
+      if (typeof setGridCenter === 'function') setGridCenter(center.lat, center.lng);
+      await new Promise(r => setTimeout(r, 200));
+
+      // Find markers
+      const markers = Array.from(document.querySelectorAll('.leaflet-marker-pane .custom-wp-marker'));
+      if (!markers || markers.length === 0) return { success: false, reason: 'no markers' };
+
+      let foundNorth = false;
+      let foundSouth = false;
+      let northHasBottom = false;
+      let southHasTop = false;
+
+      for (const m of markers) {
+        const wrapper = m.querySelector('.wp-marker-wrapper');
+        const pitchLabel = m.querySelector('.wp-pitch-label');
+        if (!wrapper || !pitchLabel) continue;
+
+        const transform = wrapper.style.transform || '';
+        // Extract rotate angle
+        const match = transform.match(/rotate\(([-\d.]+)deg\)/);
+        if (!match) continue;
+
+        const rot = ((parseFloat(match[1]) % 360) + 360) % 360;
+
+        // Northbound (rot ~ 0)
+        if (Math.abs(rot) < 15 || Math.abs(rot - 360) < 15) {
+          foundNorth = true;
+          if (pitchLabel.classList.contains('wp-pitch-pos-bottom')) {
+            northHasBottom = true;
+          }
+        }
+
+        // Southbound (rot ~ 180)
+        if (Math.abs(rot - 180) < 15) {
+          foundSouth = true;
+          if (pitchLabel.classList.contains('wp-pitch-pos-top')) {
+            southHasTop = true;
+          }
+        }
+
+        if (foundNorth && foundSouth && northHasBottom && southHasTop) break;
+      }
+
+      return {
+        success: foundNorth && foundSouth && northHasBottom && southHasTop,
+        foundNorth,
+        foundSouth,
+        northHasBottom,
+        southHasTop
+      };
+    });
+
+    assert.ok(pitchPosResult.success, `Heading-opposite pitch placement failed: ${JSON.stringify(pitchPosResult)}`);
+    assert.strictEqual(pitchPosResult.foundNorth, true);
+    assert.strictEqual(pitchPosResult.foundSouth, true);
+    assert.strictEqual(pitchPosResult.northHasBottom, true);
+    assert.strictEqual(pitchPosResult.southHasTop, true);
+  });
+
+  test('E2E: Three-Tier Architectural Hierarchy Section 2 Layer Dynamics Drawer and Controls (v1.81.0)', async () => {
+    const layerDynamicsResult = await page.evaluate(async () => {
+      const captureSelect = document.getElementById('layer-capture-mode');
+      const pathSelect = document.getElementById('layer-path-mode');
+      const headingSelect = document.getElementById('layer-heading-mode');
+      const drawerToggle = document.getElementById('layer-advanced-dynamics-toggle-btn');
+      const drawer = document.getElementById('layer-advanced-dynamics-drawer');
+      const overshootInput = document.getElementById('layer-turnaround-overshoot');
+      const speedInput = document.getElementById('layer-turnaround-speed');
+      const dampingInput = document.getElementById('layer-corner-damping');
+      const hoverModeSelect = document.getElementById('layer-hover-time-mode');
+      const settlingToggle = document.getElementById('layer-auto-settling-toggle');
+
+      if (!captureSelect || !pathSelect || !headingSelect || !drawerToggle || !drawer ||
+          !overshootInput || !speedInput || !dampingInput || !hoverModeSelect || !settlingToggle) {
+        return { success: false, reason: 'Layer dynamics controls missing in Section 2 DOM' };
+      }
+
+      // Initial drawer state should be hidden
+      const initialDrawerClosed = drawer.classList.contains('hidden');
+
+      // Click drawer toggle button
+      drawerToggle.click();
+      await new Promise(r => setTimeout(r, 60));
+      const drawerOpened = !drawer.classList.contains('hidden');
+
+      // Test changing layer capture mode to continuous
+      captureSelect.value = 'continuous';
+      captureSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+      // Test changing layer path mode to straight
+      pathSelect.value = 'straight';
+      pathSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+      // Test selecting turnaround overshoot
+      overshootInput.value = '10';
+      overshootInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+      // Test selecting turnaround speed
+      speedInput.value = '8';
+      speedInput.dispatchEvent(new Event('change', { bubbles: true }));
+
+      // Verify activeLayer was updated
+      const activeL = (typeof getActiveLayer === 'function') ? getActiveLayer() : (typeof flightLayers !== 'undefined' ? flightLayers[activeLayerIndex] : null);
+      const layerUpdated = activeL &&
+        activeL.captureMode === 'continuous' &&
+        activeL.pathMode === 'straight' &&
+        activeL.turnaroundOvershoot === 10 &&
+        activeL.turnaroundSpeed === 8;
+
+      // Click drawer toggle button again to close
+      drawerToggle.click();
+      await new Promise(r => setTimeout(r, 60));
+      const drawerClosedFinal = drawer.classList.contains('hidden');
+
+      return {
+        success: true,
+        initialDrawerClosed,
+        drawerOpened,
+        layerUpdated,
+        drawerClosedFinal
+      };
+    });
+
+    assert.ok(layerDynamicsResult.success, `Layer dynamics E2E test failed: ${JSON.stringify(layerDynamicsResult)}`);
+    assert.strictEqual(layerDynamicsResult.initialDrawerClosed, true, 'Drawer should be collapsed initially');
+    assert.strictEqual(layerDynamicsResult.drawerOpened, true, 'Drawer should open on toggle click');
+    assert.strictEqual(layerDynamicsResult.layerUpdated, true, 'Layer properties should update from Section 2 inputs');
+    assert.strictEqual(layerDynamicsResult.drawerClosedFinal, true, 'Drawer should collapse on second toggle click');
+  });
 });
+
+

@@ -335,7 +335,7 @@ function runMtpScript(scriptContent) {
     execFile(
       'powershell.exe',
       ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', encodedCommand],
-      { maxBuffer: 10 * 1024 * 1024 },
+      { maxBuffer: 10 * 1024 * 1024, timeout: 25000 },
       (error, stdout, stderr) => {
         if (error) {
           resolve({ success: false, error: stderr || error.message });
@@ -777,6 +777,10 @@ $outDir = '${LATEST_DIR}'
 $latestLogName = $null
 $latestKmzName = $null
 
+$tempMtpDir = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "aalaapi_mtp_temp")
+if (-not (Test-Path $tempMtpDir)) { New-Item -ItemType Directory -Path $tempMtpDir -Force | Out-Null }
+Get-ChildItem -Path $tempMtpDir -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+
 if ($dji) {
     $storage = Get-SubItem $dji "Internal shared storage"
     if (-not $storage) { $storage = Get-SubItem $dji "Internal storage" }
@@ -787,38 +791,75 @@ if ($dji) {
         $files   = Get-SubItem $djiApp "files"
 
         if ($files) {
-            $outFolder = $shell.Namespace($outDir)
-            # Flight logs
+            $tempFolder = $shell.Namespace($tempMtpDir)
+
+            # 1. Flight logs
             $fl = Get-SubItem $files "FlightRecord"
-            if ($fl -and $outFolder) {
+            if ($fl -and $tempFolder) {
                 $logs = @($fl.GetFolder.Items() | Where-Object { $_.Name -like "FlightRecord_*.txt" } | Sort-Object Name -Descending)
                 if ($logs.Count -gt 0) {
                     $latestLog = $logs[0]
                     $latestLogName = $latestLog.Name
-                    $outFolder.CopyHere($latestLog, 16)
-                    $swLog = [System.Diagnostics.Stopwatch]::StartNew()
-                    while ($swLog.Elapsed.TotalSeconds -lt 8) {
-                        Start-Sleep -Milliseconds 300
-                        $copiedLog = @(Get-ChildItem -Path $outDir -Filter $latestLogName -File -ErrorAction SilentlyContinue)
-                        if ($copiedLog.Count -gt 0 -and $copiedLog[0].Length -gt 0) { break }
+
+                    # Check if already present and non-empty in outDir to avoid unnecessary MTP copy
+                    $existing = @(Get-ChildItem -Path $outDir -Filter $latestLogName -File -ErrorAction SilentlyContinue)
+                    if ($existing.Count -eq 0 -or $existing[0].Length -eq 0) {
+                        # Copy to local TEMP folder first to avoid OneDrive COM hanging
+                        $tempFolder.CopyHere($latestLog, 16)
+                        $swLog = [System.Diagnostics.Stopwatch]::StartNew()
+                        $copied = $false
+                        while ($swLog.Elapsed.TotalSeconds -lt 12) {
+                            Start-Sleep -Milliseconds 300
+                            $tmpItem = @(Get-ChildItem -Path $tempMtpDir -Filter $latestLogName -File -ErrorAction SilentlyContinue)
+                            if ($tmpItem.Count -gt 0 -and $tmpItem[0].Length -gt 0) {
+                                # Verify file is fully written and unlocked
+                                try {
+                                    $fs = [System.IO.File]::Open($tmpItem[0].FullName, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::None)
+                                    $fs.Close()
+                                    $fs.Dispose()
+                                    $copied = $true
+                                    break
+                                } catch {
+                                    # Still writing/locked by Shell COM
+                                }
+                            }
+                        }
+                        if ($copied) {
+                            Copy-Item -Path (Join-Path $tempMtpDir $latestLogName) -Destination (Join-Path $outDir $latestLogName) -Force
+                        }
                     }
                 }
             }
 
-            # Waypoints (pull only the latest active mission)
+            # 2. Waypoints (only pull if no log copied, or sequentially after log transfer completes)
             $wp = Get-SubItem $files "waypoint"
-            if ($wp -and $outFolder) {
+            if ($wp -and $tempFolder) {
                 $latestMission = @($wp.GetFolder.Items() | Where-Object { $_.IsFolder -and $_.Name -match "^[A-F0-9]{8}-" } | Sort-Object Name -Descending) | Select-Object -First 1
                 if ($latestMission) {
                     $kmz = @($latestMission.GetFolder.Items() | Where-Object { $_.Name -like "*.kmz" -and $_.Name -notlike "_old_*" }) | Select-Object -First 1
                     if ($kmz) {
                         $latestKmzName = $kmz.Name
-                        $outFolder.CopyHere($kmz, 16)
-                        $swKmz = [System.Diagnostics.Stopwatch]::StartNew()
-                        while ($swKmz.Elapsed.TotalSeconds -lt 5) {
-                            Start-Sleep -Milliseconds 300
-                            $copiedKmz = @(Get-ChildItem -Path $outDir -Filter $latestKmzName -File -ErrorAction SilentlyContinue)
-                            if ($copiedKmz.Count -gt 0 -and $copiedKmz[0].Length -gt 0) { break }
+                        $existingKmz = @(Get-ChildItem -Path $outDir -Filter $latestKmzName -File -ErrorAction SilentlyContinue)
+                        if ($existingKmz.Count -eq 0 -or $existingKmz[0].Length -eq 0) {
+                            $tempFolder.CopyHere($kmz, 16)
+                            $swKmz = [System.Diagnostics.Stopwatch]::StartNew()
+                            $kmzCopied = $false
+                            while ($swKmz.Elapsed.TotalSeconds -lt 6) {
+                                Start-Sleep -Milliseconds 300
+                                $tmpKmz = @(Get-ChildItem -Path $tempMtpDir -Filter $latestKmzName -File -ErrorAction SilentlyContinue)
+                                if ($tmpKmz.Count -gt 0 -and $tmpKmz[0].Length -gt 0) {
+                                    try {
+                                        $fs = [System.IO.File]::Open($tmpKmz[0].FullName, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::None)
+                                        $fs.Close()
+                                        $fs.Dispose()
+                                        $kmzCopied = $true
+                                        break
+                                    } catch {}
+                                }
+                            }
+                            if ($kmzCopied) {
+                                Copy-Item -Path (Join-Path $tempMtpDir $latestKmzName) -Destination (Join-Path $outDir $latestKmzName) -Force
+                            }
                         }
                     }
                 }
@@ -826,6 +867,8 @@ if ($dji) {
         }
     }
 }
+
+Get-ChildItem -Path $tempMtpDir -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
 
 @{
     success = $true

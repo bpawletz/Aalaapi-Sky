@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.77.6</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.81.0</span></h1>
         </div>
       </div>
 
@@ -103,8 +103,9 @@
         </div>
       </div>
 
-      <!-- Right: Action Buttons (Theme, Intro, Config, About, Links) -->
+      <!-- Right: Action Buttons (Unit Toggle, Theme, Intro, Config, About, Links) -->
       <div class="topbar-right">
+        <button id="header-unit-toggle-btn" class="btn-secondary header-unit-btn" type="button" title="Toggle Measurement Units (Imperial / Metric)" aria-label="Toggle Units" onclick="toggleUnitSystem()"><span id="header-unit-badge">FT / MPH</span></button>
         <button id="theme-toggle-btn" class="btn-secondary header-theme-btn" type="button" title="Toggle Light / Dark Mode" aria-label="Toggle Theme" onclick="toggleAppTheme()">☀️</button>
         <button id="intro-tour-btn" class="btn-secondary header-about-btn" type="button" title="Quickstart Workflow Tour, What's New &amp; Pro Tips" onclick="openIntroModal('workflow')"><span>🎓</span><span>Intro</span></button>
         <button id="config-btn" class="btn-secondary header-config-btn" type="button" aria-label="Configuration Settings" title="Configuration Settings">
@@ -560,7 +561,7 @@
               </span>
               <span class="value-display"><span id="speed-val">4</span> <span id="speed-unit">m/s</span></span>
             </div>
-            <input type="range" id="speed" min="1" max="15" value="4" class="slider" aria-label="Flight speed">
+            <input type="range" id="speed" min="0.2" max="15" step="0.1" value="4" class="slider" aria-label="Flight speed">
           </div>
 
           <div class="control-group">
@@ -695,6 +696,169 @@
           <div class="control-group" style="display: none;">
             <input type="range" id="camera-hfov" min="30" max="120" step="0.1" value="69.7" class="slider" aria-label="Camera HFOV">
             <input type="range" id="camera-vfov" min="20" max="100" step="0.1" value="55.2" class="slider" aria-label="Camera VFOV">
+          </div>
+
+          <!-- Layer-Specific Flight & Capture Modes -->
+          <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; flex-direction: column; gap: 10px;">
+            <div class="control-label" style="margin-bottom: 2px;">
+              <span style="font-size: 0.78rem; font-weight: 700; color: var(--accent-cyan); display: inline-flex; align-items: center; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                Layer Flight &amp; Capture Modes
+              </span>
+              <span class="badge" style="font-size: 0.65rem; background: rgba(6, 182, 212, 0.12); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 5px; border-radius: 999px;">Layer</span>
+            </div>
+
+            <div class="control-group">
+              <label for="layer-capture-mode" style="font-size: 0.75rem;">Capture Mode</label>
+              <select id="layer-capture-mode" class="form-select" style="font-size: 0.75rem; padding: 4px 8px;">
+                <option value="inherit" id="layer-capture-mode-inherit-opt">🌐 Inherit Global Default</option>
+                <option value="stopAndShoot">Stop &amp; Shoot at Waypoints (Automated)</option>
+                <option value="continuous">Continuous Flight (Timed / Interval Shot)</option>
+                <option value="video">Video Mode (Record Entire Route)</option>
+              </select>
+            </div>
+
+            <div class="control-group">
+              <label for="layer-path-mode" style="font-size: 0.75rem;">Connection Path Type</label>
+              <select id="layer-path-mode" class="form-select" style="font-size: 0.75rem; padding: 4px 8px;">
+                <option value="inherit" id="layer-path-mode-inherit-opt">🌐 Inherit Global Default</option>
+                <option value="curved">Curved Path (Smooth turns, faster)</option>
+                <option value="straight">Straight Lines (Drone stops at points)</option>
+              </select>
+            </div>
+
+            <div class="control-group">
+              <label for="layer-heading-mode" style="font-size: 0.75rem;">Heading Mode</label>
+              <select id="layer-heading-mode" class="form-select" style="font-size: 0.75rem; padding: 4px 8px;">
+                <option value="inherit" id="layer-heading-mode-inherit-opt">🌐 Inherit Global Default</option>
+                <option value="followWayline">Follow Flight Path (Forward-facing)</option>
+                <option value="fixed">Fixed Heading (North)</option>
+                <option value="towardPOI">Point of Interest (Target-Facing)</option>
+              </select>
+            </div>
+
+            <div class="control-group hidden" id="layer-poi-container">
+              <label for="layer-poi-select" style="font-size: 0.75rem;">Target Point of Interest (POI)</label>
+              <select id="layer-poi-select" class="form-select" style="font-size: 0.75rem; padding: 4px 8px;">
+                <option value="">🌐 Nearest / Mission Default POI</option>
+              </select>
+            </div>
+
+            <!-- Expandable Advanced Flight Dynamics & Stabilization Drawer -->
+            <div style="margin-top: 4px;">
+              <button id="layer-advanced-dynamics-toggle-btn" type="button" class="btn-secondary" style="width: 100%; padding: 5px 8px; font-size: 0.72rem; font-weight: 600; display: flex; align-items: center; justify-content: space-between; border-radius: 6px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color);">
+                <span style="display: inline-flex; align-items: center; gap: 5px;">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                  Flight Dynamics &amp; Stabilization
+                </span>
+                <span id="layer-advanced-dynamics-arrow" style="font-size: 0.65rem; transition: transform 0.2s;">▼</span>
+              </button>
+
+              <div id="layer-advanced-dynamics-drawer" class="hidden" style="margin-top: 6px; padding: 10px; background: rgba(15, 23, 42, 0.45); border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column; gap: 10px;">
+                <div class="control-group">
+                  <div class="control-label" style="margin-bottom: 2px;">
+                    <span style="font-size: 0.72rem; color: #cbd5e1;">Turnaround Overshoot Buffer</span>
+                  </div>
+                  <select id="layer-turnaround-overshoot" class="form-select" style="font-size: 0.72rem; padding: 3px 6px;">
+                    <option value="0" selected>Off (0 m - Turn on Boundary)</option>
+                    <option value="5">5 m (Clean Edge Entry - Recommended)</option>
+                    <option value="10">10 m (Extended Entry)</option>
+                    <option value="15">15 m (Wide Margin)</option>
+                  </select>
+                  <p class="help-text" style="margin: 2px 0 0 0; font-size: 0.68rem;">Extends survey lines past perimeter so turns happen outside mapping area.</p>
+                </div>
+
+                <div class="control-group">
+                  <div class="control-label" style="margin-bottom: 2px;">
+                    <span style="font-size: 0.72rem; color: #cbd5e1;">Turnaround Transit Speed</span>
+                  </div>
+                  <select id="layer-turnaround-speed" class="form-select" style="font-size: 0.72rem; padding: 3px 6px;">
+                    <option value="inherit" selected>🌐 Inherit Layer Speed</option>
+                    <option value="6">6.0 m/s (Brisk Transit)</option>
+                    <option value="8">8.0 m/s (Fast Transit - Recommended)</option>
+                    <option value="10">10.0 m/s (High-Speed Transit)</option>
+                    <option value="12">12.0 m/s (Max Transit)</option>
+                  </select>
+                  <p class="help-text" style="margin: 2px 0 0 0; font-size: 0.68rem;">Speeds up 180° turnaround arcs between grid lines to save battery.</p>
+                </div>
+
+                <div class="control-group">
+                  <div class="control-label" style="margin-bottom: 2px;">
+                    <span style="font-size: 0.72rem; color: #cbd5e1;">Corner Damping Distance</span>
+                  </div>
+                  <select id="layer-corner-damping" class="form-select" style="font-size: 0.72rem; padding: 3px 6px;">
+                    <option value="0" selected>Sharp Turn (0 m)</option>
+                    <option value="1">Tight Arc (1 m)</option>
+                    <option value="2">Smooth Arc (2 m)</option>
+                    <option value="3">Wide Arc (3 m)</option>
+                    <option value="5">Expansive Arc (5 m)</option>
+                  </select>
+                </div>
+
+                <div class="control-group">
+                  <div class="control-label" style="margin-bottom: 2px;">
+                    <span style="font-size: 0.72rem; color: #cbd5e1;">Hover Dwell Time</span>
+                  </div>
+                  <select id="layer-hover-time-mode" class="form-select" style="font-size: 0.72rem; padding: 3px 6px;">
+                    <option value="inherit" id="layer-hover-time-inherit-opt" selected>🌐 Inherit Global Default</option>
+                    <option value="custom">Custom Dwell Time...</option>
+                  </select>
+                  <div id="layer-hover-time-custom-wrapper" class="hidden" style="margin-top: 6px;">
+                    <div class="control-label" style="margin-bottom: 2px;">
+                      <span style="font-size: 0.7rem; color: var(--text-muted);">Custom Dwell</span>
+                      <span class="value-display"><span id="layer-hover-time-val">0</span>s</span>
+                    </div>
+                    <input type="range" id="layer-hover-time-slider" min="0" max="60" step="1" value="0" class="slider">
+                  </div>
+                </div>
+
+                <div style="padding-top: 6px; border-top: 1px dashed rgba(255, 255, 255, 0.1); display: flex; flex-direction: column; gap: 8px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <label style="font-size: 0.72rem; font-weight: 600; color: #38bdf8; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; margin: 0;">
+                      <input type="checkbox" id="layer-auto-settling-toggle" checked style="accent-color: var(--accent-cyan);">
+                      Gimbal &amp; Inertia Auto-Settling
+                    </label>
+                  </div>
+                  <p class="help-text" style="margin: 0; font-size: 0.68rem; color: var(--text-muted); line-height: 1.3;">
+                    Pauses drone before camera trigger in Stop &amp; Shoot to eliminate motion blur and prevent RC 2 gimbal overload errors.
+                  </p>
+
+                  <div id="layer-auto-settling-sliders" style="display: flex; flex-direction: column; gap: 6px;">
+                    <div>
+                      <div class="control-label" style="margin-bottom: 2px;">
+                        <span style="font-size: 0.7rem;">Base Shutter Pause (Straight lines)</span>
+                        <span class="value-display"><span id="layer-base-settling-val">2.0</span>s</span>
+                      </div>
+                      <input type="range" id="layer-base-settling-slider" min="1.0" max="5.0" step="0.5" value="2.0" class="slider">
+                    </div>
+
+                    <div>
+                      <div class="control-label" style="margin-bottom: 2px;">
+                        <span style="font-size: 0.7rem;">Major Turn Pause (&ge;60&deg; / 180&deg; Turnaround)</span>
+                        <span class="value-display"><span id="layer-major-turn-settling-val">5.0</span>s</span>
+                      </div>
+                      <input type="range" id="layer-major-turn-settling-slider" min="2.0" max="10.0" step="0.5" value="5.0" class="slider">
+                    </div>
+
+                    <div>
+                      <div class="control-label" style="margin-bottom: 2px;">
+                        <span style="font-size: 0.7rem;">Moderate Turn Pause (&ge;25&deg;)</span>
+                        <span class="value-display"><span id="layer-mod-turn-settling-val">4.0</span>s</span>
+                      </div>
+                      <input type="range" id="layer-mod-turn-settling-slider" min="2.0" max="8.0" step="0.5" value="4.0" class="slider">
+                    </div>
+
+                    <div>
+                      <div class="control-label" style="margin-bottom: 2px;">
+                        <span style="font-size: 0.7rem;">Gimbal Pitch Tilt Pause (&ge;5&deg;)</span>
+                        <span class="value-display"><span id="layer-pitch-settling-val">3.0</span>s</span>
+                      </div>
+                      <input type="range" id="layer-pitch-settling-slider" min="1.0" max="6.0" step="0.5" value="3.0" class="slider">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -1404,6 +1568,24 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: var(--accent-cyan); font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              ⚡ Three-Tier Hierarchy, Per-Layer Dynamics &amp; Universal Auto-Settling
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Establishes a unified 3-tier cascade: <strong>Global Defaults &rarr; Layer Properties &rarr; Waypoint Overrides</strong>. Each layer can independently configure Capture Mode (Stop &amp; Shoot, Continuous, Video), Connection Path Type (Curved, Straight), Heading Mode, and Target POI with <code>🌐 Inherit Global</code> fallbacks. Features universal auto-settling delays across all flight plans (3s tilt, 4s/5s turns) to prevent RC 2 gimbal errors, plus Turnaround Overshoot buffers and high-speed transit between survey lines.
+            </p>
+          </div>
+
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 12px;">
+            <strong style="color: #fbbf24; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🧭 High-Contrast Camera Direction &amp; Visual Palettes
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Solves waypoint heading ambiguity against dashed flight path lines. Features enlarged, drop-shadowed directional arrows and illuminated FOV sight cones in 6 selectable high-contrast palettes (High-Viz Amber, Electric Lime, Coral Crimson, Neon Magenta, Solar Yellow, and Classic Cyan) with an independent sight cone toggle in Settings and continuous, fluid zoom-responsive scaling that coordinates both cones and pitch labels to prevent collisions.
+            </p>
+          </div>
+
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px;">
             <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🎯 Target Splat Grid (3D Frustum Culling &amp; Smart Trimming)
@@ -1893,7 +2075,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.77.6</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.81.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -1961,6 +2143,78 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.81.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Three-Tier Architectural Hierarchy (Global &rarr; Layer &rarr; Waypoint):</strong> Established a seamless 3-tier cascade across all mission parameters (Capture Mode, Connection Path Type, Heading Mode, Speed, Hover Time, Camera Actions). Section 2 provides layer overrides defaulting to <code>🌐 Inherit Global</code>, while 2D map popups and 3D FPV HUD editors default to <code>🌐 Inherit Layer</code> with granular per-waypoint overrides.</li>
+              <li><strong>Per-Layer Capture Mode &amp; Path Type:</strong> Configured independent capture modes (Stop &amp; Shoot, Continuous, Video) and path types (Curved, Straight) per layer, compiling tailored placemark action groups and turn parameters while strictly enforcing Consumer drone compliance (<code>useStraightLine: 0</code> on Mini 4 Pro / Air 3).</li>
+              <li><strong>Universal Auto-Settling Delays for All Flight Plans:</strong> Applied graduated settling pauses universally across all patterns in Stop &amp; Shoot mode (2s straight line, 3s pitch tilt, 4s moderate turn, 5s major turnaround), preventing RC 2 gimbal overload errors and motion blur.</li>
+              <li><strong>Turnaround Overshoot &amp; High-Speed Transit:</strong> Added Turnaround Overshoot buffers (5m–15m) ensuring turns occur outside survey polygons, and high-speed turnaround transit (6–12 m/s) to save battery life during 180&deg; turns.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.80.3):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Dynamic Heading-Opposite Pitch Label Positioning:</strong> Resolved visual overlap where waypoint pitch badges covered camera sight cones and directional arrows on Southbound/downward flight legs. On Southward headings (75&deg;&ndash;285&deg;), pitch badges automatically flip above the waypoint dot (<code>.wp-pitch-pos-top</code>), leaving the downward-pointing camera sight cone and directional arrow 100% visible and un-obscured.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.80.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Continuous Smooth Zoom Scaling for Cones, Pitch Labels &amp; Directional Arrows:</strong> Replaced discrete stepped thresholds with continuous floating-point zoom interpolation via CSS variables (<code>--wp-cone-scale</code>, <code>--wp-pitch-scale</code>, <code>--wp-pitch-top</code>, <code>--wp-arrow-scale</code>). Waypoint pitch badges now scale smoothly in lockstep from 0.65 to 1.0 (with top offset adjusting from 16px to 24px), completely preventing black box collisions and overlap. Micro-cones (0.18–0.38) and directional arrows remain visible across zoom 16–18 for full flight orientation while hiding pitch numbers (<code>.wp-zoom-pitch-hidden</code>) to keep working views clean.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.80.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Zoom-Responsive Camera Sight Cone Scaling:</strong> Resolved overlapping cone clutter on medium and dense waypoint grids. Camera sight cones and pitch labels now dynamically scale with map zoom (scale 1.0 at zoom &ge; 20, scale 0.68 at zoom 19, scale 0.42 compact micro-cones at zoom 18, and clean dots overview below zoom 18) with continuous live scaling on map scroll/pinch.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.80.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>High-Contrast Camera Direction &amp; Configurable Visual Palettes:</strong> Resolved camera heading ambiguity against dashed flight path lines. Directional arrows now feature an enlarged geometry and multi-stop dark drop-shadow outline for guaranteed visibility across all map imagery and dashed line segments. Added a dedicated "Map &amp; Camera Visuals" section in Configuration Settings with 6 color palettes (High-Viz Amber default, Electric Lime, Coral Crimson, Neon Magenta, Solar Yellow, and Classic Cyan) and an independent Camera FOV Sight Cones toggle.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.79.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Interactive Click-to-Convert Measurement Units:</strong> Pilots can now click directly on any unit badge (<code>ft</code>, <code>mph</code>, <code>m</code>, <code>m/s</code>) next to values on the sidebar or click the new <code>FT / MPH</code> &harr; <code>M / M/S</code> quick switcher button in the top navigation bar to seamlessly toggle between Imperial and Metric units with synchronized global conversion across all flight parameters, waypoints, and tooltips.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.78.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Click-to-Type Numerical Value Editing:</strong> Added interactive inline numerical input to all sidebar value numbers (Speed, Altitude, Width, Height, Overlap, Pitch, Rotation, etc.). Clicking any value opens a direct input box accepting numbers in the active unit system with bounds clamping, unit conversion, and instant mission recalculation.</li>
+              <li><strong>Slow Speed Floor for Gaussian Splatting:</strong> Lowered minimum speed limit from 1.0 m/s (2.2 mph) to 0.2 m/s (~0.4 mph) with fine 0.1 m/s resolution for blur-free low-light photogrammetry and small-structure 3D scanning.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.77.10):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Target Splat &amp; Exclusion Zone Vertex Dragging Responsiveness:</strong> Resolved an issue where dragging perimeter pins moved only 1–2 pixels before aborting. Draggable vertex pins now drag completely smoothly in a single continuous movement with live boundary and orbit preview updates, deferring full grid and waypoint recalculations to the drag release event.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.77.9):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>MTP Flight Log Pull Reliability &amp; Deadlock Fix:</strong> Resolved an issue where clicking "📥 Pull Flight Log" remained indefinitely stuck in the "⏳ Pulling Log..." state. Switched extraction to a safe two-stage process via local temporary storage to eliminate Explorer COM lockups within OneDrive repositories, sequentially decoupled flight log and waypoint KMZ transfers to prevent single-stream MTP collisions, and added process execution and fetch timeouts with guaranteed button restoration.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.77.8):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Target Splat Turn Steadying &amp; Settling Delays:</strong> Resolved an issue where photos taken immediately following sharp waypoint turns were captured before aircraft yaw oscillation and rotational momentum had settled. Enforced automatic settling hovers in <code>stopAndShoot</code> mode (5s on turns &ge; 60°, 4s on turns &ge; 25°, 3s on pitch changes) and enforced <code>gimbalRotate</code> actions on pitch transitions.</li>
+              <li><strong>Perimeter Orbit Safe Transit Clearance Waypoint:</strong> Resolved false APAS obstacle alarms when entering perimeter facade orbits. Injected an automatic horizontal standoff transit waypoint at safe grid altitude directly above the orbit entry point before descending, preventing steep diagonal descents near rooflines. Perimeter orbits now dynamically begin at the point closest to the grid exit.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
+            <strong style="color: var(--text-main);">Changelog (v1.77.7):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Target Splat First Waypoint Stuck Bug Fixed:</strong> Resolved an issue where Target Splat missions on DJI Mini 4 Pro became stuck indefinitely at Waypoint 0 during flight execution. Generated waypoints now strictly enforce <code>smoothTransition</code> mode with <code>headingAngleEnable: 1</code> and clamped 0.1° non-zero angles, preventing DJI Fly trajectory solver tangent errors at stopped points.</li>
+              <li><strong>Target Splat Pre-Flight Audit &amp; Auto-Repair:</strong> Extended Rule 1 in <code>validateWpmlMission</code> to flag any Target Splat mission using <code>followWayline</code>, and updated <code>validateAndFixWpml</code> to automatically sanitize and repair legacy Target Splat missions to <code>smoothTransition</code> with locked headings.</li>
+            </ul>
+          </div>
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px;">
             <strong style="color: var(--text-main);">Changelog (v1.77.6):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Map Zoom Waypoint Lockstep &amp; Nudge Popup Fix:</strong> Prevented Leaflet's internal layer removal and zoom animation listeners from being stripped during waypoint popup editing. Resolved an unhandled <code>TypeError: Cannot read properties of null (reading '_latLngToNewLayerPoint')</code> exception that caused map zoom animations to crash mid-flight and freeze waypoint markers in place after nudging.</li>
@@ -3499,6 +3753,38 @@
           <p class="help-text" style="margin-top: 4px;">Choose where address search and location controls appear.</p>
         </div>
 
+        <!-- Map & Camera Visuals -->
+        <div class="control-group">
+          <label for="camera-palette-select" style="font-weight: 600; color: var(--text-main); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <span>Camera &amp; Path Visual Palette</span>
+            <span id="palette-swatch-preview" style="display: inline-flex; align-items: center; gap: 4px;" title="Path / Camera Colors">
+              <span class="palette-swatch-chip" style="background-color: #06b6d4;" title="Flight Path"></span>
+              <span class="palette-swatch-chip" style="background-color: #f59e0b;" title="Camera Pointer"></span>
+            </span>
+          </label>
+          <select id="camera-palette-select" class="form-select" style="width: 100%;">
+            <option value="high-viz-amber" selected>High-Viz Amber (Cyan Path + Amber Camera)</option>
+            <option value="electric-lime">Electric Lime (Azure Path + Neon Lime Camera)</option>
+            <option value="coral-crimson">Coral Crimson (Cyan Path + Hot Coral Camera)</option>
+            <option value="neon-magenta">Neon Magenta (Emerald Path + Vivid Magenta Camera)</option>
+            <option value="solar-yellow">Solar Yellow (Cobalt Path + Bright Yellow Camera)</option>
+            <option value="classic-cyan">Monochrome Classic (Matched Path &amp; Camera)</option>
+          </select>
+          <p class="help-text" style="margin-top: 4px;">Sets high-contrast colors for camera heading arrows and FOV sight cones so they stand out clearly against dashed flight path lines.</p>
+        </div>
+
+        <!-- Camera FOV Sight Cones Toggle -->
+        <div class="control-group" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: -6px;">
+          <div>
+            <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-main);">Camera Sight Cones</span>
+            <p class="help-text" style="margin: 2px 0 0 0;">Show illuminated field-of-view sight cones indicating gimbal facing direction.</p>
+          </div>
+          <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px;">
+            <input type="checkbox" id="camera-cones-toggle" checked style="opacity: 0; width: 0; height: 0;">
+            <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
+          </label>
+        </div>
+
         <div style="border-top: 1px solid var(--border-color); padding-top: 16px;">
           <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--text-main); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Menu Minimization Options</h3>
           
@@ -3771,7 +4057,7 @@
                   <div style="display: flex; justify-content: space-between; align-items: center;">
                     <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 5px;"><svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" stroke="#06b6d4" fill="none"/><line x1="4" y1="22" x2="4" y2="15" stroke="#c2622d"/></svg>Turn Mode:</span>
                     <select id="fpv-edit-turn-mode" class="form-select" style="font-size: 0.72rem; padding: 3px 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); cursor: pointer;">
-                      <option value="inherit">Inherit Global Default</option>
+                      <option value="inherit" id="fpv-edit-turn-mode-inherit-opt">🌐 Inherit Layer Default</option>
                       <option value="stop">Stop & Turn</option>
                       <option value="pass">Curved Pass</option>
                     </select>
@@ -3782,7 +4068,7 @@
                   <div style="display: flex; justify-content: space-between; align-items: center;">
                     <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 5px;"><svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="#06b6d4" fill="none"/><circle cx="12" cy="13" r="4" stroke="#c2622d" fill="none"/></svg>Camera Action:</span>
                     <select id="fpv-edit-camera-action" class="form-select" style="font-size: 0.72rem; padding: 3px 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); cursor: pointer;">
-                      <option value="inherit">Inherit Global Mode</option>
+                      <option value="inherit" id="fpv-edit-camera-action-inherit-opt">🌐 Inherit Layer Mode</option>
                       <option value="none">None (No Action)</option>
                       <option value="takePhoto">Take Photo</option>
                       <option value="startRecord">Start Recording</option>
