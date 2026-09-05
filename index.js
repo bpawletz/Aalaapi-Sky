@@ -227,6 +227,43 @@ function getUnitSystem() {
   return (typeof localStorage !== 'undefined' ? localStorage.getItem('aalaapi_sky_unit_system') : null) || 'imperial';
 }
 
+function setUnitSystem(newUnit) {
+  if (newUnit !== 'imperial' && newUnit !== 'metric') return;
+  cachedUnitSystem = newUnit;
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('aalaapi_sky_unit_system', newUnit);
+    }
+  } catch (e) {}
+
+  if (typeof document !== 'undefined') {
+    const el = document.getElementById('unit-system');
+    if (el) el.value = newUnit;
+
+    const badge = document.getElementById('header-unit-badge');
+    if (badge) {
+      badge.textContent = newUnit === 'imperial' ? 'FT / MPH' : 'M / M/S';
+    }
+  }
+
+  if (typeof syncDisplayValues === 'function') {
+    syncDisplayValues();
+  }
+
+  if (typeof getCurrentWaypoints === 'function' && getCurrentWaypoints()) {
+    if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+  } else if (typeof updateGrid === 'function') {
+    updateGrid();
+  }
+}
+
+function toggleUnitSystem() {
+  const current = (typeof getUnitSystem === 'function') ? getUnitSystem() : 'imperial';
+  const next = current === 'imperial' ? 'metric' : 'imperial';
+  setUnitSystem(next);
+  return next;
+}
+
 function formatDistance(meters, decimalPlaces = 1) {
   if (meters === null || meters === undefined || isNaN(meters)) {
     return `0 ${getUnitSystem() === 'imperial' ? 'ft' : 'm'}`;
@@ -284,12 +321,177 @@ function initTheme() {
   setAppTheme(saved);
 }
 
-// Attach to window for inline onclick handlers
+// Map & Camera Visual Palette System
+const CAMERA_PALETTE_STORAGE_KEY = 'aalaapi_sky_camera_palette';
+const CAMERA_CONES_STORAGE_KEY = 'aalaapi_sky_camera_cones';
+
+const CAMERA_PALETTES = {
+  'high-viz-amber': {
+    id: 'high-viz-amber',
+    name: 'High-Viz Amber (Cyan Path + Amber Camera)',
+    arrowColor: '#f59e0b',
+    coneColor: 'rgba(245, 158, 11, 0.38)',
+    pathColor: '#06b6d4',
+    swatches: ['#06b6d4', '#f59e0b']
+  },
+  'electric-lime': {
+    id: 'electric-lime',
+    name: 'Electric Lime (Azure Path + Neon Lime Camera)',
+    arrowColor: '#22c55e',
+    coneColor: 'rgba(34, 197, 94, 0.38)',
+    pathColor: '#0284c7',
+    swatches: ['#0284c7', '#22c55e']
+  },
+  'coral-crimson': {
+    id: 'coral-crimson',
+    name: 'Coral Crimson (Cyan Path + Hot Coral Camera)',
+    arrowColor: '#f43f5e',
+    coneColor: 'rgba(244, 63, 94, 0.38)',
+    pathColor: '#06b6d4',
+    swatches: ['#06b6d4', '#f43f5e']
+  },
+  'neon-magenta': {
+    id: 'neon-magenta',
+    name: 'Neon Magenta (Emerald Path + Vivid Magenta Camera)',
+    arrowColor: '#d946ef',
+    coneColor: 'rgba(217, 70, 239, 0.38)',
+    pathColor: '#10b981',
+    swatches: ['#10b981', '#d946ef']
+  },
+  'solar-yellow': {
+    id: 'solar-yellow',
+    name: 'Solar Yellow (Cobalt Path + Bright Yellow Camera)',
+    arrowColor: '#eab308',
+    coneColor: 'rgba(234, 179, 8, 0.40)',
+    pathColor: '#2563eb',
+    swatches: ['#2563eb', '#eab308']
+  },
+  'classic-cyan': {
+    id: 'classic-cyan',
+    name: 'Monochrome Classic (Matched Path & Camera)',
+    arrowColor: null,
+    coneColor: null,
+    pathColor: null,
+    swatches: ['#06b6d4', '#06b6d4']
+  }
+};
+
+let cachedCameraPalette = null;
+let cachedCameraCones = null;
+
+function getActiveCameraPalette() {
+  if (cachedCameraPalette && CAMERA_PALETTES[cachedCameraPalette]) {
+    return CAMERA_PALETTES[cachedCameraPalette];
+  }
+  const el = typeof document !== 'undefined' ? document.getElementById('camera-palette-select') : null;
+  if (el && CAMERA_PALETTES[el.value]) {
+    cachedCameraPalette = el.value;
+    return CAMERA_PALETTES[cachedCameraPalette];
+  }
+  let saved = null;
+  try {
+    if (typeof localStorage !== 'undefined') {
+      saved = localStorage.getItem(CAMERA_PALETTE_STORAGE_KEY);
+    }
+  } catch (e) {}
+  if (saved && CAMERA_PALETTES[saved]) {
+    cachedCameraPalette = saved;
+  } else {
+    cachedCameraPalette = 'high-viz-amber';
+  }
+  return CAMERA_PALETTES[cachedCameraPalette];
+}
+
+function updatePaletteSwatchPreview(paletteId) {
+  if (typeof document === 'undefined') return;
+  const pId = paletteId || (getActiveCameraPalette() ? getActiveCameraPalette().id : 'high-viz-amber');
+  const palette = CAMERA_PALETTES[pId];
+  const preview = document.getElementById('palette-swatch-preview');
+  if (preview && palette) {
+    preview.innerHTML = `
+      <span class="palette-swatch-chip" style="background-color: ${palette.swatches[0]};" title="Flight Path"></span>
+      <span class="palette-swatch-chip" style="background-color: ${palette.swatches[1]};" title="Camera Pointer"></span>
+    `;
+  }
+}
+
+function setCameraPalette(paletteId) {
+  if (!CAMERA_PALETTES[paletteId]) return;
+  cachedCameraPalette = paletteId;
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(CAMERA_PALETTE_STORAGE_KEY, paletteId);
+    }
+  } catch (e) {}
+
+  if (typeof document !== 'undefined') {
+    const el = document.getElementById('camera-palette-select');
+    if (el && el.value !== paletteId) el.value = paletteId;
+    updatePaletteSwatchPreview(paletteId);
+  }
+
+  if (typeof getCurrentWaypoints === 'function' && getCurrentWaypoints()) {
+    if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+  } else if (typeof updateGrid === 'function') {
+    updateGrid();
+  }
+}
+
+function isCameraConeEnabled() {
+  if (cachedCameraCones !== null) return cachedCameraCones;
+  const el = typeof document !== 'undefined' ? document.getElementById('camera-cones-toggle') : null;
+  if (el) {
+    cachedCameraCones = !!el.checked;
+    return cachedCameraCones;
+  }
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem(CAMERA_CONES_STORAGE_KEY);
+      if (saved !== null) {
+        cachedCameraCones = (saved === 'true');
+        return cachedCameraCones;
+      }
+    }
+  } catch (e) {}
+  cachedCameraCones = true;
+  return cachedCameraCones;
+}
+
+function setCameraConeEnabled(enabled) {
+  cachedCameraCones = !!enabled;
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(CAMERA_CONES_STORAGE_KEY, cachedCameraCones ? 'true' : 'false');
+    }
+  } catch (e) {}
+
+  if (typeof document !== 'undefined') {
+    const el = document.getElementById('camera-cones-toggle');
+    if (el && el.checked !== cachedCameraCones) el.checked = cachedCameraCones;
+  }
+
+  if (typeof getCurrentWaypoints === 'function' && getCurrentWaypoints()) {
+    if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+  } else if (typeof updateGrid === 'function') {
+    updateGrid();
+  }
+}
+
+// Attach to window for inline onclick handlers and testing
 if (typeof window !== 'undefined') {
   window.getAppTheme = getAppTheme;
   window.setAppTheme = setAppTheme;
   window.toggleAppTheme = toggleAppTheme;
   window.initTheme = initTheme;
+  window.getUnitSystem = getUnitSystem;
+  window.setUnitSystem = setUnitSystem;
+  window.toggleUnitSystem = toggleUnitSystem;
+  window.CAMERA_PALETTES = CAMERA_PALETTES;
+  window.getActiveCameraPalette = getActiveCameraPalette;
+  window.setCameraPalette = setCameraPalette;
+  window.updatePaletteSwatchPreview = updatePaletteSwatchPreview;
+  window.isCameraConeEnabled = isCameraConeEnabled;
+  window.setCameraConeEnabled = setCameraConeEnabled;
 }
 
 function initGeolocation() {
@@ -533,10 +735,19 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     gimbalPitch: -60,
     altitude: 50,
     speed: 4,
-    headingMode: 'followWayline',
-    pathMode: 'curved',
-    captureMode: 'stopAndShoot',
-    hoverTime: 0,
+    headingMode: 'inherit',
+    pathMode: 'inherit',
+    captureMode: 'inherit',
+    targetPoiId: null,
+    hoverTime: 'inherit',
+    turnaroundOvershoot: 0,
+    turnaroundSpeed: null,
+    turnDampingDist: 0,
+    autoSettlingEnabled: true,
+    baseSettlingTime: 2.0,
+    majorTurnSettlingTime: 5.0,
+    moderateTurnSettlingTime: 4.0,
+    pitchSettlingTime: 3.0,
     cameraZoom: 1.0,
     roadOffset: 15,
     roadSnap: true,
@@ -584,6 +795,95 @@ function getActiveLayer() {
   return fallback;
 }
 
+function getEffectiveLayerCaptureMode(layer) {
+  if (layer && layer.captureMode && layer.captureMode !== 'inherit') return layer.captureMode;
+  const globalEl = typeof document !== 'undefined' ? document.getElementById('capture-mode') : null;
+  return (globalEl && globalEl.value) ? globalEl.value : 'stopAndShoot';
+}
+
+function getEffectiveLayerPathMode(layer) {
+  if (layer && layer.pathMode && layer.pathMode !== 'inherit') return layer.pathMode;
+  const globalEl = typeof document !== 'undefined' ? document.getElementById('path-mode') : null;
+  return (globalEl && globalEl.value) ? globalEl.value : 'curved';
+}
+
+function getEffectiveLayerHeadingMode(layer) {
+  if (layer && layer.headingMode && layer.headingMode !== 'inherit') return layer.headingMode;
+  const globalEl = typeof document !== 'undefined' ? document.getElementById('heading-mode') : null;
+  return (globalEl && globalEl.value) ? globalEl.value : 'followWayline';
+}
+
+function getEffectiveLayerHoverTime(layer) {
+  if (layer && layer.hoverTime !== undefined && layer.hoverTime !== null && layer.hoverTime !== 'inherit') {
+    return parseInt(layer.hoverTime, 10) || 0;
+  }
+  const globalEl = typeof document !== 'undefined' ? document.getElementById('global-hover-time') : null;
+  return globalEl ? (parseInt(globalEl.value, 10) || 0) : 0;
+}
+
+function updateInheritOptionLabels() {
+  if (typeof document === 'undefined') return;
+
+  const globalCaptureModeEl = document.getElementById('capture-mode');
+  const globalPathModeEl = document.getElementById('path-mode');
+  const globalHeadingModeEl = document.getElementById('heading-mode');
+  const globalHoverTimeEl = document.getElementById('global-hover-time');
+
+  const captureOpt = document.getElementById('layer-capture-mode-inherit-opt');
+  if (captureOpt && globalCaptureModeEl) {
+    const mapName = {
+      'stopAndShoot': 'Stop & Shoot',
+      'continuous': 'Continuous Flight',
+      'video': 'Video Mode'
+    };
+    const resolved = mapName[globalCaptureModeEl.value] || globalCaptureModeEl.value;
+    captureOpt.textContent = `🌐 Inherit Global (${resolved})`;
+  }
+
+  const pathOpt = document.getElementById('layer-path-mode-inherit-opt');
+  if (pathOpt && globalPathModeEl) {
+    const mapPath = {
+      'curved': 'Curved Path',
+      'straight': 'Straight Lines'
+    };
+    const resolved = mapPath[globalPathModeEl.value] || globalPathModeEl.value;
+    pathOpt.textContent = `🌐 Inherit Global (${resolved})`;
+  }
+
+  const headingOpt = document.getElementById('layer-heading-mode-inherit-opt');
+  if (headingOpt && globalHeadingModeEl) {
+    const mapHeading = {
+      'followWayline': 'Follow Flight Path',
+      'fixed': 'Fixed North',
+      'towardPOI': 'Point of Interest'
+    };
+    const resolved = mapHeading[globalHeadingModeEl.value] || globalHeadingModeEl.value;
+    headingOpt.textContent = `🌐 Inherit Global (${resolved})`;
+  }
+
+  const hoverOpt = document.getElementById('layer-hover-time-inherit-opt');
+  if (hoverOpt && globalHoverTimeEl) {
+    hoverOpt.textContent = `🌐 Inherit Global (${globalHoverTimeEl.value}s)`;
+  }
+}
+
+function updateLayerPoiSelectOptions() {
+  if (typeof document === 'undefined') return;
+  const select = document.getElementById('layer-poi-select');
+  if (!select) return;
+  const currentVal = select.value;
+  select.innerHTML = '<option value="">🌐 Nearest / Mission Default POI</option>';
+  if (typeof pois !== 'undefined' && Array.isArray(pois)) {
+    pois.forEach((poi, idx) => {
+      const opt = document.createElement('option');
+      opt.value = poi.id || `poi-${idx}`;
+      opt.textContent = poi.name || `POI ${idx + 1}`;
+      select.appendChild(opt);
+    });
+  }
+  select.value = currentVal;
+}
+
 function saveActiveLayerFromUi() {
   const layer = getActiveLayer();
   if (!layer) return;
@@ -599,10 +899,29 @@ function saveActiveLayerFromUi() {
   const altitudeEl = document.getElementById('altitude');
   const speedEl = document.getElementById('speed');
   const gimbalPitchEl = document.getElementById('gimbal-pitch');
+
+  // Layer-Specific Flight & Capture Modes (Section 2)
+  const layerCaptureModeEl = document.getElementById('layer-capture-mode');
+  const layerPathModeEl = document.getElementById('layer-path-mode');
+  const layerHeadingModeEl = document.getElementById('layer-heading-mode');
+  const layerPoiSelectEl = document.getElementById('layer-poi-select');
+  const layerTurnOvershootEl = document.getElementById('layer-turnaround-overshoot');
+  const layerTurnSpeedEl = document.getElementById('layer-turnaround-speed');
+  const layerCornerDampingEl = document.getElementById('layer-corner-damping');
+  const layerHoverModeEl = document.getElementById('layer-hover-time-mode');
+  const layerHoverSliderEl = document.getElementById('layer-hover-time-slider');
+  const layerAutoSettlingToggleEl = document.getElementById('layer-auto-settling-toggle');
+  const layerBaseSettlingEl = document.getElementById('layer-base-settling-slider');
+  const layerMajorTurnSettlingEl = document.getElementById('layer-major-turn-settling-slider');
+  const layerModTurnSettlingEl = document.getElementById('layer-mod-turn-settling-slider');
+  const layerPitchSettlingEl = document.getElementById('layer-pitch-settling-slider');
+
+  // Fallbacks from Section 3
   const headingModeEl = document.getElementById('heading-mode');
   const pathModeEl = document.getElementById('path-mode');
   const captureModeEl = document.getElementById('capture-mode');
   const hoverTimeEl = document.getElementById('global-hover-time');
+
   const cameraZoomEl = document.getElementById('camera-zoom');
   const roadOffsetEl = document.getElementById('road-offset');
   const roadSnapEl = document.getElementById('road-snap');
@@ -627,10 +946,65 @@ function saveActiveLayerFromUi() {
   if (altitudeEl) layer.altitude = parseFloat(altitudeEl.value) || 50;
   if (speedEl) layer.speed = parseFloat(speedEl.value) || 4;
   if (gimbalPitchEl) layer.gimbalPitch = parseFloat(gimbalPitchEl.value) || -60;
-  if (headingModeEl && headingModeEl.value) layer.headingMode = headingModeEl.value;
-  if (pathModeEl && pathModeEl.value) layer.pathMode = pathModeEl.value;
-  if (captureModeEl && captureModeEl.value) layer.captureMode = captureModeEl.value;
-  if (hoverTimeEl) layer.hoverTime = parseInt(hoverTimeEl.value, 10) || 0;
+
+  if (layerCaptureModeEl && layerCaptureModeEl.value) {
+    layer.captureMode = layerCaptureModeEl.value;
+  } else if (captureModeEl && captureModeEl.value && layer.captureMode === undefined) {
+    layer.captureMode = captureModeEl.value;
+  }
+
+  if (layerPathModeEl && layerPathModeEl.value) {
+    layer.pathMode = layerPathModeEl.value;
+  } else if (pathModeEl && pathModeEl.value && layer.pathMode === undefined) {
+    layer.pathMode = pathModeEl.value;
+  }
+
+  if (layerHeadingModeEl && layerHeadingModeEl.value) {
+    layer.headingMode = layerHeadingModeEl.value;
+  } else if (headingModeEl && headingModeEl.value && layer.headingMode === undefined) {
+    layer.headingMode = headingModeEl.value;
+  }
+
+  if (layerPoiSelectEl) {
+    layer.targetPoiId = layerPoiSelectEl.value || null;
+  }
+
+  if (layerTurnOvershootEl) {
+    layer.turnaroundOvershoot = parseFloat(layerTurnOvershootEl.value) || 0;
+  }
+  if (layerTurnSpeedEl) {
+    layer.turnaroundSpeed = (layerTurnSpeedEl.value === 'inherit' || !layerTurnSpeedEl.value) ? null : parseFloat(layerTurnSpeedEl.value);
+  }
+  if (layerCornerDampingEl) {
+    layer.turnDampingDist = parseFloat(layerCornerDampingEl.value) || 0;
+  }
+
+  if (layerHoverModeEl) {
+    if (layerHoverModeEl.value === 'inherit') {
+      layer.hoverTime = 'inherit';
+    } else if (layerHoverSliderEl) {
+      layer.hoverTime = parseInt(layerHoverSliderEl.value, 10) || 0;
+    }
+  } else if (hoverTimeEl && layer.hoverTime === undefined) {
+    layer.hoverTime = parseInt(hoverTimeEl.value, 10) || 0;
+  }
+
+  if (layerAutoSettlingToggleEl) {
+    layer.autoSettlingEnabled = layerAutoSettlingToggleEl.checked;
+  }
+  if (layerBaseSettlingEl) {
+    layer.baseSettlingTime = parseFloat(layerBaseSettlingEl.value) || 2.0;
+  }
+  if (layerMajorTurnSettlingEl) {
+    layer.majorTurnSettlingTime = parseFloat(layerMajorTurnSettlingEl.value) || 5.0;
+  }
+  if (layerModTurnSettlingEl) {
+    layer.moderateTurnSettlingTime = parseFloat(layerModTurnSettlingEl.value) || 4.0;
+  }
+  if (layerPitchSettlingEl) {
+    layer.pitchSettlingTime = parseFloat(layerPitchSettlingEl.value) || 3.0;
+  }
+
   if (cameraZoomEl) layer.cameraZoom = parseFloat(cameraZoomEl.value) || 1.0;
   if (roadOffsetEl) layer.roadOffset = parseFloat(roadOffsetEl.value) || 15;
   if (roadSnapEl) layer.roadSnap = roadSnapEl.checked;
@@ -678,6 +1052,9 @@ function syncUiWithActiveLayer() {
     if (el && val !== undefined && val !== null) el.value = val;
   };
 
+  updateInheritOptionLabels();
+  updateLayerPoiSelectOptions();
+
   setVal('grid-type', layer.pattern);
   setVal('grid-width', layer.gridWidth);
   setVal('grid-height', layer.gridHeight);
@@ -687,10 +1064,57 @@ function syncUiWithActiveLayer() {
   setVal('altitude', layer.altitude);
   setVal('speed', layer.speed);
   setVal('gimbal-pitch', layer.gimbalPitch);
-  setVal('heading-mode', layer.headingMode);
-  setVal('path-mode', layer.pathMode);
-  setVal('capture-mode', layer.captureMode);
-  setVal('global-hover-time', layer.hoverTime);
+
+  // Section 2 Layer Controls
+  setVal('layer-capture-mode', layer.captureMode || 'inherit');
+  setVal('layer-path-mode', layer.pathMode || 'inherit');
+  setVal('layer-heading-mode', layer.headingMode || 'inherit');
+  setVal('layer-poi-select', layer.targetPoiId || '');
+  setVal('layer-turnaround-overshoot', layer.turnaroundOvershoot !== undefined ? layer.turnaroundOvershoot : 0);
+  setVal('layer-turnaround-speed', (layer.turnaroundSpeed !== null && layer.turnaroundSpeed !== undefined) ? String(layer.turnaroundSpeed) : 'inherit');
+  setVal('layer-corner-damping', layer.turnDampingDist !== undefined ? layer.turnDampingDist : 0);
+
+  const isCustomHover = (layer.hoverTime !== 'inherit' && layer.hoverTime !== undefined && layer.hoverTime !== null);
+  setVal('layer-hover-time-mode', isCustomHover ? 'custom' : 'inherit');
+  const hoverCustomWrapper = document.getElementById('layer-hover-time-custom-wrapper');
+  if (hoverCustomWrapper) {
+    if (isCustomHover) hoverCustomWrapper.classList.remove('hidden');
+    else hoverCustomWrapper.classList.add('hidden');
+  }
+  const customHoverVal = isCustomHover ? parseInt(layer.hoverTime, 10) : 0;
+  setVal('layer-hover-time-slider', customHoverVal);
+  const hoverValDisplay = document.getElementById('layer-hover-time-val');
+  if (hoverValDisplay) hoverValDisplay.textContent = customHoverVal;
+
+  const autoSettlingToggle = document.getElementById('layer-auto-settling-toggle');
+  if (autoSettlingToggle) {
+    autoSettlingToggle.checked = layer.autoSettlingEnabled !== false;
+  }
+  setVal('layer-base-settling-slider', layer.baseSettlingTime !== undefined ? layer.baseSettlingTime : 2.0);
+  const baseSettlingDisplay = document.getElementById('layer-base-settling-val');
+  if (baseSettlingDisplay) baseSettlingDisplay.textContent = (layer.baseSettlingTime !== undefined ? layer.baseSettlingTime : 2.0).toFixed(1);
+
+  setVal('layer-major-turn-settling-slider', layer.majorTurnSettlingTime !== undefined ? layer.majorTurnSettlingTime : 5.0);
+  const majorTurnDisplay = document.getElementById('layer-major-turn-settling-val');
+  if (majorTurnDisplay) majorTurnDisplay.textContent = (layer.majorTurnSettlingTime !== undefined ? layer.majorTurnSettlingTime : 5.0).toFixed(1);
+
+  setVal('layer-mod-turn-settling-slider', layer.moderateTurnSettlingTime !== undefined ? layer.moderateTurnSettlingTime : 4.0);
+  const modTurnDisplay = document.getElementById('layer-mod-turn-settling-val');
+  if (modTurnDisplay) modTurnDisplay.textContent = (layer.moderateTurnSettlingTime !== undefined ? layer.moderateTurnSettlingTime : 4.0).toFixed(1);
+
+  setVal('layer-pitch-settling-slider', layer.pitchSettlingTime !== undefined ? layer.pitchSettlingTime : 3.0);
+  const pitchDisplay = document.getElementById('layer-pitch-settling-val');
+  if (pitchDisplay) pitchDisplay.textContent = (layer.pitchSettlingTime !== undefined ? layer.pitchSettlingTime : 3.0).toFixed(1);
+
+  const layerPoiContainer = document.getElementById('layer-poi-container');
+  if (layerPoiContainer) {
+    if ((layer.headingMode === 'towardPOI') || (layer.headingMode === 'inherit' && document.getElementById('heading-mode')?.value === 'towardPOI')) {
+      layerPoiContainer.classList.remove('hidden');
+    } else {
+      layerPoiContainer.classList.add('hidden');
+    }
+  }
+
   setVal('camera-zoom', layer.cameraZoom);
   setVal('road-offset', layer.roadOffset);
   setVal('exclusion-min-alt', layer.minAltitude !== undefined ? layer.minAltitude : 0);
@@ -1745,7 +2169,7 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     } else if (gridType === 'target-splat') {
       gridData = generateTargetSplatCoordinates(gridWidth, gridHeight, actualRotation, captureMode, sLine, sPhoto, altitude, defaultGimbalPitch, layer);
     } else {
-      gridData = generateGridCoordinates(gridWidth, gridHeight, actualRotation, gridType, captureMode, sLine, sPhoto);
+      gridData = generateGridCoordinates(gridWidth, gridHeight, actualRotation, gridType, captureMode, sLine, sPhoto, layer.turnaroundOvershoot || 0);
     }
 
     waypoints = gridData.waypoints.map((pt, idx) => {
@@ -1772,7 +2196,10 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
         ringIndex: pt.ringIndex !== undefined ? pt.ringIndex : null,
         isModified: false,
         skipPhoto: pt.skipPhoto || false,
+        isTurnaroundPoint: pt.isTurnaroundPoint || false,
         targetVisible: pt.targetVisible !== undefined ? pt.targetVisible : true,
+        isPerimeterOrbit: pt.isPerimeterOrbit || false,
+        gridType: pt.gridType || (gridType === 'target-splat' ? 'target-splat' : undefined),
         origLat: geo.lat,
         origLon: geo.lon,
         origX: pt.x,
@@ -1795,6 +2222,7 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
           if (oldWp.pitch !== undefined) waypoints[oldIdx].pitch = oldWp.pitch;
           if (oldWp.heading !== undefined) waypoints[oldIdx].heading = oldWp.heading;
           if (oldWp.headingMode !== undefined) waypoints[oldIdx].headingMode = oldWp.headingMode;
+          if (oldWp.gridType !== undefined) waypoints[oldIdx].gridType = oldWp.gridType;
           if (oldWp.poiIndex !== undefined) waypoints[oldIdx].poiIndex = oldWp.poiIndex;
           if (oldWp.speed !== undefined) waypoints[oldIdx].speed = oldWp.speed;
           if (oldWp.hoverTime !== undefined) waypoints[oldIdx].hoverTime = oldWp.hoverTime;
@@ -1838,7 +2266,19 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     wp.layerId = layer.id;
     wp.layerName = layer.name;
     wp.layerColor = layer.color;
+    wp.layerPattern = layer.pattern;
     wp.layerWaypointIndex = wIdx;
+    wp.layerCaptureMode = layer.captureMode || 'inherit';
+    wp.layerPathMode = layer.pathMode || 'inherit';
+    wp.layerHeadingMode = layer.headingMode || 'inherit';
+    wp.targetPoiId = layer.targetPoiId || null;
+    wp.baseSettlingTime = layer.baseSettlingTime !== undefined ? layer.baseSettlingTime : 2.0;
+    wp.majorTurnSettlingTime = layer.majorTurnSettlingTime !== undefined ? layer.majorTurnSettlingTime : 5.0;
+    wp.moderateTurnSettlingTime = layer.moderateTurnSettlingTime !== undefined ? layer.moderateTurnSettlingTime : 4.0;
+    wp.pitchSettlingTime = layer.pitchSettlingTime !== undefined ? layer.pitchSettlingTime : 3.0;
+    wp.turnDampingDist = layer.turnDampingDist !== undefined ? layer.turnDampingDist : 0;
+    wp.turnaroundSpeed = layer.turnaroundSpeed !== undefined ? layer.turnaroundSpeed : null;
+    wp.autoSettlingEnabled = layer.autoSettlingEnabled !== false;
     if (wIdx === 0) {
       wp.isLayerStart = true;
       wp.isRingStart = true;
@@ -2706,7 +3146,10 @@ function initMap() {
     updateAirspaceLegend(e);
   });
 
-  // Zoom-gate: show LAANC and Obstacles only at certain zooms
+  // Zoom-gate: show LAANC, Obstacles, and responsive camera cone scaling
+  map.on('zoom', function() {
+    applyZoomGates();
+  });
   map.on('zoomend', function() {
     applyZoomGates();
   });
@@ -2828,6 +3271,8 @@ const FACTORY_DEFAULTS = {
   'unit-system': 'imperial',
   'theme': 'dark',
   'nav-layout-select': 'header',
+  'camera-palette-select': 'high-viz-amber',
+  'camera-cones-toggle': true,
   'accordion-mode-toggle': true,
   'minimize-sidebar-toggle': false,
   'multivendor-toggle': false,
@@ -3186,12 +3631,16 @@ function resetStoredSettings(options = {}) {
   if (opts.uiPreferences) {
     if (typeof setAppTheme === 'function') setAppTheme('dark');
     if (typeof setNavLayout === 'function') setNavLayout('header');
+    if (typeof setCameraPalette === 'function') setCameraPalette('high-viz-amber');
+    if (typeof setCameraConeEnabled === 'function') setCameraConeEnabled(true);
 
     try {
       if (typeof localStorage !== 'undefined') {
         localStorage.removeItem('aalaapi_sky_theme');
         localStorage.removeItem('aalaapi_nav_layout');
         localStorage.removeItem('aalaapi_sky_unit_system');
+        localStorage.removeItem('aalaapi_sky_camera_palette');
+        localStorage.removeItem('aalaapi_sky_camera_cones');
         localStorage.removeItem('aalaapi_sky_accordion_mode');
         localStorage.removeItem('aalaapi_sky_sidebar_minimized');
         for (let i = 0; i < 10; i++) {
@@ -3203,6 +3652,13 @@ function resetStoredSettings(options = {}) {
     const unitSelect = document.getElementById('unit-system');
     if (unitSelect) unitSelect.value = 'imperial';
     cachedUnitSystem = 'imperial';
+
+    const camPalSelect = document.getElementById('camera-palette-select');
+    if (camPalSelect) camPalSelect.value = 'high-viz-amber';
+    updatePaletteSwatchPreview('high-viz-amber');
+
+    const camConesToggle = document.getElementById('camera-cones-toggle');
+    if (camConesToggle) camConesToggle.checked = true;
 
     const accordionToggle = document.getElementById('accordion-mode-toggle');
     if (accordionToggle) accordionToggle.checked = true;
@@ -3230,7 +3686,9 @@ function resetStoredSettings(options = {}) {
     const multiVendorToggle = document.getElementById('multivendor-toggle');
     if (multiVendorToggle) {
       multiVendorToggle.checked = false;
-      multiVendorToggle.dispatchEvent(new Event('change'));
+      if (typeof multiVendorToggle.dispatchEvent === 'function') {
+        multiVendorToggle.dispatchEvent(new Event('change'));
+      }
     }
 
     resetDomains.push('Hardware Links');
@@ -3917,17 +4375,224 @@ function initUIEventListeners() {
     gridTypeEl.addEventListener('change', togglePatternParameters);
   }
 
-  // Sync Capture Mode help text
-  document.getElementById('capture-mode').addEventListener('change', (e) => {
-    const helpText = document.getElementById('capture-help-text');
-    if (e.target.value === 'stopAndShoot') {
-      helpText.textContent = "Stop & Shoot halts the drone at every coordinate to take a photo. Recommended for sharp, automated maps.";
-    } else if (e.target.value === 'video') {
-      helpText.textContent = "Video Mode starts video recording automatically at takeoff and stops at the final waypoint. Recommended for cinematic road flyovers.";
-    } else {
-      helpText.textContent = "Continuous Flight flies smoothly through endpoints. The pilot must trigger DJI Fly's native interval shot (e.g. every 2s) manually.";
+  // Sync Capture Mode help text and inherit labels
+  const captureModeGlobalEl = document.getElementById('capture-mode');
+  if (captureModeGlobalEl) {
+    captureModeGlobalEl.addEventListener('change', (e) => {
+      const helpText = document.getElementById('capture-help-text');
+      if (helpText) {
+        if (e.target.value === 'stopAndShoot') {
+          helpText.textContent = "Stop & Shoot halts the drone at every coordinate to take a photo. Recommended for sharp, automated maps.";
+        } else if (e.target.value === 'video') {
+          helpText.textContent = "Video Mode starts video recording automatically at takeoff and stops at the final waypoint. Recommended for cinematic road flyovers.";
+        } else {
+          helpText.textContent = "Continuous Flight flies smoothly through endpoints. The pilot must trigger DJI Fly's native interval shot (e.g. every 2s) manually.";
+        }
+      }
+      updateInheritOptionLabels();
+    });
+  }
+
+  const pathModeGlobalEl = document.getElementById('path-mode');
+  if (pathModeGlobalEl) {
+    pathModeGlobalEl.addEventListener('change', () => {
+      updateInheritOptionLabels();
+    });
+  }
+
+  const headingModeGlobalEl = document.getElementById('heading-mode');
+  if (headingModeGlobalEl) {
+    headingModeGlobalEl.addEventListener('change', () => {
+      updateInheritOptionLabels();
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      const layerPoiContainer = document.getElementById('layer-poi-container');
+      if (layerPoiContainer && activeLayer) {
+        const effHeading = getEffectiveLayerHeadingMode(activeLayer);
+        if (effHeading === 'towardPOI') {
+          layerPoiContainer.classList.remove('hidden');
+        } else {
+          layerPoiContainer.classList.add('hidden');
+        }
+      }
+    });
+  }
+
+  const globalHoverEl = document.getElementById('global-hover-time');
+  if (globalHoverEl) {
+    globalHoverEl.addEventListener('change', () => {
+      updateInheritOptionLabels();
+    });
+  }
+
+  // Section 2: Layer Flight & Capture Dynamics Listeners
+  const layerCaptureModeEl = document.getElementById('layer-capture-mode');
+  if (layerCaptureModeEl) {
+    layerCaptureModeEl.addEventListener('change', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.captureMode = layerCaptureModeEl.value;
+      }
+      updateGrid();
+    });
+  }
+
+  const layerPathModeEl = document.getElementById('layer-path-mode');
+  if (layerPathModeEl) {
+    layerPathModeEl.addEventListener('change', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.pathMode = layerPathModeEl.value;
+      }
+      updateGrid();
+    });
+  }
+
+  const layerHeadingModeEl = document.getElementById('layer-heading-mode');
+  if (layerHeadingModeEl) {
+    layerHeadingModeEl.addEventListener('change', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.headingMode = layerHeadingModeEl.value;
+        const effHeading = getEffectiveLayerHeadingMode(activeLayer);
+        const layerPoiContainer = document.getElementById('layer-poi-container');
+        if (layerPoiContainer) {
+          if (effHeading === 'towardPOI') {
+            layerPoiContainer.classList.remove('hidden');
+          } else {
+            layerPoiContainer.classList.add('hidden');
+          }
+        }
+      }
+      updateGrid();
+    });
+  }
+
+  const layerPoiSelectEl = document.getElementById('layer-poi-select');
+  if (layerPoiSelectEl) {
+    layerPoiSelectEl.addEventListener('change', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.targetPoiId = layerPoiSelectEl.value || null;
+      }
+      updateGrid();
+    });
+  }
+
+  // Layer Advanced Dynamics Drawer Toggle
+  const layerAdvToggleBtn = document.getElementById('layer-advanced-dynamics-toggle-btn');
+  const layerAdvDrawer = document.getElementById('layer-advanced-dynamics-drawer');
+  const layerAdvArrow = document.getElementById('layer-advanced-dynamics-arrow');
+  if (layerAdvToggleBtn && layerAdvDrawer) {
+    layerAdvToggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isHidden = layerAdvDrawer.classList.contains('hidden');
+      if (isHidden) {
+        layerAdvDrawer.classList.remove('hidden');
+        if (layerAdvArrow) layerAdvArrow.style.transform = 'rotate(180deg)';
+      } else {
+        layerAdvDrawer.classList.add('hidden');
+        if (layerAdvArrow) layerAdvArrow.style.transform = 'rotate(0deg)';
+      }
+    });
+  }
+
+  const layerTurnOvershootEl = document.getElementById('layer-turnaround-overshoot');
+  if (layerTurnOvershootEl) {
+    layerTurnOvershootEl.addEventListener('input', () => {
+      const val = parseFloat(layerTurnOvershootEl.value) || 0;
+      const displayEl = document.getElementById('layer-turnaround-overshoot-val');
+      if (displayEl) displayEl.textContent = val;
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) activeLayer.turnaroundOvershoot = val;
+      updateGrid();
+    });
+  }
+
+  const layerTurnSpeedEl = document.getElementById('layer-turnaround-speed');
+  if (layerTurnSpeedEl) {
+    layerTurnSpeedEl.addEventListener('change', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.turnaroundSpeed = (layerTurnSpeedEl.value === 'inherit' || !layerTurnSpeedEl.value) ? null : parseFloat(layerTurnSpeedEl.value);
+      }
+      updateGrid();
+    });
+  }
+
+  const layerCornerDampingEl = document.getElementById('layer-corner-damping');
+  if (layerCornerDampingEl) {
+    layerCornerDampingEl.addEventListener('input', () => {
+      const val = parseFloat(layerCornerDampingEl.value) || 0;
+      const displayEl = document.getElementById('layer-corner-damping-val');
+      if (displayEl) displayEl.textContent = val.toFixed(1);
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) activeLayer.turnDampingDist = val;
+      updateGrid();
+    });
+  }
+
+  const layerHoverModeEl = document.getElementById('layer-hover-time-mode');
+  const layerHoverWrapper = document.getElementById('layer-hover-time-custom-wrapper');
+  const layerHoverSliderEl = document.getElementById('layer-hover-time-slider');
+  const layerHoverValDisplay = document.getElementById('layer-hover-time-val');
+  if (layerHoverModeEl) {
+    layerHoverModeEl.addEventListener('change', () => {
+      const isCustom = layerHoverModeEl.value === 'custom';
+      if (layerHoverWrapper) {
+        if (isCustom) layerHoverWrapper.classList.remove('hidden');
+        else layerHoverWrapper.classList.add('hidden');
+      }
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        if (isCustom && layerHoverSliderEl) {
+          activeLayer.hoverTime = parseInt(layerHoverSliderEl.value, 10) || 0;
+        } else {
+          activeLayer.hoverTime = 'inherit';
+        }
+      }
+      updateGrid();
+    });
+  }
+  if (layerHoverSliderEl) {
+    layerHoverSliderEl.addEventListener('input', () => {
+      const val = parseInt(layerHoverSliderEl.value, 10) || 0;
+      if (layerHoverValDisplay) layerHoverValDisplay.textContent = val;
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer && layerHoverModeEl?.value === 'custom') {
+        activeLayer.hoverTime = val;
+      }
+      updateGrid();
+    });
+  }
+
+  const layerAutoSettlingToggle = document.getElementById('layer-auto-settling-toggle');
+  if (layerAutoSettlingToggle) {
+    layerAutoSettlingToggle.addEventListener('change', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) activeLayer.autoSettlingEnabled = layerAutoSettlingToggle.checked;
+      updateGrid();
+    });
+  }
+
+  const bindSettlingSlider = (sliderId, displayId, layerProp) => {
+    const slider = document.getElementById(sliderId);
+    const display = document.getElementById(displayId);
+    if (slider) {
+      slider.addEventListener('input', () => {
+        const val = parseFloat(slider.value) || 0;
+        if (display) display.textContent = val.toFixed(1);
+        const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+        if (activeLayer) activeLayer[layerProp] = val;
+        updateGrid();
+      });
     }
-  });
+  };
+
+  bindSettlingSlider('layer-base-settling-slider', 'layer-base-settling-val', 'baseSettlingTime');
+  bindSettlingSlider('layer-major-turn-settling-slider', 'layer-major-turn-settling-val', 'majorTurnSettlingTime');
+  bindSettlingSlider('layer-mod-turn-settling-slider', 'layer-mod-turn-settling-val', 'moderateTurnSettlingTime');
+  bindSettlingSlider('layer-pitch-settling-slider', 'layer-pitch-settling-val', 'pitchSettlingTime');
+
 
   // Search Address button
   const searchBtn = document.getElementById('search-btn');
@@ -4456,14 +5121,7 @@ function initUIEventListeners() {
     }
     syncDisplayValues();
     unitSystemEl.addEventListener('change', () => {
-      localStorage.setItem('aalaapi_sky_unit_system', unitSystemEl.value);
-      cachedUnitSystem = unitSystemEl.value;
-      syncDisplayValues();
-      if (getCurrentWaypoints()) {
-        redrawCurrentMission();
-      } else {
-        updateGrid();
-      }
+      setUnitSystem(unitSystemEl.value);
     });
   }
   
@@ -4478,6 +5136,15 @@ function initUIEventListeners() {
       configModal.classList.toggle('hidden');
       if (!configModal.classList.contains('hidden')) {
         if (unitSystemEl) unitSystemEl.value = getUnitSystem();
+        const camPalSelect = document.getElementById('camera-palette-select');
+        if (camPalSelect) {
+          camPalSelect.value = getActiveCameraPalette().id;
+          updatePaletteSwatchPreview();
+        }
+        const camConesToggle = document.getElementById('camera-cones-toggle');
+        if (camConesToggle) {
+          camConesToggle.checked = isCameraConeEnabled();
+        }
         if (typeof updateModifiedSettingsIndicators === 'function') updateModifiedSettingsIndicators();
         if (window.innerWidth <= 768) {
           document.querySelector('.sidebar')?.classList.remove('open');
@@ -4492,6 +5159,24 @@ function initUIEventListeners() {
         configModal.classList.add('hidden');
       }
     });
+
+    // Camera palette and sight cone event listeners
+    const camPalSelect = document.getElementById('camera-palette-select');
+    if (camPalSelect) {
+      camPalSelect.value = getActiveCameraPalette().id;
+      updatePaletteSwatchPreview();
+      camPalSelect.addEventListener('change', () => {
+        setCameraPalette(camPalSelect.value);
+      });
+    }
+
+    const camConesToggle = document.getElementById('camera-cones-toggle');
+    if (camConesToggle) {
+      camConesToggle.checked = isCameraConeEnabled();
+      camConesToggle.addEventListener('change', () => {
+        setCameraConeEnabled(camConesToggle.checked);
+      });
+    }
   }
 
   // Initialize Controlled Reset Manager (v1.74.0)
@@ -4743,6 +5428,196 @@ function initUIEventListeners() {
 
   // Wires up FPV mode listeners
   setupFPVListeners();
+
+  // Setup click-to-type inline numerical editing for all sidebar value displays
+  initClickToTypeInputs();
+
+  // Setup click-to-toggle interactive unit badges
+  initClickableUnits();
+}
+
+/**
+ * Transforms sidebar value display numbers into interactive click-to-type inputs
+ * allowing pilots to click any number and type exact values in active units.
+ */
+function initClickToTypeInputs() {
+  if (typeof document === 'undefined') return;
+
+  const clickToTypeConfigs = [
+    // [valId, inputId, type, min, max, step]
+    { valId: 'speed-val', inputId: 'speed', type: 'speed', min: 0.2, max: 15, step: 0.1 },
+    { valId: 'altitude-val', inputId: 'altitude', type: 'distance', min: 10, max: 120, step: 1 },
+    { valId: 'width-val', inputId: 'grid-width', type: 'distance', min: 20, max: 500, step: 5 },
+    { valId: 'height-val', inputId: 'grid-height', type: 'distance', min: 20, max: 500, step: 5 },
+    { valId: 'rotation-val', inputId: 'grid-rotation', type: 'raw', min: 0, max: 359, step: 1 },
+    { valId: 'front-overlap-val', inputId: 'front-overlap', type: 'raw', min: 50, max: 95, step: 1 },
+    { valId: 'side-overlap-val', inputId: 'side-overlap', type: 'raw', min: 50, max: 95, step: 1 },
+    { valId: 'gimbal-pitch-val', inputId: 'gimbal-pitch', type: 'raw', min: -90, max: 60, step: 1 },
+    { valId: 'target-radius-val', inputId: 'target-splat-radius', type: 'distance', min: 5, max: 150, step: 1 },
+    { valId: 'target-height-val', inputId: 'target-splat-height', type: 'distance', min: 0, max: 35, step: 1 },
+    { valId: 'target-perimeter-standoff-val', inputId: 'target-perimeter-standoff', type: 'distance', min: 3, max: 30, step: 1 },
+    { valId: 'target-perimeter-alt-val', inputId: 'target-perimeter-alt', type: 'distance', min: 0, max: 80, step: 1 },
+    { valId: 'target-perimeter-pitch-val', inputId: 'target-perimeter-pitch', type: 'raw', min: -80, max: -30, step: 1 },
+    { valId: 'road-offset-val', inputId: 'road-offset', type: 'distance', min: -50, max: 50, step: 1 },
+    { valId: 'exclusion-min-alt-val', inputId: 'exclusion-min-alt', type: 'distance', min: 0, max: 300, step: 5 },
+    { valId: 'exclusion-max-alt-val', inputId: 'exclusion-max-alt', type: 'distance', min: 5, max: 500, step: 5 },
+    { valId: 'global-exclusion-clearance-val', inputId: 'global-exclusion-clearance-buffer', type: 'distance', min: 1, max: 25, step: 1 },
+    { valId: 'max-height-val', inputId: 'max-flight-height', type: 'distance', min: 20, max: 500, step: 5 },
+    { valId: 'rth-altitude-val', inputId: 'rth-altitude', type: 'distance', min: 20, max: 150, step: 5 },
+    { valId: 'global-hover-time-val', inputId: 'global-hover-time', type: 'raw', min: 0, max: 60, step: 1 }
+  ];
+
+  clickToTypeConfigs.forEach(cfg => {
+    const valEl = document.getElementById(cfg.valId);
+    const sliderEl = document.getElementById(cfg.inputId);
+    if (!valEl || !sliderEl) return;
+
+    valEl.classList.add('clickable-val');
+    valEl.setAttribute('title', 'Click to type exact value');
+
+    valEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // If already editing, don't re-create input
+      if (valEl.querySelector('input')) return;
+
+      const currentDisplayedText = valEl.textContent.trim();
+      const currentValNum = parseFloat(currentDisplayedText);
+      const isAuto = isNaN(currentValNum) && currentDisplayedText.toLowerCase().includes('auto');
+
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.className = 'inline-val-input';
+      input.step = cfg.step ? String(cfg.step) : 'any';
+
+      const unit = (typeof getUnitSystem === 'function') ? getUnitSystem() : 'metric';
+      let minVal = cfg.min;
+      let maxVal = cfg.max;
+      if (unit === 'imperial') {
+        if (cfg.type === 'speed') {
+          minVal = Math.round(cfg.min * MPS_TO_MPH * 10) / 10;
+          maxVal = Math.round(cfg.max * MPS_TO_MPH * 10) / 10;
+        } else if (cfg.type === 'distance') {
+          minVal = Math.round(cfg.min * M_TO_FT);
+          maxVal = Math.round(cfg.max * M_TO_FT);
+        }
+      }
+      input.min = String(minVal);
+      input.max = String(maxVal);
+      input.value = isAuto ? '0' : (isNaN(currentValNum) ? '' : String(currentValNum));
+
+      valEl.textContent = '';
+      valEl.appendChild(input);
+      if (typeof input.focus === 'function') input.focus();
+      if (typeof input.select === 'function') input.select();
+
+      let committed = false;
+      const commitChange = () => {
+        if (committed) return;
+        committed = true;
+
+        const typedRaw = parseFloat(input.value);
+        if (isNaN(typedRaw)) {
+          // Revert if invalid
+          if (typeof syncDisplayValues === 'function') syncDisplayValues();
+          return;
+        }
+
+        // Clamp to allowed range in displayed units
+        const clampedTyped = Math.max(minVal, Math.min(maxVal, typedRaw));
+
+        // Convert back to metric slider storage units if imperial
+        let metricVal = clampedTyped;
+        if (unit === 'imperial') {
+          if (cfg.type === 'speed') {
+            metricVal = clampedTyped / MPS_TO_MPH;
+          } else if (cfg.type === 'distance') {
+            metricVal = clampedTyped * FT_TO_M;
+          }
+        }
+
+        // Format decimal precision: if imperial conversion occurred, preserve 2 decimal places for smooth fidelity
+        if (unit === 'imperial') {
+          metricVal = Math.round(metricVal * 100) / 100;
+        } else if (cfg.step < 1) {
+          metricVal = Math.round(metricVal * 10) / 10;
+        } else {
+          metricVal = Math.round(metricVal);
+        }
+
+        sliderEl.value = String(metricVal);
+
+        // Dispatch input and change events so all listeners and storage sync
+        sliderEl.dispatchEvent(new Event('input', { bubbles: true }));
+        sliderEl.dispatchEvent(new Event('change', { bubbles: true }));
+
+        if (typeof syncDisplayValues === 'function') {
+          syncDisplayValues();
+        }
+      };
+
+      const cancelEdit = () => {
+        if (committed) return;
+        committed = true;
+        if (typeof syncDisplayValues === 'function') {
+          syncDisplayValues();
+        } else {
+          valEl.textContent = currentDisplayedText;
+        }
+      };
+
+      input.addEventListener('blur', commitChange);
+      input.addEventListener('keydown', (ke) => {
+        if (ke.key === 'Enter') {
+          ke.preventDefault();
+          commitChange();
+        } else if (ke.key === 'Escape') {
+          ke.preventDefault();
+          cancelEdit();
+        }
+      });
+    });
+  });
+}
+
+/**
+ * Transforms sidebar unit labels into interactive clickable toggles,
+ * allowing pilots to click any unit badge to switch globally between Imperial and Metric.
+ */
+function initClickableUnits() {
+  if (typeof document === 'undefined') return;
+
+  const unitElementIds = [
+    'width-unit',
+    'height-unit',
+    'road-offset-unit',
+    'target-radius-unit',
+    'target-height-unit',
+    'target-perimeter-standoff-unit',
+    'target-perimeter-alt-unit',
+    'exclusion-min-alt-unit',
+    'exclusion-max-alt-unit',
+    'altitude-unit',
+    'speed-unit',
+    'max-height-unit',
+    'rth-altitude-unit',
+    'global-exclusion-clearance-unit',
+    'ap-height-unit',
+    'ap-clearance-unit',
+    'fpv-edit-alt-unit'
+  ];
+
+  unitElementIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.classList.add('clickable-unit');
+    el.setAttribute('title', 'Click to switch units (Imperial / Metric)');
+
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleUnitSystem();
+    });
+  });
 }
 
 // Dynamically hide/show sliders and change labels based on chosen flight pattern
@@ -5240,6 +6115,12 @@ function syncDisplayValues() {
   const distUnitStr = unit === 'imperial' ? 'ft' : 'm';
   const speedUnitStr = unit === 'imperial' ? 'mph' : 'm/s';
 
+  // Sync Header Unit Badge
+  const headerUnitBadge = document.getElementById('header-unit-badge');
+  if (headerUnitBadge) {
+    headerUnitBadge.textContent = unit === 'imperial' ? 'FT / MPH' : 'M / M/S';
+  }
+
   const widthVal = parseFloat(document.getElementById('grid-width')?.value) || 100;
   const rotationVal = parseFloat(document.getElementById('grid-rotation')?.value) || 0;
   const altitudeVal = parseFloat(document.getElementById('altitude')?.value) || 50;
@@ -5332,7 +6213,7 @@ function syncDisplayValues() {
     document.getElementById('speed-val').textContent = (speedVal * MPS_TO_MPH).toFixed(1);
     document.getElementById('speed-unit').textContent = "mph";
   } else {
-    document.getElementById('speed-val').textContent = speedVal;
+    document.getElementById('speed-val').textContent = (Math.round(speedVal * 10) / 10).toFixed(speedVal % 1 !== 0 ? 1 : 0);
     document.getElementById('speed-unit').textContent = "m/s";
   }
 
@@ -6280,7 +7161,8 @@ function updateGrid() {
 function redrawCurrentMission() {
   if (!centerMarker) return;
 
-  const gridType = document.getElementById('grid-type').value;
+  const gridTypeEl = document.getElementById('grid-type');
+  const gridType = gridTypeEl ? gridTypeEl.value : 'single';
   if (gridType === 'road-following') {
     updateGrid();
     return;
@@ -6293,12 +7175,11 @@ function redrawCurrentMission() {
   const centerLatLng = centerMarker.getLatLng();
   const centerLat = centerLatLng.lat;
   const centerLon = centerLatLng.lng;
-
-  const gridWidth = parseFloat(document.getElementById('grid-width').value);
-  const gridHeight = parseFloat(document.getElementById('grid-height').value);
-  const rotation = parseFloat(document.getElementById('grid-rotation').value);
-  const speed = parseFloat(document.getElementById('speed').value);
-  const captureMode = document.getElementById('capture-mode').value;
+  const gridWidth = parseFloat(document.getElementById('grid-width')?.value) || 100;
+  const gridHeight = parseFloat(document.getElementById('grid-height')?.value) || 100;
+  const rotation = parseFloat(document.getElementById('grid-rotation')?.value) || 0;
+  const speed = parseFloat(document.getElementById('speed')?.value) || 4;
+  const captureMode = document.getElementById('capture-mode')?.value || 'time';
 
   const actualRotation = (gridType === 'orbit' || gridType === 'multi-orbit') ? 0 : rotation;
 
@@ -6309,9 +7190,10 @@ function redrawCurrentMission() {
 }
 
 // Generate relative meter-offset grid points
-function generateGridCoordinates(width, height, rotation, gridType, captureMode, sLine, sPhoto) {
+function generateGridCoordinates(width, height, rotation, gridType, captureMode, sLine, sPhoto, turnaroundOvershoot = 0) {
   const waypoints = [];
   const photos = [];
+  const overshoot = (typeof turnaroundOvershoot === 'number' && turnaroundOvershoot > 0) ? turnaroundOvershoot : 0;
 
   // Pass 1: North-South primary grid flight lines
   const nLines = Math.max(2, Math.round(width / sLine) + 1);
@@ -6325,6 +7207,12 @@ function generateGridCoordinates(width, height, rotation, gridType, captureMode,
     const startFromSouth = (i % 2 === 0);
     const lineHeading = startFromSouth ? 0 : 180;
     const linePoints = [];
+
+    // If turnaround overshoot is specified, add entry overshoot waypoint before the survey line
+    if (overshoot > 0) {
+      const entryY = startFromSouth ? (-height / 2.0 - overshoot) : (height / 2.0 + overshoot);
+      waypoints.push({ x: x, y: entryY, heading: lineHeading, isTurnaroundPoint: true, skipPhoto: true });
+    }
 
     for (let j = 0; j < nPhotos; j++) {
       const yIdx = startFromSouth ? j : (nPhotos - 1 - j);
@@ -6342,6 +7230,12 @@ function generateGridCoordinates(width, height, rotation, gridType, captureMode,
     } else {
       // In stop & shoot mode, every photo trigger is a waypoint
       linePoints.forEach(pt => waypoints.push(pt));
+    }
+
+    // If turnaround overshoot is specified, add exit overshoot waypoint after the survey line
+    if (overshoot > 0) {
+      const exitY = startFromSouth ? (height / 2.0 + overshoot) : (-height / 2.0 - overshoot);
+      waypoints.push({ x: x, y: exitY, heading: lineHeading, isTurnaroundPoint: true, skipPhoto: true });
     }
   }
 
@@ -6371,9 +7265,15 @@ function generateGridCoordinates(width, height, rotation, gridType, captureMode,
       const lineHeading2 = startFromWest ? 90 : 270;
       const linePoints = [];
 
+      // If turnaround overshoot is specified, add entry overshoot waypoint before Pass 2 survey line
+      if (overshoot > 0) {
+        const entryX = startFromWest ? (-width / 2.0 - overshoot) : (width / 2.0 + overshoot);
+        waypoints.push({ x: entryX, y: y, heading: lineHeading2, isTurnaroundPoint: true, skipPhoto: true });
+      }
+
       for (let j = 0; j < nPhotos2; j++) {
-        // Skip duplicate coordinate at the exact Pass 1 -> Pass 2 junction point
-        if (i === 0 && j === 0) {
+        // Skip duplicate coordinate at the exact Pass 1 -> Pass 2 junction point (only if no overshoot separating them)
+        if (i === 0 && j === 0 && overshoot === 0) {
           continue;
         }
         const xIdx = startFromWest ? j : (nPhotos2 - 1 - j);
@@ -6393,6 +7293,12 @@ function generateGridCoordinates(width, height, rotation, gridType, captureMode,
           // Stop & Shoot waypoints
           linePoints.forEach(pt => waypoints.push(pt));
         }
+      }
+
+      // If turnaround overshoot is specified, add exit overshoot waypoint after Pass 2 survey line
+      if (overshoot > 0) {
+        const exitX = startFromWest ? (width / 2.0 + overshoot) : (-width / 2.0 - overshoot);
+        waypoints.push({ x: exitX, y: y, heading: lineHeading2, isTurnaroundPoint: true, skipPhoto: true });
       }
     }
   }
@@ -6809,6 +7715,8 @@ function generateTargetSplatCoordinates(width, height, rotation, captureMode, sL
         effectivePitch = Math.round(Math.max(-85, Math.min(-15, effectivePitch)));
         pt.heading = effectiveHeading;
         pt.pitch = effectivePitch;
+        pt.headingMode = 'smoothTransition';
+        pt.gridType = 'target-splat';
         isVisible = true; // Always pointed at target
       } else {
         isVisible = isTargetVisibleInFrustum(pt.x, pt.y, altitude, pt.heading, effectivePitch, hfov, vfov, localTargetPoly, objectHeight);
@@ -6908,7 +7816,7 @@ function generateTargetSplatCoordinates(width, height, rotation, captureMode, sL
     for (let j = 0; j < nPhotos; j++) {
       const yIdx = startFromSouth ? j : (nPhotos - 1 - j);
       const y = -height / 2.0 + yIdx * dyPhoto;
-      linePoints.push({ x: x, y: y, heading: lineHeading, pitch: defaultGimbalPitch });
+      linePoints.push({ x: x, y: y, heading: lineHeading, pitch: defaultGimbalPitch, headingMode: 'smoothTransition', gridType: 'target-splat' });
     }
 
     processFlightLine(linePoints, isContinuous);
@@ -6935,7 +7843,7 @@ function generateTargetSplatCoordinates(width, height, rotation, captureMode, sL
       for (let j = 0; j < nPhotos2; j++) {
         const xIdx = startFromWest ? j : (nPhotos2 - 1 - j);
         const x = -width / 2.0 + xIdx * dxPhoto2;
-        linePoints2.push({ x: x, y: y, heading: lineHeading2, pitch: defaultGimbalPitch });
+        linePoints2.push({ x: x, y: y, heading: lineHeading2, pitch: defaultGimbalPitch, headingMode: 'smoothTransition', gridType: 'target-splat' });
       }
 
       processFlightLine(linePoints2, isContinuous);
@@ -6955,11 +7863,58 @@ function generateTargetSplatCoordinates(width, height, rotation, captureMode, sL
     const standoff = parseFloat(layer.targetPerimeterStandoff) || 8;
     const orbitAlt = (layer.targetPerimeterAltitude !== null && layer.targetPerimeterAltitude !== undefined)
       ? parseFloat(layer.targetPerimeterAltitude)
-      : (altitude * 0.65);
+      : null;
     const orbitPitch = parseFloat(layer.targetPerimeterPitch) || -55;
     const perimResult = generateTargetPerimeterOrbit(layer, standoff, orbitAlt, orbitPitch, sPhoto, centroidX, centroidY, localTargetPoly, altitude);
-    perimResult.waypoints.forEach(wp => waypoints.push(wp));
-    perimResult.photos.forEach(p => photos.push(p));
+
+    if (perimResult.waypoints.length > 0) {
+      let reorderedWps = perimResult.waypoints;
+      let reorderedPhotos = perimResult.photos;
+
+      if (waypoints.length > 0) {
+        const lastGridWp = waypoints[waypoints.length - 1];
+        // 1. Find closest perimeter orbit point to end of grid to avoid traversing across property
+        let closestIdx = 0;
+        let minD = Infinity;
+        for (let k = 0; k < perimResult.waypoints.length; k++) {
+          const d = Math.hypot(perimResult.waypoints[k].x - lastGridWp.x, perimResult.waypoints[k].y - lastGridWp.y);
+          if (d < minD) {
+            minD = d;
+            closestIdx = k;
+          }
+        }
+        reorderedWps = perimResult.waypoints.slice(closestIdx).concat(perimResult.waypoints.slice(0, closestIdx));
+        reorderedPhotos = perimResult.photos.slice(closestIdx).concat(perimResult.photos.slice(0, closestIdx));
+
+        // 2. Safe Clearance Transit Waypoint:
+        // When transitioning from overhead grid down to perimeter facade altitude,
+        // do not dive diagonally through the roofline or tree canopy!
+        // Transit horizontally to the perimeter standoff coordinate at safe grid altitude first,
+        // clearing all roof peaks and tree lines, before descending vertically in open air outside the building.
+        const firstOrbitWp = reorderedWps[0];
+        const safeTransitAlt = Math.max(altitude, firstOrbitWp.alt || altitude);
+        if (safeTransitAlt > (firstOrbitWp.alt || altitude) + 0.5) {
+          waypoints.push({
+            x: firstOrbitWp.x,
+            y: firstOrbitWp.y,
+            alt: safeTransitAlt,
+            pitch: firstOrbitWp.pitch,
+            heading: firstOrbitWp.heading,
+            headingMode: 'smoothTransition',
+            gridType: 'target-splat',
+            isTransition: true,
+            skipPhoto: true,
+            targetVisible: false,
+            turnMode: 'stop'
+          });
+        }
+      }
+
+      // Mark the first orbit point as ring start so gimbal rotates to orbitPitch
+      reorderedWps[0].isRingStart = true;
+      reorderedWps.forEach(wp => waypoints.push(wp));
+      reorderedPhotos.forEach(p => photos.push(p));
+    }
   }
 
   return { waypoints, photos };
@@ -7001,9 +7956,11 @@ function generateTargetPerimeterOrbit(layer, standoffMeters, orbitAlt, orbitPitc
   if (offsetPoly.length < 2) return { waypoints, photos };
 
   // Walk the offset polygon edges, placing one waypoint every ~sPhoto meters
+  const targetHeight = (layer && layer.targetHeight) ? parseFloat(layer.targetHeight) : 8;
+  const autoMinAlt = Math.max(12, targetHeight + 3);
   const effectiveAlt = (orbitAlt !== null && orbitAlt !== undefined && !isNaN(orbitAlt) && orbitAlt > 0)
     ? orbitAlt
-    : ((gridAlt || 50) * 0.65);
+    : Math.max(autoMinAlt, Math.round((gridAlt || 50) * 0.65 * 10) / 10);
 
   // Close the polygon
   const polyPts = [...offsetPoly, offsetPoly[0]];
@@ -7035,7 +7992,8 @@ function generateTargetPerimeterOrbit(layer, standoffMeters, orbitAlt, orbitPitc
         pitch: effectiveOrbitPitch,
         heading: heading,
         headingMode: 'smoothTransition',
-        isPerimeterOrbit: true
+        isPerimeterOrbit: true,
+        gridType: 'target-splat'
       };
       waypoints.push(pt);
       photos.push({ x: px, y: py, heading: heading, pitch: effectiveOrbitPitch });
@@ -7162,32 +8120,55 @@ function getMarkerIcon(wp, idx, waypoints, rotationDeg, tempHeading, tempPitch, 
   // Pitch calculation
   const pitch = tempPitch !== undefined && tempPitch !== null ? tempPitch : (wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : defaultGimbalPitch);
 
-  let coneColor = 'rgba(6, 182, 212, 0.15)'; // default cyan cone
+  const activePalette = (typeof getActiveCameraPalette === 'function') ? getActiveCameraPalette() : null;
+  const conesEnabled = (typeof isCameraConeEnabled === 'function') ? isCameraConeEnabled() : true;
+
+  let coneColor = (activePalette && activePalette.coneColor) ? activePalette.coneColor : 'rgba(245, 158, 11, 0.38)';
   if (isModified) {
-    coneColor = 'rgba(236, 72, 153, 0.2)'; // Pink cone
-  } else if (isMultiOrbit || isCombo || isMultiCombo) {
-    if (wp.ringIndex === 0) coneColor = 'rgba(168, 85, 247, 0.2)';
-    else if (wp.ringIndex === 1) coneColor = 'rgba(6, 182, 212, 0.2)';
-    else if (wp.ringIndex === 2) coneColor = 'rgba(245, 158, 11, 0.2)';
-    else if (wp.ringIndex === 3) coneColor = 'rgba(59, 130, 246, 0.2)';
+    coneColor = 'rgba(236, 72, 153, 0.38)'; // Pink cone
+  } else if (!activePalette || activePalette.id === 'classic-cyan') {
+    if (isMultiOrbit || isCombo || isMultiCombo) {
+      if (wp.ringIndex === 0) coneColor = 'rgba(168, 85, 247, 0.35)';
+      else if (wp.ringIndex === 1) coneColor = 'rgba(6, 182, 212, 0.35)';
+      else if (wp.ringIndex === 2) coneColor = 'rgba(245, 158, 11, 0.35)';
+      else if (wp.ringIndex === 3) coneColor = 'rgba(59, 130, 246, 0.35)';
+    } else {
+      coneColor = 'rgba(6, 182, 212, 0.35)';
+    }
   }
 
-  const showCone = !isSkipped;
+  const showCone = !isSkipped && conesEnabled;
   const coneHtml = showCone
     ? `<div class="wp-camera-cone" style="border-top-color: ${coneColor};"></div>`
     : '';
+
+  let arrowColor = color;
+  if (isModified) {
+    arrowColor = '#ec4899';
+  } else if (activePalette && activePalette.arrowColor) {
+    arrowColor = activePalette.arrowColor;
+  }
+
   const arrowStyle = isSkipped
     ? `border-bottom-color: #64748b; opacity: 0.5;`
-    : `border-bottom-color: ${color};`;
+    : `border-bottom-color: ${arrowColor};`;
   const dotHtml = isSkipped
     ? `<div class="wp-dot wp-dot-skipped" style="background-color: ${color}; border-color: ${borderColor}; width: ${radius * 2}px; height: ${radius * 2}px; border-width: ${borderWeight}px; border-style: dashed;"></div>`
     : `<div class="wp-dot" style="background-color: ${color}; border-color: ${borderColor}; width: ${radius * 2}px; height: ${radius * 2}px; border-width: ${borderWeight}px;"></div>`;
   const displayPitch = (typeof pitch === 'number' && !isNaN(pitch))
     ? Math.round(pitch)
     : (pitch !== undefined && pitch !== null ? (isNaN(parseFloat(pitch)) ? pitch : Math.round(parseFloat(pitch))) : defaultGimbalPitch);
+  const normalizedHeading = (typeof heading === 'number' && !isNaN(heading))
+    ? (((heading % 360) + 360) % 360)
+    : 0;
+  // If camera/arrow points southward (into lower hemisphere 75°–285°), anchor pitch badge above dot (North)
+  // so it never covers or collides with the downward-pointing camera cone and directional arrow.
+  const posClass = (normalizedHeading >= 75 && normalizedHeading <= 285)
+    ? 'wp-pitch-pos-top'
+    : 'wp-pitch-pos-bottom';
   const pitchHtml = isSkipped
-    ? `<div class="wp-pitch-label wp-pitch-skipped" style="opacity: 0.55;">${displayPitch}°</div>`
-    : `<div class="wp-pitch-label">${displayPitch}°</div>`;
+    ? `<div class="wp-pitch-label wp-pitch-skipped ${posClass}" style="opacity: 0.55;">${displayPitch}°</div>`
+    : `<div class="wp-pitch-label ${posClass}">${displayPitch}°</div>`;
   const markerClass = isSkipped ? 'custom-wp-marker wp-marker-skipped' : 'custom-wp-marker';
 
   return L.divIcon({
@@ -7226,6 +8207,9 @@ function drawFlightPathLines(waypoints, gridType) {
     }).addTo(flightPathPolyline);
   }
 
+  const activePalette = (typeof getActiveCameraPalette === 'function') ? getActiveCameraPalette() : null;
+  const defaultPathColor = (activePalette && activePalette.pathColor) ? activePalette.pathColor : '#06b6d4';
+
   // Draw segment by segment to color-code warnings
   for (let i = 1; i < waypoints.length; i++) {
     const p1 = waypoints[i - 1];
@@ -7233,7 +8217,7 @@ function drawFlightPathLines(waypoints, gridType) {
     const latlngs = [[p1.lat, p1.lon], [p2.lat, p2.lon]];
     const dist = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
 
-    let color = p2.layerColor || '#06b6d4'; // default cyan or layer color
+    let color = p2.layerColor || defaultPathColor;
     let dashArray = null;
     let weight = 3.5;
     let opacity = 0.85;
@@ -7312,9 +8296,10 @@ function drawExclusionZones(globalCenterLat, globalCenterLon) {
         ? zone.freeformWaypoints
         : (zone.polygonVertices && zone.polygonVertices.length > 0 ? zone.polygonVertices : []);
 
+      let exclusionPoly = null;
       if (vertices.length >= 3) {
         const latlngs = vertices.map(v => [v.lat, v.lon]);
-        const poly = L.polygon(latlngs, {
+        exclusionPoly = L.polygon(latlngs, {
           color: '#ef4444',
           weight: 2.5,
           dashArray: '6, 6',
@@ -7323,10 +8308,10 @@ function drawExclusionZones(globalCenterLat, globalCenterLon) {
           className: 'exclusion-zone-polygon'
         }).addTo(exclusionZonesGroup);
 
-        poly.bindTooltip(tooltipText, { direction: 'center', permanent: false });
+        exclusionPoly.bindTooltip(tooltipText, { direction: 'center', permanent: false });
       } else if (vertices.length === 2) {
         const latlngs = vertices.map(v => [v.lat, v.lon]);
-        L.polyline(latlngs, {
+        exclusionPoly = L.polyline(latlngs, {
           color: '#ef4444',
           weight: 2,
           dashArray: '4, 4',
@@ -7356,6 +8341,12 @@ function drawExclusionZones(globalCenterLat, globalCenterLon) {
             v.lon = newLatLng.lng;
             v.x = offsets.x;
             v.y = offsets.y;
+            if (exclusionPoly && typeof exclusionPoly.setLatLngs === 'function') {
+              exclusionPoly.setLatLngs(vertices.map(pt => [pt.lat, pt.lon]));
+            }
+          });
+
+          nodeMarker.on('dragend', () => {
             updateGrid();
           });
 
@@ -7387,31 +8378,32 @@ function addTargetPolygonPoint(lat, lng) {
   activeLayer.targetPoly.push({ lat: lat, lon: lng, x: offsets.x, y: offsets.y });
   activeLayer.targetMode = 'polygon';
 
-  // Automatically compute centroid and center grid when at least 3 vertices are defined
-  if (activeLayer.targetPoly.length >= 3) {
-    let sumLat = 0, sumLon = 0;
-    activeLayer.targetPoly.forEach(p => {
-      sumLat += p.lat;
-      sumLon += p.lon;
-    });
-    const avgLat = sumLat / activeLayer.targetPoly.length;
-    const avgLon = sumLon / activeLayer.targetPoly.length;
-    activeLayer.centerLat = avgLat;
-    activeLayer.centerLon = avgLon;
-    // Recompute offsets relative to the new centroid
-    activeLayer.targetPoly.forEach(p => {
-      const off = geodeticToLocal(p.lat, p.lon, avgLat, avgLon);
-      p.x = off.x;
-      p.y = off.y;
-    });
-    if (typeof centerLat !== 'undefined' && typeof centerLon !== 'undefined') {
-      centerLat = avgLat;
-      centerLon = avgLon;
-    }
-  }
-
+  recomputeTargetPolygonCentroid(activeLayer);
   setTargetPolyEditMode(true);
   updateGrid();
+}
+
+function recomputeTargetPolygonCentroid(activeLayer) {
+  if (!activeLayer || !activeLayer.targetPoly || activeLayer.targetPoly.length < 3) return;
+  let sumLat = 0, sumLon = 0;
+  activeLayer.targetPoly.forEach(p => {
+    sumLat += p.lat;
+    sumLon += p.lon;
+  });
+  const avgLat = sumLat / activeLayer.targetPoly.length;
+  const avgLon = sumLon / activeLayer.targetPoly.length;
+  activeLayer.centerLat = avgLat;
+  activeLayer.centerLon = avgLon;
+  // Recompute offsets relative to the new centroid
+  activeLayer.targetPoly.forEach(p => {
+    const off = geodeticToLocal(p.lat, p.lon, avgLat, avgLon);
+    p.x = off.x;
+    p.y = off.y;
+  });
+  if (typeof centerLat !== 'undefined' && typeof centerLon !== 'undefined') {
+    centerLat = avgLat;
+    centerLon = avgLon;
+  }
 }
 
 function drawTargetSplatOverlay(layer, centerLat, centerLon, rotationDeg) {
@@ -7434,9 +8426,11 @@ function drawTargetSplatOverlay(layer, centerLat, centerLon, rotationDeg) {
   } else {
     // Polygon Mode
     const vertices = layer.targetPoly || [];
+    let poly = null;
+    let polyline = null;
     if (vertices.length >= 3) {
       const latlngs = vertices.map(v => [v.lat, v.lon]);
-      const poly = L.polygon(latlngs, {
+      poly = L.polygon(latlngs, {
         color: '#10b981',
         weight: 2.5,
         dashArray: '6, 6',
@@ -7446,7 +8440,7 @@ function drawTargetSplatOverlay(layer, centerLat, centerLon, rotationDeg) {
       poly.bindTooltip(`🎯 Target House Polygon (${vertices.length} vertices, Roof Height: ${targetHeight}m)`, { direction: 'center', permanent: false });
     } else if (vertices.length === 2) {
       const latlngs = vertices.map(v => [v.lat, v.lon]);
-      L.polyline(latlngs, {
+      polyline = L.polyline(latlngs, {
         color: '#10b981',
         weight: 2.5,
         dashArray: '4, 4'
@@ -7463,6 +8457,59 @@ function drawTargetSplatOverlay(layer, centerLat, centerLon, rotationDeg) {
       }).addTo(targetPolygonGroup);
       circle.bindTooltip(`🎯 Target Envelope (${targetRadius}m - Click 'Edit Target Polygon' to trace house)`, { direction: 'center', permanent: false });
     }
+
+    // Draw Perimeter Orbit ring preview (amber dashed) when enabled (v1.77.4)
+    let orbitPolyline = null;
+    const updateOrbitPreview = () => {
+      if (!layer.targetPerimeterPass) return;
+      const localTargetPoly = getLocalTargetPolygon(layer, centerLat, centerLon, rotationDeg);
+      const centroidX = localTargetPoly.length ? localTargetPoly.reduce((s, v) => s + v.x, 0) / localTargetPoly.length : 0;
+      const centroidY = localTargetPoly.length ? localTargetPoly.reduce((s, v) => s + v.y, 0) / localTargetPoly.length : 0;
+      const standoff = parseFloat(layer.targetPerimeterStandoff) || 8;
+
+      let offsetPoly = [];
+      if (localTargetPoly.length >= 3) {
+        offsetPoly = localTargetPoly.map(v => {
+          const dx = v.x - centroidX, dy = v.y - centroidY;
+          const dist = Math.hypot(dx, dy);
+          if (dist < 0.001) return { x: v.x + standoff, y: v.y };
+          return { x: v.x + (dx / dist) * standoff, y: v.y + (dy / dist) * standoff };
+        });
+      } else {
+        const r = (layer.targetRadius || 25) + standoff;
+        const nPts = Math.max(16, Math.round((2 * Math.PI * r) / 3));
+        for (let i = 0; i < nPts; i++) {
+          const theta = (i / nPts) * 2 * Math.PI;
+          offsetPoly.push({ x: centroidX + r * Math.cos(theta), y: centroidY + r * Math.sin(theta) });
+        }
+      }
+
+      if (offsetPoly.length >= 2) {
+        const R = 6378137.0;
+        const cosLat = Math.cos(centerLat * Math.PI / 180.0);
+        const orbitLatLngs = offsetPoly.map(pt => {
+          const rotRad = (rotationDeg || 0) * Math.PI / 180.0;
+          const rx = pt.x * Math.cos(rotRad) - pt.y * Math.sin(rotRad);
+          const ry = pt.x * Math.sin(rotRad) + pt.y * Math.cos(rotRad);
+          const lat = centerLat + (ry / R) * (180.0 / Math.PI);
+          const lon = centerLon + ((rx / R) * (180.0 / Math.PI)) / cosLat;
+          return [lat, lon];
+        });
+        orbitLatLngs.push(orbitLatLngs[0]); // Close ring
+        if (orbitPolyline && typeof orbitPolyline.setLatLngs === 'function') {
+          orbitPolyline.setLatLngs(orbitLatLngs);
+        } else {
+          orbitPolyline = L.polyline(orbitLatLngs, {
+            color: '#f59e0b',
+            weight: 2,
+            dashArray: '6, 5',
+            opacity: 0.85
+          }).addTo(targetPolygonGroup).bindTooltip('🔄 Perimeter Orbit Path', { direction: 'top', sticky: true });
+        }
+      }
+    };
+
+    updateOrbitPreview();
 
     // Render numbered draggable vertex markers for all vertices (1, 2, 3...)
     vertices.forEach((v, vIdx) => {
@@ -7485,61 +8532,27 @@ function drawTargetSplatOverlay(layer, centerLat, centerLon, rotationDeg) {
         v.lon = newLatLng.lng;
         v.x = offsets.x;
         v.y = offsets.y;
+        if (poly && typeof poly.setLatLngs === 'function') {
+          poly.setLatLngs(vertices.map(pt => [pt.lat, pt.lon]));
+        } else if (polyline && typeof polyline.setLatLngs === 'function') {
+          polyline.setLatLngs(vertices.map(pt => [pt.lat, pt.lon]));
+        }
+        updateOrbitPreview();
+      });
+
+      nodeMarker.on('dragend', () => {
+        recomputeTargetPolygonCentroid(layer);
         updateGrid();
       });
 
       nodeMarker.on('click', (e) => {
         if (e.originalEvent && e.originalEvent.stopPropagation) e.originalEvent.stopPropagation();
         vertices.splice(vIdx, 1);
+        recomputeTargetPolygonCentroid(layer);
         setTargetPolyEditMode(isTargetPolyEditActive || vertices.length < 3);
         updateGrid();
       });
     });
-  }
-
-  // Draw Perimeter Orbit ring preview (amber dashed) when enabled (v1.77.4)
-  if (layer.targetPerimeterPass) {
-    const localTargetPoly = getLocalTargetPolygon(layer, centerLat, centerLon, rotationDeg);
-    const centroidX = localTargetPoly.length ? localTargetPoly.reduce((s, v) => s + v.x, 0) / localTargetPoly.length : 0;
-    const centroidY = localTargetPoly.length ? localTargetPoly.reduce((s, v) => s + v.y, 0) / localTargetPoly.length : 0;
-    const standoff = parseFloat(layer.targetPerimeterStandoff) || 8;
-
-    let offsetPoly = [];
-    if (localTargetPoly.length >= 3) {
-      offsetPoly = localTargetPoly.map(v => {
-        const dx = v.x - centroidX, dy = v.y - centroidY;
-        const dist = Math.hypot(dx, dy);
-        if (dist < 0.001) return { x: v.x + standoff, y: v.y };
-        return { x: v.x + (dx / dist) * standoff, y: v.y + (dy / dist) * standoff };
-      });
-    } else {
-      const r = (layer.targetRadius || 25) + standoff;
-      const nPts = Math.max(16, Math.round((2 * Math.PI * r) / 3));
-      for (let i = 0; i < nPts; i++) {
-        const theta = (i / nPts) * 2 * Math.PI;
-        offsetPoly.push({ x: centroidX + r * Math.cos(theta), y: centroidY + r * Math.sin(theta) });
-      }
-    }
-
-    if (offsetPoly.length >= 2) {
-      const R = 6378137.0;
-      const cosLat = Math.cos(centerLat * Math.PI / 180.0);
-      const orbitLatLngs = offsetPoly.map(pt => {
-        const rotRad = (rotationDeg || 0) * Math.PI / 180.0;
-        const rx = pt.x * Math.cos(rotRad) - pt.y * Math.sin(rotRad);
-        const ry = pt.x * Math.sin(rotRad) + pt.y * Math.cos(rotRad);
-        const lat = centerLat + (ry / R) * (180.0 / Math.PI);
-        const lon = centerLon + ((rx / R) * (180.0 / Math.PI)) / cosLat;
-        return [lat, lon];
-      });
-      orbitLatLngs.push(orbitLatLngs[0]); // Close ring
-      L.polyline(orbitLatLngs, {
-        color: '#f59e0b',
-        weight: 2,
-        dashArray: '6, 5',
-        opacity: 0.85
-      }).addTo(targetPolygonGroup).bindTooltip('🔄 Perimeter Orbit Path', { direction: 'top', sticky: true });
-    }
   }
 
   // Update saved photos pill in UI
@@ -8344,8 +9357,9 @@ function updateAirspaceLegend(e) {
 // Uses setWhere('1=0') to suppress all network requests when zoomed out,
 // and setWhere('') to restore normal queries when zoomed in enough.
 function applyZoomGates() {
-  if (typeof map === 'undefined' || !map || typeof map.getZoom !== 'function') return;
-  const zoom = map.getZoom();
+  const activeMap = (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map) || (typeof global !== 'undefined' && global.map);
+  if (!activeMap || typeof activeMap.getZoom !== 'function') return;
+  const zoom = activeMap.getZoom();
 
   if (uasFacilityMapLayer && uasFacilityMapEnabled) {
     if (zoom >= LAANC_MIN_ZOOM) {
@@ -8372,21 +9386,84 @@ function applyZoomGates() {
   }
 
   // Refresh the legend to show/hide the zoom notice
-  updateAirspaceLegend(null);
+  if (typeof updateAirspaceLegend === 'function') {
+    try { updateAirspaceLegend(null); } catch (e) {}
+  }
 
-  // Hide pitch labels, camera cones, and arrows at low zoom to prevent them
-  // from visually floating disconnected from their map-anchored dot position.
-  // These elements extend outside the 24x24 iconSize box (overflow: visible),
-  // so at low zoom they appear detached. Hide them below zoom 18.
-  const WP_DETAIL_MIN_ZOOM = 18;
-  const mapContainer = (typeof map !== 'undefined' && map && typeof map.getContainer === 'function') ? map.getContainer() : null;
+  // Responsive continuous zoom scaling for camera cones, directional arrows, and pitch labels:
+  // - Zoom >= 20.5: Full-scale view (cone scale 1.0, pitch scale 1.0, top 24px)
+  // - Zoom 18 - 20.5: Smooth continuous interpolation preventing overlap in dense grids
+  // - Zoom 16 - 18: Micro-cones (0.18 - 0.38) and arrows for heading orientation; pitch labels hidden
+  // - Zoom < 16: Low-zoom macro overview (.wp-zoomed-out) hides labels/cones to keep overview clean
+  const WP_MACRO_MIN_ZOOM = 16;
+  const WP_PITCH_MIN_ZOOM = 18;
+  const mapContainer = (activeMap && typeof activeMap.getContainer === 'function') ? activeMap.getContainer() : null;
   if (mapContainer) {
-    if (zoom >= WP_DETAIL_MIN_ZOOM) {
+    if (zoom >= WP_MACRO_MIN_ZOOM) {
       mapContainer.classList.remove('wp-zoomed-out');
+      mapContainer.classList.remove('wp-zoom-high', 'wp-zoom-mid', 'wp-zoom-compact');
+
+      let coneScale;
+      let pitchScale;
+      let pitchTop;
+      let arrowScale;
+
+      if (zoom >= 20.5) {
+        coneScale = 1.0;
+        pitchScale = 1.0;
+        pitchTop = 24;
+        arrowScale = 1.0;
+        mapContainer.classList.add('wp-zoom-high');
+      } else if (zoom >= 18) {
+        // Continuous smooth interpolation from zoom 18 to 20.5
+        const t = (zoom - 18) / 2.5;
+        coneScale = 0.38 + t * (1.0 - 0.38);
+        pitchScale = 0.65 + t * (1.0 - 0.65);
+        pitchTop = 16 + t * (24 - 16);
+        arrowScale = 0.90 + t * (1.0 - 0.90);
+        if (zoom >= 19.5) {
+          mapContainer.classList.add('wp-zoom-high');
+        } else if (zoom >= 18.5) {
+          mapContainer.classList.add('wp-zoom-mid');
+        } else {
+          mapContainer.classList.add('wp-zoom-compact');
+        }
+      } else {
+        // Micro-cones for zoom 16 to 18 (flight orientation view)
+        const t = (zoom - 16) / 2.0;
+        coneScale = 0.18 + t * (0.38 - 0.18);
+        pitchScale = 0;
+        pitchTop = 14;
+        arrowScale = 0.70 + t * (0.90 - 0.70);
+        mapContainer.classList.add('wp-zoom-compact');
+      }
+
+      if (zoom < WP_PITCH_MIN_ZOOM) {
+        mapContainer.classList.add('wp-zoom-pitch-hidden');
+      } else {
+        mapContainer.classList.remove('wp-zoom-pitch-hidden');
+      }
+
+      if (mapContainer.style && typeof mapContainer.style.setProperty === 'function') {
+        mapContainer.style.setProperty('--wp-cone-scale', coneScale.toFixed(3));
+        mapContainer.style.setProperty('--wp-pitch-scale', pitchScale.toFixed(3));
+        mapContainer.style.setProperty('--wp-pitch-top', pitchTop.toFixed(1) + 'px');
+        mapContainer.style.setProperty('--wp-arrow-scale', arrowScale.toFixed(3));
+      }
     } else {
       mapContainer.classList.add('wp-zoomed-out');
+      mapContainer.classList.remove('wp-zoom-high', 'wp-zoom-mid', 'wp-zoom-compact', 'wp-zoom-pitch-hidden');
+      if (mapContainer.style && typeof mapContainer.style.removeProperty === 'function') {
+        mapContainer.style.removeProperty('--wp-cone-scale');
+        mapContainer.style.removeProperty('--wp-pitch-scale');
+        mapContainer.style.removeProperty('--wp-pitch-top');
+        mapContainer.style.removeProperty('--wp-arrow-scale');
+      }
     }
   }
+}
+if (typeof window !== 'undefined') {
+  window.applyZoomGates = applyZoomGates;
 }
 function getSubMissionFlightTime(wps, startIdx, endIdx, speed, captureMode) {
   let distance = 0;
@@ -8408,19 +9485,49 @@ function getSubMissionFlightTime(wps, startIdx, endIdx, speed, captureMode) {
   // Sum hover times across the sub-mission waypoints
   const globalHoverEl = document.getElementById('global-hover-time');
   const globalHover = globalHoverEl ? (parseInt(globalHoverEl.value) || 0) : 0;
-  const isStopAndShoot = captureMode === 'stopAndShoot';
   
   let totalHoverSeconds = 0;
   for (let i = startIdx; i <= endIdx; i++) {
     const wp = wps[i];
     if (!wp) continue;
-    const baseHover = (wp.hoverTime !== null && wp.hoverTime !== undefined) ? wp.hoverTime : globalHover;
+    const wpCapture = (wp.captureMode && wp.captureMode !== 'inherit') ? wp.captureMode : (wp.layerCaptureMode && wp.layerCaptureMode !== 'inherit') ? wp.layerCaptureMode : captureMode;
+    const wpIsStopAndShoot = wpCapture === 'stopAndShoot';
+
+    let baseHover = globalHover;
+    if (wp.layerHoverTime !== undefined && wp.layerHoverTime !== null && wp.layerHoverTime !== 'inherit') {
+      baseHover = parseInt(wp.layerHoverTime, 10) || 0;
+    }
+    if (wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit') {
+      baseHover = parseInt(wp.hoverTime, 10) || 0;
+    }
     let wpEffectiveHover = baseHover;
-    if (isStopAndShoot && wpEffectiveHover < 2) {
-      const reposInfo = checkNeedsReposition(i, wps);
-      if (reposInfo.needsReposition) {
-        wpEffectiveHover = 2; // Auto-applied settling delay
+
+    const autoSettling = wp.autoSettlingEnabled !== false;
+    const baseSettling = wp.baseSettlingTime !== undefined ? wp.baseSettlingTime : 2.0;
+    const majorTurnSettling = wp.majorTurnSettlingTime !== undefined ? wp.majorTurnSettlingTime : 5.0;
+    const modTurnSettling = wp.moderateTurnSettlingTime !== undefined ? wp.moderateTurnSettlingTime : 4.0;
+    const pitchSettling = wp.pitchSettlingTime !== undefined ? wp.pitchSettlingTime : 3.0;
+
+    const reposInfo = checkNeedsReposition(i, wps);
+    const gridTypeEl = typeof document !== 'undefined' ? document.getElementById('grid-type') : null;
+    const gridTypeVal = (gridTypeEl && gridTypeEl.value) ? gridTypeEl.value : (wps.find(w => w && w.gridType)?.gridType || '');
+    const isTargetSplat = gridTypeVal === 'target-splat' ||
+      (wp.gridType === 'target-splat') ||
+      (wp.layerId && typeof flightLayers !== 'undefined' && flightLayers.some(l => l.id === wp.layerId && l.pattern === 'target-splat')) ||
+      (wp.majorTurnSettlingTime !== undefined && wp.layerId);
+
+    if (wpIsStopAndShoot && autoSettling && reposInfo.needsReposition) {
+      let settlingDelay = baseSettling;
+      if (isTargetSplat && i > 0) {
+        if (reposInfo.headingDiff >= 60) {
+          settlingDelay = Math.max(settlingDelay, majorTurnSettling);
+        } else if (reposInfo.headingDiff >= 25) {
+          settlingDelay = Math.max(settlingDelay, modTurnSettling);
+        } else if (reposInfo.isGimbalChanged) {
+          settlingDelay = Math.max(settlingDelay, pitchSettling);
+        }
       }
+      wpEffectiveHover = Math.max(wpEffectiveHover, settlingDelay);
     }
     totalHoverSeconds += wpEffectiveHover;
   }
@@ -8867,17 +9974,47 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
   // Sum hover times across all waypoints
   const globalHoverEl = document.getElementById('global-hover-time');
   const globalHover = globalHoverEl ? (parseInt(globalHoverEl.value) || 0) : 0;
-  const isStopAndShoot = captureMode === 'stopAndShoot';
-  
+
   let totalHoverSeconds = 0;
   waypoints.forEach((wp, idx) => {
-    const baseHover = (wp.hoverTime !== null && wp.hoverTime !== undefined) ? wp.hoverTime : globalHover;
+    const wpCapture = (wp.captureMode && wp.captureMode !== 'inherit') ? wp.captureMode : (wp.layerCaptureMode && wp.layerCaptureMode !== 'inherit') ? wp.layerCaptureMode : captureMode;
+    const wpIsStopAndShoot = wpCapture === 'stopAndShoot';
+
+    let baseHover = globalHover;
+    if (wp.layerHoverTime !== undefined && wp.layerHoverTime !== null && wp.layerHoverTime !== 'inherit') {
+      baseHover = parseInt(wp.layerHoverTime, 10) || 0;
+    }
+    if (wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit') {
+      baseHover = parseInt(wp.hoverTime, 10) || 0;
+    }
     let wpEffectiveHover = baseHover;
-    if (isStopAndShoot && wpEffectiveHover < 2) {
-      const reposInfo = checkNeedsReposition(idx, waypoints);
-      if (reposInfo.needsReposition) {
-        wpEffectiveHover = 2; // Auto-applied settling delay
+
+    const autoSettling = wp.autoSettlingEnabled !== false;
+    const baseSettling = wp.baseSettlingTime !== undefined ? wp.baseSettlingTime : 2.0;
+    const majorTurnSettling = wp.majorTurnSettlingTime !== undefined ? wp.majorTurnSettlingTime : 5.0;
+    const modTurnSettling = wp.moderateTurnSettlingTime !== undefined ? wp.moderateTurnSettlingTime : 4.0;
+    const pitchSettling = wp.pitchSettlingTime !== undefined ? wp.pitchSettlingTime : 3.0;
+
+    const reposInfo = checkNeedsReposition(idx, waypoints);
+    const gridTypeEl = typeof document !== 'undefined' ? document.getElementById('grid-type') : null;
+    const gridTypeVal = (gridTypeEl && gridTypeEl.value) ? gridTypeEl.value : (waypoints.find(w => w && w.gridType)?.gridType || '');
+    const isTargetSplat = gridTypeVal === 'target-splat' ||
+      (wp.gridType === 'target-splat') ||
+      (wp.layerId && typeof flightLayers !== 'undefined' && flightLayers.some(l => l.id === wp.layerId && l.pattern === 'target-splat')) ||
+      (wp.majorTurnSettlingTime !== undefined && wp.layerId);
+
+    if (wpIsStopAndShoot && autoSettling && reposInfo.needsReposition) {
+      let settlingDelay = baseSettling;
+      if (isTargetSplat && idx > 0) {
+        if (reposInfo.headingDiff >= 60) {
+          settlingDelay = Math.max(settlingDelay, majorTurnSettling);
+        } else if (reposInfo.headingDiff >= 25) {
+          settlingDelay = Math.max(settlingDelay, modTurnSettling);
+        } else if (reposInfo.isGimbalChanged) {
+          settlingDelay = Math.max(settlingDelay, pitchSettling);
+        }
       }
+      wpEffectiveHover = Math.max(wpEffectiveHover, settlingDelay);
     }
     totalHoverSeconds += wpEffectiveHover;
   });
@@ -9145,27 +10282,70 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
   waypoints.forEach((wp, idx) => {
     const waypointActions = [];
     
+    // Resolve Effective Layer & Waypoint Properties (Three-Tier Cascade: Waypoint -> Layer -> Global)
+    const effectiveCaptureMode = (wp.captureMode && wp.captureMode !== 'inherit')
+      ? wp.captureMode
+      : (wp.layerCaptureMode && wp.layerCaptureMode !== 'inherit')
+        ? wp.layerCaptureMode
+        : (captureMode || 'stopAndShoot');
+
+    const effectivePathMode = (wp.layerPathMode && wp.layerPathMode !== 'inherit')
+      ? wp.layerPathMode
+      : (pathMode || 'curved');
+
+    const isStopAndShoot = effectiveCaptureMode === 'stopAndShoot';
+    const isVideo = effectiveCaptureMode === 'video';
+
     // Determine if repositioning (gimbal pitch or heading yaw) is required
     const reposInfo = checkNeedsReposition(idx, waypoints);
-    const isStopAndShoot = captureMode === 'stopAndShoot';
     
-    // Determine effective hover time.
-    // In stop-and-shoot mode, always enforce a 2s minimum at every waypoint so the gimbal
-    // has time to stabilize before the camera fires (fixes gimbal error and missed shots at 0s).
-    // The 2s floor matches the existing reposition auto-inject and DJI's own settling guidance.
-    const baseHover = (wp.hoverTime !== null && wp.hoverTime !== undefined) ? wp.hoverTime : globalHoverTime;
-    let effectiveHover = baseHover;
-    if (isStopAndShoot && effectiveHover < 2) {
-      effectiveHover = 2;
-    }
-    
-    // 1. Always set gimbal pitch at start of flight (waypoint index 0), at start of a new ring, OR at every waypoint for road-following
-    const gridType = document.getElementById('grid-type')?.value;
+    const gridTypeEl = typeof document !== 'undefined' ? document.getElementById('grid-type') : null;
+    const gridType = (gridTypeEl && gridTypeEl.value) ? gridTypeEl.value : (waypoints.find(w => w && w.gridType)?.gridType || '');
     const isRoadFollowing = gridType === 'road-following';
+
+    // Three-Tier Hover Time Resolution:
+    // Tier 3: wp.hoverTime (if not null/undefined)
+    // Tier 2: wp.layerHoverTime (if not null/undefined/inherit)
+    // Tier 1: globalHoverTime
+    let baseHover = globalHoverTime;
+    if (wp.layerHoverTime !== undefined && wp.layerHoverTime !== null && wp.layerHoverTime !== 'inherit') {
+      baseHover = parseInt(wp.layerHoverTime, 10) || 0;
+    }
+    if (wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit') {
+      baseHover = parseInt(wp.hoverTime, 10) || 0;
+    }
+    let effectiveHover = baseHover;
+
+    // Universal Auto-Settling Delays across ALL flight patterns in stopAndShoot mode
+    const autoSettlingEnabled = wp.autoSettlingEnabled !== false;
+    const baseSettling = wp.baseSettlingTime !== undefined ? wp.baseSettlingTime : 2.0;
+    const majorTurnSettling = wp.majorTurnSettlingTime !== undefined ? wp.majorTurnSettlingTime : 5.0;
+    const modTurnSettling = wp.moderateTurnSettlingTime !== undefined ? wp.moderateTurnSettlingTime : 4.0;
+    const pitchSettling = wp.pitchSettlingTime !== undefined ? wp.pitchSettlingTime : 3.0;
+
+    const isExtendedSettling = (gridType === 'target-splat') ||
+      (wp.gridType === 'target-splat') ||
+      (wp.layerId && (wp.majorTurnSettlingTime !== undefined || (typeof flightLayers !== 'undefined' && flightLayers.some(l => l.id === wp.layerId && l.pattern === 'target-splat'))));
+
+    if (isStopAndShoot && autoSettlingEnabled) {
+      if (effectiveHover < baseSettling) {
+        effectiveHover = baseSettling;
+      }
+      if (idx > 0 && isExtendedSettling) {
+        if (reposInfo.headingDiff >= 60) {
+          effectiveHover = Math.max(effectiveHover, majorTurnSettling);
+        } else if (reposInfo.headingDiff >= 25) {
+          effectiveHover = Math.max(effectiveHover, modTurnSettling);
+        } else if (reposInfo.isGimbalChanged) {
+          effectiveHover = Math.max(effectiveHover, pitchSettling);
+        }
+      }
+    }
+
     // Compute effective pitch for use in both gimbalRotate action and waypointGimbalHeadingParam
     const effectivePitch = wp.pitch !== undefined ? wp.pitch : gimbalPitch;
 
-    if (idx === 0 || wp.isRingStart || isRoadFollowing) {
+    if (idx === 0 || wp.isRingStart || isRoadFollowing || reposInfo.isGimbalChanged) {
       const currentPitch = effectivePitch;
       waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
@@ -9211,29 +10391,33 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
           </wpml:action>`);
     }
 
-    // 4. Video record actions if captureMode is video (start at waypoint 0, stop at final waypoint)
-    if (captureMode === 'video') {
-      if (idx === 0) {
-        waypointActions.push(`          <wpml:action>
+    // 4. Video record actions: Start at entry of video layer/mission, Stop at exit of video layer/mission
+    const prevWp = idx > 0 ? waypoints[idx - 1] : null;
+    const nextWp = idx < waypoints.length - 1 ? waypoints[idx + 1] : null;
+    const prevWpIsVideo = prevWp ? (((prevWp.captureMode && prevWp.captureMode !== 'inherit') ? prevWp.captureMode : (prevWp.layerCaptureMode && prevWp.layerCaptureMode !== 'inherit') ? prevWp.layerCaptureMode : captureMode) === 'video') : false;
+    const nextWpIsVideo = nextWp ? (((nextWp.captureMode && nextWp.captureMode !== 'inherit') ? nextWp.captureMode : (nextWp.layerCaptureMode && nextWp.layerCaptureMode !== 'inherit') ? nextWp.layerCaptureMode : captureMode) === 'video') : false;
+
+    if (isVideo && (!prevWp || !prevWpIsVideo || wp.isLayerStart)) {
+      waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>startRecord</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
             </wpml:actionActuatorFuncParam>
           </wpml:action>`);
-      } else if (idx === waypoints.length - 1) {
-        waypointActions.push(`          <wpml:action>
+    }
+    if (isVideo && (!nextWp || !nextWpIsVideo || (nextWp && nextWp.isLayerStart))) {
+      waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>stopRecord</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
             </wpml:actionActuatorFuncParam>
           </wpml:action>`);
-      }
     }
 
-    // 5. If Stop & Shoot is active, also add photo trigger at this waypoint
-    if (captureMode === 'stopAndShoot' && wp.skipPhoto !== true) {
+    // 5. If Stop & Shoot is active, also add photo trigger at this waypoint (skipping transit turnaround overshoot waypoints)
+    if (isStopAndShoot && wp.skipPhoto !== true) {
       waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
@@ -9299,16 +10483,26 @@ ${waypointActions.join('\n')}
         </wpml:actionGroup>\n`;
     }
 
-    // Determine heading mode and angle for this waypoint
+    // Determine heading mode and angle for this waypoint (Tier 3: wp -> Tier 2: layer -> Tier 1: global)
     const validHeadingModes = ['followWayline', 'smoothTransition', 'towardPOI', 'manually', 'custom', 'fixed'];
-    let actualHeadingMode = (headingMode && validHeadingModes.includes(headingMode)) ? headingMode : 'followWayline';
+    let effectiveHeadingMode = (headingMode && validHeadingModes.includes(headingMode)) ? headingMode : 'followWayline';
+    if (wp.layerHeadingMode && wp.layerHeadingMode !== 'inherit' && validHeadingModes.includes(wp.layerHeadingMode)) {
+      effectiveHeadingMode = wp.layerHeadingMode;
+    }
+    let actualHeadingMode = effectiveHeadingMode;
     let actualHeadingAngle = 0;
     let poiPoint = "0.000000,0.000000,0.000000";
 
     const wpMode = wp.headingMode || 'inherit';
     let targetPoiIndex = wp.poiIndex || 0;
+    // Resolve target POI from layer if set
+    if (wp.targetPoiId && typeof pois !== 'undefined' && pois && pois.length > 0) {
+      const poiFoundIdx = pois.findIndex(p => p.id === wp.targetPoiId);
+      if (poiFoundIdx !== -1) targetPoiIndex = poiFoundIdx;
+    }
+
     if (wpMode !== 'inherit') {
-      if (wpMode === 'custom' || wpMode === 'smoothTransition') {
+      if (wpMode === 'custom' || wpMode === 'smoothTransition' || (gridType === 'target-splat' && wpMode === 'followWayline')) {
         actualHeadingMode = 'smoothTransition';
         actualHeadingAngle = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
       } else {
@@ -9320,16 +10514,15 @@ ${waypointActions.join('\n')}
             targetPoi = { lat: latlng.lat, lon: latlng.lng };
           }
           if (targetPoi) {
-            // DJI WPML requires latitude,longitude,altitude for waypointPoiPoint
             poiPoint = `${targetPoi.lat.toFixed(6)},${targetPoi.lon.toFixed(6)},0.000000`;
           }
         }
       }
     } else {
-      if (gridType === 'freeform' && wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
+      if ((gridType === 'freeform' || gridType === 'target-splat') && wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
         actualHeadingMode = 'smoothTransition';
         actualHeadingAngle = wp.heading;
-      } else if (headingMode === 'towardPOI') {
+      } else if (effectiveHeadingMode === 'towardPOI') {
         actualHeadingMode = 'towardPOI';
         let targetPoi = pois[targetPoiIndex] || pois[0];
         if (!targetPoi && targetPoiIndex === 0 && typeof centerMarker !== 'undefined' && centerMarker) {
@@ -9339,10 +10532,10 @@ ${waypointActions.join('\n')}
         if (targetPoi) {
           poiPoint = `${targetPoi.lat.toFixed(6)},${targetPoi.lon.toFixed(6)},0.000000`;
         }
-      } else if (headingMode === 'custom' || headingMode === 'smoothTransition') {
+      } else if (effectiveHeadingMode === 'custom' || effectiveHeadingMode === 'smoothTransition') {
         actualHeadingMode = 'smoothTransition';
         actualHeadingAngle = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
-      } else if (headingMode === 'fixed') {
+      } else if (effectiveHeadingMode === 'fixed') {
         actualHeadingMode = 'smoothTransition';
         actualHeadingAngle = 0.1;
       } else {
@@ -9414,14 +10607,42 @@ ${waypointActions.join('\n')}
     }
 
     const currentAltitude = wp.alt !== undefined ? wp.alt : altitude;
-    const actualSpeed = (wp.speed !== undefined && wp.speed !== null && !isNaN(wp.speed)) ? wp.speed : speed;
-    let actualTurnMode = turnMode;
+    
+    // Resolve Speed: If turnaround point and turnaroundSpeed specified, use it; else wp.speed or global speed
+    let actualSpeed = (wp.speed !== undefined && wp.speed !== null && !isNaN(wp.speed)) ? wp.speed : speed;
+    if (wp.isTurnaroundPoint && wp.turnaroundSpeed !== null && wp.turnaroundSpeed !== undefined && !isNaN(wp.turnaroundSpeed)) {
+      actualSpeed = wp.turnaroundSpeed;
+    }
+
+    // Consumer Drone Golden Rule & Turn Mode resolution:
+    // Consumer drones (Mini 4 Pro / Air 3) strictly require ContinuityCurvature and useStraightLine: 0
+    let actualTurnMode;
+    let actualUseStraightLine = 0;
+
+    if (isConsumer) {
+      actualTurnMode = isStopAndShoot 
+        ? 'toPointAndStopWithContinuityCurvature'
+        : 'toPointAndPassWithContinuityCurvature';
+      actualUseStraightLine = 0;
+    } else if (effectivePathMode === 'straight') {
+      actualTurnMode = isStopAndShoot
+        ? 'toPointAndStopWithDiscontinuityCurvature'
+        : 'toPointAndPassWithDiscontinuityCurvature';
+      actualUseStraightLine = 1;
+    } else {
+      actualTurnMode = isStopAndShoot
+        ? 'toPointAndStopWithContinuityCurvature'
+        : 'toPointAndPassWithContinuityCurvature';
+      actualUseStraightLine = 0;
+    }
+
+    // Per-waypoint turnMode override
     if (wp.turnMode && wp.turnMode !== 'inherit') {
       if (isConsumer) {
         actualTurnMode = wp.turnMode === 'stop'
           ? 'toPointAndStopWithContinuityCurvature'
           : 'toPointAndPassWithContinuityCurvature';
-      } else if (pathMode === 'straight') {
+      } else if (effectivePathMode === 'straight') {
         actualTurnMode = wp.turnMode === 'stop'
           ? 'toPointAndStopWithDiscontinuityCurvature'
           : 'toPointAndPassWithDiscontinuityCurvature';
@@ -9435,10 +10656,12 @@ ${waypointActions.join('\n')}
     // Endpoint Rule: Waypoint 0 (start) and Waypoint N-1 (end) MUST ALWAYS be stop points!
     // Passing turn modes at endpoints have no entry/exit tangent vectors and trigger "Error performing flight" in DJI Fly.
     if (idx === 0 || idx === waypoints.length - 1) {
-      actualTurnMode = (isConsumer || pathMode !== 'straight' && !actualTurnMode.includes('Discontinuity'))
+      actualTurnMode = (isConsumer || effectivePathMode !== 'straight' && !actualTurnMode.includes('Discontinuity'))
         ? 'toPointAndStopWithContinuityCurvature'
         : 'toPointAndStopWithDiscontinuityCurvature';
     }
+
+    const dampingDist = (wp.turnDampingDist !== undefined && wp.turnDampingDist !== null && !isNaN(wp.turnDampingDist)) ? wp.turnDampingDist : 0;
 
     placemarksXml += `      <Placemark>
         <Point>
@@ -9459,9 +10682,9 @@ ${waypointActions.join('\n')}
         </wpml:waypointHeadingParam>
         <wpml:waypointTurnParam>
           <wpml:waypointTurnMode>${actualTurnMode}</wpml:waypointTurnMode>
-          <wpml:waypointTurnDampingDist>0</wpml:waypointTurnDampingDist>
+          <wpml:waypointTurnDampingDist>${dampingDist}</wpml:waypointTurnDampingDist>
         </wpml:waypointTurnParam>
-        <wpml:useStraightLine>${useStraightLine}</wpml:useStraightLine>
+        <wpml:useStraightLine>${actualUseStraightLine}</wpml:useStraightLine>
 ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
           <wpml:waypointGimbalPitchAngle>${effectivePitch}</wpml:waypointGimbalPitchAngle>
           <wpml:waypointGimbalYawAngle>0</wpml:waypointGimbalYawAngle>
@@ -9551,9 +10774,11 @@ function validateWpmlMission(wpmlXml, templateXml = '', options = {}) {
 
   // ── RULE 1: Heading Mode & waypointHeadingAngleEnable Coherence ────────────
   let r1Passed = true;
-  let r1Msg = 'Heading modes properly assign waypointHeadingAngleEnable (intermediate followWayline waypoints use 0, endpoints use 1)';
+  let r1Msg = 'Heading modes properly assign waypointHeadingAngleEnable (intermediate followWayline waypoints use 0, endpoints use 1; target-splat uses smoothTransition with enable 1)';
   const isSinglePattern = (options && (options.gridType === 'single' || options.pattern === 'single'));
   const isDoublePattern = (options && (options.gridType === 'double' || options.pattern === 'double'));
+  const isTargetSplatPattern = (options && (options.gridType === 'target-splat' || options.pattern === 'target-splat' || options.isTargetSplat)) ||
+    (options && Array.isArray(options.waypoints) && options.waypoints.some(w => w && (w.gridType === 'target-splat' || w.isPerimeterOrbit)));
   placemarks.forEach((pm, idx) => {
     const modeMatch = pm.match(/<wpml:waypointHeadingMode>([^<]+)<\/wpml:waypointHeadingMode>/);
     const enableMatch = pm.match(/<wpml:waypointHeadingAngleEnable>([^<]+)<\/wpml:waypointHeadingAngleEnable>/);
@@ -9561,7 +10786,15 @@ function validateWpmlMission(wpmlXml, templateXml = '', options = {}) {
       const mode = modeMatch[1].trim();
       const enable = enableMatch ? enableMatch[1].trim() : '0';
       const isEndpoint = (idx === 0 || idx === placemarks.length - 1);
-      if (mode === 'followWayline') {
+      if (isTargetSplatPattern) {
+        if (mode === 'followWayline') {
+          r1Passed = false;
+          result.errors.push(`Waypoint ${idx}: pattern is 'target-splat' but waypointHeadingMode is 'followWayline' (target-splat missions must use 'smoothTransition' mode with locked headings to prevent getting stuck on first waypoint)`);
+        } else if (enable !== '1') {
+          r1Passed = false;
+          result.errors.push(`Waypoint ${idx}: pattern is 'target-splat' but waypointHeadingAngleEnable is 0 (must be 1 to maintain target-locked heading orientation)`);
+        }
+      } else if (mode === 'followWayline') {
         if (!isEndpoint && enable === '1') {
           r1Passed = false;
           result.errors.push(`Waypoint ${idx}: intermediate waypointHeadingMode is 'followWayline' but waypointHeadingAngleEnable is 1 (must be 0 to prevent DJI Fly Go abort)`);
@@ -9755,13 +10988,48 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
 
   // 1. Heading Mode & Angle Enable Coherence Sanitization
   // Ensure followWayline has waypointHeadingAngle: 0, endpoints have headingAngleEnable: 1, and intermediate have 0
+  // For target-splat missions, repair followWayline to smoothTransition with enable 1 to prevent getting stuck at Waypoint 0
+  const isTargetSplat = (options && (options.gridType === 'target-splat' || options.pattern === 'target-splat' || options.isTargetSplat)) ||
+    (options && Array.isArray(options.waypoints) && options.waypoints.some(w => w && (w.gridType === 'target-splat' || w.isPerimeterOrbit)));
+
   const pms = fixedWpml.split('<Placemark>');
   if (pms.length > 1) {
     for (let i = 1; i < pms.length; i++) {
       const isEndpoint = (i === 1 || i === pms.length - 1);
+      const wpIdx = i - 1;
       const modeMatch = pms[i].match(/<wpml:waypointHeadingMode>([^<]+)<\/wpml:waypointHeadingMode>/);
       const mode = modeMatch ? modeMatch[1].trim() : '';
-      if (mode === 'followWayline' || mode === 'towardPOI') {
+      if (isTargetSplat) {
+        if (mode === 'followWayline') {
+          pms[i] = pms[i].replace(
+            /<wpml:waypointHeadingMode>followWayline<\/wpml:waypointHeadingMode>/g,
+            '<wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>'
+          );
+        }
+        pms[i] = pms[i].replace(
+          /(<wpml:waypointHeadingAngleEnable>)\s*0\s*(<\/wpml:waypointHeadingAngleEnable>)/g,
+          '$11$2'
+        );
+        let angleVal = 0.1;
+        if (options && options.waypoints && options.waypoints[wpIdx] && options.waypoints[wpIdx].heading !== undefined && !isNaN(options.waypoints[wpIdx].heading)) {
+          let h = options.waypoints[wpIdx].heading;
+          h = ((h % 360) + 360) % 360;
+          if (h > 180) h -= 360;
+          if (Math.abs(h) < 0.05 || h === 0) h = 0.1;
+          angleVal = h;
+        } else {
+          const angleMatch = pms[i].match(/<wpml:waypointHeadingAngle>([^<]+)<\/wpml:waypointHeadingAngle>/);
+          if (angleMatch) {
+            let h = parseFloat(angleMatch[1]);
+            if (Math.abs(h) < 0.05 || h === 0) h = 0.1;
+            angleVal = h;
+          }
+        }
+        pms[i] = pms[i].replace(
+          /(<wpml:waypointHeadingAngle>)[^<]+(<\/wpml:waypointHeadingAngle>)/,
+          `$1${angleVal === 0 ? '0' : angleVal.toFixed(1)}$2`
+        );
+      } else if (mode === 'followWayline' || mode === 'towardPOI') {
         pms[i] = pms[i].replace(
           /(<wpml:waypointHeadingAngle>)[^<]+(<\/wpml:waypointHeadingAngle>)/g,
           '$10$2'
@@ -10942,80 +12210,106 @@ async function pullFromRC2() {
 }
 
 async function pullFlightLogFromRC2(targetBtn = null) {
-  const btn = targetBtn || document.getElementById('diag-pull-rc2-btn') || document.getElementById('direct-rc2-pull-log-btn');
-  const originalContent = btn ? btn.innerHTML : '';
-  if (btn) {
-    btn.disabled = true;
-    btn.innerHTML = `<span>⏳ Pulling Log...</span>`;
-  }
+  const primaryBtn = targetBtn || document.getElementById('diag-pull-rc2-btn') || document.getElementById('direct-rc2-pull-log-btn');
+  const diagBtn = document.getElementById('diag-pull-rc2-btn');
+  const directBtn = document.getElementById('direct-rc2-pull-log-btn');
+  const buttonsToUpdate = Array.from(new Set([primaryBtn, diagBtn, directBtn].filter(Boolean)));
+
+  const originalStates = new Map();
+  buttonsToUpdate.forEach(b => {
+    originalStates.set(b, { html: b.innerHTML, color: b.style.color });
+    b.disabled = true;
+    b.innerHTML = `<span>⏳ Pulling Log...</span>`;
+  });
+
+  const resetButtonStates = (delayMs = 3500) => {
+    setTimeout(() => {
+      buttonsToUpdate.forEach(b => {
+        const orig = originalStates.get(b);
+        if (orig) {
+          b.disabled = false;
+          b.innerHTML = orig.html;
+          b.style.color = orig.color || '';
+        }
+      });
+    }, delayMs);
+  };
 
   try {
     const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
-    const res = await fetch(`${apiBase}/api/latest-flight`);
+    
+    // Add 20-second timeout signal to avoid hanging indefinitely if companion server blocks
+    const fetchOptions = {};
+    if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+      fetchOptions.signal = AbortSignal.timeout(20000);
+    }
+
+    const res = await fetch(`${apiBase}/api/latest-flight`, fetchOptions);
     const data = await res.json();
 
     if (data.success && data.data && (data.data.latestLog || data.data.latestKmz)) {
       const logName = data.data.latestLog;
-      if (btn) {
-        btn.innerHTML = `<span>✅ Pulled ${logName ? logName.substring(0, 16) + '...' : 'Flight'}</span>`;
-        btn.style.color = '#38bdf8';
+      buttonsToUpdate.forEach(b => {
+        b.innerHTML = `<span>✅ Pulled ${logName ? logName.substring(0, 16) + '...' : 'Flight'}</span>`;
+        b.style.color = '#38bdf8';
+      });
+
+      // Refresh the Flight Diagnostics flight list safely
+      try {
+        if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.refreshFlightList) {
+          await FlightDiagnostics.refreshFlightList();
+        }
+      } catch (e) {
+        console.warn('FlightDiagnostics refresh warning:', e);
       }
 
-      // Refresh the Flight Diagnostics flight list
-      if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.refreshFlightList) {
-        await FlightDiagnostics.refreshFlightList();
-      }
       if (logName) {
-        const sel = document.getElementById('diag-flight-selector');
-        if (sel) {
-          const optionsList = (sel.options && typeof sel.options[Symbol.iterator] === 'function')
-            ? Array.from(sel.options)
-            : (Array.isArray(sel.options) ? sel.options : []);
-          const exists = optionsList.some(o => o.value === logName);
-          if (!exists && typeof document !== 'undefined' && document.createElement) {
-            try {
-              const opt = document.createElement('option');
-              opt.value = logName;
-              opt.textContent = `🛰️ ${logName}`;
-              sel.appendChild(opt);
-            } catch (e) {}
+        try {
+          const sel = document.getElementById('diag-flight-selector');
+          if (sel) {
+            const optionsList = (sel.options && typeof sel.options[Symbol.iterator] === 'function')
+              ? Array.from(sel.options)
+              : (Array.isArray(sel.options) ? sel.options : []);
+            const exists = optionsList.some(o => o.value === logName);
+            if (!exists && typeof document !== 'undefined' && document.createElement) {
+              try {
+                const opt = document.createElement('option');
+                opt.value = logName;
+                opt.textContent = `🛰️ ${logName}`;
+                sel.appendChild(opt);
+              } catch (e) {}
+            }
+            sel.value = logName;
           }
-          sel.value = logName;
-        }
-        if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.loadSelectedFlight) {
-          FlightDiagnostics.loadSelectedFlight(logName);
+          if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.loadSelectedFlight) {
+            FlightDiagnostics.loadSelectedFlight(logName);
+          }
+        } catch (e) {
+          console.warn('Flight selector update error:', e);
         }
       }
 
       // If triggered from the sidebar, open the Diagnostics modal to show the pulled flight!
-      if (btn && btn.id === 'direct-rc2-pull-log-btn' && typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.open) {
-        FlightDiagnostics.open();
+      try {
+        if (primaryBtn && primaryBtn.id === 'direct-rc2-pull-log-btn' && typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.open) {
+          FlightDiagnostics.open();
+        }
+      } catch (e) {
+        console.warn('FlightDiagnostics open error:', e);
       }
 
-      setTimeout(() => {
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = originalContent;
-          btn.style.color = '';
-        }
-      }, 3500);
+      resetButtonStates(3500);
       return { success: true, logName };
     } else {
       throw new Error(data.error || (data.data && data.data.error) || 'No new flight logs found on connected DJI RC 2');
     }
   } catch (err) {
     console.error('Pull Flight Log Error:', err);
-    if (btn) {
-      btn.innerHTML = `<span>❌ Pull Failed / Offline</span>`;
-      btn.style.color = '#f87171';
-      setTimeout(() => {
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = originalContent;
-          btn.style.color = '';
-        }
-      }, 3000);
-    }
+    buttonsToUpdate.forEach(b => {
+      b.innerHTML = `<span>❌ Pull Failed / Offline</span>`;
+      b.style.color = '#f87171';
+    });
+    resetButtonStates(3000);
     return { success: false, error: err.message };
   }
 }
@@ -13064,7 +14358,8 @@ const KMZInspector = {
 
       const tmpl = buildTemplateKml(finishAction, speed);
       const wpml = buildWaylinesWpml(wps, altitude, speed, headingMode, finishAction, gimbalPitch, captureMode, pathMode);
-      const report = validateWpmlMission(wpml, tmpl, { waypoints: wps });
+      const currentGridType = document.getElementById('grid-type')?.value || 'single';
+      const report = validateWpmlMission(wpml, tmpl, { waypoints: wps, gridType: currentGridType });
       this.activeReport = report;
       this.activeWpmlXml = wpml;
       this.activeTemplateXml = tmpl;
@@ -14829,18 +16124,18 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
           <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;"><svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M3 12a9 9 0 0 1 15-6.7M21 12a9 9 0 0 1-9 9" stroke="#06b6d4" fill="none"/><line x1="12" y1="12" x2="17" y2="8" stroke="#c2622d"/><circle cx="12" cy="12" r="1.5" fill="#f5f0e8"/></svg>Flight Speed:</span>
           <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-speed-val">${wp.speed ? wp.speed + ' m/s' : 'Auto'}</span></span>
         </div>
-        <input type="range" id="edit-wp-speed" min="1" max="15" step="0.5" value="${wp.speed || 5}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
+        <input type="range" id="edit-wp-speed" min="0.2" max="15" step="0.1" value="${wp.speed || 5}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
       </div>
 
       <!-- Hover Duration Input -->
       <div style="display: flex; flex-direction: column; gap: 4px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;"><svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="12" cy="12" r="9" stroke="#06b6d4" fill="none"/><polyline points="12 6 12 12 16 14" stroke="#c2622d"/></svg>Hover Time:</span>
-          <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-hover-val">${wp.hoverTime !== null && wp.hoverTime !== undefined ? wp.hoverTime : (document.getElementById('global-hover-time') ? parseInt(document.getElementById('global-hover-time').value) : 0)}</span>s${wp.hoverTime === null || wp.hoverTime === undefined ? ' <span style="color: #94a3b8; font-size: 0.7rem;">(Global)</span>' : ''}</span>
+          <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-hover-val">${wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit' ? wp.hoverTime : ((wp.layerHoverTime !== undefined && wp.layerHoverTime !== 'inherit') ? wp.layerHoverTime : (document.getElementById('global-hover-time') ? parseInt(document.getElementById('global-hover-time').value) : 0))}</span>s${wp.hoverTime === null || wp.hoverTime === undefined || wp.hoverTime === 'inherit' ? ' <span style="color: #94a3b8; font-size: 0.7rem;">(Layer)</span>' : ''}</span>
         </div>
-        <input type="range" id="edit-wp-hover" min="0" max="60" step="1" value="${wp.hoverTime !== null && wp.hoverTime !== undefined ? wp.hoverTime : (document.getElementById('global-hover-time') ? parseInt(document.getElementById('global-hover-time').value) : 0)}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
+        <input type="range" id="edit-wp-hover" min="0" max="60" step="1" value="${wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit' ? wp.hoverTime : ((wp.layerHoverTime !== undefined && wp.layerHoverTime !== 'inherit') ? wp.layerHoverTime : (document.getElementById('global-hover-time') ? parseInt(document.getElementById('global-hover-time').value) : 0))}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
         <div id="edit-wp-hover-warning" style="display: none; font-size: 0.65rem; color: #f59e0b; margin-top: 2px; line-height: 1.2;">
-          ⚠️ Gimbal/yaw change: 2s auto-settling delay will be applied in KML export.
+          ⚠️ Repositioning detected: auto-settling delay will be applied in KML export.
         </div>
       </div>
 
@@ -14849,7 +16144,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;"><svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" stroke="#06b6d4" fill="none"/><line x1="4" y1="22" x2="4" y2="15" stroke="#c2622d"/></svg>Turn Mode:</span>
           <select id="edit-wp-turn-mode" class="form-select" style="font-size: 0.72rem; padding: 3px 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); cursor: pointer;">
-            <option value="inherit" ${!wp.turnMode || wp.turnMode === 'inherit' ? 'selected' : ''}>Inherit Global</option>
+            <option value="inherit" ${!wp.turnMode || wp.turnMode === 'inherit' ? 'selected' : ''}>🌐 Inherit Layer (${(wp.layerPathMode && wp.layerPathMode !== 'inherit') ? (wp.layerPathMode === 'straight' ? 'Stop & Turn' : 'Curved Pass') : (document.getElementById('path-mode')?.value === 'straight' ? 'Stop & Turn' : 'Curved Pass')})</option>
             <option value="stop" ${wp.turnMode === 'stop' ? 'selected' : ''}>Stop & Turn</option>
             <option value="pass" ${wp.turnMode === 'pass' ? 'selected' : ''}>Curved Pass</option>
           </select>
@@ -14861,7 +16156,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;"><svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="#06b6d4" fill="none"/><circle cx="12" cy="13" r="4" stroke="#c2622d" fill="none"/></svg>Camera Action:</span>
           <select id="edit-wp-camera-action" class="form-select" style="font-size: 0.72rem; padding: 3px 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); cursor: pointer;">
-            <option value="inherit" ${!wp.cameraAction || wp.cameraAction === 'inherit' ? 'selected' : ''}>Inherit Global Mode</option>
+            <option value="inherit" ${!wp.cameraAction || wp.cameraAction === 'inherit' ? 'selected' : ''}>🌐 Inherit Layer Mode</option>
             <option value="none" ${wp.cameraAction === 'none' ? 'selected' : ''}>None (No Action)</option>
             <option value="takePhoto" ${wp.cameraAction === 'takePhoto' ? 'selected' : ''}>Take Photo</option>
             <option value="startRecord" ${wp.cameraAction === 'startRecord' ? 'selected' : ''}>Start Recording</option>
@@ -14888,7 +16183,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
         </div>
         <div style="display: flex; flex-direction: column; gap: 6px;">
           <select id="edit-wp-heading-mode" class="form-select" style="font-size: 0.72rem; padding: 4px 8px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); cursor: pointer; width: 100%;">
-            <option value="inherit" ${curMode === 'inherit' ? 'selected' : ''}>Inherit Global Default</option>
+            <option value="inherit" ${curMode === 'inherit' ? 'selected' : ''}>🌐 Inherit Layer Default</option>
             <option value="followWayline" ${curMode === 'followWayline' ? 'selected' : ''}>Follow Flight Path</option>
             <option value="fixed" ${curMode === 'fixed' ? 'selected' : ''}>Fixed Heading (North)</option>
             <option value="towardPOI" ${curMode === 'towardPOI' ? 'selected' : ''}>Point of Interest (POI)</option>
@@ -15166,7 +16461,8 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     if (!warningDiv) return;
     
     const currentHoverVal = hoverSlider ? parseInt(hoverSlider.value) : 0;
-    const isStopAndShoot = document.getElementById('capture-mode')?.value === 'stopAndShoot';
+    const effCapture = (wp.captureMode && wp.captureMode !== 'inherit') ? wp.captureMode : (wp.layerCaptureMode && wp.layerCaptureMode !== 'inherit') ? wp.layerCaptureMode : document.getElementById('capture-mode')?.value;
+    const isStopAndShoot = effCapture === 'stopAndShoot';
     
     const tempWp = {
       ...wp,
@@ -15180,7 +16476,26 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     const waypointsCopy = getCurrentWaypoints().map((w, i) => i === idx ? tempWp : w);
     const reposInfo = checkNeedsReposition(idx, waypointsCopy);
     
-    if (isStopAndShoot && currentHoverVal < 2 && reposInfo.needsReposition) {
+    const autoSettling = wp.autoSettlingEnabled !== false;
+    const baseSettling = wp.baseSettlingTime !== undefined ? wp.baseSettlingTime : 2.0;
+    const majorTurnSettling = wp.majorTurnSettlingTime !== undefined ? wp.majorTurnSettlingTime : 5.0;
+    const modTurnSettling = wp.moderateTurnSettlingTime !== undefined ? wp.moderateTurnSettlingTime : 4.0;
+    const pitchSettling = wp.pitchSettlingTime !== undefined ? wp.pitchSettlingTime : 3.0;
+
+    let requiredDelay = 0;
+    if (isStopAndShoot && autoSettling) {
+      if (idx > 0) {
+        if (reposInfo.headingDiff >= 60) requiredDelay = majorTurnSettling;
+        else if (reposInfo.headingDiff >= 25) requiredDelay = modTurnSettling;
+        else if (reposInfo.isGimbalChanged) requiredDelay = pitchSettling;
+        else if (reposInfo.needsReposition) requiredDelay = baseSettling;
+      } else if (reposInfo.needsReposition) {
+        requiredDelay = baseSettling;
+      }
+    }
+
+    if (requiredDelay > 0 && currentHoverVal < requiredDelay) {
+      warningDiv.textContent = `⚠️ Turn/pitch settling: ${requiredDelay.toFixed(1)}s auto-pause will be applied in KML export.`;
       warningDiv.style.display = 'block';
     } else {
       warningDiv.style.display = 'none';
@@ -15868,22 +17183,24 @@ function drawCoverageHeatmap(ctx, planeOffsetX, planeOffsetZ, planeSize) {
 // Check if a waypoint requires repositioning of gimbal or drone heading
 function checkNeedsReposition(idx, waypoints) {
   if (!waypoints || waypoints.length === 0 || idx === null || idx === undefined || idx < 0 || idx >= waypoints.length) {
-    return { needsReposition: false, isGimbalChanged: false, isHeadingChanged: false };
+    return { needsReposition: false, isGimbalChanged: false, isHeadingChanged: false, headingDiff: 0 };
   }
   const current = getWaypointHeadingAndPitch(idx, waypoints);
   
   let isGimbalChanged = false;
   let isHeadingChanged = false;
+  let headingDiff = 0;
   
   if (idx === 0) {
     // Takeoff: gimbal defaults to 0. Any target pitch less than -5 is a change.
     isGimbalChanged = current.pitch < -5;
     isHeadingChanged = false;
+    headingDiff = 0;
   } else {
     const prev = getWaypointHeadingAndPitch(idx - 1, waypoints);
     isGimbalChanged = Math.abs(current.pitch - prev.pitch) >= 5;
     
-    let headingDiff = Math.abs(current.heading - prev.heading) % 360;
+    headingDiff = Math.abs(current.heading - prev.heading) % 360;
     if (headingDiff > 180) headingDiff = 360 - headingDiff;
     isHeadingChanged = headingDiff >= 10;
   }
@@ -15891,7 +17208,8 @@ function checkNeedsReposition(idx, waypoints) {
   return {
     needsReposition: isGimbalChanged || isHeadingChanged,
     isGimbalChanged,
-    isHeadingChanged
+    isHeadingChanged,
+    headingDiff
   };
 }
 
@@ -17054,14 +18372,26 @@ function updateFPVEditorUI() {
 
   // Turn Mode
   const turnModeSelect = document.getElementById('fpv-edit-turn-mode');
+  const turnModeInheritOpt = document.getElementById('fpv-edit-turn-mode-inherit-opt');
   if (turnModeSelect) {
+    if (turnModeInheritOpt) {
+      const effPath = (wp.layerPathMode && wp.layerPathMode !== 'inherit') ? wp.layerPathMode : (document.getElementById('path-mode')?.value || 'curved');
+      const resolvedTurnLabel = effPath === 'straight' ? 'Stop & Turn' : 'Curved Pass';
+      turnModeInheritOpt.textContent = `🌐 Inherit Layer (${resolvedTurnLabel})`;
+    }
     turnModeSelect.value = wp.turnMode || 'inherit';
   }
 
   // Camera Action
   const cameraActionSelect = document.getElementById('fpv-edit-camera-action');
+  const cameraActionInheritOpt = document.getElementById('fpv-edit-camera-action-inherit-opt');
   const zoomContainer = document.getElementById('fpv-edit-zoom-container');
   if (cameraActionSelect) {
+    if (cameraActionInheritOpt) {
+      const effCap = (wp.layerCaptureMode && wp.layerCaptureMode !== 'inherit') ? wp.layerCaptureMode : (document.getElementById('capture-mode')?.value || 'stopAndShoot');
+      const capLabel = effCap === 'stopAndShoot' ? 'Stop & Shoot' : (effCap === 'video' ? 'Video Mode' : 'Continuous Flight');
+      cameraActionInheritOpt.textContent = `🌐 Inherit Layer (${capLabel})`;
+    }
     cameraActionSelect.value = wp.cameraAction || 'inherit';
     if (zoomContainer) {
       zoomContainer.style.display = (wp.cameraAction === 'zoom') ? 'flex' : 'none';

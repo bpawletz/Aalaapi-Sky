@@ -1,4 +1,4 @@
-﻿const { test, describe, mock, beforeEach } = require('node:test');
+const { test, describe, mock, beforeEach } = require('node:test');
 const assert = require('node:assert');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -30,7 +30,11 @@ global.document = {
     textContent: '',
     innerHTML: '',
     setAttribute: () => {},
-    className: ''
+    className: '',
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    focus: () => {},
+    select: () => {}
   }),
   createElementNS: (ns, tag) => ({
     style: {},
@@ -3527,6 +3531,7 @@ describe('Companion Bridge & Direct Sync Tests', () => {
   test('FlightDiagnostics.refreshFlightList queries SQLite diagnostics history and populates dropdown optgroups', async () => {
     const origFetch = global.fetch;
     const origGetElementById = global.document ? global.document.getElementById : null;
+    const origCreateElement = global.document ? global.document.createElement : null;
 
     let selectorOptions = [];
     const mockFlightSel = {
@@ -3594,6 +3599,7 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     } finally {
       global.fetch = origFetch;
       global.document.getElementById = origGetElementById;
+      if (origCreateElement) global.document.createElement = origCreateElement;
     }
   });
 
@@ -7643,6 +7649,7 @@ describe('Freeform Pattern & Layer Isolation Tests (v1.63.1)', () => {
   test('addFreeformWaypoint places center marker and immediately adds first waypoint', () => {
     importedWaypoints = null;
     centerMarker = null;
+    const origCreateElement = global.document ? global.document.createElement : null;
     vm.runInThisContext(`
       document.createElement = (tag) => ({
         style: {},
@@ -7686,24 +7693,28 @@ describe('Freeform Pattern & Layer Isolation Tests (v1.63.1)', () => {
       };
     `);
 
-    const freeformLayer = createDefaultLayer('layer-freeform-2', 'Freeform Test', 0, 'freeform');
-    flightLayers = [freeformLayer];
-    activeLayerId = freeformLayer.id;
+    try {
+      const freeformLayer = createDefaultLayer('layer-freeform-2', 'Freeform Test', 0, 'freeform');
+      flightLayers = [freeformLayer];
+      activeLayerId = freeformLayer.id;
 
-    // Add first waypoint
-    addFreeformWaypoint(40.1234, -80.5678);
+      // Add first waypoint
+      addFreeformWaypoint(40.1234, -80.5678);
 
-    assert.ok(centerMarker !== null, 'centerMarker should be created on first waypoint click');
-    assert.strictEqual(freeformLayer.freeformWaypoints.length, 1, 'First clicked point must be recorded as waypoint 0');
-    assert.strictEqual(freeformLayer.freeformWaypoints[0].lat, 40.1234);
-    assert.strictEqual(freeformLayer.freeformWaypoints[0].lon, -80.5678);
+      assert.ok(centerMarker !== null, 'centerMarker should be created on first waypoint click');
+      assert.strictEqual(freeformLayer.freeformWaypoints.length, 1, 'First clicked point must be recorded as waypoint 0');
+      assert.strictEqual(freeformLayer.freeformWaypoints[0].lat, 40.1234);
+      assert.strictEqual(freeformLayer.freeformWaypoints[0].lon, -80.5678);
 
-    // Add second waypoint
-    addFreeformWaypoint(40.1245, -80.5678);
-    assert.strictEqual(freeformLayer.freeformWaypoints.length, 2, 'Second clicked point must be recorded as waypoint 1');
+      // Add second waypoint
+      addFreeformWaypoint(40.1245, -80.5678);
+      assert.strictEqual(freeformLayer.freeformWaypoints.length, 2, 'Second clicked point must be recorded as waypoint 1');
 
-    const compiled = compileMultiLayerMission(40.1234, -80.5678);
-    assert.strictEqual(compiled.waypoints.length, 2, 'Compiled mission should contain exactly the 2 manual waypoints');
+      const compiled = compileMultiLayerMission(40.1234, -80.5678);
+      assert.strictEqual(compiled.waypoints.length, 2, 'Compiled mission should contain exactly the 2 manual waypoints');
+    } finally {
+      if (origCreateElement) global.document.createElement = origCreateElement;
+    }
   });
 });
 
@@ -8113,7 +8124,9 @@ describe('v1.68.0 Light & Dark Theme Manager & Topbar Polish Tests', () => {
     let setAttrVal = null;
     let btnText = null;
 
+    const origDoc = global.document;
     global.document = {
+      ...origDoc,
       documentElement: {
         setAttribute: (k, v) => { setAttrKey = k; setAttrVal = v; }
       },
@@ -8126,29 +8139,33 @@ describe('v1.68.0 Light & Dark Theme Manager & Topbar Polish Tests', () => {
             get title() { return ''; }
           };
         }
-        return null;
+        return origDoc.getElementById ? origDoc.getElementById(id) : null;
       }
     };
 
-    // Test setting light theme
-    setAppTheme('light');
-    assert.strictEqual(setAttrKey, 'data-theme');
-    assert.strictEqual(setAttrVal, 'light');
-    assert.strictEqual(btnText, '🌙', 'Light mode should show moon icon to switch to dark');
-    assert.strictEqual(localStorage.getItem('aalaapi_sky_theme'), 'light');
+    try {
+      // Test setting light theme
+      setAppTheme('light');
+      assert.strictEqual(setAttrKey, 'data-theme');
+      assert.strictEqual(setAttrVal, 'light');
+      assert.strictEqual(btnText, '🌙', 'Light mode should show moon icon to switch to dark');
+      assert.strictEqual(localStorage.getItem('aalaapi_sky_theme'), 'light');
 
-    // Test toggle from light to dark
-    const nextTheme = toggleAppTheme();
-    assert.strictEqual(nextTheme, 'dark');
-    assert.strictEqual(setAttrVal, 'dark');
-    assert.strictEqual(btnText, '☀️', 'Dark mode should show sun icon to switch to light');
-    assert.strictEqual(localStorage.getItem('aalaapi_sky_theme'), 'dark');
+      // Test toggle from light to dark
+      const nextTheme = toggleAppTheme();
+      assert.strictEqual(nextTheme, 'dark');
+      assert.strictEqual(setAttrVal, 'dark');
+      assert.strictEqual(btnText, '☀️', 'Dark mode should show sun icon to switch to light');
+      assert.strictEqual(localStorage.getItem('aalaapi_sky_theme'), 'dark');
 
-    // Test toggle from dark back to light
-    const nextTheme2 = toggleAppTheme();
-    assert.strictEqual(nextTheme2, 'light');
-    assert.strictEqual(setAttrVal, 'light');
-    assert.strictEqual(btnText, '🌙');
+      // Test toggle from dark back to light
+      const nextTheme2 = toggleAppTheme();
+      assert.strictEqual(nextTheme2, 'light');
+      assert.strictEqual(setAttrVal, 'light');
+      assert.strictEqual(btnText, '🌙');
+    } finally {
+      global.document = origDoc;
+    }
   });
 
   test('index_template.html defines theme-toggle-btn and hides default stats-panel', () => {
@@ -8320,48 +8337,37 @@ describe('v1.69.3 Multi-Station Weather Selector in Mission Details Popover', ()
   });
 
   test('updateWeatherPanelUI populates popWeatherDetails with multi-station switcher when multiple stations present', () => {
-    if (typeof document !== 'undefined' && typeof document.createElement === 'function') {
-      let popDetails = document.getElementById('pop-weather-details');
-      if (!popDetails) {
-        popDetails = document.createElement('div');
-        popDetails.id = 'pop-weather-details';
-        document.body.appendChild(popDetails);
-      }
-      let popSummary = document.getElementById('pop-weather-summary');
-      if (!popSummary) {
-        popSummary = document.createElement('div');
-        popSummary.id = 'pop-weather-summary';
-        document.body.appendChild(popSummary);
-      }
-      let win = document.getElementById('stat-weather-window');
-      if (!win) {
-        win = document.createElement('div');
-        win.id = 'stat-weather-window';
-        document.body.appendChild(win);
-      }
-      let dirs = document.getElementById('stat-weather-dirs');
-      if (!dirs) {
-        dirs = document.createElement('div');
-        dirs.id = 'stat-weather-dirs';
-        document.body.appendChild(dirs);
-      }
+    const stubElements = {
+      'stat-weather-window': { textContent: '', style: {}, title: '', appendChild: () => {} },
+      'stat-weather-dirs': { classList: { add: () => {}, remove: () => {}, contains: () => false }, appendChild: () => {} },
+      'pop-weather-details': { innerHTML: '' },
+      'pop-weather-summary': { textContent: '', style: {} },
+      'header-weather-summary': { textContent: '', style: {} },
+      'sidebar-summary-text': { textContent: '' },
+      'header-telemetry-summary': { textContent: '12 WPs • 500m • 2m 15s' }
+    };
+    global._stubElements = stubElements;
 
-      const mockDirections = {
-        closest: { icaoId: 'KOSU', name: 'Ohio State Univ', distance: 11.1, fltCat: 'VFR', visibilitySM: 10, ceilingFt: 99999 },
-        stations: [
-          { icaoId: 'KOSU', name: 'Ohio State Univ', distance: 11.1, fltCat: 'VFR', visibilitySM: 10, ceilingFt: 99999 },
-          { icaoId: 'KCMH', name: 'John Glenn Intl', distance: 18.4, fltCat: 'MVFR', visibilitySM: 4.5, ceilingFt: 2500 },
-          { icaoId: 'KTZR', name: 'Bolton Field', distance: 24.2, fltCat: 'VFR', visibilitySM: 10, ceilingFt: 99999 }
-        ],
-        activeIndex: 0
-      };
+    const mockDirections = {
+      closest: { icaoId: 'KOSU', name: 'Ohio State Univ', distance: 11.1, fltCat: 'VFR', visibilitySM: 10, ceilingFt: 99999 },
+      stations: [
+        { icaoId: 'KOSU', name: 'Ohio State Univ', distance: 11.1, fltCat: 'VFR', visibilitySM: 10, ceilingFt: 99999 },
+        { icaoId: 'KCMH', name: 'John Glenn Intl', distance: 18.4, fltCat: 'MVFR', visibilitySM: 4.5, ceilingFt: 2500 },
+        { icaoId: 'KTZR', name: 'Bolton Field', distance: 24.2, fltCat: 'VFR', visibilitySM: 10, ceilingFt: 99999 }
+      ],
+      activeIndex: 0
+    };
 
+    try {
       updateWeatherPanelUI(mockDirections, null, false);
 
+      const popDetails = stubElements['pop-weather-details'];
       assert.ok(popDetails.innerHTML.includes('KOSU'), 'Popover details must render KOSU station');
       assert.ok(popDetails.innerHTML.includes('KCMH'), 'Popover details must render KCMH station');
       assert.ok(popDetails.innerHTML.includes('KTZR'), 'Popover details must render KTZR station');
       assert.ok(popDetails.innerHTML.includes('pop-station-tab-btn'), 'Popover details must contain station switcher buttons');
+    } finally {
+      global._stubElements = null;
     }
   });
 });
@@ -8930,7 +8936,7 @@ describe('Map Zoom Marker Anchoring & Unified Pitch Badge Tests (v1.76.2)', () =
       const icon = getMarkerIcon(mockWp, 0, [mockWp], 0);
       assert.ok(icon, 'getMarkerIcon should return an icon');
       assert.ok(capturedIconOptions.html.includes('wp-static-container'), 'Icon HTML must contain wp-static-container');
-      assert.ok(capturedIconOptions.html.includes('<div class="wp-pitch-label">-60°</div>'), 'Pitch label must be housed inside divIcon HTML');
+      assert.ok(capturedIconOptions.html.includes('wp-pitch-label') && capturedIconOptions.html.includes('-60°</div>'), 'Pitch label must be housed inside divIcon HTML');
       assert.strictEqual(capturedIconOptions.iconSize[0], 24);
       assert.strictEqual(capturedIconOptions.iconSize[1], 24);
       assert.strictEqual(capturedIconOptions.iconAnchor[0], 12);
@@ -9687,4 +9693,1060 @@ describe('Convergent Mode Decimal Overflow Fix (v1.77.5)', () => {
     });
   });
 });
+
+describe('Target Splat First Waypoint Stuck Fix & WPML Validation Tests (v1.77.7)', () => {
+  test('generateTargetSplatCoordinates assigns smoothTransition headingMode and target-splat gridType to all waypoints', () => {
+    const layer = {
+      targetMode: 'polygon',
+      targetRadius: 20,
+      targetCullingMode: 'smartTrim',
+      targetGridPass: 'double',
+      targetPerimeterPass: true,
+      targetPerimeterStandoff: 8,
+      targetPerimeterAltitude: 12,
+      targetPerimeterPitch: -45,
+      targetHeight: 8,
+      centerLat: 40.0128,
+      centerLon: -83.1771
+    };
+    const result = generateTargetSplatCoordinates(50, 50, 0, 'stopAndShoot', 10, 10, 16, -45, layer);
+    assert.ok(result.waypoints.length > 0, 'Must generate waypoints');
+    result.waypoints.forEach((wp, i) => {
+      assert.strictEqual(wp.headingMode, 'smoothTransition', `Waypoint ${i} must have headingMode smoothTransition`);
+      assert.strictEqual(wp.gridType, 'target-splat', `Waypoint ${i} must have gridType target-splat`);
+    });
+  });
+
+  test('buildWaylinesWpml exports smoothTransition with locked angles and clamped 0.1 deg for target-splat missions', () => {
+    const originalGetElementById = global.document.getElementById;
+    try {
+      global.document.getElementById = (id) => {
+        if (id === 'drone-model') return { value: '68' }; // Mini 4 Pro
+        if (id === 'grid-type') return { value: 'target-splat' };
+        if (id === 'camera-zoom') return { value: '1.0' };
+        if (id === 'global-hover-time') return { value: '0' };
+        if (id === 'signal-lost-action') return { value: 'goBack' };
+        return null;
+      };
+
+      // 106 waypoints mimicking the user report
+      const waypoints = [];
+      for (let i = 0; i < 106; i++) {
+        waypoints.push({
+          index: i,
+          lat: 40.0128 + i * 0.00003,
+          lon: -83.1771,
+          alt: 16,
+          heading: (i % 2 === 0) ? 0 : 180,
+          turnMode: 'inherit',
+          gridType: 'target-splat',
+          headingMode: 'smoothTransition'
+        });
+      }
+
+      const xml = buildWaylinesWpml(waypoints, 16, 1, 'smoothTransition', 'goHome', -45, 'stopAndShoot', 'curved');
+
+      // Verify Waypoint 0 (heading 0) is clamped to 0.1 and has enable: 1 in smoothTransition
+      assert.ok(xml.includes('<wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>'),
+        'Must use smoothTransition mode');
+      assert.ok(!xml.includes('<wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>'),
+        'Must not fall back to followWayline mode for target-splat');
+
+      const pms = xml.split('<Placemark>');
+      assert.strictEqual(pms.length - 1, 106, 'Must contain 106 placemarks');
+
+      // Check Waypoint 0
+      const pm0Mode = pms[1].match(/<wpml:waypointHeadingMode>([^<]+)<\/wpml:waypointHeadingMode>/)?.[1];
+      const pm0Angle = pms[1].match(/<wpml:waypointHeadingAngle>([^<]+)<\/wpml:waypointHeadingAngle>/)?.[1];
+      const pm0Enable = pms[1].match(/<wpml:waypointHeadingAngleEnable>([^<]+)<\/wpml:waypointHeadingAngleEnable>/)?.[1];
+      assert.strictEqual(pm0Mode, 'smoothTransition', 'Waypoint 0 must be smoothTransition');
+      assert.strictEqual(pm0Angle, '0.1', 'Waypoint 0 heading 0 must be safely clamped to 0.1 to avoid firmware hang');
+      assert.strictEqual(pm0Enable, '1', 'Waypoint 0 headingAngleEnable must be 1');
+
+      // Validate the mission
+      const val = validateWpmlMission(xml, '', { gridType: 'target-splat', waypoints });
+      assert.strictEqual(val.valid, true, 'Mission must pass validation');
+      assert.strictEqual(val.rulesPassed, 10, 'Must pass all 10 rules');
+      assert.strictEqual(val.errors.length, 0, 'Must have zero validation errors');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+
+  test('validateWpmlMission Rule 1 catches and flags target-splat missions using followWayline', () => {
+    // Placemark with followWayline in target-splat
+    const badXml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">
+  <Document>
+    <wpml:missionConfig><wpml:droneEnumValue>68</wpml:droneEnumValue></wpml:missionConfig>
+    <Folder>
+      <Placemark>
+        <Point><coordinates>-83.1771,40.0128</coordinates></Point>
+        <wpml:index>0</wpml:index>
+        <wpml:executeHeight>16</wpml:executeHeight>
+        <wpml:waypointSpeed>1</wpml:waypointSpeed>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>0</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam>
+        <wpml:useStraightLine>0</wpml:useStraightLine>
+      </Placemark>
+      <Placemark>
+        <Point><coordinates>-83.1771,40.0129</coordinates></Point>
+        <wpml:index>1</wpml:index>
+        <wpml:executeHeight>16</wpml:executeHeight>
+        <wpml:waypointSpeed>1</wpml:waypointSpeed>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>0</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingAngleEnable>0</wpml:waypointHeadingAngleEnable>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam>
+        <wpml:useStraightLine>0</wpml:useStraightLine>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>`;
+
+    const val = validateWpmlMission(badXml, '', { gridType: 'target-splat' });
+    assert.strictEqual(val.valid, false, 'Should fail validation for target-splat with followWayline');
+    const r1 = val.rules.find(r => r.id === 1);
+    assert.strictEqual(r1.passed, false, 'Rule 1 must fail');
+    assert.ok(val.errors.some(e => e.includes("pattern is 'target-splat' but waypointHeadingMode is 'followWayline'")),
+      'Should specifically explain that target-splat cannot use followWayline');
+  });
+
+  test('validateAndFixWpml automatically repairs target-splat followWayline missions to smoothTransition with enable 1 and clamped angles', () => {
+    const badXml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">
+  <Document>
+    <wpml:missionConfig><wpml:droneEnumValue>68</wpml:droneEnumValue></wpml:missionConfig>
+    <Folder>
+      <Placemark>
+        <Point><coordinates>-83.1771,40.0128</coordinates></Point>
+        <wpml:index>0</wpml:index>
+        <wpml:executeHeight>16</wpml:executeHeight>
+        <wpml:waypointSpeed>1</wpml:waypointSpeed>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>0</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam>
+        <wpml:useStraightLine>0</wpml:useStraightLine>
+      </Placemark>
+      <Placemark>
+        <Point><coordinates>-83.1771,40.0129</coordinates></Point>
+        <wpml:index>1</wpml:index>
+        <wpml:executeHeight>16</wpml:executeHeight>
+        <wpml:waypointSpeed>1</wpml:waypointSpeed>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>0</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingAngleEnable>0</wpml:waypointHeadingAngleEnable>
+        </wpml:waypointHeadingParam>
+        <wpml:waypointTurnParam><wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode></wpml:waypointTurnParam>
+        <wpml:useStraightLine>0</wpml:useStraightLine>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>`;
+
+    const repaired = validateAndFixWpml(badXml, '', { gridType: 'target-splat' });
+    assert.strictEqual(repaired.validation.valid, true, 'Repaired mission must pass validation');
+    assert.strictEqual(repaired.validation.rulesPassed, 10, 'All 10 rules must pass');
+    assert.strictEqual(repaired.validation.errors.length, 0, 'No errors in repaired mission');
+
+    const pms = repaired.wpmlXml.split('<Placemark>');
+    for (let i = 1; i < pms.length; i++) {
+      const mode = pms[i].match(/<wpml:waypointHeadingMode>([^<]+)<\/wpml:waypointHeadingMode>/)?.[1];
+      const enable = pms[i].match(/<wpml:waypointHeadingAngleEnable>([^<]+)<\/wpml:waypointHeadingAngleEnable>/)?.[1];
+      const angle = parseFloat(pms[i].match(/<wpml:waypointHeadingAngle>([^<]+)<\/wpml:waypointHeadingAngle>/)?.[1]);
+      assert.strictEqual(mode, 'smoothTransition', `Placemark ${i} must be repaired to smoothTransition`);
+      assert.strictEqual(enable, '1', `Placemark ${i} must have enable 1`);
+      assert.ok(angle >= 0.1, `Placemark ${i} angle ${angle} must be clamped to >= 0.1`);
+    }
+  });
+});
+
+describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v1.77.8)', () => {
+  test('buildWaylinesWpml enforces >= 5s settling hover on turns >= 60 deg and >= 4s on turns >= 25 deg in stopAndShoot', () => {
+    const originalGetElementById = global.document.getElementById;
+    try {
+      global.document.getElementById = (id) => {
+        const map = {
+          'drone-model': { value: '68' },
+          'signal-lost-action': { value: 'goBack' },
+          'camera-zoom': { value: '1.0' },
+          'global-hover-time': { value: '0' },
+          'grid-type': { value: 'target-splat' },
+          'grid-rotation': { value: '0' },
+          'heading-mode': { value: 'custom' },
+        };
+        return map[id] || { value: '', checked: false };
+      };
+
+      // Waypoint 0: initial start
+      // Waypoint 1: straight ahead (heading 0 deg, diff 0 deg) -> base 2s
+      // Waypoint 2: turnaround (heading 180 deg, diff 180 deg >= 60 deg) -> 5s settling hover
+      // Waypoint 3: moderate turn (heading 145 deg, diff 35 deg >= 25 deg) -> 4s settling hover
+      // Waypoint 4: slight turn (heading 150 deg, diff 5 deg < 25 deg) -> base 2s
+      const waypoints = [
+        { lat: 40.0128, lon: -83.1771, alt: 16, pitch: -45, heading: 0.1, gridType: 'target-splat', hoverTime: null },
+        { lat: 40.0129, lon: -83.1771, alt: 16, pitch: -45, heading: 0.1, gridType: 'target-splat', hoverTime: null },
+        { lat: 40.0129, lon: -83.1770, alt: 16, pitch: -45, heading: 180.0, gridType: 'target-splat', hoverTime: null },
+        { lat: 40.0128, lon: -83.1770, alt: 16, pitch: -45, heading: 145.0, gridType: 'target-splat', hoverTime: null },
+        { lat: 40.0127, lon: -83.1770, alt: 16, pitch: -45, heading: 150.0, gridType: 'target-splat', hoverTime: null }
+      ];
+
+      const xml = buildWaylinesWpml(waypoints, 16, 1, 'custom', 'goHome', -45, 'stopAndShoot', 'straight');
+      const pms = xml.split('<Placemark>');
+      assert.strictEqual(pms.length - 1, 5, 'Must contain 5 placemarks');
+
+      const hovers = [];
+      for (let i = 1; i <= 5; i++) {
+        const hMatch = pms[i].match(/<wpml:hoverTime>(\d+)<\/wpml:hoverTime>/);
+        hovers.push(hMatch ? parseInt(hMatch[1], 10) : 0);
+      }
+
+      assert.strictEqual(hovers[0], 2, 'Waypoint 0 should have base 2s hover');
+      assert.strictEqual(hovers[1], 2, 'Waypoint 1 straight-line should have base 2s hover');
+      assert.strictEqual(hovers[2], 5, 'Waypoint 2 180-deg turn must have at least 5s settling hover');
+      assert.strictEqual(hovers[3], 4, 'Waypoint 3 35-deg turn must have at least 4s settling hover');
+      assert.strictEqual(hovers[4], 2, 'Waypoint 4 5-deg turn should have base 2s hover');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+
+  test('buildWaylinesWpml injects gimbalRotate action and >= 3s hover when gimbal pitch changes', () => {
+    const originalGetElementById = global.document.getElementById;
+    try {
+      global.document.getElementById = (id) => {
+        const map = {
+          'drone-model': { value: '68' },
+          'signal-lost-action': { value: 'goBack' },
+          'camera-zoom': { value: '1.0' },
+          'global-hover-time': { value: '0' },
+          'grid-type': { value: 'target-splat' },
+          'grid-rotation': { value: '0' },
+          'heading-mode': { value: 'custom' },
+        };
+        return map[id] || { value: '', checked: false };
+      };
+
+      // Waypoint 0: overhead grid pitch -45
+      // Waypoint 1: facade orbit pitch -55 (pitch changed by 10 deg)
+      const waypoints = [
+        { lat: 40.0128, lon: -83.1771, alt: 16, pitch: -45, heading: 0.1, gridType: 'target-splat', hoverTime: null },
+        { lat: 40.0129, lon: -83.1771, alt: 12, pitch: -55, heading: 0.1, gridType: 'target-splat', hoverTime: null }
+      ];
+
+      const xml = buildWaylinesWpml(waypoints, 16, 1, 'custom', 'goHome', -45, 'stopAndShoot', 'straight');
+      const pms = xml.split('<Placemark>');
+      assert.strictEqual(pms.length - 1, 2);
+
+      // Placemark 2 (WP 1) must have gimbalRotate with pitch -55 and hover >= 3s
+      assert.ok(pms[2].includes('<wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>'),
+        'Waypoint 1 must rotate gimbal when pitch changes');
+      assert.ok(pms[2].includes('<wpml:gimbalPitchRotateAngle>-55</wpml:gimbalPitchRotateAngle>'),
+        'Waypoint 1 gimbal pitch angle must be -55');
+      const hMatch = pms[2].match(/<wpml:hoverTime>(\d+)<\/wpml:hoverTime>/);
+      const hVal = hMatch ? parseInt(hMatch[1], 10) : 0;
+      assert.ok(hVal >= 3, 'Waypoint 1 hover time must be at least 3s when gimbal pitch changes');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+
+  test('generateTargetSplatCoordinates with perimeter orbit injects safe transit waypoint and starts at closest perimeter point', () => {
+    // Mock elements for target-splat parameters
+    const originalGetElementById = global.document.getElementById;
+    try {
+      const elMap = {
+        'target-splat-mode': { value: 'polygon' },
+        'target-splat-strategy': { value: 'smartTrim' },
+        'target-splat-angle-mode': { value: 'fixed' },
+        'target-splat-cross': { checked: false },
+        'target-splat-perimeter': { checked: true },
+        'target-splat-height': { value: '8' },
+        'target-splat-perimeter-alt': { value: '' }, // Auto altitude
+        'target-splat-perimeter-pitch': { value: '-55' },
+        'target-splat-perimeter-standoff': { value: '6' },
+        'grid-altitude': { value: '16' },
+        'gimbal-pitch': { value: '-45' },
+        's-line': { value: '6' },
+        's-photo': { value: '3' },
+        'drone-model': { value: '68' },
+        'camera-model': { value: 'mini4pro' },
+        'grid-rotation': { value: '0' },
+        'heading-mode': { value: 'custom' },
+        'capture-mode': { value: 'stopAndShoot' },
+        'path-mode': { value: 'normal' },
+        'grid-speed': { value: '1' }
+      };
+      global.document.getElementById = (id) => elMap[id] || { value: '', checked: false };
+
+      // Define a 15x15m rectangular target polygon
+      const centerLat = 40.01298;
+      const centerLon = -83.17700;
+      const dDeg = 0.0001; // ~11m
+      const targetPoly = [
+        { lat: centerLat - dDeg, lon: centerLon - dDeg },
+        { lat: centerLat + dDeg, lon: centerLon - dDeg },
+        { lat: centerLat + dDeg, lon: centerLon + dDeg },
+        { lat: centerLat - dDeg, lon: centerLon + dDeg }
+      ];
+
+      const layer = {
+        centerLat: centerLat,
+        centerLon: centerLon,
+        targetMode: 'polygon',
+        targetPoly: targetPoly,
+        targetHeight: 8,
+        targetCullingMode: 'smartTrim',
+        targetGridPass: 'single',
+        targetPerimeterPass: true,
+        targetPerimeterStandoff: 6,
+        targetPerimeterAltitude: null,
+        targetPerimeterPitch: -55
+      };
+
+      const result = generateTargetSplatCoordinates(
+        50, 50, 0, 'stopAndShoot', 6, 3, 16, -45, layer
+      );
+
+      assert.ok(result && result.waypoints && result.waypoints.length > 0, 'Should generate waypoints');
+
+      const wps = result.waypoints;
+      // Find the transit waypoint
+      const transitWp = wps.find(w => w.isTransition === true);
+      assert.ok(transitWp, 'Must inject a transit waypoint between grid pass and perimeter orbit');
+      assert.strictEqual(transitWp.skipPhoto, true, 'Transit waypoint must have skipPhoto: true');
+      assert.strictEqual(transitWp.turnMode, 'stop', 'Transit waypoint must have turnMode: stop');
+      assert.strictEqual(transitWp.headingMode, 'smoothTransition', 'Transit waypoint must use smoothTransition');
+      assert.ok(transitWp.alt >= 16, 'Transit waypoint altitude must maintain at least grid altitude (16m) to clear roof');
+
+      // The transit waypoint index
+      const transitIdx = wps.indexOf(transitWp);
+      assert.ok(transitIdx > 0, 'Transit waypoint must come after grid waypoints');
+      const lastGridWp = wps[transitIdx - 1];
+      const firstOrbitWp = wps[transitIdx + 1];
+
+      assert.ok(firstOrbitWp.isPerimeterOrbit, 'Waypoint immediately following transit must be perimeter orbit');
+      assert.strictEqual(firstOrbitWp.isRingStart, true, 'First orbit waypoint must have isRingStart: true to command gimbal pitch');
+      assert.strictEqual(firstOrbitWp.pitch, -55, 'First orbit waypoint pitch must match perimeter pitch');
+      assert.ok(firstOrbitWp.alt >= 12, 'Auto orbit altitude floor must be at least 12m (above building height 8m + 3m buffer)');
+
+      // The transit waypoint lat/lon must match firstOrbitWp lat/lon (flying horizontally outward before descending)
+      assert.strictEqual(transitWp.lat, firstOrbitWp.lat, 'Transit waypoint lat must align with first orbit waypoint');
+      assert.strictEqual(transitWp.lon, firstOrbitWp.lon, 'Transit waypoint lon must align with first orbit waypoint');
+
+      // Verify photo list does not include the transit waypoint
+      const transitInPhotos = result.photos.some(p => p.lat === transitWp.lat && p.lon === transitWp.lon && p.skipPhoto);
+      assert.strictEqual(transitInPhotos, false, 'Photos list must not include skipPhoto transit waypoint');
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+
+  test('calculateStats factors in target-splat turn settling hovers accurately', () => {
+    const originalGetElementById = global.document.getElementById;
+    try {
+      global.document.getElementById = (id) => {
+        const map = {
+          'drone-model': { value: '68' },
+          'global-hover-time': { value: '0' },
+          'grid-type': { value: 'target-splat' },
+          'grid-rotation': { value: '0' }
+        };
+        return map[id] || { value: '', checked: false };
+      };
+
+      // 3 waypoints in target-splat mode:
+      // WP 0: (0,0) heading 0, pitch -45 -> 2s hover
+      // WP 1: (0,50) heading 0, pitch -45 -> 0s additional settling (straight line)
+      // WP 2: (10,50) heading 180 (turn 180 deg >= 60) -> 5s settling hover
+      const waypoints = [
+        { x: 0, y: 0, lat: 40.01, lon: -83.17, alt: 16, pitch: -45, heading: 0.1, gridType: 'target-splat', hoverTime: null },
+        { x: 0, y: 50, lat: 40.0105, lon: -83.17, alt: 16, pitch: -45, heading: 0.1, gridType: 'target-splat', hoverTime: 0 },
+        { x: 10, y: 50, lat: 40.0105, lon: -83.1699, alt: 16, pitch: -45, heading: 180.0, gridType: 'target-splat', hoverTime: 0 }
+      ];
+
+      const photos = [{}, {}, {}];
+      const stats = calculateStats(waypoints, photos, 1, 10, 10, 'stopAndShoot');
+      assert.ok(stats, 'Should return flight stats');
+      // Hover time: WP0: 2s (reposition takeoff), WP1: 0s, WP2: 5s (180 turn) = 7s
+      // Distance: 50 + 10 = 60m / 1m/s = 60s
+      // Photos: 3 * 4.5 = 13.5s
+      // Buffer: 45s
+      // Total: 60 + 13.5 + 7 + 45 = 125.5s -> round to 126s
+      assert.strictEqual(Math.round(stats.flightTimeSeconds), 126);
+    } finally {
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+
+  test('pullFlightLogFromRC2 synchronizes both buttons, disables during pull, and resets after completion', async () => {
+    const originalFetch = global.fetch;
+    const originalGetElementById = global.document.getElementById;
+
+    const mockButtons = {
+      'diag-pull-rc2-btn': {
+        id: 'diag-pull-rc2-btn',
+        innerHTML: '<span>📥 Pull Flight Log</span>',
+        style: { color: '' },
+        disabled: false
+      },
+      'direct-rc2-pull-log-btn': {
+        id: 'direct-rc2-pull-log-btn',
+        innerHTML: '<span>📥 Pull</span>',
+        style: { color: '' },
+        disabled: false
+      }
+    };
+
+    global.document.getElementById = (id) => mockButtons[id] || null;
+
+    global.fetch = async (url) => {
+      assert.ok(url.includes('/api/latest-flight'), 'Should call /api/latest-flight');
+      assert.strictEqual(mockButtons['diag-pull-rc2-btn'].disabled, true);
+      assert.strictEqual(mockButtons['direct-rc2-pull-log-btn'].disabled, true);
+      assert.ok(mockButtons['diag-pull-rc2-btn'].innerHTML.includes('Pulling Log'));
+      assert.ok(mockButtons['direct-rc2-pull-log-btn'].innerHTML.includes('Pulling Log'));
+
+      return {
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: {
+            latestLog: 'FlightRecord_2026-09-04_[18-51-26].txt',
+            latestKmz: 'target-splat-mission.kmz'
+          }
+        })
+      };
+    };
+
+    try {
+      const res = await pullFlightLogFromRC2(mockButtons['direct-rc2-pull-log-btn']);
+      assert.strictEqual(res.success, true);
+      assert.strictEqual(res.logName, 'FlightRecord_2026-09-04_[18-51-26].txt');
+
+      assert.ok(mockButtons['diag-pull-rc2-btn'].innerHTML.includes('Pulled FlightRecord_20'));
+      assert.ok(mockButtons['direct-rc2-pull-log-btn'].innerHTML.includes('Pulled FlightRecord_20'));
+      assert.strictEqual(mockButtons['diag-pull-rc2-btn'].style.color, '#38bdf8');
+      assert.strictEqual(mockButtons['direct-rc2-pull-log-btn'].style.color, '#38bdf8');
+
+      await new Promise(r => setTimeout(r, 3600));
+
+      assert.strictEqual(mockButtons['diag-pull-rc2-btn'].disabled, false);
+      assert.strictEqual(mockButtons['direct-rc2-pull-log-btn'].disabled, false);
+      assert.strictEqual(mockButtons['diag-pull-rc2-btn'].innerHTML, '<span>📥 Pull Flight Log</span>');
+      assert.strictEqual(mockButtons['direct-rc2-pull-log-btn'].innerHTML, '<span>📥 Pull</span>');
+      assert.strictEqual(mockButtons['diag-pull-rc2-btn'].style.color, '');
+      assert.strictEqual(mockButtons['direct-rc2-pull-log-btn'].style.color, '');
+    } finally {
+      global.fetch = originalFetch;
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+
+  test('pullFlightLogFromRC2 gracefully handles errors/network failures and resets button state', async () => {
+    const originalFetch = global.fetch;
+    const originalGetElementById = global.document.getElementById;
+
+    const mockButtons = {
+      'diag-pull-rc2-btn': {
+        id: 'diag-pull-rc2-btn',
+        innerHTML: '<span>📥 Pull Flight Log</span>',
+        style: { color: '' },
+        disabled: false
+      },
+      'direct-rc2-pull-log-btn': {
+        id: 'direct-rc2-pull-log-btn',
+        innerHTML: '<span>📥 Pull</span>',
+        style: { color: '' },
+        disabled: false
+      }
+    };
+
+    global.document.getElementById = (id) => mockButtons[id] || null;
+
+    global.fetch = async () => {
+      throw new Error('Connection timed out');
+    };
+
+    try {
+      const res = await pullFlightLogFromRC2(mockButtons['diag-pull-rc2-btn']);
+      assert.strictEqual(res.success, false);
+      assert.strictEqual(res.error, 'Connection timed out');
+
+      assert.ok(mockButtons['diag-pull-rc2-btn'].innerHTML.includes('Pull Failed / Offline'));
+      assert.ok(mockButtons['direct-rc2-pull-log-btn'].innerHTML.includes('Pull Failed / Offline'));
+      assert.strictEqual(mockButtons['diag-pull-rc2-btn'].style.color, '#f87171');
+
+      await new Promise(r => setTimeout(r, 3100));
+
+      assert.strictEqual(mockButtons['diag-pull-rc2-btn'].disabled, false);
+      assert.strictEqual(mockButtons['direct-rc2-pull-log-btn'].disabled, false);
+      assert.strictEqual(mockButtons['diag-pull-rc2-btn'].innerHTML, '<span>📥 Pull Flight Log</span>');
+      assert.strictEqual(mockButtons['direct-rc2-pull-log-btn'].innerHTML, '<span>📥 Pull</span>');
+      assert.strictEqual(mockButtons['diag-pull-rc2-btn'].style.color, '');
+    } finally {
+      global.fetch = originalFetch;
+      global.document.getElementById = originalGetElementById;
+    }
+  });
+
+  test('target perimeter vertex dragging updates coordinates smoothly and defers centroid recalculation to dragend', () => {
+    const layer = {
+      pattern: 'target-splat',
+      targetMode: 'polygon',
+      targetPoly: [
+        { lat: 40.0, lon: -83.0, x: 0, y: 0 },
+        { lat: 40.001, lon: -83.0, x: 0, y: 111 },
+        { lat: 40.001, lon: -83.001, x: -85, y: 111 },
+        { lat: 40.0, lon: -83.001, x: -85, y: 0 }
+      ],
+      targetRadius: 25,
+      targetHeight: 8,
+      targetPerimeterPass: true,
+      targetPerimeterStandoff: 6
+    };
+
+    // Verify recomputeTargetPolygonCentroid computes correct centroid
+    recomputeTargetPolygonCentroid(layer);
+    assert.ok(Math.abs(layer.centerLat - 40.0005) < 1e-5);
+    assert.ok(Math.abs(layer.centerLon - (-83.0005)) < 1e-5);
+
+    // Simulate moving a vertex
+    layer.targetPoly[0].lat = 40.0002;
+    layer.targetPoly[0].lon = -82.9998;
+    recomputeTargetPolygonCentroid(layer);
+
+    // Verify centroid shifted
+    assert.ok(layer.centerLat > 40.0005, 'Centroid latitude should have increased after moving vertex North');
+    assert.ok(layer.centerLon > -83.0005, 'Centroid longitude should have increased after moving vertex East');
+  });
+
+  describe('Slow Speed & Click-to-Type Numerical Input Tests (v1.78.0)', () => {
+    test('minimum speed supports sub-1 m/s down to 0.2 m/s (~0.4 mph)', () => {
+      // Test imperial speed conversion at 0.2 m/s
+      const speedMps = 0.2;
+      const speedMph = (speedMps * MPS_TO_MPH).toFixed(1);
+      assert.strictEqual(speedMph, '0.4', '0.2 m/s should format to 0.4 mph in imperial mode');
+
+      // Test 0.5 m/s
+      assert.strictEqual((0.5 * MPS_TO_MPH).toFixed(1), '1.1', '0.5 m/s should format to 1.1 mph');
+
+      // Test reverse conversion: 1.5 mph -> m/s
+      const typedMph = 1.5;
+      const convertedMps = typedMph / MPS_TO_MPH;
+      assert.ok(Math.abs(convertedMps - 0.67) < 0.05);
+    });
+
+    test('initClickToTypeInputs attaches clickable-val and opens inline input on click', () => {
+      const mockValEl = {
+        id: 'speed-val',
+        textContent: '4.5',
+        classList: {
+          add: mock.fn(),
+          remove: mock.fn()
+        },
+        setAttribute: mock.fn(),
+        querySelector: () => null,
+        appendChild: mock.fn(),
+        listeners: {},
+        addEventListener: function(evt, handler) {
+          this.listeners[evt] = handler;
+        }
+      };
+
+      const mockSliderEl = {
+        id: 'speed',
+        value: '2.0',
+        dispatchEvent: mock.fn()
+      };
+
+      const origGetElementById = global.document.getElementById;
+      global.document.getElementById = (id) => {
+        if (id === 'speed-val') return mockValEl;
+        if (id === 'speed') return mockSliderEl;
+        return null;
+      };
+
+      try {
+        initClickToTypeInputs();
+        assert.strictEqual(mockValEl.classList.add.mock.calls.length >= 1, true);
+        assert.strictEqual(mockValEl.classList.add.mock.calls[0].arguments[0], 'clickable-val');
+        assert.ok(typeof mockValEl.listeners['click'] === 'function');
+
+        // Trigger click event to open inline input
+        mockValEl.listeners['click']({ stopPropagation: () => {} });
+        assert.strictEqual(mockValEl.appendChild.mock.calls.length, 1);
+        const createdInput = mockValEl.appendChild.mock.calls[0].arguments[0];
+        assert.strictEqual(createdInput.type, 'number');
+        assert.strictEqual(createdInput.className, 'inline-val-input');
+      } finally {
+        global.document.getElementById = origGetElementById;
+      }
+    });
+
+    test('setUnitSystem and toggleUnitSystem update storage, cached system, and header badge', () => {
+      const mockSelect = { value: 'imperial' };
+      const mockBadge = { textContent: 'FT / MPH' };
+      const origGetElementById = global.document.getElementById;
+      global.document.getElementById = (id) => {
+        if (id === 'unit-system') return mockSelect;
+        if (id === 'header-unit-badge') return mockBadge;
+        return null;
+      };
+
+      try {
+        setUnitSystem('metric');
+        assert.strictEqual(getUnitSystem(), 'metric');
+        assert.strictEqual(global.localStorage.getItem('aalaapi_sky_unit_system'), 'metric');
+        assert.strictEqual(mockSelect.value, 'metric');
+        assert.strictEqual(mockBadge.textContent, 'M / M/S');
+
+        // Toggle back to imperial
+        const next = toggleUnitSystem();
+        assert.strictEqual(next, 'imperial');
+        assert.strictEqual(getUnitSystem(), 'imperial');
+        assert.strictEqual(global.localStorage.getItem('aalaapi_sky_unit_system'), 'imperial');
+        assert.strictEqual(mockSelect.value, 'imperial');
+        assert.strictEqual(mockBadge.textContent, 'FT / MPH');
+      } finally {
+        global.document.getElementById = origGetElementById;
+      }
+    });
+
+    test('initClickableUnits binds click listener to toggleUnitSystem on unit labels', () => {
+      const mockUnitEl = {
+        classList: { add: mock.fn() },
+        setAttribute: mock.fn(),
+        listeners: {},
+        addEventListener: function(evt, handler) {
+          this.listeners[evt] = handler;
+        }
+      };
+
+      const origGetElementById = global.document.getElementById;
+      global.document.getElementById = (id) => {
+        if (id === 'altitude-unit') return mockUnitEl;
+        return null;
+      };
+
+      try {
+        initClickableUnits();
+        assert.strictEqual(mockUnitEl.classList.add.mock.calls.length >= 1, true);
+        assert.strictEqual(mockUnitEl.classList.add.mock.calls[0].arguments[0], 'clickable-unit');
+        assert.ok(typeof mockUnitEl.listeners['click'] === 'function');
+
+        // Set initial state to imperial
+        setUnitSystem('imperial');
+        assert.strictEqual(getUnitSystem(), 'imperial');
+
+        // Trigger click event on unit label
+        mockUnitEl.listeners['click']({ stopPropagation: () => {} });
+        assert.strictEqual(getUnitSystem(), 'metric');
+
+        // Trigger click again to verify return to imperial
+        mockUnitEl.listeners['click']({ stopPropagation: () => {} });
+        assert.strictEqual(getUnitSystem(), 'imperial');
+      } finally {
+        global.document.getElementById = origGetElementById;
+      }
+    });
+  });
+
+  describe('Camera Direction & Visual Palettes Tests (v1.80.0)', () => {
+    test('CAMERA_PALETTES registry defines all 6 palettes with correct properties', () => {
+      assert.ok(CAMERA_PALETTES['high-viz-amber'], 'high-viz-amber must exist');
+      assert.ok(CAMERA_PALETTES['electric-lime'], 'electric-lime must exist');
+      assert.ok(CAMERA_PALETTES['coral-crimson'], 'coral-crimson must exist');
+      assert.ok(CAMERA_PALETTES['neon-magenta'], 'neon-magenta must exist');
+      assert.ok(CAMERA_PALETTES['solar-yellow'], 'solar-yellow must exist');
+      assert.ok(CAMERA_PALETTES['classic-cyan'], 'classic-cyan must exist');
+
+      assert.strictEqual(CAMERA_PALETTES['high-viz-amber'].arrowColor, '#f59e0b');
+      assert.strictEqual(CAMERA_PALETTES['electric-lime'].arrowColor, '#22c55e');
+      assert.strictEqual(CAMERA_PALETTES['coral-crimson'].arrowColor, '#f43f5e');
+      assert.strictEqual(CAMERA_PALETTES['neon-magenta'].arrowColor, '#d946ef');
+      assert.strictEqual(CAMERA_PALETTES['solar-yellow'].arrowColor, '#eab308');
+      assert.strictEqual(CAMERA_PALETTES['classic-cyan'].arrowColor, null);
+
+      assert.strictEqual(CAMERA_PALETTES['high-viz-amber'].swatches.length, 2);
+    });
+
+    test('getActiveCameraPalette and setCameraPalette manage selection and persistence', () => {
+      setCameraPalette('electric-lime');
+      assert.strictEqual(getActiveCameraPalette().id, 'electric-lime');
+      if (typeof localStorage !== 'undefined') {
+        assert.strictEqual(localStorage.getItem('aalaapi_sky_camera_palette'), 'electric-lime');
+      }
+
+      setCameraPalette('high-viz-amber');
+      assert.strictEqual(getActiveCameraPalette().id, 'high-viz-amber');
+      if (typeof localStorage !== 'undefined') {
+        assert.strictEqual(localStorage.getItem('aalaapi_sky_camera_palette'), 'high-viz-amber');
+      }
+    });
+
+    test('isCameraConeEnabled and setCameraConeEnabled toggle cone preference', () => {
+      setCameraConeEnabled(false);
+      assert.strictEqual(isCameraConeEnabled(), false);
+      if (typeof localStorage !== 'undefined') {
+        assert.strictEqual(localStorage.getItem('aalaapi_sky_camera_cones'), 'false');
+      }
+
+      setCameraConeEnabled(true);
+      assert.strictEqual(isCameraConeEnabled(), true);
+      if (typeof localStorage !== 'undefined') {
+        assert.strictEqual(localStorage.getItem('aalaapi_sky_camera_cones'), 'true');
+      }
+    });
+
+    test('getMarkerIcon generates high-contrast arrow and cone matching active palette', () => {
+      const origDivIcon = L.divIcon;
+      L.divIcon = (opts) => ({ options: opts });
+      try {
+        setCameraPalette('high-viz-amber');
+        setCameraConeEnabled(true);
+
+        const wp = { lat: 37.7749, lon: -122.4194, heading: 90, pitch: -45 };
+        const waypoints = [wp];
+        const icon = getMarkerIcon(wp, 0, waypoints, false, null, null);
+        const html = icon.options.html;
+
+        assert.ok(html.includes('border-bottom-color: #f59e0b;'), 'Arrow must use Amber color from palette');
+        assert.ok(html.includes('wp-camera-cone'), 'Cone HTML must be rendered when enabled');
+        assert.ok(html.includes('border-top-color: rgba(245, 158, 11, 0.38);'), 'Cone must use Amber cone color');
+      } finally {
+        L.divIcon = origDivIcon;
+      }
+    });
+
+    test('getMarkerIcon omits cone when camera-cones-toggle is disabled', () => {
+      const origDivIcon = L.divIcon;
+      L.divIcon = (opts) => ({ options: opts });
+      try {
+        setCameraPalette('high-viz-amber');
+        setCameraConeEnabled(false);
+
+        const wp = { lat: 37.7749, lon: -122.4194, heading: 90, pitch: -45 };
+        const waypoints = [wp];
+        const icon = getMarkerIcon(wp, 0, waypoints, false, null, null);
+        const html = icon.options.html;
+
+        assert.ok(!html.includes('wp-camera-cone'), 'Cone HTML must be suppressed when cones are disabled');
+        assert.ok(html.includes('border-bottom-color: #f59e0b;'), 'Arrow should still render normally');
+
+        // Reset
+        setCameraConeEnabled(true);
+      } finally {
+        L.divIcon = origDivIcon;
+      }
+    });
+
+    test('getMarkerIcon respects skipped waypoints and modified waypoints', () => {
+      const origDivIcon = L.divIcon;
+      L.divIcon = (opts) => ({ options: opts });
+      try {
+        setCameraPalette('high-viz-amber');
+        setCameraConeEnabled(true);
+
+        const skippedWp = { lat: 37.7749, lon: -122.4194, heading: 90, pitch: -45, skipPhoto: true };
+        const skippedIcon = getMarkerIcon(skippedWp, 0, [skippedWp], false, null, null);
+        assert.ok(skippedIcon.options.html.includes('border-bottom-color: #64748b;'), 'Skipped waypoint must have muted gray arrow');
+        assert.ok(!skippedIcon.options.html.includes('wp-camera-cone'), 'Skipped waypoint must not have cone');
+
+        const modWp = { lat: 37.7749, lon: -122.4194, heading: 90, pitch: -45, isModified: true };
+        const modIcon = getMarkerIcon(modWp, 0, [modWp], false, null, null);
+        assert.ok(modIcon.options.html.includes('border-bottom-color: #ec4899;'), 'Modified waypoint must have hot pink arrow');
+        assert.ok(modIcon.options.html.includes('border-top-color: rgba(236, 72, 153, 0.38);'), 'Modified waypoint must have pink cone');
+      } finally {
+        L.divIcon = origDivIcon;
+      }
+    });
+
+    test('getMarkerIcon dynamically places pitch label opposite to camera heading (v1.80.3)', () => {
+      const origDivIcon = L.divIcon;
+      L.divIcon = (opts) => ({ options: opts });
+      try {
+        setCameraPalette('high-viz-amber');
+        setCameraConeEnabled(true);
+
+        // Northbound / upward headings (< 75° or > 285°): label sits bottom (South)
+        const northWp = { lat: 37.77, lon: -122.41, heading: 0, pitch: -90 };
+        const northIcon = getMarkerIcon(northWp, 0, [northWp], false, null, null);
+        assert.ok(northIcon.options.html.includes('wp-pitch-pos-bottom'), 'Heading 0° must anchor pitch label at bottom');
+        assert.ok(!northIcon.options.html.includes('wp-pitch-pos-top'), 'Heading 0° must not have wp-pitch-pos-top');
+
+        const neWp = { lat: 37.77, lon: -122.41, heading: 45, pitch: -60 };
+        const neIcon = getMarkerIcon(neWp, 0, [neWp], false, null, null);
+        assert.ok(neIcon.options.html.includes('wp-pitch-pos-bottom'), 'Heading 45° must anchor pitch label at bottom');
+
+        const nwWp = { lat: 37.77, lon: -122.41, heading: 315, pitch: -60 };
+        const nwIcon = getMarkerIcon(nwWp, 0, [nwWp], false, null, null);
+        assert.ok(nwIcon.options.html.includes('wp-pitch-pos-bottom'), 'Heading 315° must anchor pitch label at bottom');
+
+        // Southbound / downward headings (75° to 285°): label flips to top (North) so it never covers the cone
+        const southWp = { lat: 37.77, lon: -122.41, heading: 180, pitch: -90 };
+        const southIcon = getMarkerIcon(southWp, 0, [southWp], false, null, null);
+        assert.ok(southIcon.options.html.includes('wp-pitch-pos-top'), 'Heading 180° must anchor pitch label at top to avoid covering cone');
+        assert.ok(!southIcon.options.html.includes('wp-pitch-pos-bottom'), 'Heading 180° must not have wp-pitch-pos-bottom');
+
+        const seWp = { lat: 37.77, lon: -122.41, heading: 135, pitch: -45 };
+        const seIcon = getMarkerIcon(seWp, 0, [seWp], false, null, null);
+        assert.ok(seIcon.options.html.includes('wp-pitch-pos-top'), 'Heading 135° must anchor pitch label at top');
+
+        const swWp = { lat: 37.77, lon: -122.41, heading: 225, pitch: -45 };
+        const swIcon = getMarkerIcon(swWp, 0, [swWp], false, null, null);
+        assert.ok(swIcon.options.html.includes('wp-pitch-pos-top'), 'Heading 225° must anchor pitch label at top');
+
+        // CSS rules check
+        const cssContent = fs.readFileSync('./index.css', 'utf8');
+        assert.ok(cssContent.includes('.wp-pitch-label.wp-pitch-pos-top'), 'CSS must define .wp-pitch-pos-top');
+        assert.ok(cssContent.includes('.wp-pitch-label.wp-pitch-pos-bottom'), 'CSS must define .wp-pitch-pos-bottom');
+      } finally {
+        L.divIcon = origDivIcon;
+      }
+    });
+
+    test('applyZoomGates applies continuous scaling and CSS custom variables based on zoom level (v1.80.2)', () => {
+      const mockContainer = {
+        classList: {
+          classes: new Set(),
+          add(...tokens) { tokens.forEach(t => this.classes.add(t)); },
+          remove(...tokens) { tokens.forEach(t => this.classes.delete(t)); },
+          contains(c) { return this.classes.has(c); }
+        },
+        style: {
+          props: {},
+          setProperty(k, v) { this.props[k] = String(v); },
+          removeProperty(k) { delete this.props[k]; },
+          getPropertyValue(k) { return this.props[k]; }
+        }
+      };
+
+      let currentZoom = 21;
+      const testMap = {
+        getZoom: () => currentZoom,
+        getContainer: () => mockContainer
+      };
+      const origMap = (typeof map !== 'undefined') ? map : undefined;
+      map = testMap;
+      if (typeof window !== 'undefined') window.map = testMap;
+      if (typeof global !== 'undefined') global.map = testMap;
+
+      try {
+        // Zoom 21 (Full High Zoom)
+        currentZoom = 21;
+        applyZoomGates();
+        assert.strictEqual(mockContainer.classList.contains('wp-zoom-high'), true, 'Zoom 21 must have wp-zoom-high');
+        assert.strictEqual(mockContainer.classList.contains('wp-zoom-pitch-hidden'), false);
+        assert.strictEqual(mockContainer.style.props['--wp-cone-scale'], '1.000');
+        assert.strictEqual(mockContainer.style.props['--wp-pitch-scale'], '1.000');
+        assert.strictEqual(mockContainer.style.props['--wp-pitch-top'], '24.0px');
+        assert.strictEqual(mockContainer.style.props['--wp-arrow-scale'], '1.000');
+
+        // Zoom 19 (Mid Zoom)
+        currentZoom = 19;
+        applyZoomGates();
+        assert.strictEqual(mockContainer.classList.contains('wp-zoom-mid'), true, 'Zoom 19 must have wp-zoom-mid');
+        assert.strictEqual(mockContainer.classList.contains('wp-zoom-pitch-hidden'), false);
+        assert.ok(parseFloat(mockContainer.style.props['--wp-cone-scale']) < 0.70, 'Cone scale must be compact at zoom 19');
+        assert.ok(parseFloat(mockContainer.style.props['--wp-pitch-scale']) < 0.85, 'Pitch scale must be compact at zoom 19');
+        assert.strictEqual(mockContainer.style.props['--wp-pitch-top'], '19.2px');
+
+        // Zoom 18 (Compact Zoom)
+        currentZoom = 18;
+        applyZoomGates();
+        assert.strictEqual(mockContainer.classList.contains('wp-zoom-compact'), true, 'Zoom 18 must have wp-zoom-compact');
+        assert.strictEqual(mockContainer.classList.contains('wp-zoom-pitch-hidden'), false);
+        assert.strictEqual(mockContainer.style.props['--wp-cone-scale'], '0.380');
+        assert.strictEqual(mockContainer.style.props['--wp-pitch-scale'], '0.650');
+        assert.strictEqual(mockContainer.style.props['--wp-pitch-top'], '16.0px');
+
+        // Zoom 17 (Low Zoom Working View: Micro-cones visible, pitch hidden)
+        currentZoom = 17;
+        applyZoomGates();
+        assert.strictEqual(mockContainer.classList.contains('wp-zoomed-out'), false, 'Zoom 17 must keep orientation markers visible');
+        assert.strictEqual(mockContainer.classList.contains('wp-zoom-pitch-hidden'), true, 'Zoom 17 must hide pitch labels');
+        assert.strictEqual(mockContainer.style.props['--wp-cone-scale'], '0.280');
+        assert.strictEqual(mockContainer.style.props['--wp-pitch-scale'], '0.000');
+
+        // Zoom 15 (Macro Overview: Completely hidden)
+        currentZoom = 15;
+        applyZoomGates();
+        assert.strictEqual(mockContainer.classList.contains('wp-zoomed-out'), true, 'Zoom 15 must have wp-zoomed-out');
+        assert.strictEqual(mockContainer.style.props['--wp-cone-scale'], undefined);
+      } finally {
+        map = origMap;
+        if (typeof window !== 'undefined') window.map = origMap;
+        if (typeof global !== 'undefined') global.map = origMap;
+      }
+    });
+  });
+
+  describe('Three-Tier Architectural Hierarchy & Per-Layer Dynamics Tests (v1.81.0)', () => {
+    test('createDefaultLayer initializes layer flight dynamics with inherit defaults', () => {
+      const layer = createDefaultLayer('single', 'Test Layer');
+      assert.strictEqual(layer.captureMode, 'inherit', 'layer.captureMode should default to inherit');
+      assert.strictEqual(layer.pathMode, 'inherit', 'layer.pathMode should default to inherit');
+      assert.strictEqual(layer.headingMode, 'inherit', 'layer.headingMode should default to inherit');
+      assert.strictEqual(layer.targetPoiId, null, 'layer.targetPoiId should default to null');
+      assert.strictEqual(layer.turnaroundOvershoot, 0, 'layer.turnaroundOvershoot should default to 0');
+      assert.strictEqual(layer.turnaroundSpeed, null, 'layer.turnaroundSpeed should default to null (inherit)');
+      assert.strictEqual(layer.turnDampingDist, 0, 'layer.turnDampingDist should default to 0');
+      assert.strictEqual(layer.hoverTime, 'inherit', 'layer.hoverTime should default to inherit');
+      assert.strictEqual(layer.autoSettlingEnabled, true, 'layer.autoSettlingEnabled should default to true');
+      assert.strictEqual(layer.baseSettlingTime, 2.0, 'layer.baseSettlingTime should default to 2.0');
+      assert.strictEqual(layer.majorTurnSettlingTime, 5.0, 'layer.majorTurnSettlingTime should default to 5.0');
+      assert.strictEqual(layer.moderateTurnSettlingTime, 4.0, 'layer.moderateTurnSettlingTime should default to 4.0');
+      assert.strictEqual(layer.pitchSettlingTime, 3.0, 'layer.pitchSettlingTime should default to 3.0');
+    });
+
+    test('Three-Tier Cascade resolves Global -> Layer -> Waypoint hierarchy', () => {
+      // Tier 1: Global Defaults
+      const mockDoc = {
+        'capture-mode': { value: 'stopAndShoot' },
+        'path-mode': { value: 'curved' },
+        'heading-mode': { value: 'followWayline' },
+        'global-hover-time': { value: '0' }
+      };
+      const origGetElementById = global.document.getElementById;
+      global.document.getElementById = (id) => mockDoc[id] || { value: '' };
+
+      try {
+        // Case 1: Layer inherits Global
+        const layer1 = { captureMode: 'inherit', pathMode: 'inherit', headingMode: 'inherit', hoverTime: 'inherit' };
+        assert.strictEqual(getEffectiveLayerCaptureMode(layer1), 'stopAndShoot', 'Inherit layer capture mode resolves to Global stopAndShoot');
+        assert.strictEqual(getEffectiveLayerPathMode(layer1), 'curved', 'Inherit layer path mode resolves to Global curved');
+        assert.strictEqual(getEffectiveLayerHeadingMode(layer1), 'followWayline', 'Inherit layer heading mode resolves to Global followWayline');
+        assert.strictEqual(getEffectiveLayerHoverTime(layer1), 0, 'Inherit layer hover time resolves to Global 0');
+
+        // Case 2: Layer overrides Global
+        const layer2 = { captureMode: 'video', pathMode: 'straight', headingMode: 'custom', hoverTime: '8' };
+        assert.strictEqual(getEffectiveLayerCaptureMode(layer2), 'video', 'Explicit layer capture mode overrides Global');
+        assert.strictEqual(getEffectiveLayerPathMode(layer2), 'straight', 'Explicit layer path mode overrides Global');
+        assert.strictEqual(getEffectiveLayerHeadingMode(layer2), 'custom', 'Explicit layer heading mode overrides Global');
+        assert.strictEqual(getEffectiveLayerHoverTime(layer2), 8, 'Explicit layer hover time overrides Global');
+      } finally {
+        global.document.getElementById = origGetElementById;
+      }
+    });
+
+    test('generateGridCoordinates applies turnaround overshoot and tags turnaround points', () => {
+      const gridResult = generateGridCoordinates(50, 50, 0, 'single', 'stopAndShoot', 10, 10, 8);
+      const wps = gridResult.waypoints;
+      assert.ok(wps && wps.length > 0, 'Should generate grid waypoints');
+      
+      const turnaroundWps = wps.filter(w => w.isTurnaroundPoint === true);
+      assert.ok(turnaroundWps.length > 0, 'Should tag turnaround overshoot waypoints outside the survey envelope');
+      turnaroundWps.forEach(w => {
+        assert.strictEqual(w.skipPhoto, true, 'Turnaround waypoints must skip photo capture');
+      });
+    });
+
+    test('generateLayerWaypoints stamps layer dynamics metadata onto waypoints', () => {
+      const layer = createDefaultLayer('single', 'Survey Layer');
+      layer.centerLat = 41.88;
+      layer.centerLon = -87.62;
+      layer.captureMode = 'continuous';
+      layer.pathMode = 'straight';
+      layer.headingMode = 'fixed';
+      layer.turnaroundSpeed = 8.5;
+      layer.turnDampingDist = 1.2;
+      layer.baseSettlingTime = 2.5;
+
+      const result = generateLayerWaypoints(layer, 50, 50, 0, 'stopAndShoot', 10, 10, 50, -45, 0, 5);
+      assert.ok(result && result.waypoints && result.waypoints.length > 0, 'Should return generated waypoints');
+      
+      const firstWp = result.waypoints[0];
+      assert.strictEqual(firstWp.layerId, layer.id, 'Waypoint must record its owning layerId');
+      assert.strictEqual(firstWp.layerCaptureMode, 'continuous', 'Waypoint must record layerCaptureMode');
+      assert.strictEqual(firstWp.layerPathMode, 'straight', 'Waypoint must record layerPathMode');
+      assert.strictEqual(firstWp.layerHeadingMode, 'fixed', 'Waypoint must record layerHeadingMode');
+      assert.strictEqual(firstWp.turnaroundSpeed, 8.5, 'Waypoint must record layer turnaroundSpeed');
+      assert.strictEqual(firstWp.turnDampingDist, 1.2, 'Waypoint must record layer turnDampingDist');
+      assert.strictEqual(firstWp.baseSettlingTime, 2.5, 'Waypoint must record layer baseSettlingTime');
+    });
+
+    test('buildWaylinesWpml respects Tier 3 Waypoint Overrides over Layer and Global settings', () => {
+      // Global: curved path, stopAndShoot
+      // Layer: straight path, continuous
+      // WP 0: default (inherit layer) -> straight, continuous
+      // WP 1: override turnMode: 'stop' (straight stop), override cameraAction: 'takePhoto'
+      // WP 2: override turnMode: 'pass' (straight pass), override cameraAction: 'none'
+      const testWaypoints = [
+        {
+          lat: 41.88, lon: -87.62, alt: 50, pitch: -45,
+          layerId: 'layer-1', layerCaptureMode: 'continuous', layerPathMode: 'straight',
+          turnMode: 'inherit', cameraAction: 'inherit'
+        },
+        {
+          lat: 41.89, lon: -87.63, alt: 50, pitch: -45,
+          layerId: 'layer-1', layerCaptureMode: 'continuous', layerPathMode: 'straight',
+          turnMode: 'stop', cameraAction: 'takePhoto'
+        },
+        {
+          lat: 41.90, lon: -87.64, alt: 50, pitch: -45,
+          layerId: 'layer-1', layerCaptureMode: 'continuous', layerPathMode: 'straight',
+          turnMode: 'pass', cameraAction: 'none'
+        }
+      ];
+
+      const xml = buildWaylinesWpml(testWaypoints, 50, 5, 'followWayline', 'goHome', -45, 'stopAndShoot', 'curved');
+      const placemarks = xml.split('<Placemark>');
+      assert.ok(placemarks.length >= 4, 'Should contain placemarks');
+
+      // WP 1 (intermediate) with turnMode: 'stop' and cameraAction: 'takePhoto'
+      const wp1Xml = placemarks[2];
+      assert.ok(wp1Xml.includes('toPointAndStopWithDiscontinuityCurvature'), 'WP 1 should use Stop turnMode in straight path');
+      assert.ok(wp1Xml.includes('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>'), 'WP 1 should take photo via override');
+
+      // WP 2 with turnMode: 'pass' and cameraAction: 'none'
+      // Note: WP 2 is endpoint (last waypoint), so by DJI Golden Endpoint Rule, endpoint must be stop.
+      // Let's test with a 4th waypoint so WP 2 is intermediate:
+      const testWaypoints4 = [
+        { lat: 41.88, lon: -87.62, alt: 50, pitch: -45, layerPathMode: 'straight', turnMode: 'stop' },
+        { lat: 41.89, lon: -87.63, alt: 50, pitch: -45, layerPathMode: 'straight', turnMode: 'pass' },
+        { lat: 41.90, lon: -87.64, alt: 50, pitch: -45, layerPathMode: 'straight', turnMode: 'pass' },
+        { lat: 41.91, lon: -87.65, alt: 50, pitch: -45, layerPathMode: 'straight', turnMode: 'stop' }
+      ];
+      const xml4 = buildWaylinesWpml(testWaypoints4, 50, 5, 'followWayline', 'goHome', -45, 'continuous', 'curved');
+      const pm4 = xml4.split('<Placemark>');
+      assert.ok(pm4[2].includes('toPointAndPassWithDiscontinuityCurvature'), 'Intermediate WP 1 should use Pass turn mode in straight layer');
+      assert.ok(pm4[3].includes('toPointAndPassWithDiscontinuityCurvature'), 'Intermediate WP 2 should use Pass turn mode in straight layer');
+    });
+
+    test('Consumer drone missions strictly enforce ContinuityCurvature and useStraightLine 0', () => {
+      const origGetElementById = global.document.getElementById;
+      global.document.getElementById = (id) => {
+        if (id === 'drone-model') return { value: '68' }; // DJI Mini 4 Pro (consumer drone)
+        return { value: '' };
+      };
+
+      try {
+        const testWaypoints = [
+          { lat: 41.88, lon: -87.62, alt: 50, pitch: -45, layerPathMode: 'straight' },
+          { lat: 41.89, lon: -87.63, alt: 50, pitch: -45, layerPathMode: 'straight' }
+        ];
+        const xml = buildWaylinesWpml(testWaypoints, 50, 5, 'followWayline', 'goHome', -45, 'stopAndShoot', 'straight');
+        assert.ok(xml.includes('<wpml:useStraightLine>0</wpml:useStraightLine>'), 'Consumer drone must use useStraightLine 0');
+        assert.ok(!xml.includes('DiscontinuityCurvature'), 'Consumer drone must never use DiscontinuityCurvature');
+        assert.ok(xml.includes('ContinuityCurvature'), 'Consumer drone must use ContinuityCurvature');
+      } finally {
+        global.document.getElementById = origGetElementById;
+      }
+    });
+  });
+});
+
+
+
 

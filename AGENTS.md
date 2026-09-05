@@ -70,3 +70,18 @@ To automate building, verifying unit and E2E tests, committing, and pushing chan
   ```
 
 These scripts automatically run the build step (`python scratch/build.py`), run unit & E2E tests (`node --test index.test.js index.e2e.test.js`), stage changes (`git add .`), create a git commit, and push to `origin/main`.
+
+## 7. Three-Tier Architectural Hierarchy (Global → Layer → Waypoint)
+All flight parameters in Aalaapi Sky (including Capture Mode, Turn / Path Type, Heading Mode, Speed, Hover Dwell Time, Camera Actions, and Camera Zoom) MUST follow a strict **Three-Tier Cascading Hierarchy**:
+1. **Tier 1: Global Mission Failsafes & Defaults (`#mission-failsafes-section`, Section 3):**
+   - Serves as the overarching mission-wide fallback default for all waypoints and layers.
+2. **Tier 2: Layer Properties & Advanced Dynamics (`#pattern-settings-section`, Section 2):**
+   - Each flight layer maintains its own parameters defaulting to `inherit`.
+   - When set to `inherit`, the layer dynamically resolves to Tier 1's Global Default. When explicitly set, the layer overrides the global default for all waypoints belonging to that layer.
+3. **Tier 3: Individual Waypoint Overrides (2D Map Popup `#waypoint-popup` & 3D FPV HUD `#fpv-waypoint-editor`):**
+   - Every individual waypoint defaults to `inherit`.
+   - When set to `inherit`, the waypoint dynamically resolves to Tier 2's Layer Property (which may in turn inherit Tier 1).
+   - When explicitly configured on a waypoint, the waypoint override takes highest precedence during WPML placemark compilation and map rendering.
+
+Whenever modifying or adding flight controls, agents **MUST** ensure the setting cleanly propagates through this 3-tier cascade (`Waypoint Override -> Layer Setting -> Global Default`) and does not bypass the layer.
+
