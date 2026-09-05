@@ -3450,6 +3450,97 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(layerDynamicsResult.layerUpdated, true, 'Layer properties should update from Section 2 inputs');
     assert.strictEqual(layerDynamicsResult.drawerClosedFinal, true, 'Drawer should collapse on second toggle click');
   });
+
+  test('E2E: Flight Leg Phase Indicators & Hover Breadcrumbs (v1.82.0)', async () => {
+    const legPhaseResult = await page.evaluate(async () => {
+      // Setup test waypoints
+      const testWps = [
+        { lat: 41.88, lon: -87.62, alt: 50, pitch: -45, speed: 5, turnMode: 'stop', hoverTime: 0, cameraAction: 'none', zoom: 1.0, heading: 0, headingMode: 'inherit' },
+        { lat: 41.89, lon: -87.63, alt: 55, pitch: -50, speed: 6, turnMode: 'pass', hoverTime: 2, cameraAction: 'takePhoto', zoom: 1.2, heading: 90, headingMode: 'custom' },
+        { lat: 41.90, lon: -87.64, alt: 60, pitch: -60, speed: 7, turnMode: 'stop', hoverTime: 3, cameraAction: 'none', zoom: 1.0, heading: 180, headingMode: 'followWayline' }
+      ];
+
+      const origWps = (typeof getCurrentWaypoints === 'function') ? getCurrentWaypoints() : null;
+      if (typeof generatedWaypoints !== 'undefined') generatedWaypoints = testWps;
+
+      const dummyMarker = { setIcon: () => {}, getTooltip: () => ({ setContent: () => {} }) };
+
+      // 1. Test 2D Popup Waypoint 0 (Takeoff)
+      const popupWp0 = createWaypointEditorDOM(testWps[0], 0, dummyMarker);
+      const wp0HeadingBadge = popupWp0.querySelector('#edit-wp-heading-mode').closest('div').parentElement.querySelector('.wp-leg-phase-badge');
+      const wp0SpeedBadge = popupWp0.querySelector('#edit-wp-speed-container .wp-leg-phase-badge');
+      const wp0AltBadge = popupWp0.querySelector('#edit-wp-alt').parentElement.querySelector('.wp-leg-phase-badge');
+
+      const wp0HeadingIsAt = wp0HeadingBadge && wp0HeadingBadge.classList.contains('phase-at');
+      const wp0SpeedIsPost = wp0SpeedBadge && wp0SpeedBadge.classList.contains('phase-post');
+      const wp0AltIsAt = wp0AltBadge && wp0AltBadge.classList.contains('phase-at');
+
+      // 2. Test 2D Popup Final Waypoint (idx 2)
+      const popupEnd = createWaypointEditorDOM(testWps[2], 2, dummyMarker);
+      const endSpeedContainer = popupEnd.querySelector('#edit-wp-speed-container');
+      const endSpeedDisabled = endSpeedContainer && endSpeedContainer.classList.contains('wp-leg-control-disabled');
+      const endSpeedBadge = endSpeedContainer.querySelector('.wp-leg-phase-badge');
+      const endSpeedIsNa = endSpeedBadge && endSpeedBadge.classList.contains('phase-na');
+
+      const endTurnContainer = popupEnd.querySelector('#edit-wp-turn-mode-container');
+      const endTurnDisabled = endTurnContainer && endTurnContainer.classList.contains('wp-leg-control-disabled');
+      const endTurnBadge = endTurnContainer.querySelector('.wp-leg-phase-badge');
+      const endTurnIsNa = endTurnBadge && endTurnBadge.classList.contains('phase-na');
+
+      // Breadcrumb presence
+      const hasBreadcrumbTooltip = !!endSpeedBadge.querySelector('.wp-leg-breadcrumb-tooltip');
+
+      // 3. Test 3D FPV HUD UI update
+      if (typeof fpvProgressIndex !== 'undefined') {
+        fpvProgressIndex = 2; // Final waypoint
+        updateFPVEditorUI();
+      }
+
+      const fpvSpeedContainer = document.getElementById('fpv-edit-speed-container');
+      const fpvSpeedDisabled = fpvSpeedContainer && fpvSpeedContainer.classList.contains('wp-leg-control-disabled');
+      const fpvTurnContainer = document.getElementById('fpv-edit-turn-mode-container');
+      const fpvTurnDisabled = fpvTurnContainer && fpvTurnContainer.classList.contains('wp-leg-control-disabled');
+
+      // Intermediate waypoint in FPV HUD
+      if (typeof fpvProgressIndex !== 'undefined') {
+        fpvProgressIndex = 1; // Intermediate waypoint
+        updateFPVEditorUI();
+      }
+      const fpvMidSpeedContainer = document.getElementById('fpv-edit-speed-container');
+      const fpvMidSpeedEnabled = fpvMidSpeedContainer && !fpvMidSpeedContainer.classList.contains('wp-leg-control-disabled');
+
+      // Restore
+      if (typeof generatedWaypoints !== 'undefined' && origWps) generatedWaypoints = origWps;
+
+      return {
+        success: true,
+        wp0HeadingIsAt,
+        wp0SpeedIsPost,
+        wp0AltIsAt,
+        endSpeedDisabled,
+        endSpeedIsNa,
+        endTurnDisabled,
+        endTurnIsNa,
+        hasBreadcrumbTooltip,
+        fpvSpeedDisabled,
+        fpvTurnDisabled,
+        fpvMidSpeedEnabled
+      };
+    });
+
+    assert.ok(legPhaseResult.success, 'Leg phase test should succeed');
+    assert.strictEqual(legPhaseResult.wp0HeadingIsAt, true, 'WP 0 Heading badge must be phase-at');
+    assert.strictEqual(legPhaseResult.wp0SpeedIsPost, true, 'WP 0 Speed badge must be phase-post');
+    assert.strictEqual(legPhaseResult.wp0AltIsAt, true, 'WP 0 Altitude badge must be phase-at');
+    assert.strictEqual(legPhaseResult.endSpeedDisabled, true, 'End WP speed container must be disabled');
+    assert.strictEqual(legPhaseResult.endSpeedIsNa, true, 'End WP speed badge must be phase-na');
+    assert.strictEqual(legPhaseResult.endTurnDisabled, true, 'End WP turn mode container must be disabled');
+    assert.strictEqual(legPhaseResult.endTurnIsNa, true, 'End WP turn mode badge must be phase-na');
+    assert.strictEqual(legPhaseResult.hasBreadcrumbTooltip, true, 'Badge must contain interactive breadcrumb tooltip');
+    assert.strictEqual(legPhaseResult.fpvSpeedDisabled, true, 'FPV HUD speed must be disabled on last waypoint');
+    assert.strictEqual(legPhaseResult.fpvTurnDisabled, true, 'FPV HUD turn mode must be disabled on last waypoint');
+    assert.strictEqual(legPhaseResult.fpvMidSpeedEnabled, true, 'FPV HUD speed must be enabled on intermediate waypoint');
+  });
 });
 
 

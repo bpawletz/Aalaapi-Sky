@@ -10745,6 +10745,185 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       }
     });
   });
+
+  describe('Flight Leg Phase Indicators & Boundary Adaptation Tests (v1.82.0)', () => {
+    test('buildLegPhaseBadgeHTML generates correct icon badges and breadcrumb tooltips', () => {
+      // PRE phase
+      const preBadge = buildLegPhaseBadgeHTML('pre', 1, 5, 'Heading Mode');
+      assert.ok(preBadge.includes('↗'), 'Should contain ↗ icon');
+      assert.ok(preBadge.includes('phase-pre'), 'Should contain phase-pre class');
+      assert.ok(preBadge.includes('active-pre'), 'Breadcrumb should highlight active-pre');
+      assert.ok(preBadge.includes('wp-leg-breadcrumb-tooltip'), 'Should contain breadcrumb tooltip container');
+
+      // AT phase
+      const atBadge = buildLegPhaseBadgeHTML('at', 2, 5, 'Gimbal Pitch');
+      assert.ok(atBadge.includes('📍'), 'Should contain 📍 icon');
+      assert.ok(atBadge.includes('phase-at'), 'Should contain phase-at class');
+      assert.ok(atBadge.includes('active-at'), 'Breadcrumb should highlight active-at');
+
+      // POST phase
+      const postBadge = buildLegPhaseBadgeHTML('post', 1, 5, 'Flight Speed');
+      assert.ok(postBadge.includes('↘'), 'Should contain ↘ icon');
+      assert.ok(postBadge.includes('phase-post'), 'Should contain phase-post class');
+      assert.ok(postBadge.includes('active-post'), 'Breadcrumb should highlight active-post');
+
+      // TRANSITION phase
+      const transBadge = buildLegPhaseBadgeHTML('transition', 2, 5, 'Turn Mode');
+      assert.ok(transBadge.includes('⤹'), 'Should contain ⤹ icon');
+      assert.ok(transBadge.includes('phase-transition'), 'Should contain phase-transition class');
+
+      // N/A phase
+      const naBadge = buildLegPhaseBadgeHTML('na', 4, 5, 'Flight Speed');
+      assert.ok(naBadge.includes('⛔'), 'Should contain ⛔ icon');
+      assert.ok(naBadge.includes('phase-na'), 'Should contain phase-na class');
+    });
+
+    test('createWaypointEditorDOM adapts heading badge at Waypoint 0 (Takeoff)', () => {
+      const origCreateElement = global.document.createElement;
+      const origGetElementById = global.document.getElementById;
+      const origWaypoints = (typeof getCurrentWaypoints === 'function') ? getCurrentWaypoints() : null;
+
+      const makeEl = (tag) => ({
+        tagName: (tag || 'div').toUpperCase(),
+        className: '',
+        style: {},
+        innerHTML: '',
+        value: '',
+        textContent: '',
+        disabled: false,
+        appendChild: function(c) { return c; },
+        querySelector: function(sel) {
+          if (!this.innerHTML) return null;
+          if (sel.startsWith('#')) {
+            const id = sel.slice(1);
+            if (!this.innerHTML.includes(`id="${id}"`)) return null;
+            return {
+              value: '',
+              style: {},
+              textContent: '',
+              disabled: false,
+              addEventListener: () => {}
+            };
+          }
+          return null;
+        },
+        addEventListener: () => {}
+      });
+
+      global.document.createElement = (tag) => makeEl(tag);
+      global.document.getElementById = (id) => {
+        if (id === 'grid-rotation') return { value: '0' };
+        if (id === 'grid-type') return { value: 'single' };
+        return origGetElementById(id);
+      };
+
+      const testWps = [
+        { lat: 41.88, lon: -87.62, alt: 50, pitch: -45, heading: 90 },
+        { lat: 41.89, lon: -87.63, alt: 50, pitch: -45, heading: 90 },
+        { lat: 41.90, lon: -87.64, alt: 50, pitch: -45, heading: 90 }
+      ];
+
+      try {
+        if (typeof generatedWaypoints !== 'undefined') generatedWaypoints = testWps;
+        const dummyMarker = { setIcon: () => {}, getTooltip: () => ({ setContent: () => {} }) };
+
+        // WP 0: Heading is AT 📍 Takeoff rotation
+        const dom0 = createWaypointEditorDOM(testWps[0], 0, dummyMarker);
+        const html0 = dom0.innerHTML;
+        assert.ok(html0.includes('Heading Mode:'), 'Should render Heading Mode section');
+        assert.ok(html0.includes('phase-at'), 'WP 0 heading badge must have phase-at class');
+        assert.ok(html0.includes('📍'), 'WP 0 heading badge must display 📍 for on-axis takeoff');
+
+        // Intermediate WP 1: Heading is PRE ↗ (Approach leg)
+        const dom1 = createWaypointEditorDOM(testWps[1], 1, dummyMarker);
+        const html1 = dom1.innerHTML;
+        assert.ok(html1.includes('phase-pre'), 'Intermediate WP heading badge must have phase-pre class');
+        assert.ok(html1.includes('↗'), 'Intermediate WP heading badge must display ↗ for approach leg');
+      } finally {
+        global.document.createElement = origCreateElement;
+        global.document.getElementById = origGetElementById;
+        if (typeof generatedWaypoints !== 'undefined') generatedWaypoints = origWaypoints;
+      }
+    });
+
+    test('createWaypointEditorDOM dims speed and turn mode on final waypoint (N/A End of Route)', () => {
+      const origCreateElement = global.document.createElement;
+      const origGetElementById = global.document.getElementById;
+      const origImported = (typeof importedWaypoints !== 'undefined') ? importedWaypoints : null;
+      const origGenerated = (typeof generatedWaypoints !== 'undefined') ? generatedWaypoints : null;
+
+      const makeEl = (tag) => ({
+        tagName: (tag || 'div').toUpperCase(),
+        className: '',
+        style: {},
+        innerHTML: '',
+        value: '',
+        textContent: '',
+        disabled: false,
+        appendChild: function(c) { return c; },
+        querySelector: function(sel) {
+          if (!this.innerHTML) return null;
+          if (sel.startsWith('#')) {
+            const id = sel.slice(1);
+            if (!this.innerHTML.includes(`id="${id}"`)) return null;
+            return {
+              value: '',
+              style: {},
+              textContent: '',
+              disabled: false,
+              addEventListener: () => {}
+            };
+          }
+          return null;
+        },
+        addEventListener: () => {}
+      });
+
+      global.document.createElement = (tag) => makeEl(tag);
+      global.document.getElementById = (id) => {
+        if (id === 'grid-rotation') return { value: '0' };
+        if (id === 'grid-type') return { value: 'single' };
+        return origGetElementById(id);
+      };
+
+      const testWps = [
+        { lat: 41.88, lon: -87.62, alt: 50, pitch: -45, speed: 5, turnMode: 'stop' },
+        { lat: 41.89, lon: -87.63, alt: 50, pitch: -45, speed: 5, turnMode: 'stop' },
+        { lat: 41.90, lon: -87.64, alt: 50, pitch: -45, speed: 5, turnMode: 'stop' }
+      ];
+
+      try {
+        global.testWpsForLeg = testWps;
+        vm.runInThisContext('importedWaypoints = null; generatedWaypoints = global.testWpsForLeg;');
+        const dummyMarker = { setIcon: () => {}, getTooltip: () => ({ setContent: () => {} }) };
+
+        // Final WP (idx 2 of 3)
+        const domEnd = createWaypointEditorDOM(testWps[2], 2, dummyMarker, null, testWps);
+        const htmlEnd = domEnd.innerHTML;
+
+        assert.ok(htmlEnd.includes('id="edit-wp-speed-container" class="wp-leg-control-disabled"'), 'Final waypoint speed container must have wp-leg-control-disabled class');
+        assert.ok(htmlEnd.includes('id="edit-wp-speed" min="0.2" max="15" step="0.1" value="5" disabled'), 'Final waypoint speed input slider must be disabled');
+        assert.ok(htmlEnd.includes('id="edit-wp-speed-val">N/A</span>'), 'Final waypoint speed value must show N/A');
+        assert.ok(htmlEnd.includes('phase-na'), 'Final waypoint must include phase-na badges');
+        assert.ok(htmlEnd.includes('⛔'), 'Final waypoint speed badge must show ⛔');
+
+        assert.ok(htmlEnd.includes('id="edit-wp-turn-mode-container" class="wp-leg-control-disabled"'), 'Final waypoint turn mode container must have wp-leg-control-disabled class');
+        assert.ok(htmlEnd.includes('id="edit-wp-turn-mode" class="form-select" disabled'), 'Final waypoint turn mode select must be disabled');
+
+        // Intermediate WP (idx 1 of 3) has active controls
+        const domMid = createWaypointEditorDOM(testWps[1], 1, dummyMarker, null, testWps);
+        const htmlMid = domMid.innerHTML;
+        assert.ok(!htmlMid.includes('id="edit-wp-speed-container" class="wp-leg-control-disabled"'), 'Intermediate waypoint speed container must not have disabled class');
+        assert.ok(htmlMid.includes('↘'), 'Intermediate waypoint speed badge must show ↘');
+        assert.ok(htmlMid.includes('⤹'), 'Intermediate waypoint turn badge must show ⤹');
+      } finally {
+        global.document.createElement = origCreateElement;
+        global.document.getElementById = origGetElementById;
+        if (typeof importedWaypoints !== 'undefined') importedWaypoints = origImported;
+        if (typeof generatedWaypoints !== 'undefined') generatedWaypoints = origGenerated;
+      }
+    });
+  });
 });
 
 
