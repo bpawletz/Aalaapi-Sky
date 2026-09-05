@@ -15919,7 +15919,79 @@ function convertToFreeformMission() {
   redrawCurrentMission();
 }
 
-function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
+/**
+ * Helper to build Flight Leg Phase Badges with interactive hover breadcrumb ribbons (v1.82.0)
+ * @param {string} phase - 'pre' | 'at' | 'post' | 'transition' | 'na'
+ * @param {number} idx - 0-indexed waypoint index
+ * @param {number} totalCount - total waypoints count
+ * @param {string} paramLabel - e.g. 'Flight Speed', 'Heading Mode', 'Altitude'
+ * @param {string} customDesc - optional custom explanatory text for tooltip
+ */
+function buildLegPhaseBadgeHTML(phase, idx, totalCount, paramLabel, customDesc) {
+  const isStart = (idx === 0);
+  const isEnd = (totalCount > 1 && idx === totalCount - 1);
+  const wpNum = idx + 1; // 1-based display number
+
+  let badgeText = '';
+  let badgeClass = `phase-${phase}`;
+  let preLabel = (idx > 0) ? `Leg ${idx}→${wpNum}` : 'Takeoff';
+  let postLabel = (idx < totalCount - 1) ? `Leg ${wpNum}→${wpNum + 1}` : 'RTH / Land';
+  let atLabel = `WP ${wpNum}`;
+
+  let preNodeClass = (phase === 'pre') ? 'wp-leg-crumb-node active-pre' : 'wp-leg-crumb-node';
+  let atNodeClass = (phase === 'at') ? 'wp-leg-crumb-node active-at' : 'wp-leg-crumb-node';
+  let postNodeClass = (phase === 'post') ? 'wp-leg-crumb-node active-post' : (phase === 'transition' ? 'wp-leg-crumb-node active-transition' : 'wp-leg-crumb-node');
+
+  let defaultDesc = '';
+
+  switch (phase) {
+    case 'pre':
+      badgeText = '↗';
+      defaultDesc = `Approach Leg (${preLabel}): Governs flight dynamics leading into Waypoint ${wpNum}.`;
+      break;
+    case 'at':
+      badgeText = '📍';
+      defaultDesc = `Stationary Point Action: Executes while holding position at Waypoint ${wpNum}.`;
+      break;
+    case 'post':
+      badgeText = '↘';
+      defaultDesc = `Departure Leg (${postLabel}): Governs flight dynamics departing Waypoint ${wpNum} toward the next waypoint.`;
+      break;
+    case 'transition':
+      badgeText = '⤹';
+      defaultDesc = `Trajectory Curvature: Governs transition curvature turning through Waypoint ${wpNum}.`;
+      break;
+    case 'na':
+    default:
+      badgeText = '⛔';
+      badgeClass = 'phase-na';
+      defaultDesc = customDesc || `Not applicable: Waypoint ${wpNum} is the final destination. Drone halts and triggers Mission Landing / RTH.`;
+      break;
+  }
+
+  const desc = customDesc || defaultDesc;
+
+  return `
+    <span class="wp-leg-phase-badge ${badgeClass}" tabindex="0" title="${escapeHtml(desc)}">
+      ${badgeText}
+      <div class="wp-leg-breadcrumb-tooltip">
+        <div class="wp-leg-breadcrumb-track">
+          <span class="${preNodeClass}">${isStart ? '🛫 Takeoff' : preLabel}</span>
+          <span class="wp-leg-crumb-arrow">▶</span>
+          <span class="${atNodeClass}">${atLabel}</span>
+          <span class="wp-leg-crumb-arrow">▶</span>
+          <span class="${postNodeClass}">${isEnd ? '🏁 Finish' : postLabel}</span>
+        </div>
+        <div class="wp-leg-breadcrumb-desc">
+          <strong style="color: var(--text-main); display: block; margin-bottom: 2px;">${escapeHtml(paramLabel)}:</strong>
+          ${escapeHtml(desc)}
+        </div>
+      </div>
+    </span>
+  `;
+}
+
+function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsList = null) {
   const popupContent = document.createElement('div');
   popupContent.className = 'wp-editor-popup';
   popupContent.style.width = '230px';
@@ -15936,12 +16008,9 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       optionsHTML += `<option value="${valKey}" ${isCurrent ? 'selected' : ''}>${item.name}</option>`;
     });
     overlappingHTML = `
-      <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 6px; padding: 6px 8px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 4px;">
-        <div style="font-size: 0.72rem; color: #f59e0b; font-weight: 600; display: flex; align-items: center; justify-content: space-between;">
-          <span>⚠️ Overlapping Items (${overlappingItems.length})</span>
-          <span style="font-size: 0.65rem; color: #cbd5e1;">Switch:</span>
-        </div>
-        <select class="overlapping-switcher-select form-select" style="font-size: 0.75rem; padding: 3px 6px; border-radius: 4px; background: rgba(15, 23, 42, 0.8); color: #f8fafc; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; width: 100%;">
+      <div style="margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.15);">
+        <label style="display:block; font-size:0.75rem; color:#94a3b8; margin-bottom:2px;">Stacked Items Here:</label>
+        <select id="edit-wp-stacked-select" class="form-select" style="width:100%; font-size:0.8rem; padding:2px 4px; background:#1e293b; color:#fff; border:1px solid #475569; border-radius:4px;">
           ${optionsHTML}
         </select>
       </div>
@@ -16046,7 +16115,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
   const originalIsRingStart = wp.isRingStart;
   const originalIsModified = wp.isModified;
   const originalOrigIsRingStart = wp.origIsRingStart;
-  const originalOrigIsModified = wp.origIsModified;
+  const originalOrigIsModified = wp.origModified;
 
   const originalRoadLat = (roadWaypoints && roadWaypoints[idx]) ? roadWaypoints[idx].lat : null;
   const originalRoadLon = (roadWaypoints && roadWaypoints[idx]) ? roadWaypoints[idx].lon : null;
@@ -16092,6 +16161,40 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
     poiSelectOptions += `<option value="${idx}" ${poiIndex === idx ? 'selected' : ''}>${poi.name}</option>`;
   });
 
+  // Calculate waypoint total and boundary context for leg indicators (v1.82.0)
+  const allWaypoints = customWaypointsList || (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || (typeof generatedWaypoints !== 'undefined' ? generatedWaypoints : null) || [];
+  const totalWaypointsCount = allWaypoints.length || 1;
+  const isStartWp = (idx === 0);
+  const isEndWp = (totalWaypointsCount > 1 && idx === totalWaypointsCount - 1);
+
+  // Determine Heading Mode Phase
+  const headingPhase = isStartWp ? 'at' : 'pre';
+  const headingCustomDesc = isStartWp
+    ? 'Executes at Takeoff: Drone rotates on-axis to initial heading before commencing flight.'
+    : undefined;
+
+  // Determine Speed Phase & Boundary Adaptation
+  const speedPhase = isEndWp ? 'na' : 'post';
+  const speedCustomDesc = isEndWp
+    ? 'No departure leg exists. The drone comes to a full stop at this final waypoint to execute Mission Landing / RTH.'
+    : undefined;
+
+  // Determine Turn Mode Phase & Boundary Adaptation
+  const turnPhase = isEndWp ? 'na' : 'transition';
+  const turnCustomDesc = isEndWp
+    ? 'End of route: The drone must stop at the final destination coordinate before RTH or mission finish.'
+    : undefined;
+
+  // Generate Phase Badges
+  const altBadgeHTML = buildLegPhaseBadgeHTML('at', idx, totalWaypointsCount, 'Altitude');
+  const pitchBadgeHTML = buildLegPhaseBadgeHTML('at', idx, totalWaypointsCount, 'Gimbal Pitch');
+  const speedBadgeHTML = buildLegPhaseBadgeHTML(speedPhase, idx, totalWaypointsCount, 'Flight Speed', speedCustomDesc);
+  const hoverBadgeHTML = buildLegPhaseBadgeHTML('at', idx, totalWaypointsCount, 'Hover Time');
+  const turnBadgeHTML = buildLegPhaseBadgeHTML(turnPhase, idx, totalWaypointsCount, 'Turn Mode', turnCustomDesc);
+  const cameraBadgeHTML = buildLegPhaseBadgeHTML('at', idx, totalWaypointsCount, 'Camera Action');
+  const zoomBadgeHTML = buildLegPhaseBadgeHTML('at', idx, totalWaypointsCount, 'Camera Zoom');
+  const headingBadgeHTML = buildLegPhaseBadgeHTML(headingPhase, idx, totalWaypointsCount, 'Heading Mode', headingCustomDesc);
+
   popupContent.innerHTML = `
     <h4 id="edit-wp-title" style="margin: 0 0 12px 0; color: #06b6d4; font-size: 0.95rem; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
       <span id="edit-wp-title-text">Edit Waypoint ${idx}</span>
@@ -16103,7 +16206,11 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       <!-- Altitude Slider -->
       <div style="display: flex; flex-direction: column; gap: 4px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;"><svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><line x1="3" y1="21" x2="21" y2="21" stroke="#c2622d"/><path d="M12 21v-12M9 12l3-3 3 3" stroke="#06b6d4" fill="none"/><circle cx="12" cy="7" r="1.5" fill="#f5f0e8"/></svg>Altitude:</span>
+          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><line x1="3" y1="21" x2="21" y2="21" stroke="#c2622d"/><path d="M12 21v-12M9 12l3-3 3 3" stroke="#06b6d4" fill="none"/><circle cx="12" cy="7" r="1.5" fill="#f5f0e8"/></svg>
+            Altitude:
+            ${altBadgeHTML}
+          </span>
           <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-alt-val">${altDisp}</span> ${altUnitStr}</span>
         </div>
         <input type="range" id="edit-wp-alt" min="5" max="120" value="${wp.alt.toFixed(0)}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
@@ -16112,25 +16219,38 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       <!-- Pitch Slider -->
       <div style="display: flex; flex-direction: column; gap: 4px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;"><svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="8" cy="8" r="3" stroke="#c2622d" fill="none"/><line x1="8" y1="5" x2="8" y2="2" stroke="#c2622d"/><line x1="8" y1="8" x2="16" y2="16" stroke="#06b6d4"/><path d="M13 17l4-1-1-4" fill="#06b6d4" stroke="#06b6d4"/></svg>Gimbal Pitch:</span>
+          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="8" cy="8" r="3" stroke="#c2622d" fill="none"/><line x1="8" y1="5" x2="8" y2="2" stroke="#c2622d"/><line x1="8" y1="8" x2="16" y2="16" stroke="#06b6d4"/><path d="M13 17l4-1-1-4" fill="#06b6d4" stroke="#06b6d4"/></svg>
+            Gimbal Pitch:
+            ${pitchBadgeHTML}
+          </span>
           <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-pitch-val">${pitchVal}</span>&deg;</span>
         </div>
         <input type="range" id="edit-wp-pitch" min="-90" max="0" value="${pitchVal}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
       </div>
  
       <!-- Speed Override Slider -->
-      <div style="display: flex; flex-direction: column; gap: 4px;">
+      <div id="edit-wp-speed-container" class="${isEndWp ? 'wp-leg-control-disabled' : ''}" style="display: flex; flex-direction: column; gap: 4px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;"><svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M3 12a9 9 0 0 1 15-6.7M21 12a9 9 0 0 1-9 9" stroke="#06b6d4" fill="none"/><line x1="12" y1="12" x2="17" y2="8" stroke="#c2622d"/><circle cx="12" cy="12" r="1.5" fill="#f5f0e8"/></svg>Flight Speed:</span>
-          <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-speed-val">${wp.speed ? wp.speed + ' m/s' : 'Auto'}</span></span>
+          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M3 12a9 9 0 0 1 15-6.7M21 12a9 9 0 0 1-9 9" stroke="#06b6d4" fill="none"/><line x1="12" y1="12" x2="17" y2="8" stroke="#c2622d"/><circle cx="12" cy="12" r="1.5" fill="#f5f0e8"/></svg>
+            Flight Speed:
+            ${speedBadgeHTML}
+          </span>
+          <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-speed-val">${isEndWp ? 'N/A' : (wp.speed ? wp.speed + ' m/s' : 'Auto')}</span></span>
         </div>
-        <input type="range" id="edit-wp-speed" min="0.2" max="15" step="0.1" value="${wp.speed || 5}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
+        <input type="range" id="edit-wp-speed" min="0.2" max="15" step="0.1" value="${wp.speed || 5}" ${isEndWp ? 'disabled' : ''} style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: ${isEndWp ? 'not-allowed' : 'pointer'};">
+        ${isEndWp ? `<span class="wp-leg-na-notice">🏁 Final waypoint: no departure leg. Speed is not applicable.</span>` : ''}
       </div>
 
       <!-- Hover Duration Input -->
       <div style="display: flex; flex-direction: column; gap: 4px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;"><svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="12" cy="12" r="9" stroke="#06b6d4" fill="none"/><polyline points="12 6 12 12 16 14" stroke="#c2622d"/></svg>Hover Time:</span>
+          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="12" cy="12" r="9" stroke="#06b6d4" fill="none"/><polyline points="12 6 12 12 16 14" stroke="#c2622d"/></svg>
+            Hover Time:
+            ${hoverBadgeHTML}
+          </span>
           <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-hover-val">${wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit' ? wp.hoverTime : ((wp.layerHoverTime !== undefined && wp.layerHoverTime !== 'inherit') ? wp.layerHoverTime : (document.getElementById('global-hover-time') ? parseInt(document.getElementById('global-hover-time').value) : 0))}</span>s${wp.hoverTime === null || wp.hoverTime === undefined || wp.hoverTime === 'inherit' ? ' <span style="color: #94a3b8; font-size: 0.7rem;">(Layer)</span>' : ''}</span>
         </div>
         <input type="range" id="edit-wp-hover" min="0" max="60" step="1" value="${wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit' ? wp.hoverTime : ((wp.layerHoverTime !== undefined && wp.layerHoverTime !== 'inherit') ? wp.layerHoverTime : (document.getElementById('global-hover-time') ? parseInt(document.getElementById('global-hover-time').value) : 0))}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
@@ -16140,21 +16260,30 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       </div>
 
       <!-- Turn Mode Selector -->
-      <div style="display: flex; flex-direction: column; gap: 4px;">
+      <div id="edit-wp-turn-mode-container" class="${isEndWp ? 'wp-leg-control-disabled' : ''}" style="display: flex; flex-direction: column; gap: 4px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;"><svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" stroke="#06b6d4" fill="none"/><line x1="4" y1="22" x2="4" y2="15" stroke="#c2622d"/></svg>Turn Mode:</span>
-          <select id="edit-wp-turn-mode" class="form-select" style="font-size: 0.72rem; padding: 3px 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); cursor: pointer;">
+          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" stroke="#06b6d4" fill="none"/><line x1="4" y1="22" x2="4" y2="15" stroke="#c2622d"/></svg>
+            Turn Mode:
+            ${turnBadgeHTML}
+          </span>
+          <select id="edit-wp-turn-mode" class="form-select" ${isEndWp ? 'disabled' : ''} style="font-size: 0.72rem; padding: 3px 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); cursor: ${isEndWp ? 'not-allowed' : 'pointer'};">
             <option value="inherit" ${!wp.turnMode || wp.turnMode === 'inherit' ? 'selected' : ''}>🌐 Inherit Layer (${(wp.layerPathMode && wp.layerPathMode !== 'inherit') ? (wp.layerPathMode === 'straight' ? 'Stop & Turn' : 'Curved Pass') : (document.getElementById('path-mode')?.value === 'straight' ? 'Stop & Turn' : 'Curved Pass')})</option>
             <option value="stop" ${wp.turnMode === 'stop' ? 'selected' : ''}>Stop & Turn</option>
             <option value="pass" ${wp.turnMode === 'pass' ? 'selected' : ''}>Curved Pass</option>
           </select>
         </div>
+        ${isEndWp ? `<span class="wp-leg-na-notice">🛑 End of route: drone stops at destination before RTH/Landing.</span>` : ''}
       </div>
 
       <!-- Camera Action Selector -->
       <div style="display: flex; flex-direction: column; gap: 4px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;"><svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="#06b6d4" fill="none"/><circle cx="12" cy="13" r="4" stroke="#c2622d" fill="none"/></svg>Camera Action:</span>
+          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="#06b6d4" fill="none"/><circle cx="12" cy="13" r="4" stroke="#c2622d" fill="none"/></svg>
+            Camera Action:
+            ${cameraBadgeHTML}
+          </span>
           <select id="edit-wp-camera-action" class="form-select" style="font-size: 0.72rem; padding: 3px 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); cursor: pointer;">
             <option value="inherit" ${!wp.cameraAction || wp.cameraAction === 'inherit' ? 'selected' : ''}>🌐 Inherit Layer Mode</option>
             <option value="none" ${wp.cameraAction === 'none' ? 'selected' : ''}>None (No Action)</option>
@@ -16169,7 +16298,11 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       <!-- Camera Zoom Factor Input -->
       <div id="edit-wp-zoom-container" style="display: ${wp.cameraAction === 'zoom' ? 'flex' : 'none'}; flex-direction: column; gap: 4px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;"><svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="11" cy="11" r="8" fill="none" stroke="#06b6d4"></circle><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="#06b6d4"></line></svg>Camera Zoom:</span>
+          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="11" cy="11" r="8" fill="none" stroke="#06b6d4"></circle><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="#06b6d4"></line></svg>
+            Camera Zoom:
+            ${zoomBadgeHTML}
+          </span>
           <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-zoom-val">${(wp.zoom || 1.0).toFixed(1)}</span>x</span>
         </div>
         <input type="range" id="edit-wp-zoom" min="1.0" max="4.0" step="0.1" value="${wp.zoom || 1.0}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
@@ -16178,7 +16311,11 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       <!-- Yaw / Heading Selector -->
       <div style="display: flex; flex-direction: column; gap: 4px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;"><svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><polygon points="3 11 22 2 13 21 11 13 3 11" stroke="#06b6d4" fill="none"/></svg>Heading Mode:</span>
+          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><polygon points="3 11 22 2 13 21 11 13 3 11" stroke="#06b6d4" fill="none"/></svg>
+            Heading Mode:
+            ${headingBadgeHTML}
+          </span>
           <span id="edit-wp-heading-val" style="color: #06b6d4; font-weight: 600;">Auto</span>
         </div>
         <div style="display: flex; flex-direction: column; gap: 6px;">
@@ -16473,7 +16610,9 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker) {
       poiIndex: poiSelect ? parseInt(poiSelect.value) : (wp.poiIndex || 0),
     };
     
-    const waypointsCopy = getCurrentWaypoints().map((w, i) => i === idx ? tempWp : w);
+    const curWps = getCurrentWaypoints();
+    if (!curWps) return;
+    const waypointsCopy = curWps.map((w, i) => i === idx ? tempWp : w);
     const reposInfo = checkNeedsReposition(idx, waypointsCopy);
     
     const autoSettling = wp.autoSettlingEnabled !== false;
@@ -18496,6 +18635,75 @@ function updateFPVEditorUI() {
     );
     if (resetBtn) resetBtn.style.display = isModifiedFromOrig ? 'inline-block' : 'none';
     if (saveBtn) saveBtn.style.display = (wp.hasDraftEdits || (isModifiedFromOrig && !wp.isModified)) ? 'inline-block' : 'none';
+  }
+
+  // Update FPV Leg Phase Badges & Boundary Controls (v1.82.0)
+  const totalCount = waypoints.length || 1;
+  const isStartWp = (fpvProgressIndex === 0);
+  const isEndWp = (totalCount > 1 && fpvProgressIndex === totalCount - 1);
+
+  const altBadgeContainer = document.getElementById('fpv-alt-phase-badge-container');
+  const pitchBadgeContainer = document.getElementById('fpv-pitch-phase-badge-container');
+  const speedBadgeContainer = document.getElementById('fpv-speed-phase-badge-container');
+  const hoverBadgeContainer = document.getElementById('fpv-hover-phase-badge-container');
+  const turnBadgeContainer = document.getElementById('fpv-turn-phase-badge-container');
+  const cameraBadgeContainer = document.getElementById('fpv-camera-phase-badge-container');
+  const zoomBadgeContainer = document.getElementById('fpv-zoom-phase-badge-container');
+  const headingBadgeContainer = document.getElementById('fpv-heading-phase-badge-container');
+
+  const speedControlContainer = document.getElementById('fpv-edit-speed-container');
+  const turnModeControlContainer = document.getElementById('fpv-edit-turn-mode-container');
+  const speedNaNotice = document.getElementById('fpv-speed-na-notice');
+  const turnNaNotice = document.getElementById('fpv-turn-na-notice');
+
+  if (altBadgeContainer) altBadgeContainer.innerHTML = buildLegPhaseBadgeHTML('at', fpvProgressIndex, totalCount, 'Altitude');
+  if (pitchBadgeContainer) pitchBadgeContainer.innerHTML = buildLegPhaseBadgeHTML('at', fpvProgressIndex, totalCount, 'Gimbal Pitch');
+  if (hoverBadgeContainer) hoverBadgeContainer.innerHTML = buildLegPhaseBadgeHTML('at', fpvProgressIndex, totalCount, 'Hover Time');
+  if (cameraBadgeContainer) cameraBadgeContainer.innerHTML = buildLegPhaseBadgeHTML('at', fpvProgressIndex, totalCount, 'Camera Action');
+  if (zoomBadgeContainer) zoomBadgeContainer.innerHTML = buildLegPhaseBadgeHTML('at', fpvProgressIndex, totalCount, 'Camera Zoom');
+
+  const headingPhase = isStartWp ? 'at' : 'pre';
+  const headingCustomDesc = isStartWp
+    ? 'Executes at Takeoff: Drone rotates on-axis to initial heading before commencing flight.'
+    : undefined;
+  if (headingBadgeContainer) headingBadgeContainer.innerHTML = buildLegPhaseBadgeHTML(headingPhase, fpvProgressIndex, totalCount, 'Heading Mode', headingCustomDesc);
+
+  const speedPhase = isEndWp ? 'na' : 'post';
+  const speedCustomDesc = isEndWp
+    ? 'No departure leg exists. The drone comes to a full stop at this final waypoint to execute Mission Landing / RTH.'
+    : undefined;
+  if (speedBadgeContainer) speedBadgeContainer.innerHTML = buildLegPhaseBadgeHTML(speedPhase, fpvProgressIndex, totalCount, 'Flight Speed', speedCustomDesc);
+
+  const turnPhase = isEndWp ? 'na' : 'transition';
+  const turnCustomDesc = isEndWp
+    ? 'End of route: The drone must stop at the final destination coordinate before RTH or mission finish.'
+    : undefined;
+  if (turnBadgeContainer) turnBadgeContainer.innerHTML = buildLegPhaseBadgeHTML(turnPhase, fpvProgressIndex, totalCount, 'Turn Mode', turnCustomDesc);
+
+  // Apply boundary disabled styling to Speed & Turn Mode on final waypoint
+  if (speedControlContainer) {
+    if (isEndWp) {
+      speedControlContainer.classList.add('wp-leg-control-disabled');
+      if (speedSlider) speedSlider.disabled = true;
+      if (speedVal) speedVal.textContent = 'N/A';
+      if (speedNaNotice) speedNaNotice.style.display = 'block';
+    } else {
+      speedControlContainer.classList.remove('wp-leg-control-disabled');
+      if (speedSlider) speedSlider.disabled = false;
+      if (speedNaNotice) speedNaNotice.style.display = 'none';
+    }
+  }
+
+  if (turnModeControlContainer) {
+    if (isEndWp) {
+      turnModeControlContainer.classList.add('wp-leg-control-disabled');
+      if (turnModeSelect) turnModeSelect.disabled = true;
+      if (turnNaNotice) turnNaNotice.style.display = 'block';
+    } else {
+      turnModeControlContainer.classList.remove('wp-leg-control-disabled');
+      if (turnModeSelect) turnModeSelect.disabled = false;
+      if (turnNaNotice) turnNaNotice.style.display = 'none';
+    }
   }
 }
 
