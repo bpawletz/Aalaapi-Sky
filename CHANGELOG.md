@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.82.1] - 2026-09-05
+
+### Refinement & Visual Bug Fixes
+- **Compact Icon-Only Badges:** Streamlined flight leg phase badges to display clean, unobtrusive iconography (`↗`, `📍`, `↘`, `⤹`, `⛔`) in both 2D Waypoint Popups and 3D FPV HUDs, saving valuable horizontal layout space while moving full descriptive labels (`PRE`, `AT`, `POST`, `TURN`, `N/A`) into the interactive breadcrumb ribbon on hover.
+- **Opaque Backdrop & Stacking Fix on Hover Tooltips:** Fixed an issue where background waypoint menu icons and UI elements showed through the breadcrumb tooltip when hovering over badges. Replaced translucent blur with a solid, opaque `#0f172a` backdrop and elevated z-index to `100000`.
+
+## [1.82.0] - 2026-09-05
+
+### Added & UI/UX Enhancements
+- **Flight Leg Phase Indicators (Pre-WP, At-WP, Post-WP):**
+  - Integrated intuitive color-coded phase indicator badges into both the 2D Map Waypoint Popup Editor (`#waypoint-popup`) and the 3D FPV HUD Editor (`#fpv-waypoint-editor`):
+    - **`PRE ↗` (Cyan):** Identifies parameters that transition smoothly along the approach segment ($WP_{N-1} \to WP_N$), such as Heading / Yaw rotation in `smoothTransition` mode.
+    - **`AT 📍` (Amber):** Identifies stationary parameters that execute while holding position at the waypoint coordinate (Altitude floor, Gimbal Pitch stabilization, Hover Dwell time, Camera Photo/Zoom actions).
+    - **`POST ↘` (Emerald):** Identifies parameters that dictate flight behavior departing the waypoint along the next segment ($WP_N \to WP_{N+1}$), such as Flight Speed and Turn Mode curvature.
+  - **Interactive Hover Breadcrumb Timeline:**
+    - Hovering over any leg phase badge reveals a dynamic 3-stage breadcrumb ribbon (`[ Approach Leg N-1→N ] ──▶ [ WP N ] ──▶ [ Departure Leg N→N+1 ]`), highlighting exactly which portion of the flight path the parameter impacts.
+  - **Boundary Condition Intelligence & Control Disabling:**
+    - At **Waypoint 0 (Takeoff / Start):** The approach leg does not exist; Heading Mode adapts to `AT 📍 (Takeoff Heading)`.
+    - At **Waypoint End (Last Point):** The departure leg does not exist because the drone stops and triggers RTH / Mission Landing; Flight Speed and Turn Mode dynamically display `N/A (End of Route)` with dimmed/disabled styling and explanatory guidance so pilots never misconfigure terminal waypoints.
+
 ## [1.81.0] - 2026-09-05
 
 ### Added & Architectural Enhancements

@@ -4,7 +4,7 @@
     "playwright": "^1.61.1"
   },
   "name": "aalaapi-sky",
-  "version": "1.81.0",
+  "version": "1.82.1",
   "description": "Waypoint Mission Generator & Editor for DJI Fly",
   "main": "index.js",
   "scripts": {
