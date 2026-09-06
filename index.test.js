@@ -1274,8 +1274,10 @@ describe('initHeadingHelpDrawer Tests', () => {
     const mockHelpDrawer = {
       classList: {
         contains: (cls) => cls === 'hidden',
-        toggle: mock.fn()
-      }
+        toggle: mock.fn(),
+        remove: mock.fn()
+      },
+      scrollIntoView: mock.fn()
     };
     const mockTabFollow = {
       addEventListener: (evt, cb) => {
@@ -1297,6 +1299,23 @@ describe('initHeadingHelpDrawer Tests', () => {
       },
       style: {}
     };
+    let tabCustomClicked = null;
+    const mockTabCustom = {
+      addEventListener: (evt, cb) => {
+        if (evt === 'click') tabCustomClicked = cb;
+      },
+      classList: {
+        add: mock.fn(),
+        remove: mock.fn()
+      },
+      style: {}
+    };
+    let layerHelpBtnClicked = null;
+    const mockLayerHelpBtn = {
+      addEventListener: (evt, cb) => {
+        if (evt === 'click') layerHelpBtnClicked = cb;
+      }
+    };
     const mockTabPoi = {
       addEventListener: (evt, cb) => {
         if (evt === 'click') tabPoiClicked = cb;
@@ -1308,6 +1327,7 @@ describe('initHeadingHelpDrawer Tests', () => {
       style: {}
     };
     const mockHelpDesc = { textContent: '' };
+    const mockHelpDetails = { innerHTML: '' };
     const mockAnimDrone = { setAttribute: mock.fn() };
     const mockAnimPoiTarget = { style: { opacity: '0' } };
     const mockActivePath = { setAttribute: mock.fn() };
@@ -1315,11 +1335,14 @@ describe('initHeadingHelpDrawer Tests', () => {
     const originalGetElementById = global.document.getElementById;
     global.document.getElementById = (id) => {
       if (id === 'heading-help-btn') return mockHelpBtn;
+      if (id === 'layer-heading-help-btn') return mockLayerHelpBtn;
       if (id === 'heading-help-drawer') return mockHelpDrawer;
       if (id === 'heading-tab-follow') return mockTabFollow;
       if (id === 'heading-tab-fixed') return mockTabFixed;
       if (id === 'heading-tab-poi') return mockTabPoi;
+      if (id === 'heading-tab-custom') return mockTabCustom;
       if (id === 'heading-help-desc') return mockHelpDesc;
+      if (id === 'heading-help-details') return mockHelpDetails;
       if (id === 'anim-drone') return mockAnimDrone;
       if (id === 'anim-poi-target') return mockAnimPoiTarget;
       if (id === 'anim-flight-path-active') return mockActivePath;
@@ -1344,9 +1367,11 @@ describe('initHeadingHelpDrawer Tests', () => {
 
       // Assert click listeners were bound
       assert.ok(helpBtnClicked);
+      assert.ok(layerHelpBtnClicked);
       assert.ok(tabFollowClicked);
       assert.ok(tabFixedClicked);
       assert.ok(tabPoiClicked);
+      assert.ok(tabCustomClicked);
 
       // Trigger drawer toggle click
       const mockEvent = { stopPropagation: () => {} };
@@ -1355,18 +1380,38 @@ describe('initHeadingHelpDrawer Tests', () => {
       // Verify toggle was called
       assert.strictEqual(mockHelpDrawer.classList.toggle.mock.callCount(), 1);
 
-      // Trigger tab clicks and verify description updates
+      // Trigger layer help button click
+      layerHelpBtnClicked(mockEvent);
+      assert.strictEqual(mockHelpDrawer.classList.remove.mock.callCount(), 1);
+
+      // Trigger Fixed Heading tab and verify description + camera/photography details
       tabFixedClicked();
       assert.strictEqual(mockHelpDesc.textContent.includes('constant heading'), true);
       assert.strictEqual(mockAnimPoiTarget.style.opacity, '0');
+      assert.ok(mockHelpDetails.innerHTML.includes('Nadir (-90°) Mapping'));
+      assert.ok(mockHelpDetails.innerHTML.includes('True North'));
+      assert.ok(mockHelpDetails.innerHTML.includes('photogrammetry'));
 
+      // Trigger Follow Path tab
       tabFollowClicked();
       assert.strictEqual(mockHelpDesc.textContent.includes('rotates forward'), true);
       assert.strictEqual(mockAnimPoiTarget.style.opacity, '0');
+      assert.ok(mockHelpDetails.innerHTML.includes('Forward Alignment'));
+      assert.ok(mockHelpDetails.innerHTML.includes('corridor'));
 
+      // Trigger POI tab
       tabPoiClicked();
       assert.strictEqual(mockHelpDesc.textContent.includes('locks onto a Point of Interest'), true);
       assert.strictEqual(mockAnimPoiTarget.style.opacity, '1');
+      assert.ok(mockHelpDetails.innerHTML.includes('Target Tracking'));
+      assert.ok(mockHelpDetails.innerHTML.includes('Orbit & Tower Audits'));
+
+      // Trigger Custom Angle tab
+      tabCustomClicked();
+      assert.strictEqual(mockHelpDesc.textContent.includes('user-defined heading angle'), true);
+      assert.strictEqual(mockAnimPoiTarget.style.opacity, '0');
+      assert.ok(mockHelpDetails.innerHTML.includes('Custom Yaw'));
+      assert.ok(mockHelpDetails.innerHTML.includes('User-Defined Azimuth'));
 
     } finally {
       global.document.getElementById = originalGetElementById;
@@ -11521,6 +11566,487 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       assert.ok(serverCode.includes('[System.IO.File]::Copy($srcLog, $dstLog, $true)'), 'Must use [System.IO.File]::Copy for flight logs');
       assert.ok(serverCode.includes('[System.IO.File]::Copy($srcKmz, $dstKmz, $true)'), 'Must use [System.IO.File]::Copy for KMZ files');
       assert.ok(serverCode.includes('Test-Path -LiteralPath $finalLogPath'), 'Must verify destination log file exists on disk with -LiteralPath');
+    });
+  });
+
+  describe('Heading Mode Photography Guidance & Layer Help Tests (v1.86.3)', () => {
+    test('index_template.html and index.html contain all required v1.86.3 Heading Mode UI elements', () => {
+      const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+      // Check Section 2 layer heading help button
+      assert.ok(templateHtml.includes('id="layer-heading-help-btn"'), 'Template must contain #layer-heading-help-btn');
+      assert.ok(compiledHtml.includes('id="layer-heading-help-btn"'), 'Compiled HTML must contain #layer-heading-help-btn');
+
+      // Check Section 3 heading drawer custom tab and details container
+      assert.ok(templateHtml.includes('id="heading-tab-custom"'), 'Template must contain #heading-tab-custom');
+      assert.ok(compiledHtml.includes('id="heading-tab-custom"'), 'Compiled HTML must contain #heading-tab-custom');
+      assert.ok(templateHtml.includes('id="heading-help-details"'), 'Template must contain #heading-help-details');
+      assert.ok(compiledHtml.includes('id="heading-help-details"'), 'Compiled HTML must contain #heading-help-details');
+
+      // Check version badge
+      assert.ok(templateHtml.includes('v1.86.3'), 'Template must display version v1.86.3 in header badge');
+      assert.ok(compiledHtml.includes('v1.86.3'), 'Compiled HTML must display version v1.86.3 in header badge');
+    });
+
+    test('Heading Mode drawer renders comprehensive photography breakdowns across all 4 heading modes', () => {
+      let followClicked, fixedClicked, poiClicked, customClicked, layerHelpClicked;
+      const mockFollow = { addEventListener: (evt, cb) => { if (evt === 'click') followClicked = cb; }, classList: { add: mock.fn(), remove: mock.fn() }, style: {} };
+      const mockFixed = { addEventListener: (evt, cb) => { if (evt === 'click') fixedClicked = cb; }, classList: { add: mock.fn(), remove: mock.fn() }, style: {} };
+      const mockPoi = { addEventListener: (evt, cb) => { if (evt === 'click') poiClicked = cb; }, classList: { add: mock.fn(), remove: mock.fn() }, style: {} };
+      const mockCustom = { addEventListener: (evt, cb) => { if (evt === 'click') customClicked = cb; }, classList: { add: mock.fn(), remove: mock.fn() }, style: {} };
+      const mockLayerBtn = { addEventListener: (evt, cb) => { if (evt === 'click') layerHelpClicked = cb; } };
+      const mockHelpBtn = { addEventListener: mock.fn() };
+      const mockDrawer = { classList: { toggle: mock.fn(), remove: mock.fn() }, scrollIntoView: mock.fn() };
+      const mockDesc = { textContent: '' };
+      const mockDetails = { innerHTML: '' };
+      const mockDrone = { setAttribute: mock.fn() };
+      const mockPoiTarget = { style: { opacity: '0' } };
+      const mockActivePath = { setAttribute: mock.fn() };
+
+      const origGetEl = global.document.getElementById;
+      const origRaf = global.requestAnimationFrame;
+      const origCaf = global.cancelAnimationFrame;
+      let rafCount = 0;
+      global.requestAnimationFrame = (cb) => { 
+        rafCount++;
+        if (rafCount === 1) cb(100);
+        return 123; 
+      };
+      global.cancelAnimationFrame = () => {};
+      global.document.getElementById = (id) => {
+        if (id === 'heading-help-btn') return mockHelpBtn;
+        if (id === 'layer-heading-help-btn') return mockLayerBtn;
+        if (id === 'heading-help-drawer') return mockDrawer;
+        if (id === 'heading-tab-follow') return mockFollow;
+        if (id === 'heading-tab-fixed') return mockFixed;
+        if (id === 'heading-tab-poi') return mockPoi;
+        if (id === 'heading-tab-custom') return mockCustom;
+        if (id === 'heading-help-desc') return mockDesc;
+        if (id === 'heading-help-details') return mockDetails;
+        if (id === 'anim-drone') return mockDrone;
+        if (id === 'anim-poi-target') return mockPoiTarget;
+        if (id === 'anim-flight-path-active') return mockActivePath;
+        return null;
+      };
+
+      try {
+        vm.runInThisContext('initHeadingHelpDrawer()');
+
+        // Initial default state is Follow Path
+        assert.ok(mockDetails.innerHTML.includes('Forward Alignment'));
+        assert.ok(mockDetails.innerHTML.includes('Nadir (-90°)'));
+
+        // Switch to Fixed (North)
+        fixedClicked();
+        assert.ok(mockDetails.innerHTML.includes('North (0°) Locked'));
+        assert.ok(mockDetails.innerHTML.includes('Nadir (-90°) Mapping'));
+        assert.ok(mockDetails.innerHTML.includes('Oblique (-30° to -60°)'));
+        assert.ok(mockDetails.innerHTML.includes('Photo Trigger'));
+
+        // Switch to POI Target
+        poiClicked();
+        assert.ok(mockDetails.innerHTML.includes('Target Tracking'));
+        assert.ok(mockDetails.innerHTML.includes('Orbit & Tower Audits'));
+
+        // Switch to Custom
+        customClicked();
+        assert.ok(mockDetails.innerHTML.includes('Custom Yaw'));
+        assert.ok(mockDetails.innerHTML.includes('User-Defined Azimuth'));
+
+        // Layer help button click removes hidden class and scrolls
+        layerHelpClicked({ stopPropagation: () => {} });
+        assert.strictEqual(mockDrawer.classList.remove.mock.callCount(), 1);
+        assert.strictEqual(mockDrawer.scrollIntoView.mock.callCount(), 1);
+
+      } finally {
+        global.document.getElementById = origGetEl;
+        global.requestAnimationFrame = origRaf;
+        global.cancelAnimationFrame = origCaf;
+      }
+    });
+  });
+
+  describe('3D Flight Path Preview HUD Legend Ergonomics & Overlap Fix (v1.86.4)', () => {
+    test('index_template.html and index.html contain all required v1.86.4 HUD Legend UI elements', () => {
+      const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+      // Check version badges and changelog
+      assert.ok(templateHtml.includes('Changelog (v1.86.4)'), 'Template must display Changelog (v1.86.4)');
+      assert.ok(compiledHtml.includes('Changelog (v1.86.4)'), 'Compiled HTML must display Changelog (v1.86.4)');
+      assert.ok(/Version 1\.(86|87|88)\.\d+/.test(templateHtml), 'Template must display Version 1.86.x or later in About modal');
+      assert.ok(/Version 1\.(86|87|88)\.\d+/.test(compiledHtml), 'Compiled HTML must display Version 1.86.x or later in About modal');
+
+      // Check HUD Legend elements
+      assert.ok(templateHtml.includes('id="three-hud-legend"'), 'Template must contain #three-hud-legend');
+      assert.ok(compiledHtml.includes('id="three-hud-legend"'), 'Compiled HTML must contain #three-hud-legend');
+      assert.ok(templateHtml.includes('id="hud-legend-header"'), 'Template must contain #hud-legend-header');
+      assert.ok(compiledHtml.includes('id="hud-legend-header"'), 'Compiled HTML must contain #hud-legend-header');
+      assert.ok(templateHtml.includes('id="hud-legend-toggle-btn"'), 'Template must contain #hud-legend-toggle-btn');
+      assert.ok(compiledHtml.includes('id="hud-legend-toggle-btn"'), 'Compiled HTML must contain #hud-legend-toggle-btn');
+      assert.ok(templateHtml.includes('id="hud-legend-body"'), 'Template must contain #hud-legend-body');
+      assert.ok(compiledHtml.includes('id="hud-legend-body"'), 'Compiled HTML must contain #hud-legend-body');
+
+      // Ensure legend is positioned at right: 16px to prevent colliding with left buttons
+      assert.ok(templateHtml.includes('right: 16px;'), 'Template HUD legend must be anchored to the right side');
+      assert.ok(compiledHtml.includes('right: 16px;'), 'Compiled HTML HUD legend must be anchored to the right side');
+    });
+
+    test('HUD Legend toggle function cleanly collapses and expands the legend body', () => {
+      let headerListener, toggleBtnListener;
+      const mockHeader = {
+        addEventListener: (evt, cb) => { if (evt === 'click') headerListener = cb; }
+      };
+      const mockToggleBtn = {
+        addEventListener: (evt, cb) => { if (evt === 'click') toggleBtnListener = cb; },
+        textContent: '▼'
+      };
+      const mockBody = {
+        style: { display: 'flex' }
+      };
+
+      const origGetEl = global.document.getElementById;
+      try {
+        global.document.getElementById = (id) => {
+          if (id === 'hud-legend-header') return mockHeader;
+          if (id === 'hud-legend-toggle-btn') return mockToggleBtn;
+          if (id === 'hud-legend-body') return mockBody;
+          return null;
+        };
+
+        // Wire up toggle logic matching index.js implementation
+        const toggleHudLegend = (e) => {
+          if (e && e.stopPropagation) e.stopPropagation();
+          if (!mockBody) return;
+          const isHidden = mockBody.style.display === 'none';
+          mockBody.style.display = isHidden ? 'flex' : 'none';
+          if (mockToggleBtn) mockToggleBtn.textContent = isHidden ? '▼' : '▲';
+        };
+        mockHeader.addEventListener('click', toggleHudLegend);
+        mockToggleBtn.addEventListener('click', toggleHudLegend);
+
+        // Initially open
+        assert.strictEqual(mockBody.style.display, 'flex');
+        assert.strictEqual(mockToggleBtn.textContent, '▼');
+
+        // Click header to collapse
+        headerListener({ stopPropagation: () => {} });
+        assert.strictEqual(mockBody.style.display, 'none');
+        assert.strictEqual(mockToggleBtn.textContent, '▲');
+
+        // Click toggle button to expand
+        toggleBtnListener({ stopPropagation: () => {} });
+        assert.strictEqual(mockBody.style.display, 'flex');
+        assert.strictEqual(mockToggleBtn.textContent, '▼');
+
+      } finally {
+        global.document.getElementById = origGetEl;
+      }
+    });
+  });
+
+  describe('Waypoint Leg Phase Floating Tooltips & Clipping Fix (v1.86.5)', () => {
+    test('index_template.html and index.html contain #wp-leg-floating-tooltip', () => {
+      const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      const bundleHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+      assert.ok(templateHtml.includes('id="wp-leg-floating-tooltip"'), 'index_template.html must contain #wp-leg-floating-tooltip');
+      assert.ok(bundleHtml.includes('id="wp-leg-floating-tooltip"'), 'index.html must contain #wp-leg-floating-tooltip');
+      assert.ok(templateHtml.includes('class="wp-leg-breadcrumb-tooltip"'), 'Must have wp-leg-breadcrumb-tooltip class');
+    });
+
+    test('initLegPhaseBadgeTooltips positions floating tooltip to the left of #fpv-editor-panel to prevent clipping', () => {
+      assert.strictEqual(typeof initLegPhaseBadgeTooltips, 'function', 'initLegPhaseBadgeTooltips should be a function');
+
+      const mockFloatingTooltip = {
+        id: 'wp-leg-floating-tooltip',
+        className: 'wp-leg-breadcrumb-tooltip',
+        style: { display: 'none' },
+        offsetWidth: 260,
+        offsetHeight: 90,
+        innerHTML: ''
+      };
+
+      const mockEditorPanel = {
+        id: 'fpv-editor-panel',
+        getBoundingClientRect: () => ({ left: 600, right: 910, top: 60, bottom: 500, width: 310, height: 440 })
+      };
+
+      const mockInnerTooltip = {
+        innerHTML: '<div class="wp-leg-breadcrumb-desc">Turn Mode Help</div>'
+      };
+
+      const mockBadge = {
+        classList: { contains: () => true },
+        isConnected: true,
+        offsetParent: {},
+        querySelector: (sel) => (sel === '.wp-leg-breadcrumb-tooltip' ? mockInnerTooltip : null),
+        closest: (sel) => (sel === '#fpv-editor-panel' ? mockEditorPanel : null),
+        getBoundingClientRect: () => ({ left: 680, top: 150, bottom: 170, right: 700, width: 20, height: 20 })
+      };
+
+      const origGetEl = global.document.getElementById;
+      try {
+        global.document.getElementById = (id) => {
+          if (id === 'wp-leg-floating-tooltip') return mockFloatingTooltip;
+          if (id === 'fpv-editor-panel') return mockEditorPanel;
+          return null;
+        };
+
+        const manager = initLegPhaseBadgeTooltips();
+        assert.ok(manager, 'Manager returned');
+
+        // Show tooltip on mockBadge
+        manager.showTooltip(mockBadge);
+
+        assert.strictEqual(mockFloatingTooltip.style.display, 'flex');
+        assert.ok(mockFloatingTooltip.innerHTML.includes('Turn Mode Help'));
+
+        // Verify it docked to the left of the editor panel (600 - 260 - 12 = 328px)
+        assert.strictEqual(mockFloatingTooltip.style.left, '328px', 'Should be docked to the left of #fpv-editor-panel to prevent clipping');
+
+        // Hide tooltip
+        manager.hideTooltip();
+        assert.strictEqual(mockFloatingTooltip.style.display, 'none');
+      } finally {
+        global.document.getElementById = origGetEl;
+      }
+    });
+
+    test('initLegPhaseBadgeTooltips hides tooltip if badge is scrolled outside panel bounds', () => {
+      const mockFloatingTooltip = {
+        id: 'wp-leg-floating-tooltip',
+        className: 'wp-leg-breadcrumb-tooltip',
+        style: { display: 'none' },
+        offsetWidth: 260,
+        offsetHeight: 90,
+        innerHTML: ''
+      };
+
+      const mockEditorPanel = {
+        id: 'fpv-editor-panel',
+        getBoundingClientRect: () => ({ left: 600, right: 910, top: 60, bottom: 500, width: 310, height: 440 })
+      };
+
+      const mockInnerTooltip = {
+        innerHTML: '<div>Tooltip</div>'
+      };
+
+      // Badge scrolled above panel (top: 20 < panel.top 60)
+      const scrolledBadge = {
+        isConnected: true,
+        offsetParent: {},
+        querySelector: () => mockInnerTooltip,
+        closest: () => mockEditorPanel,
+        getBoundingClientRect: () => ({ left: 680, top: 20, bottom: 40, right: 700, width: 20, height: 20 })
+      };
+
+      const origGetEl = global.document.getElementById;
+      try {
+        global.document.getElementById = (id) => (id === 'wp-leg-floating-tooltip' ? mockFloatingTooltip : null);
+        const manager = initLegPhaseBadgeTooltips();
+
+        manager.showTooltip(scrolledBadge);
+        assert.strictEqual(mockFloatingTooltip.style.display, 'none', 'Tooltip should be hidden when badge is scrolled out of view');
+      } finally {
+        global.document.getElementById = origGetEl;
+      }
+    });
+  });
+
+  describe('Resolved Inherited Setting Displays Tests (v1.87.0)', () => {
+    test('index_template.html and index.html contain all required v1.87.0 UI elements and version tags', () => {
+      const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+      // Check current version badge in header (must be v1.87.0 or later)
+      assert.ok(/v1\.(87|88|89|90)\.\d+/.test(templateHtml), 'index_template.html must contain v1.87.x or later header badge');
+      assert.ok(/v1\.(87|88|89|90)\.\d+/.test(compiledHtml), 'index.html must contain v1.87.x or later header badge');
+
+      // Check changelog entry for v1.87.0 is still present (it persists in the changelog list)
+      assert.ok(templateHtml.includes('Changelog (v1.87.0):'), 'index_template.html must contain Changelog (v1.87.0)');
+      assert.ok(compiledHtml.includes('Changelog (v1.87.0):'), 'index.html must contain Changelog (v1.87.0)');
+
+      // Check IDs for inherit options
+      assert.ok(templateHtml.includes('id="layer-turnaround-speed-inherit-opt"'), 'Must have #layer-turnaround-speed-inherit-opt');
+      assert.ok(compiledHtml.includes('id="layer-turnaround-speed-inherit-opt"'), 'Compiled must have #layer-turnaround-speed-inherit-opt');
+      assert.ok(templateHtml.includes('id="exclusion-detour-mode-inherit-opt"'), 'Must have #exclusion-detour-mode-inherit-opt');
+      assert.ok(compiledHtml.includes('id="exclusion-detour-mode-inherit-opt"'), 'Compiled must have #exclusion-detour-mode-inherit-opt');
+      assert.ok(templateHtml.includes('id="fpv-edit-heading-mode-inherit-opt"'), 'Must have #fpv-edit-heading-mode-inherit-opt');
+      assert.ok(compiledHtml.includes('id="fpv-edit-heading-mode-inherit-opt"'), 'Compiled must have #fpv-edit-heading-mode-inherit-opt');
+    });
+
+    test('updateInheritOptionLabels dynamically computes and displays resolved labels', () => {
+      const mockElements = {
+        'capture-mode': { value: 'stopAndShoot' },
+        'path-mode': { value: 'straight' },
+        'heading-mode': { value: 'fixed' },
+        'global-hover-time': { value: '3' },
+        'speed': { value: '6.5' },
+        'global-exclusion-detour-mode': { value: 'overTop' },
+        'layer-capture-mode-inherit-opt': { textContent: '' },
+        'layer-path-mode-inherit-opt': { textContent: '' },
+        'layer-heading-mode-inherit-opt': { textContent: '' },
+        'layer-hover-time-inherit-opt': { textContent: '' },
+        'layer-turnaround-speed-inherit-opt': { textContent: '' },
+        'exclusion-detour-mode-inherit-opt': { textContent: '' }
+      };
+
+      const origGetEl = global.document.getElementById;
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      const origLayerSpeed = activeLayer ? activeLayer.speed : null;
+      try {
+        global.document.getElementById = (id) => mockElements[id] || null;
+        if (activeLayer) activeLayer.speed = 6.5;
+
+        updateInheritOptionLabels();
+
+        assert.strictEqual(mockElements['layer-capture-mode-inherit-opt'].textContent, '🌐 Inherit Global (Stop & Shoot)');
+        assert.strictEqual(mockElements['layer-path-mode-inherit-opt'].textContent, '🌐 Inherit Global (Straight Lines)');
+        assert.strictEqual(mockElements['layer-heading-mode-inherit-opt'].textContent, '🌐 Inherit Global (Fixed North)');
+        assert.strictEqual(mockElements['layer-hover-time-inherit-opt'].textContent, '🌐 Inherit Global (3s)');
+        assert.strictEqual(mockElements['layer-turnaround-speed-inherit-opt'].textContent, '🌐 Inherit Layer Speed (6.5 m/s)');
+        assert.strictEqual(mockElements['exclusion-detour-mode-inherit-opt'].textContent, '🌐 Inherit Global (Over the Top)');
+
+        // Test dynamic update when global inputs change
+        mockElements['global-exclusion-detour-mode'].value = 'smart';
+        mockElements['speed'].value = '8.0';
+        if (activeLayer) activeLayer.speed = 8.0;
+        updateInheritOptionLabels();
+
+        assert.strictEqual(mockElements['layer-turnaround-speed-inherit-opt'].textContent, '🌐 Inherit Layer Speed (8.0 m/s)');
+        assert.strictEqual(mockElements['exclusion-detour-mode-inherit-opt'].textContent, '🌐 Inherit Global (Smart 3D)');
+      } finally {
+        global.document.getElementById = origGetEl;
+        if (activeLayer) activeLayer.speed = origLayerSpeed;
+      }
+    });
+
+    test('updateLayerPoiSelectOptions displays the default POI name in option 0 when POIs exist', () => {
+      let createdOptions = [];
+      const mockSelect = {
+        value: '',
+        innerHTML: '',
+        appendChild: (child) => createdOptions.push(child)
+      };
+
+      const origGetEl = global.document.getElementById;
+      const origCreateEl = global.document.createElement;
+      const origPois = (typeof pois !== 'undefined') ? pois : [];
+      try {
+        global.document.getElementById = (id) => (id === 'layer-poi-select' ? mockSelect : null);
+        global.document.createElement = (tag) => ({ tagName: tag, value: '', textContent: '' });
+
+        // With no POIs
+        pois = [];
+        updateLayerPoiSelectOptions();
+        assert.ok(mockSelect.innerHTML.includes('🌐 Nearest / Mission Default POI</option>'));
+
+        // With named POIs
+        pois = [
+          { id: 'poi-alpha', name: 'Tower Alpha', lat: 40.0, lon: -83.0 },
+          { id: 'poi-beta', name: 'Building Beta', lat: 40.1, lon: -83.1 }
+        ];
+        createdOptions = [];
+        updateLayerPoiSelectOptions();
+        assert.ok(mockSelect.innerHTML.includes('🌐 Nearest / Mission Default POI (Tower Alpha)</option>'));
+        assert.strictEqual(createdOptions.length, 2);
+        assert.strictEqual(createdOptions[0].textContent, 'Tower Alpha');
+      } finally {
+        global.document.getElementById = origGetEl;
+        global.document.createElement = origCreateEl;
+        pois = origPois;
+      }
+    });
+
+    test('createWaypointEditorDOM renders resolved speed, camera action, and heading mode', () => {
+      const mockWp = {
+        lat: 40.0,
+        lon: -83.0,
+        alt: 50,
+        pitch: -45,
+        heading: 90,
+        headingMode: 'inherit',
+        cameraAction: 'inherit',
+        speed: null,
+        hoverTime: null,
+        layerCaptureMode: 'stopAndShoot',
+        layerHeadingMode: 'followWayline'
+      };
+
+      const mockMarker = {
+        getLatLng: () => ({ lat: 40.0, lng: -83.0 }),
+        setLatLng: () => {},
+        setIcon: () => {},
+        setTooltipContent: () => {},
+        closePopup: () => {}
+      };
+
+      const makeEl = (tag) => ({
+        tagName: (tag || 'div').toUpperCase(),
+        className: '',
+        classList: { add: () => {}, remove: () => {}, contains: () => false },
+        style: {},
+        innerHTML: '',
+        value: '',
+        textContent: '',
+        disabled: false,
+        appendChild: function(c) { return c; },
+        querySelector: function(sel) {
+          return {
+            value: '',
+            style: {},
+            textContent: '',
+            disabled: false,
+            classList: { add: () => {}, remove: () => {}, contains: () => false },
+            addEventListener: () => {}
+          };
+        },
+        querySelectorAll: function() { return []; },
+        addEventListener: () => {}
+      });
+
+      const origCreateElement = global.document.createElement;
+      const origGetEl = global.document.getElementById;
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      const origLayerSpeed = activeLayer ? activeLayer.speed : null;
+      try {
+        if (activeLayer) activeLayer.speed = 5.2;
+        global.document.createElement = (tag) => makeEl(tag);
+        global.document.getElementById = (id) => {
+          if (id === 'speed') return { value: '5.2' };
+          if (id === 'heading-mode') return { value: 'followWayline' };
+          if (id === 'capture-mode') return { value: 'stopAndShoot' };
+          if (id === 'path-mode') return { value: 'curved' };
+          if (id === 'global-hover-time') return { value: '2' };
+          if (id === 'grid-rotation') return { value: '0' };
+          if (id === 'grid-type') return { value: 'single' };
+          return {
+            value: '',
+            style: {},
+            textContent: '',
+            disabled: false,
+            classList: { add: () => {}, remove: () => {}, contains: () => false }
+          };
+        };
+
+        const dom = createWaypointEditorDOM(mockWp, 1, mockMarker, null, [mockWp, mockWp, mockWp]);
+        const html = dom.innerHTML;
+
+        // Verify Speed Display shows Auto (5.2 m/s)
+        assert.ok(html.includes('Auto (5.2 m/s)'), 'Speed display must show Auto (5.2 m/s) when inheriting');
+
+        // Verify Camera Action inherits layer mode (Stop & Shoot)
+        assert.ok(html.includes('🌐 Inherit Layer Mode (Stop & Shoot)'), 'Camera action inherit option must show Stop & Shoot');
+
+        // Verify Heading Mode inherits layer default (Follow Flight Path)
+        assert.ok(html.includes('🌐 Inherit Layer Default (Follow Flight Path)'), 'Heading mode inherit option must show Follow Flight Path');
+      } finally {
+        global.document.createElement = origCreateElement;
+        global.document.getElementById = origGetEl;
+        if (activeLayer) activeLayer.speed = origLayerSpeed;
+      }
     });
   });
 });

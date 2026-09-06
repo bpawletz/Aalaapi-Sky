@@ -12,6 +12,11 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     page = await browser.newPage();
     const indexPath = 'file:///' + path.resolve(__dirname, 'index.html').replace(/\\/g, '/');
     await page.goto(indexPath, { waitUntil: 'load' });
+    await page.evaluate(() => {
+      localStorage.setItem('aalaapi_sky_disclaimer_accepted', 'true');
+      const d = document.getElementById('disclaimer-modal');
+      if (d) d.classList.add('hidden');
+    });
   });
 
   after(async () => {
@@ -1208,6 +1213,127 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     });
 
     assert.ok(result.success, `3D Preview modal E2E test failed: ${JSON.stringify(result)}`);
+  });
+
+  test('E2E: 3D Flight Path Preview HUD Legend is positioned in bottom-right without colliding with HUD buttons, and supports collapsible minimize/expand (v1.86.4)', async () => {
+    const result = await page.evaluate(async () => {
+      if (typeof setGridCenter === 'function') {
+        setGridCenter(41.88, -87.62);
+      }
+      const preview3dBtn = document.getElementById('preview-3d-btn');
+      const preview3dModal = document.getElementById('preview-3d-modal');
+      const close3dBtn = document.getElementById('close-3d-btn');
+      const hudControls = document.querySelector('.hud-controls');
+      const hudLegend = document.getElementById('three-hud-legend') || document.querySelector('.hud-legend');
+      const legendToggleBtn = document.getElementById('hud-legend-toggle-btn');
+      const legendHeader = document.getElementById('hud-legend-header');
+      const legendBody = document.getElementById('hud-legend-body');
+      const btnFpv = document.getElementById('btn-3d-fpv');
+      const stopFpvBtn = document.getElementById('fpv-btn-stop');
+
+      if (!preview3dBtn || !preview3dModal || !close3dBtn || !hudControls || !hudLegend || !legendToggleBtn || !legendBody) {
+        return { success: false, reason: 'Required 3D Preview / Legend elements missing' };
+      }
+
+      // Open 3D preview modal
+      preview3dBtn.click();
+      await new Promise(r => setTimeout(r, 150));
+
+      const controlsRect = hudControls.getBoundingClientRect();
+      const legendRect = hudLegend.getBoundingClientRect();
+
+      // Ensure both are rendered with non-zero dimensions
+      const controlsRendered = controlsRect.width > 0 && controlsRect.height > 0;
+      const legendRendered = legendRect.width > 0 && legendRect.height > 0;
+
+      // Check collision/overlap between controls panel and legend
+      const hasOverlap = !(
+        controlsRect.right <= legendRect.left ||
+        controlsRect.left >= legendRect.right ||
+        controlsRect.bottom <= legendRect.top ||
+        controlsRect.top >= legendRect.bottom
+      );
+
+      // Verify controls are strictly to the left of the legend
+      const controlsOnLeft = controlsRect.right <= legendRect.left;
+
+      // Check all 6 HUD buttons are not covered by the legend
+      const buttonIds = [
+        'btn-3d-autorotate',
+        'btn-3d-reset',
+        'btn-3d-toggle-cones',
+        'btn-3d-toggle-footprints',
+        'btn-3d-toggle-drones',
+        'btn-3d-fpv'
+      ];
+      let allButtonsUnobstructed = true;
+      for (const bId of buttonIds) {
+        const btn = document.getElementById(bId);
+        if (!btn) { allButtonsUnobstructed = false; break; }
+        const bRect = btn.getBoundingClientRect();
+        const btnOverlap = !(
+          bRect.right <= legendRect.left ||
+          bRect.left >= legendRect.right ||
+          bRect.bottom <= legendRect.top ||
+          bRect.top >= legendRect.bottom
+        );
+        if (btnOverlap) {
+          allButtonsUnobstructed = false;
+          break;
+        }
+      }
+
+      // Test minimizing the legend via toggle button
+      legendToggleBtn.click();
+      await new Promise(r => setTimeout(r, 50));
+      const bodyHiddenAfterBtnClick = legendBody.style.display === 'none' && legendToggleBtn.textContent === '▲';
+
+      // Test expanding the legend via header click
+      legendHeader.click();
+      await new Promise(r => setTimeout(r, 50));
+      const bodyVisibleAfterHeaderClick = legendBody.style.display === 'flex' && legendToggleBtn.textContent === '▼';
+
+      // Test FPV auto-hide behavior
+      if (btnFpv) btnFpv.click();
+      await new Promise(r => setTimeout(r, 100));
+      const legendHiddenInFpv = hudLegend.classList.contains('hidden');
+
+      if (stopFpvBtn) stopFpvBtn.click();
+      await new Promise(r => setTimeout(r, 100));
+      const legendRestoredAfterFpv = !hudLegend.classList.contains('hidden');
+
+      // Close modal
+      close3dBtn.click();
+      await new Promise(r => setTimeout(r, 50));
+      const modalClosed = preview3dModal.classList.contains('hidden');
+
+      return {
+        success: controlsRendered &&
+                 legendRendered &&
+                 !hasOverlap &&
+                 controlsOnLeft &&
+                 allButtonsUnobstructed &&
+                 bodyHiddenAfterBtnClick &&
+                 bodyVisibleAfterHeaderClick &&
+                 legendHiddenInFpv &&
+                 legendRestoredAfterFpv &&
+                 modalClosed,
+        controlsRendered,
+        legendRendered,
+        hasOverlap,
+        controlsOnLeft,
+        allButtonsUnobstructed,
+        bodyHiddenAfterBtnClick,
+        bodyVisibleAfterHeaderClick,
+        legendHiddenInFpv,
+        legendRestoredAfterFpv,
+        modalClosed,
+        controlsRect: { top: controlsRect.top, left: controlsRect.left, right: controlsRect.right, bottom: controlsRect.bottom },
+        legendRect: { top: legendRect.top, left: legendRect.left, right: legendRect.right, bottom: legendRect.bottom }
+      };
+    });
+
+    assert.ok(result.success, `HUD Legend E2E test failed: ${JSON.stringify(result)}`);
   });
 
   test('E2E: Initial Safety Disclaimer modal renders 2-column icon cards and enforces checkbox acceptance before proceeding', async () => {
@@ -3962,6 +4088,271 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(desktopState.searchVisible, true, 'Desktop should display inline search container');
     assert.strictEqual(desktopState.telemVisible, true, 'Desktop should display inline telemetry pill');
     assert.strictEqual(desktopState.searchToggleHidden, true, 'Desktop should hide mobile search toggle');
+  });
+
+  test('E2E: Heading Mode Help Drawer displays photography guidance across all tabs and toggles via layer help button', async () => {
+    // 1. Verify drawer is initially hidden
+    const initialHidden = await page.evaluate(() => {
+      const drawer = document.getElementById('heading-help-drawer');
+      return drawer.classList.contains('hidden');
+    });
+    assert.strictEqual(initialHidden, true, 'Drawer should initially be hidden');
+
+    // 2. Dismiss disclaimer modal if open, uncollapse Section 3 if collapsed, and click Section 3 help button to open drawer
+    await page.evaluate(() => {
+      const d = document.getElementById('disclaimer-modal');
+      if (d) d.classList.add('hidden');
+      const s3 = document.getElementById('mission-failsafes-section');
+      if (s3 && s3.classList.contains('collapsed')) {
+        s3.classList.remove('collapsed');
+      }
+    });
+    await page.locator('#heading-help-btn').click();
+    const openedState = await page.evaluate(() => {
+      const drawer = document.getElementById('heading-help-drawer');
+      const details = document.getElementById('heading-help-details');
+      return {
+        isOpen: !drawer.classList.contains('hidden'),
+        hasForwardText: details ? details.innerHTML.includes('Forward Alignment') : false
+      };
+    });
+    assert.strictEqual(openedState.isOpen, true, 'Drawer should open when #heading-help-btn is clicked');
+    assert.strictEqual(openedState.hasForwardText, true, 'Default Follow Path should show Forward Alignment details');
+
+    // 3. Click Fixed tab
+    await page.locator('#heading-tab-fixed').click();
+    const fixedDetails = await page.evaluate(() => {
+      const desc = document.getElementById('heading-help-desc').textContent;
+      const details = document.getElementById('heading-help-details').innerHTML;
+      return {
+        hasConstantHeading: desc.includes('constant heading'),
+        hasNorthLocked: details.includes('North (0°) Locked'),
+        hasNadirPhotogrammetry: details.includes('Nadir (-90°) Mapping') && details.includes('photogrammetry'),
+        hasOblique: details.includes('Oblique (-30° to -60°)')
+      };
+    });
+    assert.strictEqual(fixedDetails.hasConstantHeading, true);
+    assert.strictEqual(fixedDetails.hasNorthLocked, true);
+    assert.strictEqual(fixedDetails.hasNadirPhotogrammetry, true);
+    assert.strictEqual(fixedDetails.hasOblique, true);
+
+    // 4. Click POI tab
+    await page.locator('#heading-tab-poi').click();
+    const poiDetails = await page.evaluate(() => {
+      const details = document.getElementById('heading-help-details').textContent;
+      return details.includes('Target Tracking') && details.includes('Tower Audits');
+    });
+    assert.strictEqual(poiDetails, true);
+
+    // 5. Click Custom tab
+    await page.locator('#heading-tab-custom').click();
+    const customDetails = await page.evaluate(() => {
+      const details = document.getElementById('heading-help-details').textContent;
+      return details.includes('Custom Yaw') && details.includes('User-Defined Azimuth');
+    });
+    assert.strictEqual(customDetails, true);
+
+    // 6. Close drawer via toggle button
+    await page.locator('#heading-help-btn').click();
+    const closedState = await page.evaluate(() => document.getElementById('heading-help-drawer').classList.contains('hidden'));
+    assert.strictEqual(closedState, true);
+
+    // 7. Ensure Section 2 is uncollapsed, re-collapse Section 3, and verify clicking Section 2 layer heading help button uncollapses Section 3 and opens drawer
+    await page.evaluate(() => {
+      const s2 = document.getElementById('grid-geometry-section');
+      if (s2 && s2.classList.contains('collapsed')) s2.classList.remove('collapsed');
+      const s3 = document.getElementById('mission-failsafes-section');
+      if (s3) s3.classList.add('collapsed');
+    });
+    await page.locator('#layer-heading-help-btn').click();
+    const reopenedState = await page.evaluate(() => {
+      const drawer = document.getElementById('heading-help-drawer');
+      const s3 = document.getElementById('mission-failsafes-section');
+      return !drawer.classList.contains('hidden') && !s3.classList.contains('collapsed');
+    });
+    assert.strictEqual(reopenedState, true, 'Section 2 layer-heading-help-btn should uncollapse Section 3 and open heading help drawer');
+  });
+
+  test('E2E: 3D Flight Path Preview Waypoint Editor Breadcrumb Tooltip Floating & Clipping Prevention (v1.86.5)', async () => {
+    // 1. Open 3D Preview Modal and FPV Waypoint Editor
+    await page.evaluate(() => {
+      const modal = document.getElementById('preview-3d-modal');
+      if (modal && modal.classList.contains('hidden')) {
+        modal.classList.remove('hidden');
+      }
+      const hudOverlay = document.getElementById('fpv-hud-overlay');
+      if (hudOverlay) hudOverlay.classList.remove('hidden');
+      const editorPanel = document.getElementById('fpv-editor-panel');
+      if (editorPanel) editorPanel.classList.remove('hidden');
+
+      if (typeof generatedWaypoints !== 'undefined') {
+        generatedWaypoints = [
+          { lat: 41.88, lon: -87.62, alt: 50, pitch: -45, speed: 5, turnMode: 'stop', hoverTime: 0, cameraAction: 'none', zoom: 1.0, heading: 0, headingMode: 'inherit' },
+          { lat: 41.89, lon: -87.63, alt: 55, pitch: -50, speed: 6, turnMode: 'pass', hoverTime: 2, cameraAction: 'takePhoto', zoom: 1.2, heading: 90, headingMode: 'custom' },
+          { lat: 41.90, lon: -87.64, alt: 60, pitch: -60, speed: 7, turnMode: 'stop', hoverTime: 3, cameraAction: 'none', zoom: 1.0, heading: 180, headingMode: 'followWayline' }
+        ];
+      }
+      if (typeof fpvProgressIndex !== 'undefined') {
+        fpvProgressIndex = 1;
+      }
+      if (typeof updateFPVEditorUI === 'function') {
+        updateFPVEditorUI();
+      }
+    });
+
+    // 2. Find turn mode badge inside #fpv-editor-panel
+    const turnBadge = page.locator('#fpv-turn-phase-badge-container .wp-leg-phase-badge');
+    await turnBadge.waitFor({ state: 'attached', timeout: 5000 });
+
+    // Hover over the badge
+    await turnBadge.hover();
+
+    // 3. Verify floating tooltip position and visibility
+    const tooltipState = await page.evaluate(() => {
+      const floatingTooltip = document.getElementById('wp-leg-floating-tooltip');
+      const editorPanel = document.getElementById('fpv-editor-panel');
+      if (!floatingTooltip || !editorPanel) return { found: false };
+
+      const isDisplayed = floatingTooltip.style.display !== 'none' && window.getComputedStyle(floatingTooltip).display !== 'none';
+      const tooltipRect = floatingTooltip.getBoundingClientRect();
+      const panelRect = editorPanel.getBoundingClientRect();
+
+      return {
+        found: true,
+        isDisplayed,
+        hasText: floatingTooltip.textContent.includes('Turn Mode'),
+        tooltipLeft: tooltipRect.left,
+        tooltipRight: tooltipRect.right,
+        tooltipTop: tooltipRect.top,
+        panelLeft: panelRect.left,
+        notClippedLeft: tooltipRect.left >= 0,
+        isDockedLeftOfPanel: tooltipRect.right <= panelRect.left + 5
+      };
+    });
+
+    assert.strictEqual(tooltipState.found, true, 'Floating tooltip element must exist in DOM');
+    assert.strictEqual(tooltipState.isDisplayed, true, 'Floating tooltip must be displayed on badge hover');
+    assert.strictEqual(tooltipState.hasText, true, 'Floating tooltip must contain parameter description');
+    assert.strictEqual(tooltipState.notClippedLeft, true, 'Floating tooltip must not be clipped on the left');
+    assert.strictEqual(tooltipState.isDockedLeftOfPanel, true, 'Floating tooltip should dock to the left of #fpv-editor-panel');
+
+    // 4. Move mouse away to ensure clean hide
+    await page.mouse.move(0, 0);
+    const hiddenAfterMouseOut = await page.evaluate(() => {
+      const floatingTooltip = document.getElementById('wp-leg-floating-tooltip');
+      return floatingTooltip ? floatingTooltip.style.display === 'none' : true;
+    });
+    assert.strictEqual(hiddenAfterMouseOut, true, 'Floating tooltip must hide on mouse out');
+
+    // Cleanup: close 3D preview modal
+    await page.evaluate(() => {
+      const modal = document.getElementById('preview-3d-modal');
+      if (modal) modal.classList.add('hidden');
+    });
+  });
+
+  test('E2E: Resolved Inherited Setting Displays Across Three-Tier Cascade (v1.87.0)', async () => {
+    const results = await page.evaluate(async () => {
+      // 1. Tier 2: Check Layer Settings inherit options
+      const speedInput = document.getElementById('speed');
+      const turnSpeedInheritOpt = document.getElementById('layer-turnaround-speed-inherit-opt');
+      const globalDetourSelect = document.getElementById('global-exclusion-detour-mode');
+      const detourInheritOpt = document.getElementById('exclusion-detour-mode-inherit-opt');
+
+      if (!speedInput || !turnSpeedInheritOpt || !globalDetourSelect || !detourInheritOpt) {
+        return { error: 'Tier 2 elements not found' };
+      }
+
+      // Set global speed to 6.2 m/s
+      speedInput.value = '6.2';
+      speedInput.dispatchEvent(new Event('input'));
+      if (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) {
+        flightLayers.forEach(l => { l.speed = 6.2; });
+      }
+      const activeLayer = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.speed = 6.2;
+      }
+      if (typeof syncDisplayValues === 'function') syncDisplayValues();
+
+      const turnSpeedText = turnSpeedInheritOpt.textContent;
+
+      // Set global detour mode to overTop
+      globalDetourSelect.value = 'overTop';
+      globalDetourSelect.dispatchEvent(new Event('change'));
+
+      const detourText = detourInheritOpt.textContent;
+
+      // 2. Tier 3: 2D Waypoint Editor Popup
+      const wps = typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : [];
+      let popupSpeedText = '';
+      let popupCameraInheritText = '';
+      let popupHeadingInheritText = '';
+
+      if (wps && wps.length > 0) {
+        wps[0].speed = null;
+        wps[0].cameraAction = 'inherit';
+        wps[0].headingMode = 'inherit';
+
+        const dummyMarker = {
+          getLatLng: () => ({ lat: wps[0].lat, lng: wps[0].lon }),
+          setLatLng: () => {},
+          setIcon: () => {},
+          setTooltipContent: () => {},
+          closePopup: () => {}
+        };
+        const dom = createWaypointEditorDOM(wps[0], 0, dummyMarker, null, wps);
+        const speedValSpan = dom.querySelector('#edit-wp-speed-val');
+        const camSelect = dom.querySelector('#edit-wp-camera-action');
+        const headSelect = dom.querySelector('#edit-wp-heading-mode');
+
+        if (speedValSpan) popupSpeedText = speedValSpan.textContent;
+        if (camSelect && camSelect.options.length > 0) popupCameraInheritText = camSelect.options[0].textContent;
+        if (headSelect && headSelect.options.length > 0) popupHeadingInheritText = headSelect.options[0].textContent;
+      }
+
+      // 3. Tier 3: 3D FPV HUD Waypoint Editor
+      let fpvSpeedText = '';
+      let fpvHoverText = '';
+      let fpvHeadingInheritText = '';
+
+      if (typeof updateFPVEditorUI === 'function') {
+        const curIdx = (typeof fpvProgressIndex !== 'undefined') ? fpvProgressIndex : 0;
+        if (wps && wps[curIdx]) {
+          wps[curIdx].speed = null;
+          wps[curIdx].hoverTime = 'inherit';
+          wps[curIdx].headingMode = 'inherit';
+        }
+        updateFPVEditorUI();
+        const fpvSpeedVal = document.getElementById('fpv-edit-speed-val');
+        const fpvHoverVal = document.getElementById('fpv-edit-hover-val');
+        const fpHHeadOpt = document.getElementById('fpv-edit-heading-mode-inherit-opt');
+
+        if (fpvSpeedVal) fpvSpeedText = fpvSpeedVal.textContent;
+        if (fpvHoverVal) fpvHoverText = fpvHoverVal.textContent;
+        if (fpHHeadOpt) fpvHeadingInheritText = fpHHeadOpt.textContent;
+      }
+
+      return {
+        turnSpeedText,
+        detourText,
+        popupSpeedText,
+        popupCameraInheritText,
+        popupHeadingInheritText,
+        fpvSpeedText,
+        fpvHoverText,
+        fpvHeadingInheritText
+      };
+    });
+
+    assert.ok(results.turnSpeedText.includes('6.2 m/s'), `Tier 2 Turnaround Speed must display 6.2 m/s, got: ${results.turnSpeedText}`);
+    assert.ok(results.detourText.includes('Over the Top'), `Tier 2 Detour must display Over the Top, got: ${results.detourText}`);
+    assert.ok(results.popupSpeedText.includes('Auto (6.2 m/s)'), `2D popup speed display must show Auto (6.2 m/s), got: ${results.popupSpeedText}`);
+    assert.ok(results.popupCameraInheritText.includes('Stop & Shoot'), `2D popup camera action must show Stop & Shoot, got: ${results.popupCameraInheritText}`);
+    assert.ok(results.popupHeadingInheritText.includes('Follow Flight Path'), `2D popup heading mode must show Follow Flight Path, got: ${results.popupHeadingInheritText}`);
+    assert.ok(results.fpvSpeedText.includes('Auto (6.2 m/s)'), `3D FPV speed must show Auto (6.2 m/s), got: ${results.fpvSpeedText}`);
+    assert.ok(results.fpvHoverText.includes('(Inherited)'), `3D FPV hover must show (Inherited), got: ${results.fpvHoverText}`);
+    assert.ok(results.fpvHeadingInheritText.includes('Follow Flight Path'), `3D FPV heading mode must show Follow Flight Path, got: ${results.fpvHeadingInheritText}`);
   });
 });
 
