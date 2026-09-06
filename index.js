@@ -305,6 +305,10 @@ function setAppTheme(theme) {
       themeBtn.textContent = current === 'light' ? '🌙' : '☀️';
       themeBtn.title = current === 'light' ? 'Switch to Dark Mode' : 'Switch to Light (Field) Mode';
     }
+    const themeSelect = document.getElementById('theme-mode-select');
+    if (themeSelect && themeSelect.value !== current) {
+      themeSelect.value = current;
+    }
   }
   return current;
 }
@@ -319,6 +323,15 @@ function toggleAppTheme() {
 function initTheme() {
   const saved = getAppTheme();
   setAppTheme(saved);
+  if (typeof document !== 'undefined') {
+    const themeSelect = document.getElementById('theme-mode-select');
+    if (themeSelect) {
+      themeSelect.value = saved;
+      themeSelect.addEventListener('change', () => {
+        setAppTheme(themeSelect.value);
+      });
+    }
+  }
 }
 
 // Map & Camera Visual Palette System
@@ -749,12 +762,15 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     moderateTurnSettlingTime: 4.0,
     pitchSettlingTime: 3.0,
     cameraZoom: 1.0,
+    cameraAspectRatio: '4:3',
     roadOffset: 15,
     roadSnap: true,
     targetPoly: [],
     targetMode: 'radius', // 'polygon' or 'radius'
     targetRadius: 25,
     targetHeight: 8,
+    targetAutoDimensions: true, // Auto-determine Width & Height from target boundary
+    targetFramingMode: 'balanced', // 'balanced', 'tight', 'full'
     targetCullingMode: 'smartTrim', // 'smartTrim', 'pruneOnly', 'convergent'
     targetGridPass: 'double', // 'double' or 'single'
     targetPerimeterPass: false, // Enable perimeter orbit pass
@@ -1006,6 +1022,8 @@ function saveActiveLayerFromUi() {
   }
 
   if (cameraZoomEl) layer.cameraZoom = parseFloat(cameraZoomEl.value) || 1.0;
+  const cameraAspectEl = document.getElementById('camera-aspect-ratio');
+  if (cameraAspectEl && cameraAspectEl.value) layer.cameraAspectRatio = cameraAspectEl.value;
   if (roadOffsetEl) layer.roadOffset = parseFloat(roadOffsetEl.value) || 15;
   if (roadSnapEl) layer.roadSnap = roadSnapEl.checked;
   if (exclAllAltEl) layer.allAltitudes = exclAllAltEl.checked;
@@ -1018,10 +1036,12 @@ function saveActiveLayerFromUi() {
   const targetHeightEl = document.getElementById('target-splat-height');
   const targetCullingEl = document.getElementById('target-splat-culling-mode');
   const targetGridPassEl = document.getElementById('target-splat-grid-pass');
+  const targetFramingEl = document.getElementById('target-splat-framing-mode');
   if (targetRadiusEl) layer.targetRadius = parseFloat(targetRadiusEl.value) || 25;
   if (targetHeightEl) layer.targetHeight = parseFloat(targetHeightEl.value) || 8;
   if (targetCullingEl && targetCullingEl.value) layer.targetCullingMode = targetCullingEl.value;
   if (targetGridPassEl && targetGridPassEl.value) layer.targetGridPass = targetGridPassEl.value;
+  if (targetFramingEl && targetFramingEl.value) layer.targetFramingMode = targetFramingEl.value;
 
   const perimPassEl = document.getElementById('target-perimeter-pass');
   const perimStandoffEl = document.getElementById('target-perimeter-standoff');
@@ -1116,6 +1136,8 @@ function syncUiWithActiveLayer() {
   }
 
   setVal('camera-zoom', layer.cameraZoom);
+  setVal('camera-aspect-ratio', layer.cameraAspectRatio || CAMERA_ASPECT_RATIO || '4:3');
+  setCameraAspectRatio(layer.cameraAspectRatio || CAMERA_ASPECT_RATIO || '4:3', true);
   setVal('road-offset', layer.roadOffset);
   setVal('exclusion-min-alt', layer.minAltitude !== undefined ? layer.minAltitude : 0);
   setVal('exclusion-max-alt', layer.maxAltitude !== undefined ? layer.maxAltitude : 60);
@@ -1127,6 +1149,9 @@ function syncUiWithActiveLayer() {
   setVal('target-splat-height', layer.targetHeight !== undefined ? layer.targetHeight : 8);
   setVal('target-splat-culling-mode', layer.targetCullingMode || 'smartTrim');
   setVal('target-splat-grid-pass', layer.targetGridPass || 'double');
+  setVal('target-splat-framing-mode', layer.targetFramingMode || 'balanced');
+  updateTargetSplatAutoFitUI(layer);
+  updateTargetSplatDiagram(layer);
 
   // Perimeter orbit controls
   const perimPassEl = document.getElementById('target-perimeter-pass');
@@ -2100,8 +2125,8 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
   const centerLat = (layer.centerLat !== undefined && layer.centerLat !== null) ? layer.centerLat : globalCenterLat;
   const centerLon = (layer.centerLon !== undefined && layer.centerLon !== null) ? layer.centerLon : globalCenterLon;
 
-  const gridWidth = layer.gridWidth !== undefined ? layer.gridWidth : 100;
-  const gridHeight = layer.gridHeight !== undefined ? layer.gridHeight : 100;
+  let gridWidth = layer.gridWidth !== undefined ? layer.gridWidth : 100;
+  let gridHeight = layer.gridHeight !== undefined ? layer.gridHeight : 100;
   const rotation = layer.gridRotation !== undefined ? layer.gridRotation : 0;
   const gridType = layer.pattern || 'double';
   const overlapFront = (layer.frontOverlap !== undefined ? layer.frontOverlap : 80) / 100.0;
@@ -2110,6 +2135,14 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
   const speed = layer.speed !== undefined ? layer.speed : 4;
   const captureMode = layer.captureMode || 'stopAndShoot';
   const defaultGimbalPitch = layer.gimbalPitch !== undefined ? layer.gimbalPitch : -60;
+
+  if (gridType === 'target-splat' && layer.targetAutoDimensions !== false) {
+    const autoDims = calculateTargetSplatDimensions(layer, altitude, defaultGimbalPitch, rotation);
+    gridWidth = autoDims.width;
+    gridHeight = autoDims.height;
+    layer.gridWidth = gridWidth;
+    layer.gridHeight = gridHeight;
+  }
   const headingMode = layer.headingMode || 'followWayline';
   const hoverTime = layer.hoverTime || 0;
   const cameraZoom = layer.cameraZoom || 1.0;
@@ -2776,9 +2809,63 @@ function getCurrentPhotos() {
   return importedPhotos || generatedPhotos;
 }
 
-// Camera specifications for DJI Mini 4 Pro (4:3 aspect ratio)
-let CAMERA_HFOV = 69.7; // Horizontal field of view in degrees
-let CAMERA_VFOV = 55.2; // Vertical field of view in degrees
+// Camera specifications and Aspect Ratio settings (v1.85.0)
+let CAMERA_ASPECT_RATIO = '4:3'; // Default '4:3' (Photo standard) or '16:9' (Video / Wide Crop)
+let CAMERA_HFOV = 69.7; // Horizontal field of view in degrees (4:3 default)
+let CAMERA_VFOV = 55.2; // Vertical field of view in degrees (4:3 default)
+
+function setCameraAspectRatio(ratio, skipUpdate = false) {
+  const normRatio = (ratio === '16:9') ? '16:9' : '4:3';
+  CAMERA_ASPECT_RATIO = normRatio;
+  if (normRatio === '16:9') {
+    CAMERA_HFOV = 69.7;
+    CAMERA_VFOV = 44.2;
+  } else {
+    CAMERA_HFOV = 69.7;
+    CAMERA_VFOV = 55.2;
+  }
+  if (typeof localStorage !== 'undefined') {
+    try { localStorage.setItem('aalaapi_camera_aspect_ratio', normRatio); } catch (e) {}
+  }
+  if (typeof document !== 'undefined') {
+    const aspectSelect = document.getElementById('camera-aspect-ratio');
+    if (aspectSelect && aspectSelect.value !== normRatio) {
+      aspectSelect.value = normRatio;
+    }
+    const badge = document.getElementById('camera-aspect-ratio-badge');
+    if (badge) {
+      if (normRatio === '16:9') {
+        badge.textContent = '16:9 Video';
+        badge.style.background = 'rgba(245, 158, 11, 0.15)';
+        badge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+        badge.style.color = '#fbbf24';
+      } else {
+        badge.textContent = '4:3 Photo';
+        badge.style.background = 'rgba(6, 182, 212, 0.15)';
+        badge.style.borderColor = 'rgba(6, 182, 212, 0.3)';
+        badge.style.color = 'var(--accent-cyan)';
+      }
+    }
+    const hfovEl = document.getElementById('camera-hfov');
+    const vfovEl = document.getElementById('camera-vfov');
+    if (hfovEl) hfovEl.value = String(CAMERA_HFOV);
+    if (vfovEl) vfovEl.value = String(CAMERA_VFOV);
+  }
+  if (!skipUpdate) {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer) {
+      activeLayer.cameraAspectRatio = normRatio;
+      if (activeLayer.pattern === 'target-splat') {
+        if (typeof applyTargetSplatAutoDimensions === 'function' && activeLayer.targetAutoDimensions !== false) {
+          applyTargetSplatAutoDimensions(activeLayer);
+        } else if (typeof updateTargetSplatDiagram === 'function') {
+          updateTargetSplatDiagram(activeLayer);
+        }
+      }
+    }
+    if (typeof updateGrid === 'function') updateGrid();
+  }
+}
 
 // Standard satellite and street map layers
 let streetLayer;
@@ -2865,6 +2952,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   initMap();
   initUIEventListeners();
+  initMobileNav();
   initGeolocation(); // Wires up the Locate Me button — does NOT auto-request permission
   initAutoPlan();
   initPatternSelectorCards();
@@ -3211,7 +3299,7 @@ const CONTROLS_LIST = [
   'grid-type', 'grid-width', 'grid-height', 'grid-rotation',
   'front-overlap', 'side-overlap', 'gimbal-pitch',
   'altitude', 'speed', 'heading-mode', 'finish-action', 'capture-mode', 'path-mode', 'signal-lost-action',
-  'camera-model', 'drone-model', 'camera-zoom', 'camera-hfov', 'camera-vfov', 'road-offset',
+  'camera-model', 'drone-model', 'camera-zoom', 'camera-aspect-ratio', 'camera-hfov', 'camera-vfov', 'road-offset',
   'global-hover-time', 'global-exclusion-detour-mode', 'global-exclusion-clearance-buffer',
   'max-flight-height', 'rth-altitude',
   'target-splat-radius', 'target-splat-height', 'target-splat-culling-mode', 'target-splat-grid-pass'
@@ -3261,6 +3349,7 @@ const FACTORY_DEFAULTS = {
   'path-mode': 'smoothTransition',
   'camera-model': 'mini4pro',
   'camera-zoom': '1',
+  'camera-aspect-ratio': '4:3',
   'camera-hfov': '69.7',
   'camera-vfov': '55.2',
   'global-hover-time': '0',
@@ -4065,11 +4154,31 @@ function initUIEventListeners() {
     
     // Listen to changes to trigger redrawing of the grid
     el.addEventListener('input', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer && activeLayer.pattern === 'target-splat') {
+        if (id === 'grid-width' || id === 'grid-height') {
+          if (!isProgrammaticDimensionUpdate) {
+            activeLayer.targetAutoDimensions = false;
+            updateTargetSplatAutoFitUI(activeLayer);
+          }
+        } else if (activeLayer.targetAutoDimensions !== false && (id === 'altitude' || id === 'gimbal-pitch' || id === 'grid-rotation')) {
+          applyTargetSplatAutoDimensions(activeLayer);
+        }
+      }
       syncDisplayValues();
       updateGrid();
     });
     
     el.addEventListener('change', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer && activeLayer.pattern === 'target-splat') {
+        if (id === 'grid-width' || id === 'grid-height') {
+          if (!isProgrammaticDimensionUpdate) {
+            activeLayer.targetAutoDimensions = false;
+            updateTargetSplatAutoFitUI(activeLayer);
+          }
+        }
+      }
       syncDisplayValues();
       updateGrid();
       saveAllSettingsToLocalStorage();
@@ -4214,10 +4323,26 @@ function initUIEventListeners() {
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
       if (activeLayer) {
         activeLayer.targetPoly = [];
+        if (activeLayer.targetAutoDimensions !== false) {
+          applyTargetSplatAutoDimensions(activeLayer);
+        }
       }
       setTargetPolyEditMode(true);
       updateGrid();
       saveAllSettingsToLocalStorage();
+    });
+  }
+
+  const targetAutoFitBtn = document.getElementById('target-splat-autofit-btn');
+  if (targetAutoFitBtn) {
+    targetAutoFitBtn.addEventListener('click', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.targetAutoDimensions = true;
+        applyTargetSplatAutoDimensions(activeLayer);
+        updateGrid();
+        saveAllSettingsToLocalStorage();
+      }
     });
   }
 
@@ -4227,6 +4352,9 @@ function initUIEventListeners() {
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
       if (activeLayer) {
         activeLayer.targetRadius = parseFloat(targetRadEl.value) || 25;
+        if (activeLayer.targetAutoDimensions !== false) {
+          applyTargetSplatAutoDimensions(activeLayer);
+        }
       }
       syncDisplayValues();
       updateGrid();
@@ -4265,6 +4393,33 @@ function initUIEventListeners() {
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
       if (activeLayer) {
         activeLayer.targetGridPass = targetPassEl.value;
+        if (activeLayer.targetAutoDimensions !== false) {
+          applyTargetSplatAutoDimensions(activeLayer);
+        }
+      }
+      updateGrid();
+      saveAllSettingsToLocalStorage();
+    });
+  }
+
+  const cameraAspectEl = document.getElementById('camera-aspect-ratio');
+  if (cameraAspectEl) {
+    cameraAspectEl.addEventListener('change', () => {
+      setCameraAspectRatio(cameraAspectEl.value);
+      saveAllSettingsToLocalStorage();
+    });
+  }
+
+  const targetFramingEl = document.getElementById('target-splat-framing-mode');
+  if (targetFramingEl) {
+    targetFramingEl.addEventListener('change', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.targetFramingMode = targetFramingEl.value;
+        if (activeLayer.targetAutoDimensions !== false) {
+          applyTargetSplatAutoDimensions(activeLayer);
+        }
+        updateTargetSplatDiagram(activeLayer);
       }
       updateGrid();
       saveAllSettingsToLocalStorage();
@@ -5136,6 +5291,8 @@ function initUIEventListeners() {
       configModal.classList.toggle('hidden');
       if (!configModal.classList.contains('hidden')) {
         if (unitSystemEl) unitSystemEl.value = getUnitSystem();
+        const themeSelect = document.getElementById('theme-mode-select');
+        if (themeSelect) themeSelect.value = getAppTheme();
         const camPalSelect = document.getElementById('camera-palette-select');
         if (camPalSelect) {
           camPalSelect.value = getActiveCameraPalette().id;
@@ -5580,6 +5737,106 @@ function initClickToTypeInputs() {
 }
 
 /**
+ * Mobile Navigation & Responsive Ergonomics (v1.86.0)
+ * Handles expandable search bar on small screens and 3-dots More Actions dropdown menu.
+ */
+function initMobileNav() {
+  if (typeof document === 'undefined' || typeof document.querySelector !== 'function') return;
+
+  const searchToggleBtn = document.getElementById('mobile-search-toggle-btn');
+  const searchCloseBtn = document.getElementById('mobile-search-close-btn');
+  const topbar = document.querySelector('.studio-topbar');
+  const topbarCenter = document.querySelector('.topbar-center');
+  const locationInput = document.getElementById('location-input');
+
+  if (searchToggleBtn && topbarCenter) {
+    searchToggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      topbarCenter.classList.add('search-open');
+      if (topbar) topbar.classList.add('search-open');
+      if (locationInput) {
+        setTimeout(() => locationInput.focus(), 50);
+      }
+    });
+  }
+
+  if (searchCloseBtn && topbarCenter) {
+    searchCloseBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      topbarCenter.classList.remove('search-open');
+      if (topbar) topbar.classList.remove('search-open');
+    });
+  }
+
+  // Close search on Locate Me click in mobile view
+  const locateBtn = document.getElementById('locate-me-btn');
+  if (locateBtn && topbarCenter) {
+    locateBtn.addEventListener('click', () => {
+      if (window.innerWidth <= 640) {
+        topbarCenter.classList.remove('search-open');
+        if (topbar) topbar.classList.remove('search-open');
+      }
+    });
+  }
+
+  // More Actions Dropdown Menu (Intro, About, Links)
+  const moreBtn = document.getElementById('header-more-btn');
+  const moreMenu = document.getElementById('header-more-menu');
+  const moreIntroBtn = document.getElementById('more-menu-intro-btn');
+  const moreAboutBtn = document.getElementById('more-menu-about-btn');
+  const moreLinksBtn = document.getElementById('more-menu-links-btn');
+
+  if (moreBtn && moreMenu) {
+    moreBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      moreMenu.classList.toggle('hidden');
+    });
+
+    if (moreIntroBtn) {
+      moreIntroBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        moreMenu.classList.add('hidden');
+        if (typeof openIntroModal === 'function') {
+          openIntroModal('workflow');
+        }
+      });
+    }
+
+    if (moreAboutBtn) {
+      moreAboutBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        moreMenu.classList.add('hidden');
+        const aboutBtn = document.getElementById('about-btn');
+        if (aboutBtn) aboutBtn.click();
+      });
+    }
+
+    if (moreLinksBtn) {
+      moreLinksBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        moreMenu.classList.add('hidden');
+        const linksBtn = document.getElementById('useful-links-btn');
+        if (linksBtn) linksBtn.click();
+      });
+    }
+
+    // Dismiss menu on click outside
+    document.addEventListener('click', (e) => {
+      if (!moreMenu.contains(e.target) && e.target !== moreBtn && !moreBtn.contains(e.target)) {
+        moreMenu.classList.add('hidden');
+      }
+    });
+
+    // Dismiss menu on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !moreMenu.classList.contains('hidden')) {
+        moreMenu.classList.add('hidden');
+      }
+    });
+  }
+}
+
+/**
  * Transforms sidebar unit labels into interactive clickable toggles,
  * allowing pilots to click any unit badge to switch globally between Imperial and Metric.
  */
@@ -5762,6 +6019,8 @@ function togglePatternParameters() {
     if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
     if (targetSplatContainer) targetSplatContainer.classList.remove('hidden');
     if (widthLabel) widthLabel.textContent = "Survey Width";
+    const heightLabel = (heightContainer && heightContainer.querySelector) ? heightContainer.querySelector('.control-label > span') : null;
+    if (heightLabel) heightLabel.textContent = "Survey Height";
     if (widthContainer) widthContainer.style.display = 'block';
     if (heightContainer) heightContainer.style.display = 'block';
     if (rotationContainer) rotationContainer.style.display = 'block';
@@ -5772,6 +6031,10 @@ function togglePatternParameters() {
     if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
     if (gimbalPitchSlider && (!gimbalPitchSlider.value || parseFloat(gimbalPitchSlider.value) === -90)) {
       gimbalPitchSlider.value = -45;
+    }
+    if (activeLayer) {
+      applyTargetSplatAutoDimensions(activeLayer);
+      updateTargetSplatDiagram(activeLayer);
     }
 
   } else if (gridType === 'exclusion-freeform') {
@@ -5884,6 +6147,8 @@ function togglePatternParameters() {
       }
     } else {
       if (widthLabel) widthLabel.textContent = "Grid Width";
+      const heightLabel = (heightContainer && heightContainer.querySelector) ? heightContainer.querySelector('.control-label > span') : null;
+      if (heightLabel) heightLabel.textContent = "Grid Height";
       if (heightContainer) heightContainer.style.display = 'block';
       if (rotationContainer) rotationContainer.style.display = 'block';
     }
@@ -6180,7 +6445,11 @@ function syncDisplayValues() {
     updateGimbalPitchVisualizer(pitchVal);
   }
 
-  // Sync Camera HFOV and VFOV variables and displays
+  // Sync Camera Aspect Ratio, HFOV, VFOV, and Zoom
+  const aspectSelect = document.getElementById('camera-aspect-ratio');
+  if (aspectSelect && aspectSelect.value && aspectSelect.value !== CAMERA_ASPECT_RATIO) {
+    setCameraAspectRatio(aspectSelect.value, true);
+  }
   const hfovSlider = document.getElementById('camera-hfov');
   const vfovSlider = document.getElementById('camera-vfov');
   const zoomSlider = document.getElementById('camera-zoom');
@@ -6377,12 +6646,25 @@ function syncDisplayValues() {
   if (perimPitchSlider && perimPitchValEl) {
     perimPitchValEl.textContent = perimPitchSlider.value;
   }
+
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  if (activeLayer && activeLayer.pattern === 'target-splat') {
+    updateTargetSplatAutoFitUI(activeLayer);
+    updateTargetSplatDiagram(activeLayer);
+  }
 }
 
 // Search Address via OpenStreetMap Nominatim API
 function searchAddress() {
   const query = document.getElementById('location-input').value.trim();
   if (!query) return;
+
+  const topbarCenter = (typeof document !== 'undefined' && typeof document.querySelector === 'function') ? document.querySelector('.topbar-center') : null;
+  const topbar = (typeof document !== 'undefined' && typeof document.querySelector === 'function') ? document.querySelector('.studio-topbar') : null;
+  if (typeof window !== 'undefined' && window.innerWidth <= 640) {
+    if (topbarCenter) topbarCenter.classList.remove('search-open');
+    if (topbar) topbar.classList.remove('search-open');
+  }
 
   const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
 
@@ -7534,7 +7816,7 @@ function generateGridMultiOrbitComboCoordinates(radius, rotation, captureMode, s
 // Target Splat 3D Frustum Culling & Geometry Engine (v1.77.0)
 // ============================================================================
 
-function calculateCameraGroundFrustum(droneX, droneY, alt, headingDeg, pitchDeg, hfov, vfov, zPlane = 0) {
+function calculateCameraGroundFrustum(droneX, droneY, alt, headingDeg, pitchDeg, hfov, vfov, zPlane = 0, framingRatio = 0.55) {
   const deltaH = Math.max(1.0, (alt || 50) - (zPlane || 0));
   const headingRad = ((headingDeg || 0) * Math.PI) / 180.0;
   
@@ -7552,9 +7834,13 @@ function calculateCameraGroundFrustum(droneX, droneY, alt, headingDeg, pitchDeg,
   const hfovVal = (hfov && !isNaN(hfov) && hfov > 0) ? hfov : 69.7;
   const vfovVal = (vfov && !isNaN(vfov) && vfov > 0) ? vfov : 55.2;
 
+  // framingRatio modulates upper vertical FOV to focus on the photogrammetric sweet spot
+  // 1.0 = full theoretical sensor horizon; 0.55 = balanced sweet spot; 0.35 = tight framing
+  const fRatio = (typeof framingRatio === 'number' && framingRatio > 0) ? Math.min(1.0, Math.max(0.1, framingRatio)) : 0.55;
+
   // Angular bounds along vertical field of view
   const alphaNearDeg = Math.max(-85.0, Math.min(85.0, alphaDeg - vfovVal / 2.0));
-  const alphaFarDeg = Math.max(-85.0, Math.min(85.0, alphaDeg + vfovVal / 2.0));
+  const alphaFarDeg = Math.max(-85.0, Math.min(85.0, alphaDeg + (vfovVal / 2.0) * fRatio));
 
   const dNear = deltaH * Math.tan((alphaNearDeg * Math.PI) / 180.0);
   const dFar = deltaH * Math.tan((alphaFarDeg * Math.PI) / 180.0);
@@ -7562,8 +7848,10 @@ function calculateCameraGroundFrustum(droneX, droneY, alt, headingDeg, pitchDeg,
   const slantNear = Math.sqrt(deltaH * deltaH + dNear * dNear);
   const slantFar = Math.sqrt(deltaH * deltaH + dFar * dFar);
 
-  const halfWNear = slantNear * Math.tan(((hfovVal / 2.0) * Math.PI) / 180.0);
-  const halfWFar = slantFar * Math.tan(((hfovVal / 2.0) * Math.PI) / 180.0);
+  // Modulate lateral (across-track) half-angle by fRatio to prune parallel flight legs
+  // that are out of frame or only capture the target at extreme sensor corners
+  const halfWNear = slantNear * Math.tan(((hfovVal / 2.0) * fRatio) * Math.PI / 180.0);
+  const halfWFar = slantFar * Math.tan(((hfovVal / 2.0) * fRatio) * Math.PI / 180.0);
 
   return [
     { x: droneX + dNear * ux - halfWNear * rx, y: droneY + dNear * uy - halfWNear * ry }, // Near-Left
@@ -7610,15 +7898,15 @@ function doPolygonsIntersect2D(polyA, polyB) {
   return false;
 }
 
-function isTargetVisibleInFrustum(droneX, droneY, alt, headingDeg, pitchDeg, hfov, vfov, targetPoly, objectHeight = 0) {
+function isTargetVisibleInFrustum(droneX, droneY, alt, headingDeg, pitchDeg, hfov, vfov, targetPoly, objectHeight = 0, framingRatio = 0.55) {
   if (!targetPoly || targetPoly.length < 3) return true;
   // Test ground footprint (Z = 0)
-  const groundFrustum = calculateCameraGroundFrustum(droneX, droneY, alt, headingDeg, pitchDeg, hfov, vfov, 0);
+  const groundFrustum = calculateCameraGroundFrustum(droneX, droneY, alt, headingDeg, pitchDeg, hfov, vfov, 0, framingRatio);
   if (doPolygonsIntersect2D(groundFrustum, targetPoly)) return true;
 
   // Test extruded roof level (Z = objectHeight) to protect rooflines & chimneys
   if (objectHeight > 0 && alt > objectHeight) {
-    const roofFrustum = calculateCameraGroundFrustum(droneX, droneY, alt, headingDeg, pitchDeg, hfov, vfov, objectHeight);
+    const roofFrustum = calculateCameraGroundFrustum(droneX, droneY, alt, headingDeg, pitchDeg, hfov, vfov, objectHeight, framingRatio);
     if (doPolygonsIntersect2D(roofFrustum, targetPoly)) return true;
   }
   return false;
@@ -7662,12 +7950,269 @@ function getLocalTargetPolygon(layer, centerLat, centerLon, rotationDeg) {
   }));
 }
 
+/**
+ * Automatically calculates optimal Target Splat flight grid dimensions (Width & Height)
+ * based on the target boundary (Radius or Freeform Polygon), camera altitude, gimbal pitch,
+ * and framing margins.
+ */
+function calculateTargetSplatDimensions(layer, overrideAltitude, overridePitch, overrideRotation) {
+  if (!layer) return { width: 100, height: 100 };
+
+  const targetMode = layer.targetMode || 'radius';
+  const targetRadius = (typeof layer.targetRadius === 'number' && layer.targetRadius > 0) ? layer.targetRadius : 25;
+  const rotationDeg = (overrideRotation !== undefined) ? overrideRotation : (layer.gridRotation !== undefined ? layer.gridRotation : 0);
+  const altitude = (overrideAltitude !== undefined && overrideAltitude > 0) ? overrideAltitude : (layer.altitude !== undefined ? layer.altitude : 50);
+
+  let gimbalPitch = (overridePitch !== undefined) ? overridePitch : (layer.gimbalPitch !== undefined ? layer.gimbalPitch : -45);
+  // Normalize pitch to negative downward angle
+  gimbalPitch = -Math.abs(gimbalPitch !== null && !isNaN(gimbalPitch) ? gimbalPitch : -45);
+  gimbalPitch = Math.max(-90, Math.min(-15, gimbalPitch));
+
+  let halfExtentX = targetRadius;
+  let halfExtentY = targetRadius;
+
+  if (targetMode === 'polygon' && Array.isArray(layer.targetPoly) && layer.targetPoly.length >= 3) {
+    const centerLat = (layer.centerLat !== undefined && layer.centerLat !== null) ? layer.centerLat : 0;
+    const centerLon = (layer.centerLon !== undefined && layer.centerLon !== null) ? layer.centerLon : 0;
+    const localPoly = getLocalTargetPolygon(layer, centerLat, centerLon, rotationDeg);
+    if (localPoly && localPoly.length >= 3) {
+      let maxX = 0;
+      let maxY = 0;
+      localPoly.forEach(pt => {
+        const absX = Math.abs(pt.x);
+        const absY = Math.abs(pt.y);
+        if (absX > maxX) maxX = absX;
+        if (absY > maxY) maxY = absY;
+      });
+      halfExtentX = Math.max(5, maxX);
+      halfExtentY = Math.max(5, maxY);
+    }
+  }
+
+  // Camera look-ahead standoff distance based on gimbal pitch angle from nadir
+  // alpha is angle from nadir: 0 deg = nadir (-90 pitch), 45 deg = 45 oblique (-45 pitch), 30 deg = 60 oblique (-60 pitch)
+  const alphaDeg = 90.0 + gimbalPitch;
+  const alphaRad = (alphaDeg * Math.PI) / 180.0;
+  let dStandoff = altitude * Math.tan(alphaRad);
+
+  const framingMode = layer ? (layer.targetFramingMode || 'balanced') : 'balanced';
+  if (framingMode === 'tight') {
+    dStandoff *= 0.85;
+  }
+
+  // Framing margin for turnaround overshoot, line spacing, and contextual framing
+  const margin = Math.max(5, Math.min(20, Math.round(0.2 * altitude)));
+
+  // In Double Grid (or default for Target Splat):
+  // Pass 1 flies North/South (aims along Y) -> requires Y standoff on both sides
+  // Pass 2 flies East/West (aims along X) -> requires X standoff on both sides
+  const gridPass = layer.targetGridPass || 'double';
+  let spanX, spanY;
+
+  spanY = 2 * (halfExtentY + dStandoff + margin);
+
+  if (gridPass === 'single') {
+    const hfovVal = (typeof CAMERA_HFOV === 'number' && CAMERA_HFOV > 0) ? CAMERA_HFOV : 69.7;
+    const halfLateralFootprint = altitude * Math.tan(((hfovVal / 2.0) * Math.PI) / 180.0);
+    spanX = 2 * (halfExtentX + Math.max(halfLateralFootprint * 0.5, margin));
+  } else {
+    spanX = 2 * (halfExtentX + dStandoff + margin);
+  }
+
+  // Clamp to slider limits: 20m to 500m, rounded to nearest 5m
+  const width = Math.min(500, Math.max(20, Math.round(spanX / 5) * 5));
+  const height = Math.min(500, Math.max(20, Math.round(spanY / 5) * 5));
+
+  return { width, height };
+}
+
+let isProgrammaticDimensionUpdate = false;
+
+function applyTargetSplatAutoDimensions(layer) {
+  if (!layer || layer.pattern !== 'target-splat' || layer.targetAutoDimensions === false) {
+    updateTargetSplatAutoFitUI(layer);
+    updateTargetSplatDiagram(layer);
+    return;
+  }
+  const dims = calculateTargetSplatDimensions(layer);
+  layer.gridWidth = dims.width;
+  layer.gridHeight = dims.height;
+
+  isProgrammaticDimensionUpdate = true;
+  if (typeof document !== 'undefined') {
+    const widthSlider = document.getElementById('grid-width');
+    const heightSlider = document.getElementById('grid-height');
+    if (widthSlider) widthSlider.value = String(dims.width);
+    if (heightSlider) heightSlider.value = String(dims.height);
+  }
+  isProgrammaticDimensionUpdate = false;
+
+  updateTargetSplatAutoFitUI(layer);
+  updateTargetSplatDiagram(layer);
+  if (typeof syncDisplayValues === 'function') syncDisplayValues();
+}
+
+function updateTargetSplatAutoFitUI(layer) {
+  if (typeof document === 'undefined') return;
+  const btn = document.getElementById('target-splat-autofit-btn');
+  if (!btn) return;
+  const isAuto = !layer || (layer.targetAutoDimensions !== false);
+  if (isAuto) {
+    if (btn.classList && typeof btn.classList.add === 'function') btn.classList.add('active');
+    if (btn.style) {
+      btn.style.background = 'rgba(16, 185, 129, 0.3)';
+      btn.style.borderColor = 'rgba(16, 185, 129, 0.6)';
+      btn.style.color = '#34d399';
+    }
+    btn.textContent = '⚡ Auto-Fit (Active)';
+    if (typeof btn.setAttribute === 'function') {
+      btn.setAttribute('title', 'Grid Width & Height auto-derived from target boundary. Click to unlock manual mode.');
+    }
+  } else {
+    if (btn.classList && typeof btn.classList.remove === 'function') btn.classList.remove('active');
+    if (btn.style) {
+      btn.style.background = 'rgba(255, 255, 255, 0.08)';
+      btn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+      btn.style.color = 'var(--text-muted)';
+    }
+    btn.textContent = '⚡ Auto-Fit Grid';
+    if (typeof btn.setAttribute === 'function') {
+      btn.setAttribute('title', 'Click to recalculate optimal Grid Width & Height from target geometry.');
+    }
+  }
+}
+
+function updateTargetSplatDiagram(layer, overrideAltitude, overridePitch) {
+  if (typeof document === 'undefined') return;
+  const svg = document.getElementById('target-splat-diagram-svg');
+  if (!svg) return;
+
+  const altSlider = document.getElementById('altitude');
+  const pitchSlider = document.getElementById('gimbal-pitch');
+
+  const altitude = (overrideAltitude !== undefined && overrideAltitude > 0)
+    ? overrideAltitude
+    : (altSlider ? (parseFloat(altSlider.value) || 50) : (layer && layer.altitude ? layer.altitude : 50));
+
+  let gimbalPitch = (overridePitch !== undefined)
+    ? overridePitch
+    : (pitchSlider ? (parseFloat(pitchSlider.value) || -45) : (layer && layer.gimbalPitch !== undefined ? layer.gimbalPitch : -45));
+  gimbalPitch = -Math.abs(gimbalPitch !== null && !isNaN(gimbalPitch) ? gimbalPitch : -45);
+  gimbalPitch = Math.max(-90, Math.min(-15, gimbalPitch));
+
+  const framingMode = layer ? (layer.targetFramingMode || 'balanced') : 'balanced';
+  const fRatio = (framingMode === 'tight') ? 0.35 : ((framingMode === 'full') ? 1.0 : 0.55);
+
+  const vfovVal = (typeof CAMERA_VFOV === 'number' && CAMERA_VFOV > 0) ? CAMERA_VFOV : 55.2;
+  const alphaDeg = 90.0 + gimbalPitch;
+
+  const dBoresight = altitude * Math.tan((alphaDeg * Math.PI) / 180.0);
+  const alphaNearDeg = Math.max(0, alphaDeg - vfovVal / 2.0);
+  const dNear = altitude * Math.tan((alphaNearDeg * Math.PI) / 180.0);
+
+  const alphaFarFullDeg = Math.min(85.0, alphaDeg + vfovVal / 2.0);
+  const dFarFull = altitude * Math.tan((alphaFarFullDeg * Math.PI) / 180.0);
+
+  const alphaFarEffDeg = Math.min(85.0, alphaDeg + (vfovVal / 2.0) * fRatio);
+  const dFarEff = altitude * Math.tan((alphaFarEffDeg * Math.PI) / 180.0);
+
+  const dSaved = Math.max(0, dFarFull - dFarEff);
+
+  // Update badge and stats text
+  const badgeEl = document.getElementById('target-splat-framing-badge');
+  if (badgeEl) {
+    if (framingMode === 'tight') {
+      badgeEl.textContent = 'Tight Framing';
+      badgeEl.style.background = 'rgba(56, 189, 248, 0.2)';
+      badgeEl.style.color = '#38bdf8';
+    } else if (framingMode === 'full') {
+      badgeEl.textContent = 'Full Horizon';
+      badgeEl.style.background = 'rgba(245, 158, 11, 0.2)';
+      badgeEl.style.color = '#fbbf24';
+    } else {
+      badgeEl.textContent = 'Sweet Spot';
+      badgeEl.style.background = 'rgba(16, 185, 129, 0.2)';
+      badgeEl.style.color = '#34d399';
+    }
+  }
+
+  const statsEl = document.getElementById('target-splat-diagram-stats');
+  if (statsEl) {
+    if (framingMode === 'full') {
+      statsEl.textContent = `Lead-In: ${Math.round(dFarFull)}m (Full Horizon)`;
+    } else {
+      statsEl.textContent = `Lead-In: ${Math.round(dFarEff)}m | Save ~${Math.round(dSaved)}m`;
+    }
+  }
+
+  // Update SVG elements
+  const maxMeters = Math.max(75, dFarFull * 1.08);
+  const originX = 36;
+  const groundY = 72;
+  const droneY = 25;
+  const svgWidth = 232;
+  const availableWidth = svgWidth - originX;
+
+  function toSvgX(distMeters) {
+    return originX + Math.min(availableWidth, Math.max(0, (distMeters / maxMeters) * availableWidth));
+  }
+
+  const xBoresight = toSvgX(dBoresight);
+  const xNear = toSvgX(dNear);
+  const xFarEff = toSvgX(dFarEff);
+  const xFarFull = toSvgX(dFarFull);
+
+  const setElemAttr = (id, attr, val) => {
+    const el = document.getElementById(id);
+    if (el && typeof el.setAttribute === 'function') el.setAttribute(attr, val);
+  };
+  const setElemText = (id, text) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  };
+
+  // Frustum polygons
+  setElemAttr('target-splat-diag-sweetspot', 'points', `${originX},${droneY} ${Math.round(xNear)},${groundY} ${Math.round(xFarEff)},${groundY}`);
+  
+  if (framingMode === 'full' || dSaved < 4) {
+    setElemAttr('target-splat-diag-pruned', 'points', `${originX},${droneY} ${Math.round(xFarEff)},${groundY} ${Math.round(xFarEff)},${groundY}`);
+    setElemAttr('target-splat-diag-pruned', 'style', 'display: none;');
+    setElemText('target-splat-diag-pruned-label', '');
+  } else {
+    setElemAttr('target-splat-diag-pruned', 'points', `${originX},${droneY} ${Math.round(xFarEff)},${groundY} ${Math.round(xFarFull)},${groundY}`);
+    setElemAttr('target-splat-diag-pruned', 'style', 'display: block;');
+    const midX = Math.round((xFarEff + xFarFull) / 2);
+    setElemAttr('target-splat-diag-pruned-label', 'x', String(midX));
+    setElemText('target-splat-diag-pruned-label', '✂ Pruned');
+  }
+
+  // Sight lines
+  setElemAttr('target-splat-diag-boresight', 'x2', String(Math.round(xBoresight)));
+  setElemAttr('target-splat-diag-near', 'x2', String(Math.round(xNear)));
+  setElemAttr('target-splat-diag-fareff', 'x2', String(Math.round(xFarEff)));
+  setElemAttr('target-splat-diag-farfull', 'x2', String(Math.round(xFarFull)));
+
+  // Building position at boresight center
+  const bldgWidth = 24;
+  const bldgX = Math.max(xNear + 2, Math.min(svgWidth - bldgWidth - 2, xBoresight - bldgWidth / 2));
+  setElemAttr('target-splat-diag-building', 'x', String(Math.round(bldgX)));
+  setElemAttr('target-splat-diag-building-label', 'x', String(Math.round(bldgX + bldgWidth / 2)));
+
+  // Altitude & Boresight text
+  setElemText('target-splat-diag-alt-text', `${Math.round(altitude)}m`);
+  setElemText('target-splat-diag-boresight-text', `Boresight: ${Math.round(dBoresight)}m`);
+  setElemAttr('target-splat-diag-boresight-text', 'x', String(Math.round(Math.max(65, Math.min(180, xBoresight)))));
+}
+
 function generateTargetSplatCoordinates(width, height, rotation, captureMode, sLine, sPhoto, altitude, defaultGimbalPitch, layer) {
   const waypoints = [];
   const photos = [];
 
   const hfov = (typeof CAMERA_HFOV === 'number' && !isNaN(CAMERA_HFOV) && CAMERA_HFOV > 0) ? CAMERA_HFOV : 69.7;
   const vfov = (typeof CAMERA_VFOV === 'number' && !isNaN(CAMERA_VFOV) && CAMERA_VFOV > 0) ? CAMERA_VFOV : 55.2;
+
+  const framingMode = layer ? (layer.targetFramingMode || 'balanced') : 'balanced';
+  const framingRatio = (framingMode === 'tight') ? 0.35 : ((framingMode === 'full') ? 1.0 : 0.55);
 
   const cullingMode = layer ? (layer.targetCullingMode || 'smartTrim') : 'smartTrim';
   const gridPass = layer ? (layer.targetGridPass || 'double') : 'double';
@@ -7719,7 +8264,7 @@ function generateTargetSplatCoordinates(width, height, rotation, captureMode, sL
         pt.gridType = 'target-splat';
         isVisible = true; // Always pointed at target
       } else {
-        isVisible = isTargetVisibleInFrustum(pt.x, pt.y, altitude, pt.heading, effectivePitch, hfov, vfov, localTargetPoly, objectHeight);
+        isVisible = isTargetVisibleInFrustum(pt.x, pt.y, altitude, pt.heading, effectivePitch, hfov, vfov, localTargetPoly, objectHeight, framingRatio);
       }
 
       pt.targetVisible = isVisible;
@@ -8379,6 +8924,9 @@ function addTargetPolygonPoint(lat, lng) {
   activeLayer.targetMode = 'polygon';
 
   recomputeTargetPolygonCentroid(activeLayer);
+  if (activeLayer.targetAutoDimensions !== false) {
+    applyTargetSplatAutoDimensions(activeLayer);
+  }
   setTargetPolyEditMode(true);
   updateGrid();
 }
@@ -8542,6 +9090,9 @@ function drawTargetSplatOverlay(layer, centerLat, centerLon, rotationDeg) {
 
       nodeMarker.on('dragend', () => {
         recomputeTargetPolygonCentroid(layer);
+        if (layer.targetAutoDimensions !== false) {
+          applyTargetSplatAutoDimensions(layer);
+        }
         updateGrid();
       });
 
@@ -8549,11 +9100,17 @@ function drawTargetSplatOverlay(layer, centerLat, centerLon, rotationDeg) {
         if (e.originalEvent && e.originalEvent.stopPropagation) e.originalEvent.stopPropagation();
         vertices.splice(vIdx, 1);
         recomputeTargetPolygonCentroid(layer);
+        if (layer.targetAutoDimensions !== false) {
+          applyTargetSplatAutoDimensions(layer);
+        }
         setTargetPolyEditMode(isTargetPolyEditActive || vertices.length < 3);
         updateGrid();
       });
     });
   }
+
+  updateTargetSplatAutoFitUI(layer);
+  updateTargetSplatDiagram(layer);
 
   // Update saved photos pill in UI
   const savedPill = document.getElementById('target-splat-saved-pill');

@@ -67,12 +67,17 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.82.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.86.1</span></h1>
         </div>
       </div>
 
       <!-- Center: Search & Locate + Telemetry & Weather HUD Pill -->
       <div class="topbar-center">
+        <!-- Mobile Search Toggle Button (visible on small screens) -->
+        <button id="mobile-search-toggle-btn" class="btn-secondary mobile-search-toggle-btn" type="button" title="Search Address or Coordinate" aria-label="Search location">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </button>
+
         <div id="header-search-container" class="header-search-container">
           <div class="header-search-input-wrapper">
             <svg class="search-input-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -86,6 +91,10 @@
               <circle cx="12" cy="12" r="9" opacity="0.3"></circle>
             </svg>
             <span id="locate-me-label">Locate</span>
+          </button>
+          <!-- Mobile Close Search Button -->
+          <button id="mobile-search-close-btn" class="mobile-search-close-btn" type="button" title="Close Search" aria-label="Close search">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
 
@@ -103,7 +112,7 @@
         </div>
       </div>
 
-      <!-- Right: Action Buttons (Unit Toggle, Theme, Intro, Config, About, Links) -->
+      <!-- Right: Action Buttons (Unit Toggle, Theme, Intro, Config, About, Links, More) -->
       <div class="topbar-right">
         <button id="header-unit-toggle-btn" class="btn-secondary header-unit-btn" type="button" title="Toggle Measurement Units (Imperial / Metric)" aria-label="Toggle Units" onclick="toggleUnitSystem()"><span id="header-unit-badge">FT / MPH</span></button>
         <button id="theme-toggle-btn" class="btn-secondary header-theme-btn" type="button" title="Toggle Light / Dark Mode" aria-label="Toggle Theme" onclick="toggleAppTheme()">☀️</button>
@@ -116,6 +125,30 @@
         </button>
         <button id="about-btn" class="btn-secondary header-about-btn" type="button" title="About &amp; Changelog">About</button>
         <button id="useful-links-btn" class="btn-secondary header-about-btn" type="button" title="Useful Links">Links</button>
+        <!-- Mobile More Menu Button (visible on small screens) -->
+        <button id="header-more-btn" class="btn-secondary header-more-btn" type="button" title="More Options" aria-label="More options">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+            <circle cx="12" cy="5" r="2"/>
+            <circle cx="12" cy="12" r="2"/>
+            <circle cx="12" cy="19" r="2"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Mobile More Actions Dropdown Menu Popover -->
+      <div id="header-more-menu" class="header-more-menu glass hidden">
+        <button id="more-menu-intro-btn" class="more-menu-item" type="button">
+          <span class="more-menu-icon">🎓</span>
+          <span class="more-menu-label">Intro &amp; Quickstart Tour</span>
+        </button>
+        <button id="more-menu-about-btn" class="more-menu-item" type="button">
+          <span class="more-menu-icon">ℹ️</span>
+          <span class="more-menu-label">About &amp; Changelog</span>
+        </button>
+        <button id="more-menu-links-btn" class="more-menu-item" type="button">
+          <span class="more-menu-icon">🔗</span>
+          <span class="more-menu-label">Useful Aviation Links</span>
+        </button>
       </div>
     </header>
 
@@ -378,7 +411,10 @@
                 </svg>
                 Target Object &amp; 3D Frustum Filter
               </strong>
-              <span id="target-splat-saved-pill" class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 0.68rem; padding: 2px 6px; border-radius: 4px; display: none;">0 pruned</span>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <button type="button" id="target-splat-autofit-btn" class="badge" style="background: rgba(16, 185, 129, 0.3); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.6); font-size: 0.68rem; padding: 2px 8px; border-radius: 4px; cursor: pointer; transition: all 0.2s;" title="Toggle Auto-Fit Survey Width &amp; Height from target radius/polygon">⚡ Auto-Fit (Active)</button>
+                <span id="target-splat-saved-pill" class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 0.68rem; padding: 2px 6px; border-radius: 4px; display: none;">0 pruned</span>
+              </div>
             </div>
 
             <!-- Boundary Mode Switcher -->
@@ -447,6 +483,71 @@
                 <option value="double" selected>Double Grid (Crosshatch - Recommended for 3D Splats)</option>
                 <option value="single">Single Grid (Parallel Passes)</option>
               </select>
+            </div>
+
+            <!-- Framing & Lead-Up Strategy -->
+            <div style="margin-bottom: 10px;">
+              <div class="control-label" style="margin-bottom: 2px;">
+                <span style="font-size: 0.75rem; color: var(--text-muted);" title="Controls camera field-of-view utilization. Trims unhelpful distant lead-up photos where the target is a tiny speck on the horizon.">Framing &amp; Lead-Up <span style="cursor:help;color:var(--accent-cyan);">ⓘ</span></span>
+                <span id="target-splat-framing-badge" class="badge" style="font-size: 0.65rem; background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 1px 6px; border-radius: 4px;">Sweet Spot</span>
+              </div>
+              <select id="target-splat-framing-mode" class="form-select" style="font-size: 0.75rem; padding: 4px 8px; width: 100%; border-radius: 6px; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main);">
+                <option value="balanced" selected>Balanced Sweet Spot (Auto-Trim Distant Lead-Up)</option>
+                <option value="tight">Tight Framing (Max Focus &amp; Battery Savings)</option>
+                <option value="full">Full Sensor Frustum (Wide Horizon - Legacy)</option>
+              </select>
+            </div>
+
+            <!-- Live Optical Standoff & Lead-Up Visualizer Card -->
+            <div id="target-splat-diagram-container" style="margin-bottom: 12px; background: rgba(5, 8, 15, 0.55); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 8px; padding: 8px; overflow: hidden;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 0.7rem; font-weight: 600; color: #34d399; display: flex; align-items: center; gap: 4px;">
+                  📐 Optical Standoff &amp; Lead-Up
+                </span>
+                <span id="target-splat-diagram-stats" style="font-size: 0.65rem; color: var(--text-muted); font-family: monospace;">
+                  Lead-In: 51m | Save ~42m
+                </span>
+              </div>
+              <div style="position: relative; width: 100%; height: 85px; overflow: hidden;">
+                <svg id="target-splat-diagram-svg" viewBox="0 0 240 85" style="width: 100%; height: 100%; display: block;">
+                  <defs>
+                    <linearGradient id="target-splat-sweetspot-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stop-color="#10b981" stop-opacity="0.45" />
+                      <stop offset="100%" stop-color="#10b981" stop-opacity="0.08" />
+                    </linearGradient>
+                    <linearGradient id="target-splat-pruned-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stop-color="#ef4444" stop-opacity="0.25" />
+                      <stop offset="100%" stop-color="#ef4444" stop-opacity="0.05" />
+                    </linearGradient>
+                  </defs>
+                  <!-- Ground Line -->
+                  <line x1="8" y1="72" x2="232" y2="72" stroke="rgba(255,255,255,0.2)" stroke-width="1.2" />
+                  <!-- Target Structure -->
+                  <rect id="target-splat-diag-building" x="148" y="52" width="28" height="20" rx="2" fill="rgba(16, 185, 129, 0.3)" stroke="#34d399" stroke-width="1.2" />
+                  <text id="target-splat-diag-building-label" x="162" y="65" fill="#34d399" font-size="6.5" font-weight="600" text-anchor="middle" font-family="sans-serif">Target</text>
+                  <!-- Frustum Shading Polygons -->
+                  <polygon id="target-splat-diag-sweetspot" points="36,25 78,72 165,72" fill="url(#target-splat-sweetspot-grad)" stroke="rgba(16, 185, 129, 0.6)" stroke-width="1" />
+                  <polygon id="target-splat-diag-pruned" points="36,25 165,72 225,72" fill="url(#target-splat-pruned-grad)" stroke="rgba(239, 68, 68, 0.4)" stroke-width="1" stroke-dasharray="2,2" />
+                  <!-- Sight Rays -->
+                  <line id="target-splat-diag-boresight" x1="36" y1="25" x2="120" y2="72" stroke="#06b6d4" stroke-width="1.2" stroke-dasharray="2,2" />
+                  <line id="target-splat-diag-near" x1="36" y1="25" x2="78" y2="72" stroke="#10b981" stroke-width="0.8" />
+                  <line id="target-splat-diag-fareff" x1="36" y1="25" x2="165" y2="72" stroke="#10b981" stroke-width="1.2" />
+                  <line id="target-splat-diag-farfull" x1="36" y1="25" x2="225" y2="72" stroke="#ef4444" stroke-width="0.8" stroke-dasharray="2,2" />
+                  <!-- Drone Silhouette -->
+                  <g id="target-splat-diag-drone" transform="translate(20, 14)">
+                    <line x1="4" y1="11" x2="28" y2="11" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round" />
+                    <ellipse cx="5" cy="8" rx="5" ry="1" fill="rgba(255,255,255,0.4)" />
+                    <ellipse cx="27" cy="8" rx="5" ry="1" fill="rgba(255,255,255,0.4)" />
+                    <rect x="12" y="8" width="8" height="6" rx="2" fill="#38bdf8" />
+                    <circle cx="16" cy="11" r="2" fill="#0284c7" />
+                  </g>
+                  <!-- Labels -->
+                  <text id="target-splat-diag-alt-text" x="18" y="48" fill="var(--text-muted)" font-size="6" font-family="sans-serif">29m</text>
+                  <line x1="30" y1="25" x2="30" y2="72" stroke="rgba(255,255,255,0.15)" stroke-width="0.8" stroke-dasharray="1,2" />
+                  <text id="target-splat-diag-boresight-text" x="110" y="81" fill="#38bdf8" font-size="6.5" font-weight="600" text-anchor="middle" font-family="sans-serif">Boresight: 29m</text>
+                  <text id="target-splat-diag-pruned-label" x="195" y="65" fill="#f87171" font-size="6" font-weight="600" text-anchor="middle" font-family="sans-serif">✂ Pruned Lead-Up</text>
+                </svg>
+              </div>
             </div>
 
             <!-- Perimeter Orbit Pass -->
@@ -691,6 +792,20 @@
               <span class="value-display"><span id="camera-zoom-val">1.0</span>x</span>
             </div>
             <input type="range" id="camera-zoom" min="1.0" max="4.0" step="0.1" value="1.0" class="slider" aria-label="Camera Zoom">
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              <span style="display: inline-flex; align-items: center; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#06b6d4" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="7" y1="5" x2="7" y2="19"/><line x1="17" y1="5" x2="17" y2="19"/></svg>
+                Camera Aspect Ratio
+              </span>
+              <span class="badge" id="camera-aspect-ratio-badge" style="font-size: 0.65rem; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 5px; border-radius: 999px;">4:3 Photo</span>
+            </div>
+            <select id="camera-aspect-ratio" class="form-select" style="font-size: 0.78rem; padding: 5px 8px;">
+              <option value="4:3" selected>4:3 (DJI Photo Standard - 69.7° × 55.2°)</option>
+              <option value="16:9">16:9 (Video / Wide Crop - 69.7° × 44.2°)</option>
+            </select>
           </div>
 
           <div class="control-group" style="display: none;">
@@ -1568,6 +1683,42 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              📱 Mobile Top Navigation Ergonomics &amp; Settings Menu Hub (v1.86.1)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Completely eliminates header crowding on small mobile phone screens. Features an adaptive brand mark, an expandable mobile search bar with 1-tap toggle (<code>🔍</code>), streamlined Telemetry HUD pill, and sleek 3-dots <strong>More Actions</strong> popover menu (<code>⋮</code>). Topbar M/F unit and theme toggles are tucked cleanly into Configuration Settings (<code>⚙️</code>), giving maximum clearance for mission telemetry.
+            </p>
+          </div>
+
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              📸 Lateral Frustum Culling &amp; Camera Aspect Ratio Selector (4:3 Photo vs 16:9 Video)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Prevents drones from flying parallel flight legs where the target is completely out of frame. Modulates lateral across-track camera footprint with framing sweet-spot ratios, pruning outer lines that only glance the target at extreme sensor corners. Introduces an explicit <strong>Camera Aspect Ratio</strong> control (4:3 Photo Standard vs 16:9 Video Crop) with dynamic HFOV/VFOV calculation and live badge feedback.
+            </p>
+          </div>
+
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              ✂️ Target Splat Auto-Pruning of Distant Lead-Up Photos &amp; Live Optical Diagram
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Eliminates excessive horizon lead-up and unhelpful distant photos when flying with oblique gimbal angles (e.g. -45°). Uses <strong>Photogrammetric Effective Framing</strong> to constrain upper field-of-view flare, cutting out up to 50% of wasted shots in neighboring yards. Features an interactive <strong>Framing &amp; Lead-Up</strong> selector (Balanced Sweet Spot, Tight Framing, or Full Frustum) and a live <strong>Optical Standoff &amp; Lead-Up SVG diagram</strong> showing side-profile drone elevation, boresight ray, and dynamic lead-in distance savings.
+            </p>
+          </div>
+
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              📐 Target Splat Auto-Determined Grid Dimensions &amp; Auto-Fit Toggle
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Eliminates cut-off facades and oversized flight areas. The geometry engine dynamically calculates optimal Survey Width and Height directly from your Target Radius or Freeform Polygon, flight altitude, gimbal pitch, and framing margins. Retains full manual control: dragging either slider switches to manual mode, and tapping <code>⚡ Auto-Fit Grid</code> instantly snaps dimensions back to optimal geometry.
+            </p>
+          </div>
+
           <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: var(--accent-cyan); font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🛫 Flight Leg Phase Indicators &amp; Hover Breadcrumb Ribbons
@@ -2084,7 +2235,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.82.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.86.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -2151,6 +2302,44 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.86.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Mobile Topbar De-Cluttering &amp; Telemetry Clearance:</strong> Removed M/F unit toggle and Dark/Light mode buttons from the top navigation bar on mobile (&le;640px), reclaiming ~124px of horizontal space and completely eliminating overlap with the Telemetry HUD pill.</li>
+              <li><strong>Settings Menu Theme &amp; Units Integration:</strong> Added Theme &amp; Appearance selector (<code>#theme-mode-select</code>) inside Configuration Settings (<code>⚙️</code>), allowing pilots on mobile and desktop to switch between Cyber Dark Mode and Sunlight Field Mode directly from the settings menu.</li>
+              <li><strong>Telemetry HUD Pill Overflow Guard:</strong> Added strict text truncation and ellipsis styling across <code>.header-telemetry-container</code>, <code>.header-telemetry-pill</code>, and <code>.pill-telemetry-group</code> to guarantee zero collision with adjacent controls.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.86.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Mobile Navigation Bar Responsive Ergonomics:</strong> Restructured top navigation bar for small screens (&le;640px), eliminating horizontal crowding and preventing controls from overflowing the viewport.</li>
+              <li><strong>Expandable Mobile Search Bar:</strong> Introduced 1-tap search toggle button (<code>🔍</code>) on mobile, smoothly expanding search input with Go, Locate, and Close (✕) controls without competing against the Telemetry HUD pill.</li>
+              <li><strong>Mobile More Actions Popover:</strong> Consolidated secondary action buttons into an elegant 3-dots More button (<code>⋮</code>) opening a glassmorphic popover for Quickstart Tours, About &amp; Changelog, and Aviation Links.</li>
+              <li><strong>Compact Header Brand &amp; Unit Badges:</strong> Display minimalist rosette drone logo and streamlined unit badges (<code>FT</code> / <code>M</code>) on small viewports to maximize usable space.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.85.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Lateral Frustum Culling:</strong> Solved parallel flight legs executing out of frame by applying framing sweet-spot modulation across track, pruning outer lines that only glance the target at extreme sensor corners.</li>
+              <li><strong>Camera Aspect Ratio Selector:</strong> Added explicit camera aspect ratio control (4:3 Photo Standard vs 16:9 Video Crop) with dynamic HFOV/VFOV calculation and live badge feedback.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.84.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Auto-Pruning Unhelpful Lead-Up Photos:</strong> Implemented photogrammetric effective framing frustum culling, eliminating distant horizon flare at oblique gimbal angles (e.g. -45°) and cutting out up to 50% of wasted shots in neighboring properties.</li>
+              <li><strong>Framing &amp; Lead-Up Selector &amp; Live Diagram:</strong> Added interactive framing strategy dropdown (Balanced Sweet Spot, Tight, Full) and a live optical elevation SVG visualizer showing drone height, boresight ray, and lead-in distance savings.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.83.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Target Splat Auto-Determined Grid Dimensions:</strong> Intelligently computes optimal Survey Width and Height directly from target boundaries (Radius or Freeform Polygon), camera altitude, gimbal pitch, and framing margins, preventing cut-off facades or oversized flight areas.</li>
+              <li><strong>Auto-Fit vs. Manual Adjustment Toggle:</strong> Seamlessly preserves pilot adjustments on Width/Height sliders, switching to manual mode on slider movement with a 1-click <code>⚡ Auto-Fit Grid</code> button to snap back to optimal geometry at any time.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.82.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -3775,6 +3964,16 @@
             <option value="imperial" selected>Imperial (feet, mph)</option>
           </select>
           <p class="help-text" style="margin-top: 4px;">Sets map grid measurements and flight inputs to feet or meters.</p>
+        </div>
+
+        <!-- Theme & Appearance Setting -->
+        <div class="control-group">
+          <label for="theme-mode-select" style="font-weight: 600; color: var(--text-main); margin-bottom: 8px; display: block;">Theme &amp; Appearance</label>
+          <select id="theme-mode-select" class="form-select" style="width: 100%;">
+            <option value="dark" selected>🌙 Cyber Dark Mode (Night / Indoor)</option>
+            <option value="light">☀️ High-Contrast Light Mode (Daylight Field)</option>
+          </select>
+          <p class="help-text" style="margin-top: 4px;">Switch between high-contrast sunlight field mode and cyber dark mode.</p>
         </div>
 
         <!-- Search & Navigation Layout Setting -->
