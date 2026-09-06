@@ -29861,12 +29861,25 @@ async function fetchAndProcessWeather(centerLat, centerLon) {
       let fltCat = null;
       let visSM = null;
       let ceilingFt = null;
+      let windSpeedKmH = null;
 
       if (obsData && obsData.properties) {
         fltCat = obsData.properties.flightCategory;
 
         if (obsData.properties.visibility && obsData.properties.visibility.value != null) {
           visSM = obsData.properties.visibility.value / 1609.34;
+        }
+
+        if (obsData.properties.windSpeed && obsData.properties.windSpeed.value != null) {
+          const rawVal = obsData.properties.windSpeed.value;
+          const unitCode = String(obsData.properties.windSpeed.unitCode || '');
+          if (unitCode.includes('m_s-1') || unitCode.includes('m/s')) {
+            windSpeedKmH = rawVal * 3.6;
+          } else if (unitCode.includes('knot') || unitCode.includes('kt')) {
+            windSpeedKmH = rawVal * 1.852;
+          } else {
+            windSpeedKmH = rawVal;
+          }
         }
 
         if (Array.isArray(obsData.properties.cloudLayers)) {
@@ -29914,6 +29927,7 @@ async function fetchAndProcessWeather(centerLat, centerLon) {
         fltCat: fltCat,
         visibilitySM: visSM,
         ceilingFt: ceilingFt,
+        windSpeedKmH: windSpeedKmH,
         timestamp: obsData?.properties?.timestamp || null,
         raw: obsData?.properties?.rawMessage || obsData?.properties?.textDescription || "No raw METAR"
       });
@@ -29939,6 +29953,18 @@ async function fetchAndProcessWeather(centerLat, centerLon) {
 }
 
 
+
+const WIND_SPEED_SVG_ICON = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; display: inline-block;"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2M9.6 4.6A2 2 0 1 1 11 8H2M12.6 19.4A2 2 0 1 0 14 16H2"/></svg>`;
+
+function formatWindSpeed(speedKmH) {
+  if (speedKmH == null || isNaN(speedKmH)) return "Calm / Unknown";
+  const sys = (typeof getUnitSystem === 'function') ? getUnitSystem() : 'imperial';
+  if (sys === 'metric') {
+    return `${Number(speedKmH).toFixed(1)} km/h`;
+  }
+  const speedMph = Number(speedKmH) * 0.621371;
+  return `${speedMph.toFixed(1)} mph`;
+}
 
 function updateWeatherStationMarker(closest, allStations, activeIdx) {
   if (typeof map === 'undefined' || !map || typeof L === 'undefined') return;
@@ -30040,6 +30066,7 @@ function updateWeatherStationMarker(closest, allStations, activeIdx) {
       <div style="background: rgba(255,255,255,0.06); padding: 6px 8px; border-radius: 4px; font-size: 0.72rem; line-height: 1.45; margin-bottom: 8px;">
         <div>Visibility: <b>${activeStation.visibilitySM != null ? Number(activeStation.visibilitySM).toFixed(1) + ' SM' : 'Unknown'}</b></div>
         <div>Ceiling: <b>${activeStation.ceilingFt != null ? (activeStation.ceilingFt >= 99999 ? 'Clear' : Number(activeStation.ceilingFt).toFixed(0) + ' ft') : 'Clear / Unknown'}</b></div>
+        <div>Wind Speed: <b>${WIND_SPEED_SVG_ICON} ${formatWindSpeed(activeStation.windSpeedKmH)}</b></div>
       </div>
       <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
         <span style="font-size: 0.65rem; color: #64748b;">NWS Observation</span>
@@ -30345,6 +30372,16 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
   }
   container.appendChild(ceilDiv);
 
+  const windDiv = document.createElement("div");
+  if (closest.windSpeedKmH !== null && closest.windSpeedKmH !== undefined) {
+    windDiv.style.color = "var(--text-main)";
+    windDiv.innerHTML = `💨 Wind Speed: <b>${WIND_SPEED_SVG_ICON} ${formatWindSpeed(closest.windSpeedKmH)}</b>`;
+  } else {
+    windDiv.style.color = "var(--text-secondary)";
+    windDiv.innerHTML = `💨 Wind Speed: <b>${WIND_SPEED_SVG_ICON} Unknown</b>`;
+  }
+  container.appendChild(windDiv);
+
   const categoryDefinitions = {
     "VFR": { name: "VFR", color: "var(--success-color)", desc: "Vis >5mi, Ceil >3000ft" },
     "MVFR": { name: "MVFR", color: "var(--warning-color)", desc: "Vis 3-5mi, Ceil 1k-3k ft" },
@@ -30513,6 +30550,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
       <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
         <div>
           <div>Visibility: <b>${closest.visibilitySM != null ? Number(closest.visibilitySM).toFixed(1) + ' SM' : 'Unknown'}</b> • Ceiling: <b>${closest.ceilingFt != null ? (closest.ceilingFt >= 99999 ? 'Clear' : Number(closest.ceilingFt).toFixed(0) + ' ft') : 'Clear'}</b></div>
+          <div style="margin-top: 2px;">Wind: <b>${WIND_SPEED_SVG_ICON} ${formatWindSpeed(closest.windSpeedKmH)}</b></div>
           <div style="color: var(--text-muted); font-size: 0.68rem; margin-top: 2px;">Station: ${escapeHtml(closest.name || closest.icaoId || 'NWS')}${cDir ? ` (${cDir})` : ''} • Last polled: ${timeString}</div>
         </div>
         <button type="button" class="btn-sm pop-locate-weather-btn" style="padding: 2px 6px; font-size: 0.66rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 4px; cursor: pointer; white-space: nowrap;" onclick="if (typeof focusWeatherStationOnMap === 'function') { focusWeatherStationOnMap(); }" title="Locate weather station on map">📍 Map</button>
@@ -30561,6 +30599,8 @@ if (typeof window !== 'undefined') {
   window.formatWeatherDistance = formatWeatherDistance;
   window.getCompassBearing = getCompassBearing;
   window.bearingToCompassDirection = bearingToCompassDirection;
+  window.formatWindSpeed = formatWindSpeed;
+  window.WIND_SPEED_SVG_ICON = WIND_SPEED_SVG_ICON;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
