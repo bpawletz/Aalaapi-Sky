@@ -6504,9 +6504,25 @@ describe('Multiple Mission Exports & Modal Close Shortcuts Tests (v1.60.2)', () 
   test('DiagnosticsDatabase restores disk archives into SQLite history', () => {
     const { DiagnosticsDatabase } = require('./tools/companion/diagnostics_db.js');
     const path = require('path');
+    const fs = require('fs');
     const db = new DiagnosticsDatabase(':memory:');
     
     const archiveDir = path.resolve(__dirname, 'scratch/mission_archives');
+    if (!fs.existsSync(archiveDir)) {
+      fs.mkdirSync(archiveDir, { recursive: true });
+    }
+    const mockFiles = [
+      { name: 'mock1_diag.json', data: { uuid: 'm1', filename: 'arch1.zip', waypointCount: 2 } },
+      { name: 'mock2_diag.json', data: { uuid: 'm2', filename: 'arch2.zip', waypointCount: 16 } },
+      { name: 'mock3_diag.json', data: { uuid: 'm3', filename: 'arch3.zip', waypointCount: 5 } }
+    ];
+    for (const mock of mockFiles) {
+      const filePath = path.join(archiveDir, mock.name);
+      if (!fs.existsSync(filePath)) {
+        fs.writeFileSync(filePath, JSON.stringify(mock.data));
+      }
+    }
+
     const restored = db.restoreFromDiskArchives(archiveDir);
     assert.strictEqual(restored >= 3, true, 'Must restore at least 3 disk archives');
 
@@ -12111,6 +12127,61 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       assert.ok(dom.innerHTML.includes('⠿ Drag'), 'Drag handle must display ⠿ Drag badge');
       assert.ok(dom.innerHTML.includes('edit-wp-coords-display'), 'Drag handle must display coordinates on separate row');
       assert.ok(dom.innerHTML.includes('padding: 0 24px 6px 0'), 'Drag handle must have right padding clearance for close button');
+    });
+  });
+
+  describe('Weather Wind Speed Display Tests', () => {
+    test('formatWindSpeed correctly formats imperial and metric values', () => {
+      vm.runInThisContext('setUnitSystem("imperial");');
+      const imperialSpeed = formatWindSpeed(16.0934); // ~10 mph
+      assert.ok(imperialSpeed.includes('10.0 mph'), `Expected 10.0 mph, got ${imperialSpeed}`);
+
+      vm.runInThisContext('setUnitSystem("metric");');
+      const metricSpeed = formatWindSpeed(25.4);
+      assert.ok(metricSpeed.includes('25.4 km/h'), `Expected 25.4 km/h, got ${metricSpeed}`);
+
+      assert.strictEqual(formatWindSpeed(null), 'Calm / Unknown');
+    });
+
+    test('updateWeatherPanelUI populates wind speed icon and formatted text in popover details', () => {
+      const stubElements = {
+        'stat-weather-window': { textContent: '', style: {}, title: '', appendChild: () => {} },
+        'stat-weather-dirs': { classList: { add: () => {}, remove: () => {}, contains: () => false }, appendChild: () => {} },
+        'header-weather-summary': { textContent: '', style: {} },
+        'sidebar-summary-text': { textContent: '' },
+        'header-telemetry-summary': { textContent: '12 WPs • 500m • 2m 15s' },
+        'pop-weather-summary': { textContent: '', style: {} },
+        'pop-weather-details': { innerHTML: '' }
+      };
+      global._stubElements = stubElements;
+
+      const mockDirections = {
+        closest: {
+          icaoId: 'KSFO',
+          name: 'San Francisco Exec Apt',
+          lat: 37.618,
+          lon: -122.375,
+          distance: 5.2,
+          fltCat: 'VFR',
+          visibilitySM: 10,
+          ceilingFt: 99999,
+          windSpeedKmH: 20,
+          timestamp: '2026-09-06T12:00:00Z',
+          raw: 'KSFO 061200Z 18010KT 10SM CLR'
+        },
+        stations: [],
+        activeIndex: 0
+      };
+
+      vm.runInThisContext('setUnitSystem("metric");');
+      updateWeatherPanelUI(mockDirections, null, false);
+
+      const popDetails = stubElements['pop-weather-details'];
+      assert.ok(popDetails, '#pop-weather-details element must exist');
+      assert.ok(popDetails.innerHTML.includes('Wind:'), 'Popover weather details must contain Wind section');
+      assert.ok(popDetails.innerHTML.includes('20.0 km/h'), 'Popover weather details must display formatted wind speed');
+      assert.ok(popDetails.innerHTML.includes('<svg'), 'Popover weather details must display inline wind SVG icon');
+      global._stubElements = null;
     });
   });
 });
