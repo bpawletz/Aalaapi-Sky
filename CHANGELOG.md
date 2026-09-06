@@ -1,5 +1,81 @@
 # Changelog
 
+## [1.86.1] - 2026-09-06
+
+### Changed & Mobile Topbar De-Cluttering
+- **Mobile Topbar De-Cluttering & Telemetry Clearance:**
+  - Removed `#header-unit-toggle-btn` (M/F unit toggle) and `#theme-toggle-btn` (Dark/Light mode switch) from the top navigation bar on mobile viewports ($\le 640\text{px}$), reclaiming $\sim 124\text{px}$ of horizontal space.
+  - Reserved `.topbar-right` exclusively for the Settings gear (`#config-btn`) and More menu (`#header-more-btn`) on mobile, completely eliminating collision and overlapping text with the Telemetry HUD pill.
+  - Hardened `.header-telemetry-container`, `.header-telemetry-pill`, and `.pill-telemetry-group` with `min-width: 0`, `overflow: hidden`, and `text-overflow: ellipsis` guards.
+- **Settings Menu Theme & Units Integration (`#config-modal`):**
+  - Added a dedicated `Theme & Appearance` selector (`#theme-mode-select`) inside Configuration Settings (`#config-modal`), enabling mobile and desktop pilots to switch between Cyber Dark Mode and High-Contrast Light (Field) Mode directly from the gear menu.
+  - Fully synchronized `#theme-mode-select` with `setAppTheme()`, the desktop header toggle button, and persistent `localStorage` (`aalaapi_sky_theme`).
+  - Users on mobile and small screens can now conveniently manage both Measurement Units (Metric / Imperial) and Display Theme in one unified, organized settings hub.
+
+## [1.86.0] - 2026-09-06
+
+### Added & Mobile Responsive Navigation Ergonomics
+- **Mobile Navigation Bar Responsive Ergonomics:**
+  - Solved top navigation bar crowding on small screens ($\le 640\text{px}$, including 360px–430px mobile phones), eliminating horizontal overflow and preventing elements from being crushed to 0 width.
+  - Implemented responsive brand title behavior: hides `.logo h1` ("Aalaapi Sky") on screens $\le 640\text{px}$ while preserving the iconic Myaamia rosette drone SVG logo, reclaiming $\sim 88\text{px}$ of horizontal space.
+- **Expandable Mobile Search Bar (`#mobile-search-toggle-btn` & `#mobile-search-close-btn`):**
+  - Added 1-tap mobile search toggle button (`🔍`) in `.topbar-center` on small screens.
+  - Keeps the Telemetry HUD pill prominently visible in the center by default without competing against a wide search input.
+  - Tapping the search toggle smoothly expands the full search bar (`#header-search-container`) with address/coordinate input, "Go", "Locate Me", and an explicit "✕" close button, auto-focusing the input.
+  - Automatically collapses the search bar upon executing a search or clicking Locate Me.
+- **Mobile More Actions Popover Menu (`#header-more-btn` & `#header-more-menu`):**
+  - Consolidated secondary text buttons (`#intro-tour-btn`, `#about-btn`, `#useful-links-btn`) into an elegant 3-dots More Actions button (`⋮`) on screens $\le 640\text{px}$.
+  - Reduces the right-side button cluster from 6 buttons ($\sim 302\text{px}$) down to 4 compact icon/chip buttons (Unit, Theme, Config, More) taking only $\sim 130\text{px}$.
+  - Opens a sleek glassmorphic popover providing 1-tap access to the Quickstart Intro Tour, About & Changelog, and Aviation Links.
+  - Supports outside-click and Escape key dismissal with full light/dark theme adaptation.
+- **Streamlined Unit & Telemetry HUD Badges:**
+  - Compacted the measurement unit button (`#header-unit-toggle-btn`) on mobile viewports for clean fit.
+  - Refined Telemetry HUD pill styling and text truncation (`max-width: 140px` on $\le 640\text{px}$, `110px` on $\le 400\text{px}$), guaranteeing zero horizontal page scrolling down to 360px viewports.
+
+## [1.85.0] - 2026-09-05
+
+### Added & Photogrammetric Lateral Culling Optimization
+- **Lateral Frustum Culling Across Track:**
+  - Fixed issue where Target Splat missions executed parallel flight legs completely out of frame.
+  - Modulated lateral across-track half-width (`halfWNear` and `halfWFar`) in `calculateCameraGroundFrustum` by `fRatio` (`framingRatio`).
+  - Prunes outer parallel flight lines that only glance the target structure at extreme sensor corners, keeping only photogrammetrically useful passes where the target is properly framed.
+- **Camera Sensor Aspect Ratio Control (`#camera-aspect-ratio`):**
+  - Added dedicated Camera Sensor Aspect Ratio selector in Section 2 Layer Properties:
+    - **4:3 (DJI Photo Standard):** $69.7^\circ \text{ HFOV} \times 55.2^\circ \text{ VFOV}$ matching default 48MP/12MP photo sensor dimensions on DJI Mini 4 Pro, Air 3, and Mavic 3.
+    - **16:9 (Video / Wide Crop):** $69.7^\circ \text{ HFOV} \times 44.2^\circ \text{ VFOV}$ for video recording passes and wide photo crops.
+  - Features real-time badge updates (`4:3 Photo` vs `16:9 Video`), localStorage persistence (`aalaapi_camera_aspect_ratio`), and automatic synchronization with active layer dynamics and the live optical standoff elevation visualizer.
+
+## [1.84.0] - 2026-09-05
+
+### Added & Photogrammetry Lead-Up Optimization
+- **Auto-Pruning Unhelpful Distant Lead-Up Photos in Target Splat:**
+  - Implemented **Photogrammetric Effective Framing Frustum Culling** in `calculateCameraGroundFrustum` and `isTargetVisibleInFrustum` to solve excessive horizon lead-up caused by wide vertical camera FOV ($55.2^\circ$) at oblique gimbal angles (e.g., $-45^\circ$).
+  - Instead of projecting camera frustum boundaries all the way to the $-17.4^\circ$ horizon (which reached $92.5\text{m}$ ahead at $29\text{m}$ altitude, capturing low-resolution sky/neighboring property), the system constrains the upper framing boundary to the **Photogrammetry Sweet Spot**:
+    - **Balanced Sweet Spot (Default):** Constrains upper vertical angle factor to $0.55 \times \frac{\text{VFOV}}{2}$, reducing far standoff distance from $92.5\text{m}$ down to $\sim 50.6\text{m}$ and cutting out up to 50–60% of unnecessary distant lead-up photos while maintaining smooth turnaround transitions.
+    - **Tight Framing:** Constrains upper factor to $0.35 \times \frac{\text{VFOV}}{2}$, reducing far standoff down to $\sim 40.9\text{m}$ for high-efficiency, structure-focused missions with maximum battery savings.
+    - **Full Sensor Frustum (Legacy):** Allows pilots to retain full sensor horizon visibility ($1.0 \times \frac{\text{VFOV}}{2}$) when wide contextual neighborhood coverage is desired.
+- **Interactive Framing & Lead-Up Mode Selector (`#target-splat-framing-mode`):**
+  - Added dedicated framing selector dropdown in the Target Splat parameters drawer with real-time regeneration and layer persistence (`targetFramingMode`).
+- **Live Optical Standoff & Lead-Up SVG Visualizer (`#target-splat-diagram`):**
+  - Integrated an interactive elevation diagram card directly inside `#target-splat-container` displaying:
+    - Side-profile elevation view of the hovering drone, ground plane, and target structure.
+    - Optical boresight ray ($D_{\text{center}}$), near ray ($D_{\text{near}}$), and effective sweet-spot far ray ($D_{\text{far, eff}}$).
+    - Visual shaded regions distinguishing the useful framing sweet spot from the pruned lead-up zone (with dynamic distance savings readout, e.g. `Lead-In: 51m | Save ~42m unhelpful lead-up`).
+    - Real-time responsive updates when adjusting gimbal pitch, altitude, or framing strategy.
+
+## [1.83.0] - 2026-09-05
+
+### Added & Drone Photogrammetry Enhancements
+- **Auto-Determining Target Splat Flight Grid Dimensions (Width & Height):**
+  - Added intelligent geometric calculation engine (`calculateTargetSplatDimensions`) that automatically determines optimal Survey Width and Height based on target boundaries (Radius or Freeform Polygon), drone altitude, camera gimbal pitch, and framing margins.
+  - In **Radius Mode**, evaluates circular footprint radius $R$ and calculates the required flight envelope: $\text{Span} = 2 \times (R + D_{\text{standoff}} + \text{margin})$ where $D_{\text{standoff}} = H \cdot \tan(90^\circ - |\theta|)$ accounts for forward camera look-ahead distance at oblique gimbal pitch.
+  - In **Freeform Polygon Mode**, converts traced building vertices into grid-aligned coordinate space to independently compute optimal Survey Width ($X$) and Survey Height ($Y$) tailored to the building's physical aspect ratio.
+  - Automatically recalculates and updates flight grid dimensions in real time when adjusting the Target Radius slider, placing/dragging/deleting polygon vertices, or modifying flight altitude and gimbal pitch.
+- **Auto-Fit vs. Manual Adjustment Toggle:**
+  - Integrated an interactive `⚡ Auto-Fit (Active)` badge button into `#target-splat-container`.
+  - Preserves pilot manual control: dragging either the Survey Width or Survey Height slider seamlessly switches the layer to manual mode (`targetAutoDimensions: false`).
+  - Clicking the `⚡ Auto-Fit Grid` button instantly snaps Width and Height back to the auto-calculated optimal dimensions and re-engages automatic geometry tracking.
+
 ## [1.82.1] - 2026-09-05
 
 ### Refinement & Visual Bug Fixes
