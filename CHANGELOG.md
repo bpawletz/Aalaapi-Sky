@@ -1,5 +1,65 @@
 # Changelog
 
+## [1.88.0] - 2026-09-06
+
+### Added — Unified Waypoint Editor UI & Help Popover
+- **Unified Map Popup Editor Layout:** The 2D map waypoint popup now matches the 3D FPV side-panel visually:
+  - Width expanded from 230px to 280px.
+  - 2-column slider grid for Altitude, Gimbal Pitch, Flight Speed, and Hover Duration (matching FPV layout).
+  - Turn Mode, Camera Action, and Heading Mode selects span full width (`grid-column: 1 / -1`).
+  - FPV-style header: 🛠️ Edit Waypoint N with live lat/lon coordinates displayed inline.
+  - Unified font size (`0.75rem`), slider height (`4px`), and D-pad button size (`22×22px`) matching the FPV panel.
+- **Insert Waypoint in Map Popup:** Added an **Insert** button to the 2D map popup action row, matching the FPV panel's Insert functionality. Inserts a new waypoint after the current one (interpolated between current and next waypoint), then closes the popup and redraws the mission.
+- **Heading Mode Help Buttons (Consistent Across Both Editors):** Added a `?` help button next to the Heading Mode row in both the map waypoint popup and the FPV editor panel, matching the left-nav help button style (`wp-editor-help-btn`). Clicking opens a lightweight, reusable tabbed help popover (`#wp-heading-help-popover`) explaining all four heading modes: Follow Path, Fixed (North), POI, and Custom Angle. Popover auto-positions relative to the button and dismisses on outside click or second press.
+- **CSS:** Added `.wp-editor-help-btn` and `#wp-heading-help-popover` styles to `index.css` for the new help UI elements.
+
+## [1.87.0] - 2026-09-06
+
+### Added & Resolved Inherited Setting Displays
+- **Resolved Inherited Setting Displays Across Three-Tier Architectural Cascade:**
+  - Added dynamic resolved values in parentheses next to `inherit` and `Auto` option labels across Tier 2 (Layer Settings) and Tier 3 (2D Waypoint Editor Popup and 3D FPV HUD Editor):
+    - **Tier 2 Layer Turnaround Transit Speed:** `<option value="inherit">` now displays the resolved active layer speed or global default speed, e.g., `🌐 Inherit Layer Speed (4.0 m/s)`.
+    - **Tier 2 Layer Exclusion Detour Strategy:** `<option value="inherit">` now displays the resolved global detour strategy, e.g., `🌐 Inherit Global (Around Perimeter)`, `🌐 Inherit Global (Over the Top)`, or `🌐 Inherit Global (Smart 3D)`.
+    - **Tier 2 Layer Target POI Selector:** When POIs exist in the mission, the default option displays the name of the active mission default POI, e.g., `🌐 Nearest / Mission Default POI (POI 1)`.
+    - **Tier 3 2D Waypoint Popup & 3D FPV HUD Camera Action:** `<option value="inherit">` now dynamically computes and displays the inherited layer or global capture mode, e.g., `🌐 Inherit Layer Mode (Stop & Shoot)`.
+    - **Tier 3 2D Waypoint Popup & 3D FPV HUD Heading Mode:** `<option value="inherit">` now dynamically computes and displays the inherited layer or global heading mode, e.g., `🌐 Inherit Layer Default (Follow Flight Path)`.
+    - **Tier 3 2D Waypoint Popup & 3D FPV HUD Speed Override:** When a waypoint does not override speed, the speed display now shows the resolved inherited speed, e.g., `Auto (4.0 m/s)`, taking into account turnaround speeds on turnaround points or layer/global speeds.
+    - **Tier 3 3D FPV HUD Hover Duration:** When a waypoint inherits hover time, the display shows the inherited duration with an explicit tag, e.g., `0s (Inherited)`.
+  - All inherited display labels reactively update when global settings, active layers, or sliders change.
+
+## [1.86.5] - 2026-09-06
+
+### Fixed & 3D Preview Waypoint Editor Tooltip Display
+- **3D Flight Path Preview Waypoint Editor Help Pop-up Clipping Fix:**
+  - Resolved an issue where hovering flight leg phase badges (PRE, AT, POST, Transition) in the 3D Waypoint Editor (`#fpv-editor-panel`) resulted in the breadcrumb help card being clipped and partially hidden by the panel's scrollable container (`overflow-y: auto`).
+  - Previously, `.wp-leg-breadcrumb-tooltip` was positioned absolutely inside `.wp-leg-phase-badge` with `bottom: calc(100% + 6px)` and `left: 50%; transform: translateX(-50%)`. Because the editor panel has `overflow-y: auto` and a fixed width of 310px, tooltips centered on badges near the left edge or top were clipped horizontally on the left (cutting off breadcrumb nodes and description text) and vertically on the top (for Altitude and Gimbal Pitch badges).
+  - Implemented a universal floating tooltip manager (`#wp-leg-floating-tooltip` via `initLegPhaseBadgeTooltips`) anchored at the root document body level with `position: fixed` and `z-index: 10000000`.
+  - Inside `#fpv-editor-panel`, tooltips now dynamically dock to the open space directly to the left of the editor panel (`panelRect.left - tooltipWidth - 12`), keeping them 100% visible, unobscured, and without covering active inputs. On narrower viewports or inside 2D map popups, the floating tooltip dynamically positions above or below the badge with viewport boundary clamping and real-time scroll capture synchronization.
+
+## [1.86.4] - 2026-09-06
+
+### Fixed & 3D Flight Plan Preview Ergonomics
+- **3D Flight Path Preview HUD Legend Collision & Overlap Fix:**
+  - Repositioned the floating Waypoint Colors legend (`#three-hud-legend`) from the bottom-left (`bottom: 16px; left: 16px;`) to the bottom-right (`bottom: 16px; right: 16px;`) corner of the 3D preview viewport.
+  - On compact displays, laptop screens, or non-fullscreen modals, the vertical space on the left was insufficient, causing the legend panel to render directly on top of the left HUD control buttons (obscuring Auto-Rotate, Reset Camera, Camera Cones, Footprints, 3D Drones, and FPV Mode).
+  - Moving the legend to the bottom-right separates it cleanly from the top-left buttons, guaranteeing zero overlap regardless of window aspect ratio or modal dimensions.
+- **Collapsible HUD Legend & FPV Auto-Hide:**
+  - Added an interactive minimize/expand chevron button (`#hud-legend-toggle-btn`) and clickable header (`#hud-legend-header`), allowing pilots to collapse the color key into a sleek, minimal header pill (`Waypoint Colors ▲`) for an unobstructed 3D view.
+  - Automatically hides the legend when entering First-Person View (FPV) walkthrough mode and restores it upon exiting, ensuring the 3D FPV HUD camera and waypoint editor panel remain completely uncluttered.
+
+## [1.86.3] - 2026-09-06
+
+### Added & Heading Mode Photography Guidance
+- **Comprehensive Heading Mode Photography Guidance:**
+  - Enriched the interactive **Heading Mode Help Drawer (`#heading-help-drawer`)** with dedicated photography, camera direction, and gimbal pitch explanations across all heading modes:
+    - **Follow Flight Path:** Clarified forward-facing camera alignment for road/corridor surveys and forward awareness, explaining nadir (-90°) alternating 180° image rotation across serpentine passes.
+    - **Fixed Heading (North):** Added detailed explanations of omnidirectional translation (strafing and reverse flight), nadir (-90°) photogrammetry benefits (sensor top strictly North, uniform shadows, no 180° pass flips, faster stitching), and oblique (-30° to -60°) single-orientation facade/slope/solar inspections.
+    - **Point of Interest (POI):** Documented target-tracking dynamics for 360° structure orbits, cell towers, and monuments with continuous centerpiece framing.
+    - **Custom Angle:** Added guidance for fixed custom compass headings (solar panel orientation, wind penetration, sun alignment).
+  - Added structured pill indicators and clear breakdowns for Gimbal Pitch (Nadir vs. Oblique) and Photo Triggering (Distance, Time, Stop-and-Shoot).
+- **Layer Heading Mode Quick Help (`#layer-heading-help-btn`):**
+  - Added a dedicated `?` help button next to Heading Mode in **Section 2: Pattern Settings & Layer Properties**, allowing pilots to access heading and camera guidance directly from the layer configuration pane.
+
 ## [1.86.2] - 2026-09-06
 
 ### Fixed & Heading Mode Alignment

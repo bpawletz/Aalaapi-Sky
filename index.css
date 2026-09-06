@@ -1831,6 +1831,39 @@ html, body {
   border-radius: 0 !important;
 }
 
+.hud-legend {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  z-index: 10;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: auto;
+  user-select: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  transition: all 0.2s ease;
+  max-width: 190px;
+}
+
+#hud-legend-header {
+  transition: opacity 0.15s ease;
+}
+
+#hud-legend-header:hover span {
+  color: #38bdf8 !important;
+}
+
+#hud-legend-toggle-btn:hover {
+  color: #fff !important;
+}
+
 /* Auto-Plan Tool Card in Pattern Grid (v1.76.1) */
 .pattern-card.auto-plan-card,
 #auto-plan-btn.pattern-card {
@@ -3108,7 +3141,7 @@ html, body {
   display: block;
 }
 
-/* Breadcrumb Hover Tooltip */
+/* Breadcrumb Hover Tooltip (Inline fallback) */
 .wp-leg-breadcrumb-tooltip {
   display: none;
   position: absolute;
@@ -3128,10 +3161,27 @@ html, body {
   animation: breadcrumbFadeIn 0.18s ease-out;
 }
 
-/* Show on badge hover or focus */
+/* Hide inline tooltips on hover to let the universal floating tooltip handle display without clipping */
 .wp-leg-phase-badge:hover .wp-leg-breadcrumb-tooltip,
 .wp-leg-phase-badge:focus-within .wp-leg-breadcrumb-tooltip {
-  display: flex;
+  display: none !important;
+}
+
+/* Universal Floating Breadcrumb Tooltip (v1.86.5) */
+#wp-leg-floating-tooltip {
+  position: fixed !important;
+  z-index: 10000000 !important;
+  pointer-events: none !important;
+  width: 260px;
+  background: #0f172a;
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.9), 0 0 16px rgba(6, 182, 212, 0.35);
+  border-radius: 8px;
+  padding: 8px 10px;
+  text-align: left;
+  font-family: 'Outfit', sans-serif;
+  animation: breadcrumbFadeIn 0.18s ease-out;
+  display: none;
   flex-direction: column;
   gap: 6px;
 }
@@ -3223,6 +3273,107 @@ html, body {
   border-color: #10b981;
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
 }
+
+/* Heading Mode Help Popover — Waypoint Editors (v1.88.0) */
+.wp-editor-help-btn {
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  color: var(--accent-cyan);
+  cursor: pointer;
+  padding: 0;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  height: 20px;
+  width: 20px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+.wp-editor-help-btn:hover {
+  background: rgba(6, 182, 212, 0.22);
+  border-color: rgba(6, 182, 212, 0.45);
+}
+
+#wp-heading-help-popover {
+  position: fixed;
+  z-index: 10000100;
+  width: 240px;
+  background: #0f172a;
+  border: 1px solid rgba(6, 182, 212, 0.35);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px -4px rgba(0,0,0,0.9), 0 0 14px rgba(6,182,212,0.2);
+  padding: 10px 12px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.72rem;
+  color: #cbd5e1;
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  animation: wpHelpPopoverFadeIn 0.15s ease-out;
+}
+@keyframes wpHelpPopoverFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+#wp-heading-help-popover .wp-help-tab-row {
+  display: flex;
+  gap: 3px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  padding-bottom: 6px;
+}
+#wp-heading-help-popover .wp-help-tab {
+  flex: 1;
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  font-size: 0.62rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 3px 2px;
+  border-radius: 4px;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+#wp-heading-help-popover .wp-help-tab.active {
+  background: rgba(6, 182, 212, 0.15);
+  border-color: rgba(6, 182, 212, 0.3);
+  color: var(--accent-cyan);
+}
+#wp-heading-help-popover .wp-help-content {
+  font-size: 0.7rem;
+  line-height: 1.4;
+  color: #94a3b8;
+  min-height: 44px;
+}
+#wp-heading-help-popover .wp-help-content strong {
+  color: #f8fafc;
+  display: block;
+  margin-bottom: 3px;
+}
+#wp-heading-help-popover .wp-help-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  border-bottom: 1px solid rgba(6,182,212,0.15);
+  padding-bottom: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+#wp-heading-help-popover .wp-help-close {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0 2px;
+  line-height: 1;
+}
+#wp-heading-help-popover .wp-help-close:hover { color: #f8fafc; }
 
 
 
