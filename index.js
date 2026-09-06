@@ -9363,8 +9363,9 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
               marker.bindPopup(() => {
                 return createWaypointEditorDOM(wp, idx, marker);
               }, {
-                maxWidth: 240,
-                minWidth: 230,
+                className: 'wp-editor-leaflet-popup',
+                maxWidth: 320,
+                minWidth: 310,
                 offset: [0, -20]
               });
             }
@@ -9407,8 +9408,9 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
       droneMarker.bindPopup(() => {
         return createWaypointEditorDOM(wp, idx, droneMarker);
       }, {
-        maxWidth: 240,
-        minWidth: 230,
+        className: 'wp-editor-leaflet-popup',
+        maxWidth: 320,
+        minWidth: 310,
         offset: [0, -20]
       });
 
@@ -9502,8 +9504,9 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
       marker.bindPopup(() => {
         return createWaypointEditorDOM(wp, idx, marker);
       }, {
-        maxWidth: 240,
-        minWidth: 230,
+        className: 'wp-editor-leaflet-popup',
+        maxWidth: 320,
+        minWidth: 310,
         offset: [0, -20]
       });
 
@@ -17162,15 +17165,15 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
   const resolvedHeadingLabel = mapHeadingName[effHeadingMode] || effHeadingMode;
 
   popupContent.innerHTML = `
-    <div id="wp-popup-drag-handle" style="cursor: grab; padding: 0 0 6px 0; margin-bottom: 0; border-bottom: 1px solid rgba(255,255,255,0.08); user-select: none;">
-      <div style="font-weight: 600; color: #06b6d4; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
-        <div style="display: flex; align-items: center; gap: 6px; overflow: hidden;">
-          <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">🛠️ Edit Waypoint <span id="edit-wp-title-text">${idx}</span></span>
+    <div id="wp-popup-drag-handle" style="cursor: grab; padding: 0 24px 6px 0; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.08); user-select: none;">
+      <div style="font-weight: 600; color: #06b6d4; font-size: 0.85rem; display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span>🛠️ Edit Waypoint <span id="edit-wp-title-text">${idx}</span></span>
           <button id="wp-popup-collapse-btn" type="button" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 0.75rem; padding: 0 4px; flex-shrink: 0;" title="Minimize/Expand Popup">▼</button>
         </div>
+        <span style="font-size: 0.65rem; color: #94a3b8; display: inline-flex; align-items: center; gap: 3px; font-weight: normal; background: rgba(255,255,255,0.05); padding: 1px 5px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.08);">⠿ Drag</span>
       </div>
-      <div style="font-family: monospace; font-size: 0.68rem; color: #64748b; margin-top: 2px; display: flex; align-items: center; gap: 4px;">
-        <span style="font-size: 0.62rem; color: #475569;">⠿ drag</span>
+      <div style="font-family: monospace; font-size: 0.7rem; color: #94a3b8; margin-top: 3px;">
         <span id="edit-wp-coords-display">${wp.lat.toFixed(5)}, ${wp.lon.toFixed(5)}</span>
       </div>
     </div>
@@ -17350,6 +17353,10 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
     </div>
   `;
 
+  if (typeof popupContent.querySelector !== 'function') {
+    return popupContent;
+  }
+
   const popupCollapseBtn = popupContent.querySelector('#wp-popup-collapse-btn');
   const popupBody = popupContent.querySelector('#edit-wp-body');
   if (popupCollapseBtn && popupBody) {
@@ -17361,55 +17368,133 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
     });
   }
 
-  // Drag-to-move for the popup (v1.88.0)
-  // Drags the Leaflet popup container by repositioning it with pointer events on the handle.
+  // Drag-to-move for the popup (v1.88.1)
   const dragHandle = popupContent.querySelector('#wp-popup-drag-handle');
   if (dragHandle) {
-    let isDragging = false;
-    let dragStartX = 0, dragStartY = 0;
-    let popupEl = null;
-    let origLeft = 0, origTop = 0;
+    if (typeof L !== 'undefined' && L.DomEvent) {
+      if (L.DomEvent.disableClickPropagation) L.DomEvent.disableClickPropagation(dragHandle);
+      if (L.DomEvent.disableScrollPropagation) L.DomEvent.disableScrollPropagation(dragHandle);
+    }
 
-    dragHandle.addEventListener('pointerdown', (e) => {
-      // Don't initiate drag from the collapse button
-      if (e.target.closest && e.target.closest('#wp-popup-collapse-btn')) return;
-      e.stopPropagation();
-      // Find the Leaflet popup wrapper element
+    let isDragging = false;
+    let startMouseX = 0, startMouseY = 0;
+    let startPoint = null;
+    let popupEl = null;
+
+    const onPointerDown = (e) => {
+      // Don't drag if clicking buttons or inputs inside header
+      if (e.target.closest && (e.target.closest('#wp-popup-collapse-btn') || e.target.closest('button') || e.target.closest('input') || e.target.closest('select'))) {
+        return;
+      }
       popupEl = popupContent.closest('.leaflet-popup');
       if (!popupEl) return;
-      isDragging = true;
-      dragHandle.style.cursor = 'grabbing';
-      dragStartX = e.clientX;
-      dragStartY = e.clientY;
-      const rect = popupEl.getBoundingClientRect();
-      origLeft = popupEl.offsetLeft;
-      origTop = popupEl.offsetTop;
-      dragHandle.setPointerCapture(e.pointerId);
-    });
 
-    dragHandle.addEventListener('pointermove', (e) => {
-      if (!isDragging || !popupEl) return;
+      e.preventDefault();
       e.stopPropagation();
-      const dx = e.clientX - dragStartX;
-      const dy = e.clientY - dragStartY;
-      popupEl.style.left = `${origLeft + dx}px`;
-      popupEl.style.top = `${origTop + dy}px`;
-      // Suppress Leaflet's positioning by removing transforms while dragging
-      popupEl.style.transform = 'none';
-    });
+      if (typeof L !== 'undefined' && L.DomEvent && L.DomEvent.stopPropagation) {
+        L.DomEvent.stopPropagation(e);
+      }
 
-    dragHandle.addEventListener('pointerup', (e) => {
+      isDragging = true;
+      startMouseX = e.clientX;
+      startMouseY = e.clientY;
+      dragHandle.style.cursor = 'grabbing';
+
+      // Disable Leaflet map dragging while dragging popup
+      if (typeof map !== 'undefined' && map && map.dragging && typeof map.dragging.disable === 'function') {
+        map.dragging.disable();
+      }
+
+      // Get initial position using Leaflet DomUtil
+      startPoint = (typeof L !== 'undefined' && L.DomUtil && L.DomUtil.getPosition)
+        ? L.DomUtil.getPosition(popupEl)
+        : null;
+
+      if (!startPoint) {
+        const computed = window.getComputedStyle(popupEl);
+        const transform = computed.transform || computed.webkitTransform;
+        let x = 0, y = 0;
+        if (transform && transform !== 'none') {
+          const match = transform.match(/matrix\(([^)]+)\)/);
+          if (match) {
+            const parts = match[1].split(',').map(s => parseFloat(s.trim()));
+            x = parts[4] || 0;
+            y = parts[5] || 0;
+          }
+        }
+        startPoint = { x, y };
+      }
+
+      try {
+        if (dragHandle.setPointerCapture && e.pointerId) {
+          dragHandle.setPointerCapture(e.pointerId);
+        }
+      } catch (_) {}
+
+      window.addEventListener('pointermove', onPointerMove, { passive: false });
+      window.addEventListener('pointerup', onPointerUp, { passive: false });
+      window.addEventListener('pointercancel', onPointerUp, { passive: false });
+    };
+
+    const onPointerMove = (e) => {
+      if (!isDragging || !popupEl || !startPoint) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      const dx = e.clientX - startMouseX;
+      const dy = e.clientY - startMouseY;
+      const newX = startPoint.x + dx;
+      const newY = startPoint.y + dy;
+
+      if (typeof L !== 'undefined' && L.DomUtil && L.DomUtil.setPosition) {
+        L.DomUtil.setPosition(popupEl, new L.Point(newX, newY));
+      } else {
+        popupEl.style.transform = `translate3d(${newX}px, ${newY}px, 0px)`;
+      }
+    };
+
+    const onPointerUp = (e) => {
       if (!isDragging) return;
       isDragging = false;
       dragHandle.style.cursor = 'grab';
-      popupEl = null;
-    });
 
-    dragHandle.addEventListener('pointercancel', () => {
-      isDragging = false;
-      dragHandle.style.cursor = 'grab';
-      popupEl = null;
-    });
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+
+      try {
+        if (e && e.pointerId && dragHandle.hasPointerCapture && dragHandle.hasPointerCapture(e.pointerId)) {
+          dragHandle.releasePointerCapture(e.pointerId);
+        }
+      } catch (_) {}
+
+      // Re-enable Leaflet map dragging
+      if (typeof map !== 'undefined' && map && map.dragging && typeof map.dragging.enable === 'function') {
+        map.dragging.enable();
+      }
+
+      // Update popup's latlng so map zoom/pan maintains dragged location
+      if (typeof map !== 'undefined' && map && popupEl && typeof map.layerPointToLatLng === 'function') {
+        try {
+          const finalPos = (typeof L !== 'undefined' && L.DomUtil && L.DomUtil.getPosition) ? L.DomUtil.getPosition(popupEl) : null;
+          if (finalPos) {
+            const popupObj = popupMarker ? (popupMarker.getPopup ? popupMarker.getPopup() : null) : (marker && marker.getPopup ? marker.getPopup() : null);
+            if (popupObj) {
+              const offset = (typeof L !== 'undefined' && L.point) ? L.point(popupObj.options.offset || [0, 0]) : { x: 0, y: 0 };
+              const anchor = (popupObj._getAnchor && typeof L !== 'undefined' && L.point) ? popupObj._getAnchor() : { x: 0, y: 0 };
+              const adjustedX = finalPos.x - offset.x - anchor.x;
+              const adjustedY = finalPos.y - offset.y - anchor.y;
+              const newLatLng = map.layerPointToLatLng([adjustedX, adjustedY]);
+              if (newLatLng && typeof popupObj.setLatLng === 'function') {
+                popupObj.setLatLng(newLatLng);
+              }
+            }
+          }
+        } catch (_) {}
+      }
+    };
+
+    dragHandle.addEventListener('pointerdown', onPointerDown);
   }
 
   // Bind events to the elements directly before they are inserted into the DOM
