@@ -1848,6 +1848,39 @@ html, body {
   border-radius: 0 !important;
 }
 
+.hud-legend {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  z-index: 10;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: auto;
+  user-select: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  transition: all 0.2s ease;
+  max-width: 190px;
+}
+
+#hud-legend-header {
+  transition: opacity 0.15s ease;
+}
+
+#hud-legend-header:hover span {
+  color: #38bdf8 !important;
+}
+
+#hud-legend-toggle-btn:hover {
+  color: #fff !important;
+}
+
 /* Auto-Plan Tool Card in Pattern Grid (v1.76.1) */
 .pattern-card.auto-plan-card,
 #auto-plan-btn.pattern-card {
@@ -3125,7 +3158,7 @@ html, body {
   display: block;
 }
 
-/* Breadcrumb Hover Tooltip */
+/* Breadcrumb Hover Tooltip (Inline fallback) */
 .wp-leg-breadcrumb-tooltip {
   display: none;
   position: absolute;
@@ -3145,10 +3178,27 @@ html, body {
   animation: breadcrumbFadeIn 0.18s ease-out;
 }
 
-/* Show on badge hover or focus */
+/* Hide inline tooltips on hover to let the universal floating tooltip handle display without clipping */
 .wp-leg-phase-badge:hover .wp-leg-breadcrumb-tooltip,
 .wp-leg-phase-badge:focus-within .wp-leg-breadcrumb-tooltip {
-  display: flex;
+  display: none !important;
+}
+
+/* Universal Floating Breadcrumb Tooltip (v1.86.5) */
+#wp-leg-floating-tooltip {
+  position: fixed !important;
+  z-index: 10000000 !important;
+  pointer-events: none !important;
+  width: 260px;
+  background: #0f172a;
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.9), 0 0 16px rgba(6, 182, 212, 0.35);
+  border-radius: 8px;
+  padding: 8px 10px;
+  text-align: left;
+  font-family: 'Outfit', sans-serif;
+  animation: breadcrumbFadeIn 0.18s ease-out;
+  display: none;
   flex-direction: column;
   gap: 6px;
 }
@@ -3241,6 +3291,107 @@ html, body {
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
 }
 
+/* Heading Mode Help Popover — Waypoint Editors (v1.88.0) */
+.wp-editor-help-btn {
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  color: var(--accent-cyan);
+  cursor: pointer;
+  padding: 0;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  height: 20px;
+  width: 20px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+.wp-editor-help-btn:hover {
+  background: rgba(6, 182, 212, 0.22);
+  border-color: rgba(6, 182, 212, 0.45);
+}
+
+#wp-heading-help-popover {
+  position: fixed;
+  z-index: 10000100;
+  width: 240px;
+  background: #0f172a;
+  border: 1px solid rgba(6, 182, 212, 0.35);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px -4px rgba(0,0,0,0.9), 0 0 14px rgba(6,182,212,0.2);
+  padding: 10px 12px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.72rem;
+  color: #cbd5e1;
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  animation: wpHelpPopoverFadeIn 0.15s ease-out;
+}
+@keyframes wpHelpPopoverFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+#wp-heading-help-popover .wp-help-tab-row {
+  display: flex;
+  gap: 3px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  padding-bottom: 6px;
+}
+#wp-heading-help-popover .wp-help-tab {
+  flex: 1;
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  font-size: 0.62rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 3px 2px;
+  border-radius: 4px;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+#wp-heading-help-popover .wp-help-tab.active {
+  background: rgba(6, 182, 212, 0.15);
+  border-color: rgba(6, 182, 212, 0.3);
+  color: var(--accent-cyan);
+}
+#wp-heading-help-popover .wp-help-content {
+  font-size: 0.7rem;
+  line-height: 1.4;
+  color: #94a3b8;
+  min-height: 44px;
+}
+#wp-heading-help-popover .wp-help-content strong {
+  color: #f8fafc;
+  display: block;
+  margin-bottom: 3px;
+}
+#wp-heading-help-popover .wp-help-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  border-bottom: 1px solid rgba(6,182,212,0.15);
+  padding-bottom: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+#wp-heading-help-popover .wp-help-close {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0 2px;
+  line-height: 1;
+}
+#wp-heading-help-popover .wp-help-close:hover { color: #f8fafc; }
+
 
 
 
@@ -3307,7 +3458,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.86.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.88.0</span></h1>
         </div>
       </div>
 
@@ -3866,7 +4017,7 @@ html, body {
                 <span style="font-size: 0.75rem; font-weight: 600; color: #f87171;">Detour Routing Strategy</span>
               </div>
               <select id="exclusion-detour-mode" class="form-select" style="font-size: 0.75rem; padding: 4px 8px; width: 100%; border-radius: 6px; background: rgba(15, 23, 42, 0.6); color: var(--text-main); border: 1px solid rgba(239, 68, 68, 0.3);">
-                <option value="inherit">🌐 Inherit Global Preference</option>
+                <option value="inherit" id="exclusion-detour-mode-inherit-opt">🌐 Inherit Global Preference</option>
                 <option value="perimeter">↩️ Around Perimeter (Horizontal)</option>
                 <option value="overTop">⬆️ Over the Top (Climb Above Ceiling)</option>
                 <option value="smart">⚡ Smart / Shortest 3D Path</option>
@@ -4083,7 +4234,10 @@ html, body {
             </div>
 
             <div class="control-group">
-              <label for="layer-heading-mode" style="font-size: 0.75rem;">Heading Mode</label>
+              <div class="control-label" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <label for="layer-heading-mode" style="font-size: 0.75rem; margin-bottom: 0;">Heading Mode</label>
+                <button id="layer-heading-help-btn" type="button" aria-label="Heading Mode Information" style="background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.2); color: var(--accent-cyan); cursor: pointer; padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; height: 20px; width: 20px; margin: 0;">?</button>
+              </div>
               <select id="layer-heading-mode" class="form-select" style="font-size: 0.75rem; padding: 4px 8px;">
                 <option value="inherit" id="layer-heading-mode-inherit-opt">🌐 Inherit Global Default</option>
                 <option value="followWayline">Follow Flight Path (Forward-facing)</option>
@@ -4128,7 +4282,7 @@ html, body {
                     <span style="font-size: 0.72rem; color: #cbd5e1;">Turnaround Transit Speed</span>
                   </div>
                   <select id="layer-turnaround-speed" class="form-select" style="font-size: 0.72rem; padding: 3px 6px;">
-                    <option value="inherit" selected>🌐 Inherit Layer Speed</option>
+                    <option value="inherit" id="layer-turnaround-speed-inherit-opt" selected>🌐 Inherit Layer Speed</option>
                     <option value="6">6.0 m/s (Brisk Transit)</option>
                     <option value="8">8.0 m/s (Fast Transit - Recommended)</option>
                     <option value="10">10.0 m/s (High-Speed Transit)</option>
@@ -4299,8 +4453,9 @@ html, body {
             <div id="heading-help-drawer" class="help-drawer hidden" style="background: rgba(15, 23, 42, 0.4); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-top: 8px; display: flex; flex-direction: column; gap: 10px;">
               <div style="display: flex; gap: 4px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px;">
                 <button id="heading-tab-follow" class="active" type="button" style="flex: 1; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); color: var(--accent-cyan); font-size: 0.65rem; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px;">Follow Path</button>
-                <button id="heading-tab-fixed" type="button" style="flex: 1; background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 0.65rem; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px;">Fixed</button>
+                <button id="heading-tab-fixed" type="button" style="flex: 1; background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 0.65rem; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px;">Fixed (North)</button>
                 <button id="heading-tab-poi" type="button" style="flex: 1; background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 0.65rem; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px;">POI Target</button>
+                <button id="heading-tab-custom" type="button" style="flex: 1; background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 0.65rem; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px;">Custom</button>
               </div>
               <div class="animation-container" style="position: relative; height: 90px; background: rgba(5, 8, 15, 0.45); border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, 0.03);">
                 <svg viewBox="0 0 200 90" style="width: 100%; height: 100%;">
@@ -4320,9 +4475,10 @@ html, body {
                   </g>
                 </svg>
               </div>
-              <p id="heading-help-desc" style="font-size: 0.72rem; color: var(--text-muted); line-height: 1.35; margin: 0; min-height: 32px;">
+              <p id="heading-help-desc" style="font-size: 0.72rem; color: var(--text-muted); line-height: 1.35; margin: 0; min-height: 28px;">
                 Drone rotates forward along the path. Camera always points ahead.
               </p>
+              <div id="heading-help-details" style="display: flex; flex-direction: column; gap: 6px; font-size: 0.69rem; color: #cbd5e1; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 6px;"></div>
             </div>
           </div>
 
@@ -4925,6 +5081,15 @@ html, body {
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🌐 Resolved Inherited Setting Displays (v1.87.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Eliminates guesswork across the Three-Tier Architectural Hierarchy. Whenever a layer or individual waypoint is set to inherit settings, dropdowns and value labels now dynamically compute and display the exact inherited value in parentheses (e.g. <code>🌐 Inherit Layer Speed (4.0 m/s)</code>, <code>🌐 Inherit Global (Around Perimeter)</code>, <code>🌐 Inherit Layer Mode (Stop &amp; Shoot)</code>, <code>Auto (4.0 m/s)</code>, and <code>0s (Inherited)</code>).
+            </p>
+          </div>
+
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               📱 Mobile Top Navigation Ergonomics &amp; Settings Menu Hub (v1.86.1)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -5475,7 +5640,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.86.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.88.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -5508,29 +5673,28 @@ html, body {
             ⚠️ Disclaimer & Safety Warning
           </strong>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.76rem; line-height: 1.35;">
-
-            <div style="background: rgba(251, 191, 36, 0.08); border: 1px solid rgba(251, 191, 36, 0.2); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
-              <span style="font-size: 1.25rem; line-height: 1;">🧑‍✈️</span>
-              <span style="color: #fbbf24; font-weight: 700; font-size: 0.72rem;">You Are the PIC</span>
-              <span style="color: #fbbf24;">The pilot-in-command bears sole responsibility for safe, legal flight. VLOS required at all times.</span>
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-size: 1.25rem; line-height: 1;">🛡️</span>
+              <strong style="color: var(--text-main); font-size: 0.78rem;">Pilot-in-Command Responsibility</strong>
+              <span style="color: var(--text-muted);">The Remote Pilot in Command (RPIC) maintains sole legal responsibility for safe flight, VLOS, airspace authorization, obstacle clearance, and terrain awareness.</span>
             </div>
 
-            <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-size: 1.25rem; line-height: 1;">🛰️</span>
+              <strong style="color: var(--text-main); font-size: 0.78rem;">Altitude Agnostic & No Elevation Data</strong>
+              <span style="color: var(--text-muted);">Aalaapi Sky waypoint altitudes are strictly relative to takeoff point (ATO/AGL). Ground elevations, structures, towers, trees, and terrain are NOT modeled.</span>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-size: 1.25rem; line-height: 1;">🎯</span>
+              <strong style="color: var(--text-main); font-size: 0.78rem;">Gimbal Tilt Safety & Propeller Clipping</strong>
+              <span style="color: var(--text-muted);">Upward gimbal tilt angles (&gt;0°) on consumer drones may capture propellers or front aircraft arms in camera frame during forward acceleration.</span>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
               <span style="font-size: 1.25rem; line-height: 1;">📐</span>
-              <span style="color: #818cf8; font-weight: 700; font-size: 0.72rem;">Coordinate Math Reference</span>
-              <span style="color: #818cf8;">WGS84 ellipsoidal model. Verify coordinates match local Datum and terrain clearance.</span>
-            </div>
-
-            <div style="background: rgba(6, 182, 212, 0.07); border: 1px solid rgba(6, 182, 212, 0.2); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
-              <span style="font-size: 1.25rem; line-height: 1;">📡</span>
-              <span style="color: #22d3ee; font-weight: 700; font-size: 0.72rem;">Live Data — Not Guaranteed</span>
-              <span style="color: #22d3ee;">FAA airspace, NOAA weather & power grids are third-party feeds. Cross-reference all data independently.</span>
-            </div>
-
-            <div style="background: rgba(249, 115, 22, 0.08); border: 1px solid rgba(249, 115, 22, 0.2); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
-              <span style="font-size: 1.25rem; line-height: 1;">🛑</span>
-              <span style="color: #fb923c; font-weight: 700; font-size: 0.72rem;">Know Your Emergency Abort</span>
-              <span style="color: #fb923c;">Know how to abort & resume manual control. Configure RTH altitude & signal-loss fail-safes before flight.</span>
+              <strong style="color: var(--text-main); font-size: 0.78rem;">Hardware Testing Required</strong>
+              <span style="color: var(--text-muted);">Always verify generated WPML missions in a controlled, obstacle-free environment at high altitude before executing complex photogrammetry grids.</span>
             </div>
 
             <div style="background: rgba(16, 185, 129, 0.07); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; grid-column: span 2;">
@@ -5542,6 +5706,43 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.88.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Unified Waypoint Editor UI:</strong> Map popup editor now matches the 3D FPV side-panel visually — 2-column slider grid (Alt, Pitch, Speed, Hover), 280px width, FPV-style header with live coordinates, unified 0.75rem font and 4px sliders.</li>
+              <li><strong>Insert Waypoint in Map Popup:</strong> Added Insert button to the 2D map popup, matching the FPV panel — inserts a new waypoint after the current one and closes the popup.</li>
+              <li><strong>Heading Mode Help Buttons:</strong> Added consistent <code>?</code> help buttons next to the Heading Mode row in both the map popup and FPV panel. Clicking opens a compact, tabbed help popover explaining Follow Path, Fixed (North), POI, and Custom modes — consistent with the left-nav help button style.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.87.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Resolved Inherited Setting Displays Across Three-Tier Cascade:</strong> Added clear, parenthesized resolved values next to all <code>inherit</code> and <code>Auto</code> options across Tier 2 (Layer Settings) and Tier 3 (2D Map Waypoint Popup and 3D FPV HUD Editor).</li>
+              <li><strong>Layer Settings (Tier 2):</strong> Turnaround Transit Speed displays resolved layer/global speed (e.g. <code>🌐 Inherit Layer Speed (4.0 m/s)</code>), Exclusion Detour displays resolved strategy (e.g. <code>🌐 Inherit Global (Around Perimeter)</code>), and Target POI displays active mission default POI name.</li>
+              <li><strong>Waypoint Editor (Tier 3):</strong> Camera Action displays resolved layer mode (e.g. <code>🌐 Inherit Layer Mode (Stop &amp; Shoot)</code>), Heading Mode displays resolved heading type (e.g. <code>🌐 Inherit Layer Default (Follow Flight Path)</code>), and Speed Override displays resolved inherited speed (e.g. <code>Auto (4.0 m/s)</code>).</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.86.5):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>3D Flight Path Preview Waypoint Editor Help Pop-up Clipping Fix:</strong> Resolved an issue where flight leg phase help pop-ups (breadcrumb tooltips) were clipped horizontally and vertically by <code>#fpv-editor-panel</code>'s scrollable container (<code>overflow-y: auto</code>). Implemented a universal floating tooltip manager (<code>#wp-leg-floating-tooltip</code>) anchored at the root document body level.</li>
+              <li><strong>Smart Docking &amp; Viewport Boundary Guard:</strong> Dynamically docks breadcrumb help pop-ups to the open space to the left of <code>#fpv-editor-panel</code> when hovering controls in the 3D FPV Waypoint Editor, keeping all flight dynamics explanations fully visible and unobscured without colliding with inputs or getting cut off.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.86.4):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>3D Flight Path Preview HUD Legend Overlap Fix:</strong> Repositioned the Waypoint Colors legend (<code>#three-hud-legend</code>) to the bottom-right corner of the 3D viewport, completely eliminating collision and visual obstruction over the left HUD control buttons (Auto-Rotate, Reset Camera, Camera Cones, Footprints, 3D Drones, FPV Mode).</li>
+              <li><strong>Collapsible HUD Legend &amp; FPV Auto-Hide:</strong> Added an interactive minimize/expand toggle button (<code>#hud-legend-toggle-btn</code>) and clickable header allowing pilots to collapse the legend into a compact pill, and automatically hide the legend during FPV walkthrough mode for an unobstructed camera view.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.86.3):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Comprehensive Heading Mode Photography Guidance:</strong> Enriched the interactive Heading Mode Help Drawer (<code>#heading-help-drawer</code>) with photography, camera direction, gimbal pitch (nadir vs. oblique), and capture trigger breakdowns across all heading modes (Follow Path, Fixed North, POI, Custom).</li>
+              <li><strong>Layer Heading Mode Quick Help:</strong> Added a dedicated <code>?</code> help button next to Heading Mode in Section 2 (Layer Properties) for immediate access to heading guidance.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.86.2):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -7604,11 +7805,14 @@ html, body {
                       Heading Mode:
                       <span id="fpv-heading-phase-badge-container"></span>
                     </span>
-                    <span id="fpv-edit-heading-val" style="color: #06b6d4; font-weight: 600;">Auto</span>
+                    <div style="display: inline-flex; align-items: center; gap: 4px;">
+                      <span id="fpv-edit-heading-val" style="color: #06b6d4; font-weight: 600;">Auto</span>
+                      <button id="fpv-heading-help-btn" type="button" class="wp-editor-help-btn" title="Heading Mode Help">?</button>
+                    </div>
                   </div>
                   <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 2px;">
                     <select id="fpv-edit-heading-mode" class="form-select" style="font-size: 0.72rem; padding: 4px 8px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); cursor: pointer; width: 100%;">
-                      <option value="inherit">Inherit Global Default</option>
+                      <option value="inherit" id="fpv-edit-heading-mode-inherit-opt">🌐 Inherit Layer Default</option>
                       <option value="followWayline">Follow Flight Path</option>
                       <option value="fixed">Fixed Heading (North)</option>
                       <option value="towardPOI">Point of Interest (POI)</option>
@@ -7710,15 +7914,20 @@ html, body {
         </div>
 
         <!-- Floating HUD Legend -->
-        <div class="hud-legend" style="position: absolute; bottom: 16px; left: 16px; z-index: 10; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); font-size: 0.75rem; display: flex; flex-direction: column; gap: 6px; pointer-events: none;">
-          <div style="font-weight: bold; color: var(--accent-cyan); margin-bottom: 2px;">Waypoint Colors</div>
-          <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block; border: 1px solid #fff;"></span> Start Point</div>
-          <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444; display: inline-block; border: 1px solid #fff;"></span> End Point</div>
-          <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #ec4899; display: inline-block; border: 1px solid #fff;"></span> Modified Waypoint</div>
-          <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #06b6d4; display: inline-block;"></span> Standard Layer</div>
-          <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #a855f7; display: inline-block;"></span> Orbit Ring 1 (High)</div>
-          <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span> Orbit Ring 3 (Low)</div>
-          <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #3b82f6; display: inline-block;"></span> Combo Grid</div>
+        <div id="three-hud-legend" class="hud-legend" style="position: absolute; bottom: 16px; right: 16px; z-index: 10; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); font-size: 0.75rem; display: flex; flex-direction: column; gap: 6px; pointer-events: auto; user-select: none;">
+          <div id="hud-legend-header" style="display: flex; justify-content: space-between; align-items: center; gap: 10px; cursor: pointer;" title="Click to minimize or expand waypoint legend">
+            <span style="font-weight: bold; color: var(--accent-cyan);">Waypoint Colors</span>
+            <button id="hud-legend-toggle-btn" type="button" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 0.75rem; padding: 0 4px; line-height: 1;" title="Minimize/Expand Legend">▼</button>
+          </div>
+          <div id="hud-legend-body" style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block; border: 1px solid #fff;"></span> Start Point</div>
+            <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444; display: inline-block; border: 1px solid #fff;"></span> End Point</div>
+            <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #ec4899; display: inline-block; border: 1px solid #fff;"></span> Modified Waypoint</div>
+            <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #06b6d4; display: inline-block;"></span> Standard Layer</div>
+            <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #a855f7; display: inline-block;"></span> Orbit Ring 1 (High)</div>
+            <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span> Orbit Ring 3 (Low)</div>
+            <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #3b82f6; display: inline-block;"></span> Combo Grid</div>
+          </div>
         </div>
 
         <!-- Helper Instructions -->
@@ -8142,6 +8351,9 @@ html, body {
     <span style="font-size: 0.85rem; color: var(--text-main); font-weight: 500;">Click & drag on the map to outline the structure</span>
     <button id="cancel-draw-btn" class="btn-secondary" style="padding: 4px 10px; font-size: 0.7rem; margin: 0; line-height: 1;" type="button">Cancel</button>
   </div>
+
+  <!-- Universal Floating Breadcrumb Tooltip (v1.86.5) -->
+  <div id="wp-leg-floating-tooltip" class="wp-leg-breadcrumb-tooltip" style="display: none; position: fixed; z-index: 10000000; pointer-events: none;"></div>
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -9119,6 +9331,29 @@ function updateInheritOptionLabels() {
   if (hoverOpt && globalHoverTimeEl) {
     hoverOpt.textContent = `🌐 Inherit Global (${globalHoverTimeEl.value}s)`;
   }
+
+  const turnSpeedOpt = document.getElementById('layer-turnaround-speed-inherit-opt');
+  if (turnSpeedOpt) {
+    const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    const speedEl = document.getElementById('speed');
+    const resolvedSpeed = (layer && layer.speed !== undefined && layer.speed !== null && !isNaN(layer.speed))
+      ? layer.speed
+      : (speedEl ? (parseFloat(speedEl.value) || 4.0) : 4.0);
+    turnSpeedOpt.textContent = `🌐 Inherit Layer Speed (${resolvedSpeed.toFixed(1)} m/s)`;
+  }
+
+  const detourOpt = document.getElementById('exclusion-detour-mode-inherit-opt');
+  const globalDetourEl = document.getElementById('global-exclusion-detour-mode');
+  if (detourOpt && (globalDetourEl || typeof globalExclusionDetourMode !== 'undefined')) {
+    const rawDetour = globalDetourEl ? globalDetourEl.value : globalExclusionDetourMode;
+    const mapDetour = {
+      'perimeter': 'Around Perimeter',
+      'overTop': 'Over the Top',
+      'smart': 'Smart 3D'
+    };
+    const resolved = mapDetour[rawDetour] || rawDetour;
+    detourOpt.textContent = `🌐 Inherit Global (${resolved})`;
+  }
 }
 
 function updateLayerPoiSelectOptions() {
@@ -9126,7 +9361,12 @@ function updateLayerPoiSelectOptions() {
   const select = document.getElementById('layer-poi-select');
   if (!select) return;
   const currentVal = select.value;
-  select.innerHTML = '<option value="">🌐 Nearest / Mission Default POI</option>';
+  let defaultLabel = '🌐 Nearest / Mission Default POI';
+  if (typeof pois !== 'undefined' && Array.isArray(pois) && pois.length > 0) {
+    const firstPoiName = pois[0].name || 'POI 1';
+    defaultLabel = `🌐 Nearest / Mission Default POI (${firstPoiName})`;
+  }
+  select.innerHTML = `<option value="">${defaultLabel}</option>`;
   if (typeof pois !== 'undefined' && Array.isArray(pois)) {
     pois.forEach((poi, idx) => {
       const opt = document.createElement('option');
@@ -12496,6 +12736,7 @@ function initUIEventListeners() {
   if (globalDetourModeEl) {
     globalDetourModeEl.addEventListener('change', () => {
       globalExclusionDetourMode = globalDetourModeEl.value;
+      updateInheritOptionLabels();
       updateGrid();
       saveAllSettingsToLocalStorage();
     });
@@ -13821,6 +14062,20 @@ function initUIEventListeners() {
     });
   }
 
+  // HUD Waypoint Colors Legend Toggle (v1.86.4)
+  const legendHeader = document.getElementById('hud-legend-header');
+  const legendToggleBtn = document.getElementById('hud-legend-toggle-btn');
+  const legendBody = document.getElementById('hud-legend-body');
+  const toggleHudLegend = (e) => {
+    if (e) e.stopPropagation();
+    if (!legendBody) return;
+    const isHidden = legendBody.style.display === 'none';
+    legendBody.style.display = isHidden ? 'flex' : 'none';
+    if (legendToggleBtn) legendToggleBtn.textContent = isHidden ? '▼' : '▲';
+  };
+  if (legendHeader) legendHeader.addEventListener('click', toggleHudLegend);
+  if (legendToggleBtn) legendToggleBtn.addEventListener('click', toggleHudLegend);
+
   // Wires up FPV mode listeners
   setupFPVListeners();
 
@@ -13829,6 +14084,9 @@ function initUIEventListeners() {
 
   // Setup click-to-toggle interactive unit badges
   initClickableUnits();
+
+  // Setup universal floating tooltips for waypoint leg phase badges (v1.86.5)
+  initLegPhaseBadgeTooltips();
 }
 
 /**
@@ -14890,6 +15148,8 @@ function syncDisplayValues() {
     updateTargetSplatAutoFitUI(activeLayer);
     updateTargetSplatDiagram(activeLayer);
   }
+
+  updateInheritOptionLabels();
 }
 
 // Search Address via OpenStreetMap Nominatim API
@@ -15354,6 +15614,7 @@ function updatePoiListUI() {
     item.appendChild(actionDiv);
     container.appendChild(item);
   });
+  updateLayerPoiSelectOptions();
 }
 
 function clearAllPois() {
@@ -24767,10 +25028,278 @@ function buildLegPhaseBadgeHTML(phase, idx, totalCount, paramLabel, customDesc) 
   `;
 }
 
+/**
+ * Universal Floating Tooltip Manager for Waypoint Leg Phase Badges (v1.86.5)
+ * Prevents breadcrumb popups from being clipped by scrollable containers like #fpv-editor-panel
+ * or Leaflet map popup boundaries.
+ */
+function initLegPhaseBadgeTooltips() {
+  if (typeof document === 'undefined') return null;
+
+  let floatingTooltip = document.getElementById('wp-leg-floating-tooltip');
+  if (!floatingTooltip && document.body && typeof document.createElement === 'function') {
+    floatingTooltip = document.createElement('div');
+    floatingTooltip.id = 'wp-leg-floating-tooltip';
+    floatingTooltip.className = 'wp-leg-breadcrumb-tooltip';
+    floatingTooltip.style.display = 'none';
+    floatingTooltip.style.position = 'fixed';
+    floatingTooltip.style.zIndex = '10000000';
+    floatingTooltip.style.pointerEvents = 'none';
+    document.body.appendChild(floatingTooltip);
+  }
+
+  let activeBadge = null;
+
+  function showTooltip(badge) {
+    if (!badge) return;
+    if (!floatingTooltip) {
+      floatingTooltip = document.getElementById('wp-leg-floating-tooltip');
+      if (!floatingTooltip && document.body && typeof document.createElement === 'function') {
+        floatingTooltip = document.createElement('div');
+        floatingTooltip.id = 'wp-leg-floating-tooltip';
+        floatingTooltip.className = 'wp-leg-breadcrumb-tooltip';
+        floatingTooltip.style.display = 'none';
+        floatingTooltip.style.position = 'fixed';
+        floatingTooltip.style.zIndex = '10000000';
+        floatingTooltip.style.pointerEvents = 'none';
+        document.body.appendChild(floatingTooltip);
+      }
+    }
+    if (!floatingTooltip) return;
+
+    const innerTooltip = badge.querySelector ? badge.querySelector('.wp-leg-breadcrumb-tooltip') : null;
+    if (!innerTooltip) return;
+
+    activeBadge = badge;
+    floatingTooltip.innerHTML = innerTooltip.innerHTML;
+    floatingTooltip.style.display = 'flex';
+    positionTooltip(badge);
+  }
+
+  function hideTooltip() {
+    activeBadge = null;
+    if (floatingTooltip) {
+      floatingTooltip.style.display = 'none';
+    }
+  }
+
+  function positionTooltip(badge) {
+    if (!badge || !floatingTooltip || floatingTooltip.style.display === 'none') return;
+    if (badge.isConnected === false || badge.offsetParent === null) {
+      hideTooltip();
+      return;
+    }
+    if (typeof badge.getBoundingClientRect !== 'function') return;
+
+    const badgeRect = badge.getBoundingClientRect();
+    const tooltipWidth = floatingTooltip.offsetWidth || 260;
+    const tooltipHeight = floatingTooltip.offsetHeight || 90;
+
+    const fpvPanel = (typeof badge.closest === 'function') ? badge.closest('#fpv-editor-panel') : null;
+    if (fpvPanel && typeof fpvPanel.getBoundingClientRect === 'function') {
+      const panelRect = fpvPanel.getBoundingClientRect();
+
+      // If badge has scrolled out of view in the editor panel, hide it
+      if (badgeRect.bottom < panelRect.top || badgeRect.top > panelRect.bottom) {
+        hideTooltip();
+        return;
+      }
+
+      // If there is space to the left of the FPV editor panel, dock it to the left
+      if (panelRect.left - tooltipWidth - 12 >= 10) {
+        const left = panelRect.left - tooltipWidth - 12;
+        let top = badgeRect.top + badgeRect.height / 2 - tooltipHeight / 2;
+        const winH = (typeof window !== 'undefined' && window.innerHeight) ? window.innerHeight : 800;
+        top = Math.max(16, Math.min(winH - tooltipHeight - 16, top));
+        floatingTooltip.style.left = `${left}px`;
+        floatingTooltip.style.top = `${top}px`;
+        floatingTooltip.style.bottom = 'auto';
+        floatingTooltip.style.right = 'auto';
+        floatingTooltip.style.transform = 'none';
+        return;
+      }
+    }
+
+    // Default positioning: above or below badge, clamped to viewport boundaries
+    const winW = (typeof window !== 'undefined' && window.innerWidth) ? window.innerWidth : 1200;
+    const winH = (typeof window !== 'undefined' && window.innerHeight) ? window.innerHeight : 800;
+
+    let left = badgeRect.left + badgeRect.width / 2 - tooltipWidth / 2;
+    left = Math.max(12, Math.min(winW - tooltipWidth - 12, left));
+
+    let top = badgeRect.top - tooltipHeight - 8;
+    if (top < 12) {
+      top = badgeRect.bottom + 8;
+    }
+    if (top + tooltipHeight > winH - 12) {
+      top = Math.max(12, winH - tooltipHeight - 12);
+    }
+
+    floatingTooltip.style.left = `${left}px`;
+    floatingTooltip.style.top = `${top}px`;
+    floatingTooltip.style.bottom = 'auto';
+    floatingTooltip.style.right = 'auto';
+    floatingTooltip.style.transform = 'none';
+  }
+
+  // Delegated mouseover / mouseout / focusin / focusout
+  if (typeof document.addEventListener === 'function') {
+    document.addEventListener('mouseover', (e) => {
+      const badge = e.target && e.target.closest ? e.target.closest('.wp-leg-phase-badge') : null;
+      if (badge) {
+        showTooltip(badge);
+      }
+    });
+
+    document.addEventListener('mouseout', (e) => {
+      const badge = e.target && e.target.closest ? e.target.closest('.wp-leg-phase-badge') : null;
+      if (badge && (!e.relatedTarget || !badge.contains(e.relatedTarget))) {
+        hideTooltip();
+      }
+    });
+
+    document.addEventListener('focusin', (e) => {
+      const badge = e.target && e.target.closest ? e.target.closest('.wp-leg-phase-badge') : null;
+      if (badge) {
+        showTooltip(badge);
+      }
+    });
+
+    document.addEventListener('focusout', (e) => {
+      const badge = e.target && e.target.closest ? e.target.closest('.wp-leg-phase-badge') : null;
+      if (badge) {
+        hideTooltip();
+      }
+    });
+  }
+
+  // Reposition on scroll (capture phase catches internal scrolling of #fpv-editor-panel)
+  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+    window.addEventListener('scroll', () => {
+      if (activeBadge) positionTooltip(activeBadge);
+    }, true);
+
+    window.addEventListener('resize', () => {
+      if (activeBadge) positionTooltip(activeBadge);
+    });
+  }
+
+  return { showTooltip, hideTooltip, positionTooltip, getFloatingTooltip: () => floatingTooltip };
+}
+
+/**
+ * showHeadingHelpPopover — Lightweight, reusable heading mode help popover (v1.88.0)
+ * Opens a small floating popover with 4-tab content explaining each heading mode.
+ * Used consistently by the map waypoint popup AND the FPV editor panel.
+ * @param {HTMLElement} anchorEl - The ? button that was clicked (used for positioning)
+ */
+function showHeadingHelpPopover(anchorEl) {
+  if (typeof document === 'undefined') return;
+
+  // Create popover once, reuse on subsequent calls
+  let popover = document.getElementById('wp-heading-help-popover');
+  if (!popover) {
+    popover = document.createElement('div');
+    popover.id = 'wp-heading-help-popover';
+    popover.innerHTML = `
+      <div class="wp-help-title">
+        Heading Mode
+        <button class="wp-help-close" id="wp-heading-help-close-btn" title="Close">✕</button>
+      </div>
+      <div class="wp-help-tab-row">
+        <button class="wp-help-tab active" data-mode="followWayline">Follow Path</button>
+        <button class="wp-help-tab" data-mode="fixed">Fixed (N)</button>
+        <button class="wp-help-tab" data-mode="towardPOI">POI</button>
+        <button class="wp-help-tab" data-mode="custom">Custom</button>
+      </div>
+      <div class="wp-help-content" id="wp-heading-help-content"></div>
+    `;
+    document.body.appendChild(popover);
+
+    const helpContent = {
+      followWayline: {
+        title: 'Follow Flight Path',
+        body: 'Drone yaws to always face the direction of travel. Camera looks forward along the route. Best for corridors, roads, and linear surveys.'
+      },
+      fixed: {
+        title: 'Fixed Heading (North)',
+        body: 'Drone maintains a fixed 0° (North) yaw throughout the entire flight, regardless of flight direction.'
+      },
+      towardPOI: {
+        title: 'Point of Interest (POI)',
+        body: 'Drone continuously rotates to keep its camera aimed at a designated Point of Interest (POI) marker on the map. Ideal for orbital and target-centric missions.'
+      },
+      custom: {
+        title: 'Custom Angle',
+        body: 'Set a specific yaw angle (0°–359°) for this waypoint override. The drone will rotate to this heading before departing.'
+      }
+    };
+
+    const contentEl = popover.querySelector('#wp-heading-help-content');
+    let activeMode = 'followWayline';
+
+    function renderContent(mode) {
+      const info = helpContent[mode] || helpContent['followWayline'];
+      contentEl.innerHTML = `<strong>${info.title}</strong>${info.body}`;
+    }
+    renderContent(activeMode);
+
+    popover.querySelectorAll('.wp-help-tab').forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        e.stopPropagation();
+        activeMode = tab.dataset.mode;
+        popover.querySelectorAll('.wp-help-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        renderContent(activeMode);
+      });
+    });
+
+    const closeBtn = popover.querySelector('#wp-heading-help-close-btn');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        popover.style.display = 'none';
+        popover._anchorEl = null;
+      });
+    }
+
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+      if (popover.style.display === 'flex' && !popover.contains(e.target) && e.target !== popover._anchorEl) {
+        popover.style.display = 'none';
+        popover._anchorEl = null;
+      }
+    }, { capture: true });
+  }
+
+  // Toggle if same button clicked again
+  if (popover._anchorEl === anchorEl && popover.style.display === 'flex') {
+    popover.style.display = 'none';
+    popover._anchorEl = null;
+    return;
+  }
+  popover._anchorEl = anchorEl;
+
+  // Position relative to anchor button
+  const rect = anchorEl.getBoundingClientRect();
+  const popoverW = 240;
+  let left = rect.right + 6;
+  if (left + popoverW > window.innerWidth - 8) {
+    left = rect.left - popoverW - 6;
+  }
+  let top = rect.top;
+  if (top + 200 > window.innerHeight - 8) {
+    top = window.innerHeight - 208;
+  }
+  popover.style.left = `${Math.max(4, left)}px`;
+  popover.style.top = `${Math.max(4, top)}px`;
+  popover.style.display = 'flex';
+}
+
 function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsList = null) {
   const popupContent = document.createElement('div');
   popupContent.className = 'wp-editor-popup';
-  popupContent.style.width = '230px';
+  popupContent.style.width = '280px';
   popupContent.style.color = '#f8fafc';
   popupContent.style.fontFamily = 'Outfit, sans-serif';
 
@@ -24971,161 +25500,210 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
   const zoomBadgeHTML = buildLegPhaseBadgeHTML('at', idx, totalWaypointsCount, 'Camera Zoom');
   const headingBadgeHTML = buildLegPhaseBadgeHTML(headingPhase, idx, totalWaypointsCount, 'Heading Mode', headingCustomDesc);
 
+  const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+
+  // Resolve Speed Label
+  let resolvedWpSpeed = 4.0;
+  if (wp.isTurnaroundPoint && wp.turnaroundSpeed !== null && wp.turnaroundSpeed !== undefined && !isNaN(wp.turnaroundSpeed)) {
+    resolvedWpSpeed = wp.turnaroundSpeed;
+  } else if (wpLayer && wpLayer.speed !== undefined && wpLayer.speed !== null && !isNaN(wpLayer.speed)) {
+    resolvedWpSpeed = wpLayer.speed;
+  } else {
+    const speedEl = document.getElementById('speed');
+    resolvedWpSpeed = speedEl ? (parseFloat(speedEl.value) || 4.0) : 4.0;
+  }
+  const resolvedSpeedStr = `${resolvedWpSpeed.toFixed(1)} m/s`;
+
+  // Resolve Camera Action Label
+  const effCaptureMode = (wp.layerCaptureMode && wp.layerCaptureMode !== 'inherit') ? wp.layerCaptureMode : getEffectiveLayerCaptureMode(wpLayer);
+  const mapCaptureName = {
+    'stopAndShoot': 'Stop & Shoot',
+    'continuous': 'Continuous Flight',
+    'video': 'Video Mode'
+  };
+  const resolvedCapLabel = mapCaptureName[effCaptureMode] || effCaptureMode;
+
+  // Resolve Heading Mode Label
+  const effHeadingMode = (wp.layerHeadingMode && wp.layerHeadingMode !== 'inherit') ? wp.layerHeadingMode : getEffectiveLayerHeadingMode(wpLayer);
+  const mapHeadingName = {
+    'followWayline': 'Follow Flight Path',
+    'fixed': 'Fixed North',
+    'towardPOI': 'Point of Interest (POI)',
+    'custom': 'Custom Angle'
+  };
+  const resolvedHeadingLabel = mapHeadingName[effHeadingMode] || effHeadingMode;
+
   popupContent.innerHTML = `
-    <h4 id="edit-wp-title" style="margin: 0 0 12px 0; color: #06b6d4; font-size: 0.95rem; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
-      <span id="edit-wp-title-text">Edit Waypoint ${idx}</span>
-      <button id="wp-popup-collapse-btn" type="button" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 0.75rem; padding: 0 4px;" title="Minimize/Expand Popup">▼</button>
-    </h4>
-    <div id="edit-wp-body" style="display: flex; flex-direction: column; gap: 12px; font-size: 0.8rem;">
+    <div id="wp-popup-drag-handle" style="cursor: grab; padding: 0 0 6px 0; margin-bottom: 0; border-bottom: 1px solid rgba(255,255,255,0.08); user-select: none;">
+      <div style="font-weight: 600; color: #06b6d4; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 6px; overflow: hidden;">
+          <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">🛠️ Edit Waypoint <span id="edit-wp-title-text">${idx}</span></span>
+          <button id="wp-popup-collapse-btn" type="button" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 0.75rem; padding: 0 4px; flex-shrink: 0;" title="Minimize/Expand Popup">▼</button>
+        </div>
+      </div>
+      <div style="font-family: monospace; font-size: 0.68rem; color: #64748b; margin-top: 2px; display: flex; align-items: center; gap: 4px;">
+        <span style="font-size: 0.62rem; color: #475569;">⠿ drag</span>
+        <span id="edit-wp-coords-display">${wp.lat.toFixed(5)}, ${wp.lon.toFixed(5)}</span>
+      </div>
+    </div>
+    <div id="edit-wp-body" style="display: flex; flex-direction: column; gap: 10px; font-size: 0.75rem;">
       ${overlappingHTML}
-      
-      <!-- Altitude Slider -->
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;">
-            <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><line x1="3" y1="21" x2="21" y2="21" stroke="#c2622d"/><path d="M12 21v-12M9 12l3-3 3 3" stroke="#06b6d4" fill="none"/><circle cx="12" cy="7" r="1.5" fill="#f5f0e8"/></svg>
-            Altitude:
-            ${altBadgeHTML}
-          </span>
-          <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-alt-val">${altDisp}</span> ${altUnitStr}</span>
-        </div>
-        <input type="range" id="edit-wp-alt" min="5" max="120" value="${wp.alt.toFixed(0)}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
-      </div>
-      
-      <!-- Pitch Slider -->
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;">
-            <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="8" cy="8" r="3" stroke="#c2622d" fill="none"/><line x1="8" y1="5" x2="8" y2="2" stroke="#c2622d"/><line x1="8" y1="8" x2="16" y2="16" stroke="#06b6d4"/><path d="M13 17l4-1-1-4" fill="#06b6d4" stroke="#06b6d4"/></svg>
-            Gimbal Pitch:
-            ${pitchBadgeHTML}
-          </span>
-          <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-pitch-val">${pitchVal}</span>&deg;</span>
-        </div>
-        <input type="range" id="edit-wp-pitch" min="-90" max="0" value="${pitchVal}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
-      </div>
- 
-      <!-- Speed Override Slider -->
-      <div id="edit-wp-speed-container" class="${isEndWp ? 'wp-leg-control-disabled' : ''}" style="display: flex; flex-direction: column; gap: 4px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;">
-            <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M3 12a9 9 0 0 1 15-6.7M21 12a9 9 0 0 1-9 9" stroke="#06b6d4" fill="none"/><line x1="12" y1="12" x2="17" y2="8" stroke="#c2622d"/><circle cx="12" cy="12" r="1.5" fill="#f5f0e8"/></svg>
-            Flight Speed:
-            ${speedBadgeHTML}
-          </span>
-          <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-speed-val">${isEndWp ? 'N/A' : (wp.speed ? wp.speed + ' m/s' : 'Auto')}</span></span>
-        </div>
-        <input type="range" id="edit-wp-speed" min="0.2" max="15" step="0.1" value="${wp.speed || 5}" ${isEndWp ? 'disabled' : ''} style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: ${isEndWp ? 'not-allowed' : 'pointer'};">
-        ${isEndWp ? `<span class="wp-leg-na-notice">🏁 Final waypoint: no departure leg. Speed is not applicable.</span>` : ''}
-      </div>
 
-      <!-- Hover Duration Input -->
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;">
-            <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="12" cy="12" r="9" stroke="#06b6d4" fill="none"/><polyline points="12 6 12 12 16 14" stroke="#c2622d"/></svg>
-            Hover Time:
-            ${hoverBadgeHTML}
-          </span>
-          <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-hover-val">${wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit' ? wp.hoverTime : ((wp.layerHoverTime !== undefined && wp.layerHoverTime !== 'inherit') ? wp.layerHoverTime : (document.getElementById('global-hover-time') ? parseInt(document.getElementById('global-hover-time').value) : 0))}</span>s${wp.hoverTime === null || wp.hoverTime === undefined || wp.hoverTime === 'inherit' ? ' <span style="color: #94a3b8; font-size: 0.7rem;">(Layer)</span>' : ''}</span>
-        </div>
-        <input type="range" id="edit-wp-hover" min="0" max="60" step="1" value="${wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit' ? wp.hoverTime : ((wp.layerHoverTime !== undefined && wp.layerHoverTime !== 'inherit') ? wp.layerHoverTime : (document.getElementById('global-hover-time') ? parseInt(document.getElementById('global-hover-time').value) : 0))}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
-        <div id="edit-wp-hover-warning" style="display: none; font-size: 0.65rem; color: #f59e0b; margin-top: 2px; line-height: 1.2;">
-          ⚠️ Repositioning detected: auto-settling delay will be applied in KML export.
-        </div>
-      </div>
+      <!-- 2-column grid: Altitude, Pitch, Speed, Hover -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
 
-      <!-- Turn Mode Selector -->
-      <div id="edit-wp-turn-mode-container" class="${isEndWp ? 'wp-leg-control-disabled' : ''}" style="display: flex; flex-direction: column; gap: 4px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;">
-            <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" stroke="#06b6d4" fill="none"/><line x1="4" y1="22" x2="4" y2="15" stroke="#c2622d"/></svg>
-            Turn Mode:
-            ${turnBadgeHTML}
-          </span>
-          <select id="edit-wp-turn-mode" class="form-select" ${isEndWp ? 'disabled' : ''} style="font-size: 0.72rem; padding: 3px 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); cursor: ${isEndWp ? 'not-allowed' : 'pointer'};">
-            <option value="inherit" ${!wp.turnMode || wp.turnMode === 'inherit' ? 'selected' : ''}>🌐 Inherit Layer (${(wp.layerPathMode && wp.layerPathMode !== 'inherit') ? (wp.layerPathMode === 'straight' ? 'Stop & Turn' : 'Curved Pass') : (document.getElementById('path-mode')?.value === 'straight' ? 'Stop & Turn' : 'Curved Pass')})</option>
-            <option value="stop" ${wp.turnMode === 'stop' ? 'selected' : ''}>Stop & Turn</option>
-            <option value="pass" ${wp.turnMode === 'pass' ? 'selected' : ''}>Curved Pass</option>
-          </select>
+        <!-- Altitude Slider -->
+        <div style="display: flex; flex-direction: column; gap: 3px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 5px;">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><line x1="3" y1="21" x2="21" y2="21" stroke="#c2622d"/><path d="M12 21v-12M9 12l3-3 3 3" stroke="#06b6d4" fill="none"/><circle cx="12" cy="7" r="1.5" fill="#f5f0e8"/></svg>
+              Altitude:
+              ${altBadgeHTML}
+            </span>
+            <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-alt-val">${altDisp}</span> ${altUnitStr}</span>
+          </div>
+          <input type="range" id="edit-wp-alt" min="5" max="120" value="${wp.alt.toFixed(0)}" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer;">
         </div>
-        ${isEndWp ? `<span class="wp-leg-na-notice">🛑 End of route: drone stops at destination before RTH/Landing.</span>` : ''}
-      </div>
 
-      <!-- Camera Action Selector -->
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;">
-            <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="#06b6d4" fill="none"/><circle cx="12" cy="13" r="4" stroke="#c2622d" fill="none"/></svg>
-            Camera Action:
-            ${cameraBadgeHTML}
-          </span>
-          <select id="edit-wp-camera-action" class="form-select" style="font-size: 0.72rem; padding: 3px 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); cursor: pointer;">
-            <option value="inherit" ${!wp.cameraAction || wp.cameraAction === 'inherit' ? 'selected' : ''}>🌐 Inherit Layer Mode</option>
-            <option value="none" ${wp.cameraAction === 'none' ? 'selected' : ''}>None (No Action)</option>
-            <option value="takePhoto" ${wp.cameraAction === 'takePhoto' ? 'selected' : ''}>Take Photo</option>
-            <option value="startRecord" ${wp.cameraAction === 'startRecord' ? 'selected' : ''}>Start Recording</option>
-            <option value="stopRecord" ${wp.cameraAction === 'stopRecord' ? 'selected' : ''}>Stop Recording</option>
-            <option value="zoom" ${wp.cameraAction === 'zoom' ? 'selected' : ''}>Set Camera Zoom</option>
-          </select>
+        <!-- Pitch Slider -->
+        <div style="display: flex; flex-direction: column; gap: 3px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 5px;">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="8" cy="8" r="3" stroke="#c2622d" fill="none"/><line x1="8" y1="5" x2="8" y2="2" stroke="#c2622d"/><line x1="8" y1="8" x2="16" y2="16" stroke="#06b6d4"/><path d="M13 17l4-1-1-4" fill="#06b6d4" stroke="#06b6d4"/></svg>
+              Pitch:
+              ${pitchBadgeHTML}
+            </span>
+            <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-pitch-val">${pitchVal}</span>&deg;</span>
+          </div>
+          <input type="range" id="edit-wp-pitch" min="-90" max="0" value="${pitchVal}" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer;">
         </div>
-      </div>
 
-      <!-- Camera Zoom Factor Input -->
-      <div id="edit-wp-zoom-container" style="display: ${wp.cameraAction === 'zoom' ? 'flex' : 'none'}; flex-direction: column; gap: 4px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;">
-            <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="11" cy="11" r="8" fill="none" stroke="#06b6d4"></circle><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="#06b6d4"></line></svg>
-            Camera Zoom:
-            ${zoomBadgeHTML}
-          </span>
-          <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-zoom-val">${(wp.zoom || 1.0).toFixed(1)}</span>x</span>
+        <!-- Speed Override Slider -->
+        <div id="edit-wp-speed-container" class="${isEndWp ? 'wp-leg-control-disabled' : ''}" style="display: flex; flex-direction: column; gap: 3px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 5px;">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M3 12a9 9 0 0 1 15-6.7M21 12a9 9 0 0 1-9 9" stroke="#06b6d4" fill="none"/><line x1="12" y1="12" x2="17" y2="8" stroke="#c2622d"/><circle cx="12" cy="12" r="1.5" fill="#f5f0e8"/></svg>
+              Speed:
+              ${speedBadgeHTML}
+            </span>
+            <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-speed-val">${isEndWp ? 'N/A' : (wp.speed ? wp.speed + ' m/s' : `Auto (${resolvedSpeedStr})`)}</span></span>
+          </div>
+          <input type="range" id="edit-wp-speed" min="0.2" max="15" step="0.1" value="${wp.speed || 5}" ${isEndWp ? 'disabled' : ''} style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: ${isEndWp ? 'not-allowed' : 'pointer'};">
+          ${isEndWp ? `<span class="wp-leg-na-notice">🏁 Final waypoint: no departure leg. Speed is not applicable.</span>` : ''}
         </div>
-        <input type="range" id="edit-wp-zoom" min="1.0" max="4.0" step="0.1" value="${wp.zoom || 1.0}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer;">
-      </div>
 
-      <!-- Yaw / Heading Selector -->
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;">
-            <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><polygon points="3 11 22 2 13 21 11 13 3 11" stroke="#06b6d4" fill="none"/></svg>
-            Heading Mode:
-            ${headingBadgeHTML}
-          </span>
-          <span id="edit-wp-heading-val" style="color: #06b6d4; font-weight: 600;">Auto</span>
+        <!-- Hover Duration Slider -->
+        <div style="display: flex; flex-direction: column; gap: 3px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 5px;">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="12" cy="12" r="9" stroke="#06b6d4" fill="none"/><polyline points="12 6 12 12 16 14" stroke="#c2622d"/></svg>
+              Hover:
+              ${hoverBadgeHTML}
+            </span>
+            <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-hover-val">${wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit' ? wp.hoverTime : ((wp.layerHoverTime !== undefined && wp.layerHoverTime !== 'inherit') ? wp.layerHoverTime : (document.getElementById('global-hover-time') ? parseInt(document.getElementById('global-hover-time').value) : 0))}</span>s</span>
+          </div>
+          <input type="range" id="edit-wp-hover" min="0" max="60" step="1" value="${wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit' ? wp.hoverTime : ((wp.layerHoverTime !== undefined && wp.layerHoverTime !== 'inherit') ? wp.layerHoverTime : (document.getElementById('global-hover-time') ? parseInt(document.getElementById('global-hover-time').value) : 0))}" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer;">
+          <div id="edit-wp-hover-warning" style="display: none; font-size: 0.65rem; color: #f59e0b; margin-top: 2px; line-height: 1.2;">
+            ⚠️ Repositioning detected: auto-settling delay will be applied in KML export.
+          </div>
         </div>
-        <div style="display: flex; flex-direction: column; gap: 6px;">
-          <select id="edit-wp-heading-mode" class="form-select" style="font-size: 0.72rem; padding: 4px 8px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); cursor: pointer; width: 100%;">
-            <option value="inherit" ${curMode === 'inherit' ? 'selected' : ''}>🌐 Inherit Layer Default</option>
-            <option value="followWayline" ${curMode === 'followWayline' ? 'selected' : ''}>Follow Flight Path</option>
-            <option value="fixed" ${curMode === 'fixed' ? 'selected' : ''}>Fixed Heading (North)</option>
-            <option value="towardPOI" ${curMode === 'towardPOI' ? 'selected' : ''}>Point of Interest (POI)</option>
-            <option value="custom" ${curMode === 'custom' ? 'selected' : ''}>Custom Angle</option>
-          </select>
-          <select id="edit-wp-poi-select" class="form-select" style="font-size: 0.72rem; padding: 4px 8px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); cursor: pointer; width: 100%; display: ${isPoiMode ? 'block' : 'none'};">
-            ${poiSelectOptions}
-          </select>
-          <input type="range" id="edit-wp-heading" min="0" max="359" value="${headingVal !== '' ? headingVal : 0}" style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.15); accent-color: #06b6d4; outline: none; border: none; cursor: pointer; display: ${curMode === 'custom' ? 'block' : 'none'};">
+
+        <!-- Turn Mode Selector (full width) -->
+        <div id="edit-wp-turn-mode-container" class="${isEndWp ? 'wp-leg-control-disabled' : ''}" style="display: flex; flex-direction: column; gap: 3px; grid-column: 1 / -1;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 5px;">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" stroke="#06b6d4" fill="none"/><line x1="4" y1="22" x2="4" y2="15" stroke="#c2622d"/></svg>
+              Turn Mode:
+              ${turnBadgeHTML}
+            </span>
+            <select id="edit-wp-turn-mode" class="form-select" ${isEndWp ? 'disabled' : ''} style="font-size: 0.72rem; padding: 3px 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); cursor: ${isEndWp ? 'not-allowed' : 'pointer'};">
+              <option value="inherit" ${!wp.turnMode || wp.turnMode === 'inherit' ? 'selected' : ''}>🌐 Inherit Layer (${(wp.layerPathMode && wp.layerPathMode !== 'inherit') ? (wp.layerPathMode === 'straight' ? 'Stop & Turn' : 'Curved Pass') : (document.getElementById('path-mode')?.value === 'straight' ? 'Stop & Turn' : 'Curved Pass')})</option>
+              <option value="stop" ${wp.turnMode === 'stop' ? 'selected' : ''}>Stop & Turn</option>
+              <option value="pass" ${wp.turnMode === 'pass' ? 'selected' : ''}>Curved Pass</option>
+            </select>
+          </div>
+          ${isEndWp ? `<span class="wp-leg-na-notice">🛑 End of route: drone stops at destination before RTH/Landing.</span>` : ''}
         </div>
-      </div>
- 
+
+        <!-- Camera Action Selector (full width) -->
+        <div style="display: flex; flex-direction: column; gap: 3px; grid-column: 1 / -1;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 5px;">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="#06b6d4" fill="none"/><circle cx="12" cy="13" r="4" stroke="#c2622d" fill="none"/></svg>
+              Camera Action:
+              ${cameraBadgeHTML}
+            </span>
+            <select id="edit-wp-camera-action" class="form-select" style="font-size: 0.72rem; padding: 3px 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); cursor: pointer;">
+              <option value="inherit" ${!wp.cameraAction || wp.cameraAction === 'inherit' ? 'selected' : ''}>🌐 Inherit Layer Mode (${resolvedCapLabel})</option>
+              <option value="none" ${wp.cameraAction === 'none' ? 'selected' : ''}>None (No Action)</option>
+              <option value="takePhoto" ${wp.cameraAction === 'takePhoto' ? 'selected' : ''}>Take Photo</option>
+              <option value="startRecord" ${wp.cameraAction === 'startRecord' ? 'selected' : ''}>Start Recording</option>
+              <option value="stopRecord" ${wp.cameraAction === 'stopRecord' ? 'selected' : ''}>Stop Recording</option>
+              <option value="zoom" ${wp.cameraAction === 'zoom' ? 'selected' : ''}>Set Camera Zoom</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Camera Zoom Factor (full width, conditional) -->
+        <div id="edit-wp-zoom-container" style="display: ${wp.cameraAction === 'zoom' ? 'flex' : 'none'}; flex-direction: column; gap: 3px; grid-column: 1 / -1;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 5px;">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="11" cy="11" r="8" fill="none" stroke="#06b6d4"></circle><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="#06b6d4"></line></svg>
+              Camera Zoom:
+              ${zoomBadgeHTML}
+            </span>
+            <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-zoom-val">${(wp.zoom || 1.0).toFixed(1)}</span>x</span>
+          </div>
+          <input type="range" id="edit-wp-zoom" min="1.0" max="4.0" step="0.1" value="${wp.zoom || 1.0}" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer;">
+        </div>
+
+        <!-- Heading Mode (full width) -->
+        <div style="display: flex; flex-direction: column; gap: 3px; grid-column: 1 / -1;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 5px;">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><polygon points="3 11 22 2 13 21 11 13 3 11" stroke="#06b6d4" fill="none"/></svg>
+              Heading Mode:
+              ${headingBadgeHTML}
+            </span>
+            <div style="display: inline-flex; align-items: center; gap: 4px;">
+              <span id="edit-wp-heading-val" style="color: #06b6d4; font-weight: 600;">Auto</span>
+              <button id="edit-wp-heading-help-btn" type="button" class="wp-editor-help-btn" title="Heading Mode Help">?</button>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 2px;">
+            <select id="edit-wp-heading-mode" class="form-select" style="font-size: 0.72rem; padding: 4px 8px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); cursor: pointer; width: 100%;">
+              <option value="inherit" ${curMode === 'inherit' ? 'selected' : ''}>🌐 Inherit Layer Default (${resolvedHeadingLabel})</option>
+              <option value="followWayline" ${curMode === 'followWayline' ? 'selected' : ''}>Follow Flight Path</option>
+              <option value="fixed" ${curMode === 'fixed' ? 'selected' : ''}>Fixed Heading (North)</option>
+              <option value="towardPOI" ${curMode === 'towardPOI' ? 'selected' : ''}>Point of Interest (POI)</option>
+              <option value="custom" ${curMode === 'custom' ? 'selected' : ''}>Custom Angle</option>
+            </select>
+            <select id="edit-wp-poi-select" class="form-select" style="font-size: 0.72rem; padding: 4px 8px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); cursor: pointer; width: 100%; display: ${isPoiMode ? 'block' : 'none'};">
+              ${poiSelectOptions}
+            </select>
+            <input type="range" id="edit-wp-heading" min="0" max="359" value="${headingVal !== '' ? headingVal : 0}" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer; display: ${curMode === 'custom' ? 'block' : 'none'};">
+          </div>
+        </div>
+
+      </div><!-- end 2-col grid -->
+
       <!-- Position Nudge & Lat/Lon Inputs -->
       <div style="display: flex; flex-direction: column; gap: 6px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
         <span style="color: #94a3b8; font-weight: 500; display: inline-flex; align-items: center; gap: 5px;"><svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z" stroke="#06b6d4" fill="none"/><circle cx="12" cy="10" r="3" stroke="#c2622d" fill="none"/></svg>Position (Nudge):</span>
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <!-- D-Pad -->
-          <div style="display: grid; grid-template-columns: repeat(3, 24px); grid-template-rows: repeat(3, 24px); gap: 2px; justify-content: center; width: 80px;">
+          <!-- D-Pad (22×22px matching FPV) -->
+          <div style="display: grid; grid-template-columns: repeat(3, 22px); grid-template-rows: repeat(3, 22px); gap: 2px; justify-content: center; width: 72px;">
             <div></div>
-            <button id="nudge-n-btn" type="button" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #06b6d4; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; font-weight: bold; width: 24px; height: 24px; padding: 0;">▲</button>
+            <button id="nudge-n-btn" type="button" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #06b6d4; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.75rem; font-weight: bold; width: 22px; height: 22px; padding: 0;">▲</button>
             <div></div>
-            <button id="nudge-w-btn" type="button" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #06b6d4; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; font-weight: bold; width: 24px; height: 24px; padding: 0;">◀</button>
-            <div id="nudge-step-display" style="display: flex; align-items: center; justify-content: center; font-size: 0.65rem; color: var(--accent-cyan); font-weight: bold; user-select: none;">${initialStepLabel}</div>
-            <button id="nudge-e-btn" type="button" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #06b6d4; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; font-weight: bold; width: 24px; height: 24px; padding: 0;">▶</button>
+            <button id="nudge-w-btn" type="button" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #06b6d4; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.75rem; font-weight: bold; width: 22px; height: 22px; padding: 0;">◀</button>
+            <div id="nudge-step-display" style="display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: var(--accent-cyan); font-weight: bold; user-select: none; cursor: pointer;" title="Click to cycle step distance">${initialStepLabel}</div>
+            <button id="nudge-e-btn" type="button" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #06b6d4; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.75rem; font-weight: bold; width: 22px; height: 22px; padding: 0;">▶</button>
             <div></div>
-            <button id="nudge-s-btn" type="button" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #06b6d4; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; font-weight: bold; width: 24px; height: 24px; padding: 0;">▼</button>
+            <button id="nudge-s-btn" type="button" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #06b6d4; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.75rem; font-weight: bold; width: 22px; height: 22px; padding: 0;">▼</button>
             <div></div>
           </div>
-          
+
           <!-- Lat/Lon inputs -->
           <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; margin-left: 8px;">
             <input type="text" id="edit-wp-lat" value="${wp.lat.toFixed(7)}" style="background: rgba(15,23,42,0.6); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 4px; color: #fff; font-size: 0.7rem; width: 100%; text-align: center;" placeholder="Latitude">
@@ -25133,11 +25711,13 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
           </div>
         </div>
       </div>
- 
-      <div style="display: flex; gap: 8px; margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
-        <button id="save-wp-btn" class="btn-primary" style="padding: 6px 12px; font-size: 0.75rem; flex: 1; min-height: 28px; line-height: 1.2; display: inline-block;">Save</button>
-        <button id="reset-wp-btn" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; color: #eab308; border-color: rgba(234, 179, 8, 0.3); flex: 1; min-height: 28px; line-height: 1.2; display: inline-block;">Revert</button>
-        <button id="delete-wp-btn" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem; color: #ef4444; border-color: rgba(239, 68, 68, 0.3); flex: 1; min-height: 28px; line-height: 1.2;">Delete</button>
+
+      <!-- Action Buttons (matching FPV button style) -->
+      <div style="display: flex; gap: 6px; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; font-size: 0.72rem;">
+        <button id="save-wp-btn" class="btn-primary" type="button" style="flex: 1; padding: 5px 6px; background: var(--primary-gradient); border-radius: 6px; font-weight: 600;">Save</button>
+        <button id="reset-wp-btn" class="btn-secondary" type="button" style="flex: 1; padding: 5px 6px; color: #eab308; border-color: rgba(234, 179, 8, 0.3); border-radius: 6px; font-weight: 600;">Revert</button>
+        <button id="delete-wp-btn" class="btn-secondary" type="button" style="flex: 1; padding: 5px 6px; border-color: rgba(239, 68, 68, 0.3); color: #ef4444; border-radius: 6px; font-weight: 600;">Delete</button>
+        <button id="insert-wp-btn" class="btn-secondary" type="button" style="flex: 1; padding: 5px 6px; color: #06b6d4; border-color: rgba(6, 182, 212, 0.3); border-radius: 6px; font-weight: 600;">Insert</button>
       </div>
     </div>
   `;
@@ -25153,10 +25733,62 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
     });
   }
 
+  // Drag-to-move for the popup (v1.88.0)
+  // Drags the Leaflet popup container by repositioning it with pointer events on the handle.
+  const dragHandle = popupContent.querySelector('#wp-popup-drag-handle');
+  if (dragHandle) {
+    let isDragging = false;
+    let dragStartX = 0, dragStartY = 0;
+    let popupEl = null;
+    let origLeft = 0, origTop = 0;
+
+    dragHandle.addEventListener('pointerdown', (e) => {
+      // Don't initiate drag from the collapse button
+      if (e.target.closest && e.target.closest('#wp-popup-collapse-btn')) return;
+      e.stopPropagation();
+      // Find the Leaflet popup wrapper element
+      popupEl = popupContent.closest('.leaflet-popup');
+      if (!popupEl) return;
+      isDragging = true;
+      dragHandle.style.cursor = 'grabbing';
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      const rect = popupEl.getBoundingClientRect();
+      origLeft = popupEl.offsetLeft;
+      origTop = popupEl.offsetTop;
+      dragHandle.setPointerCapture(e.pointerId);
+    });
+
+    dragHandle.addEventListener('pointermove', (e) => {
+      if (!isDragging || !popupEl) return;
+      e.stopPropagation();
+      const dx = e.clientX - dragStartX;
+      const dy = e.clientY - dragStartY;
+      popupEl.style.left = `${origLeft + dx}px`;
+      popupEl.style.top = `${origTop + dy}px`;
+      // Suppress Leaflet's positioning by removing transforms while dragging
+      popupEl.style.transform = 'none';
+    });
+
+    dragHandle.addEventListener('pointerup', (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      dragHandle.style.cursor = 'grab';
+      popupEl = null;
+    });
+
+    dragHandle.addEventListener('pointercancel', () => {
+      isDragging = false;
+      dragHandle.style.cursor = 'grab';
+      popupEl = null;
+    });
+  }
+
   // Bind events to the elements directly before they are inserted into the DOM
   const saveBtn = popupContent.querySelector('#save-wp-btn');
   const resetBtn = popupContent.querySelector('#reset-wp-btn');
   const deleteBtn = popupContent.querySelector('#delete-wp-btn');
+  const insertBtn = popupContent.querySelector('#insert-wp-btn');
 
   const altSlider = popupContent.querySelector('#edit-wp-alt');
   const altValText = popupContent.querySelector('#edit-wp-alt-val');
@@ -25171,6 +25803,27 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
 
   const latInput = popupContent.querySelector('#edit-wp-lat');
   const lonInput = popupContent.querySelector('#edit-wp-lon');
+
+  // Wire ? help button on Heading Mode
+  const headingHelpBtn = popupContent.querySelector('#edit-wp-heading-help-btn');
+  if (headingHelpBtn) {
+    headingHelpBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (typeof showHeadingHelpPopover === 'function') showHeadingHelpPopover(headingHelpBtn);
+    });
+  }
+
+  // Wire Insert button — insert after current waypoint then close popup
+  if (insertBtn) {
+    insertBtn.addEventListener('click', () => {
+      if (typeof fpvProgressIndex !== 'undefined') fpvProgressIndex = idx;
+      if (typeof fpvInsertWaypoint === 'function') fpvInsertWaypoint();
+      const popupObj = popupMarker ? (typeof popupMarker.getPopup === 'function' ? popupMarker.getPopup() : null) : (marker && typeof marker.getPopup === 'function' ? marker.getPopup() : null);
+      if (popupObj) { if (popupObj.close) popupObj.close(); else if (marker && marker.closePopup) marker.closePopup(); }
+      else if (marker && marker.closePopup) marker.closePopup();
+    });
+  }
+
 
   // Real-time map update helper
   const updateRealtimeMarker = () => {
@@ -27115,6 +27768,8 @@ function toggleFPVWalkthrough(enable) {
     if (hudOverlay) hudOverlay.classList.remove('hidden');
     if (fpvBtnIndicator) fpvBtnIndicator.style.background = '#10b981';
     if (instructions) instructions.classList.add('hidden');
+    const hudLegend = document.getElementById('three-hud-legend') || document.querySelector('.hud-legend');
+    if (hudLegend) hudLegend.classList.add('hidden');
     
     // Always open editor panel initially since we start paused
     if (editorPanel) editorPanel.classList.remove('hidden');
@@ -27159,6 +27814,8 @@ function toggleFPVWalkthrough(enable) {
     if (fpvBtnIndicator) fpvBtnIndicator.style.background = '#ef4444';
     if (editorPanel) editorPanel.classList.add('hidden');
     if (instructions) instructions.classList.remove('hidden');
+    const hudLegend = document.getElementById('three-hud-legend') || document.querySelector('.hud-legend');
+    if (hudLegend) hudLegend.classList.remove('hidden');
 
     // Restore original camera position and targets
     if (threeCamera && threeControls) {
@@ -27245,17 +27902,34 @@ function updateFPVEditorUI() {
     if (document.activeElement !== speedSlider) {
       speedSlider.value = wp.speed || 5;
     }
-    speedVal.textContent = wp.speed ? `${wp.speed} m/s` : 'Auto';
+    if (wp.speed) {
+      speedVal.textContent = `${wp.speed} m/s`;
+    } else {
+      const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+      let resolvedSpeed = 4.0;
+      if (wp.isTurnaroundPoint && wp.turnaroundSpeed !== null && wp.turnaroundSpeed !== undefined && !isNaN(wp.turnaroundSpeed)) {
+        resolvedSpeed = wp.turnaroundSpeed;
+      } else if (wpLayer && wpLayer.speed !== undefined && wpLayer.speed !== null && !isNaN(wpLayer.speed)) {
+        resolvedSpeed = wpLayer.speed;
+      } else {
+        const speedEl = document.getElementById('speed');
+        resolvedSpeed = speedEl ? (parseFloat(speedEl.value) || 4.0) : 4.0;
+      }
+      speedVal.textContent = `Auto (${resolvedSpeed.toFixed(1)} m/s)`;
+    }
   }
 
   // Hover Duration
   const hoverVal = document.getElementById('fpv-edit-hover-val');
   const hoverSlider = document.getElementById('fpv-edit-hover');
   if (hoverSlider && hoverVal) {
+    const hasCustomHover = (wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit');
+    const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+    const resolvedHover = hasCustomHover ? wp.hoverTime : getEffectiveLayerHoverTime(wpLayer);
     if (document.activeElement !== hoverSlider) {
-      hoverSlider.value = wp.hoverTime || 0;
+      hoverSlider.value = resolvedHover;
     }
-    hoverVal.textContent = `${wp.hoverTime || 0}`;
+    hoverVal.textContent = hasCustomHover ? `${resolvedHover}s` : `${resolvedHover}s (Inherited)`;
   }
 
   // Turn Mode
@@ -27300,10 +27974,25 @@ function updateFPVEditorUI() {
   const headingVal = document.getElementById('fpv-edit-heading-val');
   const headingSlider = document.getElementById('fpv-edit-heading');
   const headingModeSelect = document.getElementById('fpv-edit-heading-mode');
+  const headingModeInheritOpt = document.getElementById('fpv-edit-heading-mode-inherit-opt');
 
   if (headingModeSelect) {
     const mode = wp.headingMode || 'inherit';
     headingModeSelect.value = mode;
+
+    const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+
+    if (headingModeInheritOpt) {
+      const effHeading = (wp.layerHeadingMode && wp.layerHeadingMode !== 'inherit') ? wp.layerHeadingMode : getEffectiveLayerHeadingMode(wpLayer);
+      const mapHeadingName = {
+        'followWayline': 'Follow Flight Path',
+        'fixed': 'Fixed North',
+        'towardPOI': 'Point of Interest (POI)',
+        'custom': 'Custom Angle'
+      };
+      const resolvedHeadingLabel = mapHeadingName[effHeading] || effHeading;
+      headingModeInheritOpt.textContent = `🌐 Inherit Layer Default (${resolvedHeadingLabel})`;
+    }
 
     if (headingVal && headingSlider) {
       const rotEl = document.getElementById('grid-rotation');
@@ -27312,7 +28001,6 @@ function updateFPVEditorUI() {
 
       let displayAngle = 0;
       let effectiveMode = mode;
-      const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
       if (mode === 'inherit') {
         effectiveMode = getEffectiveLayerHeadingMode(wpLayer);
       }
@@ -27911,6 +28599,15 @@ function setupFPVListeners() {
         waypoints[fpvProgressIndex].hasDraftEdits = true;
         updateFPVEditorUI();
       }
+    });
+  }
+
+  // FPV Heading Mode Help Button (v1.88.0)
+  const fpvHeadingHelpBtn = document.getElementById('fpv-heading-help-btn');
+  if (fpvHeadingHelpBtn) {
+    fpvHeadingHelpBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (typeof showHeadingHelpPopover === 'function') showHeadingHelpPopover(fpvHeadingHelpBtn);
     });
   }
 
@@ -29803,18 +30500,96 @@ function initHeadingHelpDrawer() {
   const tabFollow = document.getElementById('heading-tab-follow');
   const tabFixed = document.getElementById('heading-tab-fixed');
   const tabPoi = document.getElementById('heading-tab-poi');
+  const tabCustom = document.getElementById('heading-tab-custom');
   const helpDesc = document.getElementById('heading-help-desc');
+  const helpDetails = document.getElementById('heading-help-details');
   const animDrone = document.getElementById('anim-drone');
   const animPoiTarget = document.getElementById('anim-poi-target');
   const activePath = document.getElementById('anim-flight-path-active');
+  const layerHelpBtn = document.getElementById('layer-heading-help-btn');
 
   if (!helpBtn || !helpDrawer || !tabFollow || !tabFixed || !tabPoi || !helpDesc || !animDrone || !animPoiTarget) return;
 
-  let activeMode = 'followWayline'; // 'followWayline', 'fixed', or 'poi'
+  let activeMode = 'followWayline'; // 'followWayline', 'fixed', 'poi', or 'custom'
   let animationFrameId = null;
   let isDrawerOpen = false;
 
-  // Toggle drawer visibility
+  const allTabs = [tabFollow, tabFixed, tabPoi, tabCustom].filter(Boolean);
+
+  function setActiveTabStyle(activeTab) {
+    allTabs.forEach(t => {
+      if (t === activeTab) {
+        t.classList.add('active');
+        t.style.background = 'rgba(6, 182, 212, 0.15)';
+        t.style.borderColor = 'rgba(6, 182, 212, 0.3)';
+        t.style.color = 'var(--accent-cyan)';
+      } else {
+        t.classList.remove('active');
+        t.style.background = 'none';
+        t.style.borderColor = 'transparent';
+        t.style.color = 'var(--text-muted)';
+      }
+    });
+  }
+
+  function renderHeadingHelpDetails(mode) {
+    if (!helpDetails) return;
+    if (mode === 'followWayline') {
+      helpDetails.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 0.62rem; font-weight: 700; color: #06b6d4; background: rgba(6, 182, 212, 0.12); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 4px; padding: 1px 5px;">Forward Alignment</span>
+            <span style="font-size: 0.68rem; color: #f8fafc; font-weight: 600;">Travel Vector Alignment</span>
+          </div>
+          <div style="color: #94a3b8; line-height: 1.35;">
+            • <strong>Nadir (-90°):</strong> Camera looks straight down. Alternating passes reverse by 180° across serpentine grids.
+            <br>• <strong>Oblique (0° to -60°):</strong> Camera looks ahead in flight direction. Ideal for corridor, road, pipeline, and linear obstacle awareness.
+            <br>• <strong>Photo Trigger:</strong> Fires automatically via Distance Interval, Time Interval, or Waypoint Hover.
+          </div>
+        </div>`;
+    } else if (mode === 'fixed') {
+      helpDetails.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 0.62rem; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 4px; padding: 1px 5px;">North (0°) Locked</span>
+            <span style="font-size: 0.68rem; color: #f8fafc; font-weight: 600;">Omnidirectional Strafing</span>
+          </div>
+          <div style="color: #94a3b8; line-height: 1.35;">
+            • <strong>Nadir (-90°) Mapping:</strong> Camera points straight down; top of photo frame is always True North. Eliminates 180° pass flips, preserves uniform sun/shadow angles, and accelerates photogrammetry processing (WebODM, Pix4D, Metashape).
+            <br>• <strong>Oblique (-30° to -60°):</strong> Aircraft maintains steady Northward gaze while flying sideways/backwards. Ideal for North-facing building facades, cliff inspections, and south-tilted solar arrays.
+            <br>• <strong>Photo Trigger:</strong> Distance Interval, Time Interval, or Stop-and-Shoot captures seamlessly in any travel direction.
+          </div>
+        </div>`;
+    } else if (mode === 'poi') {
+      helpDetails.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 0.62rem; font-weight: 700; color: #c2622d; background: rgba(194, 98, 45, 0.15); border: 1px solid rgba(194, 98, 45, 0.3); border-radius: 4px; padding: 1px 5px;">Target Tracking</span>
+            <span style="font-size: 0.68rem; color: #f8fafc; font-weight: 600;">Point of Interest (POI)</span>
+          </div>
+          <div style="color: #94a3b8; line-height: 1.35;">
+            • <strong>Dynamic Yaw:</strong> Aircraft and camera continually swivel toward the POI coordinates during flybys.
+            <br>• <strong>Orbit & Tower Audits:</strong> Gimbal tilts toward center target for 360° structure inspections (cell towers, water tanks, monuments).
+            <br>• <strong>Photo Trigger:</strong> Captures overlapping perspective shots at regular distance or waypoint intervals.
+          </div>
+        </div>`;
+    } else if (mode === 'custom') {
+      helpDetails.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 0.62rem; font-weight: 700; color: #a855f7; background: rgba(168, 85, 247, 0.12); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 4px; padding: 1px 5px;">Custom Yaw</span>
+            <span style="font-size: 0.68rem; color: #f8fafc; font-weight: 600;">User-Defined Azimuth (0°–359°)</span>
+          </div>
+          <div style="color: #94a3b8; line-height: 1.35;">
+            • <strong>Explicit Compass Heading:</strong> Locks aircraft to any custom angle (e.g., 180° South, 90° East).
+            <br>• <strong>Specialized Inspections:</strong> Align camera with angled infrastructure, solar panel rows, or directly into prevailing headwinds.
+            <br>• <strong>Photo Trigger:</strong> Supports Distance Interval, Time Cadence, or Waypoint Stop-and-Shoot.
+          </div>
+        </div>`;
+    }
+  }
+
+  // Toggle drawer visibility from Section 3 button
   helpBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     isDrawerOpen = !isDrawerOpen;
@@ -29827,62 +30602,63 @@ function initHeadingHelpDrawer() {
     }
   });
 
+  // Open drawer from Section 2 layer heading help button
+  if (layerHelpBtn) {
+    layerHelpBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const s3 = document.getElementById('mission-failsafes-section');
+      if (s3 && s3.classList.contains('collapsed')) {
+        s3.classList.remove('collapsed');
+      }
+      isDrawerOpen = true;
+      helpDrawer.classList.remove('hidden');
+      startAnimation();
+      if (typeof helpDrawer.scrollIntoView === 'function') {
+        helpDrawer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    });
+  }
+
   // Switch to Follow Path Tab
   tabFollow.addEventListener('click', () => {
     activeMode = 'followWayline';
-    tabFollow.classList.add('active');
-    tabFollow.style.background = 'rgba(6, 182, 212, 0.15)';
-    tabFollow.style.borderColor = 'rgba(6, 182, 212, 0.3)';
-    tabFollow.style.color = 'var(--accent-cyan)';
-
-    [tabFixed, tabPoi].forEach(t => {
-      t.classList.remove('active');
-      t.style.background = 'none';
-      t.style.borderColor = 'transparent';
-      t.style.color = 'var(--text-muted)';
-    });
-
+    setActiveTabStyle(tabFollow);
     animPoiTarget.style.opacity = '0';
     helpDesc.textContent = "Drone rotates forward along the path. Camera always points ahead.";
+    renderHeadingHelpDetails(activeMode);
   });
 
   // Switch to Fixed Heading Tab
   tabFixed.addEventListener('click', () => {
     activeMode = 'fixed';
-    tabFixed.classList.add('active');
-    tabFixed.style.background = 'rgba(6, 182, 212, 0.15)';
-    tabFixed.style.borderColor = 'rgba(6, 182, 212, 0.3)';
-    tabFixed.style.color = 'var(--accent-cyan)';
-
-    [tabFollow, tabPoi].forEach(t => {
-      t.classList.remove('active');
-      t.style.background = 'none';
-      t.style.borderColor = 'transparent';
-      t.style.color = 'var(--text-muted)';
-    });
-
+    setActiveTabStyle(tabFixed);
     animPoiTarget.style.opacity = '0';
     helpDesc.textContent = "Drone keeps a constant heading (North). The aircraft flies sideways or backwards as needed.";
+    renderHeadingHelpDetails(activeMode);
   });
 
   // Switch to POI Tab
   tabPoi.addEventListener('click', () => {
     activeMode = 'poi';
-    tabPoi.classList.add('active');
-    tabPoi.style.background = 'rgba(6, 182, 212, 0.15)';
-    tabPoi.style.borderColor = 'rgba(6, 182, 212, 0.3)';
-    tabPoi.style.color = 'var(--accent-cyan)';
-
-    [tabFollow, tabFixed].forEach(t => {
-      t.classList.remove('active');
-      t.style.background = 'none';
-      t.style.borderColor = 'transparent';
-      t.style.color = 'var(--text-muted)';
-    });
-
+    setActiveTabStyle(tabPoi);
     animPoiTarget.style.opacity = '1';
     helpDesc.textContent = "Camera locks onto a Point of Interest (POI). The drone continuously yaws to face the target subject.";
+    renderHeadingHelpDetails(activeMode);
   });
+
+  // Switch to Custom Angle Tab (if present)
+  if (tabCustom) {
+    tabCustom.addEventListener('click', () => {
+      activeMode = 'custom';
+      setActiveTabStyle(tabCustom);
+      animPoiTarget.style.opacity = '0';
+      helpDesc.textContent = "Drone maintains a constant user-defined heading angle (0°–359°).";
+      renderHeadingHelpDetails(activeMode);
+    });
+  }
+
+  // Render initial details
+  renderHeadingHelpDetails(activeMode);
 
   // Animation logic
   let startTime = null;
@@ -29913,6 +30689,8 @@ function initHeadingHelpDrawer() {
         angle = angle1;
       } else if (activeMode === 'fixed') {
         angle = 0;
+      } else if (activeMode === 'custom') {
+        angle = 90;
       } else { // POI mode
         angle = Math.atan2(poi.y - y, poi.x - x) * 180 / Math.PI + 90;
       }
@@ -29926,6 +30704,8 @@ function initHeadingHelpDrawer() {
         angle = angle2;
       } else if (activeMode === 'fixed') {
         angle = 0;
+      } else if (activeMode === 'custom') {
+        angle = 90;
       } else { // POI mode
         angle = Math.atan2(poi.y - y, poi.x - x) * 180 / Math.PI + 90;
       }

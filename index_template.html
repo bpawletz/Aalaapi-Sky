@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.86.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.88.0</span></h1>
         </div>
       </div>
 
@@ -626,7 +626,7 @@
                 <span style="font-size: 0.75rem; font-weight: 600; color: #f87171;">Detour Routing Strategy</span>
               </div>
               <select id="exclusion-detour-mode" class="form-select" style="font-size: 0.75rem; padding: 4px 8px; width: 100%; border-radius: 6px; background: rgba(15, 23, 42, 0.6); color: var(--text-main); border: 1px solid rgba(239, 68, 68, 0.3);">
-                <option value="inherit">🌐 Inherit Global Preference</option>
+                <option value="inherit" id="exclusion-detour-mode-inherit-opt">🌐 Inherit Global Preference</option>
                 <option value="perimeter">↩️ Around Perimeter (Horizontal)</option>
                 <option value="overTop">⬆️ Over the Top (Climb Above Ceiling)</option>
                 <option value="smart">⚡ Smart / Shortest 3D Path</option>
@@ -843,7 +843,10 @@
             </div>
 
             <div class="control-group">
-              <label for="layer-heading-mode" style="font-size: 0.75rem;">Heading Mode</label>
+              <div class="control-label" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <label for="layer-heading-mode" style="font-size: 0.75rem; margin-bottom: 0;">Heading Mode</label>
+                <button id="layer-heading-help-btn" type="button" aria-label="Heading Mode Information" style="background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.2); color: var(--accent-cyan); cursor: pointer; padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; height: 20px; width: 20px; margin: 0;">?</button>
+              </div>
               <select id="layer-heading-mode" class="form-select" style="font-size: 0.75rem; padding: 4px 8px;">
                 <option value="inherit" id="layer-heading-mode-inherit-opt">🌐 Inherit Global Default</option>
                 <option value="followWayline">Follow Flight Path (Forward-facing)</option>
@@ -888,7 +891,7 @@
                     <span style="font-size: 0.72rem; color: #cbd5e1;">Turnaround Transit Speed</span>
                   </div>
                   <select id="layer-turnaround-speed" class="form-select" style="font-size: 0.72rem; padding: 3px 6px;">
-                    <option value="inherit" selected>🌐 Inherit Layer Speed</option>
+                    <option value="inherit" id="layer-turnaround-speed-inherit-opt" selected>🌐 Inherit Layer Speed</option>
                     <option value="6">6.0 m/s (Brisk Transit)</option>
                     <option value="8">8.0 m/s (Fast Transit - Recommended)</option>
                     <option value="10">10.0 m/s (High-Speed Transit)</option>
@@ -1059,8 +1062,9 @@
             <div id="heading-help-drawer" class="help-drawer hidden" style="background: rgba(15, 23, 42, 0.4); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-top: 8px; display: flex; flex-direction: column; gap: 10px;">
               <div style="display: flex; gap: 4px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px;">
                 <button id="heading-tab-follow" class="active" type="button" style="flex: 1; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); color: var(--accent-cyan); font-size: 0.65rem; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px;">Follow Path</button>
-                <button id="heading-tab-fixed" type="button" style="flex: 1; background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 0.65rem; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px;">Fixed</button>
+                <button id="heading-tab-fixed" type="button" style="flex: 1; background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 0.65rem; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px;">Fixed (North)</button>
                 <button id="heading-tab-poi" type="button" style="flex: 1; background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 0.65rem; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px;">POI Target</button>
+                <button id="heading-tab-custom" type="button" style="flex: 1; background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 0.65rem; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px;">Custom</button>
               </div>
               <div class="animation-container" style="position: relative; height: 90px; background: rgba(5, 8, 15, 0.45); border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, 0.03);">
                 <svg viewBox="0 0 200 90" style="width: 100%; height: 100%;">
@@ -1080,9 +1084,10 @@
                   </g>
                 </svg>
               </div>
-              <p id="heading-help-desc" style="font-size: 0.72rem; color: var(--text-muted); line-height: 1.35; margin: 0; min-height: 32px;">
+              <p id="heading-help-desc" style="font-size: 0.72rem; color: var(--text-muted); line-height: 1.35; margin: 0; min-height: 28px;">
                 Drone rotates forward along the path. Camera always points ahead.
               </p>
+              <div id="heading-help-details" style="display: flex; flex-direction: column; gap: 6px; font-size: 0.69rem; color: #cbd5e1; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 6px;"></div>
             </div>
           </div>
 
@@ -1685,6 +1690,15 @@
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🌐 Resolved Inherited Setting Displays (v1.87.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Eliminates guesswork across the Three-Tier Architectural Hierarchy. Whenever a layer or individual waypoint is set to inherit settings, dropdowns and value labels now dynamically compute and display the exact inherited value in parentheses (e.g. <code>🌐 Inherit Layer Speed (4.0 m/s)</code>, <code>🌐 Inherit Global (Around Perimeter)</code>, <code>🌐 Inherit Layer Mode (Stop &amp; Shoot)</code>, <code>Auto (4.0 m/s)</code>, and <code>0s (Inherited)</code>).
+            </p>
+          </div>
+
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               📱 Mobile Top Navigation Ergonomics &amp; Settings Menu Hub (v1.86.1)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -2235,7 +2249,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.86.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.88.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -2268,29 +2282,28 @@
             ⚠️ Disclaimer & Safety Warning
           </strong>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.76rem; line-height: 1.35;">
-
-            <div style="background: rgba(251, 191, 36, 0.08); border: 1px solid rgba(251, 191, 36, 0.2); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
-              <span style="font-size: 1.25rem; line-height: 1;">🧑‍✈️</span>
-              <span style="color: #fbbf24; font-weight: 700; font-size: 0.72rem;">You Are the PIC</span>
-              <span style="color: #fbbf24;">The pilot-in-command bears sole responsibility for safe, legal flight. VLOS required at all times.</span>
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-size: 1.25rem; line-height: 1;">🛡️</span>
+              <strong style="color: var(--text-main); font-size: 0.78rem;">Pilot-in-Command Responsibility</strong>
+              <span style="color: var(--text-muted);">The Remote Pilot in Command (RPIC) maintains sole legal responsibility for safe flight, VLOS, airspace authorization, obstacle clearance, and terrain awareness.</span>
             </div>
 
-            <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-size: 1.25rem; line-height: 1;">🛰️</span>
+              <strong style="color: var(--text-main); font-size: 0.78rem;">Altitude Agnostic & No Elevation Data</strong>
+              <span style="color: var(--text-muted);">Aalaapi Sky waypoint altitudes are strictly relative to takeoff point (ATO/AGL). Ground elevations, structures, towers, trees, and terrain are NOT modeled.</span>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-size: 1.25rem; line-height: 1;">🎯</span>
+              <strong style="color: var(--text-main); font-size: 0.78rem;">Gimbal Tilt Safety & Propeller Clipping</strong>
+              <span style="color: var(--text-muted);">Upward gimbal tilt angles (&gt;0°) on consumer drones may capture propellers or front aircraft arms in camera frame during forward acceleration.</span>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
               <span style="font-size: 1.25rem; line-height: 1;">📐</span>
-              <span style="color: #818cf8; font-weight: 700; font-size: 0.72rem;">Coordinate Math Reference</span>
-              <span style="color: #818cf8;">WGS84 ellipsoidal model. Verify coordinates match local Datum and terrain clearance.</span>
-            </div>
-
-            <div style="background: rgba(6, 182, 212, 0.07); border: 1px solid rgba(6, 182, 212, 0.2); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
-              <span style="font-size: 1.25rem; line-height: 1;">📡</span>
-              <span style="color: #22d3ee; font-weight: 700; font-size: 0.72rem;">Live Data — Not Guaranteed</span>
-              <span style="color: #22d3ee;">FAA airspace, NOAA weather & power grids are third-party feeds. Cross-reference all data independently.</span>
-            </div>
-
-            <div style="background: rgba(249, 115, 22, 0.08); border: 1px solid rgba(249, 115, 22, 0.2); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
-              <span style="font-size: 1.25rem; line-height: 1;">🛑</span>
-              <span style="color: #fb923c; font-weight: 700; font-size: 0.72rem;">Know Your Emergency Abort</span>
-              <span style="color: #fb923c;">Know how to abort & resume manual control. Configure RTH altitude & signal-loss fail-safes before flight.</span>
+              <strong style="color: var(--text-main); font-size: 0.78rem;">Hardware Testing Required</strong>
+              <span style="color: var(--text-muted);">Always verify generated WPML missions in a controlled, obstacle-free environment at high altitude before executing complex photogrammetry grids.</span>
             </div>
 
             <div style="background: rgba(16, 185, 129, 0.07); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; grid-column: span 2;">
@@ -2302,6 +2315,43 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.88.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Unified Waypoint Editor UI:</strong> Map popup editor now matches the 3D FPV side-panel visually — 2-column slider grid (Alt, Pitch, Speed, Hover), 280px width, FPV-style header with live coordinates, unified 0.75rem font and 4px sliders.</li>
+              <li><strong>Insert Waypoint in Map Popup:</strong> Added Insert button to the 2D map popup, matching the FPV panel — inserts a new waypoint after the current one and closes the popup.</li>
+              <li><strong>Heading Mode Help Buttons:</strong> Added consistent <code>?</code> help buttons next to the Heading Mode row in both the map popup and FPV panel. Clicking opens a compact, tabbed help popover explaining Follow Path, Fixed (North), POI, and Custom modes — consistent with the left-nav help button style.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.87.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Resolved Inherited Setting Displays Across Three-Tier Cascade:</strong> Added clear, parenthesized resolved values next to all <code>inherit</code> and <code>Auto</code> options across Tier 2 (Layer Settings) and Tier 3 (2D Map Waypoint Popup and 3D FPV HUD Editor).</li>
+              <li><strong>Layer Settings (Tier 2):</strong> Turnaround Transit Speed displays resolved layer/global speed (e.g. <code>🌐 Inherit Layer Speed (4.0 m/s)</code>), Exclusion Detour displays resolved strategy (e.g. <code>🌐 Inherit Global (Around Perimeter)</code>), and Target POI displays active mission default POI name.</li>
+              <li><strong>Waypoint Editor (Tier 3):</strong> Camera Action displays resolved layer mode (e.g. <code>🌐 Inherit Layer Mode (Stop &amp; Shoot)</code>), Heading Mode displays resolved heading type (e.g. <code>🌐 Inherit Layer Default (Follow Flight Path)</code>), and Speed Override displays resolved inherited speed (e.g. <code>Auto (4.0 m/s)</code>).</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.86.5):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>3D Flight Path Preview Waypoint Editor Help Pop-up Clipping Fix:</strong> Resolved an issue where flight leg phase help pop-ups (breadcrumb tooltips) were clipped horizontally and vertically by <code>#fpv-editor-panel</code>'s scrollable container (<code>overflow-y: auto</code>). Implemented a universal floating tooltip manager (<code>#wp-leg-floating-tooltip</code>) anchored at the root document body level.</li>
+              <li><strong>Smart Docking &amp; Viewport Boundary Guard:</strong> Dynamically docks breadcrumb help pop-ups to the open space to the left of <code>#fpv-editor-panel</code> when hovering controls in the 3D FPV Waypoint Editor, keeping all flight dynamics explanations fully visible and unobscured without colliding with inputs or getting cut off.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.86.4):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>3D Flight Path Preview HUD Legend Overlap Fix:</strong> Repositioned the Waypoint Colors legend (<code>#three-hud-legend</code>) to the bottom-right corner of the 3D viewport, completely eliminating collision and visual obstruction over the left HUD control buttons (Auto-Rotate, Reset Camera, Camera Cones, Footprints, 3D Drones, FPV Mode).</li>
+              <li><strong>Collapsible HUD Legend &amp; FPV Auto-Hide:</strong> Added an interactive minimize/expand toggle button (<code>#hud-legend-toggle-btn</code>) and clickable header allowing pilots to collapse the legend into a compact pill, and automatically hide the legend during FPV walkthrough mode for an unobstructed camera view.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.86.3):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Comprehensive Heading Mode Photography Guidance:</strong> Enriched the interactive Heading Mode Help Drawer (<code>#heading-help-drawer</code>) with photography, camera direction, gimbal pitch (nadir vs. oblique), and capture trigger breakdowns across all heading modes (Follow Path, Fixed North, POI, Custom).</li>
+              <li><strong>Layer Heading Mode Quick Help:</strong> Added a dedicated <code>?</code> help button next to Heading Mode in Section 2 (Layer Properties) for immediate access to heading guidance.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.86.2):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -4364,11 +4414,14 @@
                       Heading Mode:
                       <span id="fpv-heading-phase-badge-container"></span>
                     </span>
-                    <span id="fpv-edit-heading-val" style="color: #06b6d4; font-weight: 600;">Auto</span>
+                    <div style="display: inline-flex; align-items: center; gap: 4px;">
+                      <span id="fpv-edit-heading-val" style="color: #06b6d4; font-weight: 600;">Auto</span>
+                      <button id="fpv-heading-help-btn" type="button" class="wp-editor-help-btn" title="Heading Mode Help">?</button>
+                    </div>
                   </div>
                   <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 2px;">
                     <select id="fpv-edit-heading-mode" class="form-select" style="font-size: 0.72rem; padding: 4px 8px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); cursor: pointer; width: 100%;">
-                      <option value="inherit">Inherit Global Default</option>
+                      <option value="inherit" id="fpv-edit-heading-mode-inherit-opt">🌐 Inherit Layer Default</option>
                       <option value="followWayline">Follow Flight Path</option>
                       <option value="fixed">Fixed Heading (North)</option>
                       <option value="towardPOI">Point of Interest (POI)</option>
@@ -4470,15 +4523,20 @@
         </div>
 
         <!-- Floating HUD Legend -->
-        <div class="hud-legend" style="position: absolute; bottom: 16px; left: 16px; z-index: 10; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); font-size: 0.75rem; display: flex; flex-direction: column; gap: 6px; pointer-events: none;">
-          <div style="font-weight: bold; color: var(--accent-cyan); margin-bottom: 2px;">Waypoint Colors</div>
-          <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block; border: 1px solid #fff;"></span> Start Point</div>
-          <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444; display: inline-block; border: 1px solid #fff;"></span> End Point</div>
-          <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #ec4899; display: inline-block; border: 1px solid #fff;"></span> Modified Waypoint</div>
-          <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #06b6d4; display: inline-block;"></span> Standard Layer</div>
-          <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #a855f7; display: inline-block;"></span> Orbit Ring 1 (High)</div>
-          <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span> Orbit Ring 3 (Low)</div>
-          <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #3b82f6; display: inline-block;"></span> Combo Grid</div>
+        <div id="three-hud-legend" class="hud-legend" style="position: absolute; bottom: 16px; right: 16px; z-index: 10; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); font-size: 0.75rem; display: flex; flex-direction: column; gap: 6px; pointer-events: auto; user-select: none;">
+          <div id="hud-legend-header" style="display: flex; justify-content: space-between; align-items: center; gap: 10px; cursor: pointer;" title="Click to minimize or expand waypoint legend">
+            <span style="font-weight: bold; color: var(--accent-cyan);">Waypoint Colors</span>
+            <button id="hud-legend-toggle-btn" type="button" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 0.75rem; padding: 0 4px; line-height: 1;" title="Minimize/Expand Legend">▼</button>
+          </div>
+          <div id="hud-legend-body" style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block; border: 1px solid #fff;"></span> Start Point</div>
+            <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444; display: inline-block; border: 1px solid #fff;"></span> End Point</div>
+            <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #ec4899; display: inline-block; border: 1px solid #fff;"></span> Modified Waypoint</div>
+            <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #06b6d4; display: inline-block;"></span> Standard Layer</div>
+            <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #a855f7; display: inline-block;"></span> Orbit Ring 1 (High)</div>
+            <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span> Orbit Ring 3 (Low)</div>
+            <div style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #3b82f6; display: inline-block;"></span> Combo Grid</div>
+          </div>
         </div>
 
         <!-- Helper Instructions -->
@@ -4902,6 +4960,9 @@
     <span style="font-size: 0.85rem; color: var(--text-main); font-weight: 500;">Click & drag on the map to outline the structure</span>
     <button id="cancel-draw-btn" class="btn-secondary" style="padding: 4px 10px; font-size: 0.7rem; margin: 0; line-height: 1;" type="button">Cancel</button>
   </div>
+
+  <!-- Universal Floating Breadcrumb Tooltip (v1.86.5) -->
+  <div id="wp-leg-floating-tooltip" class="wp-leg-breadcrumb-tooltip" style="display: none; position: fixed; z-index: 10000000; pointer-events: none;"></div>
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
