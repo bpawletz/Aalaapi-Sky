@@ -3000,6 +3000,225 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(result.skippedMarkersCount > 0, 'Must have skipped markers in DOM');
   });
 
+  test('E2E: Target Splat Auto-Determined Width & Height dynamically calculates dimensions and respects manual overrides', async () => {
+    const result = await page.evaluate(async () => {
+      const card = document.querySelector('.pattern-card[data-value="target-splat"]');
+      const autofitBtn = document.getElementById('target-splat-autofit-btn');
+      const widthSlider = document.getElementById('grid-width');
+      const heightSlider = document.getElementById('grid-height');
+      const radiusSlider = document.getElementById('target-splat-radius');
+
+      if (!card || !autofitBtn || !widthSlider || !heightSlider || !radiusSlider) {
+        return { success: false, reason: 'Target splat elements missing' };
+      }
+
+      // 1. Select Target Splat
+      card.click();
+      await new Promise(r => setTimeout(r, 60));
+
+      // 2. Set radius to 25m, alt to 50m, pitch to -45 deg
+      const altSlider = document.getElementById('altitude');
+      const pitchSlider = document.getElementById('gimbal-pitch');
+      if (altSlider) {
+        altSlider.value = '50';
+        altSlider.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      if (pitchSlider) {
+        pitchSlider.value = '-45';
+        pitchSlider.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      radiusSlider.value = '25';
+      radiusSlider.dispatchEvent(new Event('input', { bubbles: true }));
+      await new Promise(r => setTimeout(r, 60));
+
+      const autoWidth1 = parseFloat(widthSlider.value);
+      const autoHeight1 = parseFloat(heightSlider.value);
+      const activeLayer1 = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+      const isAutoActive1 = autofitBtn.classList.contains('active') && (activeLayer1 && activeLayer1.targetAutoDimensions !== false);
+
+      // 3. Change radius to 40m
+      radiusSlider.value = '40';
+      radiusSlider.dispatchEvent(new Event('input', { bubbles: true }));
+      await new Promise(r => setTimeout(r, 60));
+
+      const autoWidth2 = parseFloat(widthSlider.value);
+      const autoHeight2 = parseFloat(heightSlider.value);
+
+      // 4. Manually override width to 250m
+      widthSlider.value = '250';
+      widthSlider.dispatchEvent(new Event('input', { bubbles: true }));
+      await new Promise(r => setTimeout(r, 60));
+
+      const activeLayerManual = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+      const isAutoActiveManual = autofitBtn.classList.contains('active');
+      const isLayerAutoFalse = activeLayerManual && activeLayerManual.targetAutoDimensions === false;
+
+      // 5. Click Auto-Fit button to re-engage auto dimensions
+      autofitBtn.click();
+      await new Promise(r => setTimeout(r, 60));
+
+      const activeLayerRestored = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+      const isAutoActiveRestored = autofitBtn.classList.contains('active') && (activeLayerRestored && activeLayerRestored.targetAutoDimensions !== false);
+      const restoredWidth = parseFloat(widthSlider.value);
+
+      return {
+        success: autoWidth1 === 170 && autoHeight1 === 170 && isAutoActive1 &&
+                 autoWidth2 === 200 && autoHeight2 === 200 &&
+                 !isAutoActiveManual && isLayerAutoFalse &&
+                 isAutoActiveRestored && restoredWidth === 200,
+        autoWidth1,
+        autoHeight1,
+        isAutoActive1,
+        autoWidth2,
+        autoHeight2,
+        isAutoActiveManual,
+        isLayerAutoFalse,
+        isAutoActiveRestored,
+        restoredWidth
+      };
+    });
+
+    assert.ok(result.success, `Target Splat Auto-Fit E2E test failed: ${JSON.stringify(result)}`);
+    assert.strictEqual(result.autoWidth1, 170, 'Initial auto-calculated width should be 170m');
+    assert.strictEqual(result.autoWidth2, 200, 'Auto-calculated width for 40m radius should be 200m');
+    assert.strictEqual(result.isLayerAutoFalse, true, 'Manual slider adjust should set targetAutoDimensions: false');
+    assert.strictEqual(result.isAutoActiveRestored, true, 'Clicking Auto-Fit button should restore auto mode');
+    assert.strictEqual(result.restoredWidth, 200, 'Restored width should equal 200m');
+  });
+
+  test('E2E: Target Splat Framing & Lead-Up Selector and Live Optical Diagram (v1.84.0)', async () => {
+    const result = await page.evaluate(async () => {
+      const card = document.querySelector('.pattern-card[data-value="target-splat"]');
+      const framingSelect = document.getElementById('target-splat-framing-mode');
+      const diagramContainer = document.getElementById('target-splat-diagram-container');
+      const diagramSvg = document.getElementById('target-splat-diagram-svg');
+      const diagramStats = document.getElementById('target-splat-diagram-stats');
+      const framingBadge = document.getElementById('target-splat-framing-badge');
+
+      if (!card || !framingSelect || !diagramContainer || !diagramSvg || !diagramStats) {
+        return { success: false, reason: 'Target splat framing elements missing' };
+      }
+
+      // 1. Select Target Splat
+      card.click();
+      await new Promise(r => setTimeout(r, 60));
+
+      const initialMode = framingSelect.value;
+      const initialBadge = framingBadge ? framingBadge.textContent : '';
+      const initialStats = diagramStats ? diagramStats.textContent : '';
+
+      // 2. Switch to Tight Framing
+      framingSelect.value = 'tight';
+      framingSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      await new Promise(r => setTimeout(r, 60));
+
+      const tightBadge = framingBadge ? framingBadge.textContent : '';
+      const tightStats = diagramStats ? diagramStats.textContent : '';
+      const activeLayerTight = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+      const layerTightMode = activeLayerTight ? activeLayerTight.targetFramingMode : null;
+
+      // 3. Switch to Full Frustum (Legacy)
+      framingSelect.value = 'full';
+      framingSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      await new Promise(r => setTimeout(r, 60));
+
+      const fullBadge = framingBadge ? framingBadge.textContent : '';
+      const fullStats = diagramStats ? diagramStats.textContent : '';
+      const activeLayerFull = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+      const layerFullMode = activeLayerFull ? activeLayerFull.targetFramingMode : null;
+
+      return {
+        success: initialMode === 'balanced' &&
+                 initialBadge.includes('Sweet Spot') &&
+                 tightBadge.includes('Tight') &&
+                 layerTightMode === 'tight' &&
+                 fullBadge.includes('Full') &&
+                 layerFullMode === 'full' &&
+                 initialStats.includes('Lead-In') &&
+                 tightStats.includes('Lead-In'),
+        initialMode,
+        initialBadge,
+        initialStats,
+        tightBadge,
+        tightStats,
+        fullBadge,
+        fullStats,
+        layerTightMode,
+        layerFullMode,
+        hasGetActiveLayer: typeof getActiveLayer === 'function'
+      };
+    });
+
+    assert.ok(result.success, `Target Splat Framing E2E failed: ${JSON.stringify(result)}`);
+    assert.strictEqual(result.initialMode, 'balanced');
+  });
+
+  test('E2E: Camera Sensor Aspect Ratio Selector and Badge Synchronization (v1.85.0)', async () => {
+    const result = await page.evaluate(async () => {
+      const aspectSelect = document.getElementById('camera-aspect-ratio');
+      const badge = document.getElementById('camera-aspect-ratio-badge');
+      const hfovEl = document.getElementById('camera-hfov');
+      const vfovEl = document.getElementById('camera-vfov');
+
+      if (!aspectSelect || !badge) {
+        return { success: false, reason: 'Camera aspect ratio DOM elements missing' };
+      }
+
+      // Initial state should be 4:3 Photo
+      const initialVal = aspectSelect.value;
+      const initialBadge = badge.textContent;
+
+      // 1. Switch to 16:9 Video
+      aspectSelect.value = '16:9';
+      aspectSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      await new Promise(r => setTimeout(r, 60));
+
+      const videoVal = aspectSelect.value;
+      const videoBadge = badge.textContent;
+      const videoVfov = vfovEl ? parseFloat(vfovEl.value) : 0;
+      const activeLayer169 = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+      const layer169Aspect = activeLayer169 ? activeLayer169.cameraAspectRatio : null;
+
+      // 2. Switch back to 4:3 Photo
+      aspectSelect.value = '4:3';
+      aspectSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      await new Promise(r => setTimeout(r, 60));
+
+      const photoVal = aspectSelect.value;
+      const photoBadge = badge.textContent;
+      const photoVfov = vfovEl ? parseFloat(vfovEl.value) : 0;
+      const activeLayer43 = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+      const layer43Aspect = activeLayer43 ? activeLayer43.cameraAspectRatio : null;
+
+      return {
+        success: initialVal === '4:3' &&
+                 initialBadge.includes('4:3 Photo') &&
+                 videoVal === '16:9' &&
+                 videoBadge.includes('16:9 Video') &&
+                 videoVfov === 44.2 &&
+                 layer169Aspect === '16:9' &&
+                 photoVal === '4:3' &&
+                 photoBadge.includes('4:3 Photo') &&
+                 photoVfov === 55.2 &&
+                 layer43Aspect === '4:3',
+        initialVal,
+        initialBadge,
+        videoVal,
+        videoBadge,
+        videoVfov,
+        layer169Aspect,
+        photoVal,
+        photoBadge,
+        photoVfov,
+        layer43Aspect
+      };
+    });
+
+    assert.ok(result.success, `Camera Aspect Ratio E2E failed: ${JSON.stringify(result)}`);
+    assert.strictEqual(result.photoVal, '4:3');
+    assert.strictEqual(result.videoVal, '16:9');
+  });
+
   test('E2E: Click-to-type numerical editing on sidebar value displays (#speed-val and #altitude-val)', async () => {
     const editResult = await page.evaluate(async () => {
       const speedValEl = document.getElementById('speed-val');
@@ -3540,6 +3759,209 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(legPhaseResult.fpvSpeedDisabled, true, 'FPV HUD speed must be disabled on last waypoint');
     assert.strictEqual(legPhaseResult.fpvTurnDisabled, true, 'FPV HUD turn mode must be disabled on last waypoint');
     assert.strictEqual(legPhaseResult.fpvMidSpeedEnabled, true, 'FPV HUD speed must be enabled on intermediate waypoint');
+  });
+
+  test('E2E: Mobile Phone Top Navigation Bar Responsive Ergonomics, Expandable Search, and More Actions Menu (v1.86.0)', async () => {
+    // 1. Set viewport to mobile phone (390x844 - iPhone standard)
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.evaluate(() => {
+      localStorage.setItem('aalaapi_sky_disclaimer_accepted', 'true');
+      document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+    });
+
+    const mobile390Metrics = await page.evaluate(() => {
+      const topbar = document.querySelector('.studio-topbar');
+      const title = document.querySelector('.logo h1');
+      const moreBtn = document.getElementById('header-more-btn');
+      const introBtn = document.getElementById('intro-tour-btn');
+      const aboutBtn = document.getElementById('about-btn');
+      const linksBtn = document.getElementById('useful-links-btn');
+      const telem = document.getElementById('header-telemetry-pill');
+      const searchToggle = document.getElementById('mobile-search-toggle-btn');
+      const searchContainer = document.getElementById('header-search-container');
+      const unitBtn = document.getElementById('header-unit-toggle-btn');
+      const themeBtn = document.getElementById('theme-toggle-btn');
+      const configBtn = document.getElementById('config-btn');
+
+      return {
+        isOverflowing: topbar.scrollWidth > topbar.clientWidth,
+        scrollWidth: topbar.scrollWidth,
+        clientWidth: topbar.clientWidth,
+        titleHidden: window.getComputedStyle(title).display === 'none',
+        moreBtnVisible: window.getComputedStyle(moreBtn).display !== 'none',
+        introHidden: window.getComputedStyle(introBtn).display === 'none',
+        aboutHidden: window.getComputedStyle(aboutBtn).display === 'none',
+        linksHidden: window.getComputedStyle(linksBtn).display === 'none',
+        unitToggleHidden: window.getComputedStyle(unitBtn).display === 'none',
+        themeToggleHidden: window.getComputedStyle(themeBtn).display === 'none',
+        configBtnVisible: window.getComputedStyle(configBtn).display !== 'none',
+        telemVisible: window.getComputedStyle(telem).display !== 'none',
+        telemWidth: telem.getBoundingClientRect().width,
+        telemRight: telem.getBoundingClientRect().right,
+        configBtnLeft: configBtn.getBoundingClientRect().left,
+        searchToggleVisible: window.getComputedStyle(searchToggle).display !== 'none',
+        searchContainerHidden: window.getComputedStyle(searchContainer).display === 'none'
+      };
+    });
+
+    assert.strictEqual(mobile390Metrics.isOverflowing, false, 'Topbar must not horizontally overflow on 390px mobile screen');
+    assert.strictEqual(mobile390Metrics.titleHidden, true, 'Brand text should be hidden on mobile to conserve space');
+    assert.strictEqual(mobile390Metrics.moreBtnVisible, true, 'More menu button should be visible on mobile');
+    assert.strictEqual(mobile390Metrics.introHidden, true, 'Intro button should be collapsed into More menu');
+    assert.strictEqual(mobile390Metrics.aboutHidden, true, 'About button should be collapsed into More menu');
+    assert.strictEqual(mobile390Metrics.linksHidden, true, 'Links button should be collapsed into More menu');
+    assert.strictEqual(mobile390Metrics.unitToggleHidden, true, 'M/F unit button should be removed/hidden on mobile');
+    assert.strictEqual(mobile390Metrics.themeToggleHidden, true, 'Dark/light theme button should be removed/hidden on mobile');
+    assert.strictEqual(mobile390Metrics.configBtnVisible, true, 'Config settings button should remain visible on mobile');
+    assert.ok(mobile390Metrics.telemRight <= mobile390Metrics.configBtnLeft + 1, 'Telemetry pill must not collide or overlap with config button on mobile');
+    assert.strictEqual(mobile390Metrics.telemVisible, true, 'Telemetry HUD pill should be visible on mobile');
+    assert.ok(mobile390Metrics.telemWidth > 40, 'Telemetry HUD pill should have non-zero usable width');
+    assert.strictEqual(mobile390Metrics.searchToggleVisible, true, 'Mobile search toggle button should be visible');
+    assert.strictEqual(mobile390Metrics.searchContainerHidden, true, 'Search container should be collapsed by default on mobile');
+
+    // 2. Set viewport to small mobile phone (360x740)
+    await page.setViewportSize({ width: 360, height: 740 });
+    const mobile360Overflow = await page.evaluate(() => {
+      const topbar = document.querySelector('.studio-topbar');
+      return topbar.scrollWidth > topbar.clientWidth;
+    });
+    assert.strictEqual(mobile360Overflow, false, 'Topbar must not horizontally overflow even on 360px small screens');
+
+    // 3. Test Expandable Mobile Search
+    await page.locator('#mobile-search-toggle-btn').click();
+    const searchExpandedState = await page.evaluate(() => {
+      const topbar = document.querySelector('.studio-topbar');
+      const searchContainer = document.getElementById('header-search-container');
+      const telem = document.getElementById('header-telemetry-pill');
+      const closeBtn = document.getElementById('mobile-search-close-btn');
+      return {
+        isSearchOpen: topbar.classList.contains('search-open'),
+        searchContainerVisible: window.getComputedStyle(searchContainer).display !== 'none',
+        searchWidth: searchContainer.getBoundingClientRect().width,
+        telemHidden: window.getComputedStyle(telem).display === 'none',
+        closeBtnVisible: window.getComputedStyle(closeBtn).display !== 'none'
+      };
+    });
+
+    assert.strictEqual(searchExpandedState.isSearchOpen, true, 'Topbar should have search-open class when search is clicked');
+    assert.strictEqual(searchExpandedState.searchContainerVisible, true, 'Search container should be visible when expanded');
+    assert.ok(searchExpandedState.searchWidth > 200, 'Search container should span the full available width');
+    assert.strictEqual(searchExpandedState.telemHidden, true, 'Telemetry pill should be hidden while typing search');
+    assert.strictEqual(searchExpandedState.closeBtnVisible, true, 'Close button should be visible in search container');
+
+    // Close search bar
+    await page.locator('#mobile-search-close-btn').click();
+    const searchClosedState = await page.evaluate(() => {
+      const topbar = document.querySelector('.studio-topbar');
+      const searchContainer = document.getElementById('header-search-container');
+      const telem = document.getElementById('header-telemetry-pill');
+      return {
+        isSearchOpen: topbar.classList.contains('search-open'),
+        searchContainerHidden: window.getComputedStyle(searchContainer).display === 'none',
+        telemVisible: window.getComputedStyle(telem).display !== 'none'
+      };
+    });
+    assert.strictEqual(searchClosedState.isSearchOpen, false, 'search-open class should be removed on close');
+    assert.strictEqual(searchClosedState.searchContainerHidden, true, 'Search container should be hidden on close');
+    assert.strictEqual(searchClosedState.telemVisible, true, 'Telemetry pill should be restored on close');
+
+    // 4. Test Mobile More Actions Popover Menu
+    await page.locator('#header-more-btn').click();
+    const moreMenuOpenState = await page.evaluate(() => {
+      const menu = document.getElementById('header-more-menu');
+      return {
+        menuVisible: !menu.classList.contains('hidden') && window.getComputedStyle(menu).display !== 'none',
+        itemsCount: menu.querySelectorAll('.more-menu-item').length
+      };
+    });
+    assert.strictEqual(moreMenuOpenState.menuVisible, true, 'More menu should be visible after clicking more button');
+    assert.strictEqual(moreMenuOpenState.itemsCount, 3, 'More menu should contain 3 action items (Intro, About, Links)');
+
+    // Click About from More Menu
+    await page.locator('#more-menu-about-btn').click();
+    const aboutModalOpenState = await page.evaluate(() => {
+      const aboutModal = document.getElementById('about-modal');
+      const moreMenu = document.getElementById('header-more-menu');
+      return {
+        aboutModalOpen: !aboutModal.classList.contains('hidden'),
+        moreMenuClosed: moreMenu.classList.contains('hidden')
+      };
+    });
+    assert.strictEqual(aboutModalOpenState.aboutModalOpen, true, 'About modal should open when clicking About in more menu');
+    assert.strictEqual(aboutModalOpenState.moreMenuClosed, true, 'More menu should close after selecting an option');
+
+    // Close About modal
+    await page.locator('#close-about-btn').click();
+
+    // 5. Test Settings (Gear) Menu for Measurement Units & Theme on mobile
+    await page.locator('#config-btn').click();
+    const configModalState = await page.evaluate(() => {
+      const modal = document.getElementById('config-modal');
+      const unitSelect = document.getElementById('unit-system');
+      const themeSelect = document.getElementById('theme-mode-select');
+      return {
+        isOpen: !modal.classList.contains('hidden'),
+        unitSelectExists: !!unitSelect,
+        themeSelectExists: !!themeSelect,
+        currentUnit: unitSelect ? unitSelect.value : null,
+        currentTheme: themeSelect ? themeSelect.value : null
+      };
+    });
+    assert.strictEqual(configModalState.isOpen, true, 'Config modal should open when clicking gear');
+    assert.strictEqual(configModalState.unitSelectExists, true, 'Unit system select should exist in config modal');
+    assert.strictEqual(configModalState.themeSelectExists, true, 'Theme mode select should exist in config modal');
+
+    // Switch theme to light in settings menu
+    await page.selectOption('#theme-mode-select', 'light');
+    const lightThemeAttr = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+    assert.strictEqual(lightThemeAttr, 'light', 'Theme should switch to light via settings modal');
+
+    // Switch theme back to dark in settings menu
+    await page.selectOption('#theme-mode-select', 'dark');
+    const darkThemeAttr = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+    assert.strictEqual(darkThemeAttr, 'dark', 'Theme should switch back to dark via settings modal');
+
+    // Close config modal
+    await page.locator('#close-config-btn').click();
+
+    // 6. Restore Desktop Viewport (1280x720) and assert desktop layout
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const desktopState = await page.evaluate(() => {
+      const title = document.querySelector('.logo h1');
+      const moreBtn = document.getElementById('header-more-btn');
+      const introBtn = document.getElementById('intro-tour-btn');
+      const aboutBtn = document.getElementById('about-btn');
+      const linksBtn = document.getElementById('useful-links-btn');
+      const searchContainer = document.getElementById('header-search-container');
+      const telem = document.getElementById('header-telemetry-pill');
+      const searchToggle = document.getElementById('mobile-search-toggle-btn');
+      const unitBtn = document.getElementById('header-unit-toggle-btn');
+      const themeBtn = document.getElementById('theme-toggle-btn');
+
+      return {
+        titleVisible: window.getComputedStyle(title).display !== 'none',
+        moreBtnHidden: window.getComputedStyle(moreBtn).display === 'none',
+        introVisible: window.getComputedStyle(introBtn).display !== 'none',
+        aboutVisible: window.getComputedStyle(aboutBtn).display !== 'none',
+        linksVisible: window.getComputedStyle(linksBtn).display !== 'none',
+        unitBtnVisible: window.getComputedStyle(unitBtn).display !== 'none',
+        themeBtnVisible: window.getComputedStyle(themeBtn).display !== 'none',
+        searchVisible: window.getComputedStyle(searchContainer).display !== 'none',
+        telemVisible: window.getComputedStyle(telem).display !== 'none',
+        searchToggleHidden: window.getComputedStyle(searchToggle).display === 'none'
+      };
+    });
+
+    assert.strictEqual(desktopState.titleVisible, true, 'Desktop should display full brand title');
+    assert.strictEqual(desktopState.moreBtnHidden, true, 'Desktop should hide mobile more button');
+    assert.strictEqual(desktopState.introVisible, true, 'Desktop should display standalone Intro button');
+    assert.strictEqual(desktopState.aboutVisible, true, 'Desktop should display standalone About button');
+    assert.strictEqual(desktopState.linksVisible, true, 'Desktop should display standalone Links button');
+    assert.strictEqual(desktopState.unitBtnVisible, true, 'Desktop should display header unit toggle button');
+    assert.strictEqual(desktopState.themeBtnVisible, true, 'Desktop should display header theme toggle button');
+    assert.strictEqual(desktopState.searchVisible, true, 'Desktop should display inline search container');
+    assert.strictEqual(desktopState.telemVisible, true, 'Desktop should display inline telemetry pill');
+    assert.strictEqual(desktopState.searchToggleHidden, true, 'Desktop should hide mobile search toggle');
   });
 });
 

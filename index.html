@@ -182,6 +182,72 @@ html, body {
   flex-shrink: 0;
 }
 
+/* Mobile Topbar Extra Elements - Hidden on Desktop */
+.mobile-search-toggle-btn,
+.mobile-search-close-btn,
+.header-more-btn,
+.header-more-menu {
+  display: none;
+}
+
+.header-more-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 8px;
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 1100;
+  min-width: 200px;
+  flex-direction: column;
+  gap: 3px;
+}
+
+[data-theme="light"] .header-more-menu {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(15, 23, 42, 0.15);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.more-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: var(--text-main);
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.more-menu-item:hover, .more-menu-item:active {
+  background: rgba(6, 182, 212, 0.15);
+  color: var(--accent-cyan);
+}
+
+.more-menu-icon {
+  font-size: 0.95rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.more-menu-label {
+  flex: 1;
+  white-space: nowrap;
+}
+
 /* App Body Row */
 .app-container {
   display: flex;
@@ -1305,10 +1371,13 @@ html, body {
     gap: 6px;
     height: 48px;
     min-height: 48px;
+    position: relative;
+    max-width: 100vw;
   }
 
   .topbar-left {
     gap: 6px;
+    flex-shrink: 0;
   }
 
   .logo h1 {
@@ -1316,11 +1385,12 @@ html, body {
   }
 
   .header-version-badge {
-    display: none;
+    display: none !important;
   }
 
   .topbar-center {
     gap: 6px;
+    min-width: 0;
   }
 
   .header-search-container {
@@ -1446,6 +1516,188 @@ html, body {
   .modal-content {
     padding: 16px;
   }
+}
+
+/* Small Screens & Mobile Phone Ergonomics (<= 640px) */
+@media (max-width: 640px) {
+  .logo h1 {
+    display: none !important;
+  }
+
+  /* Compact Right Actions cluster */
+  .topbar-right {
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  #intro-tour-btn,
+  #about-btn,
+  #useful-links-btn,
+  #header-unit-toggle-btn,
+  #theme-toggle-btn {
+    display: none !important;
+  }
+
+  .header-more-btn {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    padding: 0;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+  }
+
+  .header-more-btn:hover {
+    background: rgba(6, 182, 212, 0.15);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+  }
+
+  .header-config-btn {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+  }
+
+  /* Telemetry HUD Pill on small screens */
+  .header-telemetry-container {
+    min-width: 0;
+    flex-shrink: 1;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .header-telemetry-pill {
+    max-width: 240px;
+    min-width: 0;
+    padding: 3px 8px !important;
+    font-size: 0.72rem;
+    overflow: hidden;
+  }
+
+  .pill-telemetry-group {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  #header-telemetry-summary {
+    font-size: 0.68rem !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Expandable Search on small screens */
+  .topbar-center:not(.search-open) #header-search-container {
+    display: none !important;
+  }
+
+  .topbar-center:not(.search-open) .mobile-search-toggle-btn {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    padding: 0;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .studio-topbar.search-open .topbar-left,
+  .studio-topbar.search-open .topbar-right {
+    display: none !important;
+  }
+
+  .studio-topbar.search-open .topbar-center,
+  .topbar-center.search-open {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 !important;
+    margin: 0 !important;
+  }
+
+  .topbar-center.search-open #header-telemetry-pill,
+  .topbar-center.search-open .header-telemetry-container,
+  .topbar-center.search-open .mobile-search-toggle-btn {
+    display: none !important;
+  }
+
+  .topbar-center.search-open #header-search-container {
+    display: flex !important;
+    flex: 1;
+    width: 100%;
+    max-width: 100%;
+    gap: 6px;
+    align-items: center;
+    animation: fadeInSearch 0.2s ease-out;
+  }
+
+  .topbar-center.search-open .header-search-input-wrapper {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .topbar-center.search-open #location-input {
+    font-size: 0.78rem;
+    padding: 4px 6px 4px 24px;
+  }
+
+  .mobile-search-close-btn {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    padding: 0;
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: 6px;
+    flex-shrink: 0;
+    transition: var(--transition-smooth);
+  }
+
+  .mobile-search-close-btn:hover {
+    color: var(--accent-red);
+    border-color: var(--accent-red);
+    background: rgba(239, 68, 68, 0.12);
+  }
+
+  .header-more-menu:not(.hidden) {
+    display: flex !important;
+  }
+}
+
+@media (max-width: 400px) {
+  .header-telemetry-pill {
+    max-width: 170px;
+  }
+}
+
+@keyframes fadeInSearch {
+  from { opacity: 0; transform: translateY(-2px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Leaflet Popup Dark Mode styling */
@@ -2966,6 +3218,29 @@ html, body {
   font-weight: 400;
 }
 
+#target-splat-autofit-btn:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+}
+
+#target-splat-autofit-btn:active {
+  transform: translateY(0);
+}
+
+#target-splat-diagram-container {
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.4);
+  transition: all 0.25s ease;
+}
+
+#target-splat-diagram-container:hover {
+  border-color: rgba(16, 185, 129, 0.45);
+}
+
+#target-splat-framing-mode:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+}
+
 
 
 
@@ -3032,12 +3307,17 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.82.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.86.1</span></h1>
         </div>
       </div>
 
       <!-- Center: Search & Locate + Telemetry & Weather HUD Pill -->
       <div class="topbar-center">
+        <!-- Mobile Search Toggle Button (visible on small screens) -->
+        <button id="mobile-search-toggle-btn" class="btn-secondary mobile-search-toggle-btn" type="button" title="Search Address or Coordinate" aria-label="Search location">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </button>
+
         <div id="header-search-container" class="header-search-container">
           <div class="header-search-input-wrapper">
             <svg class="search-input-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -3051,6 +3331,10 @@ html, body {
               <circle cx="12" cy="12" r="9" opacity="0.3"></circle>
             </svg>
             <span id="locate-me-label">Locate</span>
+          </button>
+          <!-- Mobile Close Search Button -->
+          <button id="mobile-search-close-btn" class="mobile-search-close-btn" type="button" title="Close Search" aria-label="Close search">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
 
@@ -3068,7 +3352,7 @@ html, body {
         </div>
       </div>
 
-      <!-- Right: Action Buttons (Unit Toggle, Theme, Intro, Config, About, Links) -->
+      <!-- Right: Action Buttons (Unit Toggle, Theme, Intro, Config, About, Links, More) -->
       <div class="topbar-right">
         <button id="header-unit-toggle-btn" class="btn-secondary header-unit-btn" type="button" title="Toggle Measurement Units (Imperial / Metric)" aria-label="Toggle Units" onclick="toggleUnitSystem()"><span id="header-unit-badge">FT / MPH</span></button>
         <button id="theme-toggle-btn" class="btn-secondary header-theme-btn" type="button" title="Toggle Light / Dark Mode" aria-label="Toggle Theme" onclick="toggleAppTheme()">☀️</button>
@@ -3081,6 +3365,30 @@ html, body {
         </button>
         <button id="about-btn" class="btn-secondary header-about-btn" type="button" title="About &amp; Changelog">About</button>
         <button id="useful-links-btn" class="btn-secondary header-about-btn" type="button" title="Useful Links">Links</button>
+        <!-- Mobile More Menu Button (visible on small screens) -->
+        <button id="header-more-btn" class="btn-secondary header-more-btn" type="button" title="More Options" aria-label="More options">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+            <circle cx="12" cy="5" r="2"/>
+            <circle cx="12" cy="12" r="2"/>
+            <circle cx="12" cy="19" r="2"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Mobile More Actions Dropdown Menu Popover -->
+      <div id="header-more-menu" class="header-more-menu glass hidden">
+        <button id="more-menu-intro-btn" class="more-menu-item" type="button">
+          <span class="more-menu-icon">🎓</span>
+          <span class="more-menu-label">Intro &amp; Quickstart Tour</span>
+        </button>
+        <button id="more-menu-about-btn" class="more-menu-item" type="button">
+          <span class="more-menu-icon">ℹ️</span>
+          <span class="more-menu-label">About &amp; Changelog</span>
+        </button>
+        <button id="more-menu-links-btn" class="more-menu-item" type="button">
+          <span class="more-menu-icon">🔗</span>
+          <span class="more-menu-label">Useful Aviation Links</span>
+        </button>
       </div>
     </header>
 
@@ -3343,7 +3651,10 @@ html, body {
                 </svg>
                 Target Object &amp; 3D Frustum Filter
               </strong>
-              <span id="target-splat-saved-pill" class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 0.68rem; padding: 2px 6px; border-radius: 4px; display: none;">0 pruned</span>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <button type="button" id="target-splat-autofit-btn" class="badge" style="background: rgba(16, 185, 129, 0.3); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.6); font-size: 0.68rem; padding: 2px 8px; border-radius: 4px; cursor: pointer; transition: all 0.2s;" title="Toggle Auto-Fit Survey Width &amp; Height from target radius/polygon">⚡ Auto-Fit (Active)</button>
+                <span id="target-splat-saved-pill" class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 0.68rem; padding: 2px 6px; border-radius: 4px; display: none;">0 pruned</span>
+              </div>
             </div>
 
             <!-- Boundary Mode Switcher -->
@@ -3412,6 +3723,71 @@ html, body {
                 <option value="double" selected>Double Grid (Crosshatch - Recommended for 3D Splats)</option>
                 <option value="single">Single Grid (Parallel Passes)</option>
               </select>
+            </div>
+
+            <!-- Framing & Lead-Up Strategy -->
+            <div style="margin-bottom: 10px;">
+              <div class="control-label" style="margin-bottom: 2px;">
+                <span style="font-size: 0.75rem; color: var(--text-muted);" title="Controls camera field-of-view utilization. Trims unhelpful distant lead-up photos where the target is a tiny speck on the horizon.">Framing &amp; Lead-Up <span style="cursor:help;color:var(--accent-cyan);">ⓘ</span></span>
+                <span id="target-splat-framing-badge" class="badge" style="font-size: 0.65rem; background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 1px 6px; border-radius: 4px;">Sweet Spot</span>
+              </div>
+              <select id="target-splat-framing-mode" class="form-select" style="font-size: 0.75rem; padding: 4px 8px; width: 100%; border-radius: 6px; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main);">
+                <option value="balanced" selected>Balanced Sweet Spot (Auto-Trim Distant Lead-Up)</option>
+                <option value="tight">Tight Framing (Max Focus &amp; Battery Savings)</option>
+                <option value="full">Full Sensor Frustum (Wide Horizon - Legacy)</option>
+              </select>
+            </div>
+
+            <!-- Live Optical Standoff & Lead-Up Visualizer Card -->
+            <div id="target-splat-diagram-container" style="margin-bottom: 12px; background: rgba(5, 8, 15, 0.55); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 8px; padding: 8px; overflow: hidden;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 0.7rem; font-weight: 600; color: #34d399; display: flex; align-items: center; gap: 4px;">
+                  📐 Optical Standoff &amp; Lead-Up
+                </span>
+                <span id="target-splat-diagram-stats" style="font-size: 0.65rem; color: var(--text-muted); font-family: monospace;">
+                  Lead-In: 51m | Save ~42m
+                </span>
+              </div>
+              <div style="position: relative; width: 100%; height: 85px; overflow: hidden;">
+                <svg id="target-splat-diagram-svg" viewBox="0 0 240 85" style="width: 100%; height: 100%; display: block;">
+                  <defs>
+                    <linearGradient id="target-splat-sweetspot-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stop-color="#10b981" stop-opacity="0.45" />
+                      <stop offset="100%" stop-color="#10b981" stop-opacity="0.08" />
+                    </linearGradient>
+                    <linearGradient id="target-splat-pruned-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stop-color="#ef4444" stop-opacity="0.25" />
+                      <stop offset="100%" stop-color="#ef4444" stop-opacity="0.05" />
+                    </linearGradient>
+                  </defs>
+                  <!-- Ground Line -->
+                  <line x1="8" y1="72" x2="232" y2="72" stroke="rgba(255,255,255,0.2)" stroke-width="1.2" />
+                  <!-- Target Structure -->
+                  <rect id="target-splat-diag-building" x="148" y="52" width="28" height="20" rx="2" fill="rgba(16, 185, 129, 0.3)" stroke="#34d399" stroke-width="1.2" />
+                  <text id="target-splat-diag-building-label" x="162" y="65" fill="#34d399" font-size="6.5" font-weight="600" text-anchor="middle" font-family="sans-serif">Target</text>
+                  <!-- Frustum Shading Polygons -->
+                  <polygon id="target-splat-diag-sweetspot" points="36,25 78,72 165,72" fill="url(#target-splat-sweetspot-grad)" stroke="rgba(16, 185, 129, 0.6)" stroke-width="1" />
+                  <polygon id="target-splat-diag-pruned" points="36,25 165,72 225,72" fill="url(#target-splat-pruned-grad)" stroke="rgba(239, 68, 68, 0.4)" stroke-width="1" stroke-dasharray="2,2" />
+                  <!-- Sight Rays -->
+                  <line id="target-splat-diag-boresight" x1="36" y1="25" x2="120" y2="72" stroke="#06b6d4" stroke-width="1.2" stroke-dasharray="2,2" />
+                  <line id="target-splat-diag-near" x1="36" y1="25" x2="78" y2="72" stroke="#10b981" stroke-width="0.8" />
+                  <line id="target-splat-diag-fareff" x1="36" y1="25" x2="165" y2="72" stroke="#10b981" stroke-width="1.2" />
+                  <line id="target-splat-diag-farfull" x1="36" y1="25" x2="225" y2="72" stroke="#ef4444" stroke-width="0.8" stroke-dasharray="2,2" />
+                  <!-- Drone Silhouette -->
+                  <g id="target-splat-diag-drone" transform="translate(20, 14)">
+                    <line x1="4" y1="11" x2="28" y2="11" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round" />
+                    <ellipse cx="5" cy="8" rx="5" ry="1" fill="rgba(255,255,255,0.4)" />
+                    <ellipse cx="27" cy="8" rx="5" ry="1" fill="rgba(255,255,255,0.4)" />
+                    <rect x="12" y="8" width="8" height="6" rx="2" fill="#38bdf8" />
+                    <circle cx="16" cy="11" r="2" fill="#0284c7" />
+                  </g>
+                  <!-- Labels -->
+                  <text id="target-splat-diag-alt-text" x="18" y="48" fill="var(--text-muted)" font-size="6" font-family="sans-serif">29m</text>
+                  <line x1="30" y1="25" x2="30" y2="72" stroke="rgba(255,255,255,0.15)" stroke-width="0.8" stroke-dasharray="1,2" />
+                  <text id="target-splat-diag-boresight-text" x="110" y="81" fill="#38bdf8" font-size="6.5" font-weight="600" text-anchor="middle" font-family="sans-serif">Boresight: 29m</text>
+                  <text id="target-splat-diag-pruned-label" x="195" y="65" fill="#f87171" font-size="6" font-weight="600" text-anchor="middle" font-family="sans-serif">✂ Pruned Lead-Up</text>
+                </svg>
+              </div>
             </div>
 
             <!-- Perimeter Orbit Pass -->
@@ -3656,6 +4032,20 @@ html, body {
               <span class="value-display"><span id="camera-zoom-val">1.0</span>x</span>
             </div>
             <input type="range" id="camera-zoom" min="1.0" max="4.0" step="0.1" value="1.0" class="slider" aria-label="Camera Zoom">
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              <span style="display: inline-flex; align-items: center; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#06b6d4" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="7" y1="5" x2="7" y2="19"/><line x1="17" y1="5" x2="17" y2="19"/></svg>
+                Camera Aspect Ratio
+              </span>
+              <span class="badge" id="camera-aspect-ratio-badge" style="font-size: 0.65rem; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 5px; border-radius: 999px;">4:3 Photo</span>
+            </div>
+            <select id="camera-aspect-ratio" class="form-select" style="font-size: 0.78rem; padding: 5px 8px;">
+              <option value="4:3" selected>4:3 (DJI Photo Standard - 69.7° × 55.2°)</option>
+              <option value="16:9">16:9 (Video / Wide Crop - 69.7° × 44.2°)</option>
+            </select>
           </div>
 
           <div class="control-group" style="display: none;">
@@ -4533,6 +4923,42 @@ html, body {
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              📱 Mobile Top Navigation Ergonomics &amp; Settings Menu Hub (v1.86.1)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Completely eliminates header crowding on small mobile phone screens. Features an adaptive brand mark, an expandable mobile search bar with 1-tap toggle (<code>🔍</code>), streamlined Telemetry HUD pill, and sleek 3-dots <strong>More Actions</strong> popover menu (<code>⋮</code>). Topbar M/F unit and theme toggles are tucked cleanly into Configuration Settings (<code>⚙️</code>), giving maximum clearance for mission telemetry.
+            </p>
+          </div>
+
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              📸 Lateral Frustum Culling &amp; Camera Aspect Ratio Selector (4:3 Photo vs 16:9 Video)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Prevents drones from flying parallel flight legs where the target is completely out of frame. Modulates lateral across-track camera footprint with framing sweet-spot ratios, pruning outer lines that only glance the target at extreme sensor corners. Introduces an explicit <strong>Camera Aspect Ratio</strong> control (4:3 Photo Standard vs 16:9 Video Crop) with dynamic HFOV/VFOV calculation and live badge feedback.
+            </p>
+          </div>
+
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              ✂️ Target Splat Auto-Pruning of Distant Lead-Up Photos &amp; Live Optical Diagram
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Eliminates excessive horizon lead-up and unhelpful distant photos when flying with oblique gimbal angles (e.g. -45°). Uses <strong>Photogrammetric Effective Framing</strong> to constrain upper field-of-view flare, cutting out up to 50% of wasted shots in neighboring yards. Features an interactive <strong>Framing &amp; Lead-Up</strong> selector (Balanced Sweet Spot, Tight Framing, or Full Frustum) and a live <strong>Optical Standoff &amp; Lead-Up SVG diagram</strong> showing side-profile drone elevation, boresight ray, and dynamic lead-in distance savings.
+            </p>
+          </div>
+
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              📐 Target Splat Auto-Determined Grid Dimensions &amp; Auto-Fit Toggle
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Eliminates cut-off facades and oversized flight areas. The geometry engine dynamically calculates optimal Survey Width and Height directly from your Target Radius or Freeform Polygon, flight altitude, gimbal pitch, and framing margins. Retains full manual control: dragging either slider switches to manual mode, and tapping <code>⚡ Auto-Fit Grid</code> instantly snaps dimensions back to optimal geometry.
+            </p>
+          </div>
+
           <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: var(--accent-cyan); font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🛫 Flight Leg Phase Indicators &amp; Hover Breadcrumb Ribbons
@@ -5049,7 +5475,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.82.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.86.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -5116,6 +5542,44 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.86.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Mobile Topbar De-Cluttering &amp; Telemetry Clearance:</strong> Removed M/F unit toggle and Dark/Light mode buttons from the top navigation bar on mobile (&le;640px), reclaiming ~124px of horizontal space and completely eliminating overlap with the Telemetry HUD pill.</li>
+              <li><strong>Settings Menu Theme &amp; Units Integration:</strong> Added Theme &amp; Appearance selector (<code>#theme-mode-select</code>) inside Configuration Settings (<code>⚙️</code>), allowing pilots on mobile and desktop to switch between Cyber Dark Mode and Sunlight Field Mode directly from the settings menu.</li>
+              <li><strong>Telemetry HUD Pill Overflow Guard:</strong> Added strict text truncation and ellipsis styling across <code>.header-telemetry-container</code>, <code>.header-telemetry-pill</code>, and <code>.pill-telemetry-group</code> to guarantee zero collision with adjacent controls.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.86.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Mobile Navigation Bar Responsive Ergonomics:</strong> Restructured top navigation bar for small screens (&le;640px), eliminating horizontal crowding and preventing controls from overflowing the viewport.</li>
+              <li><strong>Expandable Mobile Search Bar:</strong> Introduced 1-tap search toggle button (<code>🔍</code>) on mobile, smoothly expanding search input with Go, Locate, and Close (✕) controls without competing against the Telemetry HUD pill.</li>
+              <li><strong>Mobile More Actions Popover:</strong> Consolidated secondary action buttons into an elegant 3-dots More button (<code>⋮</code>) opening a glassmorphic popover for Quickstart Tours, About &amp; Changelog, and Aviation Links.</li>
+              <li><strong>Compact Header Brand &amp; Unit Badges:</strong> Display minimalist rosette drone logo and streamlined unit badges (<code>FT</code> / <code>M</code>) on small viewports to maximize usable space.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.85.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Lateral Frustum Culling:</strong> Solved parallel flight legs executing out of frame by applying framing sweet-spot modulation across track, pruning outer lines that only glance the target at extreme sensor corners.</li>
+              <li><strong>Camera Aspect Ratio Selector:</strong> Added explicit camera aspect ratio control (4:3 Photo Standard vs 16:9 Video Crop) with dynamic HFOV/VFOV calculation and live badge feedback.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.84.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Auto-Pruning Unhelpful Lead-Up Photos:</strong> Implemented photogrammetric effective framing frustum culling, eliminating distant horizon flare at oblique gimbal angles (e.g. -45°) and cutting out up to 50% of wasted shots in neighboring properties.</li>
+              <li><strong>Framing &amp; Lead-Up Selector &amp; Live Diagram:</strong> Added interactive framing strategy dropdown (Balanced Sweet Spot, Tight, Full) and a live optical elevation SVG visualizer showing drone height, boresight ray, and lead-in distance savings.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.83.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Target Splat Auto-Determined Grid Dimensions:</strong> Intelligently computes optimal Survey Width and Height directly from target boundaries (Radius or Freeform Polygon), camera altitude, gimbal pitch, and framing margins, preventing cut-off facades or oversized flight areas.</li>
+              <li><strong>Auto-Fit vs. Manual Adjustment Toggle:</strong> Seamlessly preserves pilot adjustments on Width/Height sliders, switching to manual mode on slider movement with a 1-click <code>⚡ Auto-Fit Grid</code> button to snap back to optimal geometry at any time.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.82.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -6742,6 +7206,16 @@ html, body {
           <p class="help-text" style="margin-top: 4px;">Sets map grid measurements and flight inputs to feet or meters.</p>
         </div>
 
+        <!-- Theme & Appearance Setting -->
+        <div class="control-group">
+          <label for="theme-mode-select" style="font-weight: 600; color: var(--text-main); margin-bottom: 8px; display: block;">Theme &amp; Appearance</label>
+          <select id="theme-mode-select" class="form-select" style="width: 100%;">
+            <option value="dark" selected>🌙 Cyber Dark Mode (Night / Indoor)</option>
+            <option value="light">☀️ High-Contrast Light Mode (Daylight Field)</option>
+          </select>
+          <p class="help-text" style="margin-top: 4px;">Switch between high-contrast sunlight field mode and cyber dark mode.</p>
+        </div>
+
         <!-- Search & Navigation Layout Setting -->
         <div class="control-group">
           <label for="nav-layout-select" style="font-weight: 600; color: var(--text-main); margin-bottom: 8px; display: block;">Search &amp; Navigation Layout</label>
@@ -7984,6 +8458,10 @@ function setAppTheme(theme) {
       themeBtn.textContent = current === 'light' ? '🌙' : '☀️';
       themeBtn.title = current === 'light' ? 'Switch to Dark Mode' : 'Switch to Light (Field) Mode';
     }
+    const themeSelect = document.getElementById('theme-mode-select');
+    if (themeSelect && themeSelect.value !== current) {
+      themeSelect.value = current;
+    }
   }
   return current;
 }
@@ -7998,6 +8476,15 @@ function toggleAppTheme() {
 function initTheme() {
   const saved = getAppTheme();
   setAppTheme(saved);
+  if (typeof document !== 'undefined') {
+    const themeSelect = document.getElementById('theme-mode-select');
+    if (themeSelect) {
+      themeSelect.value = saved;
+      themeSelect.addEventListener('change', () => {
+        setAppTheme(themeSelect.value);
+      });
+    }
+  }
 }
 
 // Map & Camera Visual Palette System
@@ -8428,12 +8915,15 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     moderateTurnSettlingTime: 4.0,
     pitchSettlingTime: 3.0,
     cameraZoom: 1.0,
+    cameraAspectRatio: '4:3',
     roadOffset: 15,
     roadSnap: true,
     targetPoly: [],
     targetMode: 'radius', // 'polygon' or 'radius'
     targetRadius: 25,
     targetHeight: 8,
+    targetAutoDimensions: true, // Auto-determine Width & Height from target boundary
+    targetFramingMode: 'balanced', // 'balanced', 'tight', 'full'
     targetCullingMode: 'smartTrim', // 'smartTrim', 'pruneOnly', 'convergent'
     targetGridPass: 'double', // 'double' or 'single'
     targetPerimeterPass: false, // Enable perimeter orbit pass
@@ -8685,6 +9175,8 @@ function saveActiveLayerFromUi() {
   }
 
   if (cameraZoomEl) layer.cameraZoom = parseFloat(cameraZoomEl.value) || 1.0;
+  const cameraAspectEl = document.getElementById('camera-aspect-ratio');
+  if (cameraAspectEl && cameraAspectEl.value) layer.cameraAspectRatio = cameraAspectEl.value;
   if (roadOffsetEl) layer.roadOffset = parseFloat(roadOffsetEl.value) || 15;
   if (roadSnapEl) layer.roadSnap = roadSnapEl.checked;
   if (exclAllAltEl) layer.allAltitudes = exclAllAltEl.checked;
@@ -8697,10 +9189,12 @@ function saveActiveLayerFromUi() {
   const targetHeightEl = document.getElementById('target-splat-height');
   const targetCullingEl = document.getElementById('target-splat-culling-mode');
   const targetGridPassEl = document.getElementById('target-splat-grid-pass');
+  const targetFramingEl = document.getElementById('target-splat-framing-mode');
   if (targetRadiusEl) layer.targetRadius = parseFloat(targetRadiusEl.value) || 25;
   if (targetHeightEl) layer.targetHeight = parseFloat(targetHeightEl.value) || 8;
   if (targetCullingEl && targetCullingEl.value) layer.targetCullingMode = targetCullingEl.value;
   if (targetGridPassEl && targetGridPassEl.value) layer.targetGridPass = targetGridPassEl.value;
+  if (targetFramingEl && targetFramingEl.value) layer.targetFramingMode = targetFramingEl.value;
 
   const perimPassEl = document.getElementById('target-perimeter-pass');
   const perimStandoffEl = document.getElementById('target-perimeter-standoff');
@@ -8795,6 +9289,8 @@ function syncUiWithActiveLayer() {
   }
 
   setVal('camera-zoom', layer.cameraZoom);
+  setVal('camera-aspect-ratio', layer.cameraAspectRatio || CAMERA_ASPECT_RATIO || '4:3');
+  setCameraAspectRatio(layer.cameraAspectRatio || CAMERA_ASPECT_RATIO || '4:3', true);
   setVal('road-offset', layer.roadOffset);
   setVal('exclusion-min-alt', layer.minAltitude !== undefined ? layer.minAltitude : 0);
   setVal('exclusion-max-alt', layer.maxAltitude !== undefined ? layer.maxAltitude : 60);
@@ -8806,6 +9302,9 @@ function syncUiWithActiveLayer() {
   setVal('target-splat-height', layer.targetHeight !== undefined ? layer.targetHeight : 8);
   setVal('target-splat-culling-mode', layer.targetCullingMode || 'smartTrim');
   setVal('target-splat-grid-pass', layer.targetGridPass || 'double');
+  setVal('target-splat-framing-mode', layer.targetFramingMode || 'balanced');
+  updateTargetSplatAutoFitUI(layer);
+  updateTargetSplatDiagram(layer);
 
   // Perimeter orbit controls
   const perimPassEl = document.getElementById('target-perimeter-pass');
@@ -9779,8 +10278,8 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
   const centerLat = (layer.centerLat !== undefined && layer.centerLat !== null) ? layer.centerLat : globalCenterLat;
   const centerLon = (layer.centerLon !== undefined && layer.centerLon !== null) ? layer.centerLon : globalCenterLon;
 
-  const gridWidth = layer.gridWidth !== undefined ? layer.gridWidth : 100;
-  const gridHeight = layer.gridHeight !== undefined ? layer.gridHeight : 100;
+  let gridWidth = layer.gridWidth !== undefined ? layer.gridWidth : 100;
+  let gridHeight = layer.gridHeight !== undefined ? layer.gridHeight : 100;
   const rotation = layer.gridRotation !== undefined ? layer.gridRotation : 0;
   const gridType = layer.pattern || 'double';
   const overlapFront = (layer.frontOverlap !== undefined ? layer.frontOverlap : 80) / 100.0;
@@ -9789,6 +10288,14 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
   const speed = layer.speed !== undefined ? layer.speed : 4;
   const captureMode = layer.captureMode || 'stopAndShoot';
   const defaultGimbalPitch = layer.gimbalPitch !== undefined ? layer.gimbalPitch : -60;
+
+  if (gridType === 'target-splat' && layer.targetAutoDimensions !== false) {
+    const autoDims = calculateTargetSplatDimensions(layer, altitude, defaultGimbalPitch, rotation);
+    gridWidth = autoDims.width;
+    gridHeight = autoDims.height;
+    layer.gridWidth = gridWidth;
+    layer.gridHeight = gridHeight;
+  }
   const headingMode = layer.headingMode || 'followWayline';
   const hoverTime = layer.hoverTime || 0;
   const cameraZoom = layer.cameraZoom || 1.0;
@@ -10455,9 +10962,63 @@ function getCurrentPhotos() {
   return importedPhotos || generatedPhotos;
 }
 
-// Camera specifications for DJI Mini 4 Pro (4:3 aspect ratio)
-let CAMERA_HFOV = 69.7; // Horizontal field of view in degrees
-let CAMERA_VFOV = 55.2; // Vertical field of view in degrees
+// Camera specifications and Aspect Ratio settings (v1.85.0)
+let CAMERA_ASPECT_RATIO = '4:3'; // Default '4:3' (Photo standard) or '16:9' (Video / Wide Crop)
+let CAMERA_HFOV = 69.7; // Horizontal field of view in degrees (4:3 default)
+let CAMERA_VFOV = 55.2; // Vertical field of view in degrees (4:3 default)
+
+function setCameraAspectRatio(ratio, skipUpdate = false) {
+  const normRatio = (ratio === '16:9') ? '16:9' : '4:3';
+  CAMERA_ASPECT_RATIO = normRatio;
+  if (normRatio === '16:9') {
+    CAMERA_HFOV = 69.7;
+    CAMERA_VFOV = 44.2;
+  } else {
+    CAMERA_HFOV = 69.7;
+    CAMERA_VFOV = 55.2;
+  }
+  if (typeof localStorage !== 'undefined') {
+    try { localStorage.setItem('aalaapi_camera_aspect_ratio', normRatio); } catch (e) {}
+  }
+  if (typeof document !== 'undefined') {
+    const aspectSelect = document.getElementById('camera-aspect-ratio');
+    if (aspectSelect && aspectSelect.value !== normRatio) {
+      aspectSelect.value = normRatio;
+    }
+    const badge = document.getElementById('camera-aspect-ratio-badge');
+    if (badge) {
+      if (normRatio === '16:9') {
+        badge.textContent = '16:9 Video';
+        badge.style.background = 'rgba(245, 158, 11, 0.15)';
+        badge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+        badge.style.color = '#fbbf24';
+      } else {
+        badge.textContent = '4:3 Photo';
+        badge.style.background = 'rgba(6, 182, 212, 0.15)';
+        badge.style.borderColor = 'rgba(6, 182, 212, 0.3)';
+        badge.style.color = 'var(--accent-cyan)';
+      }
+    }
+    const hfovEl = document.getElementById('camera-hfov');
+    const vfovEl = document.getElementById('camera-vfov');
+    if (hfovEl) hfovEl.value = String(CAMERA_HFOV);
+    if (vfovEl) vfovEl.value = String(CAMERA_VFOV);
+  }
+  if (!skipUpdate) {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer) {
+      activeLayer.cameraAspectRatio = normRatio;
+      if (activeLayer.pattern === 'target-splat') {
+        if (typeof applyTargetSplatAutoDimensions === 'function' && activeLayer.targetAutoDimensions !== false) {
+          applyTargetSplatAutoDimensions(activeLayer);
+        } else if (typeof updateTargetSplatDiagram === 'function') {
+          updateTargetSplatDiagram(activeLayer);
+        }
+      }
+    }
+    if (typeof updateGrid === 'function') updateGrid();
+  }
+}
 
 // Standard satellite and street map layers
 let streetLayer;
@@ -10544,6 +11105,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   initMap();
   initUIEventListeners();
+  initMobileNav();
   initGeolocation(); // Wires up the Locate Me button — does NOT auto-request permission
   initAutoPlan();
   initPatternSelectorCards();
@@ -10890,7 +11452,7 @@ const CONTROLS_LIST = [
   'grid-type', 'grid-width', 'grid-height', 'grid-rotation',
   'front-overlap', 'side-overlap', 'gimbal-pitch',
   'altitude', 'speed', 'heading-mode', 'finish-action', 'capture-mode', 'path-mode', 'signal-lost-action',
-  'camera-model', 'drone-model', 'camera-zoom', 'camera-hfov', 'camera-vfov', 'road-offset',
+  'camera-model', 'drone-model', 'camera-zoom', 'camera-aspect-ratio', 'camera-hfov', 'camera-vfov', 'road-offset',
   'global-hover-time', 'global-exclusion-detour-mode', 'global-exclusion-clearance-buffer',
   'max-flight-height', 'rth-altitude',
   'target-splat-radius', 'target-splat-height', 'target-splat-culling-mode', 'target-splat-grid-pass'
@@ -10940,6 +11502,7 @@ const FACTORY_DEFAULTS = {
   'path-mode': 'smoothTransition',
   'camera-model': 'mini4pro',
   'camera-zoom': '1',
+  'camera-aspect-ratio': '4:3',
   'camera-hfov': '69.7',
   'camera-vfov': '55.2',
   'global-hover-time': '0',
@@ -11744,11 +12307,31 @@ function initUIEventListeners() {
     
     // Listen to changes to trigger redrawing of the grid
     el.addEventListener('input', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer && activeLayer.pattern === 'target-splat') {
+        if (id === 'grid-width' || id === 'grid-height') {
+          if (!isProgrammaticDimensionUpdate) {
+            activeLayer.targetAutoDimensions = false;
+            updateTargetSplatAutoFitUI(activeLayer);
+          }
+        } else if (activeLayer.targetAutoDimensions !== false && (id === 'altitude' || id === 'gimbal-pitch' || id === 'grid-rotation')) {
+          applyTargetSplatAutoDimensions(activeLayer);
+        }
+      }
       syncDisplayValues();
       updateGrid();
     });
     
     el.addEventListener('change', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer && activeLayer.pattern === 'target-splat') {
+        if (id === 'grid-width' || id === 'grid-height') {
+          if (!isProgrammaticDimensionUpdate) {
+            activeLayer.targetAutoDimensions = false;
+            updateTargetSplatAutoFitUI(activeLayer);
+          }
+        }
+      }
       syncDisplayValues();
       updateGrid();
       saveAllSettingsToLocalStorage();
@@ -11893,10 +12476,26 @@ function initUIEventListeners() {
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
       if (activeLayer) {
         activeLayer.targetPoly = [];
+        if (activeLayer.targetAutoDimensions !== false) {
+          applyTargetSplatAutoDimensions(activeLayer);
+        }
       }
       setTargetPolyEditMode(true);
       updateGrid();
       saveAllSettingsToLocalStorage();
+    });
+  }
+
+  const targetAutoFitBtn = document.getElementById('target-splat-autofit-btn');
+  if (targetAutoFitBtn) {
+    targetAutoFitBtn.addEventListener('click', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.targetAutoDimensions = true;
+        applyTargetSplatAutoDimensions(activeLayer);
+        updateGrid();
+        saveAllSettingsToLocalStorage();
+      }
     });
   }
 
@@ -11906,6 +12505,9 @@ function initUIEventListeners() {
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
       if (activeLayer) {
         activeLayer.targetRadius = parseFloat(targetRadEl.value) || 25;
+        if (activeLayer.targetAutoDimensions !== false) {
+          applyTargetSplatAutoDimensions(activeLayer);
+        }
       }
       syncDisplayValues();
       updateGrid();
@@ -11944,6 +12546,33 @@ function initUIEventListeners() {
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
       if (activeLayer) {
         activeLayer.targetGridPass = targetPassEl.value;
+        if (activeLayer.targetAutoDimensions !== false) {
+          applyTargetSplatAutoDimensions(activeLayer);
+        }
+      }
+      updateGrid();
+      saveAllSettingsToLocalStorage();
+    });
+  }
+
+  const cameraAspectEl = document.getElementById('camera-aspect-ratio');
+  if (cameraAspectEl) {
+    cameraAspectEl.addEventListener('change', () => {
+      setCameraAspectRatio(cameraAspectEl.value);
+      saveAllSettingsToLocalStorage();
+    });
+  }
+
+  const targetFramingEl = document.getElementById('target-splat-framing-mode');
+  if (targetFramingEl) {
+    targetFramingEl.addEventListener('change', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.targetFramingMode = targetFramingEl.value;
+        if (activeLayer.targetAutoDimensions !== false) {
+          applyTargetSplatAutoDimensions(activeLayer);
+        }
+        updateTargetSplatDiagram(activeLayer);
       }
       updateGrid();
       saveAllSettingsToLocalStorage();
@@ -12815,6 +13444,8 @@ function initUIEventListeners() {
       configModal.classList.toggle('hidden');
       if (!configModal.classList.contains('hidden')) {
         if (unitSystemEl) unitSystemEl.value = getUnitSystem();
+        const themeSelect = document.getElementById('theme-mode-select');
+        if (themeSelect) themeSelect.value = getAppTheme();
         const camPalSelect = document.getElementById('camera-palette-select');
         if (camPalSelect) {
           camPalSelect.value = getActiveCameraPalette().id;
@@ -13259,6 +13890,106 @@ function initClickToTypeInputs() {
 }
 
 /**
+ * Mobile Navigation & Responsive Ergonomics (v1.86.0)
+ * Handles expandable search bar on small screens and 3-dots More Actions dropdown menu.
+ */
+function initMobileNav() {
+  if (typeof document === 'undefined' || typeof document.querySelector !== 'function') return;
+
+  const searchToggleBtn = document.getElementById('mobile-search-toggle-btn');
+  const searchCloseBtn = document.getElementById('mobile-search-close-btn');
+  const topbar = document.querySelector('.studio-topbar');
+  const topbarCenter = document.querySelector('.topbar-center');
+  const locationInput = document.getElementById('location-input');
+
+  if (searchToggleBtn && topbarCenter) {
+    searchToggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      topbarCenter.classList.add('search-open');
+      if (topbar) topbar.classList.add('search-open');
+      if (locationInput) {
+        setTimeout(() => locationInput.focus(), 50);
+      }
+    });
+  }
+
+  if (searchCloseBtn && topbarCenter) {
+    searchCloseBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      topbarCenter.classList.remove('search-open');
+      if (topbar) topbar.classList.remove('search-open');
+    });
+  }
+
+  // Close search on Locate Me click in mobile view
+  const locateBtn = document.getElementById('locate-me-btn');
+  if (locateBtn && topbarCenter) {
+    locateBtn.addEventListener('click', () => {
+      if (window.innerWidth <= 640) {
+        topbarCenter.classList.remove('search-open');
+        if (topbar) topbar.classList.remove('search-open');
+      }
+    });
+  }
+
+  // More Actions Dropdown Menu (Intro, About, Links)
+  const moreBtn = document.getElementById('header-more-btn');
+  const moreMenu = document.getElementById('header-more-menu');
+  const moreIntroBtn = document.getElementById('more-menu-intro-btn');
+  const moreAboutBtn = document.getElementById('more-menu-about-btn');
+  const moreLinksBtn = document.getElementById('more-menu-links-btn');
+
+  if (moreBtn && moreMenu) {
+    moreBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      moreMenu.classList.toggle('hidden');
+    });
+
+    if (moreIntroBtn) {
+      moreIntroBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        moreMenu.classList.add('hidden');
+        if (typeof openIntroModal === 'function') {
+          openIntroModal('workflow');
+        }
+      });
+    }
+
+    if (moreAboutBtn) {
+      moreAboutBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        moreMenu.classList.add('hidden');
+        const aboutBtn = document.getElementById('about-btn');
+        if (aboutBtn) aboutBtn.click();
+      });
+    }
+
+    if (moreLinksBtn) {
+      moreLinksBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        moreMenu.classList.add('hidden');
+        const linksBtn = document.getElementById('useful-links-btn');
+        if (linksBtn) linksBtn.click();
+      });
+    }
+
+    // Dismiss menu on click outside
+    document.addEventListener('click', (e) => {
+      if (!moreMenu.contains(e.target) && e.target !== moreBtn && !moreBtn.contains(e.target)) {
+        moreMenu.classList.add('hidden');
+      }
+    });
+
+    // Dismiss menu on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !moreMenu.classList.contains('hidden')) {
+        moreMenu.classList.add('hidden');
+      }
+    });
+  }
+}
+
+/**
  * Transforms sidebar unit labels into interactive clickable toggles,
  * allowing pilots to click any unit badge to switch globally between Imperial and Metric.
  */
@@ -13441,6 +14172,8 @@ function togglePatternParameters() {
     if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
     if (targetSplatContainer) targetSplatContainer.classList.remove('hidden');
     if (widthLabel) widthLabel.textContent = "Survey Width";
+    const heightLabel = (heightContainer && heightContainer.querySelector) ? heightContainer.querySelector('.control-label > span') : null;
+    if (heightLabel) heightLabel.textContent = "Survey Height";
     if (widthContainer) widthContainer.style.display = 'block';
     if (heightContainer) heightContainer.style.display = 'block';
     if (rotationContainer) rotationContainer.style.display = 'block';
@@ -13451,6 +14184,10 @@ function togglePatternParameters() {
     if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
     if (gimbalPitchSlider && (!gimbalPitchSlider.value || parseFloat(gimbalPitchSlider.value) === -90)) {
       gimbalPitchSlider.value = -45;
+    }
+    if (activeLayer) {
+      applyTargetSplatAutoDimensions(activeLayer);
+      updateTargetSplatDiagram(activeLayer);
     }
 
   } else if (gridType === 'exclusion-freeform') {
@@ -13563,6 +14300,8 @@ function togglePatternParameters() {
       }
     } else {
       if (widthLabel) widthLabel.textContent = "Grid Width";
+      const heightLabel = (heightContainer && heightContainer.querySelector) ? heightContainer.querySelector('.control-label > span') : null;
+      if (heightLabel) heightLabel.textContent = "Grid Height";
       if (heightContainer) heightContainer.style.display = 'block';
       if (rotationContainer) rotationContainer.style.display = 'block';
     }
@@ -13859,7 +14598,11 @@ function syncDisplayValues() {
     updateGimbalPitchVisualizer(pitchVal);
   }
 
-  // Sync Camera HFOV and VFOV variables and displays
+  // Sync Camera Aspect Ratio, HFOV, VFOV, and Zoom
+  const aspectSelect = document.getElementById('camera-aspect-ratio');
+  if (aspectSelect && aspectSelect.value && aspectSelect.value !== CAMERA_ASPECT_RATIO) {
+    setCameraAspectRatio(aspectSelect.value, true);
+  }
   const hfovSlider = document.getElementById('camera-hfov');
   const vfovSlider = document.getElementById('camera-vfov');
   const zoomSlider = document.getElementById('camera-zoom');
@@ -14056,12 +14799,25 @@ function syncDisplayValues() {
   if (perimPitchSlider && perimPitchValEl) {
     perimPitchValEl.textContent = perimPitchSlider.value;
   }
+
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  if (activeLayer && activeLayer.pattern === 'target-splat') {
+    updateTargetSplatAutoFitUI(activeLayer);
+    updateTargetSplatDiagram(activeLayer);
+  }
 }
 
 // Search Address via OpenStreetMap Nominatim API
 function searchAddress() {
   const query = document.getElementById('location-input').value.trim();
   if (!query) return;
+
+  const topbarCenter = (typeof document !== 'undefined' && typeof document.querySelector === 'function') ? document.querySelector('.topbar-center') : null;
+  const topbar = (typeof document !== 'undefined' && typeof document.querySelector === 'function') ? document.querySelector('.studio-topbar') : null;
+  if (typeof window !== 'undefined' && window.innerWidth <= 640) {
+    if (topbarCenter) topbarCenter.classList.remove('search-open');
+    if (topbar) topbar.classList.remove('search-open');
+  }
 
   const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
 
@@ -15213,7 +15969,7 @@ function generateGridMultiOrbitComboCoordinates(radius, rotation, captureMode, s
 // Target Splat 3D Frustum Culling & Geometry Engine (v1.77.0)
 // ============================================================================
 
-function calculateCameraGroundFrustum(droneX, droneY, alt, headingDeg, pitchDeg, hfov, vfov, zPlane = 0) {
+function calculateCameraGroundFrustum(droneX, droneY, alt, headingDeg, pitchDeg, hfov, vfov, zPlane = 0, framingRatio = 0.55) {
   const deltaH = Math.max(1.0, (alt || 50) - (zPlane || 0));
   const headingRad = ((headingDeg || 0) * Math.PI) / 180.0;
   
@@ -15231,9 +15987,13 @@ function calculateCameraGroundFrustum(droneX, droneY, alt, headingDeg, pitchDeg,
   const hfovVal = (hfov && !isNaN(hfov) && hfov > 0) ? hfov : 69.7;
   const vfovVal = (vfov && !isNaN(vfov) && vfov > 0) ? vfov : 55.2;
 
+  // framingRatio modulates upper vertical FOV to focus on the photogrammetric sweet spot
+  // 1.0 = full theoretical sensor horizon; 0.55 = balanced sweet spot; 0.35 = tight framing
+  const fRatio = (typeof framingRatio === 'number' && framingRatio > 0) ? Math.min(1.0, Math.max(0.1, framingRatio)) : 0.55;
+
   // Angular bounds along vertical field of view
   const alphaNearDeg = Math.max(-85.0, Math.min(85.0, alphaDeg - vfovVal / 2.0));
-  const alphaFarDeg = Math.max(-85.0, Math.min(85.0, alphaDeg + vfovVal / 2.0));
+  const alphaFarDeg = Math.max(-85.0, Math.min(85.0, alphaDeg + (vfovVal / 2.0) * fRatio));
 
   const dNear = deltaH * Math.tan((alphaNearDeg * Math.PI) / 180.0);
   const dFar = deltaH * Math.tan((alphaFarDeg * Math.PI) / 180.0);
@@ -15241,8 +16001,10 @@ function calculateCameraGroundFrustum(droneX, droneY, alt, headingDeg, pitchDeg,
   const slantNear = Math.sqrt(deltaH * deltaH + dNear * dNear);
   const slantFar = Math.sqrt(deltaH * deltaH + dFar * dFar);
 
-  const halfWNear = slantNear * Math.tan(((hfovVal / 2.0) * Math.PI) / 180.0);
-  const halfWFar = slantFar * Math.tan(((hfovVal / 2.0) * Math.PI) / 180.0);
+  // Modulate lateral (across-track) half-angle by fRatio to prune parallel flight legs
+  // that are out of frame or only capture the target at extreme sensor corners
+  const halfWNear = slantNear * Math.tan(((hfovVal / 2.0) * fRatio) * Math.PI / 180.0);
+  const halfWFar = slantFar * Math.tan(((hfovVal / 2.0) * fRatio) * Math.PI / 180.0);
 
   return [
     { x: droneX + dNear * ux - halfWNear * rx, y: droneY + dNear * uy - halfWNear * ry }, // Near-Left
@@ -15289,15 +16051,15 @@ function doPolygonsIntersect2D(polyA, polyB) {
   return false;
 }
 
-function isTargetVisibleInFrustum(droneX, droneY, alt, headingDeg, pitchDeg, hfov, vfov, targetPoly, objectHeight = 0) {
+function isTargetVisibleInFrustum(droneX, droneY, alt, headingDeg, pitchDeg, hfov, vfov, targetPoly, objectHeight = 0, framingRatio = 0.55) {
   if (!targetPoly || targetPoly.length < 3) return true;
   // Test ground footprint (Z = 0)
-  const groundFrustum = calculateCameraGroundFrustum(droneX, droneY, alt, headingDeg, pitchDeg, hfov, vfov, 0);
+  const groundFrustum = calculateCameraGroundFrustum(droneX, droneY, alt, headingDeg, pitchDeg, hfov, vfov, 0, framingRatio);
   if (doPolygonsIntersect2D(groundFrustum, targetPoly)) return true;
 
   // Test extruded roof level (Z = objectHeight) to protect rooflines & chimneys
   if (objectHeight > 0 && alt > objectHeight) {
-    const roofFrustum = calculateCameraGroundFrustum(droneX, droneY, alt, headingDeg, pitchDeg, hfov, vfov, objectHeight);
+    const roofFrustum = calculateCameraGroundFrustum(droneX, droneY, alt, headingDeg, pitchDeg, hfov, vfov, objectHeight, framingRatio);
     if (doPolygonsIntersect2D(roofFrustum, targetPoly)) return true;
   }
   return false;
@@ -15341,12 +16103,269 @@ function getLocalTargetPolygon(layer, centerLat, centerLon, rotationDeg) {
   }));
 }
 
+/**
+ * Automatically calculates optimal Target Splat flight grid dimensions (Width & Height)
+ * based on the target boundary (Radius or Freeform Polygon), camera altitude, gimbal pitch,
+ * and framing margins.
+ */
+function calculateTargetSplatDimensions(layer, overrideAltitude, overridePitch, overrideRotation) {
+  if (!layer) return { width: 100, height: 100 };
+
+  const targetMode = layer.targetMode || 'radius';
+  const targetRadius = (typeof layer.targetRadius === 'number' && layer.targetRadius > 0) ? layer.targetRadius : 25;
+  const rotationDeg = (overrideRotation !== undefined) ? overrideRotation : (layer.gridRotation !== undefined ? layer.gridRotation : 0);
+  const altitude = (overrideAltitude !== undefined && overrideAltitude > 0) ? overrideAltitude : (layer.altitude !== undefined ? layer.altitude : 50);
+
+  let gimbalPitch = (overridePitch !== undefined) ? overridePitch : (layer.gimbalPitch !== undefined ? layer.gimbalPitch : -45);
+  // Normalize pitch to negative downward angle
+  gimbalPitch = -Math.abs(gimbalPitch !== null && !isNaN(gimbalPitch) ? gimbalPitch : -45);
+  gimbalPitch = Math.max(-90, Math.min(-15, gimbalPitch));
+
+  let halfExtentX = targetRadius;
+  let halfExtentY = targetRadius;
+
+  if (targetMode === 'polygon' && Array.isArray(layer.targetPoly) && layer.targetPoly.length >= 3) {
+    const centerLat = (layer.centerLat !== undefined && layer.centerLat !== null) ? layer.centerLat : 0;
+    const centerLon = (layer.centerLon !== undefined && layer.centerLon !== null) ? layer.centerLon : 0;
+    const localPoly = getLocalTargetPolygon(layer, centerLat, centerLon, rotationDeg);
+    if (localPoly && localPoly.length >= 3) {
+      let maxX = 0;
+      let maxY = 0;
+      localPoly.forEach(pt => {
+        const absX = Math.abs(pt.x);
+        const absY = Math.abs(pt.y);
+        if (absX > maxX) maxX = absX;
+        if (absY > maxY) maxY = absY;
+      });
+      halfExtentX = Math.max(5, maxX);
+      halfExtentY = Math.max(5, maxY);
+    }
+  }
+
+  // Camera look-ahead standoff distance based on gimbal pitch angle from nadir
+  // alpha is angle from nadir: 0 deg = nadir (-90 pitch), 45 deg = 45 oblique (-45 pitch), 30 deg = 60 oblique (-60 pitch)
+  const alphaDeg = 90.0 + gimbalPitch;
+  const alphaRad = (alphaDeg * Math.PI) / 180.0;
+  let dStandoff = altitude * Math.tan(alphaRad);
+
+  const framingMode = layer ? (layer.targetFramingMode || 'balanced') : 'balanced';
+  if (framingMode === 'tight') {
+    dStandoff *= 0.85;
+  }
+
+  // Framing margin for turnaround overshoot, line spacing, and contextual framing
+  const margin = Math.max(5, Math.min(20, Math.round(0.2 * altitude)));
+
+  // In Double Grid (or default for Target Splat):
+  // Pass 1 flies North/South (aims along Y) -> requires Y standoff on both sides
+  // Pass 2 flies East/West (aims along X) -> requires X standoff on both sides
+  const gridPass = layer.targetGridPass || 'double';
+  let spanX, spanY;
+
+  spanY = 2 * (halfExtentY + dStandoff + margin);
+
+  if (gridPass === 'single') {
+    const hfovVal = (typeof CAMERA_HFOV === 'number' && CAMERA_HFOV > 0) ? CAMERA_HFOV : 69.7;
+    const halfLateralFootprint = altitude * Math.tan(((hfovVal / 2.0) * Math.PI) / 180.0);
+    spanX = 2 * (halfExtentX + Math.max(halfLateralFootprint * 0.5, margin));
+  } else {
+    spanX = 2 * (halfExtentX + dStandoff + margin);
+  }
+
+  // Clamp to slider limits: 20m to 500m, rounded to nearest 5m
+  const width = Math.min(500, Math.max(20, Math.round(spanX / 5) * 5));
+  const height = Math.min(500, Math.max(20, Math.round(spanY / 5) * 5));
+
+  return { width, height };
+}
+
+let isProgrammaticDimensionUpdate = false;
+
+function applyTargetSplatAutoDimensions(layer) {
+  if (!layer || layer.pattern !== 'target-splat' || layer.targetAutoDimensions === false) {
+    updateTargetSplatAutoFitUI(layer);
+    updateTargetSplatDiagram(layer);
+    return;
+  }
+  const dims = calculateTargetSplatDimensions(layer);
+  layer.gridWidth = dims.width;
+  layer.gridHeight = dims.height;
+
+  isProgrammaticDimensionUpdate = true;
+  if (typeof document !== 'undefined') {
+    const widthSlider = document.getElementById('grid-width');
+    const heightSlider = document.getElementById('grid-height');
+    if (widthSlider) widthSlider.value = String(dims.width);
+    if (heightSlider) heightSlider.value = String(dims.height);
+  }
+  isProgrammaticDimensionUpdate = false;
+
+  updateTargetSplatAutoFitUI(layer);
+  updateTargetSplatDiagram(layer);
+  if (typeof syncDisplayValues === 'function') syncDisplayValues();
+}
+
+function updateTargetSplatAutoFitUI(layer) {
+  if (typeof document === 'undefined') return;
+  const btn = document.getElementById('target-splat-autofit-btn');
+  if (!btn) return;
+  const isAuto = !layer || (layer.targetAutoDimensions !== false);
+  if (isAuto) {
+    if (btn.classList && typeof btn.classList.add === 'function') btn.classList.add('active');
+    if (btn.style) {
+      btn.style.background = 'rgba(16, 185, 129, 0.3)';
+      btn.style.borderColor = 'rgba(16, 185, 129, 0.6)';
+      btn.style.color = '#34d399';
+    }
+    btn.textContent = '⚡ Auto-Fit (Active)';
+    if (typeof btn.setAttribute === 'function') {
+      btn.setAttribute('title', 'Grid Width & Height auto-derived from target boundary. Click to unlock manual mode.');
+    }
+  } else {
+    if (btn.classList && typeof btn.classList.remove === 'function') btn.classList.remove('active');
+    if (btn.style) {
+      btn.style.background = 'rgba(255, 255, 255, 0.08)';
+      btn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+      btn.style.color = 'var(--text-muted)';
+    }
+    btn.textContent = '⚡ Auto-Fit Grid';
+    if (typeof btn.setAttribute === 'function') {
+      btn.setAttribute('title', 'Click to recalculate optimal Grid Width & Height from target geometry.');
+    }
+  }
+}
+
+function updateTargetSplatDiagram(layer, overrideAltitude, overridePitch) {
+  if (typeof document === 'undefined') return;
+  const svg = document.getElementById('target-splat-diagram-svg');
+  if (!svg) return;
+
+  const altSlider = document.getElementById('altitude');
+  const pitchSlider = document.getElementById('gimbal-pitch');
+
+  const altitude = (overrideAltitude !== undefined && overrideAltitude > 0)
+    ? overrideAltitude
+    : (altSlider ? (parseFloat(altSlider.value) || 50) : (layer && layer.altitude ? layer.altitude : 50));
+
+  let gimbalPitch = (overridePitch !== undefined)
+    ? overridePitch
+    : (pitchSlider ? (parseFloat(pitchSlider.value) || -45) : (layer && layer.gimbalPitch !== undefined ? layer.gimbalPitch : -45));
+  gimbalPitch = -Math.abs(gimbalPitch !== null && !isNaN(gimbalPitch) ? gimbalPitch : -45);
+  gimbalPitch = Math.max(-90, Math.min(-15, gimbalPitch));
+
+  const framingMode = layer ? (layer.targetFramingMode || 'balanced') : 'balanced';
+  const fRatio = (framingMode === 'tight') ? 0.35 : ((framingMode === 'full') ? 1.0 : 0.55);
+
+  const vfovVal = (typeof CAMERA_VFOV === 'number' && CAMERA_VFOV > 0) ? CAMERA_VFOV : 55.2;
+  const alphaDeg = 90.0 + gimbalPitch;
+
+  const dBoresight = altitude * Math.tan((alphaDeg * Math.PI) / 180.0);
+  const alphaNearDeg = Math.max(0, alphaDeg - vfovVal / 2.0);
+  const dNear = altitude * Math.tan((alphaNearDeg * Math.PI) / 180.0);
+
+  const alphaFarFullDeg = Math.min(85.0, alphaDeg + vfovVal / 2.0);
+  const dFarFull = altitude * Math.tan((alphaFarFullDeg * Math.PI) / 180.0);
+
+  const alphaFarEffDeg = Math.min(85.0, alphaDeg + (vfovVal / 2.0) * fRatio);
+  const dFarEff = altitude * Math.tan((alphaFarEffDeg * Math.PI) / 180.0);
+
+  const dSaved = Math.max(0, dFarFull - dFarEff);
+
+  // Update badge and stats text
+  const badgeEl = document.getElementById('target-splat-framing-badge');
+  if (badgeEl) {
+    if (framingMode === 'tight') {
+      badgeEl.textContent = 'Tight Framing';
+      badgeEl.style.background = 'rgba(56, 189, 248, 0.2)';
+      badgeEl.style.color = '#38bdf8';
+    } else if (framingMode === 'full') {
+      badgeEl.textContent = 'Full Horizon';
+      badgeEl.style.background = 'rgba(245, 158, 11, 0.2)';
+      badgeEl.style.color = '#fbbf24';
+    } else {
+      badgeEl.textContent = 'Sweet Spot';
+      badgeEl.style.background = 'rgba(16, 185, 129, 0.2)';
+      badgeEl.style.color = '#34d399';
+    }
+  }
+
+  const statsEl = document.getElementById('target-splat-diagram-stats');
+  if (statsEl) {
+    if (framingMode === 'full') {
+      statsEl.textContent = `Lead-In: ${Math.round(dFarFull)}m (Full Horizon)`;
+    } else {
+      statsEl.textContent = `Lead-In: ${Math.round(dFarEff)}m | Save ~${Math.round(dSaved)}m`;
+    }
+  }
+
+  // Update SVG elements
+  const maxMeters = Math.max(75, dFarFull * 1.08);
+  const originX = 36;
+  const groundY = 72;
+  const droneY = 25;
+  const svgWidth = 232;
+  const availableWidth = svgWidth - originX;
+
+  function toSvgX(distMeters) {
+    return originX + Math.min(availableWidth, Math.max(0, (distMeters / maxMeters) * availableWidth));
+  }
+
+  const xBoresight = toSvgX(dBoresight);
+  const xNear = toSvgX(dNear);
+  const xFarEff = toSvgX(dFarEff);
+  const xFarFull = toSvgX(dFarFull);
+
+  const setElemAttr = (id, attr, val) => {
+    const el = document.getElementById(id);
+    if (el && typeof el.setAttribute === 'function') el.setAttribute(attr, val);
+  };
+  const setElemText = (id, text) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  };
+
+  // Frustum polygons
+  setElemAttr('target-splat-diag-sweetspot', 'points', `${originX},${droneY} ${Math.round(xNear)},${groundY} ${Math.round(xFarEff)},${groundY}`);
+  
+  if (framingMode === 'full' || dSaved < 4) {
+    setElemAttr('target-splat-diag-pruned', 'points', `${originX},${droneY} ${Math.round(xFarEff)},${groundY} ${Math.round(xFarEff)},${groundY}`);
+    setElemAttr('target-splat-diag-pruned', 'style', 'display: none;');
+    setElemText('target-splat-diag-pruned-label', '');
+  } else {
+    setElemAttr('target-splat-diag-pruned', 'points', `${originX},${droneY} ${Math.round(xFarEff)},${groundY} ${Math.round(xFarFull)},${groundY}`);
+    setElemAttr('target-splat-diag-pruned', 'style', 'display: block;');
+    const midX = Math.round((xFarEff + xFarFull) / 2);
+    setElemAttr('target-splat-diag-pruned-label', 'x', String(midX));
+    setElemText('target-splat-diag-pruned-label', '✂ Pruned');
+  }
+
+  // Sight lines
+  setElemAttr('target-splat-diag-boresight', 'x2', String(Math.round(xBoresight)));
+  setElemAttr('target-splat-diag-near', 'x2', String(Math.round(xNear)));
+  setElemAttr('target-splat-diag-fareff', 'x2', String(Math.round(xFarEff)));
+  setElemAttr('target-splat-diag-farfull', 'x2', String(Math.round(xFarFull)));
+
+  // Building position at boresight center
+  const bldgWidth = 24;
+  const bldgX = Math.max(xNear + 2, Math.min(svgWidth - bldgWidth - 2, xBoresight - bldgWidth / 2));
+  setElemAttr('target-splat-diag-building', 'x', String(Math.round(bldgX)));
+  setElemAttr('target-splat-diag-building-label', 'x', String(Math.round(bldgX + bldgWidth / 2)));
+
+  // Altitude & Boresight text
+  setElemText('target-splat-diag-alt-text', `${Math.round(altitude)}m`);
+  setElemText('target-splat-diag-boresight-text', `Boresight: ${Math.round(dBoresight)}m`);
+  setElemAttr('target-splat-diag-boresight-text', 'x', String(Math.round(Math.max(65, Math.min(180, xBoresight)))));
+}
+
 function generateTargetSplatCoordinates(width, height, rotation, captureMode, sLine, sPhoto, altitude, defaultGimbalPitch, layer) {
   const waypoints = [];
   const photos = [];
 
   const hfov = (typeof CAMERA_HFOV === 'number' && !isNaN(CAMERA_HFOV) && CAMERA_HFOV > 0) ? CAMERA_HFOV : 69.7;
   const vfov = (typeof CAMERA_VFOV === 'number' && !isNaN(CAMERA_VFOV) && CAMERA_VFOV > 0) ? CAMERA_VFOV : 55.2;
+
+  const framingMode = layer ? (layer.targetFramingMode || 'balanced') : 'balanced';
+  const framingRatio = (framingMode === 'tight') ? 0.35 : ((framingMode === 'full') ? 1.0 : 0.55);
 
   const cullingMode = layer ? (layer.targetCullingMode || 'smartTrim') : 'smartTrim';
   const gridPass = layer ? (layer.targetGridPass || 'double') : 'double';
@@ -15398,7 +16417,7 @@ function generateTargetSplatCoordinates(width, height, rotation, captureMode, sL
         pt.gridType = 'target-splat';
         isVisible = true; // Always pointed at target
       } else {
-        isVisible = isTargetVisibleInFrustum(pt.x, pt.y, altitude, pt.heading, effectivePitch, hfov, vfov, localTargetPoly, objectHeight);
+        isVisible = isTargetVisibleInFrustum(pt.x, pt.y, altitude, pt.heading, effectivePitch, hfov, vfov, localTargetPoly, objectHeight, framingRatio);
       }
 
       pt.targetVisible = isVisible;
@@ -16058,6 +17077,9 @@ function addTargetPolygonPoint(lat, lng) {
   activeLayer.targetMode = 'polygon';
 
   recomputeTargetPolygonCentroid(activeLayer);
+  if (activeLayer.targetAutoDimensions !== false) {
+    applyTargetSplatAutoDimensions(activeLayer);
+  }
   setTargetPolyEditMode(true);
   updateGrid();
 }
@@ -16221,6 +17243,9 @@ function drawTargetSplatOverlay(layer, centerLat, centerLon, rotationDeg) {
 
       nodeMarker.on('dragend', () => {
         recomputeTargetPolygonCentroid(layer);
+        if (layer.targetAutoDimensions !== false) {
+          applyTargetSplatAutoDimensions(layer);
+        }
         updateGrid();
       });
 
@@ -16228,11 +17253,17 @@ function drawTargetSplatOverlay(layer, centerLat, centerLon, rotationDeg) {
         if (e.originalEvent && e.originalEvent.stopPropagation) e.originalEvent.stopPropagation();
         vertices.splice(vIdx, 1);
         recomputeTargetPolygonCentroid(layer);
+        if (layer.targetAutoDimensions !== false) {
+          applyTargetSplatAutoDimensions(layer);
+        }
         setTargetPolyEditMode(isTargetPolyEditActive || vertices.length < 3);
         updateGrid();
       });
     });
   }
+
+  updateTargetSplatAutoFitUI(layer);
+  updateTargetSplatDiagram(layer);
 
   // Update saved photos pill in UI
   const savedPill = document.getElementById('target-splat-saved-pill');

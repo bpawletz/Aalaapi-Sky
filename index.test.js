@@ -10924,7 +10924,494 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       }
     });
   });
+
+  describe('Target Splat Auto-Determining Grid Dimensions (v1.83.0)', () => {
+    test('calculateTargetSplatDimensions calculates accurate dimensions in Radius mode', () => {
+      // 1. Default settings: Radius 25m, Alt 50m, Pitch -45 deg, Double grid
+      const layer1 = {
+        pattern: 'target-splat',
+        targetMode: 'radius',
+        targetRadius: 25,
+        altitude: 50,
+        gimbalPitch: -45,
+        targetGridPass: 'double'
+      };
+      const dims1 = calculateTargetSplatDimensions(layer1);
+      assert.strictEqual(dims1.width, 170, 'Double grid Width should be 170m for 25m radius at 50m alt, -45 deg pitch');
+      assert.strictEqual(dims1.height, 170, 'Double grid Height should be 170m for 25m radius at 50m alt, -45 deg pitch');
+
+      // 2. Small shed: Radius 10m, Alt 25m, Pitch -60 deg, Double grid
+      const layer2 = {
+        pattern: 'target-splat',
+        targetMode: 'radius',
+        targetRadius: 10,
+        altitude: 25,
+        gimbalPitch: -60,
+        targetGridPass: 'double'
+      };
+      const dims2 = calculateTargetSplatDimensions(layer2);
+      assert.strictEqual(dims2.width, 60, 'Width should be 60m for 10m radius at 25m alt, -60 deg pitch');
+      assert.strictEqual(dims2.height, 60, 'Height should be 60m for 10m radius at 25m alt, -60 deg pitch');
+
+      // 3. Nadir pitch (-90 deg): dStandoff = 0, margin = 0.2 * 40 = 8m
+      // span = 2 * (25 + 0 + 8) = 66m -> rounded to nearest 5m = 65m
+      const layer3 = {
+        pattern: 'target-splat',
+        targetMode: 'radius',
+        targetRadius: 25,
+        altitude: 40,
+        gimbalPitch: -90,
+        targetGridPass: 'double'
+      };
+      const dims3 = calculateTargetSplatDimensions(layer3);
+      assert.strictEqual(dims3.width, 65, 'Nadir width should be 65m');
+      assert.strictEqual(dims3.height, 65, 'Nadir height should be 65m');
+    });
+
+    test('calculateTargetSplatDimensions adapts for single grid pass', () => {
+      const layerSingle = {
+        pattern: 'target-splat',
+        targetMode: 'radius',
+        targetRadius: 20,
+        altitude: 50,
+        gimbalPitch: -45,
+        targetGridPass: 'single'
+      };
+      const dims = calculateTargetSplatDimensions(layerSingle);
+      assert.strictEqual(dims.height, 160, 'Single grid height should have full Y standoff');
+      assert.ok(dims.width < dims.height, 'Single grid width should be narrower than height');
+    });
+
+    test('calculateTargetSplatDimensions accurately sizes rectangular Freeform Polygons', () => {
+      // 40m wide (E-W) x 20m deep (N-S) rectangular building
+      const layerPoly = {
+        pattern: 'target-splat',
+        targetMode: 'polygon',
+        gridRotation: 0,
+        altitude: 50,
+        gimbalPitch: -45,
+        targetGridPass: 'double',
+        targetPoly: [
+          { x: -20, y: 10 },
+          { x: 20, y: 10 },
+          { x: 20, y: -10 },
+          { x: -20, y: -10 }
+        ]
+      };
+      const dims = calculateTargetSplatDimensions(layerPoly);
+      assert.strictEqual(dims.width, 160, 'Polygon width should be 160m');
+      assert.strictEqual(dims.height, 140, 'Polygon height should be 140m');
+    });
+
+    test('calculateTargetSplatDimensions clamps to valid slider limits (20m - 500m)', () => {
+      const hugeLayer = {
+        pattern: 'target-splat',
+        targetMode: 'radius',
+        targetRadius: 150,
+        altitude: 120,
+        gimbalPitch: -30,
+        targetGridPass: 'double'
+      };
+      const dimsHuge = calculateTargetSplatDimensions(hugeLayer);
+      assert.strictEqual(dimsHuge.width, 500, 'Max dimension must be clamped to 500m');
+      assert.strictEqual(dimsHuge.height, 500, 'Max dimension must be clamped to 500m');
+
+      const tinyLayer = {
+        pattern: 'target-splat',
+        targetMode: 'radius',
+        targetRadius: 2,
+        altitude: 5,
+        gimbalPitch: -90,
+        targetGridPass: 'double'
+      };
+      const dimsTiny = calculateTargetSplatDimensions(tinyLayer);
+      assert.strictEqual(dimsTiny.width, 20, 'Min dimension must be clamped to 20m');
+      assert.strictEqual(dimsTiny.height, 20, 'Min dimension must be clamped to 20m');
+    });
+
+    test('generateLayerWaypoints applies auto-calculated dimensions when targetAutoDimensions is true', () => {
+      const layer = {
+        id: 'test-splat-layer',
+        enabled: true,
+        pattern: 'target-splat',
+        targetMode: 'radius',
+        targetRadius: 25,
+        altitude: 50,
+        gimbalPitch: -45,
+        targetGridPass: 'double',
+        targetAutoDimensions: true,
+        gridWidth: 100,
+        gridHeight: 100
+      };
+      generateLayerWaypoints(layer, 40.0, -83.0);
+      assert.strictEqual(layer.gridWidth, 170, 'layer.gridWidth must be updated to 170m');
+      assert.strictEqual(layer.gridHeight, 170, 'layer.gridHeight must be updated to 170m');
+    });
+
+    test('generateLayerWaypoints respects manual dimensions when targetAutoDimensions is false', () => {
+      const layer = {
+        id: 'test-manual-splat-layer',
+        enabled: true,
+        pattern: 'target-splat',
+        targetMode: 'radius',
+        targetRadius: 25,
+        altitude: 50,
+        gimbalPitch: -45,
+        targetGridPass: 'double',
+        targetAutoDimensions: false,
+        gridWidth: 120,
+        gridHeight: 90
+      };
+      generateLayerWaypoints(layer, 40.0, -83.0);
+      assert.strictEqual(layer.gridWidth, 120, 'layer.gridWidth must remain manual 120m');
+      assert.strictEqual(layer.gridHeight, 90, 'layer.gridHeight must remain manual 90m');
+    });
+
+    test('applyTargetSplatAutoDimensions updates layer dimensions when auto-fit is active', () => {
+      const testLayer = {
+        pattern: 'target-splat',
+        targetMode: 'radius',
+        targetRadius: 30,
+        altitude: 50,
+        gimbalPitch: -45,
+        targetGridPass: 'double',
+        targetAutoDimensions: true
+      };
+      applyTargetSplatAutoDimensions(testLayer);
+      assert.strictEqual(testLayer.gridWidth, 180, 'gridWidth should be 180m');
+      assert.strictEqual(testLayer.gridHeight, 180, 'gridHeight should be 180m');
+    });
+  });
+
+  describe('Target Splat Distant Lead-Up Auto-Pruning & Optical Diagram (v1.84.0)', () => {
+    test('calculateCameraGroundFrustum modulates far standoff distance with framingRatio', () => {
+      const alt = 29;
+      const pitch = -45;
+      const heading = 0;
+      const hfov = 69.7;
+      const vfov = 55.2;
+
+      // 1. Full horizon (ratio 1.0)
+      const fullFrustum = calculateCameraGroundFrustum(0, 0, alt, heading, pitch, hfov, vfov, 0, 1.0);
+      const dFarFull = fullFrustum[2].y; // Far edge along flight heading Y
+      assert.ok(dFarFull > 90 && dFarFull < 95, `Full horizon dFar should be ~92.5m, got ${dFarFull}`);
+
+      // 2. Balanced sweet spot (ratio 0.55)
+      const balFrustum = calculateCameraGroundFrustum(0, 0, alt, heading, pitch, hfov, vfov, 0, 0.55);
+      const dFarBal = balFrustum[2].y;
+      assert.ok(dFarBal > 48 && dFarBal < 53, `Balanced sweet spot dFar should be ~50.6m, got ${dFarBal}`);
+
+      // 3. Tight framing (ratio 0.35)
+      const tightFrustum = calculateCameraGroundFrustum(0, 0, alt, heading, pitch, hfov, vfov, 0, 0.35);
+      const dFarTight = tightFrustum[2].y;
+      assert.ok(dFarTight > 38 && dFarTight < 43, `Tight framing dFar should be ~40.9m, got ${dFarTight}`);
+    });
+
+    test('isTargetVisibleInFrustum auto-prunes distant lead-up points in balanced and tight modes', () => {
+      const alt = 29;
+      const pitch = -45;
+      const heading = 0; // Flying North
+      const hfov = 69.7;
+      const vfov = 55.2;
+
+      // Target centered at origin (0, 0) with a 10m radius polygon
+      const targetPoly = [
+        { x: -10, y: -10 },
+        { x: 10, y: -10 },
+        { x: 10, y: 10 },
+        { x: -10, y: 10 }
+      ];
+
+      // Drone is at (0, -75), 75 meters South of target, pointing North at target
+      const droneX = 0;
+      const droneY = -75;
+
+      // In Full mode (legacy), 75m < 92.5m, so target is visible on horizon
+      const visibleFull = isTargetVisibleInFrustum(droneX, droneY, alt, heading, pitch, hfov, vfov, targetPoly, 0, 1.0);
+      assert.strictEqual(visibleFull, true, 'Full mode should detect target on horizon');
+
+      // In Balanced mode (default), 75m > 50.6m + 10m target edge = 60.6m, so target is out of sweet spot and pruned
+      const visibleBal = isTargetVisibleInFrustum(droneX, droneY, alt, heading, pitch, hfov, vfov, targetPoly, 0, 0.55);
+      assert.strictEqual(visibleBal, false, 'Balanced mode must prune unhelpful 75m distant lead-up');
+
+      // In Tight mode, target is also pruned
+      const visibleTight = isTargetVisibleInFrustum(droneX, droneY, alt, heading, pitch, hfov, vfov, targetPoly, 0, 0.35);
+      assert.strictEqual(visibleTight, false, 'Tight mode must prune unhelpful 75m distant lead-up');
+    });
+
+    test('generateTargetSplatCoordinates reduces photo count and trims distant lead-up under balanced mode', () => {
+      const sampleLayerBal = {
+        targetMode: 'radius',
+        targetRadius: 15,
+        altitude: 29,
+        gimbalPitch: -45,
+        targetGridPass: 'double',
+        targetCullingMode: 'smartTrim',
+        targetFramingMode: 'balanced',
+        targetHeight: 8
+      };
+
+      const sampleLayerFull = {
+        targetMode: 'radius',
+        targetRadius: 15,
+        altitude: 29,
+        gimbalPitch: -45,
+        targetGridPass: 'double',
+        targetCullingMode: 'smartTrim',
+        targetFramingMode: 'full',
+        targetHeight: 8
+      };
+
+      const width = 120;
+      const height = 120;
+      const sLine = 10;
+      const sPhoto = 5;
+
+      const resBal = generateTargetSplatCoordinates(width, height, 0, 'stopAndShoot', sLine, sPhoto, 29, -45, sampleLayerBal);
+      const resFull = generateTargetSplatCoordinates(width, height, 0, 'stopAndShoot', sLine, sPhoto, 29, -45, sampleLayerFull);
+
+      assert.ok(resBal.waypoints.length > 0, 'Must generate valid balanced waypoints');
+      assert.ok(resFull.waypoints.length > 0, 'Must generate valid full waypoints');
+      assert.ok(resBal.waypoints.length < resFull.waypoints.length, `Balanced mode waypoints (${resBal.waypoints.length}) must be significantly fewer than Full mode (${resFull.waypoints.length})`);
+    });
+
+    test('updateTargetSplatDiagram executes safely and handles DOM elements without error', () => {
+      const layer = {
+        altitude: 29,
+        gimbalPitch: -45,
+        targetFramingMode: 'balanced'
+      };
+      // Should execute without throwing in test environment
+      assert.doesNotThrow(() => {
+        updateTargetSplatDiagram(layer, 29, -45);
+      }, 'updateTargetSplatDiagram must execute safely');
+    });
+  });
+
+  describe('Target Splat Lateral Frustum Culling & Camera Aspect Ratio (v1.85.0)', () => {
+    test('calculateCameraGroundFrustum modulates lateral half-width with framingRatio', () => {
+      const alt = 23;
+      const pitch = -60;
+      const heading = 0; // Flying North
+      const hfov = 69.7;
+      const vfov = 55.2;
+
+      // 1. Full sensor footprint (ratio 1.0)
+      const fullFrustum = calculateCameraGroundFrustum(0, 0, alt, heading, pitch, hfov, vfov, 0, 1.0);
+      const halfWFarFull = Math.abs(fullFrustum[2].x); // Far-Right X relative to centerline 0
+      assert.ok(halfWFarFull > 28 && halfWFarFull < 32, `Full footprint halfWFar should be ~29.9m, got ${halfWFarFull}`);
+
+      // 2. Balanced sweet spot (ratio 0.55)
+      const balFrustum = calculateCameraGroundFrustum(0, 0, alt, heading, pitch, hfov, vfov, 0, 0.55);
+      const halfWFarBal = Math.abs(balFrustum[2].x);
+      assert.ok(halfWFarBal > 10 && halfWFarBal < 13, `Balanced sweet spot halfWFar should be ~11.3m, got ${halfWFarBal}`);
+
+      // 3. Tight framing (ratio 0.35)
+      const tightFrustum = calculateCameraGroundFrustum(0, 0, alt, heading, pitch, hfov, vfov, 0, 0.35);
+      const halfWFarTight = Math.abs(tightFrustum[2].x);
+      assert.ok(halfWFarTight > 5 && halfWFarTight < 8, `Tight framing halfWFar should be ~6.5m, got ${halfWFarTight}`);
+    });
+
+    test('isTargetVisibleInFrustum culls out-of-frame parallel flight legs', () => {
+      const alt = 23;
+      const pitch = -60;
+      const heading = 90; // Flying East
+      const hfov = 69.7;
+      const vfov = 55.2;
+
+      // Target centered at (0, 0) with a 10m radius polygon (-10 to +10 in X and Y)
+      const targetPoly = [
+        { x: -10, y: 10 },
+        { x: 10, y: 10 },
+        { x: 10, y: -10 },
+        { x: -10, y: -10 }
+      ];
+
+      // Drone is flying along y = 25m (25m North of target center, 15m away from target edge)
+      const droneX = 0;
+      const droneY = 25;
+
+      // In Full mode (legacy), lateral wing reaches y = 2.28m, intersecting the target (true)
+      const visibleFull = isTargetVisibleInFrustum(droneX, droneY, alt, heading, pitch, hfov, vfov, targetPoly, 8, 1.0);
+      assert.strictEqual(visibleFull, true, 'Full mode detects target via unpruned lateral flare');
+
+      // In Balanced mode (default), lateral wing is modulated to y = 13.66m, missing the target at y = 10m (false)
+      const visibleBal = isTargetVisibleInFrustum(droneX, droneY, alt, heading, pitch, hfov, vfov, targetPoly, 8, 0.55);
+      assert.strictEqual(visibleBal, false, 'Balanced mode must cull out-of-frame parallel flight leg');
+
+      // In Tight mode, out-of-frame parallel leg is also culled
+      const visibleTight = isTargetVisibleInFrustum(droneX, droneY, alt, heading, pitch, hfov, vfov, targetPoly, 8, 0.35);
+      assert.strictEqual(visibleTight, false, 'Tight mode must cull out-of-frame parallel flight leg');
+    });
+
+    test('setCameraAspectRatio switches between 4:3 and 16:9 and updates HFOV/VFOV', () => {
+      assert.strictEqual(typeof setCameraAspectRatio, 'function', 'setCameraAspectRatio must be defined');
+
+      // Switch to 16:9 Video
+      setCameraAspectRatio('16:9', true);
+      assert.strictEqual(CAMERA_ASPECT_RATIO, '16:9');
+      assert.strictEqual(CAMERA_HFOV, 69.7);
+      assert.strictEqual(CAMERA_VFOV, 44.2);
+
+      // Switch back to 4:3 Photo
+      setCameraAspectRatio('4:3', true);
+      assert.strictEqual(CAMERA_ASPECT_RATIO, '4:3');
+      assert.strictEqual(CAMERA_HFOV, 69.7);
+      assert.strictEqual(CAMERA_VFOV, 55.2);
+    });
+
+    test('generateTargetSplatCoordinates culls outer flight legs under user configuration (Altitude: 23m, Pitch: -60°)', () => {
+      const userPoly = [
+        { x: -10, y: 10 },
+        { x: 10, y: 10 },
+        { x: 10, y: -10 },
+        { x: -10, y: -10 }
+      ];
+
+      const layerBal = {
+        pattern: 'target-splat',
+        altitude: 23,
+        gimbalPitch: -60,
+        targetMode: 'polygon',
+        targetHeight: 8,
+        targetAutoDimensions: true,
+        targetFramingMode: 'balanced',
+        targetCullingMode: 'smartTrim',
+        targetGridPass: 'double',
+        targetPoly: userPoly
+      };
+
+      const layerFull = {
+        pattern: 'target-splat',
+        altitude: 23,
+        gimbalPitch: -60,
+        targetMode: 'polygon',
+        targetHeight: 8,
+        targetAutoDimensions: true,
+        targetFramingMode: 'full',
+        targetCullingMode: 'smartTrim',
+        targetGridPass: 'double',
+        targetPoly: userPoly
+      };
+
+      const width = 60;
+      const height = 60;
+      const sLine = 9.6;
+      const sPhoto = 5.87;
+
+      const resBal = generateTargetSplatCoordinates(width, height, 0, 'stopAndShoot', sLine, sPhoto, 23, -60, layerBal);
+      const resFull = generateTargetSplatCoordinates(width, height, 0, 'stopAndShoot', sLine, sPhoto, 23, -60, layerFull);
+
+      assert.ok(resBal.waypoints.length > 0, 'Balanced mode should generate valid waypoints');
+      assert.ok(resFull.waypoints.length > 0, 'Full mode should generate valid waypoints');
+      assert.ok(resBal.waypoints.length < resFull.waypoints.length, `Balanced mode waypoints (${resBal.waypoints.length}) must cull out-of-frame legs and be fewer than Full mode (${resFull.waypoints.length})`);
+    });
+  });
+
+  describe('Mobile Responsive Topbar & More Menu (v1.86.0)', () => {
+    test('initMobileNav executes safely and binds event listeners cleanly', () => {
+      assert.strictEqual(typeof initMobileNav, 'function', 'initMobileNav should be defined as a function');
+      
+      const dummyListeners = {};
+      const mockClassList = {
+        classes: new Set(),
+        add: function(c) { this.classes.add(c); },
+        remove: function(c) { this.classes.delete(c); },
+        toggle: function(c) { if (this.classes.has(c)) this.classes.delete(c); else this.classes.add(c); },
+        contains: function(c) { return this.classes.has(c); }
+      };
+
+      const makeMockEl = () => ({
+        classList: Object.create(mockClassList),
+        addEventListener: (event, handler) => {
+          dummyListeners[event] = handler;
+        },
+        contains: () => false,
+        focus: () => {}
+      });
+
+      // Stub DOM elements
+      const searchToggle = makeMockEl();
+      const searchClose = makeMockEl();
+      const topbarCenter = makeMockEl();
+      const topbar = makeMockEl();
+      const moreBtn = makeMockEl();
+      const moreMenu = makeMockEl();
+      const moreIntroBtn = makeMockEl();
+      const moreAboutBtn = makeMockEl();
+      const moreLinksBtn = makeMockEl();
+      const locateBtn = makeMockEl();
+
+      const origGetElementById = document.getElementById;
+      const origQuerySelector = document.querySelector;
+
+      document.getElementById = (id) => {
+        if (id === 'mobile-search-toggle-btn') return searchToggle;
+        if (id === 'mobile-search-close-btn') return searchClose;
+        if (id === 'header-more-btn') return moreBtn;
+        if (id === 'header-more-menu') return moreMenu;
+        if (id === 'more-menu-intro-btn') return moreIntroBtn;
+        if (id === 'more-menu-about-btn') return moreAboutBtn;
+        if (id === 'more-menu-links-btn') return moreLinksBtn;
+        if (id === 'locate-me-btn') return locateBtn;
+        return origGetElementById(id);
+      };
+
+      document.querySelector = (sel) => {
+        if (sel === '.topbar-center') return topbarCenter;
+        if (sel === '.studio-topbar') return topbar;
+        return origQuerySelector ? origQuerySelector(sel) : null;
+      };
+
+      try {
+        initMobileNav();
+        assert.ok(true, 'initMobileNav executed without error');
+      } finally {
+        document.getElementById = origGetElementById;
+        document.querySelector = origQuerySelector;
+      }
+    });
+
+    test('Theme & Measurement Units available in Settings Menu (#config-modal) (v1.86.1)', () => {
+      const fs = require('fs');
+      const path = require('path');
+      const templateContent = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      const cssContent = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+
+      // 1. Confirm #theme-mode-select exists in #config-modal
+      assert.ok(templateContent.includes('id="theme-mode-select"'), 'index_template.html must define #theme-mode-select');
+      assert.ok(templateContent.includes('id="unit-system"'), 'index_template.html must define #unit-system in config modal');
+
+      // 2. Confirm #header-unit-toggle-btn and #theme-toggle-btn are hidden on mobile
+      assert.ok(cssContent.includes('#header-unit-toggle-btn') && cssContent.includes('#theme-toggle-btn'), 'index.css must target unit and theme toggle buttons');
+      assert.ok(cssContent.includes('display: none !important;'), 'Must hide elements on small screens');
+
+      // 3. Test setAppTheme synchronization with #theme-mode-select
+      const origGetElementById = document.getElementById;
+      const mockSelect = { value: 'dark' };
+      const mockBtn = { textContent: '', title: '' };
+
+      document.getElementById = (id) => {
+        if (id === 'theme-mode-select') return mockSelect;
+        if (id === 'theme-toggle-btn') return mockBtn;
+        return origGetElementById ? origGetElementById(id) : null;
+      };
+
+      try {
+        setAppTheme('light');
+        assert.strictEqual(mockSelect.value, 'light', 'setAppTheme should update #theme-mode-select to light');
+        assert.strictEqual(mockBtn.textContent, '🌙', 'Theme button icon should show moon for light mode');
+
+        setAppTheme('dark');
+        assert.strictEqual(mockSelect.value, 'dark', 'setAppTheme should update #theme-mode-select to dark');
+        assert.strictEqual(mockBtn.textContent, '☀️', 'Theme button icon should show sun for dark mode');
+      } finally {
+        document.getElementById = origGetElementById;
+      }
+    });
+  });
 });
+
 
 
 
