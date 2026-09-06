@@ -825,8 +825,16 @@ if ($dji) {
                             }
                         }
                         if ($copied) {
-                            Copy-Item -Path (Join-Path $tempMtpDir $latestLogName) -Destination (Join-Path $outDir $latestLogName) -Force
+                            $srcLog = Join-Path $tempMtpDir $latestLogName
+                            $dstLog = Join-Path $outDir $latestLogName
+                            [System.IO.File]::Copy($srcLog, $dstLog, $true)
                         }
+                    }
+
+                    # Verify final log on disk in outDir
+                    $finalLogPath = Join-Path $outDir $latestLogName
+                    if (-not (Test-Path -LiteralPath $finalLogPath) -or (Get-Item -LiteralPath $finalLogPath).Length -eq 0) {
+                        $latestLogName = $null
                     }
                 }
             }
@@ -858,8 +866,16 @@ if ($dji) {
                                 }
                             }
                             if ($kmzCopied) {
-                                Copy-Item -Path (Join-Path $tempMtpDir $latestKmzName) -Destination (Join-Path $outDir $latestKmzName) -Force
+                                $srcKmz = Join-Path $tempMtpDir $latestKmzName
+                                $dstKmz = Join-Path $outDir $latestKmzName
+                                [System.IO.File]::Copy($srcKmz, $dstKmz, $true)
                             }
+                        }
+
+                        # Verify final KMZ on disk in outDir
+                        $finalKmzPath = Join-Path $outDir $latestKmzName
+                        if (-not (Test-Path -LiteralPath $finalKmzPath) -or (Get-Item -LiteralPath $finalKmzPath).Length -eq 0) {
+                            $latestKmzName = $null
                         }
                     }
                 }
@@ -871,7 +887,7 @@ if ($dji) {
 Get-ChildItem -Path $tempMtpDir -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
 
 @{
-    success = $true
+    success = ($latestLogName -ne $null -or $latestKmzName -ne $null)
     latestLog = $latestLogName
     latestKmz = $latestKmzName
     outputDir = $outDir

@@ -837,6 +837,84 @@ function getEffectiveLayerHoverTime(layer) {
   return globalEl ? (parseInt(globalEl.value, 10) || 0) : 0;
 }
 
+function getEffectiveWaypointHeadingMode(wp, layer) {
+  if (wp && wp.headingMode && wp.headingMode !== 'inherit') return wp.headingMode;
+  if (wp && wp.layerHeadingMode && wp.layerHeadingMode !== 'inherit') return wp.layerHeadingMode;
+  const resolvedLayer = layer || (wp && wp.layerId && typeof flightLayers !== 'undefined' ? flightLayers.find(l => l.id === wp.layerId) : null) || ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+  return getEffectiveLayerHeadingMode(resolvedLayer);
+}
+
+function getTargetPoiCoordinates(wp, layer) {
+  const resolvedLayer = layer || (wp && wp.layerId && typeof flightLayers !== 'undefined' ? flightLayers.find(l => l.id === wp.layerId) : null) || ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+  const poiList = (typeof pois !== 'undefined' && Array.isArray(pois)) ? pois : [];
+  
+  // 1. Target POI ID on WP or Layer
+  const targetPoiId = (wp && wp.targetPoiId) || (resolvedLayer && resolvedLayer.targetPoiId);
+  if (targetPoiId && poiList.length > 0) {
+    const found = poiList.find(p => p.id === targetPoiId);
+    if (found && found.lat !== undefined && (found.lon !== undefined || found.lng !== undefined)) {
+      return { lat: found.lat, lon: found.lon !== undefined ? found.lon : found.lng };
+    }
+  }
+  
+  // 2. POI Index on WP
+  const poiIdx = (wp && wp.poiIndex !== undefined && wp.poiIndex !== null) ? wp.poiIndex : 0;
+  if (poiList[poiIdx] && poiList[poiIdx].lat !== undefined && (poiList[poiIdx].lon !== undefined || poiList[poiIdx].lng !== undefined)) {
+    const p = poiList[poiIdx];
+    return { lat: p.lat, lon: p.lon !== undefined ? p.lon : p.lng };
+  }
+  
+  // 3. Fallback to first POI
+  if (poiList.length > 0 && poiList[0].lat !== undefined && (poiList[0].lon !== undefined || poiList[0].lng !== undefined)) {
+    const p = poiList[0];
+    return { lat: p.lat, lon: p.lon !== undefined ? p.lon : p.lng };
+  }
+  
+  // 4. Fallback to center marker
+  if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+    const ll = centerMarker.getLatLng();
+    if (ll && !isNaN(ll.lat) && !isNaN(ll.lng)) {
+      return { lat: ll.lat, lon: ll.lng };
+    }
+  }
+  
+  return null;
+}
+
+function getEffectiveWaypointHeading(wp, idx, waypoints, rotationDeg = 0, tempHeading = null, layer = null) {
+  if (tempHeading !== undefined && tempHeading !== null && !isNaN(tempHeading)) {
+    return tempHeading;
+  }
+  const effectiveMode = getEffectiveWaypointHeadingMode(wp, layer);
+  
+  if (effectiveMode === 'towardPOI') {
+    const targetPoi = getTargetPoiCoordinates(wp, layer);
+    if (targetPoi && wp && wp.lat !== undefined && wp.lon !== undefined) {
+      const dy = targetPoi.lat - wp.lat;
+      const dx = targetPoi.lon - wp.lon;
+      return (90 - (Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
+    }
+    return 0;
+  }
+  
+  if (effectiveMode === 'fixed') {
+    return 0;
+  }
+  
+  if (effectiveMode === 'custom') {
+    if (wp && wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
+      return wp.heading;
+    }
+    return (typeof getDefaultHeading === 'function') ? getDefaultHeading(idx, waypoints, rotationDeg) : 0;
+  }
+  
+  // Default: followWayline / smoothTransition / inherit
+  if (wp && wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
+    return wp.heading;
+  }
+  return (typeof getDefaultHeading === 'function') ? getDefaultHeading(idx, waypoints, rotationDeg) : 0;
+}
+
 function updateInheritOptionLabels() {
   if (typeof document === 'undefined') return;
 
@@ -8632,35 +8710,12 @@ function getMarkerIcon(wp, idx, waypoints, rotationDeg, tempHeading, tempPitch, 
   const borderColor = isStart ? '#10b981' : (isEnd ? '#ef4444' : (isSkipped ? '#94a3b8' : '#ffffff'));
 
   // Heading calculation
-  let heading = 0;
-  if (tempHeading !== undefined && tempHeading !== null) {
-    heading = tempHeading;
-  } else if (wp.heading !== null && wp.heading !== undefined) {
-    heading = wp.heading;
-  } else {
-    const mode = wp.headingMode || 'inherit';
-    let effectiveMode = mode;
-    if (mode === 'inherit') {
-      const globalMode = document.getElementById('heading-mode')?.value;
-      effectiveMode = globalMode || 'followWayline';
-    }
-
-    if (effectiveMode === 'towardPOI') {
-      const selectedPoiIndex = wp.poiIndex || 0;
-      const targetPoi = pois[selectedPoiIndex];
-      if (targetPoi) {
-        const dy = targetPoi.lat - wp.lat;
-        const dx = targetPoi.lon - wp.lon;
-        heading = (90 - (Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
-      } else {
-        heading = 0;
-      }
-    } else if (effectiveMode === 'fixed') {
-      heading = 0;
-    } else {
-      heading = getDefaultHeading(idx, waypoints, rotationDeg);
-    }
-  }
+  const rot = (rotationDeg !== undefined && rotationDeg !== null && !isNaN(rotationDeg))
+    ? rotationDeg
+    : ((typeof document !== 'undefined' && document && document.getElementById && document.getElementById('grid-rotation'))
+      ? parseFloat(document.getElementById('grid-rotation').value) || 0
+      : 0);
+  const heading = getEffectiveWaypointHeading(wp, idx, waypoints, rot, tempHeading, activeLayer);
 
   // Pitch calculation
   const pitch = tempPitch !== undefined && tempPitch !== null ? tempPitch : (wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : defaultGimbalPitch);
@@ -11043,8 +11098,11 @@ ${waypointActions.join('\n')}
     // Determine heading mode and angle for this waypoint (Tier 3: wp -> Tier 2: layer -> Tier 1: global)
     const validHeadingModes = ['followWayline', 'smoothTransition', 'towardPOI', 'manually', 'custom', 'fixed'];
     let effectiveHeadingMode = (headingMode && validHeadingModes.includes(headingMode)) ? headingMode : 'followWayline';
+    const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : null;
     if (wp.layerHeadingMode && wp.layerHeadingMode !== 'inherit' && validHeadingModes.includes(wp.layerHeadingMode)) {
       effectiveHeadingMode = wp.layerHeadingMode;
+    } else if (wpLayer && wpLayer.headingMode && wpLayer.headingMode !== 'inherit' && validHeadingModes.includes(wpLayer.headingMode)) {
+      effectiveHeadingMode = wpLayer.headingMode;
     }
     let actualHeadingMode = effectiveHeadingMode;
     let actualHeadingAngle = 0;
@@ -11052,9 +11110,10 @@ ${waypointActions.join('\n')}
 
     const wpMode = wp.headingMode || 'inherit';
     let targetPoiIndex = wp.poiIndex || 0;
-    // Resolve target POI from layer if set
-    if (wp.targetPoiId && typeof pois !== 'undefined' && pois && pois.length > 0) {
-      const poiFoundIdx = pois.findIndex(p => p.id === wp.targetPoiId);
+    const targetPoiId = wp.targetPoiId || (wpLayer && wpLayer.targetPoiId);
+    // Resolve target POI from layer or wp if set
+    if (targetPoiId && typeof pois !== 'undefined' && pois && pois.length > 0) {
+      const poiFoundIdx = pois.findIndex(p => p.id === targetPoiId);
       if (poiFoundIdx !== -1) targetPoiIndex = poiFoundIdx;
     }
 
@@ -16712,7 +16771,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
 
   const curMode = wp.headingMode || 'inherit';
   const poiIndex = wp.poiIndex || 0;
-  const isPoiMode = (curMode === 'towardPOI' || (curMode === 'inherit' && document.getElementById('heading-mode')?.value === 'towardPOI'));
+  const isPoiMode = (getEffectiveWaypointHeadingMode(wp) === 'towardPOI');
   let poiSelectOptions = '';
   pois.forEach((poi, idx) => {
     poiSelectOptions += `<option value="${idx}" ${poiIndex === idx ? 'selected' : ''}>${poi.name}</option>`;
@@ -16968,8 +17027,8 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
     let tempHeading = null;
     let effectiveMode = mode;
     if (mode === 'inherit') {
-      const globalMode = document.getElementById('heading-mode');
-      effectiveMode = globalMode ? globalMode.value : 'followWayline';
+      const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+      effectiveMode = getEffectiveLayerHeadingMode(wpLayer);
     }
 
     if (effectiveMode === 'custom') {
@@ -17276,7 +17335,9 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
     }
     if (poiSelect) {
       const mode = headingModeSelect.value;
-      const isPoi = (mode === 'towardPOI' || (mode === 'inherit' && document.getElementById('heading-mode')?.value === 'towardPOI'));
+      const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+      const effectiveMode = (mode === 'inherit') ? getEffectiveLayerHeadingMode(wpLayer) : mode;
+      const isPoi = (effectiveMode === 'towardPOI');
       poiSelect.style.display = isPoi ? 'block' : 'none';
     }
     updateWarningVisibility();
@@ -17911,44 +17972,15 @@ function checkNeedsReposition(idx, waypoints) {
 
 // Calculate the heading and pitch for a waypoint index
 function getWaypointHeadingAndPitch(idx, waypoints) {
-  let heading = 0;
-  const wp = waypoints[idx];
-  const rotationDeg = parseFloat(document.getElementById('grid-rotation')?.value) || 0;
-  if (wp.heading !== null && wp.heading !== undefined) {
-    heading = wp.heading;
-  } else {
-    const mode = wp.headingMode || 'inherit';
-    let effectiveMode = mode;
-    if (mode === 'inherit') {
-      const globalMode = document.getElementById('heading-mode')?.value;
-      effectiveMode = globalMode || 'followWayline';
-    }
-
-    if (effectiveMode === 'towardPOI') {
-      const selectedPoiIndex = wp.poiIndex || 0;
-      const targetPoi = pois[selectedPoiIndex];
-      if (targetPoi) {
-        const dy = targetPoi.lat - wp.lat;
-        const dx = targetPoi.lon - wp.lon;
-        heading = (90 - (Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
-      } else {
-        if (typeof centerMarker !== 'undefined' && centerMarker) {
-          const latlng = centerMarker.getLatLng();
-          const dy = latlng.lat - wp.lat;
-          const dx = latlng.lng - wp.lon;
-          heading = (90 - (Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
-        } else {
-          heading = 0;
-        }
-      }
-    } else if (effectiveMode === 'fixed') {
-      heading = 0;
-    } else {
-      heading = getDefaultHeading(idx, waypoints, rotationDeg);
-    }
-  }
-  const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch')?.value) || -60;
-  const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : defaultGimbalPitch;
+  const wp = (waypoints && waypoints[idx]) ? waypoints[idx] : {};
+  const rotationDeg = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('grid-rotation'))
+    ? parseFloat(document.getElementById('grid-rotation').value) || 0
+    : 0;
+  const heading = getEffectiveWaypointHeading(wp, idx, waypoints, rotationDeg, null, null);
+  const defaultGimbalPitch = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('gimbal-pitch'))
+    ? parseFloat(document.getElementById('gimbal-pitch').value) || -60
+    : -60;
+  const pitch = (wp.pitch !== undefined && wp.pitch !== null) ? wp.pitch : defaultGimbalPitch;
   return { heading, pitch };
 }
 
@@ -19118,12 +19150,11 @@ function updateFPVEditorUI() {
       const rotationDeg = rotEl ? (parseFloat(rotEl.value) || 0) : 0;
       const autoHead = getDefaultHeading(fpvProgressIndex, waypoints, rotationDeg);
 
-      // Helper to compute angle based on mode
       let displayAngle = 0;
       let effectiveMode = mode;
+      const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
       if (mode === 'inherit') {
-        const globalMode = document.getElementById('heading-mode');
-        effectiveMode = globalMode ? globalMode.value : 'followWayline';
+        effectiveMode = getEffectiveLayerHeadingMode(wpLayer);
       }
 
       let standardRoadFacing = 0;
@@ -19132,8 +19163,7 @@ function updateFPVEditorUI() {
       } else if (effectiveMode === 'fixed') {
         displayAngle = 0;
       } else if (effectiveMode === 'towardPOI') {
-        const selectedPoiIndex = wp.poiIndex || 0;
-        const targetPoi = pois[selectedPoiIndex];
+        const targetPoi = getTargetPoiCoordinates(wp, wpLayer);
         if (targetPoi) {
           const dy = targetPoi.lat - wp.lat;
           const dx = targetPoi.lon - wp.lon;
