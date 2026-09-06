@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.88.1] - 2026-09-06
+
+### Fixed — Map Popup Window Overhang & Drag-to-Move Positioning
+- **Resolved Popup Container Edge Overhang:** Fixed a sizing constraint where Leaflet's `bindPopup` clamped popup width to `minWidth: 230px, maxWidth: 240px`, causing 280px controls (Pitch/Hover sliders, Turn Mode/Camera Action/Heading dropdowns, Lat/Lon inputs, and Insert button) to overhang past the dark popup bubble. Updated `bindPopup` to `minWidth: 310px, maxWidth: 320px` and added `.wp-editor-leaflet-popup` CSS with `310px` content wrapper and `280px` content width.
+- **Header Coordinate Separation & Close Button Spacing:** Reorganized the popup header so the close button (`×`) has 24px clearance, with the title and `⠿ Drag` badge on row 1 and coordinates on row 2, eliminating text collision.
+- **Robust Drag-to-Move Implementation:** Implemented a smooth, native-feeling Leaflet popup dragging mechanism using `L.DomUtil.getPosition` and `L.DomUtil.setPosition`. Temporarily disables map dragging during popup move, prevents pointer event bubbling to the map pane, and re-anchors the popup's LatLng upon release so it stays in place during map pan and zoom.
+
 ## [1.88.0] - 2026-09-06
 
 ### Added — Unified Waypoint Editor UI & Help Popover
