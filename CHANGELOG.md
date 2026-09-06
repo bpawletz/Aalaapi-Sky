@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.86.2] - 2026-09-06
+
+### Fixed & Heading Mode Alignment
+- **Point of Interest Camera FOV Sight Cone Alignment:**
+  - Resolved an issue where waypoint camera FOV sight cones (`.wp-camera-cone`) and directional heading arrows (`.wp-arrow`) remained locked forward-facing (0° North / 180° South along grid survey lines) even when Heading Mode was configured to Point of Interest (`towardPOI`).
+  - Waypoint generators (Single Grid, Double Grid, etc.) assign baseline line headings (`0` / `180`). Previously, `getMarkerIcon` and `getWaypointHeadingAndPitch` evaluated `if (wp.heading !== null)` before resolving Heading Mode, bypassing the POI angle computation.
+  - Implemented `getEffectiveWaypointHeadingMode`, `getTargetPoiCoordinates`, and `getEffectiveWaypointHeading` to strictly adhere to the Three-Tier Cascading Hierarchy (`Waypoint Override (Tier 3) -> Layer Property (Tier 2) -> Global Default (Tier 1)`).
+  - Cones and arrows on the 2D map and 3D FPV HUD now dynamically pivot and orient directly toward the target POI in real time.
+- **USB MTP Flight Log Extraction Wildcard Bracket Fix:**
+  - Fixed an issue where clicking "📥 Pull Flight Log from RC 2" failed to extract the latest recorded flight logs from the connected DJI RC 2.
+  - DJI Fly telemetry files use square brackets around timestamps (e.g., `FlightRecord_YYYY-MM-DD_[HH-MM-SS].txt`). In PowerShell, `Copy-Item -Path` treated the brackets as regex/wildcard character classes and matched 0 files.
+  - Replaced `Copy-Item` with `[System.IO.File]::Copy` and added `-LiteralPath` destination verification so that flight records are reliably extracted and immediately populated into the 3D Flight Diagnostics selector.
+
 ## [1.86.1] - 2026-09-06
 
 ### Changed & Mobile Topbar De-Cluttering

@@ -11410,6 +11410,119 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       }
     });
   });
+
+  describe('Camera POI Heading & Cones Orientation Bug Fix Regression Tests (v1.86.2)', () => {
+    test('getMarkerIcon and getWaypointHeadingAndPitch orient toward POI even when wp.heading is pre-set to 0/180', () => {
+      try {
+        pois = [
+          { name: 'Target Center POI', lat: 40.013000, lon: -83.176500 }
+        ];
+
+        // 32-waypoint single grid snippet where wp.heading was initialized to 0 or 180
+        const sampleWps = [
+          { index: 0, lat: 40.012841, lon: -83.177128, alt: 18, heading: 0, turnMode: 'inherit' },
+          { index: 1, lat: 40.012885, lon: -83.177128, alt: 18, heading: 0, turnMode: 'inherit' },
+          { index: 2, lat: 40.012921, lon: -83.177128, alt: 18, heading: 0, turnMode: 'inherit' },
+          { index: 3, lat: 40.012957, lon: -83.177128, alt: 18, heading: 180, turnMode: 'inherit' }
+        ];
+
+        const origDivIcon = L.divIcon;
+        L.divIcon = (opts) => ({ options: opts, ...opts });
+
+        // Set global heading mode to towardPOI
+        const origGetElementById = document.getElementById;
+        document.getElementById = (id) => {
+          if (id === 'heading-mode') return { value: 'towardPOI' };
+          if (id === 'grid-rotation') return { value: '0' };
+          if (id === 'gimbal-pitch') return { value: '-90' };
+          if (id === 'camera-cones-toggle') return { checked: true };
+          return origGetElementById ? origGetElementById(id) : null;
+        };
+
+        // Compute expected POI heading from wp[0] to pois[0]
+        const dy = pois[0].lat - sampleWps[0].lat;
+        const dx = pois[0].lon - sampleWps[0].lon;
+        const expectedHeading = (90 - (Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
+
+        // 1. Verify getWaypointHeadingAndPitch calculates POI heading, NOT 0
+        const hp0 = getWaypointHeadingAndPitch(0, sampleWps);
+        assert.ok(Math.abs(hp0.heading - expectedHeading) < 0.5, `getWaypointHeadingAndPitch must point to POI (~${expectedHeading.toFixed(1)}°), got ${hp0.heading}°`);
+        assert.notStrictEqual(hp0.heading, 0, 'Heading must NOT remain locked at pre-set line heading 0°');
+
+        // 2. Verify getMarkerIcon generates camera cone rotated toward POI
+        const icon0 = getMarkerIcon(sampleWps[0], 0, sampleWps, 0);
+        const iconHtml0 = (icon0.options && icon0.options.html) || icon0.html;
+        assert.ok(iconHtml0.includes('wp-camera-cone'), 'Must contain camera sight cone');
+        assert.ok(iconHtml0.includes(`transform: rotate(${expectedHeading}deg)`), `Icon must rotate toward POI angle (${expectedHeading}deg)`);
+        assert.ok(!iconHtml0.includes('transform: rotate(0deg)'), 'Icon must NOT be forward-facing 0deg');
+
+        // 3. Test wp[3] which had line heading 180: should also orient toward POI
+        const dy3 = pois[0].lat - sampleWps[3].lat;
+        const dx3 = pois[0].lon - sampleWps[3].lon;
+        const expectedHeading3 = (90 - (Math.atan2(dy3, dx3) * 180 / Math.PI) + 360) % 360;
+        const hp3 = getWaypointHeadingAndPitch(3, sampleWps);
+        assert.ok(Math.abs(hp3.heading - expectedHeading3) < 0.5, `wp[3] must point to POI (~${expectedHeading3.toFixed(1)}°), got ${hp3.heading}°`);
+        assert.notStrictEqual(hp3.heading, 180, 'Heading must NOT remain locked at pre-set line heading 180°');
+
+      } finally {
+        pois = [];
+        document.getElementById = global.document.getElementById;
+        L.divIcon = global.L ? global.L.divIcon : undefined;
+      }
+    });
+
+    test('Three-Tier Heading Hierarchy correctly cascades (Global -> Layer -> Waypoint)', () => {
+      try {
+        pois = [{ name: 'POI', lat: 40.013000, lon: -83.176500 }];
+
+        const wp = { lat: 40.012841, lon: -83.177128, heading: 0, headingMode: 'inherit' };
+        const dy = pois[0].lat - wp.lat;
+        const dx = pois[0].lon - wp.lon;
+        const poiHeading = (90 - (Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
+
+        const origGetElementById = document.getElementById;
+
+        // Tier 1: Global Default towardPOI, Layer inherit, Waypoint inherit
+        document.getElementById = (id) => {
+          if (id === 'heading-mode') return { value: 'towardPOI' };
+          return origGetElementById ? origGetElementById(id) : null;
+        };
+        const layerInherit = { headingMode: 'inherit' };
+        assert.strictEqual(getEffectiveWaypointHeadingMode(wp, layerInherit), 'towardPOI');
+        assert.ok(Math.abs(getEffectiveWaypointHeading(wp, 0, [wp], 0, null, layerInherit) - poiHeading) < 0.5);
+
+        // Tier 2: Global followWayline, Layer overrides to towardPOI, Waypoint inherit
+        document.getElementById = (id) => {
+          if (id === 'heading-mode') return { value: 'followWayline' };
+          return origGetElementById ? origGetElementById(id) : null;
+        };
+        const layerPoi = { headingMode: 'towardPOI' };
+        assert.strictEqual(getEffectiveWaypointHeadingMode(wp, layerPoi), 'towardPOI');
+        assert.ok(Math.abs(getEffectiveWaypointHeading(wp, 0, [wp], 0, null, layerPoi) - poiHeading) < 0.5);
+
+        // Tier 3: Global towardPOI, Layer towardPOI, Waypoint overrides to custom (135°)
+        const wpCustom = { lat: 40.012841, lon: -83.177128, heading: 135, headingMode: 'custom' };
+        assert.strictEqual(getEffectiveWaypointHeadingMode(wpCustom, layerPoi), 'custom');
+        assert.strictEqual(getEffectiveWaypointHeading(wpCustom, 0, [wpCustom], 0, null, layerPoi), 135);
+
+        // Tier 3: Waypoint overrides to fixed (0°)
+        const wpFixed = { lat: 40.012841, lon: -83.177128, heading: 90, headingMode: 'fixed' };
+        assert.strictEqual(getEffectiveWaypointHeadingMode(wpFixed, layerPoi), 'fixed');
+        assert.strictEqual(getEffectiveWaypointHeading(wpFixed, 0, [wpFixed], 0, null, layerPoi), 0);
+
+      } finally {
+        pois = [];
+        document.getElementById = global.document.getElementById;
+      }
+    });
+
+    test('Companion server MTP extraction script handles bracketed timestamps with [System.IO.File]::Copy', () => {
+      const serverCode = fs.readFileSync(path.join(__dirname, 'tools/companion/server.js'), 'utf8');
+      assert.ok(serverCode.includes('[System.IO.File]::Copy($srcLog, $dstLog, $true)'), 'Must use [System.IO.File]::Copy for flight logs');
+      assert.ok(serverCode.includes('[System.IO.File]::Copy($srcKmz, $dstKmz, $true)'), 'Must use [System.IO.File]::Copy for KMZ files');
+      assert.ok(serverCode.includes('Test-Path -LiteralPath $finalLogPath'), 'Must verify destination log file exists on disk with -LiteralPath');
+    });
+  });
 });
 
 
