@@ -12049,6 +12049,70 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       }
     });
   });
+
+  describe('Waypoint Editor Popup Overhang Fix & Drag-to-Move Tests (v1.88.1)', () => {
+    test('index_template.html and index.html contain required v1.88.1 version tags and changelog', () => {
+      const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+      // Check header version badge
+      assert.ok(templateHtml.includes('v1.88.1'), 'index_template.html must contain v1.88.1 header badge');
+      assert.ok(compiledHtml.includes('v1.88.1'), 'index.html must contain v1.88.1 header badge');
+
+      // Check About modal version tag
+      assert.ok(templateHtml.includes('Version 1.88.1'), 'index_template.html must contain Version 1.88.1 in About modal');
+      assert.ok(compiledHtml.includes('Version 1.88.1'), 'index.html must contain Version 1.88.1 in About modal');
+
+      // Check Changelog header
+      assert.ok(templateHtml.includes('Changelog (v1.88.1):'), 'index_template.html must contain Changelog (v1.88.1)');
+      assert.ok(compiledHtml.includes('Changelog (v1.88.1):'), 'index.html must contain Changelog (v1.88.1)');
+    });
+
+    test('index.js configures bindPopup with wp-editor-leaflet-popup and minimum 310px width', () => {
+      const indexJs = fs.readFileSync(path.join(__dirname, 'index.js'), 'utf8');
+
+      // Assert popup options are configured to prevent 240px clipping
+      assert.ok(indexJs.includes("className: 'wp-editor-leaflet-popup'"), 'index.js must apply wp-editor-leaflet-popup class');
+      assert.ok(indexJs.includes('minWidth: 310'), 'index.js must enforce minWidth: 310 on waypoint popups');
+      assert.ok(indexJs.includes('maxWidth: 320'), 'index.js must allow maxWidth: 320 on waypoint popups');
+    });
+
+    test('index.css provides 310px width styling for .wp-editor-leaflet-popup to eliminate edge overhang', () => {
+      const indexCss = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+
+      assert.ok(indexCss.includes('.leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content-wrapper'), 'CSS must style .wp-editor-leaflet-popup wrapper');
+      assert.ok(indexCss.includes('width: 310px !important;'), 'CSS must set width: 310px !important on wrapper');
+      assert.ok(indexCss.includes('width: 280px !important;'), 'CSS must set width: 280px !important on content');
+    });
+
+    test('createWaypointEditorDOM generates #wp-popup-drag-handle with separate coordinates row', () => {
+      const mockWp = {
+        lat: 40.01297,
+        lon: -83.17707,
+        alt: 25,
+        speed: 5.0,
+        pitch: -60,
+        heading: 90,
+        headingMode: 'followWayline',
+        turnMode: 'pass',
+        cameraAction: 'takePhoto',
+        hoverTime: 0
+      };
+      const mockMarker = {
+        getLatLng: () => ({ lat: 40.01297, lng: -83.17707 }),
+        getPopup: () => null,
+        closePopup: () => {}
+      };
+
+      const dom = createWaypointEditorDOM(mockWp, 7, mockMarker, null, [mockWp]);
+      assert.ok(dom, 'DOM element must be created');
+
+      assert.ok(dom.innerHTML.includes('id="wp-popup-drag-handle"'), '#wp-popup-drag-handle must exist');
+      assert.ok(dom.innerHTML.includes('⠿ Drag'), 'Drag handle must display ⠿ Drag badge');
+      assert.ok(dom.innerHTML.includes('edit-wp-coords-display'), 'Drag handle must display coordinates on separate row');
+      assert.ok(dom.innerHTML.includes('padding: 0 24px 6px 0'), 'Drag handle must have right padding clearance for close button');
+    });
+  });
 });
 
 
