@@ -12225,6 +12225,66 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       global._stubElements = null;
     });
   });
+
+  describe('Build Template & Index HTML Consistency Tests', () => {
+    test('index_template.html combined with index.css and index.js via scratch/build.py produces index.html', () => {
+      const fs = require('fs');
+      const path = require('path');
+
+      const templatePath = path.resolve(__dirname, 'index_template.html');
+      const indexPath = path.resolve(__dirname, 'index.html');
+      const cssPath = path.resolve(__dirname, 'index.css');
+      const jsPath = path.resolve(__dirname, 'index.js');
+
+      assert.ok(fs.existsSync(templatePath), 'index_template.html must exist');
+      assert.ok(fs.existsSync(indexPath), 'index.html must exist');
+      assert.ok(fs.existsSync(cssPath), 'index.css must exist');
+      assert.ok(fs.existsSync(jsPath), 'index.js must exist');
+
+      const templateContent = fs.readFileSync(templatePath, 'utf8').replace(/\r\n/g, '\n');
+      const indexContent = fs.readFileSync(indexPath, 'utf8').replace(/\r\n/g, '\n');
+      const cssContent = fs.readFileSync(cssPath, 'utf8').replace(/\r\n/g, '\n');
+      const jsContent = fs.readFileSync(jsPath, 'utf8').replace(/\r\n/g, '\n');
+
+      const cssTagMatch = templateContent.match(/<link rel="stylesheet" href="index\.css\?v=[^"]+">/i);
+      const jsTagMatch = templateContent.match(/<script src="index\.js\?v=[^"]+"><\/script>/i);
+
+      assert.ok(cssTagMatch, 'index_template.html must contain link stylesheet tag for index.css');
+      assert.ok(jsTagMatch, 'index_template.html must contain script src tag for index.js');
+
+      const cssTag = cssTagMatch[0];
+      const jsTag = jsTagMatch[0];
+
+      // Verify HTML skeleton matching (replacing style/script blocks with template tags)
+      let indexExtracted = indexContent.replace(/<style>[\s\S]*?<\/style>/i, cssTag);
+      indexExtracted = indexExtracted.replace(/<script>[\s\S]*?<\/script>/i, jsTag);
+
+      assert.strictEqual(
+        indexExtracted,
+        templateContent,
+        'index.html HTML structure must match index_template.html exactly when CSS and JS blocks are extracted'
+      );
+
+      // Verify inlined CSS and JS matching
+      const styleMatch = indexContent.match(/<style>([\s\S]*?)<\/style>/i);
+      const scriptMatch = indexContent.match(/<script>([\s\S]*?)<\/script>/i);
+
+      assert.ok(styleMatch, 'index.html must contain <style> block');
+      assert.ok(scriptMatch, 'index.html must contain <script> block');
+
+      assert.strictEqual(
+        styleMatch[1].trim(),
+        cssContent.trim(),
+        'inlined <style> in index.html must match index.css'
+      );
+
+      assert.strictEqual(
+        scriptMatch[1].trim(),
+        jsContent.trim(),
+        'inlined <script> in index.html must match index.js'
+      );
+    });
+  });
 });
 
 
