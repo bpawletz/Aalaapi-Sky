@@ -12184,6 +12184,39 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       global._stubElements = null;
     });
   });
+
+  describe('Layer Card Name Hover Tooltip Tests', () => {
+    test('renderLayersList sets layer card name title attribute to full layer name', () => {
+      const createdCards = [];
+      const listContainer = {
+        innerHTML: '',
+        appendChild: (child) => {
+          createdCards.push(child);
+        }
+      };
+
+      global._stubElements = {
+        'layers-list-container': listContainer,
+        'layer-count-badge': { textContent: '' }
+      };
+
+      const testLayerName = 'Layer 1: Nadir Grid Special Inspection';
+      flightLayers = [
+        createDefaultLayer('layer-test-1', testLayerName, 0, 'single')
+      ];
+      activeLayerId = 'layer-test-1';
+
+      renderLayersList();
+
+      assert.strictEqual(createdCards.length, 1, 'Should create 1 layer card element');
+      assert.ok(
+        createdCards[0].innerHTML.includes(`title="${escapeHtml(testLayerName)}"`),
+        'Layer card name element title attribute must contain the full layer name for hover display'
+      );
+
+      global._stubElements = null;
+    });
+  });
 });
 
 
