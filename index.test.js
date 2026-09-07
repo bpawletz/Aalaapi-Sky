@@ -937,11 +937,14 @@ test('NWS Weather fetching bounds and parsing', async () => {
     if (url.includes('/stations/mock')) {
       return { ok: true, json: async () => ({ features: [
         { geometry: { coordinates: [-90, 45] }, properties: { stationIdentifier: 'KMOCK', name: 'Mock Station' } },
-        { geometry: { coordinates: [-90, 46] }, properties: { stationIdentifier: 'KNORTH', name: 'North Station' } }
+        { geometry: { coordinates: [-90, 46] }, properties: { stationIdentifier: 'KNORTH', name: 'North Station' } },
+        { geometry: { coordinates: [-90, 47] }, properties: { stationIdentifier: 'KEAST', name: 'East Station' } },
+        { geometry: { coordinates: [-90, 48] }, properties: { stationIdentifier: 'KWEST', name: 'West Station' } },
+        { geometry: { coordinates: [-90, 49] }, properties: { stationIdentifier: 'KSOUTH', name: 'South Station' } }
       ]})};
     }
     if (url.includes('/observations/latest')) {
-      return { ok: true, json: async () => ({ properties: { flightCategory: 'VFR', rawMessage: 'METAR MOCK' } }) };
+      return { ok: true, json: async () => ({ properties: { flightCategory: 'VFR', rawMessage: 'METAR MOCK TEST 123' } }) };
     }
     return { ok: false };
   };
@@ -950,8 +953,13 @@ test('NWS Weather fetching bounds and parsing', async () => {
     vm.runInThisContext('lastWeatherFetchCenter = null;');
     await vm.runInThisContext('fetchAndProcessWeather(45.0, -90.0)');
 
-    // 1 (points) + 1 (stations list) + 2 (observations for the 2 mocked stations in parallel)
-    assert.strictEqual(fetchedUrls.length, 4, 'Should fetch: points, stations list, and observations for each discovered station');
+    // 1 (points) + 1 (stations list) + 4 (observations for top 4 mocked stations)
+    assert.strictEqual(fetchedUrls.length, 6, 'Should fetch: points, stations list, and observations for 4 top stations');
+
+    const directions = vm.runInThisContext('currentWeatherDirections');
+    assert.ok(directions, 'Directions object should exist');
+    assert.strictEqual(directions.stations.length, 4, 'Should contain up to 4 nearest weather stations');
+    assert.strictEqual(directions.stations[0].raw, 'METAR MOCK TEST 123', 'Should include raw METAR message');
   } finally {
     global.fetch = originalFetch;
   }
