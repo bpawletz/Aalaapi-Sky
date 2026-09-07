@@ -2649,7 +2649,7 @@ function renderLayersList() {
       <div class="layer-card-header">
         <div class="layer-card-info">
           <span class="layer-color-dot" style="background-color: ${layer.color}; color: ${layer.color};"></span>
-          <span class="layer-card-name" title="Click to select layer">${escapeHtml(layer.name)}</span>
+          <span class="layer-card-name" title="${escapeHtml(layer.name)}">${escapeHtml(layer.name)}</span>
           <span class="layer-card-badge">${escapeHtml(getPatternDisplayName(layer.pattern))}</span>
         </div>
         <div class="layer-card-actions">
