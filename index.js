@@ -21438,7 +21438,7 @@ async function fetchAndProcessWeather(centerLat, centerLon) {
       };
     }).sort((a, b) => a.dist - b.dist);
 
-    const topStations = sortedStations.slice(0, 3);
+    const topStations = sortedStations.slice(0, 4);
 
     // 3. Fetch latest observations for top nearby stations in parallel
     const obsResults = await Promise.allSettled(
@@ -21665,7 +21665,10 @@ function updateWeatherStationMarker(closest, allStations, activeIdx) {
         <div>Wind Speed: <b>${WIND_SPEED_SVG_ICON} ${formatWindSpeed(activeStation.windSpeedKmH)}</b></div>
       </div>
       <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
-        <span style="font-size: 0.65rem; color: #64748b;">NWS Observation</span>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="font-size: 0.65rem; color: #64748b;">NWS Observation</span>
+          ${activeStation.icaoId ? `<a href="https://aviationweather.gov/data/metar/?id=${encodeURIComponent(activeStation.icaoId)}" target="_blank" rel="noopener noreferrer" style="font-size: 0.68rem; color: #38bdf8; text-decoration: underline;" title="${escapeHtml(activeStation.raw ? 'RAW METAR: ' + activeStation.raw : 'Full METAR Report')}">📄 METAR Report</a>` : ''}
+        </div>
         <button type="button" class="btn-sm" style="padding: 2px 6px; font-size: 0.68rem; background: rgba(6,182,212,0.2); color: #22d3ee; border: 1px solid rgba(6,182,212,0.4); border-radius: 3px; cursor: pointer;" onclick="if (typeof centerMarker !== 'undefined' && centerMarker && typeof map !== 'undefined' && map && typeof map.flyTo === 'function') { map.flyTo(centerMarker.getLatLng(), typeof map.getZoom === 'function' ? map.getZoom() : 14); }">
           ✈️ Return to Center
         </button>
@@ -22019,6 +22022,20 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
   stationTitle.textContent = `📡 Station: ${closest.icaoId || 'NWS'}${cDir ? ` (${cDir})` : ''}`;
   stationHeader.appendChild(stationTitle);
 
+  if (closest.icaoId) {
+    const metarLink = document.createElement("a");
+    metarLink.href = `https://aviationweather.gov/data/metar/?id=${encodeURIComponent(closest.icaoId)}`;
+    metarLink.target = "_blank";
+    metarLink.rel = "noopener noreferrer";
+    metarLink.style.cssText = "font-size: 0.68rem; color: #38bdf8; text-decoration: underline; margin-left: 4px;";
+    metarLink.textContent = "📄 METAR Report";
+    if (closest.raw) {
+      metarLink.title = `RAW METAR: ${closest.raw}`;
+    }
+    metarLink.onclick = (e) => e.stopPropagation();
+    stationTitle.appendChild(metarLink);
+  }
+
   const locateBtn = document.createElement("button");
   locateBtn.className = "btn-sm weather-station-locate-btn";
   locateBtn.type = "button";
@@ -22147,7 +22164,10 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
         <div>
           <div>Visibility: <b>${closest.visibilitySM != null ? Number(closest.visibilitySM).toFixed(1) + ' SM' : 'Unknown'}</b> • Ceiling: <b>${closest.ceilingFt != null ? (closest.ceilingFt >= 99999 ? 'Clear' : Number(closest.ceilingFt).toFixed(0) + ' ft') : 'Clear'}</b></div>
           <div style="margin-top: 2px;">Wind: <b>${WIND_SPEED_SVG_ICON} ${formatWindSpeed(closest.windSpeedKmH)}</b></div>
-          <div style="color: var(--text-muted); font-size: 0.68rem; margin-top: 2px;">Station: ${escapeHtml(closest.name || closest.icaoId || 'NWS')}${cDir ? ` (${cDir})` : ''} • Last polled: ${timeString}</div>
+          <div style="color: var(--text-muted); font-size: 0.68rem; margin-top: 2px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <span>Station: ${escapeHtml(closest.name || closest.icaoId || 'NWS')}${cDir ? ` (${cDir})` : ''} • Last polled: ${timeString}</span>
+            ${closest.icaoId ? `<a href="https://aviationweather.gov/data/metar/?id=${encodeURIComponent(closest.icaoId)}" target="_blank" rel="noopener noreferrer" style="color: #38bdf8; text-decoration: underline;" title="${escapeHtml(closest.raw ? 'RAW METAR: ' + closest.raw : 'Full METAR Report')}">📄 METAR Report</a>` : ''}
+          </div>
         </div>
         <button type="button" class="btn-sm pop-locate-weather-btn" style="padding: 2px 6px; font-size: 0.66rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 4px; cursor: pointer; white-space: nowrap;" onclick="if (typeof focusWeatherStationOnMap === 'function') { focusWeatherStationOnMap(); }" title="Locate weather station on map">📍 Map</button>
       </div>
