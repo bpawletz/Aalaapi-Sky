@@ -2,7 +2,7 @@
 
 ## [1.88.2] - 2026-09-06
 
-### Improved — Points of Interest (POI) Management Layout
+### Improved — Points of Interest (POIs) Management Layout
 - **Relocated Points of Interest (POIs) to Section 1:** Moved the Points of Interest management card from Section 3 (Global Failsafes) to Section 1 (Pattern Layers & Tools), positioned immediately above the Pattern Layers Stack. This provides instant visibility and access to POI targets upon opening the planner without requiring users to expand collapsed global sections.
 
 ## [1.88.1] - 2026-09-06
