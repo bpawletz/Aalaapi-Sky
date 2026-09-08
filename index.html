@@ -3482,7 +3482,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.88.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.88.2</span></h1>
         </div>
       </div>
 
@@ -3578,6 +3578,21 @@ html, body {
             <span>1. Pattern Layers &amp; Tools</span>
             <span id="layer-count-badge" class="badge" style="font-size: 0.72rem; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 6px; border-radius: 999px; font-weight: 600; margin-right: 6px;">1 Layer</span>
           </h3>
+
+          <!-- Points of Interest (POIs) Controller -->
+          <div class="control-group" id="poi-list-container" style="margin-bottom: 12px; background: rgba(15, 23, 42, 0.4); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+            <div class="control-label" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+              <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 700; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.04em;">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle;">
+                  <circle cx="12" cy="12" r="9" stroke="#06b6d4" fill="none"/>
+                  <circle cx="12" cy="12" r="3" fill="#06b6d4"/>
+                </svg>
+                Points of Interest (POIs)
+              </span>
+              <button id="add-poi-btn" class="btn-secondary" type="button" style="padding: 2px 8px; font-size: 0.72rem; font-weight: 700; height: 22px; margin: 0; line-height: 1;">+ Add POI</button>
+            </div>
+            <div id="poi-items-list" style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px; max-height: 120px; overflow-y: auto;"></div>
+          </div>
           
           <!-- Flight Pattern Layers Manager -->
           <div class="layers-manager-container" style="margin-bottom: 12px; background: rgba(15, 23, 42, 0.4); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
@@ -4504,18 +4519,6 @@ html, body {
               </p>
               <div id="heading-help-details" style="display: flex; flex-direction: column; gap: 6px; font-size: 0.69rem; color: #cbd5e1; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 6px;"></div>
             </div>
-          </div>
-
-          <div class="control-group" id="poi-list-container">
-            <div class="control-label" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-              <span style="display: inline-flex; align-items: center; gap: 6px;">
-                <circle cx="12" cy="12" r="10" stroke="#06b6d4" fill="none"/>
-                <circle cx="12" cy="12" r="3" fill="#06b6d4"/>
-                Points of Interest (POIs)
-              </span>
-              <button id="add-poi-btn" class="btn-secondary" type="button" style="padding: 2px 8px; font-size: 0.72rem; font-weight: 700; height: 22px; margin: 0; line-height: 1;">+ Add POI</button>
-            </div>
-            <div id="poi-items-list" style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px; max-height: 120px; overflow-y: auto;"></div>
           </div>
 
           <div class="control-group">
@@ -5664,7 +5667,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.88.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.88.2</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -5730,6 +5733,12 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.88.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Points of Interest Section Relocation:</strong> Moved the Points of Interest (POIs) management controller from Section 3 (Global Failsafes) to Section 1 (Pattern Layers &amp; Tools) directly above the Pattern Layers Stack for instant access upon opening the mission planner.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.88.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
