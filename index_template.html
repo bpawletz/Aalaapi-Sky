@@ -209,6 +209,7 @@
               <option value="target-splat">Target Splat (Frustum Grid)</option>
               <option value="orbit">3D Object (Circular Orbit)</option>
               <option value="multi-orbit">3D Object (Multi-Tiered Orbit)</option>
+              <option value="tower">3D Structure (Tower Audit)</option>
               <option value="grid-orbit-combo">2D + 3D Hybrid (Grid + Orbit Combo)</option>
               <option value="grid-multi-orbit-combo">2D + 3D Hybrid (Grid + Multi-Orbit)</option>
               <option value="freeform">Freeform Flight Plan (Manual Waypoints)</option>
@@ -258,6 +259,15 @@
                   <circle cx="12" cy="12" r="2" fill="currentColor"/>
                 </svg>
                 <span>Multi-Orbit</span>
+              </div>
+              <div class="pattern-card" data-value="tower" title="3D Structure (Tower Audit Inspection)">
+                <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2l-6 20h12L12 2z"/>
+                  <line x1="9" y1="12" x2="15" y2="12"/>
+                  <line x1="7.5" y1="17" x2="16.5" y2="17"/>
+                  <circle cx="12" cy="2" r="1.5" fill="currentColor"/>
+                </svg>
+                <span>Tower</span>
               </div>
               <div class="pattern-card" data-value="grid-orbit-combo" title="2D + 3D Hybrid (Grid + Orbit Combo)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -386,6 +396,76 @@
           <div id="exclusion-freeform-note" class="control-group hidden" style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 10px; margin-bottom: 10px; font-size: 0.8rem; color: #fca5a5; line-height: 1.4;">
             <strong style="color: #f87171; display: block; margin-bottom: 4px;">📍 Freeform Polygon Boundary:</strong>
             Click anywhere on the map to place boundary points for this exclusion zone. Drag red node markers to reshape the volume, or click a node to remove it.
+          </div>
+
+          <!-- Tower Geometry Controls -->
+          <div id="tower-geometry-container" class="control-group hidden" style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 12px; margin-top: 10px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <strong style="color: #fbbf24; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2l-6 20h12L12 2z"/>
+                  <line x1="9" y1="12" x2="15" y2="12"/>
+                  <line x1="7.5" y1="17" x2="16.5" y2="17"/>
+                </svg>
+                Tower Audit Parameters
+              </strong>
+            </div>
+
+            <div class="control-group" style="margin-bottom: 10px;">
+              <div class="control-label">
+                <span>Minimum Height (AGL)</span>
+                <span class="value-display"><span id="tower-min-height-val">20</span> <span id="tower-min-height-unit">m</span></span>
+              </div>
+              <input type="range" id="tower-min-height" min="5" max="300" value="20" class="slider" aria-label="Tower Minimum Height">
+            </div>
+
+            <div class="control-group" style="margin-bottom: 10px;">
+              <div class="control-label">
+                <span>Maximum Height (AGL)</span>
+                <span class="value-display"><span id="tower-max-height-val">100</span> <span id="tower-max-height-unit">m</span></span>
+              </div>
+              <input type="range" id="tower-max-height" min="10" max="400" value="100" class="slider" aria-label="Tower Maximum Height">
+            </div>
+
+            <div class="control-group" style="margin-bottom: 10px;">
+              <div class="control-label">
+                <span>Standoff Radius</span>
+                <span class="value-display"><span id="tower-radius-val">30</span> <span id="tower-radius-unit">m</span></span>
+              </div>
+              <input type="range" id="tower-radius" min="5" max="150" value="30" class="slider" aria-label="Tower Standoff Radius">
+            </div>
+
+            <div class="control-group" style="margin-bottom: 10px;">
+              <div class="control-label">
+                <span style="color: #f59e0b;">Guy-Wire Safety Buffer</span>
+                <span class="value-display"><span id="tower-guy-wire-buffer-val">15</span> <span id="tower-guy-wire-buffer-unit">m</span></span>
+              </div>
+              <input type="range" id="tower-guy-wire-buffer" min="0" max="50" value="15" class="slider" aria-label="Guy Wire Buffer Distance">
+            </div>
+
+            <div class="control-group" style="margin-bottom: 10px;">
+              <label style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px; display: block;">Capture Movement Pattern</label>
+              <select id="tower-movement-mode" class="form-select" style="font-size: 0.8rem; padding: 4px 8px;">
+                <option value="horizontal" selected>Horizontal Movement (Tiered Orbital Rings)</option>
+                <option value="vertical">Vertical Movement (Up/Down Facade Columns)</option>
+              </select>
+            </div>
+
+            <div class="control-group" style="margin-bottom: 10px;">
+              <label style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px; display: block;">Altitude Order</label>
+              <select id="tower-altitude-order" class="form-select" style="font-size: 0.8rem; padding: 4px 8px;">
+                <option value="max-to-min" selected>Max Height to Min Height (Top-Down Descent)</option>
+                <option value="min-to-max">Min Height to Max Height (Bottom-Up Ascent)</option>
+              </select>
+            </div>
+
+            <!-- Guy-Wire Hazard Warning Banner -->
+            <div id="tower-guy-wire-warning" style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 6px; padding: 10px; margin-top: 10px; font-size: 0.78rem; color: #fca5a5; line-height: 1.4;">
+              <strong style="color: #ef4444; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                ⚠️ GUY-WIRE HAZARD WARNING
+              </strong>
+              Guy-wires are nearly invisible to obstacle avoidance sensors. Maintain visual line of sight (VLOS), verify standoff radius clear of support cables, and increase Guy-Wire Safety Buffer before executing automated flight.
+            </div>
           </div>
 
           <div id="road-offset-container" class="control-group hidden">

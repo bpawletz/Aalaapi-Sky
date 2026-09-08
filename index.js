@@ -52,6 +52,15 @@ const FLIGHT_TOOLS = {
     description: '3D Object multi-tiered orbit pattern',
     propertyGroups: ['multi-orbit-geometry', 'speed', 'altitude', 'camera']
   },
+  'tower': {
+    id: 'tower',
+    label: 'Tower',
+    category: 'inspection',
+    icon: 'tower',
+    shortcut: 'W',
+    description: '3D Tower Structure Vertical/Horizontal Inspection Pattern',
+    propertyGroups: ['tower-geometry', 'overlaps', 'altitude', 'speed', 'camera']
+  },
   'grid-orbit-combo': {
     id: 'grid-orbit-combo',
     label: 'Hybrid Combo',
@@ -699,6 +708,7 @@ function getPatternDisplayName(pattern) {
     'double': '3D Double Grid',
     'orbit': '3D Orbit',
     'multi-orbit': 'Multi-Orbit',
+    'tower': '3D Tower Audit',
     'grid-orbit-combo': 'Hybrid Combo',
     'grid-multi-orbit-combo': 'Multi-Hybrid',
     'freeform': 'Freeform Plan',
@@ -780,6 +790,12 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     targetPerimeterSpeed: null, // null = inherit layer speed
     targetPrunedCount: 0,
     targetSavedPercent: 0,
+    towerMinHeight: 20,
+    towerMaxHeight: 100,
+    towerRadius: 30,
+    towerGuyWireBuffer: 15,
+    towerMovementMode: 'horizontal', // 'horizontal' or 'vertical'
+    towerAltitudeOrder: 'max-to-min', // 'max-to-min' or 'min-to-max'
     freeformWaypoints: [],
     freeformPhotos: [],
     roadWaypoints: [],
@@ -1161,6 +1177,19 @@ function saveActiveLayerFromUi() {
   }
   if (perimPitchEl) layer.targetPerimeterPitch = parseFloat(perimPitchEl.value) || -55;
 
+  const towerMinH = document.getElementById('tower-min-height');
+  const towerMaxH = document.getElementById('tower-max-height');
+  const towerRad = document.getElementById('tower-radius');
+  const towerGuyBuf = document.getElementById('tower-guy-wire-buffer');
+  const towerMovMode = document.getElementById('tower-movement-mode');
+  const towerAltOrd = document.getElementById('tower-altitude-order');
+  if (towerMinH) layer.towerMinHeight = parseFloat(towerMinH.value) || 20;
+  if (towerMaxH) layer.towerMaxHeight = parseFloat(towerMaxH.value) || 100;
+  if (towerRad) layer.towerRadius = parseFloat(towerRad.value) || 30;
+  if (towerGuyBuf) layer.towerGuyWireBuffer = parseFloat(towerGuyBuf.value) || 15;
+  if (towerMovMode && towerMovMode.value) layer.towerMovementMode = towerMovMode.value;
+  if (towerAltOrd && towerAltOrd.value) layer.towerAltitudeOrder = towerAltOrd.value;
+
   if (globalDetourModeEl && globalDetourModeEl.value) {
     globalExclusionDetourMode = globalDetourModeEl.value;
   }
@@ -1272,6 +1301,14 @@ function syncUiWithActiveLayer() {
   setVal('target-perimeter-standoff', layer.targetPerimeterStandoff !== undefined ? layer.targetPerimeterStandoff : 8);
   setVal('target-perimeter-alt', (layer.targetPerimeterAltitude !== null && layer.targetPerimeterAltitude !== undefined) ? layer.targetPerimeterAltitude : 0);
   setVal('target-perimeter-pitch', layer.targetPerimeterPitch !== undefined ? layer.targetPerimeterPitch : -55);
+
+  // Tower controls
+  setVal('tower-min-height', layer.towerMinHeight !== undefined ? layer.towerMinHeight : 20);
+  setVal('tower-max-height', layer.towerMaxHeight !== undefined ? layer.towerMaxHeight : 100);
+  setVal('tower-radius', layer.towerRadius !== undefined ? layer.towerRadius : 30);
+  setVal('tower-guy-wire-buffer', layer.towerGuyWireBuffer !== undefined ? layer.towerGuyWireBuffer : 15);
+  setVal('tower-movement-mode', layer.towerMovementMode || 'horizontal');
+  setVal('tower-altitude-order', layer.towerAltitudeOrder || 'max-to-min');
 
   // Unit-aware display values for radius/height (will be updated by syncDisplayValues too)
   const _unitForLoad = (typeof getUnitSystem === 'function') ? getUnitSystem() : 'metric';
@@ -2294,10 +2331,12 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     sLine = wFoot * (1.0 - overlapSide);
     sPhoto = lFoot * (1.0 - overlapFront);
 
-    actualRotation = (gridType === 'orbit' || gridType === 'multi-orbit') ? 0 : rotation;
+    actualRotation = (gridType === 'orbit' || gridType === 'multi-orbit' || gridType === 'tower') ? 0 : rotation;
 
     let gridData;
-    if (gridType === 'orbit') {
+    if (gridType === 'tower') {
+      gridData = generateTowerCoordinates(layer, sLine, sPhoto, altitude, defaultGimbalPitch);
+    } else if (gridType === 'orbit') {
       gridData = generateOrbitCoordinates(gridWidth, sPhoto, altitude, defaultGimbalPitch);
     } else if (gridType === 'multi-orbit') {
       gridData = generateMultiOrbitCoordinates(gridWidth, sPhoto, altitude, defaultGimbalPitch);
@@ -7709,6 +7748,100 @@ function generateGridCoordinates(width, height, rotation, gridType, captureMode,
         const exitX = startFromWest ? (width / 2.0 + overshoot) : (-width / 2.0 - overshoot);
         waypoints.push({ x: exitX, y: y, heading: lineHeading2, isTurnaroundPoint: true, skipPhoto: true });
       }
+    }
+  }
+
+  return { waypoints, photos };
+}
+
+// Generate Tower flight inspection pattern coordinates (horizontal tiered rings or vertical columns)
+function generateTowerCoordinates(layer, sLine, sPhoto, baseAltitude, defaultGimbalPitch) {
+  const waypoints = [];
+  const photos = [];
+
+  const minH = layer ? (layer.towerMinHeight !== undefined ? layer.towerMinHeight : 20) : 20;
+  const maxH = layer ? (layer.towerMaxHeight !== undefined ? layer.towerMaxHeight : 100) : 100;
+  const standoffRad = layer ? (layer.towerRadius !== undefined ? layer.towerRadius : 30) : 30;
+  const guyBuffer = layer ? (layer.towerGuyWireBuffer !== undefined ? layer.towerGuyWireBuffer : 15) : 15;
+  const effectiveRadius = standoffRad + guyBuffer;
+
+  const mode = layer ? (layer.towerMovementMode || 'horizontal') : 'horizontal';
+  const order = layer ? (layer.towerAltitudeOrder || 'max-to-min') : 'max-to-min';
+
+  const hDiff = Math.abs(maxH - minH);
+  const nTiers = Math.max(2, Math.round(hDiff / Math.max(1, sLine)) + 1);
+
+  const altitudes = [];
+  for (let i = 0; i < nTiers; i++) {
+    const frac = nTiers > 1 ? i / (nTiers - 1) : 0;
+    const alt = (order === 'min-to-max') ? (minH + frac * hDiff) : (maxH - frac * hDiff);
+    altitudes.push(alt);
+  }
+
+  const circumference = 2 * Math.PI * effectiveRadius;
+  const nPosPerRing = Math.max(8, Math.round(circumference / Math.max(1, sPhoto)));
+
+  if (mode === 'horizontal') {
+    altitudes.forEach((alt, tierIdx) => {
+      for (let i = 0; i < nPosPerRing; i++) {
+        const theta = (tierIdx % 2 === 0)
+          ? (i / nPosPerRing) * 2 * Math.PI
+          : (1.0 - (i / nPosPerRing)) * 2 * Math.PI;
+
+        const x = effectiveRadius * Math.cos(theta);
+        const y = effectiveRadius * Math.sin(theta);
+
+        let heading = Math.atan2(-x, -y) * (180.0 / Math.PI);
+        if (heading < 0) heading += 360;
+
+        const pitchAngle = -Math.atan2(alt, effectiveRadius) * (180.0 / Math.PI);
+        const pitch = Math.max(-90, Math.min(60, pitchAngle));
+
+        const pt = {
+          x: x,
+          y: y,
+          alt: alt,
+          pitch: pitch,
+          heading: heading,
+          headingMode: 'smoothTransition',
+          isRingStart: i === 0,
+          ringIndex: tierIdx % 3
+        };
+
+        photos.push(pt);
+        waypoints.push(pt);
+      }
+    });
+  } else {
+    // Vertical columns mode
+    for (let colIdx = 0; colIdx < nPosPerRing; colIdx++) {
+      const theta = (colIdx / nPosPerRing) * 2 * Math.PI;
+      const x = effectiveRadius * Math.cos(theta);
+      const y = effectiveRadius * Math.sin(theta);
+
+      let heading = Math.atan2(-x, -y) * (180.0 / Math.PI);
+      if (heading < 0) heading += 360;
+
+      const columnAlts = (colIdx % 2 === 0) ? [...altitudes] : [...altitudes].reverse();
+
+      columnAlts.forEach((alt, aIdx) => {
+        const pitchAngle = -Math.atan2(alt, effectiveRadius) * (180.0 / Math.PI);
+        const pitch = Math.max(-90, Math.min(60, pitchAngle));
+
+        const pt = {
+          x: x,
+          y: y,
+          alt: alt,
+          pitch: pitch,
+          heading: heading,
+          headingMode: 'smoothTransition',
+          isRingStart: aIdx === 0,
+          ringIndex: colIdx % 3
+        };
+
+        photos.push(pt);
+        waypoints.push(pt);
+      });
     }
   }
 
