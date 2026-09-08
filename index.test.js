@@ -12080,12 +12080,12 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
 
       // Check header version badge
-      assert.ok(templateHtml.includes('v1.88.1'), 'index_template.html must contain v1.88.1 header badge');
-      assert.ok(compiledHtml.includes('v1.88.1'), 'index.html must contain v1.88.1 header badge');
+      assert.ok(/v1\.88\.\d+/.test(templateHtml), 'index_template.html must contain v1.88.x header badge');
+      assert.ok(/v1\.88\.\d+/.test(compiledHtml), 'index.html must contain v1.88.x header badge');
 
       // Check About modal version tag
-      assert.ok(templateHtml.includes('Version 1.88.1'), 'index_template.html must contain Version 1.88.1 in About modal');
-      assert.ok(compiledHtml.includes('Version 1.88.1'), 'index.html must contain Version 1.88.1 in About modal');
+      assert.ok(/Version 1\.88\.\d+/.test(templateHtml), 'index_template.html must contain Version 1.88.x in About modal');
+      assert.ok(/Version 1\.88\.\d+/.test(compiledHtml), 'index.html must contain Version 1.88.x in About modal');
 
       // Check Changelog header
       assert.ok(templateHtml.includes('Changelog (v1.88.1):'), 'index_template.html must contain Changelog (v1.88.1)');
@@ -12283,6 +12283,49 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
         jsContent.trim(),
         'inlined <script> in index.html must match index.js'
       );
+    });
+  });
+
+  describe('Points of Interest (POI) Relocation to Section 1 Tests (v1.88.2)', () => {
+    test('index_template.html and index.html contain required v1.88.2 version tags and changelog', () => {
+      const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+      // Check header version badge
+      assert.ok(templateHtml.includes('v1.88.2'), 'index_template.html must contain v1.88.2 header badge');
+      assert.ok(compiledHtml.includes('v1.88.2'), 'index.html must contain v1.88.2 header badge');
+
+      // Check About modal version tag
+      assert.ok(templateHtml.includes('Version 1.88.2'), 'index_template.html must contain Version 1.88.2 in About modal');
+      assert.ok(compiledHtml.includes('Version 1.88.2'), 'index.html must contain Version 1.88.2 in About modal');
+
+      // Check Changelog header
+      assert.ok(templateHtml.includes('Changelog (v1.88.2):'), 'index_template.html must contain Changelog (v1.88.2)');
+      assert.ok(compiledHtml.includes('Changelog (v1.88.2):'), 'index.html must contain Changelog (v1.88.2)');
+    });
+
+    test('#poi-list-container is positioned inside Section 1 above .layers-manager-container', () => {
+      ['index_template.html', 'index.html'].forEach(filename => {
+        const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
+
+        // Verify poi-list-container is present inside layers-and-location-section (Section 1)
+        const section1Match = html.match(/<section[^>]*id="layers-and-location-section"[\s\S]*?<\/section>/i);
+        assert.ok(section1Match, `${filename} must contain #layers-and-location-section`);
+
+        const section1Content = section1Match[0];
+        assert.ok(section1Content.includes('id="poi-list-container"'), `${filename} Section 1 must contain #poi-list-container`);
+
+        // Verify #poi-list-container appears BEFORE .layers-manager-container in Section 1
+        const poiIndex = section1Content.indexOf('id="poi-list-container"');
+        const layersIndex = section1Content.indexOf('class="layers-manager-container"');
+        assert.ok(poiIndex !== -1 && layersIndex !== -1, `${filename} must contain both #poi-list-container and .layers-manager-container`);
+        assert.ok(poiIndex < layersIndex, `${filename} #poi-list-container must appear above .layers-manager-container in Section 1`);
+
+        // Verify #poi-list-container is NO LONGER in Section 3 (#mission-failsafes-section)
+        const section3Match = html.match(/<section[^>]*id="mission-failsafes-section"[\s\S]*?<\/section>/i);
+        assert.ok(section3Match, `${filename} must contain #mission-failsafes-section`);
+        assert.ok(!section3Match[0].includes('id="poi-list-container"'), `${filename} Section 3 must not contain #poi-list-container`);
+      });
     });
   });
 });
