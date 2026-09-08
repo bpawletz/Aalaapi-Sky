@@ -12329,6 +12329,85 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       });
     });
   });
+
+  describe('3D Tower Flight Plan & Support Cable Warnings Tests', () => {
+    test('createDefaultLayer initializes Tower layer defaults', () => {
+      const layer = createDefaultLayer('layer-tower', 'Tower Audit Layer', 0, 'tower');
+      assert.strictEqual(layer.pattern, 'tower', 'Pattern must be tower');
+      assert.strictEqual(layer.towerMinHeight, 20, 'towerMinHeight should default to 20');
+      assert.strictEqual(layer.towerMaxHeight, 100, 'towerMaxHeight should default to 100');
+      assert.strictEqual(layer.towerRadius, 30, 'towerRadius should default to 30');
+      assert.strictEqual(layer.towerGuyWireBuffer, 15, 'towerGuyWireBuffer should default to 15');
+      assert.strictEqual(layer.towerMovementMode, 'horizontal', 'towerMovementMode should default to horizontal');
+      assert.strictEqual(layer.towerAltitudeOrder, 'max-to-min', 'towerAltitudeOrder should default to max-to-min');
+    });
+
+    test('generateTowerCoordinates generates horizontal tiered orbital rings with inward camera targeting', () => {
+      const layer = {
+        pattern: 'tower',
+        towerMinHeight: 20,
+        towerMaxHeight: 60,
+        towerRadius: 30,
+        towerGuyWireBuffer: 10,
+        towerMovementMode: 'horizontal',
+        towerAltitudeOrder: 'max-to-min'
+      };
+
+      const res = generateTowerCoordinates(layer, 20, 15, 50, -60);
+      assert.ok(res.waypoints && res.waypoints.length > 0, 'Waypoints must be generated');
+
+      // Top tier (first waypoint) should have max height 60
+      assert.strictEqual(res.waypoints[0].alt, 60, 'Top tier altitude should be 60m');
+
+      // Effective radius = 30 + 10 = 40m
+      const x0 = res.waypoints[0].x;
+      const y0 = res.waypoints[0].y;
+      const dist0 = Math.hypot(x0, y0);
+      assert.ok(Math.abs(dist0 - 40) < 0.001, `Distance from center (${dist0}) should equal effective radius (40m)`);
+
+      // Inward camera pitch angle: -atan2(60, 40) in degrees = ~ -56.3deg
+      const expectedPitch = -Math.atan2(60, 40) * (180 / Math.PI);
+      assert.ok(Math.abs(res.waypoints[0].pitch - expectedPitch) < 0.01, `Pitch (${res.waypoints[0].pitch}) should match inward calculation (${expectedPitch})`);
+
+      // Inward heading check: heading points to (0,0) from (x0, y0)
+      let expectedHeading = Math.atan2(-x0, -y0) * (180 / Math.PI);
+      if (expectedHeading < 0) expectedHeading += 360;
+      assert.ok(Math.abs(res.waypoints[0].heading - expectedHeading) < 0.01, 'Heading must point at tower center axis');
+    });
+
+    test('generateTowerCoordinates respects vertical movement mode and min-to-max altitude order', () => {
+      const layer = {
+        pattern: 'tower',
+        towerMinHeight: 10,
+        towerMaxHeight: 30,
+        towerRadius: 20,
+        towerGuyWireBuffer: 5,
+        towerMovementMode: 'vertical',
+        towerAltitudeOrder: 'min-to-max'
+      };
+
+      const res = generateTowerCoordinates(layer, 10, 10, 20, -45);
+      assert.ok(res.waypoints && res.waypoints.length > 0, 'Vertical mode waypoints must be generated');
+
+      // First column should start at min altitude 10
+      assert.strictEqual(res.waypoints[0].alt, 10, 'First altitude in min-to-max order should be minHeight (10m)');
+    });
+
+    test('index_template.html and index.html contain all required Tower UI elements and warning banners', () => {
+      ['index_template.html', 'index.html'].forEach(filename => {
+        const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
+
+        assert.ok(html.includes('id="tower-geometry-container"'), `${filename} must contain #tower-geometry-container`);
+        assert.ok(html.includes('id="tower-min-height"'), `${filename} must contain #tower-min-height`);
+        assert.ok(html.includes('id="tower-max-height"'), `${filename} must contain #tower-max-height`);
+        assert.ok(html.includes('id="tower-radius"'), `${filename} must contain #tower-radius`);
+        assert.ok(html.includes('id="tower-guy-wire-buffer"'), `${filename} must contain #tower-guy-wire-buffer`);
+        assert.ok(html.includes('id="tower-movement-mode"'), `${filename} must contain #tower-movement-mode`);
+        assert.ok(html.includes('id="tower-altitude-order"'), `${filename} must contain #tower-altitude-order`);
+        assert.ok(html.includes('GUY-WIRE HAZARD WARNING'), `${filename} must contain guy-wire warning banner`);
+      });
+    });
+  });
 });
 
 
