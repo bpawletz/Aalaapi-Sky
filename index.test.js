@@ -12286,7 +12286,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
     });
   });
 
-  describe('Points of Interest (POI) Relocation to Section 1 Tests (v1.88.2)', () => {
+  describe('Points of Interest (POIs) Relocation to Section 1 Tests (v1.88.2)', () => {
     test('index_template.html and index.html contain required v1.88.2 version tags and changelog', () => {
       const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
       const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
@@ -12314,6 +12314,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
 
         const section1Content = section1Match[0];
         assert.ok(section1Content.includes('id="poi-list-container"'), `${filename} Section 1 must contain #poi-list-container`);
+        assert.ok(section1Content.includes('Points of Interest (POIs)'), `${filename} Section 1 must contain Points of Interest (POIs) header text`);
 
         // Verify #poi-list-container appears BEFORE .layers-manager-container in Section 1
         const poiIndex = section1Content.indexOf('id="poi-list-container"');
