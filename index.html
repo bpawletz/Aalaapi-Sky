@@ -3624,6 +3624,7 @@ html, body {
               <option value="target-splat">Target Splat (Frustum Grid)</option>
               <option value="orbit">3D Object (Circular Orbit)</option>
               <option value="multi-orbit">3D Object (Multi-Tiered Orbit)</option>
+              <option value="tower">3D Structure (Tower Audit)</option>
               <option value="grid-orbit-combo">2D + 3D Hybrid (Grid + Orbit Combo)</option>
               <option value="grid-multi-orbit-combo">2D + 3D Hybrid (Grid + Multi-Orbit)</option>
               <option value="freeform">Freeform Flight Plan (Manual Waypoints)</option>
@@ -3673,6 +3674,15 @@ html, body {
                   <circle cx="12" cy="12" r="2" fill="currentColor"/>
                 </svg>
                 <span>Multi-Orbit</span>
+              </div>
+              <div class="pattern-card" data-value="tower" title="3D Structure (Tower Audit Inspection)">
+                <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2l-6 20h12L12 2z"/>
+                  <line x1="9" y1="12" x2="15" y2="12"/>
+                  <line x1="7.5" y1="17" x2="16.5" y2="17"/>
+                  <circle cx="12" cy="2" r="1.5" fill="currentColor"/>
+                </svg>
+                <span>Tower</span>
               </div>
               <div class="pattern-card" data-value="grid-orbit-combo" title="2D + 3D Hybrid (Grid + Orbit Combo)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -3801,6 +3811,76 @@ html, body {
           <div id="exclusion-freeform-note" class="control-group hidden" style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 10px; margin-bottom: 10px; font-size: 0.8rem; color: #fca5a5; line-height: 1.4;">
             <strong style="color: #f87171; display: block; margin-bottom: 4px;">📍 Freeform Polygon Boundary:</strong>
             Click anywhere on the map to place boundary points for this exclusion zone. Drag red node markers to reshape the volume, or click a node to remove it.
+          </div>
+
+          <!-- Tower Geometry Controls -->
+          <div id="tower-geometry-container" class="control-group hidden" style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 12px; margin-top: 10px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <strong style="color: #fbbf24; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2l-6 20h12L12 2z"/>
+                  <line x1="9" y1="12" x2="15" y2="12"/>
+                  <line x1="7.5" y1="17" x2="16.5" y2="17"/>
+                </svg>
+                Tower Audit Parameters
+              </strong>
+            </div>
+
+            <div class="control-group" style="margin-bottom: 10px;">
+              <div class="control-label">
+                <span>Minimum Height (AGL)</span>
+                <span class="value-display"><span id="tower-min-height-val">20</span> <span id="tower-min-height-unit">m</span></span>
+              </div>
+              <input type="range" id="tower-min-height" min="5" max="300" value="20" class="slider" aria-label="Tower Minimum Height">
+            </div>
+
+            <div class="control-group" style="margin-bottom: 10px;">
+              <div class="control-label">
+                <span>Maximum Height (AGL)</span>
+                <span class="value-display"><span id="tower-max-height-val">100</span> <span id="tower-max-height-unit">m</span></span>
+              </div>
+              <input type="range" id="tower-max-height" min="10" max="400" value="100" class="slider" aria-label="Tower Maximum Height">
+            </div>
+
+            <div class="control-group" style="margin-bottom: 10px;">
+              <div class="control-label">
+                <span>Standoff Radius</span>
+                <span class="value-display"><span id="tower-radius-val">30</span> <span id="tower-radius-unit">m</span></span>
+              </div>
+              <input type="range" id="tower-radius" min="5" max="150" value="30" class="slider" aria-label="Tower Standoff Radius">
+            </div>
+
+            <div class="control-group" style="margin-bottom: 10px;">
+              <div class="control-label">
+                <span style="color: #f59e0b;">Guy-Wire Safety Buffer</span>
+                <span class="value-display"><span id="tower-guy-wire-buffer-val">15</span> <span id="tower-guy-wire-buffer-unit">m</span></span>
+              </div>
+              <input type="range" id="tower-guy-wire-buffer" min="0" max="50" value="15" class="slider" aria-label="Guy Wire Buffer Distance">
+            </div>
+
+            <div class="control-group" style="margin-bottom: 10px;">
+              <label style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px; display: block;">Capture Movement Pattern</label>
+              <select id="tower-movement-mode" class="form-select" style="font-size: 0.8rem; padding: 4px 8px;">
+                <option value="horizontal" selected>Horizontal Movement (Tiered Orbital Rings)</option>
+                <option value="vertical">Vertical Movement (Up/Down Facade Columns)</option>
+              </select>
+            </div>
+
+            <div class="control-group" style="margin-bottom: 10px;">
+              <label style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px; display: block;">Altitude Order</label>
+              <select id="tower-altitude-order" class="form-select" style="font-size: 0.8rem; padding: 4px 8px;">
+                <option value="max-to-min" selected>Max Height to Min Height (Top-Down Descent)</option>
+                <option value="min-to-max">Min Height to Max Height (Bottom-Up Ascent)</option>
+              </select>
+            </div>
+
+            <!-- Guy-Wire Hazard Warning Banner -->
+            <div id="tower-guy-wire-warning" style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 6px; padding: 10px; margin-top: 10px; font-size: 0.78rem; color: #fca5a5; line-height: 1.4;">
+              <strong style="color: #ef4444; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                ⚠️ GUY-WIRE HAZARD WARNING
+              </strong>
+              Guy-wires are nearly invisible to obstacle avoidance sensors. Maintain visual line of sight (VLOS), verify standoff radius clear of support cables, and increase Guy-Wire Safety Buffer before executing automated flight.
+            </div>
           </div>
 
           <div id="road-offset-container" class="control-group hidden">
@@ -8465,6 +8545,15 @@ const FLIGHT_TOOLS = {
     description: '3D Object multi-tiered orbit pattern',
     propertyGroups: ['multi-orbit-geometry', 'speed', 'altitude', 'camera']
   },
+  'tower': {
+    id: 'tower',
+    label: 'Tower',
+    category: 'inspection',
+    icon: 'tower',
+    shortcut: 'W',
+    description: '3D Tower Structure Vertical/Horizontal Inspection Pattern',
+    propertyGroups: ['tower-geometry', 'overlaps', 'altitude', 'speed', 'camera']
+  },
   'grid-orbit-combo': {
     id: 'grid-orbit-combo',
     label: 'Hybrid Combo',
@@ -9112,6 +9201,7 @@ function getPatternDisplayName(pattern) {
     'double': '3D Double Grid',
     'orbit': '3D Orbit',
     'multi-orbit': 'Multi-Orbit',
+    'tower': '3D Tower Audit',
     'grid-orbit-combo': 'Hybrid Combo',
     'grid-multi-orbit-combo': 'Multi-Hybrid',
     'freeform': 'Freeform Plan',
@@ -9193,6 +9283,12 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     targetPerimeterSpeed: null, // null = inherit layer speed
     targetPrunedCount: 0,
     targetSavedPercent: 0,
+    towerMinHeight: 20,
+    towerMaxHeight: 100,
+    towerRadius: 30,
+    towerGuyWireBuffer: 15,
+    towerMovementMode: 'horizontal', // 'horizontal' or 'vertical'
+    towerAltitudeOrder: 'max-to-min', // 'max-to-min' or 'min-to-max'
     freeformWaypoints: [],
     freeformPhotos: [],
     roadWaypoints: [],
@@ -9574,6 +9670,19 @@ function saveActiveLayerFromUi() {
   }
   if (perimPitchEl) layer.targetPerimeterPitch = parseFloat(perimPitchEl.value) || -55;
 
+  const towerMinH = document.getElementById('tower-min-height');
+  const towerMaxH = document.getElementById('tower-max-height');
+  const towerRad = document.getElementById('tower-radius');
+  const towerGuyBuf = document.getElementById('tower-guy-wire-buffer');
+  const towerMovMode = document.getElementById('tower-movement-mode');
+  const towerAltOrd = document.getElementById('tower-altitude-order');
+  if (towerMinH) layer.towerMinHeight = parseFloat(towerMinH.value) || 20;
+  if (towerMaxH) layer.towerMaxHeight = parseFloat(towerMaxH.value) || 100;
+  if (towerRad) layer.towerRadius = parseFloat(towerRad.value) || 30;
+  if (towerGuyBuf) layer.towerGuyWireBuffer = parseFloat(towerGuyBuf.value) || 15;
+  if (towerMovMode && towerMovMode.value) layer.towerMovementMode = towerMovMode.value;
+  if (towerAltOrd && towerAltOrd.value) layer.towerAltitudeOrder = towerAltOrd.value;
+
   if (globalDetourModeEl && globalDetourModeEl.value) {
     globalExclusionDetourMode = globalDetourModeEl.value;
   }
@@ -9685,6 +9794,14 @@ function syncUiWithActiveLayer() {
   setVal('target-perimeter-standoff', layer.targetPerimeterStandoff !== undefined ? layer.targetPerimeterStandoff : 8);
   setVal('target-perimeter-alt', (layer.targetPerimeterAltitude !== null && layer.targetPerimeterAltitude !== undefined) ? layer.targetPerimeterAltitude : 0);
   setVal('target-perimeter-pitch', layer.targetPerimeterPitch !== undefined ? layer.targetPerimeterPitch : -55);
+
+  // Tower controls
+  setVal('tower-min-height', layer.towerMinHeight !== undefined ? layer.towerMinHeight : 20);
+  setVal('tower-max-height', layer.towerMaxHeight !== undefined ? layer.towerMaxHeight : 100);
+  setVal('tower-radius', layer.towerRadius !== undefined ? layer.towerRadius : 30);
+  setVal('tower-guy-wire-buffer', layer.towerGuyWireBuffer !== undefined ? layer.towerGuyWireBuffer : 15);
+  setVal('tower-movement-mode', layer.towerMovementMode || 'horizontal');
+  setVal('tower-altitude-order', layer.towerAltitudeOrder || 'max-to-min');
 
   // Unit-aware display values for radius/height (will be updated by syncDisplayValues too)
   const _unitForLoad = (typeof getUnitSystem === 'function') ? getUnitSystem() : 'metric';
@@ -10707,10 +10824,12 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     sLine = wFoot * (1.0 - overlapSide);
     sPhoto = lFoot * (1.0 - overlapFront);
 
-    actualRotation = (gridType === 'orbit' || gridType === 'multi-orbit') ? 0 : rotation;
+    actualRotation = (gridType === 'orbit' || gridType === 'multi-orbit' || gridType === 'tower') ? 0 : rotation;
 
     let gridData;
-    if (gridType === 'orbit') {
+    if (gridType === 'tower') {
+      gridData = generateTowerCoordinates(layer, sLine, sPhoto, altitude, defaultGimbalPitch);
+    } else if (gridType === 'orbit') {
       gridData = generateOrbitCoordinates(gridWidth, sPhoto, altitude, defaultGimbalPitch);
     } else if (gridType === 'multi-orbit') {
       gridData = generateMultiOrbitCoordinates(gridWidth, sPhoto, altitude, defaultGimbalPitch);
@@ -16122,6 +16241,100 @@ function generateGridCoordinates(width, height, rotation, gridType, captureMode,
         const exitX = startFromWest ? (width / 2.0 + overshoot) : (-width / 2.0 - overshoot);
         waypoints.push({ x: exitX, y: y, heading: lineHeading2, isTurnaroundPoint: true, skipPhoto: true });
       }
+    }
+  }
+
+  return { waypoints, photos };
+}
+
+// Generate Tower flight inspection pattern coordinates (horizontal tiered rings or vertical columns)
+function generateTowerCoordinates(layer, sLine, sPhoto, baseAltitude, defaultGimbalPitch) {
+  const waypoints = [];
+  const photos = [];
+
+  const minH = layer ? (layer.towerMinHeight !== undefined ? layer.towerMinHeight : 20) : 20;
+  const maxH = layer ? (layer.towerMaxHeight !== undefined ? layer.towerMaxHeight : 100) : 100;
+  const standoffRad = layer ? (layer.towerRadius !== undefined ? layer.towerRadius : 30) : 30;
+  const guyBuffer = layer ? (layer.towerGuyWireBuffer !== undefined ? layer.towerGuyWireBuffer : 15) : 15;
+  const effectiveRadius = standoffRad + guyBuffer;
+
+  const mode = layer ? (layer.towerMovementMode || 'horizontal') : 'horizontal';
+  const order = layer ? (layer.towerAltitudeOrder || 'max-to-min') : 'max-to-min';
+
+  const hDiff = Math.abs(maxH - minH);
+  const nTiers = Math.max(2, Math.round(hDiff / Math.max(1, sLine)) + 1);
+
+  const altitudes = [];
+  for (let i = 0; i < nTiers; i++) {
+    const frac = nTiers > 1 ? i / (nTiers - 1) : 0;
+    const alt = (order === 'min-to-max') ? (minH + frac * hDiff) : (maxH - frac * hDiff);
+    altitudes.push(alt);
+  }
+
+  const circumference = 2 * Math.PI * effectiveRadius;
+  const nPosPerRing = Math.max(8, Math.round(circumference / Math.max(1, sPhoto)));
+
+  if (mode === 'horizontal') {
+    altitudes.forEach((alt, tierIdx) => {
+      for (let i = 0; i < nPosPerRing; i++) {
+        const theta = (tierIdx % 2 === 0)
+          ? (i / nPosPerRing) * 2 * Math.PI
+          : (1.0 - (i / nPosPerRing)) * 2 * Math.PI;
+
+        const x = effectiveRadius * Math.cos(theta);
+        const y = effectiveRadius * Math.sin(theta);
+
+        let heading = Math.atan2(-x, -y) * (180.0 / Math.PI);
+        if (heading < 0) heading += 360;
+
+        const pitchAngle = -Math.atan2(alt, effectiveRadius) * (180.0 / Math.PI);
+        const pitch = Math.max(-90, Math.min(60, pitchAngle));
+
+        const pt = {
+          x: x,
+          y: y,
+          alt: alt,
+          pitch: pitch,
+          heading: heading,
+          headingMode: 'smoothTransition',
+          isRingStart: i === 0,
+          ringIndex: tierIdx % 3
+        };
+
+        photos.push(pt);
+        waypoints.push(pt);
+      }
+    });
+  } else {
+    // Vertical columns mode
+    for (let colIdx = 0; colIdx < nPosPerRing; colIdx++) {
+      const theta = (colIdx / nPosPerRing) * 2 * Math.PI;
+      const x = effectiveRadius * Math.cos(theta);
+      const y = effectiveRadius * Math.sin(theta);
+
+      let heading = Math.atan2(-x, -y) * (180.0 / Math.PI);
+      if (heading < 0) heading += 360;
+
+      const columnAlts = (colIdx % 2 === 0) ? [...altitudes] : [...altitudes].reverse();
+
+      columnAlts.forEach((alt, aIdx) => {
+        const pitchAngle = -Math.atan2(alt, effectiveRadius) * (180.0 / Math.PI);
+        const pitch = Math.max(-90, Math.min(60, pitchAngle));
+
+        const pt = {
+          x: x,
+          y: y,
+          alt: alt,
+          pitch: pitch,
+          heading: heading,
+          headingMode: 'smoothTransition',
+          isRingStart: aIdx === 0,
+          ringIndex: colIdx % 3
+        };
+
+        photos.push(pt);
+        waypoints.push(pt);
+      });
     }
   }
 
