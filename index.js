@@ -1430,6 +1430,15 @@ function addFlightLayer(pattern = 'double') {
     initCenterLat,
     initCenterLon
   );
+
+  // Automatically create dedicated POI for this new layer
+  if (initCenterLat !== null && initCenterLon !== null) {
+    const layerPoi = addPoi(initCenterLat, initCenterLon, `Layer ${newIndex + 1} Target`);
+    if (layerPoi) {
+      newLayer.targetPoiId = layerPoi.id;
+    }
+  }
+
   flightLayers.push(newLayer);
   activeLayerId = newLayer.id;
   if (pattern === 'road-following') {
@@ -1492,8 +1501,35 @@ function deleteFlightLayer(layerId) {
       syncUiWithActiveLayer();
     }
   }
+  cleanUnusedLayerPois();
   if (typeof updateGrid === 'function') updateGrid();
   renderLayersList();
+}
+
+function cleanUnusedLayerPois() {
+  if (!pois || pois.length <= 1) return;
+  // Collect all targetPoiIds currently referenced by active flightLayers or waypoints
+  const usedPoiIds = new Set();
+  if (Array.isArray(flightLayers)) {
+    flightLayers.forEach(l => {
+      if (l.targetPoiId) usedPoiIds.add(l.targetPoiId);
+    });
+  }
+  const wps = (typeof getCurrentWaypoints === 'function') ? getCurrentWaypoints() : [];
+  if (Array.isArray(wps)) {
+    wps.forEach(wp => {
+      if (wp.targetPoiId) usedPoiIds.add(wp.targetPoiId);
+    });
+  }
+
+  // Iterate backwards from pois.length - 1 down to 1 (keep index 0)
+  for (let i = pois.length - 1; i >= 1; i--) {
+    const p = pois[i];
+    // If this POI was associated with a layer name ("Layer X Target") and its ID is no longer used by any layer
+    if (p && p.id && p.name && p.name.includes("Target") && !usedPoiIds.has(p.id)) {
+      deletePoi(i);
+    }
+  }
 }
 
 function reorderFlightLayers(fromIndex, toIndex) {
@@ -2636,8 +2672,24 @@ function compileMultiLayerMission(centerLat, centerLon) {
 
   const finalRoutedWps = routeWaypointsAroundExclusionZones(allWaypoints, activeExclusionZones, centerLat, centerLon);
 
+  // Re-project all waypoints and photos relative to the primary mission origin (centerLat, centerLon)
+  // so that in 3D preview and export, distinct layer positions are correctly positioned in spatial coordinates
+  // without stacking/overlapping at (0,0)
   finalRoutedWps.forEach((wp, idx) => {
     wp.idx = idx;
+    if (wp.lat !== undefined && wp.lat !== null && wp.lon !== undefined && wp.lon !== null) {
+      const proj = geodeticToLocal(wp.lat, wp.lon, centerLat, centerLon);
+      wp.x = proj.x;
+      wp.y = proj.y;
+    }
+  });
+
+  allPhotos.forEach(pt => {
+    if (pt.lat !== undefined && pt.lat !== null && pt.lon !== undefined && pt.lon !== null) {
+      const proj = geodeticToLocal(pt.lat, pt.lon, centerLat, centerLon);
+      pt.x = proj.x;
+      pt.y = proj.y;
+    }
   });
 
   return {
@@ -6088,11 +6140,11 @@ function togglePatternParameters() {
   
   if (!widthSlider || !heightSlider || !rotationSlider) return;
 
-  const widthContainer = widthSlider.closest('.control-group');
-  const heightContainer = heightSlider.closest('.control-group');
-  const rotationContainer = rotationSlider.closest('.control-group');
-  const frontOverlapContainer = frontOverlapSlider ? frontOverlapSlider.closest('.control-group') : null;
-  const sideOverlapContainer = sideOverlapSlider ? sideOverlapSlider.closest('.control-group') : null;
+  const widthContainer = widthSlider?.closest ? widthSlider.closest('.control-group') : null;
+  const heightContainer = heightSlider?.closest ? heightSlider.closest('.control-group') : null;
+  const rotationContainer = rotationSlider?.closest ? rotationSlider.closest('.control-group') : null;
+  const frontOverlapContainer = frontOverlapSlider?.closest ? frontOverlapSlider.closest('.control-group') : null;
+  const sideOverlapContainer = sideOverlapSlider?.closest ? sideOverlapSlider.closest('.control-group') : null;
   const freeformInstructions = document.getElementById('freeform-instructions');
   const roadOffsetContainer = document.getElementById('road-offset-container');
   const roadSnapContainer = document.getElementById('road-snap-container');
@@ -7096,12 +7148,17 @@ function setGridCenter(lat, lng) {
     centerMarker.bindPopup("<b>Flight Mission Center</b><br>Drag to reposition grid.").openPopup();
     
     // Set pois[0]
+    const poi0Id = `poi-center-${Date.now()}`;
     pois[0] = {
+      id: poi0Id,
       lat: lat,
       lon: lng,
       marker: centerMarker,
-      name: "POI 0 (Center)"
+      name: "Layer 1 Target"
     };
+    if (flightLayers && flightLayers[0] && !flightLayers[0].targetPoiId) {
+      flightLayers[0].targetPoiId = poi0Id;
+    }
 
     // Recalculate grid when center is dragged
     centerMarker.on('dragstart', () => {
@@ -7143,41 +7200,50 @@ function setGridCenter(lat, lng) {
   updateOpenSkyLink();
 }
 
-function addPoi(lat, lon) {
-  if (!map) return;
+function addPoi(lat, lon, name = null) {
   const idx = pois.length;
-  // Terracotta target style
-  const poiIcon = L.divIcon({
-    className: `custom-poi-marker-${idx}`,
-    html: `<div style="background-color: #f43f5e; width: 16px; height: 16px; border-radius: 50%; border: 3px solid #f8fafc; box-shadow: 0 0 10px rgba(244,63,94,0.8); display: flex; align-items: center; justify-content: center; color: white; font-size: 8px; font-weight: bold;">${idx}</div>`,
-    iconSize: [16, 16],
-    iconAnchor: [8, 8]
-  });
+  const poiId = `poi-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  const poiName = name || (idx === 0 ? "Layer 1 Target" : `POI ${idx}`);
 
-  const marker = L.marker([lat, lon], { draggable: true, icon: poiIcon }).addTo(map);
-  marker.bindPopup(`<b>POI ${idx}</b><br>Drag to reposition target.`).openPopup();
+  let marker = null;
+  if (map) {
+    const poiIcon = L.divIcon({
+      className: `custom-poi-marker-${idx}`,
+      html: `<div style="background-color: #f43f5e; width: 16px; height: 16px; border-radius: 50%; border: 3px solid #f8fafc; box-shadow: 0 0 10px rgba(244,63,94,0.8); display: flex; align-items: center; justify-content: center; color: white; font-size: 8px; font-weight: bold;">${idx}</div>`,
+      iconSize: [16, 16],
+      iconAnchor: [8, 8]
+    });
+
+    marker = L.marker([lat, lon], { draggable: true, icon: poiIcon }).addTo(map);
+    marker.bindPopup(`<b>${poiName}</b><br>Drag to reposition target.`).openPopup();
+  }
 
   const poiObj = {
+    id: poiId,
     lat: lat,
     lon: lon,
     marker: marker,
-    name: `POI ${idx}`
+    name: poiName
   };
   pois.push(poiObj);
 
-  marker.on('drag', () => {
-    const latlng = marker.getLatLng();
-    poiObj.lat = latlng.lat;
-    poiObj.lon = latlng.lng;
-    updateGrid();
-  });
+  if (marker) {
+    marker.on('drag', () => {
+      const latlng = marker.getLatLng();
+      poiObj.lat = latlng.lat;
+      poiObj.lon = latlng.lng;
+      updateGrid();
+    });
 
-  marker.on('dragend', () => {
-    marker.openPopup();
-  });
+    marker.on('dragend', () => {
+      marker.openPopup();
+    });
+  }
 
   updatePoiListUI();
+  updateLayerPoiSelectOptions();
   updateGrid();
+  return poiObj;
 }
 
 function deletePoi(idx) {
@@ -9371,7 +9437,7 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
   if (flightPathPolyline) flightPathPolyline.clearLayers();
   if (exclusionZonesGroup) exclusionZonesGroup.clearLayers();
   if (targetPolygonGroup) targetPolygonGroup.clearLayers();
-  if (gridBoundsPolygon) map.removeLayer(gridBoundsPolygon);
+  if (gridBoundsPolygon && map && typeof map.removeLayer === 'function') map.removeLayer(gridBoundsPolygon);
   waypointMarkersGroup.clearLayers();
   if (pitchLabelsGroup) pitchLabelsGroup.clearLayers();
   photoMarkersGroup.clearLayers();
