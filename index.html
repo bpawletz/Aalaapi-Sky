@@ -3482,7 +3482,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.89.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.89.1</span></h1>
         </div>
       </div>
 
@@ -5747,7 +5747,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.89.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.89.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -5813,6 +5813,14 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.89.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>0° Gimbal Pitch Fix:</strong> Resolved an issue where setting gimbal pitch to 0° (level horizon view) was evaluated as falsy and silently reverted to -60°. 0° (and positive upward tilt) is now accurately retained across layer settings, waypoints, and WPML exports.</li>
+              <li><strong>3D Preview Gimbal Orientation:</strong> 3D drone camera gimbal bodies and visual FOV cones now immediately reflect 0° horizontal camera pitch.</li>
+              <li><strong>Live 3D Viewport Updates:</strong> Any flight parameter adjustments dynamically refresh the 3D scene in real time without requiring modal reopen.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.89.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -9361,6 +9369,13 @@ function getEffectiveLayerHoverTime(layer) {
   return globalEl ? (parseInt(globalEl.value, 10) || 0) : 0;
 }
 
+// Safely parse gimbal pitch angles preserving 0° horizontal camera tilt without falsy-zero fallback bugs
+function parseGimbalPitch(value, defaultVal = -60) {
+  if (value === undefined || value === null || value === '') return defaultVal;
+  const num = parseFloat(value);
+  return !isNaN(num) ? num : defaultVal;
+}
+
 function getEffectiveWaypointHeadingMode(wp, layer) {
   if (wp && wp.headingMode && wp.headingMode !== 'inherit') return wp.headingMode;
   if (wp && wp.layerHeadingMode && wp.layerHeadingMode !== 'inherit') return wp.layerHeadingMode;
@@ -9591,7 +9606,7 @@ function saveActiveLayerFromUi() {
   if (sideOverlapEl) layer.sideOverlap = parseFloat(sideOverlapEl.value) || 75;
   if (altitudeEl) layer.altitude = parseFloat(altitudeEl.value) || 50;
   if (speedEl) layer.speed = parseFloat(speedEl.value) || 4;
-  if (gimbalPitchEl) layer.gimbalPitch = parseFloat(gimbalPitchEl.value) || -60;
+  if (gimbalPitchEl) layer.gimbalPitch = parseGimbalPitch(gimbalPitchEl.value, -60);
 
   if (layerCaptureModeEl && layerCaptureModeEl.value) {
     layer.captureMode = layerCaptureModeEl.value;
@@ -16227,7 +16242,7 @@ function updateGrid() {
   const rotation = parseFloat(document.getElementById('grid-rotation')?.value) || 0;
   const speed = parseFloat(document.getElementById('speed')?.value) || 4;
   const captureMode = document.getElementById('capture-mode')?.value || 'stopAndShoot';
-  const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch')?.value) || -60;
+  const defaultGimbalPitch = parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60);
 
   // If imported mission is active, use imported waypoints instead of generating
   let waypoints = [];
@@ -16281,6 +16296,20 @@ function updateGrid() {
 
   // 6. Update Layers List UI
   renderLayersList();
+
+  // 7. Update 3D Preview if active
+  if (typeof threeScene !== 'undefined' && threeScene) {
+    if (typeof recreate3DWaypointsAndPaths === 'function') {
+      recreate3DWaypointsAndPaths();
+    }
+    if (typeof showFootprints !== 'undefined' && showFootprints && typeof redrawGroundPlane === 'function') {
+      redrawGroundPlane(0, 0);
+    }
+    if (typeof fpvActive !== 'undefined' && fpvActive && typeof updateFPVCamera === 'function') {
+      updateFPVCamera(0);
+      if (typeof updateFPVEditorUI === 'function') updateFPVEditorUI();
+    }
+  }
 }
 
 function redrawCurrentMission() {
@@ -16312,6 +16341,20 @@ function redrawCurrentMission() {
 
   const stats = calculateStats(waypoints, photoLocations, speed, null, null, captureMode);
   updateStatsPanel(stats);
+
+  // Update 3D Preview if active
+  if (typeof threeScene !== 'undefined' && threeScene) {
+    if (typeof recreate3DWaypointsAndPaths === 'function') {
+      recreate3DWaypointsAndPaths();
+    }
+    if (typeof showFootprints !== 'undefined' && showFootprints && typeof redrawGroundPlane === 'function') {
+      redrawGroundPlane(0, 0);
+    }
+    if (typeof fpvActive !== 'undefined' && fpvActive && typeof updateFPVCamera === 'function') {
+      updateFPVCamera(0);
+      if (typeof updateFPVEditorUI === 'function') updateFPVEditorUI();
+    }
+  }
 }
 
 // Generate relative meter-offset grid points
@@ -17033,7 +17076,7 @@ function updateTargetSplatDiagram(layer, overrideAltitude, overridePitch) {
 
   let gimbalPitch = (overridePitch !== undefined)
     ? overridePitch
-    : (pitchSlider ? (parseFloat(pitchSlider.value) || -45) : (layer && layer.gimbalPitch !== undefined ? layer.gimbalPitch : -45));
+    : (pitchSlider ? parseGimbalPitch(pitchSlider.value, -45) : (layer && layer.gimbalPitch !== undefined ? layer.gimbalPitch : -45));
   gimbalPitch = -Math.abs(gimbalPitch !== null && !isNaN(gimbalPitch) ? gimbalPitch : -45);
   gimbalPitch = Math.max(-90, Math.min(-15, gimbalPitch));
 
@@ -17539,7 +17582,7 @@ function getMarkerIcon(wp, idx, waypoints, rotationDeg, tempHeading, tempPitch, 
   const isCombo = gridType === 'grid-orbit-combo';
   const isMultiCombo = gridType === 'grid-multi-orbit-combo';
   const defaultGimbalPitch = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('gimbal-pitch'))
-    ? parseFloat(document.getElementById('gimbal-pitch').value)
+    ? parseGimbalPitch(document.getElementById('gimbal-pitch').value, (activeLayer && activeLayer.gimbalPitch !== undefined ? activeLayer.gimbalPitch : -60))
     : (activeLayer && activeLayer.gimbalPitch !== undefined ? activeLayer.gimbalPitch : -60);
 
   const isModified = isTempModified || wp.isModified;
@@ -18202,7 +18245,7 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
 
   // 5. Draw Waypoint Markers
   const gimbalPitch = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('gimbal-pitch'))
-    ? parseFloat(document.getElementById('gimbal-pitch').value)
+    ? parseGimbalPitch(document.getElementById('gimbal-pitch').value, (activeLayer && activeLayer.gimbalPitch !== undefined ? activeLayer.gimbalPitch : -60))
     : (activeLayer && activeLayer.gimbalPitch !== undefined ? activeLayer.gimbalPitch : -60);
 
   waypoints.forEach((wp, idx) => {
@@ -19075,7 +19118,7 @@ function addFreeformWaypoint(lat, lng) {
   const centerLatLng = centerMarker ? centerMarker.getLatLng() : { lat, lng };
   const offsets = geodeticToLocal(lat, lng, centerLatLng.lat, centerLatLng.lng);
   const altitude = parseFloat(document.getElementById('altitude')?.value) || 50;
-  const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch')?.value) || -60;
+  const defaultGimbalPitch = parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60);
 
   const activeLayer = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
   const currentFreeformList = activeLayer ? (activeLayer.freeformWaypoints || []) : [];
@@ -20608,7 +20651,7 @@ function exportKMZ() {
   const speed = parseFloat(document.getElementById('speed').value);
   const headingMode = document.getElementById('heading-mode').value;
   const finishAction = document.getElementById('finish-action').value;
-  const gimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value);
+  const gimbalPitch = parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60);
   const captureMode = document.getElementById('capture-mode').value;
   const pathMode = document.getElementById('path-mode').value;
 
@@ -20946,7 +20989,7 @@ function exportQgcPlan() {
   }
   const speed = parseFloat(document.getElementById('speed')?.value) || 4.0;
   const altitude = parseFloat(document.getElementById('altitude')?.value) || 50.0;
-  const gimbalPitch = parseFloat(document.getElementById('gimbal-pitch')?.value) || -90.0;
+  const gimbalPitch = parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -90.0);
 
   const plan = buildQgcMissionPlan(currentWps, { speed, altitude, gimbalPitch });
   const blob = new Blob([JSON.stringify(plan, null, 2)], { type: 'application/json' });
@@ -20969,7 +21012,7 @@ function exportAutelKml() {
   }
   const speed = parseFloat(document.getElementById('speed')?.value) || 4.0;
   const altitude = parseFloat(document.getElementById('altitude')?.value) || 50.0;
-  const gimbalPitch = parseFloat(document.getElementById('gimbal-pitch')?.value) || -90.0;
+  const gimbalPitch = parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -90.0);
 
   const kml = buildAutelMissionKml(currentWps, { speed, altitude, gimbalPitch });
   const blob = new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' });
@@ -21036,7 +21079,7 @@ function buildMissionPlanJSON(customWps = null) {
   const cameraVFOV = parseFloat(document.getElementById('camera-vfov')?.value) || 55.2;
   const overlapFront = parseFloat(document.getElementById('front-overlap')?.value) || 80;
   const overlapSide = parseFloat(document.getElementById('side-overlap')?.value) || 75;
-  const gimbalPitch = parseFloat(document.getElementById('gimbal-pitch')?.value) || -60;
+  const gimbalPitch = parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60);
 
   const altitude = parseFloat(document.getElementById('altitude')?.value) || 50;
   const speed = parseFloat(document.getElementById('speed')?.value) || 4;
@@ -21169,7 +21212,7 @@ function buildFlightDiagnosticsJSON(customWps = null, options = {}) {
 
   const altitude = options.altitude ?? (typeof document !== 'undefined' && parseFloat(document.getElementById('altitude')?.value)) ?? 50.0;
   const speed = options.speed ?? (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) ?? 4.0;
-  const gimbalPitch = options.gimbalPitch ?? (typeof document !== 'undefined' && parseFloat(document.getElementById('gimbal-pitch')?.value)) ?? -60.0;
+  const gimbalPitch = options.gimbalPitch ?? parseGimbalPitch(typeof document !== 'undefined' ? document.getElementById('gimbal-pitch')?.value : null, -60.0);
 
   const telemetry = typeof generateTelemetryFromWaypoints === 'function'
     ? generateTelemetryFromWaypoints(currentWps, { altitude, speed, gimbalPitch, isSimulation: true, flightId: uuid })
@@ -21287,7 +21330,7 @@ function generateKMZBlob(wps = null) {
   const altitude = parseFloat(document.getElementById('altitude')?.value) || 50;
   const speed = parseFloat(document.getElementById('speed')?.value) || 4;
   const headingMode = document.getElementById('heading-mode')?.value || 'followWayline';
-  const gimbalPitch = parseFloat(document.getElementById('gimbal-pitch')?.value) || -90;
+  const gimbalPitch = parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -90);
   const captureMode = document.getElementById('capture-mode')?.value || 'hover';
   const pathMode = document.getElementById('path-mode')?.value || 'normal';
 
@@ -21823,7 +21866,7 @@ async function sendDirectlyToRC2() {
     }
 
     const speed = parseFloat(document.getElementById('speed')?.value) || 4;
-    const gimbalPitch = parseFloat(document.getElementById('gimbal-pitch')?.value) || -90;
+    const gimbalPitch = parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -90);
     const waypoints = rawWps.map(wp => ({
       lat: wp.lat,
       lon: wp.lon,
@@ -22734,7 +22777,7 @@ function getActiveMissionWaypoints() {
   }
   const alt = (typeof document !== 'undefined' && parseFloat(document.getElementById('altitude')?.value)) || 21.0;
   const speed = (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) || 4.0;
-  const pitch = (typeof document !== 'undefined' && parseFloat(document.getElementById('gimbal-pitch')?.value)) || -90.0;
+  const pitch = (typeof document !== 'undefined') ? parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -90.0) : -90.0;
 
   let centerLat = 40.0130;
   let centerLon = -83.1765;
@@ -23149,7 +23192,7 @@ const FlightDiagnostics = {
     const wps = getActiveMissionWaypoints();
     const altitude = (typeof document !== 'undefined' && parseFloat(document.getElementById('altitude')?.value)) || 21.0;
     const speed = (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) || 4.0;
-    const gimbalPitch = (typeof document !== 'undefined' && parseFloat(document.getElementById('gimbal-pitch')?.value)) || -60.0;
+    const gimbalPitch = (typeof document !== 'undefined') ? parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60.0) : -60.0;
     const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : 'http://127.0.0.1:8765';
 
     if (flightId === 'active-mission') {
@@ -23649,7 +23692,7 @@ const FlightDiagnostics = {
       this.droneMesh.rotation.y = (pt.yaw * Math.PI) / 180;
 
       if (this.frustumMesh) {
-        this.frustumMesh.rotation.x = ((pt.pitch || -60) * Math.PI) / 180;
+        this.frustumMesh.rotation.x = (((pt.pitch !== undefined && pt.pitch !== null && !isNaN(pt.pitch)) ? pt.pitch : -60) * Math.PI) / 180;
       }
     }
 
@@ -23706,7 +23749,7 @@ const FlightDiagnostics = {
     const wps = (typeof getActiveMissionWaypoints === 'function') ? getActiveMissionWaypoints() : [];
     const altitude = (typeof document !== 'undefined' && parseFloat(document.getElementById('altitude')?.value)) || 50.0;
     const speed = (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) || 4.0;
-    const gimbalPitch = (typeof document !== 'undefined' && parseFloat(document.getElementById('gimbal-pitch')?.value)) || -60.0;
+    const gimbalPitch = (typeof document !== 'undefined') ? parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60.0) : -60.0;
     return exportFlightDiagnosticsJSON(wps, {
       altitude,
       speed,
@@ -23760,7 +23803,7 @@ const FlightDiagnostics = {
         const wps = getActiveMissionWaypoints();
         const altitude = (typeof document !== 'undefined' && parseFloat(document.getElementById('altitude')?.value)) || 21.0;
         const speed = (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) || 4.0;
-        const gimbalPitch = (typeof document !== 'undefined' && parseFloat(document.getElementById('gimbal-pitch')?.value)) || -60.0;
+        const gimbalPitch = (typeof document !== 'undefined') ? parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60.0) : -60.0;
         importedTelemetry = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId });
       }
 
@@ -23843,7 +23886,7 @@ const KMZInspector = {
       const altitude = parseFloat(document.getElementById('altitude')?.value) || 50;
       const speed = parseFloat(document.getElementById('speed')?.value) || 4;
       const headingMode = document.getElementById('heading-mode')?.value || 'followWayline';
-      const gimbalPitch = parseFloat(document.getElementById('gimbal-pitch')?.value) || -90;
+      const gimbalPitch = parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -90);
       const captureMode = document.getElementById('capture-mode')?.value || 'hover';
       const pathMode = document.getElementById('path-mode')?.value || 'normal';
 
@@ -25812,8 +25855,8 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
       }
       return popupContent;
     } else {
-      const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value);
-      const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : defaultGimbalPitch;
+      const defaultGimbalPitch = parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60);
+      const pitch = (wp.pitch !== undefined && wp.pitch !== null && !isNaN(wp.pitch)) ? wp.pitch : defaultGimbalPitch;
       const displayPitch = (typeof pitch === 'number' && !isNaN(pitch)) ? Math.round(pitch) : pitch;
       const headingDisplay = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading.toFixed(0) : '—';
 
@@ -26463,11 +26506,11 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
         recalculateRoadOffsetPath(centerLatLng.lat, centerLatLng.lng);
 
         // Update all drone markers positions and tooltips
-        const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value);
+        const defaultGimbalPitch = parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60);
         generatedWaypoints.forEach((gwp) => {
           if (gwp.mapMarker) {
             gwp.mapMarker.setLatLng([gwp.lat, gwp.lon]);
-            const gPitch = gwp.pitch !== undefined && gwp.pitch !== null ? gwp.pitch : defaultGimbalPitch;
+            const gPitch = (gwp.pitch !== undefined && gwp.pitch !== null && !isNaN(gwp.pitch)) ? gwp.pitch : defaultGimbalPitch;
             const displayGPitch = (typeof gPitch === 'number' && !isNaN(gPitch)) ? Math.round(gPitch) : gPitch;
             const headingDisplay = (gwp.heading !== null && gwp.heading !== undefined && !isNaN(gwp.heading)) ? gwp.heading.toFixed(0) : '—';
             const tooltipContent = `Drone Waypoint ${gwp.idx}<br>Height: ${formatDistance(gwp.alt, 0)}<br>Yaw: ${headingDisplay}°<br>Pitch: ${displayGPitch}°`;
@@ -26816,8 +26859,8 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
       if (wp.roadMarker) {
         if (marker.getTooltip()) marker.getTooltip().setContent(`Road Node ${idx}`);
       } else {
-        const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value);
-        const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : defaultGimbalPitch;
+        const defaultGimbalPitch = parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60);
+        const pitch = (wp.pitch !== undefined && wp.pitch !== null && !isNaN(wp.pitch)) ? wp.pitch : defaultGimbalPitch;
         const displayPitch = (typeof pitch === 'number' && !isNaN(pitch)) ? Math.round(pitch) : pitch;
         const headingDisplay = (wp.heading !== null && wp.heading !== undefined) ? wp.heading.toFixed(0) : '—';
         const tooltipContent = `Drone Waypoint ${idx}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${headingDisplay}°<br>Pitch: ${displayPitch}°`;
@@ -26833,7 +26876,8 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
       } else {
         heading = getDefaultHeading(idx, getCurrentWaypoints(), rotationDeg);
       }
-      const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : parseFloat(document.getElementById('gimbal-pitch').value);
+      const defaultGimbalPitch = parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60);
+      const pitch = (wp.pitch !== undefined && wp.pitch !== null && !isNaN(wp.pitch)) ? wp.pitch : defaultGimbalPitch;
       const displayPitch = (typeof pitch === 'number' && !isNaN(pitch)) ? Math.round(pitch) : pitch;
       const originalTitle = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${heading.toFixed(0)}°<br>Pitch: ${displayPitch}°`;
       if (marker.getTooltip()) marker.getTooltip().setContent(originalTitle);
@@ -26978,7 +27022,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
       unbindRevert();
       
       const defaultAlt = parseFloat(document.getElementById('altitude')?.value || 50);
-      const defaultPitch = parseFloat(document.getElementById('gimbal-pitch')?.value || -45);
+      const defaultPitch = parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -45);
 
       wp.lat = (wp.origLat !== undefined && wp.origLat !== null) ? wp.origLat : (wp._baseLat !== undefined ? wp._baseLat : wp.lat);
       wp.lon = (wp.origLon !== undefined && wp.origLon !== null) ? wp.origLon : (wp._baseLon !== undefined ? wp._baseLon : wp.lon);
@@ -27070,7 +27114,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
         } else {
           heading = getDefaultHeading(idx, getCurrentWaypoints(), rotationDeg);
         }
-        const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : parseFloat(document.getElementById('gimbal-pitch')?.value || -45);
+        const pitch = (wp.pitch !== undefined && wp.pitch !== null && !isNaN(wp.pitch)) ? wp.pitch : parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -45);
         const originalTitle = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${heading.toFixed(0)}°<br>Pitch: ${pitch}°`;
         if (marker && typeof marker.setTooltipContent === 'function') marker.setTooltipContent(originalTitle);
         if (wp.mapMarker && typeof wp.mapMarker.setTooltipContent === 'function') wp.mapMarker.setTooltipContent(originalTitle);
@@ -27078,8 +27122,8 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
         if (wp.roadMarker) {
           if (marker && typeof marker.setTooltipContent === 'function') marker.setTooltipContent(`Road Node ${idx}`);
         } else {
-          const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch')?.value || -45);
-          const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : defaultGimbalPitch;
+          const defaultGimbalPitch = parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -45);
+          const pitch = (wp.pitch !== undefined && wp.pitch !== null && !isNaN(wp.pitch)) ? wp.pitch : defaultGimbalPitch;
           const headingDisplay = (wp.heading !== null && wp.heading !== undefined) ? wp.heading.toFixed(0) : '—';
           const tooltipContent = `Drone Waypoint ${idx}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${headingDisplay}°<br>Pitch: ${pitch}°`;
           if (marker && typeof marker.setTooltipContent === 'function') marker.setTooltipContent(tooltipContent);
@@ -27231,12 +27275,12 @@ function drawCoverageHeatmap(ctx, planeOffsetX, planeOffsetZ, planeSize) {
   const waypoints = getCurrentWaypoints();
   if (!waypoints || waypoints.length === 0) return;
 
-  const rotationDeg = parseFloat(document.getElementById('grid-rotation').value) || 0;
-  const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value) || -60;
+  const rotationDeg = parseFloat(document.getElementById('grid-rotation')?.value) || 0;
+  const defaultGimbalPitch = parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60);
 
   waypoints.forEach((wp, idx) => {
     const alt = wp.alt; // in meters
-    const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : defaultGimbalPitch;
+    const pitch = (wp.pitch !== undefined && wp.pitch !== null && !isNaN(wp.pitch)) ? wp.pitch : defaultGimbalPitch;
     
     let heading = 0;
     if (wp.heading !== null && wp.heading !== undefined) {
@@ -27327,9 +27371,9 @@ function getWaypointHeadingAndPitch(idx, waypoints) {
     : 0;
   const heading = getEffectiveWaypointHeading(wp, idx, waypoints, rotationDeg, null, null);
   const defaultGimbalPitch = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('gimbal-pitch'))
-    ? parseFloat(document.getElementById('gimbal-pitch').value) || -60
+    ? parseGimbalPitch(document.getElementById('gimbal-pitch').value, -60)
     : -60;
-  const pitch = (wp.pitch !== undefined && wp.pitch !== null) ? wp.pitch : defaultGimbalPitch;
+  const pitch = (wp.pitch !== undefined && wp.pitch !== null && !isNaN(wp.pitch)) ? wp.pitch : defaultGimbalPitch;
   return { heading, pitch };
 }
 
@@ -27448,8 +27492,8 @@ function recreate3DWaypointsAndPaths() {
   if (!waypoints || waypoints.length === 0) return;
 
   coneGroups = [];
-  const rotationDeg = parseFloat(document.getElementById('grid-rotation').value) || 0;
-  const defaultGimbalPitch = parseFloat(document.getElementById('gimbal-pitch').value) || -60;
+  const rotationDeg = parseFloat(document.getElementById('grid-rotation')?.value) || 0;
+  const defaultGimbalPitch = parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60);
 
   waypointsGroup = new THREE.Group();
   pathsGroup = new THREE.Group();
@@ -27497,7 +27541,7 @@ function recreate3DWaypointsAndPaths() {
       droneMesh.rotation.y = -headingRad;
 
       // Tilt camera gimbal inside drone group to pitch angle
-      const pitchRad = (hp.pitch || -60) * Math.PI / 180.0;
+      const pitchRad = ((hp.pitch !== undefined && hp.pitch !== null && !isNaN(hp.pitch)) ? hp.pitch : -60) * Math.PI / 180.0;
       if (droneMesh.userData && droneMesh.userData.gimbalGroup) {
         droneMesh.userData.gimbalGroup.rotation.x = -pitchRad;
       }
@@ -28398,8 +28442,8 @@ function updateFPVEditorUI() {
 
   // Pitch
   const gimbalPitchEl = document.getElementById('gimbal-pitch');
-  const defaultGimbalPitch = gimbalPitchEl ? (parseFloat(gimbalPitchEl.value) || -60) : -60;
-  const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : defaultGimbalPitch;
+  const defaultGimbalPitch = gimbalPitchEl ? parseGimbalPitch(gimbalPitchEl.value, -60) : -60;
+  const pitch = (wp.pitch !== undefined && wp.pitch !== null && !isNaN(wp.pitch)) ? wp.pitch : defaultGimbalPitch;
   const pitchVal = document.getElementById('fpv-edit-pitch-val');
   const pitchSlider = document.getElementById('fpv-edit-pitch');
   if (pitchVal) pitchVal.textContent = Math.round(pitch);
@@ -28978,6 +29022,9 @@ function setupFPVListeners() {
         redrawCurrentMission();
         recreate3DWaypointsAndPaths();
         updateFPVEditorUI();
+        if (fpvActive && typeof updateFPVCamera === 'function') {
+          updateFPVCamera(0);
+        }
       }
     });
   }

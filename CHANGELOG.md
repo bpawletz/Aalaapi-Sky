@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.89.1] - 2026-09-10
+
+### Fixed — 0° Gimbal Pitch Update & 3D Preview Synchronization
+- **Fixed Falsy Zero Bug in Gimbal Pitch Parsing:** Replaced `parseFloat(val) || fallback` patterns across layer state persistence, coordinate generators, and 3D preview renderers with `parseGimbalPitch()`. Previously, setting gimbal pitch to `0` (horizontal horizon view) evaluated `0 || -60` as falsy and silently reverted the pitch to `-60` across the layer and generated waypoints.
+- **Real-Time 3D Preview Pitch Synchronization:** `getWaypointHeadingAndPitch()`, `create3DDroneMesh()`, and FOV cone geometry now correctly honor `0°` (and positive upward tilt angles). When pitch is 0°, the drone camera gimbal remains level and the FOV cone projects horizontally along the flight line instead of tilting downward.
+- **Dynamic 3D Viewport Re-render on Mission Updates:** `updateGrid()` and `redrawCurrentMission()` now immediately refresh `recreate3DWaypointsAndPaths()`, `redrawGroundPlane()`, and `updateFPVCamera()` whenever active when parameters or waypoints change.
+
 ## [1.89.0] - 2026-09-10
 
 ### Added — Independent Layer Centers & 3D Spatial Projection
