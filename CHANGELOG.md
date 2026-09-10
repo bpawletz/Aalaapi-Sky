@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.89.0] - 2026-09-10
+
+### Added — Independent Layer Centers & 3D Spatial Projection
+- **Independent Layer Centers & Auto-POI Creation:** Each flight pattern layer maintains its own distinct geographic center and automatically generates a dedicated POI target upon creation (`Layer X Target`).
+- **Unused Layer POI Cleanup:** Automatically deletes associated target POIs when their parent layer is removed, keeping the POI list uncluttered.
+- **Unified 3D Scene Spatial Projection:** Multi-layer waypoints and photos are re-projected relative to a primary mission origin (`centerLat`, `centerLon`), preventing 3D layer stacking and ensuring each layer renders at its true geographic offset in the 3D preview.
+
 ## [1.88.3] - 2026-09-10
 
 ### Fixed & Improved — 3D Tower Inspection Radius & Control Ergonomics

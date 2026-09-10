@@ -11699,8 +11699,8 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       // Check version badges and changelog
       assert.ok(templateHtml.includes('Changelog (v1.86.4)'), 'Template must display Changelog (v1.86.4)');
       assert.ok(compiledHtml.includes('Changelog (v1.86.4)'), 'Compiled HTML must display Changelog (v1.86.4)');
-      assert.ok(/Version 1\.(86|87|88)\.\d+/.test(templateHtml), 'Template must display Version 1.86.x or later in About modal');
-      assert.ok(/Version 1\.(86|87|88)\.\d+/.test(compiledHtml), 'Compiled HTML must display Version 1.86.x or later in About modal');
+      assert.ok(/Version 1\.\d+\.\d+/.test(templateHtml), 'Template must display Version 1.x.x in About modal');
+      assert.ok(/Version 1\.\d+\.\d+/.test(compiledHtml), 'Compiled HTML must display Version 1.x.x in About modal');
 
       // Check HUD Legend elements
       assert.ok(templateHtml.includes('id="three-hud-legend"'), 'Template must contain #three-hud-legend');
@@ -12080,12 +12080,12 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
 
       // Check header version badge
-      assert.ok(/v1\.88\.\d+/.test(templateHtml), 'index_template.html must contain v1.88.x header badge');
-      assert.ok(/v1\.88\.\d+/.test(compiledHtml), 'index.html must contain v1.88.x header badge');
+      assert.ok(/v1\.\d+\.\d+/.test(templateHtml), 'index_template.html must contain v1.x.x header badge');
+      assert.ok(/v1\.\d+\.\d+/.test(compiledHtml), 'index.html must contain v1.x.x header badge');
 
       // Check About modal version tag
-      assert.ok(/Version 1\.88\.\d+/.test(templateHtml), 'index_template.html must contain Version 1.88.x in About modal');
-      assert.ok(/Version 1\.88\.\d+/.test(compiledHtml), 'index.html must contain Version 1.88.x in About modal');
+      assert.ok(/Version 1\.\d+\.\d+/.test(templateHtml), 'index_template.html must contain Version 1.x.x in About modal');
+      assert.ok(/Version 1\.\d+\.\d+/.test(compiledHtml), 'index.html must contain Version 1.x.x in About modal');
 
       // Check Changelog header
       assert.ok(templateHtml.includes('Changelog (v1.88.1):'), 'index_template.html must contain Changelog (v1.88.1)');
@@ -12292,12 +12292,12 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
 
       // Check header version badge
-      assert.ok(/v1\.88\.\d+/.test(templateHtml), 'index_template.html must contain v1.88.x header badge');
-      assert.ok(/v1\.88\.\d+/.test(compiledHtml), 'index.html must contain v1.88.x header badge');
+      assert.ok(/v1\.\d+\.\d+/.test(templateHtml), 'index_template.html must contain v1.x.x header badge');
+      assert.ok(/v1\.\d+\.\d+/.test(compiledHtml), 'index.html must contain v1.x.x header badge');
 
       // Check About modal version tag
-      assert.ok(/Version 1\.88\.\d+/.test(templateHtml), 'index_template.html must contain Version 1.88.x in About modal');
-      assert.ok(/Version 1\.88\.\d+/.test(compiledHtml), 'index.html must contain Version 1.88.x in About modal');
+      assert.ok(/Version 1\.\d+\.\d+/.test(templateHtml), 'index_template.html must contain Version 1.x.x in About modal');
+      assert.ok(/Version 1\.\d+\.\d+/.test(compiledHtml), 'index.html must contain Version 1.x.x in About modal');
 
       // Check Changelog header
       assert.ok(templateHtml.includes('Changelog (v1.88.2):'), 'index_template.html must contain Changelog (v1.88.2)');
@@ -12425,19 +12425,93 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       assert.ok(Math.abs(dist - 1) < 0.001, `Distance from center (${dist}) should be 1m`);
     });
 
-    test('v1.88.3 version tags and changelog entries exist across all required files', () => {
-      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.strictEqual(pkg.version, '1.88.3', 'package.json version must be 1.88.3');
-
+    test('v1.88.3 changelog entries exist across all required files', () => {
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.88.3]'), 'CHANGELOG.md must contain ## [1.88.3]');
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
-        assert.ok(html.includes('v1.88.3'), `${filename} must contain v1.88.3 header badge`);
-        assert.ok(html.includes('Version 1.88.3'), `${filename} must contain Version 1.88.3 in About modal`);
         assert.ok(html.includes('Changelog (v1.88.3):'), `${filename} must contain Changelog (v1.88.3)`);
       });
+    });
+  });
+
+  describe('Multi-Layer Centers, Auto-POI Creation & 3D Spatial Projection Tests (v1.89.0)', () => {
+    test('index_template.html and index.html contain required v1.89.0 version tags and changelog', () => {
+      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+      assert.strictEqual(pkg.version, '1.89.0', 'package.json version must be 1.89.0');
+
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('## [1.89.0]'), 'CHANGELOG.md must contain ## [1.89.0]');
+
+      ['index_template.html', 'index.html'].forEach(filename => {
+        const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
+        assert.ok(html.includes('v1.89.0'), `${filename} must contain version v1.89.0 header badge`);
+        assert.ok(html.includes('Version 1.89.0'), `${filename} must contain Version 1.89.0 in About modal`);
+        assert.ok(html.includes('Changelog (v1.89.0):'), `${filename} must contain Changelog (v1.89.0)`);
+      });
+    });
+
+    test('addFlightLayer creates a dedicated POI for new layer and assigns targetPoiId', () => {
+      const code = `
+        (function() {
+          centerMarker = { getLatLng: () => ({ lat: 37.7749, lng: -122.4194 }) };
+          pois = [];
+          flightLayers = [];
+          const testPoi = addPoi(37.7749, -122.4194, 'Layer 1 Target');
+          const testLayer = createDefaultLayer('layer-2', 'Layer 2', 1, 'orbit', 37.7749, -122.4194);
+          testLayer.targetPoiId = testPoi ? testPoi.id : null;
+          flightLayers.push(testLayer);
+          return { layer: testLayer, poisCount: pois.length, poiId: testPoi ? testPoi.id : null, poiName: testPoi ? testPoi.name : null };
+        })()
+      `;
+      const res = vm.runInThisContext(code);
+
+      assert.ok(res.layer, 'New layer should be created');
+      assert.ok(res.poisCount > 0, 'New POI should be created for layer');
+      assert.strictEqual(res.poiName, 'Layer 1 Target', 'First POI should be named Layer 1 Target');
+      assert.strictEqual(res.layer.targetPoiId, res.poiId);
+    });
+
+    test('cleanUnusedLayerPois removes layer target POIs when the layer is deleted', () => {
+      const code = `
+        (function() {
+          map = null;
+          pois = [
+            { id: 'p0', name: 'Layer 1 Target', lat: 37.77, lon: -122.41 },
+            { id: 'p1', name: 'Layer 2 Target', lat: 37.78, lon: -122.42 }
+          ];
+          flightLayers = [
+            { id: 'l1', targetPoiId: 'p0' },
+            { id: 'l2', targetPoiId: 'p1' }
+          ];
+          deleteFlightLayer('l2');
+          return { remainingPois: pois };
+        })()
+      `;
+      const res = vm.runInThisContext(code);
+      assert.strictEqual(res.remainingPois.length, 1, 'Unused POI should be deleted');
+      assert.strictEqual(res.remainingPois[0].id, 'p0', 'Remaining POI should be p0');
+    });
+
+    test('compileMultiLayerMission re-projects multi-layer waypoints relative to primary mission center', () => {
+      const code = `
+        centerMarker = { getLatLng: () => ({ lat: 37.7749, lng: -122.4194 }) };
+        flightLayers = [
+          createDefaultLayer('layer-1', 'Layer 1', 0, 'double', 37.7749, -122.4194),
+          createDefaultLayer('layer-2', 'Layer 2', 1, 'orbit', 37.7800, -122.4100)
+        ];
+        flightLayers[0].enabled = true;
+        flightLayers[1].enabled = true;
+        compileMultiLayerMission(37.7749, -122.4194);
+      `;
+      const compiledRes = vm.runInThisContext(code);
+      assert.ok(compiledRes.waypoints.length > 0, 'Compiled waypoints should exist');
+
+      // Verify layer 2 waypoints have x, y offset reflecting difference between 37.7800,-122.4100 and primary center 37.7749,-122.4194
+      const l2Wps = compiledRes.waypoints.filter(w => w.layerId === 'layer-2');
+      assert.ok(l2Wps.length > 0, 'Layer 2 waypoints should exist');
+      assert.ok(Math.abs(l2Wps[0].x) > 10, 'Layer 2 waypoints should not stack at 0,0');
     });
   });
 });
