@@ -1185,8 +1185,11 @@ function saveActiveLayerFromUi() {
   const towerAltOrd = document.getElementById('tower-altitude-order');
   if (towerMinH) layer.towerMinHeight = parseFloat(towerMinH.value) || 20;
   if (towerMaxH) layer.towerMaxHeight = parseFloat(towerMaxH.value) || 100;
-  if (towerRad) layer.towerRadius = parseFloat(towerRad.value) || 30;
-  if (towerGuyBuf) layer.towerGuyWireBuffer = parseFloat(towerGuyBuf.value) || 15;
+  if (towerRad) {
+    const parsedRad = parseFloat(towerRad.value);
+    layer.towerRadius = (!isNaN(parsedRad) && parsedRad >= 1) ? parsedRad : 1;
+  }
+  if (towerGuyBuf) layer.towerGuyWireBuffer = parseFloat(towerGuyBuf.value) || 0;
   if (towerMovMode && towerMovMode.value) layer.towerMovementMode = towerMovMode.value;
   if (towerAltOrd && towerAltOrd.value) layer.towerAltitudeOrder = towerAltOrd.value;
 
@@ -3447,7 +3450,8 @@ const CONTROLS_LIST = [
   'camera-model', 'drone-model', 'camera-zoom', 'camera-aspect-ratio', 'camera-hfov', 'camera-vfov', 'road-offset',
   'global-hover-time', 'global-exclusion-detour-mode', 'global-exclusion-clearance-buffer',
   'max-flight-height', 'rth-altitude',
-  'target-splat-radius', 'target-splat-height', 'target-splat-culling-mode', 'target-splat-grid-pass'
+  'target-splat-radius', 'target-splat-height', 'target-splat-culling-mode', 'target-splat-grid-pass',
+  'tower-min-height', 'tower-max-height', 'tower-radius', 'tower-guy-wire-buffer', 'tower-movement-mode', 'tower-altitude-order'
 ];
 
 // Factory Defaults Schema for Reset & Modified Detection (v1.75.0)
@@ -3477,6 +3481,12 @@ const FACTORY_DEFAULTS = {
   'multi-orbit-pitch-top': '-60',
   'multi-orbit-wps': '8',
   'multi-orbit-speed': '3',
+  'tower-min-height': '20',
+  'tower-max-height': '100',
+  'tower-radius': '30',
+  'tower-guy-wire-buffer': '15',
+  'tower-movement-mode': 'horizontal',
+  'tower-altitude-order': 'max-to-min',
   'road-offset': '10',
   'road-turn-mode': 'toPointAndStopWithDiscontinuitySlightlyRounded',
   'road-action': 'none',
@@ -5778,6 +5788,10 @@ function initClickToTypeInputs() {
     { valId: 'target-perimeter-standoff-val', inputId: 'target-perimeter-standoff', type: 'distance', min: 3, max: 30, step: 1 },
     { valId: 'target-perimeter-alt-val', inputId: 'target-perimeter-alt', type: 'distance', min: 0, max: 80, step: 1 },
     { valId: 'target-perimeter-pitch-val', inputId: 'target-perimeter-pitch', type: 'raw', min: -80, max: -30, step: 1 },
+    { valId: 'tower-radius-val', inputId: 'tower-radius', type: 'distance', min: 1, max: 150, step: 1 },
+    { valId: 'tower-min-height-val', inputId: 'tower-min-height', type: 'distance', min: 1, max: 300, step: 1 },
+    { valId: 'tower-max-height-val', inputId: 'tower-max-height', type: 'distance', min: 2, max: 400, step: 1 },
+    { valId: 'tower-guy-wire-buffer-val', inputId: 'tower-guy-wire-buffer', type: 'distance', min: 0, max: 50, step: 1 },
     { valId: 'road-offset-val', inputId: 'road-offset', type: 'distance', min: -50, max: 50, step: 1 },
     { valId: 'exclusion-min-alt-val', inputId: 'exclusion-min-alt', type: 'distance', min: 0, max: 300, step: 5 },
     { valId: 'exclusion-max-alt-val', inputId: 'exclusion-max-alt', type: 'distance', min: 5, max: 500, step: 5 },
@@ -6136,6 +6150,7 @@ function togglePatternParameters() {
     'target-splat': 'Target Splat Grid',
     'orbit': 'Circular Orbit',
     'multi-orbit': 'Multi-Tier Orbit',
+    'tower': '3D Tower Audit',
     'grid-orbit-combo': '2D+3D Hybrid',
     'grid-multi-orbit-combo': 'Multi-Tier Hybrid',
     'freeform': 'Freeform Flight Plan',
@@ -6145,6 +6160,7 @@ function togglePatternParameters() {
   };
 
   const targetSplatContainer = document.getElementById('target-splat-container');
+  const towerGeometryContainer = document.getElementById('tower-geometry-container');
 
   const activePatternBadge = document.getElementById('active-layer-pattern-badge');
   if (activePatternBadge) {
@@ -6169,6 +6185,14 @@ function togglePatternParameters() {
       targetSplatContainer.classList.remove('hidden');
     } else {
       targetSplatContainer.classList.add('hidden');
+    }
+  }
+
+  if (towerGeometryContainer) {
+    if (gridType === 'tower') {
+      towerGeometryContainer.classList.remove('hidden');
+    } else {
+      towerGeometryContainer.classList.add('hidden');
     }
   }
 
@@ -6279,6 +6303,28 @@ function togglePatternParameters() {
     syncDisplayValues();
     updateGrid();
     return;
+
+  } else if (gridType === 'tower') {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
+    if (gridGeometrySection) {
+      gridGeometrySection.style.display = 'block';
+      gridGeometrySection.classList.remove('collapsed');
+    }
+    if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
+    if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
+    if (towerGeometryContainer) towerGeometryContainer.classList.remove('hidden');
+    if (widthContainer) widthContainer.style.display = 'none';
+    if (heightContainer) heightContainer.style.display = 'none';
+    if (rotationContainer) rotationContainer.style.display = 'none';
+    if (frontOverlapContainer) frontOverlapContainer.style.display = 'block';
+    if (sideOverlapContainer) sideOverlapContainer.style.display = 'block';
+    if (freeformInstructions) freeformInstructions.classList.add('hidden');
+    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
+    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
+    if (gimbalPitchSlider && (!gimbalPitchSlider.value || parseFloat(gimbalPitchSlider.value) === -90)) {
+      gimbalPitchSlider.value = -45;
+    }
 
   } else {
     if (gridGeometrySection) gridGeometrySection.style.display = 'block';
@@ -6668,6 +6714,63 @@ function syncDisplayValues() {
     } else {
       roadOffsetValEl.textContent = offsetVal;
       roadOffsetUnitEl.textContent = "m";
+    }
+  }
+
+  // Sync Tower Inspection Parameters
+  const towerRadiusSlider = document.getElementById('tower-radius');
+  const towerRadiusValEl = document.getElementById('tower-radius-val');
+  const towerRadiusUnitEl = document.getElementById('tower-radius-unit');
+  if (towerRadiusSlider && towerRadiusValEl && towerRadiusUnitEl) {
+    const radVal = parseFloat(towerRadiusSlider.value) || 30;
+    if (unit === 'imperial') {
+      towerRadiusValEl.textContent = Math.round(radVal * M_TO_FT);
+      towerRadiusUnitEl.textContent = "ft";
+    } else {
+      towerRadiusValEl.textContent = radVal;
+      towerRadiusUnitEl.textContent = "m";
+    }
+  }
+
+  const towerMinHSlider = document.getElementById('tower-min-height');
+  const towerMinHValEl = document.getElementById('tower-min-height-val');
+  const towerMinHUnitEl = document.getElementById('tower-min-height-unit');
+  if (towerMinHSlider && towerMinHValEl && towerMinHUnitEl) {
+    const minHVal = parseFloat(towerMinHSlider.value) || 20;
+    if (unit === 'imperial') {
+      towerMinHValEl.textContent = Math.round(minHVal * M_TO_FT);
+      towerMinHUnitEl.textContent = "ft";
+    } else {
+      towerMinHValEl.textContent = minHVal;
+      towerMinHUnitEl.textContent = "m";
+    }
+  }
+
+  const towerMaxHSlider = document.getElementById('tower-max-height');
+  const towerMaxHValEl = document.getElementById('tower-max-height-val');
+  const towerMaxHUnitEl = document.getElementById('tower-max-height-unit');
+  if (towerMaxHSlider && towerMaxHValEl && towerMaxHUnitEl) {
+    const maxHVal = parseFloat(towerMaxHSlider.value) || 100;
+    if (unit === 'imperial') {
+      towerMaxHValEl.textContent = Math.round(maxHVal * M_TO_FT);
+      towerMaxHUnitEl.textContent = "ft";
+    } else {
+      towerMaxHValEl.textContent = maxHVal;
+      towerMaxHUnitEl.textContent = "m";
+    }
+  }
+
+  const towerGuyBufSlider = document.getElementById('tower-guy-wire-buffer');
+  const towerGuyBufValEl = document.getElementById('tower-guy-wire-buffer-val');
+  const towerGuyBufUnitEl = document.getElementById('tower-guy-wire-buffer-unit');
+  if (towerGuyBufSlider && towerGuyBufValEl && towerGuyBufUnitEl) {
+    const bufVal = parseFloat(towerGuyBufSlider.value) || 0;
+    if (unit === 'imperial') {
+      towerGuyBufValEl.textContent = Math.round(bufVal * M_TO_FT);
+      towerGuyBufUnitEl.textContent = "ft";
+    } else {
+      towerGuyBufValEl.textContent = bufVal;
+      towerGuyBufUnitEl.textContent = "m";
     }
   }
 
@@ -7761,9 +7864,9 @@ function generateTowerCoordinates(layer, sLine, sPhoto, baseAltitude, defaultGim
 
   const minH = layer ? (layer.towerMinHeight !== undefined ? layer.towerMinHeight : 20) : 20;
   const maxH = layer ? (layer.towerMaxHeight !== undefined ? layer.towerMaxHeight : 100) : 100;
-  const standoffRad = layer ? (layer.towerRadius !== undefined ? layer.towerRadius : 30) : 30;
-  const guyBuffer = layer ? (layer.towerGuyWireBuffer !== undefined ? layer.towerGuyWireBuffer : 15) : 15;
-  const effectiveRadius = standoffRad + guyBuffer;
+  const standoffRad = layer ? (layer.towerRadius !== undefined ? Math.max(1, layer.towerRadius) : 30) : 30;
+  const guyBuffer = layer ? (layer.towerGuyWireBuffer !== undefined ? Math.max(0, layer.towerGuyWireBuffer) : 15) : 15;
+  const effectiveRadius = Math.max(1, standoffRad + guyBuffer);
 
   const mode = layer ? (layer.towerMovementMode || 'horizontal') : 'horizontal';
   const order = layer ? (layer.towerAltitudeOrder || 'max-to-min') : 'max-to-min';
@@ -9414,6 +9517,19 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
       dashArray: '5, 5',
       fillColor: '#f59e0b',
       fillOpacity: 0.03
+    }).addTo(map);
+  } else if (gridType === 'tower') {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    const towerRad = activeLayer ? (activeLayer.towerRadius !== undefined ? Math.max(1, activeLayer.towerRadius) : 30) : 30;
+    const guyBuf = activeLayer ? (activeLayer.towerGuyWireBuffer !== undefined ? Math.max(0, activeLayer.towerGuyWireBuffer) : 15) : 15;
+    const effRadius = Math.max(1, towerRad + guyBuf);
+    gridBoundsPolygon = L.circle([activeCenterLat, activeCenterLon], {
+      radius: effRadius,
+      color: '#f59e0b',
+      weight: 2,
+      dashArray: '4, 4',
+      fillColor: '#f59e0b',
+      fillOpacity: 0.04
     }).addTo(map);
   } else {
     // Draw rotated bounding box
