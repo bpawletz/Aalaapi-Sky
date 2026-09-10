@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.88.3] - 2026-09-10
+
+### Fixed & Improved — 3D Tower Inspection Radius & Control Ergonomics
+- **Dedicated Radius Controls for Tower Pattern:** Selecting the 3D Tower Inspection pattern now correctly reveals `#tower-geometry-container` and hides redundant "Grid Width", "Grid Height", and "Grid Rotation" sliders that do not apply to cylindrical tower flight paths.
+- **Micro Standoff Radius Support (Down to 1m):** Reduced minimum allowable Tower standoff radius from 5m down to 1m (`min="1"`), enabling ultra-close structural photogrammetry and tight facade inspections.
+- **Circular Boundary Overlay on Map:** Replaced the rotated rectangular grid boundary with an accurate circular standoff buffer (`L.circle`) on Leaflet reflecting `towerRadius + towerGuyWireBuffer`.
+- **Live Display & Unit Conversion Sync:** Added dynamic imperial/metric formatting and click-to-type numerical editing for Tower radius, min/max heights, and guy-wire safety buffers.
+
 ## [1.88.2] - 2026-09-06
 
 ### Improved — Points of Interest (POIs) Management Layout
