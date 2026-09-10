@@ -12292,12 +12292,12 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
 
       // Check header version badge
-      assert.ok(templateHtml.includes('v1.88.2'), 'index_template.html must contain v1.88.2 header badge');
-      assert.ok(compiledHtml.includes('v1.88.2'), 'index.html must contain v1.88.2 header badge');
+      assert.ok(/v1\.88\.\d+/.test(templateHtml), 'index_template.html must contain v1.88.x header badge');
+      assert.ok(/v1\.88\.\d+/.test(compiledHtml), 'index.html must contain v1.88.x header badge');
 
       // Check About modal version tag
-      assert.ok(templateHtml.includes('Version 1.88.2'), 'index_template.html must contain Version 1.88.2 in About modal');
-      assert.ok(compiledHtml.includes('Version 1.88.2'), 'index.html must contain Version 1.88.2 in About modal');
+      assert.ok(/Version 1\.88\.\d+/.test(templateHtml), 'index_template.html must contain Version 1.88.x in About modal');
+      assert.ok(/Version 1\.88\.\d+/.test(compiledHtml), 'index.html must contain Version 1.88.x in About modal');
 
       // Check Changelog header
       assert.ok(templateHtml.includes('Changelog (v1.88.2):'), 'index_template.html must contain Changelog (v1.88.2)');
@@ -12393,7 +12393,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       assert.strictEqual(res.waypoints[0].alt, 10, 'First altitude in min-to-max order should be minHeight (10m)');
     });
 
-    test('index_template.html and index.html contain all required Tower UI elements and warning banners', () => {
+    test('index_template.html and index.html contain all required Tower UI elements, min=1 radius, and warning banners', () => {
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
 
@@ -12401,10 +12401,42 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
         assert.ok(html.includes('id="tower-min-height"'), `${filename} must contain #tower-min-height`);
         assert.ok(html.includes('id="tower-max-height"'), `${filename} must contain #tower-max-height`);
         assert.ok(html.includes('id="tower-radius"'), `${filename} must contain #tower-radius`);
+        assert.ok(/id="tower-radius"[^>]*min="1"/.test(html), `${filename} #tower-radius slider must have min="1"`);
         assert.ok(html.includes('id="tower-guy-wire-buffer"'), `${filename} must contain #tower-guy-wire-buffer`);
         assert.ok(html.includes('id="tower-movement-mode"'), `${filename} must contain #tower-movement-mode`);
         assert.ok(html.includes('id="tower-altitude-order"'), `${filename} must contain #tower-altitude-order`);
         assert.ok(html.includes('GUY-WIRE HAZARD WARNING'), `${filename} must contain guy-wire warning banner`);
+      });
+    });
+
+    test('generateTowerCoordinates supports micro standoff radius down to 1m', () => {
+      const microLayer = {
+        pattern: 'tower',
+        towerMinHeight: 5,
+        towerMaxHeight: 15,
+        towerRadius: 1,
+        towerGuyWireBuffer: 0,
+        towerMovementMode: 'horizontal',
+        towerAltitudeOrder: 'min-to-max'
+      };
+      const res = generateTowerCoordinates(microLayer, 10, 5, 20, -45);
+      assert.ok(res.waypoints && res.waypoints.length > 0, 'Waypoints must be generated for 1m radius');
+      const dist = Math.hypot(res.waypoints[0].x, res.waypoints[0].y);
+      assert.ok(Math.abs(dist - 1) < 0.001, `Distance from center (${dist}) should be 1m`);
+    });
+
+    test('v1.88.3 version tags and changelog entries exist across all required files', () => {
+      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+      assert.strictEqual(pkg.version, '1.88.3', 'package.json version must be 1.88.3');
+
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('## [1.88.3]'), 'CHANGELOG.md must contain ## [1.88.3]');
+
+      ['index_template.html', 'index.html'].forEach(filename => {
+        const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
+        assert.ok(html.includes('v1.88.3'), `${filename} must contain v1.88.3 header badge`);
+        assert.ok(html.includes('Version 1.88.3'), `${filename} must contain Version 1.88.3 in About modal`);
+        assert.ok(html.includes('Changelog (v1.88.3):'), `${filename} must contain Changelog (v1.88.3)`);
       });
     });
   });
