@@ -11482,6 +11482,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
 
   describe('Camera POI Heading & Cones Orientation Bug Fix Regression Tests (v1.86.2)', () => {
     test('getMarkerIcon and getWaypointHeadingAndPitch orient toward POI even when wp.heading is pre-set to 0/180', () => {
+      const origGetElementById = document.getElementById;
       try {
         pois = [
           { name: 'Target Center POI', lat: 40.013000, lon: -83.176500 }
@@ -11499,7 +11500,6 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
         L.divIcon = (opts) => ({ options: opts, ...opts });
 
         // Set global heading mode to towardPOI
-        const origGetElementById = document.getElementById;
         document.getElementById = (id) => {
           if (id === 'heading-mode') return { value: 'towardPOI' };
           if (id === 'grid-rotation') return { value: '0' };
@@ -11535,12 +11535,13 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
 
       } finally {
         pois = [];
-        document.getElementById = global.document.getElementById;
+        document.getElementById = origGetElementById;
         L.divIcon = global.L ? global.L.divIcon : undefined;
       }
     });
 
     test('Three-Tier Heading Hierarchy correctly cascades (Global -> Layer -> Waypoint)', () => {
+      const origGetElementById = document.getElementById;
       try {
         pois = [{ name: 'POI', lat: 40.013000, lon: -83.176500 }];
 
@@ -11548,8 +11549,6 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
         const dy = pois[0].lat - wp.lat;
         const dx = pois[0].lon - wp.lon;
         const poiHeading = (90 - (Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
-
-        const origGetElementById = document.getElementById;
 
         // Tier 1: Global Default towardPOI, Layer inherit, Waypoint inherit
         document.getElementById = (id) => {
@@ -11581,7 +11580,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
 
       } finally {
         pois = [];
-        document.getElementById = global.document.getElementById;
+        document.getElementById = origGetElementById;
       }
     });
 
@@ -12437,17 +12436,12 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   });
 
   describe('Multi-Layer Centers, Auto-POI Creation & 3D Spatial Projection Tests (v1.89.0)', () => {
-    test('index_template.html and index.html contain required v1.89.0 version tags and changelog', () => {
-      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.strictEqual(pkg.version, '1.89.0', 'package.json version must be 1.89.0');
-
+    test('index_template.html and index.html contain required v1.89.0 changelog entries', () => {
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.89.0]'), 'CHANGELOG.md must contain ## [1.89.0]');
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
-        assert.ok(html.includes('v1.89.0'), `${filename} must contain version v1.89.0 header badge`);
-        assert.ok(html.includes('Version 1.89.0'), `${filename} must contain Version 1.89.0 in About modal`);
         assert.ok(html.includes('Changelog (v1.89.0):'), `${filename} must contain Changelog (v1.89.0)`);
       });
     });
@@ -12512,6 +12506,93 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       const l2Wps = compiledRes.waypoints.filter(w => w.layerId === 'layer-2');
       assert.ok(l2Wps.length > 0, 'Layer 2 waypoints should exist');
       assert.ok(Math.abs(l2Wps[0].x) > 10, 'Layer 2 waypoints should not stack at 0,0');
+    });
+  });
+
+  describe('0° Gimbal Pitch Update & 3D Preview Synchronization Tests (v1.89.1)', () => {
+    test('index_template.html and index.html contain required v1.89.1 version tags and changelog', () => {
+      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+      assert.strictEqual(pkg.version, '1.89.1', 'package.json version must be 1.89.1');
+
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('## [1.89.1]'), 'CHANGELOG.md must contain ## [1.89.1]');
+
+      ['index_template.html', 'index.html'].forEach(filename => {
+        const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
+        assert.ok(html.includes('v1.89.1'), `${filename} must contain version v1.89.1 header badge`);
+        assert.ok(html.includes('Version 1.89.1'), `${filename} must contain Version 1.89.1 in About modal`);
+        assert.ok(html.includes('Changelog (v1.89.1):'), `${filename} must contain Changelog (v1.89.1)`);
+      });
+    });
+
+    test('parseGimbalPitch preserves 0 and parses numeric and fallback values correctly', () => {
+      assert.strictEqual(parseGimbalPitch('0'), 0);
+      assert.strictEqual(parseGimbalPitch(0), 0);
+      assert.strictEqual(parseGimbalPitch('0.0'), 0);
+      assert.strictEqual(parseGimbalPitch(15), 15);
+      assert.strictEqual(parseGimbalPitch('-90'), -90);
+      assert.strictEqual(parseGimbalPitch(-45), -45);
+      assert.strictEqual(parseGimbalPitch('', -60), -60);
+      assert.strictEqual(parseGimbalPitch(null, -60), -60);
+      assert.strictEqual(parseGimbalPitch(undefined, -45), -45);
+      assert.strictEqual(parseGimbalPitch('abc', -90), -90);
+      assert.strictEqual(parseGimbalPitch(NaN, -60), -60);
+    });
+
+    test('saveActiveLayerFromUi preserves 0 gimbal pitch when slider is set to 0', () => {
+      const origGetEl = document.getElementById;
+      try {
+        const mockLayer = createDefaultLayer('test-layer', 'Test Layer', 0, 'single', 40.0, -83.0);
+        flightLayers = [mockLayer];
+        activeLayerId = 'test-layer';
+        
+        document.getElementById = (id) => {
+          if (id === 'gimbal-pitch') return { value: '0' };
+          return origGetEl ? origGetEl(id) : { value: '' };
+        };
+        saveActiveLayerFromUi();
+        assert.strictEqual(mockLayer.gimbalPitch, 0, 'Layer gimbalPitch must be preserved as 0, not reverted to -60');
+      } finally {
+        document.getElementById = origGetEl;
+      }
+    });
+
+    test('getWaypointHeadingAndPitch respects wp.pitch of 0 and default 0', () => {
+      const origGetEl = document.getElementById;
+      try {
+        document.getElementById = (id) => {
+          if (id === 'gimbal-pitch') return { value: '0' };
+          if (id === 'grid-rotation') return { value: '0' };
+          return origGetEl ? origGetEl(id) : { value: '' };
+        };
+        const wps = [
+          { x: 0, y: 0, alt: 50, pitch: 0 },
+          { x: 10, y: 0, alt: 50 } // pitch undefined, inherits default 0
+        ];
+        const hp0 = getWaypointHeadingAndPitch(0, wps);
+        const hp1 = getWaypointHeadingAndPitch(1, wps);
+        assert.strictEqual(hp0.pitch, 0, 'Waypoint explicit pitch 0 must be 0');
+        assert.strictEqual(hp1.pitch, 0, 'Waypoint inherited pitch 0 must be 0');
+      } finally {
+        document.getElementById = origGetEl;
+      }
+    });
+
+    test('drone gimbal pitch calculation yields 0 rad rotation for 0 deg pitch', () => {
+      const hp = { heading: 0, pitch: 0 };
+      const pitchRad = ((hp.pitch !== undefined && hp.pitch !== null && !isNaN(hp.pitch)) ? hp.pitch : -60) * Math.PI / 180.0;
+      assert.strictEqual(pitchRad, 0, 'Pitch in radians must be 0 for 0 deg pitch');
+      assert.strictEqual(-pitchRad, -0, 'Gimbal rotation.x must be 0 for 0 deg pitch');
+      
+      const hpDown = { heading: 0, pitch: -60 };
+      const pitchRadDown = ((hpDown.pitch !== undefined && hpDown.pitch !== null && !isNaN(hpDown.pitch)) ? hpDown.pitch : -60) * Math.PI / 180.0;
+      assert.ok(Math.abs(-pitchRadDown - (60 * Math.PI / 180)) < 1e-6, 'Gimbal rotation.x must be +60 deg in rad for -60 pitch');
+    });
+
+    test('buildWaylinesWpml outputs 0 for waypointGimbalPitchAngle when pitch is 0', () => {
+      const wps = [{ lat: 40.0, lon: -83.0, alt: 50, x: 0, y: 0 }];
+      const wpml = buildWaylinesWpml(wps, 50, 4, 'followWayline', 'goHome', 0, 'hover', 'straight');
+      assert.ok(wpml.includes('<wpml:waypointGimbalPitchAngle>0</wpml:waypointGimbalPitchAngle>'), 'WPML must export waypointGimbalPitchAngle as 0');
     });
   });
 });
