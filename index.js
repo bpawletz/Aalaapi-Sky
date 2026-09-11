@@ -15241,8 +15241,7 @@ const FlightDiagnostics = {
   init() {
     if (typeof document === 'undefined') return;
     const openBtns = [
-      document.getElementById('action-diagnostics-btn'),
-      document.getElementById('open-diagnostics-btn')
+      document.getElementById('action-diagnostics-btn')
     ];
     openBtns.forEach(btn => {
       if (btn && typeof btn.addEventListener === 'function') btn.addEventListener('click', () => this.open());
