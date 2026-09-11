@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.91.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.92.0</span></h1>
         </div>
       </div>
 
@@ -303,6 +303,7 @@
                 <span>Freeform</span>
               </div>
               <div class="pattern-card auto-plan-card" id="auto-plan-btn" title="Auto-Plan Tool: Drag to Box & Survey Area">
+                <span class="pattern-badge-tool">TOOL</span>
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="7"/>
                   <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
@@ -314,6 +315,7 @@
                 <span>Auto-Plan</span>
               </div>
               <div class="pattern-card exclusion-card" data-value="exclusion-box" title="Exclusion Zone (Rectangular Box)">
+                <span class="pattern-badge-restricted">SAFETY</span>
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2" stroke="#ef4444"/>
                   <line x1="3" y1="3" x2="21" y2="21" stroke="#ef4444" stroke-width="2"/>
@@ -321,6 +323,7 @@
                 <span style="color: #f87171;">Exclusion (Box)</span>
               </div>
               <div class="pattern-card exclusion-card" data-value="exclusion-freeform" title="Exclusion Zone (Freeform Polygon)">
+                <span class="pattern-badge-restricted">SAFETY</span>
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polygon points="4,19 12,4 20,9 18,20" stroke="#ef4444" stroke-width="2"/>
                   <line x1="4" y1="4" x2="20" y2="20" stroke="#ef4444" stroke-width="2"/>
@@ -345,10 +348,19 @@
         <section class="control-section collapsed" id="grid-geometry-section">
           <h3 id="grid-geometry-title" style="display: flex; justify-content: space-between; align-items: center;">
             <span>2. Layer Properties</span>
-            <span id="active-layer-pattern-badge" class="badge" style="font-size: 0.7rem; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 6px; border-radius: 999px; font-weight: 600; margin-right: 6px;">3D Double Grid</span>
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <span id="layer-hierarchy-status-badge" class="badge" style="font-size: 0.65rem; background: rgba(6, 182, 212, 0.12); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.25); padding: 1px 6px; border-radius: 999px; font-weight: 600;" title="Three-Tier Hierarchy Status">🌐 Inheriting Globals</span>
+              <span id="active-layer-pattern-badge" class="badge" style="font-size: 0.7rem; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 6px; border-radius: 999px; font-weight: 600; margin-right: 6px;">3D Double Grid</span>
+            </div>
           </h3>
 
-          <div class="control-group">
+          <!-- Card 1: Coverage & Geometry -->
+          <div id="layer-card-geometry" class="layer-subgroup-card">
+            <div class="layer-subgroup-header">
+              <span>📐 Coverage &amp; Geometry</span>
+            </div>
+
+            <div class="control-group">
             <div class="control-label">
               <span style="display: inline-flex; align-items: center; gap: 6px;">
                 <svg viewBox="0 0 24 24" width="16" height="16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
@@ -728,8 +740,15 @@
               </select>
             </div>
           </div>
+          </div> <!-- /layer-card-geometry -->
 
-          <div class="control-group" id="altitude-control-group" style="margin-top: 8px;">
+          <!-- Card 2: Flight Altitudes & Overlaps -->
+          <div id="layer-card-flight" class="layer-subgroup-card">
+            <div class="layer-subgroup-header">
+              <span>✈️ Flight Altitudes &amp; Overlaps</span>
+            </div>
+
+            <div class="control-group" id="altitude-control-group" style="margin-top: 2px;">
             <div class="control-label">
               <span style="display: inline-flex; align-items: center; gap: 6px;">
                 <svg viewBox="0 0 24 24" width="16" height="16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
@@ -785,8 +804,15 @@
             </div>
             <input type="range" id="side-overlap" min="50" max="95" value="75" class="slider" aria-label="Side overlap percentage">
           </div>
+          </div> <!-- /layer-card-flight -->
 
-          <div class="control-group" id="gimbal-pitch-control-group">
+          <!-- Card 3: Camera & Gimbal Optics -->
+          <div id="layer-card-optics" class="layer-subgroup-card">
+            <div class="layer-subgroup-header">
+              <span>📷 Camera &amp; Gimbal Optics</span>
+            </div>
+
+            <div class="control-group" id="gimbal-pitch-control-group">
             <div class="control-label">
               <span style="display: inline-flex; align-items: center; gap: 6px;">
                 <circle cx="8" cy="8" r="3" stroke="#c2622d" fill="none"/>
@@ -908,16 +934,16 @@
             <input type="range" id="camera-hfov" min="30" max="120" step="0.1" value="69.7" class="slider" aria-label="Camera HFOV">
             <input type="range" id="camera-vfov" min="20" max="100" step="0.1" value="55.2" class="slider" aria-label="Camera VFOV">
           </div>
+          </div> <!-- /layer-card-optics -->
 
-          <!-- Layer-Specific Flight & Capture Modes -->
-          <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; flex-direction: column; gap: 10px;">
-            <div class="control-label" style="margin-bottom: 2px;">
-              <span style="font-size: 0.78rem; font-weight: 700; color: var(--accent-cyan); display: inline-flex; align-items: center; gap: 6px;">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                Layer Flight &amp; Capture Modes
-              </span>
-              <span class="badge" style="font-size: 0.65rem; background: rgba(6, 182, 212, 0.12); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 5px; border-radius: 999px;">Layer</span>
+          <!-- Card 4: Layer Dynamics & Modes -->
+          <div id="layer-card-modes" class="layer-subgroup-card">
+            <div class="layer-subgroup-header">
+              <span>⚙️ Layer Dynamics &amp; Modes</span>
+              <span class="badge" style="font-size: 0.62rem; background: rgba(6, 182, 212, 0.12); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.25); padding: 1px 5px; border-radius: 999px;">Tier 2</span>
             </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
 
             <div class="control-group">
               <label for="layer-capture-mode" style="font-size: 0.75rem;">Capture Mode</label>
@@ -1088,7 +1114,8 @@
                 </div>
               </div>
             </div>
-          </div>
+            </div>
+          </div> <!-- /layer-card-modes -->
         </section>
 
         <!-- Section 3: Global Mission Failsafes & Defaults -->
@@ -1098,197 +1125,228 @@
             <span class="badge" style="font-size: 0.7rem; background: rgba(99, 102, 241, 0.15); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.3); padding: 1px 6px; border-radius: 999px; font-weight: 600; margin-right: 6px;">Global</span>
           </h3>
 
-          <div class="control-group">
-            <label for="finish-action">Finish Action</label>
-            <select id="finish-action" class="form-select">
-              <option value="goHome">Return to Home (RTH)</option>
-              <option value="gotoFirstWaypoint">Back to Start Point</option>
-              <option value="noAction">Hover in Place</option>
-              <option value="autoLand">Auto Land</option>
-            </select>
-          </div>
-
-          <div class="control-group">
-            <label for="signal-lost-action">Signal Lost Action</label>
-            <select id="signal-lost-action" class="form-select">
-              <option value="goBack" selected>Return to Home (RTH)</option>
-              <option value="hover">Hover in Place</option>
-              <option value="landing">Auto Land</option>
-              <option value="goContinue">Continue Mission</option>
-            </select>
-          </div>
-
-          <!-- Max Flight Altitude Limit (Global Ceiling) -->
-          <div class="control-group" id="max-height-control-group">
-            <div class="control-label">
-              <span style="display: inline-flex; align-items: center; gap: 6px;">
-                <svg viewBox="0 0 24 24" width="16" height="16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
-                  <line x1="3" y1="3" x2="21" y2="3" stroke="#f59e0b"/>
-                  <path d="M12 21v-14M8 11l4-4 4 4" stroke="#06b6d4" fill="none"/>
-                  <circle cx="12" cy="18" r="1.5" fill="#f5f0e8"/>
-                </svg>
-                Max Flight Altitude (Ceiling)
-              </span>
-              <span class="value-display"><span id="max-height-val">120</span> <span id="max-height-unit">m</span></span>
+          <!-- Card 1: Global Flight Defaults (Tier 1) -->
+          <div id="global-defaults-subcard" class="failsafes-subgroup-card">
+            <div class="failsafes-subgroup-header">
+              <div class="failsafes-subgroup-title">
+                <span>🌐 Global Flight Defaults</span>
+                <span class="badge" style="font-size: 0.62rem; background: rgba(99, 102, 241, 0.15); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.3); padding: 1px 5px; border-radius: 999px;">Tier 1</span>
+              </div>
+              <div class="failsafes-subgroup-desc">Overarching mission fallback inherited by all layers unless overridden.</div>
             </div>
-            <input type="range" id="max-flight-height" min="20" max="500" step="5" value="120" class="slider" aria-label="Maximum flight altitude ceiling">
-            <div id="max-height-legal-warning" class="legal-ceiling-notice" style="display: none; margin-top: 6px; padding: 6px 8px; border-radius: 6px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); font-size: 0.72rem; color: #fbbf24; line-height: 1.35;">
-              ⚠️ <strong>Above 120m / 400ft Standard Regulatory Ceiling</strong> (FAA Part 107 / EASA / UK CAA). Ensure flight waiver or airspace authorization.
-            </div>
-            <p class="help-text" style="margin-top: 3px; margin-bottom: 0;">Hard ceiling cap for layer waypoints and obstacle climb detours.</p>
-          </div>
 
-          <!-- Safe Return-to-Home Altitude -->
-          <div class="control-group" id="rth-altitude-control-group">
-            <div class="control-label">
-              <span style="display: inline-flex; align-items: center; gap: 6px;">
-                <svg viewBox="0 0 24 24" width="16" height="16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="#06b6d4" fill="none"/>
-                  <polyline points="9 22 9 12 15 12 15 22" stroke="#c2622d" fill="none"/>
-                </svg>
-                Safe RTH Altitude
-              </span>
-              <span class="value-display"><span id="rth-altitude-val">50</span> <span id="rth-altitude-unit">m</span></span>
-            </div>
-            <input type="range" id="rth-altitude" min="20" max="150" step="5" value="50" class="slider" aria-label="Safe Return-to-Home altitude">
-            <p class="help-text" style="margin-top: 3px; margin-bottom: 0;">Climb altitude before initiating Return-to-Home or Signal Loss failsafe.</p>
-          </div>
-
-          <div class="control-group" id="heading-mode-container">
-            <div class="control-label" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-              <span style="display: inline-flex; align-items: center; gap: 6px;">
-                <polygon points="3 11 22 2 13 21 11 13 3 11" stroke="#06b6d4" fill="none"/>
-                Heading Mode
-              </span>
-              <button id="heading-help-btn" type="button" aria-label="Heading Mode Information" style="background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.2); color: var(--accent-cyan); cursor: pointer; padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; height: 20px; width: 20px; margin: 0;">?</button>
-            </div>
-            <select id="heading-mode" class="form-select">
-              <option value="followWayline">Follow Flight Path (Forward-facing)</option>
-              <option value="fixed">Fixed Heading (North)</option>
-              <option value="towardPOI">Point of Interest (POI / Target-Facing)</option>
-              <option value="custom">Custom Heading (Angle)</option>
-            </select>
-            <div class="control-group hidden" id="global-custom-heading-container" style="margin-top: 6px;">
+            <div class="control-group" id="heading-mode-container">
               <div class="control-label" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                <label for="global-custom-heading" style="font-size: 0.75rem; margin-bottom: 0;">Global Custom Heading Angle</label>
-                <span class="value-display" style="font-size: 0.75rem; font-weight: 700; color: var(--accent-cyan);"><span id="global-custom-heading-val">0</span>°</span>
+                <span style="display: inline-flex; align-items: center; gap: 6px;">
+                  <polygon points="3 11 22 2 13 21 11 13 3 11" stroke="#06b6d4" fill="none"/>
+                  Heading Mode
+                </span>
+                <button id="heading-help-btn" type="button" aria-label="Heading Mode Information" style="background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.2); color: var(--accent-cyan); cursor: pointer; padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; height: 20px; width: 20px; margin: 0;">?</button>
               </div>
-              <input type="range" id="global-custom-heading" min="0" max="359" step="1" value="0" class="slider" aria-label="Global Custom Heading Angle">
-              <div style="display: flex; gap: 4px; margin-top: 4px;">
-                <button type="button" class="btn-secondary global-head-chip" data-angle="0" style="flex: 1; padding: 2px; font-size: 0.65rem;">N (0°)</button>
-                <button type="button" class="btn-secondary global-head-chip" data-angle="90" style="flex: 1; padding: 2px; font-size: 0.65rem;">E (90°)</button>
-                <button type="button" class="btn-secondary global-head-chip" data-angle="180" style="flex: 1; padding: 2px; font-size: 0.65rem;">S (180°)</button>
-                <button type="button" class="btn-secondary global-head-chip" data-angle="270" style="flex: 1; padding: 2px; font-size: 0.65rem;">W (270°)</button>
+              <select id="heading-mode" class="form-select">
+                <option value="followWayline">Follow Flight Path (Forward-facing)</option>
+                <option value="fixed">Fixed Heading (North)</option>
+                <option value="towardPOI">Point of Interest (POI / Target-Facing)</option>
+                <option value="custom">Custom Heading (Angle)</option>
+              </select>
+              <div class="control-group hidden" id="global-custom-heading-container" style="margin-top: 6px;">
+                <div class="control-label" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                  <label for="global-custom-heading" style="font-size: 0.75rem; margin-bottom: 0;">Global Custom Heading Angle</label>
+                  <span class="value-display" style="font-size: 0.75rem; font-weight: 700; color: var(--accent-cyan);"><span id="global-custom-heading-val">0</span>°</span>
+                </div>
+                <input type="range" id="global-custom-heading" min="0" max="359" step="1" value="0" class="slider" aria-label="Global Custom Heading Angle">
+                <div style="display: flex; gap: 4px; margin-top: 4px;">
+                  <button type="button" class="btn-secondary global-head-chip" data-angle="0" style="flex: 1; padding: 2px; font-size: 0.65rem;">N (0°)</button>
+                  <button type="button" class="btn-secondary global-head-chip" data-angle="90" style="flex: 1; padding: 2px; font-size: 0.65rem;">E (90°)</button>
+                  <button type="button" class="btn-secondary global-head-chip" data-angle="180" style="flex: 1; padding: 2px; font-size: 0.65rem;">S (180°)</button>
+                  <button type="button" class="btn-secondary global-head-chip" data-angle="270" style="flex: 1; padding: 2px; font-size: 0.65rem;">W (270°)</button>
+                </div>
+              </div>
+              <p class="help-text" style="margin-top: 4px; margin-bottom: 0;">Applies as a global default to all waypoints.</p>
+
+              <!-- Interactive Collapsible Help Drawer -->
+              <div id="heading-help-drawer" class="help-drawer hidden" style="background: rgba(15, 23, 42, 0.4); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-top: 8px; display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; gap: 4px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px;">
+                  <button id="heading-tab-follow" class="active" type="button" style="flex: 1; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); color: var(--accent-cyan); font-size: 0.65rem; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px;">Follow Path</button>
+                  <button id="heading-tab-fixed" type="button" style="flex: 1; background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 0.65rem; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px;">Fixed (North)</button>
+                  <button id="heading-tab-poi" type="button" style="flex: 1; background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 0.65rem; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px;">POI Target</button>
+                  <button id="heading-tab-custom" type="button" style="flex: 1; background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 0.65rem; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px;">Custom</button>
+                </div>
+                <div class="animation-container" style="position: relative; height: 90px; background: rgba(5, 8, 15, 0.45); border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, 0.03);">
+                  <svg viewBox="0 0 200 90" style="width: 100%; height: 100%;">
+                    <path d="M 30,65 L 100,25 L 170,65" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2" stroke-dasharray="4 4"/>
+                    <path id="anim-flight-path-active" d="M 30,65 L 100,25 L 170,65" fill="none" stroke="var(--accent-cyan)" stroke-width="2" stroke-dasharray="250" stroke-dashoffset="250" opacity="0.4"/>
+                    <g id="anim-poi-target" transform="translate(100, 48)" opacity="0" style="transition: opacity 0.3s ease;">
+                      <circle cx="0" cy="0" r="7" fill="rgba(194, 98, 45, 0.2)" stroke="#c2622d" stroke-width="1.2"/>
+                      <circle cx="0" cy="0" r="2.5" fill="#c2622d"/>
+                    </g>
+                    <g id="anim-drone" transform="translate(30,65)">
+                      <polygon points="0,-4 -18,-42 18,-42" fill="rgba(6, 182, 212, 0.12)" stroke="rgba(6, 182, 212, 0.35)" stroke-width="0.8" />
+                      <line x1="-7" y1="-7" x2="7" y2="7" stroke="#c2622d" stroke-width="1.5" />
+                      <line x1="-7" y1="7" x2="7" y2="-7" stroke="#c2622d" stroke-width="1.5" />
+                      <circle cx="-7" cy="-7" r="2.2" stroke="#06b6d4" stroke-width="0.8" fill="none"/>
+                      <circle cx="7" cy="-7" r="2.2" stroke="#06b6d4" stroke-width="0.8" fill="none"/>
+                      <polygon points="0,-4 -3.5,2.5 3.5,2.5" fill="#06b6d4" />
+                    </g>
+                  </svg>
+                </div>
+                <p id="heading-help-desc" style="font-size: 0.72rem; color: var(--text-muted); line-height: 1.35; margin: 0; min-height: 28px;">
+                  Drone rotates forward along the path. Camera always points ahead.
+                </p>
+                <div id="heading-help-details" style="display: flex; flex-direction: column; gap: 6px; font-size: 0.69rem; color: #cbd5e1; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 6px;"></div>
               </div>
             </div>
-            <p class="help-text" style="margin-top: 4px; margin-bottom: 0;">Applies as a global default to all waypoints.</p>
 
-            <!-- Interactive Collapsible Help Drawer -->
-            <div id="heading-help-drawer" class="help-drawer hidden" style="background: rgba(15, 23, 42, 0.4); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-top: 8px; display: flex; flex-direction: column; gap: 10px;">
-              <div style="display: flex; gap: 4px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px;">
-                <button id="heading-tab-follow" class="active" type="button" style="flex: 1; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.3); color: var(--accent-cyan); font-size: 0.65rem; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px;">Follow Path</button>
-                <button id="heading-tab-fixed" type="button" style="flex: 1; background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 0.65rem; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px;">Fixed (North)</button>
-                <button id="heading-tab-poi" type="button" style="flex: 1; background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 0.65rem; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px;">POI Target</button>
-                <button id="heading-tab-custom" type="button" style="flex: 1; background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 0.65rem; font-weight: 600; cursor: pointer; padding: 4px; border-radius: 4px;">Custom</button>
+            <div class="control-group">
+              <label for="path-mode">Connection Path Type</label>
+              <select id="path-mode" class="form-select">
+                <option value="curved" selected>Curved Path (Smooth turns, faster)</option>
+                <option value="straight">Straight Lines (Drone stops at points)</option>
+              </select>
+            </div>
+
+            <div class="control-group">
+              <label for="capture-mode">Capture Mode</label>
+              <select id="capture-mode" class="form-select">
+                <option value="stopAndShoot">Stop &amp; Shoot at Waypoints (Automated)</option>
+                <option value="continuous">Continuous Flight (Manual Interval / Timed Shot)</option>
+                <option value="video">Video Mode (Record Entire Route)</option>
+              </select>
+            </div>
+
+            <div class="control-group">
+              <label for="global-hover-time">Hover Time at Waypoints</label>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <input type="range" id="global-hover-time" class="form-range" min="0" max="60" step="1" value="0" style="flex: 1;">
+                <span style="min-width: 32px; text-align: right; font-weight: 600; color: var(--accent-cyan);"><span id="global-hover-time-val">0</span>s</span>
               </div>
-              <div class="animation-container" style="position: relative; height: 90px; background: rgba(5, 8, 15, 0.45); border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, 0.03);">
-                <svg viewBox="0 0 200 90" style="width: 100%; height: 100%;">
-                  <path d="M 30,65 L 100,25 L 170,65" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2" stroke-dasharray="4 4"/>
-                  <path id="anim-flight-path-active" d="M 30,65 L 100,25 L 170,65" fill="none" stroke="var(--accent-cyan)" stroke-width="2" stroke-dasharray="250" stroke-dashoffset="250" opacity="0.4"/>
-                  <g id="anim-poi-target" transform="translate(100, 48)" opacity="0" style="transition: opacity 0.3s ease;">
-                    <circle cx="0" cy="0" r="7" fill="rgba(194, 98, 45, 0.2)" stroke="#c2622d" stroke-width="1.2"/>
-                    <circle cx="0" cy="0" r="2.5" fill="#c2622d"/>
-                  </g>
-                  <g id="anim-drone" transform="translate(30,65)">
-                    <polygon points="0,-4 -18,-42 18,-42" fill="rgba(6, 182, 212, 0.12)" stroke="rgba(6, 182, 212, 0.35)" stroke-width="0.8" />
-                    <line x1="-7" y1="-7" x2="7" y2="7" stroke="#c2622d" stroke-width="1.5" />
-                    <line x1="-7" y1="7" x2="7" y2="-7" stroke="#c2622d" stroke-width="1.5" />
-                    <circle cx="-7" cy="-7" r="2.2" stroke="#06b6d4" stroke-width="0.8" fill="none"/>
-                    <circle cx="7" cy="-7" r="2.2" stroke="#06b6d4" stroke-width="0.8" fill="none"/>
-                    <polygon points="0,-4 -3.5,2.5 3.5,2.5" fill="#06b6d4" />
-                  </g>
-                </svg>
+            </div>
+
+            <div class="control-group" id="global-exclusion-detour-container">
+              <label for="global-exclusion-detour-mode">Exclusion Detour Strategy</label>
+              <select id="global-exclusion-detour-mode" class="form-select">
+                <option value="perimeter" selected>Around Perimeter (Horizontal Bypass)</option>
+                <option value="overTop">Over the Top (Climb Above Ceiling)</option>
+                <option value="smart">Smart / Shortest 3D Path</option>
+              </select>
+              <div id="global-clearance-wrapper" style="margin-top: 6px;">
+                <div class="control-label" style="margin-bottom: 2px;">
+                  <span style="font-size: 0.72rem; color: var(--text-muted);">Ceiling Clearance Buffer</span>
+                  <span class="value-display"><span id="global-exclusion-clearance-val">5</span> <span id="global-exclusion-clearance-unit">m</span></span>
+                </div>
+                <input type="range" id="global-exclusion-clearance-buffer" min="1" max="25" step="1" value="5" class="slider" aria-label="Ceiling Clearance Buffer">
               </div>
-              <p id="heading-help-desc" style="font-size: 0.72rem; color: var(--text-muted); line-height: 1.35; margin: 0; min-height: 28px;">
-                Drone rotates forward along the path. Camera always points ahead.
-              </p>
-              <div id="heading-help-details" style="display: flex; flex-direction: column; gap: 6px; font-size: 0.69rem; color: #cbd5e1; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 6px;"></div>
+              <p class="help-text" style="margin-top: 3px; margin-bottom: 0;">Global default for routing flights around or over restricted airspace.</p>
             </div>
-          </div>
+          </div> <!-- /global-defaults-subcard -->
 
-          <div class="control-group">
-            <label for="path-mode">Connection Path Type</label>
-            <select id="path-mode" class="form-select">
-              <option value="curved" selected>Curved Path (Smooth turns, faster)</option>
-              <option value="straight">Straight Lines (Drone stops at points)</option>
-            </select>
-          </div>
-
-          <div class="control-group">
-            <label for="capture-mode">Capture Mode</label>
-            <select id="capture-mode" class="form-select">
-              <option value="stopAndShoot">Stop &amp; Shoot at Waypoints (Automated)</option>
-              <option value="continuous">Continuous Flight (Manual Interval / Timed Shot)</option>
-              <option value="video">Video Mode (Record Entire Route)</option>
-            </select>
-          </div>
-
-          <div class="control-group">
-            <label for="global-hover-time">Hover Time at Waypoints</label>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <input type="range" id="global-hover-time" class="form-range" min="0" max="60" step="1" value="0" style="flex: 1;">
-              <span style="min-width: 32px; text-align: right; font-weight: 600; color: var(--accent-cyan);"><span id="global-hover-time-val">0</span>s</span>
-            </div>
-          </div>
-
-          <div class="control-group" id="global-exclusion-detour-container">
-            <label for="global-exclusion-detour-mode">Exclusion Detour Strategy</label>
-            <select id="global-exclusion-detour-mode" class="form-select">
-              <option value="perimeter" selected>Around Perimeter (Horizontal Bypass)</option>
-              <option value="overTop">Over the Top (Climb Above Ceiling)</option>
-              <option value="smart">Smart / Shortest 3D Path</option>
-            </select>
-            <div id="global-clearance-wrapper" style="margin-top: 6px;">
-              <div class="control-label" style="margin-bottom: 2px;">
-                <span style="font-size: 0.72rem; color: var(--text-muted);">Ceiling Clearance Buffer</span>
-                <span class="value-display"><span id="global-exclusion-clearance-val">5</span> <span id="global-exclusion-clearance-unit">m</span></span>
+          <!-- Card 2: Emergency & Safety Failsafes -->
+          <div id="emergency-failsafes-subcard" class="failsafes-subgroup-card">
+            <div class="failsafes-subgroup-header">
+              <div class="failsafes-subgroup-title">
+                <span>🛡️ Emergency &amp; Safety Failsafes</span>
               </div>
-              <input type="range" id="global-exclusion-clearance-buffer" min="1" max="25" step="1" value="5" class="slider" aria-label="Ceiling Clearance Buffer">
+              <div class="failsafes-subgroup-desc">Automated RTH and loss-of-signal procedures enforced across all waypoints.</div>
             </div>
-            <p class="help-text" style="margin-top: 3px; margin-bottom: 0;">Global default for routing flights around or over restricted airspace.</p>
-          </div>
 
-          <div class="control-group">
-            <label for="drone-model">Export Drone Target</label>
-            <select id="drone-model" class="form-select">
-              <option value="77">DJI Mavic 3 Enterprise (77)</option>
-              <option value="67">DJI Matrice 30 / 30T (67)</option>
-              <option value="60">DJI Matrice 300 / 350 RTK (60)</option>
-              <option value="68" selected>DJI Mini 4 Pro (68)</option>
-              <option value="89">DJI Air 3 (89)</option>
-              <option value="71">DJI Inspire 3 (71)</option>
-            </select>
-          </div>
-
-          <div class="control-group">
-            <label for="rc2-uuid">DJI Fly Waypoint UUID</label>
-            <div style="display:flex;gap:6px;align-items:center;">
-              <input type="text" id="rc2-uuid" class="form-input" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" maxlength="36" style="font-family:monospace;font-size:0.75rem;flex:1;letter-spacing:0.03em;" />
-              <button id="rc2-uuid-clear" type="button" title="Clear UUID" style="background:rgba(255,255,255,0.07);border:1px solid var(--border-color);color:var(--text-muted);border-radius:6px;padding:5px 8px;cursor:pointer;font-size:0.8rem;flex-shrink:0;">✕</button>
+            <div class="control-group">
+              <label for="signal-lost-action">Signal Lost Action</label>
+              <select id="signal-lost-action" class="form-select">
+                <option value="goBack" selected>Return to Home (RTH)</option>
+                <option value="hover">Hover in Place</option>
+                <option value="landing">Auto Land</option>
+                <option value="goContinue">Continue Mission</option>
+              </select>
             </div>
-            <p class="help-text">RC2 path: Android/data/dji.go.v5/files/waypoint/<strong id="rc2-uuid-preview" style="color:var(--text-main);">[UUID]</strong></p>
-          </div>
 
-          <div class="control-group">
-            <label for="camera-model">Drone &amp; Camera Model</label>
-            <select id="camera-model" class="form-select">
-              <option value="dji_mini_4_pro_std">DJI Mini 4 Pro (Standard 24mm)</option>
-              <option value="dji_mini_4_pro_wide">DJI Mini 4 Pro (Wide Lens 14mm)</option>
-              <option value="skyrover_x1_std">Skyrover X1 (Standard 26mm)</option>
-              <option value="skyrover_x1_wide">Skyrover X1 (Wide Lens 18mm)</option>
-              <option value="custom">Custom Camera...</option>
-            </select>
-          </div>
+            <div class="control-group">
+              <label for="finish-action">Finish Action</label>
+              <select id="finish-action" class="form-select">
+                <option value="goHome">Return to Home (RTH)</option>
+                <option value="gotoFirstWaypoint">Back to Start Point</option>
+                <option value="noAction">Hover in Place</option>
+                <option value="autoLand">Auto Land</option>
+              </select>
+            </div>
+
+            <!-- Safe Return-to-Home Altitude -->
+            <div class="control-group" id="rth-altitude-control-group">
+              <div class="control-label">
+                <span style="display: inline-flex; align-items: center; gap: 6px;">
+                  <svg viewBox="0 0 24 24" width="16" height="16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="#06b6d4" fill="none"/>
+                    <polyline points="9 22 9 12 15 12 15 22" stroke="#c2622d" fill="none"/>
+                  </svg>
+                  Safe RTH Altitude
+                </span>
+                <span class="value-display"><span id="rth-altitude-val">50</span> <span id="rth-altitude-unit">m</span></span>
+              </div>
+              <input type="range" id="rth-altitude" min="20" max="150" step="5" value="50" class="slider" aria-label="Safe Return-to-Home altitude">
+              <p class="help-text" style="margin-top: 3px; margin-bottom: 0;">Climb altitude before initiating Return-to-Home or Signal Loss failsafe.</p>
+            </div>
+
+            <!-- Max Flight Altitude Limit (Global Ceiling) -->
+            <div class="control-group" id="max-height-control-group">
+              <div class="control-label">
+                <span style="display: inline-flex; align-items: center; gap: 6px;">
+                  <svg viewBox="0 0 24 24" width="16" height="16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
+                    <line x1="3" y1="3" x2="21" y2="3" stroke="#f59e0b"/>
+                    <path d="M12 21v-14M8 11l4-4 4 4" stroke="#06b6d4" fill="none"/>
+                    <circle cx="12" cy="18" r="1.5" fill="#f5f0e8"/>
+                  </svg>
+                  Max Flight Altitude (Ceiling)
+                </span>
+                <span class="value-display"><span id="max-height-val">120</span> <span id="max-height-unit">m</span></span>
+              </div>
+              <input type="range" id="max-flight-height" min="20" max="500" step="5" value="120" class="slider" aria-label="Maximum flight altitude ceiling">
+              <div id="max-height-legal-warning" class="legal-ceiling-notice" style="display: none; margin-top: 6px; padding: 6px 8px; border-radius: 6px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); font-size: 0.72rem; color: #fbbf24; line-height: 1.35;">
+                ⚠️ <strong>Above 120m / 400ft Standard Regulatory Ceiling</strong> (FAA Part 107 / EASA / UK CAA). Ensure flight waiver or airspace authorization.
+              </div>
+              <p class="help-text" style="margin-top: 3px; margin-bottom: 0;">Hard ceiling cap for layer waypoints and obstacle climb detours.</p>
+            </div>
+          </div> <!-- /emergency-failsafes-subcard -->
+
+          <!-- Card 3: Drone Hardware & Export Profile -->
+          <div id="drone-hardware-subcard" class="failsafes-subgroup-card">
+            <div class="failsafes-subgroup-header">
+              <div class="failsafes-subgroup-title">
+                <span>🛰️ Drone Hardware &amp; Export Profile</span>
+              </div>
+              <div class="failsafes-subgroup-desc">Target aircraft specifications and DJI Fly WPML mission metadata.</div>
+            </div>
+
+            <div class="control-group">
+              <label for="drone-model">Export Drone Target</label>
+              <select id="drone-model" class="form-select">
+                <option value="77">DJI Mavic 3 Enterprise (77)</option>
+                <option value="67">DJI Matrice 30 / 30T (67)</option>
+                <option value="60">DJI Matrice 300 / 350 RTK (60)</option>
+                <option value="68" selected>DJI Mini 4 Pro (68)</option>
+                <option value="89">DJI Air 3 (89)</option>
+                <option value="71">DJI Inspire 3 (71)</option>
+              </select>
+            </div>
+
+            <div class="control-group">
+              <label for="camera-model">Drone &amp; Camera Model</label>
+              <select id="camera-model" class="form-select">
+                <option value="dji_mini_4_pro_std">DJI Mini 4 Pro (Standard 24mm)</option>
+                <option value="dji_mini_4_pro_wide">DJI Mini 4 Pro (Wide Lens 14mm)</option>
+                <option value="skyrover_x1_std">Skyrover X1 (Standard 26mm)</option>
+                <option value="skyrover_x1_wide">Skyrover X1 (Wide Lens 18mm)</option>
+                <option value="custom">Custom Camera...</option>
+              </select>
+            </div>
+
+            <div class="control-group">
+              <label for="rc2-uuid">DJI Fly Waypoint UUID</label>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <input type="text" id="rc2-uuid" class="form-input" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" maxlength="36" style="font-family:monospace;font-size:0.75rem;flex:1;letter-spacing:0.03em;" />
+                <button id="rc2-uuid-clear" type="button" title="Clear UUID" style="background:rgba(255,255,255,0.07);border:1px solid var(--border-color);color:var(--text-muted);border-radius:6px;padding:5px 8px;cursor:pointer;font-size:0.8rem;flex-shrink:0;">✕</button>
+              </div>
+              <p class="help-text">RC2 path: Android/data/dji.go.v5/files/waypoint/<strong id="rc2-uuid-preview" style="color:var(--text-main);">[UUID]</strong></p>
+            </div>
+          </div> <!-- /drone-hardware-subcard -->
         </section>
 
         <!-- Section 4: Actions & Live Sync -->
@@ -1316,34 +1374,7 @@
             <button id="clear-imported-btn" class="btn-secondary hidden" type="button" style="color: var(--accent-red); border-color: rgba(239, 68, 68, 0.3); padding: 8px;">✕</button>
           </div>
 
-          <!-- Export & Visualizer Row -->
-          <div style="display: flex; gap: 6px; margin-top: 6px;">
-            <button id="preview-3d-btn" class="btn-secondary" type="button" style="flex: 1; padding: 9px 4px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.78rem; margin: 0;">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-                <line x1="12" y1="22.08" x2="12" y2="12"/>
-              </svg>
-              3D View
-            </button>
-            <button id="action-diagnostics-btn" class="btn-secondary" type="button" style="flex: 1.2; padding: 9px 4px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.78rem; margin: 0; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24;" title="Flight Diagnostics &amp; 3D Telemetry Center">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="20" x2="18" y2="10"/>
-                <line x1="12" y1="20" x2="12" y2="4"/>
-                <line x1="6" y1="20" x2="6" y2="14"/>
-              </svg>
-              Flight Diag
-            </button>
-            <button id="download-btn" class="btn-primary" type="button" style="flex: 1.3; padding: 9px 6px; border-radius: 8px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.78rem; margin: 0;">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              Export KMZ
-            </button>
-          </div>
-          <button id="show-guide-btn" class="btn-secondary" type="button" style="margin-top: 6px; width: 100%; font-size: 0.72rem; padding: 6px;">Show RC2 Copy Instructions</button>
+          <button id="show-guide-btn" class="btn-secondary" type="button" style="margin-top: 4px; width: 100%; font-size: 0.72rem; padding: 6px;">Show RC2 Copy Instructions</button>
           
           <!-- Hidden backward-compatibility elements for tests/programmatic access -->
           <div id="kmz-preflight-status-badge" class="hidden" style="display: none !important;" aria-hidden="true">
@@ -1454,10 +1485,47 @@
               </svg>
               Flight Diagnostics &amp; 3D Replay
             </button>
+          </div> <!-- /#companion-sync-container -->
+        </section> <!-- /#actions-and-sync-section -->
+      </div> <!-- /.scroll-container -->
+
+        <!-- Persistent Sticky Bottom Action Dock -->
+        <div id="sidebar-sticky-dock" class="sidebar-sticky-dock">
+          <div class="sticky-dock-summary" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.68rem; color: var(--text-muted);">
+            <span style="display: inline-flex; align-items: center; gap: 4px;">
+              <span style="color: var(--accent-cyan);">⚡</span>
+              <span id="dock-layer-summary">Layer 1</span>
+            </span>
+            <span id="dock-waypoint-summary" style="font-weight: 600; color: var(--text-main);">0 Waypoints</span>
           </div>
-        </section>
-      </div>
-    </aside>
+          <div style="display: flex; gap: 6px;">
+            <button id="preview-3d-btn" class="btn-secondary" type="button" style="flex: 1; padding: 8px 4px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.76rem; margin: 0;" title="3D Flight Path Walkthrough">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                <line x1="12" y1="22.08" x2="12" y2="12"/>
+              </svg>
+              3D View
+            </button>
+            <button id="action-diagnostics-btn" class="btn-secondary" type="button" style="flex: 1.1; padding: 8px 4px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.76rem; margin: 0; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24;" title="Flight Diagnostics &amp; 3D Telemetry Center">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10"/>
+                <line x1="12" y1="20" x2="12" y2="4"/>
+                <line x1="6" y1="20" x2="6" y2="14"/>
+              </svg>
+              Flight Diag
+            </button>
+            <button id="download-btn" class="btn-primary" type="button" style="flex: 1.3; padding: 8px 6px; border-radius: 8px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.76rem; margin: 0;" title="Export WPML Mission KMZ">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Export KMZ
+            </button>
+          </div>
+        </div>
+      </aside>
 
     <!-- Main Content Area (Map and Floating Info) -->
     <main class="main-map-container">
@@ -1801,6 +1869,15 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🧭 Sidebar Usability, Structured Cards &amp; Sticky Action Dock (v1.92.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Redesigned the left navigation sidebar with clean sub-group cards across Section 2 (Coverage, Altitudes &amp; Overlaps, Optics, Dynamics) and Section 3 (Global Defaults, Safety Failsafes, Hardware Profile). Added a live 3-Tier Hierarchy status badge showing active layer inheritance or override count, utility/safety badges on pattern cards, and a persistent sticky bottom action dock with instant KMZ export and live telemetry.
+            </p>
+          </div>
+
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🧭 Layer Custom Heading &amp; Real-Time Map Camera Visuals (v1.91.0)
@@ -2380,7 +2457,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.91.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.92.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -2446,6 +2523,17 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.92.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Section 3 Failsafes &amp; Defaults Card Groupings:</strong> Organized Section 3 into 3 distinct logical cards (Global Flight Defaults, Emergency &amp; Safety Failsafes, Drone Hardware &amp; Export Profile) to clearly delineate Tier 1 defaults from mission-critical failsafes and physical aircraft hardware.</li>
+              <li><strong>Section 2 Flight Layer Dynamics Sub-Cards:</strong> Grouped Section 2 controls into 4 themed sub-cards (Coverage &amp; Geometry, Flight Altitudes &amp; Overlaps, Camera &amp; Gimbal Optics, Layer Dynamics &amp; Modes) to eliminate the wall of sliders and clarify flight parameters.</li>
+              <li><strong>Live Three-Tier Hierarchy Indicator:</strong> Added a live status badge to the Flight Layer Dynamics header displaying whether the active layer is inheriting global mission settings or overriding specific flight parameters with instant click-to-focus on overrides.</li>
+              <li><strong>Pattern Grid Category Badges:</strong> Added clear <code>TOOL</code> and <code>SAFETY</code> corner badge tags to Auto-Plan, Exclusion Box, and Exclusion Polygon cards to distinguish utility tools and airspace safety boundaries from flight patterns.</li>
+              <li><strong>Persistent Bottom Action &amp; Telemetry Dock:</strong> Pinned primary mission actions (Export KMZ, 3D Preview, Flight Diagnostics) and live telemetry counters in a sticky bottom dock so pilots never lose access when adjusting settings.</li>
+              <li><strong>Freeform Layer Parameter Usability:</strong> Freeform layers now retain access to Altitude, Speed, Optics, and Layer Dynamics sub-cards while hiding rectangular grid dimensions.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.91.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">

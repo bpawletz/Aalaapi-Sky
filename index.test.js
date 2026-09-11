@@ -12860,21 +12860,21 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('Layer-Wide Custom Heading & Real-Time Map Camera Updates (v1.91.0)', () => {
     test('version tags and changelogs are updated to v1.91.0 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.strictEqual(pkg.version, '1.91.0', 'package.json must be 1.91.0');
+      assert.ok(pkg.version === '1.91.0' || pkg.version === '1.92.0', 'package.json must be 1.91.0 or higher');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.91.0]'), 'CHANGELOG.md must contain ## [1.91.0]');
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
-        assert.ok(html.includes('Version 1.91.0'), `${filename} must contain Version 1.91.0 in About modal`);
+        assert.ok(html.includes('Version 1.91.0') || html.includes('Version 1.92.0'), `${filename} must contain Version 1.91.0 or 1.92.0 in About modal`);
         assert.ok(html.includes('Changelog (v1.91.0):'), `${filename} must contain Changelog (v1.91.0)`);
         assert.ok(html.includes('id="layer-custom-heading"'), `${filename} must contain layer-custom-heading slider`);
         assert.ok(html.includes('id="global-custom-heading"'), `${filename} must contain global-custom-heading slider`);
       });
 
       const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-      assert.ok(templateHtml.includes('<span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.91.0</span>'), 'index_template.html header badge must be v1.91.0');
+      assert.ok(templateHtml.includes('header-version-badge'), 'index_template.html must contain header badge');
     });
 
     test('getEffectiveLayerCustomHeading resolves layer custom heading and global fallback', () => {
@@ -12946,6 +12946,207 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
         assert.ok(wpml.includes('<wpml:waypointHeadingAngle>140.0</wpml:waypointHeadingAngle>'), 'WPML must export custom angle 140.0');
       } finally {
         flightLayers = origLayers;
+      }
+    });
+  });
+
+  describe('Left Navigation Usability, Structured Sub-Groupings & Sticky Action Dock (v1.92.0)', () => {
+    test('version tags and changelogs are updated to v1.92.0 across all required locations', () => {
+      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+      assert.strictEqual(pkg.version, '1.92.0', 'package.json must be 1.92.0');
+
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('## [1.92.0]'), 'CHANGELOG.md must contain ## [1.92.0]');
+
+      function readSafe(filepath) {
+        for (let i = 0; i < 5; i++) {
+          try {
+            return fs.readFileSync(filepath, 'utf8');
+          } catch (e) {
+            if (e.code === 'EBUSY' && i < 4) {
+              const start = Date.now();
+              while (Date.now() - start < 100) {}
+              continue;
+            }
+            throw e;
+          }
+        }
+      }
+
+      ['index_template.html', 'index.html'].forEach(filename => {
+        const html = readSafe(path.join(__dirname, filename));
+        assert.ok(html.includes('Version 1.92.0'), `${filename} must contain Version 1.92.0 in About modal`);
+        assert.ok(html.includes('Changelog (v1.92.0):'), `${filename} must contain Changelog (v1.92.0)`);
+        assert.ok(html.includes('id="layer-hierarchy-status-badge"'), `${filename} must contain layer-hierarchy-status-badge`);
+        assert.ok(html.includes('id="sidebar-sticky-dock"'), `${filename} must contain sidebar-sticky-dock`);
+      });
+
+      const templateHtml = readSafe(path.join(__dirname, 'index_template.html'));
+      assert.ok(
+        templateHtml.includes('<span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.92.0</span>'),
+        'index_template.html header badge must be v1.92.0'
+      );
+    });
+
+    test('Section 3 is structured into 3 distinct logical cards (Defaults, Safety Failsafes, Hardware)', () => {
+      const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(templateHtml.includes('id="global-defaults-subcard"'), 'Must include global-defaults-subcard');
+      assert.ok(templateHtml.includes('id="emergency-failsafes-subcard"'), 'Must include emergency-failsafes-subcard');
+      assert.ok(templateHtml.includes('id="drone-hardware-subcard"'), 'Must include drone-hardware-subcard');
+
+      const defaultsIdx = templateHtml.indexOf('id="global-defaults-subcard"');
+      const failsafesIdx = templateHtml.indexOf('id="emergency-failsafes-subcard"');
+      const hardwareIdx = templateHtml.indexOf('id="drone-hardware-subcard"');
+
+      assert.ok(defaultsIdx < failsafesIdx, 'Global defaults must appear before emergency failsafes');
+      assert.ok(failsafesIdx < hardwareIdx, 'Emergency failsafes must appear before drone hardware profile');
+
+      // Verify key inputs are within Section 3
+      const sec3Block = templateHtml.substring(defaultsIdx, templateHtml.indexOf('id="actions-and-sync-section"'));
+      assert.ok(sec3Block.includes('id="global-hover-time"'), 'Global hover time must be in Section 3 defaults');
+      assert.ok(sec3Block.includes('id="capture-mode"'), 'Global capture-mode must be in Section 3 defaults');
+      assert.ok(sec3Block.includes('id="path-mode"'), 'Global path-mode must be in Section 3 defaults');
+      assert.ok(sec3Block.includes('id="heading-mode"'), 'Global heading-mode must be in Section 3 defaults');
+      assert.ok(sec3Block.includes('id="finish-action"'), 'finish-action must be in Section 3 failsafes');
+      assert.ok(sec3Block.includes('id="signal-lost-action"'), 'signal-lost-action must be in Section 3 failsafes');
+      assert.ok(sec3Block.includes('id="drone-model"'), 'drone-model must be in Section 3 hardware');
+    });
+
+    test('Section 2 is grouped into 4 distinct sub-cards with hierarchy status badge in header', () => {
+      const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(templateHtml.includes('id="layer-card-geometry"'), 'Must include layer-card-geometry');
+      assert.ok(templateHtml.includes('id="layer-card-flight"'), 'Must include layer-card-flight');
+      assert.ok(templateHtml.includes('id="layer-card-optics"'), 'Must include layer-card-optics');
+      assert.ok(templateHtml.includes('id="layer-card-modes"'), 'Must include layer-card-modes');
+      assert.ok(templateHtml.includes('id="layer-hierarchy-status-badge"'), 'Must include layer-hierarchy-status-badge');
+
+      const geomIdx = templateHtml.indexOf('id="layer-card-geometry"');
+      const flightIdx = templateHtml.indexOf('id="layer-card-flight"');
+      const opticsIdx = templateHtml.indexOf('id="layer-card-optics"');
+      const modesIdx = templateHtml.indexOf('id="layer-card-modes"');
+
+      assert.ok(geomIdx < flightIdx, 'Geometry must precede flight altitudes');
+      assert.ok(flightIdx < opticsIdx, 'Flight altitudes must precede optics');
+      assert.ok(opticsIdx < modesIdx, 'Optics must precede layer dynamics modes');
+    });
+
+    test('Pattern Selector Cards display TOOL and SAFETY badges', () => {
+      const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(templateHtml.includes('class="pattern-badge-tool">TOOL</span>'), 'Auto-plan button must have TOOL badge');
+      assert.ok(templateHtml.includes('class="pattern-badge-restricted">SAFETY</span>'), 'Exclusion zones must have SAFETY badge');
+    });
+
+    test('Sticky action dock is positioned at bottom of sidebar with export KMZ and live counters', () => {
+      const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      const scrollEndIdx = templateHtml.indexOf('</div> <!-- /.scroll-container -->');
+      const dockIdx = templateHtml.indexOf('id="sidebar-sticky-dock"');
+      const sidebarEndIdx = templateHtml.indexOf('</aside>');
+
+      assert.ok(dockIdx > scrollEndIdx, 'Sticky dock must be after scroll-container');
+      assert.ok(dockIdx < sidebarEndIdx, 'Sticky dock must be inside sidebar aside');
+
+      const dockBlock = templateHtml.substring(dockIdx, sidebarEndIdx);
+      assert.ok(dockBlock.includes('id="preview-3d-btn"'), 'Dock must contain preview-3d-btn');
+      assert.ok(dockBlock.includes('id="action-diagnostics-btn"'), 'Dock must contain action-diagnostics-btn');
+      assert.ok(dockBlock.includes('id="download-btn"'), 'Dock must contain download-btn');
+      assert.ok(dockBlock.includes('id="dock-layer-summary"'), 'Dock must contain dock-layer-summary');
+      assert.ok(dockBlock.includes('id="dock-waypoint-summary"'), 'Dock must contain dock-waypoint-summary');
+    });
+
+    test('updateLayerHierarchyBadge accurately reflects inherit vs overrides count', () => {
+      const origLayers = typeof flightLayers !== 'undefined' ? flightLayers : [];
+      const origActive = typeof activeLayerId !== 'undefined' ? activeLayerId : null;
+
+      const mockBadge = {
+        textContent: '',
+        title: '',
+        style: {},
+        classList: {
+          add: () => {},
+          remove: () => {}
+        }
+      };
+
+      const origGetElementById = global.document.getElementById;
+      global.document.getElementById = (id) => {
+        if (id === 'layer-hierarchy-status-badge') return mockBadge;
+        if (id === 'layer-heading-mode') return { value: 'inherit' };
+        if (id === 'layer-path-mode') return { value: 'inherit' };
+        if (id === 'layer-capture-mode') return { value: 'inherit' };
+        if (id === 'layer-hover-time-mode') return { value: 'inherit' };
+        if (id === 'exclusion-detour-mode') return { value: 'inherit' };
+        return origGetElementById ? origGetElementById(id) : null;
+      };
+
+      try {
+        // Case 1: All inheriting
+        flightLayers = [{
+          id: 'test-layer-1',
+          name: 'Layer 1',
+          headingMode: 'inherit',
+          pathMode: 'inherit',
+          captureMode: 'inherit',
+          hoverTime: 'inherit'
+        }];
+        activeLayerId = 'test-layer-1';
+
+        updateLayerHierarchyBadge();
+        assert.ok(mockBadge.textContent.includes('Inheriting Globals'), 'Badge must show Inheriting Globals when no overrides exist');
+
+        // Case 2: Overrides
+        global.document.getElementById = (id) => {
+          if (id === 'layer-hierarchy-status-badge') return mockBadge;
+          if (id === 'layer-heading-mode') return { value: 'towardPOI' };
+          if (id === 'layer-path-mode') return { value: 'straight' };
+          if (id === 'layer-capture-mode') return { value: 'inherit' };
+          if (id === 'layer-hover-time-mode') return { value: 'inherit' };
+          if (id === 'exclusion-detour-mode') return { value: 'inherit' };
+          return origGetElementById ? origGetElementById(id) : null;
+        };
+
+        updateLayerHierarchyBadge();
+        assert.ok(mockBadge.textContent.includes('Layer Overrides (2)'), 'Badge must report Layer Overrides (2)');
+      } finally {
+        global.document.getElementById = origGetElementById;
+        flightLayers = origLayers;
+        activeLayerId = origActive;
+      }
+    });
+
+    test('togglePatternParameters keeps Section 2 visible for freeform pattern while hiding rectangular geometry', () => {
+      const origGetElementById = global.document.getElementById;
+      const elements = {
+        'grid-type': { value: 'freeform' },
+        'grid-width': { value: '100', closest: () => ({ style: {} }) },
+        'grid-height': { value: '100', closest: () => ({ style: {} }) },
+        'grid-rotation': { value: '0', closest: () => ({ style: {} }) },
+        'front-overlap': { value: '80', closest: () => ({ style: {} }) },
+        'side-overlap': { value: '75', closest: () => ({ style: {} }) },
+        'grid-geometry-section': { style: { display: 'none' }, classList: { remove: () => {} } },
+        'grid-geometry-title': { textContent: '' },
+        'layer-card-geometry': { style: {} },
+        'layer-card-flight': { style: {} },
+        'layer-card-optics': { style: {} },
+        'layer-card-modes': { style: {} },
+        'altitude-control-group': { style: {} },
+        'freeform-instructions': { classList: { remove: () => {} }, querySelector: () => ({ textContent: '' }) },
+        'gimbal-pitch': { value: '-60' }
+      };
+
+      global.document.getElementById = (id) => {
+        if (elements[id]) return elements[id];
+        return origGetElementById ? origGetElementById(id) : null;
+      };
+
+      try {
+        togglePatternParameters();
+        assert.strictEqual(elements['grid-geometry-section'].style.display, 'block', 'Section 2 must remain block for freeform');
+        assert.strictEqual(elements['layer-card-geometry'].style.display, 'none', 'layer-card-geometry must be hidden for freeform');
+        assert.strictEqual(elements['layer-card-flight'].style.display, 'block', 'layer-card-flight must be shown for freeform');
+        assert.strictEqual(elements['layer-card-optics'].style.display, 'block', 'layer-card-optics must be shown for freeform');
+        assert.strictEqual(elements['layer-card-modes'].style.display, 'block', 'layer-card-modes must be shown for freeform');
+      } finally {
+        global.document.getElementById = origGetElementById;
       }
     });
   });
