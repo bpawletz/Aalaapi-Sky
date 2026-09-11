@@ -14400,16 +14400,24 @@ describe('v1.94.3 Pre-Flight KMZ Audit & Executive Readiness Redesign Tests', ()
 });
 
 describe('v1.94.4 Real-Time Live METAR Ingestion & Flight Category Tests', () => {
-  test('Version consistency: v1.94.13 is registered across package.json, CHANGELOG.md, and template (dynamic diagnostics cards and auto-hide)', () => {
+  test('Version consistency: v1.94.14 is registered across package.json, CHANGELOG.md, and template (settings modal redesign, cyber scrollbar, and 5 structured cards)', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.94.13', 'package.json version must be 1.94.13');
+    assert.strictEqual(pkg.version, '1.94.14', 'package.json version must be 1.94.14');
 
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.94.14] - 2026-09-11'), 'CHANGELOG.md must contain 1.94.14 entry');
+
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateHtml.includes('>v1.94.14</span>'), 'index_template.html must contain header version badge v1.94.14');
+    assert.ok(templateHtml.includes('Version 1.94.14</span>'), 'index_template.html must contain About modal version tag 1.94.14');
+    assert.ok(templateHtml.includes('Changelog (v1.94.14):'), 'index_template.html must contain Changelog (v1.94.14) header');
+  });
+
+  test('Version consistency: v1.94.13 changelog entry is preserved in CHANGELOG.md and template', () => {
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.94.13] - 2026-09-11'), 'CHANGELOG.md must contain 1.94.13 entry');
 
     const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(templateHtml.includes('>v1.94.13</span>'), 'index_template.html must contain header version badge v1.94.13');
-    assert.ok(templateHtml.includes('Version 1.94.13</span>'), 'index_template.html must contain About modal version tag 1.94.13');
     assert.ok(templateHtml.includes('Changelog (v1.94.13):'), 'index_template.html must contain Changelog (v1.94.13) header');
   });
 
@@ -14923,6 +14931,98 @@ describe('v1.94.13 Dynamic Flight Diagnostics Trajectory Accuracy and Battery St
     }
   });
 });
+
+describe('v1.94.14 Configuration Settings Modal Redesign & Cyber Scrollbar Tests', () => {
+  const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+  const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+  const cssContent = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+
+  test('Settings modal container has expanded dimensions (max-width: 540px, width: 92vw, max-height: 88dvh)', () => {
+    assert.ok(
+      templateHtml.includes('max-width: 540px; width: 92vw; max-height: 88dvh;') ||
+      (templateHtml.includes('max-width: 540px') && templateHtml.includes('width: 92vw') && templateHtml.includes('max-height: 88dvh')),
+      'index_template.html #config-modal .modal must have expanded dimensions'
+    );
+    assert.ok(
+      compiledHtml.includes('max-width: 540px') && compiledHtml.includes('width: 92vw') && compiledHtml.includes('max-height: 88dvh'),
+      'compiled index.html #config-modal .modal must have expanded dimensions'
+    );
+  });
+
+  test('Settings modal-content has comfortable 20px 24px padding and flex column gap', () => {
+    assert.ok(
+      templateHtml.includes('padding: 20px 24px;') && templateHtml.includes('display: flex; flex-direction: column; gap: 16px;'),
+      'index_template.html #config-modal .modal-content must have 20px 24px padding and flex column gap'
+    );
+    assert.ok(
+      compiledHtml.includes('padding: 20px 24px;'),
+      'compiled index.html #config-modal .modal-content must have 20px 24px padding'
+    );
+  });
+
+  test('Custom cyber scrollbar is defined for .modal-content in index.css', () => {
+    assert.ok(cssContent.includes('.modal-content::-webkit-scrollbar'), 'index.css must define .modal-content::-webkit-scrollbar');
+    assert.ok(cssContent.includes('.modal-content::-webkit-scrollbar-thumb'), 'index.css must define .modal-content::-webkit-scrollbar-thumb');
+    assert.ok(cssContent.includes('scrollbar-width: thin;'), 'index.css must define Firefox thin scrollbar');
+    assert.ok(cssContent.includes('scrollbar-color: rgba(56, 189, 248,'), 'index.css must define cyan cyber scrollbar-color');
+  });
+
+  test('Settings modal contains 5 structured settings-card category sections', () => {
+    const cardRegex = /class="settings-card"/g;
+    const templateCardMatches = templateHtml.match(cardRegex) || [];
+    assert.strictEqual(templateCardMatches.length, 5, 'index_template.html must contain exactly 5 settings-card sections');
+
+    const expectedHeaders = [
+      'General &amp; Display',
+      'Map &amp; Camera Visuals',
+      'Menu Minimization Options',
+      'Multi-Vendor Autopilots',
+      'Storage &amp; Controlled Reset'
+    ];
+
+    for (const header of expectedHeaders) {
+      assert.ok(
+        templateHtml.includes(header) || templateHtml.includes(header.replace('&amp;', '&')),
+        `index_template.html must contain settings category header "${header}"`
+      );
+    }
+  });
+
+  test('All critical interactive form controls in #config-modal are preserved', () => {
+    const expectedControlIds = [
+      'unit-system',
+      'theme-mode-select',
+      'nav-layout-select',
+      'camera-palette-select',
+      'palette-swatch-preview',
+      'camera-cones-toggle',
+      'minimize-sidebar-toggle',
+      'accordion-mode-toggle',
+      'collapse-all-topics-btn',
+      'expand-all-topics-btn',
+      'multivendor-toggle',
+      'reset-select-all-btn',
+      'reset-clear-all-btn',
+      'storage-reset-categories-container',
+      'config-reset-selected-btn',
+      'config-factory-reset-btn',
+      'close-config-footer-btn',
+      'close-config-btn'
+    ];
+
+    for (const id of expectedControlIds) {
+      assert.ok(
+        templateHtml.includes(`id="${id}"`),
+        `index_template.html #config-modal must preserve control with id="${id}"`
+      );
+      assert.ok(
+        compiledHtml.includes(`id="${id}"`),
+        `compiled index.html #config-modal must preserve control with id="${id}"`
+      );
+    }
+  });
+});
+
 
 
 

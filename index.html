@@ -1010,6 +1010,26 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 189, 248, 0.25) rgba(15, 23, 42, 0.4);
+}
+
+.modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.25);
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.5);
 }
 
 .guide-steps {
@@ -4251,7 +4271,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.94.13</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.94.14</span></h1>
         </div>
       </div>
 
@@ -6692,7 +6712,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.94.13</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.94.14</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -6758,6 +6778,12 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.94.14):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Configuration Settings Redesign:</strong> Fixed `.modal-content` inside `#config-modal` by replacing zero horizontal padding with proper 24px padding, adding custom 6px cyan cyber scrollbars, expanding modal max-width from 450px to 540px, and organizing settings into clean, distinct visual cards.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.94.13):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -8648,7 +8674,7 @@ html, body {
 
   <!-- Configuration Settings Modal -->
   <div id="config-modal" class="modal-overlay hidden">
-    <div class="modal glass" style="max-width: 450px; width: 90%;">
+    <div class="modal glass" style="max-width: 540px; width: 92vw; max-height: 88dvh;">
       <header class="modal-header">
         <h2 style="display: flex; align-items: center; gap: 8px; margin: 0; font-size: 1.25rem;">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-cyan);">
@@ -8659,131 +8685,152 @@ html, body {
         </h2>
         <button id="close-config-btn" class="close-btn" type="button" aria-label="Close configuration">&times;</button>
       </header>
-      <div class="modal-content" style="display: flex; flex-direction: column; gap: 20px; padding: 20px 0 10px 0;">
+      <div class="modal-content" style="display: flex; flex-direction: column; gap: 16px; padding: 20px 24px;">
         
-        <!-- Unit Selection (Moved from sidebar) -->
-        <div class="control-group">
-          <label for="unit-system" style="font-weight: 600; color: var(--text-main); margin-bottom: 8px; display: block;">Measurement Units</label>
-          <select id="unit-system" class="form-select" style="width: 100%;">
-            <option value="metric">Metric (meters, m/s)</option>
-            <option value="imperial" selected>Imperial (feet, mph)</option>
-          </select>
-          <p class="help-text" style="margin-top: 4px;">Sets map grid measurements and flight inputs to feet or meters.</p>
-        </div>
-
-        <!-- Theme & Appearance Setting -->
-        <div class="control-group">
-          <label for="theme-mode-select" style="font-weight: 600; color: var(--text-main); margin-bottom: 8px; display: block;">Theme &amp; Appearance</label>
-          <select id="theme-mode-select" class="form-select" style="width: 100%;">
-            <option value="dark" selected>🌙 Cyber Dark Mode (Night / Indoor)</option>
-            <option value="light">☀️ High-Contrast Light Mode (Daylight Field)</option>
-          </select>
-          <p class="help-text" style="margin-top: 4px;">Switch between high-contrast sunlight field mode and cyber dark mode.</p>
-        </div>
-
-        <!-- Search & Navigation Layout Setting -->
-        <div class="control-group">
-          <label for="nav-layout-select" style="font-weight: 600; color: var(--text-main); margin-bottom: 8px; display: block;">Search &amp; Navigation Layout</label>
-          <select id="nav-layout-select" class="form-select" style="width: 100%;">
-            <option value="header" selected>App Header (Integrated Studio)</option>
-            <option value="floating">Floating Map HUD (Map Pill)</option>
-            <option value="sidebar">Sidebar (Classic Top)</option>
-          </select>
-          <p class="help-text" style="margin-top: 4px;">Choose where address search and location controls appear.</p>
-        </div>
-
-        <!-- Map & Camera Visuals -->
-        <div class="control-group">
-          <label for="camera-palette-select" style="font-weight: 600; color: var(--text-main); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-            <span>Camera &amp; Path Visual Palette</span>
-            <span id="palette-swatch-preview" style="display: inline-flex; align-items: center; gap: 4px;" title="Path / Camera Colors">
-              <span class="palette-swatch-chip" style="background-color: #06b6d4;" title="Flight Path"></span>
-              <span class="palette-swatch-chip" style="background-color: #f59e0b;" title="Camera Pointer"></span>
-            </span>
-          </label>
-          <select id="camera-palette-select" class="form-select" style="width: 100%;">
-            <option value="high-viz-amber" selected>High-Viz Amber (Cyan Path + Amber Camera)</option>
-            <option value="electric-lime">Electric Lime (Azure Path + Neon Lime Camera)</option>
-            <option value="coral-crimson">Coral Crimson (Cyan Path + Hot Coral Camera)</option>
-            <option value="neon-magenta">Neon Magenta (Emerald Path + Vivid Magenta Camera)</option>
-            <option value="solar-yellow">Solar Yellow (Cobalt Path + Bright Yellow Camera)</option>
-            <option value="classic-cyan">Monochrome Classic (Matched Path &amp; Camera)</option>
-          </select>
-          <p class="help-text" style="margin-top: 4px;">Sets high-contrast colors for camera heading arrows and FOV sight cones so they stand out clearly against dashed flight path lines.</p>
-        </div>
-
-        <!-- Camera FOV Sight Cones Toggle -->
-        <div class="control-group" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: -6px;">
-          <div>
-            <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-main);">Camera Sight Cones</span>
-            <p class="help-text" style="margin: 2px 0 0 0;">Show illuminated field-of-view sight cones indicating gimbal facing direction.</p>
+        <!-- Card 1: General & Display -->
+        <div class="settings-card" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 14px;">
+          <div style="font-size: 0.8rem; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; gap: 6px;">
+            <span>🎛️ General &amp; Display</span>
           </div>
-          <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px;">
-            <input type="checkbox" id="camera-cones-toggle" checked style="opacity: 0; width: 0; height: 0;">
-            <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
-          </label>
+
+          <!-- Unit Selection (Moved from sidebar) -->
+          <div class="control-group">
+            <label for="unit-system" style="font-weight: 600; font-size: 0.82rem; color: var(--text-main); margin-bottom: 6px; display: block;">Measurement Units</label>
+            <select id="unit-system" class="form-select" style="width: 100%;">
+              <option value="metric">Metric (meters, m/s)</option>
+              <option value="imperial" selected>Imperial (feet, mph)</option>
+            </select>
+            <p class="help-text" style="margin-top: 4px; font-size: 0.74rem;">Sets map grid measurements and flight inputs to feet or meters.</p>
+          </div>
+
+          <!-- Theme & Appearance Setting -->
+          <div class="control-group">
+            <label for="theme-mode-select" style="font-weight: 600; font-size: 0.82rem; color: var(--text-main); margin-bottom: 6px; display: block;">Theme &amp; Appearance</label>
+            <select id="theme-mode-select" class="form-select" style="width: 100%;">
+              <option value="dark" selected>🌙 Cyber Dark Mode (Night / Indoor)</option>
+              <option value="light">☀️ High-Contrast Light Mode (Daylight Field)</option>
+            </select>
+            <p class="help-text" style="margin-top: 4px; font-size: 0.74rem;">Switch between high-contrast sunlight field mode and cyber dark mode.</p>
+          </div>
+
+          <!-- Search & Navigation Layout Setting -->
+          <div class="control-group">
+            <label for="nav-layout-select" style="font-weight: 600; font-size: 0.82rem; color: var(--text-main); margin-bottom: 6px; display: block;">Search &amp; Navigation Layout</label>
+            <select id="nav-layout-select" class="form-select" style="width: 100%;">
+              <option value="header" selected>App Header (Integrated Studio)</option>
+              <option value="floating">Floating Map HUD (Map Pill)</option>
+              <option value="sidebar">Sidebar (Classic Top)</option>
+            </select>
+            <p class="help-text" style="margin-top: 4px; font-size: 0.74rem;">Choose where address search and location controls appear.</p>
+          </div>
         </div>
 
-        <div style="border-top: 1px solid var(--border-color); padding-top: 16px;">
-          <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--text-main); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Menu Minimization Options</h3>
+        <!-- Card 2: Map & Camera Visuals -->
+        <div class="settings-card" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 14px;">
+          <div style="font-size: 0.8rem; font-weight: 700; color: #a78bfa; text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; gap: 6px;">
+            <span>🎨 Map &amp; Camera Visuals</span>
+          </div>
+
+          <!-- Map & Camera Visuals -->
+          <div class="control-group">
+            <label for="camera-palette-select" style="font-weight: 600; font-size: 0.82rem; color: var(--text-main); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+              <span>Camera &amp; Path Visual Palette</span>
+              <span id="palette-swatch-preview" style="display: inline-flex; align-items: center; gap: 4px;" title="Path / Camera Colors">
+                <span class="palette-swatch-chip" style="background-color: #06b6d4;" title="Flight Path"></span>
+                <span class="palette-swatch-chip" style="background-color: #f59e0b;" title="Camera Pointer"></span>
+              </span>
+            </label>
+            <select id="camera-palette-select" class="form-select" style="width: 100%;">
+              <option value="high-viz-amber" selected>High-Viz Amber (Cyan Path + Amber Camera)</option>
+              <option value="electric-lime">Electric Lime (Azure Path + Neon Lime Camera)</option>
+              <option value="coral-crimson">Coral Crimson (Cyan Path + Hot Coral Camera)</option>
+              <option value="neon-magenta">Neon Magenta (Emerald Path + Vivid Magenta Camera)</option>
+              <option value="solar-yellow">Solar Yellow (Cobalt Path + Bright Yellow Camera)</option>
+              <option value="classic-cyan">Monochrome Classic (Matched Path &amp; Camera)</option>
+            </select>
+            <p class="help-text" style="margin-top: 4px; font-size: 0.74rem;">Sets high-contrast colors for camera heading arrows and FOV sight cones so they stand out clearly against dashed flight path lines.</p>
+          </div>
+
+          <!-- Camera FOV Sight Cones Toggle -->
+          <div class="control-group" style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+            <div>
+              <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-main);">Camera Sight Cones</span>
+              <p class="help-text" style="margin: 2px 0 0 0; font-size: 0.74rem;">Show illuminated field-of-view sight cones indicating gimbal facing direction.</p>
+            </div>
+            <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px; flex-shrink: 0;">
+              <input type="checkbox" id="camera-cones-toggle" checked style="opacity: 0; width: 0; height: 0;">
+              <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Card 3: Menu Minimization Options -->
+        <div class="settings-card" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px;">
+          <div style="font-size: 0.8rem; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; gap: 6px;">
+            <span>📐 Menu Minimization Options</span>
+          </div>
           
           <!-- Sidebar Toggle option -->
-          <div class="control-group" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px;">
+          <div class="control-group" style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
             <div>
-              <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-main);">Minimize Sidebar Menu</span>
-              <p class="help-text" style="margin: 2px 0 0 0;">Collapse the sidebar to maximize map space.</p>
+              <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-main);">Minimize Sidebar Menu</span>
+              <p class="help-text" style="margin: 2px 0 0 0; font-size: 0.74rem;">Collapse the sidebar to maximize map space.</p>
             </div>
-            <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px;">
+            <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px; flex-shrink: 0;">
               <input type="checkbox" id="minimize-sidebar-toggle" style="opacity: 0; width: 0; height: 0;">
               <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
             </label>
           </div>
 
           <!-- Accordion mode option -->
-          <div class="control-group" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px;">
+          <div class="control-group" style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
             <div>
-              <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-main);">Accordion Mode (Auto-Collapse)</span>
-              <p class="help-text" style="margin: 2px 0 0 0;">Only keep one sidebar topic expanded at a time.</p>
+              <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-main);">Accordion Mode (Auto-Collapse)</span>
+              <p class="help-text" style="margin: 2px 0 0 0; font-size: 0.74rem;">Only keep one sidebar topic expanded at a time.</p>
             </div>
-            <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px;">
+            <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px; flex-shrink: 0;">
               <input type="checkbox" id="accordion-mode-toggle" style="opacity: 0; width: 0; height: 0;">
               <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
             </label>
           </div>
 
           <!-- Mass actions -->
-          <div style="display: flex; gap: 10px; margin-top: 12px;">
-            <button id="collapse-all-topics-btn" class="btn-secondary" type="button" style="flex: 1; padding: 8px; font-size: 0.75rem; font-weight: 600;">Collapse All Topics</button>
-            <button id="expand-all-topics-btn" class="btn-secondary" type="button" style="flex: 1; padding: 8px; font-size: 0.75rem; font-weight: 600;">Expand All Topics</button>
+          <div style="display: flex; gap: 8px; margin-top: 4px;">
+            <button id="collapse-all-topics-btn" class="btn-secondary" type="button" style="flex: 1; padding: 7px; font-size: 0.74rem; font-weight: 600;">Collapse All Topics</button>
+            <button id="expand-all-topics-btn" class="btn-secondary" type="button" style="flex: 1; padding: 7px; font-size: 0.74rem; font-weight: 600;">Expand All Topics</button>
           </div>
         </div>
 
-        <!-- Multi-Vendor Autopilots Support -->
-        <div style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 16px;">
-          <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--text-main); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Multi-Vendor Autopilots</h3>
+        <!-- Card 4: Multi-Vendor Autopilots -->
+        <div class="settings-card" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="font-size: 0.8rem; font-weight: 700; color: #fbbf24; text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; gap: 6px;">
+            <span>🛸 Multi-Vendor Autopilots</span>
+          </div>
           
-          <div class="control-group" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px;">
+          <div class="control-group" style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
             <div>
-              <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-main);">Enable Multi-Vendor Autopilots</span>
-              <p class="help-text" style="margin: 2px 0 0 0;">Unlocks QGroundControl (PX4 / ArduPilot / MAVLink) and Autel Robotics export formats and MCP multi-vendor tools.</p>
+              <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-main);">Enable Multi-Vendor Autopilots</span>
+              <p class="help-text" style="margin: 2px 0 0 0; font-size: 0.74rem;">Unlocks QGroundControl (PX4 / ArduPilot / MAVLink) and Autel Robotics export formats and MCP multi-vendor tools.</p>
             </div>
-            <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px;">
+            <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 22px; flex-shrink: 0;">
               <input type="checkbox" id="multivendor-toggle" style="opacity: 0; width: 0; height: 0;">
               <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px;"></span>
             </label>
           </div>
         </div>
 
-        <!-- Controlled Settings Reset & Storage Manager -->
-        <div style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 16px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <h3 style="font-size: 0.9rem; font-weight: 600; color: var(--text-main); margin: 0; text-transform: uppercase; letter-spacing: 0.5px;">Storage &amp; Controlled Reset</h3>
+        <!-- Card 5: Controlled Settings Reset & Storage Manager -->
+        <div class="settings-card" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 0.8rem; font-weight: 700; color: #f87171; text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; gap: 6px;">
+              <span>💾 Storage &amp; Controlled Reset</span>
+            </div>
             <div style="display: flex; gap: 6px;">
               <button id="reset-select-all-btn" type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 0.7rem; font-weight: 600; margin: 0;">Select All</button>
               <button id="reset-clear-all-btn" type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 0.7rem; font-weight: 600; margin: 0;">Clear</button>
             </div>
           </div>
-          <p class="help-text" style="margin-bottom: 10px;">Select which categories of saved browser settings and cached states to selectively restore to factory defaults.</p>
+          <p class="help-text" style="margin: 0; font-size: 0.74rem;">Select which categories of saved browser settings and cached states to selectively restore to factory defaults.</p>
           
           <div id="storage-reset-categories-container" style="display: flex; flex-direction: column; gap: 8px;">
             <!-- Category 1: Flight & Layer Parameters -->
@@ -8848,7 +8895,7 @@ html, body {
           </div>
 
           <!-- Reset Action Buttons -->
-          <div style="display: flex; gap: 8px; margin-top: 12px;">
+          <div style="display: flex; gap: 8px; margin-top: 4px;">
             <button id="config-reset-selected-btn" class="btn-secondary" type="button" style="flex: 1; padding: 8px 12px; font-size: 0.75rem; font-weight: 700; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.12); display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
               <span>🔄 Reset Selected</span>
             </button>
@@ -8856,12 +8903,12 @@ html, body {
               <span>⚠️ Factory Reset</span>
             </button>
           </div>
-          <div id="reset-feedback-toast" style="display: none; margin-top: 8px; padding: 6px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; text-align: center; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35);"></div>
+          <div id="reset-feedback-toast" style="display: none; margin-top: 6px; padding: 6px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; text-align: center; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35);"></div>
         </div>
 
       </div>
-      <footer class="modal-footer" style="padding-top: 16px; display: flex; gap: 12px; justify-content: flex-end;">
-        <button id="close-config-footer-btn" class="btn-primary" type="button" style="margin-top: 0;">Save &amp; Close</button>
+      <footer class="modal-footer" style="padding: 14px 24px; border-top: 1px solid var(--border-color); background: rgba(15, 23, 42, 0.65); display: flex; justify-content: flex-end;">
+        <button id="close-config-footer-btn" class="btn-primary" type="button" style="margin: 0; padding: 8px 20px; font-size: 0.85rem; font-weight: 600;">Save &amp; Close</button>
       </footer>
     </div>
   </div>
