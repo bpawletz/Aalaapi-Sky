@@ -12860,14 +12860,14 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('Layer-Wide Custom Heading & Real-Time Map Camera Updates (v1.91.0)', () => {
     test('version tags and changelogs are updated to v1.91.0 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.ok(pkg.version === '1.91.0' || pkg.version === '1.92.0', 'package.json must be 1.91.0 or higher');
+      assert.ok(pkg.version === '1.91.0' || pkg.version === '1.92.0' || pkg.version === '1.92.1', 'package.json must be 1.91.0 or higher');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.91.0]'), 'CHANGELOG.md must contain ## [1.91.0]');
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
-        assert.ok(html.includes('Version 1.91.0') || html.includes('Version 1.92.0'), `${filename} must contain Version 1.91.0 or 1.92.0 in About modal`);
+        assert.ok(html.includes('Version 1.91.0') || html.includes('Version 1.92.0') || html.includes('Version 1.92.1'), `${filename} must contain Version 1.91.0, 1.92.0, or 1.92.1 in About modal`);
         assert.ok(html.includes('Changelog (v1.91.0):'), `${filename} must contain Changelog (v1.91.0)`);
         assert.ok(html.includes('id="layer-custom-heading"'), `${filename} must contain layer-custom-heading slider`);
         assert.ok(html.includes('id="global-custom-heading"'), `${filename} must contain global-custom-heading slider`);
@@ -12953,7 +12953,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('Left Navigation Usability, Structured Sub-Groupings & Sticky Action Dock (v1.92.0)', () => {
     test('version tags and changelogs are updated to v1.92.0 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.strictEqual(pkg.version, '1.92.0', 'package.json must be 1.92.0');
+      assert.ok(pkg.version === '1.92.0' || pkg.version === '1.92.1', 'package.json must be 1.92.0 or 1.92.1');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.92.0]'), 'CHANGELOG.md must contain ## [1.92.0]');
@@ -12975,7 +12975,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = readSafe(path.join(__dirname, filename));
-        assert.ok(html.includes('Version 1.92.0'), `${filename} must contain Version 1.92.0 in About modal`);
+        assert.ok(html.includes('Version 1.92.0') || html.includes('Version 1.92.1'), `${filename} must contain Version 1.92.0 or 1.92.1 in About modal`);
         assert.ok(html.includes('Changelog (v1.92.0):'), `${filename} must contain Changelog (v1.92.0)`);
         assert.ok(html.includes('id="layer-hierarchy-status-badge"'), `${filename} must contain layer-hierarchy-status-badge`);
         assert.ok(html.includes('id="sidebar-sticky-dock"'), `${filename} must contain sidebar-sticky-dock`);
@@ -12983,8 +12983,8 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
 
       const templateHtml = readSafe(path.join(__dirname, 'index_template.html'));
       assert.ok(
-        templateHtml.includes('<span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.92.0</span>'),
-        'index_template.html header badge must be v1.92.0'
+        templateHtml.includes('header-version-badge'),
+        'index_template.html must contain header badge'
       );
     });
 
@@ -13148,6 +13148,86 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       } finally {
         global.document.getElementById = origGetElementById;
       }
+    });
+  });
+
+  describe('Pattern Card Badge Alignment & Styling (v1.92.1)', () => {
+    test('version tags and changelogs are updated to v1.92.1 across all required locations', () => {
+      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+      assert.strictEqual(pkg.version, '1.92.1', 'package.json must be 1.92.1');
+
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('## [1.92.1]'), 'CHANGELOG.md must contain ## [1.92.1]');
+
+      function readSafe(filepath) {
+        for (let i = 0; i < 5; i++) {
+          try {
+            return fs.readFileSync(filepath, 'utf8');
+          } catch (e) {
+            if (e.code === 'EBUSY' && i < 4) {
+              const start = Date.now();
+              while (Date.now() - start < 100) {}
+              continue;
+            }
+            throw e;
+          }
+        }
+      }
+
+      ['index_template.html', 'index.html'].forEach(filename => {
+        const html = readSafe(path.join(__dirname, filename));
+        assert.ok(html.includes('Version 1.92.1'), `${filename} must contain Version 1.92.1 in About modal`);
+        assert.ok(html.includes('Changelog (v1.92.1):'), `${filename} must contain Changelog (v1.92.1)`);
+      });
+
+      const templateHtml = readSafe(path.join(__dirname, 'index_template.html'));
+      assert.ok(
+        templateHtml.includes('<span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.92.1</span>'),
+        'index_template.html header badge must be v1.92.1'
+      );
+    });
+
+    test('pattern card badge styles avoid 100% width stretching and preserve corner alignment', () => {
+      const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+
+      // 1. Assert .pattern-card span rule explicitly excludes pattern badges so they do not inherit width: 100%
+      assert.ok(
+        css.includes('.pattern-card > span:not(.pattern-badge-tool):not(.pattern-badge-restricted)'),
+        'index.css must scope pattern-card span to exclude badges'
+      );
+
+      // 2. Assert .pattern-card has overflow: hidden
+      assert.ok(
+        /\.pattern-card\s*\{[^}]*overflow:\s*hidden;/s.test(css),
+        '.pattern-card must include overflow: hidden;'
+      );
+
+      // 3. Assert pattern badges are positioned top-right with auto width
+      assert.ok(
+        css.includes('width: auto !important;'),
+        'Pattern badges must set width: auto !important;'
+      );
+      assert.ok(
+        /\.pattern-badge-tool[^{]*\{[^}]*top:\s*2px;/s.test(css) ||
+        /\.pattern-badge-tool,\s*\.pattern-badge-restricted\s*\{[^}]*top:\s*2px;/s.test(css),
+        'Badges must be positioned at top: 2px;'
+      );
+      assert.ok(
+        /\.pattern-badge-tool[^{]*\{[^}]*right:\s*2px;/s.test(css) ||
+        /\.pattern-badge-tool,\s*\.pattern-badge-restricted\s*\{[^}]*right:\s*2px;/s.test(css),
+        'Badges must be positioned at right: 2px;'
+      );
+
+      // 4. Assert compiled index.html contains the updated styles
+      const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+      assert.ok(
+        compiledHtml.includes('.pattern-card > span:not(.pattern-badge-tool):not(.pattern-badge-restricted)'),
+        'index.html bundle must contain scoped pattern-card span rule'
+      );
+      assert.ok(
+        compiledHtml.includes('width: auto !important;'),
+        'index.html bundle must contain badge width: auto !important;'
+      );
     });
   });
 });

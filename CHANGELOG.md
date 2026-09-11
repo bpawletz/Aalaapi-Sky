@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.92.1] - 2026-09-10
+
+### Fixed — Pattern Card Badge Alignment, Spacing & Scoped CSS Inheritance
+- **Pattern Badge CSS Inheritance Fix:** Scoped `.pattern-card span` rules to exclude `.pattern-badge-tool` and `.pattern-badge-restricted` tags (`.pattern-card > span:not(...)`), preventing corner badges from inheriting `width: 100%` which caused horizontal stretching across card boundaries and left overhang.
+- **Corner Badge Alignment & Typography:** Redefined `.pattern-badge-tool` and `.pattern-badge-restricted` with `width: auto !important`, `top: 2px`, `right: 2px`, `font-size: 0.40rem`, `padding: 1px 2.5px`, and `line-height: 1`.
+- **Card Icon Clearance & Padding:** Enhanced `.pattern-card` with `overflow: hidden;` and adjusted padding (`9px 3px 6px 3px`) plus `.pattern-icon` top margin (`2px`), ensuring corner badges sit neatly in the top-right corner with zero visual overlap over pattern icons.
+
 ## [1.92.0] - 2026-09-10
 
 ### Added — Left Navigation Usability, Structured Sub-Groupings & Sticky Action Dock
