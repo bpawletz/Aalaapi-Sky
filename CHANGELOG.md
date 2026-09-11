@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.89.2] - 2026-09-10
+
+### Fixed & Improved — 3D Tower Inspection Optics & Layer Control Ergonomics
+- **Perpendicular Tower Facade Camera Pitch (0° Level Default):** Fixed a critical aiming flaw where Tower waypoints were hardcoded with `-Math.atan2(alt, effectiveRadius)`, which aimed the camera down at the dirt at the tower base (`-66°` at 100m AGL) and completely ignored user gimbal pitch settings. Tower waypoints now default to `0° Level` (horizontal, pointing directly into the tower at each tier's elevation) and honor the layer's configured Gimbal Pitch slider and preset chips (`0° Level`, `-15°`, `+20° Up`).
+- **Optical Standoff-Based Overlap Spacing:** Updated footprint calculations (`sLine` and `sPhoto`) for Tower flight plans to use the actual standoff distance (`effectiveRadius = towerRadius + towerGuyWireBuffer`) rather than global flight `altitude`. This guarantees consistent 80%/75% vertical and horizontal overlap across all standoff distances and prevents large unphotographed blind spots.
+- **Inverted Height Normalization & Slider Coupling:** Added defensive normalization in `generateTowerCoordinates()` to enforce `minH <= maxH` regardless of slider values, and coupled the UI sliders to maintain a minimum 5m height clearance.
+- **Streamlined Tower UI:** Hidden the redundant `Flight Altitude (H)` slider when Tower pattern is selected, as flight elevations are governed by Minimum and Maximum Height (AGL).
+- **Guy-Wire Diagonal Flare Safety Warning:** Enhanced the guy-wire hazard banner with actionable guidance advising pilots that guy-wires flare diagonally outward toward ground anchors, ensuring the standoff radius clears ground anchor perimeters before descending.
+
 ## [1.89.1] - 2026-09-10
 
 ### Fixed — 0° Gimbal Pitch Update & 3D Preview Synchronization

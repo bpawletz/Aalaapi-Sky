@@ -2372,10 +2372,18 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
   } else {
     const hfov = (typeof CAMERA_HFOV === 'number' && !isNaN(CAMERA_HFOV) && CAMERA_HFOV > 0) ? CAMERA_HFOV : 69.7;
     const vfov = (typeof CAMERA_VFOV === 'number' && !isNaN(CAMERA_VFOV) && CAMERA_VFOV > 0) ? CAMERA_VFOV : 55.2;
-    const wFoot = 2.0 * altitude * Math.tan((hfov / 2.0) * Math.PI / 180.0);
-    const lFoot = 2.0 * altitude * Math.tan((vfov / 2.0) * Math.PI / 180.0);
-    sLine = wFoot * (1.0 - overlapSide);
-    sPhoto = lFoot * (1.0 - overlapFront);
+
+    let targetDist = altitude;
+    if (gridType === 'tower') {
+      const towerRad = layer ? (layer.towerRadius !== undefined ? Math.max(1, layer.towerRadius) : 30) : 30;
+      const guyBuf = layer ? (layer.towerGuyWireBuffer !== undefined ? Math.max(0, layer.towerGuyWireBuffer) : 15) : 15;
+      targetDist = Math.max(1, towerRad + guyBuf);
+    }
+
+    const wFoot = 2.0 * targetDist * Math.tan((hfov / 2.0) * Math.PI / 180.0);
+    const lFoot = 2.0 * targetDist * Math.tan((vfov / 2.0) * Math.PI / 180.0);
+    sLine = (gridType === 'tower') ? lFoot * (1.0 - overlapFront) : wFoot * (1.0 - overlapSide);
+    sPhoto = (gridType === 'tower') ? wFoot * (1.0 - overlapSide) : lFoot * (1.0 - overlapFront);
 
     actualRotation = (gridType === 'orbit' || gridType === 'multi-orbit' || gridType === 'tower') ? 0 : rotation;
 
@@ -4379,6 +4387,25 @@ function initUIEventListeners() {
           applyTargetSplatAutoDimensions(activeLayer);
         }
       }
+      if (id === 'tower-min-height') {
+        const maxEl = document.getElementById('tower-max-height');
+        if (maxEl) {
+          const minVal = parseFloat(el.value) || 20;
+          const maxVal = parseFloat(maxEl.value) || 100;
+          if (minVal >= maxVal - 5) {
+            maxEl.value = minVal + 5;
+          }
+        }
+      } else if (id === 'tower-max-height') {
+        const minEl = document.getElementById('tower-min-height');
+        if (minEl) {
+          const minVal = parseFloat(minEl.value) || 20;
+          const maxVal = parseFloat(el.value) || 100;
+          if (maxVal <= minVal + 5) {
+            minEl.value = Math.max(1, maxVal - 5);
+          }
+        }
+      }
       syncDisplayValues();
       updateGrid();
     });
@@ -6196,7 +6223,7 @@ function togglePatternParameters() {
   }
 
   if (altitudeControlGroup) {
-    if (isExclusion) {
+    if (isExclusion || gridType === 'tower') {
       altitudeControlGroup.style.display = 'none';
     } else {
       altitudeControlGroup.style.display = 'block';
@@ -6373,6 +6400,7 @@ function togglePatternParameters() {
     if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
     if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
     if (towerGeometryContainer) towerGeometryContainer.classList.remove('hidden');
+    if (altitudeControlGroup) altitudeControlGroup.style.display = 'none';
     if (widthContainer) widthContainer.style.display = 'none';
     if (heightContainer) heightContainer.style.display = 'none';
     if (rotationContainer) rotationContainer.style.display = 'none';
@@ -6382,7 +6410,10 @@ function togglePatternParameters() {
     if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
     if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
     if (gimbalPitchSlider && (!gimbalPitchSlider.value || parseFloat(gimbalPitchSlider.value) === -90)) {
-      gimbalPitchSlider.value = -45;
+      gimbalPitchSlider.value = 0;
+      if (typeof updateGimbalPitchVisualizer === 'function') {
+        updateGimbalPitchVisualizer(0);
+      }
     }
 
   } else {
@@ -7963,14 +7994,23 @@ function generateTowerCoordinates(layer, sLine, sPhoto, baseAltitude, defaultGim
   const waypoints = [];
   const photos = [];
 
-  const minH = layer ? (layer.towerMinHeight !== undefined ? layer.towerMinHeight : 20) : 20;
-  const maxH = layer ? (layer.towerMaxHeight !== undefined ? layer.towerMaxHeight : 100) : 100;
+  const rawMin = layer ? (layer.towerMinHeight !== undefined ? layer.towerMinHeight : 20) : 20;
+  const rawMax = layer ? (layer.towerMaxHeight !== undefined ? layer.towerMaxHeight : 100) : 100;
+  const minH = Math.min(rawMin, rawMax);
+  const maxH = Math.max(rawMin, rawMax);
   const standoffRad = layer ? (layer.towerRadius !== undefined ? Math.max(1, layer.towerRadius) : 30) : 30;
   const guyBuffer = layer ? (layer.towerGuyWireBuffer !== undefined ? Math.max(0, layer.towerGuyWireBuffer) : 15) : 15;
   const effectiveRadius = Math.max(1, standoffRad + guyBuffer);
 
   const mode = layer ? (layer.towerMovementMode || 'horizontal') : 'horizontal';
   const order = layer ? (layer.towerAltitudeOrder || 'max-to-min') : 'max-to-min';
+
+  const resolvedPitch = (defaultGimbalPitch !== undefined && defaultGimbalPitch !== null && !isNaN(defaultGimbalPitch))
+    ? defaultGimbalPitch
+    : (layer && layer.gimbalPitch !== undefined && layer.gimbalPitch !== null && !isNaN(layer.gimbalPitch))
+      ? layer.gimbalPitch
+      : 0;
+  const pitch = Math.max(-90, Math.min(60, resolvedPitch));
 
   const hDiff = Math.abs(maxH - minH);
   const nTiers = Math.max(2, Math.round(hDiff / Math.max(1, sLine)) + 1);
@@ -7997,9 +8037,6 @@ function generateTowerCoordinates(layer, sLine, sPhoto, baseAltitude, defaultGim
 
         let heading = Math.atan2(-x, -y) * (180.0 / Math.PI);
         if (heading < 0) heading += 360;
-
-        const pitchAngle = -Math.atan2(alt, effectiveRadius) * (180.0 / Math.PI);
-        const pitch = Math.max(-90, Math.min(60, pitchAngle));
 
         const pt = {
           x: x,
@@ -8029,9 +8066,6 @@ function generateTowerCoordinates(layer, sLine, sPhoto, baseAltitude, defaultGim
       const columnAlts = (colIdx % 2 === 0) ? [...altitudes] : [...altitudes].reverse();
 
       columnAlts.forEach((alt, aIdx) => {
-        const pitchAngle = -Math.atan2(alt, effectiveRadius) * (180.0 / Math.PI);
-        const pitch = Math.max(-90, Math.min(60, pitchAngle));
-
         const pt = {
           x: x,
           y: y,
@@ -9611,27 +9645,31 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
     // No boundary overlay when no waypoints are active or for road-following/freeform/exclusion
   } else if (gridType === 'orbit' || gridType === 'multi-orbit' || gridType === 'grid-orbit-combo' || gridType === 'grid-multi-orbit-combo') {
     const maxRadius = (gridType === 'multi-orbit' || gridType === 'grid-multi-orbit-combo') ? gridWidth * 1.1 : gridWidth;
-    gridBoundsPolygon = L.circle([activeCenterLat, activeCenterLon], {
-      radius: maxRadius,
-      color: '#f59e0b',
-      weight: 2,
-      dashArray: '5, 5',
-      fillColor: '#f59e0b',
-      fillOpacity: 0.03
-    }).addTo(map);
+    if (typeof L !== 'undefined' && typeof L.circle === 'function' && typeof map !== 'undefined' && map) {
+      gridBoundsPolygon = L.circle([activeCenterLat, activeCenterLon], {
+        radius: maxRadius,
+        color: '#f59e0b',
+        weight: 2,
+        dashArray: '5, 5',
+        fillColor: '#f59e0b',
+        fillOpacity: 0.03
+      }).addTo(map);
+    }
   } else if (gridType === 'tower') {
     const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
     const towerRad = activeLayer ? (activeLayer.towerRadius !== undefined ? Math.max(1, activeLayer.towerRadius) : 30) : 30;
     const guyBuf = activeLayer ? (activeLayer.towerGuyWireBuffer !== undefined ? Math.max(0, activeLayer.towerGuyWireBuffer) : 15) : 15;
     const effRadius = Math.max(1, towerRad + guyBuf);
-    gridBoundsPolygon = L.circle([activeCenterLat, activeCenterLon], {
-      radius: effRadius,
-      color: '#f59e0b',
-      weight: 2,
-      dashArray: '4, 4',
-      fillColor: '#f59e0b',
-      fillOpacity: 0.04
-    }).addTo(map);
+    if (typeof L !== 'undefined' && typeof L.circle === 'function' && typeof map !== 'undefined' && map) {
+      gridBoundsPolygon = L.circle([activeCenterLat, activeCenterLon], {
+        radius: effRadius,
+        color: '#f59e0b',
+        weight: 2,
+        dashArray: '4, 4',
+        fillColor: '#f59e0b',
+        fillOpacity: 0.04
+      }).addTo(map);
+    }
   } else {
     // Draw rotated bounding box
     const halfW = gridWidth / 2.0;

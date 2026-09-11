@@ -115,6 +115,7 @@ global.L = {
   },
   polyline: () => ({ addTo: () => {}, setLatLngs: () => {} }),
   polygon: () => ({ addTo: () => {}, setLatLngs: () => {} }),
+  circle: () => ({ addTo: () => {}, setLatLng: () => {}, setRadius: () => {} }),
   Control: {
     extend: () => function() {}
   },
@@ -12364,9 +12365,8 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       const dist0 = Math.hypot(x0, y0);
       assert.ok(Math.abs(dist0 - 40) < 0.001, `Distance from center (${dist0}) should equal effective radius (40m)`);
 
-      // Inward camera pitch angle: -atan2(60, 40) in degrees = ~ -56.3deg
-      const expectedPitch = -Math.atan2(60, 40) * (180 / Math.PI);
-      assert.ok(Math.abs(res.waypoints[0].pitch - expectedPitch) < 0.01, `Pitch (${res.waypoints[0].pitch}) should match inward calculation (${expectedPitch})`);
+      // Pitch angle should match layer/default gimbal pitch (-60 deg)
+      assert.strictEqual(res.waypoints[0].pitch, -60, 'Pitch should match passed defaultGimbalPitch (-60 deg)');
 
       // Inward heading check: heading points to (0,0) from (x0, y0)
       let expectedHeading = Math.atan2(-x0, -y0) * (180 / Math.PI);
@@ -12510,17 +12510,12 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   });
 
   describe('0° Gimbal Pitch Update & 3D Preview Synchronization Tests (v1.89.1)', () => {
-    test('index_template.html and index.html contain required v1.89.1 version tags and changelog', () => {
-      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.strictEqual(pkg.version, '1.89.1', 'package.json version must be 1.89.1');
-
+    test('index_template.html and index.html contain required v1.89.1 changelog entries', () => {
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.89.1]'), 'CHANGELOG.md must contain ## [1.89.1]');
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
-        assert.ok(html.includes('v1.89.1'), `${filename} must contain version v1.89.1 header badge`);
-        assert.ok(html.includes('Version 1.89.1'), `${filename} must contain Version 1.89.1 in About modal`);
         assert.ok(html.includes('Changelog (v1.89.1):'), `${filename} must contain Changelog (v1.89.1)`);
       });
     });
@@ -12593,6 +12588,132 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       const wps = [{ lat: 40.0, lon: -83.0, alt: 50, x: 0, y: 0 }];
       const wpml = buildWaylinesWpml(wps, 50, 4, 'followWayline', 'goHome', 0, 'hover', 'straight');
       assert.ok(wpml.includes('<wpml:waypointGimbalPitchAngle>0</wpml:waypointGimbalPitchAngle>'), 'WPML must export waypointGimbalPitchAngle as 0');
+    });
+  });
+
+  describe('3D Tower Inspection Layer Settings Refinements (v1.89.2)', () => {
+    test('index_template.html and index.html contain required v1.89.2 version tags, changelog, and flare guidance', () => {
+      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+      assert.strictEqual(pkg.version, '1.89.2', 'package.json version must be 1.89.2');
+
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('## [1.89.2]'), 'CHANGELOG.md must contain ## [1.89.2]');
+
+      ['index_template.html', 'index.html'].forEach(filename => {
+        const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
+        assert.ok(html.includes('Version 1.89.2'), `${filename} must contain Version 1.89.2 in About modal`);
+        assert.ok(html.includes('Changelog (v1.89.2):'), `${filename} must contain Changelog (v1.89.2)`);
+        assert.ok(html.includes('flare diagonally outward toward ground anchors'), `${filename} must contain guy wire diagonal flare warning`);
+      });
+
+      const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(templateHtml.includes('<span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.89.2</span>'), 'index_template.html line 70 must have v1.89.2');
+    });
+
+    test('generateTowerCoordinates defaults to 0 deg level pitch facing the tower', () => {
+      const layer = {
+        pattern: 'tower',
+        towerMinHeight: 30,
+        towerMaxHeight: 90,
+        towerRadius: 25,
+        towerGuyWireBuffer: 10,
+        towerMovementMode: 'horizontal',
+        towerAltitudeOrder: 'max-to-min'
+      };
+
+      // When defaultGimbalPitch is not passed, it should default to 0 deg level
+      const res = generateTowerCoordinates(layer, 10, 10, 50, undefined);
+      assert.ok(res.waypoints && res.waypoints.length > 0);
+      assert.strictEqual(res.waypoints[0].pitch, 0, 'Waypoint pitch must default to 0 deg level (perpendicular to tower facade)');
+      assert.strictEqual(res.waypoints[res.waypoints.length - 1].pitch, 0, 'Last waypoint pitch must also be 0 deg level');
+    });
+
+    test('generateTowerCoordinates respects custom and upward layer gimbal pitch', () => {
+      const layer = {
+        pattern: 'tower',
+        towerMinHeight: 20,
+        towerMaxHeight: 50,
+        towerRadius: 20,
+        towerGuyWireBuffer: 5,
+        towerMovementMode: 'vertical',
+        towerAltitudeOrder: 'min-to-max'
+      };
+
+      // Custom upward tilt (+20 deg)
+      const resUp = generateTowerCoordinates(layer, 10, 10, 50, 20);
+      assert.strictEqual(resUp.waypoints[0].pitch, 20, 'Waypoint pitch should respect +20 deg upward tilt');
+
+      // Slight downward tilt (-15 deg)
+      const resDown = generateTowerCoordinates(layer, 10, 10, 50, -15);
+      assert.strictEqual(resDown.waypoints[0].pitch, -15, 'Waypoint pitch should respect -15 deg downward tilt');
+    });
+
+    test('generateTowerCoordinates normalizes inverted min and max heights', () => {
+      const invertedLayer = {
+        pattern: 'tower',
+        towerMinHeight: 80, // inverted: min > max
+        towerMaxHeight: 30,
+        towerRadius: 20,
+        towerGuyWireBuffer: 10,
+        towerMovementMode: 'horizontal',
+        towerAltitudeOrder: 'min-to-max'
+      };
+
+      const res = generateTowerCoordinates(invertedLayer, 15, 10, 50, 0);
+      assert.ok(res.waypoints && res.waypoints.length > 0);
+
+      // In min-to-max order, first altitude must be 30m and last must be 80m
+      assert.strictEqual(res.waypoints[0].alt, 30, 'Normalized min altitude must be 30m');
+      const lastWp = res.waypoints[res.waypoints.length - 1];
+      assert.strictEqual(lastWp.alt, 80, 'Normalized max altitude must be 80m');
+    });
+
+    test('generateLayerWaypoints derives footprint from standoff distance rather than global altitude', () => {
+      const layer = {
+        enabled: true,
+        pattern: 'tower',
+        towerMinHeight: 20,
+        towerMaxHeight: 60,
+        towerRadius: 10, // Close standoff
+        towerGuyWireBuffer: 5, // Effective radius = 15m
+        altitude: 120, // Irrelevant global altitude slider set high
+        frontOverlap: 80,
+        sideOverlap: 75,
+        gimbalPitch: 0
+      };
+
+      const res = generateLayerWaypoints(layer, 40.0, -83.0);
+      assert.ok(res.waypoints && res.waypoints.length > 0);
+
+      // At effectiveRadius 15m, circumference is 2 * PI * 15 = ~94.2m
+      // Footprint from 15m standoff gives tight photo count around ring
+      // Verify waypoints are generated along the 15m radius
+      const w0 = res.waypoints[0];
+      const offsets = geodeticToLocal(w0.lat, w0.lon, 40.0, -83.0);
+      const dist = Math.hypot(offsets.x, offsets.y);
+      assert.ok(Math.abs(dist - 15) < 0.1, `Waypoint distance from center (${dist}) must equal effective radius (15m)`);
+    });
+
+    test('togglePatternParameters hides altitudeControlGroup when pattern is tower', () => {
+      const mockAltGroup = { style: { display: 'block' } };
+      const mockTowerContainer = { classList: { remove: mock.fn(), add: mock.fn() } };
+      const mockGimbalSlider = { value: '-90' };
+      const origGetEl = document.getElementById;
+      try {
+        document.getElementById = (id) => {
+          if (id === 'grid-type') return { value: 'tower' };
+          if (id === 'altitude-control-group') return mockAltGroup;
+          if (id === 'tower-geometry-container') return mockTowerContainer;
+          if (id === 'gimbal-pitch') return mockGimbalSlider;
+          return origGetEl ? origGetEl(id) : null;
+        };
+
+        togglePatternParameters();
+        assert.strictEqual(mockAltGroup.style.display, 'none', '#altitude-control-group must be hidden for tower pattern');
+        assert.strictEqual(mockGimbalSlider.value, 0, 'Gimbal pitch slider should default to 0 for tower');
+      } finally {
+        document.getElementById = origGetEl;
+      }
     });
   });
 });
