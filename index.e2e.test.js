@@ -4475,6 +4475,56 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       await page.setViewportSize({ width: 1280, height: 720 });
     }
   });
+
+  test('E2E: Flight Diagnostics Header Zero Banner Overlap & Non-Colliding HUD Across Breakpoints (v1.94.11)', async () => {
+    for (const w of [390, 768, 900, 1080, 1280]) {
+      await page.setViewportSize({ width: w, height: 800 });
+      await page.evaluate(() => {
+        const modal = document.getElementById('flight-diagnostics-modal');
+        if (modal) modal.classList.remove('hidden');
+      });
+      await page.waitForTimeout(200);
+
+      const metrics = await page.evaluate(() => {
+        const brand = document.querySelector('.diag-brand-area').getBoundingClientRect();
+        const tabs = document.querySelector('.diag-header-tabs').getBoundingClientRect();
+        const closeBtn = document.querySelector('.diag-close-btn').getBoundingClientRect();
+        const hud = document.getElementById('diag-hud-overlay').getBoundingClientRect();
+        const cameraCtrl = document.querySelector('.diag-view-camera-controls').getBoundingClientRect();
+
+        // Check horizontal overlap between brand and tabs on desktop/tablet
+        const isDesktopOrTablet = window.innerWidth > 768;
+        let brandTabsOverlap = false;
+        if (isDesktopOrTablet) {
+          const xOverlap = Math.max(0, Math.min(brand.x + brand.width, tabs.x + tabs.width) - Math.max(brand.x, tabs.x));
+          const yOverlap = Math.max(0, Math.min(brand.y + brand.height, tabs.y + tabs.height) - Math.max(brand.y, tabs.y));
+          brandTabsOverlap = xOverlap > 0 && yOverlap > 0;
+        }
+
+        // Check HUD vs camera controls collision
+        const hudCtrlX = Math.max(0, Math.min(hud.x + hud.width, cameraCtrl.x + cameraCtrl.width) - Math.max(hud.x, cameraCtrl.x));
+        const hudCtrlY = Math.max(0, Math.min(hud.y + hud.height, cameraCtrl.y + cameraCtrl.height) - Math.max(hud.y, cameraCtrl.y));
+        const hudCtrlOverlap = hudCtrlX > 0 && hudCtrlY > 0;
+
+        return {
+          brandTabsOverlap,
+          hudCtrlOverlap,
+          closeBtnOnScreen: closeBtn.x > 0 && closeBtn.x + closeBtn.width <= window.innerWidth
+        };
+      });
+
+      assert.strictEqual(metrics.brandTabsOverlap, false, `Brand title and navigation tabs must not collide at width ${w}px`);
+      assert.strictEqual(metrics.hudCtrlOverlap, false, `Live HUD overlay and camera controls must not collide at width ${w}px`);
+      assert.strictEqual(metrics.closeBtnOnScreen, true, `Close button must remain on-screen at width ${w}px`);
+    }
+
+    // Dismiss modal and reset viewport
+    await page.evaluate(() => {
+      const modal = document.getElementById('flight-diagnostics-modal');
+      if (modal) modal.classList.add('hidden');
+    });
+    await page.setViewportSize({ width: 1280, height: 720 });
+  });
 });
 
 
