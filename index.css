@@ -3571,6 +3571,552 @@ html, body {
   box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.08);
 }
 
+/* ==========================================================================
+   Flight Diagnostics & Telemetry Center Responsive Modal Architecture
+   ========================================================================== */
+
+.diag-modal-card {
+  max-width: 1280px;
+  width: 95vw;
+  height: 90dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 0 !important;
+  overflow: hidden;
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+  border-radius: 16px;
+  background: #0f172a;
+}
+
+.diag-modal-header {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.85);
+  flex-shrink: 0;
+  gap: 12px;
+}
+
+.diag-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.diag-brand-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.diag-header-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fbbf24;
+  flex-shrink: 0;
+}
+
+.diag-header-titles {
+  min-width: 0;
+}
+
+.diag-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.diag-drone-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  background: rgba(6, 182, 212, 0.15);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  color: #22d3ee;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.diag-flight-meta {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.diag-header-tabs {
+  display: flex;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  margin-left: 12px;
+  flex-shrink: 0;
+}
+
+.diag-header-tabs .btn-tab {
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: var(--transition-smooth);
+}
+
+.diag-header-tabs .btn-tab.active {
+  border: 1px solid rgba(6, 182, 212, 0.4);
+  background: rgba(6, 182, 212, 0.2);
+  color: #22d3ee;
+  font-weight: 700;
+}
+
+.diag-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.diag-header-flight-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.diag-flight-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.diag-flight-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.diag-flight-select {
+  padding: 5px 10px;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  cursor: pointer;
+  min-width: 230px;
+}
+
+.diag-header-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.diag-header-buttons button {
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.diag-rc2-btn {
+  background: rgba(59, 130, 246, 0.15) !important;
+  border: 1px solid rgba(59, 130, 246, 0.4) !important;
+  color: #60a5fa !important;
+}
+
+.diag-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.diag-close-btn:hover {
+  color: var(--accent-red);
+}
+
+.diag-pane-3d {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  position: relative;
+  min-height: 0;
+}
+
+.diag-mobile-subnav {
+  display: none;
+}
+
+.diag-3d-viewport-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: #0b1120;
+  min-width: 0;
+  min-height: 0;
+}
+
+.diag-3d-canvas-container {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.diag-hud-overlay {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  gap: 16px;
+  font-size: 0.75rem;
+  pointer-events: none;
+  z-index: 10;
+  color: #f8fafc;
+  font-family: monospace;
+}
+
+.diag-sidebar {
+  width: 320px;
+  border-left: 1px solid var(--border-color);
+  background: rgba(15, 23, 42, 0.65);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 14px;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Mobile Responsive Diagnostics (Screens <= 768px)
+   ========================================================================== */
+@media (max-width: 768px) {
+  #flight-diagnostics-modal {
+    padding: 0 !important;
+  }
+
+  .diag-modal-card {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+    border: none !important;
+    margin: 0 !important;
+  }
+
+  .diag-modal-header {
+    display: grid !important;
+    grid-template-columns: 1fr auto !important;
+    grid-template-areas:
+      "brand close"
+      "tabs tabs"
+      "controls controls" !important;
+    gap: 8px !important;
+    padding: 8px 12px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  .diag-header-left {
+    display: contents !important;
+  }
+
+  .diag-header-right {
+    display: contents !important;
+  }
+
+  .diag-brand-area {
+    grid-area: brand !important;
+    min-width: 0 !important;
+    gap: 8px !important;
+  }
+
+  .diag-close-btn {
+    grid-area: close !important;
+    font-size: 1.8rem !important;
+    padding: 2px 8px !important;
+    align-self: center !important;
+    justify-self: end !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: var(--text-main) !important;
+  }
+
+  .diag-title {
+    font-size: 0.92rem !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .diag-drone-badge {
+    font-size: 0.6rem !important;
+    padding: 1px 4px !important;
+  }
+
+  .diag-flight-meta {
+    font-size: 0.67rem !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .diag-tabs-area {
+    grid-area: tabs !important;
+    width: 100% !important;
+    margin-left: 0 !important;
+    display: flex !important;
+    box-sizing: border-box !important;
+  }
+
+  .diag-tabs-area .btn-tab {
+    flex: 1 !important;
+    justify-content: center !important;
+    text-align: center !important;
+    padding: 6px 8px !important;
+    font-size: 0.72rem !important;
+  }
+
+  .diag-controls-area {
+    grid-area: controls !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+  }
+
+  .diag-flight-picker-row {
+    width: 100% !important;
+  }
+
+  .diag-flight-select {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 !important;
+    font-size: 0.74rem !important;
+    padding: 5px 8px !important;
+  }
+
+  .diag-header-buttons {
+    width: 100% !important;
+    display: flex !important;
+    gap: 4px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 2px !important;
+  }
+
+  .diag-header-buttons button {
+    flex: 1 0 auto !important;
+    font-size: 0.7rem !important;
+    padding: 5px 8px !important;
+    white-space: nowrap !important;
+    justify-content: center !important;
+  }
+
+  /* Mobile Subnavigation: Toggle between 3D View and Telemetry Stats */
+  .diag-mobile-subnav {
+    display: flex !important;
+    gap: 6px !important;
+    padding: 6px 10px !important;
+    background: rgba(15, 23, 42, 0.95) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    flex-shrink: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .diag-mobile-subtab-btn {
+    flex: 1 !important;
+    padding: 6px 10px !important;
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    border-radius: 6px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-muted) !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    transition: var(--transition-smooth) !important;
+  }
+
+  .diag-mobile-subtab-btn.active {
+    background: rgba(6, 182, 212, 0.2) !important;
+    border-color: rgba(6, 182, 212, 0.5) !important;
+    color: #22d3ee !important;
+    font-weight: 700 !important;
+  }
+
+  .diag-pane-3d {
+    flex-direction: column !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* When 3D View is active on mobile */
+  .diag-pane-3d.mobile-view-3d .diag-3d-viewport-area {
+    display: flex !important;
+    flex: 1 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+  }
+
+  .diag-pane-3d.mobile-view-3d .diag-sidebar {
+    display: none !important;
+  }
+
+  /* When Flight Telemetry & Stats is active on mobile */
+  .diag-pane-3d.mobile-view-stats .diag-3d-viewport-area {
+    display: none !important;
+  }
+
+  .diag-pane-3d.mobile-view-stats .diag-sidebar {
+    display: flex !important;
+    flex: 1 !important;
+    width: 100% !important;
+    border-left: none !important;
+    padding: 12px 14px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Compact 3-column Live Cockpit HUD Overlay */
+  .diag-hud-overlay {
+    top: 6px !important;
+    left: 6px !important;
+    right: 6px !important;
+    width: auto !important;
+    max-width: calc(100% - 12px) !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 4px 6px !important;
+    padding: 5px 8px !important;
+    font-size: 0.67rem !important;
+    box-sizing: border-box !important;
+  }
+
+  .diag-hud-overlay > div > div:first-child {
+    font-size: 0.55rem !important;
+  }
+
+  #diag-hud-alt, #diag-hud-speed, #diag-hud-pitch, #diag-hud-battery, #diag-hud-sats {
+    font-size: 0.8rem !important;
+  }
+
+  #diag-hud-coords {
+    font-size: 0.64rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* View toggle controls on mobile */
+  .diag-view-camera-controls {
+    top: 66px !important;
+    right: 6px !important;
+    z-index: 10 !important;
+  }
+
+  .diag-view-camera-controls button {
+    padding: 3px 6px !important;
+    font-size: 0.65rem !important;
+  }
+
+  /* Path Legend on mobile */
+  .diag-path-legend {
+    bottom: 6px !important;
+    left: 6px !important;
+    padding: 4px 6px !important;
+    font-size: 0.62rem !important;
+    gap: 6px !important;
+    max-width: 60% !important;
+    z-index: 10 !important;
+  }
+
+  /* Timeline controller on mobile */
+  .diag-timeline-controller {
+    padding: 8px 10px !important;
+    gap: 6px !important;
+  }
+
+  .diag-timeline-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    align-items: center !important;
+  }
+
+  .diag-speed-buttons {
+    margin-left: auto !important;
+  }
+
+  /* KMZ Inspector modal mobile adjustments */
+  #kmz-inspector-modal > div:first-child {
+    grid-template-columns: repeat(2, 1fr) !important;
+    padding: 8px 10px !important;
+    gap: 8px !important;
+  }
+
+  #kmz-inspector-modal #inspector-executive-card {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    padding: 12px 14px !important;
+  }
+}
+
 
 
 
