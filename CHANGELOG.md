@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.91.0] - 2026-09-10
+
+### Added — Layer-Wide Custom Heading & Real-Time 2D/3D Map Camera Updates
+- **Layer & Global Custom Heading Angle Controls:** Added `Custom Heading (Angle)` option to Section 2 Layer Properties (`#layer-heading-mode`) and Section 3 Global Defaults (`#heading-mode`), accompanied by dedicated angle sliders (`0°`–`359°`), numeric value displays, and quick-cardinal preset chips (`N (0°)`, `E (90°)`, `S (180°)`, `W (270°)`).
+- **Real-Time 2D Map Camera Direction Updates:** Dragging custom heading angle sliders in Layer Properties, Global Defaults, or individual Waypoint Editor popups instantly re-evaluates heading angles and rotates camera directional pointer arrows and illuminated FOV sight cones across the 2D Leaflet map in real time.
+- **Synchronous 3D FPV HUD Viewport Camera Rotation:** In the 3D Flight Preview HUD editor, dragging the `#fpv-edit-heading` slider or switching `#fpv-edit-heading-mode` now invokes `updateFPVCamera(0)` synchronously, turning the 3D Three.js perspective camera in real time so pilots immediately view the new camera angle from the drone's cockpit POV.
+- **Three-Tier Architectural Heading Cascade:** Custom heading cleanly cascades down the hierarchy (`Waypoint Override -> Layer Custom Heading -> Global Custom Heading`), with automatic inheritance labels (e.g. `🌐 Inherit Global (Custom 135°)`).
+- **WPML Export Parity:** WPML mission exports compile `<wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>` and `<wpml:waypointHeadingAngle>` using the resolved custom heading angle across all waypoints, with 0.0° clamping to 0.1° to prevent DJI Fly suspend anomalies.
+
 ## [1.90.0] - 2026-09-10
 
 ### Added — Optional POI AGL Height & 3D Gimbal Pitch Resolution

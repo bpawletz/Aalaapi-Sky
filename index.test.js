@@ -12715,20 +12715,20 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('POI AGL Height & 3D Gimbal Pitch Resolution (v1.90.0)', () => {
     test('version tags and changelogs are updated to v1.90.0 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.strictEqual(pkg.version, '1.90.0', 'package.json version must be 1.90.0');
+      assert.ok(pkg.version >= '1.90.0', 'package.json version must be at least 1.90.0');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.90.0]'), 'CHANGELOG.md must contain ## [1.90.0]');
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
-        assert.ok(html.includes('Version 1.90.0'), `${filename} must contain Version 1.90.0 in About modal`);
+        assert.ok(html.includes('version-tag'), `${filename} must contain version-tag in About modal`);
         assert.ok(html.includes('Changelog (v1.90.0):'), `${filename} must contain Changelog (v1.90.0)`);
         assert.ok(html.includes('data-pitch="auto"'), `${filename} must contain data-pitch="auto" preset chip`);
       });
 
       const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-      assert.ok(templateHtml.includes('<span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.90.0</span>'), 'index_template.html line 70 must have v1.90.0');
+      assert.ok(templateHtml.includes('header-version-badge'), 'index_template.html line 70 must have header-version-badge');
     });
 
     test('addPoi stores and respects optional AGL altitude defaulting to 0', () => {
@@ -12852,6 +12852,99 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
         assert.ok(!wpml.includes('<wpml:waypointGimbalPitchAngle>NaN</wpml:waypointGimbalPitchAngle>'), 'Gimbal pitch angle must not be NaN');
       } finally {
         pois = origPois;
+        flightLayers = origLayers;
+      }
+    });
+  });
+
+  describe('Layer-Wide Custom Heading & Real-Time Map Camera Updates (v1.91.0)', () => {
+    test('version tags and changelogs are updated to v1.91.0 across all required locations', () => {
+      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+      assert.strictEqual(pkg.version, '1.91.0', 'package.json must be 1.91.0');
+
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('## [1.91.0]'), 'CHANGELOG.md must contain ## [1.91.0]');
+
+      ['index_template.html', 'index.html'].forEach(filename => {
+        const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
+        assert.ok(html.includes('Version 1.91.0'), `${filename} must contain Version 1.91.0 in About modal`);
+        assert.ok(html.includes('Changelog (v1.91.0):'), `${filename} must contain Changelog (v1.91.0)`);
+        assert.ok(html.includes('id="layer-custom-heading"'), `${filename} must contain layer-custom-heading slider`);
+        assert.ok(html.includes('id="global-custom-heading"'), `${filename} must contain global-custom-heading slider`);
+      });
+
+      const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(templateHtml.includes('<span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.91.0</span>'), 'index_template.html header badge must be v1.91.0');
+    });
+
+    test('getEffectiveLayerCustomHeading resolves layer custom heading and global fallback', () => {
+      const origGetElementById = global.document.getElementById;
+      global.document.getElementById = (id) => {
+        if (id === 'global-custom-heading') return { value: '270' };
+        return origGetElementById ? origGetElementById(id) : null;
+      };
+
+      try {
+        // Explicit layer custom heading
+        const layer1 = { customHeading: 135 };
+        assert.strictEqual(getEffectiveLayerCustomHeading(layer1), 135, 'Layer custom heading must be 135');
+
+        // Inherit or missing layer custom heading falls back to global
+        const layer2 = { customHeading: 'inherit' };
+        assert.strictEqual(getEffectiveLayerCustomHeading(layer2), 270, 'Inherited layer heading must fall back to global 270');
+
+        const layer3 = {};
+        assert.strictEqual(getEffectiveLayerCustomHeading(layer3), 270, 'Missing layer heading must fall back to global 270');
+      } finally {
+        global.document.getElementById = origGetElementById;
+      }
+    });
+
+    test('getEffectiveWaypointHeading resolves custom heading across 3-tier hierarchy', () => {
+      const origFlightLayers = typeof flightLayers !== 'undefined' ? flightLayers : [];
+      try {
+        const layerCustom = { id: 'layer-custom', headingMode: 'custom', customHeading: 210 };
+        flightLayers = [layerCustom];
+
+        // Tier 3 Override: Waypoint explicitly sets heading
+        const wpOverride = { headingMode: 'custom', heading: 45, layerId: 'layer-custom' };
+        assert.strictEqual(getEffectiveWaypointHeading(wpOverride, 0, [wpOverride], 0, null, layerCustom), 45, 'Waypoint override heading must take precedence');
+
+        // Tier 2 Inherit: Waypoint inherits layer custom heading
+        const wpInherit = { headingMode: 'inherit', heading: null, layerId: 'layer-custom' };
+        assert.strictEqual(getEffectiveWaypointHeading(wpInherit, 0, [wpInherit], 0, null, layerCustom), 210, 'Waypoint must resolve to layer custom heading 210');
+      } finally {
+        flightLayers = origFlightLayers;
+      }
+    });
+
+    test('buildWaylinesWpml exports smoothTransition and custom heading angle for layer', () => {
+      const origLayers = typeof flightLayers !== 'undefined' ? flightLayers : [];
+      try {
+        flightLayers = [
+          { id: 'layer-test-custom', headingMode: 'custom', customHeading: 140, altitude: 50 }
+        ];
+
+        const waypoints = [
+          { lat: 37.7749, lon: -122.4180, alt: 50, layerId: 'layer-test-custom' },
+          { lat: 37.7750, lon: -122.4180, alt: 50, layerId: 'layer-test-custom' }
+        ];
+
+        const wpml = buildWaylinesWpml(
+          waypoints,
+          10,
+          5.0,
+          'stopAndShoot',
+          'curved',
+          'custom',
+          50,
+          -60,
+          'Mini 4 Pro'
+        );
+
+        assert.ok(wpml.includes('<wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>'), 'WPML must use smoothTransition mode for custom heading');
+        assert.ok(wpml.includes('<wpml:waypointHeadingAngle>140.0</wpml:waypointHeadingAngle>'), 'WPML must export custom angle 140.0');
+      } finally {
         flightLayers = origLayers;
       }
     });
