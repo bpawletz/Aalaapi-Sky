@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.94.12</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.94.13</span></h1>
         </div>
       </div>
 
@@ -2508,7 +2508,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.94.12</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.94.13</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -2574,6 +2574,12 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.94.13):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Dynamic Trajectory &amp; Battery Cards:</strong> Wired up real-time telemetry stats for Trajectory Accuracy (max wayline drift, heading error, photo trigger verification) and Battery Health &amp; Consumption (start &rarr; end % and burn rate). Both cards automatically hide when telemetry data is unavailable or empty.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.94.12):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -5283,25 +5289,25 @@
           </div>
 
           <!-- Trajectory Deviation Card -->
-          <div style="background: rgba(6, 182, 212, 0.05); border: 1px solid rgba(6, 182, 212, 0.2); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 4px; font-size: 0.74rem;">
+          <div id="diag-trajectory-card" style="display: none; background: rgba(6, 182, 212, 0.05); border: 1px solid rgba(6, 182, 212, 0.2); border-radius: 8px; padding: 10px; flex-direction: column; gap: 4px; font-size: 0.74rem;">
             <div style="font-weight: 600; color: var(--accent-cyan);">🎯 Trajectory Accuracy</div>
             <div style="color: var(--text-muted); line-height: 1.35;">
-              Max wayline drift: <strong style="color: var(--text-main);">0.8 m</strong>.<br />
-              Heading tracking error: <strong style="color: var(--text-main);">&lt; 1.2&deg;</strong>.<br />
-              All waypoint photo trigger positions verified within tolerance.
+              Max wayline drift: <strong id="diag-stat-drift" style="color: var(--text-main);">0.8 m</strong>.<br />
+              Heading tracking error: <strong id="diag-stat-heading-error" style="color: var(--text-main);">&lt; 1.2&deg;</strong>.<br />
+              <span id="diag-stat-trigger-status">All waypoint photo trigger positions verified within tolerance.</span>
             </div>
           </div>
 
           <!-- Battery Profile Card -->
-          <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px; font-size: 0.74rem;">
+          <div id="diag-battery-card" style="display: none; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; flex-direction: column; gap: 6px; font-size: 0.74rem;">
             <div style="font-weight: 600; color: #a78bfa;">🔋 Battery Health &amp; Consumption</div>
             <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
               <span>Consumption:</span>
-              <strong style="color: var(--text-main);">98% &rarr; 76% (22% used)</strong>
+              <strong id="diag-stat-battery-consumption" style="color: var(--text-main);">98% &rarr; 76% (22% used)</strong>
             </div>
             <div style="display: flex; justify-content: space-between; color: var(--text-muted);">
               <span>Burn Rate:</span>
-              <strong style="color: #a78bfa;">~5.2% / minute</strong>
+              <strong id="diag-stat-battery-rate" style="color: #a78bfa;">~5.2% / minute</strong>
             </div>
           </div>
 

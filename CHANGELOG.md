@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.94.13] - 2026-09-11
+
+### Added — Dynamic Telemetry Wiring for Trajectory Accuracy & Battery Profile Cards
+- **Real-Time Telemetry Stats:** Wired the Flight Diagnostics sidebar cards (`#diag-trajectory-card` and `#diag-battery-card`) to dynamically display actual comparison and flight telemetry calculations:
+  - Trajectory Accuracy: Displays real cross-track/wayline drift (`#diag-stat-drift`), heading tracking error (`#diag-stat-heading-error`), and waypoint photo trigger verification status (`#diag-stat-trigger-status`).
+  - Battery Health & Consumption: Displays battery level transition `${start}% → ${end}% (${consumed}% used)` (`#diag-stat-battery-consumption`) and flight burn rate (`#diag-stat-battery-rate`).
+- **Conditional Visibility (Auto-Hide):** Both cards are hidden (`display: none;`) by default and automatically remain hidden when flight logs contain no telemetry points, or when battery/drift metrics are not applicable, completely preventing empty or placeholder dummy data from showing. When valid telemetry is loaded, both cards dynamically render (`display: flex;`).
+
 ## [1.94.12] - 2026-09-11
 
 ### Removed — Redundant Diagnostics Button in RC2 Bridge Container
