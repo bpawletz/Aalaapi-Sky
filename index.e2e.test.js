@@ -4525,6 +4525,97 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     });
     await page.setViewportSize({ width: 1280, height: 720 });
   });
+
+  test('E2E: Flight Diagnostics Trajectory Accuracy and Battery Health Cards Dynamic Wiring & Auto-Hiding (v1.94.13)', async () => {
+    // 1. Ensure modal is visible and populate telemetry
+    await page.evaluate(async () => {
+      await FlightDiagnostics.open('3d', {
+        flightId: 'FlightRecord_2026-08-20_[19-42-28].txt',
+        telemetry: {
+          points: [
+            { time: 0, lat: 39.1, lon: -84.5, alt: 10, speed: 2, pitch: -30, yaw: 0, battery: 98, satellites: 20 },
+            { time: 10, lat: 39.1001, lon: -84.5001, alt: 25, speed: 4, pitch: -45, yaw: 45, battery: 92, satellites: 22 }
+          ],
+          durationFormatted: '01:45',
+          durationSec: 105,
+          totalDistance: 450,
+          maxAltitude: 25,
+          photoCount: 12,
+          batteryStart: 98,
+          batteryEnd: 85,
+          batteryUsed: 13,
+          maxDeviation: '0.7 m'
+        },
+        comparison: {
+          time: { actual: '01:45', delta: '+5s' },
+          distance: { actual: '450 m', planned: '440 m' },
+          altitude: { actual: '25 m', delta: '0.0 m' },
+          photos: { actual: 12, planned: 12 },
+          battery: {
+            start: '98%',
+            end: '85%',
+            consumed: '13%',
+            ratePerMin: '7.4% / min'
+          },
+          maxDeviation: '0.7 m'
+        }
+      });
+    });
+    await page.waitForTimeout(200);
+
+    const visibleState = await page.evaluate(() => {
+      const trajCard = document.getElementById('diag-trajectory-card');
+      const battCard = document.getElementById('diag-battery-card');
+      const drift = document.getElementById('diag-stat-drift')?.textContent;
+      const heading = document.getElementById('diag-stat-heading-error')?.textContent;
+      const trigger = document.getElementById('diag-stat-trigger-status')?.textContent;
+      const battCons = document.getElementById('diag-stat-battery-consumption')?.textContent;
+      const battRate = document.getElementById('diag-stat-battery-rate')?.textContent;
+
+      return {
+        trajDisplay: window.getComputedStyle(trajCard).display,
+        battDisplay: window.getComputedStyle(battCard).display,
+        drift,
+        heading,
+        trigger,
+        battCons,
+        battRate
+      };
+    });
+
+    assert.strictEqual(visibleState.trajDisplay, 'flex', 'Trajectory card must be displayed when telemetry has drift');
+    assert.strictEqual(visibleState.battDisplay, 'flex', 'Battery card must be displayed when battery data is present');
+    assert.strictEqual(visibleState.drift, '0.7 m', 'Drift should display 0.7 m');
+    assert.ok(visibleState.trigger.includes('All 12 waypoint photo trigger positions verified'), 'Trigger text must reflect photo count');
+    assert.ok(visibleState.battCons.includes('98%') && visibleState.battCons.includes('85%') && visibleState.battCons.includes('13% used'), 'Battery consumption must display valid values');
+    assert.ok(visibleState.battRate.includes('7.4%'), 'Battery burn rate must display valid percentage');
+
+    // 2. Clear telemetry data and assert both cards become hidden
+    await page.evaluate(() => {
+      FlightDiagnostics.telemetryData = null;
+      FlightDiagnostics.comparisonData = null;
+      FlightDiagnostics.updateStatsUI();
+    });
+    await page.waitForTimeout(100);
+
+    const hiddenState = await page.evaluate(() => {
+      const trajCard = document.getElementById('diag-trajectory-card');
+      const battCard = document.getElementById('diag-battery-card');
+      return {
+        trajDisplay: trajCard ? trajCard.style.display : null,
+        battDisplay: battCard ? battCard.style.display : null
+      };
+    });
+
+    assert.strictEqual(hiddenState.trajDisplay, 'none', 'Trajectory card must be hidden when telemetry is empty/null');
+    assert.strictEqual(hiddenState.battDisplay, 'none', 'Battery card must be hidden when telemetry is empty/null');
+
+    // Close modal
+    await page.evaluate(() => {
+      const modal = document.getElementById('flight-diagnostics-modal');
+      if (modal) modal.classList.add('hidden');
+    });
+  });
 });
 
 

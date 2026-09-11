@@ -14400,16 +14400,24 @@ describe('v1.94.3 Pre-Flight KMZ Audit & Executive Readiness Redesign Tests', ()
 });
 
 describe('v1.94.4 Real-Time Live METAR Ingestion & Flight Category Tests', () => {
-  test('Version consistency: v1.94.12 is registered across package.json, CHANGELOG.md, and template (removal of redundant RC2 bridge diagnostics button)', () => {
+  test('Version consistency: v1.94.13 is registered across package.json, CHANGELOG.md, and template (dynamic diagnostics cards and auto-hide)', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.94.12', 'package.json version must be 1.94.12');
+    assert.strictEqual(pkg.version, '1.94.13', 'package.json version must be 1.94.13');
 
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.94.13] - 2026-09-11'), 'CHANGELOG.md must contain 1.94.13 entry');
+
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateHtml.includes('>v1.94.13</span>'), 'index_template.html must contain header version badge v1.94.13');
+    assert.ok(templateHtml.includes('Version 1.94.13</span>'), 'index_template.html must contain About modal version tag 1.94.13');
+    assert.ok(templateHtml.includes('Changelog (v1.94.13):'), 'index_template.html must contain Changelog (v1.94.13) header');
+  });
+
+  test('Version consistency: v1.94.12 changelog entry is preserved in CHANGELOG.md and template', () => {
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.94.12] - 2026-09-11'), 'CHANGELOG.md must contain 1.94.12 entry');
 
     const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(templateHtml.includes('>v1.94.12</span>'), 'index_template.html must contain header version badge v1.94.12');
-    assert.ok(templateHtml.includes('Version 1.94.12</span>'), 'index_template.html must contain About modal version tag 1.94.12');
     assert.ok(templateHtml.includes('Changelog (v1.94.12):'), 'index_template.html must contain Changelog (v1.94.12) header');
   });
 
@@ -14758,6 +14766,161 @@ describe('v1.94.10 Mobile View Flight Diagnostics & Responsive Layout Tests', ()
     assert.ok(css.includes('"controls controls controls"'), 'index.css must place controls in row 2');
     assert.ok(css.includes('.diag-view-camera-controls'), 'index.css must style camera controls');
     assert.ok(css.includes('max-width: 1080px'), 'index.css must include tablet breakpoint for non-overlapping camera controls');
+  });
+});
+
+describe('v1.94.13 Dynamic Flight Diagnostics Trajectory Accuracy and Battery Stats Cards', () => {
+  test('Template DOM structure includes both cards with display: none and proper IDs', () => {
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateHtml.includes('id="diag-trajectory-card"'), 'index_template.html must include #diag-trajectory-card');
+    assert.ok(templateHtml.includes('id="diag-battery-card"'), 'index_template.html must include #diag-battery-card');
+    assert.ok(templateHtml.includes('id="diag-stat-drift"'), 'index_template.html must include #diag-stat-drift');
+    assert.ok(templateHtml.includes('id="diag-stat-heading-error"'), 'index_template.html must include #diag-stat-heading-error');
+    assert.ok(templateHtml.includes('id="diag-stat-trigger-status"'), 'index_template.html must include #diag-stat-trigger-status');
+    assert.ok(templateHtml.includes('id="diag-stat-battery-consumption"'), 'index_template.html must include #diag-stat-battery-consumption');
+    assert.ok(templateHtml.includes('id="diag-stat-battery-rate"'), 'index_template.html must include #diag-stat-battery-rate');
+
+    // Verify both cards default to hidden so they never flash dummy data
+    assert.ok(templateHtml.includes('id="diag-trajectory-card" style="display: none;'), 'Trajectory card must start display: none');
+    assert.ok(templateHtml.includes('id="diag-battery-card" style="display: none;'), 'Battery card must start display: none');
+  });
+
+  test('FlightDiagnostics.updateStatsUI hides both cards when telemetryData is null or empty', () => {
+    const origGetById = document.getElementById;
+    const elements = {
+      'diag-trajectory-card': { style: { display: 'flex' } },
+      'diag-battery-card': { style: { display: 'flex' } },
+      'diag-timeline-slider': { max: '10', value: '5' },
+      'diag-flight-meta': { textContent: '' },
+      'diag-time-display': { textContent: '' }
+    };
+
+    document.getElementById = (id) => elements[id] || (origGetById ? origGetById(id) : null);
+
+    try {
+      FlightDiagnostics.telemetryData = null;
+      FlightDiagnostics.comparisonData = null;
+      FlightDiagnostics.updateStatsUI();
+
+      assert.strictEqual(elements['diag-trajectory-card'].style.display, 'none', 'Trajectory card must be hidden when telemetryData is null');
+      assert.strictEqual(elements['diag-battery-card'].style.display, 'none', 'Battery card must be hidden when telemetryData is null');
+
+      // Now with empty points array
+      elements['diag-trajectory-card'].style.display = 'flex';
+      elements['diag-battery-card'].style.display = 'flex';
+      FlightDiagnostics.telemetryData = { points: [] };
+      FlightDiagnostics.updateStatsUI();
+
+      assert.strictEqual(elements['diag-trajectory-card'].style.display, 'none', 'Trajectory card must be hidden when points array is empty');
+      assert.strictEqual(elements['diag-battery-card'].style.display, 'none', 'Battery card must be hidden when points array is empty');
+    } finally {
+      document.getElementById = origGetById;
+    }
+  });
+
+  test('FlightDiagnostics.updateStatsUI dynamically populates stats and displays both cards when telemetry is valid', () => {
+    const origGetById = document.getElementById;
+    const elements = {
+      'diag-trajectory-card': { style: { display: 'none' } },
+      'diag-battery-card': { style: { display: 'none' } },
+      'diag-stat-drift': { textContent: '' },
+      'diag-stat-heading-error': { textContent: '' },
+      'diag-stat-trigger-status': { textContent: '' },
+      'diag-stat-battery-consumption': { textContent: '' },
+      'diag-stat-battery-rate': { textContent: '' },
+      'diag-timeline-slider': { max: '0', value: '0' },
+      'diag-flight-meta': { textContent: '' },
+      'diag-time-display': { textContent: '' },
+      'diag-stat-time-actual': { textContent: '' },
+      'diag-stat-time-delta': { textContent: '' },
+      'diag-stat-dist-actual': { textContent: '' },
+      'diag-stat-dist-delta': { textContent: '' },
+      'diag-stat-alt-actual': { textContent: '' },
+      'diag-stat-alt-delta': { textContent: '' },
+      'diag-stat-photos-actual': { textContent: '' }
+    };
+
+    document.getElementById = (id) => elements[id] || (origGetById ? origGetById(id) : null);
+
+    try {
+      FlightDiagnostics.telemetryData = {
+        points: [{ lat: 39.1, lon: -84.5, alt: 25 }],
+        durationFormatted: '02:15',
+        durationSec: 135,
+        photoCount: 18,
+        maxDeviation: '0.4 m'
+      };
+      FlightDiagnostics.comparisonData = {
+        time: { actual: '02:15', delta: '+12s' },
+        distance: { actual: '340 m', planned: '320 m' },
+        altitude: { actual: '25 m', delta: '0.0 m' },
+        photos: { actual: 18, planned: 18 },
+        battery: {
+          start: '96%',
+          end: '84%',
+          consumed: '12%',
+          ratePerMin: '5.3% / min'
+        },
+        maxDeviation: '0.4 m'
+      };
+
+      FlightDiagnostics.updateStatsUI();
+
+      assert.strictEqual(elements['diag-trajectory-card'].style.display, 'flex', 'Trajectory card must be visible');
+      assert.strictEqual(elements['diag-battery-card'].style.display, 'flex', 'Battery card must be visible');
+      assert.strictEqual(elements['diag-stat-drift'].textContent, '0.4 m', 'Drift should display 0.4 m');
+      assert.strictEqual(elements['diag-stat-heading-error'].textContent, '< 1.2°', 'Heading error should display default or telemetry value');
+      assert.ok(elements['diag-stat-trigger-status'].textContent.includes('All 18 waypoint photo trigger positions verified'), 'Trigger status should reflect 18 photos');
+      assert.ok(elements['diag-stat-battery-consumption'].textContent.includes('96%'), 'Battery consumption must include start %');
+      assert.ok(elements['diag-stat-battery-consumption'].textContent.includes('84%'), 'Battery consumption must include end %');
+      assert.ok(elements['diag-stat-battery-consumption'].textContent.includes('12% used'), 'Battery consumption must include used %');
+      assert.ok(elements['diag-stat-battery-rate'].textContent.includes('5.3%'), 'Battery rate must include calculated rate');
+    } finally {
+      document.getElementById = origGetById;
+    }
+  });
+
+  test('FlightDiagnostics.updateStatsUI shows trajectory card and hides battery card if battery info is absent', () => {
+    const origGetById = document.getElementById;
+    const elements = {
+      'diag-trajectory-card': { style: { display: 'none' } },
+      'diag-battery-card': { style: { display: 'none' } },
+      'diag-stat-drift': { textContent: '' },
+      'diag-stat-heading-error': { textContent: '' },
+      'diag-stat-trigger-status': { textContent: '' },
+      'diag-stat-battery-consumption': { textContent: '' },
+      'diag-stat-battery-rate': { textContent: '' },
+      'diag-timeline-slider': { max: '0', value: '0' },
+      'diag-flight-meta': { textContent: '' },
+      'diag-time-display': { textContent: '' }
+    };
+
+    document.getElementById = (id) => elements[id] || (origGetById ? origGetById(id) : null);
+
+    try {
+      FlightDiagnostics.telemetryData = {
+        points: [{ lat: 39.1, lon: -84.5, alt: 25 }],
+        durationFormatted: '01:00',
+        durationSec: 60,
+        photoCount: 0,
+        maxDeviation: '1.1 m'
+      };
+      FlightDiagnostics.comparisonData = {
+        time: { actual: '01:00', delta: '0s' },
+        distance: { actual: '100 m', planned: '100 m' },
+        altitude: { actual: '20 m', delta: '0.0 m' },
+        photos: { actual: 0, planned: 0 },
+        maxDeviation: '1.1 m'
+      };
+
+      FlightDiagnostics.updateStatsUI();
+
+      assert.strictEqual(elements['diag-trajectory-card'].style.display, 'flex', 'Trajectory card must be visible when deviation is present');
+      assert.strictEqual(elements['diag-battery-card'].style.display, 'none', 'Battery card must be hidden when battery data is missing');
+      assert.strictEqual(elements['diag-stat-drift'].textContent, '1.1 m');
+    } finally {
+      document.getElementById = origGetById;
+    }
   });
 });
 

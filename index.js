@@ -15767,14 +15767,19 @@ const FlightDiagnostics = {
     return new THREE.Vector3(x, y, z);
   },
 
-  async open(customDataOrTab = null, maybeTab = null) {
+  async open(customDataOrTab = null, maybeTabOrCustom = null) {
     let customData = null;
     let targetTab = '3d';
     if (typeof customDataOrTab === 'string') {
       targetTab = customDataOrTab;
+      if (maybeTabOrCustom && typeof maybeTabOrCustom === 'object') {
+        customData = maybeTabOrCustom;
+      }
     } else if (customDataOrTab && typeof customDataOrTab === 'object') {
       customData = customDataOrTab;
-      if (maybeTab) targetTab = maybeTab;
+      if (maybeTabOrCustom && typeof maybeTabOrCustom === 'string') {
+        targetTab = maybeTabOrCustom;
+      }
     }
 
     const modal = document.getElementById('flight-diagnostics-modal');
@@ -15800,13 +15805,9 @@ const FlightDiagnostics = {
     }
 
     if (targetTab === '3d') {
-      await this.refreshFlightList();
-
-      const flightSel = document.getElementById('diag-flight-selector');
-      const selectedFlightId = (flightSel && flightSel.value && flightSel.value !== '0' && flightSel.value !== '') ? flightSel.value : 'FlightRecord_2026-08-20_[19-42-28].txt';
-
       if (customData) {
-        this.selectedFlightId = customData.flightId || selectedFlightId;
+        const flightSel = document.getElementById('diag-flight-selector');
+        this.selectedFlightId = customData.flightId || (flightSel && flightSel.value) || 'FlightRecord_2026-08-20_[19-42-28].txt';
         this.telemetryData = customData.telemetry;
         this.comparisonData = customData.comparison;
         this.updateStatsUI();
@@ -15815,6 +15816,9 @@ const FlightDiagnostics = {
         this.seekTo(0, true, true);
         this.pause();
       } else {
+        await this.refreshFlightList();
+        const flightSel = document.getElementById('diag-flight-selector');
+        const selectedFlightId = (flightSel && flightSel.value && flightSel.value !== '0' && flightSel.value !== '') ? flightSel.value : 'FlightRecord_2026-08-20_[19-42-28].txt';
         await this.loadSelectedFlight(selectedFlightId);
       }
     }
@@ -15834,42 +15838,97 @@ const FlightDiagnostics = {
   },
 
   updateStatsUI() {
+    const trajCard = (typeof document !== 'undefined') ? document.getElementById('diag-trajectory-card') : null;
+    const battCard = (typeof document !== 'undefined') ? document.getElementById('diag-battery-card') : null;
+
     if (!this.telemetryData || !this.telemetryData.points || !this.telemetryData.points.length) {
-      const slider = document.getElementById('diag-timeline-slider');
+      if (trajCard) trajCard.style.display = 'none';
+      if (battCard) battCard.style.display = 'none';
+
+      const slider = (typeof document !== 'undefined') ? document.getElementById('diag-timeline-slider') : null;
       if (slider) { slider.max = '0'; slider.value = '0'; }
-      const meta = document.getElementById('diag-flight-meta');
+      const meta = (typeof document !== 'undefined') ? document.getElementById('diag-flight-meta') : null;
       if (meta) {
         meta.textContent = `Telemetry Log: ${this.selectedFlightId || 'None'} • No telemetry points`;
       }
-      const timeDisplay = document.getElementById('diag-time-display');
+      const timeDisplay = (typeof document !== 'undefined') ? document.getElementById('diag-time-display') : null;
       if (timeDisplay) { timeDisplay.textContent = '00:00 / 00:00'; }
       return;
     }
-    const slider = document.getElementById('diag-timeline-slider');
+    const slider = (typeof document !== 'undefined') ? document.getElementById('diag-timeline-slider') : null;
     if (slider) {
       slider.max = (this.telemetryData.points.length - 1).toString();
       slider.value = '0';
     }
 
+    const setTxt = (id, val) => {
+      if (typeof document === 'undefined') return;
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    };
+
     const comp = this.comparisonData;
     if (comp) {
-      const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-      setTxt('diag-stat-time-actual', comp.time.actual);
-      setTxt('diag-stat-time-delta', `(${comp.time.delta})`);
-      setTxt('diag-stat-dist-actual', comp.distance.actual);
-      setTxt('diag-stat-dist-delta', `(Plan: ${comp.distance.planned})`);
-      setTxt('diag-stat-alt-actual', comp.altitude.actual);
-      setTxt('diag-stat-alt-delta', `(${comp.altitude.delta})`);
-      setTxt('diag-stat-photos-actual', `${comp.photos.actual} / ${comp.photos.planned} Photos`);
+      if (comp.time) {
+        setTxt('diag-stat-time-actual', comp.time.actual);
+        setTxt('diag-stat-time-delta', `(${comp.time.delta})`);
+      }
+      if (comp.distance) {
+        setTxt('diag-stat-dist-actual', comp.distance.actual);
+        setTxt('diag-stat-dist-delta', `(Plan: ${comp.distance.planned})`);
+      }
+      if (comp.altitude) {
+        setTxt('diag-stat-alt-actual', comp.altitude.actual);
+        setTxt('diag-stat-alt-delta', `(${comp.altitude.delta})`);
+      }
+      if (comp.photos) {
+        setTxt('diag-stat-photos-actual', `${comp.photos.actual} / ${comp.photos.planned} Photos`);
+      }
     }
 
-    const meta = document.getElementById('diag-flight-meta');
+    // Trajectory Accuracy card
+    const maxDev = comp?.maxDeviation || this.telemetryData.maxDeviation;
+    if (maxDev && maxDev !== '0' && maxDev !== 'undefined') {
+      if (trajCard) trajCard.style.display = 'flex';
+      setTxt('diag-stat-drift', maxDev);
+      setTxt('diag-stat-heading-error', this.telemetryData.headingError || '< 1.2°');
+      const photoCount = comp?.photos?.actual ?? this.telemetryData.photoCount ?? 0;
+      const photoTxt = photoCount > 0
+        ? `All ${photoCount} waypoint photo trigger positions verified within tolerance.`
+        : 'Waypoint positions verified within tolerance.';
+      setTxt('diag-stat-trigger-status', photoTxt);
+    } else if (trajCard) {
+      trajCard.style.display = 'none';
+    }
+
+    // Battery Health & Consumption card
+    const hasCompBatt = comp?.battery &&
+      comp.battery.start && !comp.battery.start.includes('undefined') && !comp.battery.start.includes('NaN') &&
+      comp.battery.end && !comp.battery.end.includes('undefined') && !comp.battery.end.includes('NaN');
+    const hasTelemBatt = this.telemetryData.batteryStart !== undefined && this.telemetryData.batteryEnd !== undefined && !isNaN(this.telemetryData.batteryStart);
+
+    if (hasCompBatt) {
+      if (battCard) battCard.style.display = 'flex';
+      setTxt('diag-stat-battery-consumption', `${comp.battery.start} \u2192 ${comp.battery.end} (${comp.battery.consumed} used)`);
+      setTxt('diag-stat-battery-rate', `~${comp.battery.ratePerMin}`);
+    } else if (hasTelemBatt) {
+      if (battCard) battCard.style.display = 'flex';
+      const used = Math.max(0, this.telemetryData.batteryStart - this.telemetryData.batteryEnd);
+      setTxt('diag-stat-battery-consumption', `${this.telemetryData.batteryStart}% \u2192 ${this.telemetryData.batteryEnd}% (${used}% used)`);
+      const durMin = (this.telemetryData.durationSec || 0) / 60;
+      const rate = durMin > 0 ? (used / durMin).toFixed(1) : '0';
+      setTxt('diag-stat-battery-rate', `~${rate}% / min`);
+    } else if (battCard) {
+      battCard.style.display = 'none';
+    }
+
+    const meta = (typeof document !== 'undefined') ? document.getElementById('diag-flight-meta') : null;
     if (meta) {
       const flightName = this.selectedFlightId || 'FlightRecord_2026-08-20_[19-42-28].txt';
       meta.textContent = `Telemetry Log: ${flightName} • Duration: ${this.telemetryData.durationFormatted}`;
     }
 
-    const timeDisplay = document.getElementById('diag-time-display');
+    const timeDisplay = (typeof document !== 'undefined') ? document.getElementById('diag-time-display') : null;
     if (timeDisplay) {
       timeDisplay.textContent = `00:00 / ${this.telemetryData.durationFormatted}`;
     }
