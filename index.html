@@ -3482,7 +3482,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.89.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.89.2</span></h1>
         </div>
       </div>
 
@@ -3879,7 +3879,7 @@ html, body {
               <strong style="color: #ef4444; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
                 ⚠️ GUY-WIRE HAZARD WARNING
               </strong>
-              Guy-wires are nearly invisible to obstacle avoidance sensors. Maintain visual line of sight (VLOS), verify standoff radius clear of support cables, and increase Guy-Wire Safety Buffer before executing automated flight.
+              Guy-wires are nearly invisible to obstacle avoidance sensors and flare diagonally outward toward ground anchors. Maintain visual line of sight (VLOS), verify that Standoff Radius + Buffer clears the outermost ground anchor radius, and increase Guy-Wire Safety Buffer before executing automated flight.
             </div>
           </div>
 
@@ -5747,7 +5747,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.89.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.89.2</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -5813,6 +5813,15 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.89.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Tower Facade Camera Pitch (0° Level Default):</strong> Tower inspection waypoints now default to 0° Level (perpendicular to tower facade) and honor the layer's configured Gimbal Pitch instead of hardcoding a ground-aiming angle.</li>
+              <li><strong>Optical Standoff-Based Overlap:</strong> Waypoint vertical and horizontal spacing for Tower flights is now derived from the actual standoff distance (effective radius) instead of flight altitude, preventing coverage gaps.</li>
+              <li><strong>Height Normalization &amp; UI Streamlining:</strong> Automatically normalizes min/max height slider values and hides the redundant Flight Altitude slider when Tower is selected.</li>
+              <li><strong>Guy-Wire Diagonal Flare Guidance:</strong> Safety warning now informs pilots to verify clearance against ground anchor flare before descending.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.89.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -10888,10 +10897,18 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
   } else {
     const hfov = (typeof CAMERA_HFOV === 'number' && !isNaN(CAMERA_HFOV) && CAMERA_HFOV > 0) ? CAMERA_HFOV : 69.7;
     const vfov = (typeof CAMERA_VFOV === 'number' && !isNaN(CAMERA_VFOV) && CAMERA_VFOV > 0) ? CAMERA_VFOV : 55.2;
-    const wFoot = 2.0 * altitude * Math.tan((hfov / 2.0) * Math.PI / 180.0);
-    const lFoot = 2.0 * altitude * Math.tan((vfov / 2.0) * Math.PI / 180.0);
-    sLine = wFoot * (1.0 - overlapSide);
-    sPhoto = lFoot * (1.0 - overlapFront);
+
+    let targetDist = altitude;
+    if (gridType === 'tower') {
+      const towerRad = layer ? (layer.towerRadius !== undefined ? Math.max(1, layer.towerRadius) : 30) : 30;
+      const guyBuf = layer ? (layer.towerGuyWireBuffer !== undefined ? Math.max(0, layer.towerGuyWireBuffer) : 15) : 15;
+      targetDist = Math.max(1, towerRad + guyBuf);
+    }
+
+    const wFoot = 2.0 * targetDist * Math.tan((hfov / 2.0) * Math.PI / 180.0);
+    const lFoot = 2.0 * targetDist * Math.tan((vfov / 2.0) * Math.PI / 180.0);
+    sLine = (gridType === 'tower') ? lFoot * (1.0 - overlapFront) : wFoot * (1.0 - overlapSide);
+    sPhoto = (gridType === 'tower') ? wFoot * (1.0 - overlapSide) : lFoot * (1.0 - overlapFront);
 
     actualRotation = (gridType === 'orbit' || gridType === 'multi-orbit' || gridType === 'tower') ? 0 : rotation;
 
@@ -12895,6 +12912,25 @@ function initUIEventListeners() {
           applyTargetSplatAutoDimensions(activeLayer);
         }
       }
+      if (id === 'tower-min-height') {
+        const maxEl = document.getElementById('tower-max-height');
+        if (maxEl) {
+          const minVal = parseFloat(el.value) || 20;
+          const maxVal = parseFloat(maxEl.value) || 100;
+          if (minVal >= maxVal - 5) {
+            maxEl.value = minVal + 5;
+          }
+        }
+      } else if (id === 'tower-max-height') {
+        const minEl = document.getElementById('tower-min-height');
+        if (minEl) {
+          const minVal = parseFloat(minEl.value) || 20;
+          const maxVal = parseFloat(el.value) || 100;
+          if (maxVal <= minVal + 5) {
+            minEl.value = Math.max(1, maxVal - 5);
+          }
+        }
+      }
       syncDisplayValues();
       updateGrid();
     });
@@ -14712,7 +14748,7 @@ function togglePatternParameters() {
   }
 
   if (altitudeControlGroup) {
-    if (isExclusion) {
+    if (isExclusion || gridType === 'tower') {
       altitudeControlGroup.style.display = 'none';
     } else {
       altitudeControlGroup.style.display = 'block';
@@ -14889,6 +14925,7 @@ function togglePatternParameters() {
     if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
     if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
     if (towerGeometryContainer) towerGeometryContainer.classList.remove('hidden');
+    if (altitudeControlGroup) altitudeControlGroup.style.display = 'none';
     if (widthContainer) widthContainer.style.display = 'none';
     if (heightContainer) heightContainer.style.display = 'none';
     if (rotationContainer) rotationContainer.style.display = 'none';
@@ -14898,7 +14935,10 @@ function togglePatternParameters() {
     if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
     if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
     if (gimbalPitchSlider && (!gimbalPitchSlider.value || parseFloat(gimbalPitchSlider.value) === -90)) {
-      gimbalPitchSlider.value = -45;
+      gimbalPitchSlider.value = 0;
+      if (typeof updateGimbalPitchVisualizer === 'function') {
+        updateGimbalPitchVisualizer(0);
+      }
     }
 
   } else {
@@ -16479,14 +16519,23 @@ function generateTowerCoordinates(layer, sLine, sPhoto, baseAltitude, defaultGim
   const waypoints = [];
   const photos = [];
 
-  const minH = layer ? (layer.towerMinHeight !== undefined ? layer.towerMinHeight : 20) : 20;
-  const maxH = layer ? (layer.towerMaxHeight !== undefined ? layer.towerMaxHeight : 100) : 100;
+  const rawMin = layer ? (layer.towerMinHeight !== undefined ? layer.towerMinHeight : 20) : 20;
+  const rawMax = layer ? (layer.towerMaxHeight !== undefined ? layer.towerMaxHeight : 100) : 100;
+  const minH = Math.min(rawMin, rawMax);
+  const maxH = Math.max(rawMin, rawMax);
   const standoffRad = layer ? (layer.towerRadius !== undefined ? Math.max(1, layer.towerRadius) : 30) : 30;
   const guyBuffer = layer ? (layer.towerGuyWireBuffer !== undefined ? Math.max(0, layer.towerGuyWireBuffer) : 15) : 15;
   const effectiveRadius = Math.max(1, standoffRad + guyBuffer);
 
   const mode = layer ? (layer.towerMovementMode || 'horizontal') : 'horizontal';
   const order = layer ? (layer.towerAltitudeOrder || 'max-to-min') : 'max-to-min';
+
+  const resolvedPitch = (defaultGimbalPitch !== undefined && defaultGimbalPitch !== null && !isNaN(defaultGimbalPitch))
+    ? defaultGimbalPitch
+    : (layer && layer.gimbalPitch !== undefined && layer.gimbalPitch !== null && !isNaN(layer.gimbalPitch))
+      ? layer.gimbalPitch
+      : 0;
+  const pitch = Math.max(-90, Math.min(60, resolvedPitch));
 
   const hDiff = Math.abs(maxH - minH);
   const nTiers = Math.max(2, Math.round(hDiff / Math.max(1, sLine)) + 1);
@@ -16513,9 +16562,6 @@ function generateTowerCoordinates(layer, sLine, sPhoto, baseAltitude, defaultGim
 
         let heading = Math.atan2(-x, -y) * (180.0 / Math.PI);
         if (heading < 0) heading += 360;
-
-        const pitchAngle = -Math.atan2(alt, effectiveRadius) * (180.0 / Math.PI);
-        const pitch = Math.max(-90, Math.min(60, pitchAngle));
 
         const pt = {
           x: x,
@@ -16545,9 +16591,6 @@ function generateTowerCoordinates(layer, sLine, sPhoto, baseAltitude, defaultGim
       const columnAlts = (colIdx % 2 === 0) ? [...altitudes] : [...altitudes].reverse();
 
       columnAlts.forEach((alt, aIdx) => {
-        const pitchAngle = -Math.atan2(alt, effectiveRadius) * (180.0 / Math.PI);
-        const pitch = Math.max(-90, Math.min(60, pitchAngle));
-
         const pt = {
           x: x,
           y: y,
@@ -18127,27 +18170,31 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
     // No boundary overlay when no waypoints are active or for road-following/freeform/exclusion
   } else if (gridType === 'orbit' || gridType === 'multi-orbit' || gridType === 'grid-orbit-combo' || gridType === 'grid-multi-orbit-combo') {
     const maxRadius = (gridType === 'multi-orbit' || gridType === 'grid-multi-orbit-combo') ? gridWidth * 1.1 : gridWidth;
-    gridBoundsPolygon = L.circle([activeCenterLat, activeCenterLon], {
-      radius: maxRadius,
-      color: '#f59e0b',
-      weight: 2,
-      dashArray: '5, 5',
-      fillColor: '#f59e0b',
-      fillOpacity: 0.03
-    }).addTo(map);
+    if (typeof L !== 'undefined' && typeof L.circle === 'function' && typeof map !== 'undefined' && map) {
+      gridBoundsPolygon = L.circle([activeCenterLat, activeCenterLon], {
+        radius: maxRadius,
+        color: '#f59e0b',
+        weight: 2,
+        dashArray: '5, 5',
+        fillColor: '#f59e0b',
+        fillOpacity: 0.03
+      }).addTo(map);
+    }
   } else if (gridType === 'tower') {
     const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
     const towerRad = activeLayer ? (activeLayer.towerRadius !== undefined ? Math.max(1, activeLayer.towerRadius) : 30) : 30;
     const guyBuf = activeLayer ? (activeLayer.towerGuyWireBuffer !== undefined ? Math.max(0, activeLayer.towerGuyWireBuffer) : 15) : 15;
     const effRadius = Math.max(1, towerRad + guyBuf);
-    gridBoundsPolygon = L.circle([activeCenterLat, activeCenterLon], {
-      radius: effRadius,
-      color: '#f59e0b',
-      weight: 2,
-      dashArray: '4, 4',
-      fillColor: '#f59e0b',
-      fillOpacity: 0.04
-    }).addTo(map);
+    if (typeof L !== 'undefined' && typeof L.circle === 'function' && typeof map !== 'undefined' && map) {
+      gridBoundsPolygon = L.circle([activeCenterLat, activeCenterLon], {
+        radius: effRadius,
+        color: '#f59e0b',
+        weight: 2,
+        dashArray: '4, 4',
+        fillColor: '#f59e0b',
+        fillOpacity: 0.04
+      }).addTo(map);
+    }
   } else {
     // Draw rotated bounding box
     const halfW = gridWidth / 2.0;
