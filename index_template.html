@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.94.14</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.95.1</span></h1>
         </div>
       </div>
 
@@ -102,6 +102,7 @@
           <button id="header-telemetry-pill" class="header-telemetry-pill" type="button" title="Click to view full Mission Details &amp; Live Weather Station">
             <span class="pill-weather-group">
               <span id="header-weather-summary" style="color: #38bdf8; font-size: 0.72rem; font-weight: 600;">☀️ Weather</span>
+              <span id="header-tfr-warning-badge" class="header-tfr-badge is-operational" title="FAA TFR Service: Operational (Airspace Clear)">🛡️ TFR</span>
               <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
             </span>
           </button>
@@ -1673,6 +1674,27 @@
             <div class="pweather-summary" id="pop-weather-summary" style="font-size: 0.78rem; font-weight: 600; color: #38bdf8; margin-bottom: 4px;">-</div>
             <div class="pweather-details" id="pop-weather-details" style="font-size: 0.72rem; color: var(--text-muted); line-height: 1.4;"></div>
           </div>
+          <!-- Active TFR & NOTAM Airspace Monitor -->
+          <div class="popover-tfr-card" id="popover-tfr-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+            <div class="ptfr-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-main);">🚫 TFR &amp; NOTAM Alert</span>
+                <span id="pop-tfr-badge" class="badge-tag" style="font-size: 0.62rem; padding: 1px 5px; border-radius: 4px; background: rgba(16, 185, 129, 0.2); color: #34d399; font-weight: 700;">CHECKING</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <select id="pop-tfr-radius" aria-label="TFR Filter Radius" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.65rem; border-radius: 4px; padding: 1px 4px;">
+                  <option value="5">5 NM</option>
+                  <option value="15">15 NM</option>
+                  <option value="30" selected>30 NM</option>
+                  <option value="50">50 NM</option>
+                  <option value="99999">All US</option>
+                </select>
+                <button id="pop-btn-refresh-tfr" class="btn-sm" type="button" style="padding: 2px 6px; font-size: 0.68rem; background: rgba(255,255,255,0.06); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;" title="Refresh active FAA NOTAMs">↻</button>
+              </div>
+            </div>
+            <div class="ptfr-summary" id="pop-tfr-summary" style="font-size: 0.75rem; font-weight: 600; color: #34d399; margin-bottom: 4px;">No active TFRs within 30 NM</div>
+            <div class="ptfr-list" id="pop-tfr-list" style="display: flex; flex-direction: column; gap: 4px; max-height: 140px; overflow-y: auto;"></div>
+          </div>
         </div>
       </div>
 
@@ -1902,6 +1924,15 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🚫 Location-Based Temporary Flight Restrictions (TFR) &amp; NOTAM Ingestion (v1.95.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Provides real-time FAA TFR and NOTAM awareness relative to your current location (mission coordinates, pilot GPS, or drone position). Renders color-coded TFR geometries on the 2D map with high-visibility crimson warning styling, point-in-polygon waypoint intersection checks, and interactive popups with altitude bounds and full NOTAM briefings. Features a dedicated TFR Monitor in the Topbar Mission Details popover with configurable radius filtering (5 NM to All US) and one-click map location targeting.
+            </p>
+          </div>
+
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               📷 Tier 1 Global Camera Aspect Ratio &amp; Multi-Pattern Overlap Integration (v1.94.0)
@@ -2462,6 +2493,26 @@
     </div>
   </div>
 
+  <!-- TFR & NOTAM Detailed Briefing Modal -->
+  <div id="tfr-briefing-modal" class="modal-overlay hidden" style="z-index: 2100;">
+    <div class="modal glass" style="max-width: 620px; width: 92vw; max-height: 85vh; display: flex; flex-direction: column;">
+      <header class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.2rem;">🚫</span>
+          <h2 id="tfr-modal-title" style="margin: 0; font-size: 1rem;">FAA NOTAM Briefing</h2>
+        </div>
+        <button id="close-tfr-modal-btn" class="close-btn" type="button" aria-label="Close TFR Modal">&times;</button>
+      </header>
+      <div class="modal-content" id="tfr-modal-content" style="overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 12px; padding: 16px 20px;">
+        <!-- Dynamic NOTAM details injected here -->
+      </div>
+      <footer class="modal-footer" style="padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color);">
+        <a id="tfr-modal-external-link" href="https://tfr.faa.gov/" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="font-size: 0.75rem; padding: 4px 10px; text-decoration: none;">View on FAA.gov ↗</a>
+        <button id="close-tfr-modal-footer-btn" class="btn-primary" type="button" style="margin: 0; padding: 4px 14px;">Close</button>
+      </footer>
+    </div>
+  </div>
+
   <!-- About Modal -->
   <div id="about-modal" class="modal-overlay hidden">
     <div class="modal glass">
@@ -2508,7 +2559,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.94.14</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.95.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -2574,6 +2625,18 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.95.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Live TFR Service Health Indicator:</strong> Enhanced the topbar telemetry pill with a visible operational health badge (<code>🛡️ TFR</code>) next to the weather summary. Dynamically displays active green when operational and clear, cyan during live FAA NOTAM queries, amber for proximity warnings (&le;15 NM), red for critical airspace conflicts, and gray if offline.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.95.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Temporary Flight Restrictions (TFR) &amp; NOTAM Ingestion:</strong> Added live FAA TFR layer with color-coded polygons, click popups, and full text briefing modal. Integrated location-aware proximity monitor in Topbar Mission Details popover with distance/bearing calculations, radius filtering, and waypoint point-in-polygon conflict detection.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.94.14):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">

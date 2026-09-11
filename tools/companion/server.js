@@ -13,6 +13,7 @@
  */
 
 const http = require('node:http');
+const https = require('node:https');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
@@ -43,6 +44,41 @@ let totalBlePackets = 0;
 let wifiScannerProc = null;
 let wifiScannerActive = false;
 let totalWifiPackets = 0;
+
+// In-Memory Temporary Flight Restriction (TFR) NOTAM Cache
+const tfrCache = {
+  list: null,
+  listTimestamp: 0,
+  geojson: null,
+  geojsonTimestamp: 0,
+  details: new Map()
+};
+const TFR_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+function fetchHttpsJson(urlStr, timeoutMs = 12000) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(urlStr, { headers: { 'User-Agent': 'AalaapiSkyMissionPlanner/1.0' } }, (res) => {
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        return reject(new Error(`HTTP ${res.statusCode}`));
+      }
+      let data = '';
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          resolve(parsed);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
+    req.on('error', reject);
+    req.setTimeout(timeoutMs, () => {
+      req.destroy();
+      reject(new Error('Request timeout'));
+    });
+  });
+}
 
 const IS_WINDOWS = process.platform === 'win32';
 
@@ -954,6 +990,8 @@ function printStartupBanner() {
   console.log(`  ${colors.green}${colors.bold}POST /api/flight-telemetry${colors.reset} ${colors.gray}3D flight trajectory solver, photo markers & variances${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /api/latest-flight${colors.reset}    ${colors.gray}Auto-extract latest flight log & KMZ over USB MTP${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /api/remote-id/drones${colors.reset} ${colors.gray}Live ASTM F3411 Remote ID detected drones in airspace${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/tfr/notams${colors.reset}       ${colors.gray}Live FAA Temporary Flight Restrictions (TFR) NOTAM list${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/tfr/geojson${colors.reset}      ${colors.gray}GeoJSON geometry boundaries for active FAA TFR polygons${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}POST /api/drone/locate${colors.reset}    ${colors.gray}Rest API locate drone & inject live geo coordinates${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}POST /api/shutdown${colors.reset}         ${colors.gray}Cleanly terminate running companion bridge process${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /health${colors.reset}               ${colors.gray}Service heartbeat and status ping${colors.reset}`);
@@ -1497,6 +1535,90 @@ const server = http.createServer(async (req, res) => {
           res.end(JSON.stringify({ success: false, error: e.message }));
         }
       });
+      return;
+    }
+
+    // 9b. Temporary Flight Restrictions (TFR) & NOTAM Proxy Endpoints
+    if (pathname === '/api/tfr/notams' && req.method === 'GET') {
+      const forceRefresh = url.searchParams.get('refresh') === 'true' || url.searchParams.get('refresh') === '1';
+      const now = Date.now();
+      if (!forceRefresh && tfrCache.list && (now - tfrCache.listTimestamp < TFR_CACHE_TTL)) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, source: 'cache', timestamp: tfrCache.listTimestamp, data: tfrCache.list }));
+        return;
+      }
+      try {
+        const list = await fetchHttpsJson('https://tfr.faa.gov/tfrapi/getTfrList');
+        tfrCache.list = list;
+        tfrCache.listTimestamp = now;
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, source: 'live', timestamp: now, data: list }));
+      } catch (e) {
+        if (tfrCache.list) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, source: 'stale_cache', error: e.message, timestamp: tfrCache.listTimestamp, data: tfrCache.list }));
+        } else {
+          res.writeHead(502, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: e.message }));
+        }
+      }
+      return;
+    }
+
+    if (pathname === '/api/tfr/geojson' && req.method === 'GET') {
+      const forceRefresh = url.searchParams.get('refresh') === 'true' || url.searchParams.get('refresh') === '1';
+      const now = Date.now();
+      if (!forceRefresh && tfrCache.geojson && (now - tfrCache.geojsonTimestamp < TFR_CACHE_TTL)) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, source: 'cache', timestamp: tfrCache.geojsonTimestamp, data: tfrCache.geojson }));
+        return;
+      }
+      try {
+        const geojson = await fetchHttpsJson('https://tfr.faa.gov/geoserver/TFR/ows?service=WFS&version=1.1.0&request=GetFeature&typeName=TFR:V_TFR_LOC&maxFeatures=300&outputFormat=application/json');
+        tfrCache.geojson = geojson;
+        tfrCache.geojsonTimestamp = now;
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, source: 'live', timestamp: now, data: geojson }));
+      } catch (e) {
+        if (tfrCache.geojson) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, source: 'stale_cache', error: e.message, timestamp: tfrCache.geojsonTimestamp, data: tfrCache.geojson }));
+        } else {
+          res.writeHead(502, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: e.message }));
+        }
+      }
+      return;
+    }
+
+    if (pathname === '/api/tfr/detail' && req.method === 'GET') {
+      const notamId = url.searchParams.get('notamId');
+      if (!notamId) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Missing notamId parameter' }));
+        return;
+      }
+      const now = Date.now();
+      const cached = tfrCache.details.get(notamId);
+      if (cached && (now - cached.timestamp < TFR_CACHE_TTL)) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, source: 'cache', data: cached.data }));
+        return;
+      }
+      try {
+        const detail = await fetchHttpsJson(`https://tfr.faa.gov/tfrapi/getWebText?notamId=${encodeURIComponent(notamId)}`);
+        tfrCache.details.set(notamId, { data: detail, timestamp: now });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, source: 'live', data: detail }));
+      } catch (e) {
+        if (cached) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, source: 'stale_cache', error: e.message, data: cached.data }));
+        } else {
+          res.writeHead(502, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: e.message }));
+        }
+      }
       return;
     }
 

@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.95.1] - 2026-09-11
+
+### Added — Live TFR Service Status & Health Indicator Next to Weather
+- **Live Health Status Badge:** Enhanced the Topbar Telemetry Pill (`#header-telemetry-pill`) next to `#header-weather-summary` with a visible TFR service health badge (`#header-tfr-warning-badge`).
+- **Dynamic Multi-State Visualization:**
+  - 🟢 **Operational & Clear:** Displays `🛡️ TFR` in emerald green (`#34d399`) with subtle green backing when the TFR service is active and airspace is clear.
+  - 🔄 **Updating / Querying:** Displays `🔄 TFR` in cyan (`#38bdf8`) with a gentle pulse animation during live FAA NOTAM queries.
+  - 🟡 **Proximity Warning:** Switches to amber `⚠️ TFR` when an active restriction is within 15 NM of the mission/pilot location.
+  - 🔴 **Critical Airspace Alert:** Switches to red `🚨 IN TFR` or `⚠️ TFR` when inside a boundary or within 5 NM.
+  - ⚪ **Offline Indicator:** Displays `⚪ TFR Off` in muted gray if FAA endpoints and proxies are unreachable.
+
+## [1.95.0] - 2026-09-11
+
+### Added — Location-Based Temporary Flight Restrictions (TFR) & NOTAM Ingestion
+- **Interactive TFR Map Layer:** Registered `"Temporary Flight Restrictions (TFR / NOTAM) (US Only)"` in the Leaflet map layer control. Displays official FAA TFR polygons and geometries with high-visibility crimson warning fill and dashed outlines, alongside interactive click popups showing NOTAM number, title, active dates, altitude ceilings/floors, distance/bearing from pilot location, and 1-click full text briefing.
+- **Location-Aware NOTAM & Proximity Monitor:** Added real-time TFR proximity checking relative to mission coordinates, pilot GPS, or drone position. Evaluates whether flight waypoints intersect active TFR boundaries using ray-casting point-in-polygon verification.
+- **Topbar Popover Integration & Proximity Filter:** Added dedicated TFR & NOTAM card in the Topbar Mission Details & Live Weather popover (`#telemetry-weather-popover`) featuring status badges (🟢 `0 Active`, 🟡 `Nearby`, 🔴 `Inside TFR`), radius filter (`5 NM`, `15 NM`, `30 NM`, `50 NM`, `All US`), one-click "📍 Locate on Map", and topbar warning pill trigger.
+- **Detailed NOTAM Briefing Modal:** Added `#tfr-briefing-modal` displaying formatted FAA NOTAM text, AIXM/FDC details, and direct links to official FAA source pages with strict XSS sanitization.
+- **Multi-Tier Companion & Fallback Pipeline:** Integrated `/api/tfr/notams`, `/api/tfr/geojson`, and `/api/tfr/detail` REST endpoints in the Node companion bridge with 10-minute in-memory caching to eliminate browser CORS limitations, alongside native browser fallback to FAA ArcGIS Online services (`National_Defense_Airspace_TFR_Areas`, `Stadiums`, and `Part_Time_National_Security_UAS_Flight_Restrictions`).
+
 ## [1.94.14] - 2026-09-11
 
 ### Fixed — Configuration Settings Modal Layout, Custom Cyber Scrollbar & Structured Cards
