@@ -1149,7 +1149,10 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname.startsWith('/api/diagnostics/') && req.method === 'GET') {
       try {
-        const identifier = pathname.replace('/api/diagnostics/', '').trim();
+        let identifier = pathname.replace('/api/diagnostics/', '').trim();
+        try {
+          identifier = decodeURIComponent(identifier);
+        } catch (decErr) {}
         const record = diagDb.getByIdOrArchiveIdOrUuid(identifier);
         if (record) {
           res.writeHead(200, { 'Content-Type': 'application/json' });

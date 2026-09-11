@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.94.9] - 2026-09-11
+
+### Fixed — Saved Mission Diagnostics Blank / No Telemetry Points
+- **URI-Encoded Archive ID Lookup in Companion:** When selecting saved missions from the dropdown (e.g. `diag:354A8F93-759C-42C3-A8D5-746F79C7622A_2026-08-30T13:37:31.968Z`), the frontend client percent-encodes the colons `:` in the ISO timestamp as `%3A`. The companion's `/api/diagnostics/:identifier` endpoint previously queried SQLite directly with the raw encoded string (`%3A` instead of `:`), causing a 404 Mission Not Found and rendering the 3D replay blank with "No telemetry points".
+- **Decode URI Components in `server.js` & `diagnostics_db.js`:** Both `/api/diagnostics/` in `server.js` and `DiagnosticsDatabase.getByIdOrArchiveIdOrUuid` in `diagnostics_db.js` now safely decode URI components before database lookup, properly resolving archived missions with ISO timestamp archive IDs.
+- **Regression Test Added:** Added dedicated unit test asserting `getByIdOrArchiveIdOrUuid` successfully resolves records when queried with percent-encoded colons (`%3A`) in the `archive_id`.
+
 ## [1.94.8] - 2026-09-11
 
 ### Fixed — 3D Diagnostics Replay Showing Active Workspace Instead of Selected Flight
