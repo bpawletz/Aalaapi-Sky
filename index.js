@@ -759,6 +759,7 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     altitude: 50,
     speed: 4,
     headingMode: 'inherit',
+    customHeading: 0,
     pathMode: 'inherit',
     captureMode: 'inherit',
     targetPoiId: null,
@@ -843,6 +844,14 @@ function getEffectiveLayerHeadingMode(layer) {
   if (layer && layer.headingMode && layer.headingMode !== 'inherit') return layer.headingMode;
   const globalEl = typeof document !== 'undefined' ? document.getElementById('heading-mode') : null;
   return (globalEl && globalEl.value) ? globalEl.value : 'followWayline';
+}
+
+function getEffectiveLayerCustomHeading(layer) {
+  if (layer && layer.customHeading !== undefined && layer.customHeading !== null && layer.customHeading !== 'inherit') {
+    return parseInt(layer.customHeading, 10) || 0;
+  }
+  const globalEl = typeof document !== 'undefined' ? document.getElementById('global-custom-heading') : null;
+  return globalEl ? (parseInt(globalEl.value, 10) || 0) : 0;
 }
 
 function getEffectiveLayerHoverTime(layer) {
@@ -989,7 +998,8 @@ function getEffectiveWaypointHeading(wp, idx, waypoints, rotationDeg = 0, tempHe
     if (wp && wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
       return wp.heading;
     }
-    return (typeof getDefaultHeading === 'function') ? getDefaultHeading(idx, waypoints, rotationDeg) : 0;
+    const resolvedLayer = layer || (wp && wp.layerId && typeof flightLayers !== 'undefined' ? flightLayers.find(l => l.id === wp.layerId) : null) || ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+    return getEffectiveLayerCustomHeading(resolvedLayer);
   }
   
   // Default: followWayline / smoothTransition / inherit
@@ -1030,10 +1040,13 @@ function updateInheritOptionLabels() {
 
   const headingOpt = document.getElementById('layer-heading-mode-inherit-opt');
   if (headingOpt && globalHeadingModeEl) {
+    const globalCustomHeadingEl = document.getElementById('global-custom-heading');
+    const globalCustomAngle = globalCustomHeadingEl ? (parseInt(globalCustomHeadingEl.value, 10) || 0) : 0;
     const mapHeading = {
       'followWayline': 'Follow Flight Path',
       'fixed': 'Fixed North',
-      'towardPOI': 'Point of Interest'
+      'towardPOI': 'Point of Interest',
+      'custom': `Custom (${globalCustomAngle}°)`
     };
     const resolved = mapHeading[globalHeadingModeEl.value] || globalHeadingModeEl.value;
     headingOpt.textContent = `🌐 Inherit Global (${resolved})`;
@@ -1169,6 +1182,11 @@ function saveActiveLayerFromUi() {
     layer.headingMode = layerHeadingModeEl.value;
   } else if (headingModeEl && headingModeEl.value && layer.headingMode === undefined) {
     layer.headingMode = headingModeEl.value;
+  }
+
+  const layerCustomHeadingEl = document.getElementById('layer-custom-heading');
+  if (layerCustomHeadingEl) {
+    layer.customHeading = parseInt(layerCustomHeadingEl.value, 10) || 0;
   }
 
   if (layerPoiSelectEl) {
@@ -1338,6 +1356,23 @@ function syncUiWithActiveLayer() {
       layerPoiContainer.classList.remove('hidden');
     } else {
       layerPoiContainer.classList.add('hidden');
+    }
+  }
+
+  const customHeadingVal = (layer.customHeading !== undefined && layer.customHeading !== null) ? parseInt(layer.customHeading, 10) : 0;
+  setVal('layer-custom-heading', customHeadingVal);
+  const customHeadingValDisplay = document.getElementById('layer-custom-heading-val');
+  if (customHeadingValDisplay) customHeadingValDisplay.textContent = customHeadingVal;
+
+  const layerCustomHeadingContainer = document.getElementById('layer-custom-heading-container');
+  if (layerCustomHeadingContainer) {
+    const effHeadingMode = (layer.headingMode === 'inherit')
+      ? (document.getElementById('heading-mode')?.value || 'followWayline')
+      : (layer.headingMode || 'inherit');
+    if (effHeadingMode === 'custom') {
+      layerCustomHeadingContainer.classList.remove('hidden');
+    } else {
+      layerCustomHeadingContainer.classList.add('hidden');
     }
   }
 
@@ -4862,18 +4897,57 @@ function initUIEventListeners() {
   if (headingModeGlobalEl) {
     headingModeGlobalEl.addEventListener('change', () => {
       updateInheritOptionLabels();
-      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
-      const layerPoiContainer = document.getElementById('layer-poi-container');
-      if (layerPoiContainer && activeLayer) {
-        const effHeading = getEffectiveLayerHeadingMode(activeLayer);
-        if (effHeading === 'towardPOI') {
-          layerPoiContainer.classList.remove('hidden');
+      const globalCustomContainer = document.getElementById('global-custom-heading-container');
+      if (globalCustomContainer) {
+        if (headingModeGlobalEl.value === 'custom') {
+          globalCustomContainer.classList.remove('hidden');
         } else {
-          layerPoiContainer.classList.add('hidden');
+          globalCustomContainer.classList.add('hidden');
         }
       }
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        const effHeading = getEffectiveLayerHeadingMode(activeLayer);
+        const layerPoiContainer = document.getElementById('layer-poi-container');
+        if (layerPoiContainer) {
+          if (effHeading === 'towardPOI') {
+            layerPoiContainer.classList.remove('hidden');
+          } else {
+            layerPoiContainer.classList.add('hidden');
+          }
+        }
+        const layerCustomContainer = document.getElementById('layer-custom-heading-container');
+        if (layerCustomContainer) {
+          if (effHeading === 'custom') {
+            layerCustomContainer.classList.remove('hidden');
+          } else {
+            layerCustomContainer.classList.add('hidden');
+          }
+        }
+      }
+      updateGrid();
     });
   }
+
+  const globalCustomHeadingEl = document.getElementById('global-custom-heading');
+  const globalCustomHeadingVal = document.getElementById('global-custom-heading-val');
+  if (globalCustomHeadingEl) {
+    globalCustomHeadingEl.addEventListener('input', () => {
+      const val = parseInt(globalCustomHeadingEl.value, 10) || 0;
+      if (globalCustomHeadingVal) globalCustomHeadingVal.textContent = val;
+      updateInheritOptionLabels();
+      redrawCurrentMission();
+    });
+  }
+  document.querySelectorAll('.global-head-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const angle = parseInt(btn.dataset.angle, 10) || 0;
+      if (globalCustomHeadingEl) globalCustomHeadingEl.value = angle;
+      if (globalCustomHeadingVal) globalCustomHeadingVal.textContent = angle;
+      updateInheritOptionLabels();
+      redrawCurrentMission();
+    });
+  });
 
   const globalHoverEl = document.getElementById('global-hover-time');
   if (globalHoverEl) {
@@ -4920,10 +4994,46 @@ function initUIEventListeners() {
             layerPoiContainer.classList.add('hidden');
           }
         }
+        const layerCustomHeadingContainer = document.getElementById('layer-custom-heading-container');
+        if (layerCustomHeadingContainer) {
+          if (effHeading === 'custom') {
+            layerCustomHeadingContainer.classList.remove('hidden');
+          } else {
+            layerCustomHeadingContainer.classList.add('hidden');
+          }
+        }
       }
       updateGrid();
     });
   }
+
+  const layerCustomHeadingEl = document.getElementById('layer-custom-heading');
+  const layerCustomHeadingVal = document.getElementById('layer-custom-heading-val');
+  if (layerCustomHeadingEl) {
+    layerCustomHeadingEl.addEventListener('input', () => {
+      const val = parseInt(layerCustomHeadingEl.value, 10) || 0;
+      if (layerCustomHeadingVal) layerCustomHeadingVal.textContent = val;
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.customHeading = val;
+      }
+      redrawCurrentMission();
+      if (typeof updateFPVEditorUI === 'function') updateFPVEditorUI();
+    });
+  }
+  document.querySelectorAll('.layer-head-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const angle = parseInt(btn.dataset.angle, 10) || 0;
+      if (layerCustomHeadingEl) layerCustomHeadingEl.value = angle;
+      if (layerCustomHeadingVal) layerCustomHeadingVal.textContent = angle;
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.customHeading = angle;
+      }
+      redrawCurrentMission();
+      if (typeof updateFPVEditorUI === 'function') updateFPVEditorUI();
+    });
+  });
 
   const layerPoiSelectEl = document.getElementById('layer-poi-select');
   if (layerPoiSelectEl) {
@@ -11808,7 +11918,9 @@ ${waypointActions.join('\n')}
         }
       } else if (effectiveHeadingMode === 'custom' || effectiveHeadingMode === 'smoothTransition') {
         actualHeadingMode = 'smoothTransition';
-        actualHeadingAngle = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
+        actualHeadingAngle = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading))
+          ? wp.heading
+          : ((typeof getEffectiveLayerCustomHeading === 'function') ? getEffectiveLayerCustomHeading(wpLayer) : 0);
       } else if (effectiveHeadingMode === 'fixed') {
         actualHeadingMode = 'smoothTransition';
         actualHeadingAngle = 0.1;
@@ -11822,6 +11934,9 @@ ${waypointActions.join('\n')}
       actualHeadingAngle = 0;
     } else if (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
       actualHeadingAngle = wp.heading;
+    } else if (effectiveHeadingMode === 'custom') {
+      actualHeadingAngle = (typeof getEffectiveLayerCustomHeading === 'function') ? getEffectiveLayerCustomHeading(wpLayer) : 0;
+      if (actualHeadingAngle === 0) actualHeadingAngle = 0.1;
     } else {
       // Compute bearing from lat/lon to avoid NaN when x/y offsets are not set
       let fromWp, toWp;
@@ -18171,7 +18286,12 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
     }
 
     if (effectiveMode === 'custom') {
-      tempHeading = parseFloat(headingSlider.value);
+      if (mode === 'custom') {
+        tempHeading = parseFloat(headingSlider.value);
+      } else {
+        const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+        tempHeading = (wp.heading !== null && wp.heading !== undefined) ? wp.heading : getEffectiveLayerCustomHeading(wpLayer);
+      }
     } else if (effectiveMode === 'followWayline') {
       tempHeading = autoHead;
     } else if (effectiveMode === 'fixed') {
@@ -18344,6 +18464,10 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
     }
     if (saveBtn) {
       saveBtn.style.display = isChangedFromOrig ? 'inline-block' : 'none';
+    }
+
+    if (typeof fpvActive !== 'undefined' && fpvActive && typeof updateFPVCamera === 'function') {
+      updateFPVCamera(0);
     }
   };
   const throttledUpdateRealtimeMarker = throttle(updateRealtimeMarker, 32);
@@ -19142,14 +19266,13 @@ function checkNeedsReposition(idx, waypoints) {
 // Calculate the heading and pitch for a waypoint index
 function getWaypointHeadingAndPitch(idx, waypoints) {
   const wp = (waypoints && waypoints[idx]) ? waypoints[idx] : {};
-  const rotationDeg = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('grid-rotation'))
-    ? parseFloat(document.getElementById('grid-rotation').value) || 0
-    : 0;
-  const heading = getEffectiveWaypointHeading(wp, idx, waypoints, rotationDeg, null, null);
-
   const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined')
     ? flightLayers.find(l => l.id === wp.layerId)
     : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+  const rotationDeg = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('grid-rotation'))
+    ? parseFloat(document.getElementById('grid-rotation').value) || 0
+    : 0;
+  const heading = getEffectiveWaypointHeading(wp, idx, waypoints, rotationDeg, null, wpLayer);
 
   const defaultGimbalPitch = (wpLayer && wpLayer.gimbalPitch !== undefined)
     ? wpLayer.gimbalPitch
@@ -20915,6 +21038,9 @@ function setupFPVListeners() {
         redrawCurrentMission();
         recreate3DWaypointsAndPaths();
         updateFPVEditorUI();
+        if (fpvActive && typeof updateFPVCamera === 'function') {
+          updateFPVCamera(0);
+        }
       }
     });
 
@@ -20937,6 +21063,9 @@ function setupFPVListeners() {
         redrawCurrentMission();
         recreate3DWaypointsAndPaths();
         updateFPVEditorUI();
+        if (fpvActive && typeof updateFPVCamera === 'function') {
+          updateFPVCamera(0);
+        }
       }
     });
 
@@ -20958,6 +21087,9 @@ function setupFPVListeners() {
           redrawCurrentMission();
           recreate3DWaypointsAndPaths();
           updateFPVEditorUI();
+          if (fpvActive && typeof updateFPVCamera === 'function') {
+            updateFPVCamera(0);
+          }
         }
       });
     }

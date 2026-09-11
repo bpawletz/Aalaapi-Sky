@@ -3482,7 +3482,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.90.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.91.0</span></h1>
         </div>
       </div>
 
@@ -4363,7 +4363,22 @@ html, body {
                 <option value="followWayline">Follow Flight Path (Forward-facing)</option>
                 <option value="fixed">Fixed Heading (North)</option>
                 <option value="towardPOI">Point of Interest (Target-Facing)</option>
+                <option value="custom">Custom Heading (Angle)</option>
               </select>
+            </div>
+
+            <div class="control-group hidden" id="layer-custom-heading-container">
+              <div class="control-label" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <label for="layer-custom-heading" style="font-size: 0.75rem; margin-bottom: 0;">Custom Heading Angle</label>
+                <span class="value-display" style="font-size: 0.75rem; font-weight: 700; color: var(--accent-cyan);"><span id="layer-custom-heading-val">0</span>°</span>
+              </div>
+              <input type="range" id="layer-custom-heading" min="0" max="359" step="1" value="0" class="slider" aria-label="Layer Custom Heading Angle">
+              <div style="display: flex; gap: 4px; margin-top: 4px;">
+                <button type="button" class="btn-secondary layer-head-chip" data-angle="0" style="flex: 1; padding: 2px; font-size: 0.65rem;">N (0°)</button>
+                <button type="button" class="btn-secondary layer-head-chip" data-angle="90" style="flex: 1; padding: 2px; font-size: 0.65rem;">E (90°)</button>
+                <button type="button" class="btn-secondary layer-head-chip" data-angle="180" style="flex: 1; padding: 2px; font-size: 0.65rem;">S (180°)</button>
+                <button type="button" class="btn-secondary layer-head-chip" data-angle="270" style="flex: 1; padding: 2px; font-size: 0.65rem;">W (270°)</button>
+              </div>
             </div>
 
             <div class="control-group hidden" id="layer-poi-container">
@@ -4566,7 +4581,21 @@ html, body {
               <option value="followWayline">Follow Flight Path (Forward-facing)</option>
               <option value="fixed">Fixed Heading (North)</option>
               <option value="towardPOI">Point of Interest (POI / Target-Facing)</option>
+              <option value="custom">Custom Heading (Angle)</option>
             </select>
+            <div class="control-group hidden" id="global-custom-heading-container" style="margin-top: 6px;">
+              <div class="control-label" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <label for="global-custom-heading" style="font-size: 0.75rem; margin-bottom: 0;">Global Custom Heading Angle</label>
+                <span class="value-display" style="font-size: 0.75rem; font-weight: 700; color: var(--accent-cyan);"><span id="global-custom-heading-val">0</span>°</span>
+              </div>
+              <input type="range" id="global-custom-heading" min="0" max="359" step="1" value="0" class="slider" aria-label="Global Custom Heading Angle">
+              <div style="display: flex; gap: 4px; margin-top: 4px;">
+                <button type="button" class="btn-secondary global-head-chip" data-angle="0" style="flex: 1; padding: 2px; font-size: 0.65rem;">N (0°)</button>
+                <button type="button" class="btn-secondary global-head-chip" data-angle="90" style="flex: 1; padding: 2px; font-size: 0.65rem;">E (90°)</button>
+                <button type="button" class="btn-secondary global-head-chip" data-angle="180" style="flex: 1; padding: 2px; font-size: 0.65rem;">S (180°)</button>
+                <button type="button" class="btn-secondary global-head-chip" data-angle="270" style="flex: 1; padding: 2px; font-size: 0.65rem;">W (270°)</button>
+              </div>
+            </div>
             <p class="help-text" style="margin-top: 4px; margin-bottom: 0;">Applies as a global default to all waypoints.</p>
 
             <!-- Interactive Collapsible Help Drawer -->
@@ -5189,6 +5218,15 @@ html, body {
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🧭 Layer Custom Heading &amp; Real-Time Map Camera Visuals (v1.91.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Pilots can now configure custom camera heading angles at the flight layer and global mission levels with dedicated 0°–359° angle sliders and quick-cardinal preset chips (N/E/S/W). Adjusting custom headings updates camera sight cones and directional pointer arrows across the 2D Leaflet map in real time, while the 3D FPV HUD walkthrough editor immediately rotates the Three.js perspective camera as the heading slider is dragged.
+            </p>
+          </div>
+
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🎯 POI AGL Height &amp; 3D Auto-Tilt Tracking (v1.90.0)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -5757,7 +5795,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.90.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.91.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -5823,6 +5861,16 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.91.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Layer &amp; Global Custom Heading Angle Controls:</strong> Added Custom Heading (Angle) to Layer Properties and Global Defaults with 0°–359° angle sliders and N/E/S/W quick chips.</li>
+              <li><strong>Real-Time 2D Map Camera Visuals:</strong> Interactive heading angle changes immediately re-evaluate heading and rotate waypoint camera sight cones and pointer arrows in real time.</li>
+              <li><strong>Synchronous 3D FPV Viewport Camera Rotation:</strong> Adjusting the heading slider in the 3D FPV HUD walkthrough editor immediately rotates the Three.js perspective camera.</li>
+              <li><strong>Three-Tier Heading Inheritance:</strong> Full cascade support (Waypoint Override &gt; Layer Custom Heading &gt; Global Custom Heading) with dynamic inherit labels.</li>
+              <li><strong>WPML Export Parity:</strong> Automatically compiles <code>smoothTransition</code> mode with the resolved custom angle across all waypoints.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.90.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -9304,6 +9352,7 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     altitude: 50,
     speed: 4,
     headingMode: 'inherit',
+    customHeading: 0,
     pathMode: 'inherit',
     captureMode: 'inherit',
     targetPoiId: null,
@@ -9388,6 +9437,14 @@ function getEffectiveLayerHeadingMode(layer) {
   if (layer && layer.headingMode && layer.headingMode !== 'inherit') return layer.headingMode;
   const globalEl = typeof document !== 'undefined' ? document.getElementById('heading-mode') : null;
   return (globalEl && globalEl.value) ? globalEl.value : 'followWayline';
+}
+
+function getEffectiveLayerCustomHeading(layer) {
+  if (layer && layer.customHeading !== undefined && layer.customHeading !== null && layer.customHeading !== 'inherit') {
+    return parseInt(layer.customHeading, 10) || 0;
+  }
+  const globalEl = typeof document !== 'undefined' ? document.getElementById('global-custom-heading') : null;
+  return globalEl ? (parseInt(globalEl.value, 10) || 0) : 0;
 }
 
 function getEffectiveLayerHoverTime(layer) {
@@ -9534,7 +9591,8 @@ function getEffectiveWaypointHeading(wp, idx, waypoints, rotationDeg = 0, tempHe
     if (wp && wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
       return wp.heading;
     }
-    return (typeof getDefaultHeading === 'function') ? getDefaultHeading(idx, waypoints, rotationDeg) : 0;
+    const resolvedLayer = layer || (wp && wp.layerId && typeof flightLayers !== 'undefined' ? flightLayers.find(l => l.id === wp.layerId) : null) || ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+    return getEffectiveLayerCustomHeading(resolvedLayer);
   }
   
   // Default: followWayline / smoothTransition / inherit
@@ -9575,10 +9633,13 @@ function updateInheritOptionLabels() {
 
   const headingOpt = document.getElementById('layer-heading-mode-inherit-opt');
   if (headingOpt && globalHeadingModeEl) {
+    const globalCustomHeadingEl = document.getElementById('global-custom-heading');
+    const globalCustomAngle = globalCustomHeadingEl ? (parseInt(globalCustomHeadingEl.value, 10) || 0) : 0;
     const mapHeading = {
       'followWayline': 'Follow Flight Path',
       'fixed': 'Fixed North',
-      'towardPOI': 'Point of Interest'
+      'towardPOI': 'Point of Interest',
+      'custom': `Custom (${globalCustomAngle}°)`
     };
     const resolved = mapHeading[globalHeadingModeEl.value] || globalHeadingModeEl.value;
     headingOpt.textContent = `🌐 Inherit Global (${resolved})`;
@@ -9714,6 +9775,11 @@ function saveActiveLayerFromUi() {
     layer.headingMode = layerHeadingModeEl.value;
   } else if (headingModeEl && headingModeEl.value && layer.headingMode === undefined) {
     layer.headingMode = headingModeEl.value;
+  }
+
+  const layerCustomHeadingEl = document.getElementById('layer-custom-heading');
+  if (layerCustomHeadingEl) {
+    layer.customHeading = parseInt(layerCustomHeadingEl.value, 10) || 0;
   }
 
   if (layerPoiSelectEl) {
@@ -9883,6 +9949,23 @@ function syncUiWithActiveLayer() {
       layerPoiContainer.classList.remove('hidden');
     } else {
       layerPoiContainer.classList.add('hidden');
+    }
+  }
+
+  const customHeadingVal = (layer.customHeading !== undefined && layer.customHeading !== null) ? parseInt(layer.customHeading, 10) : 0;
+  setVal('layer-custom-heading', customHeadingVal);
+  const customHeadingValDisplay = document.getElementById('layer-custom-heading-val');
+  if (customHeadingValDisplay) customHeadingValDisplay.textContent = customHeadingVal;
+
+  const layerCustomHeadingContainer = document.getElementById('layer-custom-heading-container');
+  if (layerCustomHeadingContainer) {
+    const effHeadingMode = (layer.headingMode === 'inherit')
+      ? (document.getElementById('heading-mode')?.value || 'followWayline')
+      : (layer.headingMode || 'inherit');
+    if (effHeadingMode === 'custom') {
+      layerCustomHeadingContainer.classList.remove('hidden');
+    } else {
+      layerCustomHeadingContainer.classList.add('hidden');
     }
   }
 
@@ -13407,18 +13490,57 @@ function initUIEventListeners() {
   if (headingModeGlobalEl) {
     headingModeGlobalEl.addEventListener('change', () => {
       updateInheritOptionLabels();
-      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
-      const layerPoiContainer = document.getElementById('layer-poi-container');
-      if (layerPoiContainer && activeLayer) {
-        const effHeading = getEffectiveLayerHeadingMode(activeLayer);
-        if (effHeading === 'towardPOI') {
-          layerPoiContainer.classList.remove('hidden');
+      const globalCustomContainer = document.getElementById('global-custom-heading-container');
+      if (globalCustomContainer) {
+        if (headingModeGlobalEl.value === 'custom') {
+          globalCustomContainer.classList.remove('hidden');
         } else {
-          layerPoiContainer.classList.add('hidden');
+          globalCustomContainer.classList.add('hidden');
         }
       }
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        const effHeading = getEffectiveLayerHeadingMode(activeLayer);
+        const layerPoiContainer = document.getElementById('layer-poi-container');
+        if (layerPoiContainer) {
+          if (effHeading === 'towardPOI') {
+            layerPoiContainer.classList.remove('hidden');
+          } else {
+            layerPoiContainer.classList.add('hidden');
+          }
+        }
+        const layerCustomContainer = document.getElementById('layer-custom-heading-container');
+        if (layerCustomContainer) {
+          if (effHeading === 'custom') {
+            layerCustomContainer.classList.remove('hidden');
+          } else {
+            layerCustomContainer.classList.add('hidden');
+          }
+        }
+      }
+      updateGrid();
     });
   }
+
+  const globalCustomHeadingEl = document.getElementById('global-custom-heading');
+  const globalCustomHeadingVal = document.getElementById('global-custom-heading-val');
+  if (globalCustomHeadingEl) {
+    globalCustomHeadingEl.addEventListener('input', () => {
+      const val = parseInt(globalCustomHeadingEl.value, 10) || 0;
+      if (globalCustomHeadingVal) globalCustomHeadingVal.textContent = val;
+      updateInheritOptionLabels();
+      redrawCurrentMission();
+    });
+  }
+  document.querySelectorAll('.global-head-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const angle = parseInt(btn.dataset.angle, 10) || 0;
+      if (globalCustomHeadingEl) globalCustomHeadingEl.value = angle;
+      if (globalCustomHeadingVal) globalCustomHeadingVal.textContent = angle;
+      updateInheritOptionLabels();
+      redrawCurrentMission();
+    });
+  });
 
   const globalHoverEl = document.getElementById('global-hover-time');
   if (globalHoverEl) {
@@ -13465,10 +13587,46 @@ function initUIEventListeners() {
             layerPoiContainer.classList.add('hidden');
           }
         }
+        const layerCustomHeadingContainer = document.getElementById('layer-custom-heading-container');
+        if (layerCustomHeadingContainer) {
+          if (effHeading === 'custom') {
+            layerCustomHeadingContainer.classList.remove('hidden');
+          } else {
+            layerCustomHeadingContainer.classList.add('hidden');
+          }
+        }
       }
       updateGrid();
     });
   }
+
+  const layerCustomHeadingEl = document.getElementById('layer-custom-heading');
+  const layerCustomHeadingVal = document.getElementById('layer-custom-heading-val');
+  if (layerCustomHeadingEl) {
+    layerCustomHeadingEl.addEventListener('input', () => {
+      const val = parseInt(layerCustomHeadingEl.value, 10) || 0;
+      if (layerCustomHeadingVal) layerCustomHeadingVal.textContent = val;
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.customHeading = val;
+      }
+      redrawCurrentMission();
+      if (typeof updateFPVEditorUI === 'function') updateFPVEditorUI();
+    });
+  }
+  document.querySelectorAll('.layer-head-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const angle = parseInt(btn.dataset.angle, 10) || 0;
+      if (layerCustomHeadingEl) layerCustomHeadingEl.value = angle;
+      if (layerCustomHeadingVal) layerCustomHeadingVal.textContent = angle;
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.customHeading = angle;
+      }
+      redrawCurrentMission();
+      if (typeof updateFPVEditorUI === 'function') updateFPVEditorUI();
+    });
+  });
 
   const layerPoiSelectEl = document.getElementById('layer-poi-select');
   if (layerPoiSelectEl) {
@@ -20353,7 +20511,9 @@ ${waypointActions.join('\n')}
         }
       } else if (effectiveHeadingMode === 'custom' || effectiveHeadingMode === 'smoothTransition') {
         actualHeadingMode = 'smoothTransition';
-        actualHeadingAngle = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
+        actualHeadingAngle = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading))
+          ? wp.heading
+          : ((typeof getEffectiveLayerCustomHeading === 'function') ? getEffectiveLayerCustomHeading(wpLayer) : 0);
       } else if (effectiveHeadingMode === 'fixed') {
         actualHeadingMode = 'smoothTransition';
         actualHeadingAngle = 0.1;
@@ -20367,6 +20527,9 @@ ${waypointActions.join('\n')}
       actualHeadingAngle = 0;
     } else if (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
       actualHeadingAngle = wp.heading;
+    } else if (effectiveHeadingMode === 'custom') {
+      actualHeadingAngle = (typeof getEffectiveLayerCustomHeading === 'function') ? getEffectiveLayerCustomHeading(wpLayer) : 0;
+      if (actualHeadingAngle === 0) actualHeadingAngle = 0.1;
     } else {
       // Compute bearing from lat/lon to avoid NaN when x/y offsets are not set
       let fromWp, toWp;
@@ -26716,7 +26879,12 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
     }
 
     if (effectiveMode === 'custom') {
-      tempHeading = parseFloat(headingSlider.value);
+      if (mode === 'custom') {
+        tempHeading = parseFloat(headingSlider.value);
+      } else {
+        const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+        tempHeading = (wp.heading !== null && wp.heading !== undefined) ? wp.heading : getEffectiveLayerCustomHeading(wpLayer);
+      }
     } else if (effectiveMode === 'followWayline') {
       tempHeading = autoHead;
     } else if (effectiveMode === 'fixed') {
@@ -26889,6 +27057,10 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
     }
     if (saveBtn) {
       saveBtn.style.display = isChangedFromOrig ? 'inline-block' : 'none';
+    }
+
+    if (typeof fpvActive !== 'undefined' && fpvActive && typeof updateFPVCamera === 'function') {
+      updateFPVCamera(0);
     }
   };
   const throttledUpdateRealtimeMarker = throttle(updateRealtimeMarker, 32);
@@ -27687,14 +27859,13 @@ function checkNeedsReposition(idx, waypoints) {
 // Calculate the heading and pitch for a waypoint index
 function getWaypointHeadingAndPitch(idx, waypoints) {
   const wp = (waypoints && waypoints[idx]) ? waypoints[idx] : {};
-  const rotationDeg = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('grid-rotation'))
-    ? parseFloat(document.getElementById('grid-rotation').value) || 0
-    : 0;
-  const heading = getEffectiveWaypointHeading(wp, idx, waypoints, rotationDeg, null, null);
-
   const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined')
     ? flightLayers.find(l => l.id === wp.layerId)
     : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+  const rotationDeg = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('grid-rotation'))
+    ? parseFloat(document.getElementById('grid-rotation').value) || 0
+    : 0;
+  const heading = getEffectiveWaypointHeading(wp, idx, waypoints, rotationDeg, null, wpLayer);
 
   const defaultGimbalPitch = (wpLayer && wpLayer.gimbalPitch !== undefined)
     ? wpLayer.gimbalPitch
@@ -29460,6 +29631,9 @@ function setupFPVListeners() {
         redrawCurrentMission();
         recreate3DWaypointsAndPaths();
         updateFPVEditorUI();
+        if (fpvActive && typeof updateFPVCamera === 'function') {
+          updateFPVCamera(0);
+        }
       }
     });
 
@@ -29482,6 +29656,9 @@ function setupFPVListeners() {
         redrawCurrentMission();
         recreate3DWaypointsAndPaths();
         updateFPVEditorUI();
+        if (fpvActive && typeof updateFPVCamera === 'function') {
+          updateFPVCamera(0);
+        }
       }
     });
 
@@ -29503,6 +29680,9 @@ function setupFPVListeners() {
           redrawCurrentMission();
           recreate3DWaypointsAndPaths();
           updateFPVEditorUI();
+          if (fpvActive && typeof updateFPVCamera === 'function') {
+            updateFPVCamera(0);
+          }
         }
       });
     }
