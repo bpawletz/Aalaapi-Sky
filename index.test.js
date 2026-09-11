@@ -947,6 +947,9 @@ test('NWS Weather fetching bounds and parsing', async () => {
     if (url.includes('/observations/latest')) {
       return { ok: true, json: async () => ({ properties: { flightCategory: 'VFR', rawMessage: 'METAR MOCK TEST 123' } }) };
     }
+    if (url.includes('vatsim.net')) {
+      return { ok: true, text: async () => 'KMOCK 111150Z 00000KT 10SM CLR 15/10 A3000\n' };
+    }
     return { ok: false };
   };
 
@@ -954,13 +957,13 @@ test('NWS Weather fetching bounds and parsing', async () => {
     vm.runInThisContext('lastWeatherFetchCenter = null;');
     await vm.runInThisContext('fetchAndProcessWeather(45.0, -90.0)');
 
-    // 1 (points) + 1 (stations list) + 4 (observations for top 4 mocked stations)
-    assert.strictEqual(fetchedUrls.length, 6, 'Should fetch: points, stations list, and observations for 4 top stations');
+    // 1 (points) + 1 (stations list) + 4 (observations for top 4 mocked stations) + 1 (live METAR batch)
+    assert.strictEqual(fetchedUrls.length, 7, 'Should fetch: points, stations list, 4 station observations, and live METAR batch');
 
     const directions = vm.runInThisContext('currentWeatherDirections');
     assert.ok(directions, 'Directions object should exist');
     assert.strictEqual(directions.stations.length, 4, 'Should contain up to 4 nearest weather stations');
-    assert.strictEqual(directions.stations[0].raw, 'METAR MOCK TEST 123', 'Should include raw METAR message');
+    assert.ok(directions.stations[0].raw.includes('KMOCK'), 'Should include METAR message');
   } finally {
     global.fetch = originalFetch;
   }
@@ -4046,6 +4049,180 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
       assert.strictEqual(pannedTo.zoom, 18);
     } finally {
       delete global._testMap;
+    }
+  });
+
+  test('FlightDiagnostics buildTrajectoryMeshes uses this.plannedWaypoints not getActiveMissionWaypoints when set (regression: 3D map wrong planned path)', () => {
+    // Regression: previously buildTrajectoryMeshes always called getActiveMissionWaypoints(),
+    // showing the active workspace route instead of the loaded flight's planned path.
+    const capturedWpSets = [];
+    const origProjectToWorld = FlightDiagnostics.projectToWorld;
+    let activeMissionCallCount = 0;
+
+    try {
+      vm.runInThisContext(`
+        var _origGetActiveMissionWaypoints = getActiveMissionWaypoints;
+        var _activeMissionCallCount = 0;
+        getActiveMissionWaypoints = function() {
+          _activeMissionCallCount++;
+          return [{ lat: 40.0130, lon: -83.1765, altitude: 21 }];
+        };
+      `);
+
+      // Set plannedWaypoints to a distinct location (Tokyo) to distinguish from active workspace
+      vm.runInThisContext(`
+        FlightDiagnostics.plannedWaypoints = [
+          { lat: 35.6762, lon: 139.6503, altitude: 30 },
+          { lat: 35.6800, lon: 139.6550, altitude: 30 },
+          { lat: 35.6850, lon: 139.6600, altitude: 30 }
+        ];
+        FlightDiagnostics.telemetryData = {
+          homePoint: { lat: 35.6762, lon: 139.6503, alt: 0 },
+          points: [
+            { lat: 35.6762, lon: 139.6503, alt: 30, speed: 4, pitch: -60, battery: 90, satellites: 12, isPhoto: false, time: 0, timeStr: '00:00', yaw: 0, waypointIndex: 0 },
+            { lat: 35.6800, lon: 139.6550, alt: 30, speed: 4, pitch: -60, battery: 89, satellites: 12, isPhoto: false, time: 10, timeStr: '00:10', yaw: 0, waypointIndex: 1 }
+          ]
+        };
+      `);
+
+      // Mock THREE and a minimal scene
+      vm.runInThisContext(`
+        var _capturedPlannedCoords = [];
+        var _origPTW = FlightDiagnostics.projectToWorld.bind(FlightDiagnostics);
+        FlightDiagnostics.projectToWorld = function(lat, lon, alt) {
+          _capturedPlannedCoords.push({ lat, lon, alt });
+          return { x: 0, y: alt || 0, z: 0, copy: function() { return this; } };
+        };
+        // Stub THREE geometry/materials/meshes for buildTrajectoryMeshes
+        var _savedTHREE = typeof THREE !== 'undefined' ? THREE : undefined;
+        var THREE = {
+          BufferGeometry: function() {
+            return { setFromPoints: function(pts) { this.pts = pts; return this; }, dispose: function() {} };
+          },
+          LineBasicMaterial: function(opts) { return {}; },
+          LineDashedMaterial: function(opts) { return {}; },
+          Line: function(geo, mat) {
+            return { geometry: geo, computeLineDistances: function() {}, position: { copy: function() {} } };
+          },
+          SphereGeometry: function() { return { dispose: function() {} }; },
+          MeshBasicMaterial: function() { return {}; },
+          Mesh: function(g, m) { return { position: { copy: function() {} }, geometry: g }; }
+        };
+        FlightDiagnostics.threeScene = {
+          add: function() {},
+          remove: function() {}
+        };
+        FlightDiagnostics.actualLineMesh = null;
+        FlightDiagnostics.plannedLineMesh = null;
+        FlightDiagnostics.photoMarkers = [];
+        FlightDiagnostics.buildTrajectoryMeshes();
+      `);
+
+      const capturedCoords = vm.runInThisContext('_capturedPlannedCoords');
+      const activeMissionCalls = vm.runInThisContext('_activeMissionCallCount');
+
+      // The planned coords should include Tokyo-area coordinates from plannedWaypoints, not Columbus
+      const planCoords = capturedCoords.filter(c => Math.abs(c.lat - 35.6762) < 0.1 || Math.abs(c.lat - 35.68) < 0.1);
+      assert.ok(planCoords.length >= 2, `buildTrajectoryMeshes must draw planned path from this.plannedWaypoints (Tokyo), got coords: ${JSON.stringify(capturedCoords)}`);
+      assert.strictEqual(activeMissionCalls, 0, `getActiveMissionWaypoints must NOT be called when this.plannedWaypoints is set (called ${activeMissionCalls} times)`);
+    } finally {
+      vm.runInThisContext(`
+        getActiveMissionWaypoints = _origGetActiveMissionWaypoints;
+        FlightDiagnostics.projectToWorld = _origPTW;
+        FlightDiagnostics.plannedWaypoints = null;
+        FlightDiagnostics.telemetryData = null;
+      `);
+    }
+  });
+
+  test('FlightDiagnostics buildTrajectoryMeshes falls back to getActiveMissionWaypoints when this.plannedWaypoints is null (regression: active-mission mode)', () => {
+    // Regression: active-mission mode must still use getActiveMissionWaypoints when plannedWaypoints is null.
+    let activeMissionCalled = false;
+
+    try {
+      vm.runInThisContext(`
+        var _origGetActiveMissionWaypoints2 = getActiveMissionWaypoints;
+        var _activeMissionCalled2 = false;
+        getActiveMissionWaypoints = function() {
+          _activeMissionCalled2 = true;
+          return [{ lat: 40.0130, lon: -83.1765, altitude: 21 }];
+        };
+        FlightDiagnostics.plannedWaypoints = null;
+        FlightDiagnostics.telemetryData = {
+          homePoint: { lat: 40.0130, lon: -83.1765, alt: 0 },
+          points: [
+            { lat: 40.0130, lon: -83.1765, alt: 21, speed: 4, pitch: -60, battery: 98, satellites: 12, isPhoto: false, time: 0, timeStr: '00:00', yaw: 0, waypointIndex: 0 }
+          ]
+        };
+        var THREE = {
+          BufferGeometry: function() { return { setFromPoints: function(pts) { return this; }, dispose: function() {} }; },
+          LineBasicMaterial: function() { return {}; },
+          LineDashedMaterial: function() { return {}; },
+          Line: function(geo, mat) { return { computeLineDistances: function() {} }; },
+          SphereGeometry: function() { return { dispose: function() {} }; },
+          MeshBasicMaterial: function() { return {}; },
+          Mesh: function(g, m) { return { position: { copy: function() {} }, geometry: g }; }
+        };
+        FlightDiagnostics.threeScene = { add: function() {}, remove: function() {} };
+        FlightDiagnostics.actualLineMesh = null;
+        FlightDiagnostics.plannedLineMesh = null;
+        FlightDiagnostics.photoMarkers = [];
+        FlightDiagnostics.projectToWorld = function(lat, lon, alt) {
+          return { x: 0, y: alt || 0, z: 0 };
+        };
+        FlightDiagnostics.buildTrajectoryMeshes();
+      `);
+
+      activeMissionCalled = vm.runInThisContext('_activeMissionCalled2');
+      assert.strictEqual(activeMissionCalled, true, 'getActiveMissionWaypoints must be called when this.plannedWaypoints is null');
+    } finally {
+      vm.runInThisContext(`
+        getActiveMissionWaypoints = _origGetActiveMissionWaypoints2;
+        FlightDiagnostics.plannedWaypoints = null;
+        FlightDiagnostics.telemetryData = null;
+      `);
+    }
+  });
+
+  test('FlightDiagnostics getSceneOrigin does not bleed active workspace centerMarker when homePoint absent (regression: 3D map wrong location)', () => {
+    // Regression: previously getSceneOrigin() fell back to centerMarker (active workspace center)
+    // when telemetryData.homePoint was missing, placing the 3D scene at the wrong location.
+    // Fix: skip centerMarker; use telemetryData.points[0] directly.
+    const FLIGHT_LAT = 51.5074;
+    const FLIGHT_LON = -0.1278;
+    const WORKSPACE_LAT = 40.0130;
+    const WORKSPACE_LON = -83.1765;
+
+    try {
+      vm.runInThisContext(`
+        // Simulate a centerMarker at the active workspace (Columbus, OH)
+        var _origCenterMarker = typeof centerMarker !== 'undefined' ? centerMarker : undefined;
+        centerMarker = {
+          getLatLng: function() { return { lat: ${WORKSPACE_LAT}, lng: ${WORKSPACE_LON} }; }
+        };
+        // Telemetry has no homePoint but has points at London
+        FlightDiagnostics.telemetryData = {
+          points: [
+            { lat: ${FLIGHT_LAT}, lon: ${FLIGHT_LON}, alt: 30, speed: 4, pitch: -60, battery: 90, satellites: 12, isPhoto: false, time: 0, timeStr: '00:00', yaw: 0 }
+          ]
+          // homePoint intentionally absent
+        };
+      `);
+
+      const origin = vm.runInThisContext('FlightDiagnostics.getSceneOrigin()');
+      assert.ok(
+        Math.abs(origin.lat - FLIGHT_LAT) < 0.001,
+        `getSceneOrigin must return the flight's telemetry location (lat ${FLIGHT_LAT}), not the workspace centerMarker (lat ${WORKSPACE_LAT}). Got: ${origin.lat}`
+      );
+      assert.ok(
+        Math.abs(origin.lon - FLIGHT_LON) < 0.001,
+        `getSceneOrigin must return the flight's telemetry location (lon ${FLIGHT_LON}), not the workspace centerMarker (lon ${WORKSPACE_LON}). Got: ${origin.lon}`
+      );
+    } finally {
+      vm.runInThisContext(`
+        centerMarker = typeof _origCenterMarker !== 'undefined' ? _origCenterMarker : undefined;
+        FlightDiagnostics.telemetryData = null;
+      `);
     }
   });
 
@@ -13822,14 +13999,12 @@ describe('v1.94.2 Section 2 Header Declutter & Conditional Hierarchy Badge', () 
 describe('v1.94.3 Pre-Flight KMZ Audit & Executive Readiness Redesign Tests', () => {
   test('Version consistency: v1.94.3 is registered across package.json, CHANGELOG.md, and template', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.94.3', 'package.json version must be 1.94.3');
+    assert.ok(pkg.version >= '1.94.3', 'package.json version must be 1.94.3 or higher');
 
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.94.3] - 2026-09-11'), 'CHANGELOG.md must contain v1.94.3 entry');
 
     const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(templateHtml.includes('v1.94.3</span>'), 'index_template.html header badge must be v1.94.3');
-    assert.ok(templateHtml.includes('Version 1.94.3</span>'), 'index_template.html About modal must be Version 1.94.3');
     assert.ok(templateHtml.includes('Changelog (v1.94.3):'), 'index_template.html must contain Changelog (v1.94.3)');
   });
 
@@ -13968,6 +14143,176 @@ describe('v1.94.3 Pre-Flight KMZ Audit & Executive Readiness Redesign Tests', ()
       assert.strictEqual(mockCopyAntigravityBtn.style.display, 'inline-flex', 'Copy Antigravity button must be visible on error');
     } finally {
       global.document.getElementById = origGetElementById;
+    }
+  });
+});
+
+describe('v1.94.4 Real-Time Live METAR Ingestion & Flight Category Tests', () => {
+  test('Version consistency: v1.94.5 is registered across package.json, CHANGELOG.md, and template (regression: 3D diag map fix)', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+    assert.strictEqual(pkg.version, '1.94.5', 'package.json version must be 1.94.5');
+
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.94.5] - 2026-09-11'), 'CHANGELOG.md must contain 1.94.5 entry');
+
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateHtml.includes('>v1.94.5</span>'), 'index_template.html must contain header version badge v1.94.5');
+    assert.ok(templateHtml.includes('Version 1.94.5</span>'), 'index_template.html must contain About modal version tag 1.94.5');
+    assert.ok(templateHtml.includes('Changelog (v1.94.5):'), 'index_template.html must contain Changelog (v1.94.5) header');
+  });
+
+  test('Version consistency: v1.94.4 changelog entry is preserved in CHANGELOG.md and template', () => {
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.94.4] - 2026-09-11'), 'CHANGELOG.md must contain 1.94.4 entry');
+
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateHtml.includes('Changelog (v1.94.4):'), 'index_template.html must contain Changelog (v1.94.4) header');
+  });
+
+  test('parseMetar correctly parses standard VFR, LIFR, fractional visibility, and cloud ceilings', () => {
+    const parseMetar = vm.runInThisContext('parseMetar');
+    assert.strictEqual(typeof parseMetar, 'function', 'parseMetar must be exported function');
+
+    // 1. KTZR Clear VFR report (user reported case)
+    const ktzrVfr = parseMetar('KTZR 111150Z 01004KT 10SM CLR 17/17 A3004');
+    assert.strictEqual(ktzrVfr.icao, 'KTZR', 'Should parse KTZR icao');
+    assert.strictEqual(ktzrVfr.fltCat, 'VFR', 'Clear sky with 10SM must resolve to VFR');
+    assert.strictEqual(ktzrVfr.visSM, 10, 'Visibility should be 10 SM');
+    assert.strictEqual(ktzrVfr.ceilingFt, null, 'CLR must yield null (clear) ceiling');
+    assert.strictEqual(Number(ktzrVfr.windSpeedKmH.toFixed(2)), 7.41, '4 KT wind should be ~7.41 km/h');
+
+    // 2. KTZR Morning Fog LIFR report (stale NWS report)
+    const ktzrLifr = parseMetar('KTZR 111130Z 00000KT 7SM FG VV002 16/16 A3004');
+    assert.strictEqual(ktzrLifr.icao, 'KTZR');
+    assert.strictEqual(ktzrLifr.fltCat, 'LIFR', 'VV002 (200 ft indefinite ceiling) must resolve to LIFR');
+    assert.strictEqual(ktzrLifr.ceilingFt, 200, 'Vertical visibility 002 must be 200 ft ceiling');
+    assert.strictEqual(ktzrLifr.visSM, 7, 'Visibility should be 7 SM');
+
+    // 3. Fractional Visibility
+    const frac1 = parseMetar('KMKC 111153Z AUTO 00000KT 1 1/2SM -SN BR BKN009 00/M02 A3010');
+    assert.strictEqual(frac1.visSM, 1.5, '1 1/2SM should parse as 1.5');
+    assert.strictEqual(frac1.ceilingFt, 900, 'BKN009 should parse as 900 ft ceiling');
+    assert.strictEqual(frac1.fltCat, 'IFR', 'Vis 1.5 and ceiling 900 ft should be IFR');
+
+    const frac2 = parseMetar('KORD 111155Z 00000KT 3/4SM FG VV004 02/02 A3000');
+    assert.strictEqual(frac2.visSM, 0.75, '3/4SM should parse as 0.75');
+    assert.strictEqual(frac2.ceilingFt, 400, 'VV004 should parse as 400 ft ceiling');
+    assert.strictEqual(frac2.fltCat, 'LIFR', 'Vis < 1 SM or ceiling < 500 ft must be LIFR');
+
+    // 4. SCT and FEW layers do not form a ceiling
+    const sctOnly = parseMetar('KLCK 111155Z AUTO 00000KT 4SM BR SCT003 18/18 A3003');
+    assert.strictEqual(sctOnly.visSM, 4);
+    assert.strictEqual(sctOnly.ceilingFt, null, 'SCT003 does not constitute a ceiling');
+    assert.strictEqual(sctOnly.fltCat, 'MVFR', 'Visibility 4SM without ceiling must be MVFR');
+
+    // 5. Metric and CAVOK
+    const cavok = parseMetar('EDDF 111150Z AUTO 23010KT CAVOK 22/07 Q1020 NOSIG');
+    assert.strictEqual(cavok.visSM, 10);
+    assert.strictEqual(cavok.ceilingFt, null);
+    assert.strictEqual(cavok.fltCat, 'VFR');
+  });
+
+  test('Live METAR overrides stale NWS observation when METAR timestamp is newer (KTZR bug fix test)', async () => {
+    const originalFetch = global.fetch;
+    const stubElements = {
+      'stat-weather-window': { textContent: '', style: {}, title: '', appendChild: () => {} },
+      'stat-weather-dirs': { classList: { add: () => {}, remove: () => {}, contains: () => false }, appendChild: () => {} },
+      'header-weather-summary': { textContent: '', style: {} },
+      'sidebar-summary-text': { textContent: '' },
+      'pop-weather-summary': { textContent: '', style: {} },
+      'pop-weather-details': { innerHTML: '' }
+    };
+    global._stubElements = stubElements;
+
+    global.fetch = async (url, options) => {
+      // 1. Gridpoint stations
+      if (url.includes('/points/')) {
+        return { ok: true, json: async () => ({ properties: { observationStations: 'https://api.weather.gov/stations/mock' } }) };
+      }
+      // 2. Stations list (KTZR closest)
+      if (url.includes('/stations/mock')) {
+        return {
+          ok: true,
+          json: async () => ({
+            features: [
+              { geometry: { coordinates: [-83.13, 39.90] }, properties: { stationIdentifier: 'KTZR', name: 'Bolton Field' } }
+            ]
+          })
+        };
+      }
+      // 3. Stale NWS observation: 11:30Z fog VV002 (LIFR)
+      if (url.includes('/observations/latest')) {
+        return {
+          ok: true,
+          json: async () => ({
+            properties: {
+              timestamp: '2026-09-11T11:30:00+00:00',
+              rawMessage: 'KTZR 111130Z 00000KT 7SM FG VV002 16/16 A3004',
+              visibility: { value: 11270 },
+              cloudLayers: [{ amount: 'VV', base: { value: 60 } }]
+            }
+          })
+        };
+      }
+      // 4. Real-time VATSIM METAR: 11:50Z Clear VFR
+      if (url.includes('vatsim.net')) {
+        return {
+          ok: true,
+          text: async () => 'KTZR 111150Z 01004KT 10SM CLR 17/17 A3004\n'
+        };
+      }
+      return { ok: false };
+    };
+
+    try {
+      vm.runInThisContext('lastWeatherFetchCenter = null;');
+      await vm.runInThisContext('fetchAndProcessWeather(39.90, -83.13, true)');
+
+      const directions = vm.runInThisContext('currentWeatherDirections');
+      assert.ok(directions, 'currentWeatherDirections must exist');
+      assert.strictEqual(directions.closest.icaoId, 'KTZR');
+      assert.strictEqual(directions.closest.fltCat, 'VFR', 'KTZR must resolve to VFR (green) using fresh live METAR instead of stale NWS LIFR');
+      assert.strictEqual(directions.closest.visibilitySM, 10, 'Visibility must be 10 SM from live METAR');
+      assert.strictEqual(directions.closest.ceilingFt, null, 'Ceiling must be null (Clear) from live METAR');
+      assert.ok(directions.closest.raw.includes('111150Z'), 'Raw METAR must be the 11:50Z updated report');
+    } finally {
+      global.fetch = originalFetch;
+      global._stubElements = null;
+    }
+  });
+
+  test('fetchAndProcessWeather force=true bypasses distance threshold cache', async () => {
+    const originalFetch = global.fetch;
+    let fetchCount = 0;
+
+    global.fetch = async (url) => {
+      fetchCount++;
+      if (url.includes('/points/')) {
+        return { ok: true, json: async () => ({ properties: { observationStations: 'https://api.weather.gov/stations/mock' } }) };
+      }
+      if (url.includes('/stations/mock')) {
+        return { ok: true, json: async () => ({ features: [{ geometry: { coordinates: [-83, 40] }, properties: { stationIdentifier: 'KMOCK', name: 'Mock' } }] }) };
+      }
+      if (url.includes('/observations/latest')) {
+        return { ok: true, json: async () => ({ properties: { flightCategory: 'VFR' } }) };
+      }
+      if (url.includes('vatsim.net')) {
+        return { ok: true, text: async () => 'KMOCK 111200Z 00000KT 10SM CLR 20/15 A3000\n' };
+      }
+      return { ok: false };
+    };
+
+    try {
+      vm.runInThisContext('lastWeatherFetchCenter = { lat: 40.0, lon: -83.0 };');
+      // Normal call without force when coordinates are same (<5km) should return immediately
+      await vm.runInThisContext('fetchAndProcessWeather(40.0, -83.0, false)');
+      assert.strictEqual(fetchCount, 0, 'Unforced call at same location should be skipped by cache');
+
+      // Forced call must bypass distance threshold
+      await vm.runInThisContext('fetchAndProcessWeather(40.0, -83.0, true)');
+      assert.ok(fetchCount > 0, 'Forced call must execute network queries even if location unchanged');
+    } finally {
+      global.fetch = originalFetch;
     }
   });
 });
