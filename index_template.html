@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.93.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.94.0</span></h1>
         </div>
       </div>
 
@@ -935,18 +935,18 @@
             <input type="range" id="camera-zoom" min="1.0" max="4.0" step="0.1" value="1.0" class="slider" aria-label="Camera Zoom">
           </div>
 
-          <div class="control-group">
-            <div class="control-label">
-              <span style="display: inline-flex; align-items: center; gap: 6px;">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#06b6d4" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="7" y1="5" x2="7" y2="19"/><line x1="17" y1="5" x2="17" y2="19"/></svg>
-                Camera Aspect Ratio
+          <div class="control-group" style="margin-top: 4px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.06);">
+            <div class="control-label" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+              <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted);">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#06b6d4" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="7" y1="5" x2="7" y2="19"/><line x1="17" y1="5" x2="17" y2="19"/></svg>
+                Sensor Aspect Ratio
               </span>
-              <span class="badge" id="camera-aspect-ratio-badge" style="font-size: 0.65rem; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 5px; border-radius: 999px;">4:3 Photo</span>
+              <div style="display: inline-flex; align-items: center; gap: 6px;">
+                <span class="badge" id="layer-optics-aspect-display" style="font-size: 0.68rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 6px; border-radius: 999px;">4:3 Photo</span>
+                <button type="button" id="jump-to-aspect-ratio-btn" style="background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.25); color: var(--accent-cyan); cursor: pointer; font-size: 0.68rem; font-weight: 600; padding: 1px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;" title="Camera sensor ratio is a mission-wide hardware setting. Click to configure in Section 3.">⚙️ Sec 3</button>
+              </div>
             </div>
-            <select id="camera-aspect-ratio" class="form-select" style="font-size: 0.78rem; padding: 5px 8px;">
-              <option value="4:3" selected>4:3 (DJI Photo Standard - 69.7° × 55.2°)</option>
-              <option value="16:9">16:9 (Video / Wide Crop - 69.7° × 44.2°)</option>
-            </select>
+            <p class="help-text" style="margin-top: 3px; margin-bottom: 0; font-size: 0.7rem;">Global drone sensor geometry applies across all flight patterns.</p>
           </div>
 
           <div class="control-group" style="display: none;">
@@ -1355,6 +1355,24 @@
                 <option value="skyrover_x1_wide">Skyrover X1 (Wide Lens 18mm)</option>
                 <option value="custom">Custom Camera...</option>
               </select>
+            </div>
+
+            <div class="control-group">
+              <div class="control-label" style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="display: inline-flex; align-items: center; gap: 6px;">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#06b6d4" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="7" y1="5" x2="7" y2="19"/><line x1="17" y1="5" x2="17" y2="19"/></svg>
+                  Camera Sensor Aspect Ratio
+                </span>
+                <span class="badge" id="camera-aspect-ratio-badge" style="font-size: 0.65rem; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 5px; border-radius: 999px;">4:3 Photo</span>
+              </div>
+              <select id="camera-aspect-ratio" class="form-select" style="font-size: 0.78rem; padding: 5px 8px;">
+                <option value="4:3" selected>4:3 (DJI Photo Standard - 69.7° × 55.2°)</option>
+                <option value="16:9">16:9 (Video / Wide Crop - 69.7° × 44.2°)</option>
+              </select>
+              <div id="camera-aspect-ratio-warning-box" style="margin-top: 5px; padding: 6px 8px; border-radius: 6px; font-size: 0.72rem; line-height: 1.35; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); color: #cbd5e1;">
+                <span style="color: #fbbf24; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">⚠️ Pre-Flight Drone Setting:</span>
+                Must match camera setting in <em>DJI Fly &gt; Camera Settings</em> on your RC controller before takeoff. <strong>Affects mission waypoint spacing &amp; photo overlap across all flight patterns.</strong>
+              </div>
             </div>
 
             <div class="control-group">
@@ -1888,6 +1906,15 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              📷 Tier 1 Global Camera Aspect Ratio &amp; Multi-Pattern Overlap Integration (v1.94.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Establishes Camera Sensor Aspect Ratio (4:3 Photo Standard vs 16:9 Video Crop) as an aircraft-level hardware setting in Section 3 Drone Hardware Profile. Automatically adapts along-track footprint and photo trigger spacing across <strong>all flight patterns</strong> (Nadir Grid, 3D Double Grid, Orbit, Tower, and Target Splat) to prevent photogrammetry overlap deficiency in 16:9 video mode. Features Section 2 quick-jump navigation, pre-flight RC controller guidance, and an enhanced pre-export KMZ checklist.
+            </p>
+          </div>
+
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               📐 Target Splat Dimension Sufficiency Warnings &amp; 1-Click Auto-Fit (v1.93.0)
@@ -2485,7 +2512,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.93.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.94.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -2551,6 +2578,15 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.94.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Tier 1 Global Camera Aspect Ratio:</strong> Relocated Camera Sensor Aspect Ratio selector to Section 3 Drone Hardware Profile, matching physical drone reality where camera format cannot be changed mid-mission.</li>
+              <li><strong>Pre-Flight Drone Setting Guidance:</strong> Added explicit pilot callout in Section 3 and Section 2 read-only badge with quick-jump navigation, instructing pilots to configure camera format in DJI Fly on their RC controller before takeoff.</li>
+              <li><strong>Universal Multi-Pattern Application:</strong> Dynamically calculates vertical along-track footprint and photo trigger spacing across 2D Nadir Grid, 3D Double Grid, Orbit, Tower, and Target Splat to preserve requested front overlap in 16:9 video mode.</li>
+              <li><strong>Enhanced Pre-Export KMZ Safety Checklist:</strong> Updated the export confirmation prompt to highlight active aspect ratio for both 4:3 and 16:9, explain its impact on waypoint spacing, and detail best on-drone settings (Manual Focus at infinity, Shutter Priority, max altitude ceiling).</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.93.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">

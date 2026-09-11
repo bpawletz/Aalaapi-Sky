@@ -12860,14 +12860,14 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('Layer-Wide Custom Heading & Real-Time Map Camera Updates (v1.91.0)', () => {
     test('version tags and changelogs are updated to v1.91.0 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.ok(pkg.version === '1.91.0' || pkg.version === '1.92.0' || pkg.version === '1.92.1' || pkg.version === '1.92.2' || pkg.version === '1.93.0', 'package.json must be 1.91.0 or higher');
+      assert.ok(pkg.version === '1.91.0' || pkg.version === '1.92.0' || pkg.version === '1.92.1' || pkg.version === '1.92.2' || pkg.version === '1.93.0' || pkg.version === '1.94.0', 'package.json must be 1.91.0 or higher');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.91.0]'), 'CHANGELOG.md must contain ## [1.91.0]');
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
-        assert.ok(html.includes('Version 1.91.0') || html.includes('Version 1.92.0') || html.includes('Version 1.92.1') || html.includes('Version 1.92.2') || html.includes('Version 1.93.0'), `${filename} must contain Version in About modal`);
+        assert.ok(html.includes('Version 1.91.0') || html.includes('Version 1.92.0') || html.includes('Version 1.92.1') || html.includes('Version 1.92.2') || html.includes('Version 1.93.0') || html.includes('Version 1.94.0'), `${filename} must contain Version in About modal`);
         assert.ok(html.includes('Changelog (v1.91.0):'), `${filename} must contain Changelog (v1.91.0)`);
         assert.ok(html.includes('id="layer-custom-heading"'), `${filename} must contain layer-custom-heading slider`);
         assert.ok(html.includes('id="global-custom-heading"'), `${filename} must contain global-custom-heading slider`);
@@ -12953,7 +12953,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('Left Navigation Usability, Structured Sub-Groupings & Sticky Action Dock (v1.92.0)', () => {
     test('version tags and changelogs are updated to v1.92.0 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.ok(pkg.version === '1.92.0' || pkg.version === '1.92.1' || pkg.version === '1.92.2' || pkg.version === '1.93.0', 'package.json must be 1.92.0 or higher');
+      assert.ok(pkg.version === '1.92.0' || pkg.version === '1.92.1' || pkg.version === '1.92.2' || pkg.version === '1.93.0' || pkg.version === '1.94.0', 'package.json must be 1.92.0 or higher');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.92.0]'), 'CHANGELOG.md must contain ## [1.92.0]');
@@ -12975,7 +12975,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = readSafe(path.join(__dirname, filename));
-        assert.ok(html.includes('Version 1.92.0') || html.includes('Version 1.92.1') || html.includes('Version 1.92.2') || html.includes('Version 1.93.0'), `${filename} must contain Version in About modal`);
+        assert.ok(html.includes('Version 1.92.0') || html.includes('Version 1.92.1') || html.includes('Version 1.92.2') || html.includes('Version 1.93.0') || html.includes('Version 1.94.0'), `${filename} must contain Version in About modal`);
         assert.ok(html.includes('Changelog (v1.92.0):'), `${filename} must contain Changelog (v1.92.0)`);
         assert.ok(html.includes('id="layer-hierarchy-status-badge"'), `${filename} must contain layer-hierarchy-status-badge`);
         assert.ok(html.includes('id="sidebar-sticky-dock"'), `${filename} must contain sidebar-sticky-dock`);
@@ -13154,7 +13154,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('Pattern Card Badge Alignment & Styling (v1.92.1)', () => {
     test('version tags and changelogs are updated to v1.92.1 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.ok(pkg.version === '1.92.1' || pkg.version === '1.92.2' || pkg.version === '1.93.0', 'package.json must be 1.92.1 or higher');
+      assert.ok(pkg.version === '1.92.1' || pkg.version === '1.92.2' || pkg.version === '1.93.0' || pkg.version === '1.94.0', 'package.json must be 1.92.1 or higher');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.92.1]'), 'CHANGELOG.md must contain ## [1.92.1]');
@@ -13176,7 +13176,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = readSafe(path.join(__dirname, filename));
-        assert.ok(html.includes('Version 1.92.1') || html.includes('Version 1.92.2') || html.includes('Version 1.93.0'), `${filename} must contain Version in About modal`);
+        assert.ok(html.includes('Version 1.92.1') || html.includes('Version 1.92.2') || html.includes('Version 1.93.0') || html.includes('Version 1.94.0'), `${filename} must contain Version in About modal`);
         assert.ok(html.includes('Changelog (v1.92.1):'), `${filename} must contain Changelog (v1.92.1)`);
       });
 
@@ -13234,7 +13234,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('Streamlined Topbar Navigation & Duplicate Telemetry Removal (v1.92.2)', () => {
     test('version tags and changelogs are updated to v1.92.2 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.ok(pkg.version === '1.92.2' || pkg.version === '1.93.0', 'package.json must be 1.92.2 or higher');
+      assert.ok(pkg.version === '1.92.2' || pkg.version === '1.93.0' || pkg.version === '1.94.0', 'package.json must be 1.92.2 or higher');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.92.2]'), 'CHANGELOG.md must contain ## [1.92.2]');
@@ -13256,7 +13256,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = readSafe(path.join(__dirname, filename));
-        assert.ok(html.includes('Version 1.92.2') || html.includes('Version 1.93.0'), `${filename} must contain Version in About modal`);
+        assert.ok(html.includes('Version 1.92.2') || html.includes('Version 1.93.0') || html.includes('Version 1.94.0'), `${filename} must contain Version in About modal`);
         assert.ok(html.includes('Changelog (v1.92.2):'), `${filename} must contain Changelog (v1.92.2)`);
       });
 
@@ -13337,7 +13337,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('Target Splat Survey Dimension Sufficiency Warnings & Auto-Fit (v1.93.0)', () => {
     test('version tags and changelogs are updated to v1.93.0 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.strictEqual(pkg.version, '1.93.0', 'package.json must be 1.93.0');
+      assert.ok(pkg.version === '1.93.0' || pkg.version === '1.94.0', 'package.json must be 1.93.0 or higher');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.93.0]'), 'CHANGELOG.md must contain ## [1.93.0]');
@@ -13359,7 +13359,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = readSafe(path.join(__dirname, filename));
-        assert.ok(html.includes('Version 1.93.0'), `${filename} must contain Version 1.93.0 in About modal`);
+        assert.ok(html.includes('Version 1.93.0') || html.includes('Version 1.94.0'), `${filename} must contain Version in About modal`);
         assert.ok(html.includes('Changelog (v1.93.0):'), `${filename} must contain Changelog (v1.93.0)`);
         assert.ok(html.includes('id="width-warning-badge"'), `${filename} must contain width-warning-badge`);
         assert.ok(html.includes('id="height-warning-badge"'), `${filename} must contain height-warning-badge`);
@@ -13369,8 +13369,8 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
 
       const templateHtml = readSafe(path.join(__dirname, 'index_template.html'));
       assert.ok(
-        templateHtml.includes('v1.93.0</span>'),
-        'index_template.html header badge must be v1.93.0'
+        templateHtml.includes('v1.93.0</span>') || templateHtml.includes('v1.94.0</span>'),
+        'index_template.html header badge must be v1.93.0 or v1.94.0'
       );
     });
 
@@ -13567,6 +13567,107 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
     });
   });
 });
+
+describe('v1.94.0 Tier 1 Global Camera Aspect Ratio & Multi-Pattern Integration', () => {
+  test('DOM Architecture: camera aspect ratio is housed in Section 3 Hardware Profile with pre-flight guidance and Section 2 read-only reflection', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const html = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+
+    // 1. Section 3 contains the actual select control and pre-flight warning
+    assert.ok(html.includes('id="camera-aspect-ratio"'), 'camera-aspect-ratio select must be present');
+    assert.ok(html.includes('id="camera-aspect-ratio-badge"'), 'camera-aspect-ratio-badge must be present');
+    assert.ok(html.includes('id="camera-aspect-ratio-warning-box"'), 'camera-aspect-ratio-warning-box must be present');
+    assert.ok(html.includes('Pre-Flight Drone Setting'), 'Pre-flight drone setting text must be present');
+
+    // Check that camera-aspect-ratio is inside #drone-hardware-subcard
+    const hardwareSubcardIdx = html.indexOf('id="drone-hardware-subcard"');
+    const aspectSelectIdx = html.indexOf('id="camera-aspect-ratio"');
+    const actionsSectionIdx = html.indexOf('id="actions-and-sync-section"');
+    assert.ok(hardwareSubcardIdx !== -1, 'drone-hardware-subcard must exist');
+    assert.ok(aspectSelectIdx > hardwareSubcardIdx && aspectSelectIdx < actionsSectionIdx, 'camera-aspect-ratio must be inside Section 3 hardware subcard');
+
+    // 2. Section 2 contains the read-only display and jump button
+    assert.ok(html.includes('id="layer-optics-aspect-display"'), 'layer-optics-aspect-display must be present in Section 2');
+    assert.ok(html.includes('id="jump-to-aspect-ratio-btn"'), 'jump-to-aspect-ratio-btn must be present in Section 2');
+  });
+
+  test('setCameraAspectRatio updates VFOV, localStorage, badges, and synchronizes all flight layers', () => {
+    try {
+      // 1. Switch to 16:9 Video
+      setCameraAspectRatio('16:9', true);
+      assert.strictEqual(CAMERA_ASPECT_RATIO, '16:9');
+      assert.strictEqual(CAMERA_HFOV, 69.7);
+      assert.strictEqual(CAMERA_VFOV, 44.2);
+
+      // Verify layer propagation
+      const testLayer1 = createDefaultLayer('test-l1', 'Layer 1', 0, 'double');
+      const testLayer2 = createDefaultLayer('test-l2', 'Layer 2', 1, 'single');
+      flightLayers = [testLayer1, testLayer2];
+
+      setCameraAspectRatio('16:9', true);
+      assert.strictEqual(testLayer1.cameraAspectRatio, '16:9');
+      assert.strictEqual(testLayer2.cameraAspectRatio, '16:9');
+
+      // 2. Switch back to 4:3 Photo
+      setCameraAspectRatio('4:3', true);
+      assert.strictEqual(CAMERA_ASPECT_RATIO, '4:3');
+      assert.strictEqual(CAMERA_HFOV, 69.7);
+      assert.strictEqual(CAMERA_VFOV, 55.2);
+      assert.strictEqual(testLayer1.cameraAspectRatio, '4:3');
+      assert.strictEqual(testLayer2.cameraAspectRatio, '4:3');
+    } finally {
+      // Restore default
+      setCameraAspectRatio('4:3', true);
+    }
+  });
+
+  test('Multi-Pattern Impact: 16:9 reduces along-track footprint and photo trigger distance across patterns', () => {
+    const altitude = 50;
+    const overlapFront = 0.80; // 80%
+
+    // In 4:3 Photo (VFOV = 55.2°)
+    setCameraAspectRatio('4:3', true);
+    const vfov43 = CAMERA_VFOV;
+    const lFoot43 = 2.0 * altitude * Math.tan((vfov43 / 2.0) * Math.PI / 180.0);
+    const sPhoto43 = lFoot43 * (1.0 - overlapFront);
+
+    // In 16:9 Video (VFOV = 44.2°)
+    setCameraAspectRatio('16:9', true);
+    const vfov169 = CAMERA_VFOV;
+    const lFoot169 = 2.0 * altitude * Math.tan((vfov169 / 2.0) * Math.PI / 180.0);
+    const sPhoto169 = lFoot169 * (1.0 - overlapFront);
+
+    // 16:9 along-track footprint is ~22.3% shorter than 4:3
+    assert.ok(lFoot169 < lFoot43, '16:9 along-track footprint must be strictly shorter than 4:3');
+    assert.ok(sPhoto169 < sPhoto43, '16:9 photo trigger interval must be strictly tighter than 4:3 to maintain 80% overlap');
+    assert.strictEqual(Math.round(sPhoto43 * 100) / 100, 10.46);
+    assert.strictEqual(Math.round(sPhoto169 * 100) / 100, 8.12);
+
+    // Test in 2D Nadir Grid waypoint generation: 16:9 should produce MORE waypoints because sPhoto is tighter
+    const gridLayer = createDefaultLayer('grid-test', 'Grid Test', 0, 'single');
+    gridLayer.gridWidth = 100;
+    gridLayer.gridHeight = 100;
+    gridLayer.altitude = 50;
+    gridLayer.frontOverlap = 80;
+    gridLayer.sideOverlap = 75;
+    gridLayer.centerLat = 40.0;
+    gridLayer.centerLon = -85.0;
+
+    setCameraAspectRatio('4:3', true);
+    const wps43 = generateLayerWaypoints(gridLayer, 40.0, -85.0);
+
+    setCameraAspectRatio('16:9', true);
+    const wps169 = generateLayerWaypoints(gridLayer, 40.0, -85.0);
+
+    assert.ok(wps169.waypoints.length > wps43.waypoints.length,
+      `16:9 grid must generate more waypoints (${wps169.waypoints.length}) than 4:3 (${wps43.waypoints.length}) to maintain 80% overlap with narrower sensor crop`);
+
+    // Reset back to 4:3
+    setCameraAspectRatio('4:3', true);
+  });
+});
+
 
 
 
