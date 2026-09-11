@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.94.5] - 2026-09-11
+
+### Fixed — Flight Diagnostics 3D Map Shows Wrong Location & Flight Plan
+- **Bug Fix — `buildTrajectoryMeshes` always used active workspace waypoints:** The cyan dashed "planned" path in the 3D diagnostics view was hard-coded to call `getActiveMissionWaypoints()`, so it always displayed the current workspace flight plan instead of the planned route belonging to the loaded log. Fixed by storing `this.plannedWaypoints` during `loadSelectedFlight()` for each flight type (active mission, saved SQLite diagnostics, and RC2 recorded logs) and reading from it in `buildTrajectoryMeshes()`, falling back to `getActiveMissionWaypoints()` only when `plannedWaypoints` is null.
+- **Bug Fix — `getSceneOrigin` fell back to active workspace `centerMarker`:** When a loaded flight's `telemetryData` lacked a `homePoint`, the 3D scene origin fell back to the Leaflet `centerMarker` (the active workspace center), placing the entire scene at the wrong geographic location. Removed the `centerMarker` fallback so the function correctly falls through to `telemetryData.points[0]`.
+- **Regression Tests Added:** Three dedicated unit tests added to `index.test.js` asserting (1) `buildTrajectoryMeshes` uses `this.plannedWaypoints` when set and does not call `getActiveMissionWaypoints`, (2) `buildTrajectoryMeshes` falls back to `getActiveMissionWaypoints` when `plannedWaypoints` is null (active-mission mode), and (3) `getSceneOrigin` returns the telemetry points location, not the workspace `centerMarker`, when `homePoint` is absent.
+
+## [1.94.4] - 2026-09-11
+
+### Fixed & Enhanced — Real-Time Live METAR Ingestion & Flight Category Resolution
+- **Live Aviation METAR Integration (Dual-Stream Ingestion):** Integrated real-time global aviation METAR streaming (`https://metar.vatsim.net`) alongside NWS (`api.weather.gov`) fallback. Resolves issue where NWS observation queues lagged 30–60+ minutes behind live weather transmissions, causing airports like KTZR to erroneously display stale red (LIFR) conditions when updated METARs were already green (VFR).
+- **Dedicated Aviation METAR Parser (`parseMetar`):** Implemented a comprehensive FAA-standard parser extracting ICAO codes, UTC timestamps, wind speeds/gusts, visibility (handling US integers, fractions like `1 1/2SM`, `3/4SM`, `M1/4SM`, metric meters, and `CAVOK`), and ceiling layers (strictly distinguishing non-ceiling `FEW`/`SCT` from true ceilings `BKN`/`OVC`/`VV`).
+- **Freshest Data Selection:** Automatically compares observation timestamps between live METAR and NWS feeds, prioritizing the most recent report while falling back gracefully to NWS or raw message parsing if a live feed is unreachable.
+- **Clear Ceiling Display Enhancement:** Updated flight checklist ceiling display to clearly indicate `✅ Ceiling: Clear / Unlimited (Req ≥ 1000 ft)` instead of `Unknown` when no cloud ceiling exists.
+- **Fixed Popover Force Refresh:** Fixed `#pop-btn-refresh-weather` event listener to reset `lastWeatherFetchCenter = null` and invoke `fetchAndProcessWeather(lat, lon, true)`, enabling manual weather re-polling from both sidebar and header telemetry cards.
+
 ## [1.94.3] - 2026-09-11
 
 ### Improved & Redesigned — Pre-Flight KMZ Audit & Flight Readiness Executive Card
