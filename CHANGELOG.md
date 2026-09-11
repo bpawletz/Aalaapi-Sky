@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.94.3] - 2026-09-11
+
+### Improved & Redesigned — Pre-Flight KMZ Audit & Flight Readiness Executive Card
+- **Sleek Executive Readiness Card:** Replaced the cluttered 10-rule wall of green text with an executive status card displaying overall DJI Fly flight readiness (e.g. `✅ 10/10 DJI Fly Firmware Rules Verified` with green glowing accents and verified target drone model).
+- **Collapsible Rules Accordion:** Compacted the 10 individual firmware checks into an expandable `<details>` accordion (`📋 View 10-Point DJI Fly Verification Rules ▾`) that stays neatly collapsed when all rules pass, and automatically expands with alert highlights if any rule fails or triggers a warning.
+- **Collapsible Raw XML Developer Inspector:** Cleanly encapsulated raw `waylines.wpml` and `template.kml` syntax viewers into an expandable `<details>` section (`💻 Advanced / Developer XML Inspection ▾`), eliminating hundreds of lines of code dump from the pilot interface.
+- **Context-Aware Bug Prompt Button:** The `📋 Copy Antigravity Fix Prompt` button is now conditionally displayed exclusively when actionable errors or warnings are detected, keeping the standard pilot export interface distraction-free.
+
 ## [1.94.2] - 2026-09-11
 
 ### Improved & Cleaned — Section 2 Header Declutter & Conditional Hierarchy Badge
