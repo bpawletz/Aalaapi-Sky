@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.94.11] - 2026-09-11
+
+### Fixed — Flight Diagnostics Banner Overlap & Multi-Tier Responsiveness
+- **Eliminated Header Text & Tab Overlapping:** Restructured `#flight-diagnostics-modal` header into a clean 2-tier CSS Grid architecture across desktop, tablet, and mobile. The title, drone badge, and flight metadata share the top row with navigation tabs and the pinned close button, while flight selection dropdown and action buttons cleanly occupy the second row.
+- **Zero HUD & View Controls Collision:** Repositioned the 3D/Top-Down camera toggle controls (`.diag-view-camera-controls`) on tablets ($\le 1080\text{px}$) and mobile screens ($\le 768\text{px}$) to the bottom-right of the viewport, completely preventing overlap with the live cockpit telemetry HUD overlay (`#diag-hud-overlay`).
+- **Flexible Dropdown & Button Wrapping:** Added flexible sizing and text truncation rules so long flight log filenames never overflow or collide with adjacent controls regardless of display resolution or window scaling.
+- **Regression Tests Added:** Added automated tests verifying non-overlapping element boundaries for title, tabs, controls, and HUD overlay across viewports from 360px to 1400px.
+
 ## [1.94.10] - 2026-09-11
 
 ### Fixed — Mobile View Flight Diagnostics Visibility & Responsive Layout
