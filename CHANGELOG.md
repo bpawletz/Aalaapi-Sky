@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.94.6] - 2026-09-11
+
+### Fixed — Flight Diagnostics 3D Map Planned Path Still Wrong for RC2 Flight Logs
+- **Root Cause:** `this.plannedWaypoints` is always `null` for RC2 recorded flight logs (the companion API does not return planned waypoints in `/api/flight-telemetry` responses). The previous fix (v1.94.5) correctly removed the `getActiveMissionWaypoints()` call when `plannedWaypoints` is set, but retained it as a fallback when `plannedWaypoints` is null — still showing the wrong active workspace route for RC2 logs.
+- **Fix — Photo-Trigger Planned Path Derivation:** When `plannedWaypoints` is null and telemetry is available, `buildTrajectoryMeshes` now derives an approximate planned path from `isPhoto === true` telemetry points. Photo-trigger events fire at the drone's planned waypoint positions, making them the best available approximation of the original flight plan from a raw RC2 log. The `getActiveMissionWaypoints()` fallback is eliminated entirely.
+- **No Photo Triggers → No Wrong Path:** If neither `plannedWaypoints` nor photo-trigger points are available, the planned line is simply omitted — not replaced by the unrelated active workspace route.
+- **Regression Tests Added:** Two additional unit tests assert (1) photo-trigger points from RC2 telemetry are used as the planned path when `plannedWaypoints` is null, and (2) `getActiveMissionWaypoints()` is never called as a fallback in either scenario.
+
 ## [1.94.5] - 2026-09-11
 
 ### Fixed — Flight Diagnostics 3D Map Shows Wrong Location & Flight Plan
