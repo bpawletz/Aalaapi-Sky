@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.90.0] - 2026-09-10
+
+### Added — Optional POI AGL Height & 3D Gimbal Pitch Resolution
+- **Optional Height (AGL) for Points of Interest (POIs):** Added an editable AGL height property to all POIs, accessible via unit-aware inputs in the Section 1 POI list card and interactive Leaflet map marker popups. Defaults to 0m (ground level) for complete backward compatibility.
+- **`🎯 Auto POI` Gimbal Tracking Mode:** Added a dedicated `🎯 Auto POI` preset chip and automatic 3D pitch calculation across the Three-Tier Hierarchy. When active, camera gimbal pitch dynamically computes the true 3D line-of-sight angle to the target POI based on horizontal standoff distance and relative elevation ($\Delta z = \text{droneAlt} - \text{poiAlt}$).
+- **Dynamic 3-Tier Resolved Pitch Displays:** Waypoint Editor (2D popup & 3D FPV HUD) dynamically displays resolved 3D angles (e.g. `🌐 Inherit Layer (Auto POI: -28°)`), while allowing pilots to override with manual pitch if desired.
+- **3D Scene POI Visualization:** Active POIs are now rendered inside the Three.js 3D viewport as elevated target poles with glowing beacon spheres at their true AGL elevation, with 3D drone camera cones pointing directly at the target in 3D space.
+- **True 3D WPML Export:** WPML mission exports now output full 3D coordinates in `<wpml:waypointPoiPoint>${lat},${lon},${alt}</wpml:waypointPoiPoint>` alongside calculated 3D `<wpml:waypointGimbalPitchAngle>` angles.
+
 ## [1.89.2] - 2026-09-10
 
 ### Fixed & Improved — 3D Tower Inspection Optics & Layer Control Ergonomics
