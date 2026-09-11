@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.93.0] - 2026-09-10
+
+### Added & Improved — Target Splat Survey Dimension Sufficiency Warnings & 1-Click Auto-Fit
+- **Geometric Dimension Sufficiency Engine (`checkTargetSplatDimensionSufficiency`):** Automatically evaluates whether Target Splat flight grid dimensions (`gridWidth` and `gridHeight`) provide adequate coverage for the physical target area and required camera standoff distances ($H \cdot \tan(\alpha)$) at the selected altitude and gimbal pitch.
+- **Dynamic Inline Warning Badges:** Directly informs pilots on the Survey Width and Survey Height numerical displays with real-time inline status badges:
+  - `🚨 < Target`: Warns when survey dimensions are smaller than the physical diameter or bounding envelope of the target object/polygon, alerting the pilot that turnaround legs will enter the structure.
+  - `⚠️ Undersized`: Warns when survey dimensions truncate the camera look-ahead standoff distance, alerting the pilot that outer building facades or rooflines will be clipped at turnaround points.
+- **Interactive Warning Callout Banner:** Added a responsive alert banner (`#target-splat-dimension-warning`) at the top of the Target Splat controls showing exact numerical deficit in active units (meters or feet), explaining why the current dimensions are insufficient.
+- **1-Click Auto-Fit Recommended Dimensions:** Integrated an instant action button (`#target-splat-fix-dims-btn`) inside the warning banner that snaps Survey Width and Height to the calculated optimal dimensions and re-engages auto-fit tracking in a single click.
+- **2D Map Overlay Warning Integration:** Updated `drawTargetSplatOverlay` to reflect dimension sufficiency with amber/red status coloring on target circles/polygons and descriptive status text in map tooltips.
+
 ## [1.92.2] - 2026-09-10
 
 ### Fixed & Improved — Streamlined Topbar Navigation & Removed Redundant Telemetry Counter
