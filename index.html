@@ -2143,11 +2143,12 @@ html, body {
   background: rgba(30, 41, 59, 0.4);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 8px 4px;
+  padding: 9px 3px 6px 3px;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
   text-align: center;
   user-select: none;
+  overflow: hidden;
 }
 
 .pattern-card:hover {
@@ -2166,6 +2167,7 @@ html, body {
   width: 20px;
   height: 20px;
   color: var(--text-muted);
+  margin-top: 2px;
   margin-bottom: 4px;
   transition: color 0.2s ease;
 }
@@ -2174,7 +2176,7 @@ html, body {
   color: var(--accent-cyan);
 }
 
-.pattern-card span {
+.pattern-card > span:not(.pattern-badge-tool):not(.pattern-badge-restricted) {
   font-size: 0.65rem;
   font-weight: 500;
   color: var(--text-muted);
@@ -2184,7 +2186,7 @@ html, body {
   width: 100%;
 }
 
-.pattern-card.active span {
+.pattern-card.active > span:not(.pattern-badge-tool):not(.pattern-badge-restricted) {
   color: #ffffff;
   font-weight: 600;
 }
@@ -3418,38 +3420,36 @@ html, body {
 }
 
 /* Pattern Card Corner Badges */
-.pattern-badge-tool {
+.pattern-badge-tool,
+.pattern-badge-restricted {
   position: absolute;
-  top: 3px;
-  right: 4px;
-  font-size: 0.52rem;
+  top: 2px;
+  right: 2px;
+  width: auto !important;
+  max-width: fit-content;
+  font-size: 0.40rem;
   font-weight: 700;
+  border-radius: 3px;
+  padding: 1px 2.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 2;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.pattern-badge-tool {
   background: rgba(56, 189, 248, 0.22);
   color: #38bdf8;
   border: 1px solid rgba(56, 189, 248, 0.4);
-  border-radius: 4px;
-  padding: 0 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  line-height: 1.3;
-  pointer-events: none;
 }
 
 .pattern-badge-restricted {
-  position: absolute;
-  top: 3px;
-  right: 4px;
-  font-size: 0.52rem;
-  font-weight: 700;
   background: rgba(239, 68, 68, 0.2);
   color: #f87171;
   border: 1px solid rgba(239, 68, 68, 0.4);
-  border-radius: 4px;
-  padding: 0 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  line-height: 1.3;
-  pointer-events: none;
 }
 
 /* Section 2: Layer Subgroup Cards */
@@ -3607,7 +3607,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.92.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.92.1</span></h1>
         </div>
       </div>
 
@@ -3843,7 +3843,6 @@ html, body {
                 <span>Freeform</span>
               </div>
               <div class="pattern-card auto-plan-card" id="auto-plan-btn" title="Auto-Plan Tool: Drag to Box & Survey Area">
-                <span class="pattern-badge-tool">TOOL</span>
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="7"/>
                   <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
@@ -3853,22 +3852,23 @@ html, body {
                   <line x1="19" y1="12" x2="22" y2="12"/>
                 </svg>
                 <span>Auto-Plan</span>
+                <span class="pattern-badge-tool">TOOL</span>
               </div>
               <div class="pattern-card exclusion-card" data-value="exclusion-box" title="Exclusion Zone (Rectangular Box)">
-                <span class="pattern-badge-restricted">SAFETY</span>
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2" stroke="#ef4444"/>
                   <line x1="3" y1="3" x2="21" y2="21" stroke="#ef4444" stroke-width="2"/>
                 </svg>
                 <span style="color: #f87171;">Exclusion (Box)</span>
+                <span class="pattern-badge-restricted">SAFETY</span>
               </div>
               <div class="pattern-card exclusion-card" data-value="exclusion-freeform" title="Exclusion Zone (Freeform Polygon)">
-                <span class="pattern-badge-restricted">SAFETY</span>
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polygon points="4,19 12,4 20,9 18,20" stroke="#ef4444" stroke-width="2"/>
                   <line x1="4" y1="4" x2="20" y2="20" stroke="#ef4444" stroke-width="2"/>
                 </svg>
                 <span style="color: #f87171;">Exclusion (Poly)</span>
+                <span class="pattern-badge-restricted">SAFETY</span>
               </div>
             </div>
           </div>
@@ -5997,7 +5997,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.92.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.92.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -6063,6 +6063,14 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.92.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Pattern Badge CSS Scoping:</strong> Resolved badge width stretching by scoping <code>.pattern-card span</code> rules to exclude corner badges, preventing 100% width inheritance and card boundary overhangs.</li>
+              <li><strong>Corner Badge Sizing &amp; Positioning:</strong> Standardized <code>TOOL</code> and <code>SAFETY</code> badges with auto-width, crisp typography (<code>0.40rem</code>), and top-right placement.</li>
+              <li><strong>Card Icon Clearance:</strong> Adjusted pattern card padding and icon top margin to maintain zero visual overlap between corner badges and SVG icons across the pattern selector grid.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.92.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
