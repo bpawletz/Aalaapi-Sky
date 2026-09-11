@@ -1009,6 +1009,54 @@ function getEffectiveWaypointHeading(wp, idx, waypoints, rotationDeg = 0, tempHe
   return (typeof getDefaultHeading === 'function') ? getDefaultHeading(idx, waypoints, rotationDeg) : 0;
 }
 
+function updateLayerHierarchyBadge() {
+  if (typeof document === 'undefined' || !document || !document.getElementById) return;
+  const badge = document.getElementById('layer-hierarchy-status-badge');
+  if (!badge) return;
+
+  const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  if (!layer) {
+    badge.textContent = '🌐 Inheriting Globals';
+    badge.title = 'Layer inherits all flight parameters from Tier 1 Global Defaults.';
+    badge.className = 'layer-hierarchy-status-badge';
+    badge.style.background = 'rgba(16, 185, 129, 0.15)';
+    badge.style.color = '#34d399';
+    badge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+    return;
+  }
+
+  // Check current UI selections if available, otherwise fallback to layer model properties
+  const headingMode = document.getElementById('layer-heading-mode')?.value || layer.headingMode || 'inherit';
+  const pathMode = document.getElementById('layer-path-mode')?.value || layer.pathMode || 'inherit';
+  const captureMode = document.getElementById('layer-capture-mode')?.value || layer.captureMode || 'inherit';
+  const hoverMode = document.getElementById('layer-hover-time-mode')?.value;
+  const hoverVal = hoverMode ? (hoverMode === 'custom' ? 'custom' : 'inherit') : ((layer.hoverTime !== 'inherit' && layer.hoverTime !== undefined && layer.hoverTime !== null) ? 'custom' : 'inherit');
+  const detourMode = document.getElementById('exclusion-detour-mode')?.value || layer.detourMode || 'inherit';
+
+  const overrides = [];
+  if (headingMode !== 'inherit') overrides.push('Heading');
+  if (pathMode !== 'inherit') overrides.push('Path Type');
+  if (captureMode !== 'inherit') overrides.push('Capture Mode');
+  if (hoverVal !== 'inherit') overrides.push('Hover Dwell');
+  if (layer.isExclusionZone && detourMode !== 'inherit') overrides.push('Detour Mode');
+
+  if (overrides.length === 0) {
+    badge.textContent = '🌐 Inheriting Globals';
+    badge.title = 'Layer inherits all flight parameters from Tier 1 Global Defaults.';
+    badge.classList.remove('has-overrides');
+    badge.style.background = 'rgba(16, 185, 129, 0.15)';
+    badge.style.color = '#34d399';
+    badge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+  } else {
+    badge.textContent = `⚡ Layer Overrides (${overrides.length})`;
+    badge.title = `Active overrides: ${overrides.join(', ')}. Click to view layer dynamics.`;
+    badge.classList.add('has-overrides');
+    badge.style.background = 'rgba(245, 158, 11, 0.15)';
+    badge.style.color = '#fbbf24';
+    badge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+  }
+}
+
 function updateInheritOptionLabels() {
   if (typeof document === 'undefined') return;
 
@@ -1078,6 +1126,10 @@ function updateInheritOptionLabels() {
     };
     const resolved = mapDetour[rawDetour] || rawDetour;
     detourOpt.textContent = `🌐 Inherit Global (${resolved})`;
+  }
+
+  if (typeof updateLayerHierarchyBadge === 'function') {
+    updateLayerHierarchyBadge();
   }
 }
 
@@ -1285,6 +1337,9 @@ function saveActiveLayerFromUi() {
   if (globalClearanceEl) {
     globalExclusionClearanceBuffer = parseFloat(globalClearanceEl.value) || 5;
   }
+  if (typeof updateLayerHierarchyBadge === 'function') {
+    updateLayerHierarchyBadge();
+  }
 }
 
 function syncUiWithActiveLayer() {
@@ -1480,6 +1535,9 @@ function syncUiWithActiveLayer() {
   }
   if (typeof togglePatternParameters === 'function') {
     togglePatternParameters();
+  }
+  if (typeof updateLayerHierarchyBadge === 'function') {
+    updateLayerHierarchyBadge();
   }
 }
 
@@ -6381,6 +6439,10 @@ function togglePatternParameters() {
   const roadSnapContainer = document.getElementById('road-snap-container');
   const gridGeometrySection = document.getElementById('grid-geometry-section');
   const gridGeometryTitle = document.getElementById('grid-geometry-title');
+  const layerCardGeometry = document.getElementById('layer-card-geometry');
+  const layerCardFlight = document.getElementById('layer-card-flight');
+  const layerCardOptics = document.getElementById('layer-card-optics');
+  const layerCardModes = document.getElementById('layer-card-modes');
 
   const widthLabel = (widthContainer && widthContainer.querySelector) ? widthContainer.querySelector('.control-label > span') : null;
   const isExclusion = (gridType === 'exclusion-box' || gridType === 'exclusion-freeform');
@@ -6472,6 +6534,10 @@ function togglePatternParameters() {
       gridGeometrySection.style.display = 'block';
       gridGeometrySection.classList.remove('collapsed');
     }
+    if (layerCardGeometry) layerCardGeometry.style.display = 'block';
+    if (layerCardFlight) layerCardFlight.style.display = 'block';
+    if (layerCardOptics) layerCardOptics.style.display = 'block';
+    if (layerCardModes) layerCardModes.style.display = 'block';
     if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
     if (targetSplatContainer) targetSplatContainer.classList.remove('hidden');
     if (widthLabel) widthLabel.textContent = "Survey Width";
@@ -6500,6 +6566,10 @@ function togglePatternParameters() {
       gridGeometrySection.style.display = 'block';
       gridGeometrySection.classList.remove('collapsed');
     }
+    if (layerCardGeometry) layerCardGeometry.style.display = 'none';
+    if (layerCardFlight) layerCardFlight.style.display = 'none';
+    if (layerCardOptics) layerCardOptics.style.display = 'none';
+    if (layerCardModes) layerCardModes.style.display = 'none';
     if (exclusionFreeformNote) exclusionFreeformNote.classList.remove('hidden');
     if (widthContainer) widthContainer.style.display = 'none';
     if (heightContainer) heightContainer.style.display = 'none';
@@ -6517,6 +6587,10 @@ function togglePatternParameters() {
       gridGeometrySection.style.display = 'block';
       gridGeometrySection.classList.remove('collapsed');
     }
+    if (layerCardGeometry) layerCardGeometry.style.display = 'block';
+    if (layerCardFlight) layerCardFlight.style.display = 'none';
+    if (layerCardOptics) layerCardOptics.style.display = 'none';
+    if (layerCardModes) layerCardModes.style.display = 'none';
     if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
     if (widthLabel) widthLabel.textContent = "Box Width";
     if (widthContainer) widthContainer.style.display = 'block';
@@ -6531,7 +6605,15 @@ function togglePatternParameters() {
   } else if (gridType === 'freeform') {
     const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
     if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
-    if (gridGeometrySection) gridGeometrySection.style.display = 'none';
+    if (gridGeometrySection) {
+      gridGeometrySection.style.display = 'block';
+      gridGeometrySection.classList.remove('collapsed');
+    }
+    if (layerCardGeometry) layerCardGeometry.style.display = 'none';
+    if (layerCardFlight) layerCardFlight.style.display = 'block';
+    if (layerCardOptics) layerCardOptics.style.display = 'block';
+    if (layerCardModes) layerCardModes.style.display = 'block';
+    if (altitudeControlGroup) altitudeControlGroup.style.display = 'block';
     if (widthContainer) widthContainer.style.display = 'none';
     if (heightContainer) heightContainer.style.display = 'none';
     if (rotationContainer) rotationContainer.style.display = 'none';
@@ -6550,6 +6632,10 @@ function togglePatternParameters() {
 
   } else if (gridType === 'road-following') {
     if (gridGeometrySection) gridGeometrySection.style.display = 'block';
+    if (layerCardGeometry) layerCardGeometry.style.display = 'none';
+    if (layerCardFlight) layerCardFlight.style.display = 'block';
+    if (layerCardOptics) layerCardOptics.style.display = 'block';
+    if (layerCardModes) layerCardModes.style.display = 'block';
     if (widthContainer) widthContainer.style.display = 'none';
     if (heightContainer) heightContainer.style.display = 'none';
     if (rotationContainer) rotationContainer.style.display = 'none';
@@ -6571,6 +6657,7 @@ function togglePatternParameters() {
 
     syncDisplayValues();
     updateGrid();
+    if (typeof updateLayerHierarchyBadge === 'function') updateLayerHierarchyBadge();
     return;
 
   } else if (gridType === 'tower') {
@@ -6580,6 +6667,10 @@ function togglePatternParameters() {
       gridGeometrySection.style.display = 'block';
       gridGeometrySection.classList.remove('collapsed');
     }
+    if (layerCardGeometry) layerCardGeometry.style.display = 'none';
+    if (layerCardFlight) layerCardFlight.style.display = 'block';
+    if (layerCardOptics) layerCardOptics.style.display = 'block';
+    if (layerCardModes) layerCardModes.style.display = 'block';
     if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
     if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
     if (towerGeometryContainer) towerGeometryContainer.classList.remove('hidden');
@@ -6601,6 +6692,10 @@ function togglePatternParameters() {
 
   } else {
     if (gridGeometrySection) gridGeometrySection.style.display = 'block';
+    if (layerCardGeometry) layerCardGeometry.style.display = 'block';
+    if (layerCardFlight) layerCardFlight.style.display = 'block';
+    if (layerCardOptics) layerCardOptics.style.display = 'block';
+    if (layerCardModes) layerCardModes.style.display = 'block';
     if (widthContainer) widthContainer.style.display = 'block';
     if (frontOverlapContainer) frontOverlapContainer.style.display = 'block';
     if (sideOverlapContainer) sideOverlapContainer.style.display = 'block';
@@ -6659,6 +6754,8 @@ function togglePatternParameters() {
     updateGrid();
     isChangingPattern = false;
   }
+
+  if (typeof updateLayerHierarchyBadge === 'function') updateLayerHierarchyBadge();
 }
 
 // Helper to get descriptive flight purpose and styling for a gimbal pitch angle
@@ -11441,6 +11538,16 @@ function updateStatsPanel(stats) {
     if (statFlightTime) statFlightTime.textContent = "-";
     if (headerSummaryEl) headerSummaryEl.textContent = "0 WPs • 0.0 km • 0m 0s";
     if (sidebarSummaryText) sidebarSummaryText.textContent = "⚡ 0 WPs • 0.0 km • 0m 0s • ☀️ Weather";
+    const dockLayerSummary = document.getElementById('dock-layer-summary');
+    const dockWaypointSummary = document.getElementById('dock-waypoint-summary');
+    if (dockLayerSummary) {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      const count = (typeof flightLayers !== 'undefined') ? flightLayers.length : 1;
+      dockLayerSummary.textContent = `${count} Layer${count === 1 ? '' : 's'}${activeLayer ? ` • ${activeLayer.name}` : ''}`;
+    }
+    if (dockWaypointSummary) {
+      dockWaypointSummary.textContent = "0 WPs • 0.0 km • 0m 0s";
+    }
     if (popWaypoints) popWaypoints.textContent = "-";
     if (popPhotos) popPhotos.textContent = "-";
     if (popDistance) popDistance.textContent = "-";
@@ -11498,6 +11605,16 @@ function updateStatsPanel(stats) {
   if (popTime) popTime.textContent = stats.timeStr;
   if (popSpacing) popSpacing.textContent = lineSpacingStr;
   if (popInterval) popInterval.textContent = photoSpacingStr;
+  const dockLayerSummary = document.getElementById('dock-layer-summary');
+  const dockWaypointSummary = document.getElementById('dock-waypoint-summary');
+  if (dockLayerSummary) {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    const count = (typeof flightLayers !== 'undefined') ? flightLayers.length : 1;
+    dockLayerSummary.textContent = `${count} Layer${count === 1 ? '' : 's'}${activeLayer ? ` • ${activeLayer.name}` : ''}`;
+  }
+  if (dockWaypointSummary) {
+    dockWaypointSummary.textContent = summaryStr;
+  }
 
   // Warnings display
   if (warningsEl) {

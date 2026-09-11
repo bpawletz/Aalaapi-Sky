@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.92.0] - 2026-09-10
+
+### Added — Left Navigation Usability, Structured Sub-Groupings & Sticky Action Dock
+- **Section 3 Structured Sub-Grouping:** Divided the flat, disorganized Section 3 into three clean, dedicated card containers:
+  - `🌐 Global Flight Defaults` (Tier 1 fallback: Heading Mode, Connection Path Type, Capture Mode, Hover Time, Exclusion Detour Strategy).
+  - `🛡️ Emergency & Safety Failsafes` (Signal Lost Action, Finish Action, Safe RTH Altitude, Max Flight Altitude Ceiling with regulatory notice).
+  - `🛰️ Drone Hardware & Export Profile` (Target Drone Model, Camera Lens & Sensor Profile, DJI Fly Waypoint UUID).
+- **Section 2 Wall-of-Sliders Mitigation:** Partitioned the extensive controls of Section 2 (Layer Properties) into four distinct, logical sub-cards:
+  - `📐 Coverage & Geometry` (Grid Dimensions, Rotation, Standoff, Target Envelope, Tower Audit Geometry, Road Offset).
+  - `✈️ Flight Altitudes & Overlaps` (Flight Altitude, Flight Speed, Front Overlap, Side Overlap).
+  - `📷 Camera & Gimbal Optics` (Gimbal Pitch, Quick Preset Chips, Purpose Badge, Live SVG Diagram, Camera Zoom, Aspect Ratio).
+  - `⚙️ Layer Dynamics & Modes` (Tier 2 Layer Capture Mode, Connection Path, Heading Mode, Target POI, and Flight Dynamics Drawer).
+- **Three-Tier Layer Inheritance Status Badge:** Added a live status badge (`#layer-hierarchy-status-badge`) in the Section 2 header that dynamically displays `🌐 Inheriting Globals` (cyan) when a layer relies on Section 3 defaults, and updates to `⚡ Layer Overrides (N)` (amber) whenever custom layer parameters are configured.
+- **Section 1 Pattern Card Badging:** Enhanced the 13-pattern selector grid with explicit badge tags (`TOOL` on `Auto-Plan`, `SAFETY` on `Exclusion Box` and `Exclusion Poly`) to clearly differentiate interactive tools and keep-out safety volumes from standard mapping patterns.
+- **Persistent Sticky Bottom Action Dock (`#sidebar-sticky-dock`):** Added a dedicated bottom dock to the left navigation housing primary mission actions (`Export KMZ`, `3D View`, and `Flight Diag`) and active layer/waypoint telemetry. Pilots can now trigger exports or 3D previews immediately from any scroll position without scrolling through long settings panels.
+- **Freeform Layer Usability Refinement:** In `Freeform` mode, Section 2 now remains cleanly accessible, displaying flight speed, altitude, optics, and capture modes while gracefully hiding rectangular grid geometry.
+
 ## [1.91.0] - 2026-09-10
 
 ### Added — Layer-Wide Custom Heading & Real-Time 2D/3D Map Camera Updates
