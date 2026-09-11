@@ -23094,7 +23094,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     headerWeatherSummary.style.color = color;
   }
   if (sidebarSummaryText) {
-    const telemText = document.getElementById('header-telemetry-summary')?.textContent || '0 WPs • 0.0 km • 0m 0s';
+    const telemText = document.getElementById('dock-waypoint-summary')?.textContent || document.getElementById('header-telemetry-summary')?.textContent || '0 WPs • 0.0 km • 0m 0s';
     sidebarSummaryText.textContent = `⚡ ${telemText} • ${weatherPillText}`;
   }
   if (popWeatherSummary) {
