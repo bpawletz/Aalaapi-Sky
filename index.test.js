@@ -7728,6 +7728,8 @@ describe('Freeform Pattern & Layer Isolation Tests (v1.63.1)', () => {
         textContent: '',
         innerHTML: '',
         setAttribute: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
         className: ''
       });
       L = {
@@ -12592,22 +12594,15 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   });
 
   describe('3D Tower Inspection Layer Settings Refinements (v1.89.2)', () => {
-    test('index_template.html and index.html contain required v1.89.2 version tags, changelog, and flare guidance', () => {
-      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.strictEqual(pkg.version, '1.89.2', 'package.json version must be 1.89.2');
-
+    test('index_template.html and index.html contain required v1.89.2 changelog and flare guidance', () => {
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.89.2]'), 'CHANGELOG.md must contain ## [1.89.2]');
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
-        assert.ok(html.includes('Version 1.89.2'), `${filename} must contain Version 1.89.2 in About modal`);
         assert.ok(html.includes('Changelog (v1.89.2):'), `${filename} must contain Changelog (v1.89.2)`);
         assert.ok(html.includes('flare diagonally outward toward ground anchors'), `${filename} must contain guy wire diagonal flare warning`);
       });
-
-      const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-      assert.ok(templateHtml.includes('<span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.89.2</span>'), 'index_template.html line 70 must have v1.89.2');
     });
 
     test('generateTowerCoordinates defaults to 0 deg level pitch facing the tower', () => {
@@ -12713,6 +12708,151 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
         assert.strictEqual(mockGimbalSlider.value, 0, 'Gimbal pitch slider should default to 0 for tower');
       } finally {
         document.getElementById = origGetEl;
+      }
+    });
+  });
+
+  describe('POI AGL Height & 3D Gimbal Pitch Resolution (v1.90.0)', () => {
+    test('version tags and changelogs are updated to v1.90.0 across all required locations', () => {
+      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+      assert.strictEqual(pkg.version, '1.90.0', 'package.json version must be 1.90.0');
+
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('## [1.90.0]'), 'CHANGELOG.md must contain ## [1.90.0]');
+
+      ['index_template.html', 'index.html'].forEach(filename => {
+        const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
+        assert.ok(html.includes('Version 1.90.0'), `${filename} must contain Version 1.90.0 in About modal`);
+        assert.ok(html.includes('Changelog (v1.90.0):'), `${filename} must contain Changelog (v1.90.0)`);
+        assert.ok(html.includes('data-pitch="auto"'), `${filename} must contain data-pitch="auto" preset chip`);
+      });
+
+      const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+      assert.ok(templateHtml.includes('<span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.90.0</span>'), 'index_template.html line 70 must have v1.90.0');
+    });
+
+    test('addPoi stores and respects optional AGL altitude defaulting to 0', () => {
+      const origPois = typeof pois !== 'undefined' ? pois : [];
+      try {
+        const p1 = addPoi(37.7749, -122.4194, 'Ground Target');
+        assert.strictEqual(p1.alt, 0, 'Default POI altitude must be 0m AGL for backward compatibility');
+
+        const p2 = addPoi(37.7750, -122.4195, 'Tower Top', 45);
+        assert.strictEqual(p2.alt, 45, 'Custom POI altitude must be preserved as 45m');
+
+        const p3 = addPoi(37.7751, -122.4196, 'Bridge Deck', '32.5');
+        assert.strictEqual(p3.alt, 32.5, 'String POI altitude must be parsed to float');
+      } finally {
+        if (typeof clearAllPois === 'function') clearAllPois();
+      }
+    });
+
+    test('getTargetPoiCoordinates includes altitude property', () => {
+      const origPois = typeof pois !== 'undefined' ? pois : [];
+      try {
+        pois = [
+          { id: 'poi-center', lat: 37.7749, lon: -122.4194, alt: 15, name: 'Center Target' }
+        ];
+        const target = getTargetPoiCoordinates({ targetPoiId: 'poi-center' }, null);
+        assert.ok(target, 'Target POI must be found');
+        assert.strictEqual(target.alt, 15, 'Target POI coordinates must include alt: 15');
+      } finally {
+        pois = origPois;
+      }
+    });
+
+    test('calculate3DPoiPitch correctly computes downward, upward, and level angles', () => {
+      // Downward tilt: drone at 50m, POI at 20m, distance 40m -> deltaZ = 30m -> atan2(30, 40) = 36.87° -> -36.9°
+      const wpDown = { x: 0, y: 0, alt: 50 };
+      const poiDown = { x: 40, y: 0, alt: 20 };
+      const pitchDown = calculate3DPoiPitch(wpDown, poiDown);
+      assert.strictEqual(pitchDown, -36.9, 'Pitch down toward lower target must be -36.9°');
+
+      // Upward tilt: drone at 20m, POI at 50m, distance 40m -> deltaZ = -30m -> atan2(-30, 40) = -36.87° -> +36.9°
+      const wpUp = { x: 0, y: 0, alt: 20 };
+      const poiUp = { x: 40, y: 0, alt: 50 };
+      const pitchUp = calculate3DPoiPitch(wpUp, poiUp);
+      assert.strictEqual(pitchUp, 36.9, 'Pitch up toward elevated target must be +36.9°');
+
+      // Level horizon: drone at 50m, POI at 50m, distance 50m -> deltaZ = 0 -> 0°
+      const wpLevel = { x: 0, y: 0, alt: 50 };
+      const poiLevel = { x: 50, y: 0, alt: 50 };
+      const pitchLevel = calculate3DPoiPitch(wpLevel, poiLevel);
+      assert.strictEqual(pitchLevel, 0, 'Pitch toward target at equal height must be 0°');
+    });
+
+    test('getWaypointHeadingAndPitch dynamically resolves auto POI pitch in 3-tier hierarchy', () => {
+      const origPois = typeof pois !== 'undefined' ? pois : [];
+      const origLayers = typeof flightLayers !== 'undefined' ? flightLayers : [];
+      try {
+        pois = [
+          { id: 'poi-elevated', lat: 37.7749, lon: -122.4194, alt: 30, name: 'Elevated POI' }
+        ];
+        flightLayers = [
+          { id: 'layer-1', gimbalPitch: 'auto', targetPoiId: 'poi-elevated', altitude: 60 }
+        ];
+
+        const wps = [
+          { layerId: 'layer-1', alt: 60, x: 0, y: 0, lat: 37.7749, lon: -122.4194 }
+        ];
+
+        // POI is 40m away horizontally (x=40, y=0)
+        pois[0].x = 40;
+        pois[0].y = 0;
+
+        const res = getWaypointHeadingAndPitch(0, wps);
+        // deltaZ = 60 - 30 = 30m, distance = 40m -> -36.9°
+        assert.strictEqual(res.pitch, -36.9, 'Inherited layer auto POI pitch must calculate -36.9°');
+
+        // Waypoint override takes precedence
+        wps[0].pitch = -15;
+        const resOverride = getWaypointHeadingAndPitch(0, wps);
+        assert.strictEqual(resOverride.pitch, -15, 'Explicit waypoint override must take precedence');
+      } finally {
+        pois = origPois;
+        flightLayers = origLayers;
+      }
+    });
+
+    test('getGimbalPitchDescription returns 3D POI Tracking for auto pitch', () => {
+      const desc = getGimbalPitchDescription('auto');
+      assert.ok(desc.text.includes('3D POI Tracking'), 'Description must indicate 3D POI Tracking');
+      assert.ok(desc.text.includes('AGL'), 'Description must include AGL target indication');
+    });
+
+    test('WPML export contains 3D waypointPoiPoint with POI altitude and calculated pitch', () => {
+      const origPois = typeof pois !== 'undefined' ? pois : [];
+      const origLayers = typeof flightLayers !== 'undefined' ? flightLayers : [];
+      try {
+        pois = [
+          { id: 'poi-1', lat: 37.7749, lon: -122.4194, alt: 25.5, name: 'Tower Tip' }
+        ];
+        flightLayers = [
+          { id: 'layer-test', headingMode: 'towardPOI', targetPoiId: 'poi-1', gimbalPitch: 'auto', altitude: 65.5 }
+        ];
+
+        const waypoints = [
+          { lat: 37.7749, lon: -122.4180, alt: 65.5, layerId: 'layer-test' },
+          { lat: 37.7750, lon: -122.4180, alt: 65.5, layerId: 'layer-test' }
+        ];
+
+        const wpml = buildWaylinesWpml(
+          waypoints,
+          10,
+          5.0,
+          'stopAndShoot',
+          'curved',
+          'towardPOI',
+          65.5,
+          'auto',
+          'Mini 4 Pro'
+        );
+
+        assert.ok(wpml.includes('<wpml:waypointPoiPoint>37.774900,-122.419400,25.500000</wpml:waypointPoiPoint>'), 'WPML must export 3D coordinates with POI altitude');
+        assert.ok(!wpml.includes('<wpml:waypointGimbalPitchAngle>NaN</wpml:waypointGimbalPitchAngle>'), 'Gimbal pitch angle must not be NaN');
+      } finally {
+        pois = origPois;
+        flightLayers = origLayers;
       }
     });
   });

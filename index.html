@@ -3482,7 +3482,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.89.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.90.0</span></h1>
         </div>
       </div>
 
@@ -4221,6 +4221,7 @@ html, body {
               <button type="button" class="gimbal-preset-chip" data-pitch="-45" style="flex: 1; padding: 3px 1px; font-size: 0.65rem; font-weight: 600; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer; transition: all 0.2s;">-45° Oblique</button>
               <button type="button" class="gimbal-preset-chip" data-pitch="0" style="flex: 1; padding: 3px 1px; font-size: 0.65rem; font-weight: 600; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer; transition: all 0.2s;">0° Level</button>
               <button type="button" class="gimbal-preset-chip" data-pitch="20" style="flex: 1; padding: 3px 1px; font-size: 0.65rem; font-weight: 600; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer; transition: all 0.2s;">+20° Up</button>
+              <button type="button" class="gimbal-preset-chip" data-pitch="auto" style="flex: 1.1; padding: 3px 1px; font-size: 0.65rem; font-weight: 600; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer; transition: all 0.2s;" title="Automatically track 3D Point of Interest elevation">🎯 Auto POI</button>
             </div>
 
             <!-- Dynamic Purpose Badge -->
@@ -5188,6 +5189,15 @@ html, body {
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🎯 POI AGL Height &amp; 3D Auto-Tilt Tracking (v1.90.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Points of Interest now support an optional Above Ground Level (AGL) height. Camera gimbals can now dynamically tilt in 3D space with the new <code>🎯 Auto POI</code> gimbal preset chip, automatically calculating the exact line-of-sight pitch angle to elevated targets (antennas, bridge towers, rooftops). Full 3D coordinates and calculated tilt angles export directly to DJI WPML missions and render in the 3D viewport.
+            </p>
+          </div>
+
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🌐 Resolved Inherited Setting Displays (v1.87.0)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -5747,7 +5757,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.89.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.90.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -5813,6 +5823,16 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.90.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Optional Height (AGL) for POIs:</strong> Added unit-aware AGL height controls to POIs in the Section 1 POI list card and interactive map popups. Defaults to 0m (ground level) for seamless backward compatibility.</li>
+              <li><strong>🎯 Auto POI Gimbal Tracking Mode:</strong> Dynamic 3D line-of-sight pitch resolution calculates true elevation angle based on horizontal standoff and relative elevation ($\Delta z$).</li>
+              <li><strong>3D Three-Tier Resolved Gimbal Displays:</strong> Waypoint editors (2D popup &amp; 3D FPV HUD) dynamically display computed 3D angles (e.g. <code>🌐 Inherit Layer (Auto POI: -28°)</code>).</li>
+              <li><strong>3D Scene POI Visualization:</strong> Renders elevated target poles and glowing beacon spheres at true AGL elevation with camera FOV sight lines tracking in 3D.</li>
+              <li><strong>True 3D WPML Export:</strong> WPML missions export full 3D coordinates in <code>&lt;wpml:waypointPoiPoint&gt;</code> and calculated 3D <code>&lt;wpml:waypointGimbalPitchAngle&gt;</code>.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.89.2):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -7877,7 +7897,7 @@ html, body {
                     </span>
                     <span style="color: #06b6d4; font-weight: 600;"><span id="fpv-edit-pitch-val">-60</span>&deg;</span>
                   </div>
-                  <input type="range" id="fpv-edit-pitch" min="-90" max="0" value="-60" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer;">
+                  <input type="range" id="fpv-edit-pitch" min="-90" max="60" value="-60" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer;">
                 </div>
 
                 <div id="fpv-edit-speed-container" style="display: flex; flex-direction: column; gap: 3px;">
@@ -9392,6 +9412,35 @@ function getEffectiveWaypointHeadingMode(wp, layer) {
   return getEffectiveLayerHeadingMode(resolvedLayer);
 }
 
+function getHorizontalDistanceMeters(lat1, lon1, lat2, lon2) {
+  if (lat1 === undefined || lon1 === undefined || lat2 === undefined || lon2 === undefined) return 50;
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function calculate3DPoiPitch(wp, targetPoi, defaultAlt = 50) {
+  if (!targetPoi) return -45;
+  let d;
+  if (wp && wp.x !== undefined && targetPoi.x !== undefined) {
+    d = Math.hypot(wp.x - targetPoi.x, wp.y - targetPoi.y);
+  } else if (wp && wp.lat !== undefined && wp.lon !== undefined && targetPoi.lat !== undefined && targetPoi.lon !== undefined) {
+    d = getHorizontalDistanceMeters(wp.lat, wp.lon, targetPoi.lat, targetPoi.lon);
+  }
+  if (d === undefined || isNaN(d) || d < 0.1) d = 50;
+  const wpAlt = (wp && wp.alt !== undefined && !isNaN(wp.alt)) ? wp.alt : defaultAlt;
+  const poiAlt = (targetPoi && targetPoi.alt !== undefined && !isNaN(targetPoi.alt)) ? Number(targetPoi.alt) : 0;
+  const deltaZ = wpAlt - poiAlt;
+  let pitch = -Math.atan2(deltaZ, Math.max(1, d)) * (180 / Math.PI);
+  pitch = Math.max(-90, Math.min(60, Math.round(pitch * 10) / 10));
+  if (pitch === 0 || Object.is(pitch, -0)) pitch = 0;
+  return pitch;
+}
+
 function getTargetPoiCoordinates(wp, layer) {
   const resolvedLayer = layer || (wp && wp.layerId && typeof flightLayers !== 'undefined' ? flightLayers.find(l => l.id === wp.layerId) : null) || ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
   const poiList = (typeof pois !== 'undefined' && Array.isArray(pois)) ? pois : [];
@@ -9401,7 +9450,15 @@ function getTargetPoiCoordinates(wp, layer) {
   if (targetPoiId && poiList.length > 0) {
     const found = poiList.find(p => p.id === targetPoiId);
     if (found && found.lat !== undefined && (found.lon !== undefined || found.lng !== undefined)) {
-      return { lat: found.lat, lon: found.lon !== undefined ? found.lon : found.lng };
+      return {
+        lat: found.lat,
+        lon: found.lon !== undefined ? found.lon : found.lng,
+        alt: (found.alt !== undefined && !isNaN(found.alt)) ? Number(found.alt) : 0,
+        x: found.x,
+        y: found.y,
+        id: found.id,
+        name: found.name
+      };
     }
   }
   
@@ -9409,20 +9466,44 @@ function getTargetPoiCoordinates(wp, layer) {
   const poiIdx = (wp && wp.poiIndex !== undefined && wp.poiIndex !== null) ? wp.poiIndex : 0;
   if (poiList[poiIdx] && poiList[poiIdx].lat !== undefined && (poiList[poiIdx].lon !== undefined || poiList[poiIdx].lng !== undefined)) {
     const p = poiList[poiIdx];
-    return { lat: p.lat, lon: p.lon !== undefined ? p.lon : p.lng };
+    return {
+      lat: p.lat,
+      lon: p.lon !== undefined ? p.lon : p.lng,
+      alt: (p.alt !== undefined && !isNaN(p.alt)) ? Number(p.alt) : 0,
+      x: p.x,
+      y: p.y,
+      id: p.id,
+      name: p.name
+    };
   }
   
   // 3. Fallback to first POI
   if (poiList.length > 0 && poiList[0].lat !== undefined && (poiList[0].lon !== undefined || poiList[0].lng !== undefined)) {
     const p = poiList[0];
-    return { lat: p.lat, lon: p.lon !== undefined ? p.lon : p.lng };
+    return {
+      lat: p.lat,
+      lon: p.lon !== undefined ? p.lon : p.lng,
+      alt: (p.alt !== undefined && !isNaN(p.alt)) ? Number(p.alt) : 0,
+      x: p.x,
+      y: p.y,
+      id: p.id,
+      name: p.name
+    };
   }
   
   // 4. Fallback to center marker
   if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
     const ll = centerMarker.getLatLng();
     if (ll && !isNaN(ll.lat) && !isNaN(ll.lng)) {
-      return { lat: ll.lat, lon: ll.lng };
+      return {
+        lat: ll.lat,
+        lon: ll.lng,
+        alt: (poiList[0] && poiList[0].alt !== undefined && !isNaN(poiList[0].alt)) ? Number(poiList[0].alt) : 0,
+        x: 0,
+        y: 0,
+        id: 'center',
+        name: 'Center'
+      };
     }
   }
   
@@ -13535,11 +13616,23 @@ function initUIEventListeners() {
   if (presetChips && presetChips.forEach) {
     presetChips.forEach(chip => {
       chip.addEventListener('click', () => {
-        const pitch = parseFloat(chip.dataset ? chip.dataset.pitch : chip.getAttribute('data-pitch'));
+        const rawPitch = chip.dataset ? chip.dataset.pitch : chip.getAttribute('data-pitch');
         const gimbalSlider = document.getElementById('gimbal-pitch');
-        if (gimbalSlider) {
+        const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+
+        if (rawPitch === 'auto') {
+          if (activeLayer) {
+            activeLayer.gimbalPitch = 'auto';
+          }
+          syncDisplayValues();
+          updateGrid();
+          saveAllSettingsToLocalStorage();
+          return;
+        }
+
+        const pitch = parseFloat(rawPitch);
+        if (gimbalSlider && !isNaN(pitch)) {
           gimbalSlider.value = pitch;
-          const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
           if (activeLayer) {
             activeLayer.gimbalPitch = pitch;
           }
@@ -15005,6 +15098,19 @@ function togglePatternParameters() {
 
 // Helper to get descriptive flight purpose and styling for a gimbal pitch angle
 function getGimbalPitchDescription(pitch) {
+  if (pitch === 'auto' || (typeof pitch === 'string' && pitch.toLowerCase() === 'auto')) {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    const targetPoi = (typeof getTargetPoiCoordinates === 'function') ? getTargetPoiCoordinates(null, activeLayer) : null;
+    const targetAlt = (targetPoi && targetPoi.alt !== undefined && !isNaN(targetPoi.alt)) ? Number(targetPoi.alt) : 0;
+    const unit = (typeof getUnitSystem === 'function') ? getUnitSystem() : 'metric';
+    const dispAlt = unit === 'imperial' ? `${Math.round(targetAlt * M_TO_FT)} ft` : `${Math.round(targetAlt)}m`;
+    return {
+      text: `🎯 3D POI Tracking (Target: ${dispAlt} AGL)`,
+      bg: 'rgba(6, 182, 212, 0.15)',
+      border: 'rgba(6, 182, 212, 0.4)',
+      color: 'var(--accent-cyan)'
+    };
+  }
   const p = Math.round(pitch);
   if (p > 0) {
     return {
@@ -15054,13 +15160,23 @@ function getGimbalPitchDescription(pitch) {
 // Dynamically update the live Gimbal Pitch diagram, FOV sight cone, preset chips, and badge
 function updateGimbalPitchVisualizer(pitch) {
   if (typeof document === 'undefined' || !document || !document.getElementById) return;
-  const pVal = isNaN(pitch) ? -60 : parseFloat(pitch);
+  const isAuto = (pitch === 'auto' || (typeof pitch === 'string' && pitch.toLowerCase() === 'auto'));
+  let pVal;
+  if (isAuto) {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    const targetPoi = (typeof getTargetPoiCoordinates === 'function') ? getTargetPoiCoordinates(null, activeLayer) : null;
+    pVal = (typeof calculate3DPoiPitch === 'function')
+      ? calculate3DPoiPitch(null, targetPoi, activeLayer?.altitude || 50)
+      : -45;
+  } else {
+    pVal = isNaN(pitch) ? -60 : parseFloat(pitch);
+  }
   const beta = -pVal; // Downward angle in degrees: negative beta is upward, positive is downward
 
   // 1. Update Purpose Badge
   const purposeBadge = document.getElementById('gimbal-pitch-purpose-badge');
   if (purposeBadge) {
-    const desc = getGimbalPitchDescription(pVal);
+    const desc = getGimbalPitchDescription(isAuto ? 'auto' : pVal);
     purposeBadge.textContent = desc.text;
     purposeBadge.style.backgroundColor = desc.bg;
     purposeBadge.style.borderColor = desc.border;
@@ -15071,8 +15187,16 @@ function updateGimbalPitchVisualizer(pitch) {
   const chips = (typeof document.querySelectorAll === 'function') ? document.querySelectorAll('.gimbal-preset-chip') : [];
   if (chips && chips.forEach) {
     chips.forEach(chip => {
-      const targetPitch = parseFloat(chip.dataset ? chip.dataset.pitch : chip.getAttribute('data-pitch'));
-      if (Math.abs(targetPitch - pVal) < 1.0) {
+      const rawTarget = chip.dataset ? chip.dataset.pitch : chip.getAttribute('data-pitch');
+      let isMatch = false;
+      if (isAuto) {
+        isMatch = (rawTarget === 'auto');
+      } else {
+        const targetPitch = parseFloat(rawTarget);
+        isMatch = (rawTarget !== 'auto' && Math.abs(targetPitch - pVal) < 1.0);
+      }
+
+      if (isMatch) {
         if (chip.classList && chip.classList.add) chip.classList.add('active');
         if (chip.style) {
           chip.style.backgroundColor = 'rgba(6, 182, 212, 0.15)';
@@ -15264,9 +15388,16 @@ function syncDisplayValues() {
   
   const gimbalPitchEl = document.getElementById('gimbal-pitch');
   if (gimbalPitchEl) {
-    const pitchVal = parseFloat(gimbalPitchEl.value);
-    document.getElementById('gimbal-pitch-val').textContent = gimbalPitchEl.value;
-    updateGimbalPitchVisualizer(pitchVal);
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    const isAuto = activeLayer && (activeLayer.gimbalPitch === 'auto');
+    if (isAuto) {
+      document.getElementById('gimbal-pitch-val').textContent = 'Auto 🎯';
+      updateGimbalPitchVisualizer('auto');
+    } else {
+      const pitchVal = parseFloat(gimbalPitchEl.value);
+      document.getElementById('gimbal-pitch-val').textContent = gimbalPitchEl.value;
+      updateGimbalPitchVisualizer(pitchVal);
+    }
   }
 
   // Sync Camera Aspect Ratio, HFOV, VFOV, and Zoom
@@ -15811,7 +15942,6 @@ function setGridCenter(lat, lng) {
     });
 
     centerMarker = L.marker([lat, lng], { draggable: true, icon: centerIcon }).addTo(map);
-    centerMarker.bindPopup("<b>Flight Mission Center</b><br>Drag to reposition grid.").openPopup();
     
     // Set pois[0]
     const poi0Id = `poi-center-${Date.now()}`;
@@ -15819,12 +15949,15 @@ function setGridCenter(lat, lng) {
       id: poi0Id,
       lat: lat,
       lon: lng,
+      alt: (pois[0] && pois[0].alt !== undefined && !isNaN(pois[0].alt)) ? pois[0].alt : 0,
       marker: centerMarker,
       name: "Layer 1 Target"
     };
     if (flightLayers && flightLayers[0] && !flightLayers[0].targetPoiId) {
       flightLayers[0].targetPoiId = poi0Id;
     }
+    updatePoiMarkerPopup(pois[0], 0);
+    centerMarker.openPopup();
 
     // Recalculate grid when center is dragged
     centerMarker.on('dragstart', () => {
@@ -15866,10 +15999,52 @@ function setGridCenter(lat, lng) {
   updateOpenSkyLink();
 }
 
-function addPoi(lat, lon, name = null) {
+function updatePoiMarkerPopup(poi, idx) {
+  if (!poi || !poi.marker) return;
+  const unit = (typeof getUnitSystem === 'function') ? getUnitSystem() : 'metric';
+  const altUnitLabel = unit === 'imperial' ? 'ft' : 'm';
+  const curAlt = (poi.alt !== undefined && !isNaN(poi.alt)) ? poi.alt : 0;
+  const dispAlt = unit === 'imperial' ? Math.round(curAlt * M_TO_FT) : Math.round(curAlt);
+  const popupHtml = `
+    <div style="font-size: 0.8rem; min-width: 150px;">
+      <div style="font-weight: 700; color: ${idx === 0 ? '#06b6d4' : '#f43f5e'}; margin-bottom: 3px;">${poi.name}</div>
+      <div style="color: #94a3b8; font-size: 0.7rem; margin-bottom: 6px;">Drag marker to reposition target.</div>
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; background: rgba(0,0,0,0.25); padding: 4px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.08);">
+        <label style="font-size: 0.72rem; font-weight: 600; color: #cbd5e1; margin: 0;">Target AGL:</label>
+        <div style="display: flex; align-items: center; gap: 3px;">
+          <input type="number" class="poi-popup-alt-input" value="${dispAlt}" min="0" style="width: 48px; font-size: 0.75rem; font-weight: 700; color: #38bdf8; background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.2); border-radius: 3px; padding: 2px 4px; text-align: right;">
+          <span style="font-size: 0.7rem; color: #94a3b8;">${altUnitLabel}</span>
+        </div>
+      </div>
+    </div>
+  `;
+  if (typeof poi.marker.bindPopup === 'function') {
+    poi.marker.bindPopup(popupHtml);
+  }
+  if (typeof poi.marker.off === 'function') {
+    poi.marker.off('popupopen');
+  }
+  if (typeof poi.marker.on === 'function') {
+    poi.marker.on('popupopen', () => {
+      const popupEl = (typeof poi.marker.getPopup === 'function') ? poi.marker.getPopup()?.getElement() : null;
+      const input = popupEl?.querySelector('.poi-popup-alt-input');
+      if (input) {
+        input.addEventListener('change', () => {
+          const val = parseFloat(input.value) || 0;
+          poi.alt = unit === 'imperial' ? (val / M_TO_FT) : val;
+          updatePoiListUI();
+          updateGrid();
+        });
+      }
+    });
+  }
+}
+
+function addPoi(lat, lon, name = null, alt = 0) {
   const idx = pois.length;
   const poiId = `poi-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   const poiName = name || (idx === 0 ? "Layer 1 Target" : `POI ${idx}`);
+  const poiAlt = (typeof alt === 'number' && !isNaN(alt)) ? alt : (parseFloat(alt) || 0);
 
   let marker = null;
   if (map) {
@@ -15881,19 +16056,22 @@ function addPoi(lat, lon, name = null) {
     });
 
     marker = L.marker([lat, lon], { draggable: true, icon: poiIcon }).addTo(map);
-    marker.bindPopup(`<b>${poiName}</b><br>Drag to reposition target.`).openPopup();
   }
 
   const poiObj = {
     id: poiId,
     lat: lat,
     lon: lon,
+    alt: poiAlt,
     marker: marker,
     name: poiName
   };
   pois.push(poiObj);
 
   if (marker) {
+    updatePoiMarkerPopup(poiObj, idx);
+    marker.openPopup();
+
     marker.on('drag', () => {
       const latlng = marker.getLatLng();
       poiObj.lat = latlng.lat;
@@ -15927,13 +16105,15 @@ function deletePoi(idx) {
       pois[i].name = `POI ${i}`;
       // Update marker text and class
       const newHtml = `<div style="background-color: #f43f5e; width: 16px; height: 16px; border-radius: 50%; border: 3px solid #f8fafc; box-shadow: 0 0 10px rgba(244,63,94,0.8); display: flex; align-items: center; justify-content: center; color: white; font-size: 8px; font-weight: bold;">${i}</div>`;
-      pois[i].marker.setIcon(L.divIcon({
-        className: `custom-poi-marker-${i}`,
-        html: newHtml,
-        iconSize: [16, 16],
-        iconAnchor: [8, 8]
-      }));
-      pois[i].marker.getPopup().setContent(`<b>POI ${i}</b><br>Drag to reposition target.`);
+      if (pois[i].marker) {
+        pois[i].marker.setIcon(L.divIcon({
+          className: `custom-poi-marker-${i}`,
+          html: newHtml,
+          iconSize: [16, 16],
+          iconAnchor: [8, 8]
+        }));
+        updatePoiMarkerPopup(pois[i], i);
+      }
     }
 
     // Reset any waypoint pointing to this POI or higher
@@ -15969,6 +16149,9 @@ function updatePoiListUI() {
   if (!container) return;
   container.innerHTML = '';
 
+  const unit = (typeof getUnitSystem === 'function') ? getUnitSystem() : 'metric';
+  const altUnitLabel = unit === 'imperial' ? 'ft' : 'm';
+
   pois.forEach((poi, idx) => {
     const item = document.createElement('div');
     item.className = 'poi-item';
@@ -15989,7 +16172,46 @@ function updatePoiListUI() {
     item.appendChild(infoDiv);
 
     const actionDiv = document.createElement('div');
-    actionDiv.style.cssText = 'display: flex; align-items: center; gap: 8px;';
+    actionDiv.style.cssText = 'display: flex; align-items: center; gap: 6px;';
+
+    // AGL Height Input
+    const curAlt = (poi.alt !== undefined && !isNaN(poi.alt)) ? poi.alt : 0;
+    const dispAlt = unit === 'imperial' ? Math.round(curAlt * M_TO_FT) : Math.round(curAlt);
+
+    const altContainer = document.createElement('div');
+    altContainer.style.cssText = 'display: inline-flex; align-items: center; gap: 2px; background: rgba(0,0,0,0.3); padding: 1px 4px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1);';
+    altContainer.title = 'Target Altitude (AGL)';
+
+    const altLabel = document.createElement('span');
+    altLabel.style.cssText = 'font-size: 0.65rem; color: var(--text-muted); font-weight: 500;';
+    altLabel.textContent = 'AGL:';
+    altContainer.appendChild(altLabel);
+
+    const altInput = document.createElement('input');
+    altInput.type = 'number';
+    altInput.className = 'poi-alt-input';
+    altInput.value = dispAlt;
+    altInput.min = '0';
+    altInput.max = unit === 'imperial' ? '1640' : '500';
+    altInput.style.cssText = 'width: 42px; background: transparent; border: none; color: #38bdf8; font-size: 0.7rem; font-weight: 600; text-align: right; padding: 0; outline: none;';
+    if (typeof altInput.addEventListener === 'function') {
+      altInput.addEventListener('change', () => {
+        const val = parseFloat(altInput.value) || 0;
+        poi.alt = unit === 'imperial' ? (val / M_TO_FT) : val;
+        if (poi.marker) {
+          updatePoiMarkerPopup(poi, idx);
+        }
+        updateGrid();
+      });
+    }
+    altContainer.appendChild(altInput);
+
+    const unitSpan = document.createElement('span');
+    unitSpan.style.cssText = 'font-size: 0.65rem; color: var(--text-muted);';
+    unitSpan.textContent = altUnitLabel;
+    altContainer.appendChild(unitSpan);
+
+    actionDiv.appendChild(altContainer);
 
     const coordSpan = document.createElement('span');
     coordSpan.style.cssText = 'color: var(--text-muted); font-size: 0.65rem;';
@@ -16001,12 +16223,14 @@ function updatePoiListUI() {
       deleteBtn.type = 'button';
       deleteBtn.innerHTML = '&times;';
       deleteBtn.style.cssText = 'background: none; border: none; color: #ef4444; cursor: pointer; padding: 0 4px; font-size: 1rem; line-height: 1; transition: opacity 0.2s;';
-      deleteBtn.addEventListener('mouseover', () => { deleteBtn.style.opacity = '0.7'; });
-      deleteBtn.addEventListener('mouseout', () => { deleteBtn.style.opacity = '1.0'; });
-      deleteBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        deletePoi(idx);
-      });
+      if (typeof deleteBtn.addEventListener === 'function') {
+        deleteBtn.addEventListener('mouseover', () => { deleteBtn.style.opacity = '0.7'; });
+        deleteBtn.addEventListener('mouseout', () => { deleteBtn.style.opacity = '1.0'; });
+        deleteBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          deletePoi(idx);
+        });
+      }
       actionDiv.appendChild(deleteBtn);
     }
 
@@ -16025,11 +16249,14 @@ function clearAllPois() {
   pois = [];
   if (centerMarker) {
     pois[0] = {
+      id: `poi-center-${Date.now()}`,
       lat: centerMarker.getLatLng().lat,
       lon: centerMarker.getLatLng().lng,
+      alt: 0,
       marker: centerMarker,
       name: "POI 0 (Center)"
     };
+    updatePoiMarkerPopup(pois[0], 0);
   }
   updatePoiListUI();
 }
@@ -19920,7 +20147,17 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     }
 
     // Compute effective pitch for use in both gimbalRotate action and waypointGimbalHeadingParam
-    const effectivePitch = wp.pitch !== undefined ? wp.pitch : gimbalPitch;
+    const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : null;
+    let effectivePitch;
+    const rawWpPitch = wp.pitch !== undefined ? wp.pitch : (wpLayer && wpLayer.gimbalPitch !== undefined ? wpLayer.gimbalPitch : gimbalPitch);
+    if (rawWpPitch === 'auto' || (typeof rawWpPitch === 'string' && rawWpPitch.toLowerCase() === 'auto')) {
+      const targetPoi = (typeof getTargetPoiCoordinates === 'function') ? getTargetPoiCoordinates(wp, wpLayer) : null;
+      effectivePitch = (typeof calculate3DPoiPitch === 'function')
+        ? calculate3DPoiPitch(wp, targetPoi, wp.alt !== undefined ? wp.alt : altitude)
+        : -45;
+    } else {
+      effectivePitch = parseGimbalPitch(rawWpPitch, -60);
+    }
 
     if (idx === 0 || wp.isRingStart || isRoadFollowing || reposInfo.isGimbalChanged) {
       const currentPitch = effectivePitch;
@@ -20063,7 +20300,6 @@ ${waypointActions.join('\n')}
     // Determine heading mode and angle for this waypoint (Tier 3: wp -> Tier 2: layer -> Tier 1: global)
     const validHeadingModes = ['followWayline', 'smoothTransition', 'towardPOI', 'manually', 'custom', 'fixed'];
     let effectiveHeadingMode = (headingMode && validHeadingModes.includes(headingMode)) ? headingMode : 'followWayline';
-    const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : null;
     if (wp.layerHeadingMode && wp.layerHeadingMode !== 'inherit' && validHeadingModes.includes(wp.layerHeadingMode)) {
       effectiveHeadingMode = wp.layerHeadingMode;
     } else if (wpLayer && wpLayer.headingMode && wpLayer.headingMode !== 'inherit' && validHeadingModes.includes(wpLayer.headingMode)) {
@@ -20095,7 +20331,8 @@ ${waypointActions.join('\n')}
             targetPoi = { lat: latlng.lat, lon: latlng.lng };
           }
           if (targetPoi) {
-            poiPoint = `${targetPoi.lat.toFixed(6)},${targetPoi.lon.toFixed(6)},0.000000`;
+            const poiAlt = (targetPoi.alt !== undefined && !isNaN(targetPoi.alt)) ? Number(targetPoi.alt) : 0;
+            poiPoint = `${targetPoi.lat.toFixed(6)},${targetPoi.lon.toFixed(6)},${poiAlt.toFixed(6)}`;
           }
         }
       }
@@ -20108,10 +20345,11 @@ ${waypointActions.join('\n')}
         let targetPoi = pois[targetPoiIndex] || pois[0];
         if (!targetPoi && targetPoiIndex === 0 && typeof centerMarker !== 'undefined' && centerMarker) {
           const latlng = centerMarker.getLatLng();
-          targetPoi = { lat: latlng.lat, lon: latlng.lng };
+          targetPoi = { lat: latlng.lat, lon: latlng.lng, alt: (pois[0] && pois[0].alt) || 0 };
         }
         if (targetPoi) {
-          poiPoint = `${targetPoi.lat.toFixed(6)},${targetPoi.lon.toFixed(6)},0.000000`;
+          const poiAlt = (targetPoi.alt !== undefined && !isNaN(targetPoi.alt)) ? Number(targetPoi.alt) : 0;
+          poiPoint = `${targetPoi.lat.toFixed(6)},${targetPoi.lon.toFixed(6)},${poiAlt.toFixed(6)}`;
         }
       } else if (effectiveHeadingMode === 'custom' || effectiveHeadingMode === 'smoothTransition') {
         actualHeadingMode = 'smoothTransition';
@@ -25938,7 +26176,13 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
   }
 
   const headingVal = (wp.heading !== undefined && wp.heading !== null) ? wp.heading.toFixed(0) : '';
-  const pitchVal = (wp.pitch !== undefined && wp.pitch !== null) ? Math.round(wp.pitch) : -45;
+  const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+  const targetPoi = (typeof getTargetPoiCoordinates === 'function') ? getTargetPoiCoordinates(wp, wpLayer) : null;
+  const autoPitchVal = (typeof calculate3DPoiPitch === 'function') ? calculate3DPoiPitch(wp, targetPoi, wp.alt || 50) : -45;
+
+  let isAutoPitch = (wp.pitch === 'auto') || ((wp.pitch === undefined || wp.pitch === null) && (wpLayer?.gimbalPitch === 'auto'));
+  const pitchVal = (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'auto') ? Math.round(wp.pitch) : autoPitchVal;
+  const pitchValTextDisplay = isAutoPitch ? `Auto 🎯 (${autoPitchVal}°)` : `${pitchVal}°`;
 
   if (typeof fpvProgressIndex !== 'undefined' && idx !== null && idx !== undefined) {
     fpvProgressIndex = idx;
@@ -26044,8 +26288,6 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
   const zoomBadgeHTML = buildLegPhaseBadgeHTML('at', idx, totalWaypointsCount, 'Camera Zoom');
   const headingBadgeHTML = buildLegPhaseBadgeHTML(headingPhase, idx, totalWaypointsCount, 'Heading Mode', headingCustomDesc);
 
-  const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
-
   // Resolve Speed Label
   let resolvedWpSpeed = 4.0;
   if (wp.isTurnaroundPoint && wp.turnaroundSpeed !== null && wp.turnaroundSpeed !== undefined && !isNaN(wp.turnaroundSpeed)) {
@@ -26117,9 +26359,12 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
               Pitch:
               ${pitchBadgeHTML}
             </span>
-            <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-pitch-val">${pitchVal}</span>&deg;</span>
+            <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-pitch-val">${pitchValTextDisplay}</span></span>
           </div>
-          <input type="range" id="edit-wp-pitch" min="-90" max="0" value="${pitchVal}" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer;">
+          <div style="display: flex; gap: 4px; align-items: center;">
+            <input type="range" id="edit-wp-pitch" min="-90" max="60" value="${pitchVal}" style="flex: 1; height: 4px; accent-color: #06b6d4; cursor: pointer;">
+            <button id="edit-wp-pitch-auto-btn" type="button" style="padding: 2px 5px; font-size: 0.65rem; font-weight: 600; border-radius: 4px; background: ${isAutoPitch ? 'rgba(6, 182, 212, 0.2)' : 'rgba(255,255,255,0.06)'}; border: 1px solid ${isAutoPitch ? 'rgba(6, 182, 212, 0.4)' : 'rgba(255,255,255,0.1)'}; color: ${isAutoPitch ? 'var(--accent-cyan)' : 'var(--text-muted)'}; cursor: pointer; line-height: 1; white-space: nowrap;" title="Toggle 3D Auto POI Tracking">🎯 Auto</button>
+          </div>
         </div>
 
         <!-- Speed Override Slider -->
@@ -26705,10 +26950,39 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
   });
 
   pitchSlider.addEventListener('input', () => {
-    pitchValText.textContent = pitchSlider.value;
+    isAutoPitch = false;
+    pitchValText.textContent = `${pitchSlider.value}°`;
+    const autoBtn = popupContent.querySelector('#edit-wp-pitch-auto-btn');
+    if (autoBtn) {
+      autoBtn.style.background = 'rgba(255,255,255,0.06)';
+      autoBtn.style.borderColor = 'rgba(255,255,255,0.1)';
+      autoBtn.style.color = 'var(--text-muted)';
+    }
     updateWarningVisibility();
     throttledUpdateRealtimeMarker();
   });
+
+  const autoPitchBtn = popupContent.querySelector('#edit-wp-pitch-auto-btn');
+  if (autoPitchBtn) {
+    autoPitchBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isAutoPitch = !isAutoPitch;
+      if (isAutoPitch) {
+        pitchSlider.value = autoPitchVal;
+        pitchValText.textContent = `Auto 🎯 (${autoPitchVal}°)`;
+        autoPitchBtn.style.background = 'rgba(6, 182, 212, 0.2)';
+        autoPitchBtn.style.borderColor = 'rgba(6, 182, 212, 0.4)';
+        autoPitchBtn.style.color = 'var(--accent-cyan)';
+      } else {
+        pitchValText.textContent = `${pitchSlider.value}°`;
+        autoPitchBtn.style.background = 'rgba(255,255,255,0.06)';
+        autoPitchBtn.style.borderColor = 'rgba(255,255,255,0.1)';
+        autoPitchBtn.style.color = 'var(--text-muted)';
+      }
+      updateWarningVisibility();
+      throttledUpdateRealtimeMarker();
+    });
+  }
 
   const speedSlider = popupContent.querySelector('#edit-wp-speed');
   const speedValText = popupContent.querySelector('#edit-wp-speed-val');
@@ -27010,7 +27284,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
         wp.y = offsets.y;
       }
       wp.alt = altVal;
-      wp.pitch = pitchVal;
+      wp.pitch = isAutoPitch ? 'auto' : pitchVal;
       wp.heading = headingVal;
       wp.headingMode = mode;
       wp.poiIndex = poiIndexVal;
@@ -27040,7 +27314,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
           rWp.y = offsets.y;
         }
         rWp.alt = altVal;
-        rWp.pitch = pitchVal;
+        rWp.pitch = isAutoPitch ? 'auto' : pitchVal;
         rWp.heading = headingVal;
         rWp.headingMode = mode;
         rWp.poiIndex = poiIndexVal;
@@ -27417,10 +27691,28 @@ function getWaypointHeadingAndPitch(idx, waypoints) {
     ? parseFloat(document.getElementById('grid-rotation').value) || 0
     : 0;
   const heading = getEffectiveWaypointHeading(wp, idx, waypoints, rotationDeg, null, null);
-  const defaultGimbalPitch = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('gimbal-pitch'))
-    ? parseGimbalPitch(document.getElementById('gimbal-pitch').value, -60)
-    : -60;
-  const pitch = (wp.pitch !== undefined && wp.pitch !== null && !isNaN(wp.pitch)) ? wp.pitch : defaultGimbalPitch;
+
+  const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined')
+    ? flightLayers.find(l => l.id === wp.layerId)
+    : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+
+  const defaultGimbalPitch = (wpLayer && wpLayer.gimbalPitch !== undefined)
+    ? wpLayer.gimbalPitch
+    : ((typeof document !== 'undefined' && document && document.getElementById && document.getElementById('gimbal-pitch'))
+      ? document.getElementById('gimbal-pitch').value
+      : -60);
+
+  const rawPitch = (wp.pitch !== undefined && wp.pitch !== null) ? wp.pitch : defaultGimbalPitch;
+  let pitch;
+  if (rawPitch === 'auto' || (typeof rawPitch === 'string' && rawPitch.toLowerCase() === 'auto')) {
+    const targetPoi = (typeof getTargetPoiCoordinates === 'function') ? getTargetPoiCoordinates(wp, wpLayer) : null;
+    pitch = (typeof calculate3DPoiPitch === 'function')
+      ? calculate3DPoiPitch(wp, targetPoi, wp.alt || (wpLayer?.altitude) || 50)
+      : -45;
+  } else {
+    pitch = parseGimbalPitch(rawPitch, -60);
+  }
+
   return { heading, pitch };
 }
 
@@ -27735,6 +28027,54 @@ function recreate3DWaypointsAndPaths() {
     conesGroup.add(localConeGroup);
     coneGroups.push(localConeGroup);
   });
+
+  // Plot 3D Points of Interest (Target Poles with glowing Beacon Spheres)
+  if (typeof pois !== 'undefined' && Array.isArray(pois)) {
+    pois.forEach((poi, pIdx) => {
+      if (!poi) return;
+      let px = poi.x;
+      let py = poi.y;
+      if ((px === undefined || py === undefined) && typeof centerMarker !== 'undefined' && centerMarker) {
+        const cPos = (typeof getMissionOrigin === 'function') ? getMissionOrigin() : { lat: centerMarker.getLatLng().lat, lon: centerMarker.getLatLng().lng };
+        if (poi.lat !== undefined && poi.lon !== undefined && cPos.lat !== undefined && cPos.lon !== undefined) {
+          px = (poi.lon - cPos.lon) * (111320 * Math.cos(cPos.lat * Math.PI / 180));
+          py = (poi.lat - cPos.lat) * 111320;
+        }
+      }
+      if (px !== undefined && py !== undefined) {
+        const pAlt = (poi.alt !== undefined && !isNaN(poi.alt)) ? Number(poi.alt) : 0;
+        const pz = -py;
+        const beaconColor = pIdx === 0 ? 0x06b6d4 : 0xf43f5e;
+
+        // Ground Target Base Ring
+        const baseGeom = new THREE.RingGeometry(1.0, 1.8, 16);
+        const baseMat = new THREE.MeshBasicMaterial({ color: beaconColor, side: THREE.DoubleSide });
+        const baseMesh = new THREE.Mesh(baseGeom, baseMat);
+        baseMesh.rotation.x = Math.PI / 2;
+        baseMesh.position.set(px, 0.05, pz);
+        waypointsGroup.add(baseMesh);
+
+        // Vertical Target Pole from 0 up to pAlt
+        if (pAlt > 0) {
+          const stemGeom = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(px, 0, pz),
+            new THREE.Vector3(px, pAlt, pz)
+          ]);
+          const stemMat = new THREE.LineDashedMaterial({ color: beaconColor, dashSize: 2, gapSize: 1 });
+          const stemLine = new THREE.Line(stemGeom, stemMat);
+          stemLine.computeLineDistances();
+          waypointsGroup.add(stemLine);
+        }
+
+        // Beacon Sphere at target height
+        const beaconGeom = new THREE.SphereGeometry(2.0, 16, 16);
+        const beaconMat = new THREE.MeshBasicMaterial({ color: beaconColor, wireframe: false });
+        const beaconMesh = new THREE.Mesh(beaconGeom, beaconMat);
+        beaconMesh.position.set(px, pAlt, pz);
+        waypointsGroup.add(beaconMesh);
+      }
+    });
+  }
 
   threeScene.add(waypointsGroup);
   threeScene.add(pathsGroup);
@@ -28488,13 +28828,24 @@ function updateFPVEditorUI() {
   if (altSlider) altSlider.value = Math.round(wp.alt);
 
   // Pitch
+  const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
   const gimbalPitchEl = document.getElementById('gimbal-pitch');
-  const defaultGimbalPitch = gimbalPitchEl ? parseGimbalPitch(gimbalPitchEl.value, -60) : -60;
-  const pitch = (wp.pitch !== undefined && wp.pitch !== null && !isNaN(wp.pitch)) ? wp.pitch : defaultGimbalPitch;
+  const defaultGimbalPitch = (wpLayer && wpLayer.gimbalPitch !== undefined) ? wpLayer.gimbalPitch : (gimbalPitchEl ? gimbalPitchEl.value : -60);
+  const rawPitch = (wp.pitch !== undefined && wp.pitch !== null) ? wp.pitch : defaultGimbalPitch;
+  const isAutoPitch = (rawPitch === 'auto') || (typeof rawPitch === 'string' && rawPitch.toLowerCase() === 'auto');
+
+  let resolvedPitch;
+  if (isAutoPitch) {
+    const targetPoi = (typeof getTargetPoiCoordinates === 'function') ? getTargetPoiCoordinates(wp, wpLayer) : null;
+    resolvedPitch = (typeof calculate3DPoiPitch === 'function') ? calculate3DPoiPitch(wp, targetPoi, wp.alt || 50) : -45;
+  } else {
+    resolvedPitch = parseGimbalPitch(rawPitch, -60);
+  }
+
   const pitchVal = document.getElementById('fpv-edit-pitch-val');
   const pitchSlider = document.getElementById('fpv-edit-pitch');
-  if (pitchVal) pitchVal.textContent = Math.round(pitch);
-  if (pitchSlider) pitchSlider.value = Math.round(pitch);
+  if (pitchVal) pitchVal.textContent = isAutoPitch ? `Auto 🎯 (${Math.round(resolvedPitch)})` : Math.round(resolvedPitch);
+  if (pitchSlider) pitchSlider.value = Math.round(resolvedPitch);
 
   // Lat / Lon precision inputs
   const latInput = document.getElementById('fpv-edit-lat');
