@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.94.14] - 2026-09-11
+
+### Fixed — Configuration Settings Modal Layout, Custom Cyber Scrollbar & Structured Cards
+- **Eliminated Edge-Clipping & Zero Padding:** Fixed `.modal-content` inside `#config-modal` by replacing `padding: 20px 0 10px 0;` with proper `padding: 20px 24px;`, giving labels and inputs proper breathing room and preventing elements from pressing against glass borders.
+- **Custom Cyber Scrollbar:** Added custom 6px translucent cyan webkit and CSS scrollbar styles for `.modal-content` (`scrollbar-width: thin; scrollbar-color: rgba(56, 189, 248, 0.25) rgba(15, 23, 42, 0.4);`), completely eliminating the stark white/gray native Windows scrollbar.
+- **Enhanced Modal Dimensions:** Expanded `#config-modal .modal` from cramped `max-width: 450px;` to `max-width: 540px; width: 92vw; max-height: 88dvh;` to eliminate awkward dropdown cutoffs and provide an ergonomic reading width.
+- **Structured Visual Cards:** Organized settings into 5 clean, distinct sub-cards (`General & Display`, `Map & Camera Visuals`, `Menu Minimization Options`, `Multi-Vendor Autopilots`, and `Storage & Controlled Reset`) with subtle dark surfaces and category header badges.
+
 ## [1.94.13] - 2026-09-11
 
 ### Added — Dynamic Telemetry Wiring for Trajectory Accuracy & Battery Profile Cards

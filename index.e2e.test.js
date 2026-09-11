@@ -4616,6 +4616,74 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       if (modal) modal.classList.add('hidden');
     });
   });
+
+  test('E2E: Settings Configuration modal renders with expanded width, comfortable padding, 5 structured cards, and footer Save & Close (v1.94.14)', async () => {
+    // 1. Open Configuration Settings Modal via #config-btn
+    await page.locator('#config-btn').click();
+    await page.waitForTimeout(150);
+
+    const modalState = await page.evaluate(() => {
+      const configModal = document.getElementById('config-modal');
+      if (!configModal || configModal.classList.contains('hidden')) {
+        return { isVisible: false };
+      }
+
+      const modalDialog = configModal.querySelector('.modal');
+      const modalContent = configModal.querySelector('.modal-content');
+      const cards = configModal.querySelectorAll('.settings-card');
+      const style = window.getComputedStyle(modalContent);
+
+      return {
+        isVisible: true,
+        dialogWidth: modalDialog ? modalDialog.offsetWidth : 0,
+        paddingLeft: parseFloat(style.paddingLeft) || 0,
+        paddingRight: parseFloat(style.paddingRight) || 0,
+        paddingTop: parseFloat(style.paddingTop) || 0,
+        paddingBottom: parseFloat(style.paddingBottom) || 0,
+        cardCount: cards.length,
+        hasGeneralCard: cards.length >= 1 && cards[0].textContent.includes('General & Display'),
+        hasVisualsCard: cards.length >= 2 && cards[1].textContent.includes('Map & Camera Visuals'),
+        hasMinimizationCard: cards.length >= 3 && cards[2].textContent.includes('Menu Minimization Options'),
+        hasMultiVendorCard: cards.length >= 4 && cards[3].textContent.includes('Multi-Vendor Autopilots'),
+        hasStorageCard: cards.length >= 5 && cards[4].textContent.includes('Storage & Controlled Reset')
+      };
+    });
+
+    assert.strictEqual(modalState.isVisible, true, 'Configuration modal must be visible after clicking #config-btn');
+    assert.ok(modalState.dialogWidth >= 500, `Modal width should be >= 500px (got ${modalState.dialogWidth}px)`);
+    assert.ok(modalState.paddingLeft >= 20, `Modal content paddingLeft must be >= 20px (got ${modalState.paddingLeft}px)`);
+    assert.ok(modalState.paddingRight >= 20, `Modal content paddingRight must be >= 20px (got ${modalState.paddingRight}px)`);
+    assert.ok(modalState.paddingTop >= 20, `Modal content paddingTop must be >= 20px (got ${modalState.paddingTop}px)`);
+    assert.ok(modalState.paddingBottom >= 20, `Modal content paddingBottom must be >= 20px (got ${modalState.paddingBottom}px)`);
+    assert.strictEqual(modalState.cardCount, 5, 'Modal must contain exactly 5 structured settings cards');
+    assert.ok(modalState.hasGeneralCard, 'Modal must have General & Display card');
+    assert.ok(modalState.hasVisualsCard, 'Modal must have Map & Camera Visuals card');
+    assert.ok(modalState.hasMinimizationCard, 'Modal must have Menu Minimization Options card');
+    assert.ok(modalState.hasMultiVendorCard, 'Modal must have Multi-Vendor Autopilots card');
+    assert.ok(modalState.hasStorageCard, 'Modal must have Storage & Controlled Reset card');
+
+    // 2. Click Save & Close footer button and verify modal closes
+    await page.locator('#close-config-footer-btn').click();
+    await page.waitForTimeout(100);
+
+    const isHiddenAfterFooterClose = await page.evaluate(() => {
+      const configModal = document.getElementById('config-modal');
+      return configModal ? configModal.classList.contains('hidden') : false;
+    });
+    assert.strictEqual(isHiddenAfterFooterClose, true, 'Modal must close when clicking #close-config-footer-btn');
+
+    // 3. Re-open and verify close with top-right 'X' button (#close-config-btn)
+    await page.locator('#config-btn').click();
+    await page.waitForTimeout(100);
+    await page.locator('#close-config-btn').click();
+    await page.waitForTimeout(100);
+
+    const isHiddenAfterXClose = await page.evaluate(() => {
+      const configModal = document.getElementById('config-modal');
+      return configModal ? configModal.classList.contains('hidden') : false;
+    });
+    assert.strictEqual(isHiddenAfterXClose, true, 'Modal must close when clicking #close-config-btn');
+  });
 });
 
 
