@@ -5728,6 +5728,17 @@ function initUIEventListeners() {
   if (tabWpml) tabWpml.addEventListener('click', () => switchInspectorTab('wpml'));
   if (tabTmpl) tabTmpl.addEventListener('click', () => switchInspectorTab('tmpl'));
 
+  const rulesDetailsEl = document.getElementById('inspector-rules-details');
+  if (rulesDetailsEl) {
+    rulesDetailsEl.addEventListener('toggle', () => {
+      rulesDetailsEl.setAttribute('data-user-interacted', 'true');
+      const expandLabel = document.getElementById('inspector-rules-expand-label');
+      if (expandLabel) {
+        expandLabel.textContent = rulesDetailsEl.open ? 'Collapse details ▴' : 'Expand details ▾';
+      }
+    });
+  }
+
 
   // Mobile & Desktop Sidebar Toggle
   const sidebarToggleBtn = document.getElementById('sidebar-toggle');
@@ -16259,6 +16270,104 @@ const KMZInspector = {
       summaryRules.style.color = report.valid ? '#34d399' : '#f87171';
     }
 
+    // 1. Update Executive Readiness Hero Card
+    const execCard = document.getElementById('inspector-executive-card');
+    const execIcon = document.getElementById('inspector-executive-icon');
+    const execTitle = document.getElementById('inspector-executive-title');
+    const execDesc = document.getElementById('inspector-executive-desc');
+    const execBadge = document.getElementById('inspector-executive-badge');
+    const rulesDetails = document.getElementById('inspector-rules-details');
+    const rulesExpandLabel = document.getElementById('inspector-rules-expand-label');
+    const copyAntigravityBtn = document.getElementById('inspector-copy-antigravity-btn');
+
+    const hasWarnings = Array.isArray(report.warnings) && report.warnings.length > 0;
+    const isFullyCompliant = report.valid && !hasWarnings;
+
+    if (execCard && execTitle) {
+      if (isFullyCompliant) {
+        execCard.style.background = 'rgba(16, 185, 129, 0.08)';
+        execCard.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+        if (execIcon) {
+          execIcon.textContent = '✓';
+          execIcon.style.color = '#34d399';
+          execIcon.style.background = 'rgba(16, 185, 129, 0.18)';
+          execIcon.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+        }
+        execTitle.textContent = '100% DJI Fly Ready';
+        execTitle.style.color = '#34d399';
+        if (execDesc) execDesc.textContent = `All ${report.rulesPassed || 10} firmware rules and spline tangent constraints verified for ${droneText}. Ready for RC 2 controller upload.`;
+        if (execBadge) {
+          execBadge.textContent = `${report.rulesPassed}/10 Passed`;
+          execBadge.style.color = '#34d399';
+          execBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+          execBadge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+        }
+        // Keep rules collapsed by default when fully clean
+        if (rulesDetails && !rulesDetails.hasAttribute('data-user-interacted')) {
+          rulesDetails.open = false;
+        }
+        if (rulesExpandLabel) rulesExpandLabel.textContent = 'Expand details ▾';
+        if (copyAntigravityBtn) copyAntigravityBtn.style.display = 'none';
+      } else if (report.valid && hasWarnings) {
+        execCard.style.background = 'rgba(245, 158, 11, 0.08)';
+        execCard.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+        if (execIcon) {
+          execIcon.textContent = '⚠️';
+          execIcon.style.color = '#fbbf24';
+          execIcon.style.background = 'rgba(245, 158, 11, 0.18)';
+          execIcon.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+        }
+        execTitle.textContent = 'DJI Fly Advisory Warnings';
+        execTitle.style.color = '#fbbf24';
+        if (execDesc) execDesc.textContent = `${report.warnings.length} advisory warning(s) detected. Mission will fly, but review recommendations below.`;
+        if (execBadge) {
+          execBadge.textContent = `${report.warnings.length} Warning(s)`;
+          execBadge.style.color = '#fbbf24';
+          execBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+          execBadge.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+        }
+        if (rulesDetails && !rulesDetails.hasAttribute('data-user-interacted')) {
+          rulesDetails.open = true;
+        }
+        if (rulesExpandLabel) rulesExpandLabel.textContent = 'Collapse details ▴';
+        if (copyAntigravityBtn) {
+          copyAntigravityBtn.style.display = 'inline-flex';
+          copyAntigravityBtn.style.background = 'rgba(245, 158, 11, 0.15)';
+          copyAntigravityBtn.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+          copyAntigravityBtn.style.color = '#fbbf24';
+        }
+      } else {
+        execCard.style.background = 'rgba(239, 68, 68, 0.08)';
+        execCard.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+        if (execIcon) {
+          execIcon.textContent = '✕';
+          execIcon.style.color = '#f87171';
+          execIcon.style.background = 'rgba(239, 68, 68, 0.18)';
+          execIcon.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+        }
+        execTitle.textContent = 'DJI Fly Incompatibility Detected';
+        execTitle.style.color = '#f87171';
+        const errCount = (report.errors && report.errors.length) || (10 - report.rulesPassed);
+        if (execDesc) execDesc.textContent = `${errCount} rule violation(s) may cause RC 2 controller to abort upon pressing "Go".`;
+        if (execBadge) {
+          execBadge.textContent = `${report.rulesPassed}/10 Passed`;
+          execBadge.style.color = '#f87171';
+          execBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+          execBadge.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+        }
+        // Auto-expand on error so pilot immediately sees what's failing
+        if (rulesDetails) rulesDetails.open = true;
+        if (rulesExpandLabel) rulesExpandLabel.textContent = 'Collapse details ▴';
+        if (copyAntigravityBtn) {
+          copyAntigravityBtn.style.display = 'inline-flex';
+          copyAntigravityBtn.style.background = 'rgba(239, 68, 68, 0.15)';
+          copyAntigravityBtn.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+          copyAntigravityBtn.style.color = '#f87171';
+        }
+      }
+    }
+
+    // 2. Render the 10 rules inside the container
     const listContainer = document.getElementById('inspector-checklist-container');
     if (listContainer) {
       listContainer.innerHTML = report.rules.map(r => `
@@ -16276,6 +16385,7 @@ const KMZInspector = {
       `).join('');
     }
 
+    // 3. Populate raw XML pre blocks
     const wpmlEl = document.getElementById('inspector-xml-wpml');
     if (wpmlEl) wpmlEl.textContent = this.activeWpmlXml;
     const tmplEl = document.getElementById('inspector-xml-tmpl');
