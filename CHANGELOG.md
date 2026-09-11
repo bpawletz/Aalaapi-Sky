@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.94.8] - 2026-09-11
+
+### Fixed — 3D Diagnostics Replay Showing Active Workspace Instead of Selected Flight
+- **RC2 Flight Log Mission Date-Matching:** The companion's `/api/flight-telemetry` endpoint now queries SQLite `mission_diagnostics` matching the flight log's recording date (e.g. `2026-09-06`). Instead of synthesizing a fake track from whatever active pattern was open in the browser, the endpoint now delivers the true archived telemetry points (e.g., 226 points) and original planned waypoints (e.g., 32 wps) corresponding to the recorded flight.
+- **Eliminated Active Workspace Fallback:** In `loadSelectedFlight`, the error catch handlers and missing-data branches previously defaulted to `generateTelemetryFromWaypoints(wps, ...)` using the active workspace waypoints. This caused any unresolvable or empty flight to be replaced by the active browser mission. The fallback is now completely removed; empty or failed loads cleanly set telemetry to `null`.
+- **Diagnostics Points Validation & Null Safety:** `loadSelectedFlight` now strictly validates `Array.isArray(data.mission.diagnostics.points) && data.mission.diagnostics.points.length > 0` before setting `telemetryData`. If telemetry points are not cached, it attempts to reconstruct the path from `wpml_xml` or `plan.waypoints`. `updateStatsUI` is now fully null-safe and does not throw when `points` is missing or empty.
+- **Test Archive Directory Isolation:** Isolated the unit test `restoreFromDiskArchives` to an `os.tmpdir()` sandbox. Previously, it wrote `mock1_diag.json`, `mock2_diag.json`, and `mock3_diag.json` (`arch1.zip`, `arch2.zip`, `arch3.zip`) directly into `scratch/mission_archives/`, which the companion continually restored into `missions.db`, crowding out real missions from the dropdown.
+- **3D Camera Trajectory Auto-Framing:** `init3DScene()` now calculates the bounding sphere of the loaded trajectory mesh and smoothly centers the orbit controls target and camera position directly on the flight path, preventing distant or offset trajectories.
+- **Regression Tests:** Added tests asserting date-matching resolution in the companion, null-safety of `updateStatsUI`, and strict refusal to fall back to active workspace waypoints on empty archive missions.
+
 ## [1.94.7] - 2026-09-11
 
 ### Fixed — 3D Viewer Shows Wrong Flight Due to Async Race Condition

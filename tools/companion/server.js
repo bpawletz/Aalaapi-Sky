@@ -1287,9 +1287,55 @@ const server = http.createServer(async (req, res) => {
           const waypoints = payload.waypoints || [];
           const flightId = payload.flightId || url.searchParams.get('file') || '';
           const options = Object.assign({}, payload.options || {}, { flightId });
-          const telemetry = generateTelemetryFromWaypoints(waypoints, options);
-          const comparison = computeFlightComparison(payload.planned || { waypointCount: waypoints.length, altitude: options.altitude }, telemetry);
-          logInfo('[TELEMETRY API]', `Solved flight track for "${flightId || 'Active Mission'}" (${telemetry.points.length} pts, ${telemetry.durationFormatted}, ${telemetry.photoCount} photos)`);
+
+          let telemetry = null;
+          let comparison = null;
+
+          // 1. Check if flightId matches a saved mission in SQLite by date or filename
+          if (flightId && diagDb && diagDb.db) {
+            const dateMatch = flightId.match(/FlightRecord_(\d{4}-\d{2}-\d{2})/);
+            if (dateMatch) {
+              const dateStr = dateMatch[1];
+              try {
+                const stmt = diagDb.db.prepare(
+                  "SELECT * FROM mission_diagnostics WHERE created_at LIKE ? AND diag_json IS NOT NULL AND diag_json != '' ORDER BY id DESC LIMIT 1"
+                );
+                const matchedRow = stmt.get(dateStr + '%');
+                if (matchedRow && matchedRow.diag_json) {
+                  const savedDiag = JSON.parse(matchedRow.diag_json);
+                  if (savedDiag && Array.isArray(savedDiag.points) && savedDiag.points.length > 0) {
+                    telemetry = savedDiag;
+                    let plannedWps = null;
+                    let plannedStats = {
+                      waypointCount: matchedRow.waypoint_count,
+                      altitude: matchedRow.altitude,
+                      totalDistance: matchedRow.total_distance
+                    };
+                    if (matchedRow.plan_json) {
+                      try {
+                        const plan = JSON.parse(matchedRow.plan_json);
+                        if (Array.isArray(plan.waypoints) && plan.waypoints.length > 0) plannedWps = plan.waypoints;
+                        if (plan.statistics) plannedStats = plan.statistics;
+                      } catch (errPlan) {}
+                    }
+                    telemetry.plannedWaypoints = plannedWps;
+                    comparison = computeFlightComparison(plannedStats, telemetry);
+                    logSuccess('[TELEMETRY RESOLVED]', `Matched flight "${flightId}" to archived mission ${matchedRow.uuid} (${telemetry.points.length} pts, ${telemetry.durationFormatted})`);
+                  }
+                }
+              } catch (dbErr) {
+                logWarn('[TELEMETRY DB MATCH]', `Could not query mission_diagnostics: ${dbErr.message}`);
+              }
+            }
+          }
+
+          // 2. Fall back to synthetic waypoint trajectory solver if no archived mission matched
+          if (!telemetry) {
+            telemetry = generateTelemetryFromWaypoints(waypoints, options);
+            comparison = computeFlightComparison(payload.planned || { waypointCount: waypoints.length, altitude: options.altitude }, telemetry);
+            logInfo('[TELEMETRY API]', `Solved synthetic flight track for "${flightId || 'Active Mission'}" (${telemetry.points.length} pts, ${telemetry.durationFormatted}, ${telemetry.photoCount} photos)`);
+          }
+
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ success: true, telemetry, comparison }));
         } catch (e) {
