@@ -3318,7 +3318,7 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     } finally {
       global.document.getElementById = origGetElementById;
       global.fetch = origFetch;
-      vm.runInThisContext('generateTelemetryFromWaypoints = _origGTFW;');
+      vm.runInThisContext('generateTelemetryFromWaypoints = _origGTFW; FlightDiagnostics.selectedFlightId = null; FlightDiagnostics.telemetryData = null;');
     }
   });
 
@@ -4671,6 +4671,98 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
       fd.seekTo = origSeek;
       fd.pause = origPause;
     }
+  });
+
+  test('FlightDiagnostics.updateStatsUI handles missing or empty telemetryData.points gracefully without throwing (regression)', () => {
+    const fd = vm.runInThisContext('FlightDiagnostics');
+    const origTelemetry = fd.telemetryData;
+    const origFlightId = fd.selectedFlightId;
+
+    try {
+      // 1. null telemetryData
+      fd.telemetryData = null;
+      assert.doesNotThrow(() => fd.updateStatsUI(), 'Must not throw when telemetryData is null');
+
+      // 2. telemetryData with no points property
+      fd.telemetryData = { uuid: 'test_empty', filename: 'test.zip' };
+      assert.doesNotThrow(() => fd.updateStatsUI(), 'Must not throw when telemetryData.points is undefined');
+
+      // 3. telemetryData with empty points array
+      fd.telemetryData = { uuid: 'test_empty', points: [] };
+      assert.doesNotThrow(() => fd.updateStatsUI(), 'Must not throw when telemetryData.points is empty');
+    } finally {
+      fd.telemetryData = origTelemetry;
+      fd.selectedFlightId = origFlightId;
+    }
+  });
+
+  test('FlightDiagnostics.loadSelectedFlight does not fall back to active workspace when mission payload has empty diagnostics and plan (regression)', async () => {
+    const fd = vm.runInThisContext('FlightDiagnostics');
+    const origFetch = global.fetch;
+    const origTelemetry = fd.telemetryData;
+    const origFlightId = fd.selectedFlightId;
+    const origInit = fd.init3DScene;
+    const origUpdate = fd.updateStatsUI;
+    const origSeek = fd.seekTo;
+    const origPause = fd.pause;
+
+    fd.init3DScene = () => {};
+    fd.updateStatsUI = () => {};
+    fd.seekTo = () => {};
+    fd.pause = () => {};
+
+    try {
+      // Mock fetch returning a mission with empty diagnostics (no points) and empty plan (like mock3_diag.json / arch3.zip)
+      global.fetch = async () => ({
+        ok: true,
+        json: async () => ({
+          success: true,
+          mission: {
+            uuid: 'mock_empty',
+            filename: 'empty.zip',
+            waypoint_count: 5,
+            diagnostics: { uuid: 'mock_empty', filename: 'empty.zip' },
+            plan: {}
+          }
+        })
+      });
+
+      await fd.loadSelectedFlight('diag:mock_empty');
+
+      // Must NOT fall back to active workspace waypoints
+      assert.strictEqual(fd.telemetryData, null, 'telemetryData must be null for empty archive mission, NOT active workspace');
+      assert.strictEqual(fd.plannedWaypoints, null, 'plannedWaypoints must be null when mission has no waypoints');
+    } finally {
+      global.fetch = origFetch;
+      fd.telemetryData = origTelemetry;
+      fd.selectedFlightId = origFlightId;
+      fd.init3DScene = origInit;
+      fd.updateStatsUI = origUpdate;
+      fd.seekTo = origSeek;
+      fd.pause = origPause;
+    }
+  });
+
+  test('Companion date matching accurately resolves archived mission diagnostics for RC2 flight logs (regression)', () => {
+    const { DiagnosticsDatabase, DEFAULT_DB_PATH } = require('./tools/companion/diagnostics_db.js');
+    const db = new DiagnosticsDatabase(DEFAULT_DB_PATH);
+
+    const flightId = 'FlightRecord_2026-09-06_[08-06-44].txt';
+    const dateMatch = flightId.match(/FlightRecord_(\d{4}-\d{2}-\d{2})/);
+    assert.ok(dateMatch, 'Must extract date from flight record filename');
+
+    const dateStr = dateMatch[1];
+    const stmt = db.db.prepare(
+      "SELECT * FROM mission_diagnostics WHERE created_at LIKE ? AND diag_json IS NOT NULL AND diag_json != '' ORDER BY id DESC LIMIT 1"
+    );
+    const matchedRow = stmt.get(dateStr + '%');
+    assert.ok(matchedRow, 'Must find archived mission matching 2026-09-06 flight date');
+    assert.strictEqual(matchedRow.uuid, '354A8F93-759C-42C3-A8D5-746F79C7622A');
+
+    const diag = JSON.parse(matchedRow.diag_json);
+    assert.ok(Array.isArray(diag.points), 'Archived diagnostics must contain points array');
+    assert.strictEqual(diag.points.length, 226, 'Should have 226 telemetry points for 2026-09-06 flight');
+    assert.strictEqual(matchedRow.waypoint_count, 32, 'Should have 32 planned waypoints');
   });
 });
 
@@ -6809,33 +6901,37 @@ describe('Multiple Mission Exports & Modal Close Shortcuts Tests (v1.60.2)', () 
     const { DiagnosticsDatabase } = require('./tools/companion/diagnostics_db.js');
     const path = require('path');
     const fs = require('fs');
+    const os = require('os');
     const db = new DiagnosticsDatabase(':memory:');
     
-    const archiveDir = path.resolve(__dirname, 'scratch/mission_archives');
+    const archiveDir = path.join(os.tmpdir(), 'aalaapi_test_archives_' + Date.now() + '_' + Math.random().toString(36).slice(2));
     if (!fs.existsSync(archiveDir)) {
       fs.mkdirSync(archiveDir, { recursive: true });
     }
-    const mockFiles = [
-      { name: 'mock1_diag.json', data: { uuid: 'm1', filename: 'arch1.zip', waypointCount: 2 } },
-      { name: 'mock2_diag.json', data: { uuid: 'm2', filename: 'arch2.zip', waypointCount: 16 } },
-      { name: 'mock3_diag.json', data: { uuid: 'm3', filename: 'arch3.zip', waypointCount: 5 } }
-    ];
-    for (const mock of mockFiles) {
-      const filePath = path.join(archiveDir, mock.name);
-      if (!fs.existsSync(filePath)) {
+    try {
+      const mockFiles = [
+        { name: 'mock1_diag.json', data: { uuid: 'm1', filename: 'arch1.zip', waypointCount: 2 } },
+        { name: 'mock2_diag.json', data: { uuid: 'm2', filename: 'arch2.zip', waypointCount: 16 } },
+        { name: 'mock3_diag.json', data: { uuid: 'm3', filename: 'arch3.zip', waypointCount: 5 } }
+      ];
+      for (const mock of mockFiles) {
+        const filePath = path.join(archiveDir, mock.name);
         fs.writeFileSync(filePath, JSON.stringify(mock.data));
       }
+
+      const restored = db.restoreFromDiskArchives(archiveDir);
+      assert.strictEqual(restored >= 3, true, 'Must restore at least 3 disk archives');
+
+      const history = db.getHistory();
+      assert.strictEqual(history.length >= 3, true);
+      assert.ok(history.some(h => h.waypoint_count === 2));
+      assert.ok(history.some(h => h.waypoint_count === 16));
+    } finally {
+      try {
+        fs.rmSync(archiveDir, { recursive: true, force: true });
+      } catch (e) {}
+      db.close();
     }
-
-    const restored = db.restoreFromDiskArchives(archiveDir);
-    assert.strictEqual(restored >= 3, true, 'Must restore at least 3 disk archives');
-
-    const history = db.getHistory();
-    assert.strictEqual(history.length >= 3, true);
-    assert.ok(history.some(h => h.waypoint_count === 2));
-    assert.ok(history.some(h => h.waypoint_count === 16));
-
-    db.close();
   });
 
   test('FlightDiagnostics modal handles Escape key and backdrop click closing', () => {
@@ -14266,16 +14362,24 @@ describe('v1.94.3 Pre-Flight KMZ Audit & Executive Readiness Redesign Tests', ()
 });
 
 describe('v1.94.4 Real-Time Live METAR Ingestion & Flight Category Tests', () => {
-  test('Version consistency: v1.94.7 is registered across package.json, CHANGELOG.md, and template (regression: 3D viewer wrong flight race condition fix)', () => {
+  test('Version consistency: v1.94.8 is registered across package.json, CHANGELOG.md, and template (regression: RC2 log date-matching and active workspace fallback elimination)', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.94.7', 'package.json version must be 1.94.7');
+    assert.strictEqual(pkg.version, '1.94.8', 'package.json version must be 1.94.8');
 
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.94.8] - 2026-09-11'), 'CHANGELOG.md must contain 1.94.8 entry');
+
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateHtml.includes('>v1.94.8</span>'), 'index_template.html must contain header version badge v1.94.8');
+    assert.ok(templateHtml.includes('Version 1.94.8</span>'), 'index_template.html must contain About modal version tag 1.94.8');
+    assert.ok(templateHtml.includes('Changelog (v1.94.8):'), 'index_template.html must contain Changelog (v1.94.8) header');
+  });
+
+  test('Version consistency: v1.94.7 changelog entry is preserved in CHANGELOG.md and template', () => {
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.94.7] - 2026-09-11'), 'CHANGELOG.md must contain 1.94.7 entry');
 
     const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(templateHtml.includes('>v1.94.7</span>'), 'index_template.html must contain header version badge v1.94.7');
-    assert.ok(templateHtml.includes('Version 1.94.7</span>'), 'index_template.html must contain About modal version tag 1.94.7');
     assert.ok(templateHtml.includes('Changelog (v1.94.7):'), 'index_template.html must contain Changelog (v1.94.7) header');
   });
 
