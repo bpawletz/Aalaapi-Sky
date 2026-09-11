@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.94.0] - 2026-09-11
+
+### Added & Architectural Refinement — Tier 1 Global Camera Aspect Ratio & Multi-Pattern Integration
+- **Tier 1 Global Camera Aspect Ratio Architecture:** Relocated the Camera Sensor Aspect Ratio selector (`#camera-aspect-ratio`) to **Section 3: Drone Hardware & Export Profile** as an aircraft-level hardware setting. Accurately aligns the mission planner with drone flight reality where sensor format cannot be toggled mid-flight during automated missions.
+- **Explicit Pre-Flight RC Setting Guidance:** Added prominent pre-flight pilot callouts below the selector informing field pilots to match their camera format (`4:3 Photo` vs `16:9 Video`) in *DJI Fly > Camera Settings* on the RC controller before takeoff, highlighting that mission waypoint spacing directly depends on this setting.
+- **Section 2 Optics Read-Only Indicator & Quick Jump:** Replaced the layer-level dropdown in Section 2 with an informative read-only badge (`#layer-optics-aspect-display`) showing the active global ratio and an interactive jump button (`#jump-to-aspect-ratio-btn`) that uncollapses Section 3, scrolls directly to the selector, and pulses with `.highlight-glow`.
+- **Universal Multi-Pattern Application:** Camera aspect ratio changes dynamically adjust vertical field of view ($VFOV = 55.2^\circ$ for 4:3 vs $44.2^\circ$ for 16:9) and along-track footprint across **all flight patterns**:
+  - **2D Nadir Grid & 3D Double Grid:** Automatically adjusts along-track photo trigger interval ($s_{\text{photo}}$) to preserve the requested front overlap (e.g. 80%), preventing photogrammetry holes in 16:9 video surveys.
+  - **3D Tower Audit:** Recalculates vertical ring separation to maintain vertical inspection coverage.
+  - **Orbit & Multi-Orbit:** Adjusts circular trigger intervals and vertical framing to prevent clipping structure tops and bases.
+  - **Target Splat:** Updates camera look-ahead standoff distance, lateral frustum culling, and sufficiency check.
+  - **3D Frustums & 2D Footprints:** Rectangular 3D camera pyramids and 2D ground footprint overlays dynamically re-project in true 4:3 or 16:9 proportions.
+- **Enhanced Export KMZ Safety & Pre-Flight Checklist:** Updated the pre-export confirmation dialog to explicitly highlight the active aspect ratio (both 4:3 and 16:9), explain that waypoint spacing was calculated for that specific format, and detail essential on-drone settings (Manual Focus locked to infinity, Shutter Priority 1/1000s+, max altitude, GPS lock, and safe RTH height).
+
 ## [1.93.0] - 2026-09-10
 
 ### Added & Improved — Target Splat Survey Dimension Sufficiency Warnings & 1-Click Auto-Fit

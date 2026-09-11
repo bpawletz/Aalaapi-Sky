@@ -3216,10 +3216,29 @@ function setCameraAspectRatio(ratio, skipUpdate = false) {
         badge.style.color = 'var(--accent-cyan)';
       }
     }
+    const layerOpticsBadge = document.getElementById('layer-optics-aspect-display');
+    if (layerOpticsBadge) {
+      if (normRatio === '16:9') {
+        layerOpticsBadge.textContent = '16:9 Video';
+        layerOpticsBadge.style.background = 'rgba(245, 158, 11, 0.15)';
+        layerOpticsBadge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+        layerOpticsBadge.style.color = '#fbbf24';
+      } else {
+        layerOpticsBadge.textContent = '4:3 Photo';
+        layerOpticsBadge.style.background = 'rgba(6, 182, 212, 0.15)';
+        layerOpticsBadge.style.borderColor = 'rgba(6, 182, 212, 0.3)';
+        layerOpticsBadge.style.color = 'var(--accent-cyan)';
+      }
+    }
     const hfovEl = document.getElementById('camera-hfov');
     const vfovEl = document.getElementById('camera-vfov');
     if (hfovEl) hfovEl.value = String(CAMERA_HFOV);
     if (vfovEl) vfovEl.value = String(CAMERA_VFOV);
+  }
+  if (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) {
+    flightLayers.forEach(l => {
+      l.cameraAspectRatio = normRatio;
+    });
   }
   if (!skipUpdate) {
     const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
@@ -4824,6 +4843,24 @@ function initUIEventListeners() {
     });
   }
 
+  const jumpToAspectBtn = document.getElementById('jump-to-aspect-ratio-btn');
+  if (jumpToAspectBtn) {
+    jumpToAspectBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const failsafesSection = document.getElementById('mission-failsafes-section');
+      if (failsafesSection && failsafesSection.classList.contains('collapsed')) {
+        failsafesSection.classList.remove('collapsed');
+      }
+      const aspectSelect = document.getElementById('camera-aspect-ratio');
+      if (aspectSelect) {
+        aspectSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        try { aspectSelect.focus(); } catch (err) {}
+        aspectSelect.classList.add('highlight-glow');
+        setTimeout(() => aspectSelect.classList.remove('highlight-glow'), 1800);
+      }
+    });
+  }
+
   const targetFramingEl = document.getElementById('target-splat-framing-mode');
   if (targetFramingEl) {
     targetFramingEl.addEventListener('change', () => {
@@ -6403,7 +6440,7 @@ function initClickableUnits() {
 function togglePatternParameters() {
   if (typeof document === 'undefined' || !document || !document.getElementById) return;
   const gridTypeEl = document.getElementById('grid-type');
-  if (!gridTypeEl) return;
+  if (!gridTypeEl || !gridTypeEl.value) return;
   const gridType = gridTypeEl.value;
 
   const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
@@ -7090,6 +7127,20 @@ function syncDisplayValues() {
   const aspectSelect = document.getElementById('camera-aspect-ratio');
   if (aspectSelect && aspectSelect.value && aspectSelect.value !== CAMERA_ASPECT_RATIO) {
     setCameraAspectRatio(aspectSelect.value, true);
+  }
+  const layerOpticsBadge = document.getElementById('layer-optics-aspect-display');
+  if (layerOpticsBadge) {
+    if (CAMERA_ASPECT_RATIO === '16:9') {
+      layerOpticsBadge.textContent = '16:9 Video';
+      layerOpticsBadge.style.background = 'rgba(245, 158, 11, 0.15)';
+      layerOpticsBadge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+      layerOpticsBadge.style.color = '#fbbf24';
+    } else {
+      layerOpticsBadge.textContent = '4:3 Photo';
+      layerOpticsBadge.style.background = 'rgba(6, 182, 212, 0.15)';
+      layerOpticsBadge.style.borderColor = 'rgba(6, 182, 212, 0.3)';
+      layerOpticsBadge.style.color = 'var(--accent-cyan)';
+    }
   }
   const hfovSlider = document.getElementById('camera-hfov');
   const vfovSlider = document.getElementById('camera-vfov');
@@ -10312,9 +10363,9 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
   if (exclusionZonesGroup) exclusionZonesGroup.clearLayers();
   if (targetPolygonGroup) targetPolygonGroup.clearLayers();
   if (gridBoundsPolygon && map && typeof map.removeLayer === 'function') map.removeLayer(gridBoundsPolygon);
-  waypointMarkersGroup.clearLayers();
+  if (waypointMarkersGroup) waypointMarkersGroup.clearLayers();
   if (pitchLabelsGroup) pitchLabelsGroup.clearLayers();
-  photoMarkersGroup.clearLayers();
+  if (photoMarkersGroup) photoMarkersGroup.clearLayers();
   if (roadPathGroup) roadPathGroup.clearLayers();
 
   // Draw 3D Exclusion Zones
@@ -12983,20 +13034,35 @@ function exportKMZ() {
     warningMessage += `• Geolocation Check: Your current pilot position is more than ${limitStr} away from the takeoff area (Takeoff distance: ${formattedDist}). Please ensure you are at the correct flight location.\n\n`;
   }
 
-  // Always define the "Press Go" warning
+  // Pre-flight Drone Camera & Safety Checklist (v1.94.0)
+  const isVideoAspect = (typeof CAMERA_ASPECT_RATIO === 'string' && CAMERA_ASPECT_RATIO === '16:9');
+  const aspectFormatStr = isVideoAspect ? '16:9 Video (Widescreen Crop - 69.7° × 44.2°)' : '4:3 Photo (Full Sensor Standard - 69.7° × 55.2°)';
+  const aspectNotice = 
+    `🚨 CRITICAL ON-DRONE CAMERA SETTING:\n` +
+    `  • Mission Camera Aspect Ratio: ${aspectFormatStr}\n` +
+    `  • In DJI Fly > Camera Settings on your controller, you MUST set the camera to ${isVideoAspect ? '16:9 (Video)' : '4:3 (Photo)'} before takeoff.\n` +
+    `  • Waypoint line spacing and photo triggers were mathematically calculated for this ratio to achieve ${Math.round(overlapFront * 100)}% front / ${Math.round(overlapSide * 100)}% side overlap. Flying with the wrong ratio will cause insufficient photogrammetric overlap or framing errors!\n\n`;
+
+  const onDroneBestSettings = 
+    `📋 RECOMMENDED ON-DRONE SETTINGS (Not Controllable via KMZ):\n` +
+    `  1. Focus Mode: Set to Manual Focus (MF) locked to infinity (∞) before pressing Go to eliminate autofocus hunting between waypoints.\n` +
+    `  2. Shutter / Exposure: Use Shutter Priority (1/1000s or faster for sharp imagery) or Manual Exposure to eliminate motion blur.\n` +
+    `  3. Obstacle Sensing: Verify APAS / Obstacle Avoidance is configured appropriately for the site in DJI Fly.\n` +
+    `  4. Max Flight Altitude: Ensure DJI Fly safety altitude limit exceeds mission altitude (${altitude}m).\n` +
+    `  5. Return-to-Home (RTH): Confirm Home Point is updated and RTH height clears all surrounding obstacles.\n\n`;
+
   const pressGoWarning = 
-    `⚠️ "Press Go" Upload Checklist:\n` +
-    `Waypoint missions may fail to start when you press "Go" as this app is in development, or if:\n` +
-    `  1. The drone's max altitude limit in DJI Fly settings is less than the mission altitude (${altitude}m).\n` +
-    `  2. The drone does not have a strong GPS lock (at least 10+ satellites) at takeoff.\n` +
-    `  3. You are too far away from the first waypoint.\n` +
-    `  4. The flight area lies within an unauthorized NFZ / Geozone.\n\n`;
+    `⚠️ "Press Go" Upload Notice:\n` +
+    `Waypoint missions may fail to start if:\n` +
+    `  • The drone does not have a strong GPS lock (at least 10+ satellites) at takeoff.\n` +
+    `  • You are too far away from the first waypoint.\n` +
+    `  • The flight area lies within an unauthorized NFZ / Geozone.\n\n`;
 
   let confirmMessage = "";
   if (warningMessage) {
-    confirmMessage = `Warning Details:\n\n${warningMessage}${pressGoWarning}Do you acknowledge these safety details and want to export the mission?`;
+    confirmMessage = `Safety Warning Details:\n\n${warningMessage}${aspectNotice}${onDroneBestSettings}${pressGoWarning}Do you acknowledge these camera & flight settings and wish to export the KMZ?`;
   } else {
-    confirmMessage = `${pressGoWarning}Do you want to proceed and export the mission?`;
+    confirmMessage = `${aspectNotice}${onDroneBestSettings}${pressGoWarning}Do you acknowledge these camera & flight settings and wish to export the KMZ?`;
   }
 
   if (!confirm(confirmMessage)) {
