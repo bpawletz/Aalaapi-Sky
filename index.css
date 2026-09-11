@@ -480,9 +480,7 @@ html, body {
 .pill-weather-group {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding-left: 6px;
-  border-left: 1px solid var(--border-color);
+  gap: 5px;
 }
 
 .gimbal-preset-chip:hover {
@@ -1389,11 +1387,7 @@ html, body {
   }
 
   .header-telemetry-pill {
-    padding: 4px 6px !important;
-  }
-
-  #header-weather-summary {
-    display: none;
+    padding: 4px 8px !important;
   }
 
   .app-container.app-body {

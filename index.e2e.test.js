@@ -3888,12 +3888,13 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   });
 
   test('E2E: Mobile Phone Top Navigation Bar Responsive Ergonomics, Expandable Search, and More Actions Menu (v1.86.0)', async () => {
-    // 1. Set viewport to mobile phone (390x844 - iPhone standard)
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.evaluate(() => {
-      localStorage.setItem('aalaapi_sky_disclaimer_accepted', 'true');
-      document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
-    });
+    try {
+      // 1. Set viewport to mobile phone (390x844 - iPhone standard)
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.evaluate(() => {
+        localStorage.setItem('aalaapi_sky_disclaimer_accepted', 'true');
+        document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+      });
 
     const mobile390Metrics = await page.evaluate(() => {
       const topbar = document.querySelector('.studio-topbar');
@@ -4088,6 +4089,9 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(desktopState.searchVisible, true, 'Desktop should display inline search container');
     assert.strictEqual(desktopState.telemVisible, true, 'Desktop should display inline telemetry pill');
     assert.strictEqual(desktopState.searchToggleHidden, true, 'Desktop should hide mobile search toggle');
+    } finally {
+      await page.setViewportSize({ width: 1280, height: 720 });
+    }
   });
 
   test('E2E: Heading Mode Help Drawer displays photography guidance across all tabs and toggles via layer help button', async () => {

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.92.2] - 2026-09-10
+
+### Fixed & Improved — Streamlined Topbar Navigation & Removed Redundant Telemetry Counter
+- **Eliminated Duplicate Topbar Waypoint Counter:** Removed `.pill-telemetry-group` (`0 WPs • 0.0 km • 0m 0s`) from the top navigation bar, eliminating redundant metrics that are now permanently anchored and visible in the left navigation's sticky bottom action dock (`#dock-waypoint-summary`).
+- **Streamlined Topbar Weather & Details Pill:** Simplified `#header-telemetry-pill` to cleanly house live weather station conditions (`#header-weather-summary` with dropdown chevron) and trigger the full Mission Details & Live Weather Station popover without horizontal crowding.
+- **Enhanced Telemetry Source Fallback:** Updated telemetry synchronization in `index.js` to prioritize `#dock-waypoint-summary` across sidebar summary and weather sync routines.
+
 ## [1.92.1] - 2026-09-10
 
 ### Fixed — Pattern Card Badge Alignment, Spacing & Scoped CSS Inheritance
