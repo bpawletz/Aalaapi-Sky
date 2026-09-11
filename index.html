@@ -3655,7 +3655,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.94.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.94.2</span></h1>
         </div>
       </div>
 
@@ -3933,7 +3933,7 @@ html, body {
           <h3 id="grid-geometry-title" style="display: flex; justify-content: space-between; align-items: center;">
             <span>2. Layer Properties</span>
             <div style="display: flex; align-items: center; gap: 4px;">
-              <span id="layer-hierarchy-status-badge" class="badge" style="font-size: 0.65rem; background: rgba(6, 182, 212, 0.12); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.25); padding: 1px 6px; border-radius: 999px; font-weight: 600;" title="Three-Tier Hierarchy Status">🌐 Inheriting Globals</span>
+              <span id="layer-hierarchy-status-badge" class="badge" style="display: none; font-size: 0.65rem; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); padding: 1px 6px; border-radius: 999px; font-weight: 600;" title="Three-Tier Hierarchy Status"></span>
               <span id="active-layer-pattern-badge" class="badge" style="font-size: 0.7rem; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 6px; border-radius: 999px; font-weight: 600; margin-right: 6px;">3D Double Grid</span>
             </div>
           </h3>
@@ -6100,7 +6100,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.94.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.94.2</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -6166,6 +6166,13 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.94.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Section 2 Header Declutter:</strong> Hidden the <code>#layer-hierarchy-status-badge</code> when layers cleanly inherit global settings, removing the redundant <code>🌐 INHERITING GLOBALS</code> badge from standard missions.</li>
+              <li><strong>Conditional Override Alerting:</strong> The badge now appears exclusively when a layer diverges from Tier 1 globals (e.g. <code>⚡ 1 Override</code> or <code>⚡ Layer Overrides (N)</code> in amber), providing immediate focus on customized layer dynamics.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.94.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -9966,12 +9973,8 @@ function updateLayerHierarchyBadge() {
 
   const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
   if (!layer) {
-    badge.textContent = '🌐 Inheriting Globals';
-    badge.title = 'Layer inherits all flight parameters from Tier 1 Global Defaults.';
-    badge.className = 'layer-hierarchy-status-badge';
-    badge.style.background = 'rgba(16, 185, 129, 0.15)';
-    badge.style.color = '#34d399';
-    badge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+    badge.style.display = 'none';
+    badge.textContent = '';
     return;
   }
 
@@ -9991,15 +9994,14 @@ function updateLayerHierarchyBadge() {
   if (layer.isExclusionZone && detourMode !== 'inherit') overrides.push('Detour Mode');
 
   if (overrides.length === 0) {
-    badge.textContent = '🌐 Inheriting Globals';
+    badge.style.display = 'none';
+    badge.textContent = '';
     badge.title = 'Layer inherits all flight parameters from Tier 1 Global Defaults.';
     badge.classList.remove('has-overrides');
-    badge.style.background = 'rgba(16, 185, 129, 0.15)';
-    badge.style.color = '#34d399';
-    badge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
   } else {
-    badge.textContent = `⚡ Layer Overrides (${overrides.length})`;
-    badge.title = `Active overrides: ${overrides.join(', ')}. Click to view layer dynamics.`;
+    badge.style.display = 'inline-flex';
+    badge.textContent = overrides.length === 1 ? '⚡ 1 Override' : `⚡ Layer Overrides (${overrides.length})`;
+    badge.title = `Active overrides: ${overrides.join(', ')}. Diverges from Tier 1 Global Defaults. Click to view layer dynamics.`;
     badge.classList.add('has-overrides');
     badge.style.background = 'rgba(245, 158, 11, 0.15)';
     badge.style.color = '#fbbf24';

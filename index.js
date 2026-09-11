@@ -1016,12 +1016,8 @@ function updateLayerHierarchyBadge() {
 
   const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
   if (!layer) {
-    badge.textContent = '🌐 Inheriting Globals';
-    badge.title = 'Layer inherits all flight parameters from Tier 1 Global Defaults.';
-    badge.className = 'layer-hierarchy-status-badge';
-    badge.style.background = 'rgba(16, 185, 129, 0.15)';
-    badge.style.color = '#34d399';
-    badge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+    badge.style.display = 'none';
+    badge.textContent = '';
     return;
   }
 
@@ -1041,15 +1037,14 @@ function updateLayerHierarchyBadge() {
   if (layer.isExclusionZone && detourMode !== 'inherit') overrides.push('Detour Mode');
 
   if (overrides.length === 0) {
-    badge.textContent = '🌐 Inheriting Globals';
+    badge.style.display = 'none';
+    badge.textContent = '';
     badge.title = 'Layer inherits all flight parameters from Tier 1 Global Defaults.';
     badge.classList.remove('has-overrides');
-    badge.style.background = 'rgba(16, 185, 129, 0.15)';
-    badge.style.color = '#34d399';
-    badge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
   } else {
-    badge.textContent = `⚡ Layer Overrides (${overrides.length})`;
-    badge.title = `Active overrides: ${overrides.join(', ')}. Click to view layer dynamics.`;
+    badge.style.display = 'inline-flex';
+    badge.textContent = overrides.length === 1 ? '⚡ 1 Override' : `⚡ Layer Overrides (${overrides.length})`;
+    badge.title = `Active overrides: ${overrides.join(', ')}. Diverges from Tier 1 Global Defaults. Click to view layer dynamics.`;
     badge.classList.add('has-overrides');
     badge.style.background = 'rgba(245, 158, 11, 0.15)';
     badge.style.color = '#fbbf24';

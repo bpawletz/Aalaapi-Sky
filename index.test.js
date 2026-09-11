@@ -13091,7 +13091,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
         activeLayerId = 'test-layer-1';
 
         updateLayerHierarchyBadge();
-        assert.ok(mockBadge.textContent.includes('Inheriting Globals'), 'Badge must show Inheriting Globals when no overrides exist');
+        assert.strictEqual(mockBadge.style.display, 'none', 'Badge must be hidden when no overrides exist');
 
         // Case 2: Overrides
         global.document.getElementById = (id) => {
@@ -13105,6 +13105,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
         };
 
         updateLayerHierarchyBadge();
+        assert.strictEqual(mockBadge.style.display, 'inline-flex', 'Badge must be visible when overrides exist');
         assert.ok(mockBadge.textContent.includes('Layer Overrides (2)'), 'Badge must report Layer Overrides (2)');
       } finally {
         global.document.getElementById = origGetElementById;
@@ -13359,7 +13360,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = readSafe(path.join(__dirname, filename));
-        assert.ok(html.includes('Version 1.93.0') || html.includes('Version 1.94.0') || html.includes('Version 1.94.1'), `${filename} must contain Version in About modal`);
+        assert.ok(html.includes('version-tag') && html.includes('Version 1.'), `${filename} must contain Version in About modal`);
         assert.ok(html.includes('Changelog (v1.93.0):'), `${filename} must contain Changelog (v1.93.0)`);
         assert.ok(html.includes('id="width-warning-badge"'), `${filename} must contain width-warning-badge`);
         assert.ok(html.includes('id="height-warning-badge"'), `${filename} must contain height-warning-badge`);
@@ -13369,8 +13370,8 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
 
       const templateHtml = readSafe(path.join(__dirname, 'index_template.html'));
       assert.ok(
-        templateHtml.includes('v1.93.0</span>') || templateHtml.includes('v1.94.0</span>') || templateHtml.includes('v1.94.1</span>'),
-        'index_template.html header badge must be v1.93.0 or higher'
+        templateHtml.includes('header-version-badge'),
+        'index_template.html must contain header badge'
       );
     });
 
@@ -13671,14 +13672,12 @@ describe('v1.94.0 Tier 1 Global Camera Aspect Ratio & Multi-Pattern Integration'
 describe('v1.94.1 Decoupled Sensor Aspect Ratio Terminology Tests', () => {
   test('Version consistency: v1.94.1 is properly registered across package.json, CHANGELOG.md, and template', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.94.1', 'package.json version must be 1.94.1');
+    assert.ok(pkg.version >= '1.94.1', 'package.json version must be 1.94.1 or higher');
 
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
-    assert.ok(changelog.includes('## [1.94.1] - 2026-09-11'), 'CHANGELOG.md must contain v1.94.1 entry');
+    assert.ok(changelog.includes('## [1.94.1]'), 'CHANGELOG.md must contain v1.94.1 entry');
 
     const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(templateHtml.includes('v1.94.1</span>'), 'index_template.html header badge must be v1.94.1');
-    assert.ok(templateHtml.includes('Version 1.94.1</span>'), 'index_template.html About modal must be Version 1.94.1');
     assert.ok(templateHtml.includes('Changelog (v1.94.1):'), 'index_template.html must contain Changelog (v1.94.1)');
   });
 
@@ -13716,6 +13715,108 @@ describe('v1.94.1 Decoupled Sensor Aspect Ratio Terminology Tests', () => {
     } finally {
       global._stubElements = null;
       setCameraAspectRatio('4:3', true);
+    }
+  });
+});
+
+describe('v1.94.2 Section 2 Header Declutter & Conditional Hierarchy Badge', () => {
+  test('Version consistency: v1.94.2 is registered across package.json, CHANGELOG.md, and template', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+    assert.strictEqual(pkg.version, '1.94.2', 'package.json version must be 1.94.2');
+
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.94.2] - 2026-09-11'), 'CHANGELOG.md must contain v1.94.2 entry');
+
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateHtml.includes('v1.94.2</span>'), 'index_template.html header badge must be v1.94.2');
+    assert.ok(templateHtml.includes('Version 1.94.2</span>'), 'index_template.html About modal must be Version 1.94.2');
+    assert.ok(templateHtml.includes('Changelog (v1.94.2):'), 'index_template.html must contain Changelog (v1.94.2)');
+  });
+
+  test('Template default: #layer-hierarchy-status-badge has display: none in index_template.html and index.html', () => {
+    ['index_template.html', 'index.html'].forEach(filename => {
+      const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
+      assert.ok(
+        html.includes('id="layer-hierarchy-status-badge" class="badge" style="display: none;'),
+        `${filename} must contain hidden hierarchy badge by default`
+      );
+    });
+  });
+
+  test('updateLayerHierarchyBadge keeps badge hidden when inheriting, shows on overrides', () => {
+    const origLayers = typeof flightLayers !== 'undefined' ? flightLayers : [];
+    const origActive = typeof activeLayerId !== 'undefined' ? activeLayerId : null;
+
+    const mockBadge = {
+      textContent: '',
+      title: '',
+      style: { display: '' },
+      classList: {
+        add: () => {},
+        remove: () => {}
+      }
+    };
+
+    const origGetElementById = global.document.getElementById;
+    global.document.getElementById = (id) => {
+      if (id === 'layer-hierarchy-status-badge') return mockBadge;
+      if (id === 'layer-heading-mode') return { value: 'inherit' };
+      if (id === 'layer-path-mode') return { value: 'inherit' };
+      if (id === 'layer-capture-mode') return { value: 'inherit' };
+      if (id === 'layer-hover-time-mode') return { value: 'inherit' };
+      if (id === 'exclusion-detour-mode') return { value: 'inherit' };
+      return origGetElementById ? origGetElementById(id) : null;
+    };
+
+    try {
+      // 1. Inheriting: badge must be hidden
+      flightLayers = [{
+        id: 'test-layer-clean',
+        name: 'Clean Layer',
+        headingMode: 'inherit',
+        pathMode: 'inherit',
+        captureMode: 'inherit',
+        hoverTime: 'inherit'
+      }];
+      activeLayerId = 'test-layer-clean';
+
+      updateLayerHierarchyBadge();
+      assert.strictEqual(mockBadge.style.display, 'none', 'Badge must be hidden when layer has 0 overrides');
+      assert.strictEqual(mockBadge.textContent, '', 'Badge text must be empty when hidden');
+
+      // 2. Single Override: badge visible with ⚡ 1 Override
+      global.document.getElementById = (id) => {
+        if (id === 'layer-hierarchy-status-badge') return mockBadge;
+        if (id === 'layer-heading-mode') return { value: 'towardPOI' };
+        if (id === 'layer-path-mode') return { value: 'inherit' };
+        if (id === 'layer-capture-mode') return { value: 'inherit' };
+        if (id === 'layer-hover-time-mode') return { value: 'inherit' };
+        if (id === 'exclusion-detour-mode') return { value: 'inherit' };
+        return origGetElementById ? origGetElementById(id) : null;
+      };
+
+      updateLayerHierarchyBadge();
+      assert.strictEqual(mockBadge.style.display, 'inline-flex', 'Badge must be visible on 1 override');
+      assert.strictEqual(mockBadge.textContent, '⚡ 1 Override', 'Badge text must be ⚡ 1 Override');
+
+      // 3. Multiple Overrides: badge visible with ⚡ Layer Overrides (2)
+      global.document.getElementById = (id) => {
+        if (id === 'layer-hierarchy-status-badge') return mockBadge;
+        if (id === 'layer-heading-mode') return { value: 'towardPOI' };
+        if (id === 'layer-path-mode') return { value: 'straight' };
+        if (id === 'layer-capture-mode') return { value: 'inherit' };
+        if (id === 'layer-hover-time-mode') return { value: 'inherit' };
+        if (id === 'exclusion-detour-mode') return { value: 'inherit' };
+        return origGetElementById ? origGetElementById(id) : null;
+      };
+
+      updateLayerHierarchyBadge();
+      assert.strictEqual(mockBadge.style.display, 'inline-flex', 'Badge must be visible on multiple overrides');
+      assert.strictEqual(mockBadge.textContent, '⚡ Layer Overrides (2)', 'Badge text must be ⚡ Layer Overrides (2)');
+    } finally {
+      global.document.getElementById = origGetElementById;
+      flightLayers = origLayers;
+      activeLayerId = origActive;
     }
   });
 });
