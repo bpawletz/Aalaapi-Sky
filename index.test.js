@@ -13722,14 +13722,12 @@ describe('v1.94.1 Decoupled Sensor Aspect Ratio Terminology Tests', () => {
 describe('v1.94.2 Section 2 Header Declutter & Conditional Hierarchy Badge', () => {
   test('Version consistency: v1.94.2 is registered across package.json, CHANGELOG.md, and template', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.94.2', 'package.json version must be 1.94.2');
+    assert.ok(pkg.version >= '1.94.2', 'package.json version must be 1.94.2 or higher');
 
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.94.2] - 2026-09-11'), 'CHANGELOG.md must contain v1.94.2 entry');
 
     const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(templateHtml.includes('v1.94.2</span>'), 'index_template.html header badge must be v1.94.2');
-    assert.ok(templateHtml.includes('Version 1.94.2</span>'), 'index_template.html About modal must be Version 1.94.2');
     assert.ok(templateHtml.includes('Changelog (v1.94.2):'), 'index_template.html must contain Changelog (v1.94.2)');
   });
 
@@ -13817,6 +13815,159 @@ describe('v1.94.2 Section 2 Header Declutter & Conditional Hierarchy Badge', () 
       global.document.getElementById = origGetElementById;
       flightLayers = origLayers;
       activeLayerId = origActive;
+    }
+  });
+});
+
+describe('v1.94.3 Pre-Flight KMZ Audit & Executive Readiness Redesign Tests', () => {
+  test('Version consistency: v1.94.3 is registered across package.json, CHANGELOG.md, and template', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+    assert.strictEqual(pkg.version, '1.94.3', 'package.json version must be 1.94.3');
+
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.94.3] - 2026-09-11'), 'CHANGELOG.md must contain v1.94.3 entry');
+
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateHtml.includes('v1.94.3</span>'), 'index_template.html header badge must be v1.94.3');
+    assert.ok(templateHtml.includes('Version 1.94.3</span>'), 'index_template.html About modal must be Version 1.94.3');
+    assert.ok(templateHtml.includes('Changelog (v1.94.3):'), 'index_template.html must contain Changelog (v1.94.3)');
+  });
+
+  test('Template DOM structure: contains executive card, details accordions, and backward-compatible IDs', () => {
+    ['index_template.html', 'index.html'].forEach(filename => {
+      const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
+      assert.ok(html.includes('id="inspector-executive-card"'), `${filename} must contain inspector-executive-card`);
+      assert.ok(html.includes('id="inspector-executive-title"'), `${filename} must contain inspector-executive-title`);
+      assert.ok(html.includes('id="inspector-executive-badge"'), `${filename} must contain inspector-executive-badge`);
+      assert.ok(html.includes('id="inspector-rules-details"'), `${filename} must contain inspector-rules-details`);
+      assert.ok(html.includes('id="inspector-xml-details"'), `${filename} must contain inspector-xml-details`);
+      assert.ok(html.includes('id="inspector-tab-checklist"'), `${filename} must preserve inspector-tab-checklist for backward compatibility`);
+      assert.ok(html.includes('id="inspector-tab-wpml"'), `${filename} must preserve inspector-tab-wpml`);
+      assert.ok(html.includes('id="inspector-tab-tmpl"'), `${filename} must preserve inspector-tab-tmpl`);
+      assert.ok(html.includes('id="inspector-checklist-container"'), `${filename} must contain inspector-checklist-container`);
+      assert.ok(html.includes('id="inspector-copy-antigravity-btn"'), `${filename} must contain inspector-copy-antigravity-btn`);
+    });
+  });
+
+  test('KMZInspector.render sets clean executive card and keeps rules collapsed when 10/10 pass', () => {
+    const mockExecCard = { style: {} };
+    const mockExecIcon = { textContent: '', style: {} };
+    const mockExecTitle = { textContent: '', style: {} };
+    const mockExecDesc = { textContent: '', style: {} };
+    const mockExecBadge = { textContent: '', style: {} };
+    const mockRulesDetails = { open: true, hasAttribute: () => false };
+    const mockRulesExpandLabel = { textContent: '' };
+    const mockCopyAntigravityBtn = { style: {} };
+    const mockListContainer = { innerHTML: '' };
+    const mockWpmlEl = { textContent: '' };
+    const mockTmplEl = { textContent: '' };
+
+    const origGetElementById = global.document.getElementById;
+    global.document.getElementById = (id) => {
+      if (id === 'inspector-executive-card') return mockExecCard;
+      if (id === 'inspector-executive-icon') return mockExecIcon;
+      if (id === 'inspector-executive-title') return mockExecTitle;
+      if (id === 'inspector-executive-desc') return mockExecDesc;
+      if (id === 'inspector-executive-badge') return mockExecBadge;
+      if (id === 'inspector-rules-details') return mockRulesDetails;
+      if (id === 'inspector-rules-expand-label') return mockRulesExpandLabel;
+      if (id === 'inspector-copy-antigravity-btn') return mockCopyAntigravityBtn;
+      if (id === 'inspector-checklist-container') return mockListContainer;
+      if (id === 'inspector-xml-wpml') return mockWpmlEl;
+      if (id === 'inspector-xml-tmpl') return mockTmplEl;
+      if (id === 'inspector-drone-target') return { textContent: '' };
+      if (id === 'inspector-wp-count') return { textContent: '' };
+      if (id === 'inspector-rules-score') return { textContent: '', style: {} };
+      if (id === 'drone-model') return { options: [{ text: 'DJI Mini 4 Pro (68)' }], selectedIndex: 0 };
+      return null;
+    };
+
+    try {
+      const mockReport = {
+        valid: true,
+        rulesPassed: 10,
+        totalRules: 10,
+        placemarkCount: 24,
+        rules: [
+          { id: 1, name: 'Heading Mode Coherence', passed: true, message: 'Compliant' }
+        ],
+        errors: [],
+        warnings: []
+      };
+
+      KMZInspector.activeReport = mockReport;
+      KMZInspector.activeWpmlXml = '<xml>wpml</xml>';
+      KMZInspector.activeTemplateXml = '<xml>template</xml>';
+
+      KMZInspector.render();
+
+      assert.strictEqual(mockExecTitle.textContent, '100% DJI Fly Ready', 'Title must say 100% DJI Fly Ready');
+      assert.strictEqual(mockExecBadge.textContent, '10/10 Passed', 'Badge must state 10/10 Passed');
+      assert.strictEqual(mockRulesDetails.open, false, 'Rules accordion must default to collapsed on clean pass');
+      assert.strictEqual(mockCopyAntigravityBtn.style.display, 'none', 'Copy Antigravity button must be hidden on clean pass');
+    } finally {
+      global.document.getElementById = origGetElementById;
+    }
+  });
+
+  test('KMZInspector.render auto-expands rules and reveals Antigravity prompt on error', () => {
+    const mockExecCard = { style: {} };
+    const mockExecIcon = { textContent: '', style: {} };
+    const mockExecTitle = { textContent: '', style: {} };
+    const mockExecDesc = { textContent: '', style: {} };
+    const mockExecBadge = { textContent: '', style: {} };
+    const mockRulesDetails = { open: false, hasAttribute: () => false };
+    const mockRulesExpandLabel = { textContent: '' };
+    const mockCopyAntigravityBtn = { style: {} };
+    const mockListContainer = { innerHTML: '' };
+    const mockWpmlEl = { textContent: '' };
+    const mockTmplEl = { textContent: '' };
+
+    const origGetElementById = global.document.getElementById;
+    global.document.getElementById = (id) => {
+      if (id === 'inspector-executive-card') return mockExecCard;
+      if (id === 'inspector-executive-icon') return mockExecIcon;
+      if (id === 'inspector-executive-title') return mockExecTitle;
+      if (id === 'inspector-executive-desc') return mockExecDesc;
+      if (id === 'inspector-executive-badge') return mockExecBadge;
+      if (id === 'inspector-rules-details') return mockRulesDetails;
+      if (id === 'inspector-rules-expand-label') return mockRulesExpandLabel;
+      if (id === 'inspector-copy-antigravity-btn') return mockCopyAntigravityBtn;
+      if (id === 'inspector-checklist-container') return mockListContainer;
+      if (id === 'inspector-xml-wpml') return mockWpmlEl;
+      if (id === 'inspector-xml-tmpl') return mockTmplEl;
+      if (id === 'inspector-drone-target') return { textContent: '' };
+      if (id === 'inspector-wp-count') return { textContent: '' };
+      if (id === 'inspector-rules-score') return { textContent: '', style: {} };
+      if (id === 'drone-model') return { options: [{ text: 'DJI Mini 4 Pro (68)' }], selectedIndex: 0 };
+      return null;
+    };
+
+    try {
+      const mockReport = {
+        valid: false,
+        rulesPassed: 9,
+        totalRules: 10,
+        placemarkCount: 24,
+        rules: [
+          { id: 1, name: 'Heading Mode Coherence', passed: false, message: 'Invalid heading mode' }
+        ],
+        errors: ['Rule 1 failed'],
+        warnings: []
+      };
+
+      KMZInspector.activeReport = mockReport;
+      KMZInspector.activeWpmlXml = '<xml>wpml</xml>';
+      KMZInspector.activeTemplateXml = '<xml>template</xml>';
+
+      KMZInspector.render();
+
+      assert.strictEqual(mockExecTitle.textContent, 'DJI Fly Incompatibility Detected', 'Title must flag incompatibility');
+      assert.strictEqual(mockExecBadge.textContent, '9/10 Passed', 'Badge must state 9/10 Passed');
+      assert.strictEqual(mockRulesDetails.open, true, 'Rules accordion must auto-expand on error');
+      assert.strictEqual(mockCopyAntigravityBtn.style.display, 'inline-flex', 'Copy Antigravity button must be visible on error');
+    } finally {
+      global.document.getElementById = origGetElementById;
     }
   });
 });
