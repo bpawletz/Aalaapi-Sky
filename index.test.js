@@ -4135,23 +4135,32 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
     }
   });
 
-  test('FlightDiagnostics buildTrajectoryMeshes falls back to getActiveMissionWaypoints when this.plannedWaypoints is null (regression: active-mission mode)', () => {
-    // Regression: active-mission mode must still use getActiveMissionWaypoints when plannedWaypoints is null.
-    let activeMissionCalled = false;
+  test('FlightDiagnostics buildTrajectoryMeshes derives planned path from photo triggers when plannedWaypoints is null (regression: RC2 log wrong flight plan)', () => {
+    // Regression: for RC2 logs, plannedWaypoints is null (companion doesn't return them).
+    // buildTrajectoryMeshes must use photo-trigger points from the telemetry as the planned path,
+    // NOT getActiveMissionWaypoints() which would show the wrong workspace route.
+    const PHOTO_LAT_1 = 35.6762;
+    const PHOTO_LAT_2 = 35.6800;
+    const PHOTO_LAT_3 = 35.6850;
 
     try {
       vm.runInThisContext(`
-        var _origGetActiveMissionWaypoints2 = getActiveMissionWaypoints;
-        var _activeMissionCalled2 = false;
+        var _origGetActiveMissionWaypoints3 = getActiveMissionWaypoints;
+        var _activeMissionCalled3 = false;
         getActiveMissionWaypoints = function() {
-          _activeMissionCalled2 = true;
+          _activeMissionCalled3 = true;
           return [{ lat: 40.0130, lon: -83.1765, altitude: 21 }];
         };
+        var _rc2PlannedCoords = [];
         FlightDiagnostics.plannedWaypoints = null;
         FlightDiagnostics.telemetryData = {
-          homePoint: { lat: 40.0130, lon: -83.1765, alt: 0 },
+          homePoint: { lat: ${PHOTO_LAT_1}, lon: 139.6503, alt: 0 },
           points: [
-            { lat: 40.0130, lon: -83.1765, alt: 21, speed: 4, pitch: -60, battery: 98, satellites: 12, isPhoto: false, time: 0, timeStr: '00:00', yaw: 0, waypointIndex: 0 }
+            { lat: ${PHOTO_LAT_1}, lon: 139.6503, alt: 30, speed: 4, pitch: -60, battery: 90, satellites: 12, isPhoto: true,  time: 0,  timeStr: '00:00', yaw: 0, waypointIndex: 0 },
+            { lat: 35.6770,        lon: 139.6515, alt: 30, speed: 4, pitch: -60, battery: 89, satellites: 12, isPhoto: false, time: 5,  timeStr: '00:05', yaw: 0, waypointIndex: 1 },
+            { lat: ${PHOTO_LAT_2}, lon: 139.6550, alt: 30, speed: 4, pitch: -60, battery: 88, satellites: 12, isPhoto: true,  time: 10, timeStr: '00:10', yaw: 0, waypointIndex: 2 },
+            { lat: 35.6825,        lon: 139.6575, alt: 30, speed: 4, pitch: -60, battery: 87, satellites: 12, isPhoto: false, time: 15, timeStr: '00:15', yaw: 0, waypointIndex: 3 },
+            { lat: ${PHOTO_LAT_3}, lon: 139.6600, alt: 30, speed: 4, pitch: -60, battery: 86, satellites: 12, isPhoto: true,  time: 20, timeStr: '00:20', yaw: 0, waypointIndex: 4 }
           ]
         };
         var THREE = {
@@ -4168,16 +4177,77 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
         FlightDiagnostics.plannedLineMesh = null;
         FlightDiagnostics.photoMarkers = [];
         FlightDiagnostics.projectToWorld = function(lat, lon, alt) {
-          return { x: 0, y: alt || 0, z: 0 };
+          _rc2PlannedCoords.push({ lat, lon, alt });
+          return { x: 0, y: alt || 0, z: 0, copy: function() { return this; } };
         };
         FlightDiagnostics.buildTrajectoryMeshes();
       `);
 
-      activeMissionCalled = vm.runInThisContext('_activeMissionCalled2');
-      assert.strictEqual(activeMissionCalled, true, 'getActiveMissionWaypoints must be called when this.plannedWaypoints is null');
+      const activeMissionCalled = vm.runInThisContext('_activeMissionCalled3');
+      const capturedCoords = vm.runInThisContext('_rc2PlannedCoords');
+
+      assert.strictEqual(activeMissionCalled, false,
+        'getActiveMissionWaypoints must NOT be called when plannedWaypoints is null — RC2 logs must use photo triggers instead');
+
+      // Photo-trigger coords should be in the captured planned coords (3 photo triggers)
+      const photoLats = [PHOTO_LAT_1, PHOTO_LAT_2, PHOTO_LAT_3];
+      const plannedCaptured = capturedCoords.filter(c => photoLats.some(pl => Math.abs(c.lat - pl) < 0.0001));
+      assert.ok(plannedCaptured.length >= 3,
+        `Planned path must include the 3 photo-trigger coordinates from telemetry. Got: ${JSON.stringify(capturedCoords)}`);
     } finally {
       vm.runInThisContext(`
-        getActiveMissionWaypoints = _origGetActiveMissionWaypoints2;
+        getActiveMissionWaypoints = _origGetActiveMissionWaypoints3;
+        FlightDiagnostics.plannedWaypoints = null;
+        FlightDiagnostics.telemetryData = null;
+      `);
+    }
+  });
+
+  test('FlightDiagnostics buildTrajectoryMeshes draws no planned line when plannedWaypoints is null and no photo triggers exist (regression: RC2 no-photo flight)', () => {
+    // Regression: when an RC2 log has no photo triggers, the planned line must simply not
+    // be drawn — not filled in with the wrong active workspace route.
+    try {
+      vm.runInThisContext(`
+        var _origGetActiveMissionWaypoints4 = getActiveMissionWaypoints;
+        var _activeMissionCalled4 = false;
+        getActiveMissionWaypoints = function() {
+          _activeMissionCalled4 = true;
+          return [{ lat: 40.0130, lon: -83.1765, altitude: 21 }];
+        };
+        FlightDiagnostics.plannedWaypoints = null;
+        FlightDiagnostics.telemetryData = {
+          homePoint: { lat: 40.0130, lon: -83.1765, alt: 0 },
+          points: [
+            { lat: 40.0130, lon: -83.1765, alt: 21, speed: 4, pitch: -60, battery: 98, satellites: 12, isPhoto: false, time: 0, timeStr: '00:00', yaw: 0, waypointIndex: 0 },
+            { lat: 40.0140, lon: -83.1775, alt: 21, speed: 4, pitch: -60, battery: 97, satellites: 12, isPhoto: false, time: 5, timeStr: '00:05', yaw: 0, waypointIndex: 1 }
+          ]
+        };
+        var _noPhotoPlannedMeshAdded = false;
+        var THREE = {
+          BufferGeometry: function() { return { setFromPoints: function(pts) { return this; }, dispose: function() {} }; },
+          LineBasicMaterial: function() { return {}; },
+          LineDashedMaterial: function() { return {}; },
+          Line: function(geo, mat) { _noPhotoPlannedMeshAdded = true; return { computeLineDistances: function() {} }; },
+          SphereGeometry: function() { return { dispose: function() {} }; },
+          MeshBasicMaterial: function() { return {}; },
+          Mesh: function(g, m) { return { position: { copy: function() {} }, geometry: g }; }
+        };
+        FlightDiagnostics.threeScene = { add: function() {}, remove: function() {} };
+        FlightDiagnostics.actualLineMesh = null;
+        FlightDiagnostics.plannedLineMesh = null;
+        FlightDiagnostics.photoMarkers = [];
+        FlightDiagnostics.projectToWorld = function(lat, lon, alt) {
+          return { x: 0, y: alt || 0, z: 0, copy: function() { return this; } };
+        };
+        FlightDiagnostics.buildTrajectoryMeshes();
+      `);
+
+      const activeMissionCalled = vm.runInThisContext('_activeMissionCalled4');
+      assert.strictEqual(activeMissionCalled, false,
+        'getActiveMissionWaypoints must NOT be called when plannedWaypoints is null and no photo triggers exist');
+    } finally {
+      vm.runInThisContext(`
+        getActiveMissionWaypoints = _origGetActiveMissionWaypoints4;
         FlightDiagnostics.plannedWaypoints = null;
         FlightDiagnostics.telemetryData = null;
       `);
@@ -14148,16 +14218,24 @@ describe('v1.94.3 Pre-Flight KMZ Audit & Executive Readiness Redesign Tests', ()
 });
 
 describe('v1.94.4 Real-Time Live METAR Ingestion & Flight Category Tests', () => {
-  test('Version consistency: v1.94.5 is registered across package.json, CHANGELOG.md, and template (regression: 3D diag map fix)', () => {
+  test('Version consistency: v1.94.6 is registered across package.json, CHANGELOG.md, and template (regression: RC2 planned path fix)', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.94.5', 'package.json version must be 1.94.5');
+    assert.strictEqual(pkg.version, '1.94.6', 'package.json version must be 1.94.6');
 
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.94.6] - 2026-09-11'), 'CHANGELOG.md must contain 1.94.6 entry');
+
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateHtml.includes('>v1.94.6</span>'), 'index_template.html must contain header version badge v1.94.6');
+    assert.ok(templateHtml.includes('Version 1.94.6</span>'), 'index_template.html must contain About modal version tag 1.94.6');
+    assert.ok(templateHtml.includes('Changelog (v1.94.6):'), 'index_template.html must contain Changelog (v1.94.6) header');
+  });
+
+  test('Version consistency: v1.94.5 changelog entry is preserved in CHANGELOG.md and template', () => {
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.94.5] - 2026-09-11'), 'CHANGELOG.md must contain 1.94.5 entry');
 
     const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(templateHtml.includes('>v1.94.5</span>'), 'index_template.html must contain header version badge v1.94.5');
-    assert.ok(templateHtml.includes('Version 1.94.5</span>'), 'index_template.html must contain About modal version tag 1.94.5');
     assert.ok(templateHtml.includes('Changelog (v1.94.5):'), 'index_template.html must contain Changelog (v1.94.5) header');
   });
 

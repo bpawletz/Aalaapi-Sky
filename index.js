@@ -15909,12 +15909,24 @@ const FlightDiagnostics = {
     });
 
     const plannedCoords = [];
-    const wps = (this.plannedWaypoints && this.plannedWaypoints.length > 0)
-      ? this.plannedWaypoints
-      : getActiveMissionWaypoints();
-    wps.forEach(wp => {
-      plannedCoords.push(this.projectToWorld(wp.lat, wp.lon, wp.altitude || 21.0));
-    });
+    if (this.plannedWaypoints && this.plannedWaypoints.length > 0) {
+      // Stored planned waypoints from the loaded flight (saved missions / active-mission mode)
+      this.plannedWaypoints.forEach(wp => {
+        plannedCoords.push(this.projectToWorld(wp.lat, wp.lon, wp.altitude || wp.alt || 21.0));
+      });
+    } else if (this.telemetryData && this.telemetryData.points) {
+      // For RC2 logs: derive approximate planned waypoints from photo-trigger events.
+      // Photo triggers fire at planned waypoint positions, making them the best available
+      // approximation of the original mission plan from a raw flight log.
+      const photoPoints = this.telemetryData.points.filter(p => p.isPhoto);
+      if (photoPoints.length > 1) {
+        photoPoints.forEach(p => {
+          plannedCoords.push(this.projectToWorld(p.lat, p.lon, p.alt));
+        });
+      }
+      // If no photo triggers exist, skip the planned line entirely rather than showing
+      // the wrong active workspace route.
+    }
     if (plannedCoords.length > 1) {
       const planGeo = new THREE.BufferGeometry().setFromPoints(plannedCoords);
       const planMat = new THREE.LineDashedMaterial({ color: 0x06b6d4, dashSize: 3, gapSize: 1 });
