@@ -382,19 +382,28 @@ class DiagnosticsDatabase {
 
   getByIdOrArchiveIdOrUuid(identifier) {
     if (!this.db || identifier === undefined || identifier === null) return null;
+    let cleanId = String(identifier).trim();
+    try {
+      cleanId = decodeURIComponent(cleanId);
+    } catch (e) {}
+
     try {
       let row = null;
-      if (typeof identifier === 'number' || /^\d+$/.test(String(identifier))) {
+      if (typeof identifier === 'number' || /^\d+$/.test(cleanId)) {
         const stmt = this.db.prepare('SELECT * FROM mission_diagnostics WHERE id = ?');
-        row = stmt.get(Number(identifier));
+        row = stmt.get(Number(cleanId));
       }
       if (!row) {
+        const stmt = this.db.prepare('SELECT * FROM mission_diagnostics WHERE archive_id = ?');
+        row = stmt.get(cleanId);
+      }
+      if (!row && cleanId !== String(identifier)) {
         const stmt = this.db.prepare('SELECT * FROM mission_diagnostics WHERE archive_id = ?');
         row = stmt.get(String(identifier));
       }
       if (!row) {
         const stmt = this.db.prepare('SELECT * FROM mission_diagnostics WHERE uuid = ? ORDER BY id DESC LIMIT 1');
-        row = stmt.get(String(identifier));
+        row = stmt.get(cleanId);
       }
       return this.rowToMission(row);
     } catch (err) {

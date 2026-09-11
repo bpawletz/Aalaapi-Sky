@@ -4764,6 +4764,22 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
     assert.strictEqual(diag.points.length, 226, 'Should have 226 telemetry points for 2026-09-06 flight');
     assert.strictEqual(matchedRow.waypoint_count, 32, 'Should have 32 planned waypoints');
   });
+
+  test('DiagnosticsDatabase.getByIdOrArchiveIdOrUuid correctly resolves URI-encoded archive_id containing percent-encoded colons (regression: saved diag blank)', () => {
+    const { DiagnosticsDatabase, DEFAULT_DB_PATH } = require('./tools/companion/diagnostics_db.js');
+    const db = new DiagnosticsDatabase(DEFAULT_DB_PATH);
+
+    const rawArchiveId = '354A8F93-759C-42C3-A8D5-746F79C7622A_2026-08-30T13:37:31.968Z';
+    const encodedArchiveId = encodeURIComponent(rawArchiveId);
+    assert.ok(encodedArchiveId.includes('%3A'), 'Encoded archive ID must have percent-encoded colons');
+
+    const record = db.getByIdOrArchiveIdOrUuid(encodedArchiveId);
+    assert.ok(record, 'Must resolve mission record when passing URI-encoded archive_id');
+    assert.strictEqual(record.archive_id, rawArchiveId);
+    assert.ok(record.diagnostics && Array.isArray(record.diagnostics.points), 'Record must contain parsed diagnostics points');
+    assert.strictEqual(record.diagnostics.points.length, 154, 'Must have all 154 telemetry points');
+    assert.strictEqual(record.waypoint_count, 40, 'Must have 40 waypoints');
+  });
 });
 
 describe('3D Preview Modal Hierarchy & HTML Tag Balance Tests', () => {
@@ -14362,16 +14378,24 @@ describe('v1.94.3 Pre-Flight KMZ Audit & Executive Readiness Redesign Tests', ()
 });
 
 describe('v1.94.4 Real-Time Live METAR Ingestion & Flight Category Tests', () => {
-  test('Version consistency: v1.94.8 is registered across package.json, CHANGELOG.md, and template (regression: RC2 log date-matching and active workspace fallback elimination)', () => {
+  test('Version consistency: v1.94.9 is registered across package.json, CHANGELOG.md, and template (regression: URI-encoded archive ID lookup in companion)', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.94.8', 'package.json version must be 1.94.8');
+    assert.strictEqual(pkg.version, '1.94.9', 'package.json version must be 1.94.9');
 
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.94.9] - 2026-09-11'), 'CHANGELOG.md must contain 1.94.9 entry');
+
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateHtml.includes('>v1.94.9</span>'), 'index_template.html must contain header version badge v1.94.9');
+    assert.ok(templateHtml.includes('Version 1.94.9</span>'), 'index_template.html must contain About modal version tag 1.94.9');
+    assert.ok(templateHtml.includes('Changelog (v1.94.9):'), 'index_template.html must contain Changelog (v1.94.9) header');
+  });
+
+  test('Version consistency: v1.94.8 changelog entry is preserved in CHANGELOG.md and template', () => {
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.94.8] - 2026-09-11'), 'CHANGELOG.md must contain 1.94.8 entry');
 
     const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(templateHtml.includes('>v1.94.8</span>'), 'index_template.html must contain header version badge v1.94.8');
-    assert.ok(templateHtml.includes('Version 1.94.8</span>'), 'index_template.html must contain About modal version tag 1.94.8');
     assert.ok(templateHtml.includes('Changelog (v1.94.8):'), 'index_template.html must contain Changelog (v1.94.8) header');
   });
 
