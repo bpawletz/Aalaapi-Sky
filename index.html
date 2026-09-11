@@ -3655,7 +3655,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.94.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.94.1</span></h1>
         </div>
       </div>
 
@@ -4530,7 +4530,7 @@ html, body {
                 Sensor Aspect Ratio
               </span>
               <div style="display: inline-flex; align-items: center; gap: 6px;">
-                <span class="badge" id="layer-optics-aspect-display" style="font-size: 0.68rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 6px; border-radius: 999px;">4:3 Photo</span>
+                <span class="badge" id="layer-optics-aspect-display" style="font-size: 0.68rem; font-weight: 600; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 6px; border-radius: 999px;">4:3 Native</span>
                 <button type="button" id="jump-to-aspect-ratio-btn" style="background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.25); color: var(--accent-cyan); cursor: pointer; font-size: 0.68rem; font-weight: 600; padding: 1px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px;" title="Camera sensor ratio is a mission-wide hardware setting. Click to configure in Section 3.">⚙️ Sec 3</button>
               </div>
             </div>
@@ -4951,15 +4951,15 @@ html, body {
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#06b6d4" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="7" y1="5" x2="7" y2="19"/><line x1="17" y1="5" x2="17" y2="19"/></svg>
                   Camera Sensor Aspect Ratio
                 </span>
-                <span class="badge" id="camera-aspect-ratio-badge" style="font-size: 0.65rem; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 5px; border-radius: 999px;">4:3 Photo</span>
+                <span class="badge" id="camera-aspect-ratio-badge" style="font-size: 0.65rem; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 5px; border-radius: 999px;">4:3 Native</span>
               </div>
               <select id="camera-aspect-ratio" class="form-select" style="font-size: 0.78rem; padding: 5px 8px;">
-                <option value="4:3" selected>4:3 (DJI Photo Standard - 69.7° × 55.2°)</option>
-                <option value="16:9">16:9 (Video / Wide Crop - 69.7° × 44.2°)</option>
+                <option value="4:3" selected>4:3 (Native Full Sensor - 69.7° × 55.2°)</option>
+                <option value="16:9">16:9 (Widescreen Crop - 69.7° × 44.2°)</option>
               </select>
               <div id="camera-aspect-ratio-warning-box" style="margin-top: 5px; padding: 6px 8px; border-radius: 6px; font-size: 0.72rem; line-height: 1.35; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); color: #cbd5e1;">
                 <span style="color: #fbbf24; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">⚠️ Pre-Flight Drone Setting:</span>
-                Must match camera setting in <em>DJI Fly &gt; Camera Settings</em> on your RC controller before takeoff. <strong>Affects mission waypoint spacing &amp; photo overlap across all flight patterns.</strong>
+                Must match camera setting in <em>DJI Fly &gt; Camera Settings</em> on your RC controller before takeoff (applicable to both Photo and Video modes). <strong>Affects mission waypoint spacing &amp; photo overlap across all flight patterns.</strong>
               </div>
             </div>
 
@@ -5499,7 +5499,7 @@ html, body {
               📷 Tier 1 Global Camera Aspect Ratio &amp; Multi-Pattern Overlap Integration (v1.94.0)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
-              Establishes Camera Sensor Aspect Ratio (4:3 Photo Standard vs 16:9 Video Crop) as an aircraft-level hardware setting in Section 3 Drone Hardware Profile. Automatically adapts along-track footprint and photo trigger spacing across <strong>all flight patterns</strong> (Nadir Grid, 3D Double Grid, Orbit, Tower, and Target Splat) to prevent photogrammetry overlap deficiency in 16:9 video mode. Features Section 2 quick-jump navigation, pre-flight RC controller guidance, and an enhanced pre-export KMZ checklist.
+              Establishes Camera Sensor Aspect Ratio (4:3 Native Full Sensor vs 16:9 Widescreen Crop) as an aircraft-level hardware setting in Section 3 Drone Hardware Profile. Automatically adapts along-track footprint and photo trigger spacing across <strong>all flight patterns</strong> (Nadir Grid, 3D Double Grid, Orbit, Tower, and Target Splat) to prevent photogrammetry overlap deficiency regardless of whether capturing still photos or recording video. Features Section 2 quick-jump navigation, pre-flight RC controller guidance, and an enhanced pre-export KMZ checklist.
             </p>
           </div>
 
@@ -5559,10 +5559,10 @@ html, body {
 
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
-              📸 Lateral Frustum Culling &amp; Camera Aspect Ratio Selector (4:3 Photo vs 16:9 Video)
+              📸 Lateral Frustum Culling &amp; Camera Aspect Ratio Selector (4:3 Native vs 16:9 Widescreen)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
-              Prevents drones from flying parallel flight legs where the target is completely out of frame. Modulates lateral across-track camera footprint with framing sweet-spot ratios, pruning outer lines that only glance the target at extreme sensor corners. Introduces an explicit <strong>Camera Aspect Ratio</strong> control (4:3 Photo Standard vs 16:9 Video Crop) with dynamic HFOV/VFOV calculation and live badge feedback.
+              Prevents drones from flying parallel flight legs where the target is completely out of frame. Modulates lateral across-track camera footprint with framing sweet-spot ratios, pruning outer lines that only glance the target at extreme sensor corners. Introduces an explicit <strong>Camera Aspect Ratio</strong> control (4:3 Native Full Sensor vs 16:9 Widescreen Crop) with dynamic HFOV/VFOV calculation and live badge feedback.
             </p>
           </div>
 
@@ -6100,7 +6100,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.94.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.94.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -6166,6 +6166,14 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.94.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Decoupled Sensor Aspect Ratio Terminology:</strong> Replaced misleading "Photo" and "Video" labels with technically accurate optical sensor terms: <code>4:3 Native (Full Sensor)</code> and <code>16:9 Widescreen (Vertical Crop)</code>.</li>
+              <li><strong>Pilot Clarity Across Capture Modes:</strong> Clarified that DJI drones can shoot both 16:9 photos (cropped still photos) and 4:3 videos (full height), and that sensor aspect ratio operates independently from Aalaapi Sky's Capture Mode (Stop &amp; Shoot, Continuous, or Video).</li>
+              <li><strong>Synchronized UI &amp; Pre-Flight Guidance:</strong> Updated Section 3 Hardware Profile options and badges, Section 2 Optics read-only badge, and KMZ export prompt to instruct pilots to confirm camera aspect ratio in DJI Fly before takeoff regardless of media type.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.94.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -12147,12 +12155,12 @@ function setCameraAspectRatio(ratio, skipUpdate = false) {
     const badge = document.getElementById('camera-aspect-ratio-badge');
     if (badge) {
       if (normRatio === '16:9') {
-        badge.textContent = '16:9 Video';
+        badge.textContent = '16:9 Widescreen';
         badge.style.background = 'rgba(245, 158, 11, 0.15)';
         badge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
         badge.style.color = '#fbbf24';
       } else {
-        badge.textContent = '4:3 Photo';
+        badge.textContent = '4:3 Native';
         badge.style.background = 'rgba(6, 182, 212, 0.15)';
         badge.style.borderColor = 'rgba(6, 182, 212, 0.3)';
         badge.style.color = 'var(--accent-cyan)';
@@ -12161,12 +12169,12 @@ function setCameraAspectRatio(ratio, skipUpdate = false) {
     const layerOpticsBadge = document.getElementById('layer-optics-aspect-display');
     if (layerOpticsBadge) {
       if (normRatio === '16:9') {
-        layerOpticsBadge.textContent = '16:9 Video';
+        layerOpticsBadge.textContent = '16:9 Widescreen';
         layerOpticsBadge.style.background = 'rgba(245, 158, 11, 0.15)';
         layerOpticsBadge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
         layerOpticsBadge.style.color = '#fbbf24';
       } else {
-        layerOpticsBadge.textContent = '4:3 Photo';
+        layerOpticsBadge.textContent = '4:3 Native';
         layerOpticsBadge.style.background = 'rgba(6, 182, 212, 0.15)';
         layerOpticsBadge.style.borderColor = 'rgba(6, 182, 212, 0.3)';
         layerOpticsBadge.style.color = 'var(--accent-cyan)';
@@ -16073,12 +16081,12 @@ function syncDisplayValues() {
   const layerOpticsBadge = document.getElementById('layer-optics-aspect-display');
   if (layerOpticsBadge) {
     if (CAMERA_ASPECT_RATIO === '16:9') {
-      layerOpticsBadge.textContent = '16:9 Video';
+      layerOpticsBadge.textContent = '16:9 Widescreen';
       layerOpticsBadge.style.background = 'rgba(245, 158, 11, 0.15)';
       layerOpticsBadge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
       layerOpticsBadge.style.color = '#fbbf24';
     } else {
-      layerOpticsBadge.textContent = '4:3 Photo';
+      layerOpticsBadge.textContent = '4:3 Native';
       layerOpticsBadge.style.background = 'rgba(6, 182, 212, 0.15)';
       layerOpticsBadge.style.borderColor = 'rgba(6, 182, 212, 0.3)';
       layerOpticsBadge.style.color = 'var(--accent-cyan)';
@@ -21976,14 +21984,14 @@ function exportKMZ() {
     warningMessage += `• Geolocation Check: Your current pilot position is more than ${limitStr} away from the takeoff area (Takeoff distance: ${formattedDist}). Please ensure you are at the correct flight location.\n\n`;
   }
 
-  // Pre-flight Drone Camera & Safety Checklist (v1.94.0)
+  // Pre-flight Drone Camera & Safety Checklist (v1.94.1)
   const isVideoAspect = (typeof CAMERA_ASPECT_RATIO === 'string' && CAMERA_ASPECT_RATIO === '16:9');
-  const aspectFormatStr = isVideoAspect ? '16:9 Video (Widescreen Crop - 69.7° × 44.2°)' : '4:3 Photo (Full Sensor Standard - 69.7° × 55.2°)';
+  const aspectFormatStr = isVideoAspect ? '16:9 Widescreen (Vertical Crop - 69.7° × 44.2°)' : '4:3 Native (Full Sensor - 69.7° × 55.2°)';
   const aspectNotice = 
     `🚨 CRITICAL ON-DRONE CAMERA SETTING:\n` +
     `  • Mission Camera Aspect Ratio: ${aspectFormatStr}\n` +
-    `  • In DJI Fly > Camera Settings on your controller, you MUST set the camera to ${isVideoAspect ? '16:9 (Video)' : '4:3 (Photo)'} before takeoff.\n` +
-    `  • Waypoint line spacing and photo triggers were mathematically calculated for this ratio to achieve ${Math.round(overlapFront * 100)}% front / ${Math.round(overlapSide * 100)}% side overlap. Flying with the wrong ratio will cause insufficient photogrammetric overlap or framing errors!\n\n`;
+    `  • In DJI Fly > Camera Settings on your controller, confirm camera aspect ratio is set to ${isVideoAspect ? '16:9 (Widescreen)' : '4:3 (Native)'} before takeoff (applicable whether capturing still photos or recording video).\n` +
+    `  • Waypoint line spacing and photo triggers were mathematically calculated for this ratio to achieve ${Math.round(overlapFront * 100)}% front / ${Math.round(overlapSide * 100)}% side overlap. Flying with a mismatched ratio will compromise photogrammetric overlap or framing!\n\n`;
 
   const onDroneBestSettings = 
     `📋 RECOMMENDED ON-DRONE SETTINGS (Not Controllable via KMZ):\n` +
