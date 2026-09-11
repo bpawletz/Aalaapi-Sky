@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.94.1] - 2026-09-11
+
+### Improved & Clarified — Sensor Aspect Ratio Terminology (Native Full Sensor vs Widescreen Crop)
+- **Decoupled Optical Aspect Ratio from Photo/Video Media Types:** Replaced misleading `"4:3 Photo"` and `"16:9 Video"` tags with technically precise optical framing terminology:
+  - **`4:3 Native (Full Sensor - 69.7° × 55.2°)`** with live badge **`4:3 Native`**.
+  - **`16:9 Widescreen (Vertical Crop - 69.7° × 44.2°)`** with live badge **`16:9 Widescreen`**.
+- **Pilot Clarity for Multi-Format Capture:** Eliminates confusion where pilots can shoot 16:9 photos (cropped still photos) or 4:3 videos (full-height/open-gate sensor video) in DJI Fly, independent of Aalaapi Sky's **Capture Mode** selector (`stopAndShoot`, `continuous` timed interval, and `video` continuous route).
+- **Synchronized UI Elements & Tooltips:** Updated Section 3 Hardware Profile selector options and badges, Section 2 Optics read-only badge and tooltips, and live telemetry synchronization.
+- **Enhanced Export KMZ Pre-Flight Checklist:** Updated pre-flight dialog copy to clarify that the aspect ratio setting applies to both Photo and Video capture modes in DJI Fly, emphasizing that waypoint line spacing and photo triggers strictly depend on the selected framing.
+
 ## [1.94.0] - 2026-09-11
 
 ### Added & Architectural Refinement — Tier 1 Global Camera Aspect Ratio & Multi-Pattern Integration

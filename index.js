@@ -3205,12 +3205,12 @@ function setCameraAspectRatio(ratio, skipUpdate = false) {
     const badge = document.getElementById('camera-aspect-ratio-badge');
     if (badge) {
       if (normRatio === '16:9') {
-        badge.textContent = '16:9 Video';
+        badge.textContent = '16:9 Widescreen';
         badge.style.background = 'rgba(245, 158, 11, 0.15)';
         badge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
         badge.style.color = '#fbbf24';
       } else {
-        badge.textContent = '4:3 Photo';
+        badge.textContent = '4:3 Native';
         badge.style.background = 'rgba(6, 182, 212, 0.15)';
         badge.style.borderColor = 'rgba(6, 182, 212, 0.3)';
         badge.style.color = 'var(--accent-cyan)';
@@ -3219,12 +3219,12 @@ function setCameraAspectRatio(ratio, skipUpdate = false) {
     const layerOpticsBadge = document.getElementById('layer-optics-aspect-display');
     if (layerOpticsBadge) {
       if (normRatio === '16:9') {
-        layerOpticsBadge.textContent = '16:9 Video';
+        layerOpticsBadge.textContent = '16:9 Widescreen';
         layerOpticsBadge.style.background = 'rgba(245, 158, 11, 0.15)';
         layerOpticsBadge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
         layerOpticsBadge.style.color = '#fbbf24';
       } else {
-        layerOpticsBadge.textContent = '4:3 Photo';
+        layerOpticsBadge.textContent = '4:3 Native';
         layerOpticsBadge.style.background = 'rgba(6, 182, 212, 0.15)';
         layerOpticsBadge.style.borderColor = 'rgba(6, 182, 212, 0.3)';
         layerOpticsBadge.style.color = 'var(--accent-cyan)';
@@ -7131,12 +7131,12 @@ function syncDisplayValues() {
   const layerOpticsBadge = document.getElementById('layer-optics-aspect-display');
   if (layerOpticsBadge) {
     if (CAMERA_ASPECT_RATIO === '16:9') {
-      layerOpticsBadge.textContent = '16:9 Video';
+      layerOpticsBadge.textContent = '16:9 Widescreen';
       layerOpticsBadge.style.background = 'rgba(245, 158, 11, 0.15)';
       layerOpticsBadge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
       layerOpticsBadge.style.color = '#fbbf24';
     } else {
-      layerOpticsBadge.textContent = '4:3 Photo';
+      layerOpticsBadge.textContent = '4:3 Native';
       layerOpticsBadge.style.background = 'rgba(6, 182, 212, 0.15)';
       layerOpticsBadge.style.borderColor = 'rgba(6, 182, 212, 0.3)';
       layerOpticsBadge.style.color = 'var(--accent-cyan)';
@@ -13034,14 +13034,14 @@ function exportKMZ() {
     warningMessage += `• Geolocation Check: Your current pilot position is more than ${limitStr} away from the takeoff area (Takeoff distance: ${formattedDist}). Please ensure you are at the correct flight location.\n\n`;
   }
 
-  // Pre-flight Drone Camera & Safety Checklist (v1.94.0)
+  // Pre-flight Drone Camera & Safety Checklist (v1.94.1)
   const isVideoAspect = (typeof CAMERA_ASPECT_RATIO === 'string' && CAMERA_ASPECT_RATIO === '16:9');
-  const aspectFormatStr = isVideoAspect ? '16:9 Video (Widescreen Crop - 69.7° × 44.2°)' : '4:3 Photo (Full Sensor Standard - 69.7° × 55.2°)';
+  const aspectFormatStr = isVideoAspect ? '16:9 Widescreen (Vertical Crop - 69.7° × 44.2°)' : '4:3 Native (Full Sensor - 69.7° × 55.2°)';
   const aspectNotice = 
     `🚨 CRITICAL ON-DRONE CAMERA SETTING:\n` +
     `  • Mission Camera Aspect Ratio: ${aspectFormatStr}\n` +
-    `  • In DJI Fly > Camera Settings on your controller, you MUST set the camera to ${isVideoAspect ? '16:9 (Video)' : '4:3 (Photo)'} before takeoff.\n` +
-    `  • Waypoint line spacing and photo triggers were mathematically calculated for this ratio to achieve ${Math.round(overlapFront * 100)}% front / ${Math.round(overlapSide * 100)}% side overlap. Flying with the wrong ratio will cause insufficient photogrammetric overlap or framing errors!\n\n`;
+    `  • In DJI Fly > Camera Settings on your controller, confirm camera aspect ratio is set to ${isVideoAspect ? '16:9 (Widescreen)' : '4:3 (Native)'} before takeoff (applicable whether capturing still photos or recording video).\n` +
+    `  • Waypoint line spacing and photo triggers were mathematically calculated for this ratio to achieve ${Math.round(overlapFront * 100)}% front / ${Math.round(overlapSide * 100)}% side overlap. Flying with a mismatched ratio will compromise photogrammetric overlap or framing!\n\n`;
 
   const onDroneBestSettings = 
     `📋 RECOMMENDED ON-DRONE SETTINGS (Not Controllable via KMZ):\n` +

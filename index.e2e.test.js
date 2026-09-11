@@ -3318,13 +3318,13 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
       return {
         success: initialVal === '4:3' &&
-                 initialBadge.includes('4:3 Photo') &&
+                 initialBadge.includes('4:3 Native') &&
                  videoVal === '16:9' &&
-                 videoBadge.includes('16:9 Video') &&
+                 videoBadge.includes('16:9 Widescreen') &&
                  videoVfov === 44.2 &&
                  layer169Aspect === '16:9' &&
                  photoVal === '4:3' &&
-                 photoBadge.includes('4:3 Photo') &&
+                 photoBadge.includes('4:3 Native') &&
                  photoVfov === 55.2 &&
                  layer43Aspect === '4:3',
         initialVal,

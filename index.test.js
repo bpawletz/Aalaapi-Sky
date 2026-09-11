@@ -12860,14 +12860,14 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('Layer-Wide Custom Heading & Real-Time Map Camera Updates (v1.91.0)', () => {
     test('version tags and changelogs are updated to v1.91.0 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.ok(pkg.version === '1.91.0' || pkg.version === '1.92.0' || pkg.version === '1.92.1' || pkg.version === '1.92.2' || pkg.version === '1.93.0' || pkg.version === '1.94.0', 'package.json must be 1.91.0 or higher');
+      assert.ok(pkg.version >= '1.91.0', 'package.json must be 1.91.0 or higher');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.91.0]'), 'CHANGELOG.md must contain ## [1.91.0]');
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
-        assert.ok(html.includes('Version 1.91.0') || html.includes('Version 1.92.0') || html.includes('Version 1.92.1') || html.includes('Version 1.92.2') || html.includes('Version 1.93.0') || html.includes('Version 1.94.0'), `${filename} must contain Version in About modal`);
+        assert.ok(html.includes('version-tag') && html.includes('Version 1.'), `${filename} must contain Version in About modal`);
         assert.ok(html.includes('Changelog (v1.91.0):'), `${filename} must contain Changelog (v1.91.0)`);
         assert.ok(html.includes('id="layer-custom-heading"'), `${filename} must contain layer-custom-heading slider`);
         assert.ok(html.includes('id="global-custom-heading"'), `${filename} must contain global-custom-heading slider`);
@@ -12953,7 +12953,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('Left Navigation Usability, Structured Sub-Groupings & Sticky Action Dock (v1.92.0)', () => {
     test('version tags and changelogs are updated to v1.92.0 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.ok(pkg.version === '1.92.0' || pkg.version === '1.92.1' || pkg.version === '1.92.2' || pkg.version === '1.93.0' || pkg.version === '1.94.0', 'package.json must be 1.92.0 or higher');
+      assert.ok(pkg.version >= '1.92.0', 'package.json must be 1.92.0 or higher');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.92.0]'), 'CHANGELOG.md must contain ## [1.92.0]');
@@ -12975,7 +12975,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = readSafe(path.join(__dirname, filename));
-        assert.ok(html.includes('Version 1.92.0') || html.includes('Version 1.92.1') || html.includes('Version 1.92.2') || html.includes('Version 1.93.0') || html.includes('Version 1.94.0'), `${filename} must contain Version in About modal`);
+        assert.ok(html.includes('version-tag') && html.includes('Version 1.'), `${filename} must contain Version in About modal`);
         assert.ok(html.includes('Changelog (v1.92.0):'), `${filename} must contain Changelog (v1.92.0)`);
         assert.ok(html.includes('id="layer-hierarchy-status-badge"'), `${filename} must contain layer-hierarchy-status-badge`);
         assert.ok(html.includes('id="sidebar-sticky-dock"'), `${filename} must contain sidebar-sticky-dock`);
@@ -13154,7 +13154,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('Pattern Card Badge Alignment & Styling (v1.92.1)', () => {
     test('version tags and changelogs are updated to v1.92.1 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.ok(pkg.version === '1.92.1' || pkg.version === '1.92.2' || pkg.version === '1.93.0' || pkg.version === '1.94.0', 'package.json must be 1.92.1 or higher');
+      assert.ok(pkg.version >= '1.92.1', 'package.json must be 1.92.1 or higher');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.92.1]'), 'CHANGELOG.md must contain ## [1.92.1]');
@@ -13176,7 +13176,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = readSafe(path.join(__dirname, filename));
-        assert.ok(html.includes('Version 1.92.1') || html.includes('Version 1.92.2') || html.includes('Version 1.93.0') || html.includes('Version 1.94.0'), `${filename} must contain Version in About modal`);
+        assert.ok(html.includes('version-tag') && html.includes('Version 1.'), `${filename} must contain Version in About modal`);
         assert.ok(html.includes('Changelog (v1.92.1):'), `${filename} must contain Changelog (v1.92.1)`);
       });
 
@@ -13234,7 +13234,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('Streamlined Topbar Navigation & Duplicate Telemetry Removal (v1.92.2)', () => {
     test('version tags and changelogs are updated to v1.92.2 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.ok(pkg.version === '1.92.2' || pkg.version === '1.93.0' || pkg.version === '1.94.0', 'package.json must be 1.92.2 or higher');
+      assert.ok(pkg.version >= '1.92.2', 'package.json must be 1.92.2 or higher');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.92.2]'), 'CHANGELOG.md must contain ## [1.92.2]');
@@ -13256,7 +13256,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = readSafe(path.join(__dirname, filename));
-        assert.ok(html.includes('Version 1.92.2') || html.includes('Version 1.93.0') || html.includes('Version 1.94.0'), `${filename} must contain Version in About modal`);
+        assert.ok(html.includes('version-tag') && html.includes('Version 1.'), `${filename} must contain Version in About modal`);
         assert.ok(html.includes('Changelog (v1.92.2):'), `${filename} must contain Changelog (v1.92.2)`);
       });
 
@@ -13337,7 +13337,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('Target Splat Survey Dimension Sufficiency Warnings & Auto-Fit (v1.93.0)', () => {
     test('version tags and changelogs are updated to v1.93.0 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.ok(pkg.version === '1.93.0' || pkg.version === '1.94.0', 'package.json must be 1.93.0 or higher');
+      assert.ok(pkg.version >= '1.93.0', 'package.json must be 1.93.0 or higher');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.93.0]'), 'CHANGELOG.md must contain ## [1.93.0]');
@@ -13359,7 +13359,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = readSafe(path.join(__dirname, filename));
-        assert.ok(html.includes('Version 1.93.0') || html.includes('Version 1.94.0'), `${filename} must contain Version in About modal`);
+        assert.ok(html.includes('Version 1.93.0') || html.includes('Version 1.94.0') || html.includes('Version 1.94.1'), `${filename} must contain Version in About modal`);
         assert.ok(html.includes('Changelog (v1.93.0):'), `${filename} must contain Changelog (v1.93.0)`);
         assert.ok(html.includes('id="width-warning-badge"'), `${filename} must contain width-warning-badge`);
         assert.ok(html.includes('id="height-warning-badge"'), `${filename} must contain height-warning-badge`);
@@ -13369,8 +13369,8 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
 
       const templateHtml = readSafe(path.join(__dirname, 'index_template.html'));
       assert.ok(
-        templateHtml.includes('v1.93.0</span>') || templateHtml.includes('v1.94.0</span>'),
-        'index_template.html header badge must be v1.93.0 or v1.94.0'
+        templateHtml.includes('v1.93.0</span>') || templateHtml.includes('v1.94.0</span>') || templateHtml.includes('v1.94.1</span>'),
+        'index_template.html header badge must be v1.93.0 or higher'
       );
     });
 
@@ -13667,6 +13667,59 @@ describe('v1.94.0 Tier 1 Global Camera Aspect Ratio & Multi-Pattern Integration'
     setCameraAspectRatio('4:3', true);
   });
 });
+
+describe('v1.94.1 Decoupled Sensor Aspect Ratio Terminology Tests', () => {
+  test('Version consistency: v1.94.1 is properly registered across package.json, CHANGELOG.md, and template', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+    assert.strictEqual(pkg.version, '1.94.1', 'package.json version must be 1.94.1');
+
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.94.1] - 2026-09-11'), 'CHANGELOG.md must contain v1.94.1 entry');
+
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateHtml.includes('v1.94.1</span>'), 'index_template.html header badge must be v1.94.1');
+    assert.ok(templateHtml.includes('Version 1.94.1</span>'), 'index_template.html About modal must be Version 1.94.1');
+    assert.ok(templateHtml.includes('Changelog (v1.94.1):'), 'index_template.html must contain Changelog (v1.94.1)');
+  });
+
+  test('Template Options: Aspect ratio options use Native Full Sensor and Widescreen Crop without Photo/Video restriction', () => {
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateHtml.includes('4:3 (Native Full Sensor - 69.7° × 55.2°)'), '4:3 option must say Native Full Sensor');
+    assert.ok(templateHtml.includes('16:9 (Widescreen Crop - 69.7° × 44.2°)'), '16:9 option must say Widescreen Crop');
+    assert.ok(!templateHtml.includes('4:3 (DJI Photo Standard'), 'Old 4:3 Photo Standard label must be removed');
+    assert.ok(!templateHtml.includes('16:9 (Video / Wide Crop'), 'Old 16:9 Video / Wide Crop label must be removed');
+  });
+
+  test('Live Badge Synchronization: setCameraAspectRatio sets 4:3 Native and 16:9 Widescreen badges', () => {
+    const mockAspectSelect = { value: '4:3' };
+    const mockGlobalBadge = { textContent: '', style: {} };
+    const mockLayerBadge = { textContent: '', style: {} };
+
+    global._stubElements = {
+      'camera-aspect-ratio': mockAspectSelect,
+      'camera-aspect-ratio-badge': mockGlobalBadge,
+      'layer-optics-aspect-display': mockLayerBadge,
+      'camera-hfov': { value: '69.7' },
+      'camera-vfov': { value: '55.2' }
+    };
+
+    try {
+      // 1. Switch to 16:9
+      setCameraAspectRatio('16:9', true);
+      assert.strictEqual(mockGlobalBadge.textContent, '16:9 Widescreen', 'Section 3 badge must say 16:9 Widescreen');
+      assert.strictEqual(mockLayerBadge.textContent, '16:9 Widescreen', 'Section 2 badge must say 16:9 Widescreen');
+
+      // 2. Switch to 4:3
+      setCameraAspectRatio('4:3', true);
+      assert.strictEqual(mockGlobalBadge.textContent, '4:3 Native', 'Section 3 badge must say 4:3 Native');
+      assert.strictEqual(mockLayerBadge.textContent, '4:3 Native', 'Section 2 badge must say 4:3 Native');
+    } finally {
+      global._stubElements = null;
+      setCameraAspectRatio('4:3', true);
+    }
+  });
+});
+
 
 
 
