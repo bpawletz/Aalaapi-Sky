@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.89.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.90.0</span></h1>
         </div>
       </div>
 
@@ -806,6 +806,7 @@
               <button type="button" class="gimbal-preset-chip" data-pitch="-45" style="flex: 1; padding: 3px 1px; font-size: 0.65rem; font-weight: 600; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer; transition: all 0.2s;">-45° Oblique</button>
               <button type="button" class="gimbal-preset-chip" data-pitch="0" style="flex: 1; padding: 3px 1px; font-size: 0.65rem; font-weight: 600; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer; transition: all 0.2s;">0° Level</button>
               <button type="button" class="gimbal-preset-chip" data-pitch="20" style="flex: 1; padding: 3px 1px; font-size: 0.65rem; font-weight: 600; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer; transition: all 0.2s;">+20° Up</button>
+              <button type="button" class="gimbal-preset-chip" data-pitch="auto" style="flex: 1.1; padding: 3px 1px; font-size: 0.65rem; font-weight: 600; border-radius: 4px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted); cursor: pointer; transition: all 0.2s;" title="Automatically track 3D Point of Interest elevation">🎯 Auto POI</button>
             </div>
 
             <!-- Dynamic Purpose Badge -->
@@ -1773,6 +1774,15 @@
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🎯 POI AGL Height &amp; 3D Auto-Tilt Tracking (v1.90.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Points of Interest now support an optional Above Ground Level (AGL) height. Camera gimbals can now dynamically tilt in 3D space with the new <code>🎯 Auto POI</code> gimbal preset chip, automatically calculating the exact line-of-sight pitch angle to elevated targets (antennas, bridge towers, rooftops). Full 3D coordinates and calculated tilt angles export directly to DJI WPML missions and render in the 3D viewport.
+            </p>
+          </div>
+
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🌐 Resolved Inherited Setting Displays (v1.87.0)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -2332,7 +2342,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.89.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.90.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -2398,6 +2408,16 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.90.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Optional Height (AGL) for POIs:</strong> Added unit-aware AGL height controls to POIs in the Section 1 POI list card and interactive map popups. Defaults to 0m (ground level) for seamless backward compatibility.</li>
+              <li><strong>🎯 Auto POI Gimbal Tracking Mode:</strong> Dynamic 3D line-of-sight pitch resolution calculates true elevation angle based on horizontal standoff and relative elevation ($\Delta z$).</li>
+              <li><strong>3D Three-Tier Resolved Gimbal Displays:</strong> Waypoint editors (2D popup &amp; 3D FPV HUD) dynamically display computed 3D angles (e.g. <code>🌐 Inherit Layer (Auto POI: -28°)</code>).</li>
+              <li><strong>3D Scene POI Visualization:</strong> Renders elevated target poles and glowing beacon spheres at true AGL elevation with camera FOV sight lines tracking in 3D.</li>
+              <li><strong>True 3D WPML Export:</strong> WPML missions export full 3D coordinates in <code>&lt;wpml:waypointPoiPoint&gt;</code> and calculated 3D <code>&lt;wpml:waypointGimbalPitchAngle&gt;</code>.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.89.2):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -4462,7 +4482,7 @@
                     </span>
                     <span style="color: #06b6d4; font-weight: 600;"><span id="fpv-edit-pitch-val">-60</span>&deg;</span>
                   </div>
-                  <input type="range" id="fpv-edit-pitch" min="-90" max="0" value="-60" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer;">
+                  <input type="range" id="fpv-edit-pitch" min="-90" max="60" value="-60" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer;">
                 </div>
 
                 <div id="fpv-edit-speed-container" style="display: flex; flex-direction: column; gap: 3px;">
