@@ -12860,14 +12860,14 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('Layer-Wide Custom Heading & Real-Time Map Camera Updates (v1.91.0)', () => {
     test('version tags and changelogs are updated to v1.91.0 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.ok(pkg.version === '1.91.0' || pkg.version === '1.92.0' || pkg.version === '1.92.1', 'package.json must be 1.91.0 or higher');
+      assert.ok(pkg.version === '1.91.0' || pkg.version === '1.92.0' || pkg.version === '1.92.1' || pkg.version === '1.92.2', 'package.json must be 1.91.0 or higher');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.91.0]'), 'CHANGELOG.md must contain ## [1.91.0]');
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
-        assert.ok(html.includes('Version 1.91.0') || html.includes('Version 1.92.0') || html.includes('Version 1.92.1'), `${filename} must contain Version 1.91.0, 1.92.0, or 1.92.1 in About modal`);
+        assert.ok(html.includes('Version 1.91.0') || html.includes('Version 1.92.0') || html.includes('Version 1.92.1') || html.includes('Version 1.92.2'), `${filename} must contain Version 1.91.0, 1.92.0, 1.92.1, or 1.92.2 in About modal`);
         assert.ok(html.includes('Changelog (v1.91.0):'), `${filename} must contain Changelog (v1.91.0)`);
         assert.ok(html.includes('id="layer-custom-heading"'), `${filename} must contain layer-custom-heading slider`);
         assert.ok(html.includes('id="global-custom-heading"'), `${filename} must contain global-custom-heading slider`);
@@ -12953,7 +12953,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('Left Navigation Usability, Structured Sub-Groupings & Sticky Action Dock (v1.92.0)', () => {
     test('version tags and changelogs are updated to v1.92.0 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.ok(pkg.version === '1.92.0' || pkg.version === '1.92.1', 'package.json must be 1.92.0 or 1.92.1');
+      assert.ok(pkg.version === '1.92.0' || pkg.version === '1.92.1' || pkg.version === '1.92.2', 'package.json must be 1.92.0, 1.92.1, or 1.92.2');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.92.0]'), 'CHANGELOG.md must contain ## [1.92.0]');
@@ -12975,7 +12975,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = readSafe(path.join(__dirname, filename));
-        assert.ok(html.includes('Version 1.92.0') || html.includes('Version 1.92.1'), `${filename} must contain Version 1.92.0 or 1.92.1 in About modal`);
+        assert.ok(html.includes('Version 1.92.0') || html.includes('Version 1.92.1') || html.includes('Version 1.92.2'), `${filename} must contain Version 1.92.0, 1.92.1, or 1.92.2 in About modal`);
         assert.ok(html.includes('Changelog (v1.92.0):'), `${filename} must contain Changelog (v1.92.0)`);
         assert.ok(html.includes('id="layer-hierarchy-status-badge"'), `${filename} must contain layer-hierarchy-status-badge`);
         assert.ok(html.includes('id="sidebar-sticky-dock"'), `${filename} must contain sidebar-sticky-dock`);
@@ -13154,7 +13154,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('Pattern Card Badge Alignment & Styling (v1.92.1)', () => {
     test('version tags and changelogs are updated to v1.92.1 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.strictEqual(pkg.version, '1.92.1', 'package.json must be 1.92.1');
+      assert.ok(pkg.version === '1.92.1' || pkg.version === '1.92.2', 'package.json must be 1.92.1 or 1.92.2');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.92.1]'), 'CHANGELOG.md must contain ## [1.92.1]');
@@ -13176,14 +13176,14 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = readSafe(path.join(__dirname, filename));
-        assert.ok(html.includes('Version 1.92.1'), `${filename} must contain Version 1.92.1 in About modal`);
+        assert.ok(html.includes('Version 1.92.1') || html.includes('Version 1.92.2'), `${filename} must contain Version 1.92.1 or 1.92.2 in About modal`);
         assert.ok(html.includes('Changelog (v1.92.1):'), `${filename} must contain Changelog (v1.92.1)`);
       });
 
       const templateHtml = readSafe(path.join(__dirname, 'index_template.html'));
       assert.ok(
-        templateHtml.includes('<span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.92.1</span>'),
-        'index_template.html header badge must be v1.92.1'
+        templateHtml.includes('header-version-badge'),
+        'index_template.html must contain header badge'
       );
     });
 
@@ -13228,6 +13228,109 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
         compiledHtml.includes('width: auto !important;'),
         'index.html bundle must contain badge width: auto !important;'
       );
+    });
+  });
+
+  describe('Streamlined Topbar Navigation & Duplicate Telemetry Removal (v1.92.2)', () => {
+    test('version tags and changelogs are updated to v1.92.2 across all required locations', () => {
+      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+      assert.strictEqual(pkg.version, '1.92.2', 'package.json must be 1.92.2');
+
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('## [1.92.2]'), 'CHANGELOG.md must contain ## [1.92.2]');
+
+      function readSafe(filepath) {
+        for (let i = 0; i < 5; i++) {
+          try {
+            return fs.readFileSync(filepath, 'utf8');
+          } catch (e) {
+            if (e.code === 'EBUSY' && i < 4) {
+              const start = Date.now();
+              while (Date.now() - start < 100) {}
+              continue;
+            }
+            throw e;
+          }
+        }
+      }
+
+      ['index_template.html', 'index.html'].forEach(filename => {
+        const html = readSafe(path.join(__dirname, filename));
+        assert.ok(html.includes('Version 1.92.2'), `${filename} must contain Version 1.92.2 in About modal`);
+        assert.ok(html.includes('Changelog (v1.92.2):'), `${filename} must contain Changelog (v1.92.2)`);
+      });
+
+      const templateHtml = readSafe(path.join(__dirname, 'index_template.html'));
+      assert.ok(
+        templateHtml.includes('<span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.92.2</span>'),
+        'index_template.html header badge must be v1.92.2'
+      );
+    });
+
+    test('topbar telemetry pill eliminates duplicate waypoint counter and houses weather status cleanly', () => {
+      ['index_template.html', 'index.html'].forEach(filename => {
+        const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
+
+        // Extract #header-telemetry-pill contents
+        const pillMatch = html.match(/<button[^>]*id="header-telemetry-pill"[^>]*>([\s\S]*?)<\/button>/);
+        assert.ok(pillMatch, `${filename} must contain #header-telemetry-pill`);
+        const pillContent = pillMatch[1];
+
+        // Must NOT contain duplicate waypoint counter or pill-telemetry-group
+        assert.ok(!pillContent.includes('pill-telemetry-group'), `${filename} #header-telemetry-pill must not contain pill-telemetry-group`);
+        assert.ok(!pillContent.includes('header-telemetry-summary'), `${filename} #header-telemetry-pill must not contain header-telemetry-summary`);
+
+        // Must contain live weather summary
+        assert.ok(pillContent.includes('id="header-weather-summary"'), `${filename} #header-telemetry-pill must contain header-weather-summary`);
+
+        // Left nav bottom dock must retain primary telemetry summary
+        assert.ok(html.includes('id="dock-waypoint-summary"'), `${filename} must contain dock-waypoint-summary in sticky bottom dock`);
+        assert.ok(html.includes('id="dock-layer-summary"'), `${filename} must contain dock-layer-summary in sticky bottom dock`);
+      });
+    });
+
+    test('updateStatsPanel updates sticky dock waypoint summary accurately', () => {
+      const stubElements = {
+        'stat-waypoints': { textContent: '' },
+        'stat-photos': { textContent: '' },
+        'stat-line-spacing': { textContent: '' },
+        'stat-photo-interval': { textContent: '' },
+        'stat-distance': { textContent: '' },
+        'stat-flight-time': { textContent: '' },
+        'dock-waypoint-summary': { textContent: '' },
+        'dock-layer-summary': { textContent: '' },
+        'sidebar-summary-text': { textContent: '' },
+        'pop-stat-waypoints': { textContent: '' },
+        'pop-stat-photos': { textContent: '' },
+        'pop-stat-distance': { textContent: '' },
+        'pop-stat-time': { textContent: '' },
+        'pop-stat-line-spacing': { textContent: '' },
+        'pop-stat-photo-interval': { textContent: '' },
+        'header-weather-summary': { textContent: '☀️ VFR' }
+      };
+      global._stubElements = stubElements;
+
+      const mockStats = {
+        waypointsCount: 18,
+        photoCount: 18,
+        lineSpacing: 20.0,
+        photoSpacing: 15.0,
+        distance: 1800,
+        timeStr: '6m 12s',
+        flightTimeSeconds: 372
+      };
+
+      try {
+        updateStatsPanel(mockStats);
+        assert.ok(stubElements['dock-waypoint-summary'].textContent.includes('18 WPs'), 'Dock waypoint summary must display WP count');
+        assert.ok(stubElements['dock-waypoint-summary'].textContent.includes('6m 12s'), 'Dock waypoint summary must display flight time');
+
+        // Reset to null
+        updateStatsPanel(null);
+        assert.strictEqual(stubElements['dock-waypoint-summary'].textContent, '0 WPs • 0.0 km • 0m 0s', 'Dock waypoint summary must reset on null stats');
+      } finally {
+        global._stubElements = null;
+      }
     });
   });
 });
