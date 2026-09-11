@@ -11776,7 +11776,7 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
   }
 
   // 2. Photo count
-  const photoCount = photoLocations.length;
+  const photoCount = photoLocations ? photoLocations.length : (waypoints ? waypoints.length : 0);
   // 3. Est flight time (accounting for stop-and-shoot hover delays)
   let flightTimeSeconds = totalDistance / speed;
   if (captureMode === 'stopAndShoot') {
@@ -15517,9 +15517,9 @@ const FlightDiagnostics = {
   },
 
   async loadSelectedFlight(flightId) {
-    // Guard against stale async results: capture the generation at the start of this call.
-    // If the user selects a different flight while this async load is in-flight, the generation
-    // will have been incremented and this call will bail out rather than overwrite the newer selection.
+    if (!flightId || flightId === '0' || (!flightId.startsWith('FlightRecord_') && !flightId.startsWith('diag:') && flightId !== 'active-mission')) {
+      flightId = 'FlightRecord_2026-08-20_[19-42-28].txt';
+    }
     this._loadGeneration = (this._loadGeneration || 0) + 1;
     const myGeneration = this._loadGeneration;
     this._pendingFlightId = flightId;
@@ -15558,7 +15558,7 @@ const FlightDiagnostics = {
             this.currentLoadedMission = data.mission;
             // Store the planned waypoints from the saved mission (not the active workspace)
             this.plannedWaypoints = data.mission.plan?.waypoints || null;
-            if (data.mission.diagnostics) {
+            if (data.mission.diagnostics && Array.isArray(data.mission.diagnostics.points) && data.mission.diagnostics.points.length > 0) {
               this.telemetryData = data.mission.diagnostics;
               const plannedStats = data.mission.plan?.statistics || {
                 waypointCount: data.mission.waypoint_count,
@@ -15566,14 +15566,36 @@ const FlightDiagnostics = {
                 totalDistance: data.mission.total_distance
               };
               this.comparisonData = computeFlightComparison(plannedStats, this.telemetryData);
-            } else {
+            } else if (data.mission.wpml_xml && typeof parseKmlOrWpmlTelemetry === 'function') {
+              // Parse actual flight telemetry directly from WPML placemarks
+              const parsed = parseKmlOrWpmlTelemetry(data.mission.wpml_xml, flightId);
+              if (parsed && Array.isArray(parsed.points) && parsed.points.length > 0) {
+                this.telemetryData = parsed;
+                if (!this.plannedWaypoints || !this.plannedWaypoints.length) {
+                  this.plannedWaypoints = parsed.points.map(p => ({ lat: p.lat, lon: p.lon, altitude: p.alt }));
+                }
+                this.comparisonData = computeFlightComparison({
+                  waypointCount: data.mission.waypoint_count || parsed.points.length,
+                  altitude: data.mission.altitude || parsed.maxAltitude,
+                  totalDistance: data.mission.total_distance || parsed.totalDistance
+                }, this.telemetryData);
+              } else {
+                this.telemetryData = null;
+                this.comparisonData = null;
+              }
+            } else if (data.mission.plan && Array.isArray(data.mission.plan.waypoints) && data.mission.plan.waypoints.length > 0) {
               // Use the saved mission's own waypoints and flight params, not the current workspace
-              const missionWps = data.mission.plan?.waypoints || wps;
+              const missionWps = data.mission.plan.waypoints;
               const missionAlt = data.mission.altitude || altitude;
               const missionSpeed = data.mission.speed || speed;
               const missionGimbal = data.mission.gimbal_pitch || gimbalPitch;
               this.telemetryData = generateTelemetryFromWaypoints(missionWps, { altitude: missionAlt, speed: missionSpeed, gimbalPitch: missionGimbal, flightId });
               this.comparisonData = computeFlightComparison({ waypointCount: missionWps.length, altitude: missionAlt, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
+            } else {
+              // Incomplete or empty archive record (e.g. mock test entry) — DO NOT show active workspace!
+              this.telemetryData = null;
+              this.comparisonData = null;
+              this.plannedWaypoints = null;
             }
           } else {
             throw new Error('Diagnostics data missing in mission payload');
@@ -15584,8 +15606,9 @@ const FlightDiagnostics = {
       } catch (err) {
         if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
         console.warn('Failed to load saved diagnostic by uuid:', err);
-        this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId });
-        this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
+        // DO NOT fall back to active workspace waypoints!
+        this.telemetryData = null;
+        this.comparisonData = null;
         this.plannedWaypoints = null;
       }
     } else {
@@ -15618,9 +15641,17 @@ const FlightDiagnostics = {
         }
       } catch (e) {
         if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
-        this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId });
-        this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
-        this.plannedWaypoints = null;
+        // For built-in demo flight profiles (e.g. 2026-08-20 demo logs), generate offline simulation
+        if (flightId && (flightId.includes('2026-08-20') || flightId.includes('19-39-07') || flightId.includes('19-41-15') || flightId.includes('19-42-28') || flightId.includes('19-47-15'))) {
+          this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId });
+          this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
+          this.plannedWaypoints = null;
+        } else {
+          // For real RC2 flight records when companion is unreachable, do NOT fall back to active workspace!
+          this.telemetryData = null;
+          this.comparisonData = null;
+          this.plannedWaypoints = null;
+        }
       }
     }
 
@@ -15685,7 +15716,7 @@ const FlightDiagnostics = {
       await this.refreshFlightList();
 
       const flightSel = document.getElementById('diag-flight-selector');
-      const selectedFlightId = flightSel ? flightSel.value : (this.selectedFlightId || 'FlightRecord_2026-08-20_[19-42-28].txt');
+      const selectedFlightId = (flightSel && flightSel.value && flightSel.value !== '0' && flightSel.value !== '') ? flightSel.value : 'FlightRecord_2026-08-20_[19-42-28].txt';
 
       if (customData) {
         this.selectedFlightId = customData.flightId || selectedFlightId;
@@ -15716,7 +15747,17 @@ const FlightDiagnostics = {
   },
 
   updateStatsUI() {
-    if (!this.telemetryData) return;
+    if (!this.telemetryData || !this.telemetryData.points || !this.telemetryData.points.length) {
+      const slider = document.getElementById('diag-timeline-slider');
+      if (slider) { slider.max = '0'; slider.value = '0'; }
+      const meta = document.getElementById('diag-flight-meta');
+      if (meta) {
+        meta.textContent = `Telemetry Log: ${this.selectedFlightId || 'None'} • No telemetry points`;
+      }
+      const timeDisplay = document.getElementById('diag-time-display');
+      if (timeDisplay) { timeDisplay.textContent = '00:00 / 00:00'; }
+      return;
+    }
     const slider = document.getElementById('diag-timeline-slider');
     if (slider) {
       slider.max = (this.telemetryData.points.length - 1).toString();
@@ -15806,6 +15847,21 @@ const FlightDiagnostics = {
 
     this.buildTrajectoryMeshes();
     this.buildDroneAvatar();
+
+    // Auto-frame camera to trajectory bounding box so the flight is always centered in view
+    if (this.actualLineMesh && this.actualLineMesh.geometry) {
+      this.actualLineMesh.geometry.computeBoundingSphere();
+      const bs = this.actualLineMesh.geometry.boundingSphere;
+      if (bs && bs.center && !isNaN(bs.center.x)) {
+        if (this.threeControls) {
+          this.threeControls.target.set(bs.center.x, Math.max(0, bs.center.y), bs.center.z);
+        }
+        const dist = Math.max(70, bs.radius * 2.2);
+        this.threeCamera.position.set(bs.center.x, bs.center.y + dist * 0.7, bs.center.z + dist * 0.9);
+        if (this.threeControls) this.threeControls.update();
+      }
+    }
+
     this.animate();
   },
 
