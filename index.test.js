@@ -12860,14 +12860,14 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('Layer-Wide Custom Heading & Real-Time Map Camera Updates (v1.91.0)', () => {
     test('version tags and changelogs are updated to v1.91.0 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.ok(pkg.version === '1.91.0' || pkg.version === '1.92.0' || pkg.version === '1.92.1' || pkg.version === '1.92.2', 'package.json must be 1.91.0 or higher');
+      assert.ok(pkg.version === '1.91.0' || pkg.version === '1.92.0' || pkg.version === '1.92.1' || pkg.version === '1.92.2' || pkg.version === '1.93.0', 'package.json must be 1.91.0 or higher');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.91.0]'), 'CHANGELOG.md must contain ## [1.91.0]');
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
-        assert.ok(html.includes('Version 1.91.0') || html.includes('Version 1.92.0') || html.includes('Version 1.92.1') || html.includes('Version 1.92.2'), `${filename} must contain Version 1.91.0, 1.92.0, 1.92.1, or 1.92.2 in About modal`);
+        assert.ok(html.includes('Version 1.91.0') || html.includes('Version 1.92.0') || html.includes('Version 1.92.1') || html.includes('Version 1.92.2') || html.includes('Version 1.93.0'), `${filename} must contain Version in About modal`);
         assert.ok(html.includes('Changelog (v1.91.0):'), `${filename} must contain Changelog (v1.91.0)`);
         assert.ok(html.includes('id="layer-custom-heading"'), `${filename} must contain layer-custom-heading slider`);
         assert.ok(html.includes('id="global-custom-heading"'), `${filename} must contain global-custom-heading slider`);
@@ -12953,7 +12953,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('Left Navigation Usability, Structured Sub-Groupings & Sticky Action Dock (v1.92.0)', () => {
     test('version tags and changelogs are updated to v1.92.0 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.ok(pkg.version === '1.92.0' || pkg.version === '1.92.1' || pkg.version === '1.92.2', 'package.json must be 1.92.0, 1.92.1, or 1.92.2');
+      assert.ok(pkg.version === '1.92.0' || pkg.version === '1.92.1' || pkg.version === '1.92.2' || pkg.version === '1.93.0', 'package.json must be 1.92.0 or higher');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.92.0]'), 'CHANGELOG.md must contain ## [1.92.0]');
@@ -12975,7 +12975,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = readSafe(path.join(__dirname, filename));
-        assert.ok(html.includes('Version 1.92.0') || html.includes('Version 1.92.1') || html.includes('Version 1.92.2'), `${filename} must contain Version 1.92.0, 1.92.1, or 1.92.2 in About modal`);
+        assert.ok(html.includes('Version 1.92.0') || html.includes('Version 1.92.1') || html.includes('Version 1.92.2') || html.includes('Version 1.93.0'), `${filename} must contain Version in About modal`);
         assert.ok(html.includes('Changelog (v1.92.0):'), `${filename} must contain Changelog (v1.92.0)`);
         assert.ok(html.includes('id="layer-hierarchy-status-badge"'), `${filename} must contain layer-hierarchy-status-badge`);
         assert.ok(html.includes('id="sidebar-sticky-dock"'), `${filename} must contain sidebar-sticky-dock`);
@@ -13154,7 +13154,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('Pattern Card Badge Alignment & Styling (v1.92.1)', () => {
     test('version tags and changelogs are updated to v1.92.1 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.ok(pkg.version === '1.92.1' || pkg.version === '1.92.2', 'package.json must be 1.92.1 or 1.92.2');
+      assert.ok(pkg.version === '1.92.1' || pkg.version === '1.92.2' || pkg.version === '1.93.0', 'package.json must be 1.92.1 or higher');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.92.1]'), 'CHANGELOG.md must contain ## [1.92.1]');
@@ -13176,7 +13176,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = readSafe(path.join(__dirname, filename));
-        assert.ok(html.includes('Version 1.92.1') || html.includes('Version 1.92.2'), `${filename} must contain Version 1.92.1 or 1.92.2 in About modal`);
+        assert.ok(html.includes('Version 1.92.1') || html.includes('Version 1.92.2') || html.includes('Version 1.93.0'), `${filename} must contain Version in About modal`);
         assert.ok(html.includes('Changelog (v1.92.1):'), `${filename} must contain Changelog (v1.92.1)`);
       });
 
@@ -13234,7 +13234,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('Streamlined Topbar Navigation & Duplicate Telemetry Removal (v1.92.2)', () => {
     test('version tags and changelogs are updated to v1.92.2 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.strictEqual(pkg.version, '1.92.2', 'package.json must be 1.92.2');
+      assert.ok(pkg.version === '1.92.2' || pkg.version === '1.93.0', 'package.json must be 1.92.2 or higher');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.92.2]'), 'CHANGELOG.md must contain ## [1.92.2]');
@@ -13256,14 +13256,14 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
 
       ['index_template.html', 'index.html'].forEach(filename => {
         const html = readSafe(path.join(__dirname, filename));
-        assert.ok(html.includes('Version 1.92.2'), `${filename} must contain Version 1.92.2 in About modal`);
+        assert.ok(html.includes('Version 1.92.2') || html.includes('Version 1.93.0'), `${filename} must contain Version in About modal`);
         assert.ok(html.includes('Changelog (v1.92.2):'), `${filename} must contain Changelog (v1.92.2)`);
       });
 
       const templateHtml = readSafe(path.join(__dirname, 'index_template.html'));
       assert.ok(
-        templateHtml.includes('<span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.92.2</span>'),
-        'index_template.html header badge must be v1.92.2'
+        templateHtml.includes('header-version-badge'),
+        'index_template.html header badge must exist'
       );
     });
 
@@ -13328,6 +13328,239 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
         // Reset to null
         updateStatsPanel(null);
         assert.strictEqual(stubElements['dock-waypoint-summary'].textContent, '0 WPs • 0.0 km • 0m 0s', 'Dock waypoint summary must reset on null stats');
+      } finally {
+        global._stubElements = null;
+      }
+    });
+  });
+
+  describe('Target Splat Survey Dimension Sufficiency Warnings & Auto-Fit (v1.93.0)', () => {
+    test('version tags and changelogs are updated to v1.93.0 across all required locations', () => {
+      const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+      assert.strictEqual(pkg.version, '1.93.0', 'package.json must be 1.93.0');
+
+      const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+      assert.ok(changelog.includes('## [1.93.0]'), 'CHANGELOG.md must contain ## [1.93.0]');
+
+      function readSafe(filepath) {
+        for (let i = 0; i < 5; i++) {
+          try {
+            return fs.readFileSync(filepath, 'utf8');
+          } catch (e) {
+            if (e.code === 'EBUSY' && i < 4) {
+              const start = Date.now();
+              while (Date.now() - start < 100) {}
+              continue;
+            }
+            throw e;
+          }
+        }
+      }
+
+      ['index_template.html', 'index.html'].forEach(filename => {
+        const html = readSafe(path.join(__dirname, filename));
+        assert.ok(html.includes('Version 1.93.0'), `${filename} must contain Version 1.93.0 in About modal`);
+        assert.ok(html.includes('Changelog (v1.93.0):'), `${filename} must contain Changelog (v1.93.0)`);
+        assert.ok(html.includes('id="width-warning-badge"'), `${filename} must contain width-warning-badge`);
+        assert.ok(html.includes('id="height-warning-badge"'), `${filename} must contain height-warning-badge`);
+        assert.ok(html.includes('id="target-splat-dimension-warning"'), `${filename} must contain target-splat-dimension-warning banner`);
+        assert.ok(html.includes('id="target-splat-fix-dims-btn"'), `${filename} must contain target-splat-fix-dims-btn`);
+      });
+
+      const templateHtml = readSafe(path.join(__dirname, 'index_template.html'));
+      assert.ok(
+        templateHtml.includes('v1.93.0</span>'),
+        'index_template.html header badge must be v1.93.0'
+      );
+    });
+
+    test('checkTargetSplatDimensionSufficiency detects adequate dimensions', () => {
+      const layer = {
+        pattern: 'target-splat',
+        targetMode: 'radius',
+        targetRadius: 25,
+        altitude: 50,
+        gimbalPitch: -45,
+        targetGridPass: 'double',
+        gridWidth: 170,
+        gridHeight: 170
+      };
+      const check = checkTargetSplatDimensionSufficiency(layer);
+      assert.strictEqual(check.isTargetSplat, true);
+      assert.strictEqual(check.isUndersized, false, '170m grid should not be undersized for 25m radius at 50m alt');
+      assert.strictEqual(check.isCritical, false, '170m grid should not be critical');
+      assert.strictEqual(check.widthOk, true);
+      assert.strictEqual(check.heightOk, true);
+      assert.strictEqual(check.widthDeficit, 0);
+      assert.strictEqual(check.heightDeficit, 0);
+      assert.strictEqual(check.recWidth, 170);
+      assert.strictEqual(check.recHeight, 170);
+    });
+
+    test('checkTargetSplatDimensionSufficiency detects undersized survey grid (standoff truncated)', () => {
+      // 25m radius (diameter 50m / 164 ft), 50m alt, -45 deg pitch -> recommended is 170m (558 ft).
+      // Pilot set 54m (177 ft) width and 61m (200 ft) height.
+      const layer = {
+        pattern: 'target-splat',
+        targetMode: 'radius',
+        targetRadius: 25,
+        altitude: 50,
+        gimbalPitch: -45,
+        targetGridPass: 'double',
+        gridWidth: 54,
+        gridHeight: 61
+      };
+      const check = checkTargetSplatDimensionSufficiency(layer);
+      assert.strictEqual(check.isTargetSplat, true);
+      assert.strictEqual(check.isUndersized, true, '54m x 61m grid must be flagged as undersized when 170m is needed');
+      assert.strictEqual(check.isCritical, false, '54m and 61m are larger than 50m bare diameter, so not critical');
+      assert.strictEqual(check.widthUndersized, true);
+      assert.strictEqual(check.heightUndersized, true);
+      assert.strictEqual(check.widthDeficit, 116, 'Width deficit should be 170 - 54 = 116m');
+      assert.strictEqual(check.heightDeficit, 109, 'Height deficit should be 170 - 61 = 109m');
+    });
+
+    test('checkTargetSplatDimensionSufficiency detects critical grid (smaller than target object)', () => {
+      // 25m radius -> bare target diameter is 50m.
+      // Pilot set 40m width and 60m height.
+      const layer = {
+        pattern: 'target-splat',
+        targetMode: 'radius',
+        targetRadius: 25,
+        altitude: 50,
+        gimbalPitch: -45,
+        targetGridPass: 'double',
+        gridWidth: 40,
+        gridHeight: 60
+      };
+      const check = checkTargetSplatDimensionSufficiency(layer);
+      assert.strictEqual(check.isTargetSplat, true);
+      assert.strictEqual(check.isUndersized, true);
+      assert.strictEqual(check.isCritical, true, '40m width < 50m target diameter must be critical');
+      assert.strictEqual(check.widthCritical, true);
+      assert.strictEqual(check.heightCritical, false);
+      assert.strictEqual(check.targetSpanX, 50);
+      assert.strictEqual(check.targetSpanY, 50);
+    });
+
+    test('checkTargetSplatDimensionSufficiency handles Freeform Polygon aspect ratios', () => {
+      // 60m wide (E-W) x 30m deep (N-S) building
+      const layerPoly = {
+        pattern: 'target-splat',
+        targetMode: 'polygon',
+        gridRotation: 0,
+        altitude: 50,
+        gimbalPitch: -45,
+        targetGridPass: 'double',
+        gridWidth: 50,
+        gridHeight: 160,
+        targetPoly: [
+          { x: -30, y: 15 },
+          { x: 30, y: 15 },
+          { x: 30, y: -15 },
+          { x: -30, y: -15 }
+        ]
+      };
+      const check = checkTargetSplatDimensionSufficiency(layerPoly);
+      assert.strictEqual(check.targetSpanX, 60, 'Span X should be 60m');
+      assert.strictEqual(check.targetSpanY, 30, 'Span Y should be 30m');
+      // Grid width 50m is smaller than target span X 60m -> critical!
+      assert.strictEqual(check.widthCritical, true, 'Grid width 50m < target span 60m must be critical');
+      assert.strictEqual(check.heightCritical, false, 'Grid height 160m > target span 30m is not critical');
+      assert.strictEqual(check.isCritical, true);
+    });
+
+    test('checkTargetSplatDimensionSufficiency returns safe defaults for non-splat layers', () => {
+      const nadirLayer = {
+        pattern: 'nadir',
+        gridWidth: 50,
+        gridHeight: 50
+      };
+      const check = checkTargetSplatDimensionSufficiency(nadirLayer);
+      assert.strictEqual(check.isTargetSplat, false);
+      assert.strictEqual(check.isUndersized, false);
+      assert.strictEqual(check.isCritical, false);
+      assert.strictEqual(check.widthOk, true);
+      assert.strictEqual(check.heightOk, true);
+    });
+
+    test('updateTargetSplatDimensionWarning updates DOM badges, banner, and auto-fit button', () => {
+      const mockElements = {
+        'width-warning-badge': { className: 'splat-dim-badge hidden', textContent: '', setAttribute: () => {} },
+        'height-warning-badge': { className: 'splat-dim-badge hidden', textContent: '', setAttribute: () => {} },
+        'target-splat-dimension-warning': {
+          classList: {
+            _classes: new Set(['hidden']),
+            add(c) { this._classes.add(c); },
+            remove(c) { this._classes.delete(c); },
+            contains(c) { return this._classes.has(c); }
+          },
+          style: {}
+        },
+        'target-splat-warning-icon': { textContent: '' },
+        'target-splat-warning-title': { textContent: '', style: {} },
+        'target-splat-warning-text': { textContent: '', style: {} },
+        'target-splat-deficit-badge': { textContent: '', style: {} },
+        'target-splat-rec-dims-text': { textContent: '' },
+        'target-splat-fix-dims-btn': { innerHTML: '' }
+      };
+      global._stubElements = mockElements;
+
+      try {
+        // 1. Undersized layer
+        const undersizedLayer = {
+          pattern: 'target-splat',
+          targetMode: 'radius',
+          targetRadius: 25,
+          altitude: 50,
+          gimbalPitch: -45,
+          targetGridPass: 'double',
+          gridWidth: 60,
+          gridHeight: 70
+        };
+        updateTargetSplatDimensionWarning(undersizedLayer);
+        assert.strictEqual(mockElements['target-splat-dimension-warning'].classList.contains('hidden'), false, 'Banner must be visible when undersized');
+        assert.ok(mockElements['target-splat-warning-title'].textContent.includes('Survey Dimensions Undersized'), 'Title must reflect undersized state');
+        assert.ok(mockElements['width-warning-badge'].className.includes('warning'), 'Width badge must have warning class');
+        assert.ok(mockElements['height-warning-badge'].className.includes('warning'), 'Height badge must have warning class');
+        assert.ok(mockElements['target-splat-fix-dims-btn'].innerHTML.includes('⚡ Auto-Fit Dimensions'), 'Button must include auto-fit prompt');
+
+        // 2. Critical layer (< target object boundary)
+        const criticalLayer = {
+          pattern: 'target-splat',
+          targetMode: 'radius',
+          targetRadius: 25,
+          altitude: 50,
+          gimbalPitch: -45,
+          targetGridPass: 'double',
+          gridWidth: 30, // < 50m diameter
+          gridHeight: 170
+        };
+        updateTargetSplatDimensionWarning(criticalLayer);
+        assert.strictEqual(mockElements['target-splat-dimension-warning'].classList.contains('hidden'), false);
+        assert.ok(mockElements['target-splat-warning-title'].textContent.includes('CRITICAL'), 'Title must reflect critical state');
+        assert.ok(mockElements['width-warning-badge'].className.includes('critical'), 'Width badge must be critical');
+        assert.strictEqual(mockElements['target-splat-warning-icon'].textContent, '🚨');
+
+        // 3. Adequate layer (auto-fit applied)
+        const adequateLayer = {
+          pattern: 'target-splat',
+          targetMode: 'radius',
+          targetRadius: 25,
+          altitude: 50,
+          gimbalPitch: -45,
+          targetGridPass: 'double',
+          gridWidth: 170,
+          gridHeight: 170
+        };
+        updateTargetSplatDimensionWarning(adequateLayer);
+        assert.strictEqual(mockElements['target-splat-dimension-warning'].classList.contains('hidden'), true, 'Banner must be hidden when adequate');
+        assert.ok(mockElements['width-warning-badge'].className.includes('hidden'), 'Width badge must be hidden');
+        assert.ok(mockElements['height-warning-badge'].className.includes('hidden'), 'Height badge must be hidden');
+
+        // 4. Non-splat pattern
+        updateTargetSplatDimensionWarning(null);
+        assert.strictEqual(mockElements['target-splat-dimension-warning'].classList.contains('hidden'), true, 'Banner must be hidden for null layer');
       } finally {
         global._stubElements = null;
       }

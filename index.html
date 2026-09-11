@@ -3288,6 +3288,54 @@ html, body {
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
 }
 
+/* Target Splat Dimension Sufficiency Warning & Inline Badges (v1.93.0) */
+.splat-dim-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 6px;
+  vertical-align: middle;
+  line-height: 1.25;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.splat-dim-badge.warning {
+  background: rgba(245, 158, 11, 0.22);
+  border: 1px solid rgba(245, 158, 11, 0.55);
+  color: #fbbf24;
+}
+
+.splat-dim-badge.critical {
+  background: rgba(239, 68, 68, 0.25);
+  border: 1px solid rgba(239, 68, 68, 0.65);
+  color: #f87171;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.35);
+}
+
+.splat-dim-badge.hidden {
+  display: none !important;
+}
+
+#target-splat-dimension-warning {
+  transition: all 0.25s ease-in-out;
+}
+
+#target-splat-fix-dims-btn:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.45) !important;
+}
+
+#target-splat-fix-dims-btn:active {
+  transform: translateY(0);
+}
+
+
 /* Heading Mode Help Popover — Waypoint Editors (v1.88.0) */
 .wp-editor-help-btn {
   background: rgba(6, 182, 212, 0.1);
@@ -3601,7 +3649,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.92.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.93.0</span></h1>
         </div>
       </div>
 
@@ -3900,7 +3948,7 @@ html, body {
                 </svg>
                 Grid Width
               </span>
-              <span class="value-display"><span id="width-val">100</span> <span id="width-unit">m</span></span>
+              <span class="value-display"><span id="width-val">100</span> <span id="width-unit">m</span><span id="width-warning-badge" class="splat-dim-badge hidden" title="Survey width is too small to capture target area">⚠️ Undersized</span></span>
             </div>
             <input type="range" id="grid-width" min="20" max="500" value="100" class="slider" aria-label="Grid width">
           </div>
@@ -3915,7 +3963,7 @@ html, body {
                 </svg>
                 Grid Height
               </span>
-              <span class="value-display"><span id="height-val">100</span> <span id="height-unit">m</span></span>
+              <span class="value-display"><span id="height-val">100</span> <span id="height-unit">m</span><span id="height-warning-badge" class="splat-dim-badge hidden" title="Survey height is too small to capture target area">⚠️ Undersized</span></span>
             </div>
             <input type="range" id="grid-height" min="20" max="500" value="100" class="slider" aria-label="Grid height">
           </div>
@@ -4051,6 +4099,29 @@ html, body {
               <div style="display: flex; align-items: center; gap: 6px;">
                 <button type="button" id="target-splat-autofit-btn" class="badge" style="background: rgba(16, 185, 129, 0.3); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.6); font-size: 0.68rem; padding: 2px 8px; border-radius: 4px; cursor: pointer; transition: all 0.2s;" title="Toggle Auto-Fit Survey Width &amp; Height from target radius/polygon">⚡ Auto-Fit (Active)</button>
                 <span id="target-splat-saved-pill" class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 0.68rem; padding: 2px 6px; border-radius: 4px; display: none;">0 pruned</span>
+              </div>
+            </div>
+
+            <!-- Target Splat Dimension Sufficiency Warning Banner (v1.93.0) -->
+            <div id="target-splat-dimension-warning" class="hidden" style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; font-size: 0.78rem; line-height: 1.45; transition: all 0.25s ease;">
+              <div style="display: flex; align-items: flex-start; gap: 8px;">
+                <span id="target-splat-warning-icon" style="font-size: 1.15rem; line-height: 1; flex-shrink: 0; margin-top: 1px;">⚠️</span>
+                <div style="flex: 1;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; flex-wrap: wrap; gap: 4px;">
+                    <strong id="target-splat-warning-title" style="color: #fbbf24; font-size: 0.82rem;">Survey Dimensions Undersized</strong>
+                    <span id="target-splat-deficit-badge" class="badge" style="background: rgba(245, 158, 11, 0.25); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.5); font-size: 0.65rem; padding: 1px 6px; border-radius: 3px;">Deficit</span>
+                  </div>
+                  <div id="target-splat-warning-text" style="color: #fde68a; margin-bottom: 6px;">
+                    Survey grid is too small to capture the target structure with the required camera standoff distance. Outer facades will be clipped.
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.25); border-radius: 4px; padding: 4px 8px; margin-bottom: 8px; font-size: 0.72rem;">
+                    <span style="color: var(--text-muted);">Recommended Coverage:</span>
+                    <strong id="target-splat-rec-dims-text" style="color: #34d399; font-family: var(--font-secondary);">560 ft &times; 560 ft</strong>
+                  </div>
+                  <button type="button" id="target-splat-fix-dims-btn" class="btn-primary" style="width: 100%; padding: 6px 10px; font-size: 0.75rem; border-radius: 5px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; background: linear-gradient(135deg, #059669, #10b981); border: 1px solid rgba(16, 185, 129, 0.6); color: #fff; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);">
+                    <span>⚡ Auto-Fit Recommended Dimensions</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -5401,6 +5472,15 @@ html, body {
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              📐 Target Splat Dimension Sufficiency Warnings &amp; 1-Click Auto-Fit (v1.93.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Instantly informs pilots whenever Target Splat Survey Width or Height is too small to cover the target area. Displays real-time inline warning badges (<code>⚠️ Undersized</code> or <code>🚨 &lt; Target</code>) alongside Survey Width/Height numerical values, a dedicated deficit breakdown callout banner, and an instant <code>⚡ Auto-Fit Recommended Dimensions</code> button to snap grid dimensions back to optimal camera standoff geometry.
+            </p>
+          </div>
+
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🧭 Sidebar Usability, Structured Cards &amp; Sticky Action Dock (v1.92.0)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -5987,7 +6067,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.92.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.93.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -6053,6 +6133,15 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.93.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Target Splat Dimension Sufficiency Detection:</strong> Automatically verifies if Survey Width and Survey Height are large enough to cover the target structure and maintain required camera standoff distance at the active altitude and gimbal pitch.</li>
+              <li><strong>Dynamic Inline Warning Badges:</strong> Informs pilots directly on the Survey Width and Survey Height displays with real-time badges (<code>⚠️ Undersized</code> when standoff distance is clipped or <code>🚨 &lt; Target</code> when grid is smaller than the physical building boundary).</li>
+              <li><strong>Interactive Deficit Banner &amp; 1-Click Auto-Fit:</strong> Displays an amber/red warning callout inside the Target Splat container showing exact numerical deficit in active units and a 1-click <code>⚡ Auto-Fit Recommended Dimensions</code> button to restore optimal geometry.</li>
+              <li><strong>Map Overlay Warning Feedback:</strong> Visualizes undersized target status directly on the Leaflet map with warning badges on target circles/polygons and updated hover tooltips.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.92.2):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -10259,6 +10348,7 @@ function syncUiWithActiveLayer() {
   setVal('target-splat-framing-mode', layer.targetFramingMode || 'balanced');
   updateTargetSplatAutoFitUI(layer);
   updateTargetSplatDiagram(layer);
+  updateTargetSplatDimensionWarning(layer);
 
   // Perimeter orbit controls
   const perimPassEl = document.getElementById('target-perimeter-pass');
@@ -13346,6 +13436,8 @@ function initUIEventListeners() {
         if (id === 'grid-width' || id === 'grid-height') {
           if (!isProgrammaticDimensionUpdate) {
             activeLayer.targetAutoDimensions = false;
+            if (id === 'grid-width') activeLayer.gridWidth = parseFloat(el.value) || 100;
+            if (id === 'grid-height') activeLayer.gridHeight = parseFloat(el.value) || 100;
             updateTargetSplatAutoFitUI(activeLayer);
           }
         } else if (activeLayer.targetAutoDimensions !== false && (id === 'altitude' || id === 'gimbal-pitch' || id === 'grid-rotation')) {
@@ -13381,6 +13473,8 @@ function initUIEventListeners() {
         if (id === 'grid-width' || id === 'grid-height') {
           if (!isProgrammaticDimensionUpdate) {
             activeLayer.targetAutoDimensions = false;
+            if (id === 'grid-width') activeLayer.gridWidth = parseFloat(el.value) || 100;
+            if (id === 'grid-height') activeLayer.gridHeight = parseFloat(el.value) || 100;
             updateTargetSplatAutoFitUI(activeLayer);
           }
         }
@@ -13543,6 +13637,19 @@ function initUIEventListeners() {
   const targetAutoFitBtn = document.getElementById('target-splat-autofit-btn');
   if (targetAutoFitBtn) {
     targetAutoFitBtn.addEventListener('click', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.targetAutoDimensions = true;
+        applyTargetSplatAutoDimensions(activeLayer);
+        updateGrid();
+        saveAllSettingsToLocalStorage();
+      }
+    });
+  }
+
+  const targetFixDimsBtn = document.getElementById('target-splat-fix-dims-btn');
+  if (targetFixDimsBtn) {
+    targetFixDimsBtn.addEventListener('click', () => {
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
       if (activeLayer) {
         activeLayer.targetAutoDimensions = true;
@@ -15199,6 +15306,12 @@ function togglePatternParameters() {
   if (!gridTypeEl) return;
   const gridType = gridTypeEl.value;
 
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  if (activeLayer) {
+    activeLayer.pattern = gridType;
+    activeLayer.isExclusionZone = (gridType === 'exclusion-box' || gridType === 'exclusion-freeform');
+  }
+
   // Transition out of Imported KMZ mode if active
   if (importedWaypoints) {
     if (gridType === 'freeform') {
@@ -16136,6 +16249,9 @@ function syncDisplayValues() {
   if (activeLayer && activeLayer.pattern === 'target-splat') {
     updateTargetSplatAutoFitUI(activeLayer);
     updateTargetSplatDiagram(activeLayer);
+    updateTargetSplatDimensionWarning(activeLayer);
+  } else {
+    updateTargetSplatDimensionWarning(null);
   }
 
   updateInheritOptionLabels();
@@ -17755,6 +17871,7 @@ function applyTargetSplatAutoDimensions(layer) {
   if (!layer || layer.pattern !== 'target-splat' || layer.targetAutoDimensions === false) {
     updateTargetSplatAutoFitUI(layer);
     updateTargetSplatDiagram(layer);
+    updateTargetSplatDimensionWarning(layer);
     return;
   }
   const dims = calculateTargetSplatDimensions(layer);
@@ -17772,6 +17889,7 @@ function applyTargetSplatAutoDimensions(layer) {
 
   updateTargetSplatAutoFitUI(layer);
   updateTargetSplatDiagram(layer);
+  updateTargetSplatDimensionWarning(layer);
   if (typeof syncDisplayValues === 'function') syncDisplayValues();
 }
 
@@ -17925,6 +18043,257 @@ function updateTargetSplatDiagram(layer, overrideAltitude, overridePitch) {
   setElemText('target-splat-diag-alt-text', `${Math.round(altitude)}m`);
   setElemText('target-splat-diag-boresight-text', `Boresight: ${Math.round(dBoresight)}m`);
   setElemAttr('target-splat-diag-boresight-text', 'x', String(Math.round(Math.max(65, Math.min(180, xBoresight)))));
+}
+
+/**
+ * Evaluates whether Target Splat survey dimensions (gridWidth & gridHeight) are large enough
+ * to cover the target area and provide required camera standoff distance at the active
+ * altitude and gimbal pitch angle.
+ *
+ * @param {Object} layer - The active pattern layer
+ * @param {number} [overrideWidth] - Optional grid width in meters
+ * @param {number} [overrideHeight] - Optional grid height in meters
+ * @returns {Object} Dimension sufficiency evaluation result
+ */
+function checkTargetSplatDimensionSufficiency(layer, overrideWidth, overrideHeight) {
+  if (!layer || layer.pattern !== 'target-splat') {
+    return {
+      isTargetSplat: false,
+      isUndersized: false,
+      isCritical: false,
+      widthOk: true,
+      heightOk: true,
+      widthUndersized: false,
+      heightUndersized: false,
+      widthCritical: false,
+      heightCritical: false,
+      recWidth: 100,
+      recHeight: 100,
+      currentWidth: 100,
+      currentHeight: 100,
+      targetSpanX: 0,
+      targetSpanY: 0,
+      widthDeficit: 0,
+      heightDeficit: 0
+    };
+  }
+
+  const recDims = calculateTargetSplatDimensions(layer);
+  const sliderWidth = (typeof document !== 'undefined' && document.getElementById('grid-width'))
+    ? parseFloat(document.getElementById('grid-width').value)
+    : undefined;
+  const sliderHeight = (typeof document !== 'undefined' && document.getElementById('grid-height'))
+    ? parseFloat(document.getElementById('grid-height').value)
+    : undefined;
+
+  const currentWidth = (overrideWidth !== undefined)
+    ? overrideWidth
+    : (sliderWidth !== undefined && !isNaN(sliderWidth) ? sliderWidth : (layer.gridWidth !== undefined ? layer.gridWidth : 100));
+  const currentHeight = (overrideHeight !== undefined)
+    ? overrideHeight
+    : (sliderHeight !== undefined && !isNaN(sliderHeight) ? sliderHeight : (layer.gridHeight !== undefined ? layer.gridHeight : 100));
+
+  // Compute physical boundary extent (diameter / bounding box)
+  const targetMode = layer.targetMode || 'radius';
+  const targetRadius = (typeof layer.targetRadius === 'number' && layer.targetRadius > 0) ? layer.targetRadius : 25;
+  const rotationDeg = (layer.gridRotation !== undefined) ? layer.gridRotation : 0;
+
+  let halfExtentX = targetRadius;
+  let halfExtentY = targetRadius;
+
+  if (targetMode === 'polygon' && Array.isArray(layer.targetPoly) && layer.targetPoly.length >= 3) {
+    const centerLat = (layer.centerLat !== undefined && layer.centerLat !== null) ? layer.centerLat : 0;
+    const centerLon = (layer.centerLon !== undefined && layer.centerLon !== null) ? layer.centerLon : 0;
+    const localPoly = (typeof getLocalTargetPolygon === 'function') ? getLocalTargetPolygon(layer, centerLat, centerLon, rotationDeg) : null;
+    if (localPoly && localPoly.length >= 3) {
+      let maxX = 0;
+      let maxY = 0;
+      localPoly.forEach(pt => {
+        const absX = Math.abs(pt.x);
+        const absY = Math.abs(pt.y);
+        if (absX > maxX) maxX = absX;
+        if (absY > maxY) maxY = absY;
+      });
+      halfExtentX = Math.max(5, maxX);
+      halfExtentY = Math.max(5, maxY);
+    }
+  }
+
+  const targetSpanX = 2 * halfExtentX;
+  const targetSpanY = 2 * halfExtentY;
+
+  // Critical check: Survey dimension is smaller than bare target physical extent (turnaround inside structure)
+  // Tolerance of 0.5m prevents false positives from floating point rounding
+  const widthCritical = currentWidth < (targetSpanX - 0.5);
+  const heightCritical = currentHeight < (targetSpanY - 0.5);
+  const isCritical = widthCritical || heightCritical;
+
+  // Undersized check: Survey dimension is smaller than recommended standoff coverage
+  const widthUndersized = currentWidth < (recDims.width - 0.5);
+  const heightUndersized = currentHeight < (recDims.height - 0.5);
+  const isUndersized = widthUndersized || heightUndersized;
+
+  const widthDeficit = Math.max(0, recDims.width - currentWidth);
+  const heightDeficit = Math.max(0, recDims.height - currentHeight);
+
+  return {
+    isTargetSplat: true,
+    isUndersized,
+    isCritical,
+    widthOk: !widthUndersized,
+    heightOk: !heightUndersized,
+    widthUndersized,
+    heightUndersized,
+    widthCritical,
+    heightCritical,
+    recWidth: recDims.width,
+    recHeight: recDims.height,
+    currentWidth,
+    currentHeight,
+    targetSpanX,
+    targetSpanY,
+    widthDeficit,
+    heightDeficit
+  };
+}
+
+/**
+ * Updates UI warning badges and callout banner when Target Splat dimensions are undersized.
+ *
+ * @param {Object} layer - Active pattern layer
+ */
+function updateTargetSplatDimensionWarning(layer) {
+  if (typeof document === 'undefined') return;
+
+  const widthBadge = document.getElementById('width-warning-badge');
+  const heightBadge = document.getElementById('height-warning-badge');
+  const warningBanner = document.getElementById('target-splat-dimension-warning');
+
+  if (!layer || layer.pattern !== 'target-splat') {
+    if (widthBadge) {
+      widthBadge.className = 'splat-dim-badge hidden';
+    }
+    if (heightBadge) {
+      heightBadge.className = 'splat-dim-badge hidden';
+    }
+    if (warningBanner) {
+      warningBanner.classList.add('hidden');
+    }
+    return;
+  }
+
+  const check = checkTargetSplatDimensionSufficiency(layer);
+  const activeUnit = (typeof getUnitSystem === 'function') ? getUnitSystem() : ((typeof unit !== 'undefined') ? unit : 'imperial');
+  const isImperial = activeUnit === 'imperial';
+  const unitStr = isImperial ? 'ft' : 'm';
+  const scale = isImperial ? M_TO_FT : 1;
+
+  const curW = Math.round(check.currentWidth * scale);
+  const curH = Math.round(check.currentHeight * scale);
+  const recW = Math.round(check.recWidth * scale);
+  const recH = Math.round(check.recHeight * scale);
+  const spanX = Math.round(check.targetSpanX * scale);
+  const spanY = Math.round(check.targetSpanY * scale);
+  const defW = Math.max(0, recW - curW);
+  const defH = Math.max(0, recH - curH);
+
+  // Update Survey Width badge
+  if (widthBadge) {
+    if (check.widthCritical) {
+      widthBadge.textContent = '🚨 < Target';
+      widthBadge.className = 'splat-dim-badge critical';
+      widthBadge.setAttribute('title', `Survey Width (${curW}${unitStr}) is smaller than physical target width (${spanX}${unitStr})! Turnaround legs enter target.`);
+    } else if (check.widthUndersized) {
+      widthBadge.textContent = '⚠️ Undersized';
+      widthBadge.className = 'splat-dim-badge warning';
+      widthBadge.setAttribute('title', `Survey Width (${curW}${unitStr}) is smaller than recommended standoff coverage (${recW}${unitStr}). Outer facades will be clipped.`);
+    } else {
+      widthBadge.className = 'splat-dim-badge hidden';
+    }
+  }
+
+  // Update Survey Height badge
+  if (heightBadge) {
+    if (check.heightCritical) {
+      heightBadge.textContent = '🚨 < Target';
+      heightBadge.className = 'splat-dim-badge critical';
+      heightBadge.setAttribute('title', `Survey Height (${curH}${unitStr}) is smaller than physical target height (${spanY}${unitStr})! Turnaround legs enter target.`);
+    } else if (check.heightUndersized) {
+      heightBadge.textContent = '⚠️ Undersized';
+      heightBadge.className = 'splat-dim-badge warning';
+      heightBadge.setAttribute('title', `Survey Height (${curH}${unitStr}) is smaller than recommended standoff coverage (${recH}${unitStr}). Outer facades will be clipped.`);
+    } else {
+      heightBadge.className = 'splat-dim-badge hidden';
+    }
+  }
+
+  // Update Warning Callout Banner
+  if (warningBanner) {
+    if (!check.isUndersized) {
+      warningBanner.classList.add('hidden');
+    } else {
+      warningBanner.classList.remove('hidden');
+
+      const iconEl = document.getElementById('target-splat-warning-icon');
+      const titleEl = document.getElementById('target-splat-warning-title');
+      const textEl = document.getElementById('target-splat-warning-text');
+      const deficitBadge = document.getElementById('target-splat-deficit-badge');
+      const recDimsEl = document.getElementById('target-splat-rec-dims-text');
+      const fixBtn = document.getElementById('target-splat-fix-dims-btn');
+
+      const deficits = [];
+      if (defW > 0) deficits.push(`-${defW} ${unitStr} W`);
+      if (defH > 0) deficits.push(`-${defH} ${unitStr} H`);
+      const deficitStr = deficits.join(', ');
+
+      if (deficitBadge) {
+        deficitBadge.textContent = `Deficit: ${deficitStr}`;
+        if (check.isCritical) {
+          deficitBadge.style.background = 'rgba(239, 68, 68, 0.25)';
+          deficitBadge.style.borderColor = 'rgba(239, 68, 68, 0.6)';
+          deficitBadge.style.color = '#f87171';
+        } else {
+          deficitBadge.style.background = 'rgba(245, 158, 11, 0.25)';
+          deficitBadge.style.borderColor = 'rgba(245, 158, 11, 0.5)';
+          deficitBadge.style.color = '#fbbf24';
+        }
+      }
+
+      if (recDimsEl) {
+        recDimsEl.textContent = `${recW} ${unitStr} × ${recH} ${unitStr}`;
+      }
+
+      if (check.isCritical) {
+        warningBanner.style.background = 'rgba(239, 68, 68, 0.12)';
+        warningBanner.style.borderColor = 'rgba(239, 68, 68, 0.45)';
+        if (iconEl) iconEl.textContent = '🚨';
+        if (titleEl) {
+          titleEl.textContent = 'CRITICAL: Grid Smaller Than Target Object';
+          titleEl.style.color = '#f87171';
+        }
+        if (textEl) {
+          textEl.style.color = '#fca5a5';
+          textEl.textContent = `Current survey grid (${curW}×${curH} ${unitStr}) is smaller than the physical target boundary (${spanX}×${spanY} ${unitStr}). Flight turnaround legs will enter the structure.`;
+        }
+      } else {
+        warningBanner.style.background = 'rgba(245, 158, 11, 0.12)';
+        warningBanner.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+        if (iconEl) iconEl.textContent = '⚠️';
+        if (titleEl) {
+          titleEl.textContent = 'Survey Dimensions Undersized';
+          titleEl.style.color = '#fbbf24';
+        }
+        if (textEl) {
+          textEl.style.color = '#fde68a';
+          textEl.textContent = `Current flight grid (${curW}×${curH} ${unitStr}) is too narrow to provide required camera standoff distance (${recW}×${recH} ${unitStr} needed at current altitude & gimbal angle). Outer building facades or rooflines will be clipped.`;
+        }
+      }
+
+      if (fixBtn) {
+        fixBtn.innerHTML = `<span>⚡ Auto-Fit Dimensions (${recW} ${unitStr} × ${recH} ${unitStr})</span>`;
+      }
+    }
+  }
 }
 
 function generateTargetSplatCoordinates(width, height, rotation, captureMode, sLine, sPhoto, altitude, defaultGimbalPitch, layer) {
@@ -18660,16 +19029,24 @@ function drawTargetSplatOverlay(layer, centerLat, centerLon, rotationDeg) {
   const targetRadius = (layer.targetRadius > 0) ? layer.targetRadius : 25;
   const targetHeight = (layer.targetHeight !== undefined && layer.targetHeight !== null) ? layer.targetHeight : 8;
 
+  const dimCheck = (typeof checkTargetSplatDimensionSufficiency === 'function')
+    ? checkTargetSplatDimensionSufficiency(layer)
+    : { isUndersized: false, isCritical: false };
+  const overlayColor = dimCheck.isCritical ? '#ef4444' : (dimCheck.isUndersized ? '#f59e0b' : '#10b981');
+  const dimStatusSuffix = dimCheck.isCritical
+    ? ' — 🚨 CRITICAL: Survey grid smaller than target object!'
+    : (dimCheck.isUndersized ? ' — ⚠️ CAUTION: Survey grid undersized for camera standoff' : '');
+
   if (targetMode === 'radius') {
     const circle = L.circle([centerLat, centerLon], {
       radius: targetRadius,
-      color: '#10b981',
+      color: overlayColor,
       weight: 2.5,
       dashArray: '6, 6',
-      fillColor: '#10b981',
+      fillColor: overlayColor,
       fillOpacity: 0.15
     }).addTo(targetPolygonGroup);
-    circle.bindTooltip(`🎯 Target Object (Radius: ${targetRadius}m, Height: ${targetHeight}m)`, { direction: 'center', permanent: false });
+    circle.bindTooltip(`🎯 Target Object (Radius: ${targetRadius}m, Height: ${targetHeight}m)${dimStatusSuffix}`, { direction: 'center', permanent: false });
 
   } else {
     // Polygon Mode
@@ -18679,17 +19056,17 @@ function drawTargetSplatOverlay(layer, centerLat, centerLon, rotationDeg) {
     if (vertices.length >= 3) {
       const latlngs = vertices.map(v => [v.lat, v.lon]);
       poly = L.polygon(latlngs, {
-        color: '#10b981',
+        color: overlayColor,
         weight: 2.5,
         dashArray: '6, 6',
-        fillColor: '#10b981',
+        fillColor: overlayColor,
         fillOpacity: 0.18
       }).addTo(targetPolygonGroup);
-      poly.bindTooltip(`🎯 Target House Polygon (${vertices.length} vertices, Roof Height: ${targetHeight}m)`, { direction: 'center', permanent: false });
+      poly.bindTooltip(`🎯 Target House Polygon (${vertices.length} vertices, Roof Height: ${targetHeight}m)${dimStatusSuffix}`, { direction: 'center', permanent: false });
     } else if (vertices.length === 2) {
       const latlngs = vertices.map(v => [v.lat, v.lon]);
       polyline = L.polyline(latlngs, {
-        color: '#10b981',
+        color: overlayColor,
         weight: 2.5,
         dashArray: '4, 4'
       }).addTo(targetPolygonGroup);
@@ -18697,13 +19074,13 @@ function drawTargetSplatOverlay(layer, centerLat, centerLon, rotationDeg) {
       // Show default circular envelope placeholder only if not actively tracing
       const circle = L.circle([centerLat, centerLon], {
         radius: targetRadius,
-        color: '#10b981',
+        color: overlayColor,
         weight: 2,
         dashArray: '4, 4',
-        fillColor: '#10b981',
+        fillColor: overlayColor,
         fillOpacity: 0.08
       }).addTo(targetPolygonGroup);
-      circle.bindTooltip(`🎯 Target Envelope (${targetRadius}m - Click 'Edit Target Polygon' to trace house)`, { direction: 'center', permanent: false });
+      circle.bindTooltip(`🎯 Target Envelope (${targetRadius}m - Click 'Edit Target Polygon' to trace house)${dimStatusSuffix}`, { direction: 'center', permanent: false });
     }
 
     // Draw Perimeter Orbit ring preview (amber dashed) when enabled (v1.77.4)

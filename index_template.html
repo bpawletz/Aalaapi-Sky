@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.92.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.93.0</span></h1>
         </div>
       </div>
 
@@ -366,7 +366,7 @@
                 </svg>
                 Grid Width
               </span>
-              <span class="value-display"><span id="width-val">100</span> <span id="width-unit">m</span></span>
+              <span class="value-display"><span id="width-val">100</span> <span id="width-unit">m</span><span id="width-warning-badge" class="splat-dim-badge hidden" title="Survey width is too small to capture target area">⚠️ Undersized</span></span>
             </div>
             <input type="range" id="grid-width" min="20" max="500" value="100" class="slider" aria-label="Grid width">
           </div>
@@ -381,7 +381,7 @@
                 </svg>
                 Grid Height
               </span>
-              <span class="value-display"><span id="height-val">100</span> <span id="height-unit">m</span></span>
+              <span class="value-display"><span id="height-val">100</span> <span id="height-unit">m</span><span id="height-warning-badge" class="splat-dim-badge hidden" title="Survey height is too small to capture target area">⚠️ Undersized</span></span>
             </div>
             <input type="range" id="grid-height" min="20" max="500" value="100" class="slider" aria-label="Grid height">
           </div>
@@ -517,6 +517,29 @@
               <div style="display: flex; align-items: center; gap: 6px;">
                 <button type="button" id="target-splat-autofit-btn" class="badge" style="background: rgba(16, 185, 129, 0.3); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.6); font-size: 0.68rem; padding: 2px 8px; border-radius: 4px; cursor: pointer; transition: all 0.2s;" title="Toggle Auto-Fit Survey Width &amp; Height from target radius/polygon">⚡ Auto-Fit (Active)</button>
                 <span id="target-splat-saved-pill" class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 0.68rem; padding: 2px 6px; border-radius: 4px; display: none;">0 pruned</span>
+              </div>
+            </div>
+
+            <!-- Target Splat Dimension Sufficiency Warning Banner (v1.93.0) -->
+            <div id="target-splat-dimension-warning" class="hidden" style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; font-size: 0.78rem; line-height: 1.45; transition: all 0.25s ease;">
+              <div style="display: flex; align-items: flex-start; gap: 8px;">
+                <span id="target-splat-warning-icon" style="font-size: 1.15rem; line-height: 1; flex-shrink: 0; margin-top: 1px;">⚠️</span>
+                <div style="flex: 1;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; flex-wrap: wrap; gap: 4px;">
+                    <strong id="target-splat-warning-title" style="color: #fbbf24; font-size: 0.82rem;">Survey Dimensions Undersized</strong>
+                    <span id="target-splat-deficit-badge" class="badge" style="background: rgba(245, 158, 11, 0.25); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.5); font-size: 0.65rem; padding: 1px 6px; border-radius: 3px;">Deficit</span>
+                  </div>
+                  <div id="target-splat-warning-text" style="color: #fde68a; margin-bottom: 6px;">
+                    Survey grid is too small to capture the target structure with the required camera standoff distance. Outer facades will be clipped.
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.25); border-radius: 4px; padding: 4px 8px; margin-bottom: 8px; font-size: 0.72rem;">
+                    <span style="color: var(--text-muted);">Recommended Coverage:</span>
+                    <strong id="target-splat-rec-dims-text" style="color: #34d399; font-family: var(--font-secondary);">560 ft &times; 560 ft</strong>
+                  </div>
+                  <button type="button" id="target-splat-fix-dims-btn" class="btn-primary" style="width: 100%; padding: 6px 10px; font-size: 0.75rem; border-radius: 5px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; background: linear-gradient(135deg, #059669, #10b981); border: 1px solid rgba(16, 185, 129, 0.6); color: #fff; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);">
+                    <span>⚡ Auto-Fit Recommended Dimensions</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1867,6 +1890,15 @@
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              📐 Target Splat Dimension Sufficiency Warnings &amp; 1-Click Auto-Fit (v1.93.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Instantly informs pilots whenever Target Splat Survey Width or Height is too small to cover the target area. Displays real-time inline warning badges (<code>⚠️ Undersized</code> or <code>🚨 &lt; Target</code>) alongside Survey Width/Height numerical values, a dedicated deficit breakdown callout banner, and an instant <code>⚡ Auto-Fit Recommended Dimensions</code> button to snap grid dimensions back to optimal camera standoff geometry.
+            </p>
+          </div>
+
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🧭 Sidebar Usability, Structured Cards &amp; Sticky Action Dock (v1.92.0)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -2453,7 +2485,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.92.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.93.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -2519,6 +2551,15 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.93.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Target Splat Dimension Sufficiency Detection:</strong> Automatically verifies if Survey Width and Survey Height are large enough to cover the target structure and maintain required camera standoff distance at the active altitude and gimbal pitch.</li>
+              <li><strong>Dynamic Inline Warning Badges:</strong> Informs pilots directly on the Survey Width and Survey Height displays with real-time badges (<code>⚠️ Undersized</code> when standoff distance is clipped or <code>🚨 &lt; Target</code> when grid is smaller than the physical building boundary).</li>
+              <li><strong>Interactive Deficit Banner &amp; 1-Click Auto-Fit:</strong> Displays an amber/red warning callout inside the Target Splat container showing exact numerical deficit in active units and a 1-click <code>⚡ Auto-Fit Recommended Dimensions</code> button to restore optimal geometry.</li>
+              <li><strong>Map Overlay Warning Feedback:</strong> Visualizes undersized target status directly on the Leaflet map with warning badges on target circles/polygons and updated hover tooltips.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.92.2):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
