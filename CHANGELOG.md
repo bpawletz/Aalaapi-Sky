@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.94.2] - 2026-09-11
+
+### Improved & Cleaned — Section 2 Header Declutter & Conditional Hierarchy Badge
+- **Hidden by Default During Global Inheritance:** Hidden `#layer-hierarchy-status-badge` (`display: none`) when layers cleanly inherit Tier 1 global flight parameters, eliminating redundant visual clutter in the Section 2 header (`🌐 INHERITING GLOBALS`).
+- **Context-Aware Override Alerting:** The badge now appears exclusively when a layer diverges from Tier 1 globals (e.g. `⚡ 1 Override` or `⚡ Layer Overrides (N)` in amber), immediately highlighting to pilots which specific layers have customized flight behaviors without cluttering standard missions.
+
 ## [1.94.1] - 2026-09-11
 
 ### Improved & Clarified — Sensor Aspect Ratio Terminology (Native Full Sensor vs Widescreen Crop)
