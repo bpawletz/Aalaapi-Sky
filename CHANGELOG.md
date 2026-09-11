@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.94.7] - 2026-09-11
+
+### Fixed — 3D Viewer Shows Wrong Flight Due to Async Race Condition
+- **Root Cause:** `loadSelectedFlight` is async and performs network fetches. When the user selected an old flight log, a pending async load from a previous selection could still be in-flight. Once that previous fetch completed, it would overwrite `this.telemetryData`, `this.comparisonData`, `this.plannedWaypoints`, and trigger `init3DScene()` — rendering the wrong flight in the 3D viewer even though the dropdown showed the correct newly selected one.
+- **Fix — `_loadGeneration` Cancellation Guard:** Each call to `loadSelectedFlight` now increments `this._loadGeneration` and captures its value. After every `await` point (fetch responses, JSON parsing, error catches, and the final render step), the function checks whether `this._loadGeneration` still matches the captured value. If a newer call has begun, the current call returns immediately without updating any state or re-rendering the scene, ensuring only the most recently requested flight is displayed.
+- **Regression Coverage:** The fix is robust across all three flight load paths: `active-mission` (sync simulation), `diag:` (SQLite saved diagnostics), and raw RC2 log filenames.
+
 ## [1.94.6] - 2026-09-11
 
 ### Fixed — Flight Diagnostics 3D Map Planned Path Still Wrong for RC2 Flight Logs
