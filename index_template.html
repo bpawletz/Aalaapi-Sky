@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.90.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.91.0</span></h1>
         </div>
       </div>
 
@@ -948,7 +948,22 @@
                 <option value="followWayline">Follow Flight Path (Forward-facing)</option>
                 <option value="fixed">Fixed Heading (North)</option>
                 <option value="towardPOI">Point of Interest (Target-Facing)</option>
+                <option value="custom">Custom Heading (Angle)</option>
               </select>
+            </div>
+
+            <div class="control-group hidden" id="layer-custom-heading-container">
+              <div class="control-label" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <label for="layer-custom-heading" style="font-size: 0.75rem; margin-bottom: 0;">Custom Heading Angle</label>
+                <span class="value-display" style="font-size: 0.75rem; font-weight: 700; color: var(--accent-cyan);"><span id="layer-custom-heading-val">0</span>°</span>
+              </div>
+              <input type="range" id="layer-custom-heading" min="0" max="359" step="1" value="0" class="slider" aria-label="Layer Custom Heading Angle">
+              <div style="display: flex; gap: 4px; margin-top: 4px;">
+                <button type="button" class="btn-secondary layer-head-chip" data-angle="0" style="flex: 1; padding: 2px; font-size: 0.65rem;">N (0°)</button>
+                <button type="button" class="btn-secondary layer-head-chip" data-angle="90" style="flex: 1; padding: 2px; font-size: 0.65rem;">E (90°)</button>
+                <button type="button" class="btn-secondary layer-head-chip" data-angle="180" style="flex: 1; padding: 2px; font-size: 0.65rem;">S (180°)</button>
+                <button type="button" class="btn-secondary layer-head-chip" data-angle="270" style="flex: 1; padding: 2px; font-size: 0.65rem;">W (270°)</button>
+              </div>
             </div>
 
             <div class="control-group hidden" id="layer-poi-container">
@@ -1151,7 +1166,21 @@
               <option value="followWayline">Follow Flight Path (Forward-facing)</option>
               <option value="fixed">Fixed Heading (North)</option>
               <option value="towardPOI">Point of Interest (POI / Target-Facing)</option>
+              <option value="custom">Custom Heading (Angle)</option>
             </select>
+            <div class="control-group hidden" id="global-custom-heading-container" style="margin-top: 6px;">
+              <div class="control-label" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <label for="global-custom-heading" style="font-size: 0.75rem; margin-bottom: 0;">Global Custom Heading Angle</label>
+                <span class="value-display" style="font-size: 0.75rem; font-weight: 700; color: var(--accent-cyan);"><span id="global-custom-heading-val">0</span>°</span>
+              </div>
+              <input type="range" id="global-custom-heading" min="0" max="359" step="1" value="0" class="slider" aria-label="Global Custom Heading Angle">
+              <div style="display: flex; gap: 4px; margin-top: 4px;">
+                <button type="button" class="btn-secondary global-head-chip" data-angle="0" style="flex: 1; padding: 2px; font-size: 0.65rem;">N (0°)</button>
+                <button type="button" class="btn-secondary global-head-chip" data-angle="90" style="flex: 1; padding: 2px; font-size: 0.65rem;">E (90°)</button>
+                <button type="button" class="btn-secondary global-head-chip" data-angle="180" style="flex: 1; padding: 2px; font-size: 0.65rem;">S (180°)</button>
+                <button type="button" class="btn-secondary global-head-chip" data-angle="270" style="flex: 1; padding: 2px; font-size: 0.65rem;">W (270°)</button>
+              </div>
+            </div>
             <p class="help-text" style="margin-top: 4px; margin-bottom: 0;">Applies as a global default to all waypoints.</p>
 
             <!-- Interactive Collapsible Help Drawer -->
@@ -1774,6 +1803,15 @@
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🧭 Layer Custom Heading &amp; Real-Time Map Camera Visuals (v1.91.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Pilots can now configure custom camera heading angles at the flight layer and global mission levels with dedicated 0°–359° angle sliders and quick-cardinal preset chips (N/E/S/W). Adjusting custom headings updates camera sight cones and directional pointer arrows across the 2D Leaflet map in real time, while the 3D FPV HUD walkthrough editor immediately rotates the Three.js perspective camera as the heading slider is dragged.
+            </p>
+          </div>
+
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🎯 POI AGL Height &amp; 3D Auto-Tilt Tracking (v1.90.0)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -2342,7 +2380,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.90.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.91.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -2408,6 +2446,16 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.91.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Layer &amp; Global Custom Heading Angle Controls:</strong> Added Custom Heading (Angle) to Layer Properties and Global Defaults with 0°–359° angle sliders and N/E/S/W quick chips.</li>
+              <li><strong>Real-Time 2D Map Camera Visuals:</strong> Interactive heading angle changes immediately re-evaluate heading and rotate waypoint camera sight cones and pointer arrows in real time.</li>
+              <li><strong>Synchronous 3D FPV Viewport Camera Rotation:</strong> Adjusting the heading slider in the 3D FPV HUD walkthrough editor immediately rotates the Three.js perspective camera.</li>
+              <li><strong>Three-Tier Heading Inheritance:</strong> Full cascade support (Waypoint Override &gt; Layer Custom Heading &gt; Global Custom Heading) with dynamic inherit labels.</li>
+              <li><strong>WPML Export Parity:</strong> Automatically compiles <code>smoothTransition</code> mode with the resolved custom angle across all waypoints.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.90.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
