@@ -5344,7 +5344,8 @@ function initUIEventListeners() {
   if (popRefreshWeather) {
     popRefreshWeather.addEventListener('click', () => {
       if (typeof centerMarker !== 'undefined' && centerMarker) {
-        fetchAndProcessWeather(centerMarker.getLatLng().lat, centerMarker.getLatLng().lng);
+        lastWeatherFetchCenter = null;
+        fetchAndProcessWeather(centerMarker.getLatLng().lat, centerMarker.getLatLng().lng, true);
       }
     });
   }
@@ -15516,6 +15517,7 @@ const FlightDiagnostics = {
   async loadSelectedFlight(flightId) {
     this.selectedFlightId = flightId;
     this.currentLoadedMission = null;
+    this.plannedWaypoints = null;
     const flightSel = document.getElementById('diag-flight-selector');
     if (flightSel && flightSel.value !== flightId) {
       flightSel.value = flightId;
@@ -15530,6 +15532,7 @@ const FlightDiagnostics = {
     if (flightId === 'active-mission') {
       this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId: 'active-mission', isSimulation: true });
       this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
+      this.plannedWaypoints = wps;
     } else if (flightId.startsWith('diag:')) {
       const identifier = flightId.replace('diag:', '').trim();
       try {
@@ -15540,6 +15543,8 @@ const FlightDiagnostics = {
           const data = await res.json();
           if (data.success && data.mission) {
             this.currentLoadedMission = data.mission;
+            // Store the planned waypoints from the saved mission (not the active workspace)
+            this.plannedWaypoints = data.mission.plan?.waypoints || null;
             if (data.mission.diagnostics) {
               this.telemetryData = data.mission.diagnostics;
               const plannedStats = data.mission.plan?.statistics || {
@@ -15567,6 +15572,7 @@ const FlightDiagnostics = {
         console.warn('Failed to load saved diagnostic by uuid:', err);
         this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId });
         this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
+        this.plannedWaypoints = null;
       }
     } else {
       try {
@@ -15585,6 +15591,9 @@ const FlightDiagnostics = {
           if (data.success && data.telemetry) {
             this.telemetryData = data.telemetry;
             this.comparisonData = data.comparison;
+            // Use planned waypoints returned by the companion (from the log's matched mission),
+            // falling back to null so buildTrajectoryMeshes uses the active workspace only as a last resort.
+            this.plannedWaypoints = data.telemetry.plannedWaypoints || data.plannedWaypoints || null;
           } else {
             throw new Error('Telemetry not in payload');
           }
@@ -15594,6 +15603,7 @@ const FlightDiagnostics = {
       } catch (e) {
         this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId });
         this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
+        this.plannedWaypoints = null;
       }
     }
 
@@ -15608,10 +15618,8 @@ const FlightDiagnostics = {
     if (this.telemetryData && this.telemetryData.homePoint) {
       return this.telemetryData.homePoint;
     }
-    if (typeof centerMarker !== 'undefined' && centerMarker) {
-      const pos = centerMarker.getLatLng();
-      return { lat: pos.lat, lon: pos.lng };
-    }
+    // Skip centerMarker fallback — it would anchor the 3D scene at the active workspace
+    // instead of the loaded flight's actual location.
     if (this.telemetryData && this.telemetryData.points && this.telemetryData.points.length > 0) {
       return { lat: this.telemetryData.points[0].lat, lon: this.telemetryData.points[0].lon };
     }
@@ -15901,7 +15909,9 @@ const FlightDiagnostics = {
     });
 
     const plannedCoords = [];
-    const wps = getActiveMissionWaypoints();
+    const wps = (this.plannedWaypoints && this.plannedWaypoints.length > 0)
+      ? this.plannedWaypoints
+      : getActiveMissionWaypoints();
     wps.forEach(wp => {
       plannedCoords.push(this.projectToWorld(wp.lat, wp.lon, wp.altitude || 21.0));
     });
@@ -22825,12 +22835,136 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
+function parseMetar(raw) {
+  if (!raw || typeof raw !== 'string') return null;
+  const cleaned = raw.trim();
+  const tokens = cleaned.split(/\s+/);
+  if (tokens.length < 2) return null;
+
+  let icao = null;
+  let timestamp = null;
+  let windSpeedKmH = null;
+  let visSM = null;
+  let ceilingFt = null;
+  let fltCat = null;
+
+  let idx = 0;
+  if (tokens[idx] === 'METAR' || tokens[idx] === 'SPECI') idx++;
+  if (idx < tokens.length && /^[A-Z0-9]{3,6}$/.test(tokens[idx])) {
+    icao = tokens[idx];
+    idx++;
+  }
+
+  // Optional modifier: AUTO, COR
+  if (idx < tokens.length && (tokens[idx] === 'AUTO' || tokens[idx] === 'COR')) {
+    idx++;
+  }
+
+  // Timestamp DDHHMMZ
+  if (idx < tokens.length && /^\d{6}Z$/.test(tokens[idx])) {
+    const timeToken = tokens[idx];
+    const now = new Date();
+    const day = parseInt(timeToken.slice(0, 2), 10);
+    const hour = parseInt(timeToken.slice(2, 4), 10);
+    const min = parseInt(timeToken.slice(4, 6), 10);
+    const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), day, hour, min));
+    // If parsed day makes date in future by > 1 day, it's from previous month
+    if (date.getTime() - now.getTime() > 86400000) {
+      date.setUTCMonth(date.getUTCMonth() - 1);
+    }
+    timestamp = date.toISOString();
+    idx++;
+  }
+
+  // Scan remaining tokens up to 'RMK'
+  for (let i = idx; i < tokens.length; i++) {
+    const t = tokens[i];
+    if (t === 'RMK') break;
+
+    // Wind: 12010KT, VRB04KT, 24015G25KT, 00000KT
+    const windMatch = t.match(/^(?:\d{3}|VRB)(\d{2,3})(?:G\d{2,3})?KT$/);
+    if (windMatch && windSpeedKmH === null) {
+      const kt = parseInt(windMatch[1], 10);
+      windSpeedKmH = kt * 1.852;
+      continue;
+    }
+
+    // Visibility US: e.g. 10SM, 7SM, 3/4SM, 1 1/2SM, M1/4SM
+    if (t.endsWith('SM')) {
+      let visStr = t.slice(0, -2);
+      if (visStr.startsWith('M')) visStr = visStr.slice(1);
+      if (visStr.includes('/')) {
+        let whole = 0;
+        if (i > idx && /^\d+$/.test(tokens[i - 1])) {
+          whole = parseInt(tokens[i - 1], 10);
+        }
+        const [num, den] = visStr.split('/').map(Number);
+        if (den) visSM = whole + (num / den);
+      } else {
+        const val = parseFloat(visStr);
+        if (!isNaN(val)) visSM = val;
+      }
+      continue;
+    }
+
+    // Visibility CAVOK or 4-digit metric
+    if (t === 'CAVOK') {
+      visSM = 10;
+      ceilingFt = 99999;
+      continue;
+    }
+    if (/^\d{4}$/.test(t) && visSM === null && i < 7) {
+      const meters = parseInt(t, 10);
+      visSM = meters >= 9999 ? 10 : (meters / 1609.34);
+      continue;
+    }
+
+    // Sky conditions: CLR, SKC, NCD, NSC
+    if (t === 'CLR' || t === 'SKC' || t === 'NCD' || t === 'NSC') {
+      if (ceilingFt === null) ceilingFt = 99999;
+      continue;
+    }
+
+    // Cloud layers: BKN015, OVC020, VV002, etc. (FEW and SCT do not form a ceiling)
+    const cloudMatch = t.match(/^(BKN|OVC|VV)(\d{3})/);
+    if (cloudMatch) {
+      const baseFt = parseInt(cloudMatch[2], 10) * 100;
+      if (ceilingFt === null || baseFt < ceilingFt) {
+        ceilingFt = baseFt;
+      }
+    }
+  }
+
+  // Calculate flight category
+  const v = visSM !== null ? visSM : 99;
+  const c = ceilingFt !== null ? ceilingFt : 99999;
+  if (v < 1 || c < 500) {
+    fltCat = 'LIFR';
+  } else if (v < 3 || c < 1000) {
+    fltCat = 'IFR';
+  } else if (v <= 5 || c <= 3000) {
+    fltCat = 'MVFR';
+  } else {
+    fltCat = 'VFR';
+  }
+
+  return {
+    icao,
+    timestamp,
+    windSpeedKmH,
+    visSM,
+    ceilingFt: (ceilingFt === 99999) ? null : ceilingFt,
+    fltCat,
+    raw: cleaned
+  };
+}
+
 let lastWeatherFetchCenter = null;
 
-async function fetchAndProcessWeather(centerLat, centerLon) {
+async function fetchAndProcessWeather(centerLat, centerLon, force = false) {
   try {
-    // Only fetch weather if center changed by > 5km or wasn't fetched yet
-    if (lastWeatherFetchCenter) {
+    // Only fetch weather if center changed by > 5km, wasn't fetched yet, or forced
+    if (!force && lastWeatherFetchCenter) {
       const dist = calculateDistance(centerLat, centerLon, lastWeatherFetchCenter.lat, lastWeatherFetchCenter.lon);
       if (dist < 5) return;
     }
@@ -22871,14 +23005,34 @@ async function fetchAndProcessWeather(centerLat, centerLon) {
 
     const topStations = sortedStations.slice(0, 4);
 
-    // 3. Fetch latest observations for top nearby stations in parallel
-    const obsResults = await Promise.allSettled(
-      topStations.map(st =>
-        fetch(`https://api.weather.gov/stations/${st.id}/observations/latest`, { headers })
-          .then(res => res.ok ? res.json() : null)
-          .catch(() => null)
-      )
-    );
+    // 3. Fetch latest observations from NWS and real-time live METARs in parallel
+    const stationIds = topStations.map(st => st.id).filter(Boolean);
+    const [obsResults, vatsimResult] = await Promise.all([
+      Promise.allSettled(
+        topStations.map(st =>
+          fetch(`https://api.weather.gov/stations/${st.id}/observations/latest`, { headers })
+            .then(res => res.ok ? res.json() : null)
+            .catch(() => null)
+        )
+      ),
+      stationIds.length > 0
+        ? fetch(`https://metar.vatsim.net/metar.php?id=${stationIds.join(',')}`)
+            .then(res => res.ok ? res.text() : null)
+            .catch(() => null)
+        : Promise.resolve(null)
+    ]);
+
+    // Parse real-time live METAR lines into map by ICAO
+    const liveMetarMap = new Map();
+    if (vatsimResult && typeof vatsimResult === 'string') {
+      const lines = vatsimResult.split('\n');
+      for (const line of lines) {
+        const parsed = parseMetar(line);
+        if (parsed && parsed.icao) {
+          liveMetarMap.set(parsed.icao.toUpperCase(), parsed);
+        }
+      }
+    }
 
     const stationDataList = [];
     topStations.forEach((st, idx) => {
@@ -22889,9 +23043,14 @@ async function fetchAndProcessWeather(centerLat, centerLon) {
       let visSM = null;
       let ceilingFt = null;
       let windSpeedKmH = null;
+      let timestamp = null;
+      let raw = null;
 
+      // Extract NWS data if available
+      let nwsTimestamp = null;
       if (obsData && obsData.properties) {
-        fltCat = obsData.properties.flightCategory;
+        nwsTimestamp = obsData.properties.timestamp || null;
+        fltCat = obsData.properties.flightCategory || null;
 
         if (obsData.properties.visibility && obsData.properties.visibility.value != null) {
           visSM = obsData.properties.visibility.value / 1609.34;
@@ -22938,6 +23097,46 @@ async function fetchAndProcessWeather(centerLat, centerLon) {
             }
           }
         }
+
+        timestamp = nwsTimestamp;
+        raw = obsData.properties.rawMessage || obsData.properties.textDescription || "No raw METAR";
+      }
+
+      // Check if real-time live METAR is available and fresher than NWS
+      const liveMetar = liveMetarMap.get(String(st.id || '').toUpperCase());
+      if (liveMetar) {
+        let useLiveMetar = false;
+        if (!timestamp) {
+          useLiveMetar = true;
+        } else if (liveMetar.timestamp) {
+          const liveTime = Date.parse(liveMetar.timestamp);
+          const nwsTime = Date.parse(timestamp);
+          // If live METAR is equal or newer than NWS, or NWS timestamp is invalid
+          if (isNaN(nwsTime) || (!isNaN(liveTime) && liveTime >= nwsTime)) {
+            useLiveMetar = true;
+          }
+        } else {
+          useLiveMetar = true;
+        }
+
+        if (useLiveMetar) {
+          fltCat = liveMetar.fltCat || fltCat;
+          if (liveMetar.visSM !== null) visSM = liveMetar.visSM;
+          ceilingFt = liveMetar.ceilingFt;
+          if (liveMetar.windSpeedKmH !== null) windSpeedKmH = liveMetar.windSpeedKmH;
+          if (liveMetar.timestamp) timestamp = liveMetar.timestamp;
+          if (liveMetar.raw) raw = liveMetar.raw;
+        }
+      }
+
+      // Fallback: If flight category is still missing and raw message exists, parse raw METAR
+      if (!fltCat && raw && typeof raw === 'string') {
+        const parsedNwsRaw = parseMetar(raw);
+        if (parsedNwsRaw) {
+          fltCat = parsedNwsRaw.fltCat;
+          if (visSM === null && parsedNwsRaw.visSM !== null) visSM = parsedNwsRaw.visSM;
+          if (ceilingFt === null && parsedNwsRaw.ceilingFt !== null) ceilingFt = parsedNwsRaw.ceilingFt;
+        }
       }
 
       const bearing = getCompassBearing(centerLat, centerLon, st.lat, st.lon);
@@ -22955,8 +23154,8 @@ async function fetchAndProcessWeather(centerLat, centerLon) {
         visibilitySM: visSM,
         ceilingFt: ceilingFt,
         windSpeedKmH: windSpeedKmH,
-        timestamp: obsData?.properties?.timestamp || null,
-        raw: obsData?.properties?.rawMessage || obsData?.properties?.textDescription || "No raw METAR"
+        timestamp: timestamp,
+        raw: raw || "No raw METAR"
       });
     });
 
@@ -22978,6 +23177,7 @@ async function fetchAndProcessWeather(centerLat, centerLon) {
     updateWeatherPanelUI(null, "Error", false);
   }
 }
+
 
 
 
@@ -23398,7 +23598,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     ceilDiv.textContent = `${ceilCheck} Ceiling: ${cStr} (Req ≥ 1000 ft)`;
   } else {
     ceilDiv.style.color = "var(--success-color)";
-    ceilDiv.textContent = "✅ Ceiling: Unknown";
+    ceilDiv.textContent = "✅ Ceiling: Clear / Unlimited (Req ≥ 1000 ft)";
   }
   container.appendChild(ceilDiv);
 
@@ -23648,6 +23848,7 @@ if (typeof window !== 'undefined') {
   window.bearingToCompassDirection = bearingToCompassDirection;
   window.formatWindSpeed = formatWindSpeed;
   window.WIND_SPEED_SVG_ICON = WIND_SPEED_SVG_ICON;
+  window.parseMetar = parseMetar;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -23657,7 +23858,7 @@ document.addEventListener('DOMContentLoaded', () => {
       e.stopPropagation();
       if (centerMarker) {
         lastWeatherFetchCenter = null;
-        fetchAndProcessWeather(centerMarker.getLatLng().lat, centerMarker.getLatLng().lng);
+        fetchAndProcessWeather(centerMarker.getLatLng().lat, centerMarker.getLatLng().lng, true);
       }
     });
   }

@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.94.3</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.94.5</span></h1>
         </div>
       </div>
 
@@ -2512,7 +2512,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.94.3</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.94.5</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -2578,6 +2578,24 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.94.5):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Flight Diagnostics 3D Map — Wrong Location & Flight Plan Fixed:</strong> The 3D diagnostics view now correctly displays the actual flight location and planned route from the loaded log. Previously, <code>buildTrajectoryMeshes</code> always drew the current active workspace plan, and <code>getSceneOrigin</code> fell back to the active workspace center marker when a flight's <code>homePoint</code> was absent.</li>
+              <li><strong>Planned Waypoints Per Loaded Flight:</strong> <code>loadSelectedFlight</code> now stores <code>this.plannedWaypoints</code> from each loaded flight type (active mission, saved SQLite diagnostics, RC2 recorded logs), used by <code>buildTrajectoryMeshes</code> to draw the correct dashed planned path.</li>
+              <li><strong>Regression Tests:</strong> Three unit tests added asserting correct behavior of <code>buildTrajectoryMeshes</code> and <code>getSceneOrigin</code> with and without loaded <code>plannedWaypoints</code>.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.94.4):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Live Aviation METAR Integration:</strong> Integrated real-time global aviation METAR streaming alongside NWS observations, eliminating delayed station queues (such as KTZR) where stale fog reports showed LIFR (red) despite updated METARs reading VFR (green).</li>
+              <li><strong>Dedicated METAR Parser:</strong> Implemented comprehensive FAA-standard parser (<code>parseMetar</code>) extracting ICAO codes, UTC timestamps, wind speeds, visibility, and cloud ceilings (distinguishing non-ceiling <code>FEW</code>/<code>SCT</code> from true ceilings <code>BKN</code>/<code>OVC</code>/<code>VV</code>).</li>
+              <li><strong>Freshest Data Selection:</strong> Dynamically selects the newest observation between real-time METAR and NWS feeds with graceful fallback.</li>
+              <li><strong>Clear Ceiling Display:</strong> Enhanced flight checklist to explicitly indicate <code>✅ Ceiling: Clear / Unlimited</code> when no clouds are present.</li>
+              <li><strong>Popover Force Refresh:</strong> Fixed <code>#pop-btn-refresh-weather</code> to clear distance cache and immediately re-poll fresh weather conditions.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.94.3):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
