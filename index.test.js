@@ -14400,16 +14400,24 @@ describe('v1.94.3 Pre-Flight KMZ Audit & Executive Readiness Redesign Tests', ()
 });
 
 describe('v1.94.4 Real-Time Live METAR Ingestion & Flight Category Tests', () => {
-  test('Version consistency: v1.94.10 is registered across package.json, CHANGELOG.md, and template (regression: mobile diagnostics responsive layout)', () => {
+  test('Version consistency: v1.94.11 is registered across package.json, CHANGELOG.md, and template (regression: diagnostics header banner overlap elimination)', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.94.10', 'package.json version must be 1.94.10');
+    assert.strictEqual(pkg.version, '1.94.11', 'package.json version must be 1.94.11');
 
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.94.11] - 2026-09-11'), 'CHANGELOG.md must contain 1.94.11 entry');
+
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateHtml.includes('>v1.94.11</span>'), 'index_template.html must contain header version badge v1.94.11');
+    assert.ok(templateHtml.includes('Version 1.94.11</span>'), 'index_template.html must contain About modal version tag 1.94.11');
+    assert.ok(templateHtml.includes('Changelog (v1.94.11):'), 'index_template.html must contain Changelog (v1.94.11) header');
+  });
+
+  test('Version consistency: v1.94.10 changelog entry is preserved in CHANGELOG.md and template', () => {
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.94.10] - 2026-09-11'), 'CHANGELOG.md must contain 1.94.10 entry');
 
     const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(templateHtml.includes('>v1.94.10</span>'), 'index_template.html must contain header version badge v1.94.10');
-    assert.ok(templateHtml.includes('Version 1.94.10</span>'), 'index_template.html must contain About modal version tag 1.94.10');
     assert.ok(templateHtml.includes('Changelog (v1.94.10):'), 'index_template.html must contain Changelog (v1.94.10) header');
   });
 
@@ -14733,6 +14741,15 @@ describe('v1.94.10 Mobile View Flight Diagnostics & Responsive Layout Tests', ()
       document.getElementById = origGetById;
       FlightDiagnostics.handleResize = origResize;
     }
+  });
+
+  test('v1.94.11 Diagnostics Header CSS Grid Structure: 2-tier non-overlapping grid layout', () => {
+    const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+    assert.ok(css.includes('grid-template-areas:'), 'index.css must declare grid-template-areas');
+    assert.ok(css.includes('"brand tabs close"'), 'index.css must place brand, tabs, and close in row 1');
+    assert.ok(css.includes('"controls controls controls"'), 'index.css must place controls in row 2');
+    assert.ok(css.includes('.diag-view-camera-controls'), 'index.css must style camera controls');
+    assert.ok(css.includes('max-width: 1080px'), 'index.css must include tablet breakpoint for non-overlapping camera controls');
   });
 });
 
