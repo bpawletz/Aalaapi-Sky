@@ -4002,7 +4002,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       };
     });
     assert.strictEqual(moreMenuOpenState.menuVisible, true, 'More menu should be visible after clicking more button');
-    assert.strictEqual(moreMenuOpenState.itemsCount, 3, 'More menu should contain 3 action items (Intro, About, Links)');
+    assert.strictEqual(moreMenuOpenState.itemsCount, 4, 'More menu should contain 4 action items (Intro, Diagnostics, About, Links)');
 
     // Click About from More Menu
     await page.locator('#more-menu-about-btn').click();
@@ -4358,6 +4358,124 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(results.fpvHoverText.includes('(Inherited)'), `3D FPV hover must show (Inherited), got: ${results.fpvHoverText}`);
     assert.ok(results.fpvHeadingInheritText.includes('Follow Flight Path'), `3D FPV heading mode must show Follow Flight Path, got: ${results.fpvHeadingInheritText}`);
   });
+
+  test('E2E: Mobile View Flight Diagnostics Modal Accessibility, Zero Overflow & Responsive Viewport (v1.94.10)', async () => {
+    try {
+      // 1. Set viewport to mobile phone (390x844 - iPhone standard)
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.evaluate(() => {
+        localStorage.setItem('aalaapi_sky_disclaimer_accepted', 'true');
+        document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+      });
+      await page.waitForTimeout(300);
+
+      // 2. Open topbar More Actions dropdown
+      await page.click('#header-more-btn');
+      await page.waitForTimeout(200);
+
+      const moreMenuVisible = await page.evaluate(() => {
+        const menu = document.getElementById('header-more-menu');
+        const diagBtn = document.getElementById('more-menu-diagnostics-btn');
+        return !menu.classList.contains('hidden') && !!diagBtn;
+      });
+      assert.strictEqual(moreMenuVisible, true, 'More Actions menu and Diagnostics entry must be visible on mobile');
+
+      // 3. Click Flight Diagnostics button in More Menu
+      await page.click('#more-menu-diagnostics-btn');
+      await page.waitForTimeout(500);
+
+      const mobileModalMetrics = await page.evaluate(() => {
+        const modal = document.getElementById('flight-diagnostics-modal');
+        const card = document.getElementById('flight-diagnostics-card');
+        const header = card.querySelector('header');
+        const closeBtn = document.getElementById('diag-close-btn');
+        const canvasCont = document.getElementById('diag-3d-canvas-container');
+        const hud = document.getElementById('diag-hud-overlay');
+        const subnav = document.getElementById('diag-mobile-subnav');
+
+        const closeRect = closeBtn.getBoundingClientRect();
+        const hudRect = hud.getBoundingClientRect();
+
+        return {
+          modalOpen: !modal.classList.contains('hidden'),
+          cardWidth: card.offsetWidth,
+          cardHeight: card.offsetHeight,
+          cardOverflow: card.scrollWidth > card.clientWidth,
+          headerOverflow: header.scrollWidth > header.clientWidth,
+          closeVisible: closeRect.right <= window.innerWidth && closeRect.left >= 0 && closeRect.top >= 0,
+          canvasWidth: canvasCont.offsetWidth,
+          canvasHeight: canvasCont.offsetHeight,
+          hudWithinViewport: hudRect.right <= window.innerWidth && hudRect.left >= 0,
+          subnavVisible: window.getComputedStyle(subnav).display !== 'none'
+        };
+      });
+
+      assert.strictEqual(mobileModalMetrics.modalOpen, true, 'Diagnostics modal must be open');
+      assert.strictEqual(mobileModalMetrics.cardOverflow, false, 'Diagnostics card must not have horizontal scroll overflow on mobile');
+      assert.strictEqual(mobileModalMetrics.headerOverflow, false, 'Diagnostics header must not have horizontal scroll overflow on mobile');
+      assert.strictEqual(mobileModalMetrics.closeVisible, true, 'Close button must be clearly visible and on-screen');
+      assert.ok(mobileModalMetrics.canvasWidth >= 300, `3D canvas width must be >= 300px on mobile, got: ${mobileModalMetrics.canvasWidth}`);
+      assert.ok(mobileModalMetrics.canvasHeight >= 300, `3D canvas height must be >= 300px on mobile, got: ${mobileModalMetrics.canvasHeight}`);
+      assert.strictEqual(mobileModalMetrics.hudWithinViewport, true, 'Cockpit HUD overlay must fit cleanly inside mobile viewport without edge clipping');
+      assert.strictEqual(mobileModalMetrics.subnavVisible, true, 'Mobile subnav tabs (3D vs Stats) must be visible on mobile screens');
+
+      // 4. Test Mobile Subnav switching: Switch to Telemetry & Stats
+      await page.click('#diag-mobile-subtab-stats');
+      await page.waitForTimeout(300);
+
+      const statsViewMetrics = await page.evaluate(() => {
+        const pane = document.getElementById('diag-pane-3d');
+        const aside = document.querySelector('#diag-pane-3d aside');
+        const canvasParent = document.getElementById('diag-3d-canvas-container').parentElement;
+
+        return {
+          hasStatsClass: pane.classList.contains('mobile-view-stats'),
+          asideDisplay: window.getComputedStyle(aside).display,
+          asideWidth: aside.offsetWidth,
+          asideOverflow: aside.scrollWidth > aside.clientWidth,
+          canvasAreaDisplay: window.getComputedStyle(canvasParent).display
+        };
+      });
+
+      assert.strictEqual(statsViewMetrics.hasStatsClass, true, 'Pane must have mobile-view-stats class');
+      assert.strictEqual(statsViewMetrics.asideDisplay, 'flex', 'Telemetry & Stats sidebar must be displayed on mobile stats view');
+      assert.ok(statsViewMetrics.asideWidth >= 300, `Stats aside must have usable full width on mobile, got: ${statsViewMetrics.asideWidth}`);
+      assert.strictEqual(statsViewMetrics.asideOverflow, false, 'Stats aside must not horizontally overflow');
+      assert.strictEqual(statsViewMetrics.canvasAreaDisplay, 'none', '3D viewport area must be hidden when viewing stats');
+
+      // 5. Switch back to 3D Replay
+      await page.click('#diag-mobile-subtab-3d');
+      await page.waitForTimeout(300);
+
+      const replayViewMetrics = await page.evaluate(() => {
+        const pane = document.getElementById('diag-pane-3d');
+        const aside = document.querySelector('#diag-pane-3d aside');
+        const canvasCont = document.getElementById('diag-3d-canvas-container');
+
+        return {
+          has3dClass: pane.classList.contains('mobile-view-3d'),
+          asideDisplay: window.getComputedStyle(aside).display,
+          canvasWidth: canvasCont.offsetWidth
+        };
+      });
+
+      assert.strictEqual(replayViewMetrics.has3dClass, true, 'Pane must return to mobile-view-3d class');
+      assert.strictEqual(replayViewMetrics.asideDisplay, 'none', 'Stats aside must be hidden when viewing 3D');
+      assert.ok(replayViewMetrics.canvasWidth >= 300, '3D canvas width must be restored to full width');
+
+      // 6. Test closing diagnostics via close button
+      await page.click('#diag-close-btn');
+      await page.waitForTimeout(200);
+
+      const modalClosed = await page.evaluate(() => {
+        return document.getElementById('flight-diagnostics-modal').classList.contains('hidden');
+      });
+      assert.strictEqual(modalClosed, true, 'Diagnostics modal must close when clicking top-right close button');
+    } finally {
+      await page.setViewportSize({ width: 1280, height: 720 });
+    }
+  });
 });
+
 
 

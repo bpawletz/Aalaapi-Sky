@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.94.10] - 2026-09-11
+
+### Fixed — Mobile View Flight Diagnostics Visibility & Responsive Layout
+- **Mobile Header Actions Entry (`#more-menu-diagnostics-btn`):** Added a dedicated 1-tap "Flight Diagnostics & 3D Replay" button to the mobile topbar More Actions dropdown (`#header-more-menu`), providing instant access to flight replays without needing to open the off-canvas drawer or scroll through settings panels.
+- **Full-Screen Mobile Modal Architecture:** On screens $\le 768\text{px}$, `#flight-diagnostics-card` now scales to full viewport dimensions (`100vw`, `100dvh`, zero border radius) for an immersive cockpit experience like native mobile flight apps.
+- **Responsive Header & Pinned Close Button:** Re-architected `#flight-diagnostics-modal` header with CSS Grid. The close button (`#diag-close-btn`) is pinned in the top-right corner of Row 1, eliminating a bug where the close button was pushed 900px off-screen to the right by horizontal overflow.
+- **Adaptive 3D vs. Stats Mobile Switcher (`#diag-mobile-subnav`):** Resolved severe horizontal squishing on mobile where the 320px telemetry sidebar crushed the 3D canvas down to a 29px unusable slit. Mobile viewports now provide a dedicated toggle bar between full-height **3D Replay** and full-width **Flight Telemetry & Stats** views.
+- **Compact Live Cockpit HUD Grid:** `#diag-hud-overlay` transforms from an overflowing single-row ribbon into an ergonomic 3-column telemetry HUD overlay, keeping altitude, speed, gimbal pitch, battery, GPS sats, and coordinates fully visible without edge clipping.
+- **Dynamic 3D Canvas Auto-Resize:** Added `handleResize()` and window resize listeners to `FlightDiagnostics`, recalculating Three.js camera aspect ratio, projection matrices, and renderer dimensions upon orientation changes or tab transitions.
+- **Regression Tests Added:** Added comprehensive E2E and unit tests asserting mobile viewport modal visibility, zero horizontal scroll overflow (`scrollWidth <= clientWidth`), close button on-screen placement, canvas width $> 0$, and mobile subtab toggling.
+
 ## [1.94.9] - 2026-09-11
 
 ### Fixed — Saved Mission Diagnostics Blank / No Telemetry Points

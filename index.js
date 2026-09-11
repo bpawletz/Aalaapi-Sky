@@ -6345,9 +6345,10 @@ function initMobileNav() {
     });
   }
 
-  // More Actions Dropdown Menu (Intro, About, Links)
+  // More Actions Dropdown Menu (Intro, About, Links, Diagnostics)
   const moreBtn = document.getElementById('header-more-btn');
   const moreMenu = document.getElementById('header-more-menu');
+  const moreDiagBtn = document.getElementById('more-menu-diagnostics-btn');
   const moreIntroBtn = document.getElementById('more-menu-intro-btn');
   const moreAboutBtn = document.getElementById('more-menu-about-btn');
   const moreLinksBtn = document.getElementById('more-menu-links-btn');
@@ -6357,6 +6358,16 @@ function initMobileNav() {
       e.stopPropagation();
       moreMenu.classList.toggle('hidden');
     });
+
+    if (moreDiagBtn && typeof moreDiagBtn.addEventListener === 'function') {
+      moreDiagBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        moreMenu.classList.add('hidden');
+        if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.open) {
+          FlightDiagnostics.open();
+        }
+      });
+    }
 
     if (moreIntroBtn) {
       moreIntroBtn.addEventListener('click', (e) => {
@@ -15234,20 +15245,20 @@ const FlightDiagnostics = {
       document.getElementById('open-diagnostics-btn')
     ];
     openBtns.forEach(btn => {
-      if (btn) btn.addEventListener('click', () => this.open());
+      if (btn && typeof btn.addEventListener === 'function') btn.addEventListener('click', () => this.open());
     });
 
     const closeBtn = document.getElementById('diag-close-btn');
-    if (closeBtn) closeBtn.addEventListener('click', () => this.close());
+    if (closeBtn && typeof closeBtn.addEventListener === 'function') closeBtn.addEventListener('click', () => this.close());
 
     const modalOverlay = document.getElementById('flight-diagnostics-modal');
-    if (modalOverlay) {
+    if (modalOverlay && typeof modalOverlay.addEventListener === 'function') {
       modalOverlay.addEventListener('click', (e) => {
         if (e.target === modalOverlay) this.close();
       });
     }
 
-    if (typeof document !== 'undefined') {
+    if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && this.isOpen) {
           this.close();
@@ -15256,19 +15267,19 @@ const FlightDiagnostics = {
     }
 
     const tab3dBtn = document.getElementById('diag-nav-3d-btn');
-    if (tab3dBtn) tab3dBtn.addEventListener('click', () => this.switchTab('3d'));
+    if (tab3dBtn && typeof tab3dBtn.addEventListener === 'function') tab3dBtn.addEventListener('click', () => this.switchTab('3d'));
 
     const tabAuditBtn = document.getElementById('diag-nav-audit-btn');
-    if (tabAuditBtn) tabAuditBtn.addEventListener('click', () => this.switchTab('audit'));
+    if (tabAuditBtn && typeof tabAuditBtn.addEventListener === 'function') tabAuditBtn.addEventListener('click', () => this.switchTab('audit'));
 
     const playBtn = document.getElementById('diag-play-btn');
-    if (playBtn) playBtn.addEventListener('click', (e) => {
+    if (playBtn && typeof playBtn.addEventListener === 'function') playBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       this.togglePlay();
     });
 
     const slider = document.getElementById('diag-timeline-slider');
-    if (slider) {
+    if (slider && typeof slider.addEventListener === 'function') {
       slider.addEventListener('input', (e) => {
         const val = parseInt(e.target.value, 10);
         this.playbackFractionalIndex = val;
@@ -15277,41 +15288,49 @@ const FlightDiagnostics = {
     }
 
     // Speed multiplier buttons
-    document.querySelectorAll('.diag-speed-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.diag-speed-btn').forEach(b => {
-          b.classList.remove('active');
-          b.style.background = 'rgba(255, 255, 255, 0.05)';
-          b.style.borderColor = 'var(--border-color)';
-          b.style.color = 'var(--text-muted)';
-        });
-        btn.classList.add('active');
-        btn.style.background = 'rgba(6, 182, 212, 0.2)';
-        btn.style.borderColor = 'rgba(6, 182, 212, 0.4)';
-        btn.style.color = '#22d3ee';
-        this.playbackSpeed = parseFloat(btn.getAttribute('data-speed')) || 1;
+    if (typeof document.querySelectorAll === 'function') {
+      document.querySelectorAll('.diag-speed-btn').forEach(btn => {
+        if (btn && typeof btn.addEventListener === 'function') {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('.diag-speed-btn').forEach(b => {
+              if (b.classList) {
+                b.classList.remove('active');
+                b.style.background = 'rgba(255, 255, 255, 0.05)';
+                b.style.borderColor = 'var(--border-color)';
+                b.style.color = 'var(--text-muted)';
+              }
+            });
+            btn.classList.add('active');
+            btn.style.background = 'rgba(6, 182, 212, 0.2)';
+            btn.style.borderColor = 'rgba(6, 182, 212, 0.4)';
+            btn.style.color = '#22d3ee';
+            this.playbackSpeed = parseFloat(btn.getAttribute('data-speed')) || 1;
+          });
+        }
       });
-    });
+    }
 
     // View toggles (3D vs Top Down)
     const view3dBtn = document.getElementById('diag-view-3d-btn');
     const viewTopBtn = document.getElementById('diag-view-top-btn');
-    if (view3dBtn && viewTopBtn) {
+    if (view3dBtn && typeof view3dBtn.addEventListener === 'function') {
       view3dBtn.addEventListener('click', () => {
         view3dBtn.classList.add('active');
-        viewTopBtn.classList.remove('active');
+        if (viewTopBtn && viewTopBtn.classList) viewTopBtn.classList.remove('active');
         this.resetCameraView('3d');
       });
+    }
+    if (viewTopBtn && typeof viewTopBtn.addEventListener === 'function') {
       viewTopBtn.addEventListener('click', () => {
         viewTopBtn.classList.add('active');
-        view3dBtn.classList.remove('active');
+        if (view3dBtn && view3dBtn.classList) view3dBtn.classList.remove('active');
         this.resetCameraView('top');
       });
     }
 
     // Flight selector dropdown
     const flightSel = document.getElementById('diag-flight-selector');
-    if (flightSel) {
+    if (flightSel && typeof flightSel.addEventListener === 'function') {
       flightSel.addEventListener('change', (e) => {
         this.loadSelectedFlight(e.target.value);
       });
@@ -15319,34 +15338,88 @@ const FlightDiagnostics = {
 
     // Copy Antigravity Fix Prompt button
     const copyAntigravityBtn = document.getElementById('diag-copy-antigravity-btn');
-    if (copyAntigravityBtn) {
+    if (copyAntigravityBtn && typeof copyAntigravityBtn.addEventListener === 'function') {
       copyAntigravityBtn.addEventListener('click', () => this.copyAntigravityPrompt());
     }
 
     // Export Diag JSON button
     const exportJsonBtn = document.getElementById('diag-export-json-btn');
-    if (exportJsonBtn) exportJsonBtn.addEventListener('click', () => this.exportDiagJSON());
+    if (exportJsonBtn && typeof exportJsonBtn.addEventListener === 'function') {
+      exportJsonBtn.addEventListener('click', () => this.exportDiagJSON());
+    }
 
     // Export GeoJSON button
     const exportBtn = document.getElementById('diag-export-geojson-btn');
-    if (exportBtn) exportBtn.addEventListener('click', () => this.exportGeoJSON());
+    if (exportBtn && typeof exportBtn.addEventListener === 'function') {
+      exportBtn.addEventListener('click', () => this.exportGeoJSON());
+    }
 
     // Center 2D Map button
     const centerMapBtn = document.getElementById('diag-center-map-btn');
-    if (centerMapBtn) centerMapBtn.addEventListener('click', () => this.centerMapOnFlight());
+    if (centerMapBtn && typeof centerMapBtn.addEventListener === 'function') {
+      centerMapBtn.addEventListener('click', () => this.centerMapOnFlight());
+    }
 
     // Pull from RC 2 button in diagnostics header
     const diagPullBtn = document.getElementById('diag-pull-rc2-btn');
-    if (diagPullBtn) {
+    if (diagPullBtn && typeof diagPullBtn.addEventListener === 'function') {
       diagPullBtn.addEventListener('click', () => pullFlightLogFromRC2(diagPullBtn));
     }
 
     // Load file button
     const loadBtn = document.getElementById('diag-load-file-btn');
     const fileInput = document.getElementById('diag-file-input');
-    if (loadBtn && fileInput) {
+    if (loadBtn && fileInput && typeof loadBtn.addEventListener === 'function') {
       loadBtn.addEventListener('click', () => fileInput.click());
-      fileInput.addEventListener('change', (e) => this.handleLogFileImport(e));
+      if (typeof fileInput.addEventListener === 'function') {
+        fileInput.addEventListener('change', (e) => this.handleLogFileImport(e));
+      }
+    }
+
+    // Mobile Subnav: 3D Replay vs Telemetry & Stats toggle
+    const mobileSubtab3d = document.getElementById('diag-mobile-subtab-3d');
+    const mobileSubtabStats = document.getElementById('diag-mobile-subtab-stats');
+    const pane3d = document.getElementById('diag-pane-3d');
+
+    if (mobileSubtab3d && mobileSubtabStats && pane3d && typeof mobileSubtab3d.addEventListener === 'function' && typeof mobileSubtabStats.addEventListener === 'function') {
+      mobileSubtab3d.addEventListener('click', () => {
+        pane3d.classList.remove('mobile-view-stats');
+        pane3d.classList.add('mobile-view-3d');
+        mobileSubtab3d.classList.add('active');
+        mobileSubtabStats.classList.remove('active');
+        this.handleResize();
+      });
+
+      mobileSubtabStats.addEventListener('click', () => {
+        pane3d.classList.remove('mobile-view-3d');
+        pane3d.classList.add('mobile-view-stats');
+        mobileSubtabStats.classList.add('active');
+        mobileSubtab3d.classList.remove('active');
+      });
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', () => {
+        if (this.isOpen) {
+          this.handleResize();
+        }
+      });
+    }
+  },
+
+  handleResize() {
+    if (!this.isOpen) return;
+    const container = document.getElementById('diag-3d-canvas-container');
+    if (!container || !this.threeRenderer || !this.threeCamera) return;
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    if (width > 0 && height > 0) {
+      this.threeCamera.aspect = width / height;
+      this.threeCamera.updateProjectionMatrix();
+      this.threeRenderer.setSize(width, height);
+      if (this.threeControls) {
+        this.threeControls.update();
+      }
     }
   },
 
@@ -15710,7 +15783,22 @@ const FlightDiagnostics = {
     modal.classList.remove('hidden');
     this.isOpen = true;
 
+    // Reset mobile subnav to 3D View by default
+    const pane3d = document.getElementById('diag-pane-3d');
+    if (pane3d) {
+      pane3d.classList.add('mobile-view-3d');
+      pane3d.classList.remove('mobile-view-stats');
+    }
+    const mobileSubtab3d = document.getElementById('diag-mobile-subtab-3d');
+    const mobileSubtabStats = document.getElementById('diag-mobile-subtab-stats');
+    if (mobileSubtab3d) mobileSubtab3d.classList.add('active');
+    if (mobileSubtabStats) mobileSubtabStats.classList.remove('active');
+
     this.switchTab(targetTab);
+
+    if (typeof requestAnimationFrame !== 'undefined') {
+      requestAnimationFrame(() => this.handleResize());
+    }
 
     if (targetTab === '3d') {
       await this.refreshFlightList();
