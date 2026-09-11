@@ -11816,6 +11816,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       const topbar = makeMockEl();
       const moreBtn = makeMockEl();
       const moreMenu = makeMockEl();
+      const moreDiagBtn = makeMockEl();
       const moreIntroBtn = makeMockEl();
       const moreAboutBtn = makeMockEl();
       const moreLinksBtn = makeMockEl();
@@ -11829,6 +11830,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
         if (id === 'mobile-search-close-btn') return searchClose;
         if (id === 'header-more-btn') return moreBtn;
         if (id === 'header-more-menu') return moreMenu;
+        if (id === 'more-menu-diagnostics-btn') return moreDiagBtn;
         if (id === 'more-menu-intro-btn') return moreIntroBtn;
         if (id === 'more-menu-about-btn') return moreAboutBtn;
         if (id === 'more-menu-links-btn') return moreLinksBtn;
@@ -14127,9 +14129,19 @@ describe('v1.94.1 Decoupled Sensor Aspect Ratio Terminology Tests', () => {
 });
 
 describe('v1.94.2 Section 2 Header Declutter & Conditional Hierarchy Badge', () => {
+  function semverGte(v1, v2) {
+    const p1 = v1.split('.').map(Number);
+    const p2 = v2.split('.').map(Number);
+    for (let i = 0; i < 3; i++) {
+      if (p1[i] > p2[i]) return true;
+      if (p1[i] < p2[i]) return false;
+    }
+    return true;
+  }
+
   test('Version consistency: v1.94.2 is registered across package.json, CHANGELOG.md, and template', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.ok(pkg.version >= '1.94.2', 'package.json version must be 1.94.2 or higher');
+    assert.ok(semverGte(pkg.version, '1.94.2'), 'package.json version must be 1.94.2 or higher');
 
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.94.2] - 2026-09-11'), 'CHANGELOG.md must contain v1.94.2 entry');
@@ -14227,9 +14239,19 @@ describe('v1.94.2 Section 2 Header Declutter & Conditional Hierarchy Badge', () 
 });
 
 describe('v1.94.3 Pre-Flight KMZ Audit & Executive Readiness Redesign Tests', () => {
+  function semverGte(v1, v2) {
+    const p1 = v1.split('.').map(Number);
+    const p2 = v2.split('.').map(Number);
+    for (let i = 0; i < 3; i++) {
+      if (p1[i] > p2[i]) return true;
+      if (p1[i] < p2[i]) return false;
+    }
+    return true;
+  }
+
   test('Version consistency: v1.94.3 is registered across package.json, CHANGELOG.md, and template', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.ok(pkg.version >= '1.94.3', 'package.json version must be 1.94.3 or higher');
+    assert.ok(semverGte(pkg.version, '1.94.3'), 'package.json version must be 1.94.3 or higher');
 
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.94.3] - 2026-09-11'), 'CHANGELOG.md must contain v1.94.3 entry');
@@ -14378,16 +14400,24 @@ describe('v1.94.3 Pre-Flight KMZ Audit & Executive Readiness Redesign Tests', ()
 });
 
 describe('v1.94.4 Real-Time Live METAR Ingestion & Flight Category Tests', () => {
-  test('Version consistency: v1.94.9 is registered across package.json, CHANGELOG.md, and template (regression: URI-encoded archive ID lookup in companion)', () => {
+  test('Version consistency: v1.94.10 is registered across package.json, CHANGELOG.md, and template (regression: mobile diagnostics responsive layout)', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.94.9', 'package.json version must be 1.94.9');
+    assert.strictEqual(pkg.version, '1.94.10', 'package.json version must be 1.94.10');
 
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.94.10] - 2026-09-11'), 'CHANGELOG.md must contain 1.94.10 entry');
+
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateHtml.includes('>v1.94.10</span>'), 'index_template.html must contain header version badge v1.94.10');
+    assert.ok(templateHtml.includes('Version 1.94.10</span>'), 'index_template.html must contain About modal version tag 1.94.10');
+    assert.ok(templateHtml.includes('Changelog (v1.94.10):'), 'index_template.html must contain Changelog (v1.94.10) header');
+  });
+
+  test('Version consistency: v1.94.9 changelog entry is preserved in CHANGELOG.md and template', () => {
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.94.9] - 2026-09-11'), 'CHANGELOG.md must contain 1.94.9 entry');
 
     const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(templateHtml.includes('>v1.94.9</span>'), 'index_template.html must contain header version badge v1.94.9');
-    assert.ok(templateHtml.includes('Version 1.94.9</span>'), 'index_template.html must contain About modal version tag 1.94.9');
     assert.ok(templateHtml.includes('Changelog (v1.94.9):'), 'index_template.html must contain Changelog (v1.94.9) header');
   });
 
@@ -14578,6 +14608,134 @@ describe('v1.94.4 Real-Time Live METAR Ingestion & Flight Category Tests', () =>
     }
   });
 });
+
+describe('v1.94.10 Mobile View Flight Diagnostics & Responsive Layout Tests', () => {
+  test('DOM Architecture: contains #more-menu-diagnostics-btn in #header-more-menu and mobile subnav tabs in #diag-pane-3d', () => {
+    ['index_template.html', 'index.html'].forEach(filename => {
+      const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
+      assert.ok(html.includes('id="more-menu-diagnostics-btn"'), `${filename} must contain #more-menu-diagnostics-btn in More Actions menu`);
+      assert.ok(html.includes('id="diag-mobile-subnav"'), `${filename} must contain #diag-mobile-subnav`);
+      assert.ok(html.includes('id="diag-mobile-subtab-3d"'), `${filename} must contain #diag-mobile-subtab-3d`);
+      assert.ok(html.includes('id="diag-mobile-subtab-stats"'), `${filename} must contain #diag-mobile-subtab-stats`);
+      assert.ok(html.includes('diag-modal-card'), `${filename} must contain diag-modal-card`);
+      assert.ok(html.includes('diag-modal-header'), `${filename} must contain diag-modal-header`);
+      assert.ok(html.includes('diag-pane-3d'), `${filename} must contain diag-pane-3d`);
+    });
+  });
+
+  test('CSS Architecture: index.css contains responsive mobile rules for flight diagnostics', () => {
+    const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+    assert.ok(css.includes('.diag-modal-card'), 'index.css must style .diag-modal-card');
+    assert.ok(css.includes('@media (max-width: 768px)'), 'index.css must include 768px breakpoint');
+    assert.ok(css.includes('.diag-mobile-subnav'), 'index.css must style .diag-mobile-subnav');
+    assert.ok(css.includes('mobile-view-3d'), 'index.css must style mobile-view-3d');
+    assert.ok(css.includes('mobile-view-stats'), 'index.css must style mobile-view-stats');
+    assert.ok(css.includes('.diag-hud-overlay'), 'index.css must style responsive .diag-hud-overlay');
+  });
+
+  test('FlightDiagnostics.handleResize executes safely without errors', () => {
+    assert.strictEqual(typeof FlightDiagnostics.handleResize, 'function', 'handleResize must be defined');
+    // Calling handleResize when closed should safely no-op
+    FlightDiagnostics.isOpen = false;
+    assert.doesNotThrow(() => FlightDiagnostics.handleResize(), 'handleResize must not throw when closed');
+
+    // Calling handleResize when open with mock elements should safely update dimensions
+    FlightDiagnostics.isOpen = true;
+    const origRenderer = FlightDiagnostics.threeRenderer;
+    const origCamera = FlightDiagnostics.threeCamera;
+    let setSizeCalled = false;
+    let projMatrixUpdated = false;
+
+    FlightDiagnostics.threeRenderer = {
+      setSize: (w, h) => { setSizeCalled = true; }
+    };
+    FlightDiagnostics.threeCamera = {
+      aspect: 1,
+      updateProjectionMatrix: () => { projMatrixUpdated = true; }
+    };
+
+    const origGetElementById = document.getElementById;
+    document.getElementById = (id) => {
+      if (id === 'diag-3d-canvas-container') return { clientWidth: 390, clientHeight: 500 };
+      return origGetElementById(id);
+    };
+
+    try {
+      FlightDiagnostics.handleResize();
+      assert.strictEqual(setSizeCalled, true, 'threeRenderer.setSize must be called on resize');
+      assert.strictEqual(projMatrixUpdated, true, 'threeCamera.updateProjectionMatrix must be called');
+      assert.strictEqual(FlightDiagnostics.threeCamera.aspect, 390 / 500, 'threeCamera.aspect must be updated');
+    } finally {
+      document.getElementById = origGetElementById;
+      FlightDiagnostics.threeRenderer = origRenderer;
+      FlightDiagnostics.threeCamera = origCamera;
+      FlightDiagnostics.isOpen = false;
+    }
+  });
+
+  test('Mobile subtabs toggle between mobile-view-3d and mobile-view-stats', () => {
+    const makeMock = (initialClasses = []) => {
+      const classes = new Set(initialClasses);
+      return {
+        style: {},
+        classList: {
+          add: (c) => classes.add(c),
+          remove: (c) => classes.delete(c),
+          contains: (c) => classes.has(c),
+          toggle: (c) => { if (classes.has(c)) classes.delete(c); else classes.add(c); }
+        },
+        _listeners: {},
+        addEventListener: function(evt, fn) {
+          this._listeners[evt] = this._listeners[evt] || [];
+          this._listeners[evt].push(fn);
+        },
+        click: function() {
+          if (this._listeners['click']) {
+            this._listeners['click'].forEach(fn => fn({ stopPropagation: () => {} }));
+          }
+        }
+      };
+    };
+
+    const mockPane = makeMock(['diag-pane-3d', 'mobile-view-3d']);
+    const mockTab3d = makeMock(['diag-mobile-subtab-btn', 'active']);
+    const mockTabStats = makeMock(['diag-mobile-subtab-btn']);
+
+    const origGetById = document.getElementById;
+    document.getElementById = (id) => {
+      if (id === 'diag-pane-3d') return mockPane;
+      if (id === 'diag-mobile-subtab-3d') return mockTab3d;
+      if (id === 'diag-mobile-subtab-stats') return mockTabStats;
+      return origGetById ? origGetById(id) : null;
+    };
+
+    const origResize = FlightDiagnostics.handleResize;
+    let resizeCount = 0;
+    FlightDiagnostics.handleResize = () => { resizeCount++; };
+
+    try {
+      FlightDiagnostics.init();
+
+      // Click stats subtab
+      mockTabStats.click();
+      assert.ok(mockPane.classList.contains('mobile-view-stats'), 'pane must have mobile-view-stats after clicking stats tab');
+      assert.ok(!mockPane.classList.contains('mobile-view-3d'), 'pane must not have mobile-view-3d');
+      assert.ok(mockTabStats.classList.contains('active'), 'stats tab must be active');
+      assert.ok(!mockTab3d.classList.contains('active'), '3d tab must not be active');
+
+      // Click 3d subtab
+      mockTab3d.click();
+      assert.ok(mockPane.classList.contains('mobile-view-3d'), 'pane must have mobile-view-3d after clicking 3d tab');
+      assert.ok(!mockPane.classList.contains('mobile-view-stats'), 'pane must not have mobile-view-stats');
+      assert.ok(mockTab3d.classList.contains('active'), '3d tab must be active');
+      assert.ok(resizeCount > 0, 'handleResize must be called when switching back to 3d view');
+    } finally {
+      document.getElementById = origGetById;
+      FlightDiagnostics.handleResize = origResize;
+    }
+  });
+});
+
 
 
 
