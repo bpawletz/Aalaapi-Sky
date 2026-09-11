@@ -4624,6 +4624,91 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
     const active = tracker.getActiveDrones();
     assert.strictEqual(active.length, 2);
   });
+
+  test('FlightDiagnostics _loadGeneration guard prevents stale async load from overwriting newer flight selection (regression: wrong flight in 3D viewer)', async () => {
+    // Simulate two concurrent calls to loadSelectedFlight.
+    // The first call starts loading "old-flight.txt" but resolves slowly.
+    // Before it resolves, a second call for "new-flight.txt" is issued.
+    // The guard must ensure that only the newer selection ("new-flight.txt") is rendered.
+    const fd = vm.runInThisContext('FlightDiagnostics');
+
+    let firstFetchResolve;
+    let firstFetchCalled = false;
+    let secondFetchCalled = false;
+
+    const origFetch = global.fetch;
+    global.fetch = async (url) => {
+      if (url.includes('old-flight')) {
+        firstFetchCalled = true;
+        // Simulate a slow old fetch — won't resolve until manually triggered
+        await new Promise(resolve => { firstFetchResolve = resolve; });
+        return { ok: false }; // Fails so we hit the catch path
+      }
+      if (url.includes('new-flight')) {
+        secondFetchCalled = true;
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            telemetry: {
+              points: [{ lat: 41.0, lon: -84.0, alt: 30, speed: 4, pitch: -60, battery: 80, satellites: 12, yaw: 0, timeStr: '00:00', isPhoto: false }],
+              durationFormatted: '00:30',
+              durationSec: 30,
+              totalDistance: 200,
+              maxAltitude: 30,
+              photoCount: 1,
+              homePoint: { lat: 41.0, lon: -84.0 }
+            },
+            comparison: {}
+          })
+        };
+      }
+      return { ok: false };
+    };
+
+    // Stub out init3DScene and updateStatsUI to avoid DOM errors
+    const origInit = fd.init3DScene;
+    const origUpdate = fd.updateStatsUI;
+    const origSeek = fd.seekTo;
+    const origPause = fd.pause;
+    fd.init3DScene = () => {};
+    fd.updateStatsUI = () => {};
+    fd.seekTo = () => {};
+    fd.pause = () => {};
+
+    try {
+      // Start loading the old flight (slow)
+      const oldLoad = fd.loadSelectedFlight('old-flight.txt');
+
+      // Before the old fetch resolves, start loading the new flight
+      const newLoad = fd.loadSelectedFlight('new-flight.txt');
+
+      // Let the new flight load complete first
+      await newLoad;
+
+      // The new flight's telemetryData should be set
+      assert.ok(fd.telemetryData, 'telemetryData should be set after new flight load');
+      assert.ok(fd.telemetryData.points && fd.telemetryData.points.length > 0, 'telemetryData.points should be from the new flight');
+      assert.strictEqual(fd.telemetryData.points[0].lat, 41.0, 'New flight lat (41.0) should be loaded, not old flight');
+
+      // Now let the old fetch "resolve" (it was blocked)
+      firstFetchResolve();
+      await oldLoad;
+
+      // After the old load finishes, the state must NOT have been overwritten
+      // because the generation guard should have bailed out
+      assert.ok(fd.telemetryData, 'telemetryData should still be set after old stale load finishes');
+      assert.strictEqual(fd.telemetryData.points[0].lat, 41.0, 'New flight data (lat 41.0) must not be overwritten by stale old-flight load');
+      assert.ok(firstFetchCalled, 'old-flight fetch should have been called');
+      assert.ok(secondFetchCalled, 'new-flight fetch should have been called');
+    } finally {
+      global.fetch = origFetch;
+      fd.init3DScene = origInit;
+      fd.updateStatsUI = origUpdate;
+      fd.seekTo = origSeek;
+      fd.pause = origPause;
+    }
+  });
 });
 
 describe('3D Preview Modal Hierarchy & HTML Tag Balance Tests', () => {
@@ -14218,16 +14303,24 @@ describe('v1.94.3 Pre-Flight KMZ Audit & Executive Readiness Redesign Tests', ()
 });
 
 describe('v1.94.4 Real-Time Live METAR Ingestion & Flight Category Tests', () => {
-  test('Version consistency: v1.94.6 is registered across package.json, CHANGELOG.md, and template (regression: RC2 planned path fix)', () => {
+  test('Version consistency: v1.94.7 is registered across package.json, CHANGELOG.md, and template (regression: 3D viewer wrong flight race condition fix)', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.94.6', 'package.json version must be 1.94.6');
+    assert.strictEqual(pkg.version, '1.94.7', 'package.json version must be 1.94.7');
 
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.94.7] - 2026-09-11'), 'CHANGELOG.md must contain 1.94.7 entry');
+
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateHtml.includes('>v1.94.7</span>'), 'index_template.html must contain header version badge v1.94.7');
+    assert.ok(templateHtml.includes('Version 1.94.7</span>'), 'index_template.html must contain About modal version tag 1.94.7');
+    assert.ok(templateHtml.includes('Changelog (v1.94.7):'), 'index_template.html must contain Changelog (v1.94.7) header');
+  });
+
+  test('Version consistency: v1.94.6 changelog entry is preserved in CHANGELOG.md and template', () => {
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.94.6] - 2026-09-11'), 'CHANGELOG.md must contain 1.94.6 entry');
 
     const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(templateHtml.includes('>v1.94.6</span>'), 'index_template.html must contain header version badge v1.94.6');
-    assert.ok(templateHtml.includes('Version 1.94.6</span>'), 'index_template.html must contain About modal version tag 1.94.6');
     assert.ok(templateHtml.includes('Changelog (v1.94.6):'), 'index_template.html must contain Changelog (v1.94.6) header');
   });
 

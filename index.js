@@ -15162,6 +15162,8 @@ const FlightDiagnostics = {
   photoMarkers: [],
   currentLoadedMission: null,
   activeTab: '3d',
+  _loadGeneration: 0,   // incremented each call to loadSelectedFlight; guards against stale async loads
+  _pendingFlightId: null, // tracks the most recently requested flight ID
 
   switchTab(tabName) {
     this.activeTab = tabName || '3d';
@@ -15515,6 +15517,13 @@ const FlightDiagnostics = {
   },
 
   async loadSelectedFlight(flightId) {
+    // Guard against stale async results: capture the generation at the start of this call.
+    // If the user selects a different flight while this async load is in-flight, the generation
+    // will have been incremented and this call will bail out rather than overwrite the newer selection.
+    this._loadGeneration = (this._loadGeneration || 0) + 1;
+    const myGeneration = this._loadGeneration;
+    this._pendingFlightId = flightId;
+
     this.selectedFlightId = flightId;
     this.currentLoadedMission = null;
     this.plannedWaypoints = null;
@@ -15530,7 +15539,9 @@ const FlightDiagnostics = {
     const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : 'http://127.0.0.1:8765';
 
     if (flightId === 'active-mission') {
-      this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId: 'active-mission', isSimulation: true });
+      const telemetry = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId: 'active-mission', isSimulation: true });
+      if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
+      this.telemetryData = telemetry;
       this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
       this.plannedWaypoints = wps;
     } else if (flightId.startsWith('diag:')) {
@@ -15539,8 +15550,10 @@ const FlightDiagnostics = {
         const res = await fetch(`${apiBase}/api/diagnostics/${encodeURIComponent(identifier)}`, {
           signal: AbortSignal.timeout ? AbortSignal.timeout(2000) : undefined
         });
+        if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
         if (res.ok) {
           const data = await res.json();
+          if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
           if (data.success && data.mission) {
             this.currentLoadedMission = data.mission;
             // Store the planned waypoints from the saved mission (not the active workspace)
@@ -15569,6 +15582,7 @@ const FlightDiagnostics = {
           throw new Error('Companion offline');
         }
       } catch (err) {
+        if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
         console.warn('Failed to load saved diagnostic by uuid:', err);
         this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId });
         this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
@@ -15586,8 +15600,10 @@ const FlightDiagnostics = {
             options: { altitude, speed, gimbalPitch, flightId }
           })
         });
+        if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
         if (res.ok) {
           const data = await res.json();
+          if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
           if (data.success && data.telemetry) {
             this.telemetryData = data.telemetry;
             this.comparisonData = data.comparison;
@@ -15601,11 +15617,15 @@ const FlightDiagnostics = {
           throw new Error('Companion unreachable');
         }
       } catch (e) {
+        if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
         this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId });
         this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
         this.plannedWaypoints = null;
       }
     }
+
+    // Final guard: do not render stale data if a newer load completed after ours
+    if (this._loadGeneration !== myGeneration) return;
 
     this.updateStatsUI();
     this.init3DScene();
