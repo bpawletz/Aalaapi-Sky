@@ -483,6 +483,71 @@ html, body {
   gap: 5px;
 }
 
+/* Header TFR Service Status & Health Indicator */
+.header-tfr-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: 4px;
+  white-space: nowrap;
+  transition: var(--transition-fast);
+  cursor: pointer;
+  user-select: none;
+}
+
+.header-tfr-badge.is-operational {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+[data-theme="light"] .header-tfr-badge.is-operational {
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.header-tfr-badge.is-loading {
+  background: rgba(56, 189, 248, 0.18);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  animation: pulseTfrBadge 1.8s infinite ease-in-out;
+}
+
+.header-tfr-badge.is-warning {
+  background: #f59e0b;
+  color: #ffffff;
+  border: 1px solid #d97706;
+}
+
+.header-tfr-badge.is-critical {
+  background: #ef4444;
+  color: #ffffff;
+  border: 1px solid #dc2626;
+  animation: pulseTfrBadge 1s infinite ease-in-out;
+}
+
+.header-tfr-badge.is-offline {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+}
+
+@keyframes pulseTfrBadge {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(0.97);
+  }
+}
+
 .gimbal-preset-chip:hover {
   background: rgba(255, 255, 255, 0.1) !important;
   color: var(--text-main) !important;
@@ -4185,6 +4250,88 @@ html, body {
     gap: 10px !important;
     padding: 12px 14px !important;
   }
+}
+
+/* TFR & NOTAM Airspace Styling */
+.popover-tfr-card {
+  margin-top: 4px;
+}
+
+.tfr-item-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 6px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s ease;
+}
+
+.tfr-item-card:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.tfr-item-card.is-critical {
+  border-color: rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.09);
+}
+
+.tfr-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.tfr-item-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tfr-item-desc {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tfr-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.notam-table-container {
+  background: #ffffff;
+  color: #1e293b;
+  border-radius: 6px;
+  padding: 10px;
+  overflow-x: auto;
+  font-family: monospace, sans-serif;
+  font-size: 0.75rem;
+}
+
+.notam-table-container table {
+  width: 100% !important;
+  border-collapse: collapse;
+}
+
+.notam-table-container td,
+.notam-table-container th {
+  padding: 4px 6px;
 }
 
 

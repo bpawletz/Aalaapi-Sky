@@ -14400,16 +14400,11 @@ describe('v1.94.3 Pre-Flight KMZ Audit & Executive Readiness Redesign Tests', ()
 });
 
 describe('v1.94.4 Real-Time Live METAR Ingestion & Flight Category Tests', () => {
-  test('Version consistency: v1.94.14 is registered across package.json, CHANGELOG.md, and template (settings modal redesign, cyber scrollbar, and 5 structured cards)', () => {
-    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.94.14', 'package.json version must be 1.94.14');
-
+  test('Version consistency: v1.94.14 changelog entry is preserved in CHANGELOG.md and template', () => {
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.94.14] - 2026-09-11'), 'CHANGELOG.md must contain 1.94.14 entry');
 
     const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(templateHtml.includes('>v1.94.14</span>'), 'index_template.html must contain header version badge v1.94.14');
-    assert.ok(templateHtml.includes('Version 1.94.14</span>'), 'index_template.html must contain About modal version tag 1.94.14');
     assert.ok(templateHtml.includes('Changelog (v1.94.14):'), 'index_template.html must contain Changelog (v1.94.14) header');
   });
 
@@ -15019,6 +15014,353 @@ describe('v1.94.14 Configuration Settings Modal Redesign & Cyber Scrollbar Tests
         compiledHtml.includes(`id="${id}"`),
         `compiled index.html #config-modal must preserve control with id="${id}"`
       );
+    }
+  });
+});
+
+describe('v1.95.0 Location-Based Temporary Flight Restrictions (TFR) & NOTAM Ingestion Tests', () => {
+  test('Version consistency: v1.95.0 changelog entry is preserved in CHANGELOG.md and template', () => {
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.95.0] - 2026-09-11'), 'CHANGELOG.md must contain 1.95.0 entry');
+
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateHtml.includes('Changelog (v1.95.0):'), 'index_template.html must contain Changelog (v1.95.0) header');
+
+    const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(compiledHtml.includes('Changelog (v1.95.0):'), 'index.html must contain Changelog (v1.95.0) header');
+  });
+
+  test('DOM Architecture: Topbar warning badge, TFR monitor card, and Briefing modal exist in template and bundle', () => {
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+    for (const html of [templateHtml, compiledHtml]) {
+      assert.ok(html.includes('id="header-tfr-warning-badge"'), 'Header TFR warning badge must exist');
+      assert.ok(html.includes('id="popover-tfr-card"'), 'Popover TFR monitor card must exist');
+      assert.ok(html.includes('id="pop-tfr-badge"'), 'TFR monitor badge must exist');
+      assert.ok(html.includes('id="pop-tfr-radius"'), 'TFR radius select filter must exist');
+      assert.ok(html.includes('id="pop-btn-refresh-tfr"'), 'TFR refresh button must exist');
+      assert.ok(html.includes('id="pop-tfr-summary"'), 'TFR summary element must exist');
+      assert.ok(html.includes('id="pop-tfr-list"'), 'TFR item list container must exist');
+      assert.ok(html.includes('id="tfr-briefing-modal"'), 'TFR briefing modal must exist');
+      assert.ok(html.includes('id="tfr-modal-title"'), 'TFR modal title must exist');
+      assert.ok(html.includes('id="tfr-modal-content"'), 'TFR modal content container must exist');
+      assert.ok(html.includes('id="close-tfr-modal-btn"'), 'TFR modal top close button must exist');
+      assert.ok(html.includes('id="close-tfr-modal-footer-btn"'), 'TFR modal footer close button must exist');
+    }
+  });
+
+  test('isPointInGeoJsonPolygon correctly identifies points inside and outside Polygon and MultiPolygon boundaries', () => {
+    // Square polygon from lat 37.0 to 38.0, lon -122.0 to -121.0
+    // Coordinates in GeoJSON are [lon, lat]
+    const squarePolygon = {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [-122.0, 37.0],
+          [-121.0, 37.0],
+          [-121.0, 38.0],
+          [-122.0, 38.0],
+          [-122.0, 37.0]
+        ]
+      ]
+    };
+
+    // Point inside
+    assert.strictEqual(isPointInGeoJsonPolygon(37.5, -121.5, squarePolygon), true, 'Center point should be inside');
+    // Point outside (lat out)
+    assert.strictEqual(isPointInGeoJsonPolygon(38.5, -121.5, squarePolygon), false, 'Point north of polygon should be outside');
+    // Point outside (lon out)
+    assert.strictEqual(isPointInGeoJsonPolygon(37.5, -123.0, squarePolygon), false, 'Point west of polygon should be outside');
+
+    // MultiPolygon
+    const multiPolygon = {
+      type: 'MultiPolygon',
+      coordinates: [
+        [
+          [
+            [-122.0, 37.0],
+            [-121.0, 37.0],
+            [-121.0, 38.0],
+            [-122.0, 38.0],
+            [-122.0, 37.0]
+          ]
+        ],
+        [
+          [
+            [-120.0, 35.0],
+            [-119.0, 35.0],
+            [-119.0, 36.0],
+            [-120.0, 36.0],
+            [-120.0, 35.0]
+          ]
+        ]
+      ]
+    };
+
+    assert.strictEqual(isPointInGeoJsonPolygon(37.5, -121.5, multiPolygon), true, 'Point in first polygon should be inside');
+    assert.strictEqual(isPointInGeoJsonPolygon(35.5, -119.5, multiPolygon), true, 'Point in second polygon should be inside');
+    assert.strictEqual(isPointInGeoJsonPolygon(36.5, -120.5, multiPolygon), false, 'Point between polygons should be outside');
+    assert.strictEqual(isPointInGeoJsonPolygon(37.5, -121.5, null), false, 'Null geometry should return false');
+  });
+
+  test('getGeoJsonCentroid computes the approximate center of Polygon coordinates', () => {
+    const polygon = {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [-122.0, 37.0],
+          [-120.0, 37.0],
+          [-120.0, 39.0],
+          [-122.0, 39.0],
+          [-122.0, 37.0]
+        ]
+      ]
+    };
+
+    const centroid = getGeoJsonCentroid(polygon);
+    assert.ok(centroid !== null, 'Centroid must not be null');
+    assert.ok(Math.abs(centroid.lat - 37.8) < 0.2, `Centroid lat should be near 37.8 (got ${centroid.lat})`);
+    assert.ok(Math.abs(centroid.lng - (-121.2)) < 0.2, `Centroid lng should be near -121.2 (got ${centroid.lng})`);
+  });
+
+  test('formatTfrDistance properly formats inside status and nautical miles / km', () => {
+    assert.strictEqual(formatTfrDistance(0, true, 'N'), '⚠️ INSIDE TFR');
+    
+    // 5 km distance
+    const dist5km = formatTfrDistance(5, false, 'NE');
+    assert.ok(dist5km.includes('NM'), 'Should display distance in Nautical Miles');
+    assert.ok(dist5km.includes('NE'), 'Should include bearing compass direction');
+
+    // Sub-kilometer
+    const distSub = formatTfrDistance(0.5, false, 'S');
+    assert.ok(distSub.includes('500m') || distSub.includes('NM'), 'Should handle short distances');
+  });
+
+  test('sanitizeNotamHtml strips dangerous scripts, iframes, and onerror attributes', () => {
+    const malicious = '<div onclick="alert(1)">FAA NOTAM<script>evil()</script><img src="x" onerror="steal()" /><iframe src="evil.html"></iframe><a href="javascript:attack()">Click</a></div>';
+    const sanitized = sanitizeNotamHtml(malicious);
+
+    assert.ok(!sanitized.includes('<script>'), 'Must strip <script> tag');
+    assert.ok(!sanitized.includes('evil()'), 'Must strip script body');
+    assert.ok(!sanitized.includes('<iframe'), 'Must strip <iframe>');
+    assert.ok(!sanitized.includes('onerror'), 'Must strip inline event handlers');
+    assert.ok(!sanitized.includes('onclick'), 'Must strip onclick handlers');
+    assert.ok(!sanitized.includes('javascript:'), 'Must strip javascript: protocols');
+    assert.ok(sanitized.includes('FAA NOTAM'), 'Must preserve safe text');
+  });
+
+  test('processTfrData merges NOTAM metadata with GeoJSON features and computes proximity', () => {
+    const mockNotamList = [
+      {
+        notam_id: '4/1234',
+        type: 'VIP',
+        state: 'DC',
+        facility: 'ZDC',
+        description: 'SECURITY RESTRICTIONS WASHINGTON DC'
+      },
+      {
+        notam_id: '4/5678',
+        type: 'STADIUM',
+        state: 'NY',
+        facility: 'ZNY',
+        description: 'EVENT AIRSPACE RESTRICTION'
+      }
+    ];
+
+    const mockGeoJson = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          properties: {
+            NOTAM_KEY: '4/1234',
+            NAME: 'VIP DC TFR',
+            MIN_ALT: 'SFC',
+            MAX_ALT: '18000FT MSL'
+          },
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [-77.1, 38.8],
+                [-76.9, 38.8],
+                [-76.9, 39.0],
+                [-77.1, 39.0],
+                [-77.1, 38.8]
+              ]
+            ]
+          }
+        },
+        {
+          type: 'Feature',
+          properties: {
+            NOTAM_KEY: '4/5678',
+            NAME: 'METS STADIUM',
+            MIN_ALT: 'SFC',
+            MAX_ALT: '3000FT AGL'
+          },
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [-73.9, 40.7],
+                [-73.8, 40.7],
+                [-73.8, 40.8],
+                [-73.9, 40.8],
+                [-73.9, 40.7]
+              ]
+            ]
+          }
+        }
+      ]
+    };
+
+    // Center at Washington DC (38.9, -77.0) -> should be inside the first TFR
+    const center = { lat: 38.9, lng: -77.0 };
+    const processed = processTfrData(mockGeoJson, mockNotamList, center.lat, center.lng);
+
+    assert.ok(Array.isArray(processed), 'Should return an array');
+    assert.strictEqual(processed.length, 2, 'Should process both features');
+
+    // First item should be the DC one (distance 0 / inside)
+    assert.strictEqual(processed[0].notamId, '4/1234');
+    assert.strictEqual(processed[0].isInside, true, 'DC center should be inside DC TFR');
+    assert.strictEqual(processed[0].distanceKm, 0);
+
+    // Second item should be NY stadium, further away
+    assert.strictEqual(processed[1].notamId, '4/5678');
+    assert.strictEqual(processed[1].isInside, false);
+    assert.ok(processed[1].distanceKm > 300, 'NY TFR should be >300 km from DC');
+  });
+
+  test('calculateStats detects intersecting active TFRs and surfaces warning', () => {
+    const testGeoJsonFeature = {
+      type: 'Feature',
+      properties: {
+        NOTAM_KEY: '5/9999',
+        NAME: 'ACTIVE WILDFIRE TFR'
+      },
+      geometry: {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-120.5, 38.0],
+            [-120.0, 38.0],
+            [-120.0, 38.5],
+            [-120.5, 38.5],
+            [-120.5, 38.0]
+          ]
+        ]
+      }
+    };
+
+    tfrActiveFeatures = [testGeoJsonFeature];
+
+    // Waypoints inside the wildfire TFR
+    const waypointsInside = [
+      { x: 0, y: 0, lat: 38.2, lon: -120.2, alt: 50 },
+      { x: 10, y: 10, lat: 38.3, lon: -120.3, alt: 50 }
+    ];
+
+    const statsWithConflict = calculateStats(waypointsInside, [], 5, 20, 20, 'Interval', null);
+    assert.ok(statsWithConflict && statsWithConflict.intersectingTfrs, 'Should detect intersecting TFRs');
+    assert.strictEqual(statsWithConflict.intersectingTfrs.length, 1);
+    assert.strictEqual(statsWithConflict.intersectingTfrs[0].notamId, '5/9999');
+
+    // Waypoints outside the wildfire TFR
+    const waypointsOutside = [
+      { x: 0, y: 0, lat: 39.0, lon: -121.0, alt: 50 },
+      { x: 10, y: 10, lat: 39.1, lon: -121.1, alt: 50 }
+    ];
+
+    const statsClear = calculateStats(waypointsOutside, [], 5, 20, 20, 'Interval', null);
+    assert.ok(statsClear && statsClear.intersectingTfrs);
+    assert.strictEqual(statsClear.intersectingTfrs.length, 0, 'No intersecting TFRs should be found');
+
+    // Cleanup
+    tfrActiveFeatures = [];
+  });
+});
+
+describe('v1.95.1 Live TFR Service Status & Health Indicator (Green) Tests', () => {
+  test('Version consistency: v1.95.1 is registered across package.json, CHANGELOG.md, index_template.html, and index.html', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+    assert.strictEqual(pkg.version, '1.95.1', 'package.json version must be 1.95.1');
+
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.95.1] - 2026-09-11'), 'CHANGELOG.md must contain 1.95.1 entry');
+
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateHtml.includes('>v1.95.1</span>'), 'index_template.html must contain header version badge v1.95.1');
+    assert.ok(templateHtml.includes('Version 1.95.1</span>'), 'index_template.html must contain About modal version tag 1.95.1');
+    assert.ok(templateHtml.includes('Changelog (v1.95.1):'), 'index_template.html must contain Changelog (v1.95.1) header');
+
+    const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(compiledHtml.includes('>v1.95.1</span>'), 'index.html must contain header version badge v1.95.1');
+    assert.ok(compiledHtml.includes('Version 1.95.1</span>'), 'index.html must contain About modal version tag 1.95.1');
+    assert.ok(compiledHtml.includes('Changelog (v1.95.1):'), 'index.html must contain Changelog (v1.95.1) header');
+  });
+
+  test('DOM & CSS Architecture: header-tfr-warning-badge is styled as operational green and visible by default', () => {
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+
+    for (const html of [templateHtml, compiledHtml]) {
+      assert.ok(html.includes('id="header-tfr-warning-badge"'), 'Header TFR badge ID must be preserved');
+      assert.ok(html.includes('class="header-tfr-badge is-operational"'), 'Header TFR badge must be operational by default');
+      assert.ok(html.includes('🛡️ TFR'), 'Header TFR badge must include shield icon and TFR label');
+    }
+
+    assert.ok(css.includes('.header-tfr-badge.is-operational'), 'CSS must define .header-tfr-badge.is-operational');
+    assert.ok(css.includes('.header-tfr-badge.is-loading'), 'CSS must define .header-tfr-badge.is-loading');
+    assert.ok(css.includes('.header-tfr-badge.is-warning'), 'CSS must define .header-tfr-badge.is-warning');
+    assert.ok(css.includes('.header-tfr-badge.is-critical'), 'CSS must define .header-tfr-badge.is-critical');
+    assert.ok(css.includes('.header-tfr-badge.is-offline'), 'CSS must define .header-tfr-badge.is-offline');
+  });
+
+  test('updateTfrPanelUI updates header badge state across operational, loading, warning, critical, and offline', () => {
+    const mockBadge = { className: '', textContent: '', title: '', style: {} };
+    const origGetElementById = global.document.getElementById;
+    global.document.getElementById = (id) => {
+      if (id === 'header-tfr-warning-badge') return mockBadge;
+      return origGetElementById(id);
+    };
+
+    try {
+      // 1. Loading state
+      updateTfrPanelUI(null, 'Checking...', true);
+      assert.strictEqual(mockBadge.className, 'header-tfr-badge is-loading');
+      assert.ok(mockBadge.textContent.includes('TFR'));
+
+      // 2. Clear / Operational state (empty list or far away)
+      updateTfrPanelUI([], 'Airspace clear', false);
+      assert.strictEqual(mockBadge.className, 'header-tfr-badge is-operational');
+      assert.strictEqual(mockBadge.textContent, '🛡️ TFR');
+      assert.ok(mockBadge.title.includes('Operational'));
+
+      // 3. Proximity warning (<= 15 NM)
+      updateTfrPanelUI([{ notamId: '1/111', distanceNM: 12, isInside: false }], '', false);
+      assert.strictEqual(mockBadge.className, 'header-tfr-badge is-warning');
+      assert.strictEqual(mockBadge.textContent, '⚠️ TFR');
+
+      // 4. Critical warning (< 5 NM)
+      updateTfrPanelUI([{ notamId: '1/222', distanceNM: 3, isInside: false }], '', false);
+      assert.strictEqual(mockBadge.className, 'header-tfr-badge is-critical');
+      assert.strictEqual(mockBadge.textContent, '⚠️ TFR');
+
+      // 5. Critical warning (inside boundary)
+      updateTfrPanelUI([{ notamId: '1/333', distanceNM: 0, isInside: true }], '', false);
+      assert.strictEqual(mockBadge.className, 'header-tfr-badge is-critical');
+      assert.strictEqual(mockBadge.textContent, '🚨 IN TFR');
+
+      // 6. Offline / Connection failed
+      updateTfrPanelUI([], 'Unable to connect to FAA TFR service', false);
+      assert.strictEqual(mockBadge.className, 'header-tfr-badge is-offline');
+      assert.strictEqual(mockBadge.textContent, '⚪ TFR Off');
+    } finally {
+      global.document.getElementById = origGetElementById;
     }
   });
 });

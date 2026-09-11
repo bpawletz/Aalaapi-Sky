@@ -4684,6 +4684,114 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     });
     assert.strictEqual(isHiddenAfterXClose, true, 'Modal must close when clicking #close-config-btn');
   });
+
+  test('E2E: Temporary Flight Restrictions (TFR) layer registered in Leaflet overlays (v1.95.0)', async () => {
+    const layerRegistered = await page.evaluate(() => {
+      const labels = Array.from(document.querySelectorAll('.leaflet-control-layers-overlays label'));
+      const textMatches = labels.some(label => label.textContent && label.textContent.includes('Temporary Flight Restrictions'));
+      const layerObjExists = typeof window.tfrAirspaceLayer !== 'undefined' && window.tfrAirspaceLayer !== null;
+      return textMatches || layerObjExists;
+    });
+    assert.strictEqual(layerRegistered, true, 'Temporary Flight Restrictions layer must be registered in Leaflet overlays');
+  });
+
+  test('E2E: Topbar Mission Details popover contains TFR monitor card with controls (v1.95.0)', async () => {
+    const popoverState = await page.evaluate(() => {
+      const card = document.getElementById('popover-tfr-card');
+      const badge = document.getElementById('pop-tfr-badge');
+      const radius = document.getElementById('pop-tfr-radius');
+      const refreshBtn = document.getElementById('pop-btn-refresh-tfr');
+      const summary = document.getElementById('pop-tfr-summary');
+      const list = document.getElementById('pop-tfr-list');
+
+      return {
+        cardExists: !!card,
+        badgeExists: !!badge,
+        radiusExists: !!radius,
+        radiusValue: radius ? radius.value : null,
+        refreshExists: !!refreshBtn,
+        summaryExists: !!summary,
+        listExists: !!list
+      };
+    });
+
+    assert.strictEqual(popoverState.cardExists, true, '#popover-tfr-card must exist');
+    assert.strictEqual(popoverState.badgeExists, true, '#pop-tfr-badge must exist');
+    assert.strictEqual(popoverState.radiusExists, true, '#pop-tfr-radius must exist');
+    assert.strictEqual(popoverState.radiusValue, '30', 'Default TFR radius must be 30 NM');
+    assert.strictEqual(popoverState.refreshExists, true, '#pop-btn-refresh-tfr must exist');
+    assert.strictEqual(popoverState.summaryExists, true, '#pop-tfr-summary must exist');
+    assert.strictEqual(popoverState.listExists, true, '#pop-tfr-list must exist');
+  });
+
+  test('E2E: TFR Briefing Modal opens, renders content, and closes via close buttons (v1.95.0)', async () => {
+    // 1. Open briefing modal programmatically
+    await page.evaluate(() => {
+      if (typeof window.openTfrBriefingModal === 'function') {
+        window.openTfrBriefingModal('4/9999', 'WILDFIRE EMERGENCY RESTRICTION');
+      }
+    });
+    await page.waitForTimeout(100);
+
+    const modalVisible = await page.evaluate(() => {
+      const modal = document.getElementById('tfr-briefing-modal');
+      const title = document.getElementById('tfr-modal-title');
+      return {
+        isVisible: modal ? !modal.classList.contains('hidden') : false,
+        titleText: title ? title.textContent : ''
+      };
+    });
+
+    assert.strictEqual(modalVisible.isVisible, true, '#tfr-briefing-modal must be visible when opened');
+    assert.ok(modalVisible.titleText.includes('4/9999'), 'Modal title must contain NOTAM ID');
+
+    // 2. Close via footer button
+    await page.locator('#close-tfr-modal-footer-btn').click();
+    await page.waitForTimeout(100);
+
+    const isHiddenAfterFooter = await page.evaluate(() => {
+      const modal = document.getElementById('tfr-briefing-modal');
+      return modal ? modal.classList.contains('hidden') : false;
+    });
+    assert.strictEqual(isHiddenAfterFooter, true, '#tfr-briefing-modal must be hidden after clicking footer close button');
+
+    // 3. Re-open and close via top X button
+    await page.evaluate(() => {
+      if (typeof window.openTfrBriefingModal === 'function') {
+        window.openTfrBriefingModal('4/8888', 'VIP MOVEMENT');
+      }
+    });
+    await page.waitForTimeout(100);
+    await page.locator('#close-tfr-modal-btn').click();
+    await page.waitForTimeout(100);
+
+    const isHiddenAfterX = await page.evaluate(() => {
+      const modal = document.getElementById('tfr-briefing-modal');
+      return modal ? modal.classList.contains('hidden') : false;
+    });
+    assert.strictEqual(isHiddenAfterX, true, '#tfr-briefing-modal must be hidden after clicking X close button');
+  });
+
+  test('E2E: Topbar Telemetry Pill renders live green TFR service indicator (v1.95.1)', async () => {
+    const badgeState = await page.evaluate(() => {
+      const badge = document.getElementById('header-tfr-warning-badge');
+      if (!badge) return null;
+      return {
+        id: badge.id,
+        visible: !badge.classList.contains('hidden') && badge.offsetParent !== null,
+        classes: Array.from(badge.classList),
+        text: badge.textContent.trim(),
+        title: badge.title
+      };
+    });
+
+    assert.ok(badgeState, '#header-tfr-warning-badge element must exist');
+    assert.strictEqual(badgeState.visible, true, '#header-tfr-warning-badge must be visible in the header telemetry pill');
+    assert.ok(badgeState.classes.includes('header-tfr-badge'), 'Badge must have .header-tfr-badge class');
+    assert.ok(badgeState.classes.includes('is-operational'), 'Badge must have .is-operational class when operational & clear');
+    assert.ok(badgeState.text.includes('TFR'), 'Badge text must contain TFR label');
+    assert.ok(badgeState.title.includes('Operational') || badgeState.title.includes('Clear') || badgeState.title.includes('TFR'), 'Badge title must describe operational status');
+  });
 });
 
 
