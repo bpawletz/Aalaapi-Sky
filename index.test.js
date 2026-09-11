@@ -4381,7 +4381,7 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
   test('index_template.html includes Flight Diagnostics button in action row without toolbar/panel clutter', () => {
     const html = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf-8');
     assert.ok(html.includes('id="action-diagnostics-btn"'), 'Must contain action-diagnostics-btn in primary actions row');
-    assert.ok(html.includes('id="open-diagnostics-btn"'), 'Must preserve open-diagnostics-btn');
+    assert.strictEqual(html.includes('id="open-diagnostics-btn"'), false, 'Must remove duplicate open-diagnostics-btn under RC2 info');
     assert.ok(html.includes('id="diag-export-json-btn"'), 'Must contain diag-export-json-btn in FlightDiagnostics modal');
     assert.strictEqual(html.includes('id="header-diagnostics-btn"'), false, 'Must not place diagnostics in header toolbar');
     assert.strictEqual(html.includes('id="stats-diagnostics-btn"'), false, 'Must not place diagnostics in floating stats panel');
@@ -14400,16 +14400,24 @@ describe('v1.94.3 Pre-Flight KMZ Audit & Executive Readiness Redesign Tests', ()
 });
 
 describe('v1.94.4 Real-Time Live METAR Ingestion & Flight Category Tests', () => {
-  test('Version consistency: v1.94.11 is registered across package.json, CHANGELOG.md, and template (regression: diagnostics header banner overlap elimination)', () => {
+  test('Version consistency: v1.94.12 is registered across package.json, CHANGELOG.md, and template (removal of redundant RC2 bridge diagnostics button)', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.94.11', 'package.json version must be 1.94.11');
+    assert.strictEqual(pkg.version, '1.94.12', 'package.json version must be 1.94.12');
 
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.94.12] - 2026-09-11'), 'CHANGELOG.md must contain 1.94.12 entry');
+
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateHtml.includes('>v1.94.12</span>'), 'index_template.html must contain header version badge v1.94.12');
+    assert.ok(templateHtml.includes('Version 1.94.12</span>'), 'index_template.html must contain About modal version tag 1.94.12');
+    assert.ok(templateHtml.includes('Changelog (v1.94.12):'), 'index_template.html must contain Changelog (v1.94.12) header');
+  });
+
+  test('Version consistency: v1.94.11 changelog entry is preserved in CHANGELOG.md and template', () => {
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.94.11] - 2026-09-11'), 'CHANGELOG.md must contain 1.94.11 entry');
 
     const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(templateHtml.includes('>v1.94.11</span>'), 'index_template.html must contain header version badge v1.94.11');
-    assert.ok(templateHtml.includes('Version 1.94.11</span>'), 'index_template.html must contain About modal version tag 1.94.11');
     assert.ok(templateHtml.includes('Changelog (v1.94.11):'), 'index_template.html must contain Changelog (v1.94.11) header');
   });
 

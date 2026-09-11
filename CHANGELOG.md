@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.94.12] - 2026-09-11
+
+### Removed — Redundant Diagnostics Button in RC2 Bridge Container
+- **Streamlined Diagnostics Access:** Removed the duplicate `Flight Diagnostics & 3D Replay` button (`#open-diagnostics-btn`) from inside the RC 2 Companion Sync container (`#companion-sync-container`). Access to Flight Diagnostics is now unified exclusively through the persistent sticky bottom action dock (`#action-diagnostics-btn`) and the mobile topbar more menu (`#more-menu-diagnostics-btn`).
+
 ## [1.94.11] - 2026-09-11
 
 ### Fixed — Flight Diagnostics Banner Overlap & Multi-Tier Responsiveness
