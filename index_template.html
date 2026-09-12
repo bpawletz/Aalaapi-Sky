@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.98.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.98.2</span></h1>
         </div>
       </div>
 
@@ -2605,7 +2605,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.98.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.98.2</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -2671,6 +2671,14 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.98.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Full Image Resolution in Photo Inspector Modal:</strong> Re-engineered <code>PhotoInspector.open</code> to dynamically resolve photo URLs across Companion Bridge API base (<code>http://127.0.0.1:8765</code>), manifest archives, and relative paths instead of falling back to placeholder text.</li>
+              <li><strong>Multi-Tier Robust Image Fallback Sequence:</strong> Added automatic recovery on <code>#photo-inspector-img</code> to try relative paths and companion raw photo endpoints before displaying placeholders.</li>
+              <li><strong>Dynamic Viewport Centering &amp; Aspect Fitting:</strong> Added <code>fitToViewport()</code> calculation when photos load to center and scale high-resolution 4K imagery to fit the viewport comfortably.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.98.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -5780,8 +5788,8 @@
         </div>
 
         <!-- Center Interactive Photo Canvas Viewport -->
-        <div id="photo-viewport-container" style="flex: 1; position: relative; overflow: hidden; background: #030712; display: flex; align-items: center; justify-content: center; cursor: grab;">
-          <div id="photo-transform-layer" style="position: absolute; transform-origin: 0 0; will-change: transform;">
+        <div id="photo-viewport-container" style="flex: 1; position: relative; overflow: hidden; background: #030712; display: block; cursor: grab;">
+          <div id="photo-transform-layer" style="position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform;">
             <img id="photo-inspector-img" src="" alt="Drone Photo" style="display: block; max-width: none; user-select: none; pointer-events: none;" />
             <canvas id="photo-annotation-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: auto;"></canvas>
           </div>
