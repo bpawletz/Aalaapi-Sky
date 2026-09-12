@@ -4629,7 +4629,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.98.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.98.3</span></h1>
         </div>
       </div>
 
@@ -7167,7 +7167,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.98.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.98.3</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -7233,6 +7233,14 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.98.3):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Media Ingestion Limit &amp; Timeout Removal:</strong> Upgraded companion media pull engine with direct drive streaming and a 10-minute timeout for MTP USB devices, allowing high-capacity SD cards and aircraft (e.g. Drive <code>E:</code> with 111 photos) to transfer hundreds of 48MP raw images without 21-photo truncation.</li>
+              <li><strong>Null-Safe Waypoint Evaluation:</strong> Fixed client exception in <code>openMediaIngestModal</code> and <code>start-media-pull-btn</code> when <code>getCurrentWaypoints()</code> returns null.</li>
+              <li><strong>Instant MPF Previews &amp; EXIF Thumbnails:</strong> Implemented hardware-accelerated extraction of 960&times;720 screennails (~700 KB) and 160&times;120 thumbnails (~17 KB), slashing gallery load times and web bandwidth by &gt;98% while storing <code>thumbnail_url</code> in SQLite.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.98.2):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -26144,7 +26152,7 @@ const FlightDiagnostics = {
         || (typeof activeLayerId !== 'undefined' && activeLayerId)
         || 'layer-1';
 
-      let imgSrc = photo.previewUrl || '';
+      let imgSrc = photo.thumbnailUrl || photo.previewUrl || '';
       if (!imgSrc && photo.rawPath) {
         imgSrc = `/scratch/mission_archives/${manifestUuid}/photos/previews/${encodeURIComponent(photo.filename)}`;
       } else if (!imgSrc && photo.filename && !photo.filename.startsWith('DJI_000') && (photo.filename.endsWith('.JPG') || photo.filename.endsWith('.jpg') || photo.filename.endsWith('.PNG') || photo.filename.endsWith('.png'))) {
@@ -26154,7 +26162,8 @@ const FlightDiagnostics = {
         imgSrc = `${apiBase}${imgSrc.startsWith('/') ? '' : '/'}${imgSrc}`;
       }
       if (imgSrc) {
-        photo.previewUrl = imgSrc;
+        photo.previewUrl = photo.previewUrl || imgSrc;
+        photo.thumbnailUrl = imgSrc;
       }
 
       card.innerHTML = `
@@ -36997,7 +37006,7 @@ function openMediaIngestModal() {
   const windowBadge = document.getElementById('ingest-window-count-badge');
   const windowDetails = document.getElementById('ingest-window-details');
 
-  const activeWps = (typeof getCurrentWaypoints === 'function') ? getCurrentWaypoints() : [];
+  const activeWps = (typeof getCurrentWaypoints === 'function' && Array.isArray(getCurrentWaypoints())) ? getCurrentWaypoints() : [];
   let telem = (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.telemetryData) ? FlightDiagnostics.telemetryData : null;
 
   if (windowBadge) {
@@ -37098,7 +37107,7 @@ if (typeof document !== 'undefined') {
 
         try {
           const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
-          const activeWps = (typeof getCurrentWaypoints === 'function') ? getCurrentWaypoints() : [];
+          const activeWps = (typeof getCurrentWaypoints === 'function' && Array.isArray(getCurrentWaypoints())) ? getCurrentWaypoints() : [];
           let telem = (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.telemetryData) ? FlightDiagnostics.telemetryData : null;
 
           let timeWindow = null;
@@ -37112,15 +37121,19 @@ if (typeof document !== 'undefined') {
           }
 
           let bounds = null;
-          if (activeWps.length > 0) {
+          if (Array.isArray(activeWps) && activeWps.length > 0) {
             let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
             activeWps.forEach(w => {
-              if (w.lat < minLat) minLat = w.lat;
-              if (w.lat > maxLat) maxLat = w.lat;
-              if (w.lon < minLon) minLon = w.lon;
-              if (w.lon > maxLon) maxLon = w.lon;
+              if (w && typeof w.lat === 'number' && typeof w.lon === 'number') {
+                if (w.lat < minLat) minLat = w.lat;
+                if (w.lat > maxLat) maxLat = w.lat;
+                if (w.lon < minLon) minLon = w.lon;
+                if (w.lon > maxLon) maxLon = w.lon;
+              }
             });
-            bounds = { minLat, maxLat, minLon, maxLon };
+            if (minLat !== Infinity) {
+              bounds = { minLat, maxLat, minLon, maxLon };
+            }
           }
 
           const res = await fetch(`${apiBase}/api/media/pull`, {
@@ -37133,7 +37146,7 @@ if (typeof document !== 'undefined') {
               filterByGeo: filterGeoCheck ? filterGeoCheck.checked : true,
               timeWindow,
               bounds,
-              telemetry: telem
+              telemetry: telem || { points: [] }
             })
           });
           const data = await res.json();

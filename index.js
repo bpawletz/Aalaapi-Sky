@@ -15613,7 +15613,7 @@ const FlightDiagnostics = {
         || (typeof activeLayerId !== 'undefined' && activeLayerId)
         || 'layer-1';
 
-      let imgSrc = photo.previewUrl || '';
+      let imgSrc = photo.thumbnailUrl || photo.previewUrl || '';
       if (!imgSrc && photo.rawPath) {
         imgSrc = `/scratch/mission_archives/${manifestUuid}/photos/previews/${encodeURIComponent(photo.filename)}`;
       } else if (!imgSrc && photo.filename && !photo.filename.startsWith('DJI_000') && (photo.filename.endsWith('.JPG') || photo.filename.endsWith('.jpg') || photo.filename.endsWith('.PNG') || photo.filename.endsWith('.png'))) {
@@ -15623,7 +15623,8 @@ const FlightDiagnostics = {
         imgSrc = `${apiBase}${imgSrc.startsWith('/') ? '' : '/'}${imgSrc}`;
       }
       if (imgSrc) {
-        photo.previewUrl = imgSrc;
+        photo.previewUrl = photo.previewUrl || imgSrc;
+        photo.thumbnailUrl = imgSrc;
       }
 
       card.innerHTML = `
@@ -26466,7 +26467,7 @@ function openMediaIngestModal() {
   const windowBadge = document.getElementById('ingest-window-count-badge');
   const windowDetails = document.getElementById('ingest-window-details');
 
-  const activeWps = (typeof getCurrentWaypoints === 'function') ? getCurrentWaypoints() : [];
+  const activeWps = (typeof getCurrentWaypoints === 'function' && Array.isArray(getCurrentWaypoints())) ? getCurrentWaypoints() : [];
   let telem = (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.telemetryData) ? FlightDiagnostics.telemetryData : null;
 
   if (windowBadge) {
@@ -26567,7 +26568,7 @@ if (typeof document !== 'undefined') {
 
         try {
           const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
-          const activeWps = (typeof getCurrentWaypoints === 'function') ? getCurrentWaypoints() : [];
+          const activeWps = (typeof getCurrentWaypoints === 'function' && Array.isArray(getCurrentWaypoints())) ? getCurrentWaypoints() : [];
           let telem = (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.telemetryData) ? FlightDiagnostics.telemetryData : null;
 
           let timeWindow = null;
@@ -26581,15 +26582,19 @@ if (typeof document !== 'undefined') {
           }
 
           let bounds = null;
-          if (activeWps.length > 0) {
+          if (Array.isArray(activeWps) && activeWps.length > 0) {
             let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
             activeWps.forEach(w => {
-              if (w.lat < minLat) minLat = w.lat;
-              if (w.lat > maxLat) maxLat = w.lat;
-              if (w.lon < minLon) minLon = w.lon;
-              if (w.lon > maxLon) maxLon = w.lon;
+              if (w && typeof w.lat === 'number' && typeof w.lon === 'number') {
+                if (w.lat < minLat) minLat = w.lat;
+                if (w.lat > maxLat) maxLat = w.lat;
+                if (w.lon < minLon) minLon = w.lon;
+                if (w.lon > maxLon) maxLon = w.lon;
+              }
             });
-            bounds = { minLat, maxLat, minLon, maxLon };
+            if (minLat !== Infinity) {
+              bounds = { minLat, maxLat, minLon, maxLon };
+            }
           }
 
           const res = await fetch(`${apiBase}/api/media/pull`, {
@@ -26602,7 +26607,7 @@ if (typeof document !== 'undefined') {
               filterByGeo: filterGeoCheck ? filterGeoCheck.checked : true,
               timeWindow,
               bounds,
-              telemetry: telem
+              telemetry: telem || { points: [] }
             })
           });
           const data = await res.json();

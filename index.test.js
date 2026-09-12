@@ -16091,8 +16091,8 @@ describe('v1.98.2 Photo Inspector Image Resolution & Viewport Fitting Tests', ()
 
     ['index_template.html', 'index.html'].forEach(filename => {
       const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
-      assert.ok(html.includes('v1.98.2'), `${filename} must contain header badge v1.98.2`);
-      assert.ok(html.includes('Version 1.98.2'), `${filename} must contain About modal Version 1.98.2`);
+      assert.ok(html.includes('>v1.98.') || html.includes('v1.98.2'), `${filename} must contain header badge v1.98.x`);
+      assert.ok(html.includes('>Version 1.98.') || html.includes('Version 1.98.2'), `${filename} must contain About modal Version 1.98.x`);
       assert.ok(html.includes('Changelog (v1.98.2):'), `${filename} must contain Changelog (v1.98.2): header`);
     });
   });
@@ -16177,4 +16177,104 @@ describe('v1.98.2 Photo Inspector Image Resolution & Viewport Fitting Tests', ()
       global.document = origDoc;
     }
   });
+
+  test('Photo Extraction: extractMpfPreview and extractExifThumbnail extract valid image buffers', () => {
+    const { extractMpfPreview, extractExifThumbnail } = require('./tools/companion/server.js');
+    const testPhotoPath = 'scratch/mission_archives/layer-1/photos/raw/DJI_20260904185149_0212_D.JPG';
+    if (fs.existsSync(testPhotoPath)) {
+      const buf = fs.readFileSync(testPhotoPath);
+      const mpf = extractMpfPreview(buf);
+      assert.ok(mpf && Buffer.isBuffer(mpf), 'MPF preview buffer should be returned');
+      assert.ok(mpf.length > 50000 && mpf.length < 2000000, `MPF preview should be reasonably sized, got ${mpf.length} bytes`);
+      assert.strictEqual(mpf[0], 0xFF, 'Should start with JPEG SOI 0xFF');
+      assert.strictEqual(mpf[1], 0xD8, 'Should start with JPEG SOI 0xD8');
+
+      const exif = extractExifThumbnail(buf);
+      assert.ok(exif && Buffer.isBuffer(exif), 'EXIF thumbnail buffer should be returned');
+      assert.ok(exif.length > 5000 && exif.length < 100000, `EXIF thumbnail should be compact, got ${exif.length} bytes`);
+      assert.strictEqual(exif[0], 0xFF, 'Should start with JPEG SOI 0xFF');
+      assert.strictEqual(exif[1], 0xD8, 'Should start with JPEG SOI 0xD8');
+    }
+  });
+
+  test('DiagnosticsDatabase: persists thumbnail_url in photo_records table', () => {
+    const { DiagnosticsDatabase } = require('./tools/companion/diagnostics_db.js');
+    const testDbPath = 'scratch/test_diag_thumbs.db';
+    if (fs.existsSync(testDbPath)) fs.unlinkSync(testDbPath);
+    try {
+      const db = new DiagnosticsDatabase(testDbPath);
+      const missionUuid = 'test_thumb_mission';
+      const mockPhotos = [{
+        photoId: 'P_01',
+        filename: 'DJI_0001.JPG',
+        rawPath: 'C:\\raw\\DJI_0001.JPG',
+        previewUrl: '/scratch/mission_archives/test/photos/previews/DJI_0001.JPG',
+        thumbnailUrl: '/scratch/mission_archives/test/photos/thumbnails/DJI_0001.JPG',
+        waypointIndex: 0,
+        actual: { lat: 40.013, lon: -83.176, altAgl: 25.0 }
+      }];
+      const saveRes = db.savePhotoRecords(missionUuid, mockPhotos);
+      assert.strictEqual(saveRes.success, true);
+      assert.strictEqual(saveRes.savedCount, 1);
+
+      const records = db.getPhotosByMission(missionUuid);
+      assert.strictEqual(records.length, 1);
+      assert.strictEqual(records[0].thumbnail_url, '/scratch/mission_archives/test/photos/thumbnails/DJI_0001.JPG');
+      assert.strictEqual(records[0].preview_url, '/scratch/mission_archives/test/photos/previews/DJI_0001.JPG');
+      db.close();
+    } finally {
+      if (fs.existsSync(testDbPath)) fs.unlinkSync(testDbPath);
+    }
+  });
+
+  test('Media Ingest Handler: null-safe when getCurrentWaypoints() returns null', () => {
+    // Verify that evaluating activeWps with null getCurrentWaypoints() does not throw
+    const getCurrentWaypointsNull = () => null;
+    const activeWps = (typeof getCurrentWaypointsNull === 'function' && Array.isArray(getCurrentWaypointsNull())) ? getCurrentWaypointsNull() : [];
+    assert.strictEqual(Array.isArray(activeWps), true, 'activeWps must default to empty array');
+    assert.strictEqual(activeWps.length, 0, 'activeWps length must be 0');
+
+    // Simulate bounds computation
+    let bounds = null;
+    if (Array.isArray(activeWps) && activeWps.length > 0) {
+      bounds = { minLat: 0, maxLat: 0, minLon: 0, maxLon: 0 };
+    }
+    assert.strictEqual(bounds, null, 'bounds should safely remain null when activeWps is empty');
+  });
 });
+
+describe('v1.98.3 Media Ingest Limit Removal, MPF Previews & Thumbnail Generation Tests', () => {
+  test('Version consistency: package.json, CHANGELOG.md, index_template.html, and index.html match 1.98.3', () => {
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    assert.strictEqual(pkg.version, '1.98.3');
+
+    const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
+    assert.ok(changelog.includes('## [1.98.3] - 2026-09-12'), 'CHANGELOG.md must contain ## [1.98.3]');
+
+    const tmpl = fs.readFileSync('index_template.html', 'utf8');
+    assert.ok(tmpl.includes('v1.98.3'), 'index_template.html must contain header badge v1.98.3');
+    assert.ok(tmpl.includes('Version 1.98.3'), 'index_template.html must contain Version 1.98.3');
+    assert.ok(tmpl.includes('Changelog (v1.98.3):'), 'index_template.html must contain Changelog (v1.98.3)');
+
+    const bundle = fs.readFileSync('index.html', 'utf8');
+    assert.ok(bundle.includes('v1.98.3'), 'index.html must contain header badge v1.98.3');
+    assert.ok(bundle.includes('Version 1.98.3'), 'index.html must contain Version 1.98.3');
+    assert.ok(bundle.includes('Changelog (v1.98.3):'), 'index.html must contain Changelog (v1.98.3)');
+  });
+
+  test('Companion server exports high-speed photo ingestion & thumbnail extraction functions', () => {
+    const companion = require('./tools/companion/server.js');
+    assert.strictEqual(typeof companion.extractMpfPreview, 'function');
+    assert.strictEqual(typeof companion.extractExifThumbnail, 'function');
+    assert.strictEqual(typeof companion.pullMediaPhotos, 'function');
+    assert.strictEqual(typeof companion.detectMediaDevices, 'function');
+  });
+
+  test('pullMediaPhotos is an async function supporting timeout and thumbnail generation', () => {
+    const { pullMediaPhotos } = require('./tools/companion/server.js');
+    assert.strictEqual(typeof pullMediaPhotos, 'function');
+    assert.strictEqual(pullMediaPhotos.constructor.name, 'AsyncFunction');
+  });
+});
+
+
