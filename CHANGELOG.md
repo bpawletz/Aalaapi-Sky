@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.95.3] - 2026-09-11
+
+### Fixed — Section 2 Layer Properties Pattern Controls Restoration
+- **Pattern Controls Re-Exposed:** Resolved control visibility conflict introduced during sidebar subgroup card standardization where selecting Tower (`tower`), Road Following (`road-following`), or Exclusion Polygon (`exclusion-freeform`) hid Card 1 (`#layer-card-geometry`).
+- **Tower Audit Parameters Restored:** Re-exposed Card 1 `#layer-card-geometry` and `#tower-geometry-container` when Tower pattern is selected, restoring full access to Standoff Radius, Min/Max Height (AGL), Guy-Wire Safety Buffer, Capture Movement Pattern (Horizontal vs Vertical), Altitude Order, and Guy-Wire Hazard warnings. Redundant Flight Altitude in Card 2 remains properly hidden while standoff-derived overlap sliders remain accessible.
+- **Road Following Controls Restored:** Re-exposed Card 1 `#layer-card-geometry`, `#road-offset-container`, and `#road-snap-container` when Road Following is selected, restoring the Road Offset Distance slider and Snap to Roads auto-routing toggle.
+- **Exclusion Polygon Airspace Controls Restored:** Re-exposed Card 1 `#layer-card-geometry`, `#exclusion-altitude-container`, and `#exclusion-freeform-note` for Exclusion Polygons, restoring Min/Max Altitude (Floor/Ceiling) sliders and Detour Routing Strategy (Perimeter, Over the Top, Smart 3D).
+- **Dynamic Card 1 Header Badges:** Added `#layer-card-geometry-title` dynamically updating Card 1 header title to match pattern context (*Tower Geometry & Standoff*, *Road Path & Routing*, *Exclusion Volume & Airspace*, *Exclusion Boundary & Airspace*, *Coverage & Geometry*).
+
+## [1.95.2] - 2026-09-11
+
+### Fixed — OpenStreetMap Tile Usage Policy Compliance
+- **Standard Tile URL Formatting:** Updated OpenStreetMap raster tile endpoints in Leaflet base layer (`streetLayer`) and Three.js 3D ground canvas texture from legacy `{s}.tile.openstreetmap.org` subdomain rotation to the official, required naked domain `https://tile.openstreetmap.org/{z}/{x}/{y}.png` per OSM Foundation Tile Usage Policy.
+
 ## [1.95.1] - 2026-09-11
 
 ### Added — Live TFR Service Status & Health Indicator Next to Weather
