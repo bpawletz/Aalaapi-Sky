@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.98.1] - 2026-09-12
+
+### Fixed — Inspection Photo Anti-Collapse Grid Architecture & Thumbnail Resolution
+- **Anti-Collapse CSS Grid Layout (`.diag-photos-grid` & `.diag-photo-card`):** Resolved critical layout compression bug where flights with extensive waypoints/photos (such as 111-point missions) caused CSS Grid auto tracks to squeeze cards into 6px tall horizontal stripes. Added `grid-auto-rows: max-content;` and `align-content: start;` to `.diag-photos-grid`, `min-height: 260px;` to `.diag-photo-card`, and `min-height: 140px; flex-shrink: 0;` to `.diag-photo-card-thumb` to ensure cards always render at full 274px height with smooth vertical scrolling.
+- **Automatic Companion Archive Discovery (`FlightDiagnostics.loadFlight()`):** Enhanced flight log loading in Flight Diagnostics to automatically query companion media archives for existing inspection manifests matching the loaded mission or layer, attaching saved photo records without requiring pilots to manually re-import media each session.
+- **Correlated Photo Preview URL Preservation:** Updated `correlatePhotosWithTelemetry()` in `tools/companion/log_decoder.js` to preserve `previewUrl` and `rawPath` in photo records.
+- **Dynamic Image URL Resolution & Fallback Recovery:** Mapped photo preview URLs against the companion bridge API base (`http://127.0.0.1:8765`), with graceful error recovery showing waypoint badge and telemetry metadata if images are unreachable.
+
 ## [1.98.0] - 2026-09-12
 
 ### Added — Mission-Specific Photo Ingestion & SQLite Photo Indexing
