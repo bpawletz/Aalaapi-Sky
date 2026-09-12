@@ -1739,8 +1739,26 @@ const server = http.createServer(async (req, res) => {
         } catch (e) {}
       }
       if (mPath && fs.existsSync(mPath)) {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        fs.createReadStream(mPath).pipe(res);
+        try {
+          const raw = fs.readFileSync(mPath, 'utf8');
+          const mObj = JSON.parse(raw);
+          const manifestUuid = mObj.missionUuid || path.basename(path.dirname(mPath)) || 'layer-1';
+          if (Array.isArray(mObj.photos)) {
+            mObj.photos.forEach(p => {
+              if (!p.previewUrl && p.filename) {
+                p.previewUrl = `/scratch/mission_archives/${manifestUuid}/photos/previews/${encodeURIComponent(p.filename)}`;
+              }
+              if (!p.rawPath && p.filename) {
+                p.rawPath = `/scratch/mission_archives/${manifestUuid}/photos/raw/${encodeURIComponent(p.filename)}`;
+              }
+            });
+          }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(mObj));
+        } catch (e) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          fs.createReadStream(mPath).pipe(res);
+        }
       } else {
         res.writeHead(404, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: false, error: 'Manifest not found' }));

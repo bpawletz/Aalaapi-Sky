@@ -5010,6 +5010,39 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(firstBox, 'First card must have valid bounding box');
     assert.ok(firstBox.height >= 250, `First card height (${firstBox.height}px) must be >= 250px`);
   });
+
+  test('E2E: Photo Inspector modal opens with resolved companion image URL (v1.98.2)', async () => {
+    const inspectorState = await page.evaluate(async () => {
+      const modal = document.getElementById('photo-inspector-modal');
+      const img = document.getElementById('photo-inspector-img');
+
+      if (typeof PhotoInspector !== 'undefined' && PhotoInspector.open) {
+        PhotoInspector.open({
+          photoId: 'TEST_PHOTO_0218',
+          filename: 'DJI_20260904185243_0218_D.JPG',
+          waypointIndex: 6,
+          actual: { lat: 40.013, lon: -83.176, altAgl: 25, gimbalPitch: -45 },
+          planned: { lat: 40.013, lon: -83.176, alt: 25, gimbalPitch: -45 },
+          variance: { horizontalDeltaMeters: 0.1, verticalDeltaMeters: 0.05, isCompliant: true },
+          gsd: { gsdCm: 0.89 },
+          annotations: []
+        });
+      }
+
+      return {
+        modalVisible: modal ? !modal.classList.contains('hidden') : false,
+        imgSrc: img ? img.src : '',
+        zoom: typeof PhotoInspector !== 'undefined' ? PhotoInspector.zoom : 0,
+        filenameText: document.getElementById('inspector-filename-text')?.textContent || ''
+      };
+    });
+
+    assert.strictEqual(inspectorState.modalVisible, true, 'Photo inspector modal should be open');
+    assert.ok(inspectorState.imgSrc.includes('/photos/previews/DJI_20260904185243_0218_D.JPG'),
+      `Image src should resolve to photo preview URL, got: ${inspectorState.imgSrc}`);
+    assert.ok(!inspectorState.imgSrc.startsWith('data:image/svg'), 'Image src should not be placeholder SVG');
+    assert.strictEqual(inspectorState.filenameText, 'DJI_20260904185243_0218_D.JPG', 'Filename header text should match');
+  });
 });
 
 

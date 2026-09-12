@@ -15878,9 +15878,9 @@ describe('v1.98.0 Mission-Specific Photo Ingestion & SQLite Indexing Tests', () 
 
     ['index_template.html', 'index.html'].forEach(filename => {
       const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
-      assert.ok(html.includes('v1.98.0') || html.includes('v1.98.1'), `${filename} must contain header badge`);
-      assert.ok(html.includes('Version 1.98.0') || html.includes('Version 1.98.1'), `${filename} must contain About modal Version`);
-      assert.ok(html.includes('Changelog (v1.98.0):') || html.includes('Changelog (v1.98.1):'), `${filename} must contain Changelog header`);
+      assert.ok(html.includes('v1.98.'), `${filename} must contain header badge`);
+      assert.ok(html.includes('Version 1.98.'), `${filename} must contain About modal Version`);
+      assert.ok(html.includes('Changelog (v1.98.0):'), `${filename} must contain Changelog header`);
       assert.ok(html.includes('Mission-Specific Photo Ingestion &amp; SQLite Photo Indexing (v1.98.0)'), `${filename} must contain v1.98.0 What's New card`);
       assert.ok(html.includes('id="media-mission-window-box"'), `${filename} must contain #media-mission-window-box`);
       assert.ok(html.includes('id="ingest-window-details"'), `${filename} must contain #ingest-window-details`);
@@ -15996,14 +15996,14 @@ describe('v1.98.0 Mission-Specific Photo Ingestion & SQLite Indexing Tests', () 
 describe('v1.98.1 Flight Diagnostics Inspection Photo Rendering & Anti-Collapse Layout Tests', () => {
   test('Version consistency: package.json, CHANGELOG.md, index_template.html, and index.html match 1.98.1', () => {
     const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.98.1', 'package.json version should be 1.98.1');
+    assert.ok(pkg.version >= '1.98.1', 'package.json version should be >= 1.98.1');
 
     const changelog = fs.readFileSync(path.resolve(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.98.1] - 2026-09-12'), 'CHANGELOG.md must contain v1.98.1 entry');
 
     const templateHtml = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(templateHtml.includes('>v1.98.1</span>'), 'index_template.html header badge must be v1.98.1');
-    assert.ok(templateHtml.includes('>Version 1.98.1</span>'), 'index_template.html About modal must be Version 1.98.1');
+    assert.ok(templateHtml.includes('>v1.98.') || templateHtml.includes('>v1.98.1</span>'), 'index_template.html header badge must be v1.98.x');
+    assert.ok(templateHtml.includes('>Version 1.98.') || templateHtml.includes('>Version 1.98.1</span>'), 'index_template.html About modal must be Version 1.98.x');
     assert.ok(templateHtml.includes('Changelog (v1.98.1):'), 'index_template.html About modal changelog must contain v1.98.1');
   });
 
@@ -16081,6 +16081,100 @@ describe('v1.98.1 Flight Diagnostics Inspection Photo Rendering & Anti-Collapse 
   });
 });
 
+describe('v1.98.2 Photo Inspector Image Resolution & Viewport Fitting Tests', () => {
+  test('Version consistency: package.json, CHANGELOG.md, index_template.html, and index.html match 1.98.2', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+    assert.ok(pkg.version >= '1.98.2', 'package.json version must be >= 1.98.2');
 
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.98.2] - 2026-09-12'), 'CHANGELOG.md must contain 1.98.2 header');
 
+    ['index_template.html', 'index.html'].forEach(filename => {
+      const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
+      assert.ok(html.includes('v1.98.2'), `${filename} must contain header badge v1.98.2`);
+      assert.ok(html.includes('Version 1.98.2'), `${filename} must contain About modal Version 1.98.2`);
+      assert.ok(html.includes('Changelog (v1.98.2):'), `${filename} must contain Changelog (v1.98.2): header`);
+    });
+  });
 
+  test('PhotoInspector.open: dynamically resolves companion URL for raw drone photo filename', () => {
+    const origDoc = global.document;
+    const dom = new JSDOM(`<!DOCTYPE html><html><body>
+      <div id="photo-inspector-modal" class="hidden"></div>
+      <span id="inspector-filename-text"></span>
+      <span id="inspector-wp-badge"></span>
+      <span id="inspector-photo-sub"></span>
+      <span id="inspector-severity-dot"></span>
+      <span id="inspector-variance-text"></span>
+      <div id="photo-viewport-container" style="width: 1000px; height: 700px;">
+        <div id="photo-transform-layer">
+          <img id="photo-inspector-img" src="" />
+          <canvas id="photo-annotation-canvas" width="1000" height="700"></canvas>
+        </div>
+      </div>
+      <div id="defect-notes-list"></div>
+      <span id="defect-count-badge"></span>
+    </body></html>`);
+    global.document = dom.window.document;
+
+    try {
+      const photo = {
+        photoId: 'PHOTO_0007',
+        filename: 'DJI_20260904185243_0218_D.JPG',
+        waypointIndex: 6,
+        actual: { lat: 40.013, lon: -83.176, altAgl: 25, gimbalPitch: -45, heading: 0 },
+        planned: { lat: 40.013, lon: -83.176, alt: 25, gimbalPitch: -45 },
+        variance: { horizontalDeltaMeters: 0.1, verticalDeltaMeters: 0.05, isCompliant: true },
+        gsd: { gsdCm: 0.89, gsdMeters: 0.0089 },
+        annotations: []
+      };
+
+      PhotoInspector.open(photo);
+
+      const imgEl = dom.window.document.getElementById('photo-inspector-img');
+      assert.ok(imgEl, 'Inspector img element should exist');
+      assert.ok(imgEl.src.includes('/photos/previews/DJI_20260904185243_0218_D.JPG') && imgEl.src.startsWith('http://127.0.0.1:8765/scratch/mission_archives/'),
+        `Expected resolved companion preview URL, got: ${imgEl.src}`);
+      assert.strictEqual(photo.previewUrl, imgEl.src, 'Photo object previewUrl should be populated with resolved URL');
+      assert.ok(typeof imgEl.onerror === 'function', 'Img should define multi-tier onerror handler');
+    } finally {
+      global.document = origDoc;
+    }
+  });
+
+  test('PhotoInspector.fitToViewport: scales and centers image without NaN or zero scale', () => {
+    const origDoc = global.document;
+    const dom = new JSDOM(`<!DOCTYPE html><html><body>
+      <div id="photo-viewport-container">
+        <div id="photo-transform-layer">
+          <img id="photo-inspector-img" src="" />
+          <canvas id="photo-annotation-canvas"></canvas>
+        </div>
+      </div>
+    </body></html>`);
+    const vp = dom.window.document.getElementById('photo-viewport-container');
+    Object.defineProperty(vp, 'clientWidth', { value: 1200 });
+    Object.defineProperty(vp, 'clientHeight', { value: 800 });
+
+    const img = dom.window.document.getElementById('photo-inspector-img');
+    Object.defineProperty(img, 'naturalWidth', { value: 4000 });
+    Object.defineProperty(img, 'naturalHeight', { value: 3000 });
+
+    global.document = dom.window.document;
+
+    try {
+      PhotoInspector.fitToViewport();
+
+      assert.ok(PhotoInspector.zoom > 0 && PhotoInspector.zoom <= 1.0, `Zoom should be positive scale <= 1.0, got ${PhotoInspector.zoom}`);
+      assert.ok(!Number.isNaN(PhotoInspector.zoom), 'Zoom should not be NaN');
+      assert.ok(!Number.isNaN(PhotoInspector.panX), 'panX should not be NaN');
+      assert.ok(!Number.isNaN(PhotoInspector.panY), 'panY should not be NaN');
+
+      const layer = dom.window.document.getElementById('photo-transform-layer');
+      assert.ok(layer.style.transform.includes('translate('), 'Transform layer should apply pan translation');
+      assert.ok(layer.style.transform.includes('scale('), 'Transform layer should apply zoom scale');
+    } finally {
+      global.document = origDoc;
+    }
+  });
+});

@@ -15622,6 +15622,9 @@ const FlightDiagnostics = {
       if (imgSrc && !imgSrc.startsWith('http') && !imgSrc.startsWith('data:')) {
         imgSrc = `${apiBase}${imgSrc.startsWith('/') ? '' : '/'}${imgSrc}`;
       }
+      if (imgSrc) {
+        photo.previewUrl = imgSrc;
+      }
 
       card.innerHTML = `
         <div class="diag-photo-card-thumb" title="Click to inspect & annotate">
@@ -15671,7 +15674,7 @@ const FlightDiagnostics = {
 
       const openInspector = () => {
         if (typeof PhotoInspector !== 'undefined' && PhotoInspector.open) {
-          PhotoInspector.open(photo, (typeof activeInspectionManifest !== 'undefined') ? activeInspectionManifest : null);
+          PhotoInspector.open(photo, (typeof activeInspectionManifest !== 'undefined' && activeInspectionManifest) ? activeInspectionManifest : (this.activeInspectionManifest || this.flightManifest || null));
         }
       };
 
@@ -25610,14 +25613,22 @@ const PhotoInspector = {
     if (!modal) return;
 
     if (manifest) this.activeManifest = manifest;
-    else if (!this.activeManifest && typeof activeInspectionManifest !== 'undefined') {
-      this.activeManifest = activeInspectionManifest;
+    else if (!this.activeManifest) {
+      if (typeof activeInspectionManifest !== 'undefined' && activeInspectionManifest) {
+        this.activeManifest = activeInspectionManifest;
+      } else if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.activeInspectionManifest) {
+        this.activeManifest = FlightDiagnostics.activeInspectionManifest;
+      } else if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.flightManifest) {
+        this.activeManifest = FlightDiagnostics.flightManifest;
+      }
     }
 
     if (typeof photoOrId === 'object' && photoOrId !== null) {
       this.activePhoto = photoOrId;
     } else if (this.activeManifest && Array.isArray(this.activeManifest.photos)) {
       this.activePhoto = this.activeManifest.photos.find(p => p.photoId === photoOrId || p.filename === photoOrId) || this.activeManifest.photos[0];
+    } else if (typeof FlightDiagnostics !== 'undefined' && Array.isArray(FlightDiagnostics.flightPhotos)) {
+      this.activePhoto = FlightDiagnostics.flightPhotos.find(p => p.photoId === photoOrId || p.filename === photoOrId) || FlightDiagnostics.flightPhotos[0];
     }
 
     if (!this.activePhoto) {
@@ -25648,21 +25659,81 @@ const PhotoInspector = {
 
     const imgEl = document.getElementById('photo-inspector-img');
     const canvas = document.getElementById('photo-annotation-canvas');
-    const imgSrc = this.activePhoto.previewUrl || (this.activePhoto.rawPath ? `/scratch/mission_archives/${(this.activeManifest && this.activeManifest.missionUuid) || 'default'}/photos/previews/${encodeURIComponent(this.activePhoto.filename)}` : '');
+
+    const apiBase = (typeof getCompanionApiBase === 'function')
+      ? getCompanionApiBase()
+      : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
+
+    const manifestUuid = (this.activeManifest && this.activeManifest.missionUuid)
+      || (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.activeInspectionManifest?.missionUuid)
+      || (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.flightManifest?.missionUuid)
+      || (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.currentLoadedMission?.uuid)
+      || (typeof activeLayerId !== 'undefined' && activeLayerId)
+      || 'layer-1';
+
+    let imgSrc = this.activePhoto.previewUrl || '';
+    if (!imgSrc && this.activePhoto.rawPath && typeof this.activePhoto.rawPath === 'string' && !this.activePhoto.rawPath.includes(':') && !this.activePhoto.rawPath.startsWith('\\\\')) {
+      imgSrc = this.activePhoto.rawPath;
+    }
+    if (!imgSrc && this.activePhoto.filename && (this.activePhoto.filename.endsWith('.JPG') || this.activePhoto.filename.endsWith('.jpg') || this.activePhoto.filename.endsWith('.PNG') || this.activePhoto.filename.endsWith('.png'))) {
+      imgSrc = `/scratch/mission_archives/${manifestUuid}/photos/previews/${encodeURIComponent(this.activePhoto.filename)}`;
+    }
+    if (imgSrc && !imgSrc.startsWith('http://') && !imgSrc.startsWith('https://') && !imgSrc.startsWith('data:')) {
+      imgSrc = `${apiBase}${imgSrc.startsWith('/') ? '' : '/'}${imgSrc}`;
+    }
+    if (imgSrc) {
+      this.activePhoto.previewUrl = imgSrc;
+    }
     
     if (imgEl) {
+      let triedRaw = false;
+      let triedRelative = false;
+      let triedPlaceholder = false;
+
+      imgEl.onerror = () => {
+        // Step 1: If URL had apiBase, try relative path directly
+        if (!triedRelative && imgSrc && imgSrc.startsWith('http')) {
+          triedRelative = true;
+          const relPath = imgSrc.replace(/^https?:\/\/[^/]+/, '');
+          if (relPath && relPath !== imgSrc) {
+            imgEl.src = relPath;
+            return;
+          }
+        }
+        // Step 2: Try high-resolution raw photo from companion
+        if (!triedRaw && this.activePhoto.filename && manifestUuid) {
+          triedRaw = true;
+          imgEl.src = `${apiBase}/scratch/mission_archives/${manifestUuid}/photos/raw/${encodeURIComponent(this.activePhoto.filename)}`;
+          return;
+        }
+        // Step 3: Fallback to styled SVG placeholder
+        if (!triedPlaceholder) {
+          triedPlaceholder = true;
+          imgEl.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080"><rect width="100%" height="100%" fill="%230f172a"/><text x="50%" y="50%" fill="%2338bdf8" font-size="32" text-anchor="middle" dominant-baseline="middle" font-family="sans-serif">📸 Photo Preview Not Available • ' + (this.activePhoto.filename || 'DJI_0001.JPG') + '</text></svg>';
+        }
+      };
+
       imgEl.onload = () => {
         if (canvas) {
           canvas.width = imgEl.naturalWidth || 1920;
           canvas.height = imgEl.naturalHeight || 1080;
         }
-        this.applyTransform();
+        this.fitToViewport();
         this.renderCanvas();
       };
+
       if (!imgSrc) {
-        imgEl.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080"><rect width="100%" height="100%" fill="%230f172a"/><text x="50%" y="50%" fill="%2338bdf8" font-size="32" text-anchor="middle" dominant-baseline="middle" font-family="sans-serif">🛰️ Ingested Photo Preview • ' + (this.activePhoto.filename || 'DJI_0001.JPG') + '</text></svg>';
+        imgEl.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080"><rect width="100%" height="100%" fill="%230f172a"/><text x="50%" y="50%" fill="%2338bdf8" font-size="32" text-anchor="middle" dominant-baseline="middle" font-family="sans-serif">📸 Photo Preview Not Available • ' + (this.activePhoto.filename || 'DJI_0001.JPG') + '</text></svg>';
       } else {
         imgEl.src = imgSrc;
+        if (imgEl.complete && imgEl.naturalWidth > 0) {
+          if (canvas) {
+            canvas.width = imgEl.naturalWidth || 1920;
+            canvas.height = imgEl.naturalHeight || 1080;
+          }
+          this.fitToViewport();
+          this.renderCanvas();
+        }
       }
     }
 
@@ -25776,6 +25847,22 @@ const PhotoInspector = {
         boundaryBox.style.display = 'none';
       }
     }
+  },
+
+  fitToViewport() {
+    const vp = document.getElementById('photo-viewport-container');
+    const imgEl = document.getElementById('photo-inspector-img');
+    if (!vp || !imgEl) return;
+    const vpW = vp.clientWidth || 800;
+    const vpH = vp.clientHeight || 600;
+    const imgW = imgEl.naturalWidth || 1920;
+    const imgH = imgEl.naturalHeight || 1080;
+
+    const scale = Math.min((vpW - 40) / imgW, (vpH - 40) / imgH, 1.0);
+    this.zoom = Math.max(0.1, scale);
+    this.panX = Math.round((vpW - imgW * this.zoom) / 2);
+    this.panY = Math.round((vpH - imgH * this.zoom) / 2);
+    this.applyTransform();
   },
 
   applyTransform() {
@@ -26244,9 +26331,12 @@ const PhotoInspector = {
     const saveBtn = document.getElementById('inspector-save-btn');
     if (saveBtn) saveBtn.textContent = 'Saving...';
 
+    const apiBase = (typeof getCompanionApiBase === 'function')
+      ? getCompanionApiBase()
+      : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
     const missionUuid = (this.activeManifest && this.activeManifest.missionUuid) || 'default';
     try {
-      await fetch('/api/media/annotations', {
+      await fetch(`${apiBase}/api/media/annotations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
