@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.98.2] - 2026-09-12
+
+### Fixed — Photo Inspector Image Loading, URL Fallbacks & Responsive Viewport Fitting
+- **Full Image Resolution in Photo Inspector Modal (`PhotoInspector.open`):** Resolved bug where inspecting captured drone photos rendered placeholder SVG text (`🛰️ Ingested Photo Preview • DJI_...`) instead of actual high-resolution images. Re-engineered `PhotoInspector.open` to dynamically resolve photo URLs across Companion Bridge API base (`http://127.0.0.1:8765`), manifest archives, and relative paths.
+- **Multi-Tier Robust Image Fallback Sequence:** Added an automatic multi-tier fallback recovery on `img#photo-inspector-img`: if companion API fetch fails, attempts relative preview path; if preview is missing, attempts raw high-res photo from companion; gracefully falling back to a clean styled placeholder icon only when no image file exists on disk.
+- **Dynamic Viewport Centering & Aspect Fitting (`fitToViewport`):** Added automated aspect ratio scaling and centering calculation (`fitToViewport()`) when images load inside `#photo-viewport-container`, preventing high-resolution 4K/48MP drone imagery from overflowing canvas bounds on initial open.
+- **Manifest Discovery & Companion API Integration:** Updated `/api/media/manifest` in companion server to guarantee `previewUrl` and `rawPath` fields on all returned photo records, ensuring instant image loading for both historical and newly ingested missions.
+
 ## [1.98.1] - 2026-09-12
 
 ### Fixed — Inspection Photo Anti-Collapse Grid Architecture & Thumbnail Resolution
