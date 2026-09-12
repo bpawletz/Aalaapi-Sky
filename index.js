@@ -15434,6 +15434,9 @@ const FlightDiagnostics = {
   },
 
   getCorrelatedPhotos() {
+    if (this.flightPhotos && Array.isArray(this.flightPhotos) && this.flightPhotos.length > 0 && (!this.flightPhotosFlightId || this.flightPhotosFlightId === this.selectedFlightId)) {
+      return this.flightPhotos;
+    }
     if (typeof activeInspectionManifest !== 'undefined' && activeInspectionManifest && Array.isArray(activeInspectionManifest.photos) && activeInspectionManifest.photos.length > 0) {
       return activeInspectionManifest.photos;
     }
@@ -15604,11 +15607,31 @@ const FlightDiagnostics = {
       const badgeBorder = sev === 'critical' ? 'rgba(239, 68, 68, 0.35)' : (sev === 'warning' ? 'rgba(245, 158, 11, 0.35)' : 'rgba(52, 211, 153, 0.35)');
       const badgeLabel = sev === 'critical' ? '🔴 DEFECT' : (sev === 'warning' ? '⚠ WARNING' : '✓ COMPLIANT');
 
-      const imgSrc = photo.previewUrl || (photo.rawPath ? `/scratch/mission_archives/${(typeof activeInspectionManifest !== 'undefined' && activeInspectionManifest?.missionUuid) || 'default'}/photos/previews/${encodeURIComponent(photo.filename)}` : '');
+      const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
+      const manifestUuid = (typeof activeInspectionManifest !== 'undefined' && activeInspectionManifest?.missionUuid)
+        || this.currentLoadedMission?.uuid
+        || (typeof activeLayerId !== 'undefined' && activeLayerId)
+        || 'layer-1';
+
+      let imgSrc = photo.previewUrl || '';
+      if (!imgSrc && photo.rawPath) {
+        imgSrc = `/scratch/mission_archives/${manifestUuid}/photos/previews/${encodeURIComponent(photo.filename)}`;
+      } else if (!imgSrc && photo.filename && !photo.filename.startsWith('DJI_000') && (photo.filename.endsWith('.JPG') || photo.filename.endsWith('.jpg') || photo.filename.endsWith('.PNG') || photo.filename.endsWith('.png'))) {
+        imgSrc = `/scratch/mission_archives/${manifestUuid}/photos/previews/${encodeURIComponent(photo.filename)}`;
+      }
+      if (imgSrc && !imgSrc.startsWith('http') && !imgSrc.startsWith('data:')) {
+        imgSrc = `${apiBase}${imgSrc.startsWith('/') ? '' : '/'}${imgSrc}`;
+      }
 
       card.innerHTML = `
         <div class="diag-photo-card-thumb" title="Click to inspect & annotate">
-          ${imgSrc ? `<img src="${imgSrc}" alt="${photo.filename}" loading="lazy" />` : `
+          ${imgSrc ? `
+            <img src="${imgSrc}" alt="${photo.filename}" loading="lazy" onerror="this.onerror=null; this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='flex';" />
+            <div style="display: none; flex-direction: column; align-items: center; gap: 4px; color: #38bdf8;">
+              <span style="font-size: 1.8rem;">📸</span>
+              <span style="font-size: 0.68rem; color: var(--text-muted);">WP #${photo.waypointIndex}</span>
+            </div>
+          ` : `
             <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; color: #38bdf8;">
               <span style="font-size: 1.8rem;">📸</span>
               <span style="font-size: 0.68rem; color: var(--text-muted);">WP #${photo.waypointIndex} Preview</span>
@@ -16200,7 +16223,28 @@ const FlightDiagnostics = {
     // Final guard: do not render stale data if a newer load completed after ours
     if (this._loadGeneration !== myGeneration) return;
 
+    // Automatically discover and attach any saved inspection photos from companion archive
+    this.flightPhotos = null;
+    this.flightPhotosFlightId = null;
+    try {
+      const mUuid = this.currentLoadedMission?.uuid || (typeof activeLayerId !== 'undefined' && activeLayerId) || 'layer-1';
+      const mRes = await fetch(`${apiBase}/api/media/manifest?uuid=${encodeURIComponent(mUuid)}&flight=${encodeURIComponent(flightId || '')}`, {
+        signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(1500) : undefined
+      });
+      if (mRes.ok) {
+        const mData = await mRes.json();
+        if (mData && Array.isArray(mData.photos) && mData.photos.length > 0) {
+          this.flightPhotos = mData.photos;
+          this.flightPhotosFlightId = flightId;
+          this.flightManifest = mData;
+        }
+      }
+    } catch (e) {}
+
     this.updateStatsUI();
+    if (this.activeTab === 'photos') {
+      this.renderInspectionPhotosUI();
+    }
     this.init3DScene();
     this.playbackFractionalIndex = 0.0;
     this.seekTo(0, true, true);

@@ -1719,9 +1719,26 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/media/manifest' && req.method === 'GET') {
-      const uuid = url.searchParams.get('uuid') || 'default-mission';
-      const mPath = path.join(ARCHIVE_DIR, uuid, 'inspection_manifest.json');
-      if (fs.existsSync(mPath)) {
+      const uuid = url.searchParams.get('uuid') || url.searchParams.get('mission');
+      let mPath = uuid ? path.join(ARCHIVE_DIR, uuid, 'inspection_manifest.json') : null;
+      if (!mPath || !fs.existsSync(mPath)) {
+        // Fallback: search subdirectories in ARCHIVE_DIR for any valid inspection_manifest.json
+        try {
+          if (fs.existsSync(ARCHIVE_DIR)) {
+            const subdirs = fs.readdirSync(ARCHIVE_DIR, { withFileTypes: true })
+              .filter(d => d.isDirectory())
+              .map(d => d.name);
+            for (const sub of subdirs) {
+              const candidate = path.join(ARCHIVE_DIR, sub, 'inspection_manifest.json');
+              if (fs.existsSync(candidate)) {
+                mPath = candidate;
+                break;
+              }
+            }
+          }
+        } catch (e) {}
+      }
+      if (mPath && fs.existsSync(mPath)) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         fs.createReadStream(mPath).pipe(res);
       } else {
