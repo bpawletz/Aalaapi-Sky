@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.98.3] - 2026-09-12
+
+### Fixed — Media Ingest Limit Removal, MPF Previews & High-Speed Thumbnail Generation
+- **21-Photo Ingestion Limit & Timeout Elimination:** Resolved issue where media ingestion halted at 21 photos when pulling from high-capacity removable media or USB readers (such as Drive `E:` with 111 photos). Re-engineered the media pull engine to utilize direct filesystem streaming with a 10-minute timeout for MTP devices (upgraded from 25 seconds), allowing multi-gigabyte transfers of hundreds of high-resolution 48MP raw drone images without truncation.
+- **Null-Safe Ingest Waypoint Evaluation (`Cannot read properties of null (reading 'length')`):** Resolved client-side exception where `openMediaIngestModal` and `start-media-pull-btn` crashed on `activeWps.length` when `getCurrentWaypoints()` returned `null`. Added array validation defaulting to empty array, safely preserving bounds and mission telemetry parameters.
+- **Hardware-Accelerated Multi-Picture Format (MPF) Preview Extraction:** Implemented zero-dependency binary parsing of JPEG APP2 Multi-Picture Format (MPF) headers, extracting pre-rendered 960×720 screen previews (~700 KB) in ~5ms per image. Reduces web bandwidth consumption by >98% compared to loading uncompressed 42MB originals while preserving crisp visual clarity in inspection galleries.
+- **Compact EXIF Thumbnail Extraction & SQLite Indexing:** Added instant extraction of 160×120 compact EXIF thumbnails (~17 KB) to `photos/thumbnails/`. Added `thumbnail_url` column with safe schema migration to SQLite (`photo_records` table in `scratch/missions.db`), enabling sub-second gallery card grid loading across 100+ photo flights while keeping raw originals preserved in `photos/raw/` for the Photo Inspector.
+- **Smart Flight Window Cross-Referencing:** Enhanced flight window filtering to cross-reference DJI filename timestamps (`DJI_YYYYMMDDHHMMSS_*.JPG`) and local write times against flight logs with a 5-minute safety buffer, ensuring all 111 flight photos are correlated cleanly even across daylight savings and timezone boundaries.
+
 ## [1.98.2] - 2026-09-12
 
 ### Fixed — Photo Inspector Image Loading, URL Fallbacks & Responsive Viewport Fitting

@@ -1145,6 +1145,7 @@ function correlatePhotosWithTelemetry(photos, telemetryPoints, plannedWaypoints 
       filename: photo.filename || `DJI_${String(pIdx + 1).padStart(4, '0')}.JPG`,
       rawFilename: photo.rawFilename || null,
       previewUrl: photo.previewUrl || null,
+      thumbnailUrl: photo.thumbnailUrl || photo.previewUrl || null,
       rawPath: photo.rawPath || null,
       waypointIndex: assignedWpIdx,
       timestamp: photo.timestamp || (matchedTelem && matchedTelem.timestamp) || new Date().toISOString(),
