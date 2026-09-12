@@ -4002,7 +4002,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       };
     });
     assert.strictEqual(moreMenuOpenState.menuVisible, true, 'More menu should be visible after clicking more button');
-    assert.strictEqual(moreMenuOpenState.itemsCount, 4, 'More menu should contain 4 action items (Intro, Diagnostics, About, Links)');
+    assert.strictEqual(moreMenuOpenState.itemsCount, 5, 'More menu should contain 5 action items (Diagnostics, Photos, Intro, About, Links)');
 
     // Click About from More Menu
     await page.locator('#more-menu-about-btn').click();
@@ -4878,4 +4878,81 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(freeformResult.cardOpticsDisplay, 'block', 'Card 3 (#layer-card-optics) must remain visible for Freeform');
     assert.strictEqual(freeformResult.cardModesDisplay, 'block', 'Card 4 (#layer-card-modes) must remain visible for Freeform');
   });
+
+  test('E2E: Flight Diagnostics Photo Ingestion & Inspection Gallery Tab (v1.97.0)', async () => {
+    const diagPhotoResult = await page.evaluate(async () => {
+      const diagModal = document.getElementById('flight-diagnostics-modal');
+      const navPhotosBtn = document.getElementById('diag-nav-photos-btn');
+      const pullPhotosBtn = document.getElementById('diag-pull-photos-btn');
+      const photosCard = document.getElementById('diag-photos-card');
+      const panePhotos = document.getElementById('diag-pane-photos');
+
+      if (typeof FlightDiagnostics !== 'undefined') {
+        FlightDiagnostics.telemetryData = {
+          points: [
+            { lat: 40.01297, lon: -83.17707, alt: 25, speed: 4.5, pitch: -60, yaw: 90, isPhoto: true, waypointIndex: 0 },
+            { lat: 40.01350, lon: -83.17707, alt: 25, speed: 4.5, pitch: -60, yaw: 90, isPhoto: true, waypointIndex: 1 }
+          ]
+        };
+        FlightDiagnostics.renderInspectionPhotosUI();
+        FlightDiagnostics.switchTab('photos');
+      }
+
+      return {
+        modalExists: !!diagModal,
+        hasNavPhotosBtn: !!navPhotosBtn,
+        hasPullPhotosBtn: !!pullPhotosBtn,
+        photosCardVisible: photosCard ? photosCard.style.display !== 'none' : false,
+        panePhotosVisible: panePhotos ? !panePhotos.classList.contains('hidden') : false,
+        activeTab: FlightDiagnostics ? FlightDiagnostics.activeTab : null,
+        photoCountText: document.getElementById('diag-nav-photos-count')?.textContent
+      };
+    });
+
+    assert.ok(diagPhotoResult.hasNavPhotosBtn, '#diag-nav-photos-btn must exist in Flight Diagnostics navbar');
+    assert.ok(diagPhotoResult.hasPullPhotosBtn, '#diag-pull-photos-btn must exist in Flight Diagnostics header');
+    assert.strictEqual(diagPhotoResult.activeTab, 'photos', 'Active tab in FlightDiagnostics should be photos');
+    assert.strictEqual(diagPhotoResult.panePhotosVisible, true, '#diag-pane-photos should be visible');
+    assert.strictEqual(diagPhotoResult.photosCardVisible, true, '#diag-photos-card in sidebar should be visible');
+    assert.strictEqual(diagPhotoResult.photoCountText, '2', 'Nav photos badge should reflect 2 photos');
+  });
+
+  test('E2E: Mission-Specific Photo Ingest Window & Geo Filter Toggles (v1.98.0)', async () => {
+    // Open Media Ingest Modal
+    await page.evaluate(() => {
+      if (typeof openMediaIngestModal === 'function') openMediaIngestModal();
+    });
+    await page.waitForTimeout(100);
+
+    const ingestModalState = await page.evaluate(() => {
+      const modal = document.getElementById('media-ingest-modal');
+      const windowBox = document.getElementById('media-mission-window-box');
+      const filterTimeCheck = document.getElementById('ingest-filter-time');
+      const filterGeoCheck = document.getElementById('ingest-filter-geo');
+      const windowBadge = document.getElementById('ingest-window-count-badge');
+
+      return {
+        isVisible: modal ? !modal.classList.contains('hidden') : false,
+        hasWindowBox: !!windowBox,
+        hasTimeFilter: !!filterTimeCheck,
+        timeFilterChecked: filterTimeCheck?.checked,
+        hasGeoFilter: !!filterGeoCheck,
+        geoFilterChecked: filterGeoCheck?.checked,
+        badgeText: windowBadge?.textContent || ''
+      };
+    });
+
+    assert.strictEqual(ingestModalState.isVisible, true, '#media-ingest-modal should be visible when opened');
+    assert.strictEqual(ingestModalState.hasWindowBox, true, '#media-mission-window-box must exist');
+    assert.strictEqual(ingestModalState.hasTimeFilter, true, '#ingest-filter-time checkbox must exist');
+    assert.strictEqual(ingestModalState.timeFilterChecked, true, 'Time filter checkbox should default to checked');
+    assert.strictEqual(ingestModalState.hasGeoFilter, true, '#ingest-filter-geo checkbox must exist');
+    assert.strictEqual(ingestModalState.geoFilterChecked, true, 'Geo filter checkbox should default to checked');
+
+    // Close modal
+    await page.locator('#close-media-ingest-modal-btn').click();
+    await page.waitForTimeout(100);
+  });
 });
+
+
