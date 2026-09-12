@@ -15871,16 +15871,16 @@ describe('v1.97.0 Flight Diagnostics Photo Ingestion & Inspection Gallery Tests'
 describe('v1.98.0 Mission-Specific Photo Ingestion & SQLite Indexing Tests', () => {
   test('Version consistency: package.json, CHANGELOG.md, index_template.html, and index.html match 1.98.0', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.98.0', 'package.json version must be 1.98.0');
+    assert.ok(pkg.version >= '1.98.0', 'package.json version must be >= 1.98.0');
 
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.98.0] - 2026-09-12'), 'CHANGELOG.md must contain 1.98.0 header');
 
     ['index_template.html', 'index.html'].forEach(filename => {
       const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
-      assert.ok(html.includes('v1.98.0'), `${filename} must contain header badge v1.98.0`);
-      assert.ok(html.includes('Version 1.98.0'), `${filename} must contain About modal Version 1.98.0`);
-      assert.ok(html.includes('Changelog (v1.98.0):'), `${filename} must contain Changelog (v1.98.0): header`);
+      assert.ok(html.includes('v1.98.0') || html.includes('v1.98.1'), `${filename} must contain header badge`);
+      assert.ok(html.includes('Version 1.98.0') || html.includes('Version 1.98.1'), `${filename} must contain About modal Version`);
+      assert.ok(html.includes('Changelog (v1.98.0):') || html.includes('Changelog (v1.98.1):'), `${filename} must contain Changelog header`);
       assert.ok(html.includes('Mission-Specific Photo Ingestion &amp; SQLite Photo Indexing (v1.98.0)'), `${filename} must contain v1.98.0 What's New card`);
       assert.ok(html.includes('id="media-mission-window-box"'), `${filename} must contain #media-mission-window-box`);
       assert.ok(html.includes('id="ingest-window-details"'), `${filename} must contain #ingest-window-details`);
@@ -15992,6 +15992,95 @@ describe('v1.98.0 Mission-Specific Photo Ingestion & SQLite Indexing Tests', () 
     }
   });
 });
+
+describe('v1.98.1 Flight Diagnostics Inspection Photo Rendering & Anti-Collapse Layout Tests', () => {
+  test('Version consistency: package.json, CHANGELOG.md, index_template.html, and index.html match 1.98.1', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf8'));
+    assert.strictEqual(pkg.version, '1.98.1', 'package.json version should be 1.98.1');
+
+    const changelog = fs.readFileSync(path.resolve(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.98.1] - 2026-09-12'), 'CHANGELOG.md must contain v1.98.1 entry');
+
+    const templateHtml = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateHtml.includes('>v1.98.1</span>'), 'index_template.html header badge must be v1.98.1');
+    assert.ok(templateHtml.includes('>Version 1.98.1</span>'), 'index_template.html About modal must be Version 1.98.1');
+    assert.ok(templateHtml.includes('Changelog (v1.98.1):'), 'index_template.html About modal changelog must contain v1.98.1');
+  });
+
+  test('CSS Architecture: index.css contains anti-collapse rules for inspection photo grid, cards and thumbnails', () => {
+    const css = fs.readFileSync(path.resolve(__dirname, 'index.css'), 'utf8');
+    assert.ok(css.includes('grid-auto-rows: max-content;'), 'index.css must specify grid-auto-rows: max-content for .diag-photos-grid');
+    assert.ok(css.includes('min-height: 260px;'), 'index.css must specify min-height: 260px for .diag-photo-card');
+    assert.ok(css.includes('min-height: 140px;'), 'index.css must specify min-height: 140px for .diag-photo-card-thumb');
+    assert.ok(css.includes('flex-shrink: 0;'), 'index.css must specify flex-shrink: 0 for .diag-photo-card-thumb');
+  });
+
+  test('Telemetry Correlation: correlatePhotosWithTelemetry preserves previewUrl and rawPath', () => {
+    const { correlatePhotosWithTelemetry } = require('./tools/companion/log_decoder.js');
+    const photos = [
+      {
+        id: 'PHOTO_0001',
+        filename: 'DJI_20260904185149_0212_D.JPG',
+        previewUrl: '/scratch/mission_archives/layer-1/photos/previews/DJI_20260904185149_0212_D.JPG',
+        rawPath: '/scratch/mission_archives/layer-1/photos/raw/DJI_20260904185149_0212_D.JPG',
+        timestamp: '2026-09-04T18:51:49.000Z'
+      }
+    ];
+    const telemPoints = [
+      { lat: 40.0129, lon: -83.1771, alt: 25, pitch: -45, yaw: 0, isPhoto: true, waypointIndex: 0, timestamp: '2026-09-04T18:51:49.000Z' }
+    ];
+
+    const correlated = correlatePhotosWithTelemetry(photos, telemPoints);
+    assert.strictEqual(correlated.length, 1);
+    assert.strictEqual(correlated[0].previewUrl, '/scratch/mission_archives/layer-1/photos/previews/DJI_20260904185149_0212_D.JPG');
+    assert.strictEqual(correlated[0].rawPath, '/scratch/mission_archives/layer-1/photos/raw/DJI_20260904185149_0212_D.JPG');
+  });
+
+  test('Gallery Grid Rendering: renderInspectionPhotosUI populates <img> element with fallback recovery', () => {
+    const origDoc = global.document;
+    const dom = new JSDOM(`<!DOCTYPE html><html><body>
+      <span id="diag-nav-photos-count">0</span>
+      <span id="diag-photos-card-count">0</span>
+      <span id="diag-photos-summary-text"></span>
+      <div id="diag-photos-grid"></div>
+    </body></html>`);
+    global.document = dom.window.document;
+
+    const origFlightPhotos = FlightDiagnostics.flightPhotos;
+    const origFlightId = FlightDiagnostics.selectedFlightId;
+    FlightDiagnostics.selectedFlightId = 'test-flight';
+    FlightDiagnostics.flightPhotos = [
+      {
+        photoId: 'TEST_P1',
+        filename: 'DJI_20260904185149_0212_D.JPG',
+        previewUrl: 'http://127.0.0.1:8765/scratch/previews/DJI_0212.JPG',
+        waypointIndex: 0,
+        actual: { altAgl: 25.0, gimbalPitch: -45 },
+        variance: { horizontalDeltaMeters: 0.1, verticalDeltaMeters: 0.05, isCompliant: true },
+        gsd: { gsdCm: '0.89' },
+        severity: 'clean'
+      }
+    ];
+
+    try {
+      FlightDiagnostics.renderInspectionPhotosUI();
+
+      const grid = dom.window.document.getElementById('diag-photos-grid');
+      const cards = grid.querySelectorAll('.diag-photo-card');
+      assert.strictEqual(cards.length, 1, 'Should render 1 photo card');
+
+      const img = cards[0].querySelector('.diag-photo-card-thumb img');
+      assert.ok(img, 'Card should contain an <img> element when previewUrl is present');
+      assert.strictEqual(img.getAttribute('src'), 'http://127.0.0.1:8765/scratch/previews/DJI_0212.JPG');
+      assert.ok(img.getAttribute('onerror'), 'Img should have onerror fallback recovery handler');
+    } finally {
+      FlightDiagnostics.flightPhotos = origFlightPhotos;
+      FlightDiagnostics.selectedFlightId = origFlightId;
+      global.document = origDoc;
+    }
+  });
+});
+
 
 
 

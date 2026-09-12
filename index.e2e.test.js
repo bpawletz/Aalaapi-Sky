@@ -4888,6 +4888,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       const panePhotos = document.getElementById('diag-pane-photos');
 
       if (typeof FlightDiagnostics !== 'undefined') {
+        FlightDiagnostics.open();
+        if (typeof clearPhotoInspectionMapLayer === 'function') clearPhotoInspectionMapLayer();
+        FlightDiagnostics.flightPhotos = null;
+        FlightDiagnostics.flightPhotosFlightId = null;
         FlightDiagnostics.telemetryData = {
           points: [
             { lat: 40.01297, lon: -83.17707, alt: 25, speed: 4.5, pitch: -60, yaw: 90, isPhoto: true, waypointIndex: 0 },
@@ -4953,6 +4957,60 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     await page.locator('#close-media-ingest-modal-btn').click();
     await page.waitForTimeout(100);
   });
+
+  test('E2E: Flight Diagnostics Inspection Photo Grid Anti-Collapse Layout (v1.98.1)', async () => {
+    // Open Flight Diagnostics and simulate 111 photo points
+    const gridState = await page.evaluate(() => {
+      if (typeof FlightDiagnostics !== 'undefined') {
+        FlightDiagnostics.open();
+        if (typeof clearPhotoInspectionMapLayer === 'function') clearPhotoInspectionMapLayer();
+        FlightDiagnostics.flightPhotos = null;
+        FlightDiagnostics.flightPhotosFlightId = null;
+
+        // Generate 111 photo points similar to Flight 5
+        const points = [];
+        for (let i = 0; i < 111; i++) {
+          points.push({
+            lat: 40.0129 + i * 0.0001,
+            lon: -83.1771 + (i % 5) * 0.0001,
+            alt: 16.0,
+            pitch: -45,
+            yaw: 0,
+            isPhoto: true,
+            waypointIndex: i
+          });
+        }
+        FlightDiagnostics.telemetryData = { points };
+        FlightDiagnostics.renderInspectionPhotosUI();
+        FlightDiagnostics.switchTab('photos');
+      }
+
+      const grid = document.getElementById('diag-photos-grid');
+      const cards = grid ? grid.querySelectorAll('.diag-photo-card') : [];
+      const firstCard = cards.length > 0 ? cards[0] : null;
+      const thumb = firstCard ? firstCard.querySelector('.diag-photo-card-thumb') : null;
+
+      return {
+        cardCount: cards.length,
+        gridAutoRows: grid ? window.getComputedStyle(grid).gridAutoRows : '',
+        cardMinHeight: firstCard ? window.getComputedStyle(firstCard).minHeight : '',
+        thumbMinHeight: thumb ? window.getComputedStyle(thumb).minHeight : '',
+        cardClientHeight: firstCard ? firstCard.clientHeight : 0,
+        thumbClientHeight: thumb ? thumb.clientHeight : 0
+      };
+    });
+
+    assert.strictEqual(gridState.cardCount, 111, 'Grid should contain all 111 photo cards');
+    assert.strictEqual(gridState.gridAutoRows, 'max-content', 'Grid auto-rows should be max-content');
+    assert.ok(gridState.cardClientHeight >= 250, `Card clientHeight (${gridState.cardClientHeight}px) should be at least 250px, never collapsed into 6px stripes`);
+    assert.ok(gridState.thumbClientHeight >= 130, `Thumb clientHeight (${gridState.thumbClientHeight}px) should be at least 130px`);
+
+    // Verify bounding box through Playwright
+    const firstBox = await page.locator('.diag-photo-card').first().boundingBox();
+    assert.ok(firstBox, 'First card must have valid bounding box');
+    assert.ok(firstBox.height >= 250, `First card height (${firstBox.height}px) must be >= 250px`);
+  });
 });
+
 
 
