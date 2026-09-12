@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.98.0] - 2026-09-12
+
+### Added — Mission-Specific Photo Ingestion & SQLite Photo Indexing
+- **Selective Mission-Window Photo Filtering:** Upgraded `/api/media/pull` in Companion Bridge service to selectively ingest only photos shot during the target flight mission. Filters photos by flight takeoff-to-landing timestamps (with safety buffer) and geographic boundary box, preventing unassociated vacation or prior-mission photos on SD cards from cluttering the inspection.
+- **SQLite Photo Records Table (`photo_records`):** Integrated photo indexing into `scratch/missions.db` via `DiagnosticsDatabase`. Stores photo IDs, mission UUIDs, filenames, paths, timestamps, planned vs. actual positions, variances, GSD metrics, defect severities, and annotation counts with relational indices.
+- **REST Photo Query Endpoint (`/api/media/photos`):** Added API to instantly query and filter indexed photo records by mission UUID and severity level without re-reading manifest files from disk.
+- **Mission Window Ingest UI:** Added active mission flight time window display and toggle in `#media-ingest-modal`, informing pilots of the exact flight timestamp span being matched.
+
+## [1.97.0] - 2026-09-12
+
+### Added — Flight Diagnostics In-Modal Photo Ingestion & Inspection Gallery
+- **Direct Photo Ingest from Diagnostics (`#diag-pull-photos-btn`):** Added a dedicated `📸 Import Photos...` action button to the Flight Diagnostics header controls (`#diag-header-flight-controls`), enabling pilots to ingest and correlate photos from connected DJI Mini 4 Pro, MicroSD cards, or RC 2 albums directly from within the diagnostics window.
+- **Dedicated Inspection Photos Tab (`#diag-nav-photos-btn` & `#diag-pane-photos`):** Added a 3rd navigation tab to Flight Diagnostics alongside 3D Telemetry Replay and Pre-Flight KMZ Audit. Features a rich photo gallery grid with live search, compliance filtering (All, Compliant, Warnings, Defects), waypoint indices, optical GSD tags, and 1-click launch into the interactive Photo Inspector.
+- **3D Replay Sidebar Photo Strip (`#diag-photos-card`):** Added a synchronized captured photo thumbnail ribbon in the 3D Replay sidebar (`diag-sidebar`). Highlights the active photo corresponding to the current point during 3D trajectory scrubbing and playback, allowing pilots to jump playback to any photo capture location with a single click.
+- **Interactive 3D Trajectory Photo Markers:** Enhanced photo trigger spheres along the 3D flight trajectory with hover metadata tooltips and click-to-inspect shortcuts opening the high-resolution photo inspector.
+
+## [1.96.0] - 2026-09-12
+
+### Added — Mini 4 Pro Photo Ingestion, Telemetry HUD Stamper, Boundary & Marker Tools, and Inspection Archive
+- **MTP & USB Media Pull:** Added `/api/media/detect` and `/api/media/pull` in Companion Bridge service supporting direct USB-C aircraft connection, SD card readers (`DCIM/100MEDIA`), and RC 2 downloaded albums (`DCIM/DJI Album`). Automatically filters photos to the active flight's takeoff-to-landing time window.
+- **Flight Log Telemetry & GSD Correlation:** Telemetry engine automatically matches photo EXIF timestamps against millisecond-precision `FlightRecord_*.txt` logs. Computes horizontal/vertical positional variance ($\Delta H, \Delta V$), gimbal pitch variance, and physical Ground Sampling Distance ($GSD$ in cm/px) based on sensor optics and altitude AGL.
+- **Interactive Photo Inspector & Marker Tools:** Added modal inspector (`#photo-inspector-modal`) equipped with non-destructive vector annotation layers:
+  - 🔘 **Defect Pins:** Severity-tagged pins (🔴 Critical, 🟡 Warning, 🔵 Info, 🟢 Repaired) with inspection titles, descriptions, and audit history.
+  - 📐 **Boundary Line / Perimeter Tool:** Multi-point polyline and polygon tool with auto-calculated real-world segment lengths, total perimeter, and enclosed area ($m^2$ and $sq\ ft$). Supports custom line styles (solid, dashed, hazard-striped) and property/setback labels.
+  - 📏 **Calibrated Measurement Caliper:** 2-point dimension line deriving physical distance directly from flight log GSD ($cm$, $m$, $in$, $ft$).
+  - ↗️ **Arrow Callouts & 🔲 Bounding Boxes:** Directional indicators and zone highlights for micro and macro asset defects.
+  - 🎯 **Waypoint Aim Reticle:** Visual target reticle comparing planned optical center with actual camera framing.
+- **Non-Destructive Layer Stack & Burn-In Export:** Preserves raw photos in `photos/raw/` while providing an in-viewer layer stack to toggle HUD, pins, boundaries, calipers, and reticles before 1-click exporting composited `.JPG` / `.PNG` images.
+- **Geospatial Map Inspection Layer:** Added dedicated **"📸 Processed Photos & Inspections"** layer card on the 2D Leaflet map and 3D FPV HUD with photo markers color-coded by defect severity, camera heading/gimbal FOV frustums, ground footprint polygons, and click-to-inspect popups.
+- **Standalone Inspection Archive Package:** Generates a complete, self-contained inspection deliverable (`mission.kmz`, `FlightRecord_*.txt`, raw & annotated photos, `inspection_manifest.json`, `photo_frustums.kml`, and zero-dependency standalone `inspection_report.html`).
+
 ## [1.95.3] - 2026-09-11
 
 ### Fixed — Section 2 Layer Properties Pattern Controls Restoration

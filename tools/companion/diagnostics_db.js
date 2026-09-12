@@ -77,6 +77,36 @@ class DiagnosticsDatabase {
         CREATE INDEX IF NOT EXISTS idx_mission_created ON mission_diagnostics (created_at DESC);
         CREATE INDEX IF NOT EXISTS idx_mission_uuid ON mission_diagnostics (uuid);
         CREATE INDEX IF NOT EXISTS idx_mission_pattern ON mission_diagnostics (flight_pattern);
+
+        CREATE TABLE IF NOT EXISTS photo_records (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          photo_id TEXT NOT NULL,
+          mission_uuid TEXT NOT NULL,
+          filename TEXT NOT NULL,
+          raw_path TEXT,
+          preview_url TEXT,
+          waypoint_index INTEGER,
+          captured_at TEXT,
+          actual_lat REAL,
+          actual_lon REAL,
+          actual_alt_agl REAL,
+          actual_pitch REAL,
+          actual_yaw REAL,
+          planned_lat REAL,
+          planned_lon REAL,
+          planned_alt REAL,
+          delta_h_meters REAL,
+          delta_v_meters REAL,
+          gsd_cm REAL,
+          severity TEXT DEFAULT 'clean',
+          annotation_count INTEGER DEFAULT 0,
+          annotations_json TEXT
+        );
+
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_photo_unique ON photo_records (mission_uuid, photo_id);
+        CREATE INDEX IF NOT EXISTS idx_photos_mission ON photo_records (mission_uuid);
+        CREATE INDEX IF NOT EXISTS idx_photos_waypoint ON photo_records (mission_uuid, waypoint_index);
+        CREATE INDEX IF NOT EXISTS idx_photos_severity ON photo_records (severity);
       `);
 
       // Safe table migration if uuid was UNIQUE or archive_id is missing
@@ -454,6 +484,128 @@ class DiagnosticsDatabase {
     } catch (err) {
       console.error('[DIAG DB ERROR] Failed to link actual flight:', err.message);
       return false;
+    }
+  }
+
+  savePhotoRecords(missionUuid, photos) {
+    if (!this.db || !missionUuid || !Array.isArray(photos)) {
+      return { success: false, savedCount: 0 };
+    }
+    try {
+      const stmt = this.db.prepare(`
+        INSERT INTO photo_records (
+          photo_id, mission_uuid, filename, raw_path, preview_url, waypoint_index,
+          captured_at, actual_lat, actual_lon, actual_alt_agl, actual_pitch, actual_yaw,
+          planned_lat, planned_lon, planned_alt, delta_h_meters, delta_v_meters,
+          gsd_cm, severity, annotation_count, annotations_json
+        ) VALUES (
+          ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?,
+          ?, ?, ?, ?
+        )
+        ON CONFLICT(mission_uuid, photo_id) DO UPDATE SET
+          filename = excluded.filename,
+          raw_path = excluded.raw_path,
+          preview_url = excluded.preview_url,
+          waypoint_index = excluded.waypoint_index,
+          captured_at = excluded.captured_at,
+          actual_lat = excluded.actual_lat,
+          actual_lon = excluded.actual_lon,
+          actual_alt_agl = excluded.actual_alt_agl,
+          actual_pitch = excluded.actual_pitch,
+          actual_yaw = excluded.actual_yaw,
+          planned_lat = excluded.planned_lat,
+          planned_lon = excluded.planned_lon,
+          planned_alt = excluded.planned_alt,
+          delta_h_meters = excluded.delta_h_meters,
+          delta_v_meters = excluded.delta_v_meters,
+          gsd_cm = excluded.gsd_cm,
+          severity = excluded.severity,
+          annotation_count = excluded.annotation_count,
+          annotations_json = excluded.annotations_json
+      `);
+
+      let count = 0;
+      for (const p of photos) {
+        const photoId = p.photoId || p.id || `PHOTO_${count + 1}`;
+        const filename = p.filename || '';
+        const rawPath = p.rawPath || '';
+        const previewUrl = p.previewUrl || '';
+        const waypointIndex = p.waypointIndex !== undefined ? p.waypointIndex : null;
+        const capturedAt = p.timestamp || new Date().toISOString();
+        const actualLat = p.actual?.lat ?? null;
+        const actualLon = p.actual?.lon ?? null;
+        const actualAltAgl = p.actual?.altAgl ?? p.actual?.alt ?? null;
+        const actualPitch = p.actual?.gimbalPitch ?? p.actual?.pitch ?? null;
+        const actualYaw = p.actual?.heading ?? p.actual?.yaw ?? null;
+        const plannedLat = p.planned?.lat ?? null;
+        const plannedLon = p.planned?.lon ?? null;
+        const plannedAlt = p.planned?.altitude ?? p.planned?.alt ?? null;
+        const deltaH = p.variance?.horizontalDeltaMeters ?? 0;
+        const deltaV = p.variance?.verticalDeltaMeters ?? 0;
+        const gsdCm = p.gsd?.gsdCm ?? null;
+        const severity = p.severity || 'clean';
+        const annotations = Array.isArray(p.annotations) ? p.annotations : [];
+        const annotationCount = annotations.length;
+        const annotationsJson = JSON.stringify(annotations);
+
+        stmt.run(
+          photoId, missionUuid, filename, rawPath, previewUrl, waypointIndex,
+          capturedAt, actualLat, actualLon, actualAltAgl, actualPitch, actualYaw,
+          plannedLat, plannedLon, plannedAlt, deltaH, deltaV,
+          gsdCm, severity, annotationCount, annotationsJson
+        );
+        count++;
+      }
+      return { success: true, savedCount: count };
+    } catch (err) {
+      console.error('[DIAG DB ERROR] Failed to save photo records:', err.message);
+      return { success: false, error: err.message, savedCount: 0 };
+    }
+  }
+
+  getPhotosByMission(missionUuid, filter = 'all') {
+    if (!this.db || !missionUuid) return [];
+    try {
+      let query = 'SELECT * FROM photo_records WHERE mission_uuid = ?';
+      const params = [missionUuid];
+
+      if (filter && filter !== 'all') {
+        query += ' AND severity = ?';
+        params.push(filter);
+      }
+      query += ' ORDER BY waypoint_index ASC, id ASC';
+
+      const stmt = this.db.prepare(query);
+      return stmt.all(...params).map(r => ({
+        ...r,
+        annotations: r.annotations_json ? JSON.parse(r.annotations_json) : []
+      }));
+    } catch (err) {
+      console.error('[DIAG DB ERROR] Failed to query photos by mission:', err.message);
+      return [];
+    }
+  }
+
+  getPhotosSummary(missionUuid) {
+    if (!this.db || !missionUuid) return null;
+    try {
+      const stmt = this.db.prepare(`
+        SELECT
+          COUNT(*) AS totalPhotos,
+          SUM(CASE WHEN severity = 'clean' THEN 1 ELSE 0 END) AS cleanCount,
+          SUM(CASE WHEN severity = 'warning' THEN 1 ELSE 0 END) AS warningCount,
+          SUM(CASE WHEN severity = 'critical' THEN 1 ELSE 0 END) AS criticalCount,
+          AVG(gsd_cm) AS averageGsdCm,
+          AVG(delta_h_meters) AS averageDeltaHMeters
+        FROM photo_records
+        WHERE mission_uuid = ?
+      `);
+      return stmt.get(missionUuid);
+    } catch (err) {
+      console.error('[DIAG DB ERROR] Failed to get photo summary:', err.message);
+      return null;
     }
   }
 

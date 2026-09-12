@@ -933,6 +933,309 @@ Get-ChildItem -Path $tempMtpDir -Recurse -ErrorAction SilentlyContinue | Remove-
   return await runMtpScript(psScript);
 }
 
+// 5. Media & Photo Ingestion Engine for Mini 4 Pro, SD Cards, & RC 2
+async function detectMediaDevices() {
+  if (!IS_WINDOWS) {
+    const adbCheck = await checkRc2AdbStatus();
+    const devices = [];
+    if (adbCheck.connected) {
+      devices.push({
+        name: adbCheck.deviceName || 'DJI Device (ADB)',
+        type: 'adb',
+        path: '/sdcard/DCIM',
+        canPull: true
+      });
+    }
+    return { success: true, devices, deviceCount: devices.length };
+  }
+
+  const psScript = `
+$shell = New-Object -ComObject Shell.Application
+$thisPC = $shell.Namespace(17)
+$detected = @()
+
+function Get-SubFolder($folderItem, $name) {
+    if (-not $folderItem) { return $null }
+    $folder = if ($folderItem.GetFolder) { $folderItem.GetFolder } else { $folderItem }
+    return $folder.Items() | Where-Object { $_.Name -eq $name } | Select-Object -First 1
+}
+
+# 1. Probe Portable / MTP Devices
+if ($thisPC) {
+    foreach ($item in $thisPC.Items()) {
+        $name = $item.Name
+        if ($name -match "DJI|Mini 4|RC 2|RC2|Drone|Mavic|Air") {
+            $storageList = @()
+            $sub = if ($item.GetFolder) { $item.GetFolder } else { $item }
+            if ($sub) {
+                foreach ($s in $sub.Items()) {
+                    $dcim = Get-SubFolder $s "DCIM"
+                    if ($dcim) {
+                        $media100 = Get-SubFolder $dcim "100MEDIA"
+                        $album = Get-SubFolder $dcim "DJI Album"
+                        $storageList += @{
+                            storageName = $s.Name
+                            hasMedia = ($media100 -ne $null -or $album -ne $null)
+                            path = if ($media100) { "DCIM\\\\100MEDIA" } else { "DCIM\\\\DJI Album" }
+                        }
+                    }
+                }
+            }
+            $detected += @{
+                name = $name
+                type = "mtp"
+                isDrone = ($name -match "Mini 4|Drone|Aircraft")
+                isRemote = ($name -match "RC 2|RC2|Remote")
+                storages = $storageList
+            }
+        }
+    }
+}
+
+# 2. Probe Removable Drive Letters
+$drives = Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Root -and (Test-Path (Join-Path $_.Root "DCIM")) }
+foreach ($d in $drives) {
+    $dcimPath = Join-Path $d.Root "DCIM"
+    $jpgs = @(Get-ChildItem -Path $dcimPath -Filter "*.JPG" -File -Recurse -ErrorAction SilentlyContinue)
+    $dngs = @(Get-ChildItem -Path $dcimPath -Filter "*.DNG" -File -Recurse -ErrorAction SilentlyContinue)
+    $totalCount = $jpgs.Count + $dngs.Count
+
+    $vol = Get-Volume -DriveLetter $d.Name -ErrorAction SilentlyContinue
+    $volName = if ($vol -and $vol.FriendlyName) { $vol.FriendlyName } else { "" }
+
+    $displayName = if ($volName -match "SD_Card") {
+        "DJI Mini 4 Pro - MicroSD Card ($($d.Name):)"
+    } elseif ($volName -match "InternalStorage") {
+        "DJI Mini 4 Pro - Internal Storage ($($d.Name):)"
+    } elseif ($totalCount -gt 0) {
+        "DJI Removable Media ($($d.Name):)"
+    } else {
+        "Removable Storage ($($d.Name):)"
+    }
+
+    $detected += @{
+        name = $displayName
+        type = "drive"
+        driveLetter = $d.Name
+        rootPath = $dcimPath
+        photoCount = $jpgs.Count
+        rawCount = $dngs.Count
+        isDrone = ($dngs.Count -gt 0 -or $totalCount -gt 0 -or $volName -match "SD_Card|InternalStorage" -or (Test-Path (Join-Path $d.Root "MISC")))
+    }
+}
+
+@{
+    success = $true
+    devices = $detected
+    deviceCount = $detected.Count
+} | ConvertTo-Json -Depth 4 -Compress
+`;
+
+  const res = await runMtpScript(psScript);
+  if (res.success && res.data) return res.data;
+  return { success: false, error: res.error || 'Failed to detect media devices', devices: [] };
+}
+
+async function pullMediaPhotos(options = {}) {
+  const missionUuid = options.missionUuid || 'mission_' + Date.now();
+  const targetDir = path.join(ARCHIVE_DIR, missionUuid);
+  const rawDir = path.join(targetDir, 'photos', 'raw');
+  const previewDir = path.join(targetDir, 'photos', 'previews');
+  const annotatedDir = path.join(targetDir, 'photos', 'annotated');
+
+  [rawDir, previewDir, annotatedDir].forEach(d => {
+    if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+  });
+
+  const filterByTime = options.filterByTime !== false;
+  const timeStart = options.timeWindow?.start ? new Date(options.timeWindow.start).getTime() : null;
+  const timeEnd = options.timeWindow?.end ? new Date(options.timeWindow.end).getTime() : null;
+  // Safety buffer of 60 seconds around mission flight window
+  const bufferMs = 60 * 1000;
+  const filterMinTimeStr = (filterByTime && timeStart) ? new Date(timeStart - bufferMs).toISOString() : '';
+  const filterMaxTimeStr = (filterByTime && timeEnd) ? new Date(timeEnd + bufferMs).toISOString() : '';
+
+  const psScript = `
+$shell = New-Object -ComObject Shell.Application
+$thisPC = $shell.Namespace(17)
+$rawDir = "${rawDir.replace(/\\/g, '\\\\')}"
+$copied = @()
+$filterTime = ${filterByTime ? '$true' : '$false'}
+$minTime = "${filterMinTimeStr}"
+$maxTime = "${filterMaxTimeStr}"
+$minDate = if ($minTime) { [DateTime]::Parse($minTime).ToUniversalTime() } else { $null }
+$maxDate = if ($maxTime) { [DateTime]::Parse($maxTime).ToUniversalTime() } else { $null }
+
+function Should-IncludeFile($fileTime) {
+    if (-not $filterTime -or -not $minDate) { return $true }
+    if (-not $fileTime) { return $true }
+    $uTime = $fileTime.ToUniversalTime()
+    if ($minDate -and $uTime -lt $minDate) { return $false }
+    if ($maxDate -and $uTime -gt $maxDate) { return $false }
+    return $true
+}
+
+function Copy-MatchingFiles($folderItem) {
+    if (-not $folderItem) { return }
+    $folder = if ($folderItem.GetFolder) { $folderItem.GetFolder } else { $folderItem }
+    $items = @($folder.Items() | Where-Object { $_.Name -like "*.JPG" -or $_.Name -like "*.DNG" })
+    $destFolder = $shell.Namespace($rawDir)
+    foreach ($item in $items) {
+        $destPath = Join-Path $rawDir $item.Name
+        if (-not (Test-Path $destPath)) {
+            $itemDate = try { $item.ModifyDate } catch { $null }
+            if (Should-IncludeFile $itemDate) {
+                $destFolder.CopyHere($item, 16)
+                Start-Sleep -Milliseconds 150
+                if (Test-Path $destPath) {
+                    $copied += @{ name = $item.Name; size = (Get-Item $destPath).Length; writeTime = (Get-Item $destPath).LastWriteTimeUtc.ToString("o") }
+                }
+            }
+        }
+    }
+}
+
+$drives = Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Root -and (Test-Path (Join-Path $_.Root "DCIM")) }
+foreach ($d in $drives) {
+    $dcim = Join-Path $d.Root "DCIM"
+    $files = @(Get-ChildItem -Path $dcim -File -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Extension -match '^\.(jpg|jpeg|dng)$' })
+    foreach ($f in $files) {
+        $dest = Join-Path $rawDir $f.Name
+        if (-not (Test-Path $dest)) {
+            if (Should-IncludeFile $f.LastWriteTimeUtc) {
+                Copy-Item -Path $f.FullName -Destination $dest -Force -ErrorAction SilentlyContinue
+                if (Test-Path $dest) {
+                    $copied += @{ name = $f.Name; size = $f.Length; path = $dest; writeTime = $f.LastWriteTimeUtc.ToString("o") }
+                }
+            }
+        }
+    }
+}
+
+if ($copied.Count -eq 0 -and $thisPC) {
+    foreach ($dev in $thisPC.Items()) {
+        if ($dev.Name -match "DJI|Mini 4|RC 2|RC2|Drone") {
+            $devFolder = if ($dev.GetFolder) { $dev.GetFolder } else { $dev }
+            if ($devFolder) {
+                foreach ($storage in $devFolder.Items()) {
+                    $sFolder = if ($storage.GetFolder) { $storage.GetFolder } else { $storage }
+                    if ($sFolder) {
+                        $dcim = $sFolder.Items() | Where-Object { $_.Name -eq "DCIM" } | Select-Object -First 1
+                        if ($dcim) {
+                            $dcimF = if ($dcim.GetFolder) { $dcim.GetFolder } else { $dcim }
+                            $media100 = $dcimF.Items() | Where-Object { $_.Name -eq "100MEDIA" -or $_.Name -eq "DJI Album" } | Select-Object -First 1
+                            if ($media100) {
+                                Copy-MatchingFiles $media100
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@{
+    success = $true
+    pulledCount = $copied.Count
+    files = $copied
+} | ConvertTo-Json -Depth 3 -Compress
+`;
+
+  await runMtpScript(psScript);
+
+  let rawFiles = [];
+  try {
+    rawFiles = fs.readdirSync(rawDir).filter(f => /\.(jpe?g|dng)$/i.test(f));
+  } catch (e) {}
+
+  rawFiles.forEach(f => {
+    const src = path.join(rawDir, f);
+    const dst = path.join(previewDir, f);
+    if (!fs.existsSync(dst)) {
+      try { fs.copyFileSync(src, dst); } catch (e) {}
+    }
+  });
+
+  const { correlatePhotosWithTelemetry } = require('./log_decoder.js');
+  const photosMetadata = rawFiles.map((fn, idx) => {
+    let capturedTime = null;
+    try {
+      const stats = fs.statSync(path.join(rawDir, fn));
+      capturedTime = stats.mtime.toISOString();
+    } catch (_) {}
+    return {
+      id: `PHOTO_${String(idx + 1).padStart(4, '0')}`,
+      filename: fn,
+      previewUrl: `/scratch/mission_archives/${missionUuid}/photos/previews/${encodeURIComponent(fn)}`,
+      rawPath: path.join(rawDir, fn),
+      waypointIndex: idx,
+      timestamp: capturedTime
+    };
+  });
+
+  const telemetry = options.telemetry || { points: [] };
+  const waypoints = options.waypoints || [];
+  const correlated = correlatePhotosWithTelemetry(photosMetadata, telemetry.points, waypoints);
+
+  const manifest = {
+    missionUuid,
+    flightDate: options.flightDate || new Date().toISOString(),
+    droneModel: options.droneModel || 'DJI Mini 4 Pro',
+    totalPhotos: correlated.length,
+    summary: {
+      totalDistance: options.totalDistance || 0,
+      maxAltitude: options.maxAltitude || 0,
+      durationFormatted: options.durationFormatted || '—',
+      maxDeviation: options.maxDeviation || '0.2 m',
+      averageGsd: correlated.length > 0 ? correlated[0].gsd.gsdCm : 0.9
+    },
+    photos: correlated
+  };
+
+  const manifestPath = path.join(targetDir, 'inspection_manifest.json');
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
+
+  // Index photo records into SQLite
+  if (diagDb && typeof diagDb.savePhotoRecords === 'function') {
+    diagDb.savePhotoRecords(missionUuid, correlated);
+  }
+
+  const tmplPath = path.join(__dirname, 'inspection_template.html');
+  if (fs.existsSync(tmplPath)) {
+    let reportHtml = fs.readFileSync(tmplPath, 'utf8');
+    reportHtml = reportHtml.replace('window.__INSPECTION_MANIFEST__ || {', `JSON.parse(${JSON.stringify(JSON.stringify(manifest))}) || {`);
+    fs.writeFileSync(path.join(targetDir, 'inspection_report.html'), reportHtml, 'utf8');
+  }
+
+  return {
+    success: true,
+    missionUuid,
+    targetDir,
+    totalPhotos: correlated.length,
+    manifest
+  };
+}
+
+function packageInspectionArchive(missionUuid) {
+  const targetDir = path.join(ARCHIVE_DIR, missionUuid);
+  if (!fs.existsSync(targetDir)) return { success: false, error: 'Mission directory not found' };
+
+  const zipFile = path.join(ARCHIVE_DIR, `${missionUuid}_inspection_archive.zip`);
+  if (!IS_WINDOWS) {
+    return { success: true, zipPath: zipFile };
+  }
+
+  try {
+    const psCmd = `Compress-Archive -Path "${targetDir.replace(/\\/g, '\\\\')}\\*" -DestinationPath "${zipFile.replace(/\\/g, '\\\\')}" -Force`;
+    execFileSync('powershell.exe', ['-NoProfile', '-Command', psCmd], { timeout: 30000 });
+    return { success: true, zipPath: zipFile, filename: `${missionUuid}_inspection_archive.zip` };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+
 function getLanAddresses() {
   const nets = os.networkInterfaces();
   const lan = [];
@@ -992,6 +1295,8 @@ function printStartupBanner() {
   console.log(`  ${colors.green}${colors.bold}GET  /api/remote-id/drones${colors.reset} ${colors.gray}Live ASTM F3411 Remote ID detected drones in airspace${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /api/tfr/notams${colors.reset}       ${colors.gray}Live FAA Temporary Flight Restrictions (TFR) NOTAM list${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /api/tfr/geojson${colors.reset}      ${colors.gray}GeoJSON geometry boundaries for active FAA TFR polygons${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/media/detect${colors.reset}       ${colors.gray}Scan for Mini 4 Pro, SD Card readers, and RC 2 albums${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}POST /api/media/pull${colors.reset}         ${colors.gray}Ingest flight photos, correlate telemetry, and build archive${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}POST /api/drone/locate${colors.reset}    ${colors.gray}Rest API locate drone & inject live geo coordinates${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}POST /api/shutdown${colors.reset}         ${colors.gray}Cleanly terminate running companion bridge process${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /health${colors.reset}               ${colors.gray}Service heartbeat and status ping${colors.reset}`);
@@ -1385,6 +1690,128 @@ const server = http.createServer(async (req, res) => {
           res.end(JSON.stringify({ success: false, error: e.message }));
         }
       });
+      return;
+    }
+
+    // 5.5 Media Ingestion & Photo Pull Endpoints (Mini 4 Pro / SD Cards / RC 2)
+    if (pathname === '/api/media/detect' && req.method === 'GET') {
+      const devRes = await detectMediaDevices();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(devRes));
+      return;
+    }
+
+    if (pathname === '/api/media/pull' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', async () => {
+        try {
+          const payload = body ? JSON.parse(body) : {};
+          const pullRes = await pullMediaPhotos(payload);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(pullRes));
+        } catch (err) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    if (pathname === '/api/media/manifest' && req.method === 'GET') {
+      const uuid = url.searchParams.get('uuid') || 'default-mission';
+      const mPath = path.join(ARCHIVE_DIR, uuid, 'inspection_manifest.json');
+      if (fs.existsSync(mPath)) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        fs.createReadStream(mPath).pipe(res);
+      } else {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Manifest not found' }));
+      }
+      return;
+    }
+
+    if (pathname === '/api/media/photos' && req.method === 'GET') {
+      const missionUuid = url.searchParams.get('mission') || url.searchParams.get('uuid') || '';
+      const severity = url.searchParams.get('severity') || 'all';
+      try {
+        let photos = [];
+        let summary = null;
+        if (diagDb && typeof diagDb.getPhotosByMission === 'function') {
+          photos = diagDb.getPhotosByMission(missionUuid, severity);
+          summary = diagDb.getPhotosSummary(missionUuid);
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: true,
+          missionUuid,
+          filter: severity,
+          total: photos.length,
+          summary,
+          photos
+        }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+      return;
+    }
+
+    if (pathname === '/api/media/annotations' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const payload = body ? JSON.parse(body) : {};
+          const uuid = payload.missionUuid || 'default-mission';
+          const mPath = path.join(ARCHIVE_DIR, uuid, 'inspection_manifest.json');
+          if (!fs.existsSync(mPath)) {
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: 'Manifest not found' }));
+            return;
+          }
+          const manifest = JSON.parse(fs.readFileSync(mPath, 'utf8'));
+          if (payload.photoId && Array.isArray(payload.annotations)) {
+            const photo = (manifest.photos || []).find(p => p.photoId === payload.photoId);
+            if (photo) {
+              photo.annotations = payload.annotations;
+              if (payload.severity) photo.severity = payload.severity;
+            }
+          } else if (Array.isArray(payload.photos)) {
+            manifest.photos = payload.photos;
+          }
+          fs.writeFileSync(mPath, JSON.stringify(manifest, null, 2), 'utf8');
+
+          const tmplPath = path.join(__dirname, 'inspection_template.html');
+          if (fs.existsSync(tmplPath)) {
+            let reportHtml = fs.readFileSync(tmplPath, 'utf8');
+            reportHtml = reportHtml.replace('window.__INSPECTION_MANIFEST__ || {', `JSON.parse(${JSON.stringify(JSON.stringify(manifest))}) || {`);
+            fs.writeFileSync(path.join(ARCHIVE_DIR, uuid, 'inspection_report.html'), reportHtml, 'utf8');
+          }
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, manifest }));
+        } catch (err) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    if (pathname === '/api/media/archive-zip' && req.method === 'GET') {
+      const uuid = url.searchParams.get('uuid') || 'default-mission';
+      const pkgRes = packageInspectionArchive(uuid);
+      if (pkgRes.success && pkgRes.zipPath && fs.existsSync(pkgRes.zipPath)) {
+        res.writeHead(200, {
+          'Content-Type': 'application/zip',
+          'Content-Disposition': `attachment; filename="${path.basename(pkgRes.zipPath)}"`
+        });
+        fs.createReadStream(pkgRes.zipPath).pipe(res);
+      } else {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: pkgRes.error || 'Archive zip not found' }));
+      }
       return;
     }
 

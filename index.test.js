@@ -3,6 +3,7 @@ const assert = require('node:assert');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const { JSDOM } = require('jsdom');
 
 // --- Global Stubbing Setup ---
 global.document = {
@@ -10,14 +11,17 @@ global.document = {
     if (id === 'unit-system') return null;
     if (global._stubElements && global._stubElements[id] !== undefined) return global._stubElements[id];
     return {
-      classList: { add: () => {}, remove: () => {} },
+      classList: { add: () => {}, remove: () => {}, contains: () => false },
       value: '',
       textContent: '',
       style: {},
       closest: () => ({ style: {} }),
       innerHTML: '',
       replaceChildren: () => {},
-      appendChild: () => {}
+      appendChild: () => {},
+      querySelector: () => null,
+      querySelectorAll: () => [],
+      dataset: {}
     };
   },
   addEventListener: () => {},
@@ -15411,22 +15415,15 @@ describe('v1.95.2 OpenStreetMap Tile Usage Policy Compliance Tests', () => {
 });
 
 describe('v1.95.3 Section 2 Pattern Controls Restoration Tests', () => {
-  test('version consistency across package.json, CHANGELOG.md, index_template.html, and index.html', () => {
-    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.95.3', 'package.json version must be 1.95.3');
-
+  test('version consistency: v1.95.3 changelog entry is preserved in CHANGELOG.md and template', () => {
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.95.3]'), 'CHANGELOG.md must contain ## [1.95.3]');
 
     const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(templateHtml.includes('>v1.95.3</span>'), 'index_template.html must contain header version badge v1.95.3');
-    assert.ok(templateHtml.includes('Version 1.95.3</span>'), 'index_template.html must contain About modal version tag 1.95.3');
     assert.ok(templateHtml.includes('Changelog (v1.95.3):'), 'index_template.html must contain Changelog (v1.95.3) header');
     assert.ok(templateHtml.includes('id="layer-card-geometry-title"'), 'index_template.html must contain #layer-card-geometry-title');
 
     const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-    assert.ok(compiledHtml.includes('>v1.95.3</span>'), 'index.html must contain header version badge v1.95.3');
-    assert.ok(compiledHtml.includes('Version 1.95.3</span>'), 'index.html must contain About modal version tag 1.95.3');
     assert.ok(compiledHtml.includes('Changelog (v1.95.3):'), 'index.html must contain Changelog (v1.95.3) header');
     assert.ok(compiledHtml.includes('id="layer-card-geometry-title"'), 'index.html must contain #layer-card-geometry-title');
   });
@@ -15548,3 +15545,453 @@ describe('v1.95.3 Section 2 Pattern Controls Restoration Tests', () => {
     }
   });
 });
+
+describe('v1.96.0 MTP Photo Ingestion, Telemetry Correlation & Inspection Archive Tests', () => {
+  const logDecoder = require('./tools/companion/log_decoder.js');
+
+  test('version consistency across package.json, CHANGELOG.md, index_template.html, and index.html', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+    assert.ok(pkg.version >= '1.96.0', 'package.json version must be at least 1.96.0');
+
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.96.0] - 2026-09-12'), 'CHANGELOG.md must contain ## [1.96.0] - 2026-09-12');
+
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateHtml.includes('class="header-version-badge"'), 'index_template.html must contain header version badge');
+    assert.ok(templateHtml.includes('class="version-tag"'), 'index_template.html must contain About modal version tag');
+    assert.ok(templateHtml.includes('Changelog (v1.96.0):'), 'index_template.html must contain Changelog (v1.96.0) header');
+
+    const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(compiledHtml.includes('class="header-version-badge"'), 'index.html must contain header version badge');
+    assert.ok(compiledHtml.includes('class="version-tag"'), 'index.html must contain About modal version tag');
+    assert.ok(compiledHtml.includes('Changelog (v1.96.0):'), 'index.html must contain Changelog (v1.96.0) header');
+  });
+
+  test('calculateGSD accurately calculates ground sampling distance for DJI Mini 4 Pro', () => {
+    // Mini 4 Pro optics: sensorWidth = 9.6mm, focalLength = 6.72mm, imageWidth = 4032px
+    // At 30m altitude: GSD = (30 * 9.6) / (6.72 * 4032) * 100 cm/px ~= 1.06 cm/px
+    const gsd30 = logDecoder.calculateGSD(30.0, 9.6, 6.72, 4032);
+    assert.strictEqual(gsd30.cmPerPixel, 1.06, '30m altitude should yield ~1.06 cm/px');
+    assert.strictEqual(gsd30.inPerPixel, 0.42, '30m altitude should yield ~0.42 in/px');
+    assert.strictEqual(gsd30.metersPerPixel, 0.0106, '30m altitude should yield ~0.0106 m/px');
+
+    // At 15m altitude: GSD should be exactly half (0.53 cm/px)
+    const gsd15 = logDecoder.calculateGSD(15.0, 9.6, 6.72, 4032);
+    assert.strictEqual(gsd15.cmPerPixel, 0.53, '15m altitude should yield ~0.53 cm/px');
+
+    // At 60m altitude: GSD should be double (2.13 cm/px)
+    const gsd60 = logDecoder.calculateGSD(60.0, 9.6, 6.72, 4032);
+    assert.strictEqual(gsd60.cmPerPixel, 2.13, '60m altitude should yield ~2.13 cm/px');
+
+    // Zero or negative altitude returns 0
+    const gsdZero = logDecoder.calculateGSD(0, 9.6, 6.72, 4032);
+    assert.strictEqual(gsdZero.cmPerPixel, 0, '0m altitude should return 0');
+    const gsdNeg = logDecoder.calculateGSD(-10, 9.6, 6.72, 4032);
+    assert.strictEqual(gsdNeg.cmPerPixel, 0, 'Negative altitude should return 0');
+  });
+
+  test('calculateBoundaryDimensions calculates perimeter and area in pixel space and geographic space', () => {
+    // 1. Pixel space test: 200px width by 100px height closed rectangle with GSD = 0.01 m/px (1 cm/px)
+    const pixelPoints = [
+      { x: 100, y: 100 },
+      { x: 300, y: 100 },
+      { x: 300, y: 200 },
+      { x: 100, y: 200 },
+      { x: 100, y: 100 }
+    ];
+    const gsdMeters = 0.01;
+    const pixelDims = logDecoder.calculateBoundaryDimensions(pixelPoints, gsdMeters);
+
+    assert.strictEqual(pixelDims.perimeterMeters, 6.0, '200x100px rectangle perimeter must be 6.0m');
+    assert.strictEqual(pixelDims.areaSquareMeters, 2.0, '200x100px rectangle area must be 2.0 sq m');
+    assert.strictEqual(pixelDims.perimeterFeet, 19.69, 'Perimeter in feet should be ~19.69 ft');
+    assert.strictEqual(pixelDims.areaSquareFeet, 21.5, 'Area in feet should be ~21.5 sq ft');
+    assert.strictEqual(pixelDims.segments.length, 4, 'Should contain 4 segment measurements');
+    assert.strictEqual(pixelDims.segments[0].meters, 2.0, 'First segment (top) should be 2.0m');
+    assert.strictEqual(pixelDims.segments[1].meters, 1.0, 'Second segment (right) should be 1.0m');
+
+    // 2. Linear measurement (2 points, open path)
+    const linePoints = [{ x: 50, y: 50 }, { x: 250, y: 50 }];
+    const lineDims = logDecoder.calculateBoundaryDimensions(linePoints, gsdMeters);
+    assert.strictEqual(lineDims.perimeterMeters, 2.0, '2-point line length should be 2.0m');
+    assert.strictEqual(lineDims.areaSquareMeters, 0, 'Open line must have 0 area');
+    assert.strictEqual(lineDims.segments.length, 1, 'Open line should have 1 segment');
+  });
+
+  test('calculateGroundFootprint produces 4-corner polygon bounding box', () => {
+    const lat = 40.0;
+    const lon = -83.0;
+    const alt = 30.0;
+    const pitch = -90.0; // nadir
+    const heading = 0.0; // North
+
+    const footprint = logDecoder.calculateGroundFootprint(lat, lon, alt, pitch, heading);
+    assert.strictEqual(footprint.type, 'Polygon', 'Footprint type must be Polygon');
+    assert.ok(Array.isArray(footprint.coordinates[0]), 'Footprint coordinates ring should be an array');
+    assert.strictEqual(footprint.coordinates[0].length, 5, 'Footprint should have 5 coordinates (closed 4-corner ring)');
+    assert.deepStrictEqual(footprint.coordinates[0][0], footprint.coordinates[0][4], 'First and last coordinates must match to close polygon');
+
+    // Verify coordinates surround center
+    const lats = footprint.coordinates[0].map(p => p[0]);
+    const lons = footprint.coordinates[0].map(p => p[1]);
+    assert.ok(Math.min(...lats) < lat && Math.max(...lats) > lat, 'Footprint latitude range must span aircraft location');
+    assert.ok(Math.min(...lons) < lon && Math.max(...lons) > lon, 'Footprint longitude range must span aircraft location');
+  });
+
+  test('correlatePhotosWithTelemetry links photos to telemetry and scores planned vs actual variance', () => {
+    const t0 = Date.now();
+    const telemetry = [
+      { timestamp: new Date(t0).toISOString(), lat: 40.0001, lon: -83.0001, altAgl: 21.2, gimbalPitch: -60.1, heading: 90, speed: 4.0, batteryPercent: 95, satellites: 18 },
+      { timestamp: new Date(t0 + 5000).toISOString(), lat: 40.0005, lon: -83.0005, altAgl: 21.5, gimbalPitch: -59.8, heading: 92, speed: 4.1, batteryPercent: 94, satellites: 18 },
+      { timestamp: new Date(t0 + 10000).toISOString(), lat: 40.0010, lon: -83.0010, altAgl: 21.0, gimbalPitch: -60.0, heading: 90, speed: 3.9, batteryPercent: 93, satellites: 19 }
+    ];
+
+    const plannedWaypoints = [
+      { lat: 40.0001, lon: -83.0001, altitude: 21.0, gimbalPitch: -60.0 },
+      { lat: 40.0005, lon: -83.0005, altitude: 21.0, gimbalPitch: -60.0 },
+      { lat: 40.0010, lon: -83.0010, altitude: 21.0, gimbalPitch: -60.0 }
+    ];
+
+    const photos = [
+      { id: 'P1', filename: 'DJI_0001.JPG', timestamp: new Date(t0 + 100).toISOString(), width: 4032, height: 3024 },
+      { id: 'P2', filename: 'DJI_0002.JPG', timestamp: new Date(t0 + 5050).toISOString(), width: 4032, height: 3024 },
+      { id: 'P3', filename: 'DJI_0003.JPG', timestamp: new Date(t0 + 10020).toISOString(), width: 4032, height: 3024 }
+    ];
+
+    const correlated = logDecoder.correlatePhotosWithTelemetry(photos, telemetry, plannedWaypoints);
+    assert.strictEqual(correlated.length, 3, 'Should correlate all 3 photos');
+
+    // Photo 1 checks
+    const p1 = correlated[0];
+    assert.strictEqual(p1.photoId, 'P1');
+    assert.strictEqual(p1.filename, 'DJI_0001.JPG');
+    assert.strictEqual(p1.waypointIndex, 0, 'First photo matches waypoint index 0');
+    assert.ok(p1.actual.lat > 0, 'Actual latitude should be populated');
+    assert.strictEqual(p1.variance.isCompliant, true, 'Sub-meter variance should be marked compliant');
+    assert.ok(p1.gsd.gsdCm > 0, 'GSD should be computed');
+    assert.ok(p1.footprint.coordinates[0].length === 5, 'Footprint should be computed');
+  });
+
+  test('DOM Architecture: photo inspector modal, media ingest modal, and action buttons exist in template and bundle', () => {
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+    for (const html of [templateHtml, compiledHtml]) {
+      // Modals
+      assert.ok(html.includes('id="photo-inspector-modal"'), 'Must include #photo-inspector-modal');
+      assert.ok(html.includes('id="media-ingest-modal"'), 'Must include #media-ingest-modal');
+
+      // Inspector canvas & HUD
+      assert.ok(html.includes('id="photo-annotation-canvas"'), 'Must include #photo-annotation-canvas');
+      assert.ok(html.includes('id="photo-inspector-img"'), 'Must include #photo-inspector-img');
+      assert.ok(html.includes('id="photo-hud-banner"'), 'Must include #photo-hud-banner');
+      assert.ok(html.includes('id="boundary-metrics-box"'), 'Must include #boundary-metrics-box');
+      assert.ok(html.includes('id="inspector-photo-title"'), 'Must include #inspector-photo-title');
+      assert.ok(html.includes('id="inspector-unit-toggle-btn"'), 'Must include #inspector-unit-toggle-btn');
+
+      // Action triggers
+      assert.ok(html.includes('id="direct-rc2-photos-btn"'), 'Must include #direct-rc2-photos-btn in RC2 dock');
+      assert.ok(html.includes('id="more-menu-photos-btn"'), 'Must include #more-menu-photos-btn in more menu');
+
+      // Feature highlights
+      assert.ok(html.includes('Mini 4 Pro Photo Ingestion, Telemetry HUD, Boundary Tools &amp; Inspection Archive'), 'Must include Feature Highlight in Intro modal');
+    }
+  });
+
+  test('CSS Architecture: photo inspection and annotation styles defined in index.css', () => {
+    const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+    assert.ok(css.includes('.photo-tool-btn'), 'index.css must define .photo-tool-btn');
+    assert.ok(css.includes('.color-dot-btn'), 'index.css must define .color-dot-btn');
+    assert.ok(css.includes('.defect-note-card'), 'index.css must define .defect-note-card');
+    assert.ok(css.includes('.photo-marker-icon'), 'index.css must define .photo-marker-icon');
+  });
+});
+
+describe('v1.97.0 Flight Diagnostics Photo Ingestion & Inspection Gallery Tests', () => {
+  test('Version consistency: package.json, CHANGELOG.md, index_template.html, and index.html match 1.97.0', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+    assert.ok(pkg.version >= '1.97.0', 'package.json version must be at least 1.97.0');
+
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.97.0] - 2026-09-12'), 'CHANGELOG.md must contain 1.97.0 header');
+
+    ['index_template.html', 'index.html'].forEach(filename => {
+      const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
+      assert.ok(html.includes('class="header-version-badge"'), `${filename} must contain header badge`);
+      assert.ok(html.includes('class="version-tag"'), `${filename} must contain About modal version tag`);
+      assert.ok(html.includes('Changelog (v1.97.0):'), `${filename} must contain Changelog (v1.97.0): header`);
+    });
+  });
+
+  test('DOM Architecture: diagnostics photo controls, tab button, sidebar strip, and gallery pane exist', () => {
+    ['index_template.html', 'index.html'].forEach(filename => {
+      const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
+      assert.ok(html.includes('id="diag-nav-photos-btn"'), `${filename} must contain #diag-nav-photos-btn`);
+      assert.ok(html.includes('id="diag-nav-photos-count"'), `${filename} must contain #diag-nav-photos-count`);
+      assert.ok(html.includes('id="diag-pull-photos-btn"'), `${filename} must contain #diag-pull-photos-btn in header`);
+      assert.ok(html.includes('id="diag-photos-card"'), `${filename} must contain #diag-photos-card in sidebar`);
+      assert.ok(html.includes('id="diag-photos-strip"'), `${filename} must contain #diag-photos-strip in sidebar`);
+      assert.ok(html.includes('id="diag-active-photo-info"'), `${filename} must contain #diag-active-photo-info`);
+      assert.ok(html.includes('id="diag-pane-photos"'), `${filename} must contain #diag-pane-photos`);
+      assert.ok(html.includes('id="diag-photos-search"'), `${filename} must contain #diag-photos-search`);
+      assert.ok(html.includes('id="diag-photos-filter-group"'), `${filename} must contain #diag-photos-filter-group`);
+      assert.ok(html.includes('id="diag-photos-grid"'), `${filename} must contain #diag-photos-grid`);
+      assert.ok(html.includes('Flight Diagnostics Photo Ingestion &amp; Inspection Gallery (v1.97.0)'), `${filename} must contain What's New card`);
+    });
+  });
+
+  test('CSS Architecture: diagnostics photo gallery and strip styles in index.css', () => {
+    const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+    assert.ok(css.includes('.diag-photos-btn'), 'index.css must style .diag-photos-btn');
+    assert.ok(css.includes('.diag-pane-photos'), 'index.css must style .diag-pane-photos');
+    assert.ok(css.includes('.diag-photos-toolbar'), 'index.css must style .diag-photos-toolbar');
+    assert.ok(css.includes('.diag-photos-grid'), 'index.css must style .diag-photos-grid');
+    assert.ok(css.includes('.diag-photo-card'), 'index.css must style .diag-photo-card');
+    assert.ok(css.includes('.diag-strip-thumb'), 'index.css must style .diag-strip-thumb');
+  });
+
+  test('FlightDiagnostics.switchTab handles "photos" correctly', () => {
+    const dom = new JSDOM(`
+      <div id="flight-diagnostics-modal">
+        <button id="diag-nav-3d-btn" class="btn-tab active"></button>
+        <button id="diag-nav-audit-btn" class="btn-tab"></button>
+        <button id="diag-nav-photos-btn" class="btn-tab"></button>
+        <div id="diag-flight-meta"></div>
+        <div id="diag-header-flight-controls"></div>
+        <div id="diag-pane-3d"></div>
+        <div id="kmz-inspector-modal" class="hidden"></div>
+        <div id="diag-pane-photos" class="hidden"></div>
+        <div id="diag-photos-grid"></div>
+        <span id="diag-nav-photos-count">0</span>
+        <span id="diag-photos-card-count">0</span>
+      </div>
+    `);
+    const origDoc = global.document;
+    global.document = dom.window.document;
+
+    try {
+      FlightDiagnostics.switchTab('photos');
+      assert.strictEqual(FlightDiagnostics.activeTab, 'photos');
+      const panePhotos = dom.window.document.getElementById('diag-pane-photos');
+      const pane3d = dom.window.document.getElementById('diag-pane-3d');
+      const paneAudit = dom.window.document.getElementById('kmz-inspector-modal');
+      const tabPhotosBtn = dom.window.document.getElementById('diag-nav-photos-btn');
+
+      assert.strictEqual(panePhotos.classList.contains('hidden'), false, 'Photos pane must be visible');
+      assert.strictEqual(pane3d.classList.contains('hidden'), true, '3D pane must be hidden');
+      assert.strictEqual(paneAudit.classList.contains('hidden'), true, 'Audit pane must be hidden');
+      assert.strictEqual(tabPhotosBtn.classList.contains('active'), true, 'Photos tab button must be active');
+    } finally {
+      global.document = origDoc;
+    }
+  });
+
+  test('FlightDiagnostics.getCorrelatedPhotos derives photos from telemetry photo points when no manifest is active', () => {
+    const origTelem = FlightDiagnostics.telemetryData;
+    const origManifest = global.activeInspectionManifest;
+    global.activeInspectionManifest = null;
+
+    FlightDiagnostics.telemetryData = {
+      points: [
+        { lat: 40.012, lon: -83.177, alt: 25, speed: 4, pitch: -60, yaw: 45, isPhoto: true, waypointIndex: 0 },
+        { lat: 40.013, lon: -83.177, alt: 25, speed: 4, pitch: -60, yaw: 45, isPhoto: false, waypointIndex: 1 },
+        { lat: 40.014, lon: -83.177, alt: 25, speed: 4, pitch: -60, yaw: 45, isPhoto: true, waypointIndex: 2 }
+      ]
+    };
+
+    try {
+      const photos = FlightDiagnostics.getCorrelatedPhotos();
+      assert.strictEqual(photos.length, 2, 'Should extract the 2 photo points');
+      assert.strictEqual(photos[0].waypointIndex, 0);
+      assert.strictEqual(photos[0].filename, 'DJI_0001.JPG');
+      assert.strictEqual(photos[1].waypointIndex, 2);
+      assert.strictEqual(photos[1].filename, 'DJI_0002.JPG');
+      assert.strictEqual(photos[0].actual.lat, 40.012);
+      assert.ok(photos[0].gsd.gsdCm > 0, 'GSD should be computed');
+    } finally {
+      FlightDiagnostics.telemetryData = origTelem;
+      global.activeInspectionManifest = origManifest;
+    }
+  });
+
+  test('FlightDiagnostics.renderInspectionPhotosUI populates gallery grid and sidebar strip', () => {
+    const dom = new JSDOM(`
+      <div id="flight-diagnostics-modal">
+        <span id="diag-nav-photos-count">0</span>
+        <span id="diag-photos-card-count">0</span>
+        <span id="diag-photos-summary-text"></span>
+        <div id="diag-photos-card" style="display: none;">
+          <div id="diag-photos-strip"></div>
+          <div id="diag-active-photo-info" style="display: none;">
+            <div id="diag-active-photo-name"></div>
+            <div id="diag-active-photo-details"></div>
+          </div>
+        </div>
+        <input id="diag-photos-search" value="" />
+        <div id="diag-photos-filter-group">
+          <button class="btn-tab active" data-filter="all">All</button>
+        </div>
+        <div id="diag-photos-grid"></div>
+      </div>
+    `);
+    const origDoc = global.document;
+    global.document = dom.window.document;
+
+    const origTelem = FlightDiagnostics.telemetryData;
+    FlightDiagnostics.telemetryData = {
+      points: [
+        { lat: 40.012, lon: -83.177, alt: 25, speed: 4, pitch: -60, yaw: 45, isPhoto: true, waypointIndex: 0 },
+        { lat: 40.014, lon: -83.177, alt: 25, speed: 4, pitch: -60, yaw: 45, isPhoto: true, waypointIndex: 1 }
+      ]
+    };
+
+    try {
+      FlightDiagnostics.renderInspectionPhotosUI();
+
+      const navCount = dom.window.document.getElementById('diag-nav-photos-count');
+      assert.strictEqual(navCount.textContent, '2', 'Nav count badge should show 2');
+
+      const card = dom.window.document.getElementById('diag-photos-card');
+      assert.strictEqual(card.style.display, 'flex', 'Sidebar photo card should be visible');
+
+      const strip = dom.window.document.getElementById('diag-photos-strip');
+      const thumbs = strip.querySelectorAll('.diag-strip-thumb');
+      assert.strictEqual(thumbs.length, 2, 'Sidebar strip must contain 2 thumbnails');
+
+      const grid = dom.window.document.getElementById('diag-photos-grid');
+      const cards = grid.querySelectorAll('.diag-photo-card');
+      assert.strictEqual(cards.length, 2, 'Gallery grid must render 2 photo cards');
+    } finally {
+      FlightDiagnostics.telemetryData = origTelem;
+      global.document = origDoc;
+    }
+  });
+});
+
+describe('v1.98.0 Mission-Specific Photo Ingestion & SQLite Indexing Tests', () => {
+  test('Version consistency: package.json, CHANGELOG.md, index_template.html, and index.html match 1.98.0', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+    assert.strictEqual(pkg.version, '1.98.0', 'package.json version must be 1.98.0');
+
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.98.0] - 2026-09-12'), 'CHANGELOG.md must contain 1.98.0 header');
+
+    ['index_template.html', 'index.html'].forEach(filename => {
+      const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
+      assert.ok(html.includes('v1.98.0'), `${filename} must contain header badge v1.98.0`);
+      assert.ok(html.includes('Version 1.98.0'), `${filename} must contain About modal Version 1.98.0`);
+      assert.ok(html.includes('Changelog (v1.98.0):'), `${filename} must contain Changelog (v1.98.0): header`);
+      assert.ok(html.includes('Mission-Specific Photo Ingestion &amp; SQLite Photo Indexing (v1.98.0)'), `${filename} must contain v1.98.0 What's New card`);
+      assert.ok(html.includes('id="media-mission-window-box"'), `${filename} must contain #media-mission-window-box`);
+      assert.ok(html.includes('id="ingest-window-details"'), `${filename} must contain #ingest-window-details`);
+      assert.ok(html.includes('id="ingest-filter-geo"'), `${filename} must contain #ingest-filter-geo`);
+    });
+  });
+
+  test('DiagnosticsDatabase: photo_records table supports savePhotoRecords, getPhotosByMission, and getPhotosSummary', () => {
+    const { DiagnosticsDatabase } = require('./tools/companion/diagnostics_db.js');
+    const testDbPath = path.join(__dirname, 'scratch', `test_photos_${Date.now()}.db`);
+    const db = new DiagnosticsDatabase(testDbPath);
+
+    try {
+      const missionUuid = 'test_mission_001';
+      const mockPhotos = [
+        {
+          photoId: 'PHOTO_0001',
+          filename: 'DJI_0001.JPG',
+          rawPath: 'C:\\test\\DJI_0001.JPG',
+          previewUrl: '/preview/DJI_0001.JPG',
+          waypointIndex: 0,
+          timestamp: '2026-09-12T14:05:00Z',
+          actual: { lat: 40.01297, lon: -83.17707, altAgl: 25.0, gimbalPitch: -60.0, heading: 90.0 },
+          planned: { lat: 40.01297, lon: -83.17707, altitude: 25.0 },
+          variance: { horizontalDeltaMeters: 0.12, verticalDeltaMeters: 0.05 },
+          gsd: { gsdCm: 0.88 },
+          severity: 'clean',
+          annotations: []
+        },
+        {
+          photoId: 'PHOTO_0002',
+          filename: 'DJI_0002.JPG',
+          rawPath: 'C:\\test\\DJI_0002.JPG',
+          previewUrl: '/preview/DJI_0002.JPG',
+          waypointIndex: 1,
+          timestamp: '2026-09-12T14:06:30Z',
+          actual: { lat: 40.01350, lon: -83.17707, altAgl: 24.8, gimbalPitch: -60.0, heading: 90.0 },
+          planned: { lat: 40.01350, lon: -83.17707, altitude: 25.0 },
+          variance: { horizontalDeltaMeters: 1.45, verticalDeltaMeters: 0.20 },
+          gsd: { gsdCm: 0.89 },
+          severity: 'warning',
+          annotations: [{ type: 'pin', text: 'Structure glare' }]
+        }
+      ];
+
+      const saveRes = db.savePhotoRecords(missionUuid, mockPhotos);
+      assert.strictEqual(saveRes.success, true, 'savePhotoRecords should succeed');
+      assert.strictEqual(saveRes.savedCount, 2, 'Should save 2 photo records');
+
+      const allPhotos = db.getPhotosByMission(missionUuid, 'all');
+      assert.strictEqual(allPhotos.length, 2, 'Should retrieve 2 photos');
+      assert.strictEqual(allPhotos[0].photo_id, 'PHOTO_0001');
+      assert.strictEqual(allPhotos[0].filename, 'DJI_0001.JPG');
+      assert.strictEqual(allPhotos[1].severity, 'warning');
+      assert.strictEqual(allPhotos[1].annotations.length, 1);
+
+      const warningPhotos = db.getPhotosByMission(missionUuid, 'warning');
+      assert.strictEqual(warningPhotos.length, 1, 'Should retrieve 1 warning photo');
+      assert.strictEqual(warningPhotos[0].photo_id, 'PHOTO_0002');
+
+      const summary = db.getPhotosSummary(missionUuid);
+      assert.strictEqual(summary.totalPhotos, 2);
+      assert.strictEqual(summary.cleanCount, 1);
+      assert.strictEqual(summary.warningCount, 1);
+      assert.strictEqual(summary.criticalCount, 0);
+      assert.ok(summary.averageGsdCm > 0.8, 'Average GSD should be calculated');
+    } finally {
+      db.close();
+      if (fs.existsSync(testDbPath)) {
+        try { fs.unlinkSync(testDbPath); } catch (_) {}
+      }
+    }
+  });
+
+  test('Mission-Window Ingest UI: openMediaIngestModal populates mission window text and waypoint count', () => {
+    const dom = new JSDOM(`
+      <div id="media-ingest-modal" class="hidden">
+        <div id="media-mission-window-box">
+          <span id="ingest-window-count-badge">0 Waypoints</span>
+          <div id="ingest-window-details">None</div>
+        </div>
+        <div id="media-devices-list"></div>
+      </div>
+    `);
+    const origDoc = global.document;
+    global.document = dom.window.document;
+
+    const origTelem = FlightDiagnostics.telemetryData;
+    const origSel = FlightDiagnostics.selectedFlightId;
+    FlightDiagnostics.selectedFlightId = 'FlightRecord_2026-09-12_[14-02-10].txt';
+    FlightDiagnostics.telemetryData = {
+      flightDate: '2026-09-12T14:02:10Z',
+      durationFormatted: '16:35'
+    };
+
+    try {
+      openMediaIngestModal();
+
+      const modal = dom.window.document.getElementById('media-ingest-modal');
+      assert.strictEqual(modal.classList.contains('hidden'), false, 'Modal should be visible');
+
+      const details = dom.window.document.getElementById('ingest-window-details');
+      assert.ok(details.textContent.includes('FlightRecord_2026-09-12'), 'Details should display flight name');
+      assert.ok(details.textContent.includes('Duration: 16:35'), 'Details should display flight duration');
+    } finally {
+      FlightDiagnostics.telemetryData = origTelem;
+      FlightDiagnostics.selectedFlightId = origSel;
+      global.document = origDoc;
+    }
+  });
+});
+
+
+

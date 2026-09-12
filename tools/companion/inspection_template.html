@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aalaapi Sky - Mission Inspection Report</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --surface: #111827;
+      --surface-card: #1e293b;
+      --border: rgba(255, 255, 255, 0.1);
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.25);
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --critical: #ef4444;
+      --warning: #f59e0b;
+      --clean: #10b981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg-dark); color: var(--text); padding: 24px; min-height: 100vh; }
+    header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 16px; }
+    .badge { font-size: 0.75rem; padding: 3px 8px; border-radius: 999px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+    .badge-clean { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .badge-warning { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .badge-critical { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+    .stat-card .label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-card .value { font-size: 1.25rem; font-weight: 700; color: #fff; margin-top: 4px; }
+    #map { height: 380px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 24px; }
+    .filter-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .filter-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); padding: 6px 14px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+    .filter-btn.active, .filter-btn:hover { background: var(--accent-glow); color: var(--accent); border-color: var(--accent); }
+    .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .photo-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; transition: transform 0.15s, border-color 0.15s; cursor: pointer; }
+    .photo-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+    .photo-card img { width: 100%; height: 190px; object-fit: cover; background: #000; display: block; }
+    .photo-card-body { padding: 12px; }
+    .photo-card-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.85rem; font-weight: 700; }
+    .photo-card-meta { font-size: 0.75rem; color: var(--text-muted); line-height: 1.5; }
+    .annotations-badge { margin-top: 8px; font-size: 0.7rem; color: #f59e0b; background: rgba(245, 158, 11, 0.15); padding: 2px 6px; border-radius: 4px; display: inline-block; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; background: var(--surface); border-radius: 8px; overflow: hidden; border: 1px solid var(--border); font-size: 0.8rem; }
+    th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { background: rgba(255, 255, 255, 0.04); color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 0.7rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1 style="display: flex; align-items: center; gap: 8px; font-size: 1.4rem;">
+        🛰️ Aalaapi Sky <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: normal;">• Mission Inspection Report</span>
+      </h1>
+      <p id="mission-info" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Loading mission manifest...</p>
+    </div>
+    <div id="overall-status">
+      <span class="badge badge-clean">Audit Complete</span>
+    </div>
+  </header>
+
+  <div class="stats-grid">
+    <div class="stat-card"><div class="label">Total Photos</div><div id="stat-photos" class="value">—</div></div>
+    <div class="stat-card"><div class="label">Duration</div><div id="stat-duration" class="value">—</div></div>
+    <div class="stat-card"><div class="label">Flight Distance</div><div id="stat-dist" class="value">—</div></div>
+    <div class="stat-card"><div class="label">Max Altitude</div><div id="stat-alt" class="value">—</div></div>
+    <div class="stat-card"><div class="label">Max Positional Variance</div><div id="stat-variance" class="value">—</div></div>
+    <div class="stat-card"><div class="label">Ground Resolution (GSD)</div><div id="stat-gsd" class="value">—</div></div>
+  </div>
+
+  <div id="map"></div>
+
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+    <h2 style="font-size: 1.1rem; font-weight: 700;">📸 Ingested &amp; Enhanced Photos</h2>
+    <div class="filter-bar" id="filter-bar">
+      <button class="filter-btn active" data-filter="all">All Photos</button>
+      <button class="filter-btn" data-filter="critical">🔴 Critical Defects</button>
+      <button class="filter-btn" data-filter="warning">🟡 Warnings</button>
+      <button class="filter-btn" data-filter="clean">🟢 Clean</button>
+    </div>
+  </div>
+
+  <div class="gallery" id="gallery"></div>
+
+  <h2 style="font-size: 1.1rem; font-weight: 700; margin-top: 24px;">📊 Planned vs. Actual Flight Variance Audit</h2>
+  <table id="variance-table">
+    <thead>
+      <tr>
+        <th>WP #</th>
+        <th>Photo</th>
+        <th>Planned GPS</th>
+        <th>Actual GPS</th>
+        <th>Δ Horizontal</th>
+        <th>Δ Vertical</th>
+        <th>Gimbal Pitch</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    // Embedded or dynamically loaded manifest
+    const manifest = window.__INSPECTION_MANIFEST__ || {
+      missionUuid: "demo-mission",
+      flightDate: new Date().toISOString(),
+      droneModel: "DJI Mini 4 Pro",
+      totalPhotos: 0,
+      photos: []
+    };
+
+    document.getElementById('mission-info').textContent = `Mission UUID: ${manifest.missionUuid} • Date: ${manifest.flightDate.replace('T', ' ').slice(0, 19)} • Drone: ${manifest.droneModel || 'DJI Mini 4 Pro'}`;
+    document.getElementById('stat-photos').textContent = manifest.photos ? manifest.photos.length : 0;
+    if (manifest.summary) {
+      document.getElementById('stat-duration').textContent = manifest.summary.durationFormatted || '—';
+      document.getElementById('stat-dist').textContent = manifest.summary.totalDistance ? `${manifest.summary.totalDistance} m` : '—';
+      document.getElementById('stat-alt').textContent = manifest.summary.maxAltitude ? `${manifest.summary.maxAltitude} m` : '—';
+      document.getElementById('stat-variance').textContent = manifest.summary.maxDeviation || '0.2 m';
+      document.getElementById('stat-gsd').textContent = manifest.summary.averageGsd ? `${manifest.summary.averageGsd} cm/px` : '0.9 cm/px';
+    }
+
+    // Map init
+    let map = null;
+    if (typeof L !== 'undefined') {
+      const firstCoord = (manifest.photos && manifest.photos[0] && manifest.photos[0].actual) ? [manifest.photos[0].actual.lat, manifest.photos[0].actual.lon] : [42.36, -71.05];
+      map = L.map('map').setView(firstCoord, 18);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 21,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+
+      const latlngs = [];
+      (manifest.photos || []).forEach(p => {
+        if (!p.actual) return;
+        const pt = [p.actual.lat, p.actual.lon];
+        latlngs.push(pt);
+        const color = p.severity === 'critical' ? '#ef4444' : (p.severity === 'warning' ? '#f59e0b' : '#10b981');
+        const marker = L.circleMarker(pt, {
+          radius: 6,
+          fillColor: color,
+          color: '#fff',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.9
+        }).addTo(map);
+        marker.bindPopup(`<b>WP #${p.waypointIndex}</b><br>${p.filename}<br>Alt: ${p.actual.altAgl}m<br>ΔH: ${p.variance ? p.variance.horizontalDeltaMeters : 0}m`);
+      });
+      if (latlngs.length > 0) {
+        L.polyline(latlngs, { color: '#38bdf8', weight: 2, dashArray: '4, 4' }).addTo(map);
+        map.fitBounds(L.latLngBounds(latlngs).pad(0.2));
+      }
+    }
+
+    // Render Gallery
+    const galleryEl = document.getElementById('gallery');
+    const tableBody = document.querySelector('#variance-table tbody');
+
+    function renderPhotos(filter = 'all') {
+      galleryEl.innerHTML = '';
+      tableBody.innerHTML = '';
+
+      const photos = manifest.photos || [];
+      const filtered = photos.filter(p => {
+        if (filter === 'all') return true;
+        return p.severity === filter;
+      });
+
+      filtered.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'photo-card';
+        const imgPath = p.previewUrl || `photos/previews/${p.filename}`;
+        const sevBadge = p.severity === 'critical' ? '<span class="badge badge-critical">🔴 Critical</span>' : (p.severity === 'warning' ? '<span class="badge badge-warning">🟡 Warning</span>' : '<span class="badge badge-clean">🟢 Clean</span>');
+        const annCount = p.annotations ? p.annotations.length : 0;
+
+        card.innerHTML = `
+          <img src="${imgPath}" alt="${p.filename}" onerror="this.style.background='#1e293b'; this.style.padding='60px 10px'; this.alt='[Preview Not Cached]'"/>
+          <div class="photo-card-body">
+            <div class="photo-card-title">
+              <span>WP #${p.waypointIndex} • ${p.filename}</span>
+              ${sevBadge}
+            </div>
+            <div class="photo-card-meta">
+              Alt: ${p.actual.altAgl}m AGL • Pitch: ${p.actual.gimbalPitch}°<br>
+              Variance: ΔH: ${p.variance ? p.variance.horizontalDeltaMeters : 0}m │ ΔV: ${p.variance ? p.variance.verticalDeltaMeters : 0}m<br>
+              GSD: ${p.gsd ? p.gsd.gsdCm : '0.9'} cm/px
+            </div>
+            ${annCount > 0 ? `<div class="annotations-badge">📐 ${annCount} Inspection Annotation(s)</div>` : ''}
+          </div>
+        `;
+        galleryEl.appendChild(card);
+
+        // Table row
+        const tr = document.createElement('tr');
+        const plannedCoord = p.planned ? `${p.planned.lat.toFixed(6)}, ${p.planned.lon.toFixed(6)}` : '—';
+        const actualCoord = `${p.actual.lat.toFixed(6)}, ${p.actual.lon.toFixed(6)}`;
+        tr.innerHTML = `
+          <td><b>#${p.waypointIndex}</b></td>
+          <td>${p.filename}</td>
+          <td>${plannedCoord}</td>
+          <td>${actualCoord}</td>
+          <td>${p.variance ? p.variance.horizontalDeltaMeters + ' m' : '—'}</td>
+          <td>${p.variance ? p.variance.verticalDeltaMeters + ' m' : '—'}</td>
+          <td>${p.actual.gimbalPitch}°</td>
+          <td>${sevBadge}</td>
+        `;
+        tableBody.appendChild(tr);
+      });
+    }
+
+    renderPhotos('all');
+
+    // Filter bar listener
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderPhotos(btn.dataset.filter);
+      });
+    });
+  </script>
+</body>
+</html>

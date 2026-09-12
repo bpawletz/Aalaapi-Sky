@@ -4334,16 +4334,222 @@ html, body {
   padding: 4px 6px;
 }
 
+/* ==========================================================================
+   Photo Inspector & Interactive Annotation Marker Tools (v1.96.0)
+   ========================================================================== */
 
+.photo-tool-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
 
+.photo-tool-btn:hover {
+  background: rgba(56, 189, 248, 0.15) !important;
+  border-color: rgba(56, 189, 248, 0.4) !important;
+  color: #38bdf8 !important;
+  transform: scale(1.05);
+}
 
+.photo-tool-btn.active {
+  background: rgba(56, 189, 248, 0.25) !important;
+  border-color: #38bdf8 !important;
+  color: #fff !important;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
+}
 
+.color-dot-btn {
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
 
+.color-dot-btn:hover {
+  transform: scale(1.15);
+}
 
+.color-dot-btn.active {
+  box-shadow: 0 0 8px currentColor;
+}
 
+.defect-note-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: border-color 0.15s ease;
+}
 
+.defect-note-card:hover {
+  border-color: var(--accent-cyan);
+}
 
+.defect-note-card.is-critical {
+  border-left: 3px solid #ef4444;
+}
 
+.defect-note-card.is-warning {
+  border-left: 3px solid #f59e0b;
+}
 
+.defect-note-card.is-info {
+  border-left: 3px solid #38bdf8;
+}
 
+.defect-note-card.is-clean {
+  border-left: 3px solid #10b981;
+}
+
+.photo-marker-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #0f172a;
+  border: 2px solid #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.photo-marker-icon:hover {
+  transform: scale(1.2);
+  z-index: 1000 !important;
+}
+
+.photo-marker-icon.severity-critical {
+  border-color: #ef4444;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+.photo-marker-icon.severity-warning {
+  border-color: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+}
+
+.photo-marker-icon.severity-clean {
+  border-color: #10b981;
+}
+
+/* Flight Diagnostics Photo Ingestion & Inspection Gallery */
+.diag-photos-btn {
+  background: rgba(56, 189, 248, 0.15) !important;
+  border: 1px solid rgba(56, 189, 248, 0.4) !important;
+  color: #38bdf8 !important;
+}
+
+.diag-photos-btn:hover {
+  background: rgba(56, 189, 248, 0.25) !important;
+  color: #7dd3fc !important;
+}
+
+.diag-pane-photos {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #0b101b;
+  position: relative;
+}
+
+.diag-photos-toolbar {
+  padding: 10px 16px;
+  background: rgba(0, 0, 0, 0.35);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.diag-photos-grid {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 14px;
+  align-content: start;
+}
+
+.diag-photo-card {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.diag-photo-card:hover {
+  transform: translateY(-2px);
+  border-color: #38bdf8;
+}
+
+.diag-photo-card.active-photo {
+  border-color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+.diag-photo-card-thumb {
+  width: 100%;
+  height: 140px;
+  background: #020617;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.diag-photo-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.diag-photo-card-body {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.75rem;
+}
+
+.diag-strip-thumb {
+  min-width: 60px;
+  width: 60px;
+  height: 60px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: #0f172a;
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.diag-strip-thumb:hover {
+  border-color: #38bdf8;
+  transform: scale(1.05);
+}
+
+.diag-strip-thumb.active {
+  border: 2px solid #38bdf8;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+}
 
