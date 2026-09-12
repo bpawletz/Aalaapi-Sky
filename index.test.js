@@ -15284,21 +15284,14 @@ describe('v1.95.0 Location-Based Temporary Flight Restrictions (TFR) & NOTAM Ing
 });
 
 describe('v1.95.1 Live TFR Service Status & Health Indicator (Green) Tests', () => {
-  test('Version consistency: v1.95.1 is registered across package.json, CHANGELOG.md, index_template.html, and index.html', () => {
-    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.95.1', 'package.json version must be 1.95.1');
-
+  test('Version consistency: v1.95.1 changelog entry is preserved in CHANGELOG.md and template', () => {
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.95.1] - 2026-09-11'), 'CHANGELOG.md must contain 1.95.1 entry');
 
     const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(templateHtml.includes('>v1.95.1</span>'), 'index_template.html must contain header version badge v1.95.1');
-    assert.ok(templateHtml.includes('Version 1.95.1</span>'), 'index_template.html must contain About modal version tag 1.95.1');
     assert.ok(templateHtml.includes('Changelog (v1.95.1):'), 'index_template.html must contain Changelog (v1.95.1) header');
 
     const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-    assert.ok(compiledHtml.includes('>v1.95.1</span>'), 'index.html must contain header version badge v1.95.1');
-    assert.ok(compiledHtml.includes('Version 1.95.1</span>'), 'index.html must contain About modal version tag 1.95.1');
     assert.ok(compiledHtml.includes('Changelog (v1.95.1):'), 'index.html must contain Changelog (v1.95.1) header');
   });
 
@@ -15365,11 +15358,193 @@ describe('v1.95.1 Live TFR Service Status & Health Indicator (Green) Tests', () 
   });
 });
 
+describe('v1.95.2 OpenStreetMap Tile Usage Policy Compliance Tests', () => {
+  test('Version consistency: v1.95.2 changelog entry is preserved in CHANGELOG.md and template', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+    const p1 = pkg.version.split('.').map(Number);
+    const p2 = [1, 95, 2];
+    const isGte = (p1[0] > p2[0]) || (p1[0] === p2[0] && p1[1] > p2[1]) || (p1[0] === p2[0] && p1[1] === p2[1] && p1[2] >= p2[2]);
+    assert.ok(isGte, 'package.json version must be 1.95.2 or higher');
 
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.95.2] - 2026-09-11'), 'CHANGELOG.md must contain 1.95.2 entry');
 
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateHtml.includes('Changelog (v1.95.2):'), 'index_template.html must contain Changelog (v1.95.2) header');
 
+    const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(compiledHtml.includes('Changelog (v1.95.2):'), 'index.html must contain Changelog (v1.95.2) header');
+  });
 
+  test('OpenStreetMap tile URLs adhere to OSM Tile Usage Policy (naked tile.openstreetmap.org domain, no {s} subdomain)', () => {
+    const indexJs = fs.readFileSync(path.join(__dirname, 'index.js'), 'utf8');
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
 
+    for (const source of [indexJs, indexHtml]) {
+      // 1. Leaflet base street layer
+      assert.ok(
+        source.includes("L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png'"),
+        'streetLayer must use the official https://tile.openstreetmap.org/{z}/{x}/{y}.png URL format'
+      );
+      assert.ok(
+        !source.includes("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"),
+        'streetLayer must not use deprecated {s} subdomain rotation'
+      );
 
+      // 2. Three.js 3D ground canvas texture
+      assert.ok(
+        source.includes("url = `https://tile.openstreetmap.org/${tileZoom}/${tileX}/${tileY}.png`;"),
+        '3D ground texture must use direct https://tile.openstreetmap.org/ URL format'
+      );
+      assert.ok(
+        !source.includes("${s}.tile.openstreetmap.org"),
+        '3D ground texture must not use ${s} subdomain rotation'
+      );
 
+      // 3. Attribution compliance
+      assert.ok(
+        source.includes('&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'),
+        'OpenStreetMap attribution must be present with link to copyright page'
+      );
+    }
+  });
+});
 
+describe('v1.95.3 Section 2 Pattern Controls Restoration Tests', () => {
+  test('version consistency across package.json, CHANGELOG.md, index_template.html, and index.html', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+    assert.strictEqual(pkg.version, '1.95.3', 'package.json version must be 1.95.3');
+
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.95.3]'), 'CHANGELOG.md must contain ## [1.95.3]');
+
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateHtml.includes('>v1.95.3</span>'), 'index_template.html must contain header version badge v1.95.3');
+    assert.ok(templateHtml.includes('Version 1.95.3</span>'), 'index_template.html must contain About modal version tag 1.95.3');
+    assert.ok(templateHtml.includes('Changelog (v1.95.3):'), 'index_template.html must contain Changelog (v1.95.3) header');
+    assert.ok(templateHtml.includes('id="layer-card-geometry-title"'), 'index_template.html must contain #layer-card-geometry-title');
+
+    const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(compiledHtml.includes('>v1.95.3</span>'), 'index.html must contain header version badge v1.95.3');
+    assert.ok(compiledHtml.includes('Version 1.95.3</span>'), 'index.html must contain About modal version tag 1.95.3');
+    assert.ok(compiledHtml.includes('Changelog (v1.95.3):'), 'index.html must contain Changelog (v1.95.3) header');
+    assert.ok(compiledHtml.includes('id="layer-card-geometry-title"'), 'index.html must contain #layer-card-geometry-title');
+  });
+
+  function createMockClassList() {
+    const classes = new Set();
+    return {
+      add: (cls) => classes.add(cls),
+      remove: (cls) => classes.delete(cls),
+      contains: (cls) => classes.has(cls),
+      _classes: classes
+    };
+  }
+
+  function setupMockElements(pattern) {
+    const elements = {
+      'grid-type': { value: pattern },
+      'grid-width': { value: '100', closest: () => ({ style: {} }) },
+      'grid-height': { value: '100', closest: () => ({ style: {} }) },
+      'grid-rotation': { value: '0', closest: () => ({ style: {} }) },
+      'front-overlap': { value: '80', closest: () => ({ style: {} }) },
+      'side-overlap': { value: '75', closest: () => ({ style: {} }) },
+      'grid-geometry-section': { style: { display: 'none' }, classList: createMockClassList() },
+      'grid-geometry-title': { textContent: '' },
+      'layer-card-geometry': { style: {}, querySelector: () => null },
+      'layer-card-geometry-title': { textContent: '' },
+      'layer-card-flight': { style: {} },
+      'layer-card-optics': { style: {} },
+      'layer-card-modes': { style: {} },
+      'altitude-control-group': { style: {} },
+      'tower-geometry-container': { classList: createMockClassList() },
+      'road-offset-container': { classList: createMockClassList() },
+      'road-snap-container': { classList: createMockClassList() },
+      'target-splat-container': { classList: createMockClassList() },
+      'exclusion-altitude-container': { classList: createMockClassList() },
+      'exclusion-freeform-note': { classList: createMockClassList() },
+      'exclusion-instructions': { classList: createMockClassList() },
+      'freeform-instructions': { classList: createMockClassList(), querySelector: () => ({ textContent: '' }) },
+      'gimbal-pitch': { value: '-60' }
+    };
+    return elements;
+  }
+
+  test('togglePatternParameters reveals layer-card-geometry and tower-geometry-container for tower pattern', () => {
+    const origGetElementById = global.document.getElementById;
+    const elements = setupMockElements('tower');
+    global.document.getElementById = (id) => elements[id] || (origGetElementById ? origGetElementById(id) : null);
+
+    try {
+      togglePatternParameters();
+      assert.strictEqual(elements['layer-card-geometry'].style.display, 'block', 'layer-card-geometry must be visible for tower');
+      assert.strictEqual(elements['tower-geometry-container'].classList.contains('hidden'), false, 'tower-geometry-container must not be hidden');
+      assert.strictEqual(elements['road-offset-container'].classList.contains('hidden'), true, 'road-offset-container must be hidden for tower');
+      assert.strictEqual(elements['road-snap-container'].classList.contains('hidden'), true, 'road-snap-container must be hidden for tower');
+      assert.strictEqual(elements['altitude-control-group'].style.display, 'none', 'redundant altitude slider must be hidden for tower');
+      assert.strictEqual(elements['layer-card-flight'].style.display, 'block', 'layer-card-flight must be visible for tower overlap');
+      assert.strictEqual(elements['layer-card-optics'].style.display, 'block', 'layer-card-optics must be visible for tower');
+      assert.strictEqual(elements['layer-card-modes'].style.display, 'block', 'layer-card-modes must be visible for tower');
+      assert.ok(elements['layer-card-geometry-title'].textContent.includes('Tower'), 'Card 1 title must reflect Tower geometry');
+    } finally {
+      global.document.getElementById = origGetElementById;
+    }
+  });
+
+  test('togglePatternParameters reveals layer-card-geometry and road containers for road-following pattern', () => {
+    const origGetElementById = global.document.getElementById;
+    const elements = setupMockElements('road-following');
+    global.document.getElementById = (id) => elements[id] || (origGetElementById ? origGetElementById(id) : null);
+
+    try {
+      togglePatternParameters();
+      assert.strictEqual(elements['layer-card-geometry'].style.display, 'block', 'layer-card-geometry must be visible for road-following');
+      assert.strictEqual(elements['road-offset-container'].classList.contains('hidden'), false, 'road-offset-container must not be hidden');
+      assert.strictEqual(elements['road-snap-container'].classList.contains('hidden'), false, 'road-snap-container must not be hidden');
+      assert.strictEqual(elements['tower-geometry-container'].classList.contains('hidden'), true, 'tower-geometry-container must be hidden for road-following');
+      assert.strictEqual(elements['altitude-control-group'].style.display, 'block', 'flight altitude must be accessible for road-following');
+      assert.strictEqual(elements['layer-card-flight'].style.display, 'block', 'layer-card-flight must be visible');
+      assert.strictEqual(elements['layer-card-optics'].style.display, 'block', 'layer-card-optics must be visible');
+      assert.strictEqual(elements['layer-card-modes'].style.display, 'block', 'layer-card-modes must be visible');
+      assert.ok(elements['layer-card-geometry-title'].textContent.includes('Road'), 'Card 1 title must reflect Road routing');
+    } finally {
+      global.document.getElementById = origGetElementById;
+    }
+  });
+
+  test('togglePatternParameters reveals layer-card-geometry and exclusion altitude controls for exclusion-freeform', () => {
+    const origGetElementById = global.document.getElementById;
+    const elements = setupMockElements('exclusion-freeform');
+    global.document.getElementById = (id) => elements[id] || (origGetElementById ? origGetElementById(id) : null);
+
+    try {
+      togglePatternParameters();
+      assert.strictEqual(elements['layer-card-geometry'].style.display, 'block', 'layer-card-geometry must be visible for exclusion-freeform');
+      assert.strictEqual(elements['exclusion-altitude-container'].classList.contains('hidden'), false, 'exclusion-altitude-container must not be hidden');
+      assert.strictEqual(elements['exclusion-freeform-note'].classList.contains('hidden'), false, 'exclusion-freeform-note must not be hidden');
+      assert.strictEqual(elements['layer-card-flight'].style.display, 'none', 'flight controls must be hidden for exclusion zone');
+      assert.strictEqual(elements['layer-card-optics'].style.display, 'none', 'optics must be hidden for exclusion zone');
+      assert.strictEqual(elements['layer-card-modes'].style.display, 'none', 'modes must be hidden for exclusion zone');
+      assert.ok(elements['layer-card-geometry-title'].textContent.includes('Exclusion'), 'Card 1 title must reflect Exclusion');
+    } finally {
+      global.document.getElementById = origGetElementById;
+    }
+  });
+
+  test('togglePatternParameters hides layer-card-geometry for freeform pattern while keeping flight, optics, and modes visible', () => {
+    const origGetElementById = global.document.getElementById;
+    const elements = setupMockElements('freeform');
+    global.document.getElementById = (id) => elements[id] || (origGetElementById ? origGetElementById(id) : null);
+
+    try {
+      togglePatternParameters();
+      assert.strictEqual(elements['layer-card-geometry'].style.display, 'none', 'layer-card-geometry must be hidden for freeform');
+      assert.strictEqual(elements['layer-card-flight'].style.display, 'block', 'layer-card-flight must be shown for freeform');
+      assert.strictEqual(elements['layer-card-optics'].style.display, 'block', 'layer-card-optics must be shown for freeform');
+      assert.strictEqual(elements['layer-card-modes'].style.display, 'block', 'layer-card-modes must be shown for freeform');
+      assert.strictEqual(elements['altitude-control-group'].style.display, 'block', 'altitude must be shown for freeform');
+    } finally {
+      global.document.getElementById = origGetElementById;
+    }
+  });
+});

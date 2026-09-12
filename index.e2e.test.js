@@ -4792,7 +4792,90 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(badgeState.text.includes('TFR'), 'Badge text must contain TFR label');
     assert.ok(badgeState.title.includes('Operational') || badgeState.title.includes('Clear') || badgeState.title.includes('TFR'), 'Badge title must describe operational status');
   });
+
+  test('E2E: Tower and Road Following controls are restored and accessible in Section 2 Layer Properties (v1.95.3)', async () => {
+    // 1. Test Tower Pattern Controls
+    const towerResult = await page.evaluate(() => {
+      const gridTypeEl = document.getElementById('grid-type');
+      gridTypeEl.value = 'tower';
+      gridTypeEl.dispatchEvent(new Event('change'));
+
+      const layerCardGeom = document.getElementById('layer-card-geometry');
+      const towerContainer = document.getElementById('tower-geometry-container');
+      const towerRadius = document.getElementById('tower-radius');
+      const towerMinHeight = document.getElementById('tower-min-height');
+      const towerMaxHeight = document.getElementById('tower-max-height');
+      const towerBuffer = document.getElementById('tower-guy-wire-buffer');
+      const geomTitle = document.getElementById('layer-card-geometry-title');
+
+      return {
+        cardDisplay: layerCardGeom?.style?.display,
+        towerHidden: towerContainer?.classList?.contains('hidden'),
+        hasRadius: !!towerRadius,
+        hasMinHeight: !!towerMinHeight,
+        hasMaxHeight: !!towerMaxHeight,
+        hasBuffer: !!towerBuffer,
+        titleText: geomTitle?.textContent || ''
+      };
+    });
+
+    assert.strictEqual(towerResult.cardDisplay, 'block', 'Card 1 (#layer-card-geometry) must be displayed for Tower');
+    assert.strictEqual(towerResult.towerHidden, false, '#tower-geometry-container must not have .hidden class');
+    assert.ok(towerResult.hasRadius, '#tower-radius slider must be present');
+    assert.ok(towerResult.hasMinHeight, '#tower-min-height slider must be present');
+    assert.ok(towerResult.hasMaxHeight, '#tower-max-height slider must be present');
+    assert.ok(towerResult.hasBuffer, '#tower-guy-wire-buffer slider must be present');
+    assert.ok(towerResult.titleText.includes('Tower'), 'Card 1 header must describe Tower geometry');
+
+    // 2. Test Road Following Pattern Controls
+    const roadResult = await page.evaluate(() => {
+      const gridTypeEl = document.getElementById('grid-type');
+      gridTypeEl.value = 'road-following';
+      gridTypeEl.dispatchEvent(new Event('change'));
+
+      const layerCardGeom = document.getElementById('layer-card-geometry');
+      const roadOffset = document.getElementById('road-offset-container');
+      const roadSnap = document.getElementById('road-snap-container');
+      const offsetSlider = document.getElementById('road-offset');
+      const geomTitle = document.getElementById('layer-card-geometry-title');
+
+      return {
+        cardDisplay: layerCardGeom?.style?.display,
+        offsetHidden: roadOffset?.classList?.contains('hidden'),
+        snapHidden: roadSnap?.classList?.contains('hidden'),
+        hasOffsetSlider: !!offsetSlider,
+        titleText: geomTitle?.textContent || ''
+      };
+    });
+
+    assert.strictEqual(roadResult.cardDisplay, 'block', 'Card 1 (#layer-card-geometry) must be displayed for Road Following');
+    assert.strictEqual(roadResult.offsetHidden, false, '#road-offset-container must not have .hidden class');
+    assert.strictEqual(roadResult.snapHidden, false, '#road-snap-container must not have .hidden class');
+    assert.ok(roadResult.hasOffsetSlider, '#road-offset slider must be present');
+    assert.ok(roadResult.titleText.includes('Road'), 'Card 1 header must describe Road routing');
+
+    // 3. Test Freeform Pattern Controls (Card 1 hidden, Cards 2-4 visible)
+    const freeformResult = await page.evaluate(() => {
+      const gridTypeEl = document.getElementById('grid-type');
+      gridTypeEl.value = 'freeform';
+      gridTypeEl.dispatchEvent(new Event('change'));
+
+      const layerCardGeom = document.getElementById('layer-card-geometry');
+      const layerCardFlight = document.getElementById('layer-card-flight');
+      const layerCardOptics = document.getElementById('layer-card-optics');
+      const layerCardModes = document.getElementById('layer-card-modes');
+
+      return {
+        cardGeomDisplay: layerCardGeom?.style?.display,
+        cardFlightDisplay: layerCardFlight?.style?.display,
+        cardOpticsDisplay: layerCardOptics?.style?.display,
+        cardModesDisplay: layerCardModes?.style?.display
+      };
+    });
+
+    assert.strictEqual(freeformResult.cardGeomDisplay, 'none', 'Card 1 (#layer-card-geometry) must be hidden for Freeform');
+    assert.strictEqual(freeformResult.cardFlightDisplay, 'block', 'Card 2 (#layer-card-flight) must remain visible for Freeform');
+    assert.strictEqual(freeformResult.cardOpticsDisplay, 'block', 'Card 3 (#layer-card-optics) must remain visible for Freeform');
+    assert.strictEqual(freeformResult.cardModesDisplay, 'block', 'Card 4 (#layer-card-modes) must remain visible for Freeform');
+  });
 });
-
-
-

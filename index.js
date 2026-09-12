@@ -3412,7 +3412,7 @@ function initMap() {
   }
 
   // Setup Tile Layers
-  streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  streetLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 22,
     maxNativeZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -6613,6 +6613,8 @@ function togglePatternParameters() {
   const layerCardFlight = document.getElementById('layer-card-flight');
   const layerCardOptics = document.getElementById('layer-card-optics');
   const layerCardModes = document.getElementById('layer-card-modes');
+  const layerCardGeometryTitle = document.getElementById('layer-card-geometry-title') ||
+    (layerCardGeometry && layerCardGeometry.querySelector ? layerCardGeometry.querySelector('.layer-subgroup-header span') : null);
 
   const widthLabel = (widthContainer && widthContainer.querySelector) ? widthContainer.querySelector('.control-label > span') : null;
   const isExclusion = (gridType === 'exclusion-box' || gridType === 'exclusion-freeform');
@@ -6705,11 +6707,16 @@ function togglePatternParameters() {
       gridGeometrySection.classList.remove('collapsed');
     }
     if (layerCardGeometry) layerCardGeometry.style.display = 'block';
+    if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "📐 Coverage & Geometry";
     if (layerCardFlight) layerCardFlight.style.display = 'block';
     if (layerCardOptics) layerCardOptics.style.display = 'block';
     if (layerCardModes) layerCardModes.style.display = 'block';
     if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
     if (targetSplatContainer) targetSplatContainer.classList.remove('hidden');
+    if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
+    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
+    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
+    if (exclusionAltContainer) exclusionAltContainer.classList.add('hidden');
     if (widthLabel) widthLabel.textContent = "Survey Width";
     const heightLabel = (heightContainer && heightContainer.querySelector) ? heightContainer.querySelector('.control-label > span') : null;
     if (heightLabel) heightLabel.textContent = "Survey Height";
@@ -6719,8 +6726,6 @@ function togglePatternParameters() {
     if (frontOverlapContainer) frontOverlapContainer.style.display = 'block';
     if (sideOverlapContainer) sideOverlapContainer.style.display = 'block';
     if (freeformInstructions) freeformInstructions.classList.add('hidden');
-    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
-    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
     if (gimbalPitchSlider && (!gimbalPitchSlider.value || parseFloat(gimbalPitchSlider.value) === -90)) {
       gimbalPitchSlider.value = -45;
     }
@@ -6736,19 +6741,23 @@ function togglePatternParameters() {
       gridGeometrySection.style.display = 'block';
       gridGeometrySection.classList.remove('collapsed');
     }
-    if (layerCardGeometry) layerCardGeometry.style.display = 'none';
+    if (layerCardGeometry) layerCardGeometry.style.display = 'block';
+    if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "🚫 Exclusion Boundary & Airspace";
     if (layerCardFlight) layerCardFlight.style.display = 'none';
     if (layerCardOptics) layerCardOptics.style.display = 'none';
     if (layerCardModes) layerCardModes.style.display = 'none';
     if (exclusionFreeformNote) exclusionFreeformNote.classList.remove('hidden');
+    if (exclusionAltContainer) exclusionAltContainer.classList.remove('hidden');
+    if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
+    if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
+    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
+    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
     if (widthContainer) widthContainer.style.display = 'none';
     if (heightContainer) heightContainer.style.display = 'none';
     if (rotationContainer) rotationContainer.style.display = 'none';
     if (frontOverlapContainer) frontOverlapContainer.style.display = 'none';
     if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
     if (freeformInstructions) freeformInstructions.classList.add('hidden');
-    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
-    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
 
   } else if (gridType === 'exclusion-box') {
     const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
@@ -6758,10 +6767,16 @@ function togglePatternParameters() {
       gridGeometrySection.classList.remove('collapsed');
     }
     if (layerCardGeometry) layerCardGeometry.style.display = 'block';
+    if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "🚫 Exclusion Volume & Airspace";
     if (layerCardFlight) layerCardFlight.style.display = 'none';
     if (layerCardOptics) layerCardOptics.style.display = 'none';
     if (layerCardModes) layerCardModes.style.display = 'none';
     if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
+    if (exclusionAltContainer) exclusionAltContainer.classList.remove('hidden');
+    if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
+    if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
+    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
+    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
     if (widthLabel) widthLabel.textContent = "Box Width";
     if (widthContainer) widthContainer.style.display = 'block';
     if (heightContainer) heightContainer.style.display = 'block';
@@ -6769,8 +6784,6 @@ function togglePatternParameters() {
     if (frontOverlapContainer) frontOverlapContainer.style.display = 'none';
     if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
     if (freeformInstructions) freeformInstructions.classList.add('hidden');
-    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
-    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
 
   } else if (gridType === 'freeform') {
     const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
@@ -6784,6 +6797,12 @@ function togglePatternParameters() {
     if (layerCardOptics) layerCardOptics.style.display = 'block';
     if (layerCardModes) layerCardModes.style.display = 'block';
     if (altitudeControlGroup) altitudeControlGroup.style.display = 'block';
+    if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
+    if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
+    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
+    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
+    if (exclusionAltContainer) exclusionAltContainer.classList.add('hidden');
+    if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
     if (widthContainer) widthContainer.style.display = 'none';
     if (heightContainer) heightContainer.style.display = 'none';
     if (rotationContainer) rotationContainer.style.display = 'none';
@@ -6796,21 +6815,28 @@ function togglePatternParameters() {
       }
       if (freeformInstructions.classList) freeformInstructions.classList.remove('hidden');
     }
-    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
-    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
     if (gimbalPitchSlider) gimbalPitchSlider.value = -60;
 
   } else if (gridType === 'road-following') {
-    if (gridGeometrySection) gridGeometrySection.style.display = 'block';
-    if (layerCardGeometry) layerCardGeometry.style.display = 'none';
+    if (gridGeometrySection) {
+      gridGeometrySection.style.display = 'block';
+      gridGeometrySection.classList.remove('collapsed');
+    }
+    if (layerCardGeometry) layerCardGeometry.style.display = 'block';
+    if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "📐 Road Path & Routing";
     if (layerCardFlight) layerCardFlight.style.display = 'block';
     if (layerCardOptics) layerCardOptics.style.display = 'block';
     if (layerCardModes) layerCardModes.style.display = 'block';
+    if (altitudeControlGroup) altitudeControlGroup.style.display = 'block';
     if (widthContainer) widthContainer.style.display = 'none';
     if (heightContainer) heightContainer.style.display = 'none';
     if (rotationContainer) rotationContainer.style.display = 'none';
     if (frontOverlapContainer) frontOverlapContainer.style.display = 'none';
     if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
+    if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
+    if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
+    if (exclusionAltContainer) exclusionAltContainer.classList.add('hidden');
+    if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
     if (freeformInstructions) {
       const span = freeformInstructions.querySelector('span');
       if (span) span.textContent = "ℹ️ Click on the map to define the road path. Drag points to adjust the road. The drone flight path will automatically offset left/right based on the slider.";
@@ -6837,12 +6863,16 @@ function togglePatternParameters() {
       gridGeometrySection.style.display = 'block';
       gridGeometrySection.classList.remove('collapsed');
     }
-    if (layerCardGeometry) layerCardGeometry.style.display = 'none';
+    if (layerCardGeometry) layerCardGeometry.style.display = 'block';
+    if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "📐 Tower Geometry & Standoff";
     if (layerCardFlight) layerCardFlight.style.display = 'block';
     if (layerCardOptics) layerCardOptics.style.display = 'block';
     if (layerCardModes) layerCardModes.style.display = 'block';
     if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
+    if (exclusionAltContainer) exclusionAltContainer.classList.add('hidden');
     if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
+    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
+    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
     if (towerGeometryContainer) towerGeometryContainer.classList.remove('hidden');
     if (altitudeControlGroup) altitudeControlGroup.style.display = 'none';
     if (widthContainer) widthContainer.style.display = 'none';
@@ -6851,8 +6881,6 @@ function togglePatternParameters() {
     if (frontOverlapContainer) frontOverlapContainer.style.display = 'block';
     if (sideOverlapContainer) sideOverlapContainer.style.display = 'block';
     if (freeformInstructions) freeformInstructions.classList.add('hidden');
-    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
-    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
     if (gimbalPitchSlider && (!gimbalPitchSlider.value || parseFloat(gimbalPitchSlider.value) === -90)) {
       gimbalPitchSlider.value = 0;
       if (typeof updateGimbalPitchVisualizer === 'function') {
@@ -6863,9 +6891,16 @@ function togglePatternParameters() {
   } else {
     if (gridGeometrySection) gridGeometrySection.style.display = 'block';
     if (layerCardGeometry) layerCardGeometry.style.display = 'block';
+    if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "📐 Coverage & Geometry";
     if (layerCardFlight) layerCardFlight.style.display = 'block';
     if (layerCardOptics) layerCardOptics.style.display = 'block';
     if (layerCardModes) layerCardModes.style.display = 'block';
+    if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
+    if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
+    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
+    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
+    if (exclusionAltContainer) exclusionAltContainer.classList.add('hidden');
+    if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
     if (widthContainer) widthContainer.style.display = 'block';
     if (frontOverlapContainer) frontOverlapContainer.style.display = 'block';
     if (sideOverlapContainer) sideOverlapContainer.style.display = 'block';
@@ -20866,7 +20901,6 @@ function init3DPreview() {
 
     // Fetch tiles asynchronously based on Leaflet active layer
     const isSatellite = map.hasLayer(satelliteLayer);
-    const subdomains = ['a', 'b', 'c'];
     let loadedTilesCount = 0;
     const tileImages = [];
 
@@ -20881,8 +20915,7 @@ function init3DPreview() {
         if (isSatellite) {
           url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${tileZoom}/${tileY}/${tileX}`;
         } else {
-          const s = subdomains[Math.abs(tileX + tileY) % 3];
-          url = `https://${s}.tile.openstreetmap.org/${tileZoom}/${tileX}/${tileY}.png`;
+          url = `https://tile.openstreetmap.org/${tileZoom}/${tileX}/${tileY}.png`;
         }
 
         tileImages.push({ img, dx: dx + 1, dy: dy + 1 });

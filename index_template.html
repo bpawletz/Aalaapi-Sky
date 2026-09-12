@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.95.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.95.3</span></h1>
         </div>
       </div>
 
@@ -358,7 +358,7 @@
           <!-- Card 1: Coverage & Geometry -->
           <div id="layer-card-geometry" class="layer-subgroup-card">
             <div class="layer-subgroup-header">
-              <span>📐 Coverage &amp; Geometry</span>
+              <span id="layer-card-geometry-title">📐 Coverage &amp; Geometry</span>
             </div>
 
             <div class="control-group">
@@ -2559,7 +2559,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.95.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.95.3</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -2625,6 +2625,22 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.95.3):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Section 2 Pattern Controls Restoration:</strong> Resolved control visibility conflict where selecting Tower (<code>tower</code>), Road Following (<code>road-following</code>), or Exclusion Polygon (<code>exclusion-freeform</code>) hid Card 1 (<code>#layer-card-geometry</code>).</li>
+              <li><strong>Tower Audit Parameters Restored:</strong> Re-exposed Card 1 <code>#layer-card-geometry</code> and <code>#tower-geometry-container</code> when Tower pattern is selected, restoring access to Standoff Radius, Min/Max Height (AGL), Guy-Wire Safety Buffer, Capture Movement Pattern, and Altitude Order sliders.</li>
+              <li><strong>Road Following Controls Restored:</strong> Re-exposed Card 1 <code>#layer-card-geometry</code>, <code>#road-offset-container</code>, and <code>#road-snap-container</code> when Road Following is selected, restoring the Road Offset Distance slider and Snap to Roads auto-routing toggle.</li>
+              <li><strong>Exclusion Polygon Airspace Controls Restored:</strong> Re-exposed Card 1 <code>#layer-card-geometry</code>, <code>#exclusion-altitude-container</code>, and <code>#exclusion-freeform-note</code> for Exclusion Polygons, restoring Min/Max Altitude (Floor/Ceiling) sliders and Detour Routing Strategy.</li>
+              <li><strong>Dynamic Card 1 Header Badges:</strong> Added <code>#layer-card-geometry-title</code> dynamically updating Card 1 header title to match pattern context (<em>Tower Geometry &amp; Standoff</em>, <em>Road Path &amp; Routing</em>, <em>Exclusion Volume &amp; Airspace</em>, <em>Exclusion Boundary &amp; Airspace</em>, <em>Coverage &amp; Geometry</em>).</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.95.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>OpenStreetMap Tile URL Compliance:</strong> Updated Leaflet base map and 3D preview ground textures to use the official <code>https://tile.openstreetmap.org/{z}/{x}/{y}.png</code> endpoint without deprecated <code>{s}</code> subdomain rotation per OSM Foundation policy.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.95.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
