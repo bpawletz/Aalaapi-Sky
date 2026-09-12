@@ -359,7 +359,7 @@ function setCorsHeaders(res) {
 }
 
 // Execute PowerShell COM helper for MTP operations
-function runMtpScript(scriptContent) {
+function runMtpScript(scriptContent, timeoutMs = 25000) {
   if (!IS_WINDOWS) {
     return Promise.resolve({
       success: false,
@@ -371,7 +371,7 @@ function runMtpScript(scriptContent) {
     execFile(
       'powershell.exe',
       ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', encodedCommand],
-      { maxBuffer: 10 * 1024 * 1024, timeout: 25000 },
+      { maxBuffer: 10 * 1024 * 1024, timeout: timeoutMs },
       (error, stdout, stderr) => {
         if (error) {
           resolve({ success: false, error: stderr || error.message });
@@ -1036,26 +1036,155 @@ foreach ($d in $drives) {
   return { success: false, error: res.error || 'Failed to detect media devices', devices: [] };
 }
 
+// Extract high-definition 960x720 screennail from JPEG APP2 Multi-Picture Format (MPF)
+function extractMpfPreview(buf) {
+  if (!buf || !Buffer.isBuffer(buf) || buf.length < 100) return null;
+  const mpfIdx = buf.indexOf(Buffer.from([0x4D, 0x50, 0x46, 0x00])); // "MPF\0"
+  if (mpfIdx === -1) return null;
+  const tiffStart = mpfIdx + 4;
+  if (tiffStart + 18 >= buf.length) return null;
+  const isLE = buf[tiffStart] === 0x49 && buf[tiffStart + 1] === 0x49;
+  const readU16 = (o) => (isLE ? buf.readUInt16LE(o) : buf.readUInt16BE(o));
+  const readU32 = (o) => (isLE ? buf.readUInt32LE(o) : buf.readUInt32BE(o));
+  const ifdOffset = readU32(tiffStart + 4);
+  if (tiffStart + ifdOffset + 2 > buf.length) return null;
+  const numEntries = readU16(tiffStart + ifdOffset);
+  let p = tiffStart + ifdOffset + 2;
+  let mpEntryOffset = null;
+  for (let i = 0; i < numEntries; i++) {
+    if (p + 12 > buf.length) break;
+    const tag = readU16(p);
+    if (tag === 0xb002) {
+      mpEntryOffset = tiffStart + readU32(p + 8);
+      break;
+    }
+    p += 12;
+  }
+  if (!mpEntryOffset || mpEntryOffset + 32 > buf.length) return null;
+  const img2Size = readU32(mpEntryOffset + 16 + 4);
+  const img2RelOff = readU32(mpEntryOffset + 16 + 8);
+  if (img2Size > 0 && img2RelOff > 0) {
+    const absOff = tiffStart + img2RelOff;
+    if (absOff + img2Size <= buf.length) {
+      return buf.subarray(absOff, absOff + img2Size);
+    }
+  }
+  return null;
+}
+
+// Extract compact 160x120 thumbnail from JPEG APP1 EXIF segment
+function extractExifThumbnail(buf) {
+  if (!buf || !Buffer.isBuffer(buf) || buf.length < 100) return null;
+  let offset = 2;
+  while (offset < Math.min(buf.length - 4, 131072)) {
+    if (buf[offset] === 0xFF && buf[offset + 1] === 0xE1) {
+      const len = buf.readUInt16BE(offset + 2);
+      const app1 = buf.subarray(offset + 4, offset + 2 + len);
+      if (app1.length > 10 && app1.slice(0, 4).toString('ascii') === 'Exif') {
+        for (let i = 10; i < app1.length - 4; i++) {
+          if (app1[i] === 0xFF && app1[i + 1] === 0xD8) {
+            for (let j = app1.length - 2; j > i + 2; j--) {
+              if (app1[j] === 0xFF && app1[j + 1] === 0xD9) {
+                return app1.subarray(i, j + 2);
+              }
+            }
+          }
+        }
+      }
+      break;
+    }
+    offset++;
+  }
+  return null;
+}
+
 async function pullMediaPhotos(options = {}) {
   const missionUuid = options.missionUuid || 'mission_' + Date.now();
   const targetDir = path.join(ARCHIVE_DIR, missionUuid);
   const rawDir = path.join(targetDir, 'photos', 'raw');
   const previewDir = path.join(targetDir, 'photos', 'previews');
+  const thumbDir = path.join(targetDir, 'photos', 'thumbnails');
   const annotatedDir = path.join(targetDir, 'photos', 'annotated');
 
-  [rawDir, previewDir, annotatedDir].forEach(d => {
+  [rawDir, previewDir, thumbDir, annotatedDir].forEach(d => {
     if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
   });
 
   const filterByTime = options.filterByTime !== false;
   const timeStart = options.timeWindow?.start ? new Date(options.timeWindow.start).getTime() : null;
   const timeEnd = options.timeWindow?.end ? new Date(options.timeWindow.end).getTime() : null;
-  // Safety buffer of 60 seconds around mission flight window
-  const bufferMs = 60 * 1000;
+  // Safety buffer of 300 seconds (5 mins) around mission flight window
+  const bufferMs = 300 * 1000;
   const filterMinTimeStr = (filterByTime && timeStart) ? new Date(timeStart - bufferMs).toISOString() : '';
   const filterMaxTimeStr = (filterByTime && timeEnd) ? new Date(timeEnd + bufferMs).toISOString() : '';
 
-  const psScript = `
+  // 1. Direct Node filesystem copy for detected drive letters (e.g. E:\DCIM)
+  let directCopiedCount = 0;
+  try {
+    const devRes = await detectMediaDevices();
+    if (devRes.success && Array.isArray(devRes.devices)) {
+      const driveDevs = devRes.devices.filter(d => d.type === 'drive' && d.rootPath && fs.existsSync(d.rootPath));
+      for (const dev of driveDevs) {
+        function scanDir(dir) {
+          let results = [];
+          try {
+            const list = fs.readdirSync(dir, { withFileTypes: true });
+            for (const item of list) {
+              const full = path.join(dir, item.name);
+              if (item.isDirectory()) {
+                results.push(...scanDir(full));
+              } else if (/\.(jpe?g|dng)$/i.test(item.name)) {
+                results.push({ name: item.name, path: full, stat: fs.statSync(full) });
+              }
+            }
+          } catch (_) {}
+          return results;
+        }
+
+        const driveFiles = scanDir(dev.rootPath);
+        for (const fileObj of driveFiles) {
+          let include = true;
+          if (filterByTime && timeStart) {
+            include = false;
+            // Check DJI filename timestamp: DJI_YYYYMMDDHHMMSS_*.JPG
+            const m = fileObj.name.match(/^DJI_(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})_/i);
+            if (m) {
+              const [_, Y, M, D, h, mnt, s] = m;
+              const fnUtc = new Date(Date.UTC(+Y, +M - 1, +D, +h, +mnt, +s)).getTime();
+              const fnLoc = new Date(+Y, +M - 1, +D, +h, +mnt, +s).getTime();
+              const t0 = timeStart - bufferMs;
+              const t1 = (timeEnd || timeStart + 3600000) + bufferMs;
+              if ((fnUtc >= t0 && fnUtc <= t1) || (fnLoc >= t0 && fnLoc <= t1)) {
+                include = true;
+              }
+            }
+            if (!include) {
+              const mtime = fileObj.stat.mtime.getTime();
+              if (mtime >= timeStart - bufferMs && mtime <= (timeEnd || timeStart + 3600000) + bufferMs) {
+                include = true;
+              }
+            }
+          }
+
+          if (include) {
+            const dest = path.join(rawDir, fileObj.name);
+            if (!fs.existsSync(dest)) {
+              try {
+                fs.copyFileSync(fileObj.path, dest);
+                directCopiedCount++;
+              } catch (_) {}
+            }
+          }
+        }
+      }
+    }
+  } catch (directErr) {
+    console.warn('[MEDIA PULL] Direct drive copy note:', directErr.message);
+  }
+
+  // 2. Fallback to PowerShell MTP device pull if no drive letters were copied or for USB MTP aircraft/controllers
+  if (directCopiedCount === 0) {
+    const psScript = `
 $shell = New-Object -ComObject Shell.Application
 $thisPC = $shell.Namespace(17)
 $rawDir = "${rawDir.replace(/\\/g, '\\\\')}"
@@ -1098,7 +1227,7 @@ function Copy-MatchingFiles($folderItem) {
 $drives = Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Root -and (Test-Path (Join-Path $_.Root "DCIM")) }
 foreach ($d in $drives) {
     $dcim = Join-Path $d.Root "DCIM"
-    $files = @(Get-ChildItem -Path $dcim -File -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Extension -match '^\.(jpg|jpeg|dng)$' })
+    $files = @(Get-ChildItem -Path $dcim -File -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Extension -match '^\\.(jpg|jpeg|dng)$' })
     foreach ($f in $files) {
         $dest = Join-Path $rawDir $f.Name
         if (-not (Test-Path $dest)) {
@@ -1142,18 +1271,52 @@ if ($copied.Count -eq 0 -and $thisPC) {
 } | ConvertTo-Json -Depth 3 -Compress
 `;
 
-  await runMtpScript(psScript);
+    await runMtpScript(psScript, 600000);
+  }
 
   let rawFiles = [];
   try {
     rawFiles = fs.readdirSync(rawDir).filter(f => /\.(jpe?g|dng)$/i.test(f));
+    rawFiles.sort((a, b) => a.localeCompare(b));
   } catch (e) {}
 
+  // 3. Generate web-optimized 960x720 previews and 160x120 thumbnails for all ingested photos
   rawFiles.forEach(f => {
     const src = path.join(rawDir, f);
-    const dst = path.join(previewDir, f);
-    if (!fs.existsSync(dst)) {
-      try { fs.copyFileSync(src, dst); } catch (e) {}
+    const prevDst = path.join(previewDir, f);
+    const thumbDst = path.join(thumbDir, f);
+
+    let needsPrev = !fs.existsSync(prevDst);
+    if (!needsPrev) {
+      try { needsPrev = fs.statSync(prevDst).size > 3 * 1024 * 1024; } catch (_) {}
+    }
+    let needsThumb = !fs.existsSync(thumbDst);
+    if (!needsThumb) {
+      try { needsThumb = fs.statSync(thumbDst).size > 500 * 1024; } catch (_) {}
+    }
+
+    if (needsPrev || needsThumb) {
+      try {
+        const fileBuf = fs.readFileSync(src);
+        const mpfPreview = extractMpfPreview(fileBuf);
+        const exifThumb = extractExifThumbnail(fileBuf);
+
+        if (mpfPreview && needsPrev) {
+          fs.writeFileSync(prevDst, mpfPreview);
+        } else if (needsPrev && !fs.existsSync(prevDst)) {
+          fs.copyFileSync(src, prevDst);
+        }
+
+        if (exifThumb && needsThumb) {
+          fs.writeFileSync(thumbDst, exifThumb);
+        } else if (needsThumb && !fs.existsSync(thumbDst)) {
+          fs.copyFileSync(fs.existsSync(prevDst) ? prevDst : src, thumbDst);
+        }
+      } catch (_) {
+        if (!fs.existsSync(prevDst)) {
+          try { fs.copyFileSync(src, prevDst); } catch (_) {}
+        }
+      }
     }
   });
 
@@ -1168,14 +1331,15 @@ if ($copied.Count -eq 0 -and $thisPC) {
       id: `PHOTO_${String(idx + 1).padStart(4, '0')}`,
       filename: fn,
       previewUrl: `/scratch/mission_archives/${missionUuid}/photos/previews/${encodeURIComponent(fn)}`,
+      thumbnailUrl: `/scratch/mission_archives/${missionUuid}/photos/thumbnails/${encodeURIComponent(fn)}`,
       rawPath: path.join(rawDir, fn),
       waypointIndex: idx,
       timestamp: capturedTime
     };
   });
 
-  const telemetry = options.telemetry || { points: [] };
-  const waypoints = options.waypoints || [];
+  const telemetry = (options.telemetry && Array.isArray(options.telemetry.points)) ? options.telemetry : { points: [] };
+  const waypoints = Array.isArray(options.waypoints) ? options.waypoints : [];
   const correlated = correlatePhotosWithTelemetry(photosMetadata, telemetry.points, waypoints);
 
   const manifest = {
@@ -1196,7 +1360,7 @@ if ($copied.Count -eq 0 -and $thisPC) {
   const manifestPath = path.join(targetDir, 'inspection_manifest.json');
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
 
-  // Index photo records into SQLite
+  // Index photo records into SQLite with thumbnail_url and preview_url
   if (diagDb && typeof diagDb.savePhotoRecords === 'function') {
     diagDb.savePhotoRecords(missionUuid, correlated);
   }
@@ -2313,6 +2477,10 @@ module.exports = {
   transferToRc2,
   pullFromRc2,
   extractLatestFlight,
+  detectMediaDevices,
+  pullMediaPhotos,
+  extractMpfPreview,
+  extractExifThumbnail,
   stopScanners,
   killExistingCompanion,
   getLanAddresses,

@@ -85,6 +85,7 @@ class DiagnosticsDatabase {
           filename TEXT NOT NULL,
           raw_path TEXT,
           preview_url TEXT,
+          thumbnail_url TEXT,
           waypoint_index INTEGER,
           captured_at TEXT,
           actual_lat REAL,
@@ -211,6 +212,16 @@ class DiagnosticsDatabase {
         }
         this.db.exec('CREATE INDEX IF NOT EXISTS idx_mission_valid ON mission_diagnostics (is_valid);');
         this.db.exec('CREATE INDEX IF NOT EXISTS idx_mission_archive_id ON mission_diagnostics (archive_id);');
+
+        // Safe migration for photo_records thumbnail_url
+        try {
+          const photoCols = new Set(
+            this.db.prepare("PRAGMA table_info(photo_records)").all().map(c => c.name)
+          );
+          if (!photoCols.has('thumbnail_url')) {
+            this.db.exec('ALTER TABLE photo_records ADD COLUMN thumbnail_url TEXT;');
+          }
+        } catch (photoMigErr) {}
       } catch (migrationErr) {}
 
       // Auto-restore any missing mission exports from disk backups if using the default database
@@ -494,12 +505,12 @@ class DiagnosticsDatabase {
     try {
       const stmt = this.db.prepare(`
         INSERT INTO photo_records (
-          photo_id, mission_uuid, filename, raw_path, preview_url, waypoint_index,
+          photo_id, mission_uuid, filename, raw_path, preview_url, thumbnail_url, waypoint_index,
           captured_at, actual_lat, actual_lon, actual_alt_agl, actual_pitch, actual_yaw,
           planned_lat, planned_lon, planned_alt, delta_h_meters, delta_v_meters,
           gsd_cm, severity, annotation_count, annotations_json
         ) VALUES (
-          ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?, ?, ?,
           ?, ?, ?, ?, ?, ?,
           ?, ?, ?, ?, ?,
           ?, ?, ?, ?
@@ -508,6 +519,7 @@ class DiagnosticsDatabase {
           filename = excluded.filename,
           raw_path = excluded.raw_path,
           preview_url = excluded.preview_url,
+          thumbnail_url = excluded.thumbnail_url,
           waypoint_index = excluded.waypoint_index,
           captured_at = excluded.captured_at,
           actual_lat = excluded.actual_lat,
@@ -532,6 +544,7 @@ class DiagnosticsDatabase {
         const filename = p.filename || '';
         const rawPath = p.rawPath || '';
         const previewUrl = p.previewUrl || '';
+        const thumbnailUrl = p.thumbnailUrl || p.previewUrl || '';
         const waypointIndex = p.waypointIndex !== undefined ? p.waypointIndex : null;
         const capturedAt = p.timestamp || new Date().toISOString();
         const actualLat = p.actual?.lat ?? null;
@@ -551,7 +564,7 @@ class DiagnosticsDatabase {
         const annotationsJson = JSON.stringify(annotations);
 
         stmt.run(
-          photoId, missionUuid, filename, rawPath, previewUrl, waypointIndex,
+          photoId, missionUuid, filename, rawPath, previewUrl, thumbnailUrl, waypointIndex,
           capturedAt, actualLat, actualLon, actualAltAgl, actualPitch, actualYaw,
           plannedLat, plannedLon, plannedAlt, deltaH, deltaV,
           gsdCm, severity, annotationCount, annotationsJson
