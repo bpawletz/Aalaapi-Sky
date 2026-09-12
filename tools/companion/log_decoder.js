@@ -817,6 +817,361 @@ function parseGpxTelemetry(gpxText, flightId = 'Imported_Flight.gpx') {
   }
 }
 
+/**
+ * Calculates Ground Sampling Distance (GSD) in cm/pixel and m/pixel
+ * based on flight altitude AGL and camera sensor parameters.
+ * Defaults to DJI Mini 4 Pro specs (1/1.3" sensor, 24mm equivalent focal length).
+ */
+function calculateGSD(altAglMeters, sensorWidthMm = 9.6, focalLengthMm = 6.72, imageWidthPx = 4032) {
+  const alt = parseFloat(altAglMeters);
+  if (isNaN(alt) || alt <= 0) {
+    return {
+      gsdCm: 0,
+      gsdMeters: 0,
+      gsdInches: 0,
+      cmPerPixel: 0,
+      metersPerPixel: 0,
+      inPerPixel: 0
+    };
+  }
+  const sW = parseFloat(sensorWidthMm) || 9.6;
+  const fL = parseFloat(focalLengthMm) || 6.72;
+  const iW = parseInt(imageWidthPx, 10) || 4032;
+
+  // GSD = (sensorWidth_mm * altitude_m * 100) / (focalLength_mm * imageWidth_px) in cm/px
+  const gsdCm = (sW * alt * 100) / (fL * iW);
+  const gsdMeters = gsdCm / 100;
+  const gsdInches = gsdCm / 2.54;
+
+  const roundedCm = Math.round(gsdCm * 100) / 100;
+  const roundedM = Math.round(gsdMeters * 10000) / 10000;
+  const roundedIn = Math.round(gsdInches * 100) / 100;
+
+  return {
+    gsdCm: roundedCm,
+    gsdMeters: roundedM,
+    gsdInches: roundedIn,
+    cmPerPixel: roundedCm,
+    metersPerPixel: roundedM,
+    inPerPixel: roundedIn
+  };
+}
+
+/**
+ * Calculates real-world segment lengths, total perimeter, and enclosed area
+ * for boundary lines and perimeters drawn over photos or map coordinates.
+ */
+function calculateBoundaryDimensions(coordinates, gsdMeters = null) {
+  if (!Array.isArray(coordinates) || coordinates.length < 2) {
+    return { segments: [], totalPerimeterMeters: 0, totalPerimeterFt: 0, areaM2: 0, areaSqFt: 0 };
+  }
+
+  const segments = [];
+  let totalMeters = 0;
+  const isGeo = coordinates[0].lat !== undefined && coordinates[0].lon !== undefined;
+
+  if (isGeo) {
+    for (let i = 0; i < coordinates.length - 1; i++) {
+      const p1 = coordinates[i];
+      const p2 = coordinates[i + 1];
+      const dist = haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon);
+      segments.push({
+        fromIndex: i,
+        toIndex: i + 1,
+        lengthMeters: Math.round(dist * 100) / 100,
+        meters: Math.round(dist * 100) / 100,
+        lengthFt: Math.round(dist * 3.28084 * 100) / 100,
+        feet: Math.round(dist * 3.28084 * 100) / 100
+      });
+      totalMeters += dist;
+    }
+
+    // Shoelace area formula on local equirectangular approximation
+    let areaM2 = 0;
+    if (coordinates.length >= 3) {
+      const lat0 = coordinates[0].lat * (Math.PI / 180);
+      const mPerDegLat = 111132.954;
+      const mPerDegLon = 111132.954 * Math.cos(lat0);
+
+      const xyPoints = coordinates.map(c => ({
+        x: (c.lon - coordinates[0].lon) * mPerDegLon,
+        y: (c.lat - coordinates[0].lat) * mPerDegLat
+      }));
+
+      let sum = 0;
+      for (let i = 0; i < xyPoints.length; i++) {
+        const j = (i + 1) % xyPoints.length;
+        sum += xyPoints[i].x * xyPoints[j].y - xyPoints[j].x * xyPoints[i].y;
+      }
+      areaM2 = Math.abs(sum) / 2;
+    }
+
+    const pM = Math.round(totalMeters * 100) / 100;
+    const pFt = Math.round(totalMeters * 3.28084 * 100) / 100;
+    const aM2 = Math.round(areaM2 * 10) / 10;
+    const aSqFt = Math.round(areaM2 * 10.7639 * 10) / 10;
+
+    return {
+      segments,
+      totalPerimeterMeters: pM,
+      perimeterMeters: pM,
+      totalPerimeterFt: pFt,
+      perimeterFeet: pFt,
+      areaM2: aM2,
+      areaSquareMeters: aM2,
+      areaSqFt: aSqFt,
+      areaSquareFeet: aSqFt
+    };
+  }
+
+  // Pixel coordinates with GSD conversion
+  const scale = gsdMeters || 0.01; // default 1cm/px if uncalibrated
+  for (let i = 0; i < coordinates.length - 1; i++) {
+    const p1 = coordinates[i];
+    const p2 = coordinates[i + 1];
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    const pxDist = Math.sqrt(dx * dx + dy * dy);
+    const distM = pxDist * scale;
+    segments.push({
+      fromIndex: i,
+      toIndex: i + 1,
+      lengthMeters: Math.round(distM * 100) / 100,
+      meters: Math.round(distM * 100) / 100,
+      lengthFt: Math.round(distM * 3.28084 * 100) / 100,
+      feet: Math.round(distM * 3.28084 * 100) / 100,
+      pixelDistance: Math.round(pxDist)
+    });
+    totalMeters += distM;
+  }
+
+  let areaM2 = 0;
+  if (coordinates.length >= 3) {
+    let sum = 0;
+    for (let i = 0; i < coordinates.length; i++) {
+      const j = (i + 1) % coordinates.length;
+      sum += coordinates[i].x * coordinates[j].y - coordinates[j].x * coordinates[i].y;
+    }
+    const pixelArea = Math.abs(sum) / 2;
+    areaM2 = pixelArea * (scale * scale);
+  }
+
+  const pM = Math.round(totalMeters * 100) / 100;
+  const pFt = Math.round(totalMeters * 3.28084 * 100) / 100;
+  const aM2 = Math.round(areaM2 * 10) / 10;
+  const aSqFt = Math.round(areaM2 * 10.7639 * 10) / 10;
+
+  return {
+    segments,
+    totalPerimeterMeters: pM,
+    perimeterMeters: pM,
+    totalPerimeterFt: pFt,
+    perimeterFeet: pFt,
+    areaM2: aM2,
+    areaSquareMeters: aM2,
+    areaSqFt: aSqFt,
+    areaSquareFeet: aSqFt
+  };
+}
+
+/**
+ * Calculates the 4-corner ground coverage footprint polygon for an aerial photo
+ * based on drone location, altitude AGL, gimbal pitch, aircraft heading, and camera FOV.
+ */
+function calculateGroundFootprint(lat, lon, altAgl, gimbalPitch = -90, heading = 0, hFov = 82.1, vFov = 60.0) {
+  const alt = Math.max(1, parseFloat(altAgl) || 20);
+  const pitchDeg = parseFloat(gimbalPitch) !== undefined ? parseFloat(gimbalPitch) : -90;
+  const headDeg = parseFloat(heading) || 0;
+
+  // Gimbal angle relative to ground (nadir = 90 deg down)
+  // Pitch is typically negative in DJI WPML (-90 is straight down, 0 is horizon)
+  const tiltFromNadir = Math.abs(pitchDeg + 90) * (Math.PI / 180);
+  const halfH = (hFov / 2) * (Math.PI / 180);
+  const halfV = (vFov / 2) * (Math.PI / 180);
+
+  // Near and far ground distances along camera optical axis projection
+  let dNear, dFar;
+  if (tiltFromNadir <= halfV) {
+    // Nadir or near-nadir: ground coverage spans behind and in front of nadir
+    dNear = -alt * Math.tan(halfV - tiltFromNadir);
+    dFar = alt * Math.tan(tiltFromNadir + halfV);
+  } else {
+    // Oblique: both near and far boundaries are in front of drone
+    dNear = alt * Math.tan(tiltFromNadir - halfV);
+    dFar = alt * Math.tan(Math.min(Math.PI / 2.1, tiltFromNadir + halfV));
+  }
+  const dCenter = alt * Math.tan(tiltFromNadir);
+
+  // Lateral half-widths at near and far ground edges
+  const wNear = Math.sqrt(alt * alt + dNear * dNear) * Math.tan(halfH);
+  const wFar = Math.sqrt(alt * alt + dFar * dFar) * Math.tan(halfH);
+
+  // Heading rotation (0 deg = North, 90 deg = East)
+  const radH = headDeg * (Math.PI / 180);
+  const cosH = Math.cos(radH);
+  const sinH = Math.sin(radH);
+
+  // Local meter offsets relative to drone position (x = East, y = North)
+  // Near-Left (rear-left), Near-Right (rear-right), Far-Right (front-right), Far-Left (front-left)
+  const localCorners = [
+    { x: -wNear * cosH + dNear * sinH, y: -wNear * sinH + dNear * cosH },
+    { x: wNear * cosH + dNear * sinH, y: wNear * sinH + dNear * cosH },
+    { x: wFar * cosH + dFar * sinH, y: wFar * sinH + dFar * cosH },
+    { x: -wFar * cosH + dFar * sinH, y: -wFar * sinH + dFar * cosH }
+  ];
+
+  const mPerDegLat = 111132.954;
+  const mPerDegLon = 111132.954 * Math.cos(lat * (Math.PI / 180));
+
+  const polygon = localCorners.map(c => [
+    Math.round((lat + c.y / mPerDegLat) * 1000000) / 1000000,
+    Math.round((lon + c.x / mPerDegLon) * 1000000) / 1000000
+  ]);
+
+  // Close polygon
+  polygon.push(polygon[0]);
+
+  return {
+    type: 'Polygon',
+    coordinates: [polygon],
+    dimensionsMeters: {
+      widthNear: Math.round(wNear * 2 * 10) / 10,
+      widthFar: Math.round(wFar * 2 * 10) / 10,
+      length: Math.round(Math.abs(dFar - dNear) * 10) / 10,
+      centerDist: Math.round(dCenter * 10) / 10
+    }
+  };
+}
+
+/**
+ * Correlates raw ingested photos with flight telemetry points and planned waypoints.
+ * Calculates variance, GSD, ground footprint, and assigns unique inspection IDs.
+ */
+function correlatePhotosWithTelemetry(photos, telemetryPoints, plannedWaypoints = []) {
+  if (!Array.isArray(photos) || photos.length === 0) return [];
+  const tPoints = Array.isArray(telemetryPoints) ? telemetryPoints : [];
+  const wps = Array.isArray(plannedWaypoints) ? plannedWaypoints : [];
+
+  return photos.map((photo, pIdx) => {
+    // 1. Attempt to match photo with telemetry point by timestamp or trigger index
+    let matchedTelem = null;
+    if (photo.timestamp && tPoints.length > 0) {
+      const pTime = new Date(photo.timestamp).getTime();
+      let bestDiff = Infinity;
+      for (const tp of tPoints) {
+        if (tp.timestamp) {
+          const diff = Math.abs(new Date(tp.timestamp).getTime() - pTime);
+          if (diff < bestDiff) {
+            bestDiff = diff;
+            matchedTelem = tp;
+          }
+        }
+      }
+    }
+
+    // Fallback: match by sequence of photo trigger points (isPhoto: true)
+    if (!matchedTelem && tPoints.length > 0) {
+      const photoTriggerPoints = tPoints.filter(tp => tp.isPhoto);
+      if (photoTriggerPoints[pIdx]) {
+        matchedTelem = photoTriggerPoints[pIdx];
+      } else {
+        const step = Math.floor(tPoints.length / Math.max(1, photos.length));
+        matchedTelem = tPoints[Math.min(tPoints.length - 1, pIdx * step)];
+      }
+    }
+
+    const lat = (matchedTelem && matchedTelem.lat !== undefined) ? matchedTelem.lat : (photo.lat || 0);
+    const lon = (matchedTelem && matchedTelem.lon !== undefined) ? matchedTelem.lon : (photo.lon || 0);
+    const telemAlt = matchedTelem ? (matchedTelem.alt !== undefined ? matchedTelem.alt : (matchedTelem.altAgl !== undefined ? matchedTelem.altAgl : matchedTelem.altitude)) : undefined;
+    const alt = telemAlt !== undefined ? telemAlt : (photo.alt || 25);
+    const telemPitch = matchedTelem ? (matchedTelem.pitch !== undefined ? matchedTelem.pitch : matchedTelem.gimbalPitch) : undefined;
+    const pitch = telemPitch !== undefined ? telemPitch : (photo.pitch || -45);
+    const telemHeading = matchedTelem ? (matchedTelem.yaw !== undefined ? matchedTelem.yaw : matchedTelem.heading) : undefined;
+    const heading = telemHeading !== undefined ? telemHeading : (photo.heading || 0);
+    const speed = matchedTelem ? (matchedTelem.speed || 0) : 0;
+    const battery = matchedTelem ? (matchedTelem.batteryPercent !== undefined ? matchedTelem.batteryPercent : (matchedTelem.battery || null)) : null;
+    const satellites = matchedTelem ? (matchedTelem.satellites || 24) : 24;
+
+    // 2. Correlate with planned waypoint
+    let planned = null;
+    let assignedWpIdx = photo.waypointIndex !== undefined ? photo.waypointIndex : (matchedTelem && matchedTelem.waypointIndex !== null ? matchedTelem.waypointIndex : pIdx);
+    if (wps[assignedWpIdx]) {
+      planned = wps[assignedWpIdx];
+    } else if (wps.length > 0) {
+      // Find geographically closest planned waypoint
+      let bestDist = Infinity;
+      let bestIdx = 0;
+      wps.forEach((wp, wIdx) => {
+        const d = haversineDistance(lat, lon, wp.lat, wp.lon);
+        if (d < bestDist) {
+          bestDist = d;
+          bestIdx = wIdx;
+        }
+      });
+      planned = wps[bestIdx];
+      assignedWpIdx = bestIdx;
+    }
+
+    // 3. Compute planned vs actual variances
+    let variance = {
+      horizontalDeltaMeters: 0,
+      verticalDeltaMeters: 0,
+      gimbalPitchDeltaDeg: 0,
+      headingDeltaDeg: 0,
+      isCompliant: true
+    };
+
+    if (planned) {
+      const hDelta = haversineDistance(lat, lon, planned.lat, planned.lon);
+      const plannedAlt = planned.altitude !== undefined ? planned.altitude : (planned.alt || alt);
+      const vDelta = Math.abs(alt - plannedAlt);
+      const plannedPitch = planned.gimbalPitch !== undefined ? planned.gimbalPitch : (planned.pitch || pitch);
+      const pDelta = Math.abs(pitch - plannedPitch);
+
+      variance = {
+        horizontalDeltaMeters: Math.round(hDelta * 100) / 100,
+        verticalDeltaMeters: Math.round(vDelta * 100) / 100,
+        gimbalPitchDeltaDeg: Math.round(pDelta * 10) / 10,
+        isCompliant: (hDelta <= 1.0 && vDelta <= 1.0)
+      };
+    }
+
+    // 4. Compute GSD and ground footprint
+    const gsd = calculateGSD(alt, photo.sensorWidthMm || 9.6, photo.focalLengthMm || 6.72, photo.width || 4032);
+    const footprint = calculateGroundFootprint(lat, lon, alt, pitch, heading);
+
+    return {
+      photoId: photo.id || `PHOTO_${String(pIdx + 1).padStart(4, '0')}`,
+      filename: photo.filename || `DJI_${String(pIdx + 1).padStart(4, '0')}.JPG`,
+      rawFilename: photo.rawFilename || null,
+      waypointIndex: assignedWpIdx,
+      timestamp: photo.timestamp || (matchedTelem && matchedTelem.timestamp) || new Date().toISOString(),
+      actual: {
+        lat: Math.round(lat * 1000000) / 1000000,
+        lon: Math.round(lon * 1000000) / 1000000,
+        altMsl: Math.round(alt * 10) / 10,
+        altAgl: Math.round(alt * 10) / 10,
+        gimbalPitch: Math.round(pitch * 10) / 10,
+        heading: Math.round(heading * 10) / 10,
+        speed: Math.round(speed * 10) / 10,
+        battery,
+        satellites
+      },
+      planned: planned ? {
+        lat: planned.lat,
+        lon: planned.lon,
+        alt: planned.altitude !== undefined ? planned.altitude : planned.alt,
+        gimbalPitch: planned.gimbalPitch !== undefined ? planned.gimbalPitch : planned.pitch
+      } : null,
+      variance,
+      gsd,
+      footprint,
+      annotations: photo.annotations || [],
+      severity: photo.severity || (variance.isCompliant ? 'clean' : 'warning')
+    };
+  });
+}
+
 if (typeof module !== 'undefined') {
   module.exports = {
     haversineDistance,
@@ -825,6 +1180,11 @@ if (typeof module !== 'undefined') {
     parseKmlOrWpmlTelemetry,
     parseGpxTelemetry,
     formatTime,
-    formatISO8601ForFilename
+    formatISO8601ForFilename,
+    calculateGSD,
+    calculateBoundaryDimensions,
+    calculateGroundFootprint,
+    correlatePhotosWithTelemetry
   };
 }
+
