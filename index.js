@@ -194,6 +194,91 @@ function setTargetPolyEditMode(active) {
   }
 }
 
+let isLayerBoundaryEditActive = false;
+
+function setLayerBoundaryEditMode(active) {
+  isLayerBoundaryEditActive = !!active;
+  if (typeof document === 'undefined') return;
+
+  const btn = document.getElementById('btn-draw-layer-boundary');
+  const clearBtn = document.getElementById('btn-clear-layer-boundary');
+  const badge = document.getElementById('layer-boundary-vertex-badge');
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const polyLen = (activeLayer && Array.isArray(activeLayer.boundaryPolygon)) ? activeLayer.boundaryPolygon.length : 0;
+
+  if (typeof map !== 'undefined' && map && map.getContainer) {
+    try {
+      const container = map.getContainer();
+      if (container) {
+        container.style.cursor = isLayerBoundaryEditActive ? 'crosshair' : '';
+      }
+    } catch (e) {}
+  }
+
+  if (btn) {
+    if (isLayerBoundaryEditActive) {
+      btn.textContent = '🛑 Done Drawing';
+      btn.style.background = 'rgba(16, 185, 129, 0.35)';
+      btn.style.borderColor = '#10b981';
+      btn.style.color = '#34d399';
+    } else {
+      btn.textContent = polyLen >= 3 ? '✏️ Edit Boundary' : '✏️ Draw on Map';
+      btn.style.background = '';
+      btn.style.borderColor = '';
+      btn.style.color = '';
+    }
+  }
+
+  if (clearBtn) {
+    clearBtn.style.display = polyLen > 0 ? 'inline-block' : 'none';
+  }
+
+  if (badge) {
+    if (polyLen >= 3) {
+      badge.textContent = `${polyLen} Vertices`;
+      badge.style.background = 'rgba(16, 185, 129, 0.2)';
+      badge.style.color = '#34d399';
+    } else if (polyLen > 0) {
+      badge.textContent = `${polyLen} Pts (Drawing...)`;
+      badge.style.background = 'rgba(245, 158, 11, 0.2)';
+      badge.style.color = '#f59e0b';
+    } else {
+      badge.textContent = 'Auto-Bounds';
+      badge.style.background = 'rgba(56, 189, 248, 0.15)';
+      badge.style.color = '#38bdf8';
+    }
+  }
+}
+
+function addLayerBoundaryPoint(lat, lon) {
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  if (!activeLayer) return;
+  if (!Array.isArray(activeLayer.boundaryPolygon)) {
+    activeLayer.boundaryPolygon = [];
+  }
+  if (activeLayer.boundaryPolygon.length >= 3) {
+    const p0 = activeLayer.boundaryPolygon[0];
+    const distM = (typeof haversineDistance === 'function') ? haversineDistance(lat, lon, p0.lat, p0.lon) : 999;
+    if (distM < 15) {
+      setLayerBoundaryEditMode(false);
+      if (typeof updatePlan === 'function') updatePlan();
+      return;
+    }
+  }
+  activeLayer.boundaryPolygon.push({ lat, lon });
+  setLayerBoundaryEditMode(isLayerBoundaryEditActive);
+  if (typeof updatePlan === 'function') updatePlan();
+}
+
+function clearLayerBoundary() {
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  if (activeLayer) {
+    activeLayer.boundaryPolygon = [];
+  }
+  setLayerBoundaryEditMode(false);
+  if (typeof updatePlan === 'function') updatePlan();
+}
+
 // Geolocation state
 let userLocation = null;
 
@@ -751,6 +836,7 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     detourMode: 'inherit', // 'inherit', 'perimeter', 'overTop', 'smart'
     clearanceBuffer: 5,
     polygonVertices: [],
+    boundaryPolygon: [],
     filteredCount: 0,
     gridWidth: 100,
     gridHeight: 100,
@@ -1536,6 +1622,9 @@ function syncUiWithActiveLayer() {
   }
   if (typeof updateLayerHierarchyBadge === 'function') {
     updateLayerHierarchyBadge();
+  }
+  if (typeof setLayerBoundaryEditMode === 'function') {
+    setLayerBoundaryEditMode(false);
   }
 }
 
@@ -3723,6 +3812,10 @@ function initMap() {
     if (isAnyPopupOpen || autoPlanActive || isRouting) {
       return;
     }
+    if (isLayerBoundaryEditActive) {
+      addLayerBoundaryPoint(e.latlng.lat, e.latlng.lng);
+      return;
+    }
     const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
     const gridTypeEl = (typeof document !== 'undefined' && document) ? document.getElementById('grid-type') : null;
     const currentPattern = gridTypeEl ? gridTypeEl.value : (activeLayer ? activeLayer.pattern : 'double');
@@ -4813,6 +4906,21 @@ function initUIEventListeners() {
       setTargetPolyEditMode(true);
       updateGrid();
       saveAllSettingsToLocalStorage();
+    });
+  }
+
+  const drawLayerBoundaryBtn = document.getElementById('btn-draw-layer-boundary');
+  const clearLayerBoundaryBtn = document.getElementById('btn-clear-layer-boundary');
+  if (drawLayerBoundaryBtn) {
+    drawLayerBoundaryBtn.addEventListener('click', () => {
+      setLayerBoundaryEditMode(!isLayerBoundaryEditActive);
+      if (typeof updatePlan === 'function') updatePlan();
+      else if (typeof updateGrid === 'function') updateGrid();
+    });
+  }
+  if (clearLayerBoundaryBtn) {
+    clearLayerBoundaryBtn.addEventListener('click', () => {
+      clearLayerBoundary();
     });
   }
 
@@ -10541,7 +10649,19 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
   }
 
   // 2. Draw boundary overlay
-  if (waypoints.length === 0 || gridType === 'road-following' || gridType === 'freeform' || gridType === 'exclusion-box' || gridType === 'exclusion-freeform') {
+  if (activeLayer && Array.isArray(activeLayer.boundaryPolygon) && activeLayer.boundaryPolygon.length >= 2) {
+    const polyColor = activeLayer.color || '#06b6d4';
+    const latlngs = activeLayer.boundaryPolygon.map(p => [p.lat, p.lon]);
+    if (typeof L !== 'undefined' && typeof L.polygon === 'function' && typeof map !== 'undefined' && map) {
+      gridBoundsPolygon = L.polygon(latlngs, {
+        color: polyColor,
+        weight: 2.5,
+        dashArray: '6, 6',
+        fillColor: polyColor,
+        fillOpacity: 0.10
+      }).addTo(map);
+    }
+  } else if (waypoints.length === 0 || gridType === 'road-following' || gridType === 'freeform' || gridType === 'exclusion-box' || gridType === 'exclusion-freeform') {
     // No boundary overlay when no waypoints are active or for road-following/freeform/exclusion
   } else if (gridType === 'orbit' || gridType === 'multi-orbit' || gridType === 'grid-orbit-combo' || gridType === 'grid-multi-orbit-combo') {
     const maxRadius = (gridType === 'multi-orbit' || gridType === 'grid-multi-orbit-combo') ? gridWidth * 1.1 : gridWidth;
@@ -25580,6 +25700,162 @@ function initHeadingHelpDrawer() {
 }
 
 // =============================================================================
+// Forward Photogrammetric World-to-Camera Projection & Layer Boundaries (v1.100.0)
+// =============================================================================
+
+/**
+ * Projects a real-world geodetic point (lat, lon, alt) onto normalized photo coordinates (u, v)
+ * using a forward pinhole camera projective model based on drone camera pose.
+ */
+function projectGeoPointToPixel(geoPoint, cameraPose, options = {}) {
+  if (!geoPoint || !cameraPose || typeof geoPoint.lat !== 'number' || typeof geoPoint.lon !== 'number') {
+    return { u: 0.5, v: 0.5, opticalDepthMeters: 0, isInFront: false, isInsideFrame: false };
+  }
+
+  const camLat = typeof cameraPose.lat === 'number' ? cameraPose.lat : 0;
+  const camLon = typeof cameraPose.lon === 'number' ? cameraPose.lon : 0;
+  const camAlt = (typeof cameraPose.altAgl === 'number' && cameraPose.altAgl > 0) ? cameraPose.altAgl : ((typeof cameraPose.alt === 'number') ? cameraPose.alt : 25.0);
+  const pitchDeg = typeof cameraPose.gimbalPitch === 'number' ? cameraPose.gimbalPitch : -90.0;
+  const yawDeg = typeof cameraPose.heading === 'number' ? cameraPose.heading : 0.0;
+
+  const targetH = typeof options.targetHeightMeters === 'number' ? options.targetHeightMeters : 0.0;
+  const ptAlt = typeof geoPoint.alt === 'number' ? geoPoint.alt : targetH;
+
+  // 1. Geodetic to local East-North-Up (ENU)
+  const latRad = (camLat * Math.PI) / 180.0;
+  const dLatRad = ((geoPoint.lat - camLat) * Math.PI) / 180.0;
+  const dLonRad = ((geoPoint.lon - camLon) * Math.PI) / 180.0;
+  const R = 6378137.0; // WGS84 Earth radius in meters
+
+  const dN = dLatRad * R;
+  const dE = dLonRad * R * Math.cos(latRad);
+  const dU = ptAlt - camAlt;
+
+  // 2. Rotate by Camera Heading / Yaw (psi) around Up axis
+  const psi = (yawDeg * Math.PI) / 180.0;
+  const Xh = dE * Math.cos(psi) - dN * Math.sin(psi);
+  const Yh = dE * Math.sin(psi) + dN * Math.cos(psi);
+  const Zh = dU;
+
+  // 3. Rotate by Camera Gimbal Pitch (theta) around Transverse axis
+  const theta = (pitchDeg * Math.PI) / 180.0;
+  const cosTheta = Math.cos(theta);
+  const sinTheta = Math.sin(theta);
+
+  const Xcam = Xh;
+  const Ycam = Yh * cosTheta + Zh * sinTheta; // Optical depth in front of lens
+  const Zcam = -Yh * sinTheta + Zh * cosTheta; // Vertical in camera sensor frame
+
+  const sW = parseFloat(options.sensorWidthMm) || 9.6;
+  const fL = parseFloat(options.focalLengthMm) || 6.72;
+  const aspect = options.aspectRatio || (options.imageWidth && options.imageHeight ? options.imageWidth / options.imageHeight : (4 / 3));
+  const sH = sW / aspect;
+
+  const tanHalfH = sW / (2.0 * fL);
+  const tanHalfV = sH / (2.0 * fL);
+
+  const isInFront = Ycam > 0.05;
+  if (!isInFront) {
+    return {
+      u: 0.5,
+      v: 0.5,
+      opticalDepthMeters: Math.round(Ycam * 100) / 100,
+      isInFront: false,
+      isInsideFrame: false,
+      xCam: Math.round(Xcam * 100) / 100,
+      yCam: Math.round(Ycam * 100) / 100,
+      zCam: Math.round(Zcam * 100) / 100
+    };
+  }
+
+  const u = 0.5 + (Xcam / (2.0 * Ycam * tanHalfH));
+  const v = 0.5 - (Zcam / (2.0 * Ycam * tanHalfV));
+  const isInsideFrame = (u >= 0.0 && u <= 1.0 && v >= 0.0 && v <= 1.0);
+
+  return {
+    u: Math.round(u * 10000) / 10000,
+    v: Math.round(v * 10000) / 10000,
+    opticalDepthMeters: Math.round(Ycam * 100) / 100,
+    isInFront: true,
+    isInsideFrame,
+    xCam: Math.round(Xcam * 100) / 100,
+    yCam: Math.round(Ycam * 100) / 100,
+    zCam: Math.round(Zcam * 100) / 100
+  };
+}
+
+/**
+ * Projects a geographic polygon (array of lat/lon vertices) onto photo coordinates.
+ */
+function projectGeoPolygonToPhoto(geoPolygon, cameraPose, options = {}) {
+  if (!Array.isArray(geoPolygon) || geoPolygon.length < 2 || !cameraPose) {
+    return { points: [], hasVisiblePoints: false, hasPointsInFront: false, rawPolygon: geoPolygon || [] };
+  }
+
+  const points = geoPolygon.map((pt, idx) => {
+    const proj = projectGeoPointToPixel(pt, cameraPose, options);
+    return {
+      vertexIndex: idx,
+      lat: pt.lat,
+      lon: pt.lon,
+      u: proj.u,
+      v: proj.v,
+      opticalDepthMeters: proj.opticalDepthMeters,
+      isInFront: proj.isInFront,
+      isInsideFrame: proj.isInsideFrame
+    };
+  });
+
+  const hasVisiblePoints = points.some(p => p.isInsideFrame);
+  const hasPointsInFront = points.some(p => p.isInFront);
+
+  return {
+    points,
+    hasVisiblePoints,
+    hasPointsInFront,
+    rawPolygon: geoPolygon
+  };
+}
+
+/**
+ * Extracts or derives the geographic boundary polygon for a flight layer.
+ */
+function getLayerBoundaryGeoPolygon(layer) {
+  if (!layer) return [];
+  if (Array.isArray(layer.boundaryPolygon) && layer.boundaryPolygon.length >= 3) {
+    return layer.boundaryPolygon;
+  }
+  if (layer.pattern === 'target-splat' && Array.isArray(layer.targetPoly) && layer.targetPoly.length >= 3) {
+    return layer.targetPoly;
+  }
+  if (Array.isArray(layer.polygonVertices) && layer.polygonVertices.length >= 3) {
+    return layer.polygonVertices;
+  }
+  if (Array.isArray(layer.freeformWaypoints) && layer.freeformWaypoints.length >= 3) {
+    return layer.freeformWaypoints;
+  }
+
+  // Default survey / grid bounding box
+  const cLat = typeof layer.centerLat === 'number' ? layer.centerLat : (typeof activeCenterLat === 'number' ? activeCenterLat : 0);
+  const cLon = typeof layer.centerLon === 'number' ? layer.centerLon : (typeof activeCenterLon === 'number' ? activeCenterLon : 0);
+  const w = typeof layer.gridWidth === 'number' ? layer.gridWidth : (typeof gridWidth === 'number' ? gridWidth : 100);
+  const h = typeof layer.gridHeight === 'number' ? layer.gridHeight : (typeof gridHeight === 'number' ? gridHeight : 100);
+  const rot = typeof layer.gridRotation === 'number' ? layer.gridRotation : (typeof rotationDeg === 'number' ? rotationDeg : 0);
+
+  if ((cLat !== 0 || cLon !== 0) && typeof localToGeodetic === 'function') {
+    const halfW = w / 2.0;
+    const halfH = h / 2.0;
+    return [
+      localToGeodetic(-halfW, halfH, cLat, cLon, rot),  // TL
+      localToGeodetic(halfW, halfH, cLat, cLon, rot),   // TR
+      localToGeodetic(halfW, -halfH, cLat, cLon, rot),  // BR
+      localToGeodetic(-halfW, -halfH, cLat, cLon, rot)  // BL
+    ];
+  }
+  return [];
+}
+
+// =============================================================================
 // Photo Inspector, Interactive Annotation Marker & Boundary Tools (v1.96.0)
 // =============================================================================
 
@@ -25604,10 +25880,14 @@ const PhotoInspector = {
   layers: {
     hud: true,
     boundary: true,
+    layerBoundary: true, // Auto-superimpose active flight layer boundary!
     measure: true,
     pins: true,
     reticle: true
   },
+  projectGeoPointToPixel,
+  projectGeoPolygonToPhoto,
+  getLayerBoundaryGeoPolygon,
   eventsBound: false,
 
   open(photoOrId, manifest = null) {
@@ -26319,6 +26599,87 @@ const PhotoInspector = {
         ctx.restore();
       });
     }
+
+    // 7. Auto-Superimposed Flight Layer Boundary (v1.100.0)
+    if (this.layers.layerBoundary) {
+      const activeLayer = (typeof getActiveLayer === 'function')
+        ? getActiveLayer()
+        : ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers))
+            ? (flightLayers.find(l => l.id === (typeof activeLayerId !== 'undefined' ? activeLayerId : null)) || flightLayers[0])
+            : null);
+
+      const boundaryGeoPoly = this.getLayerBoundaryGeoPolygon(activeLayer);
+      if (boundaryGeoPoly && boundaryGeoPoly.length >= 3) {
+        const camPose = {
+          lat: this.activePhoto.actual?.lat ?? this.activePhoto.planned?.lat ?? 0,
+          lon: this.activePhoto.actual?.lon ?? this.activePhoto.planned?.lon ?? 0,
+          altAgl: (this.activePhoto.actual?.altAgl && this.activePhoto.actual.altAgl > 0)
+            ? this.activePhoto.actual.altAgl
+            : (this.activePhoto.actual?.alt ?? this.activePhoto.planned?.alt ?? 25.0),
+          gimbalPitch: (this.activePhoto.actual?.gimbalPitch !== undefined) ? this.activePhoto.actual.gimbalPitch : -90,
+          heading: this.activePhoto.actual?.heading ?? this.activePhoto.planned?.heading ?? 0
+        };
+
+        const projRes = this.projectGeoPolygonToPhoto(boundaryGeoPoly, camPose, {
+          sensorWidthMm: this.activePhoto.sensorWidthMm || 9.6,
+          focalLengthMm: this.activePhoto.focalLengthMm || 6.72,
+          aspectRatio: canvas.width / canvas.height,
+          targetHeightMeters: typeof this.targetHeight === 'number' ? this.targetHeight : 0
+        });
+
+        if (projRes.hasPointsInFront) {
+          ctx.save();
+          ctx.strokeStyle = '#06b6d4'; // Neon cyan
+          ctx.lineWidth = 2.5;
+          ctx.setLineDash([8, 4]);
+          ctx.fillStyle = 'rgba(6, 182, 212, 0.12)';
+          ctx.beginPath();
+          projRes.points.forEach((p, idx) => {
+            const px = p.u * canvas.width;
+            const py = p.v * canvas.height;
+            if (idx === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          });
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          // Draw vertex pins
+          ctx.setLineDash([]);
+          projRes.points.forEach((p) => {
+            if (p.isInsideFrame) {
+              const px = p.u * canvas.width;
+              const py = p.v * canvas.height;
+              ctx.fillStyle = '#06b6d4';
+              ctx.beginPath();
+              ctx.arc(px, py, 4.5, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.strokeStyle = '#ffffff';
+              ctx.lineWidth = 1.5;
+              ctx.stroke();
+            }
+          });
+
+          // Draw Layer Boundary Badge on first visible vertex or top corner
+          const firstVis = projRes.points.find(p => p.isInsideFrame) || projRes.points[0];
+          if (firstVis) {
+            const bx = Math.max(10, Math.min(canvas.width - 160, firstVis.u * canvas.width));
+            const by = Math.max(25, Math.min(canvas.height - 15, firstVis.v * canvas.height - 10));
+            const layerLabel = `🗺️ ${activeLayer?.name || 'Layer'} Boundary`;
+            ctx.font = 'bold 11px sans-serif';
+            const badgeW = ctx.measureText(layerLabel).width + 16;
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+            ctx.fillRect(bx, by - 16, badgeW, 20);
+            ctx.strokeStyle = '#06b6d4';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(bx, by - 16, badgeW, 20);
+            ctx.fillStyle = '#22d3ee';
+            ctx.fillText(layerLabel, bx + 8, by - 2);
+          }
+          ctx.restore();
+        }
+      }
+    }
   },
 
   setupEvents() {
@@ -26409,8 +26770,8 @@ const PhotoInspector = {
       };
     });
 
-    ['hud', 'boundary', 'measure', 'pins', 'reticle'].forEach(lKey => {
-      const cb = document.getElementById(`layer-toggle-${lKey}`);
+    ['hud', 'boundary', 'layerBoundary', 'measure', 'pins', 'reticle'].forEach(lKey => {
+      const cb = document.getElementById(`layer-toggle-${lKey}`) || document.getElementById(`layer-toggle-${lKey.toLowerCase()}`) || document.getElementById('layer-toggle-layer-boundary');
       if (cb) {
         cb.onchange = () => {
           this.layers[lKey] = cb.checked;

@@ -1403,6 +1403,130 @@ function calculatePhotogrammetricPolygon(points, altAglMeters, gimbalPitchDeg = 
   };
 }
 
+/**
+ * Projects a real-world geodetic point (lat, lon, alt) onto normalized photo coordinates (u, v)
+ * using a forward pinhole camera projective model based on drone camera pose.
+ *
+ * @param {Object} geoPoint - { lat: number, lon: number, alt?: number }
+ * @param {Object} cameraPose - { lat: number, lon: number, altAgl: number, gimbalPitch?: number, heading?: number }
+ * @param {Object} [options] - Optical parameters { sensorWidthMm, focalLengthMm, aspectRatio, targetHeightMeters }
+ * @returns {Object} { u, v, opticalDepthMeters, isInFront, isInsideFrame, xCam, yCam, zCam }
+ */
+function projectGeoPointToPixel(geoPoint, cameraPose, options = {}) {
+  if (!geoPoint || !cameraPose || typeof geoPoint.lat !== 'number' || typeof geoPoint.lon !== 'number') {
+    return { u: 0.5, v: 0.5, opticalDepthMeters: 0, isInFront: false, isInsideFrame: false };
+  }
+
+  const camLat = typeof cameraPose.lat === 'number' ? cameraPose.lat : 0;
+  const camLon = typeof cameraPose.lon === 'number' ? cameraPose.lon : 0;
+  const camAlt = (typeof cameraPose.altAgl === 'number' && cameraPose.altAgl > 0) ? cameraPose.altAgl : ((typeof cameraPose.alt === 'number') ? cameraPose.alt : 25.0);
+  const pitchDeg = typeof cameraPose.gimbalPitch === 'number' ? cameraPose.gimbalPitch : -90.0;
+  const yawDeg = typeof cameraPose.heading === 'number' ? cameraPose.heading : 0.0;
+
+  const targetH = typeof options.targetHeightMeters === 'number' ? options.targetHeightMeters : 0.0;
+  const ptAlt = typeof geoPoint.alt === 'number' ? geoPoint.alt : targetH;
+
+  // 1. Geodetic to local East-North-Up (ENU)
+  const latRad = (camLat * Math.PI) / 180.0;
+  const dLatRad = ((geoPoint.lat - camLat) * Math.PI) / 180.0;
+  const dLonRad = ((geoPoint.lon - camLon) * Math.PI) / 180.0;
+  const R = 6378137.0; // WGS84 Earth radius in meters
+
+  const dN = dLatRad * R;
+  const dE = dLonRad * R * Math.cos(latRad);
+  const dU = ptAlt - camAlt;
+
+  // 2. Rotate by Camera Heading / Yaw (psi) around Up axis
+  const psi = (yawDeg * Math.PI) / 180.0;
+  const Xh = dE * Math.cos(psi) - dN * Math.sin(psi);
+  const Yh = dE * Math.sin(psi) + dN * Math.cos(psi);
+  const Zh = dU;
+
+  // 3. Rotate by Camera Gimbal Pitch (theta) around Transverse axis
+  const theta = (pitchDeg * Math.PI) / 180.0;
+  const cosTheta = Math.cos(theta);
+  const sinTheta = Math.sin(theta);
+
+  const Xcam = Xh;
+  const Ycam = Yh * cosTheta + Zh * sinTheta; // Optical depth in front of lens
+  const Zcam = -Yh * sinTheta + Zh * cosTheta; // Vertical in camera sensor frame
+
+  const sW = parseFloat(options.sensorWidthMm) || 9.6;
+  const fL = parseFloat(options.focalLengthMm) || 6.72;
+  const aspect = options.aspectRatio || (options.imageWidth && options.imageHeight ? options.imageWidth / options.imageHeight : (4 / 3));
+  const sH = sW / aspect;
+
+  const tanHalfH = sW / (2.0 * fL);
+  const tanHalfV = sH / (2.0 * fL);
+
+  const isInFront = Ycam > 0.05;
+  if (!isInFront) {
+    return {
+      u: 0.5,
+      v: 0.5,
+      opticalDepthMeters: Math.round(Ycam * 100) / 100,
+      isInFront: false,
+      isInsideFrame: false,
+      xCam: Math.round(Xcam * 100) / 100,
+      yCam: Math.round(Ycam * 100) / 100,
+      zCam: Math.round(Zcam * 100) / 100
+    };
+  }
+
+  const u = 0.5 + (Xcam / (2.0 * Ycam * tanHalfH));
+  const v = 0.5 - (Zcam / (2.0 * Ycam * tanHalfV));
+  const isInsideFrame = (u >= 0.0 && u <= 1.0 && v >= 0.0 && v <= 1.0);
+
+  return {
+    u: Math.round(u * 10000) / 10000,
+    v: Math.round(v * 10000) / 10000,
+    opticalDepthMeters: Math.round(Ycam * 100) / 100,
+    isInFront: true,
+    isInsideFrame,
+    xCam: Math.round(Xcam * 100) / 100,
+    yCam: Math.round(Ycam * 100) / 100,
+    zCam: Math.round(Zcam * 100) / 100
+  };
+}
+
+/**
+ * Projects a geographic polygon (array of lat/lon vertices) onto photo coordinates.
+ *
+ * @param {Array<Object>} geoPolygon - Array of { lat, lon, alt? }
+ * @param {Object} cameraPose - Drone camera telemetry
+ * @param {Object} [options] - Optical & height parameters
+ * @returns {Object} { points, hasVisiblePoints, hasPointsInFront, rawPolygon }
+ */
+function projectGeoPolygonToPhoto(geoPolygon, cameraPose, options = {}) {
+  if (!Array.isArray(geoPolygon) || geoPolygon.length < 2 || !cameraPose) {
+    return { points: [], hasVisiblePoints: false, hasPointsInFront: false, rawPolygon: geoPolygon || [] };
+  }
+
+  const points = geoPolygon.map((pt, idx) => {
+    const proj = projectGeoPointToPixel(pt, cameraPose, options);
+    return {
+      vertexIndex: idx,
+      lat: pt.lat,
+      lon: pt.lon,
+      u: proj.u,
+      v: proj.v,
+      opticalDepthMeters: proj.opticalDepthMeters,
+      isInFront: proj.isInFront,
+      isInsideFrame: proj.isInsideFrame
+    };
+  });
+
+  const hasVisiblePoints = points.some(p => p.isInsideFrame);
+  const hasPointsInFront = points.some(p => p.isInFront);
+
+  return {
+    points,
+    hasVisiblePoints,
+    hasPointsInFront,
+    rawPolygon: geoPolygon
+  };
+}
+
 if (typeof module !== 'undefined') {
   module.exports = {
     haversineDistance,
@@ -1418,6 +1542,9 @@ if (typeof module !== 'undefined') {
     correlatePhotosWithTelemetry,
     projectPixelToGroundPlane,
     calculatePhotogrammetricDistance,
-    calculatePhotogrammetricPolygon
+    calculatePhotogrammetricPolygon,
+    projectGeoPointToPixel,
+    projectGeoPolygonToPhoto
   };
 }
+
