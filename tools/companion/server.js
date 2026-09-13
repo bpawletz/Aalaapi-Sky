@@ -19,6 +19,7 @@ const path = require('node:path');
 const os = require('node:os');
 const readline = require('node:readline');
 const { execFile, spawn, execFileSync } = require('node:child_process');
+const crypto = require('node:crypto');
 
 const VERSION = '1.54.0';
 const PORT = process.env.AALAAPI_PORT ? parseInt(process.env.AALAAPI_PORT, 10) : 8765;
@@ -1098,6 +1099,47 @@ function extractExifThumbnail(buf) {
   return null;
 }
 
+/**
+ * Calculates MD5 hex checksum of a file on disk via streaming.
+ * @param {string} filePath 
+ * @returns {Promise<string>}
+ */
+function computeFileMd5(filePath) {
+  return new Promise((resolve, reject) => {
+    try {
+      const hash = crypto.createHash('md5');
+      const stream = fs.createReadStream(filePath);
+      stream.on('data', chunk => hash.update(chunk));
+      stream.on('end', () => resolve(hash.digest('hex')));
+      stream.on('error', err => reject(err));
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+/**
+ * Validates image header/SOI signature for JPEG or TIFF/DNG.
+ * @param {string} filePath 
+ * @returns {boolean}
+ */
+function validateImageHeader(filePath) {
+  try {
+    const fd = fs.openSync(filePath, 'r');
+    const headerBuf = Buffer.alloc(4);
+    fs.readSync(fd, headerBuf, 0, 4, 0);
+    fs.closeSync(fd);
+    // JPEG: 0xFFD8
+    if (headerBuf[0] === 0xFF && headerBuf[1] === 0xD8) return true;
+    // TIFF/DNG: Little-endian 0x49492A00 ('II*\0') or Big-endian 0x4D4D002A ('MM\0*')
+    if (headerBuf[0] === 0x49 && headerBuf[1] === 0x49 && headerBuf[2] === 0x2A && headerBuf[3] === 0x00) return true;
+    if (headerBuf[0] === 0x4D && headerBuf[1] === 0x4D && headerBuf[2] === 0x00 && headerBuf[3] === 0x2A) return true;
+    return false;
+  } catch (_) {
+    return false;
+  }
+}
+
 async function pullMediaPhotos(options = {}) {
   const missionUuid = options.missionUuid || 'mission_' + Date.now();
   const targetDir = path.join(ARCHIVE_DIR, missionUuid);
@@ -1117,6 +1159,10 @@ async function pullMediaPhotos(options = {}) {
   const bufferMs = 300 * 1000;
   const filterMinTimeStr = (filterByTime && timeStart) ? new Date(timeStart - bufferMs).toISOString() : '';
   const filterMaxTimeStr = (filterByTime && timeEnd) ? new Date(timeEnd + bufferMs).toISOString() : '';
+
+  const deleteFromDrone = options.deleteFromDrone === true;
+  const deletedFiles = [];
+  const deleteErrors = [];
 
   // 1. Direct Node filesystem copy for detected drive letters (e.g. E:\DCIM)
   let directCopiedCount = 0;
@@ -1168,11 +1214,46 @@ async function pullMediaPhotos(options = {}) {
 
           if (include) {
             const dest = path.join(rawDir, fileObj.name);
+            let copySucceeded = false;
             if (!fs.existsSync(dest)) {
               try {
                 fs.copyFileSync(fileObj.path, dest);
                 directCopiedCount++;
+                copySucceeded = true;
               } catch (_) {}
+            } else {
+              // File was previously ingested or already in destination
+              copySucceeded = true;
+            }
+
+            // Triple-Barrier Verification for Safe Deletion:
+            // Barrier 1: Non-zero size equality
+            // Barrier 2: Bit-for-bit MD5 checksum equality
+            // Barrier 3: Valid JPEG/TIFF image header
+            if (deleteFromDrone && copySucceeded && fs.existsSync(dest) && fs.existsSync(fileObj.path)) {
+              try {
+                const destStat = fs.statSync(dest);
+                const srcStat = fs.statSync(fileObj.path);
+
+                const sizeMatches = (destStat.size === srcStat.size) && (srcStat.size > 0);
+                const headerValid = validateImageHeader(dest);
+
+                if (sizeMatches && headerValid) {
+                  const srcMd5 = await computeFileMd5(fileObj.path);
+                  const destMd5 = await computeFileMd5(dest);
+
+                  if (srcMd5 && srcMd5 === destMd5) {
+                    fs.unlinkSync(fileObj.path);
+                    deletedFiles.push(fileObj.name);
+                  } else {
+                    deleteErrors.push(`MD5 checksum mismatch for ${fileObj.name} (src: ${srcMd5}, dest: ${destMd5})`);
+                  }
+                } else {
+                  deleteErrors.push(`Size or header validation failed for ${fileObj.name} (srcSize: ${srcStat.size}, destSize: ${destStat.size}, headerValid: ${headerValid})`);
+                }
+              } catch (delErr) {
+                deleteErrors.push(`Failed to safely delete ${fileObj.name}: ${delErr.message}`);
+              }
             }
           }
         }
@@ -1189,7 +1270,10 @@ $shell = New-Object -ComObject Shell.Application
 $thisPC = $shell.Namespace(17)
 $rawDir = "${rawDir.replace(/\\/g, '\\\\')}"
 $copied = @()
+$deleted = @()
+$delErrors = @()
 $filterTime = ${filterByTime ? '$true' : '$false'}
+$deleteDrone = ${deleteFromDrone ? '$true' : '$false'}
 $minTime = "${filterMinTimeStr}"
 $maxTime = "${filterMaxTimeStr}"
 $minDate = if ($minTime) { [DateTime]::Parse($minTime).ToUniversalTime() } else { $null }
@@ -1217,7 +1301,16 @@ function Copy-MatchingFiles($folderItem) {
                 $destFolder.CopyHere($item, 16)
                 Start-Sleep -Milliseconds 150
                 if (Test-Path $destPath) {
-                    $copied += @{ name = $item.Name; size = (Get-Item $destPath).Length; writeTime = (Get-Item $destPath).LastWriteTimeUtc.ToString("o") }
+                    $itemLen = (Get-Item $destPath).Length
+                    $copied += @{ name = $item.Name; size = $itemLen; writeTime = (Get-Item $destPath).LastWriteTimeUtc.ToString("o") }
+                    if ($deleteDrone -and $itemLen -gt 0) {
+                        try {
+                            $item.InvokeVerb("delete")
+                            $deleted += $item.Name
+                        } catch {
+                            $delErrors += "$($item.Name): $($_.Exception.Message)"
+                        }
+                    }
                 }
             }
         }
@@ -1234,7 +1327,17 @@ foreach ($d in $drives) {
             if (Should-IncludeFile $f.LastWriteTimeUtc) {
                 Copy-Item -Path $f.FullName -Destination $dest -Force -ErrorAction SilentlyContinue
                 if (Test-Path $dest) {
-                    $copied += @{ name = $f.Name; size = $f.Length; path = $dest; writeTime = $f.LastWriteTimeUtc.ToString("o") }
+                    $fLen = $f.Length
+                    $destLen = (Get-Item $dest).Length
+                    $copied += @{ name = $f.Name; size = $destLen; path = $dest; writeTime = $f.LastWriteTimeUtc.ToString("o") }
+                    if ($deleteDrone -and $destLen -eq $fLen -and $destLen -gt 0) {
+                        try {
+                            Remove-Item -Path $f.FullName -Force -ErrorAction Stop
+                            $deleted += $f.Name
+                        } catch {
+                            $delErrors += "$($f.Name): $($_.Exception.Message)"
+                        }
+                    }
                 }
             }
         }
@@ -1268,10 +1371,22 @@ if ($copied.Count -eq 0 -and $thisPC) {
     success = $true
     pulledCount = $copied.Count
     files = $copied
+    deletedCount = $deleted.Count
+    deleted = $deleted
+    deleteErrors = $delErrors
 } | ConvertTo-Json -Depth 3 -Compress
 `;
 
-    await runMtpScript(psScript, 600000);
+    const mtpRaw = await runMtpScript(psScript, 600000);
+    try {
+      const mtpData = JSON.parse(mtpRaw);
+      if (mtpData && Array.isArray(mtpData.deleted)) {
+        deletedFiles.push(...mtpData.deleted);
+      }
+      if (mtpData && Array.isArray(mtpData.deleteErrors)) {
+        deleteErrors.push(...mtpData.deleteErrors);
+      }
+    } catch (_) {}
   }
 
   let rawFiles = [];
@@ -1377,6 +1492,9 @@ if ($copied.Count -eq 0 -and $thisPC) {
     missionUuid,
     targetDir,
     totalPhotos: correlated.length,
+    deletedCount: deletedFiles.length,
+    deletedFiles,
+    deleteErrors,
     manifest
   };
 }
@@ -2479,6 +2597,8 @@ module.exports = {
   extractLatestFlight,
   detectMediaDevices,
   pullMediaPhotos,
+  computeFileMd5,
+  validateImageHeader,
   extractMpfPreview,
   extractExifThumbnail,
   stopScanners,
