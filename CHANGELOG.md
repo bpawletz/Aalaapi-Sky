@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.101.1] - 2026-09-13
+
+### Changed — Relocate Layer Boundary & Parcel Perimeter to Active Layer Flight Pattern (Section 1)
+- **Direct Association with Active Layer Flight Pattern:** Relocated the Layer Boundary / Parcel card (`#layer-custom-boundary-container`) out of Section 2 Card 1 (`#layer-card-geometry`) and placed it directly inside Section 1 (`#pattern-selection-section`) under the **Active Layer Flight Pattern** selector grid.
+- **Immediate Accessibility Across All Modes:** Boundary and parcel tracing tools (`#btn-draw-layer-boundary`, `#btn-clear-layer-boundary`, and `#layer-boundary-vertex-badge`) are now immediately accessible without expanding Section 2's collapsed property drawer, providing a clean separation from numerical pattern geometry sliders while maintaining direct association with the active layer's flight pattern footprint.
+
 ## [1.101.0] - 2026-09-13
 
 ### Added — Verified "Delete Photos from Drone After Download" Media Ingestion & Free SD Storage
