@@ -16060,7 +16060,9 @@ describe('v1.98.1 Flight Diagnostics Inspection Photo Rendering & Anti-Collapse 
 
     const origFlightPhotos = FlightDiagnostics.flightPhotos;
     const origFlightId = FlightDiagnostics.selectedFlightId;
+    const origFlightPhotosFlightId = FlightDiagnostics.flightPhotosFlightId;
     FlightDiagnostics.selectedFlightId = 'test-flight';
+    FlightDiagnostics.flightPhotosFlightId = 'test-flight';
     FlightDiagnostics.flightPhotos = [
       {
         photoId: 'TEST_P1',
@@ -16088,6 +16090,7 @@ describe('v1.98.1 Flight Diagnostics Inspection Photo Rendering & Anti-Collapse 
     } finally {
       FlightDiagnostics.flightPhotos = origFlightPhotos;
       FlightDiagnostics.selectedFlightId = origFlightId;
+      FlightDiagnostics.flightPhotosFlightId = origFlightPhotosFlightId;
       global.document = origDoc;
     }
   });
@@ -16790,14 +16793,31 @@ describe('v1.100.0 Flight Layer Boundary Auto-Superimposition Tests', () => {
     const indexTemplate = fs.readFileSync('index_template.html', 'utf8');
     const indexHtml = fs.readFileSync('index.html', 'utf8');
 
-    assert.strictEqual(pkg, '1.100.0');
-    assert.ok(cl.includes('## [1.100.0] - 2026-09-12'), 'CHANGELOG.md missing 1.100.0 header');
-    assert.ok(indexTemplate.includes('v1.100.0</span>'), 'index_template.html missing v1.100.0 header badge');
-    assert.ok(indexTemplate.includes('Version 1.100.0</span>'), 'index_template.html missing Version 1.100.0 in About modal');
-    assert.ok(indexTemplate.includes('Changelog (v1.100.0):'), 'index_template.html missing Changelog (v1.100.0)');
-    assert.ok(indexHtml.includes('v1.100.0</span>'), 'index.html missing v1.100.0 header badge');
-    assert.ok(indexHtml.includes('Version 1.100.0</span>'), 'index.html missing Version 1.100.0 in About modal');
-    assert.ok(indexHtml.includes('Changelog (v1.100.0):'), 'index.html missing Changelog (v1.100.0)');
+    assert.strictEqual(pkg, '1.100.1');
+    assert.ok(cl.includes('## [1.100.1] - 2026-09-12'), 'CHANGELOG.md missing 1.100.1 header');
+    assert.ok(indexTemplate.includes('v1.100.1</span>'), 'index_template.html missing v1.100.1 header badge');
+    assert.ok(indexTemplate.includes('Version 1.100.1</span>'), 'index_template.html missing Version 1.100.1 in About modal');
+    assert.ok(indexTemplate.includes('Changelog (v1.100.1):'), 'index_template.html missing Changelog (v1.100.1)');
+    assert.ok(indexHtml.includes('v1.100.1</span>'), 'index.html missing v1.100.1 header badge');
+    assert.ok(indexHtml.includes('Version 1.100.1</span>'), 'index.html missing Version 1.100.1 in About modal');
+    assert.ok(indexHtml.includes('Changelog (v1.100.1):'), 'index.html missing Changelog (v1.100.1)');
+  });
+
+  test('DOM Architecture: layer-custom-boundary-container is a direct child of layer-card-geometry and NOT inside exclusion-altitude-container', () => {
+    const tmpl = fs.readFileSync('index_template.html', 'utf8');
+    const dom = new JSDOM(tmpl);
+    const doc = dom.window.document;
+
+    const boundaryBox = doc.getElementById('layer-custom-boundary-container');
+    const exclusionBox = doc.getElementById('exclusion-altitude-container');
+    const cardGeometry = doc.getElementById('layer-card-geometry');
+
+    assert.ok(boundaryBox, '#layer-custom-boundary-container must exist');
+    assert.ok(exclusionBox, '#exclusion-altitude-container must exist');
+    assert.ok(cardGeometry, '#layer-card-geometry must exist');
+
+    assert.strictEqual(exclusionBox.contains(boundaryBox), false, 'boundary container must NOT be inside exclusion container');
+    assert.strictEqual(cardGeometry.contains(boundaryBox), true, 'boundary container must be inside layer-card-geometry');
   });
 });
 

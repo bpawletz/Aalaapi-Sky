@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.100.1] - 2026-09-12
+
+### Fixed — Card 1 Layer Boundary & Parcel Perimeter Control Visibility for Survey Patterns
+- **HTML Container Nesting Restoration (`#layer-custom-boundary-container`):** Resolved an issue where the Layer Boundary & Parcel Perimeter control card was nested inside `#exclusion-altitude-container` in Section 2 Card 1 (`#layer-card-geometry`). For non-exclusion patterns (such as Single Nadir Grid and 3D Double Grid), the exclusion container was hidden with `.hidden`, unintentionally hiding the boundary drawing tools. Moved the boundary container to the root of Card 1 so pilots can immediately access **✏️ Draw on Map** and **✕ Reset** across all survey patterns.
+
 ## [1.100.0] - 2026-09-12
 
 ### Added — Auto-Superimposed Flight Layer Boundaries & Parcel Perimeters on Mission Photos
