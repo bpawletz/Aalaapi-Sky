@@ -5006,7 +5006,9 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(gridState.thumbClientHeight >= 130, `Thumb clientHeight (${gridState.thumbClientHeight}px) should be at least 130px`);
 
     // Verify bounding box through Playwright
-    const firstBox = await page.locator('.diag-photo-card').first().boundingBox();
+    const firstCardLocator = page.locator('.diag-photo-card').first();
+    await firstCardLocator.waitFor({ state: 'visible', timeout: 5000 });
+    const firstBox = await firstCardLocator.boundingBox();
     assert.ok(firstBox, 'First card must have valid bounding box');
     assert.ok(firstBox.height >= 250, `First card height (${firstBox.height}px) must be >= 250px`);
   });
