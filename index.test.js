@@ -16793,35 +16793,29 @@ describe('v1.100.0 Flight Layer Boundary Auto-Superimposition Tests', () => {
     const indexTemplate = fs.readFileSync('index_template.html', 'utf8');
     const indexHtml = fs.readFileSync('index.html', 'utf8');
 
-    assert.strictEqual(pkg, '1.101.1');
-    assert.ok(cl.includes('## [1.101.1] - 2026-09-13'), 'CHANGELOG.md missing 1.101.1 header');
-    assert.ok(indexTemplate.includes('v1.101.1</span>'), 'index_template.html missing v1.101.1 header badge');
-    assert.ok(indexTemplate.includes('Version 1.101.1</span>'), 'index_template.html missing Version 1.101.1 in About modal');
-    assert.ok(indexTemplate.includes('Changelog (v1.101.1):'), 'index_template.html missing Changelog (v1.101.1)');
-    assert.ok(indexHtml.includes('v1.101.1</span>'), 'index.html missing v1.101.1 header badge');
-    assert.ok(indexHtml.includes('Version 1.101.1</span>'), 'index.html missing Version 1.101.1 in About modal');
-    assert.ok(indexHtml.includes('Changelog (v1.101.1):'), 'index.html missing Changelog (v1.101.1)');
+    assert.ok(semverGte(pkg, '1.100.0'), 'package.json version should be >= 1.100.0');
+    assert.ok(cl.includes('## [1.100.0] - 2026-09-12'), 'CHANGELOG.md missing 1.100.0 header');
+    assert.ok(indexTemplate.includes('Auto-Superimposed Flight Layer Boundaries'), 'index_template.html missing boundary feature notes');
+    assert.ok(indexHtml.includes('Auto-Superimposed Flight Layer Boundaries'), 'index.html missing boundary feature notes');
   });
 
-  test('DOM Architecture: layer-custom-boundary-container is inside Section 1 layers-and-location-section under Active Layer Flight Pattern and NOT inside Section 2', () => {
+  test('DOM Architecture: boundary-polygon is a first-class card in Section 1 and layer-card-boundary is in Section 2', () => {
     const tmpl = fs.readFileSync('index_template.html', 'utf8');
     const dom = new JSDOM(tmpl);
     const doc = dom.window.document;
 
-    const boundaryBox = doc.getElementById('layer-custom-boundary-container');
+    const patternCard = doc.querySelector('.pattern-card[data-value="boundary-polygon"]');
     const section1 = doc.getElementById('layers-and-location-section');
+    const cardBoundary = doc.getElementById('layer-card-boundary');
     const cardGeometry = doc.getElementById('layer-card-geometry');
-    const exclusionBox = doc.getElementById('exclusion-altitude-container');
 
-    assert.ok(boundaryBox, '#layer-custom-boundary-container must exist');
+    assert.ok(patternCard, '.pattern-card[data-value="boundary-polygon"] must exist');
     assert.ok(section1, '#layers-and-location-section must exist');
-    assert.ok(cardGeometry, '#layer-card-geometry must exist');
+    assert.ok(cardBoundary, '#layer-card-boundary must exist in Section 2');
 
-    assert.strictEqual(section1.contains(boundaryBox), true, 'boundary container must be inside Section 1 (layers-and-location-section)');
-    assert.strictEqual(cardGeometry.contains(boundaryBox), false, 'boundary container must NOT be inside layer-card-geometry in Section 2');
-    if (exclusionBox) {
-      assert.strictEqual(exclusionBox.contains(boundaryBox), false, 'boundary container must NOT be inside exclusion container');
-    }
+    assert.strictEqual(section1.contains(patternCard), true, 'boundary pattern card must be inside Section 1 (layers-and-location-section)');
+    assert.strictEqual(cardGeometry.contains(patternCard), false, 'boundary pattern card must NOT be inside layer-card-geometry');
+    assert.strictEqual(cardGeometry.contains(cardBoundary), false, 'boundary properties card must NOT be nested inside layer-card-geometry');
   });
 
   test('DOM Architecture: #ingest-delete-from-drone exists in media ingest modal and defaults to unchecked', () => {
@@ -16873,5 +16867,186 @@ describe('v1.101.0 Safe Media Deletion & Verification Tests', () => {
     }
   });
 });
+
+describe('v1.102.0 First-Class Drawing & Parcel Boundary Layer Tests', () => {
+  test('Version consistency is maintained across package.json, CHANGELOG.md, and templates for v1.102.0', () => {
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+    const cl = fs.readFileSync('CHANGELOG.md', 'utf8');
+    const indexTemplate = fs.readFileSync('index_template.html', 'utf8');
+    const indexHtml = fs.readFileSync('index.html', 'utf8');
+
+    assert.strictEqual(pkg, '1.102.0');
+    assert.ok(cl.includes('## [1.102.0] - 2026-09-13'), 'CHANGELOG.md missing 1.102.0 header');
+    assert.ok(indexTemplate.includes('v1.102.0</span>'), 'index_template.html missing v1.102.0 header badge');
+    assert.ok(indexTemplate.includes('Version 1.102.0</span>'), 'index_template.html missing Version 1.102.0 in About modal');
+    assert.ok(indexTemplate.includes('Changelog (v1.102.0):'), 'index_template.html missing Changelog (v1.102.0)');
+    assert.ok(indexHtml.includes('v1.102.0</span>'), 'index.html missing v1.102.0 header badge');
+    assert.ok(indexHtml.includes('Version 1.102.0</span>'), 'index.html missing Version 1.102.0 in About modal');
+    assert.ok(indexHtml.includes('Changelog (v1.102.0):'), 'index.html missing Changelog (v1.102.0)');
+  });
+
+  test('DOM Architecture: Section 1 has boundary-polygon pattern card with DRAWING badge, and Section 2 has layer-card-boundary with all controls', () => {
+    const tmpl = fs.readFileSync('index_template.html', 'utf8');
+    const dom = new JSDOM(tmpl);
+    const doc = dom.window.document;
+
+    const patternCard = doc.querySelector('.pattern-card[data-value="boundary-polygon"]');
+    assert.ok(patternCard, '.pattern-card[data-value="boundary-polygon"] must exist');
+    const badge = patternCard.querySelector('.pattern-badge-tool, .pattern-badge');
+    assert.ok(badge, 'Pattern badge must exist on boundary card');
+    assert.strictEqual(badge.textContent.trim(), 'DRAWING');
+
+    const cardBoundary = doc.getElementById('layer-card-boundary');
+    assert.ok(cardBoundary, '#layer-card-boundary must exist in Section 2');
+
+    // Section 2 Card 5 controls
+    assert.ok(doc.getElementById('boundary-layer-name'), '#boundary-layer-name must exist');
+    assert.ok(doc.getElementById('boundary-stroke-color'), '#boundary-stroke-color must exist');
+    assert.ok(doc.getElementById('boundary-line-style'), '#boundary-line-style must exist');
+    assert.ok(doc.getElementById('boundary-fill-opacity'), '#boundary-fill-opacity must exist');
+    assert.ok(doc.getElementById('boundary-elevation'), '#boundary-elevation must exist');
+    assert.ok(doc.getElementById('btn-clear-boundary-vertices'), '#btn-clear-boundary-vertices must exist');
+    assert.ok(doc.getElementById('boundary-metrics-vertices'), '#boundary-metrics-vertices must exist');
+    assert.ok(doc.getElementById('boundary-metrics-perimeter'), '#boundary-metrics-perimeter must exist');
+    assert.ok(doc.getElementById('boundary-metrics-area'), '#boundary-metrics-area must exist');
+    assert.ok(doc.getElementById('boundary-instructions'), '#boundary-instructions info banner must exist');
+  });
+
+  test('getPatternDisplayName resolves boundary-polygon correctly', () => {
+    assert.strictEqual(getPatternDisplayName('boundary-polygon'), '🗺️ Boundary / Parcel');
+  });
+
+  test('createDefaultLayer sets isDrawingLayer, cyan color, dashed style, and 15% opacity for boundary-polygon', () => {
+    const layer = createDefaultLayer('test-b-1', 'Parcel Boundary', 0, 'boundary-polygon', 37.7749, -122.4194);
+    assert.strictEqual(layer.pattern, 'boundary-polygon');
+    assert.strictEqual(layer.isDrawingLayer, true);
+    assert.strictEqual(layer.isExclusionZone, false);
+    assert.strictEqual(layer.strokeColor, '#06b6d4');
+    assert.strictEqual(layer.lineStyle, 'dashed');
+    assert.strictEqual(layer.fillOpacity, 15);
+  });
+
+  test('generateLayerWaypoints guarantees 0 flight waypoints and isDrawingLayer: true for drawing layers', () => {
+    const layer = createDefaultLayer('test-b-2', 'Parcel Boundary', 0, 'boundary-polygon', 37.7749, -122.4194);
+    const res = generateLayerWaypoints(layer, 37.7749, -122.4194);
+    assert.strictEqual(res.waypoints.length, 0, 'Drawing layer must produce 0 waypoints');
+    assert.strictEqual(res.photos.length, 0, 'Drawing layer must produce 0 photos');
+    assert.strictEqual(res.isDrawingLayer, true, 'isDrawingLayer must be flagged true');
+  });
+
+  test('calculateGeodeticPolygonMetrics computes accurate perimeter and enclosed area', () => {
+    // 100m x 100m approximate geodetic square around origin
+    const vertices = [
+      { lat: 0.0, lon: 0.0 },
+      { lat: 0.0, lon: 0.0008983 },
+      { lat: 0.0008983, lon: 0.0008983 },
+      { lat: 0.0008983, lon: 0.0 }
+    ];
+    const metrics = calculateGeodeticPolygonMetrics(vertices);
+    assert.ok(metrics.perimeter > 350 && metrics.perimeter < 450, `Perimeter should be ~400m, got ${metrics.perimeter}`);
+    assert.ok(metrics.area > 8000 && metrics.area < 12000, `Area should be ~10,000 m², got ${metrics.area}`);
+  });
+
+  test('PhotoInspector superimposes multiple enabled drawing layers onto drone photo canvas', () => {
+    const origDoc = global.document;
+    try {
+      const drawnPaths = [];
+      const stylesUsed = [];
+      const fakeCtx = {
+        clearRect: () => {},
+        save: () => {},
+        restore: () => {},
+        beginPath: () => drawnPaths.push('beginPath'),
+        moveTo: (x, y) => drawnPaths.push(`moveTo(${x.toFixed(1)},${y.toFixed(1)})`),
+        lineTo: (x, y) => drawnPaths.push(`lineTo(${x.toFixed(1)},${y.toFixed(1)})`),
+        closePath: () => drawnPaths.push('closePath'),
+        stroke: () => drawnPaths.push('stroke'),
+        fill: () => drawnPaths.push('fill'),
+        arc: () => {},
+        strokeRect: () => {},
+        fillRect: () => {},
+        fillText: (txt) => drawnPaths.push(`fillText(${txt})`),
+        measureText: () => ({ width: 50 }),
+        setLineDash: (d) => drawnPaths.push(`setLineDash(${JSON.stringify(d)})`),
+        set strokeStyle(val) { stylesUsed.push(val); },
+        set fillStyle(val) { stylesUsed.push(val); },
+        set lineWidth(val) {},
+        set font(val) {}
+      };
+
+      const canvas = {
+        width: 1000,
+        height: 750,
+        getContext: () => fakeCtx
+      };
+
+      global.document = {
+        getElementById: (id) => {
+          if (id === 'photo-annotation-canvas') return canvas;
+          return { addEventListener: () => {}, classList: { add: () => {}, remove: () => {} }, style: {} };
+        }
+      };
+
+      // Set up test flightLayers with two enabled drawing layers
+      flightLayers = [
+        {
+          id: 'layer-draw-1',
+          name: 'North Boundary',
+          enabled: true,
+          pattern: 'boundary-polygon',
+          isDrawingLayer: true,
+          strokeColor: '#ef4444',
+          lineStyle: 'dashed',
+          fillOpacity: 20,
+          boundaryPolygon: [
+            { lat: 38.89515, lon: -77.03645 },
+            { lat: 38.89515, lon: -77.03635 },
+            { lat: 38.89505, lon: -77.03635 },
+            { lat: 38.89505, lon: -77.03645 }
+          ]
+        },
+        {
+          id: 'layer-draw-2',
+          name: 'South Boundary',
+          enabled: true,
+          pattern: 'boundary-polygon',
+          isDrawingLayer: true,
+          strokeColor: '#10b981',
+          lineStyle: 'solid',
+          fillOpacity: 30,
+          boundaryPolygon: [
+            { lat: 38.89518, lon: -77.03648 },
+            { lat: 38.89518, lon: -77.03632 },
+            { lat: 38.89502, lon: -77.03632 },
+            { lat: 38.89502, lon: -77.03648 }
+          ]
+        }
+      ];
+      activeLayerId = 'layer-draw-1';
+
+      PhotoInspector.activePhoto = {
+        actual: { lat: 38.8951, lon: -77.0364, altAgl: 50, gimbalPitch: -90, heading: 0 },
+        planned: { lat: 38.8951, lon: -77.0364, alt: 50 }
+      };
+      PhotoInspector.layers = {
+        layerBoundary: true,
+        reticle: false,
+        boundary: false,
+        measure: false,
+        pins: false
+      };
+
+      PhotoInspector.renderCanvas();
+
+      assert.ok(drawnPaths.includes('beginPath'), 'Should have drawn annotation paths');
+      assert.ok(drawnPaths.includes('closePath'), 'Boundary drawing paths should close');
+      assert.ok(stylesUsed.includes('#ef4444'), 'Should have used North Boundary color #ef4444');
+      assert.ok(stylesUsed.includes('#10b981'), 'Should have used South Boundary color #10b981');
+    } finally {
+      global.document = origDoc;
+    }
+  });
+});
+
 
 

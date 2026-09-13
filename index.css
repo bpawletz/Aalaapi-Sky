@@ -3035,6 +3035,56 @@ html, body {
   cursor: pointer;
 }
 
+/* ==========================================================================
+   Parcel & Boundary Drawing Layers (v1.102.0)
+   ========================================================================== */
+.pattern-card.boundary-card {
+  border-color: rgba(6, 182, 212, 0.35);
+  background: rgba(6, 182, 212, 0.05);
+}
+
+.pattern-card.boundary-card:hover {
+  border-color: #06b6d4;
+  background: rgba(6, 182, 212, 0.12);
+}
+
+.pattern-card.boundary-card.active {
+  border-color: #06b6d4;
+  background: rgba(6, 182, 212, 0.18);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+}
+
+.layer-card.boundary-layer {
+  border-color: rgba(6, 182, 212, 0.4);
+  background: rgba(6, 182, 212, 0.06);
+}
+
+.layer-card.boundary-layer.active {
+  border-color: #06b6d4;
+  background: rgba(6, 182, 212, 0.12);
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.25);
+}
+
+.boundary-node-icon {
+  background-color: #06b6d4;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 8px rgba(6, 182, 212, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: #0f172a;
+  font-weight: 800;
+  cursor: grab;
+}
+
+.boundary-node-icon:active {
+  cursor: grabbing;
+}
+
 /* --- Controlled Settings Reset & Modified Indicators (v1.74.0) --- */
 .setting-modified-dot {
   display: inline-block;

@@ -5046,40 +5046,59 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(inspectorState.filenameText, 'DJI_20260904185243_0218_D.JPG', 'Filename header text should match');
   });
 
-  test('E2E: Flight Layer Boundary drawing controls and Photo Inspector auto-superimpose toggle (v1.100.0)', async () => {
+  test('E2E: First-Class Drawing & Parcel Boundary Layer controls, Section 2 properties card, and Photo Inspector auto-superimpose toggle (v1.102.0)', async () => {
     const boundaryControls = await page.evaluate(() => {
-      const drawBtn = document.getElementById('btn-draw-layer-boundary');
-      const clearBtn = document.getElementById('btn-clear-layer-boundary');
-      const badge = document.getElementById('layer-boundary-vertex-badge');
-      const container = document.getElementById('layer-custom-boundary-container');
+      const patternCard = document.querySelector('.pattern-card[data-value="boundary-polygon"]');
+      const cardBoundary = document.getElementById('layer-card-boundary');
+      const badge = patternCard ? patternCard.querySelector('.pattern-badge-tool, .pattern-badge') : null;
       const toggleCb = document.getElementById('layer-toggle-layer-boundary');
+      const nameInput = document.getElementById('boundary-layer-name');
+      const colorSelect = document.getElementById('boundary-stroke-color');
+      const lineSelect = document.getElementById('boundary-line-style');
+      const opacitySlider = document.getElementById('boundary-fill-opacity');
+      const elevInput = document.getElementById('boundary-elevation');
+      const clearBtn = document.getElementById('btn-clear-boundary-vertices');
+      const metricsVertices = document.getElementById('boundary-metrics-vertices');
+      const metricsPerimeter = document.getElementById('boundary-metrics-perimeter');
+      const metricsArea = document.getElementById('boundary-metrics-area');
 
-      let initialEditMode = false;
-      if (typeof setLayerBoundaryEditMode === 'function') {
-        setLayerBoundaryEditMode(true);
-        initialEditMode = drawBtn ? drawBtn.textContent.includes('Done Drawing') : false;
-        setLayerBoundaryEditMode(false);
-      }
+      // Click pattern card to activate boundary drawing mode
+      if (patternCard) patternCard.click();
+      const gridTypeVal = document.getElementById('grid-type')?.value;
+      const cardBoundaryVisible = cardBoundary ? (cardBoundary.style.display !== 'none') : false;
 
       return {
-        hasDrawBtn: !!drawBtn,
+        hasPatternCard: !!patternCard,
+        badgeText: badge ? badge.textContent.trim() : '',
+        gridTypeVal,
+        hasCardBoundary: !!cardBoundary,
+        cardBoundaryVisible,
+        hasNameInput: !!nameInput,
+        hasColorSelect: !!colorSelect,
+        hasLineSelect: !!lineSelect,
+        hasOpacitySlider: !!opacitySlider,
+        hasElevInput: !!elevInput,
         hasClearBtn: !!clearBtn,
-        hasBadge: !!badge,
-        badgeText: badge ? badge.textContent : '',
-        hasContainer: !!container,
+        hasMetrics: !!(metricsVertices && metricsPerimeter && metricsArea),
         hasToggleCb: !!toggleCb,
-        toggleChecked: toggleCb ? toggleCb.checked : false,
-        canToggleEditMode: initialEditMode
+        toggleChecked: toggleCb ? toggleCb.checked : false
       };
     });
 
-    assert.strictEqual(boundaryControls.hasDrawBtn, true, '#btn-draw-layer-boundary must exist in DOM');
-    assert.strictEqual(boundaryControls.hasClearBtn, true, '#btn-clear-layer-boundary must exist in DOM');
-    assert.strictEqual(boundaryControls.hasBadge, true, '#layer-boundary-vertex-badge must exist in DOM');
-    assert.strictEqual(boundaryControls.hasContainer, true, '#layer-custom-boundary-container must exist in DOM');
+    assert.strictEqual(boundaryControls.hasPatternCard, true, '.pattern-card[data-value="boundary-polygon"] must exist in DOM');
+    assert.strictEqual(boundaryControls.badgeText, 'DRAWING', 'Pattern badge must display DRAWING');
+    assert.strictEqual(boundaryControls.gridTypeVal, 'boundary-polygon', 'Clicking card must set grid-type to boundary-polygon');
+    assert.strictEqual(boundaryControls.hasCardBoundary, true, '#layer-card-boundary must exist in Section 2');
+    assert.strictEqual(boundaryControls.cardBoundaryVisible, true, '#layer-card-boundary must be visible in boundary-polygon mode');
+    assert.strictEqual(boundaryControls.hasNameInput, true, '#boundary-layer-name must exist');
+    assert.strictEqual(boundaryControls.hasColorSelect, true, '#boundary-stroke-color must exist');
+    assert.strictEqual(boundaryControls.hasLineSelect, true, '#boundary-line-style must exist');
+    assert.strictEqual(boundaryControls.hasOpacitySlider, true, '#boundary-fill-opacity must exist');
+    assert.strictEqual(boundaryControls.hasElevInput, true, '#boundary-elevation must exist');
+    assert.strictEqual(boundaryControls.hasClearBtn, true, '#btn-clear-boundary-vertices must exist');
+    assert.strictEqual(boundaryControls.hasMetrics, true, 'Boundary metrics badges must exist');
     assert.strictEqual(boundaryControls.hasToggleCb, true, '#layer-toggle-layer-boundary must exist in Photo Inspector');
     assert.strictEqual(boundaryControls.toggleChecked, true, 'Layer boundary superimpose toggle must be checked by default');
-    assert.strictEqual(boundaryControls.canToggleEditMode, true, 'setLayerBoundaryEditMode must update draw button');
   });
 
   test('Media Ingestion Modal: #ingest-delete-from-drone exists, defaults to unchecked, and toggles cleanly', async () => {
