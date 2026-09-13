@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.99.1] - 2026-09-12
+
+### Fixed — Dual Slant & Ground Plane Photogrammetric Calibration for Elevated Structures & Roofs
+- **Dual-Plane Photogrammetric Calibration (`mode: 'slant' | 'ground'`):** Resolved physical measurement inflation bug where measuring elevated structures (such as second-story residential roofs or commercial parapets) projected oblique camera rays through the structure down to $Z = 0$ ground level, artificially expanding ~20 ft roof lines to ~86 ft.
+- **Camera Slant View Plane Mode (Default):** Introduced `slant` calibration mode which computes distances in the optical view plane at target slant range ($D = (H - H_{target}) / \cos(\tau)$), yielding accurate physical dimensions for roofs, dormers, siding, exterior walls, and solar panels without altitude projection parallax.
+- **Planar Ground Ray-Intersection Mode:** Retained 3D Ray-to-Ground Plane intersection mode (`ground`) for flat horizontal terrain features such as driveways, sidewalks, parking stalls, and property boundaries.
+- **Dynamic Elevation & Height Offset Calibration:** Added real-time target elevation offset input (`#inspector-target-height-input`) in the Photo Inspector drawer, allowing pilots to specify the exact height of target structures ($H_{target}$) to calibrate slant range and ground ray intersections.
+- **Top Bar Quick Plane Mode Toggle:** Integrated `#inspector-plane-toggle-btn` in the Photo Inspector topbar for immediate 1-click toggling between `🏠 Slant (Structure)` and `🌍 Flat Ground`, with automatic live re-calculation of all drawn caliper measurements and boundary perimeters.
+
 ## [1.99.0] - 2026-09-12
 
 ### Added — 3D Photogrammetric Ray-to-Ground Plane Projective Correction for Photo Inspector

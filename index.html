@@ -4629,7 +4629,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.99.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.99.1</span></h1>
         </div>
       </div>
 
@@ -6507,10 +6507,10 @@ html, body {
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
-              📐 3D Photogrammetric Ground Plane Projective Correction (v1.99.0)
+              📐 Dual Slant &amp; Ground Plane Photogrammetric Measurement Calibration (v1.99.1)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
-              Eliminates perspective distortion and slant range underestimation on oblique drone imagery (e.g. -45° or -30° gimbal pitch). Pinhole ray-to-ground plane projection computes exact 3D Euclidean distances on the horizontal ground plane regardless of measurement angle—handling horizontal, vertical, and diagonal caliper lines and polygon boundaries with full keystoning and tilt foreshortening correction.
+              Introduces dual-plane calibration to prevent altitude projection parallax on elevated structures. <strong>Structure / Slant Mode</strong> (default) calculates exact physical dimensions on roofs, dormers, siding, and solar panels within the camera's optical view plane, eliminating ground-plane inflation. <strong>Flat Ground Mode</strong> projects rays down to the horizontal ground plane (Z = 0 or target elevation) for driveways, curbs, and boundaries. Switch modes instantly via the topbar toggle or calibrate custom target elevation offsets in the inspector drawer.
             </p>
           </div>
 
@@ -7176,7 +7176,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.99.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.99.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -7242,6 +7242,14 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.99.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Dual Slant &amp; Ground Plane Photogrammetric Calibration:</strong> Added dual-plane calibration to eliminate projection parallax and distance inflation on elevated structures. <em>Structure / Slant Mode</em> measures within the optical view plane at target range to accurately size roofs, dormers, and siding without ground-plane elongation. <em>Flat Ground Mode</em> projects rays to horizontal terrain for driveways and property bounds.</li>
+              <li><strong>Interactive Target Elevation Offset:</strong> Added real-time target elevation offset input in the Photo Inspector drawer, allowing pilots to fine-tune reference planes for two-story homes, commercial rooftops, and raised platforms.</li>
+              <li><strong>Header Quick-Toggle:</strong> Added 1-click plane mode toggle button (<code>#inspector-plane-toggle-btn</code>) directly in the Photo Inspector topbar with live measurement badge re-calculation.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.99.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -10340,7 +10348,8 @@ html, body {
           <span id="inspector-variance-text">ΔH: 0.18m • ΔV: 0.08m (Compliant)</span>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button id="inspector-plane-toggle-btn" class="btn-secondary btn-sm" type="button" style="font-size: 0.72rem; padding: 3px 8px;" title="Toggle Measurement Plane Calibration (Slant Optical Plane for Roofs/Elevated Structures vs Flat Ground Plane)">🏠 Slant (Structure)</button>
           <button id="inspector-unit-toggle-btn" class="btn-secondary btn-sm" type="button" style="font-size: 0.72rem; padding: 3px 8px;" title="Toggle Metric / Imperial Dimension Display">📏 Metric</button>
           <button id="close-photo-inspector-btn" class="close-btn" type="button" aria-label="Close photo inspector">&times;</button>
         </div>
@@ -10425,6 +10434,26 @@ html, body {
                 <input type="checkbox" id="layer-toggle-reticle" checked />
                 <span>🎯 Target Framing Reticle</span>
               </label>
+            </div>
+          </div>
+
+          <hr style="border: 0; border-top: 1px solid var(--border-color);">
+
+          <!-- Measurement Plane Calibration -->
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px;">
+            <h4 style="font-size: 0.75rem; text-transform: uppercase; color: var(--accent-cyan); margin-bottom: 8px; letter-spacing: 0.05em;">Measurement Calibration</h4>
+            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.75rem;">
+              <div style="display: flex; gap: 4px;">
+                <button type="button" id="plane-btn-slant" class="btn-primary btn-sm active" style="flex: 1; padding: 4px 6px; font-size: 0.72rem; text-align: center;" title="Measures directly in the camera optical plane at target range (recommended for roofs, siding, walls, solar panels)">🏠 Structure / Slant</button>
+                <button type="button" id="plane-btn-ground" class="btn-secondary btn-sm" style="flex: 1; padding: 4px 6px; font-size: 0.72rem; text-align: center;" title="Ray-to-Ground Plane intersection down to specified elevation (recommended for driveways, curbs, flat ground)">🌍 Flat Ground</button>
+              </div>
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                <label for="inspector-target-height-input" style="color: var(--text-muted); font-size: 0.72rem;">Target Elev / Offset:</label>
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <input type="number" id="inspector-target-height-input" value="0" step="0.5" style="width: 60px; padding: 2px 4px; font-size: 0.72rem; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; text-align: right;" />
+                  <span id="inspector-target-height-unit" style="font-size: 0.72rem; color: var(--text-muted);">m</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -36146,6 +36175,8 @@ const PhotoInspector = {
   currentTool: 'pan',
   currentColor: '#ef4444',
   unit: 'metric',
+  calibrationMode: 'slant', // 'slant' (default for roofs/structures) or 'ground' (flat ground plane)
+  targetHeight: 0, // Target height / elevation offset in meters
   zoom: 1,
   panX: 0,
   panY: 0,
@@ -36313,6 +36344,7 @@ const PhotoInspector = {
     const subEl = document.getElementById('inspector-photo-sub');
     const dot = document.getElementById('inspector-severity-dot');
     const varText = document.getElementById('inspector-variance-text');
+    const planeToggleBtn = document.getElementById('inspector-plane-toggle-btn');
 
     if (fnEl) fnEl.textContent = p.filename || 'DJI_0001.JPG';
     if (wpBadge) wpBadge.textContent = `WP #${p.waypointIndex !== undefined ? p.waypointIndex : '—'}`;
@@ -36321,9 +36353,16 @@ const PhotoInspector = {
     const gsdVal = this.unit === 'imperial' ? ((p.gsd ? p.gsd.gsdCm : 0.9) / 2.54).toFixed(2) + ' in/px' : (p.gsd ? p.gsd.gsdCm : 0.9) + ' cm/px';
     const pitch = (p.actual && p.actual.gimbalPitch !== undefined) ? p.actual.gimbalPitch : -90;
     const isOblique = Math.abs(pitch + 90) > 2;
-    const modeTag = isOblique ? ' • 3D Ground Corrected' : '';
+    const modeTag = isOblique ? (this.calibrationMode === 'slant' ? ' • Slant Calibrated' : ' • Ground Corrected') : '';
     if (subEl) {
       subEl.textContent = `Lat: ${p.actual.lat.toFixed(5)}° • Lon: ${p.actual.lon.toFixed(5)}° • Alt: ${altVal} AGL • Pitch: ${p.actual.gimbalPitch}° • GSD: ${gsdVal}${modeTag}`;
+    }
+
+    if (planeToggleBtn) {
+      planeToggleBtn.textContent = this.calibrationMode === 'slant' ? '🏠 Slant (Structure)' : '🌍 Flat Ground';
+      planeToggleBtn.title = this.calibrationMode === 'slant'
+        ? 'Current: Slant Optical Plane (Elevated Structures & Roofs). Click to switch to Flat Ground.'
+        : 'Current: Flat Ground Plane (Terrain & Driveways). Click to switch to Slant Structure Plane.';
     }
 
     const isComp = p.variance ? p.variance.isCompliant : true;
@@ -36347,7 +36386,7 @@ const PhotoInspector = {
     if (hudCoord) hudCoord.textContent = `Lat: ${p.actual.lat.toFixed(6)}° Lon: ${p.actual.lon.toFixed(6)}°`;
     if (hudAlt) hudAlt.textContent = `Alt: ${altVal} AGL`;
     if (hudOpt) hudOpt.textContent = `Gimbal: ${p.actual.gimbalPitch}° Yaw: ${p.actual.heading}°`;
-    if (hudGsd) hudGsd.textContent = isOblique ? `GSD: ${gsdVal} (3D Tilt Corrected)` : `GSD: ${gsdVal}`;
+    if (hudGsd) hudGsd.textContent = isOblique ? (this.calibrationMode === 'slant' ? `GSD: ${gsdVal} (Slant Calibrated)` : `GSD: ${gsdVal} (3D Tilt Corrected)`) : `GSD: ${gsdVal}`;
     if (hudTs) hudTs.textContent = p.timestamp ? p.timestamp.replace('T', ' ').slice(0, 19) + ' UTC' : '2026-09-12 14:02:30 UTC';
   },
 
@@ -36358,6 +36397,36 @@ const PhotoInspector = {
     const boundaryBox = document.getElementById('boundary-metrics-box');
     const perimEl = document.getElementById('boundary-perimeter-val');
     const areaEl = document.getElementById('boundary-area-val');
+    const slantBtn = document.getElementById('plane-btn-slant');
+    const groundBtn = document.getElementById('plane-btn-ground');
+    const heightInput = document.getElementById('inspector-target-height-input');
+    const heightUnit = document.getElementById('inspector-target-height-unit');
+
+    if (slantBtn && groundBtn) {
+      if (this.calibrationMode === 'slant') {
+        slantBtn.classList.add('active');
+        slantBtn.classList.remove('btn-secondary');
+        slantBtn.classList.add('btn-primary');
+        groundBtn.classList.remove('active');
+        groundBtn.classList.remove('btn-primary');
+        groundBtn.classList.add('btn-secondary');
+      } else {
+        groundBtn.classList.add('active');
+        groundBtn.classList.remove('btn-secondary');
+        groundBtn.classList.add('btn-primary');
+        slantBtn.classList.remove('active');
+        slantBtn.classList.remove('btn-primary');
+        slantBtn.classList.add('btn-secondary');
+      }
+    }
+
+    if (heightUnit) {
+      heightUnit.textContent = this.unit === 'imperial' ? 'ft' : 'm';
+    }
+    if (heightInput && document.activeElement !== heightInput) {
+      const dispH = this.unit === 'imperial' ? Math.round(this.targetHeight * 3.28084 * 10) / 10 : Math.round(this.targetHeight * 10) / 10;
+      heightInput.value = dispH;
+    }
 
     const annotations = this.activePhoto.annotations || [];
     const pins = annotations.filter(a => a.type === 'pin');
@@ -36381,14 +36450,20 @@ const PhotoInspector = {
           let cardDesc = ann.description || ann.details || 'No description entered.';
           if (ann.type === 'boundary') {
             cardTitle = '📐 Boundary Line';
-            if (ann.perimeterFt) cardDesc = `${ann.perimeterFt} ft perimeter • ${ann.areaSqFt || 0} sq ft`;
+            const polyRes = this.calculateGroundPolygon(ann.points);
+            if (this.unit === 'imperial') {
+              cardDesc = `${polyRes.perimeterFt} ft perimeter • ${polyRes.areaSqFt} sq ft`;
+            } else {
+              cardDesc = `${polyRes.perimeterMeters} m perimeter • ${polyRes.areaM2} m²`;
+            }
           } else if (ann.type === 'measure') {
             const dM = this.calculateGroundDistance(ann.p1, ann.p2);
             const dStr = this.unit === 'imperial' ? `${(dM * 3.28084).toFixed(2)} ft` : `${dM.toFixed(2)} m`;
             cardTitle = `📏 Measurement: ${dStr}`;
             const pitch = (this.activePhoto?.actual?.gimbalPitch !== undefined) ? this.activePhoto.actual.gimbalPitch : -90;
             const isOblique = Math.abs(pitch + 90) > 2;
-            cardDesc = isOblique ? `3D ray-plane ground corrected (${pitch}° pitch)` : 'Planar nadir calibrated';
+            const modeName = this.calibrationMode === 'slant' ? 'Structure Slant Plane' : 'Ground Plane';
+            cardDesc = isOblique ? `${modeName} corrected (${pitch}° pitch)` : 'Planar nadir calibrated';
           }
           card.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -36415,8 +36490,9 @@ const PhotoInspector = {
       if (boundaries.length > 0) {
         boundaryBox.style.display = 'block';
         const lastB = boundaries[boundaries.length - 1];
-        if (perimEl) perimEl.textContent = this.unit === 'imperial' ? `${lastB.perimeterFt || 0} ft` : `${lastB.perimeterMeters || 0} m`;
-        if (areaEl) areaEl.textContent = this.unit === 'imperial' ? `${lastB.areaSqFt || 0} sq ft` : `${lastB.areaM2 || 0} m²`;
+        const polyRes = this.calculateGroundPolygon(lastB.points);
+        if (perimEl) perimEl.textContent = this.unit === 'imperial' ? `${polyRes.perimeterFt || 0} ft` : `${polyRes.perimeterMeters || 0} m`;
+        if (areaEl) areaEl.textContent = this.unit === 'imperial' ? `${polyRes.areaSqFt || 0} sq ft` : `${polyRes.areaM2 || 0} m²`;
       } else {
         boundaryBox.style.display = 'none';
       }
@@ -36426,7 +36502,9 @@ const PhotoInspector = {
   projectPixelToGround(normX, normY) {
     if (!this.activePhoto) return { x: 0, y: 0 };
     const p = this.activePhoto;
-    const alt = (p.actual && typeof p.actual.altAgl === 'number' && p.actual.altAgl > 0) ? p.actual.altAgl : 25.0;
+    const rawAlt = (p.actual && typeof p.actual.altAgl === 'number' && p.actual.altAgl > 0) ? p.actual.altAgl : 25.0;
+    const targetH = typeof this.targetHeight === 'number' ? this.targetHeight : 0;
+    const alt = Math.max(0.5, rawAlt - targetH);
     const pitch = (p.actual && typeof p.actual.gimbalPitch === 'number') ? p.actual.gimbalPitch : -90;
 
     let tiltDeg;
@@ -36468,6 +36546,43 @@ const PhotoInspector = {
 
   calculateGroundDistance(p1, p2) {
     if (!p1 || !p2) return 0;
+    if (!this.activePhoto) return 0;
+    const p = this.activePhoto;
+    const rawAlt = (p.actual && typeof p.actual.altAgl === 'number' && p.actual.altAgl > 0) ? p.actual.altAgl : 25.0;
+    const targetH = typeof this.targetHeight === 'number' ? this.targetHeight : 0;
+    const alt = Math.max(0.5, rawAlt - targetH);
+    const pitch = (p.actual && typeof p.actual.gimbalPitch === 'number') ? p.actual.gimbalPitch : -90;
+
+    let tiltDeg;
+    if (pitch <= 0) {
+      tiltDeg = Math.min(85, Math.max(0, 90 + pitch));
+    } else {
+      tiltDeg = Math.min(85, Math.max(0, Math.abs(90 - pitch)));
+    }
+    const tau = tiltDeg * (Math.PI / 180);
+
+    const sW = p.sensorWidthMm || 9.6;
+    const fL = p.focalLengthMm || 6.72;
+    const canvas = (typeof document !== 'undefined') ? document.getElementById('photo-annotation-canvas') : null;
+    const aspect = (canvas && canvas.width && canvas.height) ? (canvas.width / canvas.height) : (4 / 3);
+    const sH = sW / aspect;
+
+    const tanHalfH = sW / (2 * fL);
+    const tanHalfV = sH / (2 * fL);
+
+    if (this.calibrationMode === 'slant') {
+      const cosTau = Math.max(0.087, Math.cos(tau));
+      const dSlant = alt / cosTau;
+      const xc1 = (2 * p1.x - 1) * tanHalfH;
+      const yc1 = (1 - 2 * p1.y) * tanHalfV;
+      const xc2 = (2 * p2.x - 1) * tanHalfH;
+      const yc2 = (1 - 2 * p2.y) * tanHalfV;
+      const dx = (xc2 - xc1) * dSlant;
+      const dy = (yc2 - yc1) * dSlant;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    // mode === 'ground': full 3D Ray-to-Ground Plane intersection
     const g1 = this.projectPixelToGround(p1.x, p1.y);
     const g2 = this.projectPixelToGround(p2.x, p2.y);
     const dx = g2.x - g1.x;
@@ -36479,7 +36594,40 @@ const PhotoInspector = {
     if (!Array.isArray(points) || points.length < 2) {
       return { perimeterMeters: 0, perimeterFt: 0, areaM2: 0, areaSqFt: 0, segments: [] };
     }
-    const groundPts = points.map(pt => this.projectPixelToGround(pt.x, pt.y));
+    let groundPts;
+    if (this.calibrationMode === 'slant') {
+      const p = this.activePhoto || {};
+      const rawAlt = (p.actual && typeof p.actual.altAgl === 'number' && p.actual.altAgl > 0) ? p.actual.altAgl : 25.0;
+      const targetH = typeof this.targetHeight === 'number' ? this.targetHeight : 0;
+      const alt = Math.max(0.5, rawAlt - targetH);
+      const pitch = (p.actual && typeof p.actual.gimbalPitch === 'number') ? p.actual.gimbalPitch : -90;
+
+      let tiltDeg;
+      if (pitch <= 0) {
+        tiltDeg = Math.min(85, Math.max(0, 90 + pitch));
+      } else {
+        tiltDeg = Math.min(85, Math.max(0, Math.abs(90 - pitch)));
+      }
+      const tau = tiltDeg * (Math.PI / 180);
+      const cosTau = Math.max(0.087, Math.cos(tau));
+      const dSlant = alt / cosTau;
+
+      const sW = p.sensorWidthMm || 9.6;
+      const fL = p.focalLengthMm || 6.72;
+      const canvas = (typeof document !== 'undefined') ? document.getElementById('photo-annotation-canvas') : null;
+      const aspect = (canvas && canvas.width && canvas.height) ? (canvas.width / canvas.height) : (4 / 3);
+      const sH = sW / aspect;
+
+      const tanHalfH = sW / (2 * fL);
+      const tanHalfV = sH / (2 * fL);
+
+      groundPts = points.map(pt => ({
+        x: (2 * pt.x - 1) * tanHalfH * dSlant,
+        y: (1 - 2 * pt.y) * tanHalfV * dSlant
+      }));
+    } else {
+      groundPts = points.map(pt => this.projectPixelToGround(pt.x, pt.y));
+    }
     const segments = [];
     let perimeter = 0;
 
@@ -36783,6 +36931,47 @@ const PhotoInspector = {
       };
     }
 
+    const planeToggleBtn = document.getElementById('inspector-plane-toggle-btn');
+    if (planeToggleBtn) {
+      planeToggleBtn.onclick = () => {
+        this.calibrationMode = this.calibrationMode === 'slant' ? 'ground' : 'slant';
+        this.updateHeaderUI();
+        this.updateDrawerUI();
+        this.renderCanvas();
+      };
+    }
+
+    const slantBtn = document.getElementById('plane-btn-slant');
+    const groundBtn = document.getElementById('plane-btn-ground');
+    if (slantBtn) {
+      slantBtn.onclick = () => {
+        this.calibrationMode = 'slant';
+        this.updateHeaderUI();
+        this.updateDrawerUI();
+        this.renderCanvas();
+      };
+    }
+    if (groundBtn) {
+      groundBtn.onclick = () => {
+        this.calibrationMode = 'ground';
+        this.updateHeaderUI();
+        this.updateDrawerUI();
+        this.renderCanvas();
+      };
+    }
+
+    const heightInput = document.getElementById('inspector-target-height-input');
+    if (heightInput) {
+      const handleHeightChange = () => {
+        const val = parseFloat(heightInput.value) || 0;
+        this.targetHeight = this.unit === 'imperial' ? val / 3.28084 : val;
+        this.updateDrawerUI();
+        this.renderCanvas();
+      };
+      heightInput.oninput = handleHeightChange;
+      heightInput.onchange = handleHeightChange;
+    }
+
     if (undoBtn) undoBtn.onclick = () => this.undo();
     if (clearBtn) clearBtn.onclick = () => this.clear();
     if (saveBtn) saveBtn.onclick = () => this.save();
@@ -36891,6 +37080,7 @@ const PhotoInspector = {
             const p2 = this.activeMeasurePoints[1];
             const distM = this.calculateGroundDistance(p1, p2);
             const distStr = this.unit === 'imperial' ? `${(distM * 3.28084).toFixed(2)} ft` : `${distM.toFixed(2)} m`;
+            const modeDesc = this.calibrationMode === 'slant' ? 'Structure slant plane' : 'Corrected 3D ground plane';
             this.activePhoto.annotations.push({
               type: 'measure',
               p1,
@@ -36898,7 +37088,7 @@ const PhotoInspector = {
               distanceMeters: Math.round(distM * 100) / 100,
               distanceFt: Math.round(distM * 3.28084 * 100) / 100,
               label: distStr,
-              details: `Corrected 3D ground distance: ${distStr}`
+              details: `${modeDesc}: ${distStr}`
             });
             this.activeMeasurePoints = [];
             this.updateDrawerUI();

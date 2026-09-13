@@ -25589,6 +25589,8 @@ const PhotoInspector = {
   currentTool: 'pan',
   currentColor: '#ef4444',
   unit: 'metric',
+  calibrationMode: 'slant', // 'slant' (default for roofs/structures) or 'ground' (flat ground plane)
+  targetHeight: 0, // Target height / elevation offset in meters
   zoom: 1,
   panX: 0,
   panY: 0,
@@ -25756,6 +25758,7 @@ const PhotoInspector = {
     const subEl = document.getElementById('inspector-photo-sub');
     const dot = document.getElementById('inspector-severity-dot');
     const varText = document.getElementById('inspector-variance-text');
+    const planeToggleBtn = document.getElementById('inspector-plane-toggle-btn');
 
     if (fnEl) fnEl.textContent = p.filename || 'DJI_0001.JPG';
     if (wpBadge) wpBadge.textContent = `WP #${p.waypointIndex !== undefined ? p.waypointIndex : '—'}`;
@@ -25764,9 +25767,16 @@ const PhotoInspector = {
     const gsdVal = this.unit === 'imperial' ? ((p.gsd ? p.gsd.gsdCm : 0.9) / 2.54).toFixed(2) + ' in/px' : (p.gsd ? p.gsd.gsdCm : 0.9) + ' cm/px';
     const pitch = (p.actual && p.actual.gimbalPitch !== undefined) ? p.actual.gimbalPitch : -90;
     const isOblique = Math.abs(pitch + 90) > 2;
-    const modeTag = isOblique ? ' • 3D Ground Corrected' : '';
+    const modeTag = isOblique ? (this.calibrationMode === 'slant' ? ' • Slant Calibrated' : ' • Ground Corrected') : '';
     if (subEl) {
       subEl.textContent = `Lat: ${p.actual.lat.toFixed(5)}° • Lon: ${p.actual.lon.toFixed(5)}° • Alt: ${altVal} AGL • Pitch: ${p.actual.gimbalPitch}° • GSD: ${gsdVal}${modeTag}`;
+    }
+
+    if (planeToggleBtn) {
+      planeToggleBtn.textContent = this.calibrationMode === 'slant' ? '🏠 Slant (Structure)' : '🌍 Flat Ground';
+      planeToggleBtn.title = this.calibrationMode === 'slant'
+        ? 'Current: Slant Optical Plane (Elevated Structures & Roofs). Click to switch to Flat Ground.'
+        : 'Current: Flat Ground Plane (Terrain & Driveways). Click to switch to Slant Structure Plane.';
     }
 
     const isComp = p.variance ? p.variance.isCompliant : true;
@@ -25790,7 +25800,7 @@ const PhotoInspector = {
     if (hudCoord) hudCoord.textContent = `Lat: ${p.actual.lat.toFixed(6)}° Lon: ${p.actual.lon.toFixed(6)}°`;
     if (hudAlt) hudAlt.textContent = `Alt: ${altVal} AGL`;
     if (hudOpt) hudOpt.textContent = `Gimbal: ${p.actual.gimbalPitch}° Yaw: ${p.actual.heading}°`;
-    if (hudGsd) hudGsd.textContent = isOblique ? `GSD: ${gsdVal} (3D Tilt Corrected)` : `GSD: ${gsdVal}`;
+    if (hudGsd) hudGsd.textContent = isOblique ? (this.calibrationMode === 'slant' ? `GSD: ${gsdVal} (Slant Calibrated)` : `GSD: ${gsdVal} (3D Tilt Corrected)`) : `GSD: ${gsdVal}`;
     if (hudTs) hudTs.textContent = p.timestamp ? p.timestamp.replace('T', ' ').slice(0, 19) + ' UTC' : '2026-09-12 14:02:30 UTC';
   },
 
@@ -25801,6 +25811,36 @@ const PhotoInspector = {
     const boundaryBox = document.getElementById('boundary-metrics-box');
     const perimEl = document.getElementById('boundary-perimeter-val');
     const areaEl = document.getElementById('boundary-area-val');
+    const slantBtn = document.getElementById('plane-btn-slant');
+    const groundBtn = document.getElementById('plane-btn-ground');
+    const heightInput = document.getElementById('inspector-target-height-input');
+    const heightUnit = document.getElementById('inspector-target-height-unit');
+
+    if (slantBtn && groundBtn) {
+      if (this.calibrationMode === 'slant') {
+        slantBtn.classList.add('active');
+        slantBtn.classList.remove('btn-secondary');
+        slantBtn.classList.add('btn-primary');
+        groundBtn.classList.remove('active');
+        groundBtn.classList.remove('btn-primary');
+        groundBtn.classList.add('btn-secondary');
+      } else {
+        groundBtn.classList.add('active');
+        groundBtn.classList.remove('btn-secondary');
+        groundBtn.classList.add('btn-primary');
+        slantBtn.classList.remove('active');
+        slantBtn.classList.remove('btn-primary');
+        slantBtn.classList.add('btn-secondary');
+      }
+    }
+
+    if (heightUnit) {
+      heightUnit.textContent = this.unit === 'imperial' ? 'ft' : 'm';
+    }
+    if (heightInput && document.activeElement !== heightInput) {
+      const dispH = this.unit === 'imperial' ? Math.round(this.targetHeight * 3.28084 * 10) / 10 : Math.round(this.targetHeight * 10) / 10;
+      heightInput.value = dispH;
+    }
 
     const annotations = this.activePhoto.annotations || [];
     const pins = annotations.filter(a => a.type === 'pin');
@@ -25824,14 +25864,20 @@ const PhotoInspector = {
           let cardDesc = ann.description || ann.details || 'No description entered.';
           if (ann.type === 'boundary') {
             cardTitle = '📐 Boundary Line';
-            if (ann.perimeterFt) cardDesc = `${ann.perimeterFt} ft perimeter • ${ann.areaSqFt || 0} sq ft`;
+            const polyRes = this.calculateGroundPolygon(ann.points);
+            if (this.unit === 'imperial') {
+              cardDesc = `${polyRes.perimeterFt} ft perimeter • ${polyRes.areaSqFt} sq ft`;
+            } else {
+              cardDesc = `${polyRes.perimeterMeters} m perimeter • ${polyRes.areaM2} m²`;
+            }
           } else if (ann.type === 'measure') {
             const dM = this.calculateGroundDistance(ann.p1, ann.p2);
             const dStr = this.unit === 'imperial' ? `${(dM * 3.28084).toFixed(2)} ft` : `${dM.toFixed(2)} m`;
             cardTitle = `📏 Measurement: ${dStr}`;
             const pitch = (this.activePhoto?.actual?.gimbalPitch !== undefined) ? this.activePhoto.actual.gimbalPitch : -90;
             const isOblique = Math.abs(pitch + 90) > 2;
-            cardDesc = isOblique ? `3D ray-plane ground corrected (${pitch}° pitch)` : 'Planar nadir calibrated';
+            const modeName = this.calibrationMode === 'slant' ? 'Structure Slant Plane' : 'Ground Plane';
+            cardDesc = isOblique ? `${modeName} corrected (${pitch}° pitch)` : 'Planar nadir calibrated';
           }
           card.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -25858,8 +25904,9 @@ const PhotoInspector = {
       if (boundaries.length > 0) {
         boundaryBox.style.display = 'block';
         const lastB = boundaries[boundaries.length - 1];
-        if (perimEl) perimEl.textContent = this.unit === 'imperial' ? `${lastB.perimeterFt || 0} ft` : `${lastB.perimeterMeters || 0} m`;
-        if (areaEl) areaEl.textContent = this.unit === 'imperial' ? `${lastB.areaSqFt || 0} sq ft` : `${lastB.areaM2 || 0} m²`;
+        const polyRes = this.calculateGroundPolygon(lastB.points);
+        if (perimEl) perimEl.textContent = this.unit === 'imperial' ? `${polyRes.perimeterFt || 0} ft` : `${polyRes.perimeterMeters || 0} m`;
+        if (areaEl) areaEl.textContent = this.unit === 'imperial' ? `${polyRes.areaSqFt || 0} sq ft` : `${polyRes.areaM2 || 0} m²`;
       } else {
         boundaryBox.style.display = 'none';
       }
@@ -25869,7 +25916,9 @@ const PhotoInspector = {
   projectPixelToGround(normX, normY) {
     if (!this.activePhoto) return { x: 0, y: 0 };
     const p = this.activePhoto;
-    const alt = (p.actual && typeof p.actual.altAgl === 'number' && p.actual.altAgl > 0) ? p.actual.altAgl : 25.0;
+    const rawAlt = (p.actual && typeof p.actual.altAgl === 'number' && p.actual.altAgl > 0) ? p.actual.altAgl : 25.0;
+    const targetH = typeof this.targetHeight === 'number' ? this.targetHeight : 0;
+    const alt = Math.max(0.5, rawAlt - targetH);
     const pitch = (p.actual && typeof p.actual.gimbalPitch === 'number') ? p.actual.gimbalPitch : -90;
 
     let tiltDeg;
@@ -25911,6 +25960,43 @@ const PhotoInspector = {
 
   calculateGroundDistance(p1, p2) {
     if (!p1 || !p2) return 0;
+    if (!this.activePhoto) return 0;
+    const p = this.activePhoto;
+    const rawAlt = (p.actual && typeof p.actual.altAgl === 'number' && p.actual.altAgl > 0) ? p.actual.altAgl : 25.0;
+    const targetH = typeof this.targetHeight === 'number' ? this.targetHeight : 0;
+    const alt = Math.max(0.5, rawAlt - targetH);
+    const pitch = (p.actual && typeof p.actual.gimbalPitch === 'number') ? p.actual.gimbalPitch : -90;
+
+    let tiltDeg;
+    if (pitch <= 0) {
+      tiltDeg = Math.min(85, Math.max(0, 90 + pitch));
+    } else {
+      tiltDeg = Math.min(85, Math.max(0, Math.abs(90 - pitch)));
+    }
+    const tau = tiltDeg * (Math.PI / 180);
+
+    const sW = p.sensorWidthMm || 9.6;
+    const fL = p.focalLengthMm || 6.72;
+    const canvas = (typeof document !== 'undefined') ? document.getElementById('photo-annotation-canvas') : null;
+    const aspect = (canvas && canvas.width && canvas.height) ? (canvas.width / canvas.height) : (4 / 3);
+    const sH = sW / aspect;
+
+    const tanHalfH = sW / (2 * fL);
+    const tanHalfV = sH / (2 * fL);
+
+    if (this.calibrationMode === 'slant') {
+      const cosTau = Math.max(0.087, Math.cos(tau));
+      const dSlant = alt / cosTau;
+      const xc1 = (2 * p1.x - 1) * tanHalfH;
+      const yc1 = (1 - 2 * p1.y) * tanHalfV;
+      const xc2 = (2 * p2.x - 1) * tanHalfH;
+      const yc2 = (1 - 2 * p2.y) * tanHalfV;
+      const dx = (xc2 - xc1) * dSlant;
+      const dy = (yc2 - yc1) * dSlant;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    // mode === 'ground': full 3D Ray-to-Ground Plane intersection
     const g1 = this.projectPixelToGround(p1.x, p1.y);
     const g2 = this.projectPixelToGround(p2.x, p2.y);
     const dx = g2.x - g1.x;
@@ -25922,7 +26008,40 @@ const PhotoInspector = {
     if (!Array.isArray(points) || points.length < 2) {
       return { perimeterMeters: 0, perimeterFt: 0, areaM2: 0, areaSqFt: 0, segments: [] };
     }
-    const groundPts = points.map(pt => this.projectPixelToGround(pt.x, pt.y));
+    let groundPts;
+    if (this.calibrationMode === 'slant') {
+      const p = this.activePhoto || {};
+      const rawAlt = (p.actual && typeof p.actual.altAgl === 'number' && p.actual.altAgl > 0) ? p.actual.altAgl : 25.0;
+      const targetH = typeof this.targetHeight === 'number' ? this.targetHeight : 0;
+      const alt = Math.max(0.5, rawAlt - targetH);
+      const pitch = (p.actual && typeof p.actual.gimbalPitch === 'number') ? p.actual.gimbalPitch : -90;
+
+      let tiltDeg;
+      if (pitch <= 0) {
+        tiltDeg = Math.min(85, Math.max(0, 90 + pitch));
+      } else {
+        tiltDeg = Math.min(85, Math.max(0, Math.abs(90 - pitch)));
+      }
+      const tau = tiltDeg * (Math.PI / 180);
+      const cosTau = Math.max(0.087, Math.cos(tau));
+      const dSlant = alt / cosTau;
+
+      const sW = p.sensorWidthMm || 9.6;
+      const fL = p.focalLengthMm || 6.72;
+      const canvas = (typeof document !== 'undefined') ? document.getElementById('photo-annotation-canvas') : null;
+      const aspect = (canvas && canvas.width && canvas.height) ? (canvas.width / canvas.height) : (4 / 3);
+      const sH = sW / aspect;
+
+      const tanHalfH = sW / (2 * fL);
+      const tanHalfV = sH / (2 * fL);
+
+      groundPts = points.map(pt => ({
+        x: (2 * pt.x - 1) * tanHalfH * dSlant,
+        y: (1 - 2 * pt.y) * tanHalfV * dSlant
+      }));
+    } else {
+      groundPts = points.map(pt => this.projectPixelToGround(pt.x, pt.y));
+    }
     const segments = [];
     let perimeter = 0;
 
@@ -26226,6 +26345,47 @@ const PhotoInspector = {
       };
     }
 
+    const planeToggleBtn = document.getElementById('inspector-plane-toggle-btn');
+    if (planeToggleBtn) {
+      planeToggleBtn.onclick = () => {
+        this.calibrationMode = this.calibrationMode === 'slant' ? 'ground' : 'slant';
+        this.updateHeaderUI();
+        this.updateDrawerUI();
+        this.renderCanvas();
+      };
+    }
+
+    const slantBtn = document.getElementById('plane-btn-slant');
+    const groundBtn = document.getElementById('plane-btn-ground');
+    if (slantBtn) {
+      slantBtn.onclick = () => {
+        this.calibrationMode = 'slant';
+        this.updateHeaderUI();
+        this.updateDrawerUI();
+        this.renderCanvas();
+      };
+    }
+    if (groundBtn) {
+      groundBtn.onclick = () => {
+        this.calibrationMode = 'ground';
+        this.updateHeaderUI();
+        this.updateDrawerUI();
+        this.renderCanvas();
+      };
+    }
+
+    const heightInput = document.getElementById('inspector-target-height-input');
+    if (heightInput) {
+      const handleHeightChange = () => {
+        const val = parseFloat(heightInput.value) || 0;
+        this.targetHeight = this.unit === 'imperial' ? val / 3.28084 : val;
+        this.updateDrawerUI();
+        this.renderCanvas();
+      };
+      heightInput.oninput = handleHeightChange;
+      heightInput.onchange = handleHeightChange;
+    }
+
     if (undoBtn) undoBtn.onclick = () => this.undo();
     if (clearBtn) clearBtn.onclick = () => this.clear();
     if (saveBtn) saveBtn.onclick = () => this.save();
@@ -26334,6 +26494,7 @@ const PhotoInspector = {
             const p2 = this.activeMeasurePoints[1];
             const distM = this.calculateGroundDistance(p1, p2);
             const distStr = this.unit === 'imperial' ? `${(distM * 3.28084).toFixed(2)} ft` : `${distM.toFixed(2)} m`;
+            const modeDesc = this.calibrationMode === 'slant' ? 'Structure slant plane' : 'Corrected 3D ground plane';
             this.activePhoto.annotations.push({
               type: 'measure',
               p1,
@@ -26341,7 +26502,7 @@ const PhotoInspector = {
               distanceMeters: Math.round(distM * 100) / 100,
               distanceFt: Math.round(distM * 3.28084 * 100) / 100,
               label: distStr,
-              details: `Corrected 3D ground distance: ${distStr}`
+              details: `${modeDesc}: ${distStr}`
             });
             this.activeMeasurePoints = [];
             this.updateDrawerUI();
