@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.101.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.102.0</span></h1>
         </div>
       </div>
 
@@ -221,6 +221,7 @@
               <option value="road-following">Road Following (Offset Path)</option>
               <option value="exclusion-box">🚫 Exclusion Zone (Box)</option>
               <option value="exclusion-freeform">🚫 Exclusion Zone (Freeform)</option>
+              <option value="boundary-polygon">🗺️ Boundary / Parcel (Drawing)</option>
             </select>
             
             <!-- Custom visual selector cards -->
@@ -335,20 +336,15 @@
                 <span style="color: #f87171;">Exclusion (Poly)</span>
                 <span class="pattern-badge-restricted">SAFETY</span>
               </div>
-            </div>
-
-            <!-- Layer Custom Boundary / Parcel Perimeter -->
-            <div id="layer-custom-boundary-container" style="margin-top: 10px; padding: 10px; background: rgba(6, 182, 212, 0.05); border: 1px dashed rgba(6, 182, 212, 0.35); border-radius: 6px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <span style="font-size: 0.75rem; font-weight: 600; color: #22d3ee;">🗺️ Layer Boundary / Parcel</span>
-                <span id="layer-boundary-vertex-badge" style="font-size: 0.68rem; padding: 2px 6px; border-radius: 4px; background: rgba(6, 182, 212, 0.15); color: #06b6d4; font-family: monospace;">Auto-Bounds</span>
-              </div>
-              <p style="font-size: 0.72rem; color: var(--text-muted); margin: 0 0 8px 0; line-height: 1.3;">
-                By default, the 4-corner pattern footprint is used. You can trace a custom parcel perimeter on the 2D map to auto-superimpose onto mission photos in the Photo Inspector.
-              </p>
-              <div style="display: flex; gap: 6px;">
-                <button type="button" id="btn-draw-layer-boundary" class="btn-secondary btn-sm" style="flex: 1; font-size: 0.72rem; padding: 4px 6px;" title="Click map to trace custom boundary polygon">✏️ Draw on Map</button>
-                <button type="button" id="btn-clear-layer-boundary" class="btn-secondary btn-sm" style="font-size: 0.72rem; padding: 4px 8px; color: #ef4444; display: none;" title="Reset to automatic pattern footprint">✕ Reset</button>
+              <div class="pattern-card boundary-card" data-value="boundary-polygon" title="Boundary / Parcel (Drawing Layer)">
+                <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="3,6 9,3 15,6 21,3 21,18 15,21 9,18 3,21" stroke="#06b6d4" stroke-dasharray="3,3"/>
+                  <polyline points="9,3 9,18" stroke="#06b6d4" opacity="0.6"/>
+                  <polyline points="15,6 15,21" stroke="#06b6d4" opacity="0.6"/>
+                  <circle cx="9" cy="10.5" r="1.5" fill="#06b6d4"/>
+                </svg>
+                <span style="color: #22d3ee;">Boundary</span>
+                <span class="pattern-badge-tool" style="background: rgba(6, 182, 212, 0.2); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.35);">DRAWING</span>
               </div>
             </div>
           </div>
@@ -359,6 +355,10 @@
 
           <div id="exclusion-instructions" class="info-alert hidden" style="margin-bottom: 12px; background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #f87171;">
             <span>🚫 <strong>Exclusion Zone Active:</strong> Waypoints from other pattern layers inside this 3D volume will not be created. For Freeform exclusion, click on the map to place/drag polygon boundary corners.</span>
+          </div>
+
+          <div id="boundary-instructions" class="info-alert hidden" style="margin-bottom: 12px; background: rgba(6, 182, 212, 0.1); border-color: rgba(6, 182, 212, 0.3); color: #22d3ee;">
+            <span>🗺️ <strong>Parcel / Boundary Drawing Active:</strong> Click anywhere on the map to place boundary vertices. Drag vertex pins to adjust or click a vertex to remove. These boundaries automatically project onto captured photos in the Photo Inspector.</span>
           </div>
 
           <p class="help-text" id="import-status-text" style="margin-top: 4px;">Click anywhere on the map to place or reposition the flight pattern center.</p>
@@ -1159,6 +1159,79 @@
             </div>
             </div>
           </div> <!-- /layer-card-modes -->
+
+          <!-- Card 5: Parcel / Boundary Drawing Properties -->
+          <div id="layer-card-boundary" class="layer-subgroup-card hidden">
+            <div class="layer-subgroup-header">
+              <span>🗺️ Parcel / Boundary Drawing Properties</span>
+              <span class="badge" style="font-size: 0.62rem; background: rgba(6, 182, 212, 0.15); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 5px; border-radius: 999px;">Drawing</span>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 6px;">
+              <div class="control-group">
+                <label for="boundary-layer-name" style="font-size: 0.75rem;">Boundary Label / Parcel ID</label>
+                <input type="text" id="boundary-layer-name" class="form-control" placeholder="e.g. Lot 4B Perimeter" value="Boundary / Parcel" style="font-size: 0.75rem; padding: 4px 8px;">
+              </div>
+
+              <div class="control-group">
+                <label for="boundary-stroke-color" style="font-size: 0.75rem;">Stroke Color</label>
+                <select id="boundary-stroke-color" class="form-select" style="font-size: 0.75rem; padding: 4px 8px;">
+                  <option value="#06b6d4" selected>Cyan (#06b6d4)</option>
+                  <option value="#10b981">Emerald Green (#10b981)</option>
+                  <option value="#f59e0b">Amber Orange (#f59e0b)</option>
+                  <option value="#ef4444">Coral Red (#ef4444)</option>
+                  <option value="#a855f7">Purple (#a855f7)</option>
+                  <option value="#ffffff">Pure White (#ffffff)</option>
+                </select>
+              </div>
+
+              <div class="control-group">
+                <label for="boundary-line-style" style="font-size: 0.75rem;">Line Style</label>
+                <select id="boundary-line-style" class="form-select" style="font-size: 0.75rem; padding: 4px 8px;">
+                  <option value="dashed" selected>Dashed Line</option>
+                  <option value="solid">Solid Line</option>
+                  <option value="dotted">Dotted Line</option>
+                </select>
+              </div>
+
+              <div class="control-group">
+                <div class="control-label">
+                  <span style="font-size: 0.75rem;">Fill Opacity</span>
+                  <span class="value-display" style="font-size: 0.75rem;"><span id="boundary-fill-opacity-val">15</span>%</span>
+                </div>
+                <input type="range" id="boundary-fill-opacity" min="0" max="50" step="5" value="15" class="slider" aria-label="Boundary Fill Opacity">
+              </div>
+
+              <div class="control-group">
+                <div class="control-label">
+                  <span style="font-size: 0.75rem;">Target Elevation Offset</span>
+                  <span class="value-display" style="font-size: 0.75rem;"><span id="boundary-elevation-val">0</span>m</span>
+                </div>
+                <input type="number" id="boundary-elevation" class="form-control" min="-50" max="500" step="1" value="0" placeholder="Offset from ground ATO (m)" style="font-size: 0.75rem; padding: 4px 8px;">
+                <p class="help-text" style="font-size: 0.68rem; margin-top: 3px;">Elevates boundary projection in Photo Inspector for structures/rooflines above takeoff ground.</p>
+              </div>
+
+              <!-- Live Boundary Measurements Card -->
+              <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 6px; padding: 8px 10px; font-size: 0.74rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                  <span style="color: var(--text-muted);">Vertices:</span>
+                  <strong id="boundary-metrics-vertices" style="color: #22d3ee;">0 Vertices</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                  <span style="color: var(--text-muted);">Perimeter:</span>
+                  <strong id="boundary-metrics-perimeter" style="color: var(--text-main);">0m (0ft)</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: var(--text-muted);">Enclosed Area:</span>
+                  <strong id="boundary-metrics-area" style="color: var(--text-main);">0 m² (0 acres)</strong>
+                </div>
+              </div>
+
+              <div>
+                <button type="button" id="btn-clear-boundary-vertices" class="btn-secondary btn-sm" style="width: 100%; font-size: 0.72rem; padding: 4px 8px; color: #ef4444;" title="Clear all vertices for this drawing layer">✕ Clear Vertices</button>
+              </div>
+            </div>
+          </div> <!-- /layer-card-boundary -->
         </section>
 
         <!-- Section 3: Global Mission Failsafes & Defaults -->
@@ -1960,6 +2033,15 @@
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🗺️ First-Class Drawing &amp; Parcel Boundary Layer with Section 2 Properties &amp; Photo Projection (v1.102.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Boundary / Parcel is now a dedicated, first-class drawing tool in Section 1's Flight Pattern selector grid with a distinctive <code>DRAWING</code> tool badge. Features Section 2 Card 5 with customizable parcel names, 8 stroke colors, line styles (solid, dashed, dotted), fill opacity, target elevation, and live geodetic perimeter &amp; area metrics. Drops vertices on 2D map clicks with draggable numbered handles. All enabled drawing layers automatically project directly onto captured drone photos in the Photo Inspector, while remaining safely isolated from drone flight waypoints.
+            </p>
+          </div>
+
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🗺️ Auto-Superimposed Flight Layer Boundaries &amp; Parcel Perimeters (v1.100.0)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -2638,7 +2720,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.101.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.102.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -2707,6 +2789,12 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.102.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>First-Class Drawing &amp; Parcel Boundary Layer:</strong> Promoted Boundary / Parcel to a first-class drawing tool in Section 1's pattern grid with <code>DRAWING</code> badge, Section 2 Card 5 properties (color, stroke style, opacity, elevation, metrics), interactive vertex handles, multi-layer drone photo superimposition, and 0-waypoint flight safety guarantee.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.101.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">

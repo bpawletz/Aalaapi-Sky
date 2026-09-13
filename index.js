@@ -114,6 +114,15 @@ const FLIGHT_TOOLS = {
     shortcut: 'P',
     description: '3D Exclusion Zone freeform polygon boundary',
     propertyGroups: ['exclusion-freeform-note', 'exclusion-altitude']
+  },
+  'boundary-polygon': {
+    id: 'boundary-polygon',
+    label: 'Boundary / Parcel',
+    category: 'drawing',
+    icon: 'boundary-polygon',
+    shortcut: 'B',
+    description: 'Drawing layer for property parcel perimeters and survey boundary envelopes',
+    propertyGroups: ['boundary-properties']
   }
 };
 
@@ -129,6 +138,7 @@ let photoMarkersGroup = null;
 let photoInspectionGroup = null;
 let activeInspectionManifest = null;
 let exclusionZonesGroup = null;
+let boundaryLayersGroup = null;
 let targetPolygonGroup = null;
 let isTargetPolyEditActive = false;
 let isAnyPopupOpen = false;
@@ -277,6 +287,208 @@ function clearLayerBoundary() {
   }
   setLayerBoundaryEditMode(false);
   if (typeof updatePlan === 'function') updatePlan();
+}
+
+function haversineDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function hexToRgba(hex, alpha = 1) {
+  if (!hex || typeof hex !== 'string') return `rgba(6, 182, 212, ${alpha})`;
+  let c = hex.replace('#', '');
+  if (c.length === 3) c = c.split('').map(x => x + x).join('');
+  const num = parseInt(c, 16);
+  if (isNaN(num)) return `rgba(6, 182, 212, ${alpha})`;
+  const r = (num >> 16) & 255;
+  const g = (num >> 8) & 255;
+  const b = num & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function calculateGeodeticPolygonMetrics(coordinates) {
+  if (!Array.isArray(coordinates) || coordinates.length < 2) {
+    return { perimeter: 0, area: 0 };
+  }
+
+  let totalMeters = 0;
+  for (let i = 0; i < coordinates.length; i++) {
+    const p1 = coordinates[i];
+    const p2 = coordinates[(i + 1) % coordinates.length];
+    if (i === coordinates.length - 1 && coordinates.length < 3) break;
+    const d = haversineDistance(p1.lat, (p1.lon !== undefined ? p1.lon : p1.lng), p2.lat, (p2.lon !== undefined ? p2.lon : p2.lng));
+    totalMeters += d;
+  }
+
+  let areaM2 = 0;
+  if (coordinates.length >= 3) {
+    const lat0 = coordinates[0].lat * (Math.PI / 180);
+    const mPerDegLat = 111132.954;
+    const mPerDegLon = 111132.954 * Math.cos(lat0);
+
+    const xyPoints = coordinates.map(c => ({
+      x: ((c.lon !== undefined ? c.lon : c.lng) - (coordinates[0].lon !== undefined ? coordinates[0].lon : coordinates[0].lng)) * mPerDegLon,
+      y: (c.lat - coordinates[0].lat) * mPerDegLat
+    }));
+
+    let sum = 0;
+    for (let i = 0; i < xyPoints.length; i++) {
+      const j = (i + 1) % xyPoints.length;
+      sum += xyPoints[i].x * xyPoints[j].y - xyPoints[j].x * xyPoints[i].y;
+    }
+    areaM2 = Math.abs(sum) / 2;
+  }
+
+  return { perimeter: totalMeters, area: areaM2 };
+}
+
+function addBoundaryPolygonPoint(lat, lng) {
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  if (!activeLayer) return;
+
+  if (!Array.isArray(activeLayer.boundaryPolygon)) {
+    activeLayer.boundaryPolygon = [];
+  }
+
+  if (!centerMarker && typeof setGridCenter === 'function') {
+    setGridCenter(lat, lng);
+  }
+
+  const centerLatLng = centerMarker ? centerMarker.getLatLng() : { lat, lng };
+  const offsets = (typeof geodeticToLocal === 'function')
+    ? geodeticToLocal(lat, lng, centerLatLng.lat, centerLatLng.lng)
+    : { x: 0, y: 0 };
+
+  const pt = {
+    lat: lat,
+    lon: lng,
+    x: offsets.x,
+    y: offsets.y
+  };
+
+  activeLayer.boundaryPolygon.push(pt);
+  activeLayer.polygonVertices = activeLayer.boundaryPolygon;
+
+  updateGrid();
+}
+
+function clearBoundaryPolygon() {
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  if (!activeLayer) return;
+  activeLayer.boundaryPolygon = [];
+  activeLayer.polygonVertices = [];
+  updateGrid();
+}
+
+function drawBoundaryLayers(globalCenterLat, globalCenterLon) {
+  if (!boundaryLayersGroup || typeof L === 'undefined' || !map) return;
+  boundaryLayersGroup.clearLayers();
+
+  const enabledDrawings = (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers))
+    ? flightLayers.filter(l => l.enabled && (l.pattern === 'boundary-polygon' || l.isDrawingLayer))
+    : [];
+
+  enabledDrawings.forEach(layer => {
+    const centerLat = (layer.centerLat !== undefined && layer.centerLat !== null) ? layer.centerLat : globalCenterLat;
+    const centerLon = (layer.centerLon !== undefined && layer.centerLon !== null) ? layer.centerLon : globalCenterLon;
+    const vertices = (Array.isArray(layer.boundaryPolygon) && layer.boundaryPolygon.length > 0)
+      ? layer.boundaryPolygon
+      : (Array.isArray(layer.polygonVertices) && layer.polygonVertices.length > 0 ? layer.polygonVertices : []);
+
+    const strokeColor = layer.strokeColor || '#06b6d4';
+    const lineStyle = layer.lineStyle || 'dashed';
+    const dashArray = lineStyle === 'solid' ? null : (lineStyle === 'dotted' ? '3, 4' : '6, 6');
+    const fillOpacity = (typeof layer.fillOpacity === 'number') ? layer.fillOpacity / 100.0 : 0.15;
+
+    const metrics = calculateGeodeticPolygonMetrics(vertices);
+    const perimMeters = metrics.perimeter;
+    const areaSqM = metrics.area;
+    const perimFt = perimMeters * 3.28084;
+    const areaAcres = areaSqM * 0.000247105;
+    const tooltipText = `🗺️ <strong>${escapeHtml(layer.name || 'Boundary / Parcel')}</strong><br>Vertices: ${vertices.length}<br>Perimeter: ${formatDistance(perimMeters)} (${Math.round(perimFt)}ft)<br>Area: ${Math.round(areaSqM).toLocaleString()} m² (${areaAcres.toFixed(2)} acres)`;
+
+    if (layer.id === activeLayerId) {
+      const vBadge = document.getElementById('boundary-metrics-vertices');
+      const pBadge = document.getElementById('boundary-metrics-perimeter');
+      const aBadge = document.getElementById('boundary-metrics-area');
+      if (vBadge) vBadge.textContent = `${vertices.length} Vertices`;
+      if (pBadge) pBadge.textContent = `${formatDistance(perimMeters)} (${Math.round(perimFt)}ft)`;
+      if (aBadge) aBadge.textContent = `${Math.round(areaSqM).toLocaleString()} m² (${areaAcres.toFixed(2)} acres)`;
+    }
+
+    let poly = null;
+    if (vertices.length >= 3) {
+      const latlngs = vertices.map(v => [v.lat, (v.lon !== undefined ? v.lon : v.lng)]);
+      poly = L.polygon(latlngs, {
+        color: strokeColor,
+        weight: 2.5,
+        dashArray: dashArray,
+        fillColor: strokeColor,
+        fillOpacity: fillOpacity,
+        className: 'boundary-drawing-polygon'
+      }).addTo(boundaryLayersGroup);
+
+      poly.bindTooltip(tooltipText, { direction: 'center', permanent: false });
+    } else if (vertices.length === 2) {
+      const latlngs = vertices.map(v => [v.lat, (v.lon !== undefined ? v.lon : v.lng)]);
+      poly = L.polyline(latlngs, {
+        color: strokeColor,
+        weight: 2,
+        dashArray: dashArray || '4, 4',
+        opacity: 0.8
+      }).addTo(boundaryLayersGroup);
+    }
+
+    // Draggable vertex handles for active layer
+    if (layer.id === activeLayerId) {
+      vertices.forEach((v, vIdx) => {
+        const vLon = v.lon !== undefined ? v.lon : v.lng;
+        const nodeIcon = L.divIcon({
+          className: 'boundary-node-icon-wrapper',
+          html: `<div class="boundary-node-icon" style="background-color: ${strokeColor};" title="Boundary Vertex ${vIdx + 1} (Drag to reposition, click to remove)">${vIdx + 1}</div>`,
+          iconSize: [20, 20],
+          iconAnchor: [10, 10]
+        });
+
+        const nodeMarker = L.marker([v.lat, vLon], {
+          icon: nodeIcon,
+          draggable: true
+        }).addTo(boundaryLayersGroup);
+
+        nodeMarker.on('drag', (e) => {
+          const newLatLng = e.target.getLatLng();
+          const offsets = (typeof geodeticToLocal === 'function')
+            ? geodeticToLocal(newLatLng.lat, newLatLng.lng, centerLat, centerLon)
+            : { x: 0, y: 0 };
+          v.lat = newLatLng.lat;
+          v.lon = newLatLng.lng;
+          v.x = offsets.x;
+          v.y = offsets.y;
+          if (poly && typeof poly.setLatLngs === 'function') {
+            poly.setLatLngs(vertices.map(pt => [pt.lat, (pt.lon !== undefined ? pt.lon : pt.lng)]));
+          }
+        });
+
+        nodeMarker.on('dragend', () => {
+          updateGrid();
+        });
+
+        nodeMarker.on('click', (e) => {
+          if (e.originalEvent && e.originalEvent.stopPropagation) e.originalEvent.stopPropagation();
+          vertices.splice(vIdx, 1);
+          if (layer.boundaryPolygon) layer.boundaryPolygon = vertices;
+          if (layer.polygonVertices) layer.polygonVertices = vertices;
+          updateGrid();
+        });
+      });
+    }
+  });
 }
 
 // Geolocation state
@@ -801,16 +1013,20 @@ function getPatternDisplayName(pattern) {
     'freeform': 'Freeform Plan',
     'road-following': 'Road Follow',
     'exclusion-box': '🚫 Exclusion (Box)',
-    'exclusion-freeform': '🚫 Exclusion (Poly)'
+    'exclusion-freeform': '🚫 Exclusion (Poly)',
+    'boundary-polygon': '🗺️ Boundary / Parcel'
   };
   return map[pattern] || pattern || 'Double Grid';
 }
 
 function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', centerLat = null, centerLon = null) {
   const isExcl = (pattern === 'exclusion-box' || pattern === 'exclusion-freeform');
+  const isDrawing = (pattern === 'boundary-polygon');
   const colorObj = isExcl
     ? { name: 'Crimson', hex: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)', border: 'rgba(239, 68, 68, 0.4)' }
-    : LAYER_COLORS[colorIndex % LAYER_COLORS.length];
+    : (isDrawing
+        ? { name: 'Cyan', hex: '#06b6d4', bg: 'rgba(6, 182, 212, 0.15)', border: 'rgba(6, 182, 212, 0.4)' }
+        : LAYER_COLORS[colorIndex % LAYER_COLORS.length]);
 
   let cLat = centerLat;
   let cLon = centerLon;
@@ -830,6 +1046,10 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     centerLat: cLat,
     centerLon: cLon,
     isExclusionZone: isExcl,
+    isDrawingLayer: isDrawing,
+    strokeColor: '#06b6d4',
+    lineStyle: 'dashed',
+    fillOpacity: 15,
     allAltitudes: true,
     minAltitude: 0,
     maxAltitude: 60,
@@ -1291,7 +1511,16 @@ function saveActiveLayerFromUi() {
   if (gridTypeEl && gridTypeEl.value) {
     layer.pattern = gridTypeEl.value;
     layer.isExclusionZone = (layer.pattern === 'exclusion-box' || layer.pattern === 'exclusion-freeform');
+    layer.isDrawingLayer = (layer.pattern === 'boundary-polygon');
   }
+  const bColorEl = document.getElementById('boundary-stroke-color');
+  const bStyleEl = document.getElementById('boundary-line-style');
+  const bOpacityEl = document.getElementById('boundary-fill-opacity');
+  const bElevEl = document.getElementById('boundary-elevation');
+  if (bColorEl && bColorEl.value) layer.strokeColor = bColorEl.value;
+  if (bStyleEl && bStyleEl.value) layer.lineStyle = bStyleEl.value;
+  if (bOpacityEl && bOpacityEl.value) layer.fillOpacity = parseInt(bOpacityEl.value, 10) || 15;
+  if (bElevEl && bElevEl.value) layer.targetHeight = parseFloat(bElevEl.value) || 0;
   if (gridWidthEl) layer.gridWidth = parseFloat(gridWidthEl.value) || 100;
   if (gridHeightEl) layer.gridHeight = parseFloat(gridHeightEl.value) || 100;
   if (gridRotationEl) layer.gridRotation = parseFloat(gridRotationEl.value) || 0;
@@ -2551,6 +2780,9 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
   if (layer.isExclusionZone || layer.pattern === 'exclusion-box' || layer.pattern === 'exclusion-freeform') {
     return { waypoints: [], photos: [], isExclusionZone: true };
   }
+  if (layer.isDrawingLayer || layer.pattern === 'boundary-polygon') {
+    return { waypoints: [], photos: [], isDrawingLayer: true };
+  }
 
   const centerLat = (layer.centerLat !== undefined && layer.centerLat !== null) ? layer.centerLat : globalCenterLat;
   const centerLon = (layer.centerLon !== undefined && layer.centerLon !== null) ? layer.centerLon : globalCenterLon;
@@ -2894,7 +3126,7 @@ function compileMultiLayerMission(centerLat, centerLon) {
   const activeExclusionZones = enabledLayers.filter(l => l.pattern === 'exclusion-box' || l.pattern === 'exclusion-freeform' || l.isExclusionZone);
   activeExclusionZones.forEach(z => { z.filteredCount = 0; });
 
-  const flightLayersOnly = enabledLayers.filter(l => l.pattern !== 'exclusion-box' && l.pattern !== 'exclusion-freeform' && !l.isExclusionZone);
+  const flightLayersOnly = enabledLayers.filter(l => l.pattern !== 'exclusion-box' && l.pattern !== 'exclusion-freeform' && !l.isExclusionZone && !l.isDrawingLayer && l.pattern !== 'boundary-polygon');
 
   for (let i = 0; i < flightLayersOnly.length; i++) {
     const currentLayer = flightLayersOnly[i];
@@ -2977,23 +3209,32 @@ function renderLayersList() {
   flightLayers.forEach((layer, idx) => {
     const isActive = layer.id === activeLayerId;
     const isExcl = (layer.pattern === 'exclusion-box' || layer.pattern === 'exclusion-freeform' || layer.isExclusionZone);
+    const isDrawing = (layer.pattern === 'boundary-polygon' || layer.isDrawingLayer);
     const card = document.createElement('div');
-    card.className = `layer-card${isExcl ? ' exclusion-zone' : ''}${isActive ? ' active' : ''}`;
+    card.className = `layer-card${isExcl ? ' exclusion-zone' : ''}${isDrawing ? ' boundary-layer' : ''}${isActive ? ' active' : ''}`;
     if (card.setAttribute) card.setAttribute('data-layer-id', layer.id);
 
     const isFirst = idx === 0;
     const isLast = idx === flightLayers.length - 1;
     const wCount = (layer.waypoints && layer.waypoints.length) ? layer.waypoints.length : 0;
+    const vCount = (Array.isArray(layer.boundaryPolygon) && layer.boundaryPolygon.length)
+      ? layer.boundaryPolygon.length
+      : ((Array.isArray(layer.polygonVertices) && layer.polygonVertices.length) ? layer.polygonVertices.length : 0);
 
     const detailsHtml = isExcl
       ? `<span>Envelope: ${layer.allAltitudes !== false ? 'All Altitudes (0m – ∞)' : `${layer.minAltitude || 0}m – ${layer.maxAltitude || 60}m`}</span>
          <span style="color: ${layer.enabled ? '#f87171' : '#ef4444'}; font-weight: 600;">
            ${layer.enabled ? (layer.filteredCount ? `🚫 ${layer.filteredCount} wps blocked` : '🚫 Active Zone') : 'Disabled'}
          </span>`
-      : `<span>Alt: ${layer.altitude}m &bull; Spd: ${layer.speed}m/s &bull; Pitch: ${layer.gimbalPitch}&deg;</span>
+      : (isDrawing
+        ? `<span>Style: ${layer.lineStyle || 'dashed'} &bull; Elev: ${layer.targetHeight || 0}m</span>
+           <span style="color: ${layer.enabled ? '#06b6d4' : '#ef4444'}; font-weight: 600;">
+             ${layer.enabled ? `0 wps • Drawing (${vCount} pts)` : 'Disabled'}
+           </span>`
+        : `<span>Alt: ${layer.altitude}m &bull; Spd: ${layer.speed}m/s &bull; Pitch: ${layer.gimbalPitch}&deg;</span>
          <span style="color: ${layer.enabled ? 'var(--text-muted)' : '#ef4444'}; font-weight: 500;">
            ${layer.enabled ? `${wCount} wps` : 'Disabled'}
-         </span>`;
+         </span>`);
 
     card.innerHTML = `
       <div class="layer-card-header">
@@ -3785,6 +4026,7 @@ function initMap() {
   // Layer groups for flight paths and markers
   flightPathPolyline = L.layerGroup().addTo(map);
   exclusionZonesGroup = L.layerGroup().addTo(map);
+  boundaryLayersGroup = L.layerGroup().addTo(map);
   waypointMarkersGroup = L.layerGroup().addTo(map);
   pitchLabelsGroup = L.layerGroup().addTo(map); // Above waypointMarkersGroup
   photoMarkersGroup = L.layerGroup().addTo(map);
@@ -3826,6 +4068,8 @@ function initMap() {
 
     if (currentPattern === 'freeform' || currentPattern === 'exclusion-freeform') {
       addFreeformWaypoint(e.latlng.lat, e.latlng.lng);
+    } else if (currentPattern === 'boundary-polygon') {
+      addBoundaryPolygonPoint(e.latlng.lat, e.latlng.lng);
     } else if (currentPattern === 'road-following') {
       addRoadWaypoint(e.latlng.lat, e.latlng.lng);
     } else if (isTargetSplatPoly) {
@@ -4918,9 +5162,75 @@ function initUIEventListeners() {
       else if (typeof updateGrid === 'function') updateGrid();
     });
   }
-  if (clearLayerBoundaryBtn) {
-    clearLayerBoundaryBtn.addEventListener('click', () => {
-      clearLayerBoundary();
+  const boundaryNameInput = document.getElementById('boundary-layer-name');
+  if (boundaryNameInput) {
+    boundaryNameInput.addEventListener('input', (e) => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.name = e.target.value || 'Boundary / Parcel';
+        renderLayersList();
+        saveAllSettingsToLocalStorage();
+      }
+    });
+  }
+
+  const boundaryColorSelect = document.getElementById('boundary-stroke-color');
+  if (boundaryColorSelect) {
+    boundaryColorSelect.addEventListener('change', (e) => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.strokeColor = e.target.value;
+        updateGrid();
+        saveAllSettingsToLocalStorage();
+      }
+    });
+  }
+
+  const boundaryLineSelect = document.getElementById('boundary-line-style');
+  if (boundaryLineSelect) {
+    boundaryLineSelect.addEventListener('change', (e) => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.lineStyle = e.target.value;
+        updateGrid();
+        saveAllSettingsToLocalStorage();
+      }
+    });
+  }
+
+  const boundaryOpacitySlider = document.getElementById('boundary-fill-opacity');
+  const boundaryOpacityVal = document.getElementById('boundary-fill-opacity-val');
+  if (boundaryOpacitySlider) {
+    boundaryOpacitySlider.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value, 10);
+      if (boundaryOpacityVal) boundaryOpacityVal.textContent = `${val}%`;
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.fillOpacity = val;
+        updateGrid();
+        saveAllSettingsToLocalStorage();
+      }
+    });
+  }
+
+  const boundaryElevInput = document.getElementById('boundary-elevation');
+  const boundaryElevVal = document.getElementById('boundary-elevation-val');
+  if (boundaryElevInput) {
+    boundaryElevInput.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value) || 0;
+      if (boundaryElevVal) boundaryElevVal.textContent = `${val}m`;
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.targetHeight = val;
+        saveAllSettingsToLocalStorage();
+      }
+    });
+  }
+
+  const clearBoundaryVerticesBtn = document.getElementById('btn-clear-boundary-vertices');
+  if (clearBoundaryVerticesBtn) {
+    clearBoundaryVerticesBtn.addEventListener('click', () => {
+      clearBoundaryPolygon();
     });
   }
 
@@ -6667,6 +6977,7 @@ function togglePatternParameters() {
   if (activeLayer) {
     activeLayer.pattern = gridType;
     activeLayer.isExclusionZone = (gridType === 'exclusion-box' || gridType === 'exclusion-freeform');
+    activeLayer.isDrawingLayer = (gridType === 'boundary-polygon');
   }
 
   // Transition out of Imported KMZ mode if active
@@ -6716,6 +7027,7 @@ function togglePatternParameters() {
   const frontOverlapContainer = frontOverlapSlider?.closest ? frontOverlapSlider.closest('.control-group') : null;
   const sideOverlapContainer = sideOverlapSlider?.closest ? sideOverlapSlider.closest('.control-group') : null;
   const freeformInstructions = document.getElementById('freeform-instructions');
+  const boundaryInstructions = document.getElementById('boundary-instructions');
   const roadOffsetContainer = document.getElementById('road-offset-container');
   const roadSnapContainer = document.getElementById('road-snap-container');
   const gridGeometrySection = document.getElementById('grid-geometry-section');
@@ -6724,15 +7036,33 @@ function togglePatternParameters() {
   const layerCardFlight = document.getElementById('layer-card-flight');
   const layerCardOptics = document.getElementById('layer-card-optics');
   const layerCardModes = document.getElementById('layer-card-modes');
+  const layerCardBoundary = document.getElementById('layer-card-boundary');
   const layerCardGeometryTitle = document.getElementById('layer-card-geometry-title') ||
     (layerCardGeometry && layerCardGeometry.querySelector ? layerCardGeometry.querySelector('.layer-subgroup-header span') : null);
 
   const widthLabel = (widthContainer && widthContainer.querySelector) ? widthContainer.querySelector('.control-label > span') : null;
   const isExclusion = (gridType === 'exclusion-box' || gridType === 'exclusion-freeform');
+  const isBoundary = (gridType === 'boundary-polygon');
   const exclusionInstructions = document.getElementById('exclusion-instructions');
   const exclusionAltContainer = document.getElementById('exclusion-altitude-container');
   const exclusionFreeformNote = document.getElementById('exclusion-freeform-note');
   const altitudeControlGroup = document.getElementById('altitude-control-group');
+
+  if (boundaryInstructions) {
+    if (isBoundary) {
+      boundaryInstructions.classList.remove('hidden');
+    } else {
+      boundaryInstructions.classList.add('hidden');
+    }
+  }
+
+  if (layerCardBoundary) {
+    if (isBoundary) {
+      layerCardBoundary.style.display = 'block';
+    } else {
+      layerCardBoundary.style.display = 'none';
+    }
+  }
 
   if (exclusionInstructions) {
     if (isExclusion) {
@@ -6751,7 +7081,7 @@ function togglePatternParameters() {
   }
 
   if (altitudeControlGroup) {
-    if (isExclusion || gridType === 'tower') {
+    if (isExclusion || isBoundary || gridType === 'tower') {
       altitudeControlGroup.style.display = 'none';
     } else {
       altitudeControlGroup.style.display = 'block';
@@ -6770,7 +7100,8 @@ function togglePatternParameters() {
     'freeform': 'Freeform Flight Plan',
     'road-following': 'Road Following',
     'exclusion-box': 'Exclusion (Box)',
-    'exclusion-freeform': 'Exclusion (Polygon)'
+    'exclusion-freeform': 'Exclusion (Polygon)',
+    'boundary-polygon': 'Boundary / Parcel'
   };
 
   const targetSplatContainer = document.getElementById('target-splat-container');
@@ -6927,6 +7258,68 @@ function togglePatternParameters() {
       if (freeformInstructions.classList) freeformInstructions.classList.remove('hidden');
     }
     if (gimbalPitchSlider) gimbalPitchSlider.value = -60;
+
+  } else if (gridType === 'boundary-polygon') {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
+    if (gridGeometrySection) {
+      gridGeometrySection.style.display = 'block';
+      gridGeometrySection.classList.remove('collapsed');
+    }
+    if (layerCardGeometry) layerCardGeometry.style.display = 'none';
+    if (layerCardFlight) layerCardFlight.style.display = 'none';
+    if (layerCardOptics) layerCardOptics.style.display = 'none';
+    if (layerCardModes) layerCardModes.style.display = 'none';
+    if (layerCardBoundary) layerCardBoundary.style.display = 'block';
+    if (boundaryInstructions) boundaryInstructions.classList.remove('hidden');
+    if (altitudeControlGroup) altitudeControlGroup.style.display = 'none';
+    if (exclusionAltContainer) exclusionAltContainer.classList.add('hidden');
+    if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
+    if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
+    if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
+    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
+    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
+    if (freeformInstructions) freeformInstructions.classList.add('hidden');
+    if (widthContainer) widthContainer.style.display = 'none';
+    if (heightContainer) heightContainer.style.display = 'none';
+    if (rotationContainer) rotationContainer.style.display = 'none';
+    if (frontOverlapContainer) frontOverlapContainer.style.display = 'none';
+    if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
+
+    // Populate active layer boundary settings
+    if (activeLayer) {
+      const nameInp = document.getElementById('boundary-layer-name');
+      if (nameInp) nameInp.value = activeLayer.name || 'Boundary / Parcel';
+      const colorSel = document.getElementById('boundary-stroke-color');
+      if (colorSel) colorSel.value = activeLayer.strokeColor || '#06b6d4';
+      const lineSel = document.getElementById('boundary-line-style');
+      if (lineSel) lineSel.value = activeLayer.lineStyle || 'dashed';
+      const opSlider = document.getElementById('boundary-fill-opacity');
+      const opVal = document.getElementById('boundary-fill-opacity-val');
+      const fillOp = (activeLayer.fillOpacity !== undefined) ? activeLayer.fillOpacity : 15;
+      if (opSlider) opSlider.value = fillOp;
+      if (opVal) opVal.textContent = `${fillOp}%`;
+      const elevInp = document.getElementById('boundary-elevation');
+      const elevVal = document.getElementById('boundary-elevation-val');
+      const elev = (activeLayer.targetHeight !== undefined) ? activeLayer.targetHeight : 0;
+      if (elevInp) elevInp.value = elev;
+      if (elevVal) elevVal.textContent = `${elev}m`;
+
+      const vertices = (Array.isArray(activeLayer.boundaryPolygon) && activeLayer.boundaryPolygon.length > 0)
+        ? activeLayer.boundaryPolygon
+        : (Array.isArray(activeLayer.polygonVertices) && activeLayer.polygonVertices.length > 0 ? activeLayer.polygonVertices : []);
+      const metrics = (typeof calculateGeodeticPolygonMetrics === 'function')
+        ? calculateGeodeticPolygonMetrics(vertices)
+        : { perimeter: 0, area: 0 };
+      const vBadge = document.getElementById('boundary-metrics-vertices');
+      const pBadge = document.getElementById('boundary-metrics-perimeter');
+      const aBadge = document.getElementById('boundary-metrics-area');
+      const perimFt = metrics.perimeter * 3.28084;
+      const areaAcres = metrics.area * 0.000247105;
+      if (vBadge) vBadge.textContent = `${vertices.length} Vertices`;
+      if (pBadge) pBadge.textContent = `${(typeof formatDistance === 'function') ? formatDistance(metrics.perimeter) : `${Math.round(metrics.perimeter)}m`} (${Math.round(perimFt)}ft)`;
+      if (aBadge) aBadge.textContent = `${Math.round(metrics.area).toLocaleString()} m² (${areaAcres.toFixed(2)} acres)`;
+    }
 
   } else if (gridType === 'road-following') {
     if (gridGeometrySection) {
@@ -10622,9 +11015,15 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
   if (pitchLabelsGroup) pitchLabelsGroup.clearLayers();
   if (photoMarkersGroup) photoMarkersGroup.clearLayers();
   if (roadPathGroup) roadPathGroup.clearLayers();
+  if (boundaryLayersGroup) boundaryLayersGroup.clearLayers();
 
   // Draw 3D Exclusion Zones
   drawExclusionZones(centerLat, centerLon);
+
+  // Draw Drawing & Parcel Boundary Layers (v1.102.0)
+  if (typeof drawBoundaryLayers === 'function') {
+    drawBoundaryLayers(centerLat, centerLon);
+  }
 
   const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
   const gridType = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('grid-type'))
@@ -10644,6 +11043,12 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
   ));
 
   if (isTargetTracingActive) {
+    updateStatsPanel(null);
+    return;
+  }
+
+  // If active layer is a pure drawing / parcel layer, update stats with null and return early
+  if (activeLayer && (activeLayer.pattern === 'boundary-polygon' || activeLayer.isDrawingLayer)) {
     updateStatsPanel(null);
     return;
   }
@@ -26600,39 +27005,83 @@ const PhotoInspector = {
       });
     }
 
-    // 7. Auto-Superimposed Flight Layer Boundary (v1.100.0)
+    // 7. Auto-Superimposed Flight Layer Boundary & Drawing Layers (v1.102.0)
     if (this.layers.layerBoundary) {
+      const camPose = {
+        lat: this.activePhoto.actual?.lat ?? this.activePhoto.planned?.lat ?? 0,
+        lon: this.activePhoto.actual?.lon ?? this.activePhoto.planned?.lon ?? 0,
+        altAgl: (this.activePhoto.actual?.altAgl && this.activePhoto.actual.altAgl > 0)
+          ? this.activePhoto.actual.altAgl
+          : (this.activePhoto.actual?.alt ?? this.activePhoto.planned?.alt ?? 25.0),
+        gimbalPitch: (this.activePhoto.actual?.gimbalPitch !== undefined) ? this.activePhoto.actual.gimbalPitch : -90,
+        heading: this.activePhoto.actual?.heading ?? this.activePhoto.planned?.heading ?? 0
+      };
+
+      const layersToProject = [];
+      const allLayers = (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : [];
+
+      // Include all enabled drawing / parcel layers
+      allLayers.filter(l => l.enabled && (l.pattern === 'boundary-polygon' || l.isDrawingLayer)).forEach(l => {
+        const poly = (Array.isArray(l.boundaryPolygon) && l.boundaryPolygon.length >= 3)
+          ? l.boundaryPolygon
+          : (Array.isArray(l.polygonVertices) && l.polygonVertices.length >= 3 ? l.polygonVertices : []);
+        if (poly.length >= 3) {
+          layersToProject.push({
+            layer: l,
+            polygon: poly,
+            name: l.name || 'Boundary / Parcel',
+            strokeColor: l.strokeColor || '#06b6d4',
+            lineStyle: l.lineStyle || 'dashed',
+            fillOpacity: (typeof l.fillOpacity === 'number') ? l.fillOpacity / 100.0 : 0.15,
+            targetHeight: typeof l.targetHeight === 'number' ? l.targetHeight : 0
+          });
+        }
+      });
+
+      // Also include activeLayer if it is not a drawing layer but has a boundary
       const activeLayer = (typeof getActiveLayer === 'function')
         ? getActiveLayer()
-        : ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers))
-            ? (flightLayers.find(l => l.id === (typeof activeLayerId !== 'undefined' ? activeLayerId : null)) || flightLayers[0])
-            : null);
+        : (allLayers.find(l => l.id === (typeof activeLayerId !== 'undefined' ? activeLayerId : null)) || allLayers[0]);
 
-      const boundaryGeoPoly = this.getLayerBoundaryGeoPolygon(activeLayer);
-      if (boundaryGeoPoly && boundaryGeoPoly.length >= 3) {
-        const camPose = {
-          lat: this.activePhoto.actual?.lat ?? this.activePhoto.planned?.lat ?? 0,
-          lon: this.activePhoto.actual?.lon ?? this.activePhoto.planned?.lon ?? 0,
-          altAgl: (this.activePhoto.actual?.altAgl && this.activePhoto.actual.altAgl > 0)
-            ? this.activePhoto.actual.altAgl
-            : (this.activePhoto.actual?.alt ?? this.activePhoto.planned?.alt ?? 25.0),
-          gimbalPitch: (this.activePhoto.actual?.gimbalPitch !== undefined) ? this.activePhoto.actual.gimbalPitch : -90,
-          heading: this.activePhoto.actual?.heading ?? this.activePhoto.planned?.heading ?? 0
-        };
+      if (activeLayer && activeLayer.enabled && !activeLayer.isDrawingLayer && activeLayer.pattern !== 'boundary-polygon') {
+        const boundaryGeoPoly = this.getLayerBoundaryGeoPolygon(activeLayer);
+        if (boundaryGeoPoly && boundaryGeoPoly.length >= 3) {
+          layersToProject.push({
+            layer: activeLayer,
+            polygon: boundaryGeoPoly,
+            name: `${activeLayer.name || 'Layer'} Boundary`,
+            strokeColor: activeLayer.color || '#06b6d4',
+            lineStyle: 'dashed',
+            fillOpacity: 0.12,
+            targetHeight: typeof this.targetHeight === 'number' ? this.targetHeight : 0
+          });
+        }
+      }
 
-        const projRes = this.projectGeoPolygonToPhoto(boundaryGeoPoly, camPose, {
+      layersToProject.forEach(item => {
+        const projRes = this.projectGeoPolygonToPhoto(item.polygon, camPose, {
           sensorWidthMm: this.activePhoto.sensorWidthMm || 9.6,
           focalLengthMm: this.activePhoto.focalLengthMm || 6.72,
           aspectRatio: canvas.width / canvas.height,
-          targetHeightMeters: typeof this.targetHeight === 'number' ? this.targetHeight : 0
+          targetHeightMeters: item.targetHeight
         });
 
         if (projRes.hasPointsInFront) {
           ctx.save();
-          ctx.strokeStyle = '#06b6d4'; // Neon cyan
+          ctx.strokeStyle = item.strokeColor;
           ctx.lineWidth = 2.5;
-          ctx.setLineDash([8, 4]);
-          ctx.fillStyle = 'rgba(6, 182, 212, 0.12)';
+          const dash = item.lineStyle === 'solid' ? [] : (item.lineStyle === 'dotted' ? [3, 4] : [8, 4]);
+          ctx.setLineDash(dash);
+
+          let fillColor = 'rgba(6, 182, 212, 0.15)';
+          if (item.strokeColor.startsWith('#') && item.strokeColor.length >= 7) {
+            const r = parseInt(item.strokeColor.slice(1, 3), 16) || 6;
+            const g = parseInt(item.strokeColor.slice(3, 5), 16) || 182;
+            const b = parseInt(item.strokeColor.slice(5, 7), 16) || 212;
+            fillColor = `rgba(${r}, ${g}, ${b}, ${item.fillOpacity})`;
+          }
+          ctx.fillStyle = fillColor;
+
           ctx.beginPath();
           projRes.points.forEach((p, idx) => {
             const px = p.u * canvas.width;
@@ -26650,7 +27099,7 @@ const PhotoInspector = {
             if (p.isInsideFrame) {
               const px = p.u * canvas.width;
               const py = p.v * canvas.height;
-              ctx.fillStyle = '#06b6d4';
+              ctx.fillStyle = item.strokeColor;
               ctx.beginPath();
               ctx.arc(px, py, 4.5, 0, Math.PI * 2);
               ctx.fill();
@@ -26665,20 +27114,20 @@ const PhotoInspector = {
           if (firstVis) {
             const bx = Math.max(10, Math.min(canvas.width - 160, firstVis.u * canvas.width));
             const by = Math.max(25, Math.min(canvas.height - 15, firstVis.v * canvas.height - 10));
-            const layerLabel = `🗺️ ${activeLayer?.name || 'Layer'} Boundary`;
+            const layerLabel = `🗺️ ${item.name}`;
             ctx.font = 'bold 11px sans-serif';
             const badgeW = ctx.measureText(layerLabel).width + 16;
             ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
             ctx.fillRect(bx, by - 16, badgeW, 20);
-            ctx.strokeStyle = '#06b6d4';
+            ctx.strokeStyle = item.strokeColor;
             ctx.lineWidth = 1;
             ctx.strokeRect(bx, by - 16, badgeW, 20);
-            ctx.fillStyle = '#22d3ee';
+            ctx.fillStyle = '#ffffff';
             ctx.fillText(layerLabel, bx + 8, by - 2);
           }
           ctx.restore();
         }
-      }
+      });
     }
   },
 

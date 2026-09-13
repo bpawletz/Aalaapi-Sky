@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.102.0] - 2026-09-13
+
+### Added — First-Class Drawing & Parcel Boundary Layer with Section 2 Properties & Photo Superimposition
+- **First-Class Pattern Selector Card (`boundary-polygon`):** Promoted Boundary / Parcel to a dedicated, first-class drawing tool in Section 1's Flight Pattern grid (`.pattern-selector-grid`) with a distinctive `DRAWING` tool badge, alongside Exclusion and Freeform tools.
+- **Section 2 Dedicated Properties Card (`#layer-card-boundary`):** Created Card 5 in Section 2 featuring comprehensive boundary customization controls:
+  - Custom Parcel ID / Boundary Name text field (`#boundary-layer-name`).
+  - Color palette picker (`#boundary-stroke-color`) supporting Cyan, Emerald, Amber, Crimson, Purple, Rose, Indigo, and White.
+  - Line stroke style selector (`#boundary-line-style`) supporting Solid, Dashed, and Dotted boundary lines.
+  - Fill opacity slider (`#boundary-fill-opacity`) from 0% to 50% with live percentage readout.
+  - Target elevation offset control (`#boundary-elevation`) with meter readouts for altitude reference.
+  - Live geodetic metrics panel (`#boundary-metrics-vertices`, `#boundary-metrics-perimeter`, `#boundary-metrics-area`) displaying vertices count, perimeter in meters/feet, and enclosed area in $m^2$ and acres.
+  - One-click clear vertices button (`#btn-clear-boundary-vertices`).
+- **Interactive Vertex Placement & Draggable Node Handles:** Clicking the 2D map in Boundary / Parcel mode drops vertices, displays dashed preview polylines for 2 points, and closes styled polygons for $\ge 3$ points with numbered draggable node handles (1, 2, 3...) for precise boundary editing. Clicking any node removes that vertex.
+- **Multi-Layer Drone Photo Superimposition:** In `PhotoInspector` (`#photo-inspector-modal`), all enabled drawing and boundary layers automatically project onto drone camera photos (`projectGeoPolygonToPhoto`) respecting each layer's specific stroke color, line style, fill opacity, elevation offset, and layer badge.
+- **Drawing Layer Safety & 0-Waypoint Flight Guarantee:** Boundary / Parcel drawing layers generate 0 flight waypoints (`0 wps • Drawing`), are isolated from flight wayline aggregation (`flightLayersOnly`), and are excluded from WPML drone execution to ensure pure drawing and parcel reference safety.
+
 ## [1.101.1] - 2026-09-13
 
 ### Changed — Relocate Layer Boundary & Parcel Perimeter to Active Layer Flight Pattern (Section 1)
