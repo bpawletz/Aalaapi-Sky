@@ -16793,31 +16793,35 @@ describe('v1.100.0 Flight Layer Boundary Auto-Superimposition Tests', () => {
     const indexTemplate = fs.readFileSync('index_template.html', 'utf8');
     const indexHtml = fs.readFileSync('index.html', 'utf8');
 
-    assert.strictEqual(pkg, '1.101.0');
-    assert.ok(cl.includes('## [1.101.0] - 2026-09-13'), 'CHANGELOG.md missing 1.101.0 header');
-    assert.ok(indexTemplate.includes('v1.101.0</span>'), 'index_template.html missing v1.101.0 header badge');
-    assert.ok(indexTemplate.includes('Version 1.101.0</span>'), 'index_template.html missing Version 1.101.0 in About modal');
-    assert.ok(indexTemplate.includes('Changelog (v1.101.0):'), 'index_template.html missing Changelog (v1.101.0)');
-    assert.ok(indexHtml.includes('v1.101.0</span>'), 'index.html missing v1.101.0 header badge');
-    assert.ok(indexHtml.includes('Version 1.101.0</span>'), 'index.html missing Version 1.101.0 in About modal');
-    assert.ok(indexHtml.includes('Changelog (v1.101.0):'), 'index.html missing Changelog (v1.101.0)');
+    assert.strictEqual(pkg, '1.101.1');
+    assert.ok(cl.includes('## [1.101.1] - 2026-09-13'), 'CHANGELOG.md missing 1.101.1 header');
+    assert.ok(indexTemplate.includes('v1.101.1</span>'), 'index_template.html missing v1.101.1 header badge');
+    assert.ok(indexTemplate.includes('Version 1.101.1</span>'), 'index_template.html missing Version 1.101.1 in About modal');
+    assert.ok(indexTemplate.includes('Changelog (v1.101.1):'), 'index_template.html missing Changelog (v1.101.1)');
+    assert.ok(indexHtml.includes('v1.101.1</span>'), 'index.html missing v1.101.1 header badge');
+    assert.ok(indexHtml.includes('Version 1.101.1</span>'), 'index.html missing Version 1.101.1 in About modal');
+    assert.ok(indexHtml.includes('Changelog (v1.101.1):'), 'index.html missing Changelog (v1.101.1)');
   });
 
-  test('DOM Architecture: layer-custom-boundary-container is a direct child of layer-card-geometry and NOT inside exclusion-altitude-container', () => {
+  test('DOM Architecture: layer-custom-boundary-container is inside Section 1 layers-and-location-section under Active Layer Flight Pattern and NOT inside Section 2', () => {
     const tmpl = fs.readFileSync('index_template.html', 'utf8');
     const dom = new JSDOM(tmpl);
     const doc = dom.window.document;
 
     const boundaryBox = doc.getElementById('layer-custom-boundary-container');
-    const exclusionBox = doc.getElementById('exclusion-altitude-container');
+    const section1 = doc.getElementById('layers-and-location-section');
     const cardGeometry = doc.getElementById('layer-card-geometry');
+    const exclusionBox = doc.getElementById('exclusion-altitude-container');
 
     assert.ok(boundaryBox, '#layer-custom-boundary-container must exist');
-    assert.ok(exclusionBox, '#exclusion-altitude-container must exist');
+    assert.ok(section1, '#layers-and-location-section must exist');
     assert.ok(cardGeometry, '#layer-card-geometry must exist');
 
-    assert.strictEqual(exclusionBox.contains(boundaryBox), false, 'boundary container must NOT be inside exclusion container');
-    assert.strictEqual(cardGeometry.contains(boundaryBox), true, 'boundary container must be inside layer-card-geometry');
+    assert.strictEqual(section1.contains(boundaryBox), true, 'boundary container must be inside Section 1 (layers-and-location-section)');
+    assert.strictEqual(cardGeometry.contains(boundaryBox), false, 'boundary container must NOT be inside layer-card-geometry in Section 2');
+    if (exclusionBox) {
+      assert.strictEqual(exclusionBox.contains(boundaryBox), false, 'boundary container must NOT be inside exclusion container');
+    }
   });
 
   test('DOM Architecture: #ingest-delete-from-drone exists in media ingest modal and defaults to unchecked', () => {
