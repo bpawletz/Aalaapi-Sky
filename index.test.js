@@ -16280,19 +16280,15 @@ describe('v1.98.3 Media Ingest Limit Removal, MPF Previews & Thumbnail Generatio
 describe('v1.99.0 3D Photogrammetric Ray-to-Ground Plane Projective Correction Tests', () => {
   test('Version consistency: package.json, CHANGELOG.md, index_template.html, and index.html match 1.99.0', () => {
     const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-    assert.strictEqual(pkg.version, '1.99.0');
+    assert.ok(pkg.version >= '1.99.0');
 
     const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
     assert.ok(changelog.includes('## [1.99.0] - 2026-09-12'), 'CHANGELOG.md must contain ## [1.99.0]');
 
     const tmpl = fs.readFileSync('index_template.html', 'utf8');
-    assert.ok(tmpl.includes('v1.99.0'), 'index_template.html must contain header badge v1.99.0');
-    assert.ok(tmpl.includes('Version 1.99.0'), 'index_template.html must contain Version 1.99.0');
     assert.ok(tmpl.includes('Changelog (v1.99.0):'), 'index_template.html must contain Changelog (v1.99.0)');
 
     const bundle = fs.readFileSync('index.html', 'utf8');
-    assert.ok(bundle.includes('v1.99.0'), 'index.html must contain header badge v1.99.0');
-    assert.ok(bundle.includes('Version 1.99.0'), 'index.html must contain Version 1.99.0');
     assert.ok(bundle.includes('Changelog (v1.99.0):'), 'index.html must contain Changelog (v1.99.0)');
   });
 
@@ -16343,8 +16339,8 @@ describe('v1.99.0 3D Photogrammetric Ray-to-Ground Plane Projective Correction T
     const alt = 25.0;
 
     // Upward step in image (0.5 to 0.4: looking farther away) vs downward step (0.6 to 0.5: looking closer)
-    const stepFar = calculatePhotogrammetricDistance({ x: 0.5, y: 0.4 }, { x: 0.5, y: 0.5 }, alt, -45);
-    const stepNear = calculatePhotogrammetricDistance({ x: 0.5, y: 0.5 }, { x: 0.5, y: 0.6 }, alt, -45);
+    const stepFar = calculatePhotogrammetricDistance({ x: 0.5, y: 0.4 }, { x: 0.5, y: 0.5 }, alt, -45, { mode: 'ground' });
+    const stepNear = calculatePhotogrammetricDistance({ x: 0.5, y: 0.5 }, { x: 0.5, y: 0.6 }, alt, -45, { mode: 'ground' });
 
     assert.ok(stepFar.distanceMeters > stepNear.distanceMeters,
       `Features farther in distance must have larger ground distance per pixel (keystoning gradient). Far: ${stepFar.distanceMeters}m, Near: ${stepNear.distanceMeters}m`);
@@ -16360,7 +16356,7 @@ describe('v1.99.0 3D Photogrammetric Ray-to-Ground Plane Projective Correction T
       { x: 0.4, y: 0.6 }
     ];
 
-    const poly = calculatePhotogrammetricPolygon(quad, alt, -45);
+    const poly = calculatePhotogrammetricPolygon(quad, alt, -45, { mode: 'ground' });
     assert.ok(poly.perimeterMeters > 0);
     assert.ok(poly.perimeterFt > poly.perimeterMeters * 3.2);
     assert.ok(poly.areaM2 > 0);
@@ -16395,6 +16391,166 @@ describe('v1.99.0 3D Photogrammetric Ray-to-Ground Plane Projective Correction T
       assert.ok(poly.areaM2 > 0);
       assert.ok(!Number.isNaN(poly.perimeterMeters));
       assert.ok(!Number.isNaN(poly.areaM2));
+    } finally {
+      global.document = origDoc;
+    }
+  });
+});
+
+describe('v1.99.1 Dual-Plane Photogrammetric Measurement Calibration Tests', () => {
+  test('Version consistency: package.json, CHANGELOG.md, index_template.html, and index.html match 1.99.1', () => {
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    assert.strictEqual(pkg.version, '1.99.1');
+
+    const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
+    assert.ok(changelog.includes('## [1.99.1] - 2026-09-12'), 'CHANGELOG.md must contain ## [1.99.1]');
+
+    const tmpl = fs.readFileSync('index_template.html', 'utf8');
+    assert.ok(tmpl.includes('v1.99.1'), 'index_template.html must contain header badge v1.99.1');
+    assert.ok(tmpl.includes('Version 1.99.1'), 'index_template.html must contain Version 1.99.1');
+    assert.ok(tmpl.includes('Changelog (v1.99.1):'), 'index_template.html must contain Changelog (v1.99.1)');
+
+    const bundle = fs.readFileSync('index.html', 'utf8');
+    assert.ok(bundle.includes('v1.99.1'), 'index.html must contain header badge v1.99.1');
+    assert.ok(bundle.includes('Version 1.99.1'), 'index.html must contain Version 1.99.1');
+    assert.ok(bundle.includes('Changelog (v1.99.1):'), 'index.html must contain Changelog (v1.99.1)');
+  });
+
+  test('calculatePhotogrammetricDistance: slant mode accurately sizes elevated roof features vs ground inflation', () => {
+    const { calculatePhotogrammetricDistance } = require('./tools/companion/log_decoder.js');
+    const altAgl = 25.0; // ~82 ft AGL
+    const pitch = -45.0;
+
+    // Roof valley measurement representing ~20% of image frame
+    const p1 = { x: 0.40, y: 0.45 };
+    const p2 = { x: 0.58, y: 0.55 };
+
+    const slantRes = calculatePhotogrammetricDistance(p1, p2, altAgl, pitch, { mode: 'slant' });
+    const groundRes = calculatePhotogrammetricDistance(p1, p2, altAgl, pitch, { mode: 'ground' });
+
+    assert.strictEqual(slantRes.mode, 'slant');
+    assert.strictEqual(groundRes.mode, 'ground');
+
+    // In slant mode, the roof valley is ~15-35 ft (realistic physical dimension of a 2-story home roof)
+    assert.ok(slantRes.distanceFt >= 15 && slantRes.distanceFt <= 35,
+      `Slant mode measurement should be realistic roof dimension (~18-35 ft), got ${slantRes.distanceFt} ft`);
+
+    // Ground projection should be larger because ray projects through roof down to Z=0
+    assert.ok(groundRes.distanceMeters > slantRes.distanceMeters,
+      `Ground mode must project deeper to Z=0 than optical view plane. Ground: ${groundRes.distanceMeters}m, Slant: ${slantRes.distanceMeters}m`);
+  });
+
+  test('calculatePhotogrammetricDistance: targetHeightMeters calibrates elevated structure altitude offset', () => {
+    const { calculatePhotogrammetricDistance } = require('./tools/companion/log_decoder.js');
+    const altAgl = 25.0;
+    const pitch = -45.0;
+    const p1 = { x: 0.40, y: 0.50 };
+    const p2 = { x: 0.60, y: 0.50 };
+
+    // Structure elevated 8 meters (approx 26 ft roof height)
+    const resBase = calculatePhotogrammetricDistance(p1, p2, altAgl, pitch, { mode: 'slant', targetHeightMeters: 0 });
+    const resElevated = calculatePhotogrammetricDistance(p1, p2, altAgl, pitch, { mode: 'slant', targetHeightMeters: 8.0 });
+
+    assert.ok(resElevated.distanceMeters < resBase.distanceMeters,
+      `Elevating target height reduces distance from camera to structure, reducing dimension: ${resElevated.distanceMeters} < ${resBase.distanceMeters}`);
+    
+    // Check proportionality: (25 - 8) / 25 = 17 / 25 = 0.68
+    const ratio = resElevated.distanceMeters / resBase.distanceMeters;
+    assert.ok(Math.abs(ratio - 0.68) < 0.02, `Ratio should closely match (H - targetH) / H (0.68), got ${ratio}`);
+  });
+
+  test('PhotoInspector: calibrationMode defaults to slant and branches distance correctly', () => {
+    const origDoc = global.document;
+    const dom = new JSDOM(`<!DOCTYPE html><html><body>
+      <div id="photo-annotation-canvas" width="1920" height="1080"></div>
+      <button id="inspector-plane-toggle-btn"></button>
+      <button id="plane-btn-slant"></button>
+      <button id="plane-btn-ground"></button>
+      <input id="inspector-target-height-input" value="0" />
+      <span id="inspector-target-height-unit">m</span>
+    </body></html>`);
+    global.document = dom.window.document;
+
+    try {
+      PhotoInspector.activePhoto = {
+        actual: { altAgl: 25.0, gimbalPitch: -45.0, heading: 90 },
+        sensorWidthMm: 9.6,
+        focalLengthMm: 6.72,
+        annotations: []
+      };
+
+      PhotoInspector.calibrationMode = 'slant';
+      PhotoInspector.targetHeight = 0;
+
+      const p1 = { x: 0.40, y: 0.45 };
+      const p2 = { x: 0.58, y: 0.55 };
+
+      const distSlant = PhotoInspector.calculateGroundDistance(p1, p2);
+      assert.ok(distSlant > 0, 'Slant distance should be positive');
+      assert.ok(!Number.isNaN(distSlant), 'Slant distance should not be NaN');
+
+      PhotoInspector.calibrationMode = 'ground';
+      const distGround = PhotoInspector.calculateGroundDistance(p1, p2);
+      assert.ok(distGround > 0, 'Ground distance should be positive');
+      assert.ok(!Number.isNaN(distGround), 'Ground distance should not be NaN');
+      assert.ok(distGround > distSlant, 'Ground projection distance should exceed slant plane distance');
+
+      // Test polygon calculation in both modes
+      PhotoInspector.calibrationMode = 'slant';
+      const polySlant = PhotoInspector.calculateGroundPolygon([p1, p2, { x: 0.50, y: 0.65 }]);
+      assert.ok(polySlant.perimeterMeters > 0);
+      assert.ok(polySlant.areaM2 > 0);
+
+      PhotoInspector.calibrationMode = 'ground';
+      const polyGround = PhotoInspector.calculateGroundPolygon([p1, p2, { x: 0.50, y: 0.65 }]);
+      assert.ok(polyGround.perimeterMeters > 0);
+      assert.ok(polyGround.areaM2 > 0);
+    } finally {
+      global.document = origDoc;
+    }
+  });
+
+  test('PhotoInspector: setupEvents handles plane toggle and target elevation input', () => {
+    const origDoc = global.document;
+    const dom = new JSDOM(`<!DOCTYPE html><html><body>
+      <div id="photo-annotation-canvas" width="1920" height="1080"></div>
+      <button id="inspector-unit-toggle-btn">📏 Metric</button>
+      <button id="inspector-plane-toggle-btn">🏠 Slant (Structure)</button>
+      <button id="plane-btn-slant" class="btn-primary active"></button>
+      <button id="plane-btn-ground" class="btn-secondary"></button>
+      <input id="inspector-target-height-input" value="0" />
+      <span id="inspector-target-height-unit">m</span>
+    </body></html>`);
+    global.document = dom.window.document;
+
+    try {
+      PhotoInspector.eventsBound = false;
+      PhotoInspector.calibrationMode = 'slant';
+      PhotoInspector.targetHeight = 0;
+      PhotoInspector.unit = 'metric';
+      PhotoInspector.setupEvents();
+
+      const toggleBtn = dom.window.document.getElementById('inspector-plane-toggle-btn');
+      const slantBtn = dom.window.document.getElementById('plane-btn-slant');
+      const groundBtn = dom.window.document.getElementById('plane-btn-ground');
+      const heightInput = dom.window.document.getElementById('inspector-target-height-input');
+
+      // 1. Toggle button switches to ground mode
+      toggleBtn.click();
+      assert.strictEqual(PhotoInspector.calibrationMode, 'ground');
+
+      // 2. Slant button switches back to slant mode
+      slantBtn.click();
+      assert.strictEqual(PhotoInspector.calibrationMode, 'slant');
+
+      // 3. Ground button switches to ground mode
+      groundBtn.click();
+      assert.strictEqual(PhotoInspector.calibrationMode, 'ground');
+
+      // 4. Input target elevation updates targetHeight
+      heightInput.value = '7.5';
+      heightInput.dispatchEvent(new dom.window.Event('input'));
+      assert.strictEqual(PhotoInspector.targetHeight, 7.5);
     } finally {
       global.document = origDoc;
     }

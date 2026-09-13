@@ -1242,13 +1242,62 @@ function projectPixelToGroundPlane(normX, normY, altAglMeters, gimbalPitchDeg = 
 }
 
 /**
- * Calculates photogrammetrically corrected 3D Euclidean distance on the ground plane
- * between two normalized points p1 and p2 in a photo.
+ * Calculates photogrammetrically corrected distance on the target/slant view plane
+ * or flat ground plane between two normalized points p1 and p2 in a photo.
+ * 
+ * Modes:
+ * - 'slant' (default): Measures across the optical view plane at target slant range.
+ *   Essential for elevated structures (roofs, dormers, siding, solar panels).
+ * - 'ground': Projects rays down to the horizontal ground plane (Z = targetHeight).
+ *   Accurate for flat ground features (curbs, driveways, sidewalks, parking lots).
  */
 function calculatePhotogrammetricDistance(p1, p2, altAglMeters, gimbalPitchDeg = -90, options = {}) {
   if (!p1 || !p2) return { distanceMeters: 0, distanceFt: 0 };
-  const g1 = projectPixelToGroundPlane(p1.x, p1.y, altAglMeters, gimbalPitchDeg, options);
-  const g2 = projectPixelToGroundPlane(p2.x, p2.y, altAglMeters, gimbalPitchDeg, options);
+  const mode = options.mode || 'slant';
+  const targetH = parseFloat(options.targetHeightMeters) || 0;
+  const rawAlt = parseFloat(altAglMeters) || 20;
+  const alt = Math.max(0.5, rawAlt - targetH);
+  const pitchDeg = parseFloat(gimbalPitchDeg) !== undefined ? parseFloat(gimbalPitchDeg) : -90;
+
+  if (mode === 'slant') {
+    let tiltDeg;
+    if (pitchDeg <= 0) {
+      tiltDeg = Math.min(85, Math.max(0, 90 + pitchDeg));
+    } else {
+      tiltDeg = Math.min(85, Math.max(0, Math.abs(90 - pitchDeg)));
+    }
+    const tau = tiltDeg * (Math.PI / 180);
+    const cosTau = Math.max(0.087, Math.cos(tau));
+    const dSlant = alt / cosTau;
+
+    const sW = parseFloat(options.sensorWidthMm) || 9.6;
+    const fL = parseFloat(options.focalLengthMm) || 6.72;
+    const aspect = options.aspectRatio || (options.imageWidth && options.imageHeight ? options.imageWidth / options.imageHeight : (4 / 3));
+    const sH = sW / aspect;
+
+    const tanHalfH = sW / (2 * fL);
+    const tanHalfV = sH / (2 * fL);
+
+    const xc1 = (2 * p1.x - 1) * tanHalfH;
+    const yc1 = (1 - 2 * p1.y) * tanHalfV;
+    const xc2 = (2 * p2.x - 1) * tanHalfH;
+    const yc2 = (1 - 2 * p2.y) * tanHalfV;
+
+    const dx = (xc2 - xc1) * dSlant;
+    const dy = (yc2 - yc1) * dSlant;
+    const distM = Math.sqrt(dx * dx + dy * dy);
+
+    return {
+      distanceMeters: Math.round(distM * 100) / 100,
+      distanceFt: Math.round(distM * 3.28084 * 100) / 100,
+      slantRangeMeters: Math.round(dSlant * 100) / 100,
+      mode: 'slant'
+    };
+  }
+
+  // mode === 'ground': Ray-to-Ground Plane intersection
+  const g1 = projectPixelToGroundPlane(p1.x, p1.y, alt, pitchDeg, options);
+  const g2 = projectPixelToGroundPlane(p2.x, p2.y, alt, pitchDeg, options);
 
   const dx = g2.x - g1.x;
   const dy = g2.y - g1.y;
@@ -1257,26 +1306,60 @@ function calculatePhotogrammetricDistance(p1, p2, altAglMeters, gimbalPitchDeg =
   return {
     distanceMeters: Math.round(distMeters * 100) / 100,
     distanceFt: Math.round(distMeters * 3.28084 * 100) / 100,
-    groundPoints: [g1, g2]
+    groundPoints: [g1, g2],
+    mode: 'ground'
   };
 }
 
 /**
  * Calculates photogrammetrically corrected perimeter and surface area for an array of
- * normalized polygon points on the ground plane.
+ * normalized polygon points on the target slant plane or ground plane.
  */
 function calculatePhotogrammetricPolygon(points, altAglMeters, gimbalPitchDeg = -90, options = {}) {
   if (!Array.isArray(points) || points.length < 2) {
     return { perimeterMeters: 0, perimeterFt: 0, areaM2: 0, areaSqFt: 0, segments: [] };
   }
 
-  const groundPts = points.map(p => projectPixelToGroundPlane(p.x, p.y, altAglMeters, gimbalPitchDeg, options));
+  const mode = options.mode || 'slant';
+  const targetH = parseFloat(options.targetHeightMeters) || 0;
+  const rawAlt = parseFloat(altAglMeters) || 20;
+  const alt = Math.max(0.5, rawAlt - targetH);
+  const pitchDeg = parseFloat(gimbalPitchDeg) !== undefined ? parseFloat(gimbalPitchDeg) : -90;
+
+  let pts;
+  if (mode === 'slant') {
+    let tiltDeg;
+    if (pitchDeg <= 0) {
+      tiltDeg = Math.min(85, Math.max(0, 90 + pitchDeg));
+    } else {
+      tiltDeg = Math.min(85, Math.max(0, Math.abs(90 - pitchDeg)));
+    }
+    const tau = tiltDeg * (Math.PI / 180);
+    const cosTau = Math.max(0.087, Math.cos(tau));
+    const dSlant = alt / cosTau;
+
+    const sW = parseFloat(options.sensorWidthMm) || 9.6;
+    const fL = parseFloat(options.focalLengthMm) || 6.72;
+    const aspect = options.aspectRatio || (options.imageWidth && options.imageHeight ? options.imageWidth / options.imageHeight : (4 / 3));
+    const sH = sW / aspect;
+
+    const tanHalfH = sW / (2 * fL);
+    const tanHalfV = sH / (2 * fL);
+
+    pts = points.map(p => ({
+      x: (2 * p.x - 1) * tanHalfH * dSlant,
+      y: (1 - 2 * p.y) * tanHalfV * dSlant
+    }));
+  } else {
+    pts = points.map(p => projectPixelToGroundPlane(p.x, p.y, alt, pitchDeg, options));
+  }
+
   const segments = [];
   let perimeter = 0;
 
-  for (let i = 0; i < groundPts.length - 1; i++) {
-    const dx = groundPts[i + 1].x - groundPts[i].x;
-    const dy = groundPts[i + 1].y - groundPts[i].y;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const dx = pts[i + 1].x - pts[i].x;
+    const dy = pts[i + 1].y - pts[i].y;
     const lenM = Math.sqrt(dx * dx + dy * dy);
     segments.push({
       fromIndex: i,
@@ -1288,11 +1371,11 @@ function calculatePhotogrammetricPolygon(points, altAglMeters, gimbalPitchDeg = 
   }
 
   if (points.length >= 3) {
-    const dx = groundPts[0].x - groundPts[groundPts.length - 1].x;
-    const dy = groundPts[0].y - groundPts[groundPts.length - 1].y;
+    const dx = pts[0].x - pts[pts.length - 1].x;
+    const dy = pts[0].y - pts[pts.length - 1].y;
     const closingLen = Math.sqrt(dx * dx + dy * dy);
     segments.push({
-      fromIndex: groundPts.length - 1,
+      fromIndex: pts.length - 1,
       toIndex: 0,
       lengthMeters: Math.round(closingLen * 100) / 100,
       lengthFt: Math.round(closingLen * 3.28084 * 100) / 100
@@ -1301,27 +1384,22 @@ function calculatePhotogrammetricPolygon(points, altAglMeters, gimbalPitchDeg = 
   }
 
   let area = 0;
-  if (groundPts.length >= 3) {
+  if (pts.length >= 3) {
     let sum = 0;
-    for (let i = 0; i < groundPts.length; i++) {
-      const j = (i + 1) % groundPts.length;
-      sum += groundPts[i].x * groundPts[j].y - groundPts[j].x * groundPts[i].y;
+    for (let i = 0; i < pts.length; i++) {
+      const j = (i + 1) % pts.length;
+      sum += pts[i].x * pts[j].y - pts[j].x * pts[i].y;
     }
     area = Math.abs(sum) / 2;
   }
 
-  const pM = Math.round(perimeter * 100) / 100;
-  const pFt = Math.round(perimeter * 3.28084 * 100) / 100;
-  const aM2 = Math.round(area * 10) / 10;
-  const aSqFt = Math.round(area * 10.7639 * 10) / 10;
-
   return {
-    perimeterMeters: pM,
-    perimeterFt: pFt,
-    areaM2: aM2,
-    areaSqFt: aSqFt,
+    perimeterMeters: Math.round(perimeter * 100) / 100,
+    perimeterFt: Math.round(perimeter * 3.28084 * 100) / 100,
+    areaM2: Math.round(area * 10) / 10,
+    areaSqFt: Math.round(area * 10.7639 * 10) / 10,
     segments,
-    groundPoints: groundPts
+    mode
   };
 }
 
