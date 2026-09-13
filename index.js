@@ -27199,10 +27199,26 @@ if (typeof document !== 'undefined') {
         const dlBtn = document.getElementById('media-download-archive-btn');
         const filterTimeCheck = document.getElementById('ingest-filter-time');
         const filterGeoCheck = document.getElementById('ingest-filter-geo');
+        const deleteDroneCheck = document.getElementById('ingest-delete-from-drone');
+
+        const shouldDeleteFromDrone = !!(deleteDroneCheck && deleteDroneCheck.checked);
+        if (shouldDeleteFromDrone) {
+          const confirmed = window.confirm(
+            '⚠️ Delete from Drone Enabled:\n\n' +
+            'Are you sure you want to delete successfully ingested photos from the drone/SD card after verification?\n\n' +
+            '• Source files will ONLY be removed after bit-for-bit MD5 checksum and byte-size verification on your PC.\n' +
+            '• Photos outside this mission window will be preserved.'
+          );
+          if (!confirmed) {
+            return;
+          }
+        }
 
         if (progContainer) progContainer.style.display = 'flex';
         if (progBar) progBar.style.width = '35%';
-        if (progText) progText.textContent = 'Pulling raw images over USB...';
+        if (progText) progText.textContent = shouldDeleteFromDrone
+          ? 'Pulling and verifying raw images over USB...'
+          : 'Pulling raw images over USB...';
 
         try {
           const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
@@ -27243,6 +27259,7 @@ if (typeof document !== 'undefined') {
               waypoints: activeWps,
               filterByTime: filterTimeCheck ? filterTimeCheck.checked : true,
               filterByGeo: filterGeoCheck ? filterGeoCheck.checked : true,
+              deleteFromDrone: shouldDeleteFromDrone,
               timeWindow,
               bounds,
               telemetry: telem || { points: [] }
@@ -27250,7 +27267,16 @@ if (typeof document !== 'undefined') {
           });
           const data = await res.json();
           if (progBar) progBar.style.width = '100%';
-          if (progText) progText.textContent = `Completed! ${data.totalPhotos || 0} photos ingested.`;
+
+          let statusMsg = `Completed! ${data.totalPhotos || 0} photos ingested.`;
+          if (shouldDeleteFromDrone) {
+            if (data.deletedCount > 0) {
+              statusMsg += ` (${data.deletedCount} verified & freed from SD card)`;
+            } else if (data.deleteErrors && data.deleteErrors.length > 0) {
+              statusMsg += ` (SD card write-protected or read-only)`;
+            }
+          }
+          if (progText) progText.textContent = statusMsg;
 
           if (data.manifest) {
             renderPhotoInspectionMapLayer(data.manifest);

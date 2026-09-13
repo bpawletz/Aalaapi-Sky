@@ -16793,14 +16793,14 @@ describe('v1.100.0 Flight Layer Boundary Auto-Superimposition Tests', () => {
     const indexTemplate = fs.readFileSync('index_template.html', 'utf8');
     const indexHtml = fs.readFileSync('index.html', 'utf8');
 
-    assert.strictEqual(pkg, '1.100.1');
-    assert.ok(cl.includes('## [1.100.1] - 2026-09-12'), 'CHANGELOG.md missing 1.100.1 header');
-    assert.ok(indexTemplate.includes('v1.100.1</span>'), 'index_template.html missing v1.100.1 header badge');
-    assert.ok(indexTemplate.includes('Version 1.100.1</span>'), 'index_template.html missing Version 1.100.1 in About modal');
-    assert.ok(indexTemplate.includes('Changelog (v1.100.1):'), 'index_template.html missing Changelog (v1.100.1)');
-    assert.ok(indexHtml.includes('v1.100.1</span>'), 'index.html missing v1.100.1 header badge');
-    assert.ok(indexHtml.includes('Version 1.100.1</span>'), 'index.html missing Version 1.100.1 in About modal');
-    assert.ok(indexHtml.includes('Changelog (v1.100.1):'), 'index.html missing Changelog (v1.100.1)');
+    assert.strictEqual(pkg, '1.101.0');
+    assert.ok(cl.includes('## [1.101.0] - 2026-09-13'), 'CHANGELOG.md missing 1.101.0 header');
+    assert.ok(indexTemplate.includes('v1.101.0</span>'), 'index_template.html missing v1.101.0 header badge');
+    assert.ok(indexTemplate.includes('Version 1.101.0</span>'), 'index_template.html missing Version 1.101.0 in About modal');
+    assert.ok(indexTemplate.includes('Changelog (v1.101.0):'), 'index_template.html missing Changelog (v1.101.0)');
+    assert.ok(indexHtml.includes('v1.101.0</span>'), 'index.html missing v1.101.0 header badge');
+    assert.ok(indexHtml.includes('Version 1.101.0</span>'), 'index.html missing Version 1.101.0 in About modal');
+    assert.ok(indexHtml.includes('Changelog (v1.101.0):'), 'index.html missing Changelog (v1.101.0)');
   });
 
   test('DOM Architecture: layer-custom-boundary-container is a direct child of layer-card-geometry and NOT inside exclusion-altitude-container', () => {
@@ -16818,6 +16818,55 @@ describe('v1.100.0 Flight Layer Boundary Auto-Superimposition Tests', () => {
 
     assert.strictEqual(exclusionBox.contains(boundaryBox), false, 'boundary container must NOT be inside exclusion container');
     assert.strictEqual(cardGeometry.contains(boundaryBox), true, 'boundary container must be inside layer-card-geometry');
+  });
+
+  test('DOM Architecture: #ingest-delete-from-drone exists in media ingest modal and defaults to unchecked', () => {
+    const tmpl = fs.readFileSync('index_template.html', 'utf8');
+    const dom = new JSDOM(tmpl);
+    const doc = dom.window.document;
+
+    const deleteCb = doc.getElementById('ingest-delete-from-drone');
+    assert.ok(deleteCb, '#ingest-delete-from-drone must exist in DOM');
+    assert.strictEqual(deleteCb.checked, false, '#ingest-delete-from-drone MUST default to unchecked for flight safety');
+  });
+});
+
+describe('v1.101.0 Safe Media Deletion & Verification Tests', () => {
+  const nodeCrypto = require('node:crypto');
+  const { computeFileMd5, validateImageHeader, pullMediaPhotos } = require('./tools/companion/server.js');
+  const os = require('node:os');
+
+  test('computeFileMd5 accurately computes MD5 hash of files', async () => {
+    const tmpFile = path.join(os.tmpdir(), `test_md5_${Date.now()}.bin`);
+    fs.writeFileSync(tmpFile, Buffer.from('AalaapiSkyFlightPlanVerification123'));
+    try {
+      const hash = await computeFileMd5(tmpFile);
+      // MD5 of 'AalaapiSkyFlightPlanVerification123'
+      const expected = nodeCrypto.createHash('md5').update('AalaapiSkyFlightPlanVerification123').digest('hex');
+      assert.strictEqual(hash, expected);
+    } finally {
+      if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
+    }
+  });
+
+  test('validateImageHeader validates JPEG (FFD8) and TIFF/DNG (4949/4D4D) headers', () => {
+    const tmpJpg = path.join(os.tmpdir(), `test_hdr_${Date.now()}.jpg`);
+    const tmpDng = path.join(os.tmpdir(), `test_hdr_${Date.now()}.dng`);
+    const tmpCorrupt = path.join(os.tmpdir(), `test_corrupt_${Date.now()}.jpg`);
+
+    try {
+      fs.writeFileSync(tmpJpg, Buffer.from([0xFF, 0xD8, 0xFF, 0xE1]));
+      fs.writeFileSync(tmpDng, Buffer.from([0x49, 0x49, 0x2A, 0x00]));
+      fs.writeFileSync(tmpCorrupt, Buffer.from([0x00, 0x00, 0x00, 0x00]));
+
+      assert.strictEqual(validateImageHeader(tmpJpg), true, 'JPEG header should be valid');
+      assert.strictEqual(validateImageHeader(tmpDng), true, 'TIFF header should be valid');
+      assert.strictEqual(validateImageHeader(tmpCorrupt), false, 'Corrupted header should fail validation');
+    } finally {
+      if (fs.existsSync(tmpJpg)) fs.unlinkSync(tmpJpg);
+      if (fs.existsSync(tmpDng)) fs.unlinkSync(tmpDng);
+      if (fs.existsSync(tmpCorrupt)) fs.unlinkSync(tmpCorrupt);
+    }
   });
 });
 
