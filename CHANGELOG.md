@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.100.0] - 2026-09-12
+
+### Added — Auto-Superimposed Flight Layer Boundaries & Parcel Perimeters on Mission Photos
+- **Forward Pinhole Camera Projective Engine (`projectGeoPointToPixel` & `projectGeoPolygonToPhoto`):** Added complete geodetic-to-camera-sensor forward projection model in `log_decoder.js` and `index.js`. Maps real-world $(\text{lat}, \text{lon}, \text{alt})$ coordinates to normalized photo coordinates $(u, v)$ based on drone GPS telemetry, altitude AGL, gimbal pitch angle, aircraft heading / yaw, camera focal length, and sensor aspect ratio.
+- **Flight Layer Boundary Superimposition in Photo Inspector:** When inspecting any drone photo taken during a mission, the active flight layer's boundary (e.g. 4-corner procedural survey footprint, target splat boundary, exclusion polygon, or custom parcel perimeter) is automatically superimposed directly onto the photo in neon cyan (`#06b6d4`) with dashed boundary lines, corner vertex pins, and a contextual layer boundary badge.
+- **Custom Layer Boundary & Parcel Perimeter Drawing:** Added interactive custom boundary tracing tools in Section 2 Card 1 (`#btn-draw-layer-boundary`, `#btn-clear-layer-boundary`, and `#layer-boundary-vertex-badge`). Pilots can trace precise real-world lot perimeters, property parcel boundaries, or custom structure envelopes on the 2D map, which automatically persist on the layer and superimpose on all photos.
+- **Photo Inspector Boundary Layer Toggle:** Added `#layer-toggle-layer-boundary` in the Photo Inspector drawer, allowing pilots and inspectors to toggle the layer boundary overlay on/off independently from manual defect markup and calipers.
+- **Export Stamping Integration:** Automatically bakes the projected layer boundary and vertex callouts into stamped JPEG exports via `exportStampedImage()`.
+
 ## [1.99.1] - 2026-09-12
 
 ### Fixed — Dual Slant & Ground Plane Photogrammetric Calibration for Elevated Structures & Roofs
