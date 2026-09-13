@@ -25762,8 +25762,11 @@ const PhotoInspector = {
     
     const altVal = this.unit === 'imperial' ? Math.round((p.actual.altAgl || 30) * 3.28084) + ' ft' : (p.actual.altAgl || 30) + 'm';
     const gsdVal = this.unit === 'imperial' ? ((p.gsd ? p.gsd.gsdCm : 0.9) / 2.54).toFixed(2) + ' in/px' : (p.gsd ? p.gsd.gsdCm : 0.9) + ' cm/px';
+    const pitch = (p.actual && p.actual.gimbalPitch !== undefined) ? p.actual.gimbalPitch : -90;
+    const isOblique = Math.abs(pitch + 90) > 2;
+    const modeTag = isOblique ? ' • 3D Ground Corrected' : '';
     if (subEl) {
-      subEl.textContent = `Lat: ${p.actual.lat.toFixed(5)}° • Lon: ${p.actual.lon.toFixed(5)}° • Alt: ${altVal} AGL • Pitch: ${p.actual.gimbalPitch}° • GSD: ${gsdVal}`;
+      subEl.textContent = `Lat: ${p.actual.lat.toFixed(5)}° • Lon: ${p.actual.lon.toFixed(5)}° • Alt: ${altVal} AGL • Pitch: ${p.actual.gimbalPitch}° • GSD: ${gsdVal}${modeTag}`;
     }
 
     const isComp = p.variance ? p.variance.isCompliant : true;
@@ -25787,7 +25790,7 @@ const PhotoInspector = {
     if (hudCoord) hudCoord.textContent = `Lat: ${p.actual.lat.toFixed(6)}° Lon: ${p.actual.lon.toFixed(6)}°`;
     if (hudAlt) hudAlt.textContent = `Alt: ${altVal} AGL`;
     if (hudOpt) hudOpt.textContent = `Gimbal: ${p.actual.gimbalPitch}° Yaw: ${p.actual.heading}°`;
-    if (hudGsd) hudGsd.textContent = `GSD: ${gsdVal}`;
+    if (hudGsd) hudGsd.textContent = isOblique ? `GSD: ${gsdVal} (3D Tilt Corrected)` : `GSD: ${gsdVal}`;
     if (hudTs) hudTs.textContent = p.timestamp ? p.timestamp.replace('T', ' ').slice(0, 19) + ' UTC' : '2026-09-12 14:02:30 UTC';
   },
 
@@ -25817,12 +25820,25 @@ const PhotoInspector = {
         annotations.forEach((ann, idx) => {
           const card = document.createElement('div');
           card.className = `defect-note-card is-${ann.severity || 'info'}`;
+          let cardTitle = `🔘 #${idx + 1} ${ann.title || 'Observation'}`;
+          let cardDesc = ann.description || ann.details || 'No description entered.';
+          if (ann.type === 'boundary') {
+            cardTitle = '📐 Boundary Line';
+            if (ann.perimeterFt) cardDesc = `${ann.perimeterFt} ft perimeter • ${ann.areaSqFt || 0} sq ft`;
+          } else if (ann.type === 'measure') {
+            const dM = this.calculateGroundDistance(ann.p1, ann.p2);
+            const dStr = this.unit === 'imperial' ? `${(dM * 3.28084).toFixed(2)} ft` : `${dM.toFixed(2)} m`;
+            cardTitle = `📏 Measurement: ${dStr}`;
+            const pitch = (this.activePhoto?.actual?.gimbalPitch !== undefined) ? this.activePhoto.actual.gimbalPitch : -90;
+            const isOblique = Math.abs(pitch + 90) > 2;
+            cardDesc = isOblique ? `3D ray-plane ground corrected (${pitch}° pitch)` : 'Planar nadir calibrated';
+          }
           card.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <strong>${ann.type === 'boundary' ? '📐 Boundary Line' : (ann.type === 'measure' ? '📏 Measurement' : `🔘 #${idx + 1} ${ann.title || 'Observation'}`)}</strong>
+              <strong>${cardTitle}</strong>
               <button type="button" class="btn-secondary btn-sm" style="padding: 1px 4px; font-size: 0.65rem; color: #ef4444;" title="Delete Annotation">✕</button>
             </div>
-            <div style="color: var(--text-muted); font-size: 0.72rem;">${ann.description || ann.details || 'No description entered.'}</div>
+            <div style="color: var(--text-muted); font-size: 0.72rem;">${cardDesc}</div>
           `;
           const delBtn = card.querySelector('button');
           if (delBtn) {
@@ -25848,6 +25864,111 @@ const PhotoInspector = {
         boundaryBox.style.display = 'none';
       }
     }
+  },
+
+  projectPixelToGround(normX, normY) {
+    if (!this.activePhoto) return { x: 0, y: 0 };
+    const p = this.activePhoto;
+    const alt = (p.actual && typeof p.actual.altAgl === 'number' && p.actual.altAgl > 0) ? p.actual.altAgl : 25.0;
+    const pitch = (p.actual && typeof p.actual.gimbalPitch === 'number') ? p.actual.gimbalPitch : -90;
+
+    let tiltDeg;
+    if (pitch <= 0) {
+      tiltDeg = Math.min(85, Math.max(0, 90 + pitch));
+    } else {
+      tiltDeg = Math.min(85, Math.max(0, Math.abs(90 - pitch)));
+    }
+    const tau = tiltDeg * (Math.PI / 180);
+
+    const sW = p.sensorWidthMm || 9.6;
+    const fL = p.focalLengthMm || 6.72;
+    const canvas = (typeof document !== 'undefined') ? document.getElementById('photo-annotation-canvas') : null;
+    const aspect = (canvas && canvas.width && canvas.height) ? (canvas.width / canvas.height) : (4 / 3);
+    const sH = sW / aspect;
+
+    const tanHalfH = sW / (2 * fL);
+    const tanHalfV = sH / (2 * fL);
+
+    const xc = (2 * normX - 1) * tanHalfH;
+    const yc = (1 - 2 * normY) * tanHalfV;
+
+    const cosTau = Math.cos(tau);
+    const sinTau = Math.sin(tau);
+
+    const dX = xc;
+    const dY = yc * cosTau + sinTau;
+    const dZ = yc * sinTau - cosTau;
+
+    const safeDz = Math.min(-0.01, dZ);
+    const t = -alt / safeDz;
+
+    return {
+      x: t * dX,
+      y: t * dY,
+      slantRangeMeters: t * Math.sqrt(dX * dX + dY * dY + safeDz * safeDz)
+    };
+  },
+
+  calculateGroundDistance(p1, p2) {
+    if (!p1 || !p2) return 0;
+    const g1 = this.projectPixelToGround(p1.x, p1.y);
+    const g2 = this.projectPixelToGround(p2.x, p2.y);
+    const dx = g2.x - g1.x;
+    const dy = g2.y - g1.y;
+    return Math.sqrt(dx * dx + dy * dy);
+  },
+
+  calculateGroundPolygon(points) {
+    if (!Array.isArray(points) || points.length < 2) {
+      return { perimeterMeters: 0, perimeterFt: 0, areaM2: 0, areaSqFt: 0, segments: [] };
+    }
+    const groundPts = points.map(pt => this.projectPixelToGround(pt.x, pt.y));
+    const segments = [];
+    let perimeter = 0;
+
+    for (let i = 0; i < groundPts.length - 1; i++) {
+      const dx = groundPts[i + 1].x - groundPts[i].x;
+      const dy = groundPts[i + 1].y - groundPts[i].y;
+      const lenM = Math.sqrt(dx * dx + dy * dy);
+      segments.push({
+        fromIndex: i,
+        toIndex: i + 1,
+        lengthMeters: Math.round(lenM * 100) / 100,
+        lengthFt: Math.round(lenM * 3.28084 * 100) / 100
+      });
+      perimeter += lenM;
+    }
+
+    if (points.length >= 3) {
+      const dx = groundPts[0].x - groundPts[groundPts.length - 1].x;
+      const dy = groundPts[0].y - groundPts[groundPts.length - 1].y;
+      const closingLen = Math.sqrt(dx * dx + dy * dy);
+      segments.push({
+        fromIndex: groundPts.length - 1,
+        toIndex: 0,
+        lengthMeters: Math.round(closingLen * 100) / 100,
+        lengthFt: Math.round(closingLen * 3.28084 * 100) / 100
+      });
+      perimeter += closingLen;
+    }
+
+    let area = 0;
+    if (groundPts.length >= 3) {
+      let sum = 0;
+      for (let i = 0; i < groundPts.length; i++) {
+        const j = (i + 1) % groundPts.length;
+        sum += groundPts[i].x * groundPts[j].y - groundPts[j].x * groundPts[i].y;
+      }
+      area = Math.abs(sum) / 2;
+    }
+
+    return {
+      perimeterMeters: Math.round(perimeter * 10) / 10,
+      perimeterFt: Math.round(perimeter * 3.28084 * 10) / 10,
+      areaM2: Math.round(area * 10) / 10,
+      areaSqFt: Math.round(area * 10.7639 * 10) / 10,
+      segments
+    };
   },
 
   fitToViewport() {
@@ -25882,7 +26003,6 @@ const PhotoInspector = {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (!this.activePhoto) return;
 
-    const gsdM = (this.activePhoto.gsd && this.activePhoto.gsd.gsdMeters) ? this.activePhoto.gsd.gsdMeters : 0.009;
     const annotations = this.activePhoto.annotations || [];
 
     // 1. Waypoint Aim Reticle (Center Crosshairs)
@@ -25931,9 +26051,7 @@ const PhotoInspector = {
           const p2 = b.points[i + 1];
           const mx = ((p1.x + p2.x) / 2) * canvas.width;
           const my = ((p1.y + p2.y) / 2) * canvas.height;
-          const dx = (p2.x - p1.x) * canvas.width;
-          const dy = (p2.y - p1.y) * canvas.height;
-          const dMeters = Math.sqrt(dx * dx + dy * dy) * gsdM;
+          const dMeters = this.calculateGroundDistance(p1, p2);
           const distStr = this.unit === 'imperial' ? `${(dMeters * 3.28084).toFixed(1)} ft` : `${dMeters.toFixed(1)} m`;
 
           ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
@@ -25987,12 +26105,12 @@ const PhotoInspector = {
         });
         const mx = (x1 + x2) / 2;
         const my = (y1 + y2) / 2;
-        const distM = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2) * gsdM;
+        const distM = this.calculateGroundDistance(m.p1, m.p2);
         const distStr = this.unit === 'imperial' ? `${(distM * 3.28084).toFixed(2)} ft` : `${distM.toFixed(2)} m`;
         ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-        ctx.fillRect(mx - 32, my - 11, 64, 22);
+        ctx.fillRect(mx - 36, my - 11, 72, 22);
         ctx.strokeStyle = '#38bdf8';
-        ctx.strokeRect(mx - 32, my - 11, 64, 22);
+        ctx.strokeRect(mx - 36, my - 11, 72, 22);
         ctx.fillStyle = '#38bdf8';
         ctx.font = 'bold 11px sans-serif';
         ctx.textAlign = 'center';
@@ -26001,6 +26119,7 @@ const PhotoInspector = {
         ctx.restore();
       });
     }
+
 
     // 4. Directional Arrows
     annotations.filter(a => a.type === 'arrow').forEach(arr => {
@@ -26189,29 +26308,16 @@ const PhotoInspector = {
             const p0 = this.activeBoundaryPoints[0];
             const distPx = Math.sqrt(((xNorm - p0.x) * canvas.width) ** 2 + ((yNorm - p0.y) * canvas.height) ** 2);
             if (distPx < 25 && this.activeBoundaryPoints.length > 3) {
-              const gsdM = (this.activePhoto.gsd && this.activePhoto.gsd.gsdMeters) ? this.activePhoto.gsd.gsdMeters : 0.009;
-              let perimeterM = 0;
-              for (let i = 0; i < this.activeBoundaryPoints.length - 1; i++) {
-                const pt1 = this.activeBoundaryPoints[i];
-                const pt2 = this.activeBoundaryPoints[i + 1];
-                perimeterM += Math.sqrt(((pt2.x - pt1.x) * canvas.width) ** 2 + ((pt2.y - pt1.y) * canvas.height) ** 2) * gsdM;
-              }
-              let sum = 0;
-              for (let i = 0; i < this.activeBoundaryPoints.length; i++) {
-                const j = (i + 1) % this.activeBoundaryPoints.length;
-                sum += (this.activeBoundaryPoints[i].x * canvas.width) * (this.activeBoundaryPoints[j].y * canvas.height) - (this.activeBoundaryPoints[j].x * canvas.width) * (this.activeBoundaryPoints[i].y * canvas.height);
-              }
-              const areaM2 = Math.abs(sum) / 2 * (gsdM * gsdM);
-
+              const polyRes = this.calculateGroundPolygon(this.activeBoundaryPoints);
               this.activePhoto.annotations.push({
                 type: 'boundary',
                 points: [...this.activeBoundaryPoints],
                 isClosed: true,
                 color: this.currentColor,
-                perimeterMeters: Math.round(perimeterM * 10) / 10,
-                perimeterFt: Math.round(perimeterM * 3.28084 * 10) / 10,
-                areaM2: Math.round(areaM2 * 10) / 10,
-                areaSqFt: Math.round(areaM2 * 10.7639 * 10) / 10
+                perimeterMeters: polyRes.perimeterMeters,
+                perimeterFt: polyRes.perimeterFt,
+                areaM2: polyRes.areaM2,
+                areaSqFt: polyRes.areaSqFt
               });
               this.activeBoundaryPoints = [];
               this.updateDrawerUI();
@@ -26224,10 +26330,18 @@ const PhotoInspector = {
         if (this.currentTool === 'measure') {
           this.activeMeasurePoints.push({ x: xNorm, y: yNorm });
           if (this.activeMeasurePoints.length === 2) {
+            const p1 = this.activeMeasurePoints[0];
+            const p2 = this.activeMeasurePoints[1];
+            const distM = this.calculateGroundDistance(p1, p2);
+            const distStr = this.unit === 'imperial' ? `${(distM * 3.28084).toFixed(2)} ft` : `${distM.toFixed(2)} m`;
             this.activePhoto.annotations.push({
               type: 'measure',
-              p1: this.activeMeasurePoints[0],
-              p2: this.activeMeasurePoints[1]
+              p1,
+              p2,
+              distanceMeters: Math.round(distM * 100) / 100,
+              distanceFt: Math.round(distM * 3.28084 * 100) / 100,
+              label: distStr,
+              details: `Corrected 3D ground distance: ${distStr}`
             });
             this.activeMeasurePoints = [];
             this.updateDrawerUI();
@@ -26388,8 +26502,10 @@ const PhotoInspector = {
       ctx.fillStyle = '#cbd5e1';
       ctx.font = '16px monospace';
       const altStr = `${p.actual.altAgl}m AGL`;
-      const gsdStr = `${p.gsd ? p.gsd.gsdCm : 0.9} cm/px`;
-      ctx.fillText(`WP #${p.waypointIndex} | Lat: ${p.actual.lat.toFixed(6)}° Lon: ${p.actual.lon.toFixed(6)}° | Alt: ${altStr} | Pitch: ${p.actual.gimbalPitch}° | GSD: ${gsdStr}`, 24, h + 58);
+      const pitch = (p.actual && p.actual.gimbalPitch !== undefined) ? p.actual.gimbalPitch : -90;
+      const isOblique = Math.abs(pitch + 90) > 2;
+      const gsdStr = `${p.gsd ? p.gsd.gsdCm : 0.9} cm/px${isOblique ? ' (3D Tilt Corrected)' : ''}`;
+      ctx.fillText(`WP #${p.waypointIndex} | Lat: ${p.actual.lat.toFixed(6)}° Lon: ${p.actual.lon.toFixed(6)}° | Alt: ${altStr} | Pitch: ${pitch}° | GSD: ${gsdStr}`, 24, h + 58);
     }
 
     const link = document.createElement('a');

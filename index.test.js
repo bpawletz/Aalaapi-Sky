@@ -15878,8 +15878,8 @@ describe('v1.98.0 Mission-Specific Photo Ingestion & SQLite Indexing Tests', () 
 
     ['index_template.html', 'index.html'].forEach(filename => {
       const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
-      assert.ok(html.includes('v1.98.'), `${filename} must contain header badge`);
-      assert.ok(html.includes('Version 1.98.'), `${filename} must contain About modal Version`);
+      assert.ok(html.includes('class="header-version-badge"'), `${filename} must contain header badge`);
+      assert.ok(html.includes('class="version-tag"'), `${filename} must contain About modal Version`);
       assert.ok(html.includes('Changelog (v1.98.0):'), `${filename} must contain Changelog header`);
       assert.ok(html.includes('Mission-Specific Photo Ingestion &amp; SQLite Photo Indexing (v1.98.0)'), `${filename} must contain v1.98.0 What's New card`);
       assert.ok(html.includes('id="media-mission-window-box"'), `${filename} must contain #media-mission-window-box`);
@@ -16002,8 +16002,8 @@ describe('v1.98.1 Flight Diagnostics Inspection Photo Rendering & Anti-Collapse 
     assert.ok(changelog.includes('## [1.98.1] - 2026-09-12'), 'CHANGELOG.md must contain v1.98.1 entry');
 
     const templateHtml = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(templateHtml.includes('>v1.98.') || templateHtml.includes('>v1.98.1</span>'), 'index_template.html header badge must be v1.98.x');
-    assert.ok(templateHtml.includes('>Version 1.98.') || templateHtml.includes('>Version 1.98.1</span>'), 'index_template.html About modal must be Version 1.98.x');
+    assert.ok(templateHtml.includes('class="header-version-badge"'), 'index_template.html header badge exists');
+    assert.ok(templateHtml.includes('class="version-tag"'), 'index_template.html About modal version tag exists');
     assert.ok(templateHtml.includes('Changelog (v1.98.1):'), 'index_template.html About modal changelog must contain v1.98.1');
   });
 
@@ -16091,8 +16091,8 @@ describe('v1.98.2 Photo Inspector Image Resolution & Viewport Fitting Tests', ()
 
     ['index_template.html', 'index.html'].forEach(filename => {
       const html = fs.readFileSync(path.join(__dirname, filename), 'utf8');
-      assert.ok(html.includes('>v1.98.') || html.includes('v1.98.2'), `${filename} must contain header badge v1.98.x`);
-      assert.ok(html.includes('>Version 1.98.') || html.includes('Version 1.98.2'), `${filename} must contain About modal Version 1.98.x`);
+      assert.ok(html.includes('class="header-version-badge"'), `${filename} must contain header badge`);
+      assert.ok(html.includes('class="version-tag"'), `${filename} must contain About modal Version`);
       assert.ok(html.includes('Changelog (v1.98.2):'), `${filename} must contain Changelog (v1.98.2): header`);
     });
   });
@@ -16246,19 +16246,19 @@ describe('v1.98.2 Photo Inspector Image Resolution & Viewport Fitting Tests', ()
 describe('v1.98.3 Media Ingest Limit Removal, MPF Previews & Thumbnail Generation Tests', () => {
   test('Version consistency: package.json, CHANGELOG.md, index_template.html, and index.html match 1.98.3', () => {
     const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-    assert.strictEqual(pkg.version, '1.98.3');
+    assert.ok(pkg.version >= '1.98.3');
 
     const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
     assert.ok(changelog.includes('## [1.98.3] - 2026-09-12'), 'CHANGELOG.md must contain ## [1.98.3]');
 
     const tmpl = fs.readFileSync('index_template.html', 'utf8');
-    assert.ok(tmpl.includes('v1.98.3'), 'index_template.html must contain header badge v1.98.3');
-    assert.ok(tmpl.includes('Version 1.98.3'), 'index_template.html must contain Version 1.98.3');
+    assert.ok(tmpl.includes('class="header-version-badge"'), 'index_template.html must contain header badge');
+    assert.ok(tmpl.includes('class="version-tag"'), 'index_template.html must contain Version tag');
     assert.ok(tmpl.includes('Changelog (v1.98.3):'), 'index_template.html must contain Changelog (v1.98.3)');
 
     const bundle = fs.readFileSync('index.html', 'utf8');
-    assert.ok(bundle.includes('v1.98.3'), 'index.html must contain header badge v1.98.3');
-    assert.ok(bundle.includes('Version 1.98.3'), 'index.html must contain Version 1.98.3');
+    assert.ok(bundle.includes('class="header-version-badge"'), 'index.html must contain header badge');
+    assert.ok(bundle.includes('class="version-tag"'), 'index.html must contain Version tag');
     assert.ok(bundle.includes('Changelog (v1.98.3):'), 'index.html must contain Changelog (v1.98.3)');
   });
 
@@ -16274,6 +16274,130 @@ describe('v1.98.3 Media Ingest Limit Removal, MPF Previews & Thumbnail Generatio
     const { pullMediaPhotos } = require('./tools/companion/server.js');
     assert.strictEqual(typeof pullMediaPhotos, 'function');
     assert.strictEqual(pullMediaPhotos.constructor.name, 'AsyncFunction');
+  });
+});
+
+describe('v1.99.0 3D Photogrammetric Ray-to-Ground Plane Projective Correction Tests', () => {
+  test('Version consistency: package.json, CHANGELOG.md, index_template.html, and index.html match 1.99.0', () => {
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    assert.strictEqual(pkg.version, '1.99.0');
+
+    const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
+    assert.ok(changelog.includes('## [1.99.0] - 2026-09-12'), 'CHANGELOG.md must contain ## [1.99.0]');
+
+    const tmpl = fs.readFileSync('index_template.html', 'utf8');
+    assert.ok(tmpl.includes('v1.99.0'), 'index_template.html must contain header badge v1.99.0');
+    assert.ok(tmpl.includes('Version 1.99.0'), 'index_template.html must contain Version 1.99.0');
+    assert.ok(tmpl.includes('Changelog (v1.99.0):'), 'index_template.html must contain Changelog (v1.99.0)');
+
+    const bundle = fs.readFileSync('index.html', 'utf8');
+    assert.ok(bundle.includes('v1.99.0'), 'index.html must contain header badge v1.99.0');
+    assert.ok(bundle.includes('Version 1.99.0'), 'index.html must contain Version 1.99.0');
+    assert.ok(bundle.includes('Changelog (v1.99.0):'), 'index.html must contain Changelog (v1.99.0)');
+  });
+
+  test('projectPixelToGroundPlane: nadir (-90°) projects center to origin and matches standard GSD', () => {
+    const { projectPixelToGroundPlane } = require('./tools/companion/log_decoder.js');
+    const alt = 25.0; // 25 meters AGL
+    const center = projectPixelToGroundPlane(0.5, 0.5, alt, -90);
+    assert.ok(Math.abs(center.x) < 0.001, 'Center X should be 0 on ground');
+    assert.ok(Math.abs(center.y) < 0.001, 'Center Y should be 0 on ground');
+    assert.ok(Math.abs(center.slantRangeMeters - alt) < 0.01, 'Nadir slant range should equal altitude');
+
+    // Horizontal offset on sensor at nadir: deltaX should match (sW / f) * alt * deltaU
+    const pRight = projectPixelToGroundPlane(0.6, 0.5, alt, -90, { sensorWidthMm: 9.6, focalLengthMm: 6.72 });
+    const expectedDx = 0.1 * (9.6 / 6.72) * alt; // 3.5714m
+    assert.ok(Math.abs(pRight.x - expectedDx) < 0.01, `Horizontal offset should match pinhole GSD, got ${pRight.x}`);
+  });
+
+  test('projectPixelToGroundPlane: oblique (-45°) center ground coordinate equals altitude (tan 45 = 1)', () => {
+    const { projectPixelToGroundPlane } = require('./tools/companion/log_decoder.js');
+    const alt = 25.0; // 25 meters AGL
+    const center = projectPixelToGroundPlane(0.5, 0.5, alt, -45);
+    assert.ok(Math.abs(center.x) < 0.001, 'Center X should be 0');
+    assert.ok(Math.abs(center.y - alt) < 0.01, `At -45° pitch, center Y should equal altitude (${alt}m), got ${center.y}`);
+    const expectedSlant = alt * Math.SQRT2;
+    assert.ok(Math.abs(center.slantRangeMeters - expectedSlant) < 0.05, `Slant range at -45° should be alt * sqrt(2) = ${expectedSlant}, got ${center.slantRangeMeters}`);
+  });
+
+  test('calculatePhotogrammetricDistance: calculates true ground distance and eliminates slant underestimation', () => {
+    const { calculatePhotogrammetricDistance } = require('./tools/companion/log_decoder.js');
+    const alt = 25.0; // meters
+
+    // Horizontal 10% span across center at nadir (-90°) vs at -45°
+    const p1 = { x: 0.45, y: 0.5 };
+    const p2 = { x: 0.55, y: 0.5 };
+
+    const distNadir = calculatePhotogrammetricDistance(p1, p2, alt, -90);
+    const distOblique45 = calculatePhotogrammetricDistance(p1, p2, alt, -45);
+
+    assert.ok(distNadir.distanceMeters > 0);
+    assert.ok(distOblique45.distanceMeters > 0);
+    // At -45° slant range is sqrt(2) larger, so horizontal distance across frame is sqrt(2) larger
+    const ratio = distOblique45.distanceMeters / distNadir.distanceMeters;
+    assert.ok(Math.abs(ratio - Math.SQRT2) < 0.05, `Ratio should approximate sqrt(2) (~1.414), got ${ratio}`);
+  });
+
+  test('calculatePhotogrammetricDistance: perspective foreshortening along vertical tilt axis', () => {
+    const { calculatePhotogrammetricDistance } = require('./tools/companion/log_decoder.js');
+    const alt = 25.0;
+
+    // Upward step in image (0.5 to 0.4: looking farther away) vs downward step (0.6 to 0.5: looking closer)
+    const stepFar = calculatePhotogrammetricDistance({ x: 0.5, y: 0.4 }, { x: 0.5, y: 0.5 }, alt, -45);
+    const stepNear = calculatePhotogrammetricDistance({ x: 0.5, y: 0.5 }, { x: 0.5, y: 0.6 }, alt, -45);
+
+    assert.ok(stepFar.distanceMeters > stepNear.distanceMeters,
+      `Features farther in distance must have larger ground distance per pixel (keystoning gradient). Far: ${stepFar.distanceMeters}m, Near: ${stepNear.distanceMeters}m`);
+  });
+
+  test('calculatePhotogrammetricPolygon: computes perimeter and area on ground plane', () => {
+    const { calculatePhotogrammetricPolygon } = require('./tools/companion/log_decoder.js');
+    const alt = 30.0;
+    const quad = [
+      { x: 0.4, y: 0.4 },
+      { x: 0.6, y: 0.4 },
+      { x: 0.6, y: 0.6 },
+      { x: 0.4, y: 0.6 }
+    ];
+
+    const poly = calculatePhotogrammetricPolygon(quad, alt, -45);
+    assert.ok(poly.perimeterMeters > 0);
+    assert.ok(poly.perimeterFt > poly.perimeterMeters * 3.2);
+    assert.ok(poly.areaM2 > 0);
+    assert.ok(poly.areaSqFt > poly.areaM2 * 10);
+    assert.strictEqual(poly.segments.length, 4, 'Closed quad should have 4 segments');
+  });
+
+  test('PhotoInspector: calculateGroundDistance and calculateGroundPolygon integrate with activePhoto', () => {
+    const origDoc = global.document;
+    const dom = new JSDOM(`<!DOCTYPE html><html><body>
+      <div id="photo-annotation-canvas" width="1920" height="1080"></div>
+    </body></html>`);
+    global.document = dom.window.document;
+
+    try {
+      PhotoInspector.activePhoto = {
+        actual: { altAgl: 24.99, gimbalPitch: -45.0, heading: 0 },
+        sensorWidthMm: 9.6,
+        focalLengthMm: 6.72
+      };
+
+      const dist = PhotoInspector.calculateGroundDistance({ x: 0.4, y: 0.5 }, { x: 0.6, y: 0.5 });
+      assert.ok(dist > 0, 'Should calculate positive ground distance');
+      assert.ok(!Number.isNaN(dist), 'Distance should not be NaN');
+
+      const poly = PhotoInspector.calculateGroundPolygon([
+        { x: 0.4, y: 0.4 },
+        { x: 0.6, y: 0.4 },
+        { x: 0.6, y: 0.6 }
+      ]);
+      assert.ok(poly.perimeterMeters > 0);
+      assert.ok(poly.areaM2 > 0);
+      assert.ok(!Number.isNaN(poly.perimeterMeters));
+      assert.ok(!Number.isNaN(poly.areaM2));
+    } finally {
+      global.document = origDoc;
+    }
   });
 });
 
