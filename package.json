@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "jsdom": "^29.1.1",
-    "playwright": "^1.61.1"
+    "playwright": "^1.63.0"
   },
   "name": "aalaapi-sky",
   "version": "1.100.1",
