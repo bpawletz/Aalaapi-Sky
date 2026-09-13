@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.101.0] - 2026-09-13
+
+### Added — Verified "Delete Photos from Drone After Download" Media Ingestion & Free SD Storage
+- **Triple-Barrier Bit-for-Bit Verification Engine:** Added automated post-download verification in Companion Bridge (`pullMediaPhotos` in `server.js`) before deleting source photos from connected aircraft or MicroSD cards:
+  - *Barrier 1 (Byte Size Check):* Destination file exists and exact non-zero byte count matches (`destSize === srcSize && srcSize > 0`).
+  - *Barrier 2 (MD5 Checksum Verification):* Bit-for-bit cryptographic MD5 checksum (`computeFileMd5`) calculated on both source file and downloaded destination file (`srcMd5 === destMd5`). Source file is only unlinked if hashes match 100%.
+  - *Barrier 3 (Header/Footer Image Format Validation):* Verified valid JPEG SOI (`0xFFD8`) or TIFF/DNG header (`0x4949`/`0x4D4D`) on destination file.
+- **Strict Opt-In Safety Toggle (`#ingest-delete-from-drone`):** Added explicit deletion toggle in Photo Ingestion modal (`#media-ingest-modal`) styled with clear warning indicators. Defaults to unchecked (`checked = false`) on every session to eliminate any accidental data removal.
+- **Pre-Flight User Intent Confirmation:** Triggered native browser confirmation dialog when ingestion begins with deletion enabled, reiterating checksum verification and selective mission window preservation.
+- **Selective Mission Window Protection:** Photos outside the active flight time window or geographic boundary are safely ignored and preserved on the MicroSD card.
+- **Live Ingest & Storage Freed Status:** Completion banner provides explicit feedback on the number of photos ingested, verified, and safely freed from SD storage (or warnings if the card is hardware write-protected).
+
 ## [1.100.1] - 2026-09-12
 
 ### Fixed — Card 1 Layer Boundary & Parcel Perimeter Control Visibility for Survey Patterns

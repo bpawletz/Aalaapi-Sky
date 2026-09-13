@@ -5079,6 +5079,31 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(boundaryControls.toggleChecked, true, 'Layer boundary superimpose toggle must be checked by default');
     assert.strictEqual(boundaryControls.canToggleEditMode, true, 'setLayerBoundaryEditMode must update draw button');
   });
+
+  test('Media Ingestion Modal: #ingest-delete-from-drone exists, defaults to unchecked, and toggles cleanly', async () => {
+    const modalState = await page.evaluate(() => {
+      const deleteCb = document.getElementById('ingest-delete-from-drone');
+      if (!deleteCb) return { exists: false };
+
+      const initialChecked = deleteCb.checked;
+      deleteCb.click();
+      const toggledChecked = deleteCb.checked;
+      deleteCb.click();
+      const restoredChecked = deleteCb.checked;
+
+      return {
+        exists: true,
+        initialChecked,
+        toggledChecked,
+        restoredChecked
+      };
+    });
+
+    assert.strictEqual(modalState.exists, true, '#ingest-delete-from-drone must exist in index.html');
+    assert.strictEqual(modalState.initialChecked, false, '#ingest-delete-from-drone must default to false for flight data safety');
+    assert.strictEqual(modalState.toggledChecked, true, '#ingest-delete-from-drone must be toggleable to true');
+    assert.strictEqual(modalState.restoredChecked, false, '#ingest-delete-from-drone must toggle back cleanly');
+  });
 });
 
 
