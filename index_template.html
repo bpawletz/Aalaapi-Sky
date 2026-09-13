@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.99.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.99.1</span></h1>
         </div>
       </div>
 
@@ -1945,10 +1945,10 @@
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
-              📐 3D Photogrammetric Ground Plane Projective Correction (v1.99.0)
+              📐 Dual Slant &amp; Ground Plane Photogrammetric Measurement Calibration (v1.99.1)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
-              Eliminates perspective distortion and slant range underestimation on oblique drone imagery (e.g. -45° or -30° gimbal pitch). Pinhole ray-to-ground plane projection computes exact 3D Euclidean distances on the horizontal ground plane regardless of measurement angle—handling horizontal, vertical, and diagonal caliper lines and polygon boundaries with full keystoning and tilt foreshortening correction.
+              Introduces dual-plane calibration to prevent altitude projection parallax on elevated structures. <strong>Structure / Slant Mode</strong> (default) calculates exact physical dimensions on roofs, dormers, siding, and solar panels within the camera's optical view plane, eliminating ground-plane inflation. <strong>Flat Ground Mode</strong> projects rays down to the horizontal ground plane (Z = 0 or target elevation) for driveways, curbs, and boundaries. Switch modes instantly via the topbar toggle or calibrate custom target elevation offsets in the inspector drawer.
             </p>
           </div>
 
@@ -2614,7 +2614,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.99.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.99.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -2680,6 +2680,14 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.99.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Dual Slant &amp; Ground Plane Photogrammetric Calibration:</strong> Added dual-plane calibration to eliminate projection parallax and distance inflation on elevated structures. <em>Structure / Slant Mode</em> measures within the optical view plane at target range to accurately size roofs, dormers, and siding without ground-plane elongation. <em>Flat Ground Mode</em> projects rays to horizontal terrain for driveways and property bounds.</li>
+              <li><strong>Interactive Target Elevation Offset:</strong> Added real-time target elevation offset input in the Photo Inspector drawer, allowing pilots to fine-tune reference planes for two-story homes, commercial rooftops, and raised platforms.</li>
+              <li><strong>Header Quick-Toggle:</strong> Added 1-click plane mode toggle button (<code>#inspector-plane-toggle-btn</code>) directly in the Photo Inspector topbar with live measurement badge re-calculation.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.99.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -5778,7 +5786,8 @@
           <span id="inspector-variance-text">ΔH: 0.18m • ΔV: 0.08m (Compliant)</span>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button id="inspector-plane-toggle-btn" class="btn-secondary btn-sm" type="button" style="font-size: 0.72rem; padding: 3px 8px;" title="Toggle Measurement Plane Calibration (Slant Optical Plane for Roofs/Elevated Structures vs Flat Ground Plane)">🏠 Slant (Structure)</button>
           <button id="inspector-unit-toggle-btn" class="btn-secondary btn-sm" type="button" style="font-size: 0.72rem; padding: 3px 8px;" title="Toggle Metric / Imperial Dimension Display">📏 Metric</button>
           <button id="close-photo-inspector-btn" class="close-btn" type="button" aria-label="Close photo inspector">&times;</button>
         </div>
@@ -5863,6 +5872,26 @@
                 <input type="checkbox" id="layer-toggle-reticle" checked />
                 <span>🎯 Target Framing Reticle</span>
               </label>
+            </div>
+          </div>
+
+          <hr style="border: 0; border-top: 1px solid var(--border-color);">
+
+          <!-- Measurement Plane Calibration -->
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px;">
+            <h4 style="font-size: 0.75rem; text-transform: uppercase; color: var(--accent-cyan); margin-bottom: 8px; letter-spacing: 0.05em;">Measurement Calibration</h4>
+            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.75rem;">
+              <div style="display: flex; gap: 4px;">
+                <button type="button" id="plane-btn-slant" class="btn-primary btn-sm active" style="flex: 1; padding: 4px 6px; font-size: 0.72rem; text-align: center;" title="Measures directly in the camera optical plane at target range (recommended for roofs, siding, walls, solar panels)">🏠 Structure / Slant</button>
+                <button type="button" id="plane-btn-ground" class="btn-secondary btn-sm" style="flex: 1; padding: 4px 6px; font-size: 0.72rem; text-align: center;" title="Ray-to-Ground Plane intersection down to specified elevation (recommended for driveways, curbs, flat ground)">🌍 Flat Ground</button>
+              </div>
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                <label for="inspector-target-height-input" style="color: var(--text-muted); font-size: 0.72rem;">Target Elev / Offset:</label>
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <input type="number" id="inspector-target-height-input" value="0" step="0.5" style="width: 60px; padding: 2px 4px; font-size: 0.72rem; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; text-align: right;" />
+                  <span id="inspector-target-height-unit" style="font-size: 0.72rem; color: var(--text-muted);">m</span>
+                </div>
+              </div>
             </div>
           </div>
 
