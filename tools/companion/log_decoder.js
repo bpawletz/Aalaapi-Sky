@@ -1175,6 +1175,156 @@ function correlatePhotosWithTelemetry(photos, telemetryPoints, plannedWaypoints 
   });
 }
 
+/**
+ * Projects a normalized image pixel (normX, normY in [0, 1]) to 3D local ground
+ * coordinates (X: Right, Y: Forward along camera azimuth, Z: 0 on ground)
+ * using a pinhole camera ray-plane intersection model.
+ * 
+ * Accurately accounts for:
+ * - Drone altitude AGL (H)
+ * - Gimbal pitch angle (nadir = -90, horizon = 0)
+ * - Camera sensor dimensions and focal length
+ * - Slant range expansion and perspective tilt foreshortening
+ */
+function projectPixelToGroundPlane(normX, normY, altAglMeters, gimbalPitchDeg = -90, options = {}) {
+  const alt = Math.max(0.5, parseFloat(altAglMeters) || 20);
+  const pitchDeg = parseFloat(gimbalPitchDeg) !== undefined ? parseFloat(gimbalPitchDeg) : -90;
+
+  // Normalized tilt from nadir in radians (nadir = -90 => 0 rad, -45 => 45 deg = 0.785 rad)
+  let tiltDeg;
+  if (pitchDeg <= 0) {
+    tiltDeg = Math.min(85, Math.max(0, 90 + pitchDeg));
+  } else {
+    tiltDeg = Math.min(85, Math.max(0, Math.abs(90 - pitchDeg)));
+  }
+  const tau = tiltDeg * (Math.PI / 180);
+
+  // Sensor and lens optics (defaults to DJI Mini 4 Pro 1/1.3" CMOS, 24mm equiv, f=6.72mm)
+  const sW = parseFloat(options.sensorWidthMm) || 9.6;
+  const fL = parseFloat(options.focalLengthMm) || 6.72;
+  const aspect = options.aspectRatio || (options.imageWidth && options.imageHeight ? options.imageWidth / options.imageHeight : (4 / 3));
+  const sH = sW / aspect;
+
+  const tanHalfH = sW / (2 * fL);
+  const tanHalfV = sH / (2 * fL);
+
+  // Pinhole camera ray in camera frame
+  // normX in [0, 1]: 0 is left, 0.5 is center, 1 is right
+  // normY in [0, 1]: 0 is top, 0.5 is center, 1 is bottom
+  const xc = (2 * normX - 1) * tanHalfH;
+  const yc = (1 - 2 * normY) * tanHalfV;
+
+  // Rotate camera ray by gimbal tilt tau around camera X axis
+  // Navigation frame: X: Right, Y: Forward (look azimuth), Z: Up
+  const cosTau = Math.cos(tau);
+  const sinTau = Math.sin(tau);
+
+  const dX = xc;
+  const dY = yc * cosTau + sinTau;
+  const dZ = yc * sinTau - cosTau;
+
+  // Ground intersection: C = (0, 0, alt) + t * (dX, dY, dZ) with plane Z = 0
+  // alt + t * dZ = 0 => t = -alt / dZ
+  // If dZ >= -0.01, ray points at/above horizon; clamp dZ to -0.01 to prevent infinity
+  const safeDz = Math.min(-0.01, dZ);
+  const t = -alt / safeDz;
+
+  const groundX = t * dX;
+  const groundY = t * dY;
+  const slantRange = t * Math.sqrt(dX * dX + dY * dY + safeDz * safeDz);
+
+  return {
+    x: groundX,
+    y: groundY,
+    slantRangeMeters: slantRange,
+    isAboveHorizon: dZ >= -0.02
+  };
+}
+
+/**
+ * Calculates photogrammetrically corrected 3D Euclidean distance on the ground plane
+ * between two normalized points p1 and p2 in a photo.
+ */
+function calculatePhotogrammetricDistance(p1, p2, altAglMeters, gimbalPitchDeg = -90, options = {}) {
+  if (!p1 || !p2) return { distanceMeters: 0, distanceFt: 0 };
+  const g1 = projectPixelToGroundPlane(p1.x, p1.y, altAglMeters, gimbalPitchDeg, options);
+  const g2 = projectPixelToGroundPlane(p2.x, p2.y, altAglMeters, gimbalPitchDeg, options);
+
+  const dx = g2.x - g1.x;
+  const dy = g2.y - g1.y;
+  const distMeters = Math.sqrt(dx * dx + dy * dy);
+
+  return {
+    distanceMeters: Math.round(distMeters * 100) / 100,
+    distanceFt: Math.round(distMeters * 3.28084 * 100) / 100,
+    groundPoints: [g1, g2]
+  };
+}
+
+/**
+ * Calculates photogrammetrically corrected perimeter and surface area for an array of
+ * normalized polygon points on the ground plane.
+ */
+function calculatePhotogrammetricPolygon(points, altAglMeters, gimbalPitchDeg = -90, options = {}) {
+  if (!Array.isArray(points) || points.length < 2) {
+    return { perimeterMeters: 0, perimeterFt: 0, areaM2: 0, areaSqFt: 0, segments: [] };
+  }
+
+  const groundPts = points.map(p => projectPixelToGroundPlane(p.x, p.y, altAglMeters, gimbalPitchDeg, options));
+  const segments = [];
+  let perimeter = 0;
+
+  for (let i = 0; i < groundPts.length - 1; i++) {
+    const dx = groundPts[i + 1].x - groundPts[i].x;
+    const dy = groundPts[i + 1].y - groundPts[i].y;
+    const lenM = Math.sqrt(dx * dx + dy * dy);
+    segments.push({
+      fromIndex: i,
+      toIndex: i + 1,
+      lengthMeters: Math.round(lenM * 100) / 100,
+      lengthFt: Math.round(lenM * 3.28084 * 100) / 100
+    });
+    perimeter += lenM;
+  }
+
+  if (points.length >= 3) {
+    const dx = groundPts[0].x - groundPts[groundPts.length - 1].x;
+    const dy = groundPts[0].y - groundPts[groundPts.length - 1].y;
+    const closingLen = Math.sqrt(dx * dx + dy * dy);
+    segments.push({
+      fromIndex: groundPts.length - 1,
+      toIndex: 0,
+      lengthMeters: Math.round(closingLen * 100) / 100,
+      lengthFt: Math.round(closingLen * 3.28084 * 100) / 100
+    });
+    perimeter += closingLen;
+  }
+
+  let area = 0;
+  if (groundPts.length >= 3) {
+    let sum = 0;
+    for (let i = 0; i < groundPts.length; i++) {
+      const j = (i + 1) % groundPts.length;
+      sum += groundPts[i].x * groundPts[j].y - groundPts[j].x * groundPts[i].y;
+    }
+    area = Math.abs(sum) / 2;
+  }
+
+  const pM = Math.round(perimeter * 100) / 100;
+  const pFt = Math.round(perimeter * 3.28084 * 100) / 100;
+  const aM2 = Math.round(area * 10) / 10;
+  const aSqFt = Math.round(area * 10.7639 * 10) / 10;
+
+  return {
+    perimeterMeters: pM,
+    perimeterFt: pFt,
+    areaM2: aM2,
+    areaSqFt: aSqFt,
+    segments,
+    groundPoints: groundPts
+  };
+}
+
 if (typeof module !== 'undefined') {
   module.exports = {
     haversineDistance,
@@ -1187,7 +1337,9 @@ if (typeof module !== 'undefined') {
     calculateGSD,
     calculateBoundaryDimensions,
     calculateGroundFootprint,
-    correlatePhotosWithTelemetry
+    correlatePhotosWithTelemetry,
+    projectPixelToGroundPlane,
+    calculatePhotogrammetricDistance,
+    calculatePhotogrammetricPolygon
   };
 }
-

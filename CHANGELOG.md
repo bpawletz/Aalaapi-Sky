@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.99.0] - 2026-09-12
+
+### Added — 3D Photogrammetric Ray-to-Ground Plane Projective Correction for Photo Inspector
+- **3D Ray-to-Ground Plane Pinhole Projection (`projectPixelToGroundPlane`):** Implemented a complete photogrammetric ray-intersection model that calculates true ground coordinates $(X, Y, 0)$ for any normalized pixel $(u, v)$ in inspection imagery, taking into account drone altitude AGL ($H$), actual gimbal pitch angle (from $-90^\circ$ nadir to shallow obliques like $-45^\circ$ and $-30^\circ$), camera focal length ($f = 6.72\text{ mm}$), and sensor dimensions ($9.6 \times 7.2\text{ mm}$).
+- **Orientation-Independent Measurement Calipers (`calculatePhotogrammetricDistance`):** Caliper measurement lines now calculate true 3D Euclidean ground distance whether drawn horizontally (across the frame), vertically (along the camera look azimuth), or diagonally at any angle, completely eliminating perspective foreshortening and slant range scale errors.
+- **Perspective Foreshortening & Keystoning Compensation:** Accurately accounts for non-linear depth gradients across oblique imagery—correcting the scale difference between foreground features at the bottom of the photo and distant features near the top of the photo.
+- **3D Polygon Perimeter & Area Calculations (`calculatePhotogrammetricPolygon`):** Polygon boundaries drawn on oblique photos now project all vertices onto the horizontal ground plane before computing segment lengths, perimeter, and surface area (via the Shoelace formula), delivering accurate real-world acreage and square footage.
+- **Inspection HUD & Defect Drawer Live Feedback:** Added visual indicator `3D Ground Corrected (Tilt: -XX°)` on the photo inspection HUD banner and formatted live distance readouts directly within the defect observation cards in the sidebar drawer. Stamped JPEG exports automatically include the photogrammetric correction badge.
+
 ## [1.98.3] - 2026-09-12
 
 ### Fixed — Media Ingest Limit Removal, MPF Previews & High-Speed Thumbnail Generation
