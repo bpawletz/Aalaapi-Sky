@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.99.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.100.0</span></h1>
         </div>
       </div>
 
@@ -766,6 +766,19 @@
                 <option value="overTop">⬆️ Over the Top (Climb Above Ceiling)</option>
                 <option value="smart">⚡ Smart / Shortest 3D Path</option>
               </select>
+            <!-- Layer Custom Boundary / Parcel Perimeter (v1.100.0) -->
+            <div id="layer-custom-boundary-container" style="margin-top: 10px; padding: 10px; background: rgba(6, 182, 212, 0.05); border: 1px dashed rgba(6, 182, 212, 0.35); border-radius: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 0.75rem; font-weight: 600; color: #22d3ee;">🗺️ Layer Boundary / Parcel</span>
+                <span id="layer-boundary-vertex-badge" style="font-size: 0.68rem; padding: 2px 6px; border-radius: 4px; background: rgba(6, 182, 212, 0.15); color: #06b6d4; font-family: monospace;">Auto-Bounds</span>
+              </div>
+              <p style="font-size: 0.72rem; color: var(--text-muted); margin: 0 0 8px 0; line-height: 1.3;">
+                By default, the 4-corner pattern footprint is used. You can trace a custom parcel perimeter on the 2D map to auto-superimpose onto mission photos in the Photo Inspector.
+              </p>
+              <div style="display: flex; gap: 6px;">
+                <button type="button" id="btn-draw-layer-boundary" class="btn-secondary btn-sm" style="flex: 1; font-size: 0.72rem; padding: 4px 6px;" title="Click map to trace custom boundary polygon">✏️ Draw on Map</button>
+                <button type="button" id="btn-clear-layer-boundary" class="btn-secondary btn-sm" style="font-size: 0.72rem; padding: 4px 8px; color: #ef4444; display: none;" title="Reset to automatic pattern footprint">✕ Reset</button>
+              </div>
             </div>
           </div>
           </div> <!-- /layer-card-geometry -->
@@ -1945,6 +1958,15 @@
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🗺️ Auto-Superimposed Flight Layer Boundaries &amp; Parcel Perimeters (v1.100.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Automatically superimposes real-world survey footprints, flight layer boundaries, and custom-drawn parcel perimeters onto captured mission photos in the Photo Inspector. Uses a forward pinhole camera projective engine (<code>projectGeoPolygonToPhoto</code>) calibrated to drone GPS, altitude AGL, gimbal pitch, and heading. Draw custom lot lines or property envelopes in Section 2 Card 1, or rely on automatic 4-corner pattern bounding boxes, with 1-click toggle controls and stamped JPEG export.
+            </p>
+          </div>
+
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               📐 Dual Slant &amp; Ground Plane Photogrammetric Measurement Calibration (v1.99.1)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -2614,7 +2636,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.99.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.100.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -2680,6 +2702,14 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.100.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Auto-Superimposed Flight Layer Boundaries &amp; Parcel Perimeters:</strong> Automatically projects the active layer's flight pattern footprint or custom-drawn property boundary onto captured mission photos in the Photo Inspector using forward pinhole camera geometry.</li>
+              <li><strong>Custom Layer Boundary Tracing:</strong> Added interactive drawing controls in Section 2 Card 1 to map real-world lot boundaries, survey envelopes, and building perimeters on the 2D map.</li>
+              <li><strong>Inspector Layer Toggle &amp; Stamped Export:</strong> Added dedicated toggle in the photo inspector drawer and baked boundary lines directly into stamped JPEG exports.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.99.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -5858,7 +5888,11 @@
               </label>
               <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                 <input type="checkbox" id="layer-toggle-boundary" checked />
-                <span>📐 Boundary Lines &amp; Area</span>
+                <span>📐 Manual Boundary &amp; Area</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" id="layer-toggle-layer-boundary" checked />
+                <span>🗺️ Flight Layer Boundary</span>
               </label>
               <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                 <input type="checkbox" id="layer-toggle-measure" checked />

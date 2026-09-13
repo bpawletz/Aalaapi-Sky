@@ -5,6 +5,18 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { JSDOM } = require('jsdom');
 
+function semverGte(v1, v2) {
+  const p1 = String(v1).split('.').map(Number);
+  const p2 = String(v2).split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    const num1 = p1[i] || 0;
+    const num2 = p2[i] || 0;
+    if (num1 > num2) return true;
+    if (num1 < num2) return false;
+  }
+  return true;
+}
+
 // --- Global Stubbing Setup ---
 global.document = {
   getElementById: (id) => {
@@ -13128,7 +13140,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('POI AGL Height & 3D Gimbal Pitch Resolution (v1.90.0)', () => {
     test('version tags and changelogs are updated to v1.90.0 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.ok(pkg.version >= '1.90.0', 'package.json version must be at least 1.90.0');
+      assert.ok(semverGte(pkg.version, '1.90.0'), 'package.json version must be at least 1.90.0');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.90.0]'), 'CHANGELOG.md must contain ## [1.90.0]');
@@ -13273,7 +13285,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('Layer-Wide Custom Heading & Real-Time Map Camera Updates (v1.91.0)', () => {
     test('version tags and changelogs are updated to v1.91.0 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.ok(pkg.version >= '1.91.0', 'package.json must be 1.91.0 or higher');
+      assert.ok(semverGte(pkg.version, '1.91.0'), 'package.json must be 1.91.0 or higher');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.91.0]'), 'CHANGELOG.md must contain ## [1.91.0]');
@@ -13366,7 +13378,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('Left Navigation Usability, Structured Sub-Groupings & Sticky Action Dock (v1.92.0)', () => {
     test('version tags and changelogs are updated to v1.92.0 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.ok(pkg.version >= '1.92.0', 'package.json must be 1.92.0 or higher');
+      assert.ok(semverGte(pkg.version, '1.92.0'), 'package.json must be 1.92.0 or higher');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.92.0]'), 'CHANGELOG.md must contain ## [1.92.0]');
@@ -13568,7 +13580,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('Pattern Card Badge Alignment & Styling (v1.92.1)', () => {
     test('version tags and changelogs are updated to v1.92.1 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.ok(pkg.version >= '1.92.1', 'package.json must be 1.92.1 or higher');
+      assert.ok(semverGte(pkg.version, '1.92.1'), 'package.json must be 1.92.1 or higher');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.92.1]'), 'CHANGELOG.md must contain ## [1.92.1]');
@@ -13648,7 +13660,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('Streamlined Topbar Navigation & Duplicate Telemetry Removal (v1.92.2)', () => {
     test('version tags and changelogs are updated to v1.92.2 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.ok(pkg.version >= '1.92.2', 'package.json must be 1.92.2 or higher');
+      assert.ok(semverGte(pkg.version, '1.92.2'), 'package.json must be 1.92.2 or higher');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.92.2]'), 'CHANGELOG.md must contain ## [1.92.2]');
@@ -13751,7 +13763,7 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
   describe('Target Splat Survey Dimension Sufficiency Warnings & Auto-Fit (v1.93.0)', () => {
     test('version tags and changelogs are updated to v1.93.0 across all required locations', () => {
       const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-      assert.ok(pkg.version >= '1.93.0', 'package.json must be 1.93.0 or higher');
+      assert.ok(semverGte(pkg.version, '1.93.0'), 'package.json must be 1.93.0 or higher');
 
       const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
       assert.ok(changelog.includes('## [1.93.0]'), 'CHANGELOG.md must contain ## [1.93.0]');
@@ -14085,7 +14097,7 @@ describe('v1.94.0 Tier 1 Global Camera Aspect Ratio & Multi-Pattern Integration'
 describe('v1.94.1 Decoupled Sensor Aspect Ratio Terminology Tests', () => {
   test('Version consistency: v1.94.1 is properly registered across package.json, CHANGELOG.md, and template', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.ok(pkg.version >= '1.94.1', 'package.json version must be 1.94.1 or higher');
+    assert.ok(semverGte(pkg.version, '1.94.1'), 'package.json version must be 1.94.1 or higher');
 
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.94.1]'), 'CHANGELOG.md must contain v1.94.1 entry');
@@ -15551,7 +15563,7 @@ describe('v1.96.0 MTP Photo Ingestion, Telemetry Correlation & Inspection Archiv
 
   test('version consistency across package.json, CHANGELOG.md, index_template.html, and index.html', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.ok(pkg.version >= '1.96.0', 'package.json version must be at least 1.96.0');
+    assert.ok(semverGte(pkg.version, '1.96.0'), 'package.json version must be at least 1.96.0');
 
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.96.0] - 2026-09-12'), 'CHANGELOG.md must contain ## [1.96.0] - 2026-09-12');
@@ -15710,7 +15722,7 @@ describe('v1.96.0 MTP Photo Ingestion, Telemetry Correlation & Inspection Archiv
 describe('v1.97.0 Flight Diagnostics Photo Ingestion & Inspection Gallery Tests', () => {
   test('Version consistency: package.json, CHANGELOG.md, index_template.html, and index.html match 1.97.0', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.ok(pkg.version >= '1.97.0', 'package.json version must be at least 1.97.0');
+    assert.ok(semverGte(pkg.version, '1.97.0'), 'package.json version must be at least 1.97.0');
 
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.97.0] - 2026-09-12'), 'CHANGELOG.md must contain 1.97.0 header');
@@ -15871,7 +15883,7 @@ describe('v1.97.0 Flight Diagnostics Photo Ingestion & Inspection Gallery Tests'
 describe('v1.98.0 Mission-Specific Photo Ingestion & SQLite Indexing Tests', () => {
   test('Version consistency: package.json, CHANGELOG.md, index_template.html, and index.html match 1.98.0', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.ok(pkg.version >= '1.98.0', 'package.json version must be >= 1.98.0');
+    assert.ok(semverGte(pkg.version, '1.98.0'), 'package.json version must be >= 1.98.0');
 
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.98.0] - 2026-09-12'), 'CHANGELOG.md must contain 1.98.0 header');
@@ -15996,7 +16008,7 @@ describe('v1.98.0 Mission-Specific Photo Ingestion & SQLite Indexing Tests', () 
 describe('v1.98.1 Flight Diagnostics Inspection Photo Rendering & Anti-Collapse Layout Tests', () => {
   test('Version consistency: package.json, CHANGELOG.md, index_template.html, and index.html match 1.98.1', () => {
     const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf8'));
-    assert.ok(pkg.version >= '1.98.1', 'package.json version should be >= 1.98.1');
+    assert.ok(semverGte(pkg.version, '1.98.1'), 'package.json version should be >= 1.98.1');
 
     const changelog = fs.readFileSync(path.resolve(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.98.1] - 2026-09-12'), 'CHANGELOG.md must contain v1.98.1 entry');
@@ -16084,7 +16096,7 @@ describe('v1.98.1 Flight Diagnostics Inspection Photo Rendering & Anti-Collapse 
 describe('v1.98.2 Photo Inspector Image Resolution & Viewport Fitting Tests', () => {
   test('Version consistency: package.json, CHANGELOG.md, index_template.html, and index.html match 1.98.2', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.ok(pkg.version >= '1.98.2', 'package.json version must be >= 1.98.2');
+    assert.ok(semverGte(pkg.version, '1.98.2'), 'package.json version must be >= 1.98.2');
 
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.98.2] - 2026-09-12'), 'CHANGELOG.md must contain 1.98.2 header');
@@ -16246,7 +16258,7 @@ describe('v1.98.2 Photo Inspector Image Resolution & Viewport Fitting Tests', ()
 describe('v1.98.3 Media Ingest Limit Removal, MPF Previews & Thumbnail Generation Tests', () => {
   test('Version consistency: package.json, CHANGELOG.md, index_template.html, and index.html match 1.98.3', () => {
     const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-    assert.ok(pkg.version >= '1.98.3');
+    assert.ok(semverGte(pkg.version, '1.98.3'));
 
     const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
     assert.ok(changelog.includes('## [1.98.3] - 2026-09-12'), 'CHANGELOG.md must contain ## [1.98.3]');
@@ -16280,7 +16292,7 @@ describe('v1.98.3 Media Ingest Limit Removal, MPF Previews & Thumbnail Generatio
 describe('v1.99.0 3D Photogrammetric Ray-to-Ground Plane Projective Correction Tests', () => {
   test('Version consistency: package.json, CHANGELOG.md, index_template.html, and index.html match 1.99.0', () => {
     const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-    assert.ok(pkg.version >= '1.99.0');
+    assert.ok(semverGte(pkg.version, '1.99.0'));
 
     const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
     assert.ok(changelog.includes('## [1.99.0] - 2026-09-12'), 'CHANGELOG.md must contain ## [1.99.0]');
@@ -16400,19 +16412,19 @@ describe('v1.99.0 3D Photogrammetric Ray-to-Ground Plane Projective Correction T
 describe('v1.99.1 Dual-Plane Photogrammetric Measurement Calibration Tests', () => {
   test('Version consistency: package.json, CHANGELOG.md, index_template.html, and index.html match 1.99.1', () => {
     const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-    assert.strictEqual(pkg.version, '1.99.1');
+    assert.ok(semverGte(pkg.version, '1.99.1'));
 
     const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
     assert.ok(changelog.includes('## [1.99.1] - 2026-09-12'), 'CHANGELOG.md must contain ## [1.99.1]');
 
     const tmpl = fs.readFileSync('index_template.html', 'utf8');
-    assert.ok(tmpl.includes('v1.99.1'), 'index_template.html must contain header badge v1.99.1');
-    assert.ok(tmpl.includes('Version 1.99.1'), 'index_template.html must contain Version 1.99.1');
+    assert.ok(tmpl.includes('class="header-version-badge"'), 'index_template.html must contain header badge');
+    assert.ok(tmpl.includes('class="version-tag"'), 'index_template.html must contain Version tag');
     assert.ok(tmpl.includes('Changelog (v1.99.1):'), 'index_template.html must contain Changelog (v1.99.1)');
 
     const bundle = fs.readFileSync('index.html', 'utf8');
-    assert.ok(bundle.includes('v1.99.1'), 'index.html must contain header badge v1.99.1');
-    assert.ok(bundle.includes('Version 1.99.1'), 'index.html must contain Version 1.99.1');
+    assert.ok(bundle.includes('class="header-version-badge"'), 'index.html must contain header badge');
+    assert.ok(bundle.includes('class="version-tag"'), 'index.html must contain Version tag');
     assert.ok(bundle.includes('Changelog (v1.99.1):'), 'index.html must contain Changelog (v1.99.1)');
   });
 
@@ -16554,6 +16566,238 @@ describe('v1.99.1 Dual-Plane Photogrammetric Measurement Calibration Tests', () 
     } finally {
       global.document = origDoc;
     }
+  });
+});
+
+describe('v1.100.0 Flight Layer Boundary Auto-Superimposition Tests', () => {
+  const logDecoder = require('./tools/companion/log_decoder.js');
+
+  test('projectGeoPointToPixel accurately projects Nadir point directly below drone to photo center', () => {
+    const camPose = {
+      lat: 38.8951,
+      lon: -77.0364,
+      altAgl: 25.0,
+      gimbalPitch: -90.0,
+      heading: 0.0
+    };
+    const groundPoint = { lat: 38.8951, lon: -77.0364, alt: 0.0 };
+    const proj = logDecoder.projectGeoPointToPixel(groundPoint, camPose, {
+      sensorWidthMm: 9.6,
+      focalLengthMm: 6.72,
+      aspectRatio: 4 / 3
+    });
+
+    assert.strictEqual(proj.isInFront, true);
+    assert.strictEqual(proj.isInsideFrame, true);
+    assert.ok(Math.abs(proj.u - 0.5) < 0.01, `u should be centered ~0.5, got ${proj.u}`);
+    assert.ok(Math.abs(proj.v - 0.5) < 0.01, `v should be centered ~0.5, got ${proj.v}`);
+    assert.ok(Math.abs(proj.opticalDepthMeters - 25.0) < 0.1, `optical depth should be 25m, got ${proj.opticalDepthMeters}`);
+  });
+
+  test('projectGeoPointToPixel accurately projects Oblique point into optical frame', () => {
+    // 25m high, pitch = -45 deg, heading = 0 (North).
+    // The camera looks North and down at 45 deg.
+    // Point at 25m North of drone will be directly along the optical center axis.
+    const camPose = {
+      lat: 38.8951,
+      lon: -77.0364,
+      altAgl: 25.0,
+      gimbalPitch: -45.0,
+      heading: 0.0
+    };
+    const dLat = 25.0 / 111319.5;
+    const targetPoint = { lat: 38.8951 + dLat, lon: -77.0364, alt: 0.0 };
+    const proj = logDecoder.projectGeoPointToPixel(targetPoint, camPose, {
+      sensorWidthMm: 9.6,
+      focalLengthMm: 6.72,
+      aspectRatio: 4 / 3
+    });
+
+    assert.strictEqual(proj.isInFront, true);
+    assert.strictEqual(proj.isInsideFrame, true);
+    assert.ok(Math.abs(proj.u - 0.5) < 0.02, `u should be centered ~0.5, got ${proj.u}`);
+    assert.ok(Math.abs(proj.v - 0.5) < 0.02, `v should be centered ~0.5, got ${proj.v}`);
+    const expectedDepth = 25.0 * Math.SQRT2;
+    assert.ok(Math.abs(proj.opticalDepthMeters - expectedDepth) < 0.5, `slant depth should be ~${expectedDepth.toFixed(1)}, got ${proj.opticalDepthMeters}`);
+  });
+
+  test('projectGeoPolygonToPhoto projects an array of vertices and flags visibility', () => {
+    const camPose = {
+      lat: 38.8951,
+      lon: -77.0364,
+      altAgl: 30.0,
+      gimbalPitch: -90.0,
+      heading: 0.0
+    };
+    const poly = [
+      { lat: 38.89515, lon: -77.03645 },
+      { lat: 38.89515, lon: -77.03635 },
+      { lat: 38.89505, lon: -77.03635 },
+      { lat: 38.89505, lon: -77.03645 }
+    ];
+    const res = logDecoder.projectGeoPolygonToPhoto(poly, camPose, {
+      sensorWidthMm: 9.6,
+      focalLengthMm: 6.72,
+      aspectRatio: 4 / 3
+    });
+
+    assert.strictEqual(res.points.length, 4);
+    assert.strictEqual(res.hasPointsInFront, true);
+    assert.strictEqual(res.hasVisiblePoints, true);
+    res.points.forEach(p => {
+      assert.ok(typeof p.u === 'number');
+      assert.ok(typeof p.v === 'number');
+      assert.strictEqual(p.isInFront, true);
+    });
+  });
+
+  test('getLayerBoundaryGeoPolygon extracts custom boundary polygon when available', () => {
+    const layerWithCustom = {
+      id: 'layer_1',
+      name: 'Custom Parcel',
+      boundaryPolygon: [
+        { lat: 38.8951, lon: -77.0364 },
+        { lat: 38.8952, lon: -77.0365 },
+        { lat: 38.8950, lon: -77.0366 }
+      ]
+    };
+    const poly = getLayerBoundaryGeoPolygon(layerWithCustom);
+    assert.strictEqual(poly.length, 3);
+    assert.strictEqual(poly[0].lat, 38.8951);
+  });
+
+  test('getLayerBoundaryGeoPolygon calculates 4-corner bounding box for survey layers', () => {
+    const surveyLayer = {
+      id: 'layer_survey',
+      name: 'Survey 1',
+      pattern: 'grid',
+      centerLat: 38.8951,
+      centerLon: -77.0364,
+      gridWidth: 100,
+      gridHeight: 80,
+      gridRotation: 45
+    };
+    const poly = getLayerBoundaryGeoPolygon(surveyLayer);
+    assert.strictEqual(poly.length, 4);
+    poly.forEach(pt => {
+      assert.ok(typeof pt.lat === 'number' && !isNaN(pt.lat));
+      assert.ok(typeof pt.lon === 'number' && !isNaN(pt.lon));
+    });
+  });
+
+  test('setLayerBoundaryEditMode, addLayerBoundaryPoint, and clearLayerBoundary manage boundary vertices', () => {
+    const origDoc = global.document;
+    const dom = new JSDOM(`<!DOCTYPE html><html><body>
+      <button id="btn-draw-layer-boundary"></button>
+      <button id="btn-clear-layer-boundary"></button>
+      <span id="layer-boundary-vertex-badge"></span>
+    </body></html>`);
+    global.document = dom.window.document;
+
+    try {
+      const activeL = getActiveLayer();
+      activeL.boundaryPolygon = [];
+
+      setLayerBoundaryEditMode(true);
+      const btn = dom.window.document.getElementById('btn-draw-layer-boundary');
+      assert.strictEqual(btn.textContent, '🛑 Done Drawing');
+
+      addLayerBoundaryPoint(38.8951, -77.0364);
+      addLayerBoundaryPoint(38.8952, -77.0364);
+      addLayerBoundaryPoint(38.8952, -77.0365);
+      assert.strictEqual(activeL.boundaryPolygon.length, 3);
+
+      const badge = dom.window.document.getElementById('layer-boundary-vertex-badge');
+      assert.strictEqual(badge.textContent, '3 Vertices');
+
+      clearLayerBoundary();
+      assert.strictEqual(activeL.boundaryPolygon.length, 0);
+      assert.strictEqual(badge.textContent, 'Auto-Bounds');
+    } finally {
+      global.document = origDoc;
+    }
+  });
+
+  test('PhotoInspector renders superimposed flight layer boundary onto annotation canvas', () => {
+    const origDoc = global.document;
+    const dom = new JSDOM(`<!DOCTYPE html><html><body>
+      <canvas id="photo-annotation-canvas" width="800" height="600"></canvas>
+    </body></html>`);
+    global.document = dom.window.document;
+
+    const drawnPaths = [];
+    const canvas = dom.window.document.getElementById('photo-annotation-canvas');
+    canvas.getContext = () => ({
+      clearRect: () => {},
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      closePath: () => { drawnPaths.push('closePath'); },
+      stroke: () => { drawnPaths.push('stroke'); },
+      fill: () => { drawnPaths.push('fill'); },
+      moveTo: (x, y) => { drawnPaths.push(`moveTo:${Math.round(x)},${Math.round(y)}`); },
+      lineTo: (x, y) => { drawnPaths.push(`lineTo:${Math.round(x)},${Math.round(y)}`); },
+      arc: () => {},
+      fillRect: () => {},
+      strokeRect: () => {},
+      fillText: () => {},
+      measureText: (str) => ({ width: str.length * 7 }),
+      setLineDash: () => {}
+    });
+
+    try {
+      const activeL = getActiveLayer();
+      activeL.name = 'Roof Survey';
+      activeL.boundaryPolygon = [
+        { lat: 38.89515, lon: -77.03645 },
+        { lat: 38.89515, lon: -77.03635 },
+        { lat: 38.89505, lon: -77.03635 },
+        { lat: 38.89505, lon: -77.03645 }
+      ];
+
+      PhotoInspector.activePhoto = {
+        photoId: 'photo_test_1',
+        filename: 'DJI_0001.JPG',
+        actual: {
+          lat: 38.8951,
+          lon: -77.0364,
+          altAgl: 25.0,
+          gimbalPitch: -90,
+          heading: 0
+        },
+        annotations: []
+      };
+      PhotoInspector.layers.layerBoundary = true;
+      PhotoInspector.layers.reticle = false;
+      PhotoInspector.layers.boundary = false;
+      PhotoInspector.layers.measure = false;
+      PhotoInspector.layers.pins = false;
+
+      PhotoInspector.renderCanvas();
+
+      assert.ok(drawnPaths.includes('closePath'), 'Boundary path should close');
+      assert.ok(drawnPaths.includes('stroke'), 'Boundary should be stroked');
+      assert.ok(drawnPaths.includes('fill'), 'Boundary should be filled');
+      assert.ok(drawnPaths.some(p => p.startsWith('moveTo')), 'Boundary must have moveTo');
+    } finally {
+      global.document = origDoc;
+    }
+  });
+
+  test('Version consistency is maintained across package.json, CHANGELOG.md, and templates', () => {
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+    const cl = fs.readFileSync('CHANGELOG.md', 'utf8');
+    const indexTemplate = fs.readFileSync('index_template.html', 'utf8');
+    const indexHtml = fs.readFileSync('index.html', 'utf8');
+
+    assert.strictEqual(pkg, '1.100.0');
+    assert.ok(cl.includes('## [1.100.0] - 2026-09-12'), 'CHANGELOG.md missing 1.100.0 header');
+    assert.ok(indexTemplate.includes('v1.100.0</span>'), 'index_template.html missing v1.100.0 header badge');
+    assert.ok(indexTemplate.includes('Version 1.100.0</span>'), 'index_template.html missing Version 1.100.0 in About modal');
+    assert.ok(indexTemplate.includes('Changelog (v1.100.0):'), 'index_template.html missing Changelog (v1.100.0)');
+    assert.ok(indexHtml.includes('v1.100.0</span>'), 'index.html missing v1.100.0 header badge');
+    assert.ok(indexHtml.includes('Version 1.100.0</span>'), 'index.html missing Version 1.100.0 in About modal');
+    assert.ok(indexHtml.includes('Changelog (v1.100.0):'), 'index.html missing Changelog (v1.100.0)');
   });
 });
 

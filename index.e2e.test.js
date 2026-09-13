@@ -5043,6 +5043,42 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(!inspectorState.imgSrc.startsWith('data:image/svg'), 'Image src should not be placeholder SVG');
     assert.strictEqual(inspectorState.filenameText, 'DJI_20260904185243_0218_D.JPG', 'Filename header text should match');
   });
+
+  test('E2E: Flight Layer Boundary drawing controls and Photo Inspector auto-superimpose toggle (v1.100.0)', async () => {
+    const boundaryControls = await page.evaluate(() => {
+      const drawBtn = document.getElementById('btn-draw-layer-boundary');
+      const clearBtn = document.getElementById('btn-clear-layer-boundary');
+      const badge = document.getElementById('layer-boundary-vertex-badge');
+      const container = document.getElementById('layer-custom-boundary-container');
+      const toggleCb = document.getElementById('layer-toggle-layer-boundary');
+
+      let initialEditMode = false;
+      if (typeof setLayerBoundaryEditMode === 'function') {
+        setLayerBoundaryEditMode(true);
+        initialEditMode = drawBtn ? drawBtn.textContent.includes('Done Drawing') : false;
+        setLayerBoundaryEditMode(false);
+      }
+
+      return {
+        hasDrawBtn: !!drawBtn,
+        hasClearBtn: !!clearBtn,
+        hasBadge: !!badge,
+        badgeText: badge ? badge.textContent : '',
+        hasContainer: !!container,
+        hasToggleCb: !!toggleCb,
+        toggleChecked: toggleCb ? toggleCb.checked : false,
+        canToggleEditMode: initialEditMode
+      };
+    });
+
+    assert.strictEqual(boundaryControls.hasDrawBtn, true, '#btn-draw-layer-boundary must exist in DOM');
+    assert.strictEqual(boundaryControls.hasClearBtn, true, '#btn-clear-layer-boundary must exist in DOM');
+    assert.strictEqual(boundaryControls.hasBadge, true, '#layer-boundary-vertex-badge must exist in DOM');
+    assert.strictEqual(boundaryControls.hasContainer, true, '#layer-custom-boundary-container must exist in DOM');
+    assert.strictEqual(boundaryControls.hasToggleCb, true, '#layer-toggle-layer-boundary must exist in Photo Inspector');
+    assert.strictEqual(boundaryControls.toggleChecked, true, 'Layer boundary superimpose toggle must be checked by default');
+    assert.strictEqual(boundaryControls.canToggleEditMode, true, 'setLayerBoundaryEditMode must update draw button');
+  });
 });
 
 
