@@ -1,5 +1,46 @@
 # Changelog
 
+## [1.103.1] - 2026-09-17
+
+### Fixed — Road Node Drag Moves Only 1 Pixel at a Time
+- **Road Follow node drag freeze:** Dragging an amber Road Node marker on the 2D map now follows the cursor smoothly. Previously, the `drag` event handler called `updateGrid()` (a full, expensive recalculation and re-render) on every mousemove event, causing the marker to creep only 1 pixel per frame. Fixed by moving `updateGrid()` to `dragend` (fires once when the user releases) and performing only a lightweight road polyline `setLatLngs()` update during the drag — matching the same pattern used for regular waypoint markers (commit `266d76d`).
+- **Road node `dragstart`:** Now closes any open popup and records `origLat/origLon/origX/origY` on first drag so the Revert button restores the correct position.
+
+---
+
+## [1.103.0] - 2026-09-13
+
+
+### Added — Road Follow Dynamic Gimbal Focus & Road Tracking
+- **Automated Road Surface Gimbal Tilt (`-atan2(altitude, |offset|)`):** Dynamically calculates camera pitch angles targeting the road surface based on flight altitude and road offset distance. When flying directly overhead (0m offset), pitch defaults to nadir ($-90^\circ$); when flying offset to the side (e.g. 15m offset at 50m altitude), pitch locks onto the road at $-73^\circ$.
+- **Dynamic Road Focus Modes (`focusRoad`, `followRoad`, `lookAhead`, `custom`):** Added a dedicated Road Gimbal & Camera Focus selector inside Card 1 (`#road-focus-mode`):
+  - `focusRoad`: **Focus on Road Centerline** — Automatically rotates aircraft yaw and camera pitch cross-track to keep the camera centered on the road surface throughout the flight.
+  - `followRoad`: **Follow Road Corridor** — Drone and camera follow the forward tangent of the flight path, smoothly tracking road curves.
+  - `lookAhead`: **Look Ahead to Next Road Node** — Camera points down and forward toward the upcoming road waypoint/bend ahead.
+  - `custom`: **Manual Gimbal & Heading** — Respects user-configured layer pitch and custom heading angles.
+- **Directional Waypoint Markers & Camera Cones on 2D Map:** Upgraded Road Follow drone waypoints on the Leaflet map from plain circular markers to full directional markers with heading arrows (`wp-arrow`), pitch angle badges (`wp-pitch-label`), and translucent camera FOV cones (`wp-camera-cone`) that dynamically pivot toward the road as offset distance or road nodes are adjusted.
+- **Card 3 Auto Road Preset Chip & Dynamic Purpose Badge:** Upgraded `#gimbal-preset-chips` in Card 3 to display `🎯 Auto Road` when Road Following is active, updating `#gimbal-pitch-purpose-badge` with real-time road tilt readout (e.g. `🛣️ Road Focus (-73° based on 15m offset & 50m alt)`).
+- **DJI WPML Smooth Transition & Gimbal Rotate Compliance:** Exports road-facing heading angles in WPML via `<wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>` and `<wpml:action>` `gimbalRotate` pitch commands, ensuring full flight fidelity on DJI Fly and Pilot 2 without firmware suspension errors.
+
+## [1.102.2] - 2026-09-13
+
+### Fixed — 3D Telemetry Diagnostics Camera Cone Alignment & Directional Photo Frustums
+- **Clockwise Compass Heading Sign Inversion (`-yaw * Math.PI / 180`):** Fixed drone model orientation in 3D Flight Diagnostics Replay (`seekTo`). In Three.js world coordinates where North is $-Z$ and East is $+X$, clockwise heading angle $\theta$ requires a negative rotation around the $+Y$ axis. Previously, positive rotation was applied, causing East-facing telemetry ($70^\circ$) to face West ($290^\circ$), pointing away from inspected structures.
+- **Realistic Camera Pyramid Geometry & Front Nose Indicator:** Replaced the uncentered 4-sided `ConeGeometry` with standard `createCameraPyramidGeometry(CAMERA_HFOV, CAMERA_VFOV, coneHeight)`. The camera pyramid apex is anchored at the aircraft gimbal mount (`[0, -0.4, -1.2]`) with an optical axis center ray, wireframe outline, and a forward-pointing directional nose indicator wedge on the fuselage.
+- **Downward-to-Horizontal Gimbal Pitch Calibration (`(90 + pitch) * Math.PI / 180`):** Aligned frustum tilt axis with standard photogrammetry convention where $-90^\circ$ (nadir) projects straight down ($0\text{ rad}$) and $0^\circ$ projects horizontally forward along the aircraft flight path ($\frac{\pi}{2}\text{ rad}$).
+- **Directional Camera Frustums on Photo Trigger Markers:** Enhanced green photo capture spheres in `buildTrajectoryMeshes()` with 3.5m directional camera frustum pyramids oriented to each exposure's exact heading and gimbal pitch. Pilots can visually audit camera aim across all waypoint exposures along the 3D trajectory.
+- **Recursive Raycasting on Photo Markers:** Updated the 3D viewport click listener to perform recursive raycasting (`intersectObjects(this.photoMarkers, true)`) and traverse upward to parent groups, ensuring smooth timeline scrubbing when clicking any part of a photo marker or its camera cone.
+
+## [1.102.1] - 2026-09-13
+
+### Fixed — 3D Diagnostics Telemetry Replay Altitude Flatline & WPML Altitude Resolution
+- **Waypoint Altitude Property Resolution (`wp.alt ?? wp.altitude`):** Resolved an issue in `generateTelemetryFromWaypoints` (`index.js` and `tools/companion/log_decoder.js`) where waypoint altitudes were evaluated only against `wp.altitude`. Flight pattern generators (including Tower, Orbit, Facade, and Grid) define waypoint altitudes using `wp.alt`. Because `wp.altitude` was undefined, all time-series telemetry points, photo triggers, and hover states erroneously defaulted to the global default altitude (`defaultAlt = 50.0m`).
+- **Dynamic 3D Multi-Altitude Profiles & Vertical Tier Ascent/Descent:** Waypoints now correctly resolve `wp.altitude !== undefined ? wp.altitude : (wp.alt !== undefined ? wp.alt : defaultAlt)`, along with `wp.pitch` / `wp.gimbalPitch` and `wp.heading` / `wp.yaw`. Tower inspection rings and vertical columns now faithfully climb and descend between 14m and 24m AGL in 3D Replay.
+- **Photo Trigger Firing When Hover Time is 0:** Added photo trigger generation on waypoint arrival when `hoverTime === 0`, ensuring all 36 waypoint photo capture events render at their respective waypoint altitudes.
+- **Eliminated 3D Perspective Projection Shift:** Correcting the flight altitude from 50m to 14m–24m aligns the actual flown trajectory and green photo trigger spheres directly over the planned structure footprint instead of projecting high into the air and visually shifting north across adjacent streets.
+- **WPML Telemetry `<wpml:executeHeight>` Extraction:** Upgraded `parseKmlOrWpmlTelemetry` in `index.js` and `log_decoder.js` to extract altitude from `<wpml:executeHeight>`, `<executeHeight>`, `<wpml:height>`, or `<wpml:altitude>` (plus `<wpml:waypointSpeed>`, `<wpml:gimbalPitchRotateAngle>`, and `<wpml:waypointHeadingAngle>`) rather than defaulting to 21.0m when `<coordinates>` only contains `lon,lat`.
+- **Automatic SQLite Mission Archive Telemetry Upgrades:** Companion server `/api/flight-telemetry` and client `loadSelectedFlight` now automatically detect legacy flat-altitude diagnostics for multi-altitude missions, regenerate the true 3D vertical trajectory from the planned waypoints, and upgrade `diag_json` in `scratch/missions.db`.
+
 ## [1.102.0] - 2026-09-13
 
 ### Added — First-Class Drawing & Parcel Boundary Layer with Section 2 Properties & Photo Superimposition
