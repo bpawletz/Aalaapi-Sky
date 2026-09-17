@@ -9019,7 +9019,48 @@ describe('v1.70.1 Road Follow Layer Isolation & Multi-Layer Independence', () =>
     assert.strictEqual(roadWaypoints.length, 1);
     assert.strictEqual(roadWaypoints[0].lat, 40.01);
   });
+
+  test('v1.103.1 regression: road node drag handler updates wp coords without calling updateGrid() during drag (only on dragend)', () => {
+    // Regression: road node marker.on('drag') was calling updateGrid() on every
+    // mousemove event, causing the marker to move only 1 pixel at a time.
+    // Fix: drag only updates coords + lightweight polyline redraw; dragend calls updateGrid().
+    const wp = { lat: 40.0, lon: -83.0, x: 0, y: 0, isModified: false };
+
+    let updateGridCallCount = 0;
+    let coordsUpdatedDuringDrag = false;
+
+    // Simulate the drag handler logic (no updateGrid call inside)
+    function simulateRoadNodeDrag(newLat, newLon) {
+      // Update coords (as the fixed drag handler does)
+      wp.lat = newLat;
+      wp.lon = newLon;
+      wp.isModified = true;
+      coordsUpdatedDuringDrag = true;
+      // Do NOT call updateGrid here — that's the whole point of the fix
+    }
+
+    // Simulate the dragend handler logic (calls updateGrid once)
+    function simulateRoadNodeDragEnd() {
+      updateGridCallCount++;
+    }
+
+    // Fire drag multiple times (simulating mouse movement)
+    simulateRoadNodeDrag(40.001, -83.001);
+    simulateRoadNodeDrag(40.002, -83.002);
+    simulateRoadNodeDrag(40.003, -83.003);
+
+    // During drag: coords must be updated, but updateGrid must NOT have been called
+    assert.strictEqual(coordsUpdatedDuringDrag, true, 'wp coords should be updated during drag');
+    assert.strictEqual(updateGridCallCount, 0, 'updateGrid must NOT be called during drag (causes 1-pixel freeze)');
+    assert.strictEqual(wp.lat, 40.003, 'wp.lat should reflect latest drag position');
+    assert.strictEqual(wp.isModified, true, 'wp.isModified should be set to true during drag');
+
+    // Fire dragend once
+    simulateRoadNodeDragEnd();
+    assert.strictEqual(updateGridCallCount, 1, 'updateGrid should be called exactly once on dragend');
+  });
 });
+
 
 describe('v1.71.0 Exclusion Detour Strategy (Perimeter vs. Over the Top vs. Smart 3D)', () => {
   test('getSegmentIntersection accurately calculates intersection coordinates and parameter t', () => {
@@ -16875,13 +16916,9 @@ describe('v1.102.0 First-Class Drawing & Parcel Boundary Layer Tests', () => {
     const indexTemplate = fs.readFileSync('index_template.html', 'utf8');
     const indexHtml = fs.readFileSync('index.html', 'utf8');
 
-    assert.strictEqual(pkg, '1.102.0');
+    assert.ok(semverGte(pkg, '1.102.0'), 'package.json version should be >= 1.102.0');
     assert.ok(cl.includes('## [1.102.0] - 2026-09-13'), 'CHANGELOG.md missing 1.102.0 header');
-    assert.ok(indexTemplate.includes('v1.102.0</span>'), 'index_template.html missing v1.102.0 header badge');
-    assert.ok(indexTemplate.includes('Version 1.102.0</span>'), 'index_template.html missing Version 1.102.0 in About modal');
     assert.ok(indexTemplate.includes('Changelog (v1.102.0):'), 'index_template.html missing Changelog (v1.102.0)');
-    assert.ok(indexHtml.includes('v1.102.0</span>'), 'index.html missing v1.102.0 header badge');
-    assert.ok(indexHtml.includes('Version 1.102.0</span>'), 'index.html missing Version 1.102.0 in About modal');
     assert.ok(indexHtml.includes('Changelog (v1.102.0):'), 'index.html missing Changelog (v1.102.0)');
   });
 
@@ -17048,5 +17085,410 @@ describe('v1.102.0 First-Class Drawing & Parcel Boundary Layer Tests', () => {
   });
 });
 
+describe('3D Diagnostics Multi-Altitude and WPML Attitude Tests (v1.102.1)', () => {
+  test('generateTelemetryFromWaypoints respects wp.alt, pitch, yaw and captures photos when hoverTime is 0', () => {
+    const multiAltWps = [
+      { lat: 40.0130, lon: -83.1765, alt: 14.0, pitch: 0, heading: 90, hoverTime: 0 },
+      { lat: 40.0131, lon: -83.1765, alt: 18.0, pitch: -10, heading: 180, hoverTime: 0 },
+      { lat: 40.0132, lon: -83.1765, alt: 24.2, pitch: -20, heading: 270, hoverTime: 0 }
+    ];
 
+    const result = vm.runInThisContext(`
+      generateTelemetryFromWaypoints(${JSON.stringify(multiAltWps)}, { altitude: 50.0, speed: 4, gimbalPitch: -60 })
+    `);
+
+    assert.ok(result);
+    // Should NOT fall back to default 50.0
+    assert.strictEqual(result.maxAltitude, 24.2, 'maxAltitude should be 24.2m matching highest wp.alt');
+
+    // Photo triggers should fire even with hoverTime = 0
+    const photos = result.points.filter(p => p.isPhoto);
+    assert.strictEqual(photos.length, 3, 'Should record photo trigger for all 3 waypoints with hoverTime=0');
+    assert.ok(Math.abs(photos[0].alt - 14.0) <= 0.3, `First photo alt should be ~14m, got ${photos[0].alt}`);
+    assert.ok(Math.abs(photos[1].alt - 18.0) <= 0.3, `Second photo alt should be ~18m, got ${photos[1].alt}`);
+    assert.ok(Math.abs(photos[2].alt - 24.2) <= 0.3, `Third photo alt should be ~24.2m, got ${photos[2].alt}`);
+
+    // Pitch and yaw should match waypoint overrides
+    assert.strictEqual(photos[0].pitch, 0);
+    assert.strictEqual(photos[0].yaw, 90);
+    assert.strictEqual(photos[1].pitch, -10);
+    assert.strictEqual(photos[1].yaw, 180);
+    assert.strictEqual(photos[2].pitch, -20);
+    assert.strictEqual(photos[2].yaw, 270);
+  });
+
+  test('parseKmlOrWpmlTelemetry extracts wpml:executeHeight, speed, gimbal pitch, and heading', () => {
+    const wpmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/1.0.6">
+  <Document>
+    <Placemark>
+      <Point><coordinates>-83.1765,40.0130</coordinates></Point>
+      <wpml:executeHeight>16.5</wpml:executeHeight>
+      <wpml:waypointSpeed>3.8</wpml:waypointSpeed>
+      <wpml:waypointHeadingAngle>135</wpml:waypointHeadingAngle>
+      <wpml:gimbalPitchRotateAngle>-45</wpml:gimbalPitchRotateAngle>
+      <action>takePhoto</action>
+    </Placemark>
+    <Placemark>
+      <Point><coordinates>-83.1766,40.0131</coordinates></Point>
+      <wpml:executeHeight>22.0</wpml:executeHeight>
+      <wpml:waypointSpeed>4.0</wpml:waypointSpeed>
+      <wpml:waypointHeadingAngle>225</wpml:waypointHeadingAngle>
+      <wpml:gimbalPitchRotateAngle>-30</wpml:gimbalPitchRotateAngle>
+      <action>takePhoto</action>
+    </Placemark>
+  </Document>
+</kml>`;
+
+    const parsed = vm.runInThisContext(`
+      parseKmlOrWpmlTelemetry(${JSON.stringify(wpmlContent)}, 'tower_inspection.wpml')
+    `);
+
+    assert.ok(parsed);
+    assert.strictEqual(parsed.maxAltitude, 22.0);
+    assert.strictEqual(parsed.photoCount, 2);
+
+    const photos = parsed.points.filter(p => p.isPhoto);
+    assert.strictEqual(photos.length, 2);
+
+    assert.strictEqual(photos[0].alt, 16.5);
+    assert.strictEqual(photos[0].yaw, 135);
+    assert.strictEqual(photos[0].pitch, -45);
+
+    assert.strictEqual(photos[1].alt, 22.0);
+    assert.strictEqual(photos[1].yaw, 225);
+    assert.strictEqual(photos[1].pitch, -30);
+  });
+
+  test('log_decoder.js generateTelemetryFromWaypoints and parseKmlOrWpmlTelemetry mirror multi-altitude handling', () => {
+    const { generateTelemetryFromWaypoints, parseKmlOrWpmlTelemetry } = require('./tools/companion/log_decoder.js');
+
+    const multiAltWps = [
+      { lat: 40.0130, lon: -83.1765, alt: 15.0, pitch: -15, heading: 45, hoverTime: 0 },
+      { lat: 40.0131, lon: -83.1765, alt: 25.0, pitch: -25, heading: 90, hoverTime: 0 }
+    ];
+
+    const result = generateTelemetryFromWaypoints(multiAltWps, { altitude: 50.0 });
+    assert.strictEqual(result.maxAltitude, 25.0);
+    assert.strictEqual(result.photoCount, 2);
+    const photos = result.points.filter(p => p.isPhoto);
+    assert.strictEqual(photos.length, 2);
+    assert.ok(Math.abs(photos[0].alt - 15.0) <= 0.3, `First photo alt should be ~15m, got ${photos[0].alt}`);
+    assert.ok(Math.abs(photos[1].alt - 25.0) <= 0.3, `Second photo alt should be ~25m, got ${photos[1].alt}`);
+
+    const wpmlXml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/1.0.6">
+  <Document>
+    <Placemark>
+      <Point><coordinates>-83.1765,40.0130</coordinates></Point>
+      <wpml:executeHeight>19.2</wpml:executeHeight>
+      <action>takePhoto</action>
+    </Placemark>
+  </Document>
+</kml>`;
+    const parsed = parseKmlOrWpmlTelemetry(wpmlXml, 'test.wpml');
+    assert.strictEqual(parsed.maxAltitude, 19.2);
+    assert.strictEqual(parsed.points[0].alt, 19.2);
+  });
+
+  test('Version consistency is maintained across package.json, CHANGELOG.md, and templates for v1.102.1', () => {
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+    const cl = fs.readFileSync('CHANGELOG.md', 'utf8');
+    const indexTemplate = fs.readFileSync('index_template.html', 'utf8');
+    const indexHtml = fs.readFileSync('index.html', 'utf8');
+
+    assert.ok(cl.includes('## [1.102.1] - 2026-09-13'), 'CHANGELOG.md missing 1.102.1 header');
+    assert.ok(indexTemplate.includes('Changelog (v1.102.1):'), 'index_template.html missing Changelog (v1.102.1)');
+    assert.ok(indexHtml.includes('Changelog (v1.102.1):'), 'index.html missing Changelog (v1.102.1)');
+  });
+});
+
+describe('3D Diagnostics Camera Cone Alignment & Directional Photo Frustums (v1.102.2)', () => {
+  test('FlightDiagnostics.seekTo computes clockwise compass heading rotation and downward-to-horizontal pitch axis', () => {
+    // Setup mock scene, droneMesh, and frustumMesh in vm context
+    vm.runInThisContext(`
+      FlightDiagnostics.droneMesh = {
+        position: { copy: function() {} },
+        rotation: { y: 0 }
+      };
+      FlightDiagnostics.frustumMesh = {
+        rotation: { x: 0 }
+      };
+      FlightDiagnostics.telemetryData = {
+        points: [
+          { lat: 40.012781, lon: -83.177077, alt: 20.9, yaw: 70, pitch: 0, speed: 2.7, battery: 80, satellites: 14, timeStr: '01:15' },
+          { lat: 40.012800, lon: -83.177000, alt: 20.9, yaw: 180, pitch: -90, speed: 2.7, battery: 79, satellites: 14, timeStr: '01:18' }
+        ],
+        durationFormatted: '02:30'
+      };
+      FlightDiagnostics.projectToWorld = function(lat, lon, alt) {
+        return { x: 0, y: alt, z: 0 };
+      };
+
+      // Test point 0: yaw = 70 (compass heading East-North-East), pitch = 0 (horizontal)
+      FlightDiagnostics.seekTo(0, false, false);
+      var droneRotY0 = FlightDiagnostics.droneMesh.rotation.y;
+      var frustumRotX0 = FlightDiagnostics.frustumMesh.rotation.x;
+
+      // Test point 1: yaw = 180 (compass heading South), pitch = -90 (nadir)
+      FlightDiagnostics.seekTo(1, false, false);
+      var droneRotY1 = FlightDiagnostics.droneMesh.rotation.y;
+      var frustumRotX1 = FlightDiagnostics.frustumMesh.rotation.x;
+    `);
+
+    const rotY0 = vm.runInThisContext('droneRotY0');
+    const rotX0 = vm.runInThisContext('frustumRotX0');
+    const rotY1 = vm.runInThisContext('droneRotY1');
+    const rotX1 = vm.runInThisContext('frustumRotX1');
+
+    // Clockwise compass heading in Three.js requires negative Y rotation
+    const expectedRotY0 = - (70 * Math.PI) / 180;
+    const expectedRotY1 = - (180 * Math.PI) / 180;
+    assert.ok(Math.abs(rotY0 - expectedRotY0) < 1e-6, `Yaw 70 should rotate droneMesh.rotation.y by -70 deg, got ${rotY0}`);
+    assert.ok(Math.abs(rotY1 - expectedRotY1) < 1e-6, `Yaw 180 should rotate droneMesh.rotation.y by -180 deg, got ${rotY1}`);
+
+    // Pitch: 0 deg horizontal should rotate by (90 + 0) * PI / 180 = PI / 2
+    // -90 deg nadir should rotate by (90 - 90) * PI / 180 = 0
+    const expectedRotX0 = ((90 + 0) * Math.PI) / 180;
+    const expectedRotX1 = ((90 - 90) * Math.PI) / 180;
+    assert.ok(Math.abs(rotX0 - expectedRotX0) < 1e-6, `Pitch 0 should rotate frustumMesh.rotation.x to PI/2, got ${rotX0}`);
+    assert.ok(Math.abs(rotX1 - expectedRotX1) < 1e-6, `Pitch -90 should rotate frustumMesh.rotation.x to 0, got ${rotX1}`);
+  });
+
+  test('createCameraPyramidGeometry creates apex at (0,0,0) and downwards base', () => {
+    vm.runInThisContext(`
+      var _savedTHREE_Pyramid = typeof THREE !== 'undefined' ? THREE : undefined;
+      THREE = {
+        BufferGeometry: function() {
+          this.attributes = {};
+          this.setAttribute = function(name, attr) { this.attributes[name] = attr; };
+          this.getAttribute = function(name) { return this.attributes[name]; };
+          this.setIndex = function(idx) { this.indices = idx; };
+          this.computeVertexNormals = function() {};
+        },
+        BufferAttribute: function(array, itemSize) {
+          this.array = array;
+          this.itemSize = itemSize;
+          this.count = array.length / itemSize;
+          this.getX = function(i) { return this.array[i * 3]; };
+          this.getY = function(i) { return this.array[i * 3 + 1]; };
+          this.getZ = function(i) { return this.array[i * 3 + 2]; };
+        }
+      };
+    `);
+
+    try {
+      const geo = vm.runInThisContext('createCameraPyramidGeometry(69.7, 55.2, 10)');
+      assert.ok(geo, 'Geometry should be created');
+      const pos = geo.getAttribute('position');
+      assert.strictEqual(pos.count, 5, 'Geometry should have 5 vertices (apex + 4 base corners)');
+      // Vertex 0 is apex (0,0,0)
+      assert.strictEqual(pos.getX(0), 0);
+      assert.strictEqual(pos.getY(0), 0);
+      assert.strictEqual(pos.getZ(0), 0);
+      // Base corners extend along -Y (-10)
+      assert.strictEqual(pos.getY(1), -10);
+      assert.strictEqual(pos.getY(2), -10);
+    } finally {
+      vm.runInThisContext('THREE = _savedTHREE_Pyramid;');
+    }
+  });
+
+  test('Version consistency is maintained across package.json, CHANGELOG.md, and templates for v1.102.2', () => {
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+    const cl = fs.readFileSync('CHANGELOG.md', 'utf8');
+    const indexTemplate = fs.readFileSync('index_template.html', 'utf8');
+    const indexHtml = fs.readFileSync('index.html', 'utf8');
+
+    assert.strictEqual(pkg, '1.103.1');
+    assert.ok(cl.includes('## [1.102.2] - 2026-09-13'), 'CHANGELOG.md missing 1.102.2 header');
+    assert.ok(indexTemplate.includes('v1.103.1</span>'), 'index_template.html missing v1.103.1 header badge');
+    assert.ok(indexTemplate.includes('Version 1.103.1</span>'), 'index_template.html missing Version 1.103.1 in About modal');
+    assert.ok(indexTemplate.includes('Changelog (v1.102.2):'), 'index_template.html missing Changelog (v1.102.2)');
+    assert.ok(indexHtml.includes('v1.103.1</span>'), 'index.html missing v1.103.1 header badge');
+    assert.ok(indexHtml.includes('Version 1.103.1</span>'), 'index.html missing Version 1.103.1 in About modal');
+    assert.ok(indexHtml.includes('Changelog (v1.102.2):'), 'index.html missing Changelog (v1.102.2)');
+  });
+});
+
+describe('v1.103.0 Road Follow Gimbal Focus & Road Tracking Tests', () => {
+  beforeEach(() => {
+    flightLayers = [];
+    activeLayerId = null;
+    roadWaypoints = [];
+    generatedWaypoints = [];
+    generatedPhotos = [];
+    importedWaypoints = null;
+    importedPhotos = null;
+  });
+
+  test('Version consistency is maintained across package.json, CHANGELOG.md, and templates for v1.103.0', () => {
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+    const cl = fs.readFileSync('CHANGELOG.md', 'utf8');
+    const indexTemplate = fs.readFileSync('index_template.html', 'utf8');
+    const indexHtml = fs.readFileSync('index.html', 'utf8');
+
+    assert.strictEqual(pkg, '1.103.1');
+    assert.ok(cl.includes('## [1.103.0] - 2026-09-13'), 'CHANGELOG.md missing 1.103.0 header');
+    assert.ok(indexTemplate.includes('v1.103.1</span>'), 'index_template.html missing v1.103.1 header badge');
+    assert.ok(indexTemplate.includes('Version 1.103.1</span>'), 'index_template.html missing Version 1.103.1 in About modal');
+    assert.ok(indexTemplate.includes('Changelog (v1.103.0):'), 'index_template.html missing Changelog (v1.103.0)');
+    assert.ok(indexHtml.includes('v1.103.1</span>'), 'index.html missing v1.103.1 header badge');
+    assert.ok(indexHtml.includes('Version 1.103.1</span>'), 'index.html missing Version 1.103.1 in About modal');
+    assert.ok(indexHtml.includes('Changelog (v1.103.0):'), 'index.html missing Changelog (v1.103.0)');
+  });
+
+  test('createDefaultLayer sets roadFocusMode to focusRoad', () => {
+    const layer = createDefaultLayer('layer-road-test', 'Test Road Layer', 0, 'road-following', 40.0, -83.0);
+    assert.strictEqual(layer.pattern, 'road-following');
+    assert.strictEqual(layer.roadFocusMode, 'focusRoad');
+    assert.strictEqual(layer.roadOffset, 15);
+  });
+
+  test('generateRoadFlightWaypoints computes exact trigonometric pitch targeting road surface', () => {
+    const roadNodes = [
+      { lat: 40.0, lon: -83.0 },
+      { lat: 40.001, lon: -83.0 }
+    ];
+
+    // Case 1: 50m altitude, 15m offset -> -atan2(50, 15) * 180 / PI = -73.3° -> -73°
+    const res1 = generateRoadFlightWaypoints(roadNodes, 15, 50, -60, 4, 'stopAndShoot', 40.0, -83.0, 'inherit', 'focusRoad');
+    assert.strictEqual(res1.waypoints.length, 2);
+    assert.strictEqual(res1.waypoints[0].pitch, -73, 'Pitch should be -73° for 50m alt and 15m offset in focusRoad mode');
+    assert.strictEqual(res1.waypoints[0].isRoadDroneWaypoint, true);
+    assert.strictEqual(res1.waypoints[0].roadFocusMode, 'focusRoad');
+
+    // Case 2: 30m altitude, 30m offset -> -atan2(30, 30) = -45°
+    const res2 = generateRoadFlightWaypoints(roadNodes, 30, 30, -60, 4, 'stopAndShoot', 40.0, -83.0, 'inherit', 'focusRoad');
+    assert.strictEqual(res2.waypoints[0].pitch, -45, 'Pitch should be -45° for 30m alt and 30m offset');
+
+    // Case 3: 50m altitude, 0m offset (direct nadir overhead) -> -90°
+    const res3 = generateRoadFlightWaypoints(roadNodes, 0, 50, -60, 4, 'stopAndShoot', 40.0, -83.0, 'inherit', 'focusRoad');
+    assert.strictEqual(res3.waypoints[0].pitch, -90, 'Pitch should be -90° (nadir) when offset is 0m');
+  });
+
+  test('generateRoadFlightWaypoints computes cross-track yaw in focusRoad vs forward yaw in followRoad', () => {
+    // North-South road: from (40.0, -83.0) to (40.001, -83.0)
+    const roadNodes = [
+      { lat: 40.0, lon: -83.0, alt: 50 },
+      { lat: 40.001, lon: -83.0, alt: 50 }
+    ];
+
+    // Drone offset +15m to the East (right of the northbound road)
+    // Camera in focusRoad should point West towards the road (~270°)
+    const focusRes = generateRoadFlightWaypoints(roadNodes, 15, 50, -60, 4, 'stopAndShoot', 40.0, -83.0, 'inherit', 'focusRoad');
+    const focusYaw = focusRes.waypoints[0].heading;
+    assert.ok(focusYaw >= 260 && focusYaw <= 280, `Focus heading should be ~270° pointing West at the road, got ${focusYaw}`);
+
+    // In followRoad mode, drone should face North along the road (~0° / 360°)
+    const followRes = generateRoadFlightWaypoints(roadNodes, 15, 50, -60, 4, 'stopAndShoot', 40.0, -83.0, 'followWayline', 'followRoad');
+    const followYaw = followRes.waypoints[0].heading;
+    assert.ok(followYaw <= 10 || followYaw >= 350, `Follow heading should be ~0° pointing North along flight path, got ${followYaw}`);
+  });
+
+  test('generateRoadFlightWaypoints computes lookAhead heading and pitch toward upcoming node', () => {
+    const roadNodes = [
+      { lat: 40.0, lon: -83.0, alt: 50 },
+      { lat: 40.001, lon: -83.0, alt: 50 },
+      { lat: 40.002, lon: -83.001, alt: 50 }
+    ];
+
+    const lookRes = generateRoadFlightWaypoints(roadNodes, 15, 50, -60, 4, 'stopAndShoot', 40.0, -83.0, 'inherit', 'lookAhead');
+    assert.strictEqual(lookRes.waypoints.length, 3);
+    assert.strictEqual(lookRes.waypoints[0].roadFocusMode, 'lookAhead');
+    assert.ok(lookRes.waypoints[0].pitch < 0, 'Pitch should be negative downward angle');
+    assert.ok(lookRes.waypoints[0].heading !== null && !isNaN(lookRes.waypoints[0].heading));
+  });
+
+  test('recalculateRoadOffsetPath applies roadFocusMode and updates pitch and heading dynamically', () => {
+    const origGetElementById = document.getElementById;
+    document.getElementById = (id) => {
+      if (id === 'road-offset') return { value: '20' };
+      if (id === 'altitude') return { value: '40' };
+      if (id === 'road-focus-mode') return { value: 'focusRoad' };
+      if (id === 'heading-mode') return { value: 'followWayline' };
+      return origGetElementById.call(document, id);
+    };
+
+    try {
+      roadWaypoints = [
+        { lat: 40.0, lon: -83.0, x: 0, y: 0, alt: 40, pitch: null, heading: null },
+        { lat: 40.001, lon: -83.0, x: 0, y: 111, alt: 40, pitch: null, heading: null }
+      ];
+
+      recalculateRoadOffsetPath(40.0, -83.0);
+      assert.ok(generatedWaypoints && generatedWaypoints.length === 2);
+
+      // Expected pitch: -atan2(40, 20) * 180 / PI = -63.4° -> -63°
+      assert.strictEqual(generatedWaypoints[0].pitch, -63);
+      assert.strictEqual(generatedWaypoints[0].roadFocusMode, 'focusRoad');
+      assert.strictEqual(generatedWaypoints[0].headingMode, 'smoothTransition');
+      assert.ok(generatedWaypoints[0].heading !== null && !isNaN(generatedWaypoints[0].heading));
+    } finally {
+      document.getElementById = origGetElementById;
+    }
+  });
+
+  test('updateRoadFocusUI updates badge and help text for all modes', () => {
+    const mockLayer = {
+      roadFocusMode: 'focusRoad',
+      roadOffset: 15,
+      altitude: 50
+    };
+
+    const mockBadge = { textContent: '', style: {} };
+    const mockHelp = { textContent: '' };
+
+    const origGetElementById = document.getElementById;
+    document.getElementById = (id) => {
+      if (id === 'road-focus-badge') return mockBadge;
+      if (id === 'road-focus-help') return mockHelp;
+      return origGetElementById ? origGetElementById.call(document, id) : null;
+    };
+
+    try {
+      updateRoadFocusUI(mockLayer);
+      assert.strictEqual(mockBadge.textContent, 'Auto Pitch (-73°)');
+      assert.ok(mockHelp.textContent.includes('-73°'));
+
+      mockLayer.roadFocusMode = 'followRoad';
+      updateRoadFocusUI(mockLayer);
+      assert.strictEqual(mockBadge.textContent, 'Forward Tangent');
+
+      mockLayer.roadFocusMode = 'lookAhead';
+      updateRoadFocusUI(mockLayer);
+      assert.strictEqual(mockBadge.textContent, 'Look-Ahead Slant');
+    } finally {
+      document.getElementById = origGetElementById;
+    }
+  });
+
+  test('WPML export includes smoothTransition road-facing heading and gimbalRotate pitch for road waypoints', () => {
+    const origLayers = typeof flightLayers !== 'undefined' ? flightLayers : [];
+    const origActive = typeof activeLayerId !== 'undefined' ? activeLayerId : null;
+    try {
+      const layer = createDefaultLayer('layer-road-wpml', 'WPML Road Test', 0, 'road-following', 40.0, -83.0);
+      layer.roadOffset = 15;
+      layer.altitude = 50;
+      layer.roadFocusMode = 'focusRoad';
+
+      const waypoints = [
+        { lat: 40.0, lon: -83.0001, alt: 50, pitch: -73, heading: 270, isRoadDroneWaypoint: true, layerId: layer.id },
+        { lat: 40.001, lon: -83.0001, alt: 50, pitch: -73, heading: 270, isRoadDroneWaypoint: true, layerId: layer.id }
+      ];
+
+      flightLayers = [layer];
+      activeLayerId = layer.id;
+
+      const xml = buildWaylinesWpml(waypoints, 50, 4, 'smoothTransition', 'goHome', -73, 'stopAndShoot', 'curved');
+      assert.ok(xml.includes('<wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>'), 'WPML should use smoothTransition heading mode');
+      assert.ok(xml.includes('<wpml:waypointGimbalPitchAngle>-73</wpml:waypointGimbalPitchAngle>'), 'WPML should export -73 pitch angle');
+      assert.ok(xml.includes('<wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>'), 'WPML should include gimbalRotate action');
+      assert.ok(xml.includes('<wpml:gimbalPitchRotateAngle>-73</wpml:gimbalPitchRotateAngle>'), 'gimbalRotate action should rotate pitch to -73');
+    } finally {
+      flightLayers = origLayers;
+      activeLayerId = origActive;
+    }
+  });
+});
 

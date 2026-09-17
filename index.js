@@ -1084,6 +1084,7 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     cameraAspectRatio: '4:3',
     roadOffset: 15,
     roadSnap: true,
+    roadFocusMode: 'focusRoad',
     targetPoly: [],
     targetMode: 'radius', // 'polygon' or 'radius'
     targetRadius: 25,
@@ -1598,6 +1599,8 @@ function saveActiveLayerFromUi() {
   if (cameraAspectEl && cameraAspectEl.value) layer.cameraAspectRatio = cameraAspectEl.value;
   if (roadOffsetEl) layer.roadOffset = parseFloat(roadOffsetEl.value) || 15;
   if (roadSnapEl) layer.roadSnap = roadSnapEl.checked;
+  const roadFocusModeEl = document.getElementById('road-focus-mode');
+  if (roadFocusModeEl && roadFocusModeEl.value) layer.roadFocusMode = roadFocusModeEl.value;
   if (exclAllAltEl) layer.allAltitudes = exclAllAltEl.checked;
   if (exclMinAltEl) layer.minAltitude = parseFloat(exclMinAltEl.value) || 0;
   if (exclMaxAltEl) layer.maxAltitude = parseFloat(exclMaxAltEl.value) || 60;
@@ -1747,6 +1750,8 @@ function syncUiWithActiveLayer() {
   setVal('camera-aspect-ratio', layer.cameraAspectRatio || CAMERA_ASPECT_RATIO || '4:3');
   setCameraAspectRatio(layer.cameraAspectRatio || CAMERA_ASPECT_RATIO || '4:3', true);
   setVal('road-offset', layer.roadOffset);
+  setVal('road-focus-mode', layer.roadFocusMode || 'focusRoad');
+  if (typeof updateRoadFocusUI === 'function') updateRoadFocusUI(layer);
   setVal('exclusion-min-alt', layer.minAltitude !== undefined ? layer.minAltitude : 0);
   setVal('exclusion-max-alt', layer.maxAltitude !== undefined ? layer.maxAltitude : 60);
   setVal('exclusion-detour-mode', layer.detourMode || 'inherit');
@@ -2649,7 +2654,7 @@ function filterWaypointsByExclusionZones(waypoints, photos, activeZones, centerL
   };
 }
 
-function generateRoadFlightWaypoints(rawRoad, offsetDist, altitude, defaultGimbalPitch, speed, captureMode, centerLat, centerLon, headingMode) {
+function generateRoadFlightWaypoints(rawRoad, offsetDist, altitude, defaultGimbalPitch, speed, captureMode, centerLat, centerLon, headingMode, roadFocusMode = 'focusRoad') {
   if (!rawRoad || !Array.isArray(rawRoad) || rawRoad.length === 0) {
     return { waypoints: [], photos: [] };
   }
@@ -2727,9 +2732,34 @@ function generateRoadFlightWaypoints(rawRoad, offsetDist, altitude, defaultGimba
     const geo = localToGeodetic(droneX, droneY, centerLat, centerLon, 0);
 
     const altVal = roadNode.alt !== undefined && roadNode.alt !== null ? roadNode.alt : altitude;
+
+    // Calculate road surface focus pitch
+    let calculatedRoadPitch;
+    if (Math.abs(D) < 0.01) {
+      calculatedRoadPitch = -90; // Nadir down at the road
+    } else {
+      calculatedRoadPitch = -Math.round(Math.atan2(altVal, Math.max(Math.abs(D), 1)) * (180.0 / Math.PI));
+    }
+
+    // Look-ahead pitch and heading
+    let lookAheadPitch = calculatedRoadPitch;
+    let lookAheadHeading = null;
+    if (idx < rawRoad.length - 1) {
+      const nextNode = rawRoad[idx + 1];
+      const dNext = Math.hypot(nextNode.x - droneX, nextNode.y - droneY);
+      lookAheadPitch = -Math.round(Math.atan2(altVal, Math.max(dNext, 1)) * (180.0 / Math.PI));
+      lookAheadHeading = (Math.atan2(nextNode.x - droneX, nextNode.y - droneY) * (180.0 / Math.PI) + 360) % 360;
+    }
+
     let pitchVal = roadNode.pitch;
     if (pitchVal === null || pitchVal === undefined) {
-      pitchVal = (defaultGimbalPitch !== undefined && defaultGimbalPitch !== null) ? defaultGimbalPitch : -Math.round(Math.atan2(altVal, Math.max(Math.abs(D), 1)) * (180.0 / Math.PI));
+      if (roadFocusMode === 'lookAhead') {
+        pitchVal = lookAheadPitch;
+      } else if (roadFocusMode === 'focusRoad' || defaultGimbalPitch === 'auto' || defaultGimbalPitch === null || defaultGimbalPitch === undefined) {
+        pitchVal = calculatedRoadPitch;
+      } else {
+        pitchVal = (typeof defaultGimbalPitch === 'number' && !isNaN(defaultGimbalPitch)) ? defaultGimbalPitch : calculatedRoadPitch;
+      }
     }
 
     let standardRoadFacing;
@@ -2740,14 +2770,25 @@ function generateRoadFlightWaypoints(rawRoad, offsetDist, altitude, defaultGimba
     }
     standardRoadFacing = (standardRoadFacing + 360) % 360;
 
+    let forwardRoadHeading = (Math.atan2(tx, ty) * (180.0 / Math.PI) + 360) % 360;
+
     let headingVal = standardRoadFacing;
-    if (headingMode === 'followWayline') {
-      headingVal = (Math.atan2(tx, ty) * (180.0 / Math.PI) + 360) % 360;
+    if (roadNode.heading !== null && roadNode.heading !== undefined) {
+      headingVal = roadNode.heading;
     } else if (headingMode === 'fixed') {
       headingVal = 0;
-    } else if (roadNode.heading !== null && roadNode.heading !== undefined) {
-      headingVal = roadNode.heading;
+    } else if (headingMode === 'custom') {
+      headingVal = roadNode.heading || 0;
+    } else if (roadFocusMode === 'followRoad' || (headingMode === 'followWayline' && roadFocusMode === 'custom')) {
+      headingVal = forwardRoadHeading;
+    } else if (roadFocusMode === 'lookAhead' && lookAheadHeading !== null) {
+      headingVal = lookAheadHeading;
+    } else {
+      // Default: focusRoad (cross-track road targeting)
+      headingVal = standardRoadFacing;
     }
+
+    headingVal = (headingVal + 360) % 360;
 
     return {
       lat: geo.lat,
@@ -2757,10 +2798,13 @@ function generateRoadFlightWaypoints(rawRoad, offsetDist, altitude, defaultGimba
       alt: altVal,
       pitch: pitchVal,
       heading: headingVal,
-      headingMode: headingMode || 'followWayline',
+      headingMode: (roadFocusMode === 'focusRoad' || roadFocusMode === 'lookAhead') ? 'smoothTransition' : (headingMode || 'followWayline'),
       speed: speed,
       idx: idx,
-      isRoadDroneWaypoint: true
+      isRoadDroneWaypoint: true,
+      roadNodeLat: roadNode.lat,
+      roadNodeLon: roadNode.lon,
+      roadFocusMode: roadFocusMode
     };
   });
 
@@ -2838,7 +2882,8 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     const rawRoad = (layer.roadWaypoints && Array.isArray(layer.roadWaypoints)) ? layer.roadWaypoints : (layer.id === activeLayerId ? (roadWaypoints || []) : []);
     if (rawRoad && rawRoad.length > 0) {
       const offsetDist = layer.roadOffset !== undefined ? layer.roadOffset : 15;
-      const generated = generateRoadFlightWaypoints(rawRoad, offsetDist, altitude, defaultGimbalPitch, speed, captureMode, centerLat, centerLon, headingMode);
+      const roadFocusMode = layer.roadFocusMode || 'focusRoad';
+      const generated = generateRoadFlightWaypoints(rawRoad, offsetDist, altitude, defaultGimbalPitch, speed, captureMode, centerLat, centerLon, headingMode, roadFocusMode);
       waypoints = generated.waypoints;
       photos = generated.photos;
     }
@@ -5782,6 +5827,12 @@ function initUIEventListeners() {
         if (rawPitch === 'auto') {
           if (activeLayer) {
             activeLayer.gimbalPitch = 'auto';
+            if (activeLayer.pattern === 'road-following') {
+              activeLayer.roadFocusMode = 'focusRoad';
+              const rfm = document.getElementById('road-focus-mode');
+              if (rfm) rfm.value = 'focusRoad';
+              if (typeof updateRoadFocusUI === 'function') updateRoadFocusUI(activeLayer);
+            }
           }
           syncDisplayValues();
           updateGrid();
@@ -5800,6 +5851,23 @@ function initUIEventListeners() {
           saveAllSettingsToLocalStorage();
         }
       });
+    });
+  }
+
+  // Road Focus Mode dropdown listener
+  const roadFocusModeEl = document.getElementById('road-focus-mode');
+  if (roadFocusModeEl) {
+    roadFocusModeEl.addEventListener('change', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.roadFocusMode = roadFocusModeEl.value;
+        if (roadFocusModeEl.value === 'focusRoad') {
+          activeLayer.gimbalPitch = 'auto';
+        }
+      }
+      if (typeof updateRoadFocusUI === 'function') updateRoadFocusUI(activeLayer);
+      updateGrid();
+      saveAllSettingsToLocalStorage();
     });
   }
 
@@ -7469,8 +7537,26 @@ function togglePatternParameters() {
 
 // Helper to get descriptive flight purpose and styling for a gimbal pitch angle
 function getGimbalPitchDescription(pitch) {
-  if (pitch === 'auto' || (typeof pitch === 'string' && pitch.toLowerCase() === 'auto')) {
-    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const isAuto = (pitch === 'auto' || (typeof pitch === 'string' && pitch.toLowerCase() === 'auto'));
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  if (isAuto && activeLayer && activeLayer.pattern === 'road-following') {
+    const offsetDist = activeLayer.roadOffset !== undefined ? activeLayer.roadOffset : 15;
+    const alt = activeLayer.altitude || 50;
+    let autoPitch;
+    if (Math.abs(offsetDist) < 0.01) {
+      autoPitch = -90;
+    } else {
+      autoPitch = -Math.round(Math.atan2(alt, Math.max(Math.abs(offsetDist), 1)) * (180.0 / Math.PI));
+    }
+    return {
+      text: `🛣️ Road Focus (${autoPitch}° based on ${Math.abs(offsetDist)}m offset & ${alt}m alt)`,
+      bg: 'rgba(6, 182, 212, 0.15)',
+      border: 'rgba(6, 182, 212, 0.4)',
+      color: 'var(--accent-cyan)'
+    };
+  }
+
+  if (isAuto) {
     const targetPoi = (typeof getTargetPoiCoordinates === 'function') ? getTargetPoiCoordinates(null, activeLayer) : null;
     const targetAlt = (targetPoi && targetPoi.alt !== undefined && !isNaN(targetPoi.alt)) ? Number(targetPoi.alt) : 0;
     const unit = (typeof getUnitSystem === 'function') ? getUnitSystem() : 'metric';
@@ -7532,13 +7618,29 @@ function getGimbalPitchDescription(pitch) {
 function updateGimbalPitchVisualizer(pitch) {
   if (typeof document === 'undefined' || !document || !document.getElementById) return;
   const isAuto = (pitch === 'auto' || (typeof pitch === 'string' && pitch.toLowerCase() === 'auto'));
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const isRoad = activeLayer && activeLayer.pattern === 'road-following';
+  let roadAutoPitch = null;
+  if (isRoad) {
+    const offsetDist = activeLayer.roadOffset !== undefined ? activeLayer.roadOffset : 15;
+    const alt = activeLayer.altitude || 50;
+    if (Math.abs(offsetDist) < 0.01) {
+      roadAutoPitch = -90;
+    } else {
+      roadAutoPitch = -Math.round(Math.atan2(alt, Math.max(Math.abs(offsetDist), 1)) * (180.0 / Math.PI));
+    }
+  }
+
   let pVal;
-  if (isAuto) {
-    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
-    const targetPoi = (typeof getTargetPoiCoordinates === 'function') ? getTargetPoiCoordinates(null, activeLayer) : null;
-    pVal = (typeof calculate3DPoiPitch === 'function')
-      ? calculate3DPoiPitch(null, targetPoi, activeLayer?.altitude || 50)
-      : -45;
+  if (isAuto || (isRoad && activeLayer.roadFocusMode === 'focusRoad')) {
+    if (isRoad && roadAutoPitch !== null) {
+      pVal = roadAutoPitch;
+    } else {
+      const targetPoi = (typeof getTargetPoiCoordinates === 'function') ? getTargetPoiCoordinates(null, activeLayer) : null;
+      pVal = (typeof calculate3DPoiPitch === 'function')
+        ? calculate3DPoiPitch(null, targetPoi, activeLayer?.altitude || 50)
+        : -45;
+    }
   } else {
     pVal = isNaN(pitch) ? -60 : parseFloat(pitch);
   }
@@ -7557,10 +7659,21 @@ function updateGimbalPitchVisualizer(pitch) {
   // 2. Highlight matching preset chip
   const chips = (typeof document.querySelectorAll === 'function') ? document.querySelectorAll('.gimbal-preset-chip') : [];
   if (chips && chips.forEach) {
+    // Update auto preset chip label if on road-following
     chips.forEach(chip => {
       const rawTarget = chip.dataset ? chip.dataset.pitch : chip.getAttribute('data-pitch');
+      if (rawTarget === 'auto') {
+        if (isRoad) {
+          chip.textContent = '🎯 Auto Road';
+          chip.title = `Automatically track road surface (${roadAutoPitch}° tilt)`;
+        } else {
+          chip.textContent = '🎯 Auto POI';
+          chip.title = 'Automatically track 3D Point of Interest elevation';
+        }
+      }
+
       let isMatch = false;
-      if (isAuto) {
+      if (isAuto || (isRoad && activeLayer.roadFocusMode === 'focusRoad')) {
         isMatch = (rawTarget === 'auto');
       } else {
         const targetPitch = parseFloat(rawTarget);
@@ -8735,11 +8848,36 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
     // 3. Convert drone local coordinates back to geodetic lat/lon
     const geo = localToGeodetic(droneX, droneY, centerLat, centerLon, 0);
 
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    const roadFocusMode = (activeLayer && activeLayer.roadFocusMode) ? activeLayer.roadFocusMode : (document.getElementById('road-focus-mode')?.value || 'focusRoad');
+
     // 4. Calculate gimbal pitch and heading pointing to the road
     const altVal = wp.alt !== undefined && wp.alt !== null ? wp.alt : altitude;
+    let calculatedRoadPitch;
+    if (Math.abs(D) < 0.01) {
+      calculatedRoadPitch = -90;
+    } else {
+      calculatedRoadPitch = -Math.round(Math.atan2(altVal, Math.max(Math.abs(D), 1)) * (180.0 / Math.PI));
+    }
+
+    let lookAheadPitch = calculatedRoadPitch;
+    let lookAheadHeading = null;
+    if (idx < roadWaypoints.length - 1) {
+      const nextNode = roadWaypoints[idx + 1];
+      const dNext = Math.hypot(nextNode.x - droneX, nextNode.y - droneY);
+      lookAheadPitch = -Math.round(Math.atan2(altVal, Math.max(dNext, 1)) * (180.0 / Math.PI));
+      lookAheadHeading = (Math.atan2(nextNode.x - droneX, nextNode.y - droneY) * (180.0 / Math.PI) + 360) % 360;
+    }
+
     let pitchVal = wp.pitch;
     if (pitchVal === null || pitchVal === undefined) {
-      pitchVal = -Math.round(Math.atan2(altVal, Math.abs(D)) * (180.0 / Math.PI));
+      if (roadFocusMode === 'lookAhead') {
+        pitchVal = lookAheadPitch;
+      } else if (roadFocusMode === 'focusRoad' || activeLayer?.gimbalPitch === 'auto' || activeLayer?.gimbalPitch === null || activeLayer?.gimbalPitch === undefined) {
+        pitchVal = calculatedRoadPitch;
+      } else {
+        pitchVal = (typeof activeLayer?.gimbalPitch === 'number' && !isNaN(activeLayer.gimbalPitch)) ? activeLayer.gimbalPitch : calculatedRoadPitch;
+      }
     }
     
     // Resolve heading and headingMode
@@ -8759,6 +8897,8 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
     }
     standardRoadFacing = (standardRoadFacing + 360) % 360;
 
+    let forwardRoadHeading = (Math.atan2(tx, ty) * (180.0 / Math.PI) + 360) % 360;
+
     let headingVal;
     if (effectiveMode === 'custom' && wp.heading !== null && wp.heading !== undefined) {
       headingVal = wp.heading;
@@ -8774,9 +8914,12 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
       } else {
         headingVal = standardRoadFacing;
       }
-    } else if (effectiveMode === 'followWayline') {
-      headingVal = (Math.atan2(tx, ty) * (180.0 / Math.PI) + 360) % 360;
+    } else if (roadFocusMode === 'followRoad' || (effectiveMode === 'followWayline' && roadFocusMode === 'custom')) {
+      headingVal = forwardRoadHeading;
+    } else if (roadFocusMode === 'lookAhead' && lookAheadHeading !== null) {
+      headingVal = lookAheadHeading;
     } else {
+      // Default: focusRoad (cross-track road targeting)
       headingVal = standardRoadFacing;
     }
     headingVal = (headingVal + 360) % 360;
@@ -8805,7 +8948,10 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
       existingGwp.alt = finalAlt;
       existingGwp.pitch = finalPitch;
       existingGwp.heading = headingVal;
-      existingGwp.headingMode = mode;
+      existingGwp.headingMode = (mode !== 'inherit') ? mode : ((roadFocusMode === 'focusRoad' || roadFocusMode === 'lookAhead') ? 'smoothTransition' : 'inherit');
+      existingGwp.roadFocusMode = roadFocusMode;
+      existingGwp.roadNodeLat = roadNode.lat;
+      existingGwp.roadNodeLon = roadNode.lon;
       existingGwp.speed = finalSpeed;
       existingGwp.hoverTime = finalHover;
       existingGwp.turnMode = finalTurn;
@@ -8841,7 +8987,11 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
       alt: finalAlt,
       pitch: finalPitch,
       heading: headingVal,
-      headingMode: mode,
+      headingMode: (mode !== 'inherit') ? mode : ((roadFocusMode === 'focusRoad' || roadFocusMode === 'lookAhead') ? 'smoothTransition' : 'inherit'),
+      roadFocusMode: roadFocusMode,
+      roadNodeLat: roadNode.lat,
+      roadNodeLon: roadNode.lon,
+      isRoadDroneWaypoint: true,
       speed: finalSpeed,
       hoverTime: finalHover,
       turnMode: finalTurn,
@@ -10095,6 +10245,59 @@ function updateTargetSplatDimensionWarning(layer) {
   }
 }
 
+/**
+ * Update Road Focus & Gimbal UI badges and descriptions
+ * @param {Object} layer - Active pattern layer
+ */
+function updateRoadFocusUI(layer) {
+  if (typeof document === 'undefined' || !document || !document.getElementById) return;
+  const l = layer || ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+  const mode = (l && l.roadFocusMode) ? l.roadFocusMode : ((document.getElementById('road-focus-mode')?.value) || 'focusRoad');
+  const badge = document.getElementById('road-focus-badge');
+  const help = document.getElementById('road-focus-help');
+  const offset = l ? (l.roadOffset !== undefined ? l.roadOffset : 15) : 15;
+  const alt = l ? (l.altitude || 50) : 50;
+
+  let calculatedRoadPitch;
+  if (Math.abs(offset) < 0.01) {
+    calculatedRoadPitch = -90;
+  } else {
+    calculatedRoadPitch = -Math.round(Math.atan2(alt, Math.max(Math.abs(offset), 1)) * (180.0 / Math.PI));
+  }
+
+  if (badge) {
+    if (mode === 'focusRoad') {
+      badge.textContent = `Auto Pitch (${calculatedRoadPitch}°)`;
+      badge.style.background = 'rgba(6, 182, 212, 0.15)';
+      badge.style.color = 'var(--accent-cyan)';
+    } else if (mode === 'followRoad') {
+      badge.textContent = 'Forward Tangent';
+      badge.style.background = 'rgba(59, 130, 246, 0.15)';
+      badge.style.color = '#60a5fa';
+    } else if (mode === 'lookAhead') {
+      badge.textContent = 'Look-Ahead Slant';
+      badge.style.background = 'rgba(245, 158, 11, 0.15)';
+      badge.style.color = '#fbbf24';
+    } else {
+      badge.textContent = 'Manual';
+      badge.style.background = 'rgba(255, 255, 255, 0.05)';
+      badge.style.color = 'var(--text-muted)';
+    }
+  }
+
+  if (help) {
+    if (mode === 'focusRoad') {
+      help.textContent = `Camera automatically tilts to ${calculatedRoadPitch}° and yaws to focus directly onto the road surface.`;
+    } else if (mode === 'followRoad') {
+      help.textContent = 'Camera points forward along the flight path corridor, smoothly tracking road curves.';
+    } else if (mode === 'lookAhead') {
+      help.textContent = 'Camera points forward and down toward the next road node ahead on the road.';
+    } else {
+      help.textContent = 'Camera uses manual layer pitch and heading controls.';
+    }
+  }
+}
+
 function generateTargetSplatCoordinates(width, height, rotation, captureMode, sLine, sPhoto, altitude, defaultGimbalPitch, layer) {
   const waypoints = [];
   const photos = [];
@@ -11155,6 +11358,18 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
             marker.bindTooltip(`${l.name} Road Node ${idx}`, { direction: 'top', offset: [0, -10] });
 
             if (isActive) {
+              marker.on('dragstart', () => {
+                if (typeof map !== 'undefined' && map && map.closePopup) map.closePopup();
+                // Record originals on first drag so Revert works correctly
+                if (wp.origLat === undefined || wp.origLat === null) {
+                  wp.origLat = wp.lat;
+                  wp.origLon = wp.lon;
+                  wp.origX = wp.x;
+                  wp.origY = wp.y;
+                }
+                wp.isModified = true;
+              });
+
               marker.on('drag', (e) => {
                 const newLatLng = e.target.getLatLng();
                 const layerCenterLat = (l.centerLat !== undefined && l.centerLat !== null) ? l.centerLat : centerLat;
@@ -11165,6 +11380,19 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
                 wp.x = offsets.x;
                 wp.y = offsets.y;
                 wp.isModified = true;
+                // Lightweight live update: only redraw the road path polyline, no full grid recalc
+                if (roadPathGroup && l.roadWaypoints && l.roadWaypoints.length > 0) {
+                  const updatedLatLngs = l.roadWaypoints.map(n => [n.lat, n.lon]);
+                  roadPathGroup.eachLayer(layer => {
+                    if (typeof layer.setLatLngs === 'function' && layer.getLatLngs) {
+                      layer.setLatLngs(updatedLatLngs);
+                    }
+                  });
+                }
+              });
+
+              marker.on('dragend', () => {
+                // Full recalc once, after the user releases the marker
                 updateGrid();
               });
 
@@ -11199,24 +11427,68 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
     const isRoadWp = wp.isRoadDroneWaypoint || wp.layerPattern === 'road-following';
 
     if (isRoadWp) {
-      const droneMarker = L.circleMarker([wp.lat, wp.lon], {
-        radius: 5,
-        color: wp.layerColor ? `${wp.layerColor}40` : 'rgba(6, 182, 212, 0.2)',
-        fillColor: wp.layerColor || '#06b6d4',
-        fillOpacity: 0.9,
-        weight: 8
+      const isStart = idx === 0;
+      const isEnd = idx === waypoints.length - 1;
+      const markerIcon = getMarkerIcon(wp, idx, waypoints, rotationDeg);
+
+      let heading = (wp.heading !== null && wp.heading !== undefined) ? wp.heading : 0;
+      const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch;
+      const displayPitch = (typeof pitch === 'number' && !isNaN(pitch)) ? Math.round(pitch) : pitch;
+      const headingDisplay = (!isNaN(heading)) ? heading.toFixed(0) : '—';
+      const tooltipContent = `${isStart ? "Road Start Point" : (isEnd ? "Road End Point" : `Road Waypoint ${idx}`)}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${headingDisplay}°<br>Pitch: ${displayPitch}°`;
+
+      const droneMarker = L.marker([wp.lat, wp.lon], {
+        icon: markerIcon,
+        draggable: true
       });
 
       wp.droneMarker = droneMarker;
       wp.mapMarker = droneMarker;
 
-      const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch;
-      const displayPitch = (typeof pitch === 'number' && !isNaN(pitch)) ? Math.round(pitch) : pitch;
-      const headingDisplay = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading.toFixed(0) : '—';
-      const tooltipContent = `Drone Waypoint ${idx}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${headingDisplay}°<br>Pitch: ${displayPitch}°`;
-      droneMarker.bindTooltip(tooltipContent, { direction: 'top', offset: [0, -5] });
-
+      droneMarker.bindTooltip(tooltipContent, { direction: 'top', offset: [0, -10] });
       droneMarker.addTo(waypointMarkersGroup);
+
+      droneMarker.on('dragstart', () => {
+        bringMarkerToFront(droneMarker, idx);
+        if (typeof map !== 'undefined' && map && map.closePopup) {
+          map.closePopup();
+        }
+        if (wp.origLat === undefined || wp.origLat === null) {
+          wp.origLat = wp.lat;
+          wp.origLon = wp.lon;
+          wp.origX = wp.x;
+          wp.origY = wp.y;
+        }
+        wp.isModified = true;
+      });
+
+      droneMarker.on('drag', (e) => {
+        const newLatLng = e.target.getLatLng();
+        const layerCenterLat = (wp.layerId && flightLayers.find(l => l.id === wp.layerId)?.centerLat) || centerLat;
+        const layerCenterLon = (wp.layerId && flightLayers.find(l => l.id === wp.layerId)?.centerLon) || centerLon;
+        const offsets = geodeticToLocal(newLatLng.lat, newLatLng.lng, layerCenterLat, layerCenterLon);
+
+        wp.lat = newLatLng.lat;
+        wp.lon = newLatLng.lng;
+        wp.x = offsets.x;
+        wp.y = offsets.y;
+        wp.isModified = true;
+
+        const activePhotos = getCurrentPhotos();
+        if (activePhotos && activePhotos[idx]) {
+          activePhotos[idx].lat = newLatLng.lat;
+          activePhotos[idx].lon = newLatLng.lng;
+          activePhotos[idx].x = offsets.x;
+          activePhotos[idx].y = offsets.y;
+        }
+
+        updatePathLinesAndStats(waypoints, photoLocations, centerLat, centerLon, gridWidth, gridHeight, rotationDeg);
+      });
+
+      droneMarker.on('dragend', () => {
+        redrawCurrentMission();
+        if (wp.mapMarker) bringMarkerToFront(wp.mapMarker, idx);
+      });
 
       droneMarker.bindPopup(() => {
         return createWaypointEditorDOM(wp, idx, droneMarker);
@@ -12893,10 +13165,16 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     let effectivePitch;
     const rawWpPitch = wp.pitch !== undefined ? wp.pitch : (wpLayer && wpLayer.gimbalPitch !== undefined ? wpLayer.gimbalPitch : gimbalPitch);
     if (rawWpPitch === 'auto' || (typeof rawWpPitch === 'string' && rawWpPitch.toLowerCase() === 'auto')) {
-      const targetPoi = (typeof getTargetPoiCoordinates === 'function') ? getTargetPoiCoordinates(wp, wpLayer) : null;
-      effectivePitch = (typeof calculate3DPoiPitch === 'function')
-        ? calculate3DPoiPitch(wp, targetPoi, wp.alt !== undefined ? wp.alt : altitude)
-        : -45;
+      if (wp.isRoadDroneWaypoint || isRoadFollowing) {
+        const offset = (wpLayer && wpLayer.roadOffset !== undefined) ? wpLayer.roadOffset : 15;
+        const wAlt = wp.alt !== undefined ? wp.alt : altitude;
+        effectivePitch = (Math.abs(offset) < 0.01) ? -90 : -Math.round(Math.atan2(wAlt, Math.max(Math.abs(offset), 1)) * (180.0 / Math.PI));
+      } else {
+        const targetPoi = (typeof getTargetPoiCoordinates === 'function') ? getTargetPoiCoordinates(wp, wpLayer) : null;
+        effectivePitch = (typeof calculate3DPoiPitch === 'function')
+          ? calculate3DPoiPitch(wp, targetPoi, wp.alt !== undefined ? wp.alt : altitude)
+          : -45;
+      }
     } else {
       effectivePitch = parseGimbalPitch(rawWpPitch, -60);
     }
@@ -13079,7 +13357,7 @@ ${waypointActions.join('\n')}
         }
       }
     } else {
-      if ((gridType === 'freeform' || gridType === 'target-splat') && wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
+      if ((gridType === 'freeform' || gridType === 'target-splat' || gridType === 'road-following' || wp.isRoadDroneWaypoint) && wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
         actualHeadingMode = 'smoothTransition';
         actualHeadingAngle = wp.heading;
       } else if (effectiveHeadingMode === 'towardPOI') {
@@ -15854,6 +16132,40 @@ function getActiveMissionWaypoints() {
   ];
 }
 
+// Create a rectangular pyramid representing the camera's field of view (frustum)
+function createCameraPyramidGeometry(hfov, vfov, height) {
+  if (typeof THREE === 'undefined' || typeof THREE.BufferGeometry !== 'function' || typeof THREE.BufferAttribute !== 'function') {
+    return null;
+  }
+  const geom = new THREE.BufferGeometry();
+  const wHalf = height * Math.tan((hfov / 2) * Math.PI / 180);
+  const vHalf = height * Math.tan((vfov / 2) * Math.PI / 180);
+
+  const vertices = new Float32Array([
+     0,      0,      0,     // 0: Apex
+    -wHalf, -height, -vHalf, // 1: Top-Left
+     wHalf, -height, -vHalf, // 2: Top-Right
+     wHalf, -height,  vHalf, // 3: Bottom-Right
+    -wHalf, -height,  vHalf  // 4: Bottom-Left
+  ]);
+
+  const indices = [
+    0, 1, 2,
+    0, 2, 3,
+    0, 3, 4,
+    0, 4, 1,
+    1, 3, 2,
+    1, 4, 3
+  ];
+
+  geom.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+  geom.setIndex(indices);
+  if (typeof geom.computeVertexNormals === 'function') {
+    geom.computeVertexNormals();
+  }
+  return geom;
+}
+
 const FlightDiagnostics = {
   isOpen: false,
   isPlaying: false,
@@ -16653,7 +16965,19 @@ const FlightDiagnostics = {
             // Store the planned waypoints from the saved mission (not the active workspace)
             this.plannedWaypoints = data.mission.plan?.waypoints || null;
             if (data.mission.diagnostics && Array.isArray(data.mission.diagnostics.points) && data.mission.diagnostics.points.length > 0) {
-              this.telemetryData = data.mission.diagnostics;
+              let diag = data.mission.diagnostics;
+              const missionWps = data.mission.plan?.waypoints;
+              if (missionWps && missionWps.length > 1 && diag.points) {
+                const photoAlts = new Set(diag.points.filter(p => p.isPhoto).map(p => p.alt));
+                const planAlts = new Set(missionWps.map(w => w.altitude !== undefined ? w.altitude : (w.alt !== undefined ? w.alt : 50)));
+                if (photoAlts.size === 1 && planAlts.size > 1) {
+                  const missionAlt = data.mission.altitude || altitude;
+                  const missionSpeed = data.mission.speed || speed;
+                  const missionGimbal = data.mission.gimbal_pitch || gimbalPitch;
+                  diag = generateTelemetryFromWaypoints(missionWps, { altitude: missionAlt, speed: missionSpeed, gimbalPitch: missionGimbal, flightId });
+                }
+              }
+              this.telemetryData = diag;
               const plannedStats = data.mission.plan?.statistics || {
                 waypointCount: data.mission.waypoint_count,
                 altitude: data.mission.altitude,
@@ -16722,11 +17046,20 @@ const FlightDiagnostics = {
           const data = await res.json();
           if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
           if (data.success && data.telemetry) {
-            this.telemetryData = data.telemetry;
+            let telem = data.telemetry;
+            const plannedWps = data.telemetry.plannedWaypoints || data.plannedWaypoints || null;
+            if (telem && telem.points && plannedWps && plannedWps.length > 1) {
+              const photoAlts = new Set(telem.points.filter(p => p.isPhoto).map(p => p.alt));
+              const planAlts = new Set(plannedWps.map(w => w.altitude !== undefined ? w.altitude : (w.alt !== undefined ? w.alt : 50)));
+              if (photoAlts.size === 1 && planAlts.size > 1) {
+                telem = generateTelemetryFromWaypoints(plannedWps, { altitude, speed, gimbalPitch, flightId });
+              }
+            }
+            this.telemetryData = telem;
             this.comparisonData = data.comparison;
             // Use planned waypoints returned by the companion (from the log's matched mission),
             // falling back to null so buildTrajectoryMeshes uses the active workspace only as a last resort.
-            this.plannedWaypoints = data.telemetry.plannedWaypoints || data.plannedWaypoints || null;
+            this.plannedWaypoints = plannedWps;
           } else {
             throw new Error('Telemetry not in payload');
           }
@@ -17022,10 +17355,12 @@ const FlightDiagnostics = {
         const rect = this.threeRenderer.domElement.getBoundingClientRect();
         mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-        raycaster.setFromCamera(mouse, this.threeCamera);
-        const intersects = raycaster.intersectObjects(this.photoMarkers);
+        const intersects = raycaster.intersectObjects(this.photoMarkers, true);
         if (intersects && intersects.length > 0) {
-          const hit = intersects[0].object;
+          let hit = intersects[0].object;
+          while (hit && (!hit.userData || hit.userData.index === undefined) && hit.parent) {
+            hit = hit.parent;
+          }
           if (hit && hit.userData && hit.userData.index !== undefined) {
             this.seekTo(hit.userData.index);
           }
@@ -17185,13 +17520,64 @@ const FlightDiagnostics = {
 
     pts.forEach((p, pIdx) => {
       if (p.isPhoto) {
-        const photoGeo = new THREE.SphereGeometry(0.8, 8, 8);
-        const photoMat = new THREE.MeshBasicMaterial({ color: 0x22c55e });
-        const photoMesh = new THREE.Mesh(photoGeo, photoMat);
-        photoMesh.position.copy(this.projectToWorld(p.lat, p.lon, p.alt));
-        photoMesh.userData = { isPhoto: true, point: p, index: pIdx };
-        this.threeScene.add(photoMesh);
-        this.photoMarkers.push(photoMesh);
+        let photoMarker;
+        if (typeof THREE.Group === 'function') {
+          const photoGroup = new THREE.Group();
+          if (photoGroup.position && photoGroup.position.copy) {
+            photoGroup.position.copy(this.projectToWorld(p.lat, p.lon, p.alt));
+          }
+          const photoHeading = (p.yaw !== undefined && p.yaw !== null && !isNaN(p.yaw)) ? p.yaw : 0;
+          const photoPitch = (p.pitch !== undefined && p.pitch !== null && !isNaN(p.pitch)) ? p.pitch : -60;
+          if (photoGroup.rotation) {
+            photoGroup.rotation.y = - (photoHeading * Math.PI) / 180;
+          }
+
+          if (typeof THREE.SphereGeometry === 'function' && typeof THREE.MeshBasicMaterial === 'function' && typeof THREE.Mesh === 'function') {
+            const photoGeo = new THREE.SphereGeometry(0.8, 8, 8);
+            const photoMat = new THREE.MeshBasicMaterial({ color: 0x22c55e });
+            const photoMesh = new THREE.Mesh(photoGeo, photoMat);
+            photoGroup.add(photoMesh);
+          }
+
+          // Small directional camera frustum showing photo capture angle
+          if (typeof createCameraPyramidGeometry === 'function') {
+            const coneGeom = createCameraPyramidGeometry(CAMERA_HFOV, CAMERA_VFOV, 3.5);
+            if (coneGeom && typeof THREE.MeshBasicMaterial === 'function' && typeof THREE.Mesh === 'function') {
+              const coneMat = new THREE.MeshBasicMaterial({
+                color: 0x22c55e,
+                wireframe: false,
+                transparent: true,
+                opacity: 0.2,
+                side: THREE.DoubleSide,
+                depthWrite: false
+              });
+              const coneMesh = new THREE.Mesh(coneGeom, coneMat);
+              if (coneMesh.rotation) {
+                coneMesh.rotation.x = ((90 + photoPitch) * Math.PI) / 180;
+              }
+              if (typeof THREE.EdgesGeometry === 'function' && typeof THREE.LineBasicMaterial === 'function' && typeof THREE.LineSegments === 'function') {
+                const wireGeom = new THREE.EdgesGeometry(coneGeom);
+                const wireMat = new THREE.LineBasicMaterial({ color: 0x22c55e, transparent: true, opacity: 0.6 });
+                coneMesh.add(new THREE.LineSegments(wireGeom, wireMat));
+              }
+              photoGroup.add(coneMesh);
+            }
+          }
+          photoMarker = photoGroup;
+        } else if (typeof THREE.Mesh === 'function') {
+          const photoGeo = typeof THREE.SphereGeometry === 'function' ? new THREE.SphereGeometry(0.8, 8, 8) : null;
+          const photoMat = typeof THREE.MeshBasicMaterial === 'function' ? new THREE.MeshBasicMaterial({ color: 0x22c55e }) : null;
+          photoMarker = new THREE.Mesh(photoGeo, photoMat);
+          if (photoMarker.position && photoMarker.position.copy) {
+            photoMarker.position.copy(this.projectToWorld(p.lat, p.lon, p.alt));
+          }
+        }
+
+        if (photoMarker) {
+          photoMarker.userData = { isPhoto: true, point: p, index: pIdx };
+          if (this.threeScene && this.threeScene.add) this.threeScene.add(photoMarker);
+          this.photoMarkers.push(photoMarker);
+        }
       }
     });
 
@@ -17231,6 +17617,14 @@ const FlightDiagnostics = {
     const body = new THREE.Mesh(bodyGeo, bodyMat);
     this.droneMesh.add(body);
 
+    // Front nose direction indicator (dark forward-pointing wedge at -Z)
+    const noseGeo = new THREE.ConeGeometry(0.8, 1.2, 4);
+    noseGeo.rotateX(-Math.PI / 2);
+    const noseMat = new THREE.MeshBasicMaterial({ color: 0x0284c7 });
+    const nose = new THREE.Mesh(noseGeo, noseMat);
+    nose.position.set(0, 0.2, -2.1);
+    this.droneMesh.add(nose);
+
     const rotorMat = new THREE.MeshBasicMaterial({ color: 0x22d3ee });
     [[-1.8, 1.8], [1.8, 1.8], [-1.8, -1.8], [1.8, -1.8]].forEach(([rx, rz]) => {
       const rGeo = new THREE.CylinderGeometry(1.2, 1.2, 0.1, 16);
@@ -17239,11 +17633,34 @@ const FlightDiagnostics = {
       this.droneMesh.add(r);
     });
 
-    const fGeo = new THREE.ConeGeometry(3.0, 7.0, 4);
-    fGeo.rotateX(Math.PI / 2);
-    const fMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24, wireframe: true, transparent: true, opacity: 0.45 });
+    // Realistic camera field-of-view pyramid with apex at camera gimbal
+    const coneHeight = 10;
+    const fGeo = createCameraPyramidGeometry(CAMERA_HFOV, CAMERA_VFOV, coneHeight);
+    const fMat = new THREE.MeshBasicMaterial({
+      color: 0xfbbf24,
+      wireframe: false,
+      transparent: true,
+      opacity: 0.25,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
     this.frustumMesh = new THREE.Mesh(fGeo, fMat);
-    this.frustumMesh.position.set(0, -1.5, 0);
+    this.frustumMesh.position.set(0, -0.4, -1.2); // Forward camera gimbal position
+
+    // Wireframe edges for clear visibility
+    const wireGeom = new THREE.EdgesGeometry(fGeo);
+    const wireMat = new THREE.LineBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.75 });
+    this.frustumMesh.add(new THREE.LineSegments(wireGeom, wireMat));
+
+    // Optical Axis Center Ray
+    const axisPoints = [
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, -coneHeight, 0)
+    ];
+    const axisGeom = new THREE.BufferGeometry().setFromPoints(axisPoints);
+    const axisMat = new THREE.LineBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.6 });
+    this.frustumMesh.add(new THREE.Line(axisGeom, axisMat));
+
     this.droneMesh.add(this.frustumMesh);
 
     this.threeScene.add(this.droneMesh);
@@ -17330,10 +17747,12 @@ const FlightDiagnostics = {
     if (this.droneMesh) {
       const pos = this.projectToWorld(pt.lat, pt.lon, pt.alt);
       this.droneMesh.position.copy(pos);
-      this.droneMesh.rotation.y = (pt.yaw * Math.PI) / 180;
+      const yawVal = (pt.yaw !== undefined && pt.yaw !== null && !isNaN(pt.yaw)) ? pt.yaw : 0;
+      this.droneMesh.rotation.y = - (yawVal * Math.PI) / 180;
 
       if (this.frustumMesh) {
-        this.frustumMesh.rotation.x = (((pt.pitch !== undefined && pt.pitch !== null && !isNaN(pt.pitch)) ? pt.pitch : -60) * Math.PI) / 180;
+        const pitchVal = (pt.pitch !== undefined && pt.pitch !== null && !isNaN(pt.pitch)) ? pt.pitch : -60;
+        this.frustumMesh.rotation.x = ((90 + pitchVal) * Math.PI) / 180;
       }
     }
 
@@ -18045,8 +18464,25 @@ function parseKmlOrWpmlTelemetry(xmlText, flightId = 'Imported_Flight.kml') {
       if (parts.length < 2) continue;
       const lon = parseFloat(parts[0]);
       const lat = parseFloat(parts[1]);
-      const alt = parts[2] !== undefined ? parseFloat(parts[2]) : 21.0;
+      let alt = parts[2] !== undefined ? parseFloat(parts[2]) : NaN;
+      if (isNaN(alt)) {
+        const hMatch = pm.match(/<(?:wpml:)?executeHeight>([\s\S]*?)<\/(?:wpml:)?executeHeight>/i) ||
+                       pm.match(/<(?:wpml:)?height>([\s\S]*?)<\/(?:wpml:)?height>/i) ||
+                       pm.match(/<(?:wpml:)?altitude>([\s\S]*?)<\/(?:wpml:)?altitude>/i);
+        if (hMatch) {
+          alt = parseFloat(hMatch[1]);
+        }
+      }
+      if (isNaN(alt)) alt = 21.0;
       if (isNaN(lat) || isNaN(lon)) continue;
+
+      const spdMatch = pm.match(/<(?:wpml:)?waypointSpeed>([\s\S]*?)<\/(?:wpml:)?waypointSpeed>/i);
+      const speed = spdMatch ? (parseFloat(spdMatch[1]) || 4.0) : 4.0;
+      const pitchMatch = pm.match(/<(?:wpml:)?gimbalPitchRotateAngle>([\s\S]*?)<\/(?:wpml:)?gimbalPitchRotateAngle>/i) ||
+                         pm.match(/<(?:wpml:)?waypointGimbalPitchAngle>([\s\S]*?)<\/(?:wpml:)?waypointGimbalPitchAngle>/i);
+      const pitch = pitchMatch ? (parseFloat(pitchMatch[1]) || -60.0) : -60.0;
+      const yawMatch = pm.match(/<(?:wpml:)?waypointHeadingAngle>([\s\S]*?)<\/(?:wpml:)?waypointHeadingAngle>/i);
+      const yaw = yawMatch ? (parseFloat(yawMatch[1]) || 0) : 0;
 
       if (alt > maxAlt) maxAlt = alt;
       const hasPhoto = pm.includes('takePhoto') || pm.includes('ShootPhoto');
@@ -18054,9 +18490,11 @@ function parseKmlOrWpmlTelemetry(xmlText, flightId = 'Imported_Flight.kml') {
 
       if (points.length > 0) {
         const prev = points[points.length - 1];
-        const d = Math.hypot((lat - prev.lat) * 111320, (lon - prev.lon) * 111320 * Math.cos(lat * Math.PI / 180));
+        const d = (typeof haversineDistance === 'function')
+          ? haversineDistance(prev.lat, prev.lon, lat, lon)
+          : Math.hypot((lat - prev.lat) * 111320, (lon - prev.lon) * 111320 * Math.cos(lat * Math.PI / 180));
         totalDist += d;
-        const segSec = Math.max(1, Math.round(d / 4.0));
+        const segSec = Math.max(1, Math.round(d / speed));
         for (let s = 1; s <= segSec; s++) {
           curTime++;
           const r = s / segSec;
@@ -18067,12 +18505,12 @@ function parseKmlOrWpmlTelemetry(xmlText, flightId = 'Imported_Flight.kml') {
             lat: prev.lat + (lat - prev.lat) * r,
             lon: prev.lon + (lon - prev.lon) * r,
             alt: Math.round((prev.alt + (alt - prev.alt) * r) * 10) / 10,
-            speed: 4.0,
-            pitch: -60.0,
-            yaw: 0,
+            speed: Math.round(speed * 10) / 10,
+            pitch: Math.round(pitch * 10) / 10,
+            yaw: Math.round(yaw * 10) / 10,
             battery: Math.max(10, Math.round(battery * 10) / 10),
             satellites: 24,
-            isPhoto: false,
+            isPhoto: (s === segSec) && hasPhoto,
             waypointIndex: (s === segSec) ? i : null
           });
         }
@@ -18084,8 +18522,8 @@ function parseKmlOrWpmlTelemetry(xmlText, flightId = 'Imported_Flight.kml') {
           lon,
           alt: Math.round(alt * 10) / 10,
           speed: 0.0,
-          pitch: -60.0,
-          yaw: 0,
+          pitch: Math.round(pitch * 10) / 10,
+          yaw: Math.round(yaw * 10) / 10,
           battery: 98,
           satellites: 24,
           isPhoto: hasPhoto,
@@ -18291,12 +18729,14 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
   // 2. Flight 2: Perimeter / Initial 4-waypoint check (52s, 4 photos)
   if (flightId.includes('19-41-15') || flightId === 'Flight 2') {
     const subsetWps = waypoints.slice(0, Math.min(4, waypoints.length));
+    const firstWp2 = subsetWps[0];
+    const firstAlt2 = firstWp2.altitude !== undefined ? firstWp2.altitude : (firstWp2.alt !== undefined ? firstWp2.alt : defaultAlt);
     const points = [];
     let curTime = 0;
     let totalDist = 0;
     let battery = 98.0;
 
-    const takeoffSec = 4;
+    const takeoffSec = Math.max(4, Math.round(firstAlt2 / 2.5));
     for (let s = 0; s <= takeoffSec; s++) {
       const ratio = s / takeoffSec;
       points.push({
@@ -18304,7 +18744,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
         timeStr: formatTime(s),
         lat: homePoint.lat,
         lon: homePoint.lon,
-        alt: Math.round(defaultAlt * ratio * 10) / 10,
+        alt: Math.round(firstAlt2 * ratio * 10) / 10,
         speed: Math.round(ratio * 1.5 * 10) / 10,
         pitch: Math.round(globalPitch * ratio * 10) / 10,
         yaw: 0,
@@ -18319,7 +18759,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
 
     for (let i = 0; i < subsetWps.length; i++) {
       const wp = subsetWps[i];
-      const prevWp = i > 0 ? subsetWps[i - 1] : { lat: homePoint.lat, lon: homePoint.lon, altitude: defaultAlt };
+      const prevWp = i > 0 ? subsetWps[i - 1] : { lat: homePoint.lat, lon: homePoint.lon, alt: firstAlt2 };
       const d = (typeof haversineDistance === 'function')
         ? haversineDistance(prevWp.lat, prevWp.lon, wp.lat, wp.lon)
         : Math.hypot((wp.lat - prevWp.lat) * 111320, (wp.lon - prevWp.lon) * 85000);
@@ -18327,16 +18767,17 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
 
       const segSpeed = wp.speed || cruiseSpeed || 4.0;
       const segTime = Math.max(2, Math.round(d / segSpeed));
-      const targetP = wp.gimbalPitch !== undefined ? wp.gimbalPitch : globalPitch;
-      const targetA = wp.altitude !== undefined ? wp.altitude : defaultAlt;
-      const targetY = wp.heading !== undefined ? wp.heading : 0;
+      const targetP = wp.gimbalPitch !== undefined ? wp.gimbalPitch : (wp.pitch !== undefined ? wp.pitch : globalPitch);
+      const targetA = wp.altitude !== undefined ? wp.altitude : (wp.alt !== undefined ? wp.alt : defaultAlt);
+      const targetY = wp.heading !== undefined ? wp.heading : (wp.yaw !== undefined ? wp.yaw : 0);
+      const prevA = prevWp.altitude !== undefined ? prevWp.altitude : (prevWp.alt !== undefined ? prevWp.alt : targetA);
 
       for (let st = 1; st <= segTime; st++) {
         curTime++;
         const r = st / segTime;
         const cLat = prevWp.lat + (wp.lat - prevWp.lat) * r + Math.sin(curTime * 0.3) * 0.000002;
         const cLon = prevWp.lon + (wp.lon - prevWp.lon) * r + Math.cos(curTime * 0.3) * 0.000002;
-        const cAlt = targetA + Math.sin(curTime * 0.4) * 0.15;
+        const cAlt = prevA + (targetA - prevA) * r + Math.sin(curTime * 0.4) * 0.15;
         battery -= 0.07;
         points.push({
           time: curTime,
@@ -18375,6 +18816,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
     }
 
     const lastPoint = subsetWps[subsetWps.length - 1];
+    const lastAlt2 = lastPoint.altitude !== undefined ? lastPoint.altitude : (lastPoint.alt !== undefined ? lastPoint.alt : defaultAlt);
     const rthD = (typeof haversineDistance === 'function')
       ? haversineDistance(lastPoint.lat, lastPoint.lon, homePoint.lat, homePoint.lon)
       : Math.hypot((homePoint.lat - lastPoint.lat) * 111320, (homePoint.lon - lastPoint.lon) * 85000);
@@ -18389,7 +18831,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
         timeStr: formatTime(curTime),
         lat: lastPoint.lat + (homePoint.lat - lastPoint.lat) * r,
         lon: lastPoint.lon + (homePoint.lon - lastPoint.lon) * r,
-        alt: defaultAlt,
+        alt: Math.round(lastAlt2 * 10) / 10,
         speed: 5.5,
         pitch: -20,
         yaw: 0,
@@ -18400,7 +18842,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
       });
     }
 
-    const landSec = 4;
+    const landSec = Math.max(4, Math.round(lastAlt2 / 2.0));
     for (let s = 1; s <= landSec; s++) {
       curTime++;
       const r = 1 - (s / landSec);
@@ -18410,7 +18852,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
         timeStr: formatTime(curTime),
         lat: homePoint.lat,
         lon: homePoint.lon,
-        alt: Math.max(0, Math.round(defaultAlt * r * 10) / 10),
+        alt: Math.max(0, Math.round(lastAlt2 * r * 10) / 10),
         speed: 0.5,
         pitch: 0,
         yaw: 0,
@@ -18421,6 +18863,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
       });
     }
 
+    const f2Alts = points.map(p => p.alt);
     return {
       flightId,
       flightDate,
@@ -18428,7 +18871,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
       durationSec: curTime,
       durationFormatted: formatTime(curTime),
       totalDistance: Math.round(totalDist),
-      maxAltitude: defaultAlt,
+      maxAltitude: f2Alts.length > 0 ? Math.max(...f2Alts) : defaultAlt,
       photoCount: subsetWps.length,
       homePoint,
       points,
@@ -18594,7 +19037,10 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
   let totalDistance = 0;
   let battery = 98.0;
 
-  const takeoffDuration = Math.max(4, Math.round(defaultAlt / 2.5));
+  const firstWp = waypoints[0];
+  const initialAlt = firstWp.altitude !== undefined ? firstWp.altitude : (firstWp.alt !== undefined ? firstWp.alt : defaultAlt);
+  const initialPitch = firstWp.gimbalPitch !== undefined ? firstWp.gimbalPitch : (firstWp.pitch !== undefined ? firstWp.pitch : globalPitch);
+  const takeoffDuration = Math.max(4, Math.round(initialAlt / 2.5));
   for (let s = 0; s <= takeoffDuration; s++) {
     const tRatio = s / takeoffDuration;
     points.push({
@@ -18602,9 +19048,9 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
       timeStr: formatTime(s),
       lat: homePoint.lat,
       lon: homePoint.lon,
-      alt: Math.round(defaultAlt * tRatio * 10) / 10,
+      alt: Math.round(initialAlt * tRatio * 10) / 10,
       speed: Math.round(tRatio * 1.5 * 10) / 10,
-      pitch: Math.round(globalPitch * tRatio * 10) / 10,
+      pitch: Math.round(initialPitch * tRatio * 10) / 10,
       yaw: 0,
       battery: Math.round((battery - s * 0.05) * 10) / 10,
       satellites: 24,
@@ -18625,9 +19071,13 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
 
     const segmentSpeed = wp.speed || cruiseSpeed;
     const segmentTime = Math.max(1, Math.round(dist / segmentSpeed));
-    const targetPitch = wp.gimbalPitch !== undefined ? wp.gimbalPitch : globalPitch;
-    const targetAlt = wp.altitude !== undefined ? wp.altitude : defaultAlt;
-    const targetYaw = wp.heading !== undefined ? wp.heading : 0;
+    const targetPitch = wp.gimbalPitch !== undefined ? wp.gimbalPitch : (wp.pitch !== undefined ? wp.pitch : globalPitch);
+    const targetAlt = wp.altitude !== undefined ? wp.altitude : (wp.alt !== undefined ? wp.alt : defaultAlt);
+    const targetYaw = wp.heading !== undefined ? wp.heading : (wp.yaw !== undefined ? wp.yaw : 0);
+
+    const prevAlt = prevWp.altitude !== undefined ? prevWp.altitude : (prevWp.alt !== undefined ? prevWp.alt : targetAlt);
+    const prevPitch = prevWp.gimbalPitch !== undefined ? prevWp.gimbalPitch : (prevWp.pitch !== undefined ? prevWp.pitch : targetPitch);
+    const prevYaw = prevWp.heading !== undefined ? prevWp.heading : (prevWp.yaw !== undefined ? prevWp.yaw : targetYaw);
 
     for (let step = 1; step <= segmentTime; step++) {
       currentTime++;
@@ -18637,14 +19087,15 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
       const driftAlt = isPureSim ? 0 : Math.sin(currentTime * 0.2) * 0.25;
       const curLat = prevWp.lat + (wp.lat - prevWp.lat) * ratio + driftLat;
       const curLon = prevWp.lon + (wp.lon - prevWp.lon) * ratio + driftLon;
-      const baseAlt = prevWp.altitude ? prevWp.altitude + (targetAlt - prevWp.altitude) * ratio : targetAlt;
+      const baseAlt = prevAlt + (targetAlt - prevAlt) * ratio;
       const curAlt = baseAlt + driftAlt;
-      const curPitch = prevWp.gimbalPitch !== undefined ? prevWp.gimbalPitch + (targetPitch - prevWp.gimbalPitch) * ratio : targetPitch;
-      const curYaw = prevWp.heading !== undefined ? prevWp.heading + (targetYaw - prevWp.heading) * ratio : targetYaw;
+      const curPitch = prevPitch + (targetPitch - prevPitch) * ratio;
+      const curYaw = prevYaw + (targetYaw - prevYaw) * ratio;
 
       battery -= 0.08;
 
       const isLastStepOfWaypoint = (step === segmentTime);
+      const hoverTime = (wp.hoverTime !== undefined && wp.hoverTime !== null && !isNaN(wp.hoverTime)) ? wp.hoverTime : 2;
       points.push({
         time: currentTime,
         timeStr: formatTime(currentTime),
@@ -18656,12 +19107,12 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
         yaw: Math.round(curYaw * 10) / 10,
         battery: Math.max(10, Math.round(battery * 10) / 10),
         satellites: 24,
-        isPhoto: false,
+        isPhoto: isLastStepOfWaypoint && hoverTime === 0,
         waypointIndex: isLastStepOfWaypoint ? i : null
       });
     }
 
-    const hoverTime = wp.hoverTime !== undefined ? wp.hoverTime : 2;
+    const hoverTime = (wp.hoverTime !== undefined && wp.hoverTime !== null && !isNaN(wp.hoverTime)) ? wp.hoverTime : 2;
     for (let h = 1; h <= hoverTime; h++) {
       currentTime++;
       battery -= 0.05;
@@ -18685,6 +19136,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
   }
 
   const lastWp = waypoints[waypoints.length - 1];
+  const lastAlt = lastWp.altitude !== undefined ? lastWp.altitude : (lastWp.alt !== undefined ? lastWp.alt : defaultAlt);
   const rthDist = (typeof haversineDistance === 'function')
     ? haversineDistance(lastWp.lat, lastWp.lon, homePoint.lat, homePoint.lon)
     : Math.hypot((homePoint.lat - lastWp.lat) * 111320, (homePoint.lon - lastWp.lon) * 85000);
@@ -18702,7 +19154,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
       timeStr: formatTime(currentTime),
       lat: curLat,
       lon: curLon,
-      alt: defaultAlt,
+      alt: Math.round(lastAlt * 10) / 10,
       speed: 6.0,
       pitch: 0,
       yaw: 0,
@@ -18713,7 +19165,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
     });
   }
 
-  const landingTime = Math.max(4, Math.round(defaultAlt / 2.0));
+  const landingTime = Math.max(4, Math.round(lastAlt / 2.0));
   for (let l = 1; l <= landingTime; l++) {
     currentTime++;
     const ratio = 1 - (l / landingTime);
@@ -18723,7 +19175,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
       timeStr: formatTime(currentTime),
       lat: homePoint.lat,
       lon: homePoint.lon,
-      alt: Math.max(0, Math.round(defaultAlt * ratio * 10) / 10),
+      alt: Math.max(0, Math.round(lastAlt * ratio * 10) / 10),
       speed: 0.5,
       pitch: 0,
       yaw: 0,
@@ -18736,6 +19188,8 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
 
   const durationSec = currentTime;
   const photoCount = waypoints.length;
+  const wpAlts = waypoints.map(wp => (wp.altitude !== undefined ? wp.altitude : (wp.alt !== undefined ? wp.alt : defaultAlt)));
+  const maxAltitude = wpAlts.length > 0 ? wpAlts.reduce((max, a) => Math.max(max, a), wpAlts[0]) : defaultAlt;
 
   return {
     flightId,
@@ -18744,7 +19198,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
     durationSec,
     durationFormatted: formatTime(durationSec),
     totalDistance: Math.round(totalDistance + (isPureSim ? 0 : 25)),
-    maxAltitude: defaultAlt,
+    maxAltitude,
     photoCount,
     homePoint,
     points,
@@ -21069,34 +21523,6 @@ let fpvPhotoDelayTimer = null;
 let fpvRecordTimer = null;
 let fpvRecordSeconds = 0;
 
-// Create a rectangular pyramid representing the camera's field of view (frustum)
-function createCameraPyramidGeometry(hfov, vfov, height) {
-  const geom = new THREE.BufferGeometry();
-  const wHalf = height * Math.tan((hfov / 2) * Math.PI / 180);
-  const vHalf = height * Math.tan((vfov / 2) * Math.PI / 180);
-
-  const vertices = new Float32Array([
-     0,      0,      0,     // 0: Apex
-    -wHalf, -height, -vHalf, // 1: Top-Left
-     wHalf, -height, -vHalf, // 2: Top-Right
-     wHalf, -height,  vHalf, // 3: Bottom-Right
-    -wHalf, -height,  vHalf  // 4: Bottom-Left
-  ]);
-
-  const indices = [
-    0, 1, 2,
-    0, 2, 3,
-    0, 3, 4,
-    0, 4, 1,
-    1, 3, 2,
-    1, 4, 3
-  ];
-
-  geom.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-  geom.setIndex(indices);
-  geom.computeVertexNormals();
-  return geom;
-}
 
 // Draw photogrammetry coverage heatmap on the ground plane canvas
 function drawCoverageHeatmap(ctx, planeOffsetX, planeOffsetZ, planeSize) {

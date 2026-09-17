@@ -1932,7 +1932,6 @@ const server = http.createServer(async (req, res) => {
                 if (matchedRow && matchedRow.diag_json) {
                   const savedDiag = JSON.parse(matchedRow.diag_json);
                   if (savedDiag && Array.isArray(savedDiag.points) && savedDiag.points.length > 0) {
-                    telemetry = savedDiag;
                     let plannedWps = null;
                     let plannedStats = {
                       waypointCount: matchedRow.waypoint_count,
@@ -1946,6 +1945,25 @@ const server = http.createServer(async (req, res) => {
                         if (plan.statistics) plannedStats = plan.statistics;
                       } catch (errPlan) {}
                     }
+
+                    let telemToUse = savedDiag;
+                    if (plannedWps && plannedWps.length > 1) {
+                      const photoAlts = new Set(savedDiag.points.filter(p => p.isPhoto).map(p => p.alt));
+                      const planAlts = new Set(plannedWps.map(w => w.altitude !== undefined ? w.altitude : (w.alt !== undefined ? w.alt : 50)));
+                      if (photoAlts.size <= 1 && planAlts.size > 1) {
+                        telemToUse = generateTelemetryFromWaypoints(plannedWps, {
+                          altitude: matchedRow.altitude || options.altitude,
+                          speed: matchedRow.speed || options.speed,
+                          gimbalPitch: matchedRow.gimbal_pitch !== undefined ? matchedRow.gimbal_pitch : options.gimbalPitch,
+                          flightId
+                        });
+                        try {
+                          diagDb.db.prepare("UPDATE mission_diagnostics SET diag_json = ? WHERE id = ?").run(JSON.stringify(telemToUse), matchedRow.id);
+                          logSuccess('[TELEMETRY UPGRADED]', `Regenerated 3D dynamic altitude profile for archived mission ${matchedRow.uuid}`);
+                        } catch (upErr) {}
+                      }
+                    }
+                    telemetry = telemToUse;
                     telemetry.plannedWaypoints = plannedWps;
                     comparison = computeFlightComparison(plannedStats, telemetry);
                     logSuccess('[TELEMETRY RESOLVED]', `Matched flight "${flightId}" to archived mission ${matchedRow.uuid} (${telemetry.points.length} pts, ${telemetry.durationFormatted})`);
