@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.102.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.103.1</span></h1>
         </div>
       </div>
 
@@ -514,6 +514,20 @@
             </div>
             <input type="range" id="road-offset" min="-50" max="50" step="1" value="15" class="slider" aria-label="Road Offset Distance">
             <p class="help-text">Negative offsets fly to the left of the road; positive fly to the right. Camera points at the road.</p>
+
+            <div style="margin-top: 10px;">
+              <div class="control-label" style="display: flex; justify-content: space-between; align-items: center;">
+                <label for="road-focus-mode" style="font-size: 0.75rem; margin-bottom: 0;">Road Gimbal &amp; Camera Focus</label>
+                <span id="road-focus-badge" class="badge" style="background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); font-size: 0.65rem; padding: 2px 6px; border-radius: 4px;">Auto Pitch Active</span>
+              </div>
+              <select id="road-focus-mode" class="form-select" style="font-size: 0.75rem; padding: 4px 8px; margin-top: 4px;">
+                <option value="focusRoad" selected>🎯 Focus on Road Centerline (Auto Tilt &amp; Pan)</option>
+                <option value="followRoad">🛣️ Follow Road Corridor (Forward-Facing)</option>
+                <option value="lookAhead">🔭 Look Ahead to Next Road Node</option>
+                <option value="custom">⚙️ Manual Gimbal &amp; Heading</option>
+              </select>
+              <p id="road-focus-help" class="help-text" style="margin-top: 4px;">Camera automatically tilts and yaws to focus directly onto the road surface.</p>
+            </div>
           </div>
 
           <div id="road-snap-container" class="control-group hidden" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px;">
@@ -2033,6 +2047,15 @@
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🛣️ Road Follow Dynamic Gimbal Focus &amp; Road Tracking (v1.103.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Enables the camera gimbal to actively focus on and follow the road during Road Following missions. Features automated trigonometric pitch calculations (<code>-atan2(altitude, |offset|)</code>) locking the camera directly onto the road surface, cross-track road-facing yaw alignments, forward corridor tracking, and look-ahead node targeting. Upgraded 2D map drone waypoints with directional heading arrows and translucent camera FOV sight cones that dynamically pivot toward the road as offset sliders or road nodes are adjusted, with full DJI WPML <code>smoothTransition</code> and <code>gimbalRotate</code> export compliance.
+            </p>
+          </div>
+
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🗺️ First-Class Drawing &amp; Parcel Boundary Layer with Section 2 Properties &amp; Photo Projection (v1.102.0)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -2720,10 +2743,16 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.102.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.103.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; font-style: italic; border-top: 1px solid rgba(255,255,255,0.07); padding-top: 6px;">
+              <span style="color: var(--accent-cyan); font-style: normal; font-weight: 600;">aalaapi-</span>
+              <span style="color: rgba(255,255,255,0.45); font-style: normal; font-size: 0.68rem;">(No-object Verb)</span>
+              &nbsp;Look in a particular direction, observe &mdash;
+              <a href="https://mc.miamioh.edu/ilda-myaamia/dictionary/entries/1873" target="_blank" rel="noopener noreferrer" style="color: var(--accent-cyan); opacity: 0.75; text-decoration: none; font-style: normal;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.75'">Myaamia Dictionary ↗</a>
             </div>
           </div>
         </div>
@@ -2758,25 +2787,19 @@
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.76rem; line-height: 1.35;">
             <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
               <span style="font-size: 1.25rem; line-height: 1;">🛡️</span>
-              <strong style="color: var(--text-main); font-size: 0.78rem;">Pilot-in-Command Responsibility</strong>
-              <span style="color: var(--text-muted);">The Remote Pilot in Command (RPIC) maintains sole legal responsibility for safe flight, VLOS, airspace authorization, obstacle clearance, and terrain awareness.</span>
+              <span style="color: #fca5a5; font-weight: 700; font-size: 0.72rem;">Pre-Flight Mission Authorization</span>
+              <span style="color: var(--text-muted);">Ensure valid airspace authorizations (LAANC) and maintain Visual Line of Sight (VLOS) during flight execution.</span>
             </div>
 
             <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
-              <span style="font-size: 1.25rem; line-height: 1;">🛰️</span>
-              <strong style="color: var(--text-main); font-size: 0.78rem;">Altitude Agnostic &amp; No Elevation Data</strong>
-              <span style="color: var(--text-muted);">Aalaapi Sky waypoint altitudes are strictly relative to takeoff point (ATO/AGL). Ground elevations, structures, towers, trees, and terrain are NOT modeled.</span>
+              <span style="font-size: 1.25rem; line-height: 1;">🕹️</span>
+              <span style="color: #fca5a5; font-weight: 700; font-size: 0.72rem;">Physical Remote Controller in Hand</span>
+              <span style="color: var(--text-muted);">Always hold the RC with fingers near the Flight Mode switch (or Pause button) to immediately abort autonomous flight.</span>
             </div>
 
             <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
-              <span style="font-size: 1.25rem; line-height: 1;">🎯</span>
-              <strong style="color: var(--text-main); font-size: 0.78rem;">Gimbal Tilt Safety &amp; Propeller Clipping</strong>
-              <span style="color: var(--text-muted);">Upward gimbal tilt angles (&gt;0°) on consumer drones may capture propellers or front aircraft arms in camera frame during forward acceleration.</span>
-            </div>
-
-            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 7px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
-              <span style="font-size: 1.25rem; line-height: 1;">📐</span>
-              <strong style="color: var(--text-main); font-size: 0.78rem;">Hardware Testing Required</strong>
+              <span style="font-size: 1.25rem; line-height: 1;">🏔️</span>
+              <span style="color: #fca5a5; font-weight: 700; font-size: 0.72rem;">Obstacle &amp; Terrain Clearance</span>
               <span style="color: var(--text-muted);">Always verify generated WPML missions in a controlled, obstacle-free environment at high altitude before executing complex photogrammetry grids.</span>
             </div>
 
@@ -2789,6 +2812,40 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.103.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Road Node Drag Freeze Fix:</strong> Dragging amber Road Node markers now follows the cursor smoothly. Previously, <code>updateGrid()</code> was called on every mousemove event during drag, causing the node to move only 1 pixel at a time. Fixed by deferring <code>updateGrid()</code> to <code>dragend</code> and using a lightweight polyline <code>setLatLngs()</code> update during drag.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.103.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Road Follow Dynamic Gimbal Focus &amp; Road Tracking:</strong> Added dynamic camera gimbal focusing and automated road tracking for Road Following missions with <code>focusRoad</code> (cross-track road targeting), <code>followRoad</code> (forward corridor tracking), and <code>lookAhead</code> modes.</li>
+              <li><strong>Automated Road Surface Trigonometric Pitch:</strong> Dynamically calculates gimbal pitch angles (<code>-atan2(alt, |offset|)</code>) targeting the road surface based on flight altitude and offset distance.</li>
+              <li><strong>Directional Waypoint Markers &amp; Camera Cones:</strong> Upgraded 2D map road drone waypoints with directional arrows and translucent camera FOV sight cones that dynamically pivot toward the road as offset sliders or road nodes change.</li>
+              <li><strong>DJI WPML Smooth Transition &amp; Gimbal Export:</strong> Exports road-facing heading angles via <code>smoothTransition</code> and per-waypoint <code>gimbalRotate</code> pitch actions, ensuring complete DJI Fly/Pilot 2 flight execution fidelity.</li>
+            </ul>
+          </div>
+
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.102.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>3D Telemetry Diagnostics Camera Cone Alignment:</strong> Fixed clockwise compass yaw rotation sign (<code>-yaw * Math.PI / 180</code>) and calibrated downward-to-horizontal gimbal pitch axis (<code>(90 + pitch) * Math.PI / 180</code>), resolving inverted camera orientation during 3D flight replays.</li>
+              <li><strong>Realistic Camera Pyramid &amp; Fuselage Nose Indicator:</strong> Upgraded drone avatar with standard aspect-ratio camera pyramid geometry, center optical ray, and forward directional nose wedge.</li>
+              <li><strong>Directional Camera Frustums on Photo Markers:</strong> Added 3.5m directional camera pyramids to all waypoint photo markers matching exposure heading and pitch for visual exposure audit along the flight path.</li>
+              <li><strong>Recursive Raycasting on Photo Markers:</strong> Enabled nested raycasting across photo marker groups for responsive timeline scrubbing when clicking photo spheres or camera pyramids in the 3D viewport.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.102.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>3D Diagnostics Multi-Altitude Trajectory &amp; Real-Flight Dynamics:</strong> Fixed telemetry generator and flight log decoder falling back to flat 50m/21m altitude ceilings by supporting <code>wp.alt</code> (in addition to <code>wp.altitude</code>), <code>wp.pitch</code>, and <code>wp.yaw</code>. Accurately renders true vertical multi-tier flights, facade inspections, and tower climb/descents.</li>
+              <li><strong>Zero-Hover Waypoint Photo Trigger Precision:</strong> Corrected photo trigger recording for fast-transit photogrammetry and tower flights with <code>hoverTime = 0</code>, guaranteeing all waypoint photos are properly projected in 3D telemetry views.</li>
+              <li><strong>WPML ExecuteHeight &amp; Attitude Parser:</strong> Added native extraction for DJI WPML <code>&lt;wpml:executeHeight&gt;</code>, <code>&lt;wpml:waypointSpeed&gt;</code>, <code>&lt;wpml:gimbalPitchRotateAngle&gt;</code>, and <code>&lt;wpml:waypointHeadingAngle&gt;</code> tags.</li>
+              <li><strong>Live Diagnostics Database Auto-Repair:</strong> Automatically detects and upgrades legacy flat-altitude flight diagnostics in SQLite storage and local state with true 3D multi-tier waypoint altitudes and photo triggers upon flight selection.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.102.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">

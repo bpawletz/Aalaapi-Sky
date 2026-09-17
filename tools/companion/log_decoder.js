@@ -147,12 +147,14 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
   // 2. Flight 2: Perimeter / Initial 4-waypoint check (52s, 4 photos)
   if (flightId.includes('19-41-15') || flightId === 'Flight 2') {
     const subsetWps = waypoints.slice(0, Math.min(4, waypoints.length));
+    const firstWp2 = subsetWps[0];
+    const firstAlt2 = firstWp2.altitude !== undefined ? firstWp2.altitude : (firstWp2.alt !== undefined ? firstWp2.alt : defaultAlt);
     const points = [];
     let curTime = 0;
     let totalDist = 0;
     let battery = 98.0;
 
-    const takeoffSec = 4;
+    const takeoffSec = Math.max(4, Math.round(firstAlt2 / 2.5));
     for (let s = 0; s <= takeoffSec; s++) {
       const ratio = s / takeoffSec;
       points.push({
@@ -160,7 +162,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
         timeStr: formatTime(s),
         lat: homePoint.lat,
         lon: homePoint.lon,
-        alt: Math.round(defaultAlt * ratio * 10) / 10,
+        alt: Math.round(firstAlt2 * ratio * 10) / 10,
         speed: Math.round(ratio * 1.5 * 10) / 10,
         pitch: Math.round(globalPitch * ratio * 10) / 10,
         yaw: 0,
@@ -175,22 +177,23 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
 
     for (let i = 0; i < subsetWps.length; i++) {
       const wp = subsetWps[i];
-      const prevWp = i > 0 ? subsetWps[i - 1] : { lat: homePoint.lat, lon: homePoint.lon, altitude: defaultAlt };
+      const prevWp = i > 0 ? subsetWps[i - 1] : { lat: homePoint.lat, lon: homePoint.lon, alt: firstAlt2 };
       const d = haversineDistance(prevWp.lat, prevWp.lon, wp.lat, wp.lon);
       totalDist += d;
 
       const segSpeed = wp.speed || cruiseSpeed || 4.0;
       const segTime = Math.max(2, Math.round(d / segSpeed));
-      const targetP = wp.gimbalPitch !== undefined ? wp.gimbalPitch : globalPitch;
-      const targetA = wp.altitude !== undefined ? wp.altitude : defaultAlt;
-      const targetY = wp.heading !== undefined ? wp.heading : 0;
+      const targetP = wp.gimbalPitch !== undefined ? wp.gimbalPitch : (wp.pitch !== undefined ? wp.pitch : globalPitch);
+      const targetA = wp.altitude !== undefined ? wp.altitude : (wp.alt !== undefined ? wp.alt : defaultAlt);
+      const targetY = wp.heading !== undefined ? wp.heading : (wp.yaw !== undefined ? wp.yaw : 0);
+      const prevA = prevWp.altitude !== undefined ? prevWp.altitude : (prevWp.alt !== undefined ? prevWp.alt : targetA);
 
       for (let st = 1; st <= segTime; st++) {
         curTime++;
         const r = st / segTime;
         const cLat = prevWp.lat + (wp.lat - prevWp.lat) * r + Math.sin(curTime * 0.3) * 0.000002;
         const cLon = prevWp.lon + (wp.lon - prevWp.lon) * r + Math.cos(curTime * 0.3) * 0.000002;
-        const cAlt = targetA + Math.sin(curTime * 0.4) * 0.15;
+        const cAlt = prevA + (targetA - prevA) * r + Math.sin(curTime * 0.4) * 0.15;
         battery -= 0.07;
         points.push({
           time: curTime,
@@ -229,6 +232,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
     }
 
     const lastPoint = subsetWps[subsetWps.length - 1];
+    const lastAlt2 = lastPoint.altitude !== undefined ? lastPoint.altitude : (lastPoint.alt !== undefined ? lastPoint.alt : defaultAlt);
     const rthD = haversineDistance(lastPoint.lat, lastPoint.lon, homePoint.lat, homePoint.lon);
     totalDist += rthD;
     const rthSec = Math.max(4, Math.round(rthD / 5.5));
@@ -241,7 +245,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
         timeStr: formatTime(curTime),
         lat: lastPoint.lat + (homePoint.lat - lastPoint.lat) * r,
         lon: lastPoint.lon + (homePoint.lon - lastPoint.lon) * r,
-        alt: defaultAlt,
+        alt: Math.round(lastAlt2 * 10) / 10,
         speed: 5.5,
         pitch: -20,
         yaw: 0,
@@ -252,7 +256,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
       });
     }
 
-    const landSec = 4;
+    const landSec = Math.max(4, Math.round(lastAlt2 / 2.0));
     for (let s = 1; s <= landSec; s++) {
       curTime++;
       const r = 1 - (s / landSec);
@@ -262,7 +266,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
         timeStr: formatTime(curTime),
         lat: homePoint.lat,
         lon: homePoint.lon,
-        alt: Math.max(0, Math.round(defaultAlt * r * 10) / 10),
+        alt: Math.max(0, Math.round(lastAlt2 * r * 10) / 10),
         speed: 0.5,
         pitch: 0,
         yaw: 0,
@@ -273,6 +277,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
       });
     }
 
+    const f2Alts = points.map(p => p.alt);
     return {
       flightId,
       flightDate,
@@ -280,7 +285,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
       durationSec: curTime,
       durationFormatted: formatTime(curTime),
       totalDistance: Math.round(totalDist),
-      maxAltitude: defaultAlt,
+      maxAltitude: f2Alts.length > 0 ? Math.max(...f2Alts) : defaultAlt,
       photoCount: subsetWps.length,
       homePoint,
       points,
@@ -446,7 +451,10 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
   let totalDistance = 0;
   let battery = 98.0;
 
-  const takeoffDuration = Math.max(4, Math.round(defaultAlt / 2.5));
+  const firstWp = waypoints[0];
+  const initialAlt = firstWp.altitude !== undefined ? firstWp.altitude : (firstWp.alt !== undefined ? firstWp.alt : defaultAlt);
+  const initialPitch = firstWp.gimbalPitch !== undefined ? firstWp.gimbalPitch : (firstWp.pitch !== undefined ? firstWp.pitch : globalPitch);
+  const takeoffDuration = Math.max(4, Math.round(initialAlt / 2.5));
   for (let s = 0; s <= takeoffDuration; s++) {
     const tRatio = s / takeoffDuration;
     points.push({
@@ -454,9 +462,9 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
       timeStr: formatTime(s),
       lat: homePoint.lat,
       lon: homePoint.lon,
-      alt: Math.round(defaultAlt * tRatio * 10) / 10,
+      alt: Math.round(initialAlt * tRatio * 10) / 10,
       speed: Math.round(tRatio * 1.5 * 10) / 10,
-      pitch: Math.round(globalPitch * tRatio * 10) / 10,
+      pitch: Math.round(initialPitch * tRatio * 10) / 10,
       yaw: 0,
       battery: Math.round((battery - s * 0.05) * 10) / 10,
       satellites: 24,
@@ -475,9 +483,13 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
 
     const segmentSpeed = wp.speed || cruiseSpeed;
     const segmentTime = Math.max(1, Math.round(dist / segmentSpeed));
-    const targetPitch = wp.gimbalPitch !== undefined ? wp.gimbalPitch : globalPitch;
-    const targetAlt = wp.altitude !== undefined ? wp.altitude : defaultAlt;
-    const targetYaw = wp.heading !== undefined ? wp.heading : 0;
+    const targetPitch = wp.gimbalPitch !== undefined ? wp.gimbalPitch : (wp.pitch !== undefined ? wp.pitch : globalPitch);
+    const targetAlt = wp.altitude !== undefined ? wp.altitude : (wp.alt !== undefined ? wp.alt : defaultAlt);
+    const targetYaw = wp.heading !== undefined ? wp.heading : (wp.yaw !== undefined ? wp.yaw : 0);
+
+    const prevAlt = prevWp.altitude !== undefined ? prevWp.altitude : (prevWp.alt !== undefined ? prevWp.alt : targetAlt);
+    const prevPitch = prevWp.gimbalPitch !== undefined ? prevWp.gimbalPitch : (prevWp.pitch !== undefined ? prevWp.pitch : targetPitch);
+    const prevYaw = prevWp.heading !== undefined ? prevWp.heading : (prevWp.yaw !== undefined ? prevWp.yaw : targetYaw);
 
     for (let step = 1; step <= segmentTime; step++) {
       currentTime++;
@@ -487,14 +499,15 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
       const driftAlt = isPureSim ? 0 : Math.sin(currentTime * 0.2) * 0.25;
       const curLat = prevWp.lat + (wp.lat - prevWp.lat) * ratio + driftLat;
       const curLon = prevWp.lon + (wp.lon - prevWp.lon) * ratio + driftLon;
-      const baseAlt = prevWp.altitude ? prevWp.altitude + (targetAlt - prevWp.altitude) * ratio : targetAlt;
+      const baseAlt = prevAlt + (targetAlt - prevAlt) * ratio;
       const curAlt = baseAlt + driftAlt;
-      const curPitch = prevWp.gimbalPitch !== undefined ? prevWp.gimbalPitch + (targetPitch - prevWp.gimbalPitch) * ratio : targetPitch;
-      const curYaw = prevWp.heading !== undefined ? prevWp.heading + (targetYaw - prevWp.heading) * ratio : targetYaw;
+      const curPitch = prevPitch + (targetPitch - prevPitch) * ratio;
+      const curYaw = prevYaw + (targetYaw - prevYaw) * ratio;
 
       battery -= 0.08;
 
       const isLastStepOfWaypoint = (step === segmentTime);
+      const hoverTime = (wp.hoverTime !== undefined && wp.hoverTime !== null && !isNaN(wp.hoverTime)) ? wp.hoverTime : 2;
       points.push({
         time: currentTime,
         timeStr: formatTime(currentTime),
@@ -506,12 +519,12 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
         yaw: Math.round(curYaw * 10) / 10,
         battery: Math.max(10, Math.round(battery * 10) / 10),
         satellites: 24,
-        isPhoto: false,
+        isPhoto: isLastStepOfWaypoint && hoverTime === 0,
         waypointIndex: isLastStepOfWaypoint ? i : null
       });
     }
 
-    const hoverTime = wp.hoverTime !== undefined ? wp.hoverTime : 2;
+    const hoverTime = (wp.hoverTime !== undefined && wp.hoverTime !== null && !isNaN(wp.hoverTime)) ? wp.hoverTime : 2;
     for (let h = 1; h <= hoverTime; h++) {
       currentTime++;
       battery -= 0.05;
@@ -535,6 +548,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
   }
 
   const lastWp = waypoints[waypoints.length - 1];
+  const lastAlt = lastWp.altitude !== undefined ? lastWp.altitude : (lastWp.alt !== undefined ? lastWp.alt : defaultAlt);
   const rthDist = haversineDistance(lastWp.lat, lastWp.lon, homePoint.lat, homePoint.lon);
   totalDistance += rthDist;
   const rthTime = Math.max(3, Math.round(rthDist / 6.0));
@@ -550,7 +564,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
       timeStr: formatTime(currentTime),
       lat: curLat,
       lon: curLon,
-      alt: defaultAlt,
+      alt: Math.round(lastAlt * 10) / 10,
       speed: 6.0,
       pitch: 0,
       yaw: 0,
@@ -561,7 +575,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
     });
   }
 
-  const landingTime = Math.max(4, Math.round(defaultAlt / 2.0));
+  const landingTime = Math.max(4, Math.round(lastAlt / 2.0));
   for (let l = 1; l <= landingTime; l++) {
     currentTime++;
     const ratio = 1 - (l / landingTime);
@@ -571,7 +585,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
       timeStr: formatTime(currentTime),
       lat: homePoint.lat,
       lon: homePoint.lon,
-      alt: Math.max(0, Math.round(defaultAlt * ratio * 10) / 10),
+      alt: Math.max(0, Math.round(lastAlt * ratio * 10) / 10),
       speed: 0.5,
       pitch: 0,
       yaw: 0,
@@ -584,6 +598,8 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
 
   const durationSec = currentTime;
   const photoCount = waypoints.length;
+  const wpAlts = waypoints.map(wp => (wp.altitude !== undefined ? wp.altitude : (wp.alt !== undefined ? wp.alt : defaultAlt)));
+  const maxAltitude = wpAlts.length > 0 ? wpAlts.reduce((max, a) => Math.max(max, a), wpAlts[0]) : defaultAlt;
 
   return {
     flightId,
@@ -592,7 +608,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
     durationSec,
     durationFormatted: formatTime(durationSec),
     totalDistance: Math.round(totalDistance + (isPureSim ? 0 : 25)),
-    maxAltitude: defaultAlt,
+    maxAltitude,
     photoCount,
     homePoint,
     points,
@@ -678,8 +694,25 @@ function parseKmlOrWpmlTelemetry(xmlText, flightId = 'Imported_Flight.kml') {
       if (parts.length < 2) continue;
       const lon = parseFloat(parts[0]);
       const lat = parseFloat(parts[1]);
-      const alt = parts[2] !== undefined ? parseFloat(parts[2]) : 21.0;
+      let alt = parts[2] !== undefined ? parseFloat(parts[2]) : NaN;
+      if (isNaN(alt)) {
+        const hMatch = pm.match(/<(?:wpml:)?executeHeight>([\s\S]*?)<\/(?:wpml:)?executeHeight>/i) ||
+                       pm.match(/<(?:wpml:)?height>([\s\S]*?)<\/(?:wpml:)?height>/i) ||
+                       pm.match(/<(?:wpml:)?altitude>([\s\S]*?)<\/(?:wpml:)?altitude>/i);
+        if (hMatch) {
+          alt = parseFloat(hMatch[1]);
+        }
+      }
+      if (isNaN(alt)) alt = 21.0;
       if (isNaN(lat) || isNaN(lon)) continue;
+
+      const spdMatch = pm.match(/<(?:wpml:)?waypointSpeed>([\s\S]*?)<\/(?:wpml:)?waypointSpeed>/i);
+      const speed = spdMatch ? (parseFloat(spdMatch[1]) || 4.0) : 4.0;
+      const pitchMatch = pm.match(/<(?:wpml:)?gimbalPitchRotateAngle>([\s\S]*?)<\/(?:wpml:)?gimbalPitchRotateAngle>/i) ||
+                         pm.match(/<(?:wpml:)?waypointGimbalPitchAngle>([\s\S]*?)<\/(?:wpml:)?waypointGimbalPitchAngle>/i);
+      const pitch = pitchMatch ? (parseFloat(pitchMatch[1]) || -60.0) : -60.0;
+      const yawMatch = pm.match(/<(?:wpml:)?waypointHeadingAngle>([\s\S]*?)<\/(?:wpml:)?waypointHeadingAngle>/i);
+      const yaw = yawMatch ? (parseFloat(yawMatch[1]) || 0) : 0;
 
       if (alt > maxAlt) maxAlt = alt;
       const hasPhoto = pm.includes('takePhoto') || pm.includes('ShootPhoto');
@@ -689,7 +722,7 @@ function parseKmlOrWpmlTelemetry(xmlText, flightId = 'Imported_Flight.kml') {
         const prev = points[points.length - 1];
         const d = haversineDistance(prev.lat, prev.lon, lat, lon);
         totalDist += d;
-        const segSec = Math.max(1, Math.round(d / 4.0));
+        const segSec = Math.max(1, Math.round(d / speed));
         for (let s = 1; s <= segSec; s++) {
           curTime++;
           const r = s / segSec;
@@ -700,12 +733,12 @@ function parseKmlOrWpmlTelemetry(xmlText, flightId = 'Imported_Flight.kml') {
             lat: prev.lat + (lat - prev.lat) * r,
             lon: prev.lon + (lon - prev.lon) * r,
             alt: Math.round((prev.alt + (alt - prev.alt) * r) * 10) / 10,
-            speed: 4.0,
-            pitch: -60.0,
-            yaw: 0,
+            speed: Math.round(speed * 10) / 10,
+            pitch: Math.round(pitch * 10) / 10,
+            yaw: Math.round(yaw * 10) / 10,
             battery: Math.max(10, Math.round(battery * 10) / 10),
             satellites: 24,
-            isPhoto: false,
+            isPhoto: (s === segSec) && hasPhoto,
             waypointIndex: (s === segSec) ? i : null
           });
         }
@@ -717,8 +750,8 @@ function parseKmlOrWpmlTelemetry(xmlText, flightId = 'Imported_Flight.kml') {
           lon,
           alt: Math.round(alt * 10) / 10,
           speed: 0.0,
-          pitch: -60.0,
-          yaw: 0,
+          pitch: Math.round(pitch * 10) / 10,
+          yaw: Math.round(yaw * 10) / 10,
           battery: 98,
           satellites: 24,
           isPhoto: hasPhoto,
