@@ -1,5 +1,59 @@
 # Changelog
 
+## [1.104.2] - 2026-09-17
+
+### Added & Improved — Standby Stadium Advisories (14 CFR § 99.7)
+- **Distinguish Standby Stadium Advisories from Active TFRs:** Ingested FAA ArcGIS Online stadium venues (such as Ohio Stadium at OSU) are now properly recognized as Standby Stadium Advisories (`type: 'STADIUM'`) rather than generic emergency flight restrictions.
+- **Human-Readable Venue Names:** Replaced the raw numeric ArcGIS database record ID (`147`) with the actual venue name (`Ohio Stadium`) across the monitor summary, card headers, and map popups.
+- **Non-Alarmist Proximity Badging:** Nearby non-active stadium venues now display calm purple/indigo badging (`[STADIUM]` / `1 VENUE`) and informative summaries (`🏟️ Closest: Ohio Stadium • 7.3 NM E (Standby)`) instead of false-alarm emergency warnings (`⚠️ Closest: 147 (TFR)`).
+- **Green Airspace Health Status:** The topbar telemetry pill (`#header-tfr-warning-badge`) remains green and operational (`🛡️ TFR`) when only standby stadium advisories are within range.
+- **Dedicated 14 CFR § 99.7 Stadium Briefing:** Clicking "Briefing" for a stadium venue opens a comprehensive briefing modal outlining:
+  - 14 CFR § 99.7 Special Security Instructions (Sporting Events)
+  - Event restriction window (1 hour before scheduled start to 1 hour after conclusion)
+  - 30,000+ seat venue threshold (NCAA Division I Football, NFL, MLB, NASCAR/IndyCar)
+  - 3 Nautical Mile radius and surface-to-3,000 ft AGL protected airspace
+  - Part 107 and Recreational UAS operational compliance
+- **Interactive 2D Map 3 NM Advisory Rings:** Rendered a 3 NM dashed advisory perimeter ring around stadium venues in Leaflet with venue details and direct briefing access.
+
+## [1.104.1] - 2026-09-17
+
+### Fixed
+- **Weather Station Tab No-Jump:** Clicking one of the 4 nearby weather station buttons in the Live Weather card now only updates the card information (METAR, flight category, wind, visibility). The map no longer auto-pans or fits bounds to the selected station. The explicit `📍 Map` button remains available for intentional map focus.
+
+## [1.104.0] - 2026-09-17
+
+### Added — Ground Control Points (GCPs) & Fiducial Markers Survey Suite
+- **First-Class Survey Drawing Layer (`fiducial-markers`):** Added a dedicated survey pattern to Section 1 Pattern Select (`🎯 Fiducial / GCPs (Survey)`) with an Amber theme badge (`SURVEY`). Survey layers operate as pure ground annotation layers (`isDrawingLayer: true`, `isFiducialLayer: true`), guaranteeing 0 flight waypoints and complete isolation from DJI WPML flight exports.
+- **Section 2 Card 6 Survey Controls (`#layer-card-fiducial`):** Comprehensive survey management panel featuring:
+  - Default Target Family selector (`aruco_4x4`, `aruco_5x5`, `apriltag_36h11`, `checkerboard`, `crosshair`).
+  - Default Marker Role selector (`gcp`, `checkpoint`, `scale_bar`, `anchor`).
+  - Physical target dimension input in meters.
+  - Target Marker Color picker.
+  - Survey metrics summary badge (total markers, GCP count, checkpoint count).
+  - Interactive tabular marker list with real-time elevation, geodetic coordinates, fly-to button (`📍`), and individual point deletion (`✕`).
+- **Interactive 2D Leaflet Survey Markers & Drag Repositioning:**
+  - Click anywhere on the map while a Fiducial layer is active to place ground control points.
+  - Custom SVG target pin markers with concentric rings, center crosshairs, and role-colored badges (`GCP-1`, `CP-2`, etc.).
+  - Drag markers to reposition them with real-time lat/lon updates.
+  - Leaflet popup editor allows updating Code/Label, Role, and Altitude (m) directly from the map.
+- **Survey File Ingest & Export (RTK GNSS Rover CSV & GeoJSON):**
+  - **CSV Ingest (`parseSurveyCsv`):** Auto-detects standard surveyor rover export column headers (`Name`/`Code`/`Point ID`, `Latitude`/`Y`/`Northing`, `Longitude`/`X`/`Easting`, `Altitude`/`Z`/`Elevation`, `Role`/`Class`, `Type`/`Family`, `Size`). Supports comma, tab, and semicolon delimiters, as well as headerless XYZ tables.
+  - **GeoJSON Ingest (`parseSurveyGeoJson`):** Parses GeoJSON Point features and FeatureCollections with full property extraction.
+  - **Survey Exports:** Instant surveyor-ready CSV (`exportFiducialMarkersCsv`) and GeoJSON (`exportFiducialMarkersGeoJson`) downloads with geodetic coordinates formatted to 8 decimal places.
+- **Millimeter-Accurate Printable Vector SVG Target Generator (`#fiducial-generator-modal`):**
+  - Live vector preview modal capable of generating authentic, millimeter-accurate fiducial targets ready for field printing.
+  - Canonical OpenCV binary dictionaries for **ArUco 4x4** (`DICT_4X4_50`), **ArUco 5x5** (`DICT_5X5_100`), and **AprilTag** (`tag16h5`).
+  - High-contrast survey checkerboard and AeroPoint crosshair targets.
+  - Configurable target ID, physical edge size, center crosshairs for RTK rover tip alignment, corner alignment ticks, header labels, and 1:1 scale ruler.
+  - One-click SVG vector download and native browser print dialog with dedicated `@media print` clean-sheet styling.
+- **Photo Inspector Optical Superimposition (`#layer-toggle-fiducials`):**
+  - Integrated with `PhotoInspector` projective geometry engine (`projectGeoPointToPixel`).
+  - Projects 3D ground targets into 2D photo coordinates using the drone's actual camera pose (lat, lon, altitude AGL, gimbal pitch, aircraft heading, sensor dimensions, and focal length).
+  - Renders bullseye target rings, crosshairs, and inspection pills with target code, role, physical size, and optical slant distance.
+  - Dedicated toggle checkbox in Photo Inspector Annotation Layers (`🎯 Fiducial Targets & GCPs`).
+
+---
+
 ## [1.103.1] - 2026-09-17
 
 ### Fixed — Road Node Drag Moves Only 1 Pixel at a Time
