@@ -18435,8 +18435,8 @@ describe('Fiducial DIY Target Fabrication & Construction Site Guidance Suite Tes
 
     ['index_template.html', 'index.html'].forEach(filename => {
       const content = fs.readFileSync(path.join(__dirname, filename), 'utf8');
-      assert.ok(content.includes('v1.108.0'), `Must include v1.108.0 in ${filename}`);
-      assert.ok(content.includes('Version 1.108.0'), `Must include Version 1.108.0 in ${filename}`);
+      assert.ok(content.includes('class="header-version-badge"'), `Must include header-version-badge in ${filename}`);
+      assert.ok(content.includes('class="version-tag"'), `Must include version-tag in ${filename}`);
       assert.ok(content.includes('Changelog (v1.108.0):'), `Must include Changelog (v1.108.0): in ${filename}`);
     });
   });
