@@ -1,5 +1,82 @@
 # Changelog
 
+## [1.109.0] - 2026-09-18
+
+### Added — Altitude-Based Fiducial Sizing Advisor, Flight Height Warnings & Optical Detection Range Rings
+- **Flight Altitude & Sizing Advisor Card (`#fiducial-altitude-advisor`):** Added a real-time photogrammetric resolution advisor to Section 2 Card 6 (`#layer-card-fiducial`). Inspects surrounding flight layers (previous, next, and mission min/max flight altitudes), calculates Ground Sampling Distance (\(\text{GSD} \approx 0.0354 \times H \text{ cm/px}\)), and evaluates whether the target physical size satisfies computer vision tag detection thresholds (\(\ge 10\text{–}15\text{ px}\)).
+- **Intelligent Resolution Quality Warnings:**
+  - 🔴 **Undersized Warning:** Triggers when target span is \(< 10\text{ px}\) across the tag at flight altitude, warning pilots that automated SfM/OpenCV detection will fail and advising the required dimension.
+  - 🟡 **Marginal Caution:** Displays when target span is \(10\text{–}13\text{ px}\), cautioning that detection requires high midday sun and recommending larger targets.
+  - 🟢 **Optimal Resolution:** Displays when target span is \(\ge 14\text{ px}\), confirming survey-grade sub-pixel localization.
+  - **1-Click Auto-Set Button (`#btn-fid-autoset-size`):** Instantly updates the layer's default physical target size to the mathematically recommended dimension for the mission flight altitude.
+- **2D Map Optical Detection Range Rings (\(R_{\text{ground}}\)):**
+  - Added interactive Leaflet detection range circles around each placed ground control point in `drawFiducialLayers()`. Shows the horizontal ground detection radius (\(R_{\text{ground}} = \sqrt{D_{\max}^2 - H^2}\)) where the target occupies \(\ge 10\text{ px}\) on the camera sensor.
+  - Allows pilots to visually verify that drone flight lines pass through the detection envelope of every marker.
+  - Includes a Card 6 toggle (`#fiducial-show-range-rings`) to show/hide range rings on demand.
+  - Displays Slant Detection Distance (\(D_{\max}\)) and Ground Detection Radius (\(R_{\text{ground}}\)) in the marker popup and advisor metrics.
+- **Printable Target Sheet Modal Altitude Advisor (`#gen-altitude-advisor-banner`):** Added a live flight altitude context banner to `#fiducial-generator-modal`, dynamically linking the printable vector generator to the workspace's mission flight height with real-time pixel span feedback and 1-click auto-set.
+
+## [1.108.0] - 2026-09-18
+
+### Added — Fiducial DIY Target Fabrication, Scale Bar Assembly & Construction Site Survey Guide
+- **3-Tab Section 2 Card 6 Help Drawer (`#fiducial-help-drawer`):** Expanded the Ground Control & Fiducials help drawer into a comprehensive 3-tab layout:
+  - **Tab 1 (`🎯 Workflow & Roles`):** Georeferencing math, functional marker types (GCP, Check Point, Scale Bar, Origin/Anchor), map placement/import, and Photo Inspector reprojection.
+  - **Tab 2 (`🛠️ DIY Target Fabrication`):** Step-by-step physical target construction guide. Recommends 4mm/10mm Coroplast or ACM backing with 3M Super 77 adhesive, mandatory anti-glare cold matte lamination (preventing sensor blinding from specular sun glare), 4–6mm brass center grommets for 0mm play RTK rover pole tip seating, pre-drilled corner staking (8"–10" galvanized spikes / sandbags against prop wash), 1m/2m aluminum extrusion 2020 or carbon fiber rigid scale bar assembly, and an altitude vs. target size lookup table based on the \(10 \times \text{GSD}\) rule.
+  - **Tab 3 (`🏗️ Construction Sites`):** Specialized earthwork surveying practices. Details vertical ($Z$) error sensitivity in cut/fill volumetrics and stockpile calculations, semi-permanent MAG nails with fluorescent whiskers in concrete/curbs for multi-week flight tracking without re-surveying, independent Check Point (CP) quality assurance protocol ($< 1.5 \times \text{GSD}$ RMSE), and RTK rover antenna pole height configuration verification.
+- **Interactive Tab Switching:** Integrated active/inactive styling and pane visibility toggles for `#fid-tab-btn-workflow`, `#fid-tab-btn-fabrication`, and `#fid-tab-btn-construction` in `index.js`.
+- **Target Sheet Modal Physical Fabrication Callout (`#fiducial-generator-modal`):** Enhanced the printable vector SVG generator modal with a dedicated physical fabrication callout emphasizing 1:1 scale verification (100% print scaling with 10 cm / 4 in ruler check before field deployment), rigid backing, anti-glare matte finish, and center pole tip grommets.
+
+## [1.107.1] - 2026-09-18
+
+### Fixed — Flight Diagnostics 3D Trajectory & Drift Simulation Fidelity
+- **Disambiguated Simulated vs. Flown Missions:** Resolved misleading presentation in the Flight Diagnostics panel (`FlightDiagnostics`) where unflown workspace missions rendered an orange trajectory labeled "Actual Flown GPS" with fabricated GPS drift, alongside a misleading "Mission Comparison: ✅ Completed" badge and false completion deltas.
+- **Active Mission Default & Clean Telemetry:** Defaulted `#diag-flight-selector` to `'active-mission'` ("🎯 Planned Mission Simulation (Active Workspace)"), clearly grouping sample flight logs under a dedicated `<optgroup>`. Simulated missions now render clean, drift-free telemetry with only the solid cyan Planned Trajectory mesh (`plannedLineMesh`).
+- **Dynamic 3D Path Legend:** Updated `#diag-path-legend` to conditionally hide the orange "Actual Flown GPS" legend item and retitle the path as "Planned Flight Path" during simulation mode, displaying actual flown trajectory indicators only when an authentic flight log (`.csv`, `.txt`) is imported or loaded.
+- **Dynamic Sidebar Header & Status Badge:** Toggled sidebar card header to "Mission Simulation" with a `🎯 Simulation (Unflown)` badge during simulation mode, hiding false duration/distance deltas and hiding the 3D trajectory drift deviation card. When authentic flight logs are loaded, the UI restores "Mission Comparison: ✅ Completed" with actual GPS drift metrics and completion deltas.
+
+## [1.107.0] - 2026-09-18
+
+### Added & Improved — Ground Control Points (GCPs) & Fiducials Help Guide & Field Practices
+- **Section 2 Card 6 Interactive Help Drawer (`#fiducial-help-drawer` & `#fiducial-help-btn`):** Added a dedicated `❓ Guide` button in the Fiducial Markers & GCPs layer card header that toggles an in-situ workflow guide. Covers photogrammetry georeferencing principles, marker role definitions (GCP, Check Point, Scale Bar, Anchor), coordinate placement/ingest workflows, printable target generation, Photo Inspector optical superimposition, and zero-waypoint flight safety.
+- **Printable Target Sheet Field Best Practices:** Added a field deployment recommendations card to `#fiducial-generator-modal`, covering heavy matte non-glare cardstock selection, rigid coroplast mounting and ground staking against wind flutter, RTK GNSS pole tip alignment on center crosshairs, and the \(10 \times \text{GSD}\) target sizing rule of thumb for aerial resolution.
+- **Quickstart Guide Hub Photogrammetry Tip Card:** Added a dedicated Ground Control (GCPs & Fiducials) survey card to **💡 Pro Pilot Tips** (`#intro-pane-tips`) in the Intro Guide Hub.
+
+## [1.106.1] - 2026-09-18
+
+### Fixed — Decoupled Companion Status & Radar Timers with Radar Timeout Backoff
+- **Independent Status & Radar Scheduling Loops:** Decoupled `companionStatusTimer` and `companionRadarTimer` into two fully independent self-scheduling loops (`scheduleNextStatusCheck()` and `scheduleNextRadarCheck()`). Previously, the 1.5s live radar loop repeatedly reset the 8.0s status timer in a shared scheduler, inadvertently starving periodic `/api/status` calls and preventing offline state transitions.
+- **Drone Radar Timeout & Consecutive Failure Backoff:** Added `consecutiveRadarFailures` tracking in `RemoteIdRadar.pollAirspace()`. When drone radar requests time out or fail 2 or more consecutive times, the radar polling interval automatically backs off from 1.5s to 10s and immediately triggers a Companion Bridge status probe to check service health.
+- **Immediate Radar Cancellation on Service Offline:** When `pollCompanionStatus()` catches an error or server timeout, any pending drone radar timer is immediately cleared and set to `null`, completely halting drone polling until the bridge service is verified online again.
+
+## [1.106.0] - 2026-09-18
+
+### Added & Improved — Adaptive Background Communication & Drone Radar Gating
+- **Companion-Gated Drone Radar Polling:** Gated ASTM F3411 Remote ID airspace radar queries (`/api/remote-id/drones`) directly on Companion Bridge online status (`isCompanionOnline`). When the Companion Bridge service is offline or unreachable, drone polling is completely halted, eliminating 100% of redundant failed requests (dropping from 40 requests/min to 0 requests/min) and preventing repetitive `net::ERR_CONNECTION_REFUSED` browser console error spam.
+- **Stepped Adaptive Backoff for Status Checks:** Replaced rigid 6-second controller/service status polling with an adaptive scheduler. When offline, status checks step from 6s (fast reconnect for service restarts) to 15s, 30s, and 60s dormant heartbeats, reducing overall offline background network traffic by ~98% (from 50 req/min down to 1 req/min).
+- **HTML5 Page Visibility API & Window Focus Throttling:** Integrated `document.visibilitychange` and window focus listeners. Background and minimized browser tabs automatically pause live drone radar polling and reduce status checks to 60s dormant heartbeats. Restoring the tab or focusing the window triggers an immediate on-demand status check with zero latency.
+- **Instant User Wake-on-Demand:** Clicking the sidebar companion status box, offline setup hint, host IP save button, or RC 2 direct sync/pull buttons immediately tests bridge connection and resets backoff timers with zero delay.
+- **Airspace Drone Summary in Status Response (`tools/companion/server.js`):** Extended `/api/status` to return real-time detected `droneCount` from `RemoteIdAirspaceTracker`. When online, the frontend dynamically adjusts radar polling frequency between 1.5s (active airborne targets) and 5.0s (clear airspace) to further conserve CPU and network cycles.
+
+## [1.105.1] - 2026-09-18
+
+### Fixed — Section 2 Layer Properties Visibility for Fiducial Markers & Boundaries
+- **Resolved Card Display Conflict:** Fixed an issue where the Fiducial Markers & GCPs property panel (`#layer-card-fiducial`) and Parcel / Boundary panel (`#layer-card-boundary`) remained completely invisible when Section 2 was expanded in the sidebar. The HTML template contained `class="layer-subgroup-card hidden"`, which in conjunction with `.hidden { display: none !important; }` overrode JavaScript `element.style.display = 'block'` assignments.
+- **Synchronized Display and Class State:** Removed initial `hidden` class from the template definitions for `#layer-card-fiducial` and `#layer-card-boundary`, and updated `togglePatternParameters()` to explicitly manage `classList.remove('hidden')` / `classList.add('hidden')` alongside `style.display = 'block'/'none'`.
+
+## [1.105.0] - 2026-09-18
+
+### Added & Improved — Native DJI FlightRecord Decryption via DJI Cloud API
+- **Native Encrypted Flight Log Decryption:** DJI Fly encrypted flight records (v13/v14 `FlightRecord_*.txt`) can now be directly decrypted inside Aalaapi Sky using the user's free DJI Developer Open API App Key.
+- **Companion CLI Integration (`dji-log.exe`):** Integrated the cross-platform Rust-based `dji-log` CLI tool (v0.5.7) into `tools/companion/bin/` with automated PowerShell installation and update script (`tools/setup-dji-parser.ps1`). The companion server authenticates with DJI's keychain authentication service (`api.dji.com`) to exchange encrypted key payloads for the ephemeral AES decryption key, avoiding browser CORS constraints and preserving local data privacy.
+- **Full 10 Hz Telemetry & Post-RTH Manual Flight:** Decrypts complete drone telemetry points including post-RTH manual flight segments, RC stick deflections (`rc.elevator`, `rc.rudder`, `rc.aileron`, `rc.throttle`), individual battery cell voltages, and camera shutter events.
+- **Enhanced Multi-Format Telemetry Parser (`log_decoder.js` & `index.js`):** Extended `parseCsvTelemetry` and `parseGeoJsonTelemetry` to natively parse normalized `dji-log`, Airdata, and PhantomHelp CSV telemetry formats with intelligent 10 Hz to 1 Hz time downsampling and automatic duration calculation.
+- **Diagnostics UI Key Management (`#diag-dji-key-btn` & `#dji-key-modal`):**
+  - Added dedicated DJI Key button (`#diag-dji-key-btn`) in the Flight Diagnostics header with visual status indicators (golden when unconfigured, emerald when active).
+  - Added in-app configuration modal (`#dji-key-modal`) to securely input, inspect, test, or clear DJI Developer API keys.
+  - Stored encrypted keys locally in `scratch/companion_config.json` with support for environment variable fallback (`process.env.DJI_API_KEY`).
+  - Added status badging in `#diag-flight-meta`: displays `🔓 Decrypted via DJI Cloud API` or interactive `📐 Modeled (Synthetic KMZ) • 🔑 Decrypt` button.
+- **Extended Request Timeout:** Increased client telemetry fetch timeout to 45 seconds to accommodate remote DJI keychain key exchange during initial log parsing.
+
 ## [1.104.4] - 2026-09-17
 
 ### Fixed — Live Weather Station Card Auto-Dismissal

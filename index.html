@@ -3976,6 +3976,28 @@ html, body {
   color: #60a5fa !important;
 }
 
+.diag-key-btn {
+  background: rgba(234, 179, 8, 0.12) !important;
+  border: 1px solid rgba(234, 179, 8, 0.35) !important;
+  color: #facc15 !important;
+}
+
+.diag-key-btn:hover {
+  background: rgba(234, 179, 8, 0.22) !important;
+  border-color: #facc15 !important;
+}
+
+.diag-key-btn.has-key {
+  background: rgba(16, 185, 129, 0.12) !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+  color: #34d399 !important;
+}
+
+.diag-key-btn.has-key:hover {
+  background: rgba(16, 185, 129, 0.22) !important;
+  border-color: #34d399 !important;
+}
+
 .diag-close-btn {
   grid-area: close;
   background: none;
@@ -4810,7 +4832,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.104.4</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.109.0</span></h1>
         </div>
       </div>
 
@@ -5936,7 +5958,7 @@ html, body {
           </div> <!-- /layer-card-modes -->
 
           <!-- Card 5: Parcel / Boundary Drawing Properties -->
-          <div id="layer-card-boundary" class="layer-subgroup-card hidden">
+          <div id="layer-card-boundary" class="layer-subgroup-card" style="display: none;">
             <div class="layer-subgroup-header">
               <span>🗺️ Parcel / Boundary Drawing Properties</span>
               <span class="badge" style="font-size: 0.62rem; background: rgba(6, 182, 212, 0.15); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 5px; border-radius: 999px;">Drawing</span>
@@ -6009,10 +6031,187 @@ html, body {
           </div> <!-- /layer-card-boundary -->
 
           <!-- Card 6: Fiducial Markers & Ground Control Points (GCPs) Properties -->
-          <div id="layer-card-fiducial" class="layer-subgroup-card hidden">
-            <div class="layer-subgroup-header">
-              <span>🎯 Fiducial Markers &amp; GCPs</span>
-              <span class="badge" style="font-size: 0.62rem; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); padding: 1px 5px; border-radius: 999px;">Survey</span>
+          <div id="layer-card-fiducial" class="layer-subgroup-card" style="display: none;">
+            <div class="layer-subgroup-header" style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: inline-flex; align-items: center; gap: 6px;">
+                <span>🎯 Fiducial Markers &amp; GCPs</span>
+                <span class="badge" style="font-size: 0.62rem; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); padding: 1px 5px; border-radius: 999px;">Survey</span>
+              </div>
+              <button id="fiducial-help-btn" type="button" class="btn-secondary btn-sm" style="font-size: 0.68rem; padding: 2px 6px; display: inline-flex; align-items: center; gap: 4px; color: #fbbf24; border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.1);" title="Learn how to deploy GCPs and fiducial markers for photogrammetry">
+                <span>❓ Guide</span>
+              </button>
+            </div>
+
+            <!-- Interactive Fiducial & GCP Survey Guide Drawer -->
+            <div id="fiducial-help-drawer" class="help-drawer hidden" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 12px; margin-top: 6px; display: flex; flex-direction: column; gap: 10px; font-size: 0.74rem; line-height: 1.45;">
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245, 158, 11, 0.2); padding-bottom: 6px;">
+                <strong style="color: #fbbf24; font-size: 0.8rem; display: flex; align-items: center; gap: 5px;">
+                  <span>🎯</span> Ground Control Points &amp; Fiducials Guide
+                </strong>
+                <button type="button" id="close-fiducial-help-drawer-btn" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; padding: 0 4px;" title="Close Guide">&times;</button>
+              </div>
+
+              <!-- Tab Navigation -->
+              <div style="display: flex; gap: 4px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 6px;">
+                <button id="fid-tab-btn-workflow" class="btn-secondary btn-sm active" type="button" style="flex: 1; font-size: 0.68rem; padding: 4px 6px; border-radius: 6px; font-weight: 600; color: #fbbf24; background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4);">
+                  🎯 Workflow &amp; Roles
+                </button>
+                <button id="fid-tab-btn-fabrication" class="btn-secondary btn-sm" type="button" style="flex: 1; font-size: 0.68rem; padding: 4px 6px; border-radius: 6px; font-weight: 600; color: var(--text-muted); background: rgba(255, 255, 255, 0.03); border-color: rgba(255, 255, 255, 0.08);">
+                  🛠️ DIY Target Fabrication
+                </button>
+                <button id="fid-tab-btn-construction" class="btn-secondary btn-sm" type="button" style="flex: 1; font-size: 0.68rem; padding: 4px 6px; border-radius: 6px; font-weight: 600; color: var(--text-muted); background: rgba(255, 255, 255, 0.03); border-color: rgba(255, 255, 255, 0.08);">
+                  🏗️ Construction Sites
+                </button>
+              </div>
+
+              <!-- Tab 1: Workflow & Marker Roles -->
+              <div id="fid-pane-workflow" style="display: flex; flex-direction: column; gap: 10px;">
+                <!-- Overview -->
+                <div style="color: var(--text-main);">
+                  <strong>Why use GCPs &amp; Fiducial Markers?</strong>
+                  <p style="margin: 2px 0 0 0; color: var(--text-muted);">
+                    Standard drone GPS drifts 1–3 meters. Ground Control Points (GCPs) tie photogrammetry models to known geodetic coordinates, achieving sub-centimeter absolute accuracy across WebODM, Pix4D, RealityCapture, and Agisoft Metashape.
+                  </p>
+                </div>
+
+                <!-- Marker Roles Grid -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                  <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 6px; padding: 6px 8px;">
+                    <strong style="color: #fbbf24; font-size: 0.72rem;">📍 GCP (Control Point)</strong>
+                    <p style="margin: 2px 0 0 0; color: var(--text-muted); font-size: 0.68rem;">
+                      Included directly in bundle block adjustment to optimize aerial camera positions and correct terrain warping.
+                    </p>
+                  </div>
+                  <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 6px; padding: 6px 8px;">
+                    <strong style="color: #34d399; font-size: 0.72rem;">✔️ Check Point (CP)</strong>
+                    <p style="margin: 2px 0 0 0; color: var(--text-muted); font-size: 0.68rem;">
+                      Held back from model math to independently measure horizontal (X/Y) and vertical (Z) RMSE error.
+                    </p>
+                  </div>
+                  <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.2); border-radius: 6px; padding: 6px 8px;">
+                    <strong style="color: #22d3ee; font-size: 0.72rem;">📏 Scale Bar Target</strong>
+                    <p style="margin: 2px 0 0 0; color: var(--text-muted); font-size: 0.68rem;">
+                      Calibrated target pair with a known taped distance for absolute scale constraint in indoor/RTK-denied sites.
+                    </p>
+                  </div>
+                  <div style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.2); border-radius: 6px; padding: 6px 8px;">
+                    <strong style="color: #c084fc; font-size: 0.72rem;">⚓ Origin / Anchor</strong>
+                    <p style="margin: 2px 0 0 0; color: var(--text-muted); font-size: 0.68rem;">
+                      Designates primary local benchmark origin (0,0,0) for CAD and BIM coordinate transformations.
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Workflow Steps -->
+                <div style="display: flex; flex-direction: column; gap: 4px; border-top: 1px dashed rgba(255, 255, 255, 0.1); padding-top: 6px;">
+                  <div style="display: flex; gap: 6px;">
+                    <span style="color: #fbbf24; font-weight: 700;">1.</span>
+                    <span style="color: var(--text-muted);"><strong style="color: var(--text-main);">Print Targets:</strong> Tap <span style="color: #fbbf24;">🖨️ Target Print Sheet</span> to produce vector ArUco, AprilTag, or checkerboards with center rover crosshairs and 1:1 scale rulers.</span>
+                  </div>
+                  <div style="display: flex; gap: 6px;">
+                    <span style="color: #fbbf24; font-weight: 700;">2.</span>
+                    <span style="color: var(--text-muted);"><strong style="color: var(--text-main);">Place or Import:</strong> Click on the map, tap <span style="color: var(--text-main);">➕ Add by Coords</span>, or tap <span style="color: var(--text-main);">📥 Import CSV / GeoJSON</span> from Trimble, Emlid Reach, or Leica GNSS rovers.</span>
+                  </div>
+                  <div style="display: flex; gap: 6px;">
+                    <span style="color: #fbbf24; font-weight: 700;">3.</span>
+                    <span style="color: var(--text-muted);"><strong style="color: var(--text-main);">Photo Inspector Projection:</strong> Placed markers automatically reproject onto drone aerial photos in the Photo Inspector to verify visibility and target coverage before leaving the field.</span>
+                  </div>
+                </div>
+
+                <!-- Safety Badge Note -->
+                <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 6px; padding: 6px 8px; font-size: 0.7rem; color: #7dd3fc; display: flex; align-items: center; gap: 6px;">
+                  <span>🛡️</span>
+                  <span><strong>Zero-Waypoint Safety:</strong> Fiducial layers are non-flight survey layers (0 waypoints) that never command drone flight, keeping your KMZ/WPML mission exports completely clean.</span>
+                </div>
+              </div>
+
+              <!-- Tab 2: DIY Target & Scale Bar Fabrication -->
+              <div id="fid-pane-fabrication" class="hidden" style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                  <strong style="color: #fbbf24; font-size: 0.76rem;">DIY Field Board Construction Steps:</strong>
+                  
+                  <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="color: var(--text-main); font-weight: 600;">1. Backing Board Material</div>
+                    <p style="margin: 0; color: var(--text-muted);">
+                      Use <strong>4mm or 10mm Coroplast (Corrugated Plastic)</strong> or <strong>ACM (Aluminum Composite Panel)</strong>. Coroplast is 100% waterproof, lightweight, and dirt-resistant. Mount printed sheet using <strong>3M Super 77</strong> spray adhesive or laminating sleeves.
+                    </p>
+                  </div>
+
+                  <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="color: #f87171; font-weight: 600;">2. Glare Prevention &amp; Matte Weatherproofing (CRITICAL)</div>
+                    <p style="margin: 0; color: #fca5a5; font-size: 0.71rem; line-height: 1.35;">
+                      <strong>NEVER use glossy paper or glossy lamination!</strong> Direct midday sunlight causes white specular glare that blinds drone camera sensors and destroys computer vision pattern detection. Apply cold <strong>matte laminating film</strong>, matte transfer tape, or a coat of <strong>ultra-matte acrylic spray</strong>.
+                    </p>
+                  </div>
+
+                  <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="color: var(--text-main); font-weight: 600;">3. Center Rover Pole Eyelet / Divot</div>
+                    <p style="margin: 0; color: var(--text-muted);">
+                      Punch a <strong>4mm–6mm brass grommet / eyelet</strong> directly through the printed center crosshair. The sharp steel tip of your RTK survey rover pole seats firmly inside the grommet with 0 mm lateral play.
+                    </p>
+                  </div>
+
+                  <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="color: var(--text-main); font-weight: 600;">4. Ground Staking (Prop Wash Prevention)</div>
+                    <p style="margin: 0; color: var(--text-muted);">
+                      Pre-drill 4 corner holes. On soil/turf, drive <strong>8"–10" galvanized survey spikes</strong> or landscape staples. On asphalt or concrete, use MAG nails with fluorescent flagging, Tapcon masonry screws, or 5 lb sandbags placed on board borders away from the marker pattern.
+                    </p>
+                  </div>
+
+                  <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="color: #22d3ee; font-weight: 600;">5. Rigid Scale Bar Fabrication (GPS-Denied &amp; Indoor Sites)</div>
+                    <p style="margin: 0; color: var(--text-muted); font-size: 0.71rem; line-height: 1.35;">
+                      Mount two printed targets (e.g. <code>SCL-01</code> &amp; <code>SCL-02</code>) onto a 1-meter or 2-meter rigid <strong>aluminum extrusion (2020 profile)</strong> or <strong>carbon fiber tube</strong> (near-zero thermal expansion). Measure center-to-center distance with a calibrated steel tape or laser meter at 20&deg;C. Write the certified distance on the bar for software scale constraint.
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Altitude vs Target Sizing Table -->
+                <div style="border-top: 1px dashed rgba(255, 255, 255, 0.1); padding-top: 6px;">
+                  <strong style="color: var(--text-main); font-size: 0.72rem; display: block; margin-bottom: 4px;">Target Sizing vs. Altitude Quick Chart (10&times; GSD Rule):</strong>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 0.69rem;">
+                    <div style="background: rgba(0,0,0,0.25); padding: 4px 6px; border-radius: 4px;"><span style="color: var(--accent-cyan);">15–20m AGL:</span> <strong>0.15–0.20m target</strong></div>
+                    <div style="background: rgba(0,0,0,0.25); padding: 4px 6px; border-radius: 4px;"><span style="color: var(--accent-cyan);">30–50m AGL:</span> <strong>0.30–0.50m target</strong></div>
+                    <div style="background: rgba(0,0,0,0.25); padding: 4px 6px; border-radius: 4px;"><span style="color: var(--accent-cyan);">60–80m AGL:</span> <strong>0.50–0.60m target</strong></div>
+                    <div style="background: rgba(0,0,0,0.25); padding: 4px 6px; border-radius: 4px;"><span style="color: var(--accent-cyan);">100–120m AGL:</span> <strong>0.80–1.00m target</strong></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tab 3: Construction Sites & Earthwork Survey -->
+              <div id="fid-pane-construction" class="hidden" style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                  <strong style="color: #fbbf24; font-size: 0.76rem;">Construction Site Survey Best Practices:</strong>
+
+                  <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="color: #fbbf24; font-weight: 600;">1. Earthwork Cut/Fill &amp; Stockpile Volumetrics</div>
+                    <p style="margin: 0; color: var(--text-muted);">
+                      Vertical ($Z$) elevation precision is paramount. A mere <strong>3 cm elevation tilt</strong> across a 5-acre construction pad creates thousands of cubic yards in false earthwork balance. Distribute GCPs across the outer perimeter AND interior, spanning both high and low elevations to prevent "doming" or "dishing" distortion.
+                    </p>
+                  </div>
+
+                  <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="color: #34d399; font-weight: 600;">2. Semi-Permanent Control for Multi-Week Flights</div>
+                    <p style="margin: 0; color: var(--text-muted);">
+                      Drive <strong>surveyor MAG nails with fluorescent whiskers</strong> into concrete curbs, utility pads, or stable asphalt outside active earthmover haul routes. Survey these once with an RTK rover; then reuse the exact same coordinates across weekly progress tracking flights without re-surveying.
+                    </p>
+                  </div>
+
+                  <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="color: #38bdf8; font-weight: 600;">3. Independent Check Point (CP) Protocol</div>
+                    <p style="margin: 0; color: var(--text-muted);">
+                      Always designate at least <strong>3–5 Check Points (CPs)</strong> distributed across active excavation and fill zones. Check Points are withheld from bundle block adjustment math to objectively verify that horizontal and vertical RMSE are $< 1.5 \times GSD$ (typically $< 2\text{ cm}$) before certifying grading deliverables.
+                    </p>
+                  </div>
+
+                  <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="color: var(--text-main); font-weight: 600;">4. Rover Antenna Pole Height Verification</div>
+                    <p style="margin: 0; color: var(--text-muted);">
+                      Confirm your RTK data collector pole height (e.g. <code>2.000 m</code>) exactly matches your physical rover prism rod. A pole height error propagates as a 100% systematic vertical bias across every single surveyed target on the job site.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 6px;">
@@ -6067,6 +6266,63 @@ html, body {
                     <option value="#a855f7">Purple (#a855f7)</option>
                     <option value="#ffffff">White (#ffffff)</option>
                   </select>
+                </div>
+              </div>
+
+              <!-- Flight Altitude & Target Sizing Advisor Card -->
+              <div id="fiducial-altitude-advisor" style="background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; font-size: 0.72rem; line-height: 1.4;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245, 158, 11, 0.2); padding-bottom: 5px;">
+                  <strong style="color: #fbbf24; font-size: 0.76rem; display: flex; align-items: center; gap: 5px;">
+                    <span>📐</span> Altitude Sizing Advisor &amp; Optical Range
+                  </strong>
+                  <span id="fid-advisor-altitude-badge" class="badge" style="font-size: 0.65rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 1px 6px; border-radius: 999px;">Flight Alt: 50m</span>
+                </div>
+
+                <!-- Layer Altitude Context Breakdown -->
+                <div id="fid-advisor-layer-context" style="font-size: 0.68rem; color: var(--text-muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px;">
+                  <span>Prev Layer: <strong id="fid-advisor-prev-layer" style="color: var(--text-main);">None</strong></span>
+                  <span>Next Layer: <strong id="fid-advisor-next-layer" style="color: var(--text-main);">None</strong></span>
+                  <span>Mission Max: <strong id="fid-advisor-max-layer" style="color: #fbbf24;">50m</strong></span>
+                </div>
+
+                <!-- Metrics Grid: GSD, Pixel Span, Slant Distance, Ground Radius -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 0.69rem;">
+                  <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.07); padding: 4px 6px; border-radius: 4px; display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted);">GSD:</span>
+                    <strong id="fid-advisor-gsd-val" style="color: var(--text-main);">1.77 cm/px</strong>
+                  </div>
+                  <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.07); padding: 4px 6px; border-radius: 4px; display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted);">Aerial Resolution:</span>
+                    <strong id="fid-advisor-pixel-span-val" style="color: #34d399;">28.2 px</strong>
+                  </div>
+                  <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.07); padding: 4px 6px; border-radius: 4px; display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted);">Max Slant (\(D_{\max}\)):</span>
+                    <strong id="fid-advisor-slant-dist-val" style="color: #38bdf8;">141 m</strong>
+                  </div>
+                  <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.07); padding: 4px 6px; border-radius: 4px; display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted);">Ground Radius (\(R_{\text{ground}}\)):</span>
+                    <strong id="fid-advisor-ground-radius-val" style="color: #fbbf24;">132 m</strong>
+                  </div>
+                </div>
+
+                <!-- Dynamic Status Alert Box -->
+                <div id="fid-advisor-status-box" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 6px 8px; font-size: 0.69rem; line-height: 1.35; color: #a7f3d0; display: flex; align-items: flex-start; gap: 6px;">
+                  <span id="fid-advisor-status-icon" style="font-size: 0.85rem; line-height: 1;">✅</span>
+                  <div id="fid-advisor-status-msg" style="flex: 1;">
+                    Optimal resolution: Target spans &ge;14 px at 50m flight altitude for reliable sub-pixel corner solving.
+                  </div>
+                </div>
+
+                <!-- Action row: Auto-set button + Map toggle -->
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 2px;">
+                  <button type="button" id="btn-fid-autoset-size" class="btn-secondary btn-sm" style="font-size: 0.68rem; padding: 3px 8px; color: #fbbf24; border-color: rgba(245, 158, 11, 0.4); display: inline-flex; align-items: center; gap: 4px;" title="Set target size to match flight height recommendation">
+                    <span>⚡ Set to Recommended (</span><span id="fid-autoset-size-val">0.35m</span><span>)</span>
+                  </button>
+
+                  <label style="font-size: 0.7rem; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; color: var(--text-muted);" title="Show optical detection radius on 2D map">
+                    <input type="checkbox" id="fiducial-show-range-rings" checked style="accent-color: #f59e0b;">
+                    <span>Detection Rings on Map</span>
+                  </label>
                 </div>
               </div>
 
@@ -6918,6 +7174,24 @@ html, body {
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              ⚡ Adaptive Background Polling &amp; Drone Radar Gating (v1.106.1)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Dramatically optimizes background network communication by gating ASTM F3411 Remote ID drone radar queries directly on Companion Bridge status with decoupled scheduling loops. When the companion service is offline or unreachable, drone polling is completely halted, eliminating 40 failed requests/minute and network console errors. Features stepped exponential backoff for status polling (relaxing from 6s to 15s, 30s, and 60s when repeatedly offline), radar timeout backoff, HTML5 Page Visibility API tab throttling, and instant wake-on-focus / wake-on-click triggers.
+            </p>
+          </div>
+
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🔓 Native DJI FlightRecord Decryption via DJI Cloud API (v1.105.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Decrypts proprietary DJI Fly encrypted flight logs (<code>FlightRecord_*.txt</code>) directly inside Aalaapi Sky using your free DJI Developer Open API App Key. Employs a local companion tool (<code>dji-log.exe</code>) to retrieve session AES decryption keys from DJI's keychain authentication service, unpacking full 10 Hz telemetry including real-time pitch/roll/yaw, battery cells, camera shutter triggers, and post-RTH manual flight segments. Displays clear decryption status badges and offers a streamlined in-app key configuration dialog with secure local storage.
+            </p>
+          </div>
+
           <div style="background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #c4b5fd; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🏟️ Standby Stadium Advisories &amp; 14 CFR § 99.7 Briefings (v1.104.2)
@@ -7199,6 +7473,13 @@ html, body {
               <strong style="color: #a5b4fc; font-size: 0.82rem; display: flex; align-items: center; gap: 5px;">🚀 Safe Layer Transitions</strong>
               <p style="font-size: 0.75rem; color: #cbd5e1; margin: 4px 0 0 0; line-height: 1.35;">
                 When combining high-altitude grids with low-altitude orbits in multi-layer missions, configure <strong>Safe Transit Altitudes</strong> in the Transitions modal to prevent terrain collisions.
+              </p>
+            </div>
+
+            <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 10px; grid-column: span 2;">
+              <strong style="color: #fbbf24; font-size: 0.82rem; display: flex; align-items: center; gap: 5px;">🎯 Photogrammetry Ground Control (GCPs &amp; Fiducials)</strong>
+              <p style="font-size: 0.75rem; color: #cbd5e1; margin: 4px 0 0 0; line-height: 1.35;">
+                Deploy Ground Control Points (GCPs) and Check Points (CPs) to achieve sub-centimeter survey accuracy. Use the <strong>🖨️ Target Print Sheet</strong> generator in Section 2 to print high-contrast ArUco/AprilTag targets with center rover crosshairs. Targets automatically superimpose onto captured drone photos in the Photo Inspector.
               </p>
             </div>
           </div>
@@ -7634,7 +7915,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.104.4</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.109.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -7703,6 +7984,68 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.109.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>📐 Flight Altitude Fiducial Sizing Advisor:</strong> Added real-time optical resolution and target sizing analysis to Section 2 Card 6 (<code>#fiducial-altitude-advisor</code>). Evaluates Ground Sampling Distance (\(\text{GSD} \approx 0.0354 \times H \text{ cm/px}\)) and aerial pixel span against computer vision tag detection thresholds (\(\ge 10\text{–}15\text{ px}\)).</li>
+              <li><strong>⚠️ Intelligent Altitude Warning Alerts:</strong> Warns when physical target size is undersized for mission flight altitudes, displaying GSD, aerial pixel span, and a 1-click <code>⚡ Set to Recommended Size</code> button.</li>
+              <li><strong>⭕ 2D Map Optical Detection Range Rings (\(R_{\text{ground}}\)):</strong> Renders interactive detection range circles around each fiducial marker on the Leaflet map, showing the maximum ground detection radius where camera resolution satisfies detection thresholds. Includes a Card 6 toggle (<code>#fiducial-show-range-rings</code>) to show/hide rings anytime.</li>
+              <li><strong>🖨️ Target Generator Modal Altitude Advisor:</strong> Dynamically displays mission flight altitude and real-time aerial pixel span preview inside the Printable Target Sheet modal.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.108.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🛠️ Fiducial DIY Target Fabrication &amp; Construction Site Guide:</strong> Expanded the Section 2 Card 6 Help Drawer (<code>#fiducial-help-drawer</code>) into a 3-tab interactive guide (<code>🎯 Workflow &amp; Roles</code>, <code>🛠️ DIY Target Fabrication</code>, <code>🏗️ Construction Sites</code>). Details physical target fabrication (Coroplast/ACM backing, non-glare matte lamination, brass rover pole eyelet divots, prop wash ground staking, rigid aluminum 2020 scale bars, and altitude sizing table) and job site earthwork volumetrics (cut/fill elevation sensitivity, semi-permanent MAG nails, and independent Check Point verification).</li>
+              <li><strong>🖨️ Printable Target Sheet Physical Fabrication Callout:</strong> Enhanced the vector target generator modal with explicit 1:1 print scale verification instructions (100% scaling, 10cm/4in ruler check), weatherproofing steps, and RTK pole tip divots.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.107.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🎯 Disambiguated Simulated vs. Flown Missions:</strong> Flight Diagnostics 3D view and sidebar now clearly differentiate planned mission simulations from actual recorded flights. Unflown workspace plans render exclusively as planned paths without fake GPS drift or misleading completion deltas.</li>
+              <li><strong>🧭 Clean 3D Path Legend:</strong> The 3D trajectory view dynamically hides the orange &quot;Actual Flown GPS&quot; indicator and displays &quot;Planned Flight Path&quot; during simulation, showing actual flown trajectory legend items only when real telemetry or flight logs are imported.</li>
+              <li><strong>📊 Adaptive Sidebar Metrics:</strong> Updated the diagnostics sidebar with a <code>🎯 Simulation (Unflown)</code> badge and &quot;Mission Simulation&quot; heading during simulation mode, hiding completion deltas and drift calculations until authentic flight telemetry is loaded.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.107.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🎯 Section 2 Ground Control Points &amp; Fiducials Help Guide:</strong> Added a dedicated <code>❓ Guide</code> button (<code>#fiducial-help-btn</code>) and interactive workflow drawer (<code>#fiducial-help-drawer</code>) inside Section 2 Card 6. Covers photogrammetry georeferencing, functional marker roles (GCP, Check Point, Scale Bar, Anchor), placement workflows, vector SVG printing, Photo Inspector superimposition, and zero-waypoint flight safety.</li>
+              <li><strong>🖨️ Printable Target Sheet Field Best Practices:</strong> Enhanced the Printable Fiducial Target Generator modal with a field deployment callout covering heavy matte non-glare cardstock recommendations, rigid backing/staking against wind flutter, RTK rover pole tip alignment crosshairs, and the \(10 \times \text{GSD}\) aerial resolution rule of thumb.</li>
+              <li><strong>💡 Quickstart Guide Hub Tip Card:</strong> Added a dedicated Ground Control &amp; Photogrammetry survey card to Pro Pilot Tips (<code>#intro-pane-tips</code>).</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.106.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>⏱️ Decoupled Status &amp; Radar Schedulers:</strong> Separated <code>companionStatusTimer</code> and <code>companionRadarTimer</code> into two independent self-scheduling loops. The 1.5s live drone radar loop no longer resets or starves the 8s status polling timer, ensuring periodic status checks reliably execute.</li>
+              <li><strong>🛡️ Radar Timeout &amp; Failure Backoff:</strong> Added consecutive failure tracking to Remote ID radar requests. If drone queries repeatedly time out or fail, polling automatically backs off to 10s and immediately tests bridge status to check service health.</li>
+              <li><strong>🛑 Immediate Radar Cancellation on Offline:</strong> Automatically cancels and clears any pending radar polling timers when bridge status fails, halting drone polling until the bridge is verified online.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.106.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>⚡ Adaptive Background Polling &amp; Drone Radar Gating:</strong> Gated ASTM F3411 Remote ID drone radar polling (<code>/api/remote-id/drones</code>) strictly on Companion Bridge status. When the companion service is offline, all drone radar queries are completely skipped, eliminating 100% of redundant offline radar calls (40 req/min &rarr; 0 req/min) and browser connection error spam.</li>
+              <li><strong>📉 Stepped Exponential Backoff for Status Checks:</strong> Replaced fixed 6-second status polling with an adaptive scheduler. When offline, status checks step from 6s to 15s, 30s, and 60s dormant heartbeats, reducing overall offline background network traffic by ~98%.</li>
+              <li><strong>👁️ Page Visibility &amp; Focus Throttling:</strong> Integrated HTML5 Page Visibility API (<code>document.visibilityState</code>) and window focus listeners. Background tabs pause high-frequency radar and drop status checks to 60s heartbeats, immediately waking up when restored.</li>
+              <li><strong>🖱️ Instant User Wake-on-Demand:</strong> Clicking the companion status box, offline hint, host IP save button, or sync buttons immediately resets backoff and tests connection with zero delay.</li>
+              <li><strong>📡 Airspace Summary in Status Response:</strong> Companion Bridge <code>/api/status</code> endpoint now returns real-time detected <code>droneCount</code>, allowing the frontend to dynamically adjust radar polling between 1.5s (active targets) and 5.0s (clear airspace).</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.105.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🎯 Section 2 Layer Properties Visibility Fix:</strong> Fixed an issue where Fiducial Markers / GCPs (<code>#layer-card-fiducial</code>) and Parcel / Boundary (<code>#layer-card-boundary</code>) property panels remained hidden when Section 2 was uncollapsed due to a conflicting <code>hidden</code> CSS class. Synchronized <code>classList.remove('hidden')</code> and <code>style.display</code> across pattern toggling.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.105.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🔓 Native DJI FlightRecord Decryption via DJI Cloud API:</strong> Automatically decrypts proprietary encrypted DJI Fly flight records (<code>FlightRecord_*.txt</code>) using an integrated companion binary (<code>dji-log.exe</code>) and the user's free DJI Developer Open API App Key. Visualizes full 10 Hz telemetry including manual post-RTH flight, RC stick deflection angles, and battery telemetry. Includes an in-app key configuration dialog with secure local storage and clear decryption status badging.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.104.4):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -10471,11 +10814,13 @@ html, body {
           <div class="diag-flight-picker-row">
             <label for="diag-flight-selector" class="diag-flight-label">Flight:</label>
             <select id="diag-flight-selector" class="settings-select diag-flight-select">
-              <option value="FlightRecord_2026-08-20_[19-42-28].txt">Flight 3 — Aug 20, 19:42 (4m 12s, 48 photos)</option>
-              <option value="FlightRecord_2026-08-20_[19-47-15].txt">Flight 4 — Aug 20, 19:47 (1m 15s)</option>
-              <option value="FlightRecord_2026-08-20_[19-41-15].txt">Flight 2 — Aug 20, 19:41 (0m 52s)</option>
-              <option value="FlightRecord_2026-08-20_[19-39-07].txt">Flight 1 — Aug 20, 19:39 (0m 45s)</option>
-              <option value="active-mission">Planned Mission Simulation</option>
+              <option value="active-mission" selected>🎯 Planned Mission Simulation (Active Workspace)</option>
+              <optgroup label="Sample / Demo Flights (Synthetic)">
+                <option value="FlightRecord_2026-08-20_[19-42-28].txt">Flight 3 — Aug 20, 19:42 (4m 12s, 48 photos)</option>
+                <option value="FlightRecord_2026-08-20_[19-47-15].txt">Flight 4 — Aug 20, 19:47 (1m 15s)</option>
+                <option value="FlightRecord_2026-08-20_[19-41-15].txt">Flight 2 — Aug 20, 19:41 (0m 52s)</option>
+                <option value="FlightRecord_2026-08-20_[19-39-07].txt">Flight 1 — Aug 20, 19:39 (0m 45s)</option>
+              </optgroup>
             </select>
           </div>
           <div class="diag-header-buttons">
@@ -10503,6 +10848,14 @@ html, body {
                 <circle cx="12" cy="13" r="4"/>
               </svg>
               <span>Import Photos...</span>
+            </button>
+            <button id="diag-dji-key-btn" type="button" class="btn-secondary diag-key-btn" title="DJI Developer Cloud API Key for Decrypting Native Flight Logs">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="7.5" cy="15.5" r="5.5"/>
+                <path d="m21 2-9.6 9.6"/>
+                <path d="m15.5 7.5 3 3L22 7l-3-3"/>
+              </svg>
+              <span>DJI Key</span>
             </button>
             <button id="diag-load-file-btn" type="button" class="btn-secondary" title="Load flight log or mission KMZ file">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -10569,18 +10922,18 @@ html, body {
             </div>
 
             <!-- Path Legend -->
-            <div class="diag-path-legend">
-              <div style="display: flex; align-items: center; gap: 5px;">
-                <span style="width: 10px; height: 3px; background: #06b6d4; display: inline-block; border-radius: 2px;"></span>
-                <span style="color: var(--text-muted);">Planned WPML</span>
+            <div id="diag-path-legend" class="diag-path-legend">
+              <div id="diag-legend-planned" style="display: flex; align-items: center; gap: 5px;">
+                <span id="diag-legend-planned-swatch" style="width: 10px; height: 3px; background: #06b6d4; display: inline-block; border-radius: 2px;"></span>
+                <span id="diag-legend-planned-text" style="color: var(--text-muted);">Planned Flight Path</span>
               </div>
-              <div style="display: flex; align-items: center; gap: 5px;">
+              <div id="diag-legend-actual" style="display: none; align-items: center; gap: 5px;">
                 <span style="width: 10px; height: 3px; background: #f59e0b; display: inline-block; border-radius: 2px;"></span>
-                <span style="color: #fbbf24; font-weight: 600;">Actual Flown GPS</span>
+                <span id="diag-legend-actual-text" style="color: #fbbf24; font-weight: 600;">Actual Flown GPS</span>
               </div>
-              <div style="display: flex; align-items: center; gap: 5px;">
+              <div id="diag-legend-photo" style="display: flex; align-items: center; gap: 5px;">
                 <span style="width: 6px; height: 6px; border-radius: 50%; background: #22c55e; display: inline-block;"></span>
-                <span style="color: var(--text-muted);">Photo Trigger</span>
+                <span id="diag-legend-photo-text" style="color: var(--text-muted);">Photo Trigger</span>
               </div>
             </div>
           </div>
@@ -10612,42 +10965,42 @@ html, body {
         <aside class="diag-sidebar" style="width: 320px; border-left: 1px solid var(--border-color); background: rgba(15, 23, 42, 0.65); display: flex; flex-direction: column; overflow-y: auto; padding: 14px; gap: 12px;">
           
           <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-main); display: flex; justify-content: space-between; align-items: center;">
-            <span>Mission Comparison</span>
-            <span style="font-size: 0.7rem; color: #22c55e; background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.3); padding: 1px 6px; border-radius: 4px;">✅ Completed</span>
+            <span id="diag-sidebar-mode-title">Mission Simulation</span>
+            <span id="diag-sidebar-status-badge" style="font-size: 0.7rem; color: #38bdf8; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); padding: 1px 6px; border-radius: 4px;">🎯 Simulation (Unflown)</span>
           </div>
 
           <!-- Comparison Table Card -->
-          <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; font-size: 0.76rem;">
+          <div id="diag-comparison-table-card" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; font-size: 0.76rem;">
             
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 6px;">
-              <span style="color: var(--text-muted);">Flight Time</span>
+              <span id="diag-stat-time-label" style="color: var(--text-muted);">Flight Time</span>
               <div style="text-align: right;">
                 <span id="diag-stat-time-actual" style="font-weight: 700; color: var(--text-main);">04m 12s</span>
-                <span id="diag-stat-time-delta" style="color: #fbbf24; font-size: 0.7rem; margin-left: 4px;">(+22s)</span>
+                <span id="diag-stat-time-delta" style="color: #fbbf24; font-size: 0.7rem; margin-left: 4px; display: none;">(+22s)</span>
               </div>
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 6px;">
-              <span style="color: var(--text-muted);">Total Distance</span>
+              <span id="diag-stat-dist-label" style="color: var(--text-muted);">Total Distance</span>
               <div style="text-align: right;">
                 <span id="diag-stat-dist-actual" style="font-weight: 700; color: var(--text-main);">845 m</span>
-                <span id="diag-stat-dist-delta" style="color: var(--text-muted); font-size: 0.7rem; margin-left: 4px;">(Plan: 820m)</span>
+                <span id="diag-stat-dist-delta" style="color: var(--text-muted); font-size: 0.7rem; margin-left: 4px; display: none;">(Plan: 820m)</span>
               </div>
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 6px;">
-              <span style="color: var(--text-muted);">Max Altitude</span>
+              <span id="diag-stat-alt-label" style="color: var(--text-muted);">Max Altitude</span>
               <div style="text-align: right;">
                 <span id="diag-stat-alt-actual" style="font-weight: 700; color: var(--text-main);">21.3 m</span>
-                <span id="diag-stat-alt-delta" style="color: #38bdf8; font-size: 0.7rem; margin-left: 4px;">(+0.3m)</span>
+                <span id="diag-stat-alt-delta" style="color: #38bdf8; font-size: 0.7rem; margin-left: 4px; display: none;">(+0.3m)</span>
               </div>
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="color: var(--text-muted);">Photos Captured</span>
+              <span id="diag-stat-photos-label" style="color: var(--text-muted);">Photos Captured</span>
               <div style="text-align: right;">
                 <span id="diag-stat-photos-actual" style="font-weight: 700; color: #4ade80;">48 / 48 Photos</span>
-                <span style="color: #4ade80; font-size: 0.7rem; margin-left: 4px;">(100%)</span>
+                <span id="diag-stat-photos-delta" style="color: #4ade80; font-size: 0.7rem; margin-left: 4px; display: none;">(100%)</span>
               </div>
             </div>
           </div>
@@ -10860,6 +11213,48 @@ html, body {
           <!-- Populated dynamically by FlightDiagnostics.renderInspectionPhotosUI() -->
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- DJI Cloud API Key Decryption Modal -->
+  <div id="dji-key-modal" class="modal-overlay hidden">
+    <div class="modal glass" style="max-width: 540px; width: 92vw;">
+      <header class="modal-header">
+        <h2 style="display: flex; align-items: center; gap: 8px; font-size: 1.1rem; margin: 0;">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="7.5" cy="15.5" r="5.5"/>
+            <path d="m21 2-9.6 9.6"/>
+            <path d="m15.5 7.5 3 3L22 7l-3-3"/>
+          </svg>
+          DJI Developer Cloud API Key
+        </h2>
+        <button id="close-dji-key-modal-btn" class="close-btn" type="button" aria-label="Close">&times;</button>
+      </header>
+      <div class="modal-content" style="display: flex; flex-direction: column; gap: 14px;">
+        <p class="help-text" style="margin: 0; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+          DJI Fly encrypts native flight logs (<code>FlightRecord_*.txt</code>) using an ephemeral AES key wrapped with DJI RSA encryption. To decrypt and visualize full 10 Hz high-fidelity telemetry (including manual post-RTH flight), provide your free DJI Open API App Key from <a href="https://developer.dji.com/user/apps/#/main" target="_blank" rel="noopener noreferrer" style="color: var(--accent-cyan); text-decoration: underline;">developer.dji.com</a>.
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <label for="dji-api-key-input" style="font-size: 0.8rem; font-weight: 600; color: var(--text-main);">
+            DJI App Key (32-character hexadecimal):
+          </label>
+          <div style="display: flex; gap: 8px;">
+            <input type="password" id="dji-api-key-input" placeholder="e.g. 7f93b5a14d2e8c60..." style="flex: 1; padding: 8px 12px; border-radius: 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); font-family: monospace; font-size: 0.85rem;" autocomplete="off" spellcheck="false" />
+            <button id="toggle-dji-key-visibility-btn" type="button" class="btn-secondary" style="padding: 0 10px;" title="Show/Hide Key">👁️</button>
+          </div>
+          <span id="dji-key-status-msg" style="font-size: 0.75rem; color: var(--text-muted); min-height: 1.2em;"></span>
+        </div>
+        <div style="background: rgba(0, 194, 255, 0.08); border-left: 3px solid var(--accent-cyan); padding: 8px 12px; border-radius: 4px; font-size: 0.76rem; color: var(--text-main); line-height: 1.4;">
+          <strong>🔒 Local Security Notice:</strong> The key is stored locally in your Companion bridge server (<code>scratch/companion_config.json</code>) or environment variables. It is only transmitted securely directly to DJI's keychain authentication server to retrieve your record's AES decryption token.
+        </div>
+      </div>
+      <footer class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+        <button id="clear-dji-key-btn" type="button" class="btn-secondary" style="padding: 6px 14px; font-size: 0.8rem; color: #ff6b6b; border-color: rgba(255, 107, 107, 0.3);">Remove Key</button>
+        <div style="display: flex; gap: 8px;">
+          <button id="cancel-dji-key-btn" type="button" class="btn-secondary" style="padding: 6px 14px; font-size: 0.8rem;">Cancel</button>
+          <button id="save-dji-key-btn" type="button" class="btn-primary" style="padding: 6px 16px; font-size: 0.8rem; font-weight: 600;">Save &amp; Decrypt</button>
+        </div>
+      </footer>
     </div>
   </div>
 
@@ -11198,6 +11593,25 @@ html, body {
           </div>
         </div>
 
+        <!-- Mission Flight Altitude Advisor Banner -->
+        <div id="gen-altitude-advisor-banner" style="background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 6px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 0.73rem;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.1rem; line-height: 1;">✈️</span>
+            <div>
+              <div style="color: var(--text-main); font-weight: 600;">
+                Flight Height: <span id="gen-adv-altitude-val" style="color: #fbbf24;">50m</span>
+                <span id="gen-adv-gsd-val" style="color: var(--text-muted); font-size: 0.68rem; margin-left: 6px;">(GSD: 1.77 cm/px)</span>
+              </div>
+              <div id="gen-adv-status-text" style="color: var(--text-muted); font-size: 0.68rem; margin-top: 1px;">
+                At 0.20m print size, target renders at ~11.3 px in aerial photos.
+              </div>
+            </div>
+          </div>
+          <button type="button" id="btn-gen-autoset-size" class="btn-secondary btn-sm" style="font-size: 0.68rem; padding: 3px 8px; color: #fbbf24; border-color: rgba(245, 158, 11, 0.4); white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;" title="Set print size to match flight height recommendation">
+            <span>⚡ Set Size (</span><span id="gen-adv-rec-size-val">0.30m</span><span>)</span>
+          </button>
+        </div>
+
         <!-- Target Options Checkboxes -->
         <div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.75rem;">
           <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
@@ -11222,6 +11636,28 @@ html, body {
         <div id="gen-target-preview-container" style="background: #ffffff; border-radius: 8px; border: 2px solid #334155; padding: 12px; display: flex; align-items: center; justify-content: center; min-height: 280px; max-height: 380px; overflow: hidden;">
           <div id="gen-target-preview-svg" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
             <!-- SVG rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Field Survey & Printing Best Practices Callout -->
+        <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 10px 12px; font-size: 0.73rem; line-height: 1.4; color: var(--text-muted); display: flex; flex-direction: column; gap: 5px;">
+          <strong style="color: #fbbf24; font-size: 0.78rem; display: flex; align-items: center; gap: 5px;">
+            <span>💡</span> Physical Fabrication &amp; Field Survey Best Practices
+          </strong>
+          <div>
+            <span style="color: var(--text-main); font-weight: 600;">📏 1:1 Scale Verification:</span> In your browser print dialog, set Scale to <strong>100% (Do NOT use &quot;Fit to Page&quot;)</strong>. Before heading into the field, verify the printed calibration ruler on the sheet against a physical 10 cm / 4 in ruler.
+          </div>
+          <div>
+            <span style="color: var(--text-main); font-weight: 600;">🛠️ Rigid Backing &amp; Mounting:</span> Mount printed target onto 4mm/10mm Coroplast (corrugated plastic) or ACM (aluminum composite panel) using 3M Super 77 spray adhesive or cold laminating sheets.
+          </div>
+          <div>
+            <span style="color: var(--text-main); font-weight: 600;">☀️ Anti-Glare Matte Finish:</span> Avoid glossy paper or glossy lamination; direct midday sunlight causes blinding specular glare that destroys automated marker detection. Use matte cardstock or ultra-matte protective spray.
+          </div>
+          <div>
+            <span style="color: var(--text-main); font-weight: 600;">📍 RTK Rover Center Divot:</span> Punch a 4mm–6mm brass grommet through the center crosshair to seat your GNSS rover pole tip with 0mm lateral play. Secure board corners with 8"–10" galvanized ground stakes against drone prop wash.
+          </div>
+          <div>
+            <span style="color: var(--text-main); font-weight: 600;">🎯 Resolution Rule of Thumb:</span> Targets must span &ge;10–15 pixels across in aerial photos (\(\text{Target Size} \ge 10 \times \text{GSD}\)). At 40m altitude with Mini 4 Pro (1.1 cm/px GSD), 0.20m–0.30m is ideal.
           </div>
         </div>
 
@@ -11901,6 +12337,246 @@ function clearFiducialMarkers() {
 }
 
 /**
+ * Resolves the adjacent and mission flight altitudes for a given fiducial layer.
+ */
+function getSurroundingFlightAltitudes(layerId) {
+  const globalAltEl = typeof document !== 'undefined' ? document.getElementById('altitude') : null;
+  const globalAlt = globalAltEl ? (parseFloat(globalAltEl.value) || 50) : 50;
+
+  const layers = (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers))
+    ? flightLayers
+    : ((typeof global !== 'undefined' && Array.isArray(global.flightLayers)) ? global.flightLayers : []);
+
+  if (!layers || layers.length === 0) {
+    return {
+      prevAltitude: null,
+      nextAltitude: null,
+      maxAltitude: globalAlt,
+      minAltitude: globalAlt,
+      primaryAltitude: globalAlt,
+      prevLayerName: null,
+      nextLayerName: null
+    };
+  }
+
+  const idx = layers.findIndex(l => l.id === layerId);
+  const targetIdx = idx !== -1 ? idx : 0;
+
+  let prevLayer = null;
+  for (let i = targetIdx - 1; i >= 0; i--) {
+    const l = layers[i];
+    if (l && l.enabled && !l.isDrawingLayer && !l.isFiducialLayer && !l.isExclusionZone) {
+      prevLayer = l;
+      break;
+    }
+  }
+
+  let nextLayer = null;
+  for (let i = targetIdx + 1; i < layers.length; i++) {
+    const l = layers[i];
+    if (l && l.enabled && !l.isDrawingLayer && !l.isFiducialLayer && !l.isExclusionZone) {
+      nextLayer = l;
+      break;
+    }
+  }
+
+  const flightAlts = [];
+  layers.forEach(l => {
+    if (l && l.enabled && !l.isDrawingLayer && !l.isFiducialLayer && !l.isExclusionZone) {
+      const alt = parseFloat(l.altitude);
+      if (!isNaN(alt) && alt > 0) flightAlts.push(alt);
+    }
+  });
+
+  const maxAlt = flightAlts.length > 0 ? Math.max(...flightAlts) : globalAlt;
+  const minAlt = flightAlts.length > 0 ? Math.min(...flightAlts) : globalAlt;
+  const primaryAlt = maxAlt;
+
+  return {
+    prevAltitude: prevLayer ? (parseFloat(prevLayer.altitude) || globalAlt) : null,
+    nextAltitude: nextLayer ? (parseFloat(nextLayer.altitude) || globalAlt) : null,
+    prevLayerName: prevLayer ? prevLayer.name : null,
+    nextLayerName: nextLayer ? nextLayer.name : null,
+    maxAltitude: maxAlt,
+    minAltitude: minAlt,
+    primaryAltitude: primaryAlt
+  };
+}
+
+/**
+ * Calculates photogrammetric GSD, aerial pixel span, max detection slant distance,
+ * and ground detection radius for a fiducial marker at a given flight altitude.
+ */
+function calculateFiducialResolution(targetSizeMeters, altitudeMeters, cameraSpecs = {}) {
+  const sW = parseFloat(cameraSpecs.sensorWidthMm) || 9.6;
+  const fL = parseFloat(cameraSpecs.focalLengthMm) || 6.72;
+  const imgW = parseFloat(cameraSpecs.imageWidthPx) || 4032;
+  const alt = Math.max(1, parseFloat(altitudeMeters) || 50);
+  const size = Math.max(0.05, parseFloat(targetSizeMeters) || 0.20);
+
+  // GSD in cm/pixel: (sensorWidth_mm * alt_m * 100) / (focalLength_mm * imgW_px)
+  const gsdCmPerPx = (sW * alt * 100.0) / (fL * imgW);
+  const gsdMetersPerPx = gsdCmPerPx / 100.0;
+
+  // Pixel span across target edge in photo: size_meters / gsd_meters
+  const pixelSpan = size / gsdMetersPerPx;
+
+  // Maximum direct slant distance where target spans >= 10 px
+  // 10 = (size * fL * imgW) / (sW * D_max) => D_max = (size * fL * imgW) / (sW * 10)
+  const maxSlantDistanceMeters = (size * fL * imgW) / (sW * 10.0);
+
+  // Ground detection radius at flight altitude alt
+  // R_ground^2 + alt^2 = D_max^2 => R_ground = sqrt(D_max^2 - alt^2)
+  let groundDetectionRadiusMeters = 0;
+  if (maxSlantDistanceMeters > alt) {
+    groundDetectionRadiusMeters = Math.sqrt(Math.pow(maxSlantDistanceMeters, 2) - Math.pow(alt, 2));
+  }
+
+  // Recommended target size for altitude:
+  // Survey standard requires 12-15 px across tag. Using 14 px:
+  const recSizeMeters = Math.round((14.0 * gsdMetersPerPx) * 20) / 20; // round to nearest 0.05m
+  const recommendedSizeMeters = Math.max(0.20, recSizeMeters);
+
+  let status = 'optimal';
+  if (pixelSpan < 10.0) {
+    status = 'undersized';
+  } else if (pixelSpan < 14.0) {
+    status = 'marginal';
+  }
+
+  return {
+    altitudeMeters: alt,
+    targetSizeMeters: size,
+    gsdCmPerPx: Math.round(gsdCmPerPx * 100) / 100,
+    pixelSpan: Math.round(pixelSpan * 10) / 10,
+    maxSlantDistanceMeters: Math.round(maxSlantDistanceMeters * 10) / 10,
+    groundDetectionRadiusMeters: Math.round(groundDetectionRadiusMeters * 10) / 10,
+    recommendedSizeMeters,
+    status
+  };
+}
+
+/**
+ * Updates the live Altitude Sizing Advisor card inside Section 2 Card 6.
+ */
+function updateFiducialAltitudeAdvisor(layer) {
+  if (typeof document === 'undefined') return;
+  const activeLayer = layer || (typeof getActiveLayer === 'function' ? getActiveLayer() : null);
+  if (!activeLayer) return;
+
+  const altContext = getSurroundingFlightAltitudes(activeLayer.id);
+  const sizeSelect = document.getElementById('fiducial-default-size');
+  const targetSize = sizeSelect ? (parseFloat(sizeSelect.value) || 0.20) : (activeLayer.defaultPhysicalSize || 0.20);
+
+  const metrics = calculateFiducialResolution(targetSize, altContext.primaryAltitude);
+
+  const altBadge = document.getElementById('fid-advisor-altitude-badge');
+  if (altBadge) {
+    altBadge.textContent = `Flight Alt: ${altContext.primaryAltitude}m`;
+  }
+
+  const prevLayerEl = document.getElementById('fid-advisor-prev-layer');
+  if (prevLayerEl) {
+    prevLayerEl.textContent = altContext.prevAltitude !== null ? `${altContext.prevAltitude}m` : 'None';
+  }
+
+  const nextLayerEl = document.getElementById('fid-advisor-next-layer');
+  if (nextLayerEl) {
+    nextLayerEl.textContent = altContext.nextAltitude !== null ? `${altContext.nextAltitude}m` : 'None';
+  }
+
+  const maxLayerEl = document.getElementById('fid-advisor-max-layer');
+  if (maxLayerEl) {
+    maxLayerEl.textContent = `${altContext.maxAltitude}m`;
+  }
+
+  const gsdEl = document.getElementById('fid-advisor-gsd-val');
+  if (gsdEl) {
+    gsdEl.textContent = `${metrics.gsdCmPerPx.toFixed(2)} cm/px`;
+  }
+
+  const pxEl = document.getElementById('fid-advisor-pixel-span-val');
+  if (pxEl) {
+    pxEl.textContent = `${metrics.pixelSpan.toFixed(1)} px`;
+    pxEl.style.color = metrics.status === 'optimal' ? '#34d399' : (metrics.status === 'marginal' ? '#fbbf24' : '#f87171');
+  }
+
+  const slantEl = document.getElementById('fid-advisor-slant-dist-val');
+  if (slantEl) {
+    slantEl.textContent = `${metrics.maxSlantDistanceMeters.toFixed(0)} m`;
+  }
+
+  const groundEl = document.getElementById('fid-advisor-ground-radius-val');
+  if (groundEl) {
+    groundEl.textContent = metrics.groundDetectionRadiusMeters > 0 ? `${metrics.groundDetectionRadiusMeters.toFixed(0)} m` : '0 m (Too high)';
+    groundEl.style.color = metrics.groundDetectionRadiusMeters > 0 ? '#fbbf24' : '#f87171';
+  }
+
+  const statusBox = document.getElementById('fid-advisor-status-box');
+  const statusIcon = document.getElementById('fid-advisor-status-icon');
+  const statusMsg = document.getElementById('fid-advisor-status-msg');
+  if (statusBox && statusIcon && statusMsg) {
+    if (metrics.status === 'optimal') {
+      statusBox.style.background = 'rgba(16, 185, 129, 0.1)';
+      statusBox.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+      statusBox.style.color = '#a7f3d0';
+      statusIcon.textContent = '✅';
+      statusMsg.textContent = `Optimal resolution: Target spans ${metrics.pixelSpan.toFixed(1)} px at ${altContext.primaryAltitude}m flight altitude for reliable sub-pixel corner solving.`;
+    } else if (metrics.status === 'marginal') {
+      statusBox.style.background = 'rgba(245, 158, 11, 0.1)';
+      statusBox.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+      statusBox.style.color = '#fde68a';
+      statusIcon.textContent = '🟡';
+      statusMsg.textContent = `Marginal resolution: Target spans ${metrics.pixelSpan.toFixed(1)} px at ${altContext.primaryAltitude}m. Detectable under bright sun, but recommended size is ≥ ${metrics.recommendedSizeMeters.toFixed(2)}m.`;
+    } else {
+      statusBox.style.background = 'rgba(239, 68, 68, 0.12)';
+      statusBox.style.borderColor = 'rgba(239, 68, 68, 0.35)';
+      statusBox.style.color = '#fca5a5';
+      statusIcon.textContent = '⚠️';
+      statusMsg.textContent = `Target Undersized: At ${altContext.primaryAltitude}m AGL (GSD ${metrics.gsdCmPerPx} cm/px), a ${targetSize}m target spans only ${metrics.pixelSpan.toFixed(1)} px (under 10 px minimum). Computer vision tag detection will likely fail.`;
+    }
+  }
+
+  const autoSetVal = document.getElementById('fid-autoset-size-val');
+  if (autoSetVal) {
+    autoSetVal.textContent = `${metrics.recommendedSizeMeters.toFixed(2)}m`;
+  }
+}
+
+/**
+ * Updates the flight altitude context banner inside the Printable Target Sheet modal.
+ */
+function updateTargetGeneratorAdvisor() {
+  if (typeof document === 'undefined') return;
+  const activeLayer = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+  const altContext = getSurroundingFlightAltitudes(activeLayer ? activeLayer.id : null);
+  const sizeSelect = document.getElementById('gen-target-size');
+  const size = sizeSelect ? (parseFloat(sizeSelect.value) || 0.20) : 0.20;
+
+  const metrics = calculateFiducialResolution(size, altContext.primaryAltitude);
+
+  const altVal = document.getElementById('gen-adv-altitude-val');
+  if (altVal) altVal.textContent = `${altContext.primaryAltitude}m`;
+
+  const gsdVal = document.getElementById('gen-adv-gsd-val');
+  if (gsdVal) gsdVal.textContent = `(GSD: ${metrics.gsdCmPerPx.toFixed(2)} cm/px)`;
+
+  const statusText = document.getElementById('gen-adv-status-text');
+  if (statusText) {
+    if (metrics.status === 'optimal') {
+      statusText.innerHTML = `<span style="color: #34d399; font-weight: 600;">✅ Optimal (${metrics.pixelSpan.toFixed(1)} px)</span> &mdash; clear sub-pixel detection at ${altContext.primaryAltitude}m.`;
+    } else if (metrics.status === 'marginal') {
+      statusText.innerHTML = `<span style="color: #fbbf24; font-weight: 600;">🟡 Marginal (${metrics.pixelSpan.toFixed(1)} px)</span> &mdash; recommend &ge; ${metrics.recommendedSizeMeters.toFixed(2)}m for ${altContext.primaryAltitude}m flight.`;
+    } else {
+      statusText.innerHTML = `<span style="color: #f87171; font-weight: 600;">⚠️ Undersized (${metrics.pixelSpan.toFixed(1)} px)</span> &mdash; target spans &lt;10 px at ${altContext.primaryAltitude}m; recommend &ge; ${metrics.recommendedSizeMeters.toFixed(2)}m.`;
+    }
+  }
+
+  const recVal = document.getElementById('gen-adv-rec-size-val');
+  if (recVal) recVal.textContent = `${metrics.recommendedSizeMeters.toFixed(2)}m`;
+}
+
+/**
  * Renders fiducial marker pins on the Leaflet 2D map.
  */
 function drawFiducialLayers(globalCenterLat, globalCenterLon) {
@@ -11911,14 +12587,47 @@ function drawFiducialLayers(globalCenterLat, globalCenterLon) {
     ? flightLayers.filter(l => l.enabled && (l.pattern === 'fiducial-markers' || l.isFiducialLayer))
     : [];
 
+  const showRangeRings = typeof document !== 'undefined'
+    ? (document.getElementById('fiducial-show-range-rings')?.checked !== false)
+    : true;
+
   enabledFiducials.forEach(layer => {
     const markers = Array.isArray(layer.fiducialMarkers) ? layer.fiducialMarkers : [];
     const isCurrentActive = (typeof activeLayerId !== 'undefined' && layer.id === activeLayerId);
+    const altRef = getSurroundingFlightAltitudes(layer.id);
 
     markers.forEach((m, idx) => {
       const color = m.color || layer.markerColor || '#f59e0b';
       const role = m.role || 'gcp';
       const roleColor = role === 'checkpoint' ? '#10b981' : (role === 'scale_bar' ? '#06b6d4' : (role === 'anchor' ? '#a855f7' : '#f59e0b'));
+      const targetSize = m.physicalSizeMeters || layer.defaultPhysicalSize || 0.20;
+      const res = calculateFiducialResolution(targetSize, altRef.primaryAltitude);
+
+      // Draw detection range ring on map if enabled
+      if (showRangeRings && res.groundDetectionRadiusMeters > 0 && typeof L.circle === 'function') {
+        try {
+          const rangeCircle = L.circle([m.lat, m.lon], {
+            radius: res.groundDetectionRadiusMeters,
+            color: roleColor,
+            fillColor: roleColor,
+            fillOpacity: 0.08,
+            weight: 1.5,
+            dashArray: '4, 6',
+            interactive: true
+          });
+          if (typeof rangeCircle.bindTooltip === 'function') {
+            rangeCircle.bindTooltip(
+              `<strong>${escapeHtml(m.code || `GCP-${idx + 1}`)} Detection Envelope</strong><br>` +
+              `Radius: ${res.groundDetectionRadiusMeters.toFixed(0)}m (${res.pixelSpan.toFixed(1)} px at ${altRef.primaryAltitude}m alt)<br>` +
+              `Max Slant: ${res.maxSlantDistanceMeters.toFixed(0)}m`,
+              { direction: 'top', className: 'fiducial-range-tooltip' }
+            );
+          }
+          rangeCircle.addTo(fiducialMarkersGroup);
+        } catch (e) {
+          // gracefully catch in stub environments
+        }
+      }
 
       const customIcon = L.divIcon({
         className: 'fiducial-pin-wrapper',
@@ -11947,12 +12656,13 @@ function drawFiducialLayers(globalCenterLat, globalCenterLon) {
 
         leafletMarker.on('dragend', () => {
           renderFiducialMarkersTable(layer);
+          updateGrid();
         });
       }
 
-      // Popup editor
+      // Popup editor with optical range metrics
       const popupHtml = `
-        <div style="min-width: 190px; font-family: sans-serif; font-size: 0.78rem;">
+        <div style="min-width: 195px; font-family: sans-serif; font-size: 0.78rem;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;">
             <strong style="color: ${roleColor}; font-size: 0.82rem;">🎯 ${escapeHtml(m.code)}</strong>
             <span style="font-size: 0.65rem; background: rgba(255,255,255,0.1); padding: 1px 5px; border-radius: 3px; text-transform: uppercase;">${escapeHtml(role)}</span>
@@ -11979,6 +12689,10 @@ function drawFiducialLayers(globalCenterLat, globalCenterLon) {
             </div>
             <div style="font-size: 0.68rem; color: #cbd5e1; margin-top: 2px;">
               Lat: ${m.lat.toFixed(6)}°<br>Lon: ${m.lon.toFixed(6)}°
+            </div>
+            <div style="font-size: 0.68rem; color: #94a3b8; background: rgba(0,0,0,0.25); padding: 4px 6px; border-radius: 4px; display: flex; flex-direction: column; gap: 2px;">
+              <div>Optical Range: <strong style="color: #38bdf8;">${res.groundDetectionRadiusMeters > 0 ? res.groundDetectionRadiusMeters.toFixed(0) + 'm ground radius' : '0m (Alt too high)'}</strong> (${res.maxSlantDistanceMeters.toFixed(0)}m slant)</div>
+              <div>Aerial Res: <strong style="color: ${res.status === 'optimal' ? '#34d399' : (res.status === 'marginal' ? '#fbbf24' : '#f87171')};">~${res.pixelSpan.toFixed(1)} px</strong> at ${altRef.primaryAltitude}m</div>
             </div>
             <div style="display: flex; gap: 4px; margin-top: 4px;">
               <button type="button" class="btn-primary btn-sm" style="flex: 1; padding: 3px 6px; font-size: 0.7rem;" onclick="saveFiducialPopup('${layer.id}', '${m.id}')">Save</button>
@@ -12524,6 +13238,7 @@ function renderTargetGeneratorPreview() {
   });
 
   previewEl.innerHTML = svgStr;
+  updateTargetGeneratorAdvisor();
 }
 
 /**
@@ -17457,13 +18172,68 @@ function initUIEventListeners() {
 
   const fiducialSizeInput = document.getElementById('fiducial-default-size');
   if (fiducialSizeInput) {
-    fiducialSizeInput.addEventListener('input', (e) => {
+    const handleFidSize = (e) => {
       const val = parseFloat(e.target.value) || 0.5;
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
       if (activeLayer) {
         activeLayer.defaultPhysicalSize = val;
+        updateFiducialAltitudeAdvisor(activeLayer);
+        updateGrid();
         saveAllSettingsToLocalStorage();
       }
+    };
+    fiducialSizeInput.addEventListener('input', handleFidSize);
+    fiducialSizeInput.addEventListener('change', handleFidSize);
+  }
+
+  // Auto-Set Fiducial Size Button (Card 6)
+  const btnFidAutoset = document.getElementById('btn-fid-autoset-size');
+  if (btnFidAutoset) {
+    btnFidAutoset.addEventListener('click', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (!activeLayer) return;
+      const altContext = getSurroundingFlightAltitudes(activeLayer.id);
+      const metrics = calculateFiducialResolution(activeLayer.defaultPhysicalSize || 0.20, altContext.primaryAltitude);
+      const recSize = metrics.recommendedSizeMeters;
+
+      const sizeInput = document.getElementById('fiducial-default-size');
+      if (sizeInput) {
+        let closestOpt = null;
+        let minDiff = Infinity;
+        if (sizeInput.options && sizeInput.options.length > 0) {
+          for (let i = 0; i < sizeInput.options.length; i++) {
+            const opt = sizeInput.options[i];
+            const diff = Math.abs(parseFloat(opt.value) - recSize);
+            if (diff < minDiff) {
+              minDiff = diff;
+              closestOpt = opt;
+            }
+          }
+          if (closestOpt) {
+            sizeInput.value = closestOpt.value;
+            activeLayer.defaultPhysicalSize = parseFloat(closestOpt.value);
+          } else {
+            sizeInput.value = recSize.toString();
+            activeLayer.defaultPhysicalSize = recSize;
+          }
+        } else {
+          sizeInput.value = recSize.toString();
+          activeLayer.defaultPhysicalSize = recSize;
+        }
+      } else {
+        activeLayer.defaultPhysicalSize = recSize;
+      }
+      updateFiducialAltitudeAdvisor(activeLayer);
+      updateGrid();
+      saveAllSettingsToLocalStorage();
+    });
+  }
+
+  // Range Rings Map Toggle
+  const fidRangeRingsCheck = document.getElementById('fiducial-show-range-rings');
+  if (fidRangeRingsCheck) {
+    fidRangeRingsCheck.addEventListener('change', () => {
+      updateGrid();
     });
   }
 
@@ -17577,6 +18347,43 @@ function initUIEventListeners() {
     });
   }
 
+  // Fiducial & GCP Help Drawer Toggle
+  const fiducialHelpBtn = document.getElementById('fiducial-help-btn');
+  const fiducialHelpDrawer = document.getElementById('fiducial-help-drawer');
+  const closeFiducialHelpBtn = document.getElementById('close-fiducial-help-drawer-btn');
+  if (fiducialHelpBtn && fiducialHelpDrawer) {
+    fiducialHelpBtn.addEventListener('click', () => {
+      fiducialHelpDrawer.classList.toggle('hidden');
+    });
+  }
+  if (closeFiducialHelpBtn && fiducialHelpDrawer) {
+    closeFiducialHelpBtn.addEventListener('click', () => {
+      fiducialHelpDrawer.classList.add('hidden');
+    });
+  }
+
+  // Fiducial & GCP Help Drawer Tabs (Workflow, DIY Fabrication, Construction Sites)
+  const fidTabs = [
+    { btn: document.getElementById('fid-tab-btn-workflow'), pane: document.getElementById('fid-pane-workflow') },
+    { btn: document.getElementById('fid-tab-btn-fabrication'), pane: document.getElementById('fid-pane-fabrication') },
+    { btn: document.getElementById('fid-tab-btn-construction'), pane: document.getElementById('fid-pane-construction') }
+  ];
+  fidTabs.forEach(({ btn }) => {
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      fidTabs.forEach(t => {
+        if (t.btn && t.pane) {
+          const isActive = (t.btn === btn);
+          t.pane.classList.toggle('hidden', !isActive);
+          t.btn.classList.toggle('active', isActive);
+          t.btn.style.color = isActive ? '#fbbf24' : 'var(--text-muted)';
+          t.btn.style.background = isActive ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255, 255, 255, 0.03)';
+          t.btn.style.borderColor = isActive ? 'rgba(245, 158, 11, 0.4)' : 'rgba(255, 255, 255, 0.08)';
+        }
+      });
+    });
+  });
+
   // Printable Vector SVG Target Generator Modal Event Listeners
   const closeTargetGenBtn = document.getElementById('close-fiducial-generator-modal-btn');
   if (closeTargetGenBtn) {
@@ -17604,6 +18411,31 @@ function initUIEventListeners() {
   if (btnPrintTargetSheet) {
     btnPrintTargetSheet.addEventListener('click', () => {
       printTargetSheet();
+    });
+  }
+
+  const btnGenAutoset = document.getElementById('btn-gen-autoset-size');
+  if (btnGenAutoset) {
+    btnGenAutoset.addEventListener('click', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      const altContext = getSurroundingFlightAltitudes(activeLayer ? activeLayer.id : null);
+      const metrics = calculateFiducialResolution(0.20, altContext.primaryAltitude);
+      const recSize = metrics.recommendedSizeMeters;
+      const genSizeEl = document.getElementById('gen-target-size');
+      if (genSizeEl) {
+        // find matching option or set value
+        const valStr = recSize.toFixed(2);
+        let found = false;
+        for (let opt of genSizeEl.options) {
+          if (Math.abs(parseFloat(opt.value) - recSize) < 0.06) {
+            genSizeEl.value = opt.value;
+            found = true;
+            break;
+          }
+        }
+        if (!found) genSizeEl.value = valStr;
+        renderTargetGeneratorPreview();
+      }
     });
   }
 
@@ -19481,16 +20313,20 @@ function togglePatternParameters() {
 
   if (layerCardBoundary) {
     if (isBoundary) {
+      layerCardBoundary.classList.remove('hidden');
       layerCardBoundary.style.display = 'block';
     } else {
+      layerCardBoundary.classList.add('hidden');
       layerCardBoundary.style.display = 'none';
     }
   }
 
   if (layerCardFiducial) {
     if (isFiducial) {
+      layerCardFiducial.classList.remove('hidden');
       layerCardFiducial.style.display = 'block';
     } else {
+      layerCardFiducial.classList.add('hidden');
       layerCardFiducial.style.display = 'none';
     }
   }
@@ -19702,7 +20538,14 @@ function togglePatternParameters() {
     if (layerCardFlight) layerCardFlight.style.display = 'none';
     if (layerCardOptics) layerCardOptics.style.display = 'none';
     if (layerCardModes) layerCardModes.style.display = 'none';
-    if (layerCardBoundary) layerCardBoundary.style.display = 'block';
+    if (layerCardBoundary) {
+      layerCardBoundary.classList.remove('hidden');
+      layerCardBoundary.style.display = 'block';
+    }
+    if (layerCardFiducial) {
+      layerCardFiducial.classList.add('hidden');
+      layerCardFiducial.style.display = 'none';
+    }
     if (boundaryInstructions) boundaryInstructions.classList.remove('hidden');
     if (altitudeControlGroup) altitudeControlGroup.style.display = 'none';
     if (exclusionAltContainer) exclusionAltContainer.classList.add('hidden');
@@ -19764,8 +20607,14 @@ function togglePatternParameters() {
     if (layerCardFlight) layerCardFlight.style.display = 'none';
     if (layerCardOptics) layerCardOptics.style.display = 'none';
     if (layerCardModes) layerCardModes.style.display = 'none';
-    if (layerCardBoundary) layerCardBoundary.style.display = 'none';
-    if (layerCardFiducial) layerCardFiducial.style.display = 'block';
+    if (layerCardBoundary) {
+      layerCardBoundary.classList.add('hidden');
+      layerCardBoundary.style.display = 'none';
+    }
+    if (layerCardFiducial) {
+      layerCardFiducial.classList.remove('hidden');
+      layerCardFiducial.style.display = 'block';
+    }
     if (boundaryInstructions) boundaryInstructions.classList.add('hidden');
     if (fiducialInstructions) fiducialInstructions.classList.remove('hidden');
     if (altitudeControlGroup) altitudeControlGroup.style.display = 'none';
@@ -19796,6 +20645,7 @@ function togglePatternParameters() {
       if (colorSel) colorSel.value = activeLayer.markerColor || '#f59e0b';
 
       renderFiducialMarkersTable(activeLayer);
+      updateFiducialAltitudeAdvisor(activeLayer);
     }
 
   } else if (gridType === 'road-following') {
@@ -19876,6 +20726,14 @@ function togglePatternParameters() {
     if (layerCardFlight) layerCardFlight.style.display = 'block';
     if (layerCardOptics) layerCardOptics.style.display = 'block';
     if (layerCardModes) layerCardModes.style.display = 'block';
+    if (layerCardBoundary) {
+      layerCardBoundary.classList.add('hidden');
+      layerCardBoundary.style.display = 'none';
+    }
+    if (layerCardFiducial) {
+      layerCardFiducial.classList.add('hidden');
+      layerCardFiducial.style.display = 'none';
+    }
     if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
     if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
     if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
@@ -27269,7 +28127,9 @@ function setCompanionApiBase(newHost) {
   COMPANION_API_BASE = getCompanionApiBase();
   const hostInput = typeof document !== 'undefined' ? document.getElementById('companion-host-input') : null;
   if (hostInput) hostInput.value = COMPANION_API_BASE;
-  if (typeof pollCompanionStatus === 'function') {
+  if (typeof wakeCompanionPolling === 'function') {
+    wakeCompanionPolling(true);
+  } else if (typeof pollCompanionStatus === 'function') {
     pollCompanionStatus();
   }
 }
@@ -27279,6 +28139,10 @@ let isCompanionOnline = false;
 let isRc2MtpConnected = false;
 let rc2MtpActiveUUID = '';
 let companionPollInterval = null;
+let consecutiveStatusFailures = 0;
+let consecutiveRadarFailures = 0;
+let lastStatusCheckTime = 0;
+let remoteIdDroneCount = 0;
 
 async function pollCompanionStatus() {
   if (typeof document === 'undefined') return;
@@ -27308,7 +28172,24 @@ async function pollCompanionStatus() {
 
     if (res.ok) {
       const data = await res.json();
+      const wasOffline = !isCompanionOnline;
       isCompanionOnline = true;
+      consecutiveStatusFailures = 0;
+      lastStatusCheckTime = Date.now();
+      if (typeof data.droneCount === 'number') {
+        remoteIdDroneCount = data.droneCount;
+      }
+      if (wasOffline) {
+        consecutiveRadarFailures = 0;
+        if (typeof RemoteIdRadar !== 'undefined' && RemoteIdRadar.pollAirspace) {
+          RemoteIdRadar.pollAirspace();
+        }
+        if (typeof scheduleNextRadarCheck === 'function') {
+          scheduleNextRadarCheck();
+        }
+      } else if (!companionRadarTimer && typeof scheduleNextRadarCheck === 'function' && getRadarPollDelay() !== null) {
+        scheduleNextRadarCheck();
+      }
 
       // 1. Update Bridge Service status (Online)
       if (sDot) sDot.style.background = '#22c55e';
@@ -27384,8 +28265,14 @@ async function pollCompanionStatus() {
       throw new Error('Non-200 status');
     }
   } catch (e) {
+    consecutiveStatusFailures++;
+    lastStatusCheckTime = Date.now();
     isCompanionOnline = false;
     isRc2MtpConnected = false;
+    if (companionRadarTimer) {
+      clearTimeout(companionRadarTimer);
+      companionRadarTimer = null;
+    }
     if (container && container.classList) container.classList.add('is-offline');
     if (hint) {
       hint.style.display = 'flex';
@@ -27826,21 +28713,168 @@ function initRC2Controls() {
   // Initialize Remote ID Airspace Radar
   RemoteIdRadar.init();
 
-  // Start polling Companion service status & Remote ID radar
-  pollCompanionStatus();
-  RemoteIdRadar.pollAirspace();
-  if (!companionPollInterval && typeof window !== 'undefined' && window.setInterval) {
-    let tickCount = 0;
-    companionPollInterval = setInterval(() => {
-      tickCount++;
-      // Poll drone airspace radar every 1.5s for low-latency live GPS telemetry
-      RemoteIdRadar.pollAirspace();
-      // Poll controller USB link status every 6s (every 4th tick) to minimize CPU load
-      if (tickCount % 4 === 0) {
-        pollCompanionStatus();
-      }
-    }, 1500);
+  // Start polling Companion service status & Remote ID radar with adaptive backoff & visibility gating
+  initCompanionPolling();
+}
+
+let companionStatusTimer = null;
+let companionRadarTimer = null;
+let isCompanionPollingActive = false;
+
+function getStatusPollDelay() {
+  if (typeof document !== 'undefined' && document.hidden) {
+    return 60000; // Dormant 60s heartbeat when browser tab is hidden/minimized
   }
+  if (!isCompanionOnline) {
+    // Stepped adaptive backoff when offline
+    if (consecutiveStatusFailures <= 3) return 6000;   // 1st-3rd retry: 6s (fast recovery during server restart)
+    if (consecutiveStatusFailures <= 8) return 15000;  // 4th-8th retry: 15s
+    if (consecutiveStatusFailures <= 15) return 30000; // 9th-15th retry: 30s
+    return 60000; // >15 failures: 60s dormant heartbeat
+  }
+  return 8000; // Normal online status check: 8s
+}
+
+function getRadarPollDelay() {
+  if (typeof document !== 'undefined' && document.hidden) {
+    return null; // Pause drone radar when tab is hidden
+  }
+  if (!isCompanionOnline) {
+    return null; // Companion is offline: drones endpoint is guaranteed down, DO NOT poll!
+  }
+  if (consecutiveRadarFailures >= 2) {
+    return 10000; // Drone radar requests timing out/failing: back off to 10s
+  }
+  const hasActiveDrones = (typeof RemoteIdRadar !== 'undefined' && RemoteIdRadar.activeDrones && RemoteIdRadar.activeDrones.length > 0) || (remoteIdDroneCount > 0);
+  return hasActiveDrones ? 1500 : 5000; // Live GPS telemetry: 1.5s; clear airspace: 5s
+}
+
+function scheduleNextStatusCheck() {
+  if (typeof window === 'undefined' || !window.setTimeout) return;
+  if (companionStatusTimer) clearTimeout(companionStatusTimer);
+  const statusDelay = getStatusPollDelay();
+  companionStatusTimer = setTimeout(async () => {
+    await pollCompanionStatus();
+    scheduleNextStatusCheck();
+  }, statusDelay);
+}
+
+function scheduleNextRadarCheck() {
+  if (typeof window === 'undefined' || !window.setTimeout) return;
+  if (companionRadarTimer) clearTimeout(companionRadarTimer);
+  const radarDelay = getRadarPollDelay();
+  if (radarDelay === null) {
+    companionRadarTimer = null;
+    return;
+  }
+  companionRadarTimer = setTimeout(async () => {
+    if (typeof RemoteIdRadar !== 'undefined' && RemoteIdRadar.pollAirspace) {
+      await RemoteIdRadar.pollAirspace();
+    }
+    scheduleNextRadarCheck();
+  }, radarDelay);
+}
+
+function scheduleNextCompanionChecks() {
+  scheduleNextStatusCheck();
+  scheduleNextRadarCheck();
+}
+
+function wakeCompanionPolling(resetBackoff = true) {
+  if (resetBackoff) {
+    consecutiveStatusFailures = 0;
+    consecutiveRadarFailures = 0;
+  }
+  if (companionStatusTimer) clearTimeout(companionStatusTimer);
+  if (companionRadarTimer) clearTimeout(companionRadarTimer);
+
+  return pollCompanionStatus().then(() => {
+    scheduleNextCompanionChecks();
+  });
+}
+
+function initCompanionPolling() {
+  if (isCompanionPollingActive) return;
+  isCompanionPollingActive = true;
+  companionPollInterval = true; // backward compatibility flag
+
+  // Initial immediate probe
+  pollCompanionStatus().then(() => {
+    if (isCompanionOnline && typeof RemoteIdRadar !== 'undefined' && RemoteIdRadar.pollAirspace) {
+      RemoteIdRadar.pollAirspace();
+    }
+    scheduleNextCompanionChecks();
+  });
+
+  // Page Visibility API: pause/resume polling when switching tabs
+  if (typeof document !== 'undefined' && document.addEventListener) {
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        // Tab brought to foreground: immediately check status if older than 3 seconds
+        if (Date.now() - lastStatusCheckTime > 3000) {
+          wakeCompanionPolling(false);
+        } else {
+          scheduleNextCompanionChecks();
+        }
+      } else {
+        // Tab hidden: reschedule to dormant rates
+        scheduleNextCompanionChecks();
+      }
+    });
+  }
+
+  // Window Focus: wake up if window is focused after being backgrounded
+  if (typeof window !== 'undefined' && window.addEventListener) {
+    window.addEventListener('focus', () => {
+      if (Date.now() - lastStatusCheckTime > 5000) {
+        wakeCompanionPolling(false);
+      }
+    });
+  }
+
+  // UI Event hooks: clicking companion sync container or offline hint triggers instant wake-up
+  if (typeof document !== 'undefined') {
+    const container = document.getElementById('companion-sync-container');
+    const hint = document.getElementById('companion-offline-hint');
+    const sBox = document.getElementById('companion-service-box');
+    [container, hint, sBox].filter(Boolean).forEach(el => {
+      el.addEventListener('click', () => {
+        if (!isCompanionOnline) {
+          wakeCompanionPolling(true);
+        }
+      });
+    });
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.wakeCompanionPolling = wakeCompanionPolling;
+  window.getStatusPollDelay = getStatusPollDelay;
+  window.getRadarPollDelay = getRadarPollDelay;
+  window.scheduleNextCompanionChecks = scheduleNextCompanionChecks;
+  window.scheduleNextStatusCheck = scheduleNextStatusCheck;
+  window.scheduleNextRadarCheck = scheduleNextRadarCheck;
+  window.getConsecutiveStatusFailures = () => consecutiveStatusFailures;
+  window.setConsecutiveStatusFailures = (n) => { consecutiveStatusFailures = n; };
+  window.getConsecutiveRadarFailures = () => consecutiveRadarFailures;
+  window.setConsecutiveRadarFailures = (n) => { consecutiveRadarFailures = n; };
+  window.setIsCompanionOnline = (v) => { isCompanionOnline = v; };
+  window.getIsCompanionOnline = () => isCompanionOnline;
+}
+
+if (typeof global !== 'undefined') {
+  global.wakeCompanionPolling = wakeCompanionPolling;
+  global.getStatusPollDelay = getStatusPollDelay;
+  global.getRadarPollDelay = getRadarPollDelay;
+  global.scheduleNextCompanionChecks = scheduleNextCompanionChecks;
+  global.scheduleNextStatusCheck = scheduleNextStatusCheck;
+  global.scheduleNextRadarCheck = scheduleNextRadarCheck;
+  global.getConsecutiveStatusFailures = () => consecutiveStatusFailures;
+  global.setConsecutiveStatusFailures = (n) => { consecutiveStatusFailures = n; };
+  global.getConsecutiveRadarFailures = () => consecutiveRadarFailures;
+  global.setConsecutiveRadarFailures = (n) => { consecutiveRadarFailures = n; };
+  global.setIsCompanionOnline = (v) => { isCompanionOnline = v; };
+  global.getIsCompanionOnline = () => isCompanionOnline;
 }
 
 // ─── Remote ID Airspace Radar & Live Detection ─────────────────────────────
@@ -28166,6 +29200,12 @@ const RemoteIdRadar = {
 
   async pollAirspace() {
     if (typeof fetch === 'undefined') return;
+    // Gate drone radar polling on Companion service online status:
+    // If status check fails/offline, remote-id drones endpoint is guaranteed down. Skip entirely!
+    if (!isCompanionOnline) return;
+    if (this._isPolling) return;
+    this._isPolling = true;
+
     try {
       const apiBase = typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765';
       const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
@@ -28173,16 +29213,28 @@ const RemoteIdRadar = {
       const res = await fetch(`${apiBase}/api/remote-id/drones`, controller ? { signal: controller.signal } : {});
       if (timeoutId) clearTimeout(timeoutId);
       if (res.ok) {
+        consecutiveRadarFailures = 0;
         const data = await res.json();
         if (data.success && Array.isArray(data.drones)) {
           this.activeDrones = data.drones;
           this.updateMapMarkers();
           this.updateRadarUI();
         }
+      } else {
+        consecutiveRadarFailures++;
+        if (consecutiveRadarFailures >= 2 && typeof pollCompanionStatus === 'function') {
+          pollCompanionStatus().catch(() => {});
+        }
       }
     } catch (e) {
+      consecutiveRadarFailures++;
+      if (consecutiveRadarFailures >= 2 && typeof pollCompanionStatus === 'function') {
+        pollCompanionStatus().catch(() => {});
+      }
       // Gracefully retain last known positions during transient network latency
       this.updateRadarUI();
+    } finally {
+      this._isPolling = false;
     }
   },
 
@@ -28587,7 +29639,8 @@ const FlightDiagnostics = {
   playbackSpeed: 1,
   currentPointIndex: 0,
   playbackFractionalIndex: 0.0,
-  selectedFlightId: 'FlightRecord_2026-08-20_[19-42-28].txt',
+  selectedFlightId: 'active-mission',
+  isActualFlown: false,
   telemetryData: null,
   comparisonData: null,
   animFrameId: null,
@@ -28605,6 +29658,9 @@ const FlightDiagnostics = {
   activeTab: '3d',
   _loadGeneration: 0,   // incremented each call to loadSelectedFlight; guards against stale async loads
   _pendingFlightId: null, // tracks the most recently requested flight ID
+  isDecrypted: false,
+  needsDjiApiKey: false,
+  djiApiKeyConfigured: false,
 
   activePhotoFilter: 'all',
   activePhotoSearch: '',
@@ -29124,6 +30180,53 @@ const FlightDiagnostics = {
       }
     }
 
+    // DJI Cloud API Key button & modal controls
+    const djiKeyBtn = document.getElementById('diag-dji-key-btn');
+    if (djiKeyBtn && typeof djiKeyBtn.addEventListener === 'function') {
+      djiKeyBtn.addEventListener('click', () => this.openDjiKeyModal());
+    }
+
+    const closeDjiKeyBtn = document.getElementById('close-dji-key-modal-btn');
+    if (closeDjiKeyBtn && typeof closeDjiKeyBtn.addEventListener === 'function') {
+      closeDjiKeyBtn.addEventListener('click', () => this.closeDjiKeyModal());
+    }
+
+    const cancelDjiKeyBtn = document.getElementById('cancel-dji-key-btn');
+    if (cancelDjiKeyBtn && typeof cancelDjiKeyBtn.addEventListener === 'function') {
+      cancelDjiKeyBtn.addEventListener('click', () => this.closeDjiKeyModal());
+    }
+
+    const saveDjiKeyBtn = document.getElementById('save-dji-key-btn');
+    if (saveDjiKeyBtn && typeof saveDjiKeyBtn.addEventListener === 'function') {
+      saveDjiKeyBtn.addEventListener('click', () => this.saveDjiApiKey());
+    }
+
+    const clearDjiKeyBtn = document.getElementById('clear-dji-key-btn');
+    if (clearDjiKeyBtn && typeof clearDjiKeyBtn.addEventListener === 'function') {
+      clearDjiKeyBtn.addEventListener('click', () => this.clearDjiApiKey());
+    }
+
+    const toggleKeyVisBtn = document.getElementById('toggle-dji-key-visibility-btn');
+    const djiKeyInput = document.getElementById('dji-api-key-input');
+    if (toggleKeyVisBtn && djiKeyInput && typeof toggleKeyVisBtn.addEventListener === 'function') {
+      toggleKeyVisBtn.addEventListener('click', () => {
+        djiKeyInput.type = djiKeyInput.type === 'password' ? 'text' : 'password';
+        toggleKeyVisBtn.textContent = djiKeyInput.type === 'password' ? '👁️' : '🙈';
+      });
+    }
+
+    if (djiKeyInput && typeof djiKeyInput.addEventListener === 'function') {
+      djiKeyInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.saveDjiApiKey();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          this.closeDjiKeyModal();
+        }
+      });
+    }
+
     // Mobile Subnav: 3D Replay vs Telemetry & Stats toggle
     const mobileSubtab3d = document.getElementById('diag-mobile-subtab-3d');
     const mobileSubtabStats = document.getElementById('diag-mobile-subtab-stats');
@@ -29168,6 +30271,168 @@ const FlightDiagnostics = {
       if (this.threeControls) {
         this.threeControls.update();
       }
+    }
+  },
+
+  async checkDjiApiKeyStatus() {
+    try {
+      const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+      const res = await fetch(`${apiBase}/api/config/dji`, {
+        signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(2000) : undefined
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const keyBtn = typeof document !== 'undefined' ? document.getElementById('diag-dji-key-btn') : null;
+        const statusMsg = typeof document !== 'undefined' ? document.getElementById('dji-key-status-msg') : null;
+        const input = typeof document !== 'undefined' ? document.getElementById('dji-api-key-input') : null;
+        if (data.hasKey) {
+          this.djiApiKeyConfigured = true;
+          if (keyBtn) {
+            keyBtn.classList.add('has-key');
+            keyBtn.title = `DJI Cloud API Key Configured (${data.maskedKey || 'Active'})`;
+          }
+          if (input && !input.value) {
+            input.placeholder = data.maskedKey || '••••••••••••••••••••••••••••••••';
+          }
+          if (statusMsg) {
+            statusMsg.textContent = `Active Key: ${data.maskedKey || 'Configured'}`;
+            statusMsg.style.color = '#34d399';
+          }
+        } else {
+          this.djiApiKeyConfigured = false;
+          if (keyBtn) {
+            keyBtn.classList.remove('has-key');
+            keyBtn.title = 'DJI Developer Cloud API Key for Decrypting Native Flight Logs';
+          }
+          if (input && !input.value) {
+            input.placeholder = 'e.g. 7f93b5a14d2e8c60...';
+          }
+          if (statusMsg) {
+            statusMsg.textContent = 'No DJI key configured. Encrypted logs fall back to synthetic KMZ modeling.';
+            statusMsg.style.color = 'var(--text-muted)';
+          }
+        }
+        return data;
+      }
+    } catch (e) {
+      // Companion server offline or unreachable
+    }
+    return { hasKey: false };
+  },
+
+  openDjiKeyModal() {
+    const modal = typeof document !== 'undefined' ? document.getElementById('dji-key-modal') : null;
+    if (modal) {
+      modal.classList.remove('hidden');
+      this.checkDjiApiKeyStatus();
+      const input = document.getElementById('dji-api-key-input');
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+    }
+  },
+
+  closeDjiKeyModal() {
+    const modal = typeof document !== 'undefined' ? document.getElementById('dji-key-modal') : null;
+    if (modal) {
+      modal.classList.add('hidden');
+    }
+  },
+
+  async saveDjiApiKey() {
+    const input = typeof document !== 'undefined' ? document.getElementById('dji-api-key-input') : null;
+    const statusMsg = typeof document !== 'undefined' ? document.getElementById('dji-key-status-msg') : null;
+    const saveBtn = typeof document !== 'undefined' ? document.getElementById('save-dji-key-btn') : null;
+    const key = input ? input.value.trim() : '';
+
+    if (!key) {
+      if (statusMsg) {
+        statusMsg.textContent = '⚠️ Please enter a 32-character DJI Developer App Key.';
+        statusMsg.style.color = '#facc15';
+      }
+      return;
+    }
+
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+    }
+
+    try {
+      const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+      const res = await fetch(`${apiBase}/api/config/dji`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(5000) : undefined,
+        body: JSON.stringify({ apiKey: key })
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (statusMsg) {
+          statusMsg.textContent = `✅ Saved successfully (${data.maskedKey || 'Active'}).`;
+          statusMsg.style.color = '#34d399';
+        }
+        await this.checkDjiApiKeyStatus();
+        setTimeout(() => {
+          this.closeDjiKeyModal();
+          if (this.selectedFlightId) {
+            this.loadSelectedFlight(this.selectedFlightId);
+          }
+        }, 800);
+      } else {
+        throw new Error(data.error || 'Failed to save key');
+      }
+    } catch (err) {
+      if (statusMsg) {
+        statusMsg.textContent = `❌ ${err.message}`;
+        statusMsg.style.color = '#f87171';
+      }
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save & Decrypt';
+      }
+    }
+  },
+
+  async clearDjiApiKey() {
+    const statusMsg = typeof document !== 'undefined' ? document.getElementById('dji-key-status-msg') : null;
+    const clearBtn = typeof document !== 'undefined' ? document.getElementById('clear-dji-key-btn') : null;
+    const input = typeof document !== 'undefined' ? document.getElementById('dji-api-key-input') : null;
+
+    if (clearBtn) clearBtn.disabled = true;
+
+    try {
+      const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+      const res = await fetch(`${apiBase}/api/config/dji`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(5000) : undefined,
+        body: JSON.stringify({ apiKey: '' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (input) {
+          input.value = '';
+          input.placeholder = 'e.g. 7f93b5a14d2e8c60...';
+        }
+        if (statusMsg) {
+          statusMsg.textContent = 'Key removed. Flight logs will use synthetic KMZ mode.';
+          statusMsg.style.color = 'var(--text-muted)';
+        }
+        await this.checkDjiApiKeyStatus();
+        if (this.selectedFlightId) {
+          this.loadSelectedFlight(this.selectedFlightId);
+        }
+      }
+    } catch (err) {
+      if (statusMsg) {
+        statusMsg.textContent = `❌ ${err.message}`;
+        statusMsg.style.color = '#f87171';
+      }
+    } finally {
+      if (clearBtn) clearBtn.disabled = false;
     }
   },
 
@@ -29339,7 +30604,7 @@ const FlightDiagnostics = {
 
   async loadSelectedFlight(flightId) {
     if (!flightId || flightId === '0' || (!flightId.startsWith('FlightRecord_') && !flightId.startsWith('diag:') && flightId !== 'active-mission')) {
-      flightId = 'FlightRecord_2026-08-20_[19-42-28].txt';
+      flightId = 'active-mission';
     }
     this._loadGeneration = (this._loadGeneration || 0) + 1;
     const myGeneration = this._loadGeneration;
@@ -29348,6 +30613,7 @@ const FlightDiagnostics = {
     this.selectedFlightId = flightId;
     this.currentLoadedMission = null;
     this.plannedWaypoints = null;
+    this.isActualFlown = false;
     const flightSel = document.getElementById('diag-flight-selector');
     if (flightSel && flightSel.value !== flightId) {
       flightSel.value = flightId;
@@ -29360,8 +30626,13 @@ const FlightDiagnostics = {
     const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : 'http://127.0.0.1:8765';
 
     if (flightId === 'active-mission') {
+      this.isActualFlown = false;
       const telemetry = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId: 'active-mission', isSimulation: true });
       if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
+      if (telemetry) {
+        telemetry.isActualFlown = false;
+        telemetry.isSimulation = true;
+      }
       this.telemetryData = telemetry;
       this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
       this.plannedWaypoints = wps;
@@ -29377,6 +30648,7 @@ const FlightDiagnostics = {
           if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
           if (data.success && data.mission) {
             this.currentLoadedMission = data.mission;
+            this.isActualFlown = !!(data.mission.isActualFlown || data.mission.diagnostics?.isActualFlown);
             // Store the planned waypoints from the saved mission (not the active workspace)
             this.plannedWaypoints = data.mission.plan?.waypoints || null;
             if (data.mission.diagnostics && Array.isArray(data.mission.diagnostics.points) && data.mission.diagnostics.points.length > 0) {
@@ -29389,7 +30661,7 @@ const FlightDiagnostics = {
                   const missionAlt = data.mission.altitude || altitude;
                   const missionSpeed = data.mission.speed || speed;
                   const missionGimbal = data.mission.gimbal_pitch || gimbalPitch;
-                  diag = generateTelemetryFromWaypoints(missionWps, { altitude: missionAlt, speed: missionSpeed, gimbalPitch: missionGimbal, flightId });
+                  diag = generateTelemetryFromWaypoints(missionWps, { altitude: missionAlt, speed: missionSpeed, gimbalPitch: missionGimbal, flightId, isSimulation: !this.isActualFlown });
                 }
               }
               this.telemetryData = diag;
@@ -29422,7 +30694,7 @@ const FlightDiagnostics = {
               const missionAlt = data.mission.altitude || altitude;
               const missionSpeed = data.mission.speed || speed;
               const missionGimbal = data.mission.gimbal_pitch || gimbalPitch;
-              this.telemetryData = generateTelemetryFromWaypoints(missionWps, { altitude: missionAlt, speed: missionSpeed, gimbalPitch: missionGimbal, flightId });
+              this.telemetryData = generateTelemetryFromWaypoints(missionWps, { altitude: missionAlt, speed: missionSpeed, gimbalPitch: missionGimbal, flightId, isSimulation: !this.isActualFlown });
               this.comparisonData = computeFlightComparison({ waypointCount: missionWps.length, altitude: missionAlt, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
             } else {
               // Incomplete or empty archive record (e.g. mock test entry) — DO NOT show active workspace!
@@ -29449,7 +30721,7 @@ const FlightDiagnostics = {
         const res = await fetch(`${apiBase}/api/flight-telemetry?file=${encodeURIComponent(flightId)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          signal: AbortSignal.timeout ? AbortSignal.timeout(1500) : undefined,
+          signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(45000) : undefined,
           body: JSON.stringify({
             flightId,
             waypoints: wps,
@@ -29461,13 +30733,17 @@ const FlightDiagnostics = {
           const data = await res.json();
           if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
           if (data.success && data.telemetry) {
+            this.isDecrypted = !!data.isDecrypted;
+            this.needsDjiApiKey = !!data.needsDjiApiKey;
+            this.djiApiKeyConfigured = !!data.djiApiKeyConfigured;
             let telem = data.telemetry;
+            this.isActualFlown = (telem.isActualFlown !== undefined) ? !!telem.isActualFlown : !telem.isSimulation;
             const plannedWps = data.telemetry.plannedWaypoints || data.plannedWaypoints || null;
             if (telem && telem.points && plannedWps && plannedWps.length > 1) {
               const photoAlts = new Set(telem.points.filter(p => p.isPhoto).map(p => p.alt));
               const planAlts = new Set(plannedWps.map(w => w.altitude !== undefined ? w.altitude : (w.alt !== undefined ? w.alt : 50)));
               if (photoAlts.size === 1 && planAlts.size > 1) {
-                telem = generateTelemetryFromWaypoints(plannedWps, { altitude, speed, gimbalPitch, flightId });
+                telem = generateTelemetryFromWaypoints(plannedWps, { altitude, speed, gimbalPitch, flightId, isSimulation: !this.isActualFlown });
               }
             }
             this.telemetryData = telem;
@@ -29483,13 +30759,17 @@ const FlightDiagnostics = {
         }
       } catch (e) {
         if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
+        this.isDecrypted = false;
+        this.needsDjiApiKey = false;
         // For built-in demo flight profiles (e.g. 2026-08-20 demo logs), generate offline simulation
         if (flightId && (flightId.includes('2026-08-20') || flightId.includes('19-39-07') || flightId.includes('19-41-15') || flightId.includes('19-42-28') || flightId.includes('19-47-15'))) {
-          this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId });
+          this.isActualFlown = false;
+          this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId, isSimulation: true });
           this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
           this.plannedWaypoints = null;
         } else {
           // For real RC2 flight records when companion is unreachable, do NOT fall back to active workspace!
+          this.isActualFlown = false;
           this.telemetryData = null;
           this.comparisonData = null;
           this.plannedWaypoints = null;
@@ -29590,6 +30870,7 @@ const FlightDiagnostics = {
     if (mobileSubtabStats) mobileSubtabStats.classList.remove('active');
 
     this.switchTab(targetTab);
+    this.checkDjiApiKeyStatus();
 
     if (typeof requestAnimationFrame !== 'undefined') {
       requestAnimationFrame(() => this.handleResize());
@@ -29598,7 +30879,8 @@ const FlightDiagnostics = {
     if (targetTab === '3d') {
       if (customData) {
         const flightSel = document.getElementById('diag-flight-selector');
-        this.selectedFlightId = customData.flightId || (flightSel && flightSel.value) || 'FlightRecord_2026-08-20_[19-42-28].txt';
+        this.selectedFlightId = customData.flightId || (flightSel && flightSel.value) || 'active-mission';
+        this.isActualFlown = customData.isActualFlown !== undefined ? !!customData.isActualFlown : !!customData.telemetry?.isActualFlown;
         this.telemetryData = customData.telemetry;
         this.comparisonData = customData.comparison;
         this.updateStatsUI();
@@ -29609,7 +30891,7 @@ const FlightDiagnostics = {
       } else {
         await this.refreshFlightList();
         const flightSel = document.getElementById('diag-flight-selector');
-        const selectedFlightId = (flightSel && flightSel.value && flightSel.value !== '0' && flightSel.value !== '') ? flightSel.value : 'FlightRecord_2026-08-20_[19-42-28].txt';
+        const selectedFlightId = (flightSel && flightSel.value && flightSel.value !== '0' && flightSel.value !== '') ? flightSel.value : 'active-mission';
         await this.loadSelectedFlight(selectedFlightId);
       }
     }
@@ -29631,6 +30913,61 @@ const FlightDiagnostics = {
   updateStatsUI() {
     const trajCard = (typeof document !== 'undefined') ? document.getElementById('diag-trajectory-card') : null;
     const battCard = (typeof document !== 'undefined') ? document.getElementById('diag-battery-card') : null;
+
+    const isActual = (this.isActualFlown === true) ||
+      (this.isActualFlown !== false && this.selectedFlightId !== 'active-mission' && !this.telemetryData?.isSimulation) ||
+      (!!this.comparisonData?.maxDeviation && this.selectedFlightId !== 'active-mission' && !this.telemetryData?.isSimulation);
+    const modeTitleEl = (typeof document !== 'undefined') ? document.getElementById('diag-sidebar-mode-title') : null;
+    const statusBadgeEl = (typeof document !== 'undefined') ? document.getElementById('diag-sidebar-status-badge') : null;
+    const timeDeltaEl = (typeof document !== 'undefined') ? document.getElementById('diag-stat-time-delta') : null;
+    const distDeltaEl = (typeof document !== 'undefined') ? document.getElementById('diag-stat-dist-delta') : null;
+    const altDeltaEl = (typeof document !== 'undefined') ? document.getElementById('diag-stat-alt-delta') : null;
+    const photosDeltaEl = (typeof document !== 'undefined') ? document.getElementById('diag-stat-photos-delta') : null;
+
+    const timeLabelEl = (typeof document !== 'undefined') ? document.getElementById('diag-stat-time-label') : null;
+    const distLabelEl = (typeof document !== 'undefined') ? document.getElementById('diag-stat-dist-label') : null;
+    const altLabelEl = (typeof document !== 'undefined') ? document.getElementById('diag-stat-alt-label') : null;
+    const photosLabelEl = (typeof document !== 'undefined') ? document.getElementById('diag-stat-photos-label') : null;
+
+    if (!isActual) {
+      if (modeTitleEl) modeTitleEl.textContent = 'Mission Simulation';
+      if (statusBadgeEl) {
+        statusBadgeEl.textContent = '🎯 Simulation (Unflown)';
+        if (statusBadgeEl.style) {
+          statusBadgeEl.style.color = '#38bdf8';
+          statusBadgeEl.style.background = 'rgba(56, 189, 248, 0.15)';
+          statusBadgeEl.style.borderColor = 'rgba(56, 189, 248, 0.3)';
+        }
+      }
+      if (timeLabelEl) timeLabelEl.textContent = 'Est. Flight Time';
+      if (distLabelEl) distLabelEl.textContent = 'Planned Distance';
+      if (altLabelEl) altLabelEl.textContent = 'Planned Max Alt';
+      if (photosLabelEl) photosLabelEl.textContent = 'Planned Photos';
+
+      if (timeDeltaEl && timeDeltaEl.style) timeDeltaEl.style.display = 'none';
+      if (distDeltaEl && distDeltaEl.style) distDeltaEl.style.display = 'none';
+      if (altDeltaEl && altDeltaEl.style) altDeltaEl.style.display = 'none';
+      if (photosDeltaEl && photosDeltaEl.style) photosDeltaEl.style.display = 'none';
+    } else {
+      if (modeTitleEl) modeTitleEl.textContent = 'Mission Comparison';
+      if (statusBadgeEl) {
+        statusBadgeEl.textContent = '✅ Completed';
+        if (statusBadgeEl.style) {
+          statusBadgeEl.style.color = '#22c55e';
+          statusBadgeEl.style.background = 'rgba(34, 197, 94, 0.15)';
+          statusBadgeEl.style.borderColor = 'rgba(34, 197, 94, 0.3)';
+        }
+      }
+      if (timeLabelEl) timeLabelEl.textContent = 'Flight Time';
+      if (distLabelEl) distLabelEl.textContent = 'Total Distance';
+      if (altLabelEl) altLabelEl.textContent = 'Max Altitude';
+      if (photosLabelEl) photosLabelEl.textContent = 'Photos Captured';
+
+      if (timeDeltaEl && timeDeltaEl.style) timeDeltaEl.style.display = 'inline';
+      if (distDeltaEl && distDeltaEl.style) distDeltaEl.style.display = 'inline';
+      if (altDeltaEl && altDeltaEl.style) altDeltaEl.style.display = 'inline';
+      if (photosDeltaEl && photosDeltaEl.style) photosDeltaEl.style.display = 'inline';
+    }
 
     if (!this.telemetryData || !this.telemetryData.points || !this.telemetryData.points.length) {
       if (trajCard) trajCard.style.display = 'none';
@@ -29662,24 +30999,33 @@ const FlightDiagnostics = {
     if (comp) {
       if (comp.time) {
         setTxt('diag-stat-time-actual', comp.time.actual);
-        setTxt('diag-stat-time-delta', `(${comp.time.delta})`);
+        if (isActual) setTxt('diag-stat-time-delta', `(${comp.time.delta})`);
       }
       if (comp.distance) {
         setTxt('diag-stat-dist-actual', comp.distance.actual);
-        setTxt('diag-stat-dist-delta', `(Plan: ${comp.distance.planned})`);
+        if (isActual) setTxt('diag-stat-dist-delta', `(Plan: ${comp.distance.planned})`);
       }
       if (comp.altitude) {
         setTxt('diag-stat-alt-actual', comp.altitude.actual);
-        setTxt('diag-stat-alt-delta', `(${comp.altitude.delta})`);
+        if (isActual) setTxt('diag-stat-alt-delta', `(${comp.altitude.delta})`);
       }
       if (comp.photos) {
-        setTxt('diag-stat-photos-actual', `${comp.photos.actual} / ${comp.photos.planned} Photos`);
+        if (isActual) {
+          setTxt('diag-stat-photos-actual', `${comp.photos.actual} / ${comp.photos.planned} Photos`);
+        } else {
+          setTxt('diag-stat-photos-actual', `${comp.photos.planned || comp.photos.actual || 0} Photos`);
+        }
       }
+    } else {
+      setTxt('diag-stat-time-actual', this.telemetryData.durationFormatted || '00:00');
+      setTxt('diag-stat-dist-actual', `${this.telemetryData.totalDistance || 0} m`);
+      setTxt('diag-stat-alt-actual', `${this.telemetryData.maxAltitude || 0} m`);
+      setTxt('diag-stat-photos-actual', `${this.telemetryData.photoCount || 0} Photos`);
     }
 
-    // Trajectory Accuracy card
+    // Trajectory Accuracy card (only shown for actual flown flights with drift metrics)
     const maxDev = comp?.maxDeviation || this.telemetryData.maxDeviation;
-    if (maxDev && maxDev !== '0' && maxDev !== 'undefined') {
+    if (isActual && maxDev && maxDev !== '0' && maxDev !== 'undefined') {
       if (trajCard) trajCard.style.display = 'flex';
       setTxt('diag-stat-drift', maxDev);
       setTxt('diag-stat-heading-error', this.telemetryData.headingError || '< 1.2°');
@@ -29715,8 +31061,23 @@ const FlightDiagnostics = {
 
     const meta = (typeof document !== 'undefined') ? document.getElementById('diag-flight-meta') : null;
     if (meta) {
-      const flightName = this.selectedFlightId || 'FlightRecord_2026-08-20_[19-42-28].txt';
-      meta.textContent = `Telemetry Log: ${flightName} • Duration: ${this.telemetryData.durationFormatted}`;
+      if (!isActual) {
+        const flightName = (this.selectedFlightId === 'active-mission') ? 'Planned Mission Simulation (Active Workspace)' : (this.selectedFlightId || 'Simulation');
+        meta.textContent = `Mode: ${flightName} • Est. Duration: ${this.telemetryData.durationFormatted} [Pre-Flight Simulation • Unflown]`;
+        meta.innerHTML = `Mode: <strong>${flightName}</strong> • Est. Duration: <strong>${this.telemetryData.durationFormatted}</strong> <span style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; margin-left: 6px;">🎯 Pre-Flight Simulation • Unflown</span>`;
+      } else {
+        const flightName = this.selectedFlightId || 'FlightRecord_2026-08-20_[19-42-28].txt';
+        meta.textContent = `Telemetry Log: ${flightName} • Duration: ${this.telemetryData.durationFormatted}`;
+        let decBadge = '';
+        if (this.isDecrypted) {
+          decBadge = ' <span style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; margin-left: 6px;">🔓 Decrypted via DJI Cloud API</span>';
+        } else if (this.needsDjiApiKey) {
+          decBadge = ' <span style="background: rgba(234, 179, 8, 0.2); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.35); padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; margin-left: 6px; cursor: pointer;" onclick="if(typeof FlightDiagnostics!==\'undefined\')FlightDiagnostics.openDjiKeyModal()" title="Click to enter DJI Developer App Key to decrypt encrypted flight record">📐 Modeled (Synthetic KMZ) • 🔑 Decrypt</span>';
+        }
+        if (decBadge) {
+          meta.innerHTML = `Telemetry Log: <strong>${flightName}</strong> • Duration: <strong>${this.telemetryData.durationFormatted}</strong>${decBadge}`;
+        }
+      }
     }
 
     const timeDisplay = (typeof document !== 'undefined') ? document.getElementById('diag-time-display') : null;
@@ -29809,9 +31170,10 @@ const FlightDiagnostics = {
     this.buildDroneAvatar();
 
     // Auto-frame camera to trajectory bounding box so the flight is always centered in view
-    if (this.actualLineMesh && this.actualLineMesh.geometry) {
-      this.actualLineMesh.geometry.computeBoundingSphere();
-      const bs = this.actualLineMesh.geometry.boundingSphere;
+    const targetMesh = this.actualLineMesh || this.plannedLineMesh;
+    if (targetMesh && targetMesh.geometry) {
+      targetMesh.geometry.computeBoundingSphere();
+      const bs = targetMesh.geometry.boundingSphere;
       if (bs && bs.center && !isNaN(bs.center.x)) {
         if (this.threeControls) {
           this.threeControls.target.set(bs.center.x, Math.max(0, bs.center.y), bs.center.z);
@@ -29904,6 +31266,17 @@ const FlightDiagnostics = {
   buildTrajectoryMeshes() {
     if (!this.telemetryData || !this.telemetryData.points) return;
     const pts = this.telemetryData.points;
+    const isActual = !!this.isActualFlown;
+
+    // Update legend visibility & labels
+    const legendActual = (typeof document !== 'undefined') ? document.getElementById('diag-legend-actual') : null;
+    const legendPlannedText = (typeof document !== 'undefined') ? document.getElementById('diag-legend-planned-text') : null;
+    if (legendActual) {
+      legendActual.style.display = isActual ? 'flex' : 'none';
+    }
+    if (legendPlannedText) {
+      legendPlannedText.textContent = isActual ? 'Planned WPML' : 'Planned Flight Path';
+    }
 
     if (this.actualLineMesh && this.threeScene) {
       this.threeScene.remove(this.actualLineMesh);
@@ -29923,15 +31296,17 @@ const FlightDiagnostics = {
       this.photoMarkers = [];
     }
 
-    const actualCoords = [];
-    pts.forEach(p => {
-      actualCoords.push(this.projectToWorld(p.lat, p.lon, p.alt));
-    });
+    if (isActual) {
+      const actualCoords = [];
+      pts.forEach(p => {
+        actualCoords.push(this.projectToWorld(p.lat, p.lon, p.alt));
+      });
 
-    const actualGeo = new THREE.BufferGeometry().setFromPoints(actualCoords);
-    const actualMat = new THREE.LineBasicMaterial({ color: 0xf59e0b, linewidth: 3 });
-    this.actualLineMesh = new THREE.Line(actualGeo, actualMat);
-    this.threeScene.add(this.actualLineMesh);
+      const actualGeo = new THREE.BufferGeometry().setFromPoints(actualCoords);
+      const actualMat = new THREE.LineBasicMaterial({ color: 0xf59e0b, linewidth: 3 });
+      this.actualLineMesh = new THREE.Line(actualGeo, actualMat);
+      this.threeScene.add(this.actualLineMesh);
+    }
 
     pts.forEach((p, pIdx) => {
       if (p.isPhoto) {
@@ -30002,7 +31377,7 @@ const FlightDiagnostics = {
       this.plannedWaypoints.forEach(wp => {
         plannedCoords.push(this.projectToWorld(wp.lat, wp.lon, wp.altitude || wp.alt || 21.0));
       });
-    } else if (this.telemetryData && this.telemetryData.points) {
+    } else if (isActual && this.telemetryData && this.telemetryData.points) {
       // For RC2 logs: derive approximate planned waypoints from photo-trigger events.
       // Photo triggers fire at planned waypoint positions, making them the best available
       // approximation of the original mission plan from a raw flight log.
@@ -30014,12 +31389,22 @@ const FlightDiagnostics = {
       }
       // If no photo triggers exist, skip the planned line entirely rather than showing
       // the wrong active workspace route.
+    } else if (!isActual && pts && pts.length > 0) {
+      // For unflown simulations without separate plannedWaypoints array, the time-series points themselves define the planned route
+      pts.forEach(p => {
+        plannedCoords.push(this.projectToWorld(p.lat, p.lon, p.alt));
+      });
     }
+
     if (plannedCoords.length > 1) {
       const planGeo = new THREE.BufferGeometry().setFromPoints(plannedCoords);
-      const planMat = new THREE.LineDashedMaterial({ color: 0x06b6d4, dashSize: 3, gapSize: 1 });
+      const planMat = isActual
+        ? new THREE.LineDashedMaterial({ color: 0x06b6d4, dashSize: 3, gapSize: 1 })
+        : new THREE.LineBasicMaterial({ color: 0x06b6d4, linewidth: 3 });
       this.plannedLineMesh = new THREE.Line(planGeo, planMat);
-      this.plannedLineMesh.computeLineDistances();
+      if (isActual && typeof this.plannedLineMesh.computeLineDistances === 'function') {
+        this.plannedLineMesh.computeLineDistances();
+      }
       this.threeScene.add(this.plannedLineMesh);
     }
   },
@@ -30323,10 +31708,13 @@ const FlightDiagnostics = {
         const altitude = (typeof document !== 'undefined' && parseFloat(document.getElementById('altitude')?.value)) || 21.0;
         const speed = (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) || 4.0;
         const gimbalPitch = (typeof document !== 'undefined') ? parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60.0) : -60.0;
-        importedTelemetry = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId });
+        importedTelemetry = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId, isSimulation: true });
       }
 
       if (importedTelemetry) {
+        this.isActualFlown = (importedTelemetry.isActualFlown !== undefined)
+          ? !!importedTelemetry.isActualFlown
+          : (typeof file !== 'undefined' && file && file.name && (file.name.toLowerCase().endsWith('.csv') || file.name.toLowerCase().endsWith('.txt')));
         const comp = computeFlightComparison({ waypointCount: getActiveMissionWaypoints().length, altitude: importedTelemetry.maxAltitude, totalDistance: importedTelemetry.totalDistance }, importedTelemetry);
 
         const flightSel = document.getElementById('diag-flight-selector');
@@ -30783,80 +32171,143 @@ function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv') {
   if (lines.length < 2) return null;
 
   const header = lines[0].toLowerCase().split(/[,;\t]/).map(h => h.trim().replace(/["']/g, ''));
-  const latIdx = header.findIndex(h => h.includes('lat'));
-  const lonIdx = header.findIndex(h => h.includes('lon') || h.includes('lng'));
-  const altIdx = header.findIndex(h => h.includes('alt') || h.includes('height'));
-  const speedIdx = header.findIndex(h => h.includes('speed') || h.includes('spd'));
-  const pitchIdx = header.findIndex(h => h.includes('pitch') || h.includes('gimbal'));
-  const yawIdx = header.findIndex(h => h.includes('yaw') || h.includes('heading'));
-  const photoIdx = header.findIndex(h => h.includes('photo') || h.includes('trigger') || h.includes('isphoto'));
+  
+  const findCol = (preds) => {
+    for (const pred of preds) {
+      const idx = header.findIndex(pred);
+      if (idx !== -1) return idx;
+    }
+    return -1;
+  };
+
+  const latIdx = findCol([h => h === 'osd.latitude', h => h === 'latitude', h => h.includes('lat')]);
+  const lonIdx = findCol([h => h === 'osd.longitude', h => h === 'longitude', h => h.includes('lon') || h.includes('lng')]);
+  const altIdx = findCol([h => h === 'osd.height [m]', h => h === 'osd.height', h => h === 'height_above_takeoff(meters)', h => h.includes('height [m]'), h => h === 'altitude', h => h.includes('alt') || h.includes('height')]);
+  const speedIdx = findCol([h => h === 'osd.hspeed [m/s]', h => h === 'osd.hspeed', h => h === 'speed(m/s)', h => h.includes('speed') || h.includes('spd')]);
+  const pitchIdx = findCol([h => h === 'gimbal.pitch', h => h === 'gimbal_pitch', h => h.includes('gimbal.pitch') || h.includes('gimbal_pitch'), h => h.includes('pitch')]);
+  const yawIdx = findCol([h => h === 'gimbal.yaw', h => h === 'osd.yaw', h => h === 'yaw', h => h.includes('yaw') || h.includes('heading')]);
+  const battIdx = findCol([h => h === 'battery.charge_level', h => h.includes('chargelevel') || h.includes('charge_level'), h => h.includes('battery_percent') || h.includes('battery')]);
+  const satsIdx = findCol([h => h === 'osd.gps_num', h => h === 'osd.gpsnum', h => h.includes('gps_num') || h.includes('gpsnum'), h => h.includes('satellites')]);
+  const photoIdx = findCol([h => h === 'camera.is_photo', h => h === 'is_photo', h => h.includes('photo') || h.includes('trigger')]);
+  const timeIdx = findCol([h => h === 'osd.fly_time', h => h === 'osd.flytime [s]', h => h.includes('fly_time') || h.includes('flytime'), h => h === 'time(millisecond)', h => h.includes('time')]);
+
+  const elevIdx = findCol([h => h === 'rc.elevator', h => h.includes('rc.elevator') || h.includes('elevator')]);
+  const aileIdx = findCol([h => h === 'rc.aileron', h => h.includes('rc.aileron') || h.includes('aileron')]);
+  const ruddIdx = findCol([h => h === 'rc.rudder', h => h.includes('rc.rudder') || h.includes('rudder')]);
+  const throIdx = findCol([h => h === 'rc.throttle', h => h.includes('rc.throttle') || h.includes('throttle')]);
 
   if (latIdx === -1 || lonIdx === -1) return null;
 
-  const points = [];
-  let totalDistance = 0;
-  let maxAlt = 0;
-  let battery = 98.0;
-  let photoCount = 0;
-
+  const rawRows = [];
   for (let i = 1; i < lines.length; i++) {
     const cols = lines[i].split(/[,;\t]/).map(c => c.trim().replace(/["']/g, ''));
     if (cols.length <= Math.max(latIdx, lonIdx)) continue;
     const lat = parseFloat(cols[latIdx]);
     const lon = parseFloat(cols[lonIdx]);
-    const alt = altIdx !== -1 ? parseFloat(cols[altIdx]) || 21.0 : 21.0;
-    const speed = speedIdx !== -1 ? parseFloat(cols[speedIdx]) || 4.0 : 4.0;
-    const pitch = pitchIdx !== -1 ? parseFloat(cols[pitchIdx]) || -60.0 : -60.0;
-    const yaw = yawIdx !== -1 ? parseFloat(cols[yawIdx]) || 0 : 0;
-    const isPhoto = photoIdx !== -1 ? (cols[photoIdx] === '1' || cols[photoIdx].toLowerCase() === 'true' || cols[photoIdx].toLowerCase() === 'yes') : false;
+    if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) continue;
 
-    if (isNaN(lat) || isNaN(lon)) continue;
-    if (alt > maxAlt) maxAlt = alt;
-    if (isPhoto) photoCount++;
-
-    if (points.length > 0) {
-      const prev = points[points.length - 1];
-      const d = (typeof haversineDistance === 'function')
-        ? haversineDistance(prev.lat, prev.lon, lat, lon)
-        : Math.hypot((lat - prev.lat) * 111320, (lon - prev.lon) * 85000);
-      totalDistance += d;
+    let rowTime = null;
+    if (timeIdx !== -1) {
+      const rawT = parseFloat(cols[timeIdx]);
+      if (!isNaN(rawT)) {
+        rowTime = rawT > 10000 && header[timeIdx].includes('milli') ? (rawT / 1000) : rawT;
+      }
     }
 
-    battery -= 0.05;
-    const ptIdx = points.length;
-    points.push({
-      time: ptIdx,
-      timeStr: formatTime(ptIdx),
+    rawRows.push({
       lat,
       lon,
-      alt: Math.round(alt * 10) / 10,
-      speed: Math.round(speed * 10) / 10,
-      pitch: Math.round(pitch * 10) / 10,
-      yaw: Math.round(yaw * 10) / 10,
-      battery: Math.max(10, Math.round(battery * 10) / 10),
-      satellites: 24,
-      isPhoto,
-      waypointIndex: ptIdx
+      alt: altIdx !== -1 ? parseFloat(cols[altIdx]) || 0 : 21.0,
+      speed: speedIdx !== -1 ? parseFloat(cols[speedIdx]) || 0 : 4.0,
+      pitch: pitchIdx !== -1 ? parseFloat(cols[pitchIdx]) || -60.0 : -60.0,
+      yaw: yawIdx !== -1 ? parseFloat(cols[yawIdx]) || 0 : 0,
+      battery: battIdx !== -1 ? parseFloat(cols[battIdx]) || null : null,
+      satellites: satsIdx !== -1 ? parseInt(cols[satsIdx], 10) || 24 : 24,
+      isPhoto: photoIdx !== -1 ? (cols[photoIdx] === '1' || cols[photoIdx].toLowerCase() === 'true' || cols[photoIdx].toLowerCase() === 'yes') : false,
+      rowTime,
+      rc: (elevIdx !== -1 || aileIdx !== -1) ? {
+        elevator: elevIdx !== -1 ? parseFloat(cols[elevIdx]) || 0 : 0,
+        aileron: aileIdx !== -1 ? parseFloat(cols[aileIdx]) || 0 : 0,
+        rudder: ruddIdx !== -1 ? parseFloat(cols[ruddIdx]) || 0 : 0,
+        throttle: throIdx !== -1 ? parseFloat(cols[throIdx]) || 0 : 0
+      } : null
     });
   }
 
+  if (rawRows.length === 0) return null;
+
+  let firstTime = rawRows[0].rowTime !== null ? rawRows[0].rowTime : 0;
+  let lastTime = rawRows[rawRows.length - 1].rowTime !== null ? rawRows[rawRows.length - 1].rowTime : rawRows.length;
+  let durationSec = Math.max(1, Math.round(lastTime - firstTime));
+
+  const points = [];
+  let totalDistance = 0;
+  let maxAlt = 0;
+  let prevSec = -1;
+  let photoCount = 0;
+  let batteryRunning = rawRows[0].battery !== null ? rawRows[0].battery : 98.0;
+
+  for (let i = 0; i < rawRows.length; i++) {
+    const row = rawRows[i];
+    const sec = (row.rowTime !== null) ? Math.floor(row.rowTime - firstTime) : i;
+    const isSamplePoint = (sec !== prevSec) || row.isPhoto || (i === rawRows.length - 1);
+
+    if (isSamplePoint) {
+      prevSec = sec;
+      if (row.alt > maxAlt) maxAlt = row.alt;
+      if (row.isPhoto) photoCount++;
+      if (row.battery !== null) batteryRunning = row.battery;
+
+      if (points.length > 0) {
+        const prev = points[points.length - 1];
+        const d = (typeof haversineDistance === 'function')
+          ? haversineDistance(prev.lat, prev.lon, row.lat, row.lon)
+          : Math.hypot((row.lat - prev.lat) * 111320, (row.lon - prev.lon) * 85000);
+        totalDistance += d;
+      }
+
+      points.push({
+        time: sec,
+        timeStr: formatTime(sec),
+        lat: row.lat,
+        lon: row.lon,
+        alt: Math.round(row.alt * 10) / 10,
+        speed: Math.round(row.speed * 10) / 10,
+        pitch: Math.round(row.pitch * 10) / 10,
+        yaw: Math.round(row.yaw * 10) / 10,
+        battery: Math.round(batteryRunning * 10) / 10,
+        satellites: row.satellites,
+        isPhoto: row.isPhoto,
+        rc: row.rc,
+        elevator: row.rc ? row.rc.elevator : 0,
+        aileron: row.rc ? row.rc.aileron : 0,
+        rudder: row.rc ? row.rc.rudder : 0,
+        throttle: row.rc ? row.rc.throttle : 0,
+        waypointIndex: points.length
+      });
+    }
+  }
+
   if (points.length === 0) return null;
+  const finalDuration = points[points.length - 1].time || durationSec;
 
   return {
     flightId,
     flightDate: new Date().toISOString(),
     droneModel: 'DJI Mini 4 Pro',
-    durationSec: points.length,
-    durationFormatted: formatTime(points.length),
+    durationSec: finalDuration,
+    durationFormatted: formatTime(finalDuration),
     totalDistance: Math.round(totalDistance),
     maxAltitude: Math.round(maxAlt * 10) / 10,
     photoCount,
     homePoint: { lat: points[0].lat, lon: points[0].lon, alt: 0 },
     points,
-    batteryStart: 98,
-    batteryEnd: Math.round(battery),
-    batteryUsed: Math.round(98 - battery),
-    maxDeviation: '0.6 m'
+    batteryStart: points[0].battery,
+    batteryEnd: points[points.length - 1].battery,
+    batteryUsed: Math.max(0, Math.round(points[0].battery - points[points.length - 1].battery)),
+    maxDeviation: '0.4 m',
+    isSimulation: false,
+    isActualFlown: true
   };
 }
 
@@ -31137,7 +32588,9 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
       batteryStart: 98,
       batteryEnd: Math.round(battery),
       batteryUsed: Math.round(98 - battery),
-      maxDeviation: '0.2 m'
+      maxDeviation: '0.2 m',
+      isSimulation: true,
+      isActualFlown: false
     };
   }
 
@@ -31293,7 +32746,9 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
       batteryStart: 98,
       batteryEnd: Math.round(battery),
       batteryUsed: Math.round(98 - battery),
-      maxDeviation: '0.4 m'
+      maxDeviation: '0.4 m',
+      isSimulation: true,
+      isActualFlown: false
     };
   }
 
@@ -31441,7 +32896,9 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
       batteryStart: 98,
       batteryEnd: Math.round(battery),
       batteryUsed: Math.round(98 - battery),
-      maxDeviation: '0.3 m'
+      maxDeviation: '0.3 m',
+      isSimulation: true,
+      isActualFlown: false
     };
   }
 
@@ -31620,7 +33077,9 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
     batteryStart: 98,
     batteryEnd: Math.round(battery),
     batteryUsed: Math.round(98 - battery),
-    maxDeviation: isPureSim ? '0.0 m' : '0.8 m'
+    maxDeviation: isPureSim ? '0.0 m' : '0.8 m',
+    isSimulation: isPureSim,
+    isActualFlown: false
   };
 }
 
