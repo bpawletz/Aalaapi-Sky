@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.103.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.104.2</span></h1>
         </div>
       </div>
 
@@ -222,6 +222,7 @@
               <option value="exclusion-box">🚫 Exclusion Zone (Box)</option>
               <option value="exclusion-freeform">🚫 Exclusion Zone (Freeform)</option>
               <option value="boundary-polygon">🗺️ Boundary / Parcel (Drawing)</option>
+              <option value="fiducial-markers">🎯 Fiducial / GCPs (Survey)</option>
             </select>
             
             <!-- Custom visual selector cards -->
@@ -346,6 +347,19 @@
                 <span style="color: #22d3ee;">Boundary</span>
                 <span class="pattern-badge-tool" style="background: rgba(6, 182, 212, 0.2); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.35);">DRAWING</span>
               </div>
+              <div class="pattern-card fiducial-card" data-value="fiducial-markers" title="Fiducial Markers & Ground Control Points (GCPs)">
+                <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="9" stroke="#f59e0b"/>
+                  <circle cx="12" cy="12" r="4" stroke="#f59e0b"/>
+                  <line x1="12" y1="1" x2="12" y2="7" stroke="#f59e0b"/>
+                  <line x1="12" y1="17" x2="12" y2="23" stroke="#f59e0b"/>
+                  <line x1="1" y1="12" x2="7" y2="12" stroke="#f59e0b"/>
+                  <line x1="17" y1="12" x2="23" y2="12" stroke="#f59e0b"/>
+                  <circle cx="12" cy="12" r="1.5" fill="#f59e0b"/>
+                </svg>
+                <span style="color: #fbbf24;">Fiducial / GCP</span>
+                <span class="pattern-badge-tool" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35);">SURVEY</span>
+              </div>
             </div>
           </div>
           
@@ -359,6 +373,10 @@
 
           <div id="boundary-instructions" class="info-alert hidden" style="margin-bottom: 12px; background: rgba(6, 182, 212, 0.1); border-color: rgba(6, 182, 212, 0.3); color: #22d3ee;">
             <span>🗺️ <strong>Parcel / Boundary Drawing Active:</strong> Click anywhere on the map to place boundary vertices. Drag vertex pins to adjust or click a vertex to remove. These boundaries automatically project onto captured photos in the Photo Inspector.</span>
+          </div>
+
+          <div id="fiducial-instructions" class="info-alert hidden" style="margin-bottom: 12px; background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); color: #fbbf24;">
+            <span>🎯 <strong>Fiducial Markers &amp; GCPs Active:</strong> Click anywhere on the map to place ground control points or fiducial targets. Drag pins to adjust coordinates. These markers automatically project onto captured photos in the Photo Inspector for photogrammetry and calibration.</span>
           </div>
 
           <p class="help-text" id="import-status-text" style="margin-top: 4px;">Click anywhere on the map to place or reposition the flight pattern center.</p>
@@ -1246,6 +1264,118 @@
               </div>
             </div>
           </div> <!-- /layer-card-boundary -->
+
+          <!-- Card 6: Fiducial Markers & Ground Control Points (GCPs) Properties -->
+          <div id="layer-card-fiducial" class="layer-subgroup-card hidden">
+            <div class="layer-subgroup-header">
+              <span>🎯 Fiducial Markers &amp; GCPs</span>
+              <span class="badge" style="font-size: 0.62rem; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); padding: 1px 5px; border-radius: 999px;">Survey</span>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 6px;">
+              <div class="control-group">
+                <label for="fiducial-layer-name" style="font-size: 0.75rem;">Survey Layer Name</label>
+                <input type="text" id="fiducial-layer-name" class="form-control" placeholder="e.g. Ground Control Points" value="Fiducial / GCPs" style="font-size: 0.75rem; padding: 4px 8px;">
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div class="control-group">
+                  <label for="fiducial-default-type" style="font-size: 0.75rem;">Target Family</label>
+                  <select id="fiducial-default-type" class="form-select" style="font-size: 0.72rem; padding: 4px 6px;">
+                    <option value="aruco_4x4" selected>ArUco 4x4 (50)</option>
+                    <option value="aruco_5x5">ArUco 5x5 (100)</option>
+                    <option value="apriltag_36h11">AprilTag (36h11)</option>
+                    <option value="checkerboard">Checkerboard</option>
+                    <option value="crosshair">Crosshair / AeroPoint</option>
+                    <option value="circular_coded">Circular Coded</option>
+                  </select>
+                </div>
+
+                <div class="control-group">
+                  <label for="fiducial-default-role" style="font-size: 0.75rem;">Default Role</label>
+                  <select id="fiducial-default-role" class="form-select" style="font-size: 0.72rem; padding: 4px 6px;">
+                    <option value="gcp" selected>GCP (Control Point)</option>
+                    <option value="checkpoint">Check Point (CP)</option>
+                    <option value="scale_bar">Scale Bar Target</option>
+                    <option value="anchor">Origin / Anchor</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div class="control-group">
+                  <label for="fiducial-default-size" style="font-size: 0.75rem;">Target Size (m)</label>
+                  <select id="fiducial-default-size" class="form-select" style="font-size: 0.72rem; padding: 4px 6px;">
+                    <option value="0.2">0.20 m (~8 in)</option>
+                    <option value="0.3">0.30 m (~12 in)</option>
+                    <option value="0.5" selected>0.50 m (~20 in)</option>
+                    <option value="0.6">0.60 m (~24 in)</option>
+                    <option value="1.0">1.00 m (~39 in)</option>
+                  </select>
+                </div>
+
+                <div class="control-group">
+                  <label for="fiducial-marker-color" style="font-size: 0.75rem;">Marker Color</label>
+                  <select id="fiducial-marker-color" class="form-select" style="font-size: 0.72rem; padding: 4px 6px;">
+                    <option value="#f59e0b" selected>Amber (#f59e0b)</option>
+                    <option value="#10b981">Emerald (#10b981)</option>
+                    <option value="#06b6d4">Cyan (#06b6d4)</option>
+                    <option value="#ef4444">Crimson (#ef4444)</option>
+                    <option value="#a855f7">Purple (#a855f7)</option>
+                    <option value="#ffffff">White (#ffffff)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Markers Summary Card -->
+              <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 6px; padding: 8px 10px; font-size: 0.74rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: var(--text-muted);">Surveyed Markers:</span>
+                  <strong id="fiducial-metrics-summary" style="color: #fbbf24;">0 Markers</strong>
+                </div>
+              </div>
+
+              <!-- Placed Markers Table Container -->
+              <div id="fiducial-markers-table-container" style="max-height: 180px; overflow-y: auto; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; background: rgba(15, 23, 42, 0.5);">
+                <table id="fiducial-markers-table" style="width: 100%; border-collapse: collapse; font-size: 0.7rem; text-align: left;">
+                  <thead>
+                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1); color: var(--text-muted); background: rgba(0, 0, 0, 0.2);">
+                      <th style="padding: 4px 6px;">Code</th>
+                      <th style="padding: 4px 6px;">Role</th>
+                      <th style="padding: 4px 6px;">Alt (m)</th>
+                      <th style="padding: 4px 6px; text-align: right;">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="fiducial-markers-tbody">
+                    <tr>
+                      <td colspan="4" style="padding: 10px; text-align: center; color: var(--text-muted); font-style: italic;">
+                        No markers placed yet. Click on the map or import CSV/GeoJSON.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Quick Action Button Grid -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                <button type="button" id="btn-add-fiducial-manual" class="btn-secondary btn-sm" style="font-size: 0.72rem; padding: 4px 6px;">➕ Add by Coords</button>
+                <button type="button" id="btn-open-target-generator" class="btn-secondary btn-sm" style="font-size: 0.72rem; padding: 4px 6px; color: #fbbf24;">🖨️ Target Print Sheet</button>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                <button type="button" id="btn-import-fiducials" class="btn-secondary btn-sm" style="font-size: 0.72rem; padding: 4px 6px;">📥 Import CSV / GeoJSON</button>
+                <input type="file" id="fiducial-import-file-input" accept=".csv,.txt,.geojson,.json" class="hidden" />
+                <div style="display: flex; gap: 4px;">
+                  <button type="button" id="btn-export-fiducials-csv" class="btn-secondary btn-sm" style="flex: 1; font-size: 0.72rem; padding: 4px 4px;" title="Export markers as CSV">📤 CSV</button>
+                  <button type="button" id="btn-export-fiducials-geojson" class="btn-secondary btn-sm" style="flex: 1; font-size: 0.72rem; padding: 4px 4px;" title="Export markers as GeoJSON">📤 GeoJSON</button>
+                </div>
+              </div>
+
+              <div>
+                <button type="button" id="btn-clear-fiducial-markers" class="btn-secondary btn-sm" style="width: 100%; font-size: 0.72rem; padding: 4px 8px; color: #ef4444;" title="Clear all fiducial markers for this layer">✕ Clear All Markers</button>
+              </div>
+            </div>
+          </div> <!-- /layer-card-fiducial -->
         </section>
 
         <!-- Section 3: Global Mission Failsafes & Defaults -->
@@ -2045,6 +2175,24 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #c4b5fd; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🏟️ Standby Stadium Advisories &amp; 14 CFR § 99.7 Briefings (v1.104.2)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Major sports arenas and speedways (e.g., Ohio Stadium) are now intelligently distinguished as Standby Stadium Advisories rather than active emergency TFRs. Features human-readable venue names (replacing raw database IDs), calm non-alarmist proximity indicators, green operational telemetry health, Leaflet 3 NM advisory perimeter circles, and a dedicated 14 CFR § 99.7 briefing covering event restriction windows (&plusmn;1 hr for 30k+ spectator venues), 3,000 ft AGL ceiling, and Part 107 compliance.
+            </p>
+          </div>
+
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #fbbf24; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🎯 Fiducial Markers &amp; Ground Control Points (GCPs) Workflow (v1.104.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Introduces a comprehensive Ground Control Point (GCP) and fiducial marker ecosystem for aerial photogrammetry and high-accuracy drone surveys. Features a first-class <code>SURVEY</code> drawing tool in Section 1 with interactive 2D map marker placement, draggable target pins, and popup editors. Section 2 Card 6 manages target families (ArUco 4x4/5x5, AprilTag 36h11, Checkerboards, Crosshairs), functional roles (GCP, Check Point, Scale Bar, Anchor), physical dimensions, and live marker tables. Includes standard RTK GNSS rover CSV/GeoJSON import and export, automatic forward pinhole projection onto captured photos in the Photo Inspector with dedicated layer toggle, and an in-app printable vector SVG target sheet generator for field deployment. Safely produces 0 flight waypoints to preserve WPML flight isolation.
+            </p>
+          </div>
+
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🛣️ Road Follow Dynamic Gimbal Focus &amp; Road Tracking (v1.103.0)
@@ -2743,7 +2891,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.103.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.104.2</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -2812,6 +2960,28 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.104.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🏟️ Standby Stadium Advisories &amp; 14 CFR § 99.7:</strong> Ingested sporting arenas (such as Ohio Stadium at OSU) are now distinguished as Standby Stadium Advisories rather than active emergency TFRs, eliminating false alarms.</li>
+              <li><strong>Venue Name Display:</strong> Shows human-readable venue names across all panels and popups instead of raw numeric ArcGIS database IDs.</li>
+              <li><strong>Non-Alarmist Proximity Badging:</strong> Calm purple/indigo <code>[STADIUM]</code> badge, nearest venue summary, and green operational telemetry health status.</li>
+              <li><strong>Dedicated In-App Briefing:</strong> Interactive modal detailing 14 CFR § 99.7 sporting event rules, 30,000+ attendee thresholds, &plusmn;1 hour restriction windows, 3 NM / 3,000 ft AGL protected airspace, and UAS compliance guidance.</li>
+              <li><strong>2D Map Advisory Perimeters:</strong> Renders 3 NM dashed advisory boundary circles around stadiums in the Leaflet TFR overlay.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.104.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🗺️ Weather Station Tab No-Jump:</strong> Clicking the 4 nearby station buttons in the Live Weather card now only updates the card info without moving the map. Use the <code>📍 Map</code> button for intentional map focus.</li>
+              <li><strong>🎯 Fiducial Markers &amp; GCPs Ecosystem:</strong> Added dedicated <code>SURVEY</code> drawing pattern in Section 1 and Section 2 Card 6 for ground control points and photogrammetric fiducial targets.</li>
+              <li><strong>Interactive 2D Map &amp; Popup Editor:</strong> Click map to drop styled fiducial pins (ArUco, AprilTag, Checkerboard, Crosshair) with draggable coordinate adjustment and inline editing.</li>
+              <li><strong>Survey Rover Import &amp; Export:</strong> 1-click import and export of standard RTK GNSS CSV and GeoJSON files with automated column mapping.</li>
+              <li><strong>Photo Inspector Forward Pinhole Projection:</strong> Real-time superimposition of fiducial reticles, marker ID badges, and footprint bounding boxes with dedicated overlay toggle.</li>
+              <li><strong>Printable Vector Target Generator:</strong> Built-in modal generating millimeter-accurate SVG/PDF target sheets for field deployment with center crosshairs, scale rulers, and corner alignment ticks.</li>
+              <li><strong>Safe Flight Wayline Isolation:</strong> Fiducial layers safely produce 0 flight waypoints and are isolated from drone WPML execution.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.103.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -6065,6 +6235,10 @@
                 <span>🗺️ Flight Layer Boundary</span>
               </label>
               <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" id="layer-toggle-fiducials" checked />
+                <span>🎯 Fiducial Markers / GCPs</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                 <input type="checkbox" id="layer-toggle-measure" checked />
                 <span>📏 Caliper Measurements</span>
               </label>
@@ -6210,6 +6384,98 @@
           <button id="start-media-pull-btn" type="button" class="btn-primary" style="padding: 6px 16px; font-size: 0.78rem; font-weight: 600;">📥 Ingest &amp; Correlate Photos</button>
         </div>
       </footer>
+    </div>
+  </div>
+
+  <!-- Fiducial Target Generator Modal (v1.104.0) -->
+  <div id="fiducial-generator-modal" class="modal-overlay hidden" style="z-index: 10045;">
+    <div class="modal glass" style="max-width: 680px; width: 95vw;">
+      <header class="modal-header">
+        <h2 style="display: flex; align-items: center; gap: 8px; font-size: 1.05rem; margin: 0;">
+          <span>🎯</span>
+          Printable Fiducial Target Generator
+        </h2>
+        <button id="close-fiducial-generator-modal-btn" class="close-btn" type="button" aria-label="Close generator">&times;</button>
+      </header>
+      <div class="modal-content" style="display: flex; flex-direction: column; gap: 14px; padding: 18px 20px;">
+        <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted); line-height: 1.45;">
+          Generate high-contrast, millimeter-accurate optical fiducial targets (ArUco, AprilTag, Checkerboard, Crosshair) with calibrated scale bars and center crosshairs for field survey deployment.
+        </p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="control-group">
+            <label for="gen-target-type" style="font-size: 0.75rem;">Target Family / Style</label>
+            <select id="gen-target-type" class="form-select" style="font-size: 0.75rem; padding: 4px 8px;">
+              <option value="aruco_4x4" selected>ArUco 4x4 (DICT_4X4_50)</option>
+              <option value="aruco_5x5">ArUco 5x5 (DICT_5X5_100)</option>
+              <option value="apriltag_36h11">AprilTag (Tag36h11)</option>
+              <option value="checkerboard">Survey Checkerboard (4x4)</option>
+              <option value="crosshair">Survey Crosshair &amp; Bullseye</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="gen-target-id" style="font-size: 0.75rem;">Marker ID / Dictionary Index</label>
+            <input type="number" id="gen-target-id" class="form-control" min="0" max="99" value="0" style="font-size: 0.75rem; padding: 4px 8px;">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="control-group">
+            <label for="gen-sheet-size" style="font-size: 0.75rem;">Print Sheet Format</label>
+            <select id="gen-sheet-size" class="form-select" style="font-size: 0.75rem; padding: 4px 8px;">
+              <option value="letter" selected>US Letter (8.5 &times; 11 in)</option>
+              <option value="a4">ISO A4 (210 &times; 297 mm)</option>
+              <option value="large">Arch C / 18 &times; 24 in</option>
+              <option value="poster">Arch D / 24 &times; 36 in</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="gen-target-size" style="font-size: 0.75rem;">Physical Target Edge (m)</label>
+            <select id="gen-target-size" class="form-select" style="font-size: 0.75rem; padding: 4px 8px;">
+              <option value="0.15">0.15 m (~6 in)</option>
+              <option value="0.20" selected>0.20 m (~8 in)</option>
+              <option value="0.30">0.30 m (~12 in)</option>
+              <option value="0.50">0.50 m (~20 in)</option>
+              <option value="1.00">1.00 m (~39 in)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Target Options Checkboxes -->
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.75rem;">
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="checkbox" id="gen-opt-crosshair" checked />
+            <span>Center Crosshair</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="checkbox" id="gen-opt-cornerticks" checked />
+            <span>Corner Alignment Ticks</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="checkbox" id="gen-opt-ruler" checked />
+            <span>Calibrated Scale Ruler (10cm / 4in)</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="checkbox" id="gen-opt-idlabel" checked />
+            <span>Header ID Badge &amp; Date</span>
+          </label>
+        </div>
+
+        <!-- Live Vector SVG Target Preview Container -->
+        <div id="gen-target-preview-container" style="background: #ffffff; border-radius: 8px; border: 2px solid #334155; padding: 12px; display: flex; align-items: center; justify-content: center; min-height: 280px; max-height: 380px; overflow: hidden;">
+          <div id="gen-target-preview-svg" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+            <!-- SVG rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Modal Action Footer -->
+        <div style="display: flex; justify-content: flex-end; gap: 8px;">
+          <button type="button" id="btn-download-target-svg" class="btn-secondary" style="font-size: 0.78rem; padding: 6px 12px;">💾 Download Vector SVG</button>
+          <button type="button" id="btn-print-target-sheet" class="btn-primary" style="font-size: 0.78rem; padding: 6px 14px; background: linear-gradient(135deg, #d97706, #f59e0b); border-color: #f59e0b; color: #000; font-weight: 700;">🖨️ Print Target Sheet</button>
+        </div>
+      </div>
     </div>
   </div>
 

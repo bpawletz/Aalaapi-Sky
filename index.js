@@ -123,6 +123,15 @@ const FLIGHT_TOOLS = {
     shortcut: 'B',
     description: 'Drawing layer for property parcel perimeters and survey boundary envelopes',
     propertyGroups: ['boundary-properties']
+  },
+  'fiducial-markers': {
+    id: 'fiducial-markers',
+    label: 'Fiducial / GCPs',
+    category: 'survey',
+    icon: 'fiducial-markers',
+    shortcut: 'M',
+    description: 'Ground Control Points (GCPs), check points, and optical fiducial markers for photogrammetry',
+    propertyGroups: ['fiducial-properties']
   }
 };
 
@@ -139,6 +148,7 @@ let photoInspectionGroup = null;
 let activeInspectionManifest = null;
 let exclusionZonesGroup = null;
 let boundaryLayersGroup = null;
+let fiducialMarkersGroup = null;
 let targetPolygonGroup = null;
 let isTargetPolyEditActive = false;
 let isAnyPopupOpen = false;
@@ -489,6 +499,811 @@ function drawBoundaryLayers(globalCenterLat, globalCenterLon) {
       });
     }
   });
+}
+
+// ============================================================================
+// 🎯 Fiducial Markers & Ground Control Points (GCPs) Engine (v1.104.0)
+// ============================================================================
+
+/**
+ * Predefined dictionary data for ArUco 4x4 (first 50 markers from OpenCV DICT_4X4_1000_BYTES)
+ * Each pair represents 2 bytes (16 bits, 4x4 grid in row-major order).
+ */
+const ARUCO_4X4_50_DATA = [
+  [181, 50], [15, 154], [51, 45], [153, 70], [84, 158], [121, 205], [158, 46], [196, 242],
+  [254, 218], [207, 86], [249, 145], [17, 167], [14, 183], [42, 15], [36, 177], [38, 62],
+  [70, 101], [102, 0], [108, 94], [118, 175], [134, 139], [176, 43], [204, 213], [221, 130],
+  [254, 71], [148, 113], [172, 228], [165, 84], [33, 35], [52, 111], [68, 21], [87, 178],
+  [158, 207], [240, 203], [8, 174], [9, 41], [24, 117], [4, 255], [13, 246], [28, 90],
+  [23, 24], [42, 40], [50, 140], [56, 178], [36, 232], [46, 235], [45, 63], [75, 100],
+  [80, 46], [80, 19]
+];
+
+/**
+ * Predefined dictionary data for Classic ArUco 5x5 (first 50 markers from OpenCV DICT_ARUCO_BYTES)
+ * Each tuple represents 4 bytes (25 bits, 5x5 grid in row-major order).
+ */
+const ARUCO_5X5_DATA = [
+  [132, 33, 8, 0], [132, 33, 11, 1], [132, 33, 4, 1], [132, 33, 7, 0],
+  [132, 33, 120, 0], [132, 33, 123, 1], [132, 33, 116, 1], [132, 33, 119, 0],
+  [132, 32, 152, 0], [132, 32, 155, 1], [132, 32, 148, 1], [132, 32, 151, 0],
+  [132, 32, 232, 0], [132, 32, 235, 1], [132, 32, 228, 1], [132, 32, 231, 0],
+  [132, 47, 8, 0], [132, 47, 11, 1], [132, 47, 4, 1], [132, 47, 7, 0],
+  [132, 47, 120, 0], [132, 47, 123, 1], [132, 47, 116, 1], [132, 47, 119, 0],
+  [132, 46, 152, 0], [132, 46, 155, 1], [132, 46, 148, 1], [132, 46, 151, 0],
+  [132, 46, 232, 0], [132, 46, 235, 1], [132, 46, 228, 1], [132, 46, 231, 0],
+  [132, 37, 8, 0], [132, 37, 11, 1], [132, 37, 4, 1], [132, 37, 7, 0],
+  [132, 37, 120, 0], [132, 37, 123, 1], [132, 37, 116, 1], [132, 37, 119, 0],
+  [132, 36, 152, 0], [132, 36, 155, 1], [132, 36, 148, 1], [132, 36, 151, 0],
+  [132, 36, 232, 0], [132, 36, 235, 1], [132, 36, 228, 1], [132, 36, 231, 0],
+  [132, 43, 8, 0], [132, 43, 11, 1]
+];
+
+/**
+ * Predefined dictionary data for AprilTag 16h5 (OpenCV DICT_APRILTAG_16h5_BYTES)
+ */
+const APRILTAG_16H5_DATA = [
+  [216, 196], [165, 116], [86, 44], [157, 162], [101, 158], [214, 254], [26, 205], [233, 49],
+  [83, 193], [146, 85], [178, 163], [75, 41], [171, 91], [106, 219], [43, 151], [53, 107],
+  [203, 101], [109, 137], [182, 73], [115, 23]
+];
+
+/**
+ * Adds a new fiducial marker / GCP to the active layer.
+ */
+function addFiducialMarkerPoint(lat, lng, layerOrOptions = {}, maybeOptions = {}) {
+  let targetLayer = null;
+  let options = {};
+  if (layerOrOptions && typeof layerOrOptions === 'object' && ('fiducialMarkers' in layerOrOptions || 'isDrawingLayer' in layerOrOptions || 'id' in layerOrOptions)) {
+    targetLayer = layerOrOptions;
+    options = maybeOptions || {};
+  } else {
+    options = layerOrOptions || {};
+  }
+
+  const activeLayer = targetLayer || ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+  if (!activeLayer) return null;
+
+  if (!Array.isArray(activeLayer.fiducialMarkers)) {
+    activeLayer.fiducialMarkers = [];
+  }
+
+  const idx = activeLayer.fiducialMarkers.length;
+  const role = options.role || activeLayer.defaultTargetRole || 'gcp';
+  const type = options.type || activeLayer.defaultTargetType || 'aruco_4x4';
+  const prefix = role === 'checkpoint' ? 'CHK' : (role === 'scale_bar' ? 'SCL' : (role === 'anchor' ? 'ANC' : 'GCP'));
+  const code = options.code || `${prefix}-${String(idx + 1).padStart(2, '0')}`;
+  const size = (typeof options.physicalSizeMeters === 'number' && options.physicalSizeMeters > 0)
+    ? options.physicalSizeMeters
+    : (parseFloat(activeLayer.defaultPhysicalSize) || 0.50);
+  const alt = (typeof options.alt === 'number') ? options.alt : (parseFloat(activeLayer.altitude) || 0.0);
+  const color = options.color || activeLayer.markerColor || '#f59e0b';
+
+  const marker = {
+    id: options.id || `gcp-${Date.now()}-${idx + 1}-${Math.floor(Math.random() * 1000)}`,
+    code,
+    role,
+    type,
+    markerId: typeof options.markerId === 'number' ? options.markerId : idx,
+    lat,
+    lon: lng,
+    alt,
+    physicalSizeMeters: size,
+    color,
+    notes: options.notes || ''
+  };
+
+  activeLayer.fiducialMarkers.push(marker);
+  updateGrid();
+  renderFiducialMarkersTable(activeLayer);
+  return marker;
+}
+
+/**
+ * Deletes a fiducial marker by ID from a layer.
+ */
+function deleteFiducialMarker(layerId, markerId) {
+  const allLayers = (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : [];
+  const layer = allLayers.find(l => l.id === layerId) || ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+  if (!layer || !Array.isArray(layer.fiducialMarkers)) return;
+
+  layer.fiducialMarkers = layer.fiducialMarkers.filter(m => m.id !== markerId);
+  updateGrid();
+  renderFiducialMarkersTable(layer);
+}
+
+/**
+ * Updates properties of a fiducial marker.
+ */
+function updateFiducialMarker(layerId, markerId, updates = {}) {
+  const allLayers = (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : [];
+  const layer = allLayers.find(l => l.id === layerId) || ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+  if (!layer || !Array.isArray(layer.fiducialMarkers)) return;
+
+  const marker = layer.fiducialMarkers.find(m => m.id === markerId);
+  if (marker) {
+    Object.assign(marker, updates);
+    updateGrid();
+    renderFiducialMarkersTable(layer);
+  }
+}
+
+/**
+ * Clears all fiducial markers for the active layer.
+ */
+function clearFiducialMarkers() {
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  if (!activeLayer) return;
+  activeLayer.fiducialMarkers = [];
+  updateGrid();
+  renderFiducialMarkersTable(activeLayer);
+}
+
+/**
+ * Renders fiducial marker pins on the Leaflet 2D map.
+ */
+function drawFiducialLayers(globalCenterLat, globalCenterLon) {
+  if (!fiducialMarkersGroup || typeof L === 'undefined' || !map) return;
+  fiducialMarkersGroup.clearLayers();
+
+  const enabledFiducials = (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers))
+    ? flightLayers.filter(l => l.enabled && (l.pattern === 'fiducial-markers' || l.isFiducialLayer))
+    : [];
+
+  enabledFiducials.forEach(layer => {
+    const markers = Array.isArray(layer.fiducialMarkers) ? layer.fiducialMarkers : [];
+    const isCurrentActive = (typeof activeLayerId !== 'undefined' && layer.id === activeLayerId);
+
+    markers.forEach((m, idx) => {
+      const color = m.color || layer.markerColor || '#f59e0b';
+      const role = m.role || 'gcp';
+      const roleColor = role === 'checkpoint' ? '#10b981' : (role === 'scale_bar' ? '#06b6d4' : (role === 'anchor' ? '#a855f7' : '#f59e0b'));
+
+      const customIcon = L.divIcon({
+        className: 'fiducial-pin-wrapper',
+        html: `
+          <div class="fiducial-pin-label" style="border-color: ${roleColor}; color: ${roleColor};">${escapeHtml(m.code || `GCP-${idx + 1}`)}</div>
+          <div class="fiducial-node-icon" style="background-color: ${color}; border-color: ${roleColor};" title="${escapeHtml(m.code)} (${role.toUpperCase()})">
+            🎯
+          </div>
+        `,
+        iconSize: [26, 26],
+        iconAnchor: [13, 13]
+      });
+
+      const leafletMarker = L.marker([m.lat, m.lon], {
+        icon: customIcon,
+        draggable: isCurrentActive
+      }).addTo(fiducialMarkersGroup);
+
+      // Draggable handles for active layer
+      if (isCurrentActive) {
+        leafletMarker.on('drag', (e) => {
+          const newLatLng = e.target.getLatLng();
+          m.lat = newLatLng.lat;
+          m.lon = newLatLng.lng;
+        });
+
+        leafletMarker.on('dragend', () => {
+          renderFiducialMarkersTable(layer);
+        });
+      }
+
+      // Popup editor
+      const popupHtml = `
+        <div style="min-width: 190px; font-family: sans-serif; font-size: 0.78rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;">
+            <strong style="color: ${roleColor}; font-size: 0.82rem;">🎯 ${escapeHtml(m.code)}</strong>
+            <span style="font-size: 0.65rem; background: rgba(255,255,255,0.1); padding: 1px 5px; border-radius: 3px; text-transform: uppercase;">${escapeHtml(role)}</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 5px;">
+            <div>
+              <label style="font-size: 0.7rem; color: #94a3b8; display: block;">Code / Label:</label>
+              <input type="text" id="pop-fid-code-${m.id}" value="${escapeHtml(m.code)}" class="form-control" style="font-size: 0.75rem; padding: 2px 5px; width: 100%;">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
+              <div>
+                <label style="font-size: 0.7rem; color: #94a3b8; display: block;">Role:</label>
+                <select id="pop-fid-role-${m.id}" class="form-select" style="font-size: 0.72rem; padding: 2px 4px; width: 100%;">
+                  <option value="gcp" ${role === 'gcp' ? 'selected' : ''}>GCP</option>
+                  <option value="checkpoint" ${role === 'checkpoint' ? 'selected' : ''}>Check Point</option>
+                  <option value="scale_bar" ${role === 'scale_bar' ? 'selected' : ''}>Scale Bar</option>
+                  <option value="anchor" ${role === 'anchor' ? 'selected' : ''}>Anchor</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 0.7rem; color: #94a3b8; display: block;">Alt (m):</label>
+                <input type="number" id="pop-fid-alt-${m.id}" value="${m.alt || 0}" step="0.1" class="form-control" style="font-size: 0.72rem; padding: 2px 4px; width: 100%;">
+              </div>
+            </div>
+            <div style="font-size: 0.68rem; color: #cbd5e1; margin-top: 2px;">
+              Lat: ${m.lat.toFixed(6)}°<br>Lon: ${m.lon.toFixed(6)}°
+            </div>
+            <div style="display: flex; gap: 4px; margin-top: 4px;">
+              <button type="button" class="btn-primary btn-sm" style="flex: 1; padding: 3px 6px; font-size: 0.7rem;" onclick="saveFiducialPopup('${layer.id}', '${m.id}')">Save</button>
+              <button type="button" class="btn-secondary btn-sm" style="padding: 3px 6px; font-size: 0.7rem; color: #ef4444;" onclick="deleteFiducialMarker('${layer.id}', '${m.id}')">🗑️</button>
+            </div>
+          </div>
+        </div>
+      `;
+      leafletMarker.bindPopup(popupHtml);
+    });
+  });
+}
+
+/**
+ * Saves edits made inside a fiducial map marker popup.
+ */
+function saveFiducialPopup(layerId, markerId) {
+  const codeEl = document.getElementById(`pop-fid-code-${markerId}`);
+  const roleEl = document.getElementById(`pop-fid-role-${markerId}`);
+  const altEl = document.getElementById(`pop-fid-alt-${markerId}`);
+  const updates = {};
+  if (codeEl && codeEl.value) updates.code = codeEl.value.trim();
+  if (roleEl && roleEl.value) updates.role = roleEl.value;
+  if (altEl && !isNaN(parseFloat(altEl.value))) updates.alt = parseFloat(altEl.value);
+
+  updateFiducialMarker(layerId, markerId, updates);
+  if (map) map.closePopup();
+}
+
+/**
+ * Renders the interactive table of placed fiducial markers in Section 2 Card 6.
+ */
+function renderFiducialMarkersTable(layer) {
+  const tbody = document.getElementById('fiducial-markers-tbody');
+  const summaryEl = document.getElementById('fiducial-metrics-summary');
+  if (!layer || !Array.isArray(layer.fiducialMarkers) || layer.fiducialMarkers.length === 0) {
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="4" style="padding: 10px; text-align: center; color: var(--text-muted); font-style: italic;">
+            No markers placed yet. Click on the map or import CSV/GeoJSON.
+          </td>
+        </tr>
+      `;
+    }
+    if (summaryEl) summaryEl.textContent = "0 Markers";
+    return;
+  }
+
+  const markers = layer.fiducialMarkers;
+  const gcpCount = markers.filter(m => m.role === 'gcp').length;
+  const cpCount = markers.filter(m => m.role === 'checkpoint').length;
+  const otherCount = markers.length - gcpCount - cpCount;
+
+  if (summaryEl) {
+    let summaryText = `${markers.length} Markers (${gcpCount} GCPs, ${cpCount} CPs`;
+    if (otherCount > 0) summaryText += `, ${otherCount} other`;
+    summaryText += ')';
+    summaryEl.textContent = summaryText;
+  }
+
+  if (!tbody) return;
+  tbody.innerHTML = markers.map((m, idx) => {
+    const roleBadgeColor = m.role === 'checkpoint' ? 'rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4)' :
+      (m.role === 'scale_bar' ? 'rgba(6, 182, 212, 0.2); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.4)' :
+      (m.role === 'anchor' ? 'rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4)' :
+      'rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4)'));
+
+    return `
+      <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+        <td style="padding: 4px 6px; font-weight: 600; color: #f8fafc;">${escapeHtml(m.code || `GCP-${idx + 1}`)}</td>
+        <td style="padding: 4px 6px;">
+          <span style="font-size: 0.62rem; padding: 1px 4px; border-radius: 3px; font-weight: 700; ${roleBadgeColor}">
+            ${m.role ? m.role.toUpperCase() : 'GCP'}
+          </span>
+        </td>
+        <td style="padding: 4px 6px; font-family: monospace; color: #94a3b8;">${(m.alt !== undefined ? m.alt : 0).toFixed(1)}m</td>
+        <td style="padding: 4px 6px; text-align: right; white-space: nowrap;">
+          <button type="button" class="btn-secondary btn-sm" style="padding: 1px 5px; font-size: 0.65rem; margin-right: 2px;" onclick="flyToFiducialMarker(${m.lat}, ${m.lon})" title="Center on map">📍</button>
+          <button type="button" class="btn-secondary btn-sm" style="padding: 1px 5px; font-size: 0.65rem; color: #ef4444;" onclick="deleteFiducialMarker('${layer.id}', '${m.id}')" title="Delete marker">✕</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+/**
+ * Centers the Leaflet map on a fiducial marker.
+ */
+function flyToFiducialMarker(lat, lon) {
+  if (typeof map !== 'undefined' && map && typeof map.setView === 'function') {
+    map.setView([lat, lon], Math.max(map.getZoom ? map.getZoom() : 18, 19));
+  }
+}
+
+/**
+ * Parses RTK GNSS rover point surveys from CSV text.
+ * Auto-detects standard columns: Name/Code, Latitude/Y, Longitude/X, Altitude/Z, Role, Type, Size.
+ */
+function parseSurveyCsv(csvText) {
+  if (!csvText || typeof csvText !== 'string') return [];
+  const lines = csvText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+  if (lines.length === 0) return [];
+
+  const delimiter = lines[0].includes('\t') ? '\t' : (lines[0].includes(';') ? ';' : ',');
+  const rows = lines.map(line => line.split(delimiter).map(c => c.trim().replace(/^["']|["']$/g, '')));
+  if (rows.length === 0) return [];
+
+  const header = rows[0].map(h => h.toLowerCase());
+  let nameIdx = -1, latIdx = -1, lonIdx = -1, altIdx = -1, roleIdx = -1, typeIdx = -1, sizeIdx = -1;
+
+  header.forEach((h, idx) => {
+    if (['name', 'code', 'point', 'point id', 'pt', 'id', 'label', 'target'].includes(h)) nameIdx = idx;
+    else if (['lat', 'latitude', 'y', 'northing'].includes(h)) latIdx = idx;
+    else if (['lon', 'lng', 'long', 'longitude', 'x', 'easting'].includes(h)) lonIdx = idx;
+    else if (['alt', 'altitude', 'height', 'elev', 'elevation', 'z', 'ellipsoid'].includes(h)) altIdx = idx;
+    else if (['role', 'class', 'marker_role'].includes(h)) roleIdx = idx;
+    else if (['type', 'target_type', 'family', 'dict'].includes(h)) typeIdx = idx;
+    else if (['size', 'target_size', 'dimension', 'width'].includes(h)) sizeIdx = idx;
+  });
+
+  const hasHeader = (latIdx !== -1 && lonIdx !== -1);
+  const dataRows = hasHeader ? rows.slice(1) : rows;
+
+  const markers = [];
+  dataRows.forEach((cols, rowIdx) => {
+    if (cols.length < 2) return;
+    let code = '', lat = NaN, lon = NaN, alt = 0, role = 'gcp', type = 'aruco_4x4', size = 0.5;
+
+    if (hasHeader) {
+      code = nameIdx !== -1 ? cols[nameIdx] : `GCP-${rowIdx + 1}`;
+      lat = parseFloat(cols[latIdx]);
+      lon = parseFloat(cols[lonIdx]);
+      if (altIdx !== -1 && !isNaN(parseFloat(cols[altIdx]))) alt = parseFloat(cols[altIdx]);
+      if (roleIdx !== -1 && cols[roleIdx]) role = cols[roleIdx].toLowerCase();
+      if (typeIdx !== -1 && cols[typeIdx]) type = cols[typeIdx].toLowerCase();
+      if (sizeIdx !== -1 && !isNaN(parseFloat(cols[sizeIdx]))) size = parseFloat(cols[sizeIdx]);
+    } else {
+      if (cols.length >= 3 && !isNaN(parseFloat(cols[1])) && !isNaN(parseFloat(cols[2]))) {
+        code = cols[0];
+        lat = parseFloat(cols[1]);
+        lon = parseFloat(cols[2]);
+        if (cols.length >= 4 && !isNaN(parseFloat(cols[3]))) alt = parseFloat(cols[3]);
+      } else if (!isNaN(parseFloat(cols[0])) && !isNaN(parseFloat(cols[1]))) {
+        code = `GCP-${rowIdx + 1}`;
+        lat = parseFloat(cols[0]);
+        lon = parseFloat(cols[1]);
+        if (cols.length >= 3 && !isNaN(parseFloat(cols[2]))) alt = parseFloat(cols[2]);
+      }
+    }
+
+    if (!isNaN(lat) && !isNaN(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+      const cleanRole = ['checkpoint', 'check', 'cp'].includes(role) ? 'checkpoint' :
+        (['scale_bar', 'scale', 'scalebar'].includes(role) ? 'scale_bar' :
+        (['anchor', 'origin'].includes(role) ? 'anchor' : 'gcp'));
+      const cleanType = ['aruco_5x5', 'apriltag_36h11', 'checkerboard', 'crosshair', 'circular_coded'].includes(type) ? type : 'aruco_4x4';
+
+      markers.push({
+        id: `gcp-${Date.now()}-${rowIdx + 1}-${Math.floor(Math.random() * 1000)}`,
+        code: code || `GCP-${rowIdx + 1}`,
+        role: cleanRole,
+        type: cleanType,
+        markerId: rowIdx,
+        lat,
+        lon,
+        alt: isNaN(alt) ? 0 : alt,
+        physicalSizeMeters: isNaN(size) || size <= 0 ? 0.5 : size,
+        color: '#f59e0b',
+        notes: ''
+      });
+    }
+  });
+
+  return markers;
+}
+
+/**
+ * Parses GeoJSON FeatureCollection into fiducial marker objects.
+ */
+function parseSurveyGeoJson(geoJsonText) {
+  if (!geoJsonText) return [];
+  let data;
+  try {
+    data = typeof geoJsonText === 'string' ? JSON.parse(geoJsonText) : geoJsonText;
+  } catch (e) {
+    return [];
+  }
+  const features = (data && data.type === 'FeatureCollection' && Array.isArray(data.features))
+    ? data.features
+    : ((data && data.type === 'Feature') ? [data] : []);
+
+  const markers = [];
+  features.forEach((feat, idx) => {
+    if (!feat.geometry || feat.geometry.type !== 'Point' || !Array.isArray(feat.geometry.coordinates)) return;
+    const coords = feat.geometry.coordinates;
+    const lon = parseFloat(coords[0]);
+    const lat = parseFloat(coords[1]);
+    const alt = coords.length >= 3 ? parseFloat(coords[2]) || 0 : 0;
+    if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) return;
+
+    const props = feat.properties || {};
+    const code = props.name || props.code || props.id || props.label || `GCP-${idx + 1}`;
+    const roleRaw = (props.role || props.class || 'gcp').toLowerCase();
+    const role = ['checkpoint', 'check', 'cp'].includes(roleRaw) ? 'checkpoint' :
+      (['scale_bar', 'scale'].includes(roleRaw) ? 'scale_bar' :
+      (['anchor', 'origin'].includes(roleRaw) ? 'anchor' : 'gcp'));
+    const type = props.type || 'aruco_4x4';
+    const size = parseFloat(props.size || props.physicalSizeMeters) || 0.5;
+
+    markers.push({
+      id: `gcp-${Date.now()}-${idx + 1}-${Math.floor(Math.random() * 1000)}`,
+      code: String(code),
+      role,
+      type,
+      markerId: idx,
+      lat,
+      lon,
+      alt: isNaN(alt) ? 0 : alt,
+      physicalSizeMeters: size,
+      color: props.color || '#f59e0b',
+      notes: props.notes || ''
+    });
+  });
+  return markers;
+}
+
+/**
+ * Exports a layer's fiducial markers as a standard surveyor CSV download.
+ */
+function exportFiducialMarkersCsv(layer) {
+  if (!layer || !Array.isArray(layer.fiducialMarkers) || layer.fiducialMarkers.length === 0) {
+    alert("No fiducial markers to export in this layer.");
+    return;
+  }
+
+  const rows = [
+    ['Code', 'Latitude', 'Longitude', 'Altitude_m', 'Role', 'Type', 'Size_m', 'Notes'].join(',')
+  ];
+
+  layer.fiducialMarkers.forEach(m => {
+    rows.push([
+      `"${(m.code || '').replace(/"/g, '""')}"`,
+      m.lat.toFixed(8),
+      m.lon.toFixed(8),
+      (m.alt !== undefined ? m.alt : 0).toFixed(3),
+      m.role || 'gcp',
+      m.type || 'aruco_4x4',
+      (m.physicalSizeMeters || 0.5).toFixed(2),
+      `"${(m.notes || '').replace(/"/g, '""')}"`
+    ].join(','));
+  });
+
+  const csvBlob = new Blob([rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(csvBlob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  const safeName = (layer.name || 'GCP_Survey').replace(/[^a-z0-9_-]/gi, '_');
+  link.setAttribute('download', `Aalaapi_Fiducial_Markers_${safeName}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/**
+ * Exports a layer's fiducial markers as standard GeoJSON FeatureCollection.
+ */
+function exportFiducialMarkersGeoJson(layer) {
+  if (!layer || !Array.isArray(layer.fiducialMarkers) || layer.fiducialMarkers.length === 0) {
+    alert("No fiducial markers to export in this layer.");
+    return;
+  }
+
+  const geojson = {
+    type: 'FeatureCollection',
+    name: layer.name || 'Fiducial Markers',
+    features: layer.fiducialMarkers.map(m => ({
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: [m.lon, m.lat, m.alt || 0]
+      },
+      properties: {
+        code: m.code,
+        role: m.role,
+        type: m.type,
+        physicalSizeMeters: m.physicalSizeMeters,
+        color: m.color,
+        notes: m.notes
+      }
+    }))
+  };
+
+  const jsonBlob = new Blob([JSON.stringify(geojson, null, 2)], { type: 'application/geo+json;charset=utf-8;' });
+  const url = URL.createObjectURL(jsonBlob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  const safeName = (layer.name || 'GCP_Survey').replace(/[^a-z0-9_-]/gi, '_');
+  link.setAttribute('download', `Aalaapi_Fiducial_Markers_${safeName}.geojson`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/**
+ * Generates an authentic, millimeter-accurate vector SVG string for optical fiducial targets.
+ */
+function generateFiducialSvg(options = {}) {
+  const type = options.type || 'aruco_4x4';
+  const id = Math.max(0, parseInt(options.id, 10) || 0);
+  const targetEdgeM = parseFloat(options.physicalSizeMeters) || 0.20;
+  const showCrosshair = options.showCrosshair !== false;
+  const showCornerTicks = options.showCornerTicks !== false;
+  const showRuler = options.showRuler !== false;
+  const showIdLabel = options.showIdLabel !== false;
+
+  const totalSize = 500;
+  const margin = 50;
+  const targetSize = totalSize - (margin * 2); // 400x400
+  const center = totalSize / 2;
+
+  let markerContent = '';
+
+  if (type === 'aruco_4x4') {
+    // 6x6 grid: 1-cell black border, inner 4x4 data payload
+    const dataPair = ARUCO_4X4_50_DATA[id % ARUCO_4X4_50_DATA.length] || [181, 50];
+    const cellSize = targetSize / 6;
+
+    // Black background for entire 6x6
+    markerContent += `<rect x="${margin}" y="${margin}" width="${targetSize}" height="${targetSize}" fill="#000000" />`;
+
+    // Inner 4x4 white cells
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        const bitIdx = r * 4 + c;
+        const byteIdx = Math.floor(bitIdx / 8);
+        const bitInByte = 7 - (bitIdx % 8);
+        const bitVal = (dataPair[byteIdx] >> bitInByte) & 1;
+
+        if (bitVal === 1) {
+          const x = margin + (c + 1) * cellSize;
+          const y = margin + (r + 1) * cellSize;
+          markerContent += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="#ffffff" />`;
+        }
+      }
+    }
+  } else if (type === 'aruco_5x5') {
+    // 7x7 grid: 1-cell black border, inner 5x5 data payload
+    const dataTuple = ARUCO_5X5_DATA[id % ARUCO_5X5_DATA.length] || [132, 33, 8, 0];
+    const cellSize = targetSize / 7;
+
+    markerContent += `<rect x="${margin}" y="${margin}" width="${targetSize}" height="${targetSize}" fill="#000000" />`;
+
+    for (let r = 0; r < 5; r++) {
+      for (let c = 0; c < 5; c++) {
+        const bitIdx = r * 5 + c;
+        const byteIdx = Math.floor(bitIdx / 8);
+        const bitInByte = 7 - (bitIdx % 8);
+        const bitVal = (dataTuple[byteIdx] >> bitInByte) & 1;
+
+        if (bitVal === 1) {
+          const x = margin + (c + 1) * cellSize;
+          const y = margin + (r + 1) * cellSize;
+          markerContent += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="#ffffff" />`;
+        }
+      }
+    }
+  } else if (type === 'apriltag_36h11' || type === 'apriltag_16h5') {
+    // 6x6 grid with 1-cell black border
+    const dataPair = APRILTAG_16H5_DATA[id % APRILTAG_16H5_DATA.length] || [216, 196];
+    const cellSize = targetSize / 6;
+
+    markerContent += `<rect x="${margin}" y="${margin}" width="${targetSize}" height="${targetSize}" fill="#000000" />`;
+
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        const bitIdx = r * 4 + c;
+        const byteIdx = Math.floor(bitIdx / 8);
+        const bitInByte = 7 - (bitIdx % 8);
+        const bitVal = (dataPair[byteIdx] >> bitInByte) & 1;
+
+        if (bitVal === 1) {
+          const x = margin + (c + 1) * cellSize;
+          const y = margin + (r + 1) * cellSize;
+          markerContent += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="#ffffff" />`;
+        }
+      }
+    }
+  } else if (type === 'checkerboard') {
+    // 4x4 alternating black & white squares
+    const cellSize = targetSize / 4;
+    markerContent += `<rect x="${margin}" y="${margin}" width="${targetSize}" height="${targetSize}" fill="#ffffff" stroke="#000000" stroke-width="2" />`;
+
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        if ((r + c) % 2 === 0) {
+          const x = margin + c * cellSize;
+          const y = margin + r * cellSize;
+          markerContent += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="#000000" />`;
+        }
+      }
+    }
+  } else {
+    // High-Contrast Crosshair / AeroPoint target
+    markerContent += `
+      <rect x="${margin}" y="${margin}" width="${targetSize}" height="${targetSize}" fill="#ffffff" stroke="#000000" stroke-width="2" />
+      <!-- Quadrants -->
+      <rect x="${margin}" y="${margin}" width="${targetSize / 2}" height="${targetSize / 2}" fill="#000000" />
+      <rect x="${center}" y="${center}" width="${targetSize / 2}" height="${targetSize / 2}" fill="#000000" />
+      <!-- Concentric Target Circles -->
+      <circle cx="${center}" cy="${center}" r="${targetSize * 0.35}" fill="none" stroke="#f59e0b" stroke-width="3" stroke-dasharray="4,4" />
+      <circle cx="${center}" cy="${center}" r="${targetSize * 0.15}" fill="none" stroke="#000000" stroke-width="2" />
+    `;
+  }
+
+  // Corner alignment ticks
+  let cornerTicksSvg = '';
+  if (showCornerTicks) {
+    const tickLen = 20;
+    cornerTicksSvg = `
+      <!-- Top-Left -->
+      <path d="M ${margin - 10} ${margin} L ${margin - 10} ${margin - 10} L ${margin} ${margin - 10}" fill="none" stroke="#000000" stroke-width="2" />
+      <!-- Top-Right -->
+      <path d="M ${totalSize - margin + 10} ${margin} L ${totalSize - margin + 10} ${margin - 10} L ${totalSize - margin} ${margin - 10}" fill="none" stroke="#000000" stroke-width="2" />
+      <!-- Bottom-Left -->
+      <path d="M ${margin - 10} ${totalSize - margin} L ${margin - 10} ${totalSize - margin + 10} L ${margin} ${totalSize - margin + 10}" fill="none" stroke="#000000" stroke-width="2" />
+      <!-- Bottom-Right -->
+      <path d="M ${totalSize - margin + 10} ${totalSize - margin} L ${totalSize - margin + 10} ${totalSize - margin + 10} L ${totalSize - margin} ${totalSize - margin + 10}" fill="none" stroke="#000000" stroke-width="2" />
+    `;
+  }
+
+  // Center crosshair
+  let crosshairSvg = '';
+  if (showCrosshair) {
+    crosshairSvg = `
+      <line x1="${center}" y1="${margin - 5}" x2="${center}" y2="${center - 6}" stroke="#ef4444" stroke-width="1.5" />
+      <line x1="${center}" y1="${center + 6}" x2="${center}" y2="${totalSize - margin + 5}" stroke="#ef4444" stroke-width="1.5" />
+      <line x1="${margin - 5}" y1="${center}" x2="${center - 6}" y2="${center}" stroke="#ef4444" stroke-width="1.5" />
+      <line x1="${center + 6}" y1="${center}" x2="${totalSize - margin + 5}" y2="${center}" stroke="#ef4444" stroke-width="1.5" />
+      <circle cx="${center}" cy="${center}" r="2" fill="#ef4444" />
+    `;
+  }
+
+  // Ruler Scale Bar (10 cm / 4 in)
+  let rulerSvg = '';
+  if (showRuler) {
+    const rx = margin;
+    const ry = totalSize - 18;
+    const rw = targetSize;
+    rulerSvg = `
+      <g id="scale-ruler" font-family="sans-serif" font-size="8" fill="#334155">
+        <line x1="${rx}" y1="${ry}" x2="${rx + rw}" y2="${ry}" stroke="#334155" stroke-width="1.5" />
+        <line x1="${rx}" y1="${ry - 6}" x2="${rx}" y2="${ry + 6}" stroke="#334155" stroke-width="1.5" />
+        <line x1="${rx + rw / 2}" y1="${ry - 4}" x2="${rx + rw / 2}" y2="${ry + 4}" stroke="#334155" stroke-width="1" />
+        <line x1="${rx + rw}" y1="${ry - 6}" x2="${rx + rw}" y2="${ry + 6}" stroke="#334155" stroke-width="1.5" />
+        <text x="${rx}" y="${ry - 8}" text-anchor="start">0</text>
+        <text x="${rx + rw / 2}" y="${ry - 8}" text-anchor="middle">50%</text>
+        <text x="${rx + rw}" y="${ry - 8}" text-anchor="end">Target Width: ${(targetEdgeM * 1000).toFixed(0)} mm (${(targetEdgeM * 39.37).toFixed(1)} in)</text>
+      </g>
+    `;
+  }
+
+  // Header ID label
+  let idLabelSvg = '';
+  if (showIdLabel) {
+    const typeLabel = type === 'aruco_4x4' ? `ArUco 4x4 (DICT_4X4_50) #ID:${id}` :
+      (type === 'aruco_5x5' ? `ArUco 5x5 (DICT_5X5_100) #ID:${id}` :
+      (type === 'apriltag_36h11' || type === 'apriltag_16h5' ? `AprilTag #ID:${id}` :
+      (type === 'checkerboard' ? `Survey Checkerboard 4x4` : `Survey AeroPoint Crosshair`)));
+
+    idLabelSvg = `
+      <g id="header-label" font-family="sans-serif">
+        <text x="${margin}" y="24" font-size="11" font-weight="700" fill="#0f172a">${escapeHtml(typeLabel)}</text>
+        <text x="${totalSize - margin}" y="24" font-size="10" font-weight="600" fill="#64748b" text-anchor="end">AALAAPI SKY SURVEY</text>
+      </g>
+    `;
+  }
+
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalSize} ${totalSize}" width="100%" height="100%" style="background-color: #ffffff; display: block; max-width: 100%; height: auto;">
+      <rect x="0" y="0" width="${totalSize}" height="${totalSize}" fill="#ffffff" />
+      ${idLabelSvg}
+      ${markerContent}
+      ${cornerTicksSvg}
+      ${crosshairSvg}
+      ${rulerSvg}
+    </svg>
+  `.trim();
+}
+
+/**
+ * Opens the Printable Target Generator modal.
+ */
+function openTargetGeneratorModal(options = {}) {
+  const modal = document.getElementById('fiducial-generator-modal');
+  if (!modal) return;
+
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const targetTypeEl = document.getElementById('gen-target-type');
+  const targetIdEl = document.getElementById('gen-target-id');
+  const targetSizeEl = document.getElementById('gen-target-size');
+
+  if (targetTypeEl) targetTypeEl.value = options.type || (activeLayer ? activeLayer.defaultTargetType : 'aruco_4x4') || 'aruco_4x4';
+  if (targetIdEl) targetIdEl.value = typeof options.id === 'number' ? options.id : 0;
+  if (targetSizeEl) targetSizeEl.value = options.physicalSizeMeters || (activeLayer ? activeLayer.defaultPhysicalSize : 0.20) || 0.20;
+
+  modal.classList.remove('hidden');
+  renderTargetGeneratorPreview();
+}
+
+/**
+ * Closes the Printable Target Generator modal.
+ */
+function closeTargetGeneratorModal() {
+  const modal = document.getElementById('fiducial-generator-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+/**
+ * Renders the live SVG target preview inside the target generator modal.
+ */
+function renderTargetGeneratorPreview() {
+  const previewEl = document.getElementById('gen-target-preview-svg');
+  if (!previewEl) return;
+
+  const type = document.getElementById('gen-target-type')?.value || 'aruco_4x4';
+  const id = parseInt(document.getElementById('gen-target-id')?.value, 10) || 0;
+  const size = parseFloat(document.getElementById('gen-target-size')?.value) || 0.20;
+  const showCrosshair = document.getElementById('gen-opt-crosshair')?.checked !== false;
+  const showCornerTicks = document.getElementById('gen-opt-cornerticks')?.checked !== false;
+  const showRuler = document.getElementById('gen-opt-ruler')?.checked !== false;
+  const showIdLabel = document.getElementById('gen-opt-idlabel')?.checked !== false;
+
+  const svgStr = generateFiducialSvg({
+    type,
+    id,
+    physicalSizeMeters: size,
+    showCrosshair,
+    showCornerTicks,
+    showRuler,
+    showIdLabel
+  });
+
+  previewEl.innerHTML = svgStr;
+}
+
+/**
+ * Downloads the currently generated target as a vector SVG file.
+ */
+function exportTargetSvg() {
+  const type = document.getElementById('gen-target-type')?.value || 'aruco_4x4';
+  const id = parseInt(document.getElementById('gen-target-id')?.value, 10) || 0;
+  const size = parseFloat(document.getElementById('gen-target-size')?.value) || 0.20;
+  const showCrosshair = document.getElementById('gen-opt-crosshair')?.checked !== false;
+  const showCornerTicks = document.getElementById('gen-opt-cornerticks')?.checked !== false;
+  const showRuler = document.getElementById('gen-opt-ruler')?.checked !== false;
+  const showIdLabel = document.getElementById('gen-opt-idlabel')?.checked !== false;
+
+  const svgStr = generateFiducialSvg({
+    type,
+    id,
+    physicalSizeMeters: size,
+    showCrosshair,
+    showCornerTicks,
+    showRuler,
+    showIdLabel
+  });
+
+  const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', `Target_${type}_ID${id}_${(size * 1000).toFixed(0)}mm.svg`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/**
+ * Prints the target sheet using the browser's native print engine.
+ */
+function printTargetSheet() {
+  renderTargetGeneratorPreview();
+  window.print();
 }
 
 // Geolocation state
@@ -1014,19 +1829,24 @@ function getPatternDisplayName(pattern) {
     'road-following': 'Road Follow',
     'exclusion-box': '🚫 Exclusion (Box)',
     'exclusion-freeform': '🚫 Exclusion (Poly)',
-    'boundary-polygon': '🗺️ Boundary / Parcel'
+    'boundary-polygon': '🗺️ Boundary / Parcel',
+    'fiducial-markers': '🎯 Fiducial / GCPs'
   };
   return map[pattern] || pattern || 'Double Grid';
 }
 
 function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', centerLat = null, centerLon = null) {
   const isExcl = (pattern === 'exclusion-box' || pattern === 'exclusion-freeform');
-  const isDrawing = (pattern === 'boundary-polygon');
+  const isBoundary = (pattern === 'boundary-polygon');
+  const isFiducial = (pattern === 'fiducial-markers');
+  const isDrawing = (isBoundary || isFiducial);
   const colorObj = isExcl
     ? { name: 'Crimson', hex: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)', border: 'rgba(239, 68, 68, 0.4)' }
-    : (isDrawing
+    : (isBoundary
         ? { name: 'Cyan', hex: '#06b6d4', bg: 'rgba(6, 182, 212, 0.15)', border: 'rgba(6, 182, 212, 0.4)' }
-        : LAYER_COLORS[colorIndex % LAYER_COLORS.length]);
+        : (isFiducial
+            ? { name: 'Amber', hex: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', border: 'rgba(245, 158, 11, 0.4)' }
+            : LAYER_COLORS[colorIndex % LAYER_COLORS.length]));
 
   let cLat = centerLat;
   let cLon = centerLon;
@@ -1047,6 +1867,13 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     centerLon: cLon,
     isExclusionZone: isExcl,
     isDrawingLayer: isDrawing,
+    isFiducialLayer: isFiducial,
+    fiducialMarkers: [],
+    defaultTargetType: 'aruco_4x4',
+    defaultTargetRole: 'gcp',
+    defaultRole: 'gcp',
+    defaultPhysicalSize: 0.50,
+    markerColor: isFiducial ? '#f59e0b' : '#06b6d4',
     strokeColor: '#06b6d4',
     lineStyle: 'dashed',
     fillOpacity: 15,
@@ -1512,8 +2339,18 @@ function saveActiveLayerFromUi() {
   if (gridTypeEl && gridTypeEl.value) {
     layer.pattern = gridTypeEl.value;
     layer.isExclusionZone = (layer.pattern === 'exclusion-box' || layer.pattern === 'exclusion-freeform');
-    layer.isDrawingLayer = (layer.pattern === 'boundary-polygon');
+    layer.isDrawingLayer = (layer.pattern === 'boundary-polygon' || layer.pattern === 'fiducial-markers');
+    layer.isFiducialLayer = (layer.pattern === 'fiducial-markers');
   }
+  const fTypeEl = document.getElementById('fiducial-default-type');
+  const fRoleEl = document.getElementById('fiducial-default-role');
+  const fSizeEl = document.getElementById('fiducial-default-size');
+  const fColorEl = document.getElementById('fiducial-marker-color');
+  if (fTypeEl && fTypeEl.value) layer.defaultTargetType = fTypeEl.value;
+  if (fRoleEl && fRoleEl.value) layer.defaultTargetRole = fRoleEl.value;
+  if (fSizeEl && fSizeEl.value) layer.defaultPhysicalSize = parseFloat(fSizeEl.value) || 0.50;
+  if (fColorEl && fColorEl.value) layer.markerColor = fColorEl.value;
+
   const bColorEl = document.getElementById('boundary-stroke-color');
   const bStyleEl = document.getElementById('boundary-line-style');
   const bOpacityEl = document.getElementById('boundary-fill-opacity');
@@ -2824,7 +3661,7 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
   if (layer.isExclusionZone || layer.pattern === 'exclusion-box' || layer.pattern === 'exclusion-freeform') {
     return { waypoints: [], photos: [], isExclusionZone: true };
   }
-  if (layer.isDrawingLayer || layer.pattern === 'boundary-polygon') {
+  if (layer.isDrawingLayer || layer.pattern === 'boundary-polygon' || layer.pattern === 'fiducial-markers' || layer.isFiducialLayer) {
     return { waypoints: [], photos: [], isDrawingLayer: true };
   }
 
@@ -3171,7 +4008,7 @@ function compileMultiLayerMission(centerLat, centerLon) {
   const activeExclusionZones = enabledLayers.filter(l => l.pattern === 'exclusion-box' || l.pattern === 'exclusion-freeform' || l.isExclusionZone);
   activeExclusionZones.forEach(z => { z.filteredCount = 0; });
 
-  const flightLayersOnly = enabledLayers.filter(l => l.pattern !== 'exclusion-box' && l.pattern !== 'exclusion-freeform' && !l.isExclusionZone && !l.isDrawingLayer && l.pattern !== 'boundary-polygon');
+  const flightLayersOnly = enabledLayers.filter(l => l.pattern !== 'exclusion-box' && l.pattern !== 'exclusion-freeform' && !l.isExclusionZone && !l.isDrawingLayer && l.pattern !== 'boundary-polygon' && l.pattern !== 'fiducial-markers' && !l.isFiducialLayer);
 
   for (let i = 0; i < flightLayersOnly.length; i++) {
     const currentLayer = flightLayersOnly[i];
@@ -3254,9 +4091,11 @@ function renderLayersList() {
   flightLayers.forEach((layer, idx) => {
     const isActive = layer.id === activeLayerId;
     const isExcl = (layer.pattern === 'exclusion-box' || layer.pattern === 'exclusion-freeform' || layer.isExclusionZone);
-    const isDrawing = (layer.pattern === 'boundary-polygon' || layer.isDrawingLayer);
+    const isBoundary = (layer.pattern === 'boundary-polygon');
+    const isFiducial = (layer.pattern === 'fiducial-markers' || layer.isFiducialLayer);
+    const isDrawing = (isBoundary || isFiducial || layer.isDrawingLayer);
     const card = document.createElement('div');
-    card.className = `layer-card${isExcl ? ' exclusion-zone' : ''}${isDrawing ? ' boundary-layer' : ''}${isActive ? ' active' : ''}`;
+    card.className = `layer-card${isExcl ? ' exclusion-zone' : ''}${isBoundary ? ' boundary-layer' : ''}${isFiducial ? ' fiducial-layer' : ''}${isActive ? ' active' : ''}`;
     if (card.setAttribute) card.setAttribute('data-layer-id', layer.id);
 
     const isFirst = idx === 0;
@@ -3265,21 +4104,27 @@ function renderLayersList() {
     const vCount = (Array.isArray(layer.boundaryPolygon) && layer.boundaryPolygon.length)
       ? layer.boundaryPolygon.length
       : ((Array.isArray(layer.polygonVertices) && layer.polygonVertices.length) ? layer.polygonVertices.length : 0);
+    const gCount = (Array.isArray(layer.fiducialMarkers) && layer.fiducialMarkers.length) ? layer.fiducialMarkers.length : 0;
 
     const detailsHtml = isExcl
       ? `<span>Envelope: ${layer.allAltitudes !== false ? 'All Altitudes (0m – ∞)' : `${layer.minAltitude || 0}m – ${layer.maxAltitude || 60}m`}</span>
          <span style="color: ${layer.enabled ? '#f87171' : '#ef4444'}; font-weight: 600;">
            ${layer.enabled ? (layer.filteredCount ? `🚫 ${layer.filteredCount} wps blocked` : '🚫 Active Zone') : 'Disabled'}
          </span>`
-      : (isDrawing
-        ? `<span>Style: ${layer.lineStyle || 'dashed'} &bull; Elev: ${layer.targetHeight || 0}m</span>
-           <span style="color: ${layer.enabled ? '#06b6d4' : '#ef4444'}; font-weight: 600;">
-             ${layer.enabled ? `0 wps • Drawing (${vCount} pts)` : 'Disabled'}
+      : (isFiducial
+        ? `<span>Type: ${escapeHtml(layer.defaultTargetType || 'aruco_4x4')} &bull; Role: ${(layer.defaultTargetRole || 'GCP').toUpperCase()}</span>
+           <span style="color: ${layer.enabled ? '#fbbf24' : '#ef4444'}; font-weight: 600;">
+             ${layer.enabled ? `0 wps • Survey (${gCount} GCPs)` : 'Disabled'}
            </span>`
-        : `<span>Alt: ${layer.altitude}m &bull; Spd: ${layer.speed}m/s &bull; Pitch: ${layer.gimbalPitch}&deg;</span>
-         <span style="color: ${layer.enabled ? 'var(--text-muted)' : '#ef4444'}; font-weight: 500;">
-           ${layer.enabled ? `${wCount} wps` : 'Disabled'}
-         </span>`);
+        : (isBoundary
+          ? `<span>Style: ${layer.lineStyle || 'dashed'} &bull; Elev: ${layer.targetHeight || 0}m</span>
+             <span style="color: ${layer.enabled ? '#06b6d4' : '#ef4444'}; font-weight: 600;">
+               ${layer.enabled ? `0 wps • Drawing (${vCount} pts)` : 'Disabled'}
+             </span>`
+          : `<span>Alt: ${layer.altitude}m &bull; Spd: ${layer.speed}m/s &bull; Pitch: ${layer.gimbalPitch}&deg;</span>
+           <span style="color: ${layer.enabled ? 'var(--text-muted)' : '#ef4444'}; font-weight: 500;">
+             ${layer.enabled ? `${wCount} wps` : 'Disabled'}
+           </span>`));
 
     card.innerHTML = `
       <div class="layer-card-header">
@@ -3958,14 +4803,14 @@ function initMap() {
   tfrAirspaceLayer = L.geoJSON(null, {
     style: function(feature) {
       const props = feature.properties || {};
-      const isStadium = (props.TYPE === 'STADIUM' || props.LEGAL === 'STADIUM' || (props.TITLE && props.TITLE.toLowerCase().includes('stadium')));
+      const isStadium = props.isStadium || (props.TYPE === 'STADIUM' || props.LEGAL === 'STADIUM' || (props.TITLE && props.TITLE.toLowerCase().includes('stadium')) || (props.NAME && (props.CITY || props.OBJECTID)));
       if (isStadium) {
         return {
-          color: '#f59e0b',
+          color: '#a78bfa',
           weight: 1.8,
           dashArray: '5, 4',
-          fillColor: '#f59e0b',
-          fillOpacity: 0.16
+          fillColor: '#8b5cf6',
+          fillOpacity: 0.12
         };
       }
       return {
@@ -3976,20 +4821,52 @@ function initMap() {
         fillOpacity: 0.22
       };
     },
+    pointToLayer: function(feature, latlng) {
+      const props = feature.properties || {};
+      const isStadium = props.isStadium || (props.TYPE === 'STADIUM' || props.LEGAL === 'STADIUM' || (props.TITLE && props.TITLE.toLowerCase().includes('stadium')) || (props.NAME && (props.CITY || props.OBJECTID)));
+      if (isStadium) {
+        // 3 Nautical Miles = 5556 meters
+        return L.circle(latlng, {
+          radius: 5556,
+          color: '#a78bfa',
+          weight: 1.8,
+          dashArray: '5, 4',
+          fillColor: '#8b5cf6',
+          fillOpacity: 0.12
+        });
+      }
+      return L.circleMarker(latlng, {
+        radius: 6,
+        color: '#ffffff',
+        weight: 1.5,
+        fillColor: '#ef4444',
+        fillOpacity: 0.9
+      });
+    },
     onEachFeature: function(feature, layer) {
       const props = feature.properties || {};
       const notamId = props.notam_id || props.NOTAM_KEY || feature.id || 'FAA TFR';
       const title = props.title || props.TITLE || props.NAME || props.TxtName || 'Temporary Flight Restriction';
-      const type = props.type || props.LEGAL || props.TYPE_CODE || 'RESTRICTION';
+      const isStandbyStadium = (props.isStadium || props.TYPE === 'STADIUM' || props.type === 'STADIUM' || (props.NAME && (props.CITY || props.OBJECTID))) && props.isActiveTfr === false;
+      const type = isStandbyStadium ? 'STADIUM' : (props.type || props.LEGAL || props.TYPE_CODE || 'RESTRICTION');
       const state = props.state || props.STATE || '';
       const cDist = props.distanceKm != null ? formatTfrDistance(props.distanceKm, props.isInside, props.compassDir) : '';
       
-      let popupHtml = `<div style="font-size:0.78rem; line-height:1.4; min-width:200px;">`;
-      popupHtml += `<div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;"><span style="background:#ef4444; color:#fff; font-size:0.65rem; font-weight:700; padding:1px 5px; border-radius:4px;">TFR NOTAM</span><strong style="color:var(--text-main); font-size:0.85rem;">${notamId}</strong></div>`;
-      popupHtml += `<div style="font-weight:600; color:#38bdf8; margin-bottom:4px;">${title}</div>`;
-      if (type) popupHtml += `<div style="color:var(--text-muted); font-size:0.72rem;">Type: <b>${type}</b> ${state ? `(${state})` : ''}</div>`;
-      if (props.effectiveTime) popupHtml += `<div style="color:var(--text-muted); font-size:0.72rem;">Schedule: <b>${props.effectiveTime}</b></div>`;
-      if (props.altitude) popupHtml += `<div style="color:var(--text-muted); font-size:0.72rem;">Altitudes: <b>${props.altitude}</b></div>`;
+      let popupHtml = `<div style="font-size:0.78rem; line-height:1.4; min-width:210px;">`;
+      if (isStandbyStadium) {
+        const locationStr = [props.city || props.CITY, state].filter(Boolean).join(', ');
+        popupHtml += `<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;"><span style="background:rgba(139,92,246,0.25); color:#c4b5fd; border:1px solid rgba(139,92,246,0.4); font-size:0.65rem; font-weight:700; padding:1px 6px; border-radius:4px;">STADIUM ADVISORY</span><span style="color:#34d399; font-size:0.7rem; font-weight:600;">Standby</span></div>`;
+        popupHtml += `<div style="font-weight:700; color:#fff; font-size:0.92rem; margin-bottom:4px;">🏟️ ${title}</div>`;
+        if (locationStr) popupHtml += `<div style="color:var(--text-muted); font-size:0.72rem;">Location: <b>${locationStr}</b></div>`;
+        popupHtml += `<div style="color:var(--text-muted); font-size:0.72rem;">Rule: <b>14 CFR § 99.7 (3 NM • 3,000 ft AGL)</b></div>`;
+        popupHtml += `<div style="color:var(--text-muted); font-size:0.72rem;">Window: <b>Event start -1h to end +1h (30k+ seats)</b></div>`;
+      } else {
+        popupHtml += `<div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;"><span style="background:#ef4444; color:#fff; font-size:0.65rem; font-weight:700; padding:1px 5px; border-radius:4px;">TFR NOTAM</span><strong style="color:var(--text-main); font-size:0.85rem;">${notamId}</strong></div>`;
+        popupHtml += `<div style="font-weight:600; color:#38bdf8; margin-bottom:4px;">${title}</div>`;
+        if (type) popupHtml += `<div style="color:var(--text-muted); font-size:0.72rem;">Type: <b>${type}</b> ${state ? `(${state})` : ''}</div>`;
+        if (props.effectiveTime) popupHtml += `<div style="color:var(--text-muted); font-size:0.72rem;">Schedule: <b>${props.effectiveTime}</b></div>`;
+        if (props.altitude) popupHtml += `<div style="color:var(--text-muted); font-size:0.72rem;">Altitudes: <b>${props.altitude}</b></div>`;
+      }
       if (cDist) popupHtml += `<div style="color:${props.isInside ? '#ef4444' : '#34d399'}; font-weight:700; font-size:0.74rem; margin-top:4px;">Proximity: ${cDist}</div>`;
       popupHtml += `<div style="margin-top:8px; display:flex; gap:6px;">`;
       popupHtml += `<button type="button" class="btn-sm" style="padding:2px 8px; font-size:0.68rem; background:var(--accent-cyan); color:#0f172a; font-weight:700; border:none; border-radius:4px; cursor:pointer;" onclick="openTfrBriefingModal('${notamId}')">📄 View Briefing</button>`;
@@ -4072,6 +4949,7 @@ function initMap() {
   flightPathPolyline = L.layerGroup().addTo(map);
   exclusionZonesGroup = L.layerGroup().addTo(map);
   boundaryLayersGroup = L.layerGroup().addTo(map);
+  fiducialMarkersGroup = L.layerGroup().addTo(map);
   waypointMarkersGroup = L.layerGroup().addTo(map);
   pitchLabelsGroup = L.layerGroup().addTo(map); // Above waypointMarkersGroup
   photoMarkersGroup = L.layerGroup().addTo(map);
@@ -4115,6 +4993,8 @@ function initMap() {
       addFreeformWaypoint(e.latlng.lat, e.latlng.lng);
     } else if (currentPattern === 'boundary-polygon') {
       addBoundaryPolygonPoint(e.latlng.lat, e.latlng.lng);
+    } else if (currentPattern === 'fiducial-markers') {
+      addFiducialMarkerPoint(e.latlng.lat, e.latlng.lng);
     } else if (currentPattern === 'road-following') {
       addRoadWaypoint(e.latlng.lat, e.latlng.lng);
     } else if (isTargetSplatPoly) {
@@ -5276,6 +6156,193 @@ function initUIEventListeners() {
   if (clearBoundaryVerticesBtn) {
     clearBoundaryVerticesBtn.addEventListener('click', () => {
       clearBoundaryPolygon();
+    });
+  }
+
+  // Card 6: Fiducial Markers & GCPs Event Listeners (v1.104.0)
+  const fiducialNameInput = document.getElementById('fiducial-layer-name');
+  if (fiducialNameInput) {
+    fiducialNameInput.addEventListener('input', (e) => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.name = e.target.value || 'Ground Control Points (GCPs)';
+        renderLayersList();
+        saveAllSettingsToLocalStorage();
+      }
+    });
+  }
+
+  const fiducialTypeSelect = document.getElementById('fiducial-default-type');
+  if (fiducialTypeSelect) {
+    fiducialTypeSelect.addEventListener('change', (e) => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.defaultTargetType = e.target.value;
+        saveAllSettingsToLocalStorage();
+      }
+    });
+  }
+
+  const fiducialRoleSelect = document.getElementById('fiducial-default-role');
+  if (fiducialRoleSelect) {
+    fiducialRoleSelect.addEventListener('change', (e) => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.defaultRole = e.target.value;
+        saveAllSettingsToLocalStorage();
+      }
+    });
+  }
+
+  const fiducialSizeInput = document.getElementById('fiducial-default-size');
+  if (fiducialSizeInput) {
+    fiducialSizeInput.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value) || 0.5;
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.defaultPhysicalSize = val;
+        saveAllSettingsToLocalStorage();
+      }
+    });
+  }
+
+  const fiducialColorSelect = document.getElementById('fiducial-marker-color');
+  if (fiducialColorSelect) {
+    fiducialColorSelect.addEventListener('change', (e) => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) {
+        activeLayer.markerColor = e.target.value;
+        updateGrid();
+        saveAllSettingsToLocalStorage();
+      }
+    });
+  }
+
+  const btnAddFiducialManual = document.getElementById('btn-add-fiducial-manual');
+  if (btnAddFiducialManual) {
+    btnAddFiducialManual.addEventListener('click', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (!activeLayer) return;
+      const coordsStr = prompt('Enter coordinates (Latitude, Longitude, [Altitude_m], [Code/Label]):', '42.3601, -71.0589, 0, GCP-1');
+      if (!coordsStr) return;
+      const parts = coordsStr.split(',').map(s => s.trim());
+      const lat = parseFloat(parts[0]);
+      const lon = parseFloat(parts[1]);
+      const alt = parts.length > 2 && !isNaN(parseFloat(parts[2])) ? parseFloat(parts[2]) : 0;
+      const code = parts.length > 3 && parts[3] ? parts[3] : '';
+      if (!isNaN(lat) && !isNaN(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+        addFiducialMarkerPoint(lat, lon, activeLayer, { alt, code });
+      } else {
+        alert('Invalid coordinates. Please enter valid Lat, Lon decimal values.');
+      }
+    });
+  }
+
+  const btnClearFiducials = document.getElementById('btn-clear-fiducial-markers');
+  if (btnClearFiducials) {
+    btnClearFiducials.addEventListener('click', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) clearFiducialMarkers(activeLayer.id);
+    });
+  }
+
+  const btnExportFiducialsCsv = document.getElementById('btn-export-fiducials-csv');
+  if (btnExportFiducialsCsv) {
+    btnExportFiducialsCsv.addEventListener('click', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) exportFiducialMarkersCsv(activeLayer);
+    });
+  }
+
+  const btnExportFiducialsGeoJson = document.getElementById('btn-export-fiducials-geojson');
+  if (btnExportFiducialsGeoJson) {
+    btnExportFiducialsGeoJson.addEventListener('click', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (activeLayer) exportFiducialMarkersGeoJson(activeLayer);
+    });
+  }
+
+  const btnImportFiducials = document.getElementById('btn-import-fiducials');
+  const fiducialFileInput = document.getElementById('fiducial-import-file-input');
+  if (btnImportFiducials && fiducialFileInput) {
+    btnImportFiducials.addEventListener('click', () => {
+      fiducialFileInput.click();
+    });
+
+    fiducialFileInput.addEventListener('change', (e) => {
+      const file = e.target.files ? e.target.files[0] : null;
+      if (!file) return;
+
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (!activeLayer) {
+        alert("Please select a Fiducial / GCP layer first.");
+        fiducialFileInput.value = "";
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target.result;
+        let imported = [];
+        if (file.name.toLowerCase().endsWith('.geojson') || file.name.toLowerCase().endsWith('.json')) {
+          imported = parseSurveyGeoJson(text);
+        } else {
+          imported = parseSurveyCsv(text);
+        }
+
+        if (imported.length === 0) {
+          alert("Could not find any valid coordinate points in survey file. Please verify CSV or GeoJSON format.");
+          fiducialFileInput.value = "";
+          return;
+        }
+
+        if (!Array.isArray(activeLayer.fiducialMarkers)) activeLayer.fiducialMarkers = [];
+        activeLayer.fiducialMarkers.push(...imported);
+        renderFiducialMarkersTable(activeLayer);
+        renderLayersList();
+        updateGrid();
+        saveAllSettingsToLocalStorage();
+        alert(`Successfully imported ${imported.length} survey marker(s) into ${activeLayer.name || 'layer'}.`);
+        fiducialFileInput.value = "";
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  const btnOpenTargetGen = document.getElementById('btn-open-target-generator');
+  if (btnOpenTargetGen) {
+    btnOpenTargetGen.addEventListener('click', () => {
+      openTargetGeneratorModal();
+    });
+  }
+
+  // Printable Vector SVG Target Generator Modal Event Listeners
+  const closeTargetGenBtn = document.getElementById('close-fiducial-generator-modal-btn');
+  if (closeTargetGenBtn) {
+    closeTargetGenBtn.addEventListener('click', () => {
+      closeTargetGeneratorModal();
+    });
+  }
+
+  ['gen-target-type', 'gen-target-id', 'gen-target-size', 'gen-opt-crosshair', 'gen-opt-cornerticks', 'gen-opt-ruler', 'gen-opt-idlabel'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', () => renderTargetGeneratorPreview());
+      el.addEventListener('change', () => renderTargetGeneratorPreview());
+    }
+  });
+
+  const btnDownloadTargetSvg = document.getElementById('btn-download-target-svg');
+  if (btnDownloadTargetSvg) {
+    btnDownloadTargetSvg.addEventListener('click', () => {
+      exportTargetSvg();
+    });
+  }
+
+  const btnPrintTargetSheet = document.getElementById('btn-print-target-sheet');
+  if (btnPrintTargetSheet) {
+    btnPrintTargetSheet.addEventListener('click', () => {
+      printTargetSheet();
     });
   }
 
@@ -7045,7 +8112,8 @@ function togglePatternParameters() {
   if (activeLayer) {
     activeLayer.pattern = gridType;
     activeLayer.isExclusionZone = (gridType === 'exclusion-box' || gridType === 'exclusion-freeform');
-    activeLayer.isDrawingLayer = (gridType === 'boundary-polygon');
+    activeLayer.isDrawingLayer = (gridType === 'boundary-polygon' || gridType === 'fiducial-markers');
+    activeLayer.isFiducialLayer = (gridType === 'fiducial-markers');
   }
 
   // Transition out of Imported KMZ mode if active
@@ -7105,12 +8173,15 @@ function togglePatternParameters() {
   const layerCardOptics = document.getElementById('layer-card-optics');
   const layerCardModes = document.getElementById('layer-card-modes');
   const layerCardBoundary = document.getElementById('layer-card-boundary');
+  const layerCardFiducial = document.getElementById('layer-card-fiducial');
+  const fiducialInstructions = document.getElementById('fiducial-instructions');
   const layerCardGeometryTitle = document.getElementById('layer-card-geometry-title') ||
     (layerCardGeometry && layerCardGeometry.querySelector ? layerCardGeometry.querySelector('.layer-subgroup-header span') : null);
 
   const widthLabel = (widthContainer && widthContainer.querySelector) ? widthContainer.querySelector('.control-label > span') : null;
   const isExclusion = (gridType === 'exclusion-box' || gridType === 'exclusion-freeform');
   const isBoundary = (gridType === 'boundary-polygon');
+  const isFiducial = (gridType === 'fiducial-markers');
   const exclusionInstructions = document.getElementById('exclusion-instructions');
   const exclusionAltContainer = document.getElementById('exclusion-altitude-container');
   const exclusionFreeformNote = document.getElementById('exclusion-freeform-note');
@@ -7124,11 +8195,27 @@ function togglePatternParameters() {
     }
   }
 
+  if (fiducialInstructions) {
+    if (isFiducial) {
+      fiducialInstructions.classList.remove('hidden');
+    } else {
+      fiducialInstructions.classList.add('hidden');
+    }
+  }
+
   if (layerCardBoundary) {
     if (isBoundary) {
       layerCardBoundary.style.display = 'block';
     } else {
       layerCardBoundary.style.display = 'none';
+    }
+  }
+
+  if (layerCardFiducial) {
+    if (isFiducial) {
+      layerCardFiducial.style.display = 'block';
+    } else {
+      layerCardFiducial.style.display = 'none';
     }
   }
 
@@ -7149,7 +8236,7 @@ function togglePatternParameters() {
   }
 
   if (altitudeControlGroup) {
-    if (isExclusion || isBoundary || gridType === 'tower') {
+    if (isExclusion || isBoundary || isFiducial || gridType === 'tower') {
       altitudeControlGroup.style.display = 'none';
     } else {
       altitudeControlGroup.style.display = 'block';
@@ -7169,7 +8256,8 @@ function togglePatternParameters() {
     'road-following': 'Road Following',
     'exclusion-box': 'Exclusion (Box)',
     'exclusion-freeform': 'Exclusion (Polygon)',
-    'boundary-polygon': 'Boundary / Parcel'
+    'boundary-polygon': 'Boundary / Parcel',
+    'fiducial-markers': '🎯 Fiducial / GCPs'
   };
 
   const targetSplatContainer = document.getElementById('target-splat-container');
@@ -7387,6 +8475,51 @@ function togglePatternParameters() {
       if (vBadge) vBadge.textContent = `${vertices.length} Vertices`;
       if (pBadge) pBadge.textContent = `${(typeof formatDistance === 'function') ? formatDistance(metrics.perimeter) : `${Math.round(metrics.perimeter)}m`} (${Math.round(perimFt)}ft)`;
       if (aBadge) aBadge.textContent = `${Math.round(metrics.area).toLocaleString()} m² (${areaAcres.toFixed(2)} acres)`;
+    }
+
+  } else if (gridType === 'fiducial-markers') {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
+    if (gridGeometrySection) {
+      gridGeometrySection.style.display = 'block';
+      gridGeometrySection.classList.remove('collapsed');
+    }
+    if (layerCardGeometry) layerCardGeometry.style.display = 'none';
+    if (layerCardFlight) layerCardFlight.style.display = 'none';
+    if (layerCardOptics) layerCardOptics.style.display = 'none';
+    if (layerCardModes) layerCardModes.style.display = 'none';
+    if (layerCardBoundary) layerCardBoundary.style.display = 'none';
+    if (layerCardFiducial) layerCardFiducial.style.display = 'block';
+    if (boundaryInstructions) boundaryInstructions.classList.add('hidden');
+    if (fiducialInstructions) fiducialInstructions.classList.remove('hidden');
+    if (altitudeControlGroup) altitudeControlGroup.style.display = 'none';
+    if (exclusionAltContainer) exclusionAltContainer.classList.add('hidden');
+    if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
+    if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
+    if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
+    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
+    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
+    if (freeformInstructions) freeformInstructions.classList.add('hidden');
+    if (widthContainer) widthContainer.style.display = 'none';
+    if (heightContainer) heightContainer.style.display = 'none';
+    if (rotationContainer) rotationContainer.style.display = 'none';
+    if (frontOverlapContainer) frontOverlapContainer.style.display = 'none';
+    if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
+
+    // Populate active layer fiducial settings
+    if (activeLayer) {
+      const nameInp = document.getElementById('fiducial-layer-name');
+      if (nameInp) nameInp.value = activeLayer.name || 'Ground Control Points (GCPs)';
+      const typeSel = document.getElementById('fiducial-default-type');
+      if (typeSel) typeSel.value = activeLayer.defaultTargetType || 'aruco_4x4';
+      const roleSel = document.getElementById('fiducial-default-role');
+      if (roleSel) roleSel.value = activeLayer.defaultRole || 'gcp';
+      const sizeInp = document.getElementById('fiducial-default-size');
+      if (sizeInp) sizeInp.value = activeLayer.defaultPhysicalSize !== undefined ? activeLayer.defaultPhysicalSize : 0.5;
+      const colorSel = document.getElementById('fiducial-marker-color');
+      if (colorSel) colorSel.value = activeLayer.markerColor || '#f59e0b';
+
+      renderFiducialMarkersTable(activeLayer);
     }
 
   } else if (gridType === 'road-following') {
@@ -11219,6 +12352,7 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
   if (photoMarkersGroup) photoMarkersGroup.clearLayers();
   if (roadPathGroup) roadPathGroup.clearLayers();
   if (boundaryLayersGroup) boundaryLayersGroup.clearLayers();
+  if (fiducialMarkersGroup) fiducialMarkersGroup.clearLayers();
 
   // Draw 3D Exclusion Zones
   drawExclusionZones(centerLat, centerLon);
@@ -11226,6 +12360,11 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
   // Draw Drawing & Parcel Boundary Layers (v1.102.0)
   if (typeof drawBoundaryLayers === 'function') {
     drawBoundaryLayers(centerLat, centerLon);
+  }
+
+  // Draw Survey Fiducial & Ground Control Point Layers (v1.104.0)
+  if (typeof drawFiducialLayers === 'function') {
+    drawFiducialLayers(centerLat, centerLon);
   }
 
   const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
@@ -25138,7 +26277,7 @@ function updateWeatherStationMarker(closest, allStations, activeIdx) {
           </div>
           <div style="font-weight: 600; margin-bottom: 2px;">${sName}</div>
           <div style="color: #94a3b8; font-size: 0.72rem; margin-bottom: 6px;">Distance: <b>${sDistFormatted}</b> (${sDistKm} km) from center</div>
-          <button type="button" class="btn-sm" style="width: 100%; padding: 4px 8px; font-size: 0.72rem; background: rgba(56,189,248,0.2); color: #38bdf8; border: 1px solid #38bdf8; border-radius: 4px; cursor: pointer;" onclick="if (typeof selectActiveWeatherStation === 'function') { selectActiveWeatherStation(${sIdx}); }">
+          <button type="button" class="btn-sm" style="width: 100%; padding: 4px 8px; font-size: 0.72rem; background: rgba(56,189,248,0.2); color: #38bdf8; border: 1px solid #38bdf8; border-radius: 4px; cursor: pointer;" onclick="if (typeof selectActiveWeatherStationFromPopup === 'function') { selectActiveWeatherStationFromPopup(${sIdx}); }">
             Select This Station
           </button>
         </div>
@@ -25148,8 +26287,8 @@ function updateWeatherStationMarker(closest, allStations, activeIdx) {
       if (typeof secMarker.bindPopup === 'function') secMarker.bindPopup(secPopupHtml, { className: 'weather-station-popup' });
       if (typeof secMarker.bindTooltip === 'function') secMarker.bindTooltip(`🌤️ Weather Station: ${sIcao} (${sName}) • ${sDistFormatted}`, { direction: 'top', offset: [0, -16] });
       secMarker.on('click', () => {
-        if (typeof selectActiveWeatherStation === 'function') {
-          selectActiveWeatherStation(sIdx);
+        if (typeof selectActiveWeatherStationFromPopup === 'function') {
+          selectActiveWeatherStationFromPopup(sIdx);
         }
       });
       if (weatherStationLayer && typeof weatherStationLayer.addLayer === 'function') {
@@ -25203,7 +26342,65 @@ function selectActiveWeatherStation(idx) {
   currentWeatherDirections.closest = currentWeatherDirections.stations[idx];
 
   updateWeatherPanelUI(currentWeatherDirections, null, false);
-  focusWeatherStationOnMap(currentWeatherDirections.stations[idx]);
+  // Do not auto-pan the map when switching stations; user can use the 📍 Map button if needed.
+}
+
+// Called when the user clicks a station tab button *inside* the Leaflet map popup.
+// Avoids replacing popWeatherDetails.innerHTML (which would destroy the popup DOM and
+// cause Leaflet to snap the map back), and instead patches only the active-button
+// styling and the popup summary text in-place.
+function selectActiveWeatherStationFromPopup(idx) {
+  if (!currentWeatherDirections || !Array.isArray(currentWeatherDirections.stations)) return;
+  if (idx < 0 || idx >= currentWeatherDirections.stations.length) return;
+
+  activeWeatherStationIndex = idx;
+  currentWeatherDirections.activeIndex = idx;
+  currentWeatherDirections.closest = currentWeatherDirections.stations[idx];
+
+  // 1. Update the sidebar card (does not touch pop-weather-details)
+  updateWeatherPanelUI(currentWeatherDirections, null, false);
+
+  // 2. Patch popup summary text in-place
+  const closest = currentWeatherDirections.closest;
+  const popWeatherSummary = document.getElementById('pop-weather-summary');
+  if (popWeatherSummary && closest) {
+    let statusText = '';
+    let color = '';
+    if (closest.fltCat === 'VFR')        { statusText = '🟢 Allowed (VFR)';   color = 'var(--success-color)'; }
+    else if (closest.fltCat === 'MVFR')  { statusText = '🟡 Caution (MVFR)';  color = 'var(--warning-color)'; }
+    else if (closest.fltCat === 'IFR')   { statusText = '🔴 No-Fly (IFR)';    color = 'var(--error-color)';   }
+    else if (closest.fltCat === 'LIFR')  { statusText = '🔴 No-Fly (LIFR)';   color = 'var(--error-color)';   }
+    else                                  { statusText = '⚪ Unknown';          color = 'var(--text-muted)';    }
+    const cDir = closest.compassDir || '';
+    const formattedDist = (typeof formatWeatherDistance === 'function')
+      ? formatWeatherDistance(closest.distance, cDir)
+      : (closest.distance != null ? Number(closest.distance).toFixed(1) + ' km' : '');
+    popWeatherSummary.textContent = `${statusText} • ${closest.icaoId || 'NWS Station'} (${formattedDist})`;
+    popWeatherSummary.style.color = color;
+  }
+
+  // 3. Patch active-button styling on the popup station tabs in-place (no innerHTML replacement)
+  const popDetails = document.getElementById('pop-weather-details');
+  if (popDetails) {
+    const tabBtns = popDetails.querySelectorAll('.pop-station-tab-btn');
+    tabBtns.forEach((btn, i) => {
+      const isActive = i === idx;
+      if (isActive) {
+        btn.style.background = 'rgba(56, 189, 248, 0.25)';
+        btn.style.color = '#38bdf8';
+        btn.style.border = '1px solid #38bdf8';
+        btn.style.fontWeight = '700';
+      } else {
+        btn.style.background = 'rgba(255, 255, 255, 0.05)';
+        btn.style.color = 'var(--text-muted)';
+        btn.style.border = '1px solid rgba(255,255,255,0.15)';
+        btn.style.fontWeight = '';
+      }
+    });
+  }
+
+  // 4. Update the map marker line/dot to reflect the new active station
+  updateWeatherStationMarker(closest, currentWeatherDirections.stations, idx);
 }
 
 function toggleWeatherDetails(forceState) {
@@ -25546,7 +26743,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
                   isActive
                     ? 'background: rgba(56, 189, 248, 0.25); color: #38bdf8; border: 1px solid #38bdf8; font-weight: 700;'
                     : 'background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.15);'
-                }" onclick="if (typeof selectActiveWeatherStation === 'function') { selectActiveWeatherStation(${sIdx}); }">
+                }" onclick="if (typeof selectActiveWeatherStationFromPopup === 'function') { selectActiveWeatherStationFromPopup(${sIdx}); }">
                 <span>${catDot}</span>
                 <span>${escapeHtml(st.icaoId)}</span>
                 <span style="opacity: 0.75; font-size: 0.62rem;">(${sDist})</span>
@@ -25609,6 +26806,7 @@ function formatWeatherDistance(distKm, compassDir = '') {
 
 if (typeof window !== 'undefined') {
   window.selectActiveWeatherStation = selectActiveWeatherStation;
+  window.selectActiveWeatherStationFromPopup = selectActiveWeatherStationFromPopup;
   window.focusWeatherStationOnMap = focusWeatherStationOnMap;
   window.formatWeatherDistance = formatWeatherDistance;
   window.getCompassBearing = getCompassBearing;
@@ -25810,15 +27008,23 @@ async function fetchAndProcessTFRs(centerLat, centerLon, force = false) {
   if (!geojson || !geojson.features || geojson.features.length === 0) {
     try {
       const arcgisUrls = [
-        'https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/arcgis/rest/services/National_Defense_Airspace_TFR_Areas/FeatureServer/0/query?where=1%3D1&outFields=*&returnGeometry=true&f=geojson',
-        'https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/arcgis/rest/services/Stadiums/FeatureServer/0/query?where=1%3D1&outFields=*&returnGeometry=true&f=geojson',
-        'https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/arcgis/rest/services/Part_Time_National_Security_UAS_Flight_Restrictions/FeatureServer/0/query?where=1%3D1&outFields=*&returnGeometry=true&f=geojson'
+        { url: 'https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/arcgis/rest/services/National_Defense_Airspace_TFR_Areas/FeatureServer/0/query?where=1%3D1&outFields=*&returnGeometry=true&f=geojson', type: 'defense' },
+        { url: 'https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/arcgis/rest/services/Stadiums/FeatureServer/0/query?where=1%3D1&outFields=*&returnGeometry=true&f=geojson', type: 'stadium' },
+        { url: 'https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/arcgis/rest/services/Part_Time_National_Security_UAS_Flight_Restrictions/FeatureServer/0/query?where=1%3D1&outFields=*&returnGeometry=true&f=geojson', type: 'security' }
       ];
-      const results = await Promise.allSettled(arcgisUrls.map(u => fetch(u, { signal: AbortSignal.timeout(6000) }).then(r => r.json())));
+      const results = await Promise.allSettled(arcgisUrls.map(item => fetch(item.url, { signal: AbortSignal.timeout(6000) }).then(r => r.json()).then(data => ({ data, type: item.type }))));
       const combined = [];
       for (const r of results) {
-        if (r.status === 'fulfilled' && r.value && Array.isArray(r.value.features)) {
-          combined.push(...r.value.features);
+        if (r.status === 'fulfilled' && r.value && r.value.data && Array.isArray(r.value.data.features)) {
+          const ftype = r.value.type;
+          r.value.data.features.forEach(f => {
+            if (!f.properties) f.properties = {};
+            if (ftype === 'stadium') {
+              f.properties._sourceType = 'stadium';
+              f.properties.isStadium = true;
+            }
+            combined.push(f);
+          });
         }
       }
       if (combined.length > 0) {
@@ -25868,9 +27074,25 @@ function processTfrData(geojson, notamList, centerLat, centerLon) {
     notamId = String(notamId).trim();
 
     const matchedNotam = notamMap.get(notamId) || {};
-    const title = matchedNotam.description || props.TITLE || props.title || props.NAME || props.TxtName || 'Temporary Flight Restriction';
-    const type = matchedNotam.type || props.LEGAL || props.TYPE_CODE || 'TFR';
+    const hasLiveNotam = !!(matchedNotam.notam_id || matchedNotam.gid);
+
+    // Identify if this feature represents a stadium venue
+    const isStadiumVenue = props._sourceType === 'stadium' || props.isStadium === true || props.TYPE === 'STADIUM' || props.LEGAL === 'STADIUM' || (props.TITLE && props.TITLE.toLowerCase().includes('stadium')) || (props.NAME && (props.CITY || props.LATITUDE || props.OBJECTID) && !props.notam_id && !props.NOTAM_KEY);
+    const isStandbyStadium = isStadiumVenue && !hasLiveNotam;
+
+    let title;
+    let type;
+    if (isStandbyStadium) {
+      title = props.NAME || props.TITLE || 'Major Sporting Venue';
+      type = 'STADIUM';
+      if (props.NAME) notamId = String(props.NAME).trim();
+    } else {
+      title = matchedNotam.description || props.TITLE || props.title || props.NAME || props.TxtName || 'Temporary Flight Restriction';
+      type = matchedNotam.type || props.LEGAL || props.TYPE_CODE || 'TFR';
+    }
+
     const state = matchedNotam.state || props.STATE || props.state || '';
+    const city = props.CITY || props.city || '';
     const centroid = getGeoJsonCentroid(feat.geometry);
 
     let distKm = null;
@@ -25878,19 +27100,28 @@ function processTfrData(geojson, notamList, centerLat, centerLon) {
     let bearing = null;
     let compassDir = '';
     let isInside = false;
+    let isInsideStadiumZone = false;
 
     if (centroid && centerLat != null && centerLon != null) {
       distKm = calculateDistance(centerLat, centerLon, centroid.lat, centroid.lon);
       distNM = distKm / 1.852;
       bearing = getCompassBearing(centerLat, centerLon, centroid.lat, centroid.lon);
       compassDir = bearingToCompassDirection(bearing);
+      if (isStadiumVenue && distNM <= 3.0) {
+        isInsideStadiumZone = true;
+      }
     }
 
     if (centerLat != null && centerLon != null) {
-      isInside = isPointInGeoJsonPolygon(centerLat, centerLon, feat.geometry);
-      if (isInside) {
-        distKm = 0;
-        distNM = 0;
+      if (isStandbyStadium) {
+        // Standby stadium is not an active emergency TFR violation
+        isInside = false;
+      } else {
+        isInside = isPointInGeoJsonPolygon(centerLat, centerLon, feat.geometry);
+        if (isInside) {
+          distKm = 0;
+          distNM = 0;
+        }
       }
     }
 
@@ -25901,6 +27132,11 @@ function processTfrData(geojson, notamList, centerLat, centerLon) {
       title: title,
       type: type,
       state: state,
+      city: city,
+      isStadium: isStadiumVenue,
+      isActiveTfr: !isStandbyStadium,
+      isInsideStadiumZone: isInsideStadiumZone,
+      stadiumId: feat.id || props.OBJECTID || null,
       distanceKm: distKm,
       distanceNM: distNM,
       bearing: bearing,
@@ -25913,6 +27149,11 @@ function processTfrData(geojson, notamList, centerLat, centerLon) {
       title: title,
       type: type,
       state: state,
+      city: city,
+      isStadium: isStadiumVenue,
+      isActiveTfr: !isStandbyStadium,
+      isInsideStadiumZone: isInsideStadiumZone,
+      stadiumId: feat.id || props.OBJECTID || null,
       centroid: centroid,
       geometry: feat.geometry,
       distanceKm: distKm,
@@ -25934,6 +27175,11 @@ function processTfrData(geojson, notamList, centerLat, centerLon) {
           title: n.description || `TFR ${n.type || 'Notice'}`,
           type: n.type || 'TFR',
           state: n.state || '',
+          city: '',
+          isStadium: false,
+          isActiveTfr: true,
+          isInsideStadiumZone: false,
+          stadiumId: null,
           centroid: null,
           geometry: null,
           distanceKm: 99999,
@@ -25971,20 +27217,34 @@ function filterAndUpdateTfrUI(centerLat, centerLon) {
   // Recalculate distance / bearing if coordinates changed
   if (centerLat != null && centerLon != null) {
     for (const item of tfrActiveNotams) {
+      const isStandby = item.isStadium && item.isActiveTfr === false;
       if (item.geometry) {
-        item.isInside = isPointInGeoJsonPolygon(centerLat, centerLon, item.geometry);
+        if (isStandby) {
+          item.isInside = false;
+        } else {
+          item.isInside = isPointInGeoJsonPolygon(centerLat, centerLon, item.geometry);
+        }
       }
       if (item.centroid) {
-        item.distanceKm = item.isInside ? 0 : calculateDistance(centerLat, centerLon, item.centroid.lat, item.centroid.lon);
+        const rawDistKm = calculateDistance(centerLat, centerLon, item.centroid.lat, item.centroid.lon);
+        item.distanceKm = item.isInside ? 0 : rawDistKm;
         item.distanceNM = item.distanceKm / 1.852;
         item.bearing = getCompassBearing(centerLat, centerLon, item.centroid.lat, item.centroid.lon);
         item.compassDir = bearingToCompassDirection(item.bearing);
+        if (item.isStadium) {
+          item.isInsideStadiumZone = (rawDistKm / 1.852) <= 3.0;
+        }
       }
     }
   }
 
-  // Sort by distance (inside first, then ascending distance)
+  // Sort by priority: Active TFRs where inside first, then active TFRs by distance, then standby Stadium Advisories by distance
   tfrActiveNotams.sort((a, b) => {
+    const aActive = a.isActiveTfr !== false;
+    const bActive = b.isActiveTfr !== false;
+    if (aActive && !bActive) return -1;
+    if (!aActive && bActive) return 1;
+
     if (a.isInside && !b.isInside) return -1;
     if (!a.isInside && b.isInside) return 1;
     return (a.distanceNM || 99999) - (b.distanceNM || 99999);
@@ -26022,16 +27282,18 @@ function updateTfrPanelUI(tfrList, statusText, isLoading) {
 
   const items = Array.isArray(tfrList) ? tfrList : [];
   const radius = tfrFilterRadiusNM >= 9999 ? 'US' : `${tfrFilterRadiusNM} NM`;
-  const insideAny = items.some(t => t.isInside);
-  const nearbyCount = items.length;
+  const activeTfrs = items.filter(t => t.isActiveTfr !== false);
+  const stadiumAdvisories = items.filter(t => t.isActiveTfr === false && t.isStadium);
+  const insideAnyActive = activeTfrs.some(t => t.isInside);
+  const nearbyActiveCount = activeTfrs.length;
 
   // Header Warning & Health Status Badge on Topbar Telemetry Pill
   if (headerWarningBadge) {
-    if (insideAny || items.some(t => t.distanceNM <= 5)) {
+    if (insideAnyActive || activeTfrs.some(t => t.distanceNM <= 5)) {
       headerWarningBadge.className = 'header-tfr-badge is-critical';
-      headerWarningBadge.textContent = insideAny ? '🚨 IN TFR' : '⚠️ TFR';
-      headerWarningBadge.title = insideAny ? 'CRITICAL: Location is inside an active TFR!' : 'Warning: Active TFR within 5 NM of location!';
-    } else if (items.some(t => t.distanceNM <= 15)) {
+      headerWarningBadge.textContent = insideAnyActive ? '🚨 IN TFR' : '⚠️ TFR';
+      headerWarningBadge.title = insideAnyActive ? 'CRITICAL: Location is inside an active TFR!' : 'Warning: Active TFR within 5 NM of location!';
+    } else if (activeTfrs.some(t => t.distanceNM <= 15)) {
       headerWarningBadge.className = 'header-tfr-badge is-warning';
       headerWarningBadge.textContent = '⚠️ TFR';
       headerWarningBadge.title = 'Warning: Active TFR within 15 NM of location';
@@ -26042,33 +27304,50 @@ function updateTfrPanelUI(tfrList, statusText, isLoading) {
     } else {
       headerWarningBadge.className = 'header-tfr-badge is-operational';
       headerWarningBadge.textContent = '🛡️ TFR';
-      headerWarningBadge.title = `FAA TFR Service: Operational (${items.length === 0 ? 'No active TFRs in range' : 'Airspace clear within 15 NM'})`;
+      if (stadiumAdvisories.length > 0 && activeTfrs.length === 0) {
+        headerWarningBadge.title = `FAA TFR Service: Operational (Airspace clear; ${stadiumAdvisories.length} standby stadium advisory nearby)`;
+      } else {
+        headerWarningBadge.title = `FAA TFR Service: Operational (${items.length === 0 ? 'No active TFRs in range' : 'Airspace clear within 15 NM'})`;
+      }
     }
   }
 
   // Popover TFR Status Badge & Summary
-  if (insideAny) {
+  if (insideAnyActive) {
     if (badgeEl) {
       badgeEl.textContent = 'CRITICAL ALERT';
       badgeEl.style.background = 'rgba(239, 68, 68, 0.3)';
       badgeEl.style.color = '#ef4444';
     }
     if (summaryEl) {
-      const active = items.find(t => t.isInside);
+      const active = activeTfrs.find(t => t.isInside);
       summaryEl.textContent = `🚨 LOCATION INSIDE TFR: ${active.notamId || ''} (${active.type || 'RESTRICTION'})`;
       summaryEl.style.color = '#ef4444';
     }
-  } else if (nearbyCount > 0) {
+  } else if (nearbyActiveCount > 0) {
     if (badgeEl) {
-      badgeEl.textContent = `${nearbyCount} NEARBY`;
+      badgeEl.textContent = `${nearbyActiveCount} ACTIVE`;
       badgeEl.style.background = 'rgba(245, 158, 11, 0.25)';
       badgeEl.style.color = '#f59e0b';
     }
     if (summaryEl) {
-      const closest = items[0];
+      const closest = activeTfrs[0];
       const distStr = formatTfrDistance(closest.distanceKm, false, closest.compassDir);
       summaryEl.textContent = `⚠️ Closest: ${closest.notamId} • ${distStr} (${closest.type || 'TFR'})`;
       summaryEl.style.color = '#f59e0b';
+    }
+  } else if (stadiumAdvisories.length > 0) {
+    if (badgeEl) {
+      badgeEl.textContent = `${stadiumAdvisories.length} VENUE${stadiumAdvisories.length > 1 ? 'S' : ''}`;
+      badgeEl.style.background = 'rgba(139, 92, 246, 0.22)';
+      badgeEl.style.color = '#a78bfa';
+    }
+    if (summaryEl) {
+      const closest = stadiumAdvisories[0];
+      const distStr = formatTfrDistance(closest.distanceKm, false, closest.compassDir);
+      const zoneNote = closest.isInsideStadiumZone ? ' • Inside 3 NM Zone' : '';
+      summaryEl.textContent = `🏟️ Closest: ${closest.title || closest.notamId} • ${distStr}${zoneNote} (Standby)`;
+      summaryEl.style.color = '#a78bfa';
     }
   } else {
     if (badgeEl) {
@@ -26094,8 +27373,9 @@ function updateTfrPanelUI(tfrList, statusText, isLoading) {
     }
 
     items.forEach((item, idx) => {
+      const isStandbyStadium = item.isStadium && item.isActiveTfr === false;
       const card = document.createElement('div');
-      card.className = `tfr-item-card ${item.isInside ? 'is-critical' : ''}`;
+      card.className = `tfr-item-card ${item.isInside ? 'is-critical' : ''} ${isStandbyStadium ? 'is-stadium' : ''}`;
 
       const infoDiv = document.createElement('div');
       infoDiv.className = 'tfr-item-info';
@@ -26104,18 +27384,26 @@ function updateTfrPanelUI(tfrList, statusText, isLoading) {
       headerDiv.className = 'tfr-item-header';
 
       const typeBadge = document.createElement('span');
-      typeBadge.style.cssText = `font-size: 0.6rem; padding: 1px 4px; border-radius: 3px; font-weight: 700; ${
-        item.isInside ? 'background: #ef4444; color: #fff;' : 'background: rgba(245,158,11,0.25); color: #f59e0b;'
-      }`;
-      typeBadge.textContent = item.type || 'TFR';
+      if (isStandbyStadium) {
+        typeBadge.style.cssText = 'font-size: 0.6rem; padding: 1px 5px; border-radius: 3px; font-weight: 700; background: rgba(139, 92, 246, 0.25); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.4);';
+        typeBadge.textContent = 'STADIUM';
+      } else {
+        typeBadge.style.cssText = `font-size: 0.6rem; padding: 1px 4px; border-radius: 3px; font-weight: 700; ${
+          item.isInside ? 'background: #ef4444; color: #fff;' : 'background: rgba(245,158,11,0.25); color: #f59e0b;'
+        }`;
+        typeBadge.textContent = item.type || 'TFR';
+      }
       headerDiv.appendChild(typeBadge);
 
       const idSpan = document.createElement('span');
-      idSpan.textContent = item.notamId;
+      idSpan.style.cssText = isStandbyStadium ? 'font-weight: 700; color: var(--text-main);' : '';
+      idSpan.textContent = isStandbyStadium ? (item.title || item.notamId) : item.notamId;
       headerDiv.appendChild(idSpan);
 
       const distSpan = document.createElement('span');
-      distSpan.style.cssText = `font-size: 0.68rem; margin-left: auto; ${item.isInside ? 'color: #ef4444; font-weight: 700;' : 'color: var(--accent-cyan);'}`;
+      distSpan.style.cssText = `font-size: 0.68rem; margin-left: auto; ${
+        item.isInside ? 'color: #ef4444; font-weight: 700;' : (isStandbyStadium ? 'color: #a78bfa;' : 'color: var(--accent-cyan);')
+      }`;
       distSpan.textContent = formatTfrDistance(item.distanceKm, item.isInside, item.compassDir);
       headerDiv.appendChild(distSpan);
 
@@ -26123,7 +27411,12 @@ function updateTfrPanelUI(tfrList, statusText, isLoading) {
 
       const descDiv = document.createElement('div');
       descDiv.className = 'tfr-item-desc';
-      descDiv.textContent = item.title;
+      if (isStandbyStadium) {
+        const cityState = (item.city && item.state) ? `${item.city}, ${item.state}` : (item.state || 'US');
+        descDiv.innerHTML = `<span style="color:#a78bfa; font-weight:600;">Standby Advisory:</span> Major venue (${cityState}) • 14 CFR § 99.7 active during events ±1 hr`;
+      } else {
+        descDiv.textContent = item.title;
+      }
       infoDiv.appendChild(descDiv);
 
       card.appendChild(infoDiv);
@@ -26137,7 +27430,7 @@ function updateTfrPanelUI(tfrList, statusText, isLoading) {
         locateBtn.className = 'btn-sm';
         locateBtn.style.cssText = 'padding: 2px 5px; font-size: 0.65rem; background: rgba(255,255,255,0.06); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;';
         locateBtn.textContent = '📍';
-        locateBtn.title = 'Focus TFR on Map';
+        locateBtn.title = isStandbyStadium ? 'Focus Stadium on Map' : 'Focus TFR on Map';
         locateBtn.onclick = (e) => {
           e.stopPropagation();
           focusTfrOnMap(idx);
@@ -26148,7 +27441,9 @@ function updateTfrPanelUI(tfrList, statusText, isLoading) {
       const briefBtn = document.createElement('button');
       briefBtn.type = 'button';
       briefBtn.className = 'btn-sm';
-      briefBtn.style.cssText = 'padding: 2px 6px; font-size: 0.65rem; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); border-radius: 4px; cursor: pointer; font-weight: 600;';
+      briefBtn.style.cssText = isStandbyStadium
+        ? 'padding: 2px 6px; font-size: 0.65rem; background: rgba(139,92,246,0.18); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.35); border-radius: 4px; cursor: pointer; font-weight: 600;'
+        : 'padding: 2px 6px; font-size: 0.65rem; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); border-radius: 4px; cursor: pointer; font-weight: 600;'
       briefBtn.textContent = 'Briefing';
       briefBtn.onclick = (e) => {
         e.stopPropagation();
@@ -26186,14 +27481,61 @@ async function openTfrBriefingModal(notamId) {
   const extLink = document.getElementById('tfr-modal-external-link');
 
   if (!modal || !contentEl) return;
+
+  // Find local item metadata
+  const localItem = tfrActiveNotams ? tfrActiveNotams.find(t => t.notamId === notamId || t.title === notamId || String(t.stadiumId) === String(notamId)) : null;
+
+  modal.classList.remove('hidden');
+  if (typeof contentEl.replaceChildren === 'function') contentEl.replaceChildren(); else contentEl.innerHTML = '';
+
+  // Dedicated handling for Standby Stadium Advisories
+  if (localItem && (localItem.isStadium || localItem.type === 'STADIUM') && localItem.isActiveTfr === false) {
+    const venueName = localItem.title || localItem.notamId || 'Major Sporting Venue';
+    if (titleEl) titleEl.textContent = `FAA Airspace Advisory: ${venueName}`;
+    if (extLink) {
+      extLink.href = 'https://tfr.faa.gov/';
+      extLink.textContent = 'FAA TFR Portal ↗';
+    }
+
+    const locationStr = [localItem.city, localItem.state].filter(Boolean).join(', ') || 'United States';
+    const distText = formatTfrDistance(localItem.distanceKm, false, localItem.compassDir);
+    const coordsStr = localItem.centroid ? `${localItem.centroid.lat.toFixed(4)}° N, ${Math.abs(localItem.centroid.lon).toFixed(4)}° W` : 'Coordinates Available';
+
+    const stadiumCard = document.createElement('div');
+    stadiumCard.className = 'stadium-briefing-container';
+    stadiumCard.style.cssText = 'display:flex; flex-direction:column; gap:12px; font-size:0.78rem; line-height:1.5; color:var(--text-main);';
+    stadiumCard.innerHTML = `
+      <div style="background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.3); border-radius: 8px; padding: 12px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+          <span style="background: rgba(139,92,246,0.25); color: #c4b5fd; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(139,92,246,0.4);">SPORTING VENUE ADVISORY</span>
+          <span style="color: #34d399; font-weight: 700; font-size: 0.72rem;">● Standby / Non-Active</span>
+        </div>
+        <div style="font-size: 1.05rem; font-weight: 700; color: #fff;">🏟️ ${venueName}</div>
+        <div style="color: var(--text-muted); font-size: 0.75rem; margin-top: 2px;">Location: <b>${locationStr}</b> (${coordsStr}) • Distance from Pilot: <b style="color: #a78bfa;">${distText}</b></div>
+      </div>
+
+      <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+        <div><strong style="color: var(--accent-cyan);">Federal Aviation Regulation:</strong> 14 CFR § 99.7 Special Security Instructions (Sporting Events)</div>
+        <div><strong style="color: var(--text-main);">Venue Threshold:</strong> Any stadium or speedway with a seating capacity of <b>30,000 or more</b> hosting NCAA Division I football, NFL, MLB, NASCAR, or IndyCar events.</div>
+        <div><strong style="color: var(--text-main);">Effective Flight Restriction Window:</strong> Flight restrictions automatically take effect <b>1 hour before</b> scheduled event start time and expire <b>1 hour after</b> event conclusion.</div>
+        <div><strong style="color: var(--text-main);">Protected Airspace Dimensions:</strong> Surface up to <b>3,000 ft AGL</b> within a <b>3 Nautical Mile (3 NM / 5.56 km)</b> radius centered on the venue.</div>
+        <div><strong style="color: var(--text-main);">Drone (UAS) Compliance:</strong> All UAS flights within the 3 NM perimeter are strictly prohibited during active event windows unless granted explicit FAA airspace authorization/waiver. Outside active event windows, standard Part 107 and Recreational rules apply.</div>
+      </div>
+
+      <div style="padding: 10px 12px; background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.25); border-radius: 8px; font-size: 0.74rem; color: var(--text-muted);">
+        💡 <b>Operational Note:</b> This venue is displayed as a situational advisory because it is within your 30 NM monitor radius. If no game or major event is currently scheduled today, the 3 NM flight restriction is in standby and not active.
+      </div>
+    `;
+    contentEl.appendChild(stadiumCard);
+    return;
+  }
+
   if (titleEl) titleEl.textContent = `FAA NOTAM Briefing: FDC ${notamId}`;
   if (extLink) {
     const formattedId = notamId ? notamId.replace('/', '_') : '';
     extLink.href = `https://tfr.faa.gov/save_pages/detail_${formattedId}.html`;
+    extLink.textContent = 'View on FAA Portal ↗';
   }
-
-  modal.classList.remove('hidden');
-  if (typeof contentEl.replaceChildren === 'function') contentEl.replaceChildren(); else contentEl.innerHTML = '';
 
   const loadingDiv = document.createElement('div');
   loadingDiv.style.cssText = 'padding: 20px; text-align: center; color: var(--text-muted); font-size: 0.8rem;';
@@ -26228,8 +27570,6 @@ async function openTfrBriefingModal(notamId) {
 
   if (typeof contentEl.replaceChildren === 'function') contentEl.replaceChildren(); else contentEl.innerHTML = '';
 
-  // Find local item metadata
-  const localItem = tfrActiveNotams ? tfrActiveNotams.find(t => t.notamId === notamId) : null;
   if (localItem) {
     const metaCard = document.createElement('div');
     metaCard.style.cssText = 'background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 4px; font-size: 0.75rem;';
@@ -26712,6 +28052,7 @@ const PhotoInspector = {
     hud: true,
     boundary: true,
     layerBoundary: true, // Auto-superimpose active flight layer boundary!
+    fiducials: true, // Auto-superimpose fiducial markers / GCPs!
     measure: true,
     pins: true,
     reticle: true
@@ -27555,6 +28896,100 @@ const PhotoInspector = {
         }
       });
     }
+
+    // 8. Auto-Superimposed Fiducial Markers & Ground Control Points (v1.104.0)
+    if (this.layers.fiducials) {
+      const camPose = {
+        lat: this.activePhoto.actual?.lat ?? this.activePhoto.planned?.lat ?? 0,
+        lon: this.activePhoto.actual?.lon ?? this.activePhoto.planned?.lon ?? 0,
+        altAgl: (this.activePhoto.actual?.altAgl && this.activePhoto.actual.altAgl > 0)
+          ? this.activePhoto.actual.altAgl
+          : (this.activePhoto.actual?.alt ?? this.activePhoto.planned?.alt ?? 25.0),
+        gimbalPitch: (this.activePhoto.actual?.gimbalPitch !== undefined) ? this.activePhoto.actual.gimbalPitch : -90,
+        heading: this.activePhoto.actual?.heading ?? this.activePhoto.planned?.heading ?? 0
+      };
+
+      const allLayers = (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : [];
+      const markersToProject = [];
+
+      allLayers.filter(l => l.enabled && Array.isArray(l.fiducialMarkers)).forEach(l => {
+        l.fiducialMarkers.forEach(m => {
+          markersToProject.push({
+            marker: m,
+            layerColor: l.markerColor || '#f59e0b',
+            layerName: l.name || 'GCP Survey'
+          });
+        });
+      });
+
+      const opt = {
+        sensorWidthMm: this.activePhoto.sensorWidthMm || 9.6,
+        focalLengthMm: this.activePhoto.focalLengthMm || 6.72,
+        aspectRatio: canvas.width / canvas.height,
+        targetHeightMeters: 0
+      };
+
+      markersToProject.forEach(({ marker, layerColor, layerName }) => {
+        const proj = projectGeoPointToPixel(marker, camPose, opt);
+        if (proj.isInFront && proj.isInsideFrame) {
+          const px = proj.u * canvas.width;
+          const py = proj.v * canvas.height;
+          const color = marker.color || layerColor || '#f59e0b';
+          const sizeM = marker.physicalSizeMeters || 0.5;
+          const code = marker.code || 'GCP';
+          const role = (marker.role || 'gcp').toUpperCase();
+          const depthM = proj.opticalDepthMeters;
+
+          ctx.save();
+          // Draw outer target ring
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.arc(px, py, 14, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Draw dashed concentric ring
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath();
+          ctx.arc(px, py, 22, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Draw target crosshairs
+          ctx.beginPath();
+          ctx.moveTo(px - 18, py); ctx.lineTo(px + 18, py);
+          ctx.moveTo(px, py - 18); ctx.lineTo(px, py + 18);
+          ctx.stroke();
+
+          // Center bullseye dot
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.arc(px, py, 3, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Target Label Pill
+          const distStr = this.unit === 'imperial' ? `${(depthM * 3.28084).toFixed(1)}ft` : `${depthM.toFixed(1)}m`;
+          const sizeStr = this.unit === 'imperial' ? `${(sizeM * 39.37).toFixed(0)}in` : `${(sizeM * 100).toFixed(0)}cm`;
+          const labelText = `🎯 ${code} [${role}] • ${sizeStr} • ${distStr}`;
+
+          ctx.font = 'bold 11px sans-serif';
+          const textW = ctx.measureText(labelText).width;
+          const badgeX = Math.max(10, Math.min(canvas.width - textW - 24, px + 18));
+          const badgeY = Math.max(25, Math.min(canvas.height - 15, py - 12));
+
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
+          ctx.fillRect(badgeX, badgeY - 14, textW + 16, 22);
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(badgeX, badgeY - 14, textW + 16, 22);
+
+          ctx.fillStyle = '#f8fafc';
+          ctx.fillText(labelText, badgeX + 8, badgeY + 1);
+          ctx.restore();
+        }
+      });
+    }
   },
 
   setupEvents() {
@@ -27645,7 +29080,7 @@ const PhotoInspector = {
       };
     });
 
-    ['hud', 'boundary', 'layerBoundary', 'measure', 'pins', 'reticle'].forEach(lKey => {
+    ['hud', 'boundary', 'layerBoundary', 'fiducials', 'measure', 'pins', 'reticle'].forEach(lKey => {
       const cb = document.getElementById(`layer-toggle-${lKey}`) || document.getElementById(`layer-toggle-${lKey.toLowerCase()}`) || document.getElementById('layer-toggle-layer-boundary');
       if (cb) {
         cb.onchange = () => {
