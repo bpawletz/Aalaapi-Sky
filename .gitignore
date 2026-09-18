@@ -18,3 +18,8 @@ scratch/*
 prev.txt
 previous_test.txt
 dummy.kml
+
+# Companion CLI binaries
+tools/companion/bin/
+*.exe
+

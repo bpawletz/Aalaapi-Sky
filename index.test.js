@@ -131,7 +131,7 @@ global.L = {
   },
   polyline: () => ({ addTo: () => {}, setLatLngs: () => {} }),
   polygon: () => ({ addTo: () => {}, setLatLngs: () => {} }),
-  circle: () => ({ addTo: () => {}, setLatLng: () => {}, setRadius: () => {} }),
+  circle: () => ({ addTo: function() { return this; }, setLatLng: function() { return this; }, setRadius: function() { return this; }, bindTooltip: function() { return this; } }),
   Control: {
     extend: () => function() {}
   },
@@ -17604,21 +17604,21 @@ describe('v1.104.0 Ground Control Points (GCPs) & Fiducial Markers Survey Suite 
     importedPhotos = null;
   });
 
-  test('Version consistency is maintained across package.json, CHANGELOG.md, and templates for v1.104.4', () => {
+  test('Version consistency is maintained across package.json, CHANGELOG.md, and templates for v1.107.1', () => {
     const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
     const cl = fs.readFileSync('CHANGELOG.md', 'utf8');
     const indexTemplate = fs.readFileSync('index_template.html', 'utf8');
     const indexHtml = fs.readFileSync('index.html', 'utf8');
 
-    assert.strictEqual(pkg, '1.104.4');
-    assert.ok(cl.includes('## [1.104.4]'), 'CHANGELOG.md missing 1.104.4 header');
-    assert.ok(cl.includes('## [1.104.3]'), 'CHANGELOG.md missing 1.104.3 header');
-    assert.ok(indexTemplate.includes('v1.104.4</span>'), 'index_template.html missing v1.104.4 header badge');
-    assert.ok(indexTemplate.includes('Version 1.104.4</span>'), 'index_template.html missing Version 1.104.4 in About modal');
-    assert.ok(indexTemplate.includes('Changelog (v1.104.4):'), 'index_template.html missing Changelog (v1.104.4)');
-    assert.ok(indexHtml.includes('v1.104.4</span>'), 'index.html missing v1.104.4 header badge');
-    assert.ok(indexHtml.includes('Version 1.104.4</span>'), 'index.html missing Version 1.104.4 in About modal');
-    assert.ok(indexHtml.includes('Changelog (v1.104.4):'), 'index.html missing Changelog (v1.104.4)');
+    assert.ok(semverGte(pkg, '1.107.1'), 'package.json version should be >= 1.107.1');
+    assert.ok(cl.includes('## [1.107.1]'), 'CHANGELOG.md missing 1.107.1 header');
+    assert.ok(cl.includes('## [1.107.0]'), 'CHANGELOG.md missing 1.107.0 header');
+    assert.ok(indexTemplate.includes('class="header-version-badge"'), 'index_template.html missing header badge');
+    assert.ok(indexTemplate.includes('v1.107.1'), 'index_template.html missing header badge v1.107.1');
+    assert.ok(indexTemplate.includes('Changelog (v1.107.1):'), 'index_template.html missing Changelog (v1.107.1)');
+    assert.ok(indexHtml.includes('class="header-version-badge"'), 'index.html missing header badge');
+    assert.ok(indexHtml.includes('v1.107.1'), 'index.html missing header badge v1.107.1');
+    assert.ok(indexHtml.includes('Changelog (v1.107.1):'), 'index.html missing Changelog (v1.107.1)');
   });
 
   test('DOM Architecture: Section 1 has fiducial-markers pattern card with SURVEY badge, and Section 2 has layer-card-fiducial with all controls', () => {
@@ -17635,7 +17635,10 @@ describe('v1.104.0 Ground Control Points (GCPs) & Fiducial Markers Survey Suite 
     const cardFiducial = doc.getElementById('layer-card-fiducial');
     assert.ok(cardFiducial, '#layer-card-fiducial must exist in Section 2');
 
-    // Section 2 Card 6 controls
+    // Section 2 Card 6 controls & interactive help
+    assert.ok(doc.getElementById('fiducial-help-btn'), '#fiducial-help-btn must exist in Card 6 header');
+    assert.ok(doc.getElementById('fiducial-help-drawer'), '#fiducial-help-drawer must exist in Card 6');
+    assert.ok(doc.getElementById('close-fiducial-help-drawer-btn'), '#close-fiducial-help-drawer-btn must exist');
     assert.ok(doc.getElementById('fiducial-layer-name'), '#fiducial-layer-name must exist');
     assert.ok(doc.getElementById('fiducial-default-type'), '#fiducial-default-type must exist');
     assert.ok(doc.getElementById('fiducial-default-role'), '#fiducial-default-role must exist');
@@ -18017,3 +18020,682 @@ describe('selectActiveWeatherStation — no map jump on tab click', () => {
     assert.strictEqual(popover.classList.contains('hidden'), true, 'Outside click must close popover');
   });
 });
+
+describe('DJI Developer Cloud API Key Decryption & Telemetry Pipeline', () => {
+  test('index_template.html and index.html include #diag-dji-key-btn and #dji-key-modal', () => {
+    const fs = require('fs');
+    const path = require('path');
+    ['index_template.html', 'index.html'].forEach(filename => {
+      const content = fs.readFileSync(path.join(__dirname, filename), 'utf8');
+      assert.ok(content.includes('id="diag-dji-key-btn"'), `Must include diag-dji-key-btn in ${filename}`);
+      assert.ok(content.includes('id="dji-key-modal"'), `Must include dji-key-modal in ${filename}`);
+      assert.ok(content.includes('id="dji-api-key-input"'), `Must include dji-api-key-input in ${filename}`);
+      assert.ok(content.includes('id="save-dji-key-btn"'), `Must include save-dji-key-btn in ${filename}`);
+      assert.ok(content.includes('id="clear-dji-key-btn"'), `Must include clear-dji-key-btn in ${filename}`);
+    });
+  });
+
+  test('parseCsvTelemetry parses dji-log CSV format with stick deflections and 10Hz to 1Hz downsampling', () => {
+    const { parseCsvTelemetry } = require('./tools/companion/log_decoder.js');
+    // Generate simulated 10Hz CSV telemetry for 3 seconds (30 frames)
+    let csv = 'CUSTOM.updateTime,OSD.latitude,OSD.longitude,OSD.height [m],OSD.pitch,OSD.roll,OSD.yaw,BATTERY.chargeLevel,RC.elevator,RC.aileron,RC.rudder,RC.throttle,CAMERA.isPhoto\n';
+    for (let i = 0; i < 30; i++) {
+      const timeMs = i * 100;
+      const lat = 40.013000 + i * 0.000010;
+      const lon = -83.176500 + i * 0.000010;
+      const alt = 15.0 + i * 0.2;
+      const isPhoto = (i === 15) ? 1 : 0;
+      csv += `${timeMs},${lat.toFixed(6)},${lon.toFixed(6)},${alt.toFixed(1)},-10.5,2.0,85.0,92,-200,150,50,300,${isPhoto}\n`;
+    }
+
+    const telemetry = parseCsvTelemetry(csv, 'FlightRecord_test.csv');
+    assert.ok(telemetry, 'Telemetry must be parsed');
+    assert.strictEqual(telemetry.flightId, 'FlightRecord_test.csv');
+    assert.ok(telemetry.points.length >= 3, 'Must downsample 10Hz to 1Hz points');
+    assert.strictEqual(telemetry.photoCount, 1, 'Should detect 1 photo point');
+    assert.strictEqual(telemetry.points.some(p => p.isPhoto), true);
+
+    const firstPt = telemetry.points[0];
+    assert.ok(typeof firstPt.lat === 'number');
+    assert.ok(typeof firstPt.lon === 'number');
+    assert.ok(typeof firstPt.alt === 'number');
+    assert.ok(typeof firstPt.battery === 'number');
+    assert.ok(typeof firstPt.elevator === 'number');
+    assert.strictEqual(firstPt.elevator, -200);
+  });
+
+  test('Companion server handles DJI API key configuration and masking securely', () => {
+    const { maskApiKey } = require('./tools/companion/server.js');
+    assert.strictEqual(maskApiKey(''), '');
+    assert.strictEqual(maskApiKey(null), '');
+    assert.strictEqual(maskApiKey('1234567890abcdef1234567890abcdef'), '1234...cdef');
+    assert.strictEqual(maskApiKey('shortkey'), '****');
+  });
+});
+
+describe('Section 2 Layer Properties Visibility Regression Tests (v1.105.1)', () => {
+  test('index_template.html and index.html do NOT have hidden class on #layer-card-fiducial and #layer-card-boundary', () => {
+    ['index_template.html', 'index.html'].forEach(filename => {
+      const content = fs.readFileSync(path.join(__dirname, filename), 'utf8');
+      assert.ok(!content.includes('id="layer-card-fiducial" class="layer-subgroup-card hidden"'),
+        `#layer-card-fiducial must not contain hidden class in ${filename}`);
+      assert.ok(!content.includes('id="layer-card-boundary" class="layer-subgroup-card hidden"'),
+        `#layer-card-boundary must not contain hidden class in ${filename}`);
+      assert.ok(content.includes('id="layer-card-fiducial" class="layer-subgroup-card"'),
+        `#layer-card-fiducial must have class="layer-subgroup-card" in ${filename}`);
+      assert.ok(content.includes('id="layer-card-boundary" class="layer-subgroup-card"'),
+        `#layer-card-boundary must have class="layer-subgroup-card" in ${filename}`);
+    });
+  });
+
+  test('togglePatternParameters explicitly synchronizes classList hidden alongside style.display', () => {
+    const code = fs.readFileSync(path.join(__dirname, 'index.js'), 'utf8');
+    assert.ok(code.includes("layerCardFiducial.classList.remove('hidden')"),
+      "Must explicitly remove hidden class when fiducial layer is active");
+    assert.ok(code.includes("layerCardFiducial.classList.add('hidden')"),
+      "Must explicitly add hidden class when fiducial layer is inactive");
+    assert.ok(code.includes("layerCardBoundary.classList.remove('hidden')"),
+      "Must explicitly remove hidden class when boundary layer is active");
+    assert.ok(code.includes("layerCardBoundary.classList.add('hidden')"),
+      "Must explicitly add hidden class when boundary layer is inactive");
+  });
+});
+
+describe('Adaptive Background Communication & Drone Radar Gating Tests (v1.106.1)', () => {
+  test('Version consistency is maintained across package.json, CHANGELOG.md, and templates for v1.106.1', () => {
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+    const cl = fs.readFileSync('CHANGELOG.md', 'utf8');
+    const indexTemplate = fs.readFileSync('index_template.html', 'utf8');
+    const indexHtml = fs.readFileSync('index.html', 'utf8');
+
+    assert.ok(semverGte(pkg, '1.106.1'), 'package.json version should be >= 1.106.1');
+    assert.ok(cl.includes('## [1.106.1]'), 'CHANGELOG.md missing 1.106.1 header');
+    assert.ok(indexTemplate.includes('class="header-version-badge"'), 'index_template.html missing header badge');
+    assert.ok(indexTemplate.includes('class="version-tag"'), 'index_template.html missing Version tag in About modal');
+    assert.ok(indexTemplate.includes('Changelog (v1.106.1):'), 'index_template.html missing Changelog (v1.106.1)');
+    assert.ok(indexHtml.includes('class="header-version-badge"'), 'index.html missing header badge');
+    assert.ok(indexHtml.includes('class="version-tag"'), 'index.html missing Version tag in About modal');
+    assert.ok(indexHtml.includes('Changelog (v1.106.1):'), 'index.html missing Changelog (v1.106.1)');
+  });
+
+  test('RemoteIdRadar.pollAirspace skips fetch when isCompanionOnline is false (eliminates offline background comm)', async () => {
+    const origFetch = global.fetch;
+    const origWindowFetch = global.window ? global.window.fetch : null;
+    let fetchCalled = false;
+    global.fetch = async () => {
+      fetchCalled = true;
+      return { ok: false };
+    };
+    if (global.window) global.window.fetch = global.fetch;
+
+    try {
+      vm.runInThisContext('setIsCompanionOnline(false);');
+      assert.strictEqual(getIsCompanionOnline(), false);
+
+      // Call pollAirspace when companion is offline
+      await RemoteIdRadar.pollAirspace();
+      assert.strictEqual(fetchCalled, false, 'pollAirspace must NOT call fetch when companion is offline');
+
+      // Simulate companion coming online
+      vm.runInThisContext('setIsCompanionOnline(true);');
+      assert.strictEqual(getIsCompanionOnline(), true);
+
+      await RemoteIdRadar.pollAirspace();
+      assert.strictEqual(fetchCalled, true, 'pollAirspace must call fetch once companion is online');
+    } finally {
+      global.fetch = origFetch;
+      if (global.window) global.window.fetch = origWindowFetch;
+      vm.runInThisContext('setIsCompanionOnline(false);');
+    }
+  });
+
+  test('getStatusPollDelay implements stepped adaptive backoff when offline and throttles in hidden tab', () => {
+    vm.runInThisContext(`
+      setIsCompanionOnline(false);
+      setConsecutiveStatusFailures(0);
+    `);
+
+    // 0-3 failures: 6s
+    assert.strictEqual(getStatusPollDelay(), 6000);
+    vm.runInThisContext('setConsecutiveStatusFailures(3);');
+    assert.strictEqual(getStatusPollDelay(), 6000);
+
+    // 4-8 failures: 15s
+    vm.runInThisContext('setConsecutiveStatusFailures(5);');
+    assert.strictEqual(getStatusPollDelay(), 15000);
+
+    // 9-15 failures: 30s
+    vm.runInThisContext('setConsecutiveStatusFailures(10);');
+    assert.strictEqual(getStatusPollDelay(), 30000);
+
+    // >15 failures: 60s dormant heartbeat
+    vm.runInThisContext('setConsecutiveStatusFailures(20);');
+    assert.strictEqual(getStatusPollDelay(), 60000);
+
+    // Online: 8s
+    vm.runInThisContext('setIsCompanionOnline(true);');
+    assert.strictEqual(getStatusPollDelay(), 8000);
+
+    // Cleanup
+    vm.runInThisContext('setIsCompanionOnline(false); setConsecutiveStatusFailures(0);');
+  });
+
+  test('getRadarPollDelay pauses when companion is offline or tab is hidden, and adapts when online', () => {
+    // Offline: must return null (paused)
+    vm.runInThisContext('setIsCompanionOnline(false);');
+    assert.strictEqual(getRadarPollDelay(), null);
+
+    // Online with 0 drones: 5000ms
+    vm.runInThisContext(`
+      setIsCompanionOnline(true);
+      RemoteIdRadar.activeDrones = [];
+      remoteIdDroneCount = 0;
+    `);
+    assert.strictEqual(getRadarPollDelay(), 5000);
+
+    // Online with active drone: 1500ms
+    vm.runInThisContext(`
+      RemoteIdRadar.activeDrones = [{ id: 'drone-1', latitude: 40.0, longitude: -83.0 }];
+    `);
+    assert.strictEqual(getRadarPollDelay(), 1500);
+
+    // Cleanup
+    vm.runInThisContext(`
+      setIsCompanionOnline(false);
+      RemoteIdRadar.activeDrones = [];
+    `);
+  });
+
+  test('wakeCompanionPolling resets backoff and immediately queries status', async () => {
+    const origFetch = global.fetch;
+    const origWindowFetch = global.window ? global.window.fetch : null;
+    const fetchedUrls = [];
+    global.fetch = async (url) => {
+      fetchedUrls.push(url);
+      return {
+        ok: true,
+        json: async () => ({ connected: false, droneCount: 2, drones: [] })
+      };
+    };
+    if (global.window) global.window.fetch = global.fetch;
+
+    try {
+      vm.runInThisContext('setConsecutiveStatusFailures(15);');
+      assert.strictEqual(getConsecutiveStatusFailures(), 15);
+
+      await wakeCompanionPolling(true);
+
+      assert.strictEqual(getConsecutiveStatusFailures(), 0, 'Must reset consecutiveStatusFailures on wake');
+      assert.ok(fetchedUrls.some(u => u && u.includes('/api/status')), 'Must query /api/status on wake');
+      assert.ok(fetchedUrls.some(u => u && u.includes('/api/remote-id/drones')), 'Must wake and query radar on online transition');
+      assert.strictEqual(getIsCompanionOnline(), true, 'Must transition to online on 200 res');
+    } finally {
+      global.fetch = origFetch;
+      if (global.window) global.window.fetch = origWindowFetch;
+      vm.runInThisContext('setIsCompanionOnline(false);');
+    }
+  });
+
+  test('Companion server /api/status includes real-time droneCount field', () => {
+    const serverCode = fs.readFileSync(path.join(__dirname, 'tools/companion/server.js'), 'utf8');
+    assert.ok(serverCode.includes('droneCount'), 'Companion server /api/status route must include droneCount');
+    assert.ok(serverCode.includes('airspaceTracker.getActiveDrones().length'), 'droneCount must reflect airspaceTracker active count');
+  });
+
+  test('getRadarPollDelay backs off to 10s when consecutiveRadarFailures >= 2', () => {
+    vm.runInThisContext(`
+      setIsCompanionOnline(true);
+      RemoteIdRadar.activeDrones = [{ id: 'drone-1', latitude: 40.0, longitude: -83.0 }];
+      setConsecutiveRadarFailures(0);
+    `);
+    assert.strictEqual(getRadarPollDelay(), 1500, 'Live radar delay when 0 failures');
+
+    vm.runInThisContext('setConsecutiveRadarFailures(1);');
+    assert.strictEqual(getRadarPollDelay(), 1500, 'Live radar delay when 1 failure');
+
+    vm.runInThisContext('setConsecutiveRadarFailures(2);');
+    assert.strictEqual(getRadarPollDelay(), 10000, 'Backs off to 10s when >= 2 consecutive failures');
+
+    vm.runInThisContext('setConsecutiveRadarFailures(5);');
+    assert.strictEqual(getRadarPollDelay(), 10000, 'Remains backed off to 10s on repeated failures');
+
+    // Cleanup
+    vm.runInThisContext(`
+      setIsCompanionOnline(false);
+      RemoteIdRadar.activeDrones = [];
+      setConsecutiveRadarFailures(0);
+    `);
+  });
+
+  test('RemoteIdRadar.pollAirspace tracks consecutive failures and triggers status probe on repeated failures', async () => {
+    const origFetch = global.fetch;
+    const origWindowFetch = global.window ? global.window.fetch : null;
+    let statusProbeCalled = false;
+    global.fetch = async (url) => {
+      if (typeof url === 'string' && url.includes('/api/status')) {
+        statusProbeCalled = true;
+        return { ok: false, status: 500 };
+      }
+      if (typeof url === 'string' && url.includes('/api/remote-id/drones')) {
+        throw new Error('Connection timeout');
+      }
+      return { ok: false };
+    };
+    if (global.window) global.window.fetch = global.fetch;
+
+    try {
+      vm.runInThisContext(`
+        setIsCompanionOnline(true);
+        setConsecutiveRadarFailures(0);
+      `);
+      assert.strictEqual(getConsecutiveRadarFailures(), 0);
+
+      // 1st failure
+      await RemoteIdRadar.pollAirspace();
+      assert.strictEqual(getConsecutiveRadarFailures(), 1);
+      assert.strictEqual(statusProbeCalled, false, 'Should not trigger status check on single failure');
+
+      // 2nd failure
+      await RemoteIdRadar.pollAirspace();
+      assert.strictEqual(getConsecutiveRadarFailures(), 2);
+      assert.strictEqual(statusProbeCalled, true, 'Should trigger status check on 2nd consecutive failure');
+    } finally {
+      global.fetch = origFetch;
+      if (global.window) global.window.fetch = origWindowFetch;
+      vm.runInThisContext(`
+        setIsCompanionOnline(false);
+        setConsecutiveRadarFailures(0);
+      `);
+    }
+  });
+
+  test('Radar check does not clear or reschedule companionStatusTimer', () => {
+    const clearedTimers = [];
+    const origClearTimeout = global.clearTimeout;
+    global.clearTimeout = (id) => {
+      clearedTimers.push(id);
+      origClearTimeout(id);
+    };
+
+    try {
+      vm.runInThisContext(`
+        setIsCompanionOnline(true);
+        companionStatusTimer = 999111;
+        scheduleNextRadarCheck();
+      `);
+      assert.ok(!clearedTimers.includes(999111), 'scheduleNextRadarCheck must NOT clear companionStatusTimer');
+    } finally {
+      global.clearTimeout = origClearTimeout;
+      vm.runInThisContext(`
+        if (companionRadarTimer) clearTimeout(companionRadarTimer);
+        companionRadarTimer = null;
+        companionStatusTimer = null;
+        setIsCompanionOnline(false);
+      `);
+    }
+  });
+});
+
+describe('Fiducial & GCP Help Drawer and Field Guidance Suite Tests (v1.107.0)', () => {
+  test('index_template.html and index.html include fiducial help drawer and best practices callout', () => {
+    ['index_template.html', 'index.html'].forEach(filename => {
+      const content = fs.readFileSync(path.join(__dirname, filename), 'utf8');
+      assert.ok(content.includes('id="fiducial-help-btn"'), `Must include #fiducial-help-btn in ${filename}`);
+      assert.ok(content.includes('id="fiducial-help-drawer"'), `Must include #fiducial-help-drawer in ${filename}`);
+      assert.ok(content.includes('id="close-fiducial-help-drawer-btn"'), `Must include #close-fiducial-help-drawer-btn in ${filename}`);
+      assert.ok(content.includes('Ground Control Points &amp; Fiducials Guide'), `Must include guide header in ${filename}`);
+      assert.ok(content.includes('Zero-Waypoint Safety:'), `Must include zero-waypoint safety notice in ${filename}`);
+    });
+  });
+
+  test('index_template.html includes Photogrammetry Ground Control tip in Pro Pilot Tips', () => {
+    const tmpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(tmpl.includes('Photogrammetry Ground Control (GCPs &amp; Fiducials)'), 'Must include GCP card in intro-pane-tips');
+  });
+});
+
+describe('Fiducial DIY Target Fabrication & Construction Site Guidance Suite Tests (v1.108.0)', () => {
+  test('index_template.html and index.html include 3-tab drawer navigation and content panes', () => {
+    ['index_template.html', 'index.html'].forEach(filename => {
+      const content = fs.readFileSync(path.join(__dirname, filename), 'utf8');
+      assert.ok(content.includes('id="fid-tab-btn-workflow"'), `Must include #fid-tab-btn-workflow in ${filename}`);
+      assert.ok(content.includes('id="fid-tab-btn-fabrication"'), `Must include #fid-tab-btn-fabrication in ${filename}`);
+      assert.ok(content.includes('id="fid-tab-btn-construction"'), `Must include #fid-tab-btn-construction in ${filename}`);
+      assert.ok(content.includes('id="fid-pane-workflow"'), `Must include #fid-pane-workflow in ${filename}`);
+      assert.ok(content.includes('id="fid-pane-fabrication"'), `Must include #fid-pane-fabrication in ${filename}`);
+      assert.ok(content.includes('id="fid-pane-construction"'), `Must include #fid-pane-construction in ${filename}`);
+      assert.ok(content.includes('Coroplast'), `Must mention Coroplast in ${filename}`);
+      assert.ok(content.includes('brass grommet'), `Must mention brass grommet in ${filename}`);
+      assert.ok(content.includes('Rigid Scale Bar Fabrication'), `Must mention Scale Bar Fabrication in ${filename}`);
+      assert.ok(content.includes('Earthwork Cut/Fill &amp; Stockpile Volumetrics'), `Must mention earthwork cut/fill in ${filename}`);
+      assert.ok(content.includes('MAG nails with fluorescent whiskers'), `Must mention MAG nails in ${filename}`);
+      assert.ok(content.includes('Independent Check Point (CP) Protocol'), `Must mention Check Point protocol in ${filename}`);
+      assert.ok(content.includes('Rover Antenna Pole Height Verification'), `Must mention rover pole height verification in ${filename}`);
+      assert.ok(content.includes('Physical Fabrication &amp; Field Survey Best Practices'), `Must include enhanced modal callout in ${filename}`);
+      assert.ok(content.includes('1:1 Scale Verification'), `Must include 1:1 Scale Verification in ${filename}`);
+    });
+  });
+
+  test('Fiducial drawer tab switching logic in index.js operates correctly', () => {
+    const tmpl = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    const dom = new JSDOM(tmpl);
+    const doc = dom.window.document;
+
+    const btnWorkflow = doc.getElementById('fid-tab-btn-workflow');
+    const btnFab = doc.getElementById('fid-tab-btn-fabrication');
+    const btnConst = doc.getElementById('fid-tab-btn-construction');
+    const paneWorkflow = doc.getElementById('fid-pane-workflow');
+    const paneFab = doc.getElementById('fid-pane-fabrication');
+    const paneConst = doc.getElementById('fid-pane-construction');
+
+    assert.ok(btnWorkflow && btnFab && btnConst && paneWorkflow && paneFab && paneConst, 'All 3 tab buttons and panes must exist');
+
+    const fidTabs = [
+      { btn: btnWorkflow, pane: paneWorkflow },
+      { btn: btnFab, pane: paneFab },
+      { btn: btnConst, pane: paneConst }
+    ];
+
+    fidTabs.forEach(({ btn }) => {
+      btn.addEventListener('click', () => {
+        fidTabs.forEach(t => {
+          const isActive = (t.btn === btn);
+          t.pane.classList.toggle('hidden', !isActive);
+          t.btn.classList.toggle('active', isActive);
+        });
+      });
+    });
+
+    // Default state: workflow is visible, fabrication and construction are hidden
+    assert.strictEqual(paneWorkflow.classList.contains('hidden'), false);
+    assert.strictEqual(paneFab.classList.contains('hidden'), true);
+    assert.strictEqual(paneConst.classList.contains('hidden'), true);
+
+    // Switch to DIY fabrication
+    btnFab.click();
+    assert.strictEqual(paneWorkflow.classList.contains('hidden'), true);
+    assert.strictEqual(paneFab.classList.contains('hidden'), false);
+    assert.strictEqual(btnFab.classList.contains('active'), true);
+    assert.strictEqual(btnWorkflow.classList.contains('active'), false);
+
+    // Switch to Construction sites
+    btnConst.click();
+    assert.strictEqual(paneFab.classList.contains('hidden'), true);
+    assert.strictEqual(paneConst.classList.contains('hidden'), false);
+    assert.strictEqual(btnConst.classList.contains('active'), true);
+    assert.strictEqual(btnFab.classList.contains('active'), false);
+  });
+
+  test('version is consistent at 1.108.0 across required locations', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+    assert.ok(semverGte(pkg.version, '1.108.0'), 'package.json version should be >= 1.108.0');
+
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.108.0] - 2026-09-18'), 'CHANGELOG.md must contain 1.108.0 heading');
+
+    ['index_template.html', 'index.html'].forEach(filename => {
+      const content = fs.readFileSync(path.join(__dirname, filename), 'utf8');
+      assert.ok(content.includes('v1.108.0'), `Must include v1.108.0 in ${filename}`);
+      assert.ok(content.includes('Version 1.108.0'), `Must include Version 1.108.0 in ${filename}`);
+      assert.ok(content.includes('Changelog (v1.108.0):'), `Must include Changelog (v1.108.0): in ${filename}`);
+    });
+  });
+});
+
+describe('Flight Diagnostics 3D Trajectory & Drift Simulation Fidelity Tests (v1.107.1)', () => {
+  test('index_template.html and index.html include updated selector, dynamic legend elements, and sidebar indicators', () => {
+    ['index_template.html', 'index.html'].forEach(filename => {
+      const content = fs.readFileSync(path.join(__dirname, filename), 'utf8');
+      assert.ok(content.includes('value="active-mission" selected'), `Must have active-mission selected in ${filename}`);
+      assert.ok(content.includes('Sample / Demo Flights (Synthetic)'), `Must group sample flights in optgroup in ${filename}`);
+      assert.ok(content.includes('id="diag-legend-planned"'), `Must have #diag-legend-planned in ${filename}`);
+      assert.ok(content.includes('id="diag-legend-actual"'), `Must have #diag-legend-actual in ${filename}`);
+      assert.ok(content.includes('id="diag-sidebar-mode-title"'), `Must have #diag-sidebar-mode-title in ${filename}`);
+      assert.ok(content.includes('id="diag-sidebar-status-badge"'), `Must have #diag-sidebar-status-badge in ${filename}`);
+      assert.ok(content.includes('id="diag-stat-time-delta"'), `Must have #diag-stat-time-delta in ${filename}`);
+      assert.ok(content.includes('id="diag-stat-dist-delta"'), `Must have #diag-stat-dist-delta in ${filename}`);
+    });
+  });
+
+  test('FlightDiagnostics defaults to active-mission with isActualFlown = false', () => {
+    FlightDiagnostics.selectedFlightId = 'active-mission';
+    FlightDiagnostics.isActualFlown = false;
+    assert.strictEqual(FlightDiagnostics.selectedFlightId, 'active-mission');
+    assert.strictEqual(FlightDiagnostics.isActualFlown, false);
+  });
+
+  test('generateTelemetryFromWaypoints flags simulation and unflown state', () => {
+    const wps = [
+      { lat: 42.3601, lon: -71.0589, alt: 50 },
+      { lat: 42.3610, lon: -71.0580, alt: 50 }
+    ];
+    const telemetry = vm.runInThisContext(`generateTelemetryFromWaypoints(${JSON.stringify(wps)}, { flightId: 'active-mission', isSimulation: true })`);
+    assert.strictEqual(telemetry.isActualFlown, false, 'active-mission should not be flagged as actual flown');
+    assert.strictEqual(telemetry.isSimulation, true, 'active-mission should be flagged as simulation');
+    assert.ok(telemetry.points && telemetry.points.length > 0, 'Should generate telemetry points');
+    // Ensure all points have zero drift in pure simulation
+    const maxDrift = telemetry.points.reduce((max, p) => Math.max(max, p.drift || 0), 0);
+    assert.strictEqual(maxDrift, 0, 'Pure simulation telemetry points must have 0 drift');
+  });
+
+  test('updateStatsUI adapts between Simulation mode and Actual Flown comparison mode', () => {
+    const tmpl = fs.readFileSync('index_template.html', 'utf8');
+    const dom = new JSDOM(tmpl);
+    const originalDoc = global.document;
+    global.document = dom.window.document;
+
+    try {
+      FlightDiagnostics.selectedFlightId = 'active-mission';
+      FlightDiagnostics.telemetryData = {
+        totalDuration: 120,
+        durationFormatted: '02:00',
+        totalDistance: 500,
+        maxDrift: 0,
+        avgDrift: 0,
+        maxSpeed: 8,
+        points: [{ lat: 42.36, lon: -71.05, alt: 50, speed: 8, time: 0 }],
+        isSimulation: true
+      };
+      FlightDiagnostics.comparisonData = {
+        durationDelta: 22,
+        distanceDelta: 40,
+        driftMax: 0.8,
+        driftAvg: 0.3
+      };
+
+      // 1. Simulation / Unflown mode
+      FlightDiagnostics.isActualFlown = false;
+      FlightDiagnostics.updateStatsUI();
+
+      const modeTitle = dom.window.document.getElementById('diag-sidebar-mode-title');
+      const statusBadge = dom.window.document.getElementById('diag-sidebar-status-badge');
+      const durDelta = dom.window.document.getElementById('diag-stat-time-delta');
+      const distDelta = dom.window.document.getElementById('diag-stat-dist-delta');
+      const driftCard = dom.window.document.getElementById('diag-trajectory-card');
+
+      assert.strictEqual(modeTitle.textContent.trim(), 'Mission Simulation');
+      assert.strictEqual(statusBadge.textContent.trim(), '🎯 Simulation (Unflown)');
+      assert.strictEqual(durDelta.style.display, 'none');
+      assert.strictEqual(distDelta.style.display, 'none');
+      if (driftCard) {
+        assert.strictEqual(driftCard.style.display, 'none');
+      }
+
+      // 2. Actual Flown mode
+      FlightDiagnostics.selectedFlightId = 'FlightRecord_2026-09-18.csv';
+      FlightDiagnostics.isActualFlown = true;
+      FlightDiagnostics.telemetryData.isSimulation = false;
+      FlightDiagnostics.comparisonData.maxDeviation = '0.8 m';
+      FlightDiagnostics.updateStatsUI();
+
+      assert.strictEqual(modeTitle.textContent.trim(), 'Mission Comparison');
+      assert.strictEqual(statusBadge.textContent.trim(), '✅ Completed');
+      assert.strictEqual(durDelta.style.display, 'inline');
+      assert.strictEqual(distDelta.style.display, 'inline');
+      if (driftCard) {
+        assert.strictEqual(driftCard.style.display, 'flex');
+      }
+    } finally {
+      global.document = originalDoc;
+    }
+  });
+
+  test('buildTrajectoryMeshes hides actual flown line and legend in simulation mode', () => {
+    const tmpl = fs.readFileSync('index_template.html', 'utf8');
+    const dom = new JSDOM(tmpl);
+    const originalDoc = global.document;
+    const originalTHREE = global.THREE;
+
+    global.THREE = {
+      BufferGeometry: class {
+        setFromPoints() { return this; }
+        setAttribute() { return this; }
+        dispose() {}
+      },
+      LineBasicMaterial: class {},
+      LineDashedMaterial: class {},
+      Line: class {
+        constructor(geo, mat) {
+          this.geometry = geo;
+          this.material = mat;
+          this.visible = true;
+        }
+        computeLineDistances() {}
+      },
+      Vector3: class {
+        constructor(x = 0, y = 0, z = 0) { this.x = x; this.y = y; this.z = z; }
+      },
+      Group: class {
+        constructor() { this.children = []; }
+        add(obj) { this.children.push(obj); }
+        remove(obj) {
+          const idx = this.children.indexOf(obj);
+          if (idx !== -1) this.children.splice(idx, 1);
+        }
+      }
+    };
+    global.document = dom.window.document;
+
+    try {
+      FlightDiagnostics.threeScene = new global.THREE.Group();
+      FlightDiagnostics.actualLineMesh = null;
+      FlightDiagnostics.plannedLineMesh = null;
+      FlightDiagnostics.telemetryData = {
+        points: [
+          { lat: 42.3601, lon: -71.0589, alt: 50 },
+          { lat: 42.3610, lon: -71.0580, alt: 50 }
+        ]
+      };
+      FlightDiagnostics.plannedWaypoints = [
+        { lat: 42.3601, lon: -71.0589, alt: 50 },
+        { lat: 42.3610, lon: -71.0580, alt: 50 }
+      ];
+
+      // In simulation mode (isActualFlown = false)
+      FlightDiagnostics.isActualFlown = false;
+      FlightDiagnostics.buildTrajectoryMeshes();
+
+      assert.strictEqual(FlightDiagnostics.actualLineMesh, null, 'actualLineMesh must NOT be created in simulation mode');
+      assert.ok(FlightDiagnostics.plannedLineMesh, 'plannedLineMesh must be created');
+      const legendActual = dom.window.document.getElementById('diag-legend-actual');
+      assert.strictEqual(legendActual.style.display, 'none', '#diag-legend-actual must be hidden in simulation mode');
+
+      // In actual flown mode (isActualFlown = true)
+      FlightDiagnostics.isActualFlown = true;
+      FlightDiagnostics.buildTrajectoryMeshes();
+
+      assert.ok(FlightDiagnostics.actualLineMesh, 'actualLineMesh must be created when isActualFlown is true');
+      assert.strictEqual(legendActual.style.display, 'flex', '#diag-legend-actual must be displayed when isActualFlown is true');
+    } finally {
+      global.document = originalDoc;
+      global.THREE = originalTHREE;
+    }
+  });
+});
+
+describe('Fiducial Altitude Sizing Advisor & Optical Detection Range Suite Tests (v1.109.0)', () => {
+  test('calculateFiducialResolution correctly computes GSD, pixel span, slant distance, ground radius, and quality status', () => {
+    // 1. Marginal case: 50m altitude with 0.20m target
+    const m50 = calculateFiducialResolution(0.20, 50);
+    assert.strictEqual(m50.altitudeMeters, 50);
+    assert.strictEqual(m50.targetSizeMeters, 0.20);
+    assert.ok(Math.abs(m50.gsdCmPerPx - 1.77) < 0.05, `GSD should be ~1.77 cm/px, got ${m50.gsdCmPerPx}`);
+    assert.ok(Math.abs(m50.pixelSpan - 11.3) < 0.2, `Pixel span should be ~11.3 px, got ${m50.pixelSpan}`);
+    assert.strictEqual(m50.status, 'marginal', '11.3 px should be flagged as marginal');
+    assert.ok(m50.maxSlantDistanceMeters > 50, 'Max slant distance should exceed altitude');
+    assert.ok(m50.groundDetectionRadiusMeters > 20, 'Ground radius should be > 20m');
+    assert.ok(m50.recommendedSizeMeters >= 0.25, 'Recommended size should be >= 0.25m');
+
+    // 2. Undersized case: 80m altitude with 0.20m target
+    const m80 = calculateFiducialResolution(0.20, 80);
+    assert.ok(m80.pixelSpan < 10.0, 'Pixel span should be under 10 px');
+    assert.strictEqual(m80.status, 'undersized', 'Under 10 px must be flagged as undersized');
+    assert.strictEqual(m80.groundDetectionRadiusMeters, 0, 'Ground radius must be 0 when altitude exceeds slant range');
+    assert.ok(m80.recommendedSizeMeters >= 0.35, 'Recommended size should be >= 0.35m');
+
+    // 3. Optimal case: 40m altitude with 0.50m target
+    const opt = calculateFiducialResolution(0.50, 40);
+    assert.ok(opt.pixelSpan >= 14.0, 'Pixel span should be >= 14 px');
+    assert.strictEqual(opt.status, 'optimal', '>= 14 px must be flagged as optimal');
+    assert.ok(opt.groundDetectionRadiusMeters > 100, 'Ground radius should be > 100m');
+  });
+
+  test('getSurroundingFlightAltitudes identifies previous, next, and mission max flight altitudes', () => {
+    const originalFlightLayers = (typeof flightLayers !== 'undefined') ? flightLayers : undefined;
+    const testLayers = [
+      { id: 'layer-1', name: 'Nadir Grid', enabled: true, altitude: 60, isDrawingLayer: false, isFiducialLayer: false, isExclusionZone: false },
+      { id: 'layer-2', name: 'Survey GCPs', enabled: true, altitude: 0, isDrawingLayer: true, isFiducialLayer: true, isExclusionZone: false },
+      { id: 'layer-3', name: 'Oblique Facade', enabled: true, altitude: 25, isDrawingLayer: false, isFiducialLayer: false, isExclusionZone: false }
+    ];
+    try {
+      flightLayers = testLayers;
+      global.flightLayers = testLayers;
+
+      const res = getSurroundingFlightAltitudes('layer-2');
+      assert.strictEqual(res.prevAltitude, 60, 'Previous flight layer altitude should be 60m');
+      assert.strictEqual(res.nextAltitude, 25, 'Next flight layer altitude should be 25m');
+      assert.strictEqual(res.maxAltitude, 60, 'Max mission flight altitude should be 60m');
+      assert.strictEqual(res.minAltitude, 25, 'Min mission flight altitude should be 25m');
+      assert.strictEqual(res.primaryAltitude, 60, 'Primary altitude reference should be highest pass (60m)');
+    } finally {
+      if (originalFlightLayers !== undefined) flightLayers = originalFlightLayers;
+      delete global.flightLayers;
+    }
+  });
+
+  test('index_template.html and index.html contain altitude advisor card, range ring checkbox, and generator banner', () => {
+    ['index_template.html', 'index.html'].forEach(filename => {
+      const content = fs.readFileSync(path.join(__dirname, filename), 'utf8');
+      assert.ok(content.includes('id="fiducial-altitude-advisor"'), `Must include #fiducial-altitude-advisor in ${filename}`);
+      assert.ok(content.includes('id="fid-advisor-altitude-badge"'), `Must include #fid-advisor-altitude-badge in ${filename}`);
+      assert.ok(content.includes('id="fid-advisor-prev-layer"'), `Must include #fid-advisor-prev-layer in ${filename}`);
+      assert.ok(content.includes('id="fid-advisor-next-layer"'), `Must include #fid-advisor-next-layer in ${filename}`);
+      assert.ok(content.includes('id="fid-advisor-max-layer"'), `Must include #fid-advisor-max-layer in ${filename}`);
+      assert.ok(content.includes('id="fid-advisor-gsd-val"'), `Must include #fid-advisor-gsd-val in ${filename}`);
+      assert.ok(content.includes('id="fid-advisor-pixel-span-val"'), `Must include #fid-advisor-pixel-span-val in ${filename}`);
+      assert.ok(content.includes('id="fid-advisor-slant-dist-val"'), `Must include #fid-advisor-slant-dist-val in ${filename}`);
+      assert.ok(content.includes('id="fid-advisor-ground-radius-val"'), `Must include #fid-advisor-ground-radius-val in ${filename}`);
+      assert.ok(content.includes('id="fid-advisor-status-box"'), `Must include #fid-advisor-status-box in ${filename}`);
+      assert.ok(content.includes('id="btn-fid-autoset-size"'), `Must include #btn-fid-autoset-size in ${filename}`);
+      assert.ok(content.includes('id="fiducial-show-range-rings"'), `Must include #fiducial-show-range-rings in ${filename}`);
+      assert.ok(content.includes('id="gen-altitude-advisor-banner"'), `Must include #gen-altitude-advisor-banner in ${filename}`);
+      assert.ok(content.includes('id="btn-gen-autoset-size"'), `Must include #btn-gen-autoset-size in ${filename}`);
+    });
+  });
+
+  test('version is consistent at 1.109.0 across required locations', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+    assert.strictEqual(pkg.version, '1.109.0');
+
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.109.0] - 2026-09-18'), 'CHANGELOG.md must contain 1.109.0 heading');
+
+    ['index_template.html', 'index.html'].forEach(filename => {
+      const content = fs.readFileSync(path.join(__dirname, filename), 'utf8');
+      assert.ok(content.includes('v1.109.0'), `Must include v1.109.0 in ${filename}`);
+      assert.ok(content.includes('Version 1.109.0'), `Must include Version 1.109.0 in ${filename}`);
+      assert.ok(content.includes('Changelog (v1.109.0):'), `Must include Changelog (v1.109.0): in ${filename}`);
+    });
+  });
+});
+

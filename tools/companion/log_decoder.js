@@ -615,7 +615,9 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
     batteryStart: 98,
     batteryEnd: Math.round(battery),
     batteryUsed: Math.round(98 - battery),
-    maxDeviation: isPureSim ? '0.0 m' : '0.8 m'
+    maxDeviation: isPureSim ? '0.0 m' : '0.8 m',
+    isSimulation: isPureSim,
+    isActualFlown: false
   };
 }
 
@@ -1560,6 +1562,232 @@ function projectGeoPolygonToPhoto(geoPolygon, cameraPose, options = {}) {
   };
 }
 
+function parseGeoJsonTelemetry(geojson, flightId = 'Imported_Flight.geojson') {
+  if (!geojson) return null;
+  let coords = [];
+  if (geojson.type === 'FeatureCollection' && Array.isArray(geojson.features)) {
+    for (const f of geojson.features) {
+      if (f.geometry && f.geometry.coordinates) {
+        if (f.geometry.type === 'LineString') {
+          coords = coords.concat(f.geometry.coordinates);
+        } else if (f.geometry.type === 'MultiPoint' || f.geometry.type === 'Polygon') {
+          coords = coords.concat(Array.isArray(f.geometry.coordinates[0]) && Array.isArray(f.geometry.coordinates[0][0]) ? f.geometry.coordinates[0] : f.geometry.coordinates);
+        } else if (f.geometry.type === 'Point') {
+          coords.push(f.geometry.coordinates);
+        }
+      }
+    }
+  } else if (geojson.type === 'Feature' && geojson.geometry && geojson.geometry.coordinates) {
+    if (geojson.geometry.type === 'LineString') coords = geojson.geometry.coordinates;
+    else if (Array.isArray(geojson.geometry.coordinates)) coords = geojson.geometry.coordinates;
+  } else if (Array.isArray(geojson.coordinates)) {
+    coords = geojson.coordinates;
+  }
+
+  if (!coords || coords.length === 0) return null;
+
+  const points = [];
+  let totalDistance = 0;
+  let maxAlt = 0;
+  let battery = 98.0;
+
+  for (let i = 0; i < coords.length; i++) {
+    const c = coords[i];
+    const lon = parseFloat(c[0]);
+    const lat = parseFloat(c[1]);
+    const alt = parseFloat(c[2] !== undefined ? c[2] : 21.0);
+    if (isNaN(lat) || isNaN(lon)) continue;
+    if (alt > maxAlt) maxAlt = alt;
+
+    if (points.length > 0) {
+      const prev = points[points.length - 1];
+      const d = haversineDistance(prev.lat, prev.lon, lat, lon);
+      totalDistance += d;
+    }
+
+    battery -= 0.05;
+    points.push({
+      time: i,
+      timeStr: formatTime(i),
+      lat,
+      lon,
+      alt: Math.round(alt * 10) / 10,
+      speed: 4.0,
+      pitch: -60.0,
+      yaw: 0,
+      battery: Math.max(10, Math.round(battery * 10) / 10),
+      satellites: 24,
+      isPhoto: false,
+      waypointIndex: i
+    });
+  }
+
+  if (points.length === 0) return null;
+
+  return {
+    flightId,
+    flightDate: new Date().toISOString(),
+    droneModel: 'DJI Mini 4 Pro',
+    durationSec: points.length,
+    durationFormatted: formatTime(points.length),
+    totalDistance: Math.round(totalDistance),
+    maxAltitude: Math.round(maxAlt * 10) / 10,
+    photoCount: 0,
+    homePoint: { lat: points[0].lat, lon: points[0].lon, alt: 0 },
+    points,
+    batteryStart: 98,
+    batteryEnd: Math.round(battery),
+    batteryUsed: Math.round(98 - battery),
+    maxDeviation: '0.5 m'
+  };
+}
+
+function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv') {
+  if (!csvText || typeof csvText !== 'string') return null;
+  const lines = csvText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (lines.length < 2) return null;
+
+  const header = lines[0].toLowerCase().split(/[,;\t]/).map(h => h.trim().replace(/["']/g, ''));
+  
+  // Find column indices with smart priority (handles dji-log-cli, PhantomHelp, Airdata, and generic CSVs)
+  const findCol = (preds) => {
+    for (const pred of preds) {
+      const idx = header.findIndex(pred);
+      if (idx !== -1) return idx;
+    }
+    return -1;
+  };
+
+  const latIdx = findCol([h => h === 'osd.latitude', h => h === 'latitude', h => h.includes('lat')]);
+  const lonIdx = findCol([h => h === 'osd.longitude', h => h === 'longitude', h => h.includes('lon') || h.includes('lng')]);
+  const altIdx = findCol([h => h === 'osd.height [m]', h => h === 'osd.height', h => h === 'height_above_takeoff(meters)', h => h.includes('height [m]'), h => h === 'altitude', h => h.includes('alt') || h.includes('height')]);
+  const speedIdx = findCol([h => h === 'osd.hspeed [m/s]', h => h === 'osd.hspeed', h => h === 'speed(m/s)', h => h.includes('speed') || h.includes('spd')]);
+  const pitchIdx = findCol([h => h === 'gimbal.pitch', h => h === 'gimbal_pitch', h => h.includes('gimbal.pitch') || h.includes('gimbal_pitch'), h => h.includes('pitch')]);
+  const yawIdx = findCol([h => h === 'gimbal.yaw', h => h === 'osd.yaw', h => h === 'yaw', h => h.includes('yaw') || h.includes('heading')]);
+  const battIdx = findCol([h => h === 'battery.charge_level', h => h.includes('chargelevel') || h.includes('charge_level'), h => h.includes('battery_percent') || h.includes('battery')]);
+  const satsIdx = findCol([h => h === 'osd.gps_num', h => h === 'osd.gpsnum', h => h.includes('gps_num') || h.includes('gpsnum'), h => h.includes('satellites')]);
+  const photoIdx = findCol([h => h === 'camera.is_photo', h => h === 'is_photo', h => h.includes('photo') || h.includes('trigger')]);
+  const timeIdx = findCol([h => h === 'osd.fly_time', h => h === 'osd.flytime [s]', h => h.includes('fly_time') || h.includes('flytime'), h => h === 'time(millisecond)', h => h.includes('time')]);
+
+  const elevIdx = findCol([h => h === 'rc.elevator', h => h.includes('rc.elevator') || h.includes('elevator')]);
+  const aileIdx = findCol([h => h === 'rc.aileron', h => h.includes('rc.aileron') || h.includes('aileron')]);
+  const ruddIdx = findCol([h => h === 'rc.rudder', h => h.includes('rc.rudder') || h.includes('rudder')]);
+  const throIdx = findCol([h => h === 'rc.throttle', h => h.includes('rc.throttle') || h.includes('throttle')]);
+
+  if (latIdx === -1 || lonIdx === -1) return null;
+
+  // First pass: collect raw row data and check time scale
+  const rawRows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(/[,;\t]/).map(c => c.trim().replace(/["']/g, ''));
+    if (cols.length <= Math.max(latIdx, lonIdx)) continue;
+    const lat = parseFloat(cols[latIdx]);
+    const lon = parseFloat(cols[lonIdx]);
+    if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) continue;
+
+    let rowTime = null;
+    if (timeIdx !== -1) {
+      const rawT = parseFloat(cols[timeIdx]);
+      if (!isNaN(rawT)) {
+        // If > 10000 and integer-like, likely milliseconds (Airdata time(millisecond))
+        rowTime = rawT > 10000 && header[timeIdx].includes('milli') ? (rawT / 1000) : rawT;
+      }
+    }
+
+    rawRows.push({
+      lat,
+      lon,
+      alt: altIdx !== -1 ? parseFloat(cols[altIdx]) || 0 : 21.0,
+      speed: speedIdx !== -1 ? parseFloat(cols[speedIdx]) || 0 : 4.0,
+      pitch: pitchIdx !== -1 ? parseFloat(cols[pitchIdx]) || -60.0 : -60.0,
+      yaw: yawIdx !== -1 ? parseFloat(cols[yawIdx]) || 0 : 0,
+      battery: battIdx !== -1 ? parseFloat(cols[battIdx]) || null : null,
+      satellites: satsIdx !== -1 ? parseInt(cols[satsIdx], 10) || 24 : 24,
+      isPhoto: photoIdx !== -1 ? (cols[photoIdx] === '1' || cols[photoIdx].toLowerCase() === 'true' || cols[photoIdx].toLowerCase() === 'yes') : false,
+      rowTime,
+      rc: (elevIdx !== -1 || aileIdx !== -1) ? {
+        elevator: elevIdx !== -1 ? parseFloat(cols[elevIdx]) || 0 : 0,
+        aileron: aileIdx !== -1 ? parseFloat(cols[aileIdx]) || 0 : 0,
+        rudder: ruddIdx !== -1 ? parseFloat(cols[ruddIdx]) || 0 : 0,
+        throttle: throIdx !== -1 ? parseFloat(cols[throIdx]) || 0 : 0
+      } : null
+    });
+  }
+
+  if (rawRows.length === 0) return null;
+
+  // Determine true flight duration and sampling interval
+  let firstTime = rawRows[0].rowTime !== null ? rawRows[0].rowTime : 0;
+  let lastTime = rawRows[rawRows.length - 1].rowTime !== null ? rawRows[rawRows.length - 1].rowTime : rawRows.length;
+  let durationSec = Math.max(1, Math.round(lastTime - firstTime));
+  
+  // Downsample high-frequency telemetry (e.g. 10 Hz) to ~1 Hz for smooth 3D replay
+  const points = [];
+  let totalDistance = 0;
+  let maxAlt = 0;
+  let prevSec = -1;
+  let photoCount = 0;
+  let batteryRunning = rawRows[0].battery !== null ? rawRows[0].battery : 98.0;
+
+  for (let i = 0; i < rawRows.length; i++) {
+    const row = rawRows[i];
+    const sec = (row.rowTime !== null) ? Math.floor(row.rowTime - firstTime) : i;
+    const isSamplePoint = (sec !== prevSec) || row.isPhoto || (i === rawRows.length - 1);
+
+    if (isSamplePoint) {
+      prevSec = sec;
+      if (row.alt > maxAlt) maxAlt = row.alt;
+      if (row.isPhoto) photoCount++;
+      if (row.battery !== null) batteryRunning = row.battery;
+
+      if (points.length > 0) {
+        const prev = points[points.length - 1];
+        totalDistance += haversineDistance(prev.lat, prev.lon, row.lat, row.lon);
+      }
+
+      points.push({
+        time: sec,
+        timeStr: formatTime(sec),
+        lat: row.lat,
+        lon: row.lon,
+        alt: Math.round(row.alt * 10) / 10,
+        speed: Math.round(row.speed * 10) / 10,
+        pitch: Math.round(row.pitch * 10) / 10,
+        yaw: Math.round(row.yaw * 10) / 10,
+        battery: Math.round(batteryRunning * 10) / 10,
+        satellites: row.satellites,
+        isPhoto: row.isPhoto,
+        rc: row.rc,
+        elevator: row.rc ? row.rc.elevator : 0,
+        aileron: row.rc ? row.rc.aileron : 0,
+        rudder: row.rc ? row.rc.rudder : 0,
+        throttle: row.rc ? row.rc.throttle : 0,
+        waypointIndex: points.length
+      });
+    }
+  }
+
+  if (points.length === 0) return null;
+  const finalDuration = points[points.length - 1].time || durationSec;
+
+  return {
+    flightId,
+    flightDate: new Date().toISOString(),
+    droneModel: 'DJI Mini 4 Pro',
+    durationSec: finalDuration,
+    durationFormatted: formatTime(finalDuration),
+    totalDistance: Math.round(totalDistance),
+    maxAltitude: Math.round(maxAlt * 10) / 10,
+    photoCount,
+    homePoint: { lat: points[0].lat, lon: points[0].lon, alt: 0 },
+    points,
+    batteryStart: points[0].battery,
+    batteryEnd: points[points.length - 1].battery,
+    batteryUsed: Math.max(0, Math.round(points[0].battery - points[points.length - 1].battery)),
+    maxDeviation: '0.4 m'
+  };
+}
+
 if (typeof module !== 'undefined') {
   module.exports = {
     haversineDistance,
@@ -1567,6 +1795,8 @@ if (typeof module !== 'undefined') {
     computeFlightComparison,
     parseKmlOrWpmlTelemetry,
     parseGpxTelemetry,
+    parseGeoJsonTelemetry,
+    parseCsvTelemetry,
     formatTime,
     formatISO8601ForFilename,
     calculateGSD,
@@ -1580,4 +1810,5 @@ if (typeof module !== 'undefined') {
     projectGeoPolygonToPhoto
   };
 }
+
 

@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.104.4</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.109.0</span></h1>
         </div>
       </div>
 
@@ -1193,7 +1193,7 @@
           </div> <!-- /layer-card-modes -->
 
           <!-- Card 5: Parcel / Boundary Drawing Properties -->
-          <div id="layer-card-boundary" class="layer-subgroup-card hidden">
+          <div id="layer-card-boundary" class="layer-subgroup-card" style="display: none;">
             <div class="layer-subgroup-header">
               <span>🗺️ Parcel / Boundary Drawing Properties</span>
               <span class="badge" style="font-size: 0.62rem; background: rgba(6, 182, 212, 0.15); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 5px; border-radius: 999px;">Drawing</span>
@@ -1266,10 +1266,187 @@
           </div> <!-- /layer-card-boundary -->
 
           <!-- Card 6: Fiducial Markers & Ground Control Points (GCPs) Properties -->
-          <div id="layer-card-fiducial" class="layer-subgroup-card hidden">
-            <div class="layer-subgroup-header">
-              <span>🎯 Fiducial Markers &amp; GCPs</span>
-              <span class="badge" style="font-size: 0.62rem; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); padding: 1px 5px; border-radius: 999px;">Survey</span>
+          <div id="layer-card-fiducial" class="layer-subgroup-card" style="display: none;">
+            <div class="layer-subgroup-header" style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: inline-flex; align-items: center; gap: 6px;">
+                <span>🎯 Fiducial Markers &amp; GCPs</span>
+                <span class="badge" style="font-size: 0.62rem; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); padding: 1px 5px; border-radius: 999px;">Survey</span>
+              </div>
+              <button id="fiducial-help-btn" type="button" class="btn-secondary btn-sm" style="font-size: 0.68rem; padding: 2px 6px; display: inline-flex; align-items: center; gap: 4px; color: #fbbf24; border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.1);" title="Learn how to deploy GCPs and fiducial markers for photogrammetry">
+                <span>❓ Guide</span>
+              </button>
+            </div>
+
+            <!-- Interactive Fiducial & GCP Survey Guide Drawer -->
+            <div id="fiducial-help-drawer" class="help-drawer hidden" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 12px; margin-top: 6px; display: flex; flex-direction: column; gap: 10px; font-size: 0.74rem; line-height: 1.45;">
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245, 158, 11, 0.2); padding-bottom: 6px;">
+                <strong style="color: #fbbf24; font-size: 0.8rem; display: flex; align-items: center; gap: 5px;">
+                  <span>🎯</span> Ground Control Points &amp; Fiducials Guide
+                </strong>
+                <button type="button" id="close-fiducial-help-drawer-btn" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; padding: 0 4px;" title="Close Guide">&times;</button>
+              </div>
+
+              <!-- Tab Navigation -->
+              <div style="display: flex; gap: 4px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 6px;">
+                <button id="fid-tab-btn-workflow" class="btn-secondary btn-sm active" type="button" style="flex: 1; font-size: 0.68rem; padding: 4px 6px; border-radius: 6px; font-weight: 600; color: #fbbf24; background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4);">
+                  🎯 Workflow &amp; Roles
+                </button>
+                <button id="fid-tab-btn-fabrication" class="btn-secondary btn-sm" type="button" style="flex: 1; font-size: 0.68rem; padding: 4px 6px; border-radius: 6px; font-weight: 600; color: var(--text-muted); background: rgba(255, 255, 255, 0.03); border-color: rgba(255, 255, 255, 0.08);">
+                  🛠️ DIY Target Fabrication
+                </button>
+                <button id="fid-tab-btn-construction" class="btn-secondary btn-sm" type="button" style="flex: 1; font-size: 0.68rem; padding: 4px 6px; border-radius: 6px; font-weight: 600; color: var(--text-muted); background: rgba(255, 255, 255, 0.03); border-color: rgba(255, 255, 255, 0.08);">
+                  🏗️ Construction Sites
+                </button>
+              </div>
+
+              <!-- Tab 1: Workflow & Marker Roles -->
+              <div id="fid-pane-workflow" style="display: flex; flex-direction: column; gap: 10px;">
+                <!-- Overview -->
+                <div style="color: var(--text-main);">
+                  <strong>Why use GCPs &amp; Fiducial Markers?</strong>
+                  <p style="margin: 2px 0 0 0; color: var(--text-muted);">
+                    Standard drone GPS drifts 1–3 meters. Ground Control Points (GCPs) tie photogrammetry models to known geodetic coordinates, achieving sub-centimeter absolute accuracy across WebODM, Pix4D, RealityCapture, and Agisoft Metashape.
+                  </p>
+                </div>
+
+                <!-- Marker Roles Grid -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                  <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 6px; padding: 6px 8px;">
+                    <strong style="color: #fbbf24; font-size: 0.72rem;">📍 GCP (Control Point)</strong>
+                    <p style="margin: 2px 0 0 0; color: var(--text-muted); font-size: 0.68rem;">
+                      Included directly in bundle block adjustment to optimize aerial camera positions and correct terrain warping.
+                    </p>
+                  </div>
+                  <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 6px; padding: 6px 8px;">
+                    <strong style="color: #34d399; font-size: 0.72rem;">✔️ Check Point (CP)</strong>
+                    <p style="margin: 2px 0 0 0; color: var(--text-muted); font-size: 0.68rem;">
+                      Held back from model math to independently measure horizontal (X/Y) and vertical (Z) RMSE error.
+                    </p>
+                  </div>
+                  <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.2); border-radius: 6px; padding: 6px 8px;">
+                    <strong style="color: #22d3ee; font-size: 0.72rem;">📏 Scale Bar Target</strong>
+                    <p style="margin: 2px 0 0 0; color: var(--text-muted); font-size: 0.68rem;">
+                      Calibrated target pair with a known taped distance for absolute scale constraint in indoor/RTK-denied sites.
+                    </p>
+                  </div>
+                  <div style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.2); border-radius: 6px; padding: 6px 8px;">
+                    <strong style="color: #c084fc; font-size: 0.72rem;">⚓ Origin / Anchor</strong>
+                    <p style="margin: 2px 0 0 0; color: var(--text-muted); font-size: 0.68rem;">
+                      Designates primary local benchmark origin (0,0,0) for CAD and BIM coordinate transformations.
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Workflow Steps -->
+                <div style="display: flex; flex-direction: column; gap: 4px; border-top: 1px dashed rgba(255, 255, 255, 0.1); padding-top: 6px;">
+                  <div style="display: flex; gap: 6px;">
+                    <span style="color: #fbbf24; font-weight: 700;">1.</span>
+                    <span style="color: var(--text-muted);"><strong style="color: var(--text-main);">Print Targets:</strong> Tap <span style="color: #fbbf24;">🖨️ Target Print Sheet</span> to produce vector ArUco, AprilTag, or checkerboards with center rover crosshairs and 1:1 scale rulers.</span>
+                  </div>
+                  <div style="display: flex; gap: 6px;">
+                    <span style="color: #fbbf24; font-weight: 700;">2.</span>
+                    <span style="color: var(--text-muted);"><strong style="color: var(--text-main);">Place or Import:</strong> Click on the map, tap <span style="color: var(--text-main);">➕ Add by Coords</span>, or tap <span style="color: var(--text-main);">📥 Import CSV / GeoJSON</span> from Trimble, Emlid Reach, or Leica GNSS rovers.</span>
+                  </div>
+                  <div style="display: flex; gap: 6px;">
+                    <span style="color: #fbbf24; font-weight: 700;">3.</span>
+                    <span style="color: var(--text-muted);"><strong style="color: var(--text-main);">Photo Inspector Projection:</strong> Placed markers automatically reproject onto drone aerial photos in the Photo Inspector to verify visibility and target coverage before leaving the field.</span>
+                  </div>
+                </div>
+
+                <!-- Safety Badge Note -->
+                <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 6px; padding: 6px 8px; font-size: 0.7rem; color: #7dd3fc; display: flex; align-items: center; gap: 6px;">
+                  <span>🛡️</span>
+                  <span><strong>Zero-Waypoint Safety:</strong> Fiducial layers are non-flight survey layers (0 waypoints) that never command drone flight, keeping your KMZ/WPML mission exports completely clean.</span>
+                </div>
+              </div>
+
+              <!-- Tab 2: DIY Target & Scale Bar Fabrication -->
+              <div id="fid-pane-fabrication" class="hidden" style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                  <strong style="color: #fbbf24; font-size: 0.76rem;">DIY Field Board Construction Steps:</strong>
+                  
+                  <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="color: var(--text-main); font-weight: 600;">1. Backing Board Material</div>
+                    <p style="margin: 0; color: var(--text-muted);">
+                      Use <strong>4mm or 10mm Coroplast (Corrugated Plastic)</strong> or <strong>ACM (Aluminum Composite Panel)</strong>. Coroplast is 100% waterproof, lightweight, and dirt-resistant. Mount printed sheet using <strong>3M Super 77</strong> spray adhesive or laminating sleeves.
+                    </p>
+                  </div>
+
+                  <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="color: #f87171; font-weight: 600;">2. Glare Prevention &amp; Matte Weatherproofing (CRITICAL)</div>
+                    <p style="margin: 0; color: #fca5a5; font-size: 0.71rem; line-height: 1.35;">
+                      <strong>NEVER use glossy paper or glossy lamination!</strong> Direct midday sunlight causes white specular glare that blinds drone camera sensors and destroys computer vision pattern detection. Apply cold <strong>matte laminating film</strong>, matte transfer tape, or a coat of <strong>ultra-matte acrylic spray</strong>.
+                    </p>
+                  </div>
+
+                  <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="color: var(--text-main); font-weight: 600;">3. Center Rover Pole Eyelet / Divot</div>
+                    <p style="margin: 0; color: var(--text-muted);">
+                      Punch a <strong>4mm–6mm brass grommet / eyelet</strong> directly through the printed center crosshair. The sharp steel tip of your RTK survey rover pole seats firmly inside the grommet with 0 mm lateral play.
+                    </p>
+                  </div>
+
+                  <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="color: var(--text-main); font-weight: 600;">4. Ground Staking (Prop Wash Prevention)</div>
+                    <p style="margin: 0; color: var(--text-muted);">
+                      Pre-drill 4 corner holes. On soil/turf, drive <strong>8"–10" galvanized survey spikes</strong> or landscape staples. On asphalt or concrete, use MAG nails with fluorescent flagging, Tapcon masonry screws, or 5 lb sandbags placed on board borders away from the marker pattern.
+                    </p>
+                  </div>
+
+                  <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="color: #22d3ee; font-weight: 600;">5. Rigid Scale Bar Fabrication (GPS-Denied &amp; Indoor Sites)</div>
+                    <p style="margin: 0; color: var(--text-muted); font-size: 0.71rem; line-height: 1.35;">
+                      Mount two printed targets (e.g. <code>SCL-01</code> &amp; <code>SCL-02</code>) onto a 1-meter or 2-meter rigid <strong>aluminum extrusion (2020 profile)</strong> or <strong>carbon fiber tube</strong> (near-zero thermal expansion). Measure center-to-center distance with a calibrated steel tape or laser meter at 20&deg;C. Write the certified distance on the bar for software scale constraint.
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Altitude vs Target Sizing Table -->
+                <div style="border-top: 1px dashed rgba(255, 255, 255, 0.1); padding-top: 6px;">
+                  <strong style="color: var(--text-main); font-size: 0.72rem; display: block; margin-bottom: 4px;">Target Sizing vs. Altitude Quick Chart (10&times; GSD Rule):</strong>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 0.69rem;">
+                    <div style="background: rgba(0,0,0,0.25); padding: 4px 6px; border-radius: 4px;"><span style="color: var(--accent-cyan);">15–20m AGL:</span> <strong>0.15–0.20m target</strong></div>
+                    <div style="background: rgba(0,0,0,0.25); padding: 4px 6px; border-radius: 4px;"><span style="color: var(--accent-cyan);">30–50m AGL:</span> <strong>0.30–0.50m target</strong></div>
+                    <div style="background: rgba(0,0,0,0.25); padding: 4px 6px; border-radius: 4px;"><span style="color: var(--accent-cyan);">60–80m AGL:</span> <strong>0.50–0.60m target</strong></div>
+                    <div style="background: rgba(0,0,0,0.25); padding: 4px 6px; border-radius: 4px;"><span style="color: var(--accent-cyan);">100–120m AGL:</span> <strong>0.80–1.00m target</strong></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tab 3: Construction Sites & Earthwork Survey -->
+              <div id="fid-pane-construction" class="hidden" style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                  <strong style="color: #fbbf24; font-size: 0.76rem;">Construction Site Survey Best Practices:</strong>
+
+                  <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="color: #fbbf24; font-weight: 600;">1. Earthwork Cut/Fill &amp; Stockpile Volumetrics</div>
+                    <p style="margin: 0; color: var(--text-muted);">
+                      Vertical ($Z$) elevation precision is paramount. A mere <strong>3 cm elevation tilt</strong> across a 5-acre construction pad creates thousands of cubic yards in false earthwork balance. Distribute GCPs across the outer perimeter AND interior, spanning both high and low elevations to prevent "doming" or "dishing" distortion.
+                    </p>
+                  </div>
+
+                  <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="color: #34d399; font-weight: 600;">2. Semi-Permanent Control for Multi-Week Flights</div>
+                    <p style="margin: 0; color: var(--text-muted);">
+                      Drive <strong>surveyor MAG nails with fluorescent whiskers</strong> into concrete curbs, utility pads, or stable asphalt outside active earthmover haul routes. Survey these once with an RTK rover; then reuse the exact same coordinates across weekly progress tracking flights without re-surveying.
+                    </p>
+                  </div>
+
+                  <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="color: #38bdf8; font-weight: 600;">3. Independent Check Point (CP) Protocol</div>
+                    <p style="margin: 0; color: var(--text-muted);">
+                      Always designate at least <strong>3–5 Check Points (CPs)</strong> distributed across active excavation and fill zones. Check Points are withheld from bundle block adjustment math to objectively verify that horizontal and vertical RMSE are $< 1.5 \times GSD$ (typically $< 2\text{ cm}$) before certifying grading deliverables.
+                    </p>
+                  </div>
+
+                  <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="color: var(--text-main); font-weight: 600;">4. Rover Antenna Pole Height Verification</div>
+                    <p style="margin: 0; color: var(--text-muted);">
+                      Confirm your RTK data collector pole height (e.g. <code>2.000 m</code>) exactly matches your physical rover prism rod. A pole height error propagates as a 100% systematic vertical bias across every single surveyed target on the job site.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 6px;">
@@ -1324,6 +1501,63 @@
                     <option value="#a855f7">Purple (#a855f7)</option>
                     <option value="#ffffff">White (#ffffff)</option>
                   </select>
+                </div>
+              </div>
+
+              <!-- Flight Altitude & Target Sizing Advisor Card -->
+              <div id="fiducial-altitude-advisor" style="background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; font-size: 0.72rem; line-height: 1.4;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245, 158, 11, 0.2); padding-bottom: 5px;">
+                  <strong style="color: #fbbf24; font-size: 0.76rem; display: flex; align-items: center; gap: 5px;">
+                    <span>📐</span> Altitude Sizing Advisor &amp; Optical Range
+                  </strong>
+                  <span id="fid-advisor-altitude-badge" class="badge" style="font-size: 0.65rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 1px 6px; border-radius: 999px;">Flight Alt: 50m</span>
+                </div>
+
+                <!-- Layer Altitude Context Breakdown -->
+                <div id="fid-advisor-layer-context" style="font-size: 0.68rem; color: var(--text-muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px;">
+                  <span>Prev Layer: <strong id="fid-advisor-prev-layer" style="color: var(--text-main);">None</strong></span>
+                  <span>Next Layer: <strong id="fid-advisor-next-layer" style="color: var(--text-main);">None</strong></span>
+                  <span>Mission Max: <strong id="fid-advisor-max-layer" style="color: #fbbf24;">50m</strong></span>
+                </div>
+
+                <!-- Metrics Grid: GSD, Pixel Span, Slant Distance, Ground Radius -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 0.69rem;">
+                  <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.07); padding: 4px 6px; border-radius: 4px; display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted);">GSD:</span>
+                    <strong id="fid-advisor-gsd-val" style="color: var(--text-main);">1.77 cm/px</strong>
+                  </div>
+                  <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.07); padding: 4px 6px; border-radius: 4px; display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted);">Aerial Resolution:</span>
+                    <strong id="fid-advisor-pixel-span-val" style="color: #34d399;">28.2 px</strong>
+                  </div>
+                  <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.07); padding: 4px 6px; border-radius: 4px; display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted);">Max Slant (\(D_{\max}\)):</span>
+                    <strong id="fid-advisor-slant-dist-val" style="color: #38bdf8;">141 m</strong>
+                  </div>
+                  <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.07); padding: 4px 6px; border-radius: 4px; display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted);">Ground Radius (\(R_{\text{ground}}\)):</span>
+                    <strong id="fid-advisor-ground-radius-val" style="color: #fbbf24;">132 m</strong>
+                  </div>
+                </div>
+
+                <!-- Dynamic Status Alert Box -->
+                <div id="fid-advisor-status-box" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 6px 8px; font-size: 0.69rem; line-height: 1.35; color: #a7f3d0; display: flex; align-items: flex-start; gap: 6px;">
+                  <span id="fid-advisor-status-icon" style="font-size: 0.85rem; line-height: 1;">✅</span>
+                  <div id="fid-advisor-status-msg" style="flex: 1;">
+                    Optimal resolution: Target spans &ge;14 px at 50m flight altitude for reliable sub-pixel corner solving.
+                  </div>
+                </div>
+
+                <!-- Action row: Auto-set button + Map toggle -->
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 2px;">
+                  <button type="button" id="btn-fid-autoset-size" class="btn-secondary btn-sm" style="font-size: 0.68rem; padding: 3px 8px; color: #fbbf24; border-color: rgba(245, 158, 11, 0.4); display: inline-flex; align-items: center; gap: 4px;" title="Set target size to match flight height recommendation">
+                    <span>⚡ Set to Recommended (</span><span id="fid-autoset-size-val">0.35m</span><span>)</span>
+                  </button>
+
+                  <label style="font-size: 0.7rem; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; color: var(--text-muted);" title="Show optical detection radius on 2D map">
+                    <input type="checkbox" id="fiducial-show-range-rings" checked style="accent-color: #f59e0b;">
+                    <span>Detection Rings on Map</span>
+                  </label>
                 </div>
               </div>
 
@@ -2175,6 +2409,24 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              ⚡ Adaptive Background Polling &amp; Drone Radar Gating (v1.106.1)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Dramatically optimizes background network communication by gating ASTM F3411 Remote ID drone radar queries directly on Companion Bridge status with decoupled scheduling loops. When the companion service is offline or unreachable, drone polling is completely halted, eliminating 40 failed requests/minute and network console errors. Features stepped exponential backoff for status polling (relaxing from 6s to 15s, 30s, and 60s when repeatedly offline), radar timeout backoff, HTML5 Page Visibility API tab throttling, and instant wake-on-focus / wake-on-click triggers.
+            </p>
+          </div>
+
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🔓 Native DJI FlightRecord Decryption via DJI Cloud API (v1.105.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Decrypts proprietary DJI Fly encrypted flight logs (<code>FlightRecord_*.txt</code>) directly inside Aalaapi Sky using your free DJI Developer Open API App Key. Employs a local companion tool (<code>dji-log.exe</code>) to retrieve session AES decryption keys from DJI's keychain authentication service, unpacking full 10 Hz telemetry including real-time pitch/roll/yaw, battery cells, camera shutter triggers, and post-RTH manual flight segments. Displays clear decryption status badges and offers a streamlined in-app key configuration dialog with secure local storage.
+            </p>
+          </div>
+
           <div style="background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #c4b5fd; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🏟️ Standby Stadium Advisories &amp; 14 CFR § 99.7 Briefings (v1.104.2)
@@ -2456,6 +2708,13 @@
               <strong style="color: #a5b4fc; font-size: 0.82rem; display: flex; align-items: center; gap: 5px;">🚀 Safe Layer Transitions</strong>
               <p style="font-size: 0.75rem; color: #cbd5e1; margin: 4px 0 0 0; line-height: 1.35;">
                 When combining high-altitude grids with low-altitude orbits in multi-layer missions, configure <strong>Safe Transit Altitudes</strong> in the Transitions modal to prevent terrain collisions.
+              </p>
+            </div>
+
+            <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 10px; grid-column: span 2;">
+              <strong style="color: #fbbf24; font-size: 0.82rem; display: flex; align-items: center; gap: 5px;">🎯 Photogrammetry Ground Control (GCPs &amp; Fiducials)</strong>
+              <p style="font-size: 0.75rem; color: #cbd5e1; margin: 4px 0 0 0; line-height: 1.35;">
+                Deploy Ground Control Points (GCPs) and Check Points (CPs) to achieve sub-centimeter survey accuracy. Use the <strong>🖨️ Target Print Sheet</strong> generator in Section 2 to print high-contrast ArUco/AprilTag targets with center rover crosshairs. Targets automatically superimpose onto captured drone photos in the Photo Inspector.
               </p>
             </div>
           </div>
@@ -2891,7 +3150,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.104.4</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.109.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -2960,6 +3219,68 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.109.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>📐 Flight Altitude Fiducial Sizing Advisor:</strong> Added real-time optical resolution and target sizing analysis to Section 2 Card 6 (<code>#fiducial-altitude-advisor</code>). Evaluates Ground Sampling Distance (\(\text{GSD} \approx 0.0354 \times H \text{ cm/px}\)) and aerial pixel span against computer vision tag detection thresholds (\(\ge 10\text{–}15\text{ px}\)).</li>
+              <li><strong>⚠️ Intelligent Altitude Warning Alerts:</strong> Warns when physical target size is undersized for mission flight altitudes, displaying GSD, aerial pixel span, and a 1-click <code>⚡ Set to Recommended Size</code> button.</li>
+              <li><strong>⭕ 2D Map Optical Detection Range Rings (\(R_{\text{ground}}\)):</strong> Renders interactive detection range circles around each fiducial marker on the Leaflet map, showing the maximum ground detection radius where camera resolution satisfies detection thresholds. Includes a Card 6 toggle (<code>#fiducial-show-range-rings</code>) to show/hide rings anytime.</li>
+              <li><strong>🖨️ Target Generator Modal Altitude Advisor:</strong> Dynamically displays mission flight altitude and real-time aerial pixel span preview inside the Printable Target Sheet modal.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.108.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🛠️ Fiducial DIY Target Fabrication &amp; Construction Site Guide:</strong> Expanded the Section 2 Card 6 Help Drawer (<code>#fiducial-help-drawer</code>) into a 3-tab interactive guide (<code>🎯 Workflow &amp; Roles</code>, <code>🛠️ DIY Target Fabrication</code>, <code>🏗️ Construction Sites</code>). Details physical target fabrication (Coroplast/ACM backing, non-glare matte lamination, brass rover pole eyelet divots, prop wash ground staking, rigid aluminum 2020 scale bars, and altitude sizing table) and job site earthwork volumetrics (cut/fill elevation sensitivity, semi-permanent MAG nails, and independent Check Point verification).</li>
+              <li><strong>🖨️ Printable Target Sheet Physical Fabrication Callout:</strong> Enhanced the vector target generator modal with explicit 1:1 print scale verification instructions (100% scaling, 10cm/4in ruler check), weatherproofing steps, and RTK pole tip divots.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.107.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🎯 Disambiguated Simulated vs. Flown Missions:</strong> Flight Diagnostics 3D view and sidebar now clearly differentiate planned mission simulations from actual recorded flights. Unflown workspace plans render exclusively as planned paths without fake GPS drift or misleading completion deltas.</li>
+              <li><strong>🧭 Clean 3D Path Legend:</strong> The 3D trajectory view dynamically hides the orange &quot;Actual Flown GPS&quot; indicator and displays &quot;Planned Flight Path&quot; during simulation, showing actual flown trajectory legend items only when real telemetry or flight logs are imported.</li>
+              <li><strong>📊 Adaptive Sidebar Metrics:</strong> Updated the diagnostics sidebar with a <code>🎯 Simulation (Unflown)</code> badge and &quot;Mission Simulation&quot; heading during simulation mode, hiding completion deltas and drift calculations until authentic flight telemetry is loaded.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.107.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🎯 Section 2 Ground Control Points &amp; Fiducials Help Guide:</strong> Added a dedicated <code>❓ Guide</code> button (<code>#fiducial-help-btn</code>) and interactive workflow drawer (<code>#fiducial-help-drawer</code>) inside Section 2 Card 6. Covers photogrammetry georeferencing, functional marker roles (GCP, Check Point, Scale Bar, Anchor), placement workflows, vector SVG printing, Photo Inspector superimposition, and zero-waypoint flight safety.</li>
+              <li><strong>🖨️ Printable Target Sheet Field Best Practices:</strong> Enhanced the Printable Fiducial Target Generator modal with a field deployment callout covering heavy matte non-glare cardstock recommendations, rigid backing/staking against wind flutter, RTK rover pole tip alignment crosshairs, and the \(10 \times \text{GSD}\) aerial resolution rule of thumb.</li>
+              <li><strong>💡 Quickstart Guide Hub Tip Card:</strong> Added a dedicated Ground Control &amp; Photogrammetry survey card to Pro Pilot Tips (<code>#intro-pane-tips</code>).</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.106.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>⏱️ Decoupled Status &amp; Radar Schedulers:</strong> Separated <code>companionStatusTimer</code> and <code>companionRadarTimer</code> into two independent self-scheduling loops. The 1.5s live drone radar loop no longer resets or starves the 8s status polling timer, ensuring periodic status checks reliably execute.</li>
+              <li><strong>🛡️ Radar Timeout &amp; Failure Backoff:</strong> Added consecutive failure tracking to Remote ID radar requests. If drone queries repeatedly time out or fail, polling automatically backs off to 10s and immediately tests bridge status to check service health.</li>
+              <li><strong>🛑 Immediate Radar Cancellation on Offline:</strong> Automatically cancels and clears any pending radar polling timers when bridge status fails, halting drone polling until the bridge is verified online.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.106.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>⚡ Adaptive Background Polling &amp; Drone Radar Gating:</strong> Gated ASTM F3411 Remote ID drone radar polling (<code>/api/remote-id/drones</code>) strictly on Companion Bridge status. When the companion service is offline, all drone radar queries are completely skipped, eliminating 100% of redundant offline radar calls (40 req/min &rarr; 0 req/min) and browser connection error spam.</li>
+              <li><strong>📉 Stepped Exponential Backoff for Status Checks:</strong> Replaced fixed 6-second status polling with an adaptive scheduler. When offline, status checks step from 6s to 15s, 30s, and 60s dormant heartbeats, reducing overall offline background network traffic by ~98%.</li>
+              <li><strong>👁️ Page Visibility &amp; Focus Throttling:</strong> Integrated HTML5 Page Visibility API (<code>document.visibilityState</code>) and window focus listeners. Background tabs pause high-frequency radar and drop status checks to 60s heartbeats, immediately waking up when restored.</li>
+              <li><strong>🖱️ Instant User Wake-on-Demand:</strong> Clicking the companion status box, offline hint, host IP save button, or sync buttons immediately resets backoff and tests connection with zero delay.</li>
+              <li><strong>📡 Airspace Summary in Status Response:</strong> Companion Bridge <code>/api/status</code> endpoint now returns real-time detected <code>droneCount</code>, allowing the frontend to dynamically adjust radar polling between 1.5s (active targets) and 5.0s (clear airspace).</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.105.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🎯 Section 2 Layer Properties Visibility Fix:</strong> Fixed an issue where Fiducial Markers / GCPs (<code>#layer-card-fiducial</code>) and Parcel / Boundary (<code>#layer-card-boundary</code>) property panels remained hidden when Section 2 was uncollapsed due to a conflicting <code>hidden</code> CSS class. Synchronized <code>classList.remove('hidden')</code> and <code>style.display</code> across pattern toggling.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.105.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🔓 Native DJI FlightRecord Decryption via DJI Cloud API:</strong> Automatically decrypts proprietary encrypted DJI Fly flight records (<code>FlightRecord_*.txt</code>) using an integrated companion binary (<code>dji-log.exe</code>) and the user's free DJI Developer Open API App Key. Visualizes full 10 Hz telemetry including manual post-RTH flight, RC stick deflection angles, and battery telemetry. Includes an in-app key configuration dialog with secure local storage and clear decryption status badging.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.104.4):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -5728,11 +6049,13 @@
           <div class="diag-flight-picker-row">
             <label for="diag-flight-selector" class="diag-flight-label">Flight:</label>
             <select id="diag-flight-selector" class="settings-select diag-flight-select">
-              <option value="FlightRecord_2026-08-20_[19-42-28].txt">Flight 3 — Aug 20, 19:42 (4m 12s, 48 photos)</option>
-              <option value="FlightRecord_2026-08-20_[19-47-15].txt">Flight 4 — Aug 20, 19:47 (1m 15s)</option>
-              <option value="FlightRecord_2026-08-20_[19-41-15].txt">Flight 2 — Aug 20, 19:41 (0m 52s)</option>
-              <option value="FlightRecord_2026-08-20_[19-39-07].txt">Flight 1 — Aug 20, 19:39 (0m 45s)</option>
-              <option value="active-mission">Planned Mission Simulation</option>
+              <option value="active-mission" selected>🎯 Planned Mission Simulation (Active Workspace)</option>
+              <optgroup label="Sample / Demo Flights (Synthetic)">
+                <option value="FlightRecord_2026-08-20_[19-42-28].txt">Flight 3 — Aug 20, 19:42 (4m 12s, 48 photos)</option>
+                <option value="FlightRecord_2026-08-20_[19-47-15].txt">Flight 4 — Aug 20, 19:47 (1m 15s)</option>
+                <option value="FlightRecord_2026-08-20_[19-41-15].txt">Flight 2 — Aug 20, 19:41 (0m 52s)</option>
+                <option value="FlightRecord_2026-08-20_[19-39-07].txt">Flight 1 — Aug 20, 19:39 (0m 45s)</option>
+              </optgroup>
             </select>
           </div>
           <div class="diag-header-buttons">
@@ -5760,6 +6083,14 @@
                 <circle cx="12" cy="13" r="4"/>
               </svg>
               <span>Import Photos...</span>
+            </button>
+            <button id="diag-dji-key-btn" type="button" class="btn-secondary diag-key-btn" title="DJI Developer Cloud API Key for Decrypting Native Flight Logs">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="7.5" cy="15.5" r="5.5"/>
+                <path d="m21 2-9.6 9.6"/>
+                <path d="m15.5 7.5 3 3L22 7l-3-3"/>
+              </svg>
+              <span>DJI Key</span>
             </button>
             <button id="diag-load-file-btn" type="button" class="btn-secondary" title="Load flight log or mission KMZ file">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -5826,18 +6157,18 @@
             </div>
 
             <!-- Path Legend -->
-            <div class="diag-path-legend">
-              <div style="display: flex; align-items: center; gap: 5px;">
-                <span style="width: 10px; height: 3px; background: #06b6d4; display: inline-block; border-radius: 2px;"></span>
-                <span style="color: var(--text-muted);">Planned WPML</span>
+            <div id="diag-path-legend" class="diag-path-legend">
+              <div id="diag-legend-planned" style="display: flex; align-items: center; gap: 5px;">
+                <span id="diag-legend-planned-swatch" style="width: 10px; height: 3px; background: #06b6d4; display: inline-block; border-radius: 2px;"></span>
+                <span id="diag-legend-planned-text" style="color: var(--text-muted);">Planned Flight Path</span>
               </div>
-              <div style="display: flex; align-items: center; gap: 5px;">
+              <div id="diag-legend-actual" style="display: none; align-items: center; gap: 5px;">
                 <span style="width: 10px; height: 3px; background: #f59e0b; display: inline-block; border-radius: 2px;"></span>
-                <span style="color: #fbbf24; font-weight: 600;">Actual Flown GPS</span>
+                <span id="diag-legend-actual-text" style="color: #fbbf24; font-weight: 600;">Actual Flown GPS</span>
               </div>
-              <div style="display: flex; align-items: center; gap: 5px;">
+              <div id="diag-legend-photo" style="display: flex; align-items: center; gap: 5px;">
                 <span style="width: 6px; height: 6px; border-radius: 50%; background: #22c55e; display: inline-block;"></span>
-                <span style="color: var(--text-muted);">Photo Trigger</span>
+                <span id="diag-legend-photo-text" style="color: var(--text-muted);">Photo Trigger</span>
               </div>
             </div>
           </div>
@@ -5869,42 +6200,42 @@
         <aside class="diag-sidebar" style="width: 320px; border-left: 1px solid var(--border-color); background: rgba(15, 23, 42, 0.65); display: flex; flex-direction: column; overflow-y: auto; padding: 14px; gap: 12px;">
           
           <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-main); display: flex; justify-content: space-between; align-items: center;">
-            <span>Mission Comparison</span>
-            <span style="font-size: 0.7rem; color: #22c55e; background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.3); padding: 1px 6px; border-radius: 4px;">✅ Completed</span>
+            <span id="diag-sidebar-mode-title">Mission Simulation</span>
+            <span id="diag-sidebar-status-badge" style="font-size: 0.7rem; color: #38bdf8; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); padding: 1px 6px; border-radius: 4px;">🎯 Simulation (Unflown)</span>
           </div>
 
           <!-- Comparison Table Card -->
-          <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; font-size: 0.76rem;">
+          <div id="diag-comparison-table-card" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; font-size: 0.76rem;">
             
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 6px;">
-              <span style="color: var(--text-muted);">Flight Time</span>
+              <span id="diag-stat-time-label" style="color: var(--text-muted);">Flight Time</span>
               <div style="text-align: right;">
                 <span id="diag-stat-time-actual" style="font-weight: 700; color: var(--text-main);">04m 12s</span>
-                <span id="diag-stat-time-delta" style="color: #fbbf24; font-size: 0.7rem; margin-left: 4px;">(+22s)</span>
+                <span id="diag-stat-time-delta" style="color: #fbbf24; font-size: 0.7rem; margin-left: 4px; display: none;">(+22s)</span>
               </div>
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 6px;">
-              <span style="color: var(--text-muted);">Total Distance</span>
+              <span id="diag-stat-dist-label" style="color: var(--text-muted);">Total Distance</span>
               <div style="text-align: right;">
                 <span id="diag-stat-dist-actual" style="font-weight: 700; color: var(--text-main);">845 m</span>
-                <span id="diag-stat-dist-delta" style="color: var(--text-muted); font-size: 0.7rem; margin-left: 4px;">(Plan: 820m)</span>
+                <span id="diag-stat-dist-delta" style="color: var(--text-muted); font-size: 0.7rem; margin-left: 4px; display: none;">(Plan: 820m)</span>
               </div>
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 6px;">
-              <span style="color: var(--text-muted);">Max Altitude</span>
+              <span id="diag-stat-alt-label" style="color: var(--text-muted);">Max Altitude</span>
               <div style="text-align: right;">
                 <span id="diag-stat-alt-actual" style="font-weight: 700; color: var(--text-main);">21.3 m</span>
-                <span id="diag-stat-alt-delta" style="color: #38bdf8; font-size: 0.7rem; margin-left: 4px;">(+0.3m)</span>
+                <span id="diag-stat-alt-delta" style="color: #38bdf8; font-size: 0.7rem; margin-left: 4px; display: none;">(+0.3m)</span>
               </div>
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="color: var(--text-muted);">Photos Captured</span>
+              <span id="diag-stat-photos-label" style="color: var(--text-muted);">Photos Captured</span>
               <div style="text-align: right;">
                 <span id="diag-stat-photos-actual" style="font-weight: 700; color: #4ade80;">48 / 48 Photos</span>
-                <span style="color: #4ade80; font-size: 0.7rem; margin-left: 4px;">(100%)</span>
+                <span id="diag-stat-photos-delta" style="color: #4ade80; font-size: 0.7rem; margin-left: 4px; display: none;">(100%)</span>
               </div>
             </div>
           </div>
@@ -6117,6 +6448,48 @@
           <!-- Populated dynamically by FlightDiagnostics.renderInspectionPhotosUI() -->
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- DJI Cloud API Key Decryption Modal -->
+  <div id="dji-key-modal" class="modal-overlay hidden">
+    <div class="modal glass" style="max-width: 540px; width: 92vw;">
+      <header class="modal-header">
+        <h2 style="display: flex; align-items: center; gap: 8px; font-size: 1.1rem; margin: 0;">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="7.5" cy="15.5" r="5.5"/>
+            <path d="m21 2-9.6 9.6"/>
+            <path d="m15.5 7.5 3 3L22 7l-3-3"/>
+          </svg>
+          DJI Developer Cloud API Key
+        </h2>
+        <button id="close-dji-key-modal-btn" class="close-btn" type="button" aria-label="Close">&times;</button>
+      </header>
+      <div class="modal-content" style="display: flex; flex-direction: column; gap: 14px;">
+        <p class="help-text" style="margin: 0; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+          DJI Fly encrypts native flight logs (<code>FlightRecord_*.txt</code>) using an ephemeral AES key wrapped with DJI RSA encryption. To decrypt and visualize full 10 Hz high-fidelity telemetry (including manual post-RTH flight), provide your free DJI Open API App Key from <a href="https://developer.dji.com/user/apps/#/main" target="_blank" rel="noopener noreferrer" style="color: var(--accent-cyan); text-decoration: underline;">developer.dji.com</a>.
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <label for="dji-api-key-input" style="font-size: 0.8rem; font-weight: 600; color: var(--text-main);">
+            DJI App Key (32-character hexadecimal):
+          </label>
+          <div style="display: flex; gap: 8px;">
+            <input type="password" id="dji-api-key-input" placeholder="e.g. 7f93b5a14d2e8c60..." style="flex: 1; padding: 8px 12px; border-radius: 6px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); font-family: monospace; font-size: 0.85rem;" autocomplete="off" spellcheck="false" />
+            <button id="toggle-dji-key-visibility-btn" type="button" class="btn-secondary" style="padding: 0 10px;" title="Show/Hide Key">👁️</button>
+          </div>
+          <span id="dji-key-status-msg" style="font-size: 0.75rem; color: var(--text-muted); min-height: 1.2em;"></span>
+        </div>
+        <div style="background: rgba(0, 194, 255, 0.08); border-left: 3px solid var(--accent-cyan); padding: 8px 12px; border-radius: 4px; font-size: 0.76rem; color: var(--text-main); line-height: 1.4;">
+          <strong>🔒 Local Security Notice:</strong> The key is stored locally in your Companion bridge server (<code>scratch/companion_config.json</code>) or environment variables. It is only transmitted securely directly to DJI's keychain authentication server to retrieve your record's AES decryption token.
+        </div>
+      </div>
+      <footer class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+        <button id="clear-dji-key-btn" type="button" class="btn-secondary" style="padding: 6px 14px; font-size: 0.8rem; color: #ff6b6b; border-color: rgba(255, 107, 107, 0.3);">Remove Key</button>
+        <div style="display: flex; gap: 8px;">
+          <button id="cancel-dji-key-btn" type="button" class="btn-secondary" style="padding: 6px 14px; font-size: 0.8rem;">Cancel</button>
+          <button id="save-dji-key-btn" type="button" class="btn-primary" style="padding: 6px 16px; font-size: 0.8rem; font-weight: 600;">Save &amp; Decrypt</button>
+        </div>
+      </footer>
     </div>
   </div>
 
@@ -6455,6 +6828,25 @@
           </div>
         </div>
 
+        <!-- Mission Flight Altitude Advisor Banner -->
+        <div id="gen-altitude-advisor-banner" style="background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 6px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 0.73rem;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.1rem; line-height: 1;">✈️</span>
+            <div>
+              <div style="color: var(--text-main); font-weight: 600;">
+                Flight Height: <span id="gen-adv-altitude-val" style="color: #fbbf24;">50m</span>
+                <span id="gen-adv-gsd-val" style="color: var(--text-muted); font-size: 0.68rem; margin-left: 6px;">(GSD: 1.77 cm/px)</span>
+              </div>
+              <div id="gen-adv-status-text" style="color: var(--text-muted); font-size: 0.68rem; margin-top: 1px;">
+                At 0.20m print size, target renders at ~11.3 px in aerial photos.
+              </div>
+            </div>
+          </div>
+          <button type="button" id="btn-gen-autoset-size" class="btn-secondary btn-sm" style="font-size: 0.68rem; padding: 3px 8px; color: #fbbf24; border-color: rgba(245, 158, 11, 0.4); white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;" title="Set print size to match flight height recommendation">
+            <span>⚡ Set Size (</span><span id="gen-adv-rec-size-val">0.30m</span><span>)</span>
+          </button>
+        </div>
+
         <!-- Target Options Checkboxes -->
         <div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.75rem;">
           <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
@@ -6479,6 +6871,28 @@
         <div id="gen-target-preview-container" style="background: #ffffff; border-radius: 8px; border: 2px solid #334155; padding: 12px; display: flex; align-items: center; justify-content: center; min-height: 280px; max-height: 380px; overflow: hidden;">
           <div id="gen-target-preview-svg" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
             <!-- SVG rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Field Survey & Printing Best Practices Callout -->
+        <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 10px 12px; font-size: 0.73rem; line-height: 1.4; color: var(--text-muted); display: flex; flex-direction: column; gap: 5px;">
+          <strong style="color: #fbbf24; font-size: 0.78rem; display: flex; align-items: center; gap: 5px;">
+            <span>💡</span> Physical Fabrication &amp; Field Survey Best Practices
+          </strong>
+          <div>
+            <span style="color: var(--text-main); font-weight: 600;">📏 1:1 Scale Verification:</span> In your browser print dialog, set Scale to <strong>100% (Do NOT use &quot;Fit to Page&quot;)</strong>. Before heading into the field, verify the printed calibration ruler on the sheet against a physical 10 cm / 4 in ruler.
+          </div>
+          <div>
+            <span style="color: var(--text-main); font-weight: 600;">🛠️ Rigid Backing &amp; Mounting:</span> Mount printed target onto 4mm/10mm Coroplast (corrugated plastic) or ACM (aluminum composite panel) using 3M Super 77 spray adhesive or cold laminating sheets.
+          </div>
+          <div>
+            <span style="color: var(--text-main); font-weight: 600;">☀️ Anti-Glare Matte Finish:</span> Avoid glossy paper or glossy lamination; direct midday sunlight causes blinding specular glare that destroys automated marker detection. Use matte cardstock or ultra-matte protective spray.
+          </div>
+          <div>
+            <span style="color: var(--text-main); font-weight: 600;">📍 RTK Rover Center Divot:</span> Punch a 4mm–6mm brass grommet through the center crosshair to seat your GNSS rover pole tip with 0mm lateral play. Secure board corners with 8"–10" galvanized ground stakes against drone prop wash.
+          </div>
+          <div>
+            <span style="color: var(--text-main); font-weight: 600;">🎯 Resolution Rule of Thumb:</span> Targets must span &ge;10–15 pixels across in aerial photos (\(\text{Target Size} \ge 10 \times \text{GSD}\)). At 40m altitude with Mini 4 Pro (1.1 cm/px GSD), 0.20m–0.30m is ideal.
           </div>
         </div>
 
