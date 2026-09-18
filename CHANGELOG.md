@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.104.3] - 2026-09-17
+
+### Fixed — Stadium & TFR Locate Pin Navigation
+- **Locate Pin Array Index Mismatch Fix:** Clicking the `📍` locate pin button on a stadium advisory card in the TFR monitor now pans directly to the clicked stadium's exact coordinates (`40.0017°N, -83.0197°W` for Ohio Stadium). Previously, the locate button passed the filtered list index `idx` (e.g. `0`) to `focusTfrOnMap()`, which resolved to the first entry in the globally sorted US TFR array (an active TFR on the East Coast in Maryland / Washington DC).
+- **Direct Object Passing:** Updated `locateBtn.onclick` to pass the `item` reference directly to `focusTfrOnMap(item)` and support direct string ID lookups.
+- **Centroid Property Normalization:** Ensured GeoJSON Point centroids consistently expose both `lon` and `lng` properties.
+- **Automated Popup Opening:** Centering on a stadium or TFR via the locate pin now automatically opens the feature's popup on the Leaflet map overlay.
+
 ## [1.104.2] - 2026-09-17
 
 ### Added & Improved — Standby Stadium Advisories (14 CFR § 99.7)
