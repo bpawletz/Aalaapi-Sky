@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.104.4] - 2026-09-17
+
+### Fixed — Live Weather Station Card Auto-Dismissal
+- **Station Switcher Card Retention:** Clicking any of the 4 nearby weather station buttons in the Live Weather Station popover card now updates the displayed weather info (flight category, ceiling, visibility, wind, station name, METAR) without closing the card or returning to the map.
+- **Detached DOM Event Bubbling Protection:** Replaced DOM elements during weather panel updates previously caused the document outside-click handler to treat the clicked element as outside the popover (`!telemetryPopover.contains(e.target)` was false). Added event propagation stops on the popover container, inline button event stops, and `e.composedPath()` validation in the document click listener.
+
 ## [1.104.3] - 2026-09-17
 
 ### Fixed — Stadium & TFR Locate Pin Navigation
