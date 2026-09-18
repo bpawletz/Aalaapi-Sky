@@ -3085,6 +3085,75 @@ html, body {
   cursor: grabbing;
 }
 
+.pattern-card.fiducial-card {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.pattern-card.fiducial-card:hover {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.pattern-card.fiducial-card.active {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.18);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+}
+
+.layer-card.fiducial-layer {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.layer-card.fiducial-layer.active {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);
+}
+
+.fiducial-node-icon {
+  background-color: #f59e0b;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  color: #0f172a;
+  font-weight: 800;
+  cursor: grab;
+}
+
+.fiducial-node-icon:active {
+  cursor: grabbing;
+}
+
+.fiducial-pin-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.fiducial-pin-label {
+  position: absolute;
+  top: -18px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  font-size: 8px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 /* --- Controlled Settings Reset & Modified Indicators (v1.74.0) --- */
 .setting-modified-dot {
   display: inline-block;
@@ -4328,6 +4397,15 @@ html, body {
   background: rgba(239, 68, 68, 0.09);
 }
 
+.tfr-item-card.is-stadium {
+  border-color: rgba(139, 92, 246, 0.35);
+  background: rgba(139, 92, 246, 0.05);
+}
+
+.tfr-item-card.is-stadium:hover {
+  background: rgba(139, 92, 246, 0.1);
+}
+
 .tfr-item-info {
   display: flex;
   flex-direction: column;
@@ -4606,5 +4684,58 @@ html, body {
 .diag-strip-thumb.active {
   border: 2px solid #38bdf8;
   box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+}
+
+/* Printable Target Sheet Media Styles (v1.104.0) */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #fiducial-generator-modal,
+  #fiducial-generator-modal #gen-target-preview-container,
+  #fiducial-generator-modal #gen-target-preview-container * {
+    visibility: visible;
+  }
+  #fiducial-generator-modal {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #ffffff !important;
+    z-index: 99999;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  #fiducial-generator-modal .modal {
+    background: #ffffff !important;
+    border: none !important;
+    box-shadow: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 !important;
+  }
+  #fiducial-generator-modal .modal-header,
+  #fiducial-generator-modal .modal-content > p,
+  #fiducial-generator-modal .modal-content > div:not(#gen-target-preview-container) {
+    display: none !important;
+  }
+  #fiducial-generator-modal #gen-target-preview-container {
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #fiducial-generator-modal #gen-target-preview-svg svg {
+    max-width: 95vw;
+    max-height: 95vh;
+  }
 }
 

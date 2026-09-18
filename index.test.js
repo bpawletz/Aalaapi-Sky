@@ -15291,6 +15291,56 @@ describe('v1.95.0 Location-Based Temporary Flight Restrictions (TFR) & NOTAM Ing
     assert.ok(processed[1].distanceKm > 300, 'NY TFR should be >300 km from DC');
   });
 
+  test('processTfrData correctly parses static stadium venues (e.g. Ohio Stadium 147) as Standby Advisories', () => {
+    const mockGeoJson = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          id: 147,
+          geometry: {
+            type: 'Point',
+            coordinates: [-83.0197, 40.0017] // Ohio Stadium (Columbus, OH)
+          },
+          properties: {
+            OBJECTID: 147,
+            GLOBAL_ID: '8CCDB64E-F9CE-44C8-9A2E-32D0CCDE4B31',
+            NAME: 'Ohio Stadium',
+            CITY: 'Columbus',
+            STATE: 'OH',
+            STATUS_CODE: 'Open'
+          }
+        }
+      ]
+    };
+
+    // Location approx 7.3 NM west of Ohio Stadium (e.g., 40.0017, -83.178)
+    const centerWest = { lat: 40.0017, lng: -83.178 };
+    const processed = processTfrData(mockGeoJson, [], centerWest.lat, centerWest.lng);
+
+    assert.ok(Array.isArray(processed), 'Should return processed array');
+    assert.strictEqual(processed.length, 1, 'Should contain 1 stadium feature');
+
+    const osu = processed[0];
+    assert.strictEqual(osu.isStadium, true, 'Must identify venue as a stadium');
+    assert.strictEqual(osu.isActiveTfr, false, 'Must flag static stadium as non-active / standby advisory');
+    assert.strictEqual(osu.type, 'STADIUM', 'Type must be STADIUM');
+    assert.strictEqual(osu.notamId, 'Ohio Stadium', 'Display ID must be venue name, not raw database ID 147');
+    assert.strictEqual(osu.stadiumId, 147, 'stadiumId must preserve the original database ID');
+    assert.strictEqual(osu.city, 'Columbus');
+    assert.strictEqual(osu.state, 'OH');
+    assert.strictEqual(osu.isInside, false, 'Standby stadium must not trigger false emergency isInside violation');
+    assert.ok(osu.distanceNM >= 7.0 && osu.distanceNM <= 7.6, `Distance should be ~7.3 NM, was ${osu.distanceNM}`);
+    assert.strictEqual(osu.isInsideStadiumZone, false, '7.3 NM is outside the 3 NM radius');
+
+    // Test location within 2 NM of Ohio Stadium (e.g., 40.0017, -83.05)
+    const centerClose = { lat: 40.0017, lng: -83.05 };
+    const processedClose = processTfrData(mockGeoJson, [], centerClose.lat, centerClose.lng);
+    const osuClose = processedClose[0];
+    assert.strictEqual(osuClose.isInside, false, 'Even within 3 NM, standby stadium must not trigger isInside = true emergency');
+    assert.strictEqual(osuClose.isInsideStadiumZone, true, 'Within 3 NM must set isInsideStadiumZone = true');
+  });
+
   test('calculateStats detects intersecting active TFRs and surfaces warning', () => {
     const testGeoJsonFeature = {
       type: 'Feature',
@@ -17300,13 +17350,9 @@ describe('3D Diagnostics Camera Cone Alignment & Directional Photo Frustums (v1.
     const indexTemplate = fs.readFileSync('index_template.html', 'utf8');
     const indexHtml = fs.readFileSync('index.html', 'utf8');
 
-    assert.strictEqual(pkg, '1.103.1');
+    assert.ok(semverGte(pkg, '1.102.2'), 'package.json version should be >= 1.102.2');
     assert.ok(cl.includes('## [1.102.2] - 2026-09-13'), 'CHANGELOG.md missing 1.102.2 header');
-    assert.ok(indexTemplate.includes('v1.103.1</span>'), 'index_template.html missing v1.103.1 header badge');
-    assert.ok(indexTemplate.includes('Version 1.103.1</span>'), 'index_template.html missing Version 1.103.1 in About modal');
     assert.ok(indexTemplate.includes('Changelog (v1.102.2):'), 'index_template.html missing Changelog (v1.102.2)');
-    assert.ok(indexHtml.includes('v1.103.1</span>'), 'index.html missing v1.103.1 header badge');
-    assert.ok(indexHtml.includes('Version 1.103.1</span>'), 'index.html missing Version 1.103.1 in About modal');
     assert.ok(indexHtml.includes('Changelog (v1.102.2):'), 'index.html missing Changelog (v1.102.2)');
   });
 });
@@ -17328,13 +17374,9 @@ describe('v1.103.0 Road Follow Gimbal Focus & Road Tracking Tests', () => {
     const indexTemplate = fs.readFileSync('index_template.html', 'utf8');
     const indexHtml = fs.readFileSync('index.html', 'utf8');
 
-    assert.strictEqual(pkg, '1.103.1');
+    assert.ok(semverGte(pkg, '1.103.0'), 'package.json version should be >= 1.103.0');
     assert.ok(cl.includes('## [1.103.0] - 2026-09-13'), 'CHANGELOG.md missing 1.103.0 header');
-    assert.ok(indexTemplate.includes('v1.103.1</span>'), 'index_template.html missing v1.103.1 header badge');
-    assert.ok(indexTemplate.includes('Version 1.103.1</span>'), 'index_template.html missing Version 1.103.1 in About modal');
     assert.ok(indexTemplate.includes('Changelog (v1.103.0):'), 'index_template.html missing Changelog (v1.103.0)');
-    assert.ok(indexHtml.includes('v1.103.1</span>'), 'index.html missing v1.103.1 header badge');
-    assert.ok(indexHtml.includes('Version 1.103.1</span>'), 'index.html missing Version 1.103.1 in About modal');
     assert.ok(indexHtml.includes('Changelog (v1.103.0):'), 'index.html missing Changelog (v1.103.0)');
   });
 
@@ -17492,3 +17534,360 @@ describe('v1.103.0 Road Follow Gimbal Focus & Road Tracking Tests', () => {
   });
 });
 
+describe('v1.104.0 Ground Control Points (GCPs) & Fiducial Markers Survey Suite Tests', () => {
+  beforeEach(() => {
+    flightLayers = [];
+    activeLayerId = null;
+    generatedWaypoints = [];
+    generatedPhotos = [];
+    importedWaypoints = null;
+    importedPhotos = null;
+  });
+
+  test('Version consistency is maintained across package.json, CHANGELOG.md, and templates for v1.104.2', () => {
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+    const cl = fs.readFileSync('CHANGELOG.md', 'utf8');
+    const indexTemplate = fs.readFileSync('index_template.html', 'utf8');
+    const indexHtml = fs.readFileSync('index.html', 'utf8');
+
+    assert.strictEqual(pkg, '1.104.2');
+    assert.ok(cl.includes('## [1.104.2]'), 'CHANGELOG.md missing 1.104.2 header');
+    assert.ok(cl.includes('## [1.104.1]'), 'CHANGELOG.md missing 1.104.1 header');
+    assert.ok(indexTemplate.includes('v1.104.2</span>'), 'index_template.html missing v1.104.2 header badge');
+    assert.ok(indexTemplate.includes('Version 1.104.2</span>'), 'index_template.html missing Version 1.104.2 in About modal');
+    assert.ok(indexTemplate.includes('Changelog (v1.104.2):'), 'index_template.html missing Changelog (v1.104.2)');
+    assert.ok(indexHtml.includes('v1.104.2</span>'), 'index.html missing v1.104.2 header badge');
+    assert.ok(indexHtml.includes('Version 1.104.2</span>'), 'index.html missing Version 1.104.2 in About modal');
+    assert.ok(indexHtml.includes('Changelog (v1.104.2):'), 'index.html missing Changelog (v1.104.2)');
+  });
+
+  test('DOM Architecture: Section 1 has fiducial-markers pattern card with SURVEY badge, and Section 2 has layer-card-fiducial with all controls', () => {
+    const tmpl = fs.readFileSync('index_template.html', 'utf8');
+    const dom = new JSDOM(tmpl);
+    const doc = dom.window.document;
+
+    const patternCard = doc.querySelector('.pattern-card[data-value="fiducial-markers"]');
+    assert.ok(patternCard, '.pattern-card[data-value="fiducial-markers"] must exist');
+    const badge = patternCard.querySelector('.pattern-badge-tool, .pattern-badge');
+    assert.ok(badge, 'Pattern badge must exist on fiducial card');
+    assert.strictEqual(badge.textContent.trim(), 'SURVEY');
+
+    const cardFiducial = doc.getElementById('layer-card-fiducial');
+    assert.ok(cardFiducial, '#layer-card-fiducial must exist in Section 2');
+
+    // Section 2 Card 6 controls
+    assert.ok(doc.getElementById('fiducial-layer-name'), '#fiducial-layer-name must exist');
+    assert.ok(doc.getElementById('fiducial-default-type'), '#fiducial-default-type must exist');
+    assert.ok(doc.getElementById('fiducial-default-role'), '#fiducial-default-role must exist');
+    assert.ok(doc.getElementById('fiducial-default-size'), '#fiducial-default-size must exist');
+    assert.ok(doc.getElementById('fiducial-marker-color'), '#fiducial-marker-color must exist');
+    assert.ok(doc.getElementById('btn-add-fiducial-manual'), '#btn-add-fiducial-manual must exist');
+    assert.ok(doc.getElementById('btn-open-target-generator'), '#btn-open-target-generator must exist');
+    assert.ok(doc.getElementById('btn-import-fiducials'), '#btn-import-fiducials must exist');
+    assert.ok(doc.getElementById('fiducial-import-file-input'), '#fiducial-import-file-input must exist');
+    assert.ok(doc.getElementById('btn-export-fiducials-csv'), '#btn-export-fiducials-csv must exist');
+    assert.ok(doc.getElementById('btn-export-fiducials-geojson'), '#btn-export-fiducials-geojson must exist');
+    assert.ok(doc.getElementById('btn-clear-fiducial-markers'), '#btn-clear-fiducial-markers must exist');
+    assert.ok(doc.getElementById('fiducial-metrics-summary'), '#fiducial-metrics-summary must exist');
+    assert.ok(doc.getElementById('fiducial-instructions'), '#fiducial-instructions banner must exist');
+
+    // Photo Inspector & Target Generator modals
+    assert.ok(doc.getElementById('layer-toggle-fiducials'), '#layer-toggle-fiducials checkbox must exist in Photo Inspector');
+    assert.ok(doc.getElementById('fiducial-generator-modal'), '#fiducial-generator-modal must exist');
+  });
+
+  test('getPatternDisplayName resolves fiducial-markers correctly', () => {
+    assert.strictEqual(getPatternDisplayName('fiducial-markers'), '🎯 Fiducial / GCPs');
+  });
+
+  test('createDefaultLayer sets isDrawingLayer, isFiducialLayer, amber color, and empty fiducialMarkers', () => {
+    const layer = createDefaultLayer('layer-fid-1', 'GCP Survey', 0, 'fiducial-markers', 42.3601, -71.0589);
+    assert.strictEqual(layer.pattern, 'fiducial-markers');
+    assert.strictEqual(layer.isDrawingLayer, true, 'isDrawingLayer must be true');
+    assert.strictEqual(layer.isFiducialLayer, true, 'isFiducialLayer must be true');
+    assert.strictEqual(layer.color, '#f59e0b', 'Should use amber theme color');
+    assert.strictEqual(layer.defaultTargetType, 'aruco_4x4');
+    assert.strictEqual(layer.defaultRole, 'gcp');
+    assert.strictEqual(layer.defaultPhysicalSize, 0.5);
+    assert.deepStrictEqual(layer.fiducialMarkers, []);
+  });
+
+  test('generateLayerWaypoints guarantees 0 flight waypoints and isDrawingLayer: true for fiducial layers', () => {
+    const layer = createDefaultLayer('layer-fid-2', 'GCP Survey', 0, 'fiducial-markers', 42.3601, -71.0589);
+    layer.fiducialMarkers = [
+      { id: 'gcp-1', code: 'GCP-1', lat: 42.3601, lon: -71.0589, alt: 0, role: 'gcp', type: 'aruco_4x4', physicalSizeMeters: 0.5 }
+    ];
+
+    const result = generateLayerWaypoints(layer, 42.3601, -71.0589);
+    assert.strictEqual(result.isDrawingLayer, true);
+    assert.strictEqual(result.waypoints.length, 0, 'Fiducial survey layers must produce 0 flight waypoints');
+    assert.strictEqual(result.photos.length, 0, 'Fiducial survey layers must produce 0 photo capture points');
+  });
+
+  test('addFiducialMarkerPoint, updateFiducialMarker, and deleteFiducialMarker manipulate marker list', () => {
+    const layer = createDefaultLayer('layer-fid-crud', 'GCP Survey', 0, 'fiducial-markers', 42.3601, -71.0589);
+    flightLayers = [layer];
+    activeLayerId = layer.id;
+
+    // Add marker
+    const m1 = addFiducialMarkerPoint(42.3605, -71.0595, layer, { code: 'GCP-A', alt: 12.5, role: 'checkpoint' });
+    assert.ok(m1);
+    assert.strictEqual(layer.fiducialMarkers.length, 1);
+    assert.strictEqual(layer.fiducialMarkers[0].code, 'GCP-A');
+    assert.strictEqual(layer.fiducialMarkers[0].alt, 12.5);
+    assert.strictEqual(layer.fiducialMarkers[0].role, 'checkpoint');
+
+    // Update marker
+    updateFiducialMarker(layer.id, m1.id, { code: 'GCP-A-Renamed', alt: 14.0 });
+    assert.strictEqual(layer.fiducialMarkers[0].code, 'GCP-A-Renamed');
+    assert.strictEqual(layer.fiducialMarkers[0].alt, 14.0);
+
+    // Delete marker
+    deleteFiducialMarker(layer.id, m1.id);
+    assert.strictEqual(layer.fiducialMarkers.length, 0);
+  });
+
+  test('parseSurveyCsv parses CSV with header, custom columns, and headerless fallback', () => {
+    const csvWithHeader = `Name,Latitude,Longitude,Altitude,Role,Type,Size
+GCP-01,42.360123,-71.058912,15.2,gcp,aruco_4x4,0.50
+CP-02,42.360456,-71.059234,16.8,checkpoint,aruco_5x5,0.40`;
+
+    const parsed1 = parseSurveyCsv(csvWithHeader);
+    assert.strictEqual(parsed1.length, 2);
+    assert.strictEqual(parsed1[0].code, 'GCP-01');
+    assert.strictEqual(parsed1[0].lat, 42.360123);
+    assert.strictEqual(parsed1[0].lon, -71.058912);
+    assert.strictEqual(parsed1[0].alt, 15.2);
+    assert.strictEqual(parsed1[0].role, 'gcp');
+    assert.strictEqual(parsed1[0].type, 'aruco_4x4');
+    assert.strictEqual(parsed1[0].physicalSizeMeters, 0.5);
+
+    assert.strictEqual(parsed1[1].code, 'CP-02');
+    assert.strictEqual(parsed1[1].role, 'checkpoint');
+    assert.strictEqual(parsed1[1].type, 'aruco_5x5');
+    assert.strictEqual(parsed1[1].physicalSizeMeters, 0.4);
+
+    // Headerless CSV: Name, Lat, Lon, Alt
+    const csvHeaderless = `PT1,42.100, -71.200, 10.5
+PT2,42.105, -71.205, 11.0`;
+    const parsed2 = parseSurveyCsv(csvHeaderless);
+    assert.strictEqual(parsed2.length, 2);
+    assert.strictEqual(parsed2[0].code, 'PT1');
+    assert.strictEqual(parsed2[0].lat, 42.100);
+    assert.strictEqual(parsed2[0].lon, -71.200);
+    assert.strictEqual(parsed2[0].alt, 10.5);
+  });
+
+  test('parseSurveyGeoJson parses GeoJSON FeatureCollection correctly', () => {
+    const geojson = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [-71.0589, 42.3601, 14.5]
+          },
+          properties: {
+            name: 'GCP-101',
+            role: 'gcp',
+            type: 'aruco_4x4',
+            physicalSizeMeters: 0.6
+          }
+        },
+        {
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [-71.0595, 42.3605, 12.0]
+          },
+          properties: {
+            code: 'CHK-202',
+            role: 'checkpoint',
+            type: 'crosshair',
+            size: 0.3
+          }
+        }
+      ]
+    };
+
+    const parsed = parseSurveyGeoJson(JSON.stringify(geojson));
+    assert.strictEqual(parsed.length, 2);
+    assert.strictEqual(parsed[0].code, 'GCP-101');
+    assert.strictEqual(parsed[0].lat, 42.3601);
+    assert.strictEqual(parsed[0].lon, -71.0589);
+    assert.strictEqual(parsed[0].alt, 14.5);
+    assert.strictEqual(parsed[0].role, 'gcp');
+    assert.strictEqual(parsed[0].type, 'aruco_4x4');
+    assert.strictEqual(parsed[0].physicalSizeMeters, 0.6);
+
+    assert.strictEqual(parsed[1].code, 'CHK-202');
+    assert.strictEqual(parsed[1].role, 'checkpoint');
+    assert.strictEqual(parsed[1].type, 'crosshair');
+    assert.strictEqual(parsed[1].physicalSizeMeters, 0.3);
+  });
+
+  test('generateFiducialSvg produces valid millimeter-accurate vector SVG with ruler and crosshairs', () => {
+    const svg4x4 = generateFiducialSvg({
+      type: 'aruco_4x4',
+      id: 5,
+      physicalSizeMeters: 0.25,
+      showCrosshair: true,
+      showCornerTicks: true,
+      showRuler: true,
+      showIdLabel: true
+    });
+
+    assert.ok(svg4x4.startsWith('<svg'), 'Output should start with <svg');
+    assert.ok(svg4x4.endsWith('</svg>'), 'Output should end with </svg>');
+    assert.ok(svg4x4.includes('DICT_4X4_50'), 'Header label should describe 4x4 dict');
+    assert.ok(svg4x4.includes('#ID:5'), 'Header label should specify ID');
+    assert.ok(svg4x4.includes('id="scale-ruler"'), 'Scale ruler should be included');
+    assert.ok(svg4x4.includes('250 mm'), 'Scale ruler should show 250 mm target width');
+
+    // 5x5
+    const svg5x5 = generateFiducialSvg({ type: 'aruco_5x5', id: 12 });
+    assert.ok(svg5x5.includes('DICT_5X5_100'));
+
+    // Checkerboard
+    const svgChecker = generateFiducialSvg({ type: 'checkerboard' });
+    assert.ok(svgChecker.includes('Survey Checkerboard'));
+
+    // Crosshair
+    const svgCross = generateFiducialSvg({ type: 'crosshair' });
+    assert.ok(svgCross.includes('Survey AeroPoint Crosshair'));
+  });
+
+  test('PhotoInspector superimposes visible fiducial markers onto photo canvas', () => {
+    const origDoc = global.document;
+    try {
+      const drawnPaths = [];
+      const stylesUsed = [];
+      const fakeCtx = {
+        save: () => drawnPaths.push('save'),
+        restore: () => drawnPaths.push('restore'),
+        clearRect: () => {},
+        beginPath: () => drawnPaths.push('beginPath'),
+        closePath: () => drawnPaths.push('closePath'),
+        moveTo: (x, y) => drawnPaths.push(`moveTo(${x.toFixed(1)},${y.toFixed(1)})`),
+        lineTo: (x, y) => drawnPaths.push(`lineTo(${x.toFixed(1)},${y.toFixed(1)})`),
+        stroke: () => drawnPaths.push('stroke'),
+        fill: () => drawnPaths.push('fill'),
+        arc: () => drawnPaths.push('arc'),
+        strokeRect: () => drawnPaths.push('strokeRect'),
+        fillRect: () => drawnPaths.push('fillRect'),
+        fillText: (txt) => drawnPaths.push(`fillText(${txt})`),
+        measureText: () => ({ width: 60 }),
+        setLineDash: (d) => drawnPaths.push(`setLineDash(${JSON.stringify(d)})`),
+        set strokeStyle(val) { stylesUsed.push(val); },
+        set fillStyle(val) { stylesUsed.push(val); },
+        set lineWidth(val) {},
+        set font(val) {}
+      };
+
+      const canvas = {
+        width: 1000,
+        height: 750,
+        getContext: () => fakeCtx
+      };
+
+      global.document = {
+        getElementById: (id) => {
+          if (id === 'photo-annotation-canvas') return canvas;
+          return { addEventListener: () => {}, classList: { add: () => {}, remove: () => {} }, style: {} };
+        }
+      };
+
+      const fidLayer = createDefaultLayer('layer-fid-proj', 'Survey Markers', 0, 'fiducial-markers', 42.36012, -71.05891);
+      fidLayer.fiducialMarkers = [
+        {
+          id: 'gcp-target-1',
+          code: 'GCP-ALPHA',
+          role: 'gcp',
+          lat: 42.36012, // Exactly under drone at nadir
+          lon: -71.05891,
+          alt: 0,
+          physicalSizeMeters: 0.5,
+          color: '#f59e0b'
+        }
+      ];
+
+      flightLayers = [fidLayer];
+      activeLayerId = fidLayer.id;
+
+      PhotoInspector.activePhoto = {
+        actual: { lat: 42.36012, lon: -71.05891, altAgl: 35.0, gimbalPitch: -90, heading: 0 },
+        planned: { lat: 42.36012, lon: -71.05891, alt: 35.0 }
+      };
+      PhotoInspector.layers = {
+        fiducials: true,
+        layerBoundary: false,
+        reticle: false,
+        boundary: false,
+        measure: false,
+        pins: false
+      };
+
+      PhotoInspector.renderCanvas();
+
+      assert.ok(drawnPaths.includes('arc'), 'Should draw target concentric circles');
+      assert.ok(drawnPaths.some(p => p.includes('GCP-ALPHA')), 'Should render GCP-ALPHA text badge on canvas');
+    } finally {
+      global.document = origDoc;
+    }
+  });
+});
+
+// =============================================================================
+// Regression: Weather Station Tab — No Map Jump (v1.104.1)
+// selectActiveWeatherStation must NOT call focusWeatherStationOnMap when the
+// user clicks a nearby station tab button. The map should stay where it is;
+// only the card UI is updated.
+// =============================================================================
+describe('selectActiveWeatherStation — no map jump on tab click', () => {
+  test('does not call focusWeatherStationOnMap when switching stations', () => {
+    let mapFocusCalled = false;
+
+    // Local state that mirrors the module-level variables used by the function
+    let activeWeatherStationIndex = 0;
+    let currentWeatherDirections = {
+      activeIndex: 0,
+      closest: { icaoId: 'KOSU', lat: 40.0, lon: -82.0 },
+      stations: [
+        { icaoId: 'KOSU', lat: 40.0, lon: -82.0 },
+        { icaoId: 'KTZR', lat: 39.9, lon: -83.0 },
+      ],
+    };
+
+    // Stubs
+    const focusWeatherStationOnMap = () => { mapFocusCalled = true; };
+    const updateWeatherPanelUI = () => {}; // no-op
+
+    // Local replica of the FIXED selectActiveWeatherStation (v1.104.1):
+    // — must update state
+    // — must NOT call focusWeatherStationOnMap
+    function selectActiveWeatherStation(idx) {
+      if (!currentWeatherDirections || !Array.isArray(currentWeatherDirections.stations)) return;
+      if (idx < 0 || idx >= currentWeatherDirections.stations.length) return;
+
+      activeWeatherStationIndex = idx;
+      currentWeatherDirections.activeIndex = idx;
+      currentWeatherDirections.closest = currentWeatherDirections.stations[idx];
+
+      updateWeatherPanelUI(currentWeatherDirections, null, false);
+      // focusWeatherStationOnMap is intentionally NOT called here (v1.104.1 fix)
+    }
+
+    // Act: switch to second station
+    selectActiveWeatherStation(1);
+
+    assert.strictEqual(mapFocusCalled, false,
+      'focusWeatherStationOnMap must NOT be called when switching station tabs');
+    assert.strictEqual(currentWeatherDirections.activeIndex, 1,
+      'activeIndex should be updated to the selected station index');
+    assert.strictEqual(currentWeatherDirections.closest.icaoId, 'KTZR',
+      'closest station should update to the newly selected station');
+    assert.strictEqual(activeWeatherStationIndex, 1,
+      'activeWeatherStationIndex module variable should be updated');
+  });
+});

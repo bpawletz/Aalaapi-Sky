@@ -4772,6 +4772,55 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(isHiddenAfterX, true, '#tfr-briefing-modal must be hidden after clicking X close button');
   });
 
+  test('E2E: Stadium Advisory Briefing Modal renders 14 CFR 99.7 guidelines and standby status (v1.104.2)', async () => {
+    // Inject a mock standby stadium into window.tfrActiveNotams
+    await page.evaluate(() => {
+      window.tfrActiveNotams = [
+        {
+          notamId: 'Ohio Stadium',
+          title: 'Ohio Stadium',
+          type: 'STADIUM',
+          state: 'OH',
+          city: 'Columbus',
+          isStadium: true,
+          isActiveTfr: false,
+          isInsideStadiumZone: false,
+          stadiumId: 147,
+          distanceKm: 13.5,
+          distanceNM: 7.3,
+          compassDir: 'E',
+          centroid: { lat: 40.0017, lon: -83.0197 },
+          geometry: { type: 'Point', coordinates: [-83.0197, 40.0017] },
+          isInside: false
+        }
+      ];
+      if (typeof window.openTfrBriefingModal === 'function') {
+        window.openTfrBriefingModal('Ohio Stadium');
+      }
+    });
+    await page.waitForTimeout(100);
+
+    const stadiumModal = await page.evaluate(() => {
+      const modal = document.getElementById('tfr-briefing-modal');
+      const title = document.getElementById('tfr-modal-title');
+      const content = document.getElementById('tfr-modal-content');
+      return {
+        isVisible: modal ? !modal.classList.contains('hidden') : false,
+        titleText: title ? title.textContent : '',
+        contentHtml: content ? content.innerHTML : ''
+      };
+    });
+
+    assert.strictEqual(stadiumModal.isVisible, true, 'Briefing modal must be visible');
+    assert.ok(stadiumModal.titleText.includes('Ohio Stadium'), 'Title must display Ohio Stadium');
+    assert.ok(stadiumModal.contentHtml.includes('14 CFR § 99.7'), 'Must cite 14 CFR § 99.7 sporting event rule');
+    assert.ok(stadiumModal.contentHtml.includes('Standby / Non-Active'), 'Must display Standby / Non-Active status');
+    assert.ok(stadiumModal.contentHtml.includes('3 Nautical Mile'), 'Must display 3 NM radius parameter');
+
+    await page.locator('#close-tfr-modal-footer-btn').click();
+    await page.waitForTimeout(100);
+  });
+
   test('E2E: Topbar Telemetry Pill renders live green TFR service indicator (v1.95.1)', async () => {
     const badgeState = await page.evaluate(() => {
       const badge = document.getElementById('header-tfr-warning-badge');
@@ -5124,6 +5173,99 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(modalState.initialChecked, false, '#ingest-delete-from-drone must default to false for flight data safety');
     assert.strictEqual(modalState.toggledChecked, true, '#ingest-delete-from-drone must be toggleable to true');
     assert.strictEqual(modalState.restoredChecked, false, '#ingest-delete-from-drone must toggle back cleanly');
+  });
+
+  test('Fiducial / GCPs (v1.104.0): UI Card 6 controls, pattern selection, and Target Generator modal interaction', async () => {
+    const fiducialState = await page.evaluate(() => {
+      const card = document.querySelector('.pattern-card[data-value="fiducial-markers"]');
+      const badge = card ? card.querySelector('.pattern-badge-tool, .pattern-badge') : null;
+      const select = document.getElementById('grid-type');
+      if (select) {
+        select.value = 'fiducial-markers';
+        select.dispatchEvent(new Event('change'));
+      }
+
+      const layerCard = document.getElementById('layer-card-fiducial');
+      const instructions = document.getElementById('fiducial-instructions');
+      const nameInput = document.getElementById('fiducial-layer-name');
+      const typeSelect = document.getElementById('fiducial-default-type');
+      const roleSelect = document.getElementById('fiducial-default-role');
+      const sizeInput = document.getElementById('fiducial-default-size');
+      const colorSelect = document.getElementById('fiducial-marker-color');
+      const btnAddCoords = document.getElementById('btn-add-fiducial-manual');
+      const btnGenModal = document.getElementById('btn-open-target-generator');
+      const btnImport = document.getElementById('btn-import-fiducials');
+      const btnExportCsv = document.getElementById('btn-export-fiducials-csv');
+      const btnExportGeoJson = document.getElementById('btn-export-fiducials-geojson');
+      const btnClear = document.getElementById('btn-clear-fiducial-markers');
+      const summaryEl = document.getElementById('fiducial-metrics-summary');
+      const photoToggle = document.getElementById('layer-toggle-fiducials');
+      const genModal = document.getElementById('fiducial-generator-modal');
+
+      // Test opening target generator modal
+      if (typeof openTargetGeneratorModal === 'function') {
+        openTargetGeneratorModal({ type: 'aruco_4x4', id: 3 });
+      }
+      const modalOpenClass = genModal ? !genModal.classList.contains('hidden') : false;
+      const previewEl = document.getElementById('gen-target-preview-svg');
+      const hasPreviewSvg = previewEl ? previewEl.innerHTML.includes('<svg') : false;
+
+      // Close modal
+      if (typeof closeTargetGeneratorModal === 'function') {
+        closeTargetGeneratorModal();
+      }
+      const modalClosedClass = genModal ? genModal.classList.contains('hidden') : false;
+
+      return {
+        hasPatternCard: !!card,
+        badgeText: badge ? badge.textContent.trim() : '',
+        gridTypeValue: select ? select.value : '',
+        layerCardVisible: layerCard ? layerCard.style.display !== 'none' : false,
+        instructionsVisible: instructions ? !instructions.classList.contains('hidden') : false,
+        hasNameInput: !!nameInput,
+        hasTypeSelect: !!typeSelect,
+        hasRoleSelect: !!roleSelect,
+        hasSizeInput: !!sizeInput,
+        hasColorSelect: !!colorSelect,
+        hasBtnAddCoords: !!btnAddCoords,
+        hasBtnGenModal: !!btnGenModal,
+        hasBtnImport: !!btnImport,
+        hasBtnExportCsv: !!btnExportCsv,
+        hasBtnExportGeoJson: !!btnExportGeoJson,
+        hasBtnClear: !!btnClear,
+        hasSummaryEl: !!summaryEl,
+        hasPhotoToggle: !!photoToggle,
+        photoToggleChecked: photoToggle ? photoToggle.checked : false,
+        hasGenModal: !!genModal,
+        modalOpenClass,
+        hasPreviewSvg,
+        modalClosedClass
+      };
+    });
+
+    assert.strictEqual(fiducialState.hasPatternCard, true, '.pattern-card[data-value="fiducial-markers"] must exist');
+    assert.strictEqual(fiducialState.badgeText, 'SURVEY', 'Pattern badge text must be SURVEY');
+    assert.strictEqual(fiducialState.gridTypeValue, 'fiducial-markers', 'Grid type should switch to fiducial-markers');
+    assert.strictEqual(fiducialState.layerCardVisible, true, '#layer-card-fiducial should be visible');
+    assert.strictEqual(fiducialState.instructionsVisible, true, '#fiducial-instructions should be shown');
+    assert.strictEqual(fiducialState.hasNameInput, true, '#fiducial-layer-name must exist');
+    assert.strictEqual(fiducialState.hasTypeSelect, true, '#fiducial-default-type must exist');
+    assert.strictEqual(fiducialState.hasRoleSelect, true, '#fiducial-default-role must exist');
+    assert.strictEqual(fiducialState.hasSizeInput, true, '#fiducial-default-size must exist');
+    assert.strictEqual(fiducialState.hasColorSelect, true, '#fiducial-marker-color must exist');
+    assert.strictEqual(fiducialState.hasBtnAddCoords, true, '#btn-add-fiducial-manual must exist');
+    assert.strictEqual(fiducialState.hasBtnGenModal, true, '#btn-open-target-generator must exist');
+    assert.strictEqual(fiducialState.hasBtnImport, true, '#btn-import-fiducials must exist');
+    assert.strictEqual(fiducialState.hasBtnExportCsv, true, '#btn-export-fiducials-csv must exist');
+    assert.strictEqual(fiducialState.hasBtnExportGeoJson, true, '#btn-export-fiducials-geojson must exist');
+    assert.strictEqual(fiducialState.hasBtnClear, true, '#btn-clear-fiducial-markers must exist');
+    assert.strictEqual(fiducialState.hasSummaryEl, true, '#fiducial-metrics-summary must exist');
+    assert.strictEqual(fiducialState.hasPhotoToggle, true, '#layer-toggle-fiducials must exist in Photo Inspector');
+    assert.strictEqual(fiducialState.photoToggleChecked, true, '#layer-toggle-fiducials must default to checked');
+    assert.strictEqual(fiducialState.hasGenModal, true, '#fiducial-generator-modal must exist');
+    assert.strictEqual(fiducialState.modalOpenClass, true, 'Target generator modal should open without hidden class');
+    assert.strictEqual(fiducialState.hasPreviewSvg, true, 'Target preview element should render vector SVG');
+    assert.strictEqual(fiducialState.modalClosedClass, true, 'Target generator modal should close with hidden class');
   });
 });
 
