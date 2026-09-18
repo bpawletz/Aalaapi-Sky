@@ -4810,7 +4810,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.104.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.104.3</span></h1>
         </div>
       </div>
 
@@ -7634,7 +7634,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.104.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.104.3</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -7703,6 +7703,12 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.104.3):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>📍 Stadium &amp; TFR Locate Pin Fix:</strong> Clicking the locate pin button (<code>📍</code>) on a nearby stadium or TFR card now passes the item directly to <code>focusTfrOnMap()</code>, fixing an index mismatch that previously panned the camera to an East Coast TFR instead of the clicked venue coordinates.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.104.2):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -38140,7 +38146,7 @@ function getGeoJsonCentroid(geometry) {
   } else if (geometry.type === 'MultiPolygon' && geometry.coordinates[0] && geometry.coordinates[0][0]) {
     pts = geometry.coordinates[0][0];
   } else if (geometry.type === 'Point') {
-    return { lon: geometry.coordinates[0], lat: geometry.coordinates[1] };
+    return { lon: geometry.coordinates[0], lng: geometry.coordinates[0], lat: geometry.coordinates[1] };
   }
   if (!pts || pts.length === 0) return null;
   let sumLon = 0, sumLat = 0, count = 0;
@@ -38682,7 +38688,7 @@ function updateTfrPanelUI(tfrList, statusText, isLoading) {
         locateBtn.title = isStandbyStadium ? 'Focus Stadium on Map' : 'Focus TFR on Map';
         locateBtn.onclick = (e) => {
           e.stopPropagation();
-          focusTfrOnMap(idx);
+          focusTfrOnMap(item);
         };
         actionsDiv.appendChild(locateBtn);
       }
@@ -38692,7 +38698,7 @@ function updateTfrPanelUI(tfrList, statusText, isLoading) {
       briefBtn.className = 'btn-sm';
       briefBtn.style.cssText = isStandbyStadium
         ? 'padding: 2px 6px; font-size: 0.65rem; background: rgba(139,92,246,0.18); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.35); border-radius: 4px; cursor: pointer; font-weight: 600;'
-        : 'padding: 2px 6px; font-size: 0.65rem; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); border-radius: 4px; cursor: pointer; font-weight: 600;'
+        : 'padding: 2px 6px; font-size: 0.65rem; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); border-radius: 4px; cursor: pointer; font-weight: 600;';
       briefBtn.textContent = 'Briefing';
       briefBtn.onclick = (e) => {
         e.stopPropagation();
@@ -38706,20 +38712,46 @@ function updateTfrPanelUI(tfrList, statusText, isLoading) {
   }
 }
 
-function focusTfrOnMap(tfrIndex) {
-  if (!tfrActiveNotams || !tfrActiveNotams[tfrIndex]) return;
-  const item = tfrActiveNotams[tfrIndex];
-  if (!map) return;
+function focusTfrOnMap(target) {
+  let item = null;
+  if (typeof target === 'object' && target !== null) {
+    item = target;
+  } else if (typeof target === 'string') {
+    item = (tfrActiveNotams || []).find(t => t.notamId === target || t.title === target || String(t.stadiumId) === target);
+  } else if (typeof target === 'number') {
+    item = (tfrActiveNotams || [])[target];
+  }
+  if (!item || !map) return;
 
   // Make sure TFR overlay is enabled and visible
   if (tfrAirspaceLayer && !map.hasLayer(tfrAirspaceLayer)) {
     map.addLayer(tfrAirspaceLayer);
-    airspaceActiveSet.add('Temporary Flight Restrictions (TFR / NOTAM) (US Only)');
-    updateAirspaceLegend();
+    if (typeof airspaceActiveSet !== 'undefined' && airspaceActiveSet) {
+      airspaceActiveSet.add('Temporary Flight Restrictions (TFR / NOTAM) (US Only)');
+    }
+    if (typeof updateAirspaceLegend === 'function') {
+      updateAirspaceLegend();
+    }
   }
 
-  if (item.centroid) {
-    map.setView([item.centroid.lat, item.centroid.lon], Math.max(map.getZoom(), 11));
+  const lat = item.centroid ? item.centroid.lat : null;
+  const lon = item.centroid ? (item.centroid.lon != null ? item.centroid.lon : item.centroid.lng) : null;
+
+  if (lat != null && lon != null && !isNaN(lat) && !isNaN(lon)) {
+    const targetZoom = item.isStadium ? Math.max(map.getZoom(), 13) : Math.max(map.getZoom(), 11);
+    map.setView([lat, lon], targetZoom);
+
+    // Attempt to locate and open matching popup
+    if (tfrAirspaceLayer) {
+      tfrAirspaceLayer.eachLayer(layer => {
+        const p = layer.feature && layer.feature.properties ? layer.feature.properties : {};
+        if (p.notam_id === item.notamId || p.title === item.title || (p.stadiumId != null && p.stadiumId === item.stadiumId)) {
+          if (typeof layer.openPopup === 'function') {
+            layer.openPopup(L.latLng(lat, lon));
+          }
+        }
+      });
+    }
   }
 }
 
