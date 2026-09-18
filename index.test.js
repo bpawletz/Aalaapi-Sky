@@ -17604,21 +17604,21 @@ describe('v1.104.0 Ground Control Points (GCPs) & Fiducial Markers Survey Suite 
     importedPhotos = null;
   });
 
-  test('Version consistency is maintained across package.json, CHANGELOG.md, and templates for v1.104.3', () => {
+  test('Version consistency is maintained across package.json, CHANGELOG.md, and templates for v1.104.4', () => {
     const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
     const cl = fs.readFileSync('CHANGELOG.md', 'utf8');
     const indexTemplate = fs.readFileSync('index_template.html', 'utf8');
     const indexHtml = fs.readFileSync('index.html', 'utf8');
 
-    assert.strictEqual(pkg, '1.104.3');
+    assert.strictEqual(pkg, '1.104.4');
+    assert.ok(cl.includes('## [1.104.4]'), 'CHANGELOG.md missing 1.104.4 header');
     assert.ok(cl.includes('## [1.104.3]'), 'CHANGELOG.md missing 1.104.3 header');
-    assert.ok(cl.includes('## [1.104.2]'), 'CHANGELOG.md missing 1.104.2 header');
-    assert.ok(indexTemplate.includes('v1.104.3</span>'), 'index_template.html missing v1.104.3 header badge');
-    assert.ok(indexTemplate.includes('Version 1.104.3</span>'), 'index_template.html missing Version 1.104.3 in About modal');
-    assert.ok(indexTemplate.includes('Changelog (v1.104.3):'), 'index_template.html missing Changelog (v1.104.3)');
-    assert.ok(indexHtml.includes('v1.104.3</span>'), 'index.html missing v1.104.3 header badge');
-    assert.ok(indexHtml.includes('Version 1.104.3</span>'), 'index.html missing Version 1.104.3 in About modal');
-    assert.ok(indexHtml.includes('Changelog (v1.104.3):'), 'index.html missing Changelog (v1.104.3)');
+    assert.ok(indexTemplate.includes('v1.104.4</span>'), 'index_template.html missing v1.104.4 header badge');
+    assert.ok(indexTemplate.includes('Version 1.104.4</span>'), 'index_template.html missing Version 1.104.4 in About modal');
+    assert.ok(indexTemplate.includes('Changelog (v1.104.4):'), 'index_template.html missing Changelog (v1.104.4)');
+    assert.ok(indexHtml.includes('v1.104.4</span>'), 'index.html missing v1.104.4 header badge');
+    assert.ok(indexHtml.includes('Version 1.104.4</span>'), 'index.html missing Version 1.104.4 in About modal');
+    assert.ok(indexHtml.includes('Changelog (v1.104.4):'), 'index.html missing Changelog (v1.104.4)');
   });
 
   test('DOM Architecture: Section 1 has fiducial-markers pattern card with SURVEY badge, and Section 2 has layer-card-fiducial with all controls', () => {
@@ -17949,5 +17949,71 @@ describe('selectActiveWeatherStation — no map jump on tab click', () => {
       'closest station should update to the newly selected station');
     assert.strictEqual(activeWeatherStationIndex, 1,
       'activeWeatherStationIndex module variable should be updated');
+  });
+
+  test('Live Weather Station popover card does NOT dismiss when clicking station buttons', () => {
+    // Verify that clicks inside telemetry-weather-popover do not trigger outside-click closure
+    const tmpl = fs.readFileSync('index_template.html', 'utf8');
+    const dom = new JSDOM(tmpl);
+    const doc = dom.window.document;
+
+    const popover = doc.getElementById('telemetry-weather-popover');
+    assert.ok(popover, '#telemetry-weather-popover must exist in DOM');
+
+    // Initially unhide popover
+    popover.classList.remove('hidden');
+
+    // Popover stops click propagation so clicks inside never reach document
+    popover.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+
+    // Document click listener that closes popover when clicking outside
+    let closed = false;
+    doc.addEventListener('click', (e) => {
+      const path = typeof e.composedPath === 'function' ? e.composedPath() : [];
+      if (
+        path.includes(popover) ||
+        popover.contains(e.target)
+      ) {
+        return;
+      }
+      closed = true;
+      popover.classList.add('hidden');
+    });
+
+    // 1. Click directly inside popover
+    const fakeButton = doc.createElement('button');
+    fakeButton.className = 'pop-station-tab-btn';
+    popover.appendChild(fakeButton);
+
+    fakeButton.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+    assert.strictEqual(popover.classList.contains('hidden'), false,
+      'Popover must remain open when station button is clicked');
+    assert.strictEqual(closed, false, 'Document handler must not run on internal clicks');
+
+    // 2. Click when element is detached during re-render (simulating popWeatherDetails.innerHTML replacement)
+    const detachedButton = doc.createElement('button');
+    popover.appendChild(detachedButton);
+
+    // Detach element inside click event (simulating innerHTML replacement)
+    detachedButton.addEventListener('click', () => {
+      popover.removeChild(detachedButton);
+    });
+
+    detachedButton.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+
+    assert.strictEqual(popover.classList.contains('hidden'), false,
+      'Popover must remain open when child element is replaced/detached in click handler');
+    assert.strictEqual(closed, false,
+      'Document click handler must not close popover when child element was replaced in handler');
+
+    // 3. Click truly outside popover (e.g. on body) MUST close popover
+    const outsideEl = doc.createElement('div');
+    doc.body.appendChild(outsideEl);
+    outsideEl.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+
+    assert.strictEqual(closed, true, 'Outside click must trigger document close handler');
+    assert.strictEqual(popover.classList.contains('hidden'), true, 'Outside click must close popover');
   });
 });
