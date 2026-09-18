@@ -5114,13 +5114,16 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       // Click pattern card to activate boundary drawing mode
       if (patternCard) patternCard.click();
       const gridTypeVal = document.getElementById('grid-type')?.value;
-      const cardBoundaryVisible = cardBoundary ? (cardBoundary.style.display !== 'none') : false;
+      const cardBoundaryHasHidden = cardBoundary ? cardBoundary.classList.contains('hidden') : true;
+      const cardBoundaryComputed = cardBoundary ? window.getComputedStyle(cardBoundary).display : 'none';
+      const cardBoundaryVisible = cardBoundary ? (cardBoundary.style.display !== 'none' && !cardBoundaryHasHidden && cardBoundaryComputed !== 'none') : false;
 
       return {
         hasPatternCard: !!patternCard,
         badgeText: badge ? badge.textContent.trim() : '',
         gridTypeVal,
         hasCardBoundary: !!cardBoundary,
+        cardBoundaryHasHidden,
         cardBoundaryVisible,
         hasNameInput: !!nameInput,
         hasColorSelect: !!colorSelect,
@@ -5138,6 +5141,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(boundaryControls.badgeText, 'DRAWING', 'Pattern badge must display DRAWING');
     assert.strictEqual(boundaryControls.gridTypeVal, 'boundary-polygon', 'Clicking card must set grid-type to boundary-polygon');
     assert.strictEqual(boundaryControls.hasCardBoundary, true, '#layer-card-boundary must exist in Section 2');
+    assert.strictEqual(boundaryControls.cardBoundaryHasHidden, false, '#layer-card-boundary must not have hidden class');
     assert.strictEqual(boundaryControls.cardBoundaryVisible, true, '#layer-card-boundary must be visible in boundary-polygon mode');
     assert.strictEqual(boundaryControls.hasNameInput, true, '#boundary-layer-name must exist');
     assert.strictEqual(boundaryControls.hasColorSelect, true, '#boundary-stroke-color must exist');
@@ -5216,11 +5220,57 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       }
       const modalClosedClass = genModal ? genModal.classList.contains('hidden') : false;
 
+      // Test Fiducial Guide Drawer toggle and tab switching
+      const helpBtn = document.getElementById('fiducial-help-btn');
+      const helpDrawer = document.getElementById('fiducial-help-drawer');
+      const closeHelpBtn = document.getElementById('close-fiducial-help-drawer-btn');
+      const initialDrawerHidden = helpDrawer ? helpDrawer.classList.contains('hidden') : true;
+
+      if (helpBtn) helpBtn.click();
+      const openDrawerHidden = helpDrawer ? helpDrawer.classList.contains('hidden') : true;
+
+      const tabWorkflow = document.getElementById('fid-tab-btn-workflow');
+      const tabFab = document.getElementById('fid-tab-btn-fabrication');
+      const tabConst = document.getElementById('fid-tab-btn-construction');
+      const paneWorkflow = document.getElementById('fid-pane-workflow');
+      const paneFab = document.getElementById('fid-pane-fabrication');
+      const paneConst = document.getElementById('fid-pane-construction');
+
+      // Click fabrication tab
+      if (tabFab) tabFab.click();
+      const fabTabActive = tabFab ? tabFab.classList.contains('active') : false;
+      const fabPaneVisible = paneFab ? !paneFab.classList.contains('hidden') : false;
+      const wfPaneHidden = paneWorkflow ? paneWorkflow.classList.contains('hidden') : false;
+
+      // Click construction tab
+      if (tabConst) tabConst.click();
+      const constTabActive = tabConst ? tabConst.classList.contains('active') : false;
+      const constPaneVisible = paneConst ? !paneConst.classList.contains('hidden') : false;
+      const fabPaneNowHidden = paneFab ? paneFab.classList.contains('hidden') : false;
+
+      if (closeHelpBtn) closeHelpBtn.click();
+      const closedDrawerHidden = helpDrawer ? helpDrawer.classList.contains('hidden') : false;
+
+      const advisorCard = document.getElementById('fiducial-altitude-advisor');
+      const btnFidAutoset = document.getElementById('btn-fid-autoset-size');
+      const rangeRingsCheck = document.getElementById('fiducial-show-range-rings');
+      const genAdvisorBanner = document.getElementById('gen-altitude-advisor-banner');
+      const btnGenAutoset = document.getElementById('btn-gen-autoset-size');
+
+      let autosetApplied = false;
+      if (btnFidAutoset) {
+        btnFidAutoset.click();
+        const updatedVal = parseFloat(sizeInput?.value) || 0;
+        autosetApplied = updatedVal > 0;
+      }
+
       return {
         hasPatternCard: !!card,
         badgeText: badge ? badge.textContent.trim() : '',
         gridTypeValue: select ? select.value : '',
-        layerCardVisible: layerCard ? layerCard.style.display !== 'none' : false,
+        layerCardHasHidden: layerCard ? layerCard.classList.contains('hidden') : true,
+        layerCardComputed: layerCard ? window.getComputedStyle(layerCard).display : 'none',
+        layerCardVisible: layerCard ? (layerCard.style.display !== 'none' && !layerCard.classList.contains('hidden') && window.getComputedStyle(layerCard).display !== 'none') : false,
         instructionsVisible: instructions ? !instructions.classList.contains('hidden') : false,
         hasNameInput: !!nameInput,
         hasTypeSelect: !!typeSelect,
@@ -5239,14 +5289,53 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         hasGenModal: !!genModal,
         modalOpenClass,
         hasPreviewSvg,
-        modalClosedClass
+        modalClosedClass,
+        hasHelpBtn: !!helpBtn,
+        hasHelpDrawer: !!helpDrawer,
+        initialDrawerHidden,
+        openDrawerHidden,
+        closedDrawerHidden,
+        hasTabs: !!(tabWorkflow && tabFab && tabConst),
+        fabTabActive,
+        fabPaneVisible,
+        wfPaneHidden,
+        constTabActive,
+        constPaneVisible,
+        fabPaneNowHidden,
+        hasAdvisorCard: !!advisorCard,
+        hasBtnFidAutoset: !!btnFidAutoset,
+        hasRangeRingsCheck: !!rangeRingsCheck,
+        rangeRingsChecked: rangeRingsCheck ? rangeRingsCheck.checked : false,
+        hasGenAdvisorBanner: !!genAdvisorBanner,
+        hasBtnGenAutoset: !!btnGenAutoset,
+        autosetApplied
       };
     });
 
     assert.strictEqual(fiducialState.hasPatternCard, true, '.pattern-card[data-value="fiducial-markers"] must exist');
     assert.strictEqual(fiducialState.badgeText, 'SURVEY', 'Pattern badge text must be SURVEY');
     assert.strictEqual(fiducialState.gridTypeValue, 'fiducial-markers', 'Grid type should switch to fiducial-markers');
-    assert.strictEqual(fiducialState.layerCardVisible, true, '#layer-card-fiducial should be visible');
+    assert.strictEqual(fiducialState.layerCardHasHidden, false, '#layer-card-fiducial must not contain hidden class');
+    assert.strictEqual(fiducialState.layerCardVisible, true, '#layer-card-fiducial should be fully visible and rendered');
+    assert.strictEqual(fiducialState.hasHelpBtn, true, '#fiducial-help-btn must exist in Card 6 header');
+    assert.strictEqual(fiducialState.hasHelpDrawer, true, '#fiducial-help-drawer must exist in Card 6');
+    assert.strictEqual(fiducialState.initialDrawerHidden, true, 'Help drawer should default to hidden');
+    assert.strictEqual(fiducialState.openDrawerHidden, false, 'Help drawer should expand when clicking Guide button');
+    assert.strictEqual(fiducialState.hasTabs, true, 'All 3 fiducial guide tabs must exist');
+    assert.strictEqual(fiducialState.fabTabActive, true, 'Fabrication tab should become active when clicked');
+    assert.strictEqual(fiducialState.fabPaneVisible, true, 'Fabrication pane should become visible when clicked');
+    assert.strictEqual(fiducialState.wfPaneHidden, true, 'Workflow pane should be hidden when fabrication tab is active');
+    assert.strictEqual(fiducialState.constTabActive, true, 'Construction tab should become active when clicked');
+    assert.strictEqual(fiducialState.constPaneVisible, true, 'Construction pane should become visible when clicked');
+    assert.strictEqual(fiducialState.fabPaneNowHidden, true, 'Fabrication pane should be hidden when construction tab is active');
+    assert.strictEqual(fiducialState.closedDrawerHidden, true, 'Help drawer should close when clicking &times; close button');
+    assert.strictEqual(fiducialState.hasAdvisorCard, true, '#fiducial-altitude-advisor must exist in Card 6');
+    assert.strictEqual(fiducialState.hasBtnFidAutoset, true, '#btn-fid-autoset-size must exist');
+    assert.strictEqual(fiducialState.hasRangeRingsCheck, true, '#fiducial-show-range-rings must exist');
+    assert.strictEqual(fiducialState.rangeRingsChecked, true, '#fiducial-show-range-rings should default to checked');
+    assert.strictEqual(fiducialState.autosetApplied, true, 'Auto-set button should successfully set target size');
+    assert.strictEqual(fiducialState.hasGenAdvisorBanner, true, '#gen-altitude-advisor-banner must exist in target generator modal');
+    assert.strictEqual(fiducialState.hasBtnGenAutoset, true, '#btn-gen-autoset-size must exist in generator modal');
     assert.strictEqual(fiducialState.instructionsVisible, true, '#fiducial-instructions should be shown');
     assert.strictEqual(fiducialState.hasNameInput, true, '#fiducial-layer-name must exist');
     assert.strictEqual(fiducialState.hasTypeSelect, true, '#fiducial-default-type must exist');
@@ -5266,6 +5355,61 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(fiducialState.modalOpenClass, true, 'Target generator modal should open without hidden class');
     assert.strictEqual(fiducialState.hasPreviewSvg, true, 'Target preview element should render vector SVG');
     assert.strictEqual(fiducialState.modalClosedClass, true, 'Target generator modal should close with hidden class');
+  });
+
+  test('DJI Cloud API Key Decryption (v1.105.0): Diagnostics button, configuration modal, and input interaction', async () => {
+    const djiModalState = await page.evaluate(async () => {
+      const diagBtn = document.getElementById('diag-dji-key-btn');
+      const modal = document.getElementById('dji-key-modal');
+      const input = document.getElementById('dji-api-key-input');
+      const saveBtn = document.getElementById('save-dji-key-btn');
+      const clearBtn = document.getElementById('clear-dji-key-btn');
+      const closeBtn = document.getElementById('close-dji-key-modal-btn');
+      const toggleVisBtn = document.getElementById('toggle-dji-key-visibility-btn');
+
+      const initialHidden = modal ? modal.classList.contains('hidden') : false;
+
+      // Click DJI API Key button in diagnostics
+      if (diagBtn) diagBtn.click();
+      const openHidden = modal ? modal.classList.contains('hidden') : true;
+
+      // Test key visibility toggle
+      let initialInputType = input ? input.type : '';
+      if (toggleVisBtn) toggleVisBtn.click();
+      let toggledInputType = input ? input.type : '';
+      if (toggleVisBtn) toggleVisBtn.click();
+      let restoredInputType = input ? input.type : '';
+
+      // Close modal
+      if (closeBtn) closeBtn.click();
+      const closedHidden = modal ? modal.classList.contains('hidden') : false;
+
+      return {
+        hasDiagBtn: !!diagBtn,
+        hasModal: !!modal,
+        hasInput: !!input,
+        hasSaveBtn: !!saveBtn,
+        hasClearBtn: !!clearBtn,
+        initialHidden,
+        openHidden,
+        initialInputType,
+        toggledInputType,
+        restoredInputType,
+        closedHidden
+      };
+    });
+
+    assert.strictEqual(djiModalState.hasDiagBtn, true, '#diag-dji-key-btn must exist in diagnostics header');
+    assert.strictEqual(djiModalState.hasModal, true, '#dji-key-modal must exist');
+    assert.strictEqual(djiModalState.hasInput, true, '#dji-api-key-input must exist');
+    assert.strictEqual(djiModalState.hasSaveBtn, true, '#save-dji-key-btn must exist');
+    assert.strictEqual(djiModalState.hasClearBtn, true, '#clear-dji-key-btn must exist');
+    assert.strictEqual(djiModalState.initialHidden, true, 'Modal should initially be hidden');
+    assert.strictEqual(djiModalState.openHidden, false, 'Modal should open upon clicking diag button');
+    assert.strictEqual(djiModalState.initialInputType, 'password', 'Input type should default to password');
+    assert.strictEqual(djiModalState.toggledInputType, 'text', 'Input type should toggle to text');
+    assert.strictEqual(djiModalState.restoredInputType, 'password', 'Input type should toggle back to password');
+    assert.strictEqual(djiModalState.closedHidden, true, 'Modal should close upon clicking close button');
   });
 });
 

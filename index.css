@@ -3959,6 +3959,28 @@ html, body {
   color: #60a5fa !important;
 }
 
+.diag-key-btn {
+  background: rgba(234, 179, 8, 0.12) !important;
+  border: 1px solid rgba(234, 179, 8, 0.35) !important;
+  color: #facc15 !important;
+}
+
+.diag-key-btn:hover {
+  background: rgba(234, 179, 8, 0.22) !important;
+  border-color: #facc15 !important;
+}
+
+.diag-key-btn.has-key {
+  background: rgba(16, 185, 129, 0.12) !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+  color: #34d399 !important;
+}
+
+.diag-key-btn.has-key:hover {
+  background: rgba(16, 185, 129, 0.22) !important;
+  border-color: #34d399 !important;
+}
+
 .diag-close-btn {
   grid-area: close;
   background: none;

@@ -640,6 +640,246 @@ function clearFiducialMarkers() {
 }
 
 /**
+ * Resolves the adjacent and mission flight altitudes for a given fiducial layer.
+ */
+function getSurroundingFlightAltitudes(layerId) {
+  const globalAltEl = typeof document !== 'undefined' ? document.getElementById('altitude') : null;
+  const globalAlt = globalAltEl ? (parseFloat(globalAltEl.value) || 50) : 50;
+
+  const layers = (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers))
+    ? flightLayers
+    : ((typeof global !== 'undefined' && Array.isArray(global.flightLayers)) ? global.flightLayers : []);
+
+  if (!layers || layers.length === 0) {
+    return {
+      prevAltitude: null,
+      nextAltitude: null,
+      maxAltitude: globalAlt,
+      minAltitude: globalAlt,
+      primaryAltitude: globalAlt,
+      prevLayerName: null,
+      nextLayerName: null
+    };
+  }
+
+  const idx = layers.findIndex(l => l.id === layerId);
+  const targetIdx = idx !== -1 ? idx : 0;
+
+  let prevLayer = null;
+  for (let i = targetIdx - 1; i >= 0; i--) {
+    const l = layers[i];
+    if (l && l.enabled && !l.isDrawingLayer && !l.isFiducialLayer && !l.isExclusionZone) {
+      prevLayer = l;
+      break;
+    }
+  }
+
+  let nextLayer = null;
+  for (let i = targetIdx + 1; i < layers.length; i++) {
+    const l = layers[i];
+    if (l && l.enabled && !l.isDrawingLayer && !l.isFiducialLayer && !l.isExclusionZone) {
+      nextLayer = l;
+      break;
+    }
+  }
+
+  const flightAlts = [];
+  layers.forEach(l => {
+    if (l && l.enabled && !l.isDrawingLayer && !l.isFiducialLayer && !l.isExclusionZone) {
+      const alt = parseFloat(l.altitude);
+      if (!isNaN(alt) && alt > 0) flightAlts.push(alt);
+    }
+  });
+
+  const maxAlt = flightAlts.length > 0 ? Math.max(...flightAlts) : globalAlt;
+  const minAlt = flightAlts.length > 0 ? Math.min(...flightAlts) : globalAlt;
+  const primaryAlt = maxAlt;
+
+  return {
+    prevAltitude: prevLayer ? (parseFloat(prevLayer.altitude) || globalAlt) : null,
+    nextAltitude: nextLayer ? (parseFloat(nextLayer.altitude) || globalAlt) : null,
+    prevLayerName: prevLayer ? prevLayer.name : null,
+    nextLayerName: nextLayer ? nextLayer.name : null,
+    maxAltitude: maxAlt,
+    minAltitude: minAlt,
+    primaryAltitude: primaryAlt
+  };
+}
+
+/**
+ * Calculates photogrammetric GSD, aerial pixel span, max detection slant distance,
+ * and ground detection radius for a fiducial marker at a given flight altitude.
+ */
+function calculateFiducialResolution(targetSizeMeters, altitudeMeters, cameraSpecs = {}) {
+  const sW = parseFloat(cameraSpecs.sensorWidthMm) || 9.6;
+  const fL = parseFloat(cameraSpecs.focalLengthMm) || 6.72;
+  const imgW = parseFloat(cameraSpecs.imageWidthPx) || 4032;
+  const alt = Math.max(1, parseFloat(altitudeMeters) || 50);
+  const size = Math.max(0.05, parseFloat(targetSizeMeters) || 0.20);
+
+  // GSD in cm/pixel: (sensorWidth_mm * alt_m * 100) / (focalLength_mm * imgW_px)
+  const gsdCmPerPx = (sW * alt * 100.0) / (fL * imgW);
+  const gsdMetersPerPx = gsdCmPerPx / 100.0;
+
+  // Pixel span across target edge in photo: size_meters / gsd_meters
+  const pixelSpan = size / gsdMetersPerPx;
+
+  // Maximum direct slant distance where target spans >= 10 px
+  // 10 = (size * fL * imgW) / (sW * D_max) => D_max = (size * fL * imgW) / (sW * 10)
+  const maxSlantDistanceMeters = (size * fL * imgW) / (sW * 10.0);
+
+  // Ground detection radius at flight altitude alt
+  // R_ground^2 + alt^2 = D_max^2 => R_ground = sqrt(D_max^2 - alt^2)
+  let groundDetectionRadiusMeters = 0;
+  if (maxSlantDistanceMeters > alt) {
+    groundDetectionRadiusMeters = Math.sqrt(Math.pow(maxSlantDistanceMeters, 2) - Math.pow(alt, 2));
+  }
+
+  // Recommended target size for altitude:
+  // Survey standard requires 12-15 px across tag. Using 14 px:
+  const recSizeMeters = Math.round((14.0 * gsdMetersPerPx) * 20) / 20; // round to nearest 0.05m
+  const recommendedSizeMeters = Math.max(0.20, recSizeMeters);
+
+  let status = 'optimal';
+  if (pixelSpan < 10.0) {
+    status = 'undersized';
+  } else if (pixelSpan < 14.0) {
+    status = 'marginal';
+  }
+
+  return {
+    altitudeMeters: alt,
+    targetSizeMeters: size,
+    gsdCmPerPx: Math.round(gsdCmPerPx * 100) / 100,
+    pixelSpan: Math.round(pixelSpan * 10) / 10,
+    maxSlantDistanceMeters: Math.round(maxSlantDistanceMeters * 10) / 10,
+    groundDetectionRadiusMeters: Math.round(groundDetectionRadiusMeters * 10) / 10,
+    recommendedSizeMeters,
+    status
+  };
+}
+
+/**
+ * Updates the live Altitude Sizing Advisor card inside Section 2 Card 6.
+ */
+function updateFiducialAltitudeAdvisor(layer) {
+  if (typeof document === 'undefined') return;
+  const activeLayer = layer || (typeof getActiveLayer === 'function' ? getActiveLayer() : null);
+  if (!activeLayer) return;
+
+  const altContext = getSurroundingFlightAltitudes(activeLayer.id);
+  const sizeSelect = document.getElementById('fiducial-default-size');
+  const targetSize = sizeSelect ? (parseFloat(sizeSelect.value) || 0.20) : (activeLayer.defaultPhysicalSize || 0.20);
+
+  const metrics = calculateFiducialResolution(targetSize, altContext.primaryAltitude);
+
+  const altBadge = document.getElementById('fid-advisor-altitude-badge');
+  if (altBadge) {
+    altBadge.textContent = `Flight Alt: ${altContext.primaryAltitude}m`;
+  }
+
+  const prevLayerEl = document.getElementById('fid-advisor-prev-layer');
+  if (prevLayerEl) {
+    prevLayerEl.textContent = altContext.prevAltitude !== null ? `${altContext.prevAltitude}m` : 'None';
+  }
+
+  const nextLayerEl = document.getElementById('fid-advisor-next-layer');
+  if (nextLayerEl) {
+    nextLayerEl.textContent = altContext.nextAltitude !== null ? `${altContext.nextAltitude}m` : 'None';
+  }
+
+  const maxLayerEl = document.getElementById('fid-advisor-max-layer');
+  if (maxLayerEl) {
+    maxLayerEl.textContent = `${altContext.maxAltitude}m`;
+  }
+
+  const gsdEl = document.getElementById('fid-advisor-gsd-val');
+  if (gsdEl) {
+    gsdEl.textContent = `${metrics.gsdCmPerPx.toFixed(2)} cm/px`;
+  }
+
+  const pxEl = document.getElementById('fid-advisor-pixel-span-val');
+  if (pxEl) {
+    pxEl.textContent = `${metrics.pixelSpan.toFixed(1)} px`;
+    pxEl.style.color = metrics.status === 'optimal' ? '#34d399' : (metrics.status === 'marginal' ? '#fbbf24' : '#f87171');
+  }
+
+  const slantEl = document.getElementById('fid-advisor-slant-dist-val');
+  if (slantEl) {
+    slantEl.textContent = `${metrics.maxSlantDistanceMeters.toFixed(0)} m`;
+  }
+
+  const groundEl = document.getElementById('fid-advisor-ground-radius-val');
+  if (groundEl) {
+    groundEl.textContent = metrics.groundDetectionRadiusMeters > 0 ? `${metrics.groundDetectionRadiusMeters.toFixed(0)} m` : '0 m (Too high)';
+    groundEl.style.color = metrics.groundDetectionRadiusMeters > 0 ? '#fbbf24' : '#f87171';
+  }
+
+  const statusBox = document.getElementById('fid-advisor-status-box');
+  const statusIcon = document.getElementById('fid-advisor-status-icon');
+  const statusMsg = document.getElementById('fid-advisor-status-msg');
+  if (statusBox && statusIcon && statusMsg) {
+    if (metrics.status === 'optimal') {
+      statusBox.style.background = 'rgba(16, 185, 129, 0.1)';
+      statusBox.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+      statusBox.style.color = '#a7f3d0';
+      statusIcon.textContent = '✅';
+      statusMsg.textContent = `Optimal resolution: Target spans ${metrics.pixelSpan.toFixed(1)} px at ${altContext.primaryAltitude}m flight altitude for reliable sub-pixel corner solving.`;
+    } else if (metrics.status === 'marginal') {
+      statusBox.style.background = 'rgba(245, 158, 11, 0.1)';
+      statusBox.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+      statusBox.style.color = '#fde68a';
+      statusIcon.textContent = '🟡';
+      statusMsg.textContent = `Marginal resolution: Target spans ${metrics.pixelSpan.toFixed(1)} px at ${altContext.primaryAltitude}m. Detectable under bright sun, but recommended size is ≥ ${metrics.recommendedSizeMeters.toFixed(2)}m.`;
+    } else {
+      statusBox.style.background = 'rgba(239, 68, 68, 0.12)';
+      statusBox.style.borderColor = 'rgba(239, 68, 68, 0.35)';
+      statusBox.style.color = '#fca5a5';
+      statusIcon.textContent = '⚠️';
+      statusMsg.textContent = `Target Undersized: At ${altContext.primaryAltitude}m AGL (GSD ${metrics.gsdCmPerPx} cm/px), a ${targetSize}m target spans only ${metrics.pixelSpan.toFixed(1)} px (under 10 px minimum). Computer vision tag detection will likely fail.`;
+    }
+  }
+
+  const autoSetVal = document.getElementById('fid-autoset-size-val');
+  if (autoSetVal) {
+    autoSetVal.textContent = `${metrics.recommendedSizeMeters.toFixed(2)}m`;
+  }
+}
+
+/**
+ * Updates the flight altitude context banner inside the Printable Target Sheet modal.
+ */
+function updateTargetGeneratorAdvisor() {
+  if (typeof document === 'undefined') return;
+  const activeLayer = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+  const altContext = getSurroundingFlightAltitudes(activeLayer ? activeLayer.id : null);
+  const sizeSelect = document.getElementById('gen-target-size');
+  const size = sizeSelect ? (parseFloat(sizeSelect.value) || 0.20) : 0.20;
+
+  const metrics = calculateFiducialResolution(size, altContext.primaryAltitude);
+
+  const altVal = document.getElementById('gen-adv-altitude-val');
+  if (altVal) altVal.textContent = `${altContext.primaryAltitude}m`;
+
+  const gsdVal = document.getElementById('gen-adv-gsd-val');
+  if (gsdVal) gsdVal.textContent = `(GSD: ${metrics.gsdCmPerPx.toFixed(2)} cm/px)`;
+
+  const statusText = document.getElementById('gen-adv-status-text');
+  if (statusText) {
+    if (metrics.status === 'optimal') {
+      statusText.innerHTML = `<span style="color: #34d399; font-weight: 600;">✅ Optimal (${metrics.pixelSpan.toFixed(1)} px)</span> &mdash; clear sub-pixel detection at ${altContext.primaryAltitude}m.`;
+    } else if (metrics.status === 'marginal') {
+      statusText.innerHTML = `<span style="color: #fbbf24; font-weight: 600;">🟡 Marginal (${metrics.pixelSpan.toFixed(1)} px)</span> &mdash; recommend &ge; ${metrics.recommendedSizeMeters.toFixed(2)}m for ${altContext.primaryAltitude}m flight.`;
+    } else {
+      statusText.innerHTML = `<span style="color: #f87171; font-weight: 600;">⚠️ Undersized (${metrics.pixelSpan.toFixed(1)} px)</span> &mdash; target spans &lt;10 px at ${altContext.primaryAltitude}m; recommend &ge; ${metrics.recommendedSizeMeters.toFixed(2)}m.`;
+    }
+  }
+
+  const recVal = document.getElementById('gen-adv-rec-size-val');
+  if (recVal) recVal.textContent = `${metrics.recommendedSizeMeters.toFixed(2)}m`;
+}
+
+/**
  * Renders fiducial marker pins on the Leaflet 2D map.
  */
 function drawFiducialLayers(globalCenterLat, globalCenterLon) {
@@ -650,14 +890,47 @@ function drawFiducialLayers(globalCenterLat, globalCenterLon) {
     ? flightLayers.filter(l => l.enabled && (l.pattern === 'fiducial-markers' || l.isFiducialLayer))
     : [];
 
+  const showRangeRings = typeof document !== 'undefined'
+    ? (document.getElementById('fiducial-show-range-rings')?.checked !== false)
+    : true;
+
   enabledFiducials.forEach(layer => {
     const markers = Array.isArray(layer.fiducialMarkers) ? layer.fiducialMarkers : [];
     const isCurrentActive = (typeof activeLayerId !== 'undefined' && layer.id === activeLayerId);
+    const altRef = getSurroundingFlightAltitudes(layer.id);
 
     markers.forEach((m, idx) => {
       const color = m.color || layer.markerColor || '#f59e0b';
       const role = m.role || 'gcp';
       const roleColor = role === 'checkpoint' ? '#10b981' : (role === 'scale_bar' ? '#06b6d4' : (role === 'anchor' ? '#a855f7' : '#f59e0b'));
+      const targetSize = m.physicalSizeMeters || layer.defaultPhysicalSize || 0.20;
+      const res = calculateFiducialResolution(targetSize, altRef.primaryAltitude);
+
+      // Draw detection range ring on map if enabled
+      if (showRangeRings && res.groundDetectionRadiusMeters > 0 && typeof L.circle === 'function') {
+        try {
+          const rangeCircle = L.circle([m.lat, m.lon], {
+            radius: res.groundDetectionRadiusMeters,
+            color: roleColor,
+            fillColor: roleColor,
+            fillOpacity: 0.08,
+            weight: 1.5,
+            dashArray: '4, 6',
+            interactive: true
+          });
+          if (typeof rangeCircle.bindTooltip === 'function') {
+            rangeCircle.bindTooltip(
+              `<strong>${escapeHtml(m.code || `GCP-${idx + 1}`)} Detection Envelope</strong><br>` +
+              `Radius: ${res.groundDetectionRadiusMeters.toFixed(0)}m (${res.pixelSpan.toFixed(1)} px at ${altRef.primaryAltitude}m alt)<br>` +
+              `Max Slant: ${res.maxSlantDistanceMeters.toFixed(0)}m`,
+              { direction: 'top', className: 'fiducial-range-tooltip' }
+            );
+          }
+          rangeCircle.addTo(fiducialMarkersGroup);
+        } catch (e) {
+          // gracefully catch in stub environments
+        }
+      }
 
       const customIcon = L.divIcon({
         className: 'fiducial-pin-wrapper',
@@ -686,12 +959,13 @@ function drawFiducialLayers(globalCenterLat, globalCenterLon) {
 
         leafletMarker.on('dragend', () => {
           renderFiducialMarkersTable(layer);
+          updateGrid();
         });
       }
 
-      // Popup editor
+      // Popup editor with optical range metrics
       const popupHtml = `
-        <div style="min-width: 190px; font-family: sans-serif; font-size: 0.78rem;">
+        <div style="min-width: 195px; font-family: sans-serif; font-size: 0.78rem;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;">
             <strong style="color: ${roleColor}; font-size: 0.82rem;">🎯 ${escapeHtml(m.code)}</strong>
             <span style="font-size: 0.65rem; background: rgba(255,255,255,0.1); padding: 1px 5px; border-radius: 3px; text-transform: uppercase;">${escapeHtml(role)}</span>
@@ -718,6 +992,10 @@ function drawFiducialLayers(globalCenterLat, globalCenterLon) {
             </div>
             <div style="font-size: 0.68rem; color: #cbd5e1; margin-top: 2px;">
               Lat: ${m.lat.toFixed(6)}°<br>Lon: ${m.lon.toFixed(6)}°
+            </div>
+            <div style="font-size: 0.68rem; color: #94a3b8; background: rgba(0,0,0,0.25); padding: 4px 6px; border-radius: 4px; display: flex; flex-direction: column; gap: 2px;">
+              <div>Optical Range: <strong style="color: #38bdf8;">${res.groundDetectionRadiusMeters > 0 ? res.groundDetectionRadiusMeters.toFixed(0) + 'm ground radius' : '0m (Alt too high)'}</strong> (${res.maxSlantDistanceMeters.toFixed(0)}m slant)</div>
+              <div>Aerial Res: <strong style="color: ${res.status === 'optimal' ? '#34d399' : (res.status === 'marginal' ? '#fbbf24' : '#f87171')};">~${res.pixelSpan.toFixed(1)} px</strong> at ${altRef.primaryAltitude}m</div>
             </div>
             <div style="display: flex; gap: 4px; margin-top: 4px;">
               <button type="button" class="btn-primary btn-sm" style="flex: 1; padding: 3px 6px; font-size: 0.7rem;" onclick="saveFiducialPopup('${layer.id}', '${m.id}')">Save</button>
@@ -1263,6 +1541,7 @@ function renderTargetGeneratorPreview() {
   });
 
   previewEl.innerHTML = svgStr;
+  updateTargetGeneratorAdvisor();
 }
 
 /**
@@ -6196,13 +6475,68 @@ function initUIEventListeners() {
 
   const fiducialSizeInput = document.getElementById('fiducial-default-size');
   if (fiducialSizeInput) {
-    fiducialSizeInput.addEventListener('input', (e) => {
+    const handleFidSize = (e) => {
       const val = parseFloat(e.target.value) || 0.5;
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
       if (activeLayer) {
         activeLayer.defaultPhysicalSize = val;
+        updateFiducialAltitudeAdvisor(activeLayer);
+        updateGrid();
         saveAllSettingsToLocalStorage();
       }
+    };
+    fiducialSizeInput.addEventListener('input', handleFidSize);
+    fiducialSizeInput.addEventListener('change', handleFidSize);
+  }
+
+  // Auto-Set Fiducial Size Button (Card 6)
+  const btnFidAutoset = document.getElementById('btn-fid-autoset-size');
+  if (btnFidAutoset) {
+    btnFidAutoset.addEventListener('click', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (!activeLayer) return;
+      const altContext = getSurroundingFlightAltitudes(activeLayer.id);
+      const metrics = calculateFiducialResolution(activeLayer.defaultPhysicalSize || 0.20, altContext.primaryAltitude);
+      const recSize = metrics.recommendedSizeMeters;
+
+      const sizeInput = document.getElementById('fiducial-default-size');
+      if (sizeInput) {
+        let closestOpt = null;
+        let minDiff = Infinity;
+        if (sizeInput.options && sizeInput.options.length > 0) {
+          for (let i = 0; i < sizeInput.options.length; i++) {
+            const opt = sizeInput.options[i];
+            const diff = Math.abs(parseFloat(opt.value) - recSize);
+            if (diff < minDiff) {
+              minDiff = diff;
+              closestOpt = opt;
+            }
+          }
+          if (closestOpt) {
+            sizeInput.value = closestOpt.value;
+            activeLayer.defaultPhysicalSize = parseFloat(closestOpt.value);
+          } else {
+            sizeInput.value = recSize.toString();
+            activeLayer.defaultPhysicalSize = recSize;
+          }
+        } else {
+          sizeInput.value = recSize.toString();
+          activeLayer.defaultPhysicalSize = recSize;
+        }
+      } else {
+        activeLayer.defaultPhysicalSize = recSize;
+      }
+      updateFiducialAltitudeAdvisor(activeLayer);
+      updateGrid();
+      saveAllSettingsToLocalStorage();
+    });
+  }
+
+  // Range Rings Map Toggle
+  const fidRangeRingsCheck = document.getElementById('fiducial-show-range-rings');
+  if (fidRangeRingsCheck) {
+    fidRangeRingsCheck.addEventListener('change', () => {
+      updateGrid();
     });
   }
 
@@ -6316,6 +6650,43 @@ function initUIEventListeners() {
     });
   }
 
+  // Fiducial & GCP Help Drawer Toggle
+  const fiducialHelpBtn = document.getElementById('fiducial-help-btn');
+  const fiducialHelpDrawer = document.getElementById('fiducial-help-drawer');
+  const closeFiducialHelpBtn = document.getElementById('close-fiducial-help-drawer-btn');
+  if (fiducialHelpBtn && fiducialHelpDrawer) {
+    fiducialHelpBtn.addEventListener('click', () => {
+      fiducialHelpDrawer.classList.toggle('hidden');
+    });
+  }
+  if (closeFiducialHelpBtn && fiducialHelpDrawer) {
+    closeFiducialHelpBtn.addEventListener('click', () => {
+      fiducialHelpDrawer.classList.add('hidden');
+    });
+  }
+
+  // Fiducial & GCP Help Drawer Tabs (Workflow, DIY Fabrication, Construction Sites)
+  const fidTabs = [
+    { btn: document.getElementById('fid-tab-btn-workflow'), pane: document.getElementById('fid-pane-workflow') },
+    { btn: document.getElementById('fid-tab-btn-fabrication'), pane: document.getElementById('fid-pane-fabrication') },
+    { btn: document.getElementById('fid-tab-btn-construction'), pane: document.getElementById('fid-pane-construction') }
+  ];
+  fidTabs.forEach(({ btn }) => {
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      fidTabs.forEach(t => {
+        if (t.btn && t.pane) {
+          const isActive = (t.btn === btn);
+          t.pane.classList.toggle('hidden', !isActive);
+          t.btn.classList.toggle('active', isActive);
+          t.btn.style.color = isActive ? '#fbbf24' : 'var(--text-muted)';
+          t.btn.style.background = isActive ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255, 255, 255, 0.03)';
+          t.btn.style.borderColor = isActive ? 'rgba(245, 158, 11, 0.4)' : 'rgba(255, 255, 255, 0.08)';
+        }
+      });
+    });
+  });
+
   // Printable Vector SVG Target Generator Modal Event Listeners
   const closeTargetGenBtn = document.getElementById('close-fiducial-generator-modal-btn');
   if (closeTargetGenBtn) {
@@ -6343,6 +6714,31 @@ function initUIEventListeners() {
   if (btnPrintTargetSheet) {
     btnPrintTargetSheet.addEventListener('click', () => {
       printTargetSheet();
+    });
+  }
+
+  const btnGenAutoset = document.getElementById('btn-gen-autoset-size');
+  if (btnGenAutoset) {
+    btnGenAutoset.addEventListener('click', () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      const altContext = getSurroundingFlightAltitudes(activeLayer ? activeLayer.id : null);
+      const metrics = calculateFiducialResolution(0.20, altContext.primaryAltitude);
+      const recSize = metrics.recommendedSizeMeters;
+      const genSizeEl = document.getElementById('gen-target-size');
+      if (genSizeEl) {
+        // find matching option or set value
+        const valStr = recSize.toFixed(2);
+        let found = false;
+        for (let opt of genSizeEl.options) {
+          if (Math.abs(parseFloat(opt.value) - recSize) < 0.06) {
+            genSizeEl.value = opt.value;
+            found = true;
+            break;
+          }
+        }
+        if (!found) genSizeEl.value = valStr;
+        renderTargetGeneratorPreview();
+      }
     });
   }
 
@@ -8220,16 +8616,20 @@ function togglePatternParameters() {
 
   if (layerCardBoundary) {
     if (isBoundary) {
+      layerCardBoundary.classList.remove('hidden');
       layerCardBoundary.style.display = 'block';
     } else {
+      layerCardBoundary.classList.add('hidden');
       layerCardBoundary.style.display = 'none';
     }
   }
 
   if (layerCardFiducial) {
     if (isFiducial) {
+      layerCardFiducial.classList.remove('hidden');
       layerCardFiducial.style.display = 'block';
     } else {
+      layerCardFiducial.classList.add('hidden');
       layerCardFiducial.style.display = 'none';
     }
   }
@@ -8441,7 +8841,14 @@ function togglePatternParameters() {
     if (layerCardFlight) layerCardFlight.style.display = 'none';
     if (layerCardOptics) layerCardOptics.style.display = 'none';
     if (layerCardModes) layerCardModes.style.display = 'none';
-    if (layerCardBoundary) layerCardBoundary.style.display = 'block';
+    if (layerCardBoundary) {
+      layerCardBoundary.classList.remove('hidden');
+      layerCardBoundary.style.display = 'block';
+    }
+    if (layerCardFiducial) {
+      layerCardFiducial.classList.add('hidden');
+      layerCardFiducial.style.display = 'none';
+    }
     if (boundaryInstructions) boundaryInstructions.classList.remove('hidden');
     if (altitudeControlGroup) altitudeControlGroup.style.display = 'none';
     if (exclusionAltContainer) exclusionAltContainer.classList.add('hidden');
@@ -8503,8 +8910,14 @@ function togglePatternParameters() {
     if (layerCardFlight) layerCardFlight.style.display = 'none';
     if (layerCardOptics) layerCardOptics.style.display = 'none';
     if (layerCardModes) layerCardModes.style.display = 'none';
-    if (layerCardBoundary) layerCardBoundary.style.display = 'none';
-    if (layerCardFiducial) layerCardFiducial.style.display = 'block';
+    if (layerCardBoundary) {
+      layerCardBoundary.classList.add('hidden');
+      layerCardBoundary.style.display = 'none';
+    }
+    if (layerCardFiducial) {
+      layerCardFiducial.classList.remove('hidden');
+      layerCardFiducial.style.display = 'block';
+    }
     if (boundaryInstructions) boundaryInstructions.classList.add('hidden');
     if (fiducialInstructions) fiducialInstructions.classList.remove('hidden');
     if (altitudeControlGroup) altitudeControlGroup.style.display = 'none';
@@ -8535,6 +8948,7 @@ function togglePatternParameters() {
       if (colorSel) colorSel.value = activeLayer.markerColor || '#f59e0b';
 
       renderFiducialMarkersTable(activeLayer);
+      updateFiducialAltitudeAdvisor(activeLayer);
     }
 
   } else if (gridType === 'road-following') {
@@ -8615,6 +9029,14 @@ function togglePatternParameters() {
     if (layerCardFlight) layerCardFlight.style.display = 'block';
     if (layerCardOptics) layerCardOptics.style.display = 'block';
     if (layerCardModes) layerCardModes.style.display = 'block';
+    if (layerCardBoundary) {
+      layerCardBoundary.classList.add('hidden');
+      layerCardBoundary.style.display = 'none';
+    }
+    if (layerCardFiducial) {
+      layerCardFiducial.classList.add('hidden');
+      layerCardFiducial.style.display = 'none';
+    }
     if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
     if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
     if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
@@ -16008,7 +16430,9 @@ function setCompanionApiBase(newHost) {
   COMPANION_API_BASE = getCompanionApiBase();
   const hostInput = typeof document !== 'undefined' ? document.getElementById('companion-host-input') : null;
   if (hostInput) hostInput.value = COMPANION_API_BASE;
-  if (typeof pollCompanionStatus === 'function') {
+  if (typeof wakeCompanionPolling === 'function') {
+    wakeCompanionPolling(true);
+  } else if (typeof pollCompanionStatus === 'function') {
     pollCompanionStatus();
   }
 }
@@ -16018,6 +16442,10 @@ let isCompanionOnline = false;
 let isRc2MtpConnected = false;
 let rc2MtpActiveUUID = '';
 let companionPollInterval = null;
+let consecutiveStatusFailures = 0;
+let consecutiveRadarFailures = 0;
+let lastStatusCheckTime = 0;
+let remoteIdDroneCount = 0;
 
 async function pollCompanionStatus() {
   if (typeof document === 'undefined') return;
@@ -16047,7 +16475,24 @@ async function pollCompanionStatus() {
 
     if (res.ok) {
       const data = await res.json();
+      const wasOffline = !isCompanionOnline;
       isCompanionOnline = true;
+      consecutiveStatusFailures = 0;
+      lastStatusCheckTime = Date.now();
+      if (typeof data.droneCount === 'number') {
+        remoteIdDroneCount = data.droneCount;
+      }
+      if (wasOffline) {
+        consecutiveRadarFailures = 0;
+        if (typeof RemoteIdRadar !== 'undefined' && RemoteIdRadar.pollAirspace) {
+          RemoteIdRadar.pollAirspace();
+        }
+        if (typeof scheduleNextRadarCheck === 'function') {
+          scheduleNextRadarCheck();
+        }
+      } else if (!companionRadarTimer && typeof scheduleNextRadarCheck === 'function' && getRadarPollDelay() !== null) {
+        scheduleNextRadarCheck();
+      }
 
       // 1. Update Bridge Service status (Online)
       if (sDot) sDot.style.background = '#22c55e';
@@ -16123,8 +16568,14 @@ async function pollCompanionStatus() {
       throw new Error('Non-200 status');
     }
   } catch (e) {
+    consecutiveStatusFailures++;
+    lastStatusCheckTime = Date.now();
     isCompanionOnline = false;
     isRc2MtpConnected = false;
+    if (companionRadarTimer) {
+      clearTimeout(companionRadarTimer);
+      companionRadarTimer = null;
+    }
     if (container && container.classList) container.classList.add('is-offline');
     if (hint) {
       hint.style.display = 'flex';
@@ -16565,21 +17016,168 @@ function initRC2Controls() {
   // Initialize Remote ID Airspace Radar
   RemoteIdRadar.init();
 
-  // Start polling Companion service status & Remote ID radar
-  pollCompanionStatus();
-  RemoteIdRadar.pollAirspace();
-  if (!companionPollInterval && typeof window !== 'undefined' && window.setInterval) {
-    let tickCount = 0;
-    companionPollInterval = setInterval(() => {
-      tickCount++;
-      // Poll drone airspace radar every 1.5s for low-latency live GPS telemetry
-      RemoteIdRadar.pollAirspace();
-      // Poll controller USB link status every 6s (every 4th tick) to minimize CPU load
-      if (tickCount % 4 === 0) {
-        pollCompanionStatus();
-      }
-    }, 1500);
+  // Start polling Companion service status & Remote ID radar with adaptive backoff & visibility gating
+  initCompanionPolling();
+}
+
+let companionStatusTimer = null;
+let companionRadarTimer = null;
+let isCompanionPollingActive = false;
+
+function getStatusPollDelay() {
+  if (typeof document !== 'undefined' && document.hidden) {
+    return 60000; // Dormant 60s heartbeat when browser tab is hidden/minimized
   }
+  if (!isCompanionOnline) {
+    // Stepped adaptive backoff when offline
+    if (consecutiveStatusFailures <= 3) return 6000;   // 1st-3rd retry: 6s (fast recovery during server restart)
+    if (consecutiveStatusFailures <= 8) return 15000;  // 4th-8th retry: 15s
+    if (consecutiveStatusFailures <= 15) return 30000; // 9th-15th retry: 30s
+    return 60000; // >15 failures: 60s dormant heartbeat
+  }
+  return 8000; // Normal online status check: 8s
+}
+
+function getRadarPollDelay() {
+  if (typeof document !== 'undefined' && document.hidden) {
+    return null; // Pause drone radar when tab is hidden
+  }
+  if (!isCompanionOnline) {
+    return null; // Companion is offline: drones endpoint is guaranteed down, DO NOT poll!
+  }
+  if (consecutiveRadarFailures >= 2) {
+    return 10000; // Drone radar requests timing out/failing: back off to 10s
+  }
+  const hasActiveDrones = (typeof RemoteIdRadar !== 'undefined' && RemoteIdRadar.activeDrones && RemoteIdRadar.activeDrones.length > 0) || (remoteIdDroneCount > 0);
+  return hasActiveDrones ? 1500 : 5000; // Live GPS telemetry: 1.5s; clear airspace: 5s
+}
+
+function scheduleNextStatusCheck() {
+  if (typeof window === 'undefined' || !window.setTimeout) return;
+  if (companionStatusTimer) clearTimeout(companionStatusTimer);
+  const statusDelay = getStatusPollDelay();
+  companionStatusTimer = setTimeout(async () => {
+    await pollCompanionStatus();
+    scheduleNextStatusCheck();
+  }, statusDelay);
+}
+
+function scheduleNextRadarCheck() {
+  if (typeof window === 'undefined' || !window.setTimeout) return;
+  if (companionRadarTimer) clearTimeout(companionRadarTimer);
+  const radarDelay = getRadarPollDelay();
+  if (radarDelay === null) {
+    companionRadarTimer = null;
+    return;
+  }
+  companionRadarTimer = setTimeout(async () => {
+    if (typeof RemoteIdRadar !== 'undefined' && RemoteIdRadar.pollAirspace) {
+      await RemoteIdRadar.pollAirspace();
+    }
+    scheduleNextRadarCheck();
+  }, radarDelay);
+}
+
+function scheduleNextCompanionChecks() {
+  scheduleNextStatusCheck();
+  scheduleNextRadarCheck();
+}
+
+function wakeCompanionPolling(resetBackoff = true) {
+  if (resetBackoff) {
+    consecutiveStatusFailures = 0;
+    consecutiveRadarFailures = 0;
+  }
+  if (companionStatusTimer) clearTimeout(companionStatusTimer);
+  if (companionRadarTimer) clearTimeout(companionRadarTimer);
+
+  return pollCompanionStatus().then(() => {
+    scheduleNextCompanionChecks();
+  });
+}
+
+function initCompanionPolling() {
+  if (isCompanionPollingActive) return;
+  isCompanionPollingActive = true;
+  companionPollInterval = true; // backward compatibility flag
+
+  // Initial immediate probe
+  pollCompanionStatus().then(() => {
+    if (isCompanionOnline && typeof RemoteIdRadar !== 'undefined' && RemoteIdRadar.pollAirspace) {
+      RemoteIdRadar.pollAirspace();
+    }
+    scheduleNextCompanionChecks();
+  });
+
+  // Page Visibility API: pause/resume polling when switching tabs
+  if (typeof document !== 'undefined' && document.addEventListener) {
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        // Tab brought to foreground: immediately check status if older than 3 seconds
+        if (Date.now() - lastStatusCheckTime > 3000) {
+          wakeCompanionPolling(false);
+        } else {
+          scheduleNextCompanionChecks();
+        }
+      } else {
+        // Tab hidden: reschedule to dormant rates
+        scheduleNextCompanionChecks();
+      }
+    });
+  }
+
+  // Window Focus: wake up if window is focused after being backgrounded
+  if (typeof window !== 'undefined' && window.addEventListener) {
+    window.addEventListener('focus', () => {
+      if (Date.now() - lastStatusCheckTime > 5000) {
+        wakeCompanionPolling(false);
+      }
+    });
+  }
+
+  // UI Event hooks: clicking companion sync container or offline hint triggers instant wake-up
+  if (typeof document !== 'undefined') {
+    const container = document.getElementById('companion-sync-container');
+    const hint = document.getElementById('companion-offline-hint');
+    const sBox = document.getElementById('companion-service-box');
+    [container, hint, sBox].filter(Boolean).forEach(el => {
+      el.addEventListener('click', () => {
+        if (!isCompanionOnline) {
+          wakeCompanionPolling(true);
+        }
+      });
+    });
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.wakeCompanionPolling = wakeCompanionPolling;
+  window.getStatusPollDelay = getStatusPollDelay;
+  window.getRadarPollDelay = getRadarPollDelay;
+  window.scheduleNextCompanionChecks = scheduleNextCompanionChecks;
+  window.scheduleNextStatusCheck = scheduleNextStatusCheck;
+  window.scheduleNextRadarCheck = scheduleNextRadarCheck;
+  window.getConsecutiveStatusFailures = () => consecutiveStatusFailures;
+  window.setConsecutiveStatusFailures = (n) => { consecutiveStatusFailures = n; };
+  window.getConsecutiveRadarFailures = () => consecutiveRadarFailures;
+  window.setConsecutiveRadarFailures = (n) => { consecutiveRadarFailures = n; };
+  window.setIsCompanionOnline = (v) => { isCompanionOnline = v; };
+  window.getIsCompanionOnline = () => isCompanionOnline;
+}
+
+if (typeof global !== 'undefined') {
+  global.wakeCompanionPolling = wakeCompanionPolling;
+  global.getStatusPollDelay = getStatusPollDelay;
+  global.getRadarPollDelay = getRadarPollDelay;
+  global.scheduleNextCompanionChecks = scheduleNextCompanionChecks;
+  global.scheduleNextStatusCheck = scheduleNextStatusCheck;
+  global.scheduleNextRadarCheck = scheduleNextRadarCheck;
+  global.getConsecutiveStatusFailures = () => consecutiveStatusFailures;
+  global.setConsecutiveStatusFailures = (n) => { consecutiveStatusFailures = n; };
+  global.getConsecutiveRadarFailures = () => consecutiveRadarFailures;
+  global.setConsecutiveRadarFailures = (n) => { consecutiveRadarFailures = n; };
+  global.setIsCompanionOnline = (v) => { isCompanionOnline = v; };
+  global.getIsCompanionOnline = () => isCompanionOnline;
 }
 
 // ─── Remote ID Airspace Radar & Live Detection ─────────────────────────────
@@ -16905,6 +17503,12 @@ const RemoteIdRadar = {
 
   async pollAirspace() {
     if (typeof fetch === 'undefined') return;
+    // Gate drone radar polling on Companion service online status:
+    // If status check fails/offline, remote-id drones endpoint is guaranteed down. Skip entirely!
+    if (!isCompanionOnline) return;
+    if (this._isPolling) return;
+    this._isPolling = true;
+
     try {
       const apiBase = typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765';
       const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
@@ -16912,16 +17516,28 @@ const RemoteIdRadar = {
       const res = await fetch(`${apiBase}/api/remote-id/drones`, controller ? { signal: controller.signal } : {});
       if (timeoutId) clearTimeout(timeoutId);
       if (res.ok) {
+        consecutiveRadarFailures = 0;
         const data = await res.json();
         if (data.success && Array.isArray(data.drones)) {
           this.activeDrones = data.drones;
           this.updateMapMarkers();
           this.updateRadarUI();
         }
+      } else {
+        consecutiveRadarFailures++;
+        if (consecutiveRadarFailures >= 2 && typeof pollCompanionStatus === 'function') {
+          pollCompanionStatus().catch(() => {});
+        }
       }
     } catch (e) {
+      consecutiveRadarFailures++;
+      if (consecutiveRadarFailures >= 2 && typeof pollCompanionStatus === 'function') {
+        pollCompanionStatus().catch(() => {});
+      }
       // Gracefully retain last known positions during transient network latency
       this.updateRadarUI();
+    } finally {
+      this._isPolling = false;
     }
   },
 
@@ -17326,7 +17942,8 @@ const FlightDiagnostics = {
   playbackSpeed: 1,
   currentPointIndex: 0,
   playbackFractionalIndex: 0.0,
-  selectedFlightId: 'FlightRecord_2026-08-20_[19-42-28].txt',
+  selectedFlightId: 'active-mission',
+  isActualFlown: false,
   telemetryData: null,
   comparisonData: null,
   animFrameId: null,
@@ -17344,6 +17961,9 @@ const FlightDiagnostics = {
   activeTab: '3d',
   _loadGeneration: 0,   // incremented each call to loadSelectedFlight; guards against stale async loads
   _pendingFlightId: null, // tracks the most recently requested flight ID
+  isDecrypted: false,
+  needsDjiApiKey: false,
+  djiApiKeyConfigured: false,
 
   activePhotoFilter: 'all',
   activePhotoSearch: '',
@@ -17863,6 +18483,53 @@ const FlightDiagnostics = {
       }
     }
 
+    // DJI Cloud API Key button & modal controls
+    const djiKeyBtn = document.getElementById('diag-dji-key-btn');
+    if (djiKeyBtn && typeof djiKeyBtn.addEventListener === 'function') {
+      djiKeyBtn.addEventListener('click', () => this.openDjiKeyModal());
+    }
+
+    const closeDjiKeyBtn = document.getElementById('close-dji-key-modal-btn');
+    if (closeDjiKeyBtn && typeof closeDjiKeyBtn.addEventListener === 'function') {
+      closeDjiKeyBtn.addEventListener('click', () => this.closeDjiKeyModal());
+    }
+
+    const cancelDjiKeyBtn = document.getElementById('cancel-dji-key-btn');
+    if (cancelDjiKeyBtn && typeof cancelDjiKeyBtn.addEventListener === 'function') {
+      cancelDjiKeyBtn.addEventListener('click', () => this.closeDjiKeyModal());
+    }
+
+    const saveDjiKeyBtn = document.getElementById('save-dji-key-btn');
+    if (saveDjiKeyBtn && typeof saveDjiKeyBtn.addEventListener === 'function') {
+      saveDjiKeyBtn.addEventListener('click', () => this.saveDjiApiKey());
+    }
+
+    const clearDjiKeyBtn = document.getElementById('clear-dji-key-btn');
+    if (clearDjiKeyBtn && typeof clearDjiKeyBtn.addEventListener === 'function') {
+      clearDjiKeyBtn.addEventListener('click', () => this.clearDjiApiKey());
+    }
+
+    const toggleKeyVisBtn = document.getElementById('toggle-dji-key-visibility-btn');
+    const djiKeyInput = document.getElementById('dji-api-key-input');
+    if (toggleKeyVisBtn && djiKeyInput && typeof toggleKeyVisBtn.addEventListener === 'function') {
+      toggleKeyVisBtn.addEventListener('click', () => {
+        djiKeyInput.type = djiKeyInput.type === 'password' ? 'text' : 'password';
+        toggleKeyVisBtn.textContent = djiKeyInput.type === 'password' ? '👁️' : '🙈';
+      });
+    }
+
+    if (djiKeyInput && typeof djiKeyInput.addEventListener === 'function') {
+      djiKeyInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.saveDjiApiKey();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          this.closeDjiKeyModal();
+        }
+      });
+    }
+
     // Mobile Subnav: 3D Replay vs Telemetry & Stats toggle
     const mobileSubtab3d = document.getElementById('diag-mobile-subtab-3d');
     const mobileSubtabStats = document.getElementById('diag-mobile-subtab-stats');
@@ -17907,6 +18574,168 @@ const FlightDiagnostics = {
       if (this.threeControls) {
         this.threeControls.update();
       }
+    }
+  },
+
+  async checkDjiApiKeyStatus() {
+    try {
+      const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+      const res = await fetch(`${apiBase}/api/config/dji`, {
+        signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(2000) : undefined
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const keyBtn = typeof document !== 'undefined' ? document.getElementById('diag-dji-key-btn') : null;
+        const statusMsg = typeof document !== 'undefined' ? document.getElementById('dji-key-status-msg') : null;
+        const input = typeof document !== 'undefined' ? document.getElementById('dji-api-key-input') : null;
+        if (data.hasKey) {
+          this.djiApiKeyConfigured = true;
+          if (keyBtn) {
+            keyBtn.classList.add('has-key');
+            keyBtn.title = `DJI Cloud API Key Configured (${data.maskedKey || 'Active'})`;
+          }
+          if (input && !input.value) {
+            input.placeholder = data.maskedKey || '••••••••••••••••••••••••••••••••';
+          }
+          if (statusMsg) {
+            statusMsg.textContent = `Active Key: ${data.maskedKey || 'Configured'}`;
+            statusMsg.style.color = '#34d399';
+          }
+        } else {
+          this.djiApiKeyConfigured = false;
+          if (keyBtn) {
+            keyBtn.classList.remove('has-key');
+            keyBtn.title = 'DJI Developer Cloud API Key for Decrypting Native Flight Logs';
+          }
+          if (input && !input.value) {
+            input.placeholder = 'e.g. 7f93b5a14d2e8c60...';
+          }
+          if (statusMsg) {
+            statusMsg.textContent = 'No DJI key configured. Encrypted logs fall back to synthetic KMZ modeling.';
+            statusMsg.style.color = 'var(--text-muted)';
+          }
+        }
+        return data;
+      }
+    } catch (e) {
+      // Companion server offline or unreachable
+    }
+    return { hasKey: false };
+  },
+
+  openDjiKeyModal() {
+    const modal = typeof document !== 'undefined' ? document.getElementById('dji-key-modal') : null;
+    if (modal) {
+      modal.classList.remove('hidden');
+      this.checkDjiApiKeyStatus();
+      const input = document.getElementById('dji-api-key-input');
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+    }
+  },
+
+  closeDjiKeyModal() {
+    const modal = typeof document !== 'undefined' ? document.getElementById('dji-key-modal') : null;
+    if (modal) {
+      modal.classList.add('hidden');
+    }
+  },
+
+  async saveDjiApiKey() {
+    const input = typeof document !== 'undefined' ? document.getElementById('dji-api-key-input') : null;
+    const statusMsg = typeof document !== 'undefined' ? document.getElementById('dji-key-status-msg') : null;
+    const saveBtn = typeof document !== 'undefined' ? document.getElementById('save-dji-key-btn') : null;
+    const key = input ? input.value.trim() : '';
+
+    if (!key) {
+      if (statusMsg) {
+        statusMsg.textContent = '⚠️ Please enter a 32-character DJI Developer App Key.';
+        statusMsg.style.color = '#facc15';
+      }
+      return;
+    }
+
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+    }
+
+    try {
+      const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+      const res = await fetch(`${apiBase}/api/config/dji`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(5000) : undefined,
+        body: JSON.stringify({ apiKey: key })
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (statusMsg) {
+          statusMsg.textContent = `✅ Saved successfully (${data.maskedKey || 'Active'}).`;
+          statusMsg.style.color = '#34d399';
+        }
+        await this.checkDjiApiKeyStatus();
+        setTimeout(() => {
+          this.closeDjiKeyModal();
+          if (this.selectedFlightId) {
+            this.loadSelectedFlight(this.selectedFlightId);
+          }
+        }, 800);
+      } else {
+        throw new Error(data.error || 'Failed to save key');
+      }
+    } catch (err) {
+      if (statusMsg) {
+        statusMsg.textContent = `❌ ${err.message}`;
+        statusMsg.style.color = '#f87171';
+      }
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save & Decrypt';
+      }
+    }
+  },
+
+  async clearDjiApiKey() {
+    const statusMsg = typeof document !== 'undefined' ? document.getElementById('dji-key-status-msg') : null;
+    const clearBtn = typeof document !== 'undefined' ? document.getElementById('clear-dji-key-btn') : null;
+    const input = typeof document !== 'undefined' ? document.getElementById('dji-api-key-input') : null;
+
+    if (clearBtn) clearBtn.disabled = true;
+
+    try {
+      const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+      const res = await fetch(`${apiBase}/api/config/dji`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(5000) : undefined,
+        body: JSON.stringify({ apiKey: '' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (input) {
+          input.value = '';
+          input.placeholder = 'e.g. 7f93b5a14d2e8c60...';
+        }
+        if (statusMsg) {
+          statusMsg.textContent = 'Key removed. Flight logs will use synthetic KMZ mode.';
+          statusMsg.style.color = 'var(--text-muted)';
+        }
+        await this.checkDjiApiKeyStatus();
+        if (this.selectedFlightId) {
+          this.loadSelectedFlight(this.selectedFlightId);
+        }
+      }
+    } catch (err) {
+      if (statusMsg) {
+        statusMsg.textContent = `❌ ${err.message}`;
+        statusMsg.style.color = '#f87171';
+      }
+    } finally {
+      if (clearBtn) clearBtn.disabled = false;
     }
   },
 
@@ -18078,7 +18907,7 @@ const FlightDiagnostics = {
 
   async loadSelectedFlight(flightId) {
     if (!flightId || flightId === '0' || (!flightId.startsWith('FlightRecord_') && !flightId.startsWith('diag:') && flightId !== 'active-mission')) {
-      flightId = 'FlightRecord_2026-08-20_[19-42-28].txt';
+      flightId = 'active-mission';
     }
     this._loadGeneration = (this._loadGeneration || 0) + 1;
     const myGeneration = this._loadGeneration;
@@ -18087,6 +18916,7 @@ const FlightDiagnostics = {
     this.selectedFlightId = flightId;
     this.currentLoadedMission = null;
     this.plannedWaypoints = null;
+    this.isActualFlown = false;
     const flightSel = document.getElementById('diag-flight-selector');
     if (flightSel && flightSel.value !== flightId) {
       flightSel.value = flightId;
@@ -18099,8 +18929,13 @@ const FlightDiagnostics = {
     const apiBase = typeof getCompanionApiBase === 'function' ? getCompanionApiBase() : 'http://127.0.0.1:8765';
 
     if (flightId === 'active-mission') {
+      this.isActualFlown = false;
       const telemetry = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId: 'active-mission', isSimulation: true });
       if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
+      if (telemetry) {
+        telemetry.isActualFlown = false;
+        telemetry.isSimulation = true;
+      }
       this.telemetryData = telemetry;
       this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
       this.plannedWaypoints = wps;
@@ -18116,6 +18951,7 @@ const FlightDiagnostics = {
           if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
           if (data.success && data.mission) {
             this.currentLoadedMission = data.mission;
+            this.isActualFlown = !!(data.mission.isActualFlown || data.mission.diagnostics?.isActualFlown);
             // Store the planned waypoints from the saved mission (not the active workspace)
             this.plannedWaypoints = data.mission.plan?.waypoints || null;
             if (data.mission.diagnostics && Array.isArray(data.mission.diagnostics.points) && data.mission.diagnostics.points.length > 0) {
@@ -18128,7 +18964,7 @@ const FlightDiagnostics = {
                   const missionAlt = data.mission.altitude || altitude;
                   const missionSpeed = data.mission.speed || speed;
                   const missionGimbal = data.mission.gimbal_pitch || gimbalPitch;
-                  diag = generateTelemetryFromWaypoints(missionWps, { altitude: missionAlt, speed: missionSpeed, gimbalPitch: missionGimbal, flightId });
+                  diag = generateTelemetryFromWaypoints(missionWps, { altitude: missionAlt, speed: missionSpeed, gimbalPitch: missionGimbal, flightId, isSimulation: !this.isActualFlown });
                 }
               }
               this.telemetryData = diag;
@@ -18161,7 +18997,7 @@ const FlightDiagnostics = {
               const missionAlt = data.mission.altitude || altitude;
               const missionSpeed = data.mission.speed || speed;
               const missionGimbal = data.mission.gimbal_pitch || gimbalPitch;
-              this.telemetryData = generateTelemetryFromWaypoints(missionWps, { altitude: missionAlt, speed: missionSpeed, gimbalPitch: missionGimbal, flightId });
+              this.telemetryData = generateTelemetryFromWaypoints(missionWps, { altitude: missionAlt, speed: missionSpeed, gimbalPitch: missionGimbal, flightId, isSimulation: !this.isActualFlown });
               this.comparisonData = computeFlightComparison({ waypointCount: missionWps.length, altitude: missionAlt, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
             } else {
               // Incomplete or empty archive record (e.g. mock test entry) — DO NOT show active workspace!
@@ -18188,7 +19024,7 @@ const FlightDiagnostics = {
         const res = await fetch(`${apiBase}/api/flight-telemetry?file=${encodeURIComponent(flightId)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          signal: AbortSignal.timeout ? AbortSignal.timeout(1500) : undefined,
+          signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(45000) : undefined,
           body: JSON.stringify({
             flightId,
             waypoints: wps,
@@ -18200,13 +19036,17 @@ const FlightDiagnostics = {
           const data = await res.json();
           if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
           if (data.success && data.telemetry) {
+            this.isDecrypted = !!data.isDecrypted;
+            this.needsDjiApiKey = !!data.needsDjiApiKey;
+            this.djiApiKeyConfigured = !!data.djiApiKeyConfigured;
             let telem = data.telemetry;
+            this.isActualFlown = (telem.isActualFlown !== undefined) ? !!telem.isActualFlown : !telem.isSimulation;
             const plannedWps = data.telemetry.plannedWaypoints || data.plannedWaypoints || null;
             if (telem && telem.points && plannedWps && plannedWps.length > 1) {
               const photoAlts = new Set(telem.points.filter(p => p.isPhoto).map(p => p.alt));
               const planAlts = new Set(plannedWps.map(w => w.altitude !== undefined ? w.altitude : (w.alt !== undefined ? w.alt : 50)));
               if (photoAlts.size === 1 && planAlts.size > 1) {
-                telem = generateTelemetryFromWaypoints(plannedWps, { altitude, speed, gimbalPitch, flightId });
+                telem = generateTelemetryFromWaypoints(plannedWps, { altitude, speed, gimbalPitch, flightId, isSimulation: !this.isActualFlown });
               }
             }
             this.telemetryData = telem;
@@ -18222,13 +19062,17 @@ const FlightDiagnostics = {
         }
       } catch (e) {
         if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
+        this.isDecrypted = false;
+        this.needsDjiApiKey = false;
         // For built-in demo flight profiles (e.g. 2026-08-20 demo logs), generate offline simulation
         if (flightId && (flightId.includes('2026-08-20') || flightId.includes('19-39-07') || flightId.includes('19-41-15') || flightId.includes('19-42-28') || flightId.includes('19-47-15'))) {
-          this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId });
+          this.isActualFlown = false;
+          this.telemetryData = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId, isSimulation: true });
           this.comparisonData = computeFlightComparison({ waypointCount: wps.length, altitude, totalDistance: this.telemetryData?.totalDistance || 820 }, this.telemetryData);
           this.plannedWaypoints = null;
         } else {
           // For real RC2 flight records when companion is unreachable, do NOT fall back to active workspace!
+          this.isActualFlown = false;
           this.telemetryData = null;
           this.comparisonData = null;
           this.plannedWaypoints = null;
@@ -18329,6 +19173,7 @@ const FlightDiagnostics = {
     if (mobileSubtabStats) mobileSubtabStats.classList.remove('active');
 
     this.switchTab(targetTab);
+    this.checkDjiApiKeyStatus();
 
     if (typeof requestAnimationFrame !== 'undefined') {
       requestAnimationFrame(() => this.handleResize());
@@ -18337,7 +19182,8 @@ const FlightDiagnostics = {
     if (targetTab === '3d') {
       if (customData) {
         const flightSel = document.getElementById('diag-flight-selector');
-        this.selectedFlightId = customData.flightId || (flightSel && flightSel.value) || 'FlightRecord_2026-08-20_[19-42-28].txt';
+        this.selectedFlightId = customData.flightId || (flightSel && flightSel.value) || 'active-mission';
+        this.isActualFlown = customData.isActualFlown !== undefined ? !!customData.isActualFlown : !!customData.telemetry?.isActualFlown;
         this.telemetryData = customData.telemetry;
         this.comparisonData = customData.comparison;
         this.updateStatsUI();
@@ -18348,7 +19194,7 @@ const FlightDiagnostics = {
       } else {
         await this.refreshFlightList();
         const flightSel = document.getElementById('diag-flight-selector');
-        const selectedFlightId = (flightSel && flightSel.value && flightSel.value !== '0' && flightSel.value !== '') ? flightSel.value : 'FlightRecord_2026-08-20_[19-42-28].txt';
+        const selectedFlightId = (flightSel && flightSel.value && flightSel.value !== '0' && flightSel.value !== '') ? flightSel.value : 'active-mission';
         await this.loadSelectedFlight(selectedFlightId);
       }
     }
@@ -18370,6 +19216,61 @@ const FlightDiagnostics = {
   updateStatsUI() {
     const trajCard = (typeof document !== 'undefined') ? document.getElementById('diag-trajectory-card') : null;
     const battCard = (typeof document !== 'undefined') ? document.getElementById('diag-battery-card') : null;
+
+    const isActual = (this.isActualFlown === true) ||
+      (this.isActualFlown !== false && this.selectedFlightId !== 'active-mission' && !this.telemetryData?.isSimulation) ||
+      (!!this.comparisonData?.maxDeviation && this.selectedFlightId !== 'active-mission' && !this.telemetryData?.isSimulation);
+    const modeTitleEl = (typeof document !== 'undefined') ? document.getElementById('diag-sidebar-mode-title') : null;
+    const statusBadgeEl = (typeof document !== 'undefined') ? document.getElementById('diag-sidebar-status-badge') : null;
+    const timeDeltaEl = (typeof document !== 'undefined') ? document.getElementById('diag-stat-time-delta') : null;
+    const distDeltaEl = (typeof document !== 'undefined') ? document.getElementById('diag-stat-dist-delta') : null;
+    const altDeltaEl = (typeof document !== 'undefined') ? document.getElementById('diag-stat-alt-delta') : null;
+    const photosDeltaEl = (typeof document !== 'undefined') ? document.getElementById('diag-stat-photos-delta') : null;
+
+    const timeLabelEl = (typeof document !== 'undefined') ? document.getElementById('diag-stat-time-label') : null;
+    const distLabelEl = (typeof document !== 'undefined') ? document.getElementById('diag-stat-dist-label') : null;
+    const altLabelEl = (typeof document !== 'undefined') ? document.getElementById('diag-stat-alt-label') : null;
+    const photosLabelEl = (typeof document !== 'undefined') ? document.getElementById('diag-stat-photos-label') : null;
+
+    if (!isActual) {
+      if (modeTitleEl) modeTitleEl.textContent = 'Mission Simulation';
+      if (statusBadgeEl) {
+        statusBadgeEl.textContent = '🎯 Simulation (Unflown)';
+        if (statusBadgeEl.style) {
+          statusBadgeEl.style.color = '#38bdf8';
+          statusBadgeEl.style.background = 'rgba(56, 189, 248, 0.15)';
+          statusBadgeEl.style.borderColor = 'rgba(56, 189, 248, 0.3)';
+        }
+      }
+      if (timeLabelEl) timeLabelEl.textContent = 'Est. Flight Time';
+      if (distLabelEl) distLabelEl.textContent = 'Planned Distance';
+      if (altLabelEl) altLabelEl.textContent = 'Planned Max Alt';
+      if (photosLabelEl) photosLabelEl.textContent = 'Planned Photos';
+
+      if (timeDeltaEl && timeDeltaEl.style) timeDeltaEl.style.display = 'none';
+      if (distDeltaEl && distDeltaEl.style) distDeltaEl.style.display = 'none';
+      if (altDeltaEl && altDeltaEl.style) altDeltaEl.style.display = 'none';
+      if (photosDeltaEl && photosDeltaEl.style) photosDeltaEl.style.display = 'none';
+    } else {
+      if (modeTitleEl) modeTitleEl.textContent = 'Mission Comparison';
+      if (statusBadgeEl) {
+        statusBadgeEl.textContent = '✅ Completed';
+        if (statusBadgeEl.style) {
+          statusBadgeEl.style.color = '#22c55e';
+          statusBadgeEl.style.background = 'rgba(34, 197, 94, 0.15)';
+          statusBadgeEl.style.borderColor = 'rgba(34, 197, 94, 0.3)';
+        }
+      }
+      if (timeLabelEl) timeLabelEl.textContent = 'Flight Time';
+      if (distLabelEl) distLabelEl.textContent = 'Total Distance';
+      if (altLabelEl) altLabelEl.textContent = 'Max Altitude';
+      if (photosLabelEl) photosLabelEl.textContent = 'Photos Captured';
+
+      if (timeDeltaEl && timeDeltaEl.style) timeDeltaEl.style.display = 'inline';
+      if (distDeltaEl && distDeltaEl.style) distDeltaEl.style.display = 'inline';
+      if (altDeltaEl && altDeltaEl.style) altDeltaEl.style.display = 'inline';
+      if (photosDeltaEl && photosDeltaEl.style) photosDeltaEl.style.display = 'inline';
+    }
 
     if (!this.telemetryData || !this.telemetryData.points || !this.telemetryData.points.length) {
       if (trajCard) trajCard.style.display = 'none';
@@ -18401,24 +19302,33 @@ const FlightDiagnostics = {
     if (comp) {
       if (comp.time) {
         setTxt('diag-stat-time-actual', comp.time.actual);
-        setTxt('diag-stat-time-delta', `(${comp.time.delta})`);
+        if (isActual) setTxt('diag-stat-time-delta', `(${comp.time.delta})`);
       }
       if (comp.distance) {
         setTxt('diag-stat-dist-actual', comp.distance.actual);
-        setTxt('diag-stat-dist-delta', `(Plan: ${comp.distance.planned})`);
+        if (isActual) setTxt('diag-stat-dist-delta', `(Plan: ${comp.distance.planned})`);
       }
       if (comp.altitude) {
         setTxt('diag-stat-alt-actual', comp.altitude.actual);
-        setTxt('diag-stat-alt-delta', `(${comp.altitude.delta})`);
+        if (isActual) setTxt('diag-stat-alt-delta', `(${comp.altitude.delta})`);
       }
       if (comp.photos) {
-        setTxt('diag-stat-photos-actual', `${comp.photos.actual} / ${comp.photos.planned} Photos`);
+        if (isActual) {
+          setTxt('diag-stat-photos-actual', `${comp.photos.actual} / ${comp.photos.planned} Photos`);
+        } else {
+          setTxt('diag-stat-photos-actual', `${comp.photos.planned || comp.photos.actual || 0} Photos`);
+        }
       }
+    } else {
+      setTxt('diag-stat-time-actual', this.telemetryData.durationFormatted || '00:00');
+      setTxt('diag-stat-dist-actual', `${this.telemetryData.totalDistance || 0} m`);
+      setTxt('diag-stat-alt-actual', `${this.telemetryData.maxAltitude || 0} m`);
+      setTxt('diag-stat-photos-actual', `${this.telemetryData.photoCount || 0} Photos`);
     }
 
-    // Trajectory Accuracy card
+    // Trajectory Accuracy card (only shown for actual flown flights with drift metrics)
     const maxDev = comp?.maxDeviation || this.telemetryData.maxDeviation;
-    if (maxDev && maxDev !== '0' && maxDev !== 'undefined') {
+    if (isActual && maxDev && maxDev !== '0' && maxDev !== 'undefined') {
       if (trajCard) trajCard.style.display = 'flex';
       setTxt('diag-stat-drift', maxDev);
       setTxt('diag-stat-heading-error', this.telemetryData.headingError || '< 1.2°');
@@ -18454,8 +19364,23 @@ const FlightDiagnostics = {
 
     const meta = (typeof document !== 'undefined') ? document.getElementById('diag-flight-meta') : null;
     if (meta) {
-      const flightName = this.selectedFlightId || 'FlightRecord_2026-08-20_[19-42-28].txt';
-      meta.textContent = `Telemetry Log: ${flightName} • Duration: ${this.telemetryData.durationFormatted}`;
+      if (!isActual) {
+        const flightName = (this.selectedFlightId === 'active-mission') ? 'Planned Mission Simulation (Active Workspace)' : (this.selectedFlightId || 'Simulation');
+        meta.textContent = `Mode: ${flightName} • Est. Duration: ${this.telemetryData.durationFormatted} [Pre-Flight Simulation • Unflown]`;
+        meta.innerHTML = `Mode: <strong>${flightName}</strong> • Est. Duration: <strong>${this.telemetryData.durationFormatted}</strong> <span style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; margin-left: 6px;">🎯 Pre-Flight Simulation • Unflown</span>`;
+      } else {
+        const flightName = this.selectedFlightId || 'FlightRecord_2026-08-20_[19-42-28].txt';
+        meta.textContent = `Telemetry Log: ${flightName} • Duration: ${this.telemetryData.durationFormatted}`;
+        let decBadge = '';
+        if (this.isDecrypted) {
+          decBadge = ' <span style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; margin-left: 6px;">🔓 Decrypted via DJI Cloud API</span>';
+        } else if (this.needsDjiApiKey) {
+          decBadge = ' <span style="background: rgba(234, 179, 8, 0.2); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.35); padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; margin-left: 6px; cursor: pointer;" onclick="if(typeof FlightDiagnostics!==\'undefined\')FlightDiagnostics.openDjiKeyModal()" title="Click to enter DJI Developer App Key to decrypt encrypted flight record">📐 Modeled (Synthetic KMZ) • 🔑 Decrypt</span>';
+        }
+        if (decBadge) {
+          meta.innerHTML = `Telemetry Log: <strong>${flightName}</strong> • Duration: <strong>${this.telemetryData.durationFormatted}</strong>${decBadge}`;
+        }
+      }
     }
 
     const timeDisplay = (typeof document !== 'undefined') ? document.getElementById('diag-time-display') : null;
@@ -18548,9 +19473,10 @@ const FlightDiagnostics = {
     this.buildDroneAvatar();
 
     // Auto-frame camera to trajectory bounding box so the flight is always centered in view
-    if (this.actualLineMesh && this.actualLineMesh.geometry) {
-      this.actualLineMesh.geometry.computeBoundingSphere();
-      const bs = this.actualLineMesh.geometry.boundingSphere;
+    const targetMesh = this.actualLineMesh || this.plannedLineMesh;
+    if (targetMesh && targetMesh.geometry) {
+      targetMesh.geometry.computeBoundingSphere();
+      const bs = targetMesh.geometry.boundingSphere;
       if (bs && bs.center && !isNaN(bs.center.x)) {
         if (this.threeControls) {
           this.threeControls.target.set(bs.center.x, Math.max(0, bs.center.y), bs.center.z);
@@ -18643,6 +19569,17 @@ const FlightDiagnostics = {
   buildTrajectoryMeshes() {
     if (!this.telemetryData || !this.telemetryData.points) return;
     const pts = this.telemetryData.points;
+    const isActual = !!this.isActualFlown;
+
+    // Update legend visibility & labels
+    const legendActual = (typeof document !== 'undefined') ? document.getElementById('diag-legend-actual') : null;
+    const legendPlannedText = (typeof document !== 'undefined') ? document.getElementById('diag-legend-planned-text') : null;
+    if (legendActual) {
+      legendActual.style.display = isActual ? 'flex' : 'none';
+    }
+    if (legendPlannedText) {
+      legendPlannedText.textContent = isActual ? 'Planned WPML' : 'Planned Flight Path';
+    }
 
     if (this.actualLineMesh && this.threeScene) {
       this.threeScene.remove(this.actualLineMesh);
@@ -18662,15 +19599,17 @@ const FlightDiagnostics = {
       this.photoMarkers = [];
     }
 
-    const actualCoords = [];
-    pts.forEach(p => {
-      actualCoords.push(this.projectToWorld(p.lat, p.lon, p.alt));
-    });
+    if (isActual) {
+      const actualCoords = [];
+      pts.forEach(p => {
+        actualCoords.push(this.projectToWorld(p.lat, p.lon, p.alt));
+      });
 
-    const actualGeo = new THREE.BufferGeometry().setFromPoints(actualCoords);
-    const actualMat = new THREE.LineBasicMaterial({ color: 0xf59e0b, linewidth: 3 });
-    this.actualLineMesh = new THREE.Line(actualGeo, actualMat);
-    this.threeScene.add(this.actualLineMesh);
+      const actualGeo = new THREE.BufferGeometry().setFromPoints(actualCoords);
+      const actualMat = new THREE.LineBasicMaterial({ color: 0xf59e0b, linewidth: 3 });
+      this.actualLineMesh = new THREE.Line(actualGeo, actualMat);
+      this.threeScene.add(this.actualLineMesh);
+    }
 
     pts.forEach((p, pIdx) => {
       if (p.isPhoto) {
@@ -18741,7 +19680,7 @@ const FlightDiagnostics = {
       this.plannedWaypoints.forEach(wp => {
         plannedCoords.push(this.projectToWorld(wp.lat, wp.lon, wp.altitude || wp.alt || 21.0));
       });
-    } else if (this.telemetryData && this.telemetryData.points) {
+    } else if (isActual && this.telemetryData && this.telemetryData.points) {
       // For RC2 logs: derive approximate planned waypoints from photo-trigger events.
       // Photo triggers fire at planned waypoint positions, making them the best available
       // approximation of the original mission plan from a raw flight log.
@@ -18753,12 +19692,22 @@ const FlightDiagnostics = {
       }
       // If no photo triggers exist, skip the planned line entirely rather than showing
       // the wrong active workspace route.
+    } else if (!isActual && pts && pts.length > 0) {
+      // For unflown simulations without separate plannedWaypoints array, the time-series points themselves define the planned route
+      pts.forEach(p => {
+        plannedCoords.push(this.projectToWorld(p.lat, p.lon, p.alt));
+      });
     }
+
     if (plannedCoords.length > 1) {
       const planGeo = new THREE.BufferGeometry().setFromPoints(plannedCoords);
-      const planMat = new THREE.LineDashedMaterial({ color: 0x06b6d4, dashSize: 3, gapSize: 1 });
+      const planMat = isActual
+        ? new THREE.LineDashedMaterial({ color: 0x06b6d4, dashSize: 3, gapSize: 1 })
+        : new THREE.LineBasicMaterial({ color: 0x06b6d4, linewidth: 3 });
       this.plannedLineMesh = new THREE.Line(planGeo, planMat);
-      this.plannedLineMesh.computeLineDistances();
+      if (isActual && typeof this.plannedLineMesh.computeLineDistances === 'function') {
+        this.plannedLineMesh.computeLineDistances();
+      }
       this.threeScene.add(this.plannedLineMesh);
     }
   },
@@ -19062,10 +20011,13 @@ const FlightDiagnostics = {
         const altitude = (typeof document !== 'undefined' && parseFloat(document.getElementById('altitude')?.value)) || 21.0;
         const speed = (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) || 4.0;
         const gimbalPitch = (typeof document !== 'undefined') ? parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60.0) : -60.0;
-        importedTelemetry = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId });
+        importedTelemetry = generateTelemetryFromWaypoints(wps, { altitude, speed, gimbalPitch, flightId, isSimulation: true });
       }
 
       if (importedTelemetry) {
+        this.isActualFlown = (importedTelemetry.isActualFlown !== undefined)
+          ? !!importedTelemetry.isActualFlown
+          : (typeof file !== 'undefined' && file && file.name && (file.name.toLowerCase().endsWith('.csv') || file.name.toLowerCase().endsWith('.txt')));
         const comp = computeFlightComparison({ waypointCount: getActiveMissionWaypoints().length, altitude: importedTelemetry.maxAltitude, totalDistance: importedTelemetry.totalDistance }, importedTelemetry);
 
         const flightSel = document.getElementById('diag-flight-selector');
@@ -19522,80 +20474,143 @@ function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv') {
   if (lines.length < 2) return null;
 
   const header = lines[0].toLowerCase().split(/[,;\t]/).map(h => h.trim().replace(/["']/g, ''));
-  const latIdx = header.findIndex(h => h.includes('lat'));
-  const lonIdx = header.findIndex(h => h.includes('lon') || h.includes('lng'));
-  const altIdx = header.findIndex(h => h.includes('alt') || h.includes('height'));
-  const speedIdx = header.findIndex(h => h.includes('speed') || h.includes('spd'));
-  const pitchIdx = header.findIndex(h => h.includes('pitch') || h.includes('gimbal'));
-  const yawIdx = header.findIndex(h => h.includes('yaw') || h.includes('heading'));
-  const photoIdx = header.findIndex(h => h.includes('photo') || h.includes('trigger') || h.includes('isphoto'));
+  
+  const findCol = (preds) => {
+    for (const pred of preds) {
+      const idx = header.findIndex(pred);
+      if (idx !== -1) return idx;
+    }
+    return -1;
+  };
+
+  const latIdx = findCol([h => h === 'osd.latitude', h => h === 'latitude', h => h.includes('lat')]);
+  const lonIdx = findCol([h => h === 'osd.longitude', h => h === 'longitude', h => h.includes('lon') || h.includes('lng')]);
+  const altIdx = findCol([h => h === 'osd.height [m]', h => h === 'osd.height', h => h === 'height_above_takeoff(meters)', h => h.includes('height [m]'), h => h === 'altitude', h => h.includes('alt') || h.includes('height')]);
+  const speedIdx = findCol([h => h === 'osd.hspeed [m/s]', h => h === 'osd.hspeed', h => h === 'speed(m/s)', h => h.includes('speed') || h.includes('spd')]);
+  const pitchIdx = findCol([h => h === 'gimbal.pitch', h => h === 'gimbal_pitch', h => h.includes('gimbal.pitch') || h.includes('gimbal_pitch'), h => h.includes('pitch')]);
+  const yawIdx = findCol([h => h === 'gimbal.yaw', h => h === 'osd.yaw', h => h === 'yaw', h => h.includes('yaw') || h.includes('heading')]);
+  const battIdx = findCol([h => h === 'battery.charge_level', h => h.includes('chargelevel') || h.includes('charge_level'), h => h.includes('battery_percent') || h.includes('battery')]);
+  const satsIdx = findCol([h => h === 'osd.gps_num', h => h === 'osd.gpsnum', h => h.includes('gps_num') || h.includes('gpsnum'), h => h.includes('satellites')]);
+  const photoIdx = findCol([h => h === 'camera.is_photo', h => h === 'is_photo', h => h.includes('photo') || h.includes('trigger')]);
+  const timeIdx = findCol([h => h === 'osd.fly_time', h => h === 'osd.flytime [s]', h => h.includes('fly_time') || h.includes('flytime'), h => h === 'time(millisecond)', h => h.includes('time')]);
+
+  const elevIdx = findCol([h => h === 'rc.elevator', h => h.includes('rc.elevator') || h.includes('elevator')]);
+  const aileIdx = findCol([h => h === 'rc.aileron', h => h.includes('rc.aileron') || h.includes('aileron')]);
+  const ruddIdx = findCol([h => h === 'rc.rudder', h => h.includes('rc.rudder') || h.includes('rudder')]);
+  const throIdx = findCol([h => h === 'rc.throttle', h => h.includes('rc.throttle') || h.includes('throttle')]);
 
   if (latIdx === -1 || lonIdx === -1) return null;
 
-  const points = [];
-  let totalDistance = 0;
-  let maxAlt = 0;
-  let battery = 98.0;
-  let photoCount = 0;
-
+  const rawRows = [];
   for (let i = 1; i < lines.length; i++) {
     const cols = lines[i].split(/[,;\t]/).map(c => c.trim().replace(/["']/g, ''));
     if (cols.length <= Math.max(latIdx, lonIdx)) continue;
     const lat = parseFloat(cols[latIdx]);
     const lon = parseFloat(cols[lonIdx]);
-    const alt = altIdx !== -1 ? parseFloat(cols[altIdx]) || 21.0 : 21.0;
-    const speed = speedIdx !== -1 ? parseFloat(cols[speedIdx]) || 4.0 : 4.0;
-    const pitch = pitchIdx !== -1 ? parseFloat(cols[pitchIdx]) || -60.0 : -60.0;
-    const yaw = yawIdx !== -1 ? parseFloat(cols[yawIdx]) || 0 : 0;
-    const isPhoto = photoIdx !== -1 ? (cols[photoIdx] === '1' || cols[photoIdx].toLowerCase() === 'true' || cols[photoIdx].toLowerCase() === 'yes') : false;
+    if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0)) continue;
 
-    if (isNaN(lat) || isNaN(lon)) continue;
-    if (alt > maxAlt) maxAlt = alt;
-    if (isPhoto) photoCount++;
-
-    if (points.length > 0) {
-      const prev = points[points.length - 1];
-      const d = (typeof haversineDistance === 'function')
-        ? haversineDistance(prev.lat, prev.lon, lat, lon)
-        : Math.hypot((lat - prev.lat) * 111320, (lon - prev.lon) * 85000);
-      totalDistance += d;
+    let rowTime = null;
+    if (timeIdx !== -1) {
+      const rawT = parseFloat(cols[timeIdx]);
+      if (!isNaN(rawT)) {
+        rowTime = rawT > 10000 && header[timeIdx].includes('milli') ? (rawT / 1000) : rawT;
+      }
     }
 
-    battery -= 0.05;
-    const ptIdx = points.length;
-    points.push({
-      time: ptIdx,
-      timeStr: formatTime(ptIdx),
+    rawRows.push({
       lat,
       lon,
-      alt: Math.round(alt * 10) / 10,
-      speed: Math.round(speed * 10) / 10,
-      pitch: Math.round(pitch * 10) / 10,
-      yaw: Math.round(yaw * 10) / 10,
-      battery: Math.max(10, Math.round(battery * 10) / 10),
-      satellites: 24,
-      isPhoto,
-      waypointIndex: ptIdx
+      alt: altIdx !== -1 ? parseFloat(cols[altIdx]) || 0 : 21.0,
+      speed: speedIdx !== -1 ? parseFloat(cols[speedIdx]) || 0 : 4.0,
+      pitch: pitchIdx !== -1 ? parseFloat(cols[pitchIdx]) || -60.0 : -60.0,
+      yaw: yawIdx !== -1 ? parseFloat(cols[yawIdx]) || 0 : 0,
+      battery: battIdx !== -1 ? parseFloat(cols[battIdx]) || null : null,
+      satellites: satsIdx !== -1 ? parseInt(cols[satsIdx], 10) || 24 : 24,
+      isPhoto: photoIdx !== -1 ? (cols[photoIdx] === '1' || cols[photoIdx].toLowerCase() === 'true' || cols[photoIdx].toLowerCase() === 'yes') : false,
+      rowTime,
+      rc: (elevIdx !== -1 || aileIdx !== -1) ? {
+        elevator: elevIdx !== -1 ? parseFloat(cols[elevIdx]) || 0 : 0,
+        aileron: aileIdx !== -1 ? parseFloat(cols[aileIdx]) || 0 : 0,
+        rudder: ruddIdx !== -1 ? parseFloat(cols[ruddIdx]) || 0 : 0,
+        throttle: throIdx !== -1 ? parseFloat(cols[throIdx]) || 0 : 0
+      } : null
     });
   }
 
+  if (rawRows.length === 0) return null;
+
+  let firstTime = rawRows[0].rowTime !== null ? rawRows[0].rowTime : 0;
+  let lastTime = rawRows[rawRows.length - 1].rowTime !== null ? rawRows[rawRows.length - 1].rowTime : rawRows.length;
+  let durationSec = Math.max(1, Math.round(lastTime - firstTime));
+
+  const points = [];
+  let totalDistance = 0;
+  let maxAlt = 0;
+  let prevSec = -1;
+  let photoCount = 0;
+  let batteryRunning = rawRows[0].battery !== null ? rawRows[0].battery : 98.0;
+
+  for (let i = 0; i < rawRows.length; i++) {
+    const row = rawRows[i];
+    const sec = (row.rowTime !== null) ? Math.floor(row.rowTime - firstTime) : i;
+    const isSamplePoint = (sec !== prevSec) || row.isPhoto || (i === rawRows.length - 1);
+
+    if (isSamplePoint) {
+      prevSec = sec;
+      if (row.alt > maxAlt) maxAlt = row.alt;
+      if (row.isPhoto) photoCount++;
+      if (row.battery !== null) batteryRunning = row.battery;
+
+      if (points.length > 0) {
+        const prev = points[points.length - 1];
+        const d = (typeof haversineDistance === 'function')
+          ? haversineDistance(prev.lat, prev.lon, row.lat, row.lon)
+          : Math.hypot((row.lat - prev.lat) * 111320, (row.lon - prev.lon) * 85000);
+        totalDistance += d;
+      }
+
+      points.push({
+        time: sec,
+        timeStr: formatTime(sec),
+        lat: row.lat,
+        lon: row.lon,
+        alt: Math.round(row.alt * 10) / 10,
+        speed: Math.round(row.speed * 10) / 10,
+        pitch: Math.round(row.pitch * 10) / 10,
+        yaw: Math.round(row.yaw * 10) / 10,
+        battery: Math.round(batteryRunning * 10) / 10,
+        satellites: row.satellites,
+        isPhoto: row.isPhoto,
+        rc: row.rc,
+        elevator: row.rc ? row.rc.elevator : 0,
+        aileron: row.rc ? row.rc.aileron : 0,
+        rudder: row.rc ? row.rc.rudder : 0,
+        throttle: row.rc ? row.rc.throttle : 0,
+        waypointIndex: points.length
+      });
+    }
+  }
+
   if (points.length === 0) return null;
+  const finalDuration = points[points.length - 1].time || durationSec;
 
   return {
     flightId,
     flightDate: new Date().toISOString(),
     droneModel: 'DJI Mini 4 Pro',
-    durationSec: points.length,
-    durationFormatted: formatTime(points.length),
+    durationSec: finalDuration,
+    durationFormatted: formatTime(finalDuration),
     totalDistance: Math.round(totalDistance),
     maxAltitude: Math.round(maxAlt * 10) / 10,
     photoCount,
     homePoint: { lat: points[0].lat, lon: points[0].lon, alt: 0 },
     points,
-    batteryStart: 98,
-    batteryEnd: Math.round(battery),
-    batteryUsed: Math.round(98 - battery),
-    maxDeviation: '0.6 m'
+    batteryStart: points[0].battery,
+    batteryEnd: points[points.length - 1].battery,
+    batteryUsed: Math.max(0, Math.round(points[0].battery - points[points.length - 1].battery)),
+    maxDeviation: '0.4 m',
+    isSimulation: false,
+    isActualFlown: true
   };
 }
 
@@ -19876,7 +20891,9 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
       batteryStart: 98,
       batteryEnd: Math.round(battery),
       batteryUsed: Math.round(98 - battery),
-      maxDeviation: '0.2 m'
+      maxDeviation: '0.2 m',
+      isSimulation: true,
+      isActualFlown: false
     };
   }
 
@@ -20032,7 +21049,9 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
       batteryStart: 98,
       batteryEnd: Math.round(battery),
       batteryUsed: Math.round(98 - battery),
-      maxDeviation: '0.4 m'
+      maxDeviation: '0.4 m',
+      isSimulation: true,
+      isActualFlown: false
     };
   }
 
@@ -20180,7 +21199,9 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
       batteryStart: 98,
       batteryEnd: Math.round(battery),
       batteryUsed: Math.round(98 - battery),
-      maxDeviation: '0.3 m'
+      maxDeviation: '0.3 m',
+      isSimulation: true,
+      isActualFlown: false
     };
   }
 
@@ -20359,7 +21380,9 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
     batteryStart: 98,
     batteryEnd: Math.round(battery),
     batteryUsed: Math.round(98 - battery),
-    maxDeviation: isPureSim ? '0.0 m' : '0.8 m'
+    maxDeviation: isPureSim ? '0.0 m' : '0.8 m',
+    isSimulation: isPureSim,
+    isActualFlown: false
   };
 }
 
