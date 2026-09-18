@@ -6958,12 +6958,20 @@ function initUIEventListeners() {
     });
   }
   if (telemetryCloseBtn && telemetryPopover) {
-    telemetryCloseBtn.addEventListener('click', () => {
+    telemetryCloseBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
       telemetryPopover.classList.add('hidden');
     });
   }
+  if (telemetryPopover) {
+    // Prevent clicks inside popover from bubbling to document (which closes it when inner elements re-render)
+    telemetryPopover.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+  }
   if (popRefreshWeather) {
-    popRefreshWeather.addEventListener('click', () => {
+    popRefreshWeather.addEventListener('click', (e) => {
+      e.stopPropagation();
       if (typeof centerMarker !== 'undefined' && centerMarker) {
         lastWeatherFetchCenter = null;
         fetchAndProcessWeather(centerMarker.getLatLng().lat, centerMarker.getLatLng().lng, true);
@@ -6998,9 +7006,16 @@ function initUIEventListeners() {
 
   document.addEventListener('click', (e) => {
     if (telemetryPopover && !telemetryPopover.classList.contains('hidden')) {
-      if (!telemetryPopover.contains(e.target) && !telemetryPill?.contains(e.target) && !sidebarSummaryStrip?.contains(e.target)) {
-        telemetryPopover.classList.add('hidden');
+      const path = typeof e.composedPath === 'function' ? e.composedPath() : [];
+      if (
+        path.includes(telemetryPopover) ||
+        telemetryPopover.contains(e.target) ||
+        telemetryPill?.contains(e.target) ||
+        sidebarSummaryStrip?.contains(e.target)
+      ) {
+        return;
       }
+      telemetryPopover.classList.add('hidden');
     }
   });
 
@@ -26345,62 +26360,9 @@ function selectActiveWeatherStation(idx) {
   // Do not auto-pan the map when switching stations; user can use the 📍 Map button if needed.
 }
 
-// Called when the user clicks a station tab button *inside* the Leaflet map popup.
-// Avoids replacing popWeatherDetails.innerHTML (which would destroy the popup DOM and
-// cause Leaflet to snap the map back), and instead patches only the active-button
-// styling and the popup summary text in-place.
+// Compatibility alias for popup context
 function selectActiveWeatherStationFromPopup(idx) {
-  if (!currentWeatherDirections || !Array.isArray(currentWeatherDirections.stations)) return;
-  if (idx < 0 || idx >= currentWeatherDirections.stations.length) return;
-
-  activeWeatherStationIndex = idx;
-  currentWeatherDirections.activeIndex = idx;
-  currentWeatherDirections.closest = currentWeatherDirections.stations[idx];
-
-  // 1. Update the sidebar card (does not touch pop-weather-details)
-  updateWeatherPanelUI(currentWeatherDirections, null, false);
-
-  // 2. Patch popup summary text in-place
-  const closest = currentWeatherDirections.closest;
-  const popWeatherSummary = document.getElementById('pop-weather-summary');
-  if (popWeatherSummary && closest) {
-    let statusText = '';
-    let color = '';
-    if (closest.fltCat === 'VFR')        { statusText = '🟢 Allowed (VFR)';   color = 'var(--success-color)'; }
-    else if (closest.fltCat === 'MVFR')  { statusText = '🟡 Caution (MVFR)';  color = 'var(--warning-color)'; }
-    else if (closest.fltCat === 'IFR')   { statusText = '🔴 No-Fly (IFR)';    color = 'var(--error-color)';   }
-    else if (closest.fltCat === 'LIFR')  { statusText = '🔴 No-Fly (LIFR)';   color = 'var(--error-color)';   }
-    else                                  { statusText = '⚪ Unknown';          color = 'var(--text-muted)';    }
-    const cDir = closest.compassDir || '';
-    const formattedDist = (typeof formatWeatherDistance === 'function')
-      ? formatWeatherDistance(closest.distance, cDir)
-      : (closest.distance != null ? Number(closest.distance).toFixed(1) + ' km' : '');
-    popWeatherSummary.textContent = `${statusText} • ${closest.icaoId || 'NWS Station'} (${formattedDist})`;
-    popWeatherSummary.style.color = color;
-  }
-
-  // 3. Patch active-button styling on the popup station tabs in-place (no innerHTML replacement)
-  const popDetails = document.getElementById('pop-weather-details');
-  if (popDetails) {
-    const tabBtns = popDetails.querySelectorAll('.pop-station-tab-btn');
-    tabBtns.forEach((btn, i) => {
-      const isActive = i === idx;
-      if (isActive) {
-        btn.style.background = 'rgba(56, 189, 248, 0.25)';
-        btn.style.color = '#38bdf8';
-        btn.style.border = '1px solid #38bdf8';
-        btn.style.fontWeight = '700';
-      } else {
-        btn.style.background = 'rgba(255, 255, 255, 0.05)';
-        btn.style.color = 'var(--text-muted)';
-        btn.style.border = '1px solid rgba(255,255,255,0.15)';
-        btn.style.fontWeight = '';
-      }
-    });
-  }
-
-  // 4. Update the map marker line/dot to reflect the new active station
-  updateWeatherStationMarker(closest, currentWeatherDirections.stations, idx);
+  selectActiveWeatherStation(idx);
 }
 
 function toggleWeatherDetails(forceState) {
@@ -26743,7 +26705,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
                   isActive
                     ? 'background: rgba(56, 189, 248, 0.25); color: #38bdf8; border: 1px solid #38bdf8; font-weight: 700;'
                     : 'background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.15);'
-                }" onclick="if (typeof selectActiveWeatherStationFromPopup === 'function') { selectActiveWeatherStationFromPopup(${sIdx}); }">
+                }" onclick="if (typeof event !== 'undefined' && event && typeof event.stopPropagation === 'function') { event.stopPropagation(); } if (typeof selectActiveWeatherStation === 'function') { selectActiveWeatherStation(${sIdx}); }" title="Switch active station to ${escapeHtml(st.icaoId)}">
                 <span>${catDot}</span>
                 <span>${escapeHtml(st.icaoId)}</span>
                 <span style="opacity: 0.75; font-size: 0.62rem;">(${sDist})</span>
@@ -26764,7 +26726,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
             ${closest.icaoId ? `<a href="https://aviationweather.gov/data/metar/?id=${encodeURIComponent(closest.icaoId)}" target="_blank" rel="noopener noreferrer" style="color: #38bdf8; text-decoration: underline;" title="${escapeHtml(closest.raw ? 'RAW METAR: ' + closest.raw : 'Full METAR Report')}">📄 METAR Report</a>` : ''}
           </div>
         </div>
-        <button type="button" class="btn-sm pop-locate-weather-btn" style="padding: 2px 6px; font-size: 0.66rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 4px; cursor: pointer; white-space: nowrap;" onclick="if (typeof focusWeatherStationOnMap === 'function') { focusWeatherStationOnMap(); }" title="Locate weather station on map">📍 Map</button>
+        <button type="button" class="btn-sm pop-locate-weather-btn" style="padding: 2px 6px; font-size: 0.66rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 4px; cursor: pointer; white-space: nowrap;" onclick="if (typeof event !== 'undefined' && event && typeof event.stopPropagation === 'function') { event.stopPropagation(); } if (typeof focusWeatherStationOnMap === 'function') { focusWeatherStationOnMap(); }" title="Locate weather station on map">📍 Map</button>
       </div>
       ${multiStationsHtml}
     `;
