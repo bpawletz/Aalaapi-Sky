@@ -15341,6 +15341,66 @@ describe('v1.95.0 Location-Based Temporary Flight Restrictions (TFR) & NOTAM Ing
     assert.strictEqual(osuClose.isInsideStadiumZone, true, 'Within 3 NM must set isInsideStadiumZone = true');
   });
 
+  test('focusTfrOnMap centers map on target item coordinates avoiding filtered index mismatch', () => {
+    let pannedCoords = null;
+    let pannedZoom = null;
+    const testMap = {
+      getZoom: () => 10,
+      setView: (latlng, zoom) => {
+        pannedCoords = latlng;
+        pannedZoom = zoom;
+      },
+      hasLayer: () => true,
+      addLayer: () => {},
+      removeControl: () => {},
+      addControl: () => {}
+    };
+    const origMap = (typeof map !== 'undefined') ? map : undefined;
+    const origTfrActiveNotams = (typeof tfrActiveNotams !== 'undefined') ? tfrActiveNotams : [];
+    map = testMap;
+    if (typeof window !== 'undefined') window.map = testMap;
+    if (typeof global !== 'undefined') global.map = testMap;
+
+    try {
+      // Simulate tfrActiveNotams having an active East Coast TFR at index 0 and Ohio Stadium at index 1
+      tfrActiveNotams = [
+        {
+          notamId: '6/3803',
+          title: 'Laurel, MD TFR',
+          type: 'SECURITY',
+          centroid: { lat: 39.1000, lon: -76.8500 } // East Coast
+        },
+        {
+          notamId: 'Ohio Stadium',
+          title: 'Ohio Stadium',
+          type: 'STADIUM',
+          isStadium: true,
+          centroid: { lat: 40.0017, lon: -83.0197 } // OSU Columbus, OH
+        }
+      ];
+
+      const osuItem = tfrActiveNotams[1];
+
+      // Call focusTfrOnMap passing the item directly (as the 📍 button now does)
+      focusTfrOnMap(osuItem);
+
+      assert.ok(pannedCoords, 'Must call map.setView');
+      assert.strictEqual(pannedCoords[0], 40.0017, 'Must pan to Ohio Stadium latitude (40.0017), not East Coast (39.1)');
+      assert.strictEqual(pannedCoords[1], -83.0197, 'Must pan to Ohio Stadium longitude (-83.0197), not East Coast (-76.85)');
+      assert.strictEqual(pannedZoom, 13, 'Must use zoom level >= 13 for stadium focus');
+
+      // Also test lookup by notamId string
+      focusTfrOnMap('Ohio Stadium');
+      assert.strictEqual(pannedCoords[0], 40.0017);
+      assert.strictEqual(pannedCoords[1], -83.0197);
+    } finally {
+      map = origMap;
+      if (typeof window !== 'undefined') window.map = origMap;
+      if (typeof global !== 'undefined') global.map = origMap;
+      tfrActiveNotams = origTfrActiveNotams;
+    }
+  });
+
   test('calculateStats detects intersecting active TFRs and surfaces warning', () => {
     const testGeoJsonFeature = {
       type: 'Feature',
@@ -17544,21 +17604,21 @@ describe('v1.104.0 Ground Control Points (GCPs) & Fiducial Markers Survey Suite 
     importedPhotos = null;
   });
 
-  test('Version consistency is maintained across package.json, CHANGELOG.md, and templates for v1.104.2', () => {
+  test('Version consistency is maintained across package.json, CHANGELOG.md, and templates for v1.104.3', () => {
     const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
     const cl = fs.readFileSync('CHANGELOG.md', 'utf8');
     const indexTemplate = fs.readFileSync('index_template.html', 'utf8');
     const indexHtml = fs.readFileSync('index.html', 'utf8');
 
-    assert.strictEqual(pkg, '1.104.2');
+    assert.strictEqual(pkg, '1.104.3');
+    assert.ok(cl.includes('## [1.104.3]'), 'CHANGELOG.md missing 1.104.3 header');
     assert.ok(cl.includes('## [1.104.2]'), 'CHANGELOG.md missing 1.104.2 header');
-    assert.ok(cl.includes('## [1.104.1]'), 'CHANGELOG.md missing 1.104.1 header');
-    assert.ok(indexTemplate.includes('v1.104.2</span>'), 'index_template.html missing v1.104.2 header badge');
-    assert.ok(indexTemplate.includes('Version 1.104.2</span>'), 'index_template.html missing Version 1.104.2 in About modal');
-    assert.ok(indexTemplate.includes('Changelog (v1.104.2):'), 'index_template.html missing Changelog (v1.104.2)');
-    assert.ok(indexHtml.includes('v1.104.2</span>'), 'index.html missing v1.104.2 header badge');
-    assert.ok(indexHtml.includes('Version 1.104.2</span>'), 'index.html missing Version 1.104.2 in About modal');
-    assert.ok(indexHtml.includes('Changelog (v1.104.2):'), 'index.html missing Changelog (v1.104.2)');
+    assert.ok(indexTemplate.includes('v1.104.3</span>'), 'index_template.html missing v1.104.3 header badge');
+    assert.ok(indexTemplate.includes('Version 1.104.3</span>'), 'index_template.html missing Version 1.104.3 in About modal');
+    assert.ok(indexTemplate.includes('Changelog (v1.104.3):'), 'index_template.html missing Changelog (v1.104.3)');
+    assert.ok(indexHtml.includes('v1.104.3</span>'), 'index.html missing v1.104.3 header badge');
+    assert.ok(indexHtml.includes('Version 1.104.3</span>'), 'index.html missing Version 1.104.3 in About modal');
+    assert.ok(indexHtml.includes('Changelog (v1.104.3):'), 'index.html missing Changelog (v1.104.3)');
   });
 
   test('DOM Architecture: Section 1 has fiducial-markers pattern card with SURVEY badge, and Section 2 has layer-card-fiducial with all controls', () => {

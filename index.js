@@ -26891,7 +26891,7 @@ function getGeoJsonCentroid(geometry) {
   } else if (geometry.type === 'MultiPolygon' && geometry.coordinates[0] && geometry.coordinates[0][0]) {
     pts = geometry.coordinates[0][0];
   } else if (geometry.type === 'Point') {
-    return { lon: geometry.coordinates[0], lat: geometry.coordinates[1] };
+    return { lon: geometry.coordinates[0], lng: geometry.coordinates[0], lat: geometry.coordinates[1] };
   }
   if (!pts || pts.length === 0) return null;
   let sumLon = 0, sumLat = 0, count = 0;
@@ -27433,7 +27433,7 @@ function updateTfrPanelUI(tfrList, statusText, isLoading) {
         locateBtn.title = isStandbyStadium ? 'Focus Stadium on Map' : 'Focus TFR on Map';
         locateBtn.onclick = (e) => {
           e.stopPropagation();
-          focusTfrOnMap(idx);
+          focusTfrOnMap(item);
         };
         actionsDiv.appendChild(locateBtn);
       }
@@ -27443,7 +27443,7 @@ function updateTfrPanelUI(tfrList, statusText, isLoading) {
       briefBtn.className = 'btn-sm';
       briefBtn.style.cssText = isStandbyStadium
         ? 'padding: 2px 6px; font-size: 0.65rem; background: rgba(139,92,246,0.18); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.35); border-radius: 4px; cursor: pointer; font-weight: 600;'
-        : 'padding: 2px 6px; font-size: 0.65rem; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); border-radius: 4px; cursor: pointer; font-weight: 600;'
+        : 'padding: 2px 6px; font-size: 0.65rem; background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); border-radius: 4px; cursor: pointer; font-weight: 600;';
       briefBtn.textContent = 'Briefing';
       briefBtn.onclick = (e) => {
         e.stopPropagation();
@@ -27457,20 +27457,46 @@ function updateTfrPanelUI(tfrList, statusText, isLoading) {
   }
 }
 
-function focusTfrOnMap(tfrIndex) {
-  if (!tfrActiveNotams || !tfrActiveNotams[tfrIndex]) return;
-  const item = tfrActiveNotams[tfrIndex];
-  if (!map) return;
+function focusTfrOnMap(target) {
+  let item = null;
+  if (typeof target === 'object' && target !== null) {
+    item = target;
+  } else if (typeof target === 'string') {
+    item = (tfrActiveNotams || []).find(t => t.notamId === target || t.title === target || String(t.stadiumId) === target);
+  } else if (typeof target === 'number') {
+    item = (tfrActiveNotams || [])[target];
+  }
+  if (!item || !map) return;
 
   // Make sure TFR overlay is enabled and visible
   if (tfrAirspaceLayer && !map.hasLayer(tfrAirspaceLayer)) {
     map.addLayer(tfrAirspaceLayer);
-    airspaceActiveSet.add('Temporary Flight Restrictions (TFR / NOTAM) (US Only)');
-    updateAirspaceLegend();
+    if (typeof airspaceActiveSet !== 'undefined' && airspaceActiveSet) {
+      airspaceActiveSet.add('Temporary Flight Restrictions (TFR / NOTAM) (US Only)');
+    }
+    if (typeof updateAirspaceLegend === 'function') {
+      updateAirspaceLegend();
+    }
   }
 
-  if (item.centroid) {
-    map.setView([item.centroid.lat, item.centroid.lon], Math.max(map.getZoom(), 11));
+  const lat = item.centroid ? item.centroid.lat : null;
+  const lon = item.centroid ? (item.centroid.lon != null ? item.centroid.lon : item.centroid.lng) : null;
+
+  if (lat != null && lon != null && !isNaN(lat) && !isNaN(lon)) {
+    const targetZoom = item.isStadium ? Math.max(map.getZoom(), 13) : Math.max(map.getZoom(), 11);
+    map.setView([lat, lon], targetZoom);
+
+    // Attempt to locate and open matching popup
+    if (tfrAirspaceLayer) {
+      tfrAirspaceLayer.eachLayer(layer => {
+        const p = layer.feature && layer.feature.properties ? layer.feature.properties : {};
+        if (p.notam_id === item.notamId || p.title === item.title || (p.stadiumId != null && p.stadiumId === item.stadiumId)) {
+          if (typeof layer.openPopup === 'function') {
+            layer.openPopup(L.latLng(lat, lon));
+          }
+        }
+      });
+    }
   }
 }
 
