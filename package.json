@@ -4,10 +4,12 @@
     "playwright": "^1.61.1"
   },
   "name": "aalaapi-sky",
-  "version": "1.109.0",
+  "version": "1.111.2",
   "description": "Aalaapi-Sky Drone Flight Planner & Editor for DJI Fly",
   "main": "index.js",
   "scripts": {
+    "bridge": "node tools/companion/server.js",
+    "bridge:stop": "node -e \"require('http').request({hostname:'127.0.0.1',port:process.env.AALAAPI_PORT||8765,path:'/api/shutdown',method:'POST'},res=>{console.log('Aalaapi Sky Bridge stopped.');process.exit(0);}).on('error',()=>console.log('Aalaapi Sky Bridge is not running.')).end()\"",
     "companion": "node tools/companion/server.js",
     "companion:stop": "node -e \"require('http').request({hostname:'127.0.0.1',port:process.env.AALAAPI_PORT||8765,path:'/api/shutdown',method:'POST'},res=>{console.log('Aalaapi Sky Companion stopped.');process.exit(0);}).on('error',()=>console.log('Aalaapi Sky Companion is not running.')).end()\"",
     "test": "node --test index.test.js index.e2e.test.js",

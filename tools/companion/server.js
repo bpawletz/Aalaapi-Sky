@@ -83,13 +83,24 @@ function decryptFlightRecordWithDjiCli(rawLogPath, apiKey) {
     if (!fs.existsSync(DJI_LOG_EXE) || !apiKey || !fs.existsSync(rawLogPath)) {
       return resolve({ success: false, error: 'Parser or API key unavailable' });
     }
+    const cachedJsonPath = rawLogPath.replace(/\.txt$/, '_decrypted.json');
     const cachedCsvPath = rawLogPath.replace(/\.txt$/, '_decrypted.csv');
     const cachedGeoPath = rawLogPath.replace(/\.txt$/, '_decrypted.geojson');
 
-    execFile(DJI_LOG_EXE, [rawLogPath, '--api-key', apiKey, '--csv', cachedCsvPath, '--geojson', cachedGeoPath], { timeout: 45000 }, (err, stdout, stderr) => {
+    const args = [
+      rawLogPath,
+      '--api-key', apiKey,
+      '--output', cachedJsonPath,
+      '--csv', cachedCsvPath,
+      '--geojson', cachedGeoPath
+    ];
+
+    execFile(DJI_LOG_EXE, args, { timeout: 60000, maxBuffer: 100 * 1024 * 1024 }, (err, stdout, stderr) => {
       if (err) {
         logWarn('[DJI DECRYPT FAILED]', `CLI error: ${err.message}${stderr ? ` - ${stderr.trim()}` : ''}`);
-        return resolve({ success: false, error: stderr ? stderr.trim() : err.message });
+        if (!fs.existsSync(cachedCsvPath)) {
+          return resolve({ success: false, error: stderr ? stderr.trim() : err.message });
+        }
       }
       if (fs.existsSync(cachedCsvPath)) {
         try {
@@ -99,6 +110,7 @@ function decryptFlightRecordWithDjiCli(rawLogPath, apiKey) {
           if (telemetry && Array.isArray(telemetry.points) && telemetry.points.length > 0) {
             telemetry.isDecrypted = true;
             telemetry.decryptedVia = 'DJI Cloud API';
+            telemetry.isActualFlown = true;
             return resolve({ success: true, telemetry, csvPath: cachedCsvPath });
           }
         } catch (parseErr) {
@@ -2050,10 +2062,11 @@ const server = http.createServer(async (req, res) => {
               path.join(__dirname, '../../scratch/rc2_flight_logs', flightId),
               path.join(ARCHIVE_DIR, flightId)
             ];
+            const forceDecrypt = payload.forceDecrypt === true || url.searchParams.get('force') === 'true';
             candidateLogPath = candidatePaths.find(p => fs.existsSync(p));
             if (candidateLogPath) {
               const cachedCsv = candidateLogPath.replace(/\.txt$/, '_decrypted.csv');
-              if (fs.existsSync(cachedCsv)) {
+              if (!forceDecrypt && fs.existsSync(cachedCsv)) {
                 try {
                   const csvData = fs.readFileSync(cachedCsv, 'utf8');
                   const parsed = parseCsvTelemetry(csvData, path.basename(candidateLogPath));

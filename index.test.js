@@ -3215,6 +3215,7 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     let directActions = { style: { display: '' } };
     let container = { classList: { add: (c) => container.classes.add(c), remove: (c) => container.classes.delete(c) }, classes: new Set() };
     let hint = { style: { display: '' }, querySelector: () => ({ innerHTML: '' }) };
+    let diagPullBtn = { style: { display: '' } };
 
     const origGetElementById = global.document.getElementById;
     const origFetch = global.fetch;
@@ -3235,19 +3236,21 @@ describe('Companion Bridge & Direct Sync Tests', () => {
       if (id === 'rc2-direct-actions') return directActions;
       if (id === 'companion-sync-container') return container;
       if (id === 'companion-offline-hint') return hint;
+      if (id === 'diag-pull-rc2-btn') return diagPullBtn;
       return origGetElementById ? origGetElementById(id) : null;
     };
 
     try {
       await vm.runInThisContext(`pollCompanionStatus()`);
-      assert.strictEqual(sText.textContent, 'Bridge Service: Offline');
+      assert.strictEqual(sText.textContent, 'Aalaapi Bridge: Offline');
       assert.strictEqual(sDot.style.background, '#64748b');
-      assert.strictEqual(sLabel.textContent, 'start-companion.bat');
+      assert.strictEqual(sLabel.textContent, 'start-bridge.bat');
       assert.strictEqual(uText.textContent, 'RC 2 USB Link: Waiting');
       assert.strictEqual(uDot.style.background, '#64748b');
-      assert.strictEqual(text.textContent, 'Companion Offline');
+      assert.strictEqual(text.textContent, 'Aalaapi Bridge Offline');
       assert.strictEqual(dot.style.background, '#64748b');
       assert.strictEqual(btn.style.display, 'none');
+      assert.strictEqual(diagPullBtn.style.display, 'none');
       assert.ok(container.classes.has('is-offline'));
       assert.strictEqual(hint.style.display, 'flex');
     } finally {
@@ -3354,6 +3357,7 @@ describe('Companion Bridge & Direct Sync Tests', () => {
     let directActions = { style: { display: '' } };
     let container = { classList: { add: (c) => container.classes.add(c), remove: (c) => container.classes.delete(c) }, classes: new Set() };
     let hint = { style: { display: '' }, querySelector: () => ({ innerHTML: '' }) };
+    let diagPullBtn = { style: { display: '' } };
 
     const origGetElementById = global.document.getElementById;
     const origFetch = global.fetch;
@@ -3373,6 +3377,7 @@ describe('Companion Bridge & Direct Sync Tests', () => {
       if (id === 'rc2-direct-actions') return directActions;
       if (id === 'companion-sync-container') return container;
       if (id === 'companion-offline-hint') return hint;
+      if (id === 'diag-pull-rc2-btn') return diagPullBtn;
       return origGetElementById ? origGetElementById(id) : null;
     };
 
@@ -3383,11 +3388,12 @@ describe('Companion Bridge & Direct Sync Tests', () => {
         json: () => Promise.resolve({ connected: false })
       });
       await vm.runInThisContext(`pollCompanionStatus()`);
-      assert.strictEqual(sText.textContent, 'Bridge Service: Online');
+      assert.strictEqual(sText.textContent, 'Aalaapi Bridge: Online');
       assert.strictEqual(sDot.style.background, '#22c55e');
       assert.strictEqual(uText.textContent, 'RC 2 USB Link: Unplugged');
       assert.strictEqual(uDot.style.background, '#eab308');
       assert.strictEqual(uLabel.textContent, 'Plug in USB-C');
+      assert.strictEqual(diagPullBtn.style.display, 'none');
       assert.ok(container.classes.has('is-offline'));
 
       // 2. Online, USB connected
@@ -3396,11 +3402,12 @@ describe('Companion Bridge & Direct Sync Tests', () => {
         json: () => Promise.resolve({ connected: true, deviceName: 'DJI RC 2 (MTP)' })
       });
       await vm.runInThisContext(`pollCompanionStatus()`);
-      assert.strictEqual(sText.textContent, 'Bridge Service: Online');
+      assert.strictEqual(sText.textContent, 'Aalaapi Bridge: Online');
       assert.strictEqual(sDot.style.background, '#22c55e');
       assert.strictEqual(uText.textContent, 'RC 2 USB Link: Connected');
       assert.strictEqual(uDot.style.background, '#22c55e');
       assert.strictEqual(uLabel.textContent, 'DJI RC 2 (MTP)');
+      assert.strictEqual(diagPullBtn.style.display, 'inline-flex');
       assert.ok(!container.classes.has('is-offline'));
       assert.strictEqual(btn.style.display, 'inline-flex');
     } finally {
@@ -18071,6 +18078,19 @@ describe('DJI Developer Cloud API Key Decryption & Telemetry Pipeline', () => {
     assert.strictEqual(maskApiKey('1234567890abcdef1234567890abcdef'), '1234...cdef');
     assert.strictEqual(maskApiKey('shortkey'), '****');
   });
+
+  test('decryptFlightRecordWithDjiCli specifies --output to avoid stdout maxBuffer overflow', () => {
+    const serverCode = fs.readFileSync(path.join(__dirname, 'tools/companion/server.js'), 'utf8');
+    assert.ok(serverCode.includes("'--output', cachedJsonPath"), 'Must route JSON output to file via --output');
+    assert.ok(serverCode.includes("maxBuffer: 100 * 1024 * 1024"), 'Must allocate 100MB buffer for execFile');
+  });
+
+  test('FlightDiagnostics preserves isDecrypted without simulation overwrite and displays error badge on decrypt failure', () => {
+    const clientCode = fs.readFileSync(path.join(__dirname, 'index.js'), 'utf8');
+    assert.ok(clientCode.includes("!this.isDecrypted && telem && telem.points"), 'Must guard against overwriting decrypted points');
+    assert.ok(clientCode.includes("this.djiDecryptError = data.djiDecryptError || null"), 'Must store djiDecryptError');
+    assert.ok(clientCode.includes("Decrypt Failed • 🔑 Retry"), 'Must show retry badge on decryption error');
+  });
 });
 
 describe('Section 2 Layer Properties Visibility Regression Tests (v1.105.1)', () => {
@@ -18683,19 +18703,220 @@ describe('Fiducial Altitude Sizing Advisor & Optical Detection Range Suite Tests
     });
   });
 
-  test('version is consistent at 1.109.0 across required locations', () => {
+  test('version is consistent at 1.111.1 across required locations', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.109.0');
+    assert.ok(semverGte(pkg.version, '1.111.1'), 'package.json version should be >= 1.111.1');
 
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
-    assert.ok(changelog.includes('## [1.109.0] - 2026-09-18'), 'CHANGELOG.md must contain 1.109.0 heading');
+    assert.ok(changelog.includes('## [1.111.1] - 2026-09-18'), 'CHANGELOG.md must contain 1.111.1 heading');
 
     ['index_template.html', 'index.html'].forEach(filename => {
       const content = fs.readFileSync(path.join(__dirname, filename), 'utf8');
-      assert.ok(content.includes('v1.109.0'), `Must include v1.109.0 in ${filename}`);
-      assert.ok(content.includes('Version 1.109.0'), `Must include Version 1.109.0 in ${filename}`);
-      assert.ok(content.includes('Changelog (v1.109.0):'), `Must include Changelog (v1.109.0): in ${filename}`);
+      assert.ok(content.includes('class="version-tag"'), `Must include class="version-tag" in ${filename}`);
+      assert.ok(content.includes('Changelog (v1.111.1):'), `Must include Changelog (v1.111.1): in ${filename}`);
+      assert.ok(content.includes('start-bridge.bat'), `Must include start-bridge.bat in ${filename}`);
+      assert.ok(content.includes('Aalaapi Bridge: Offline'), `Must include Aalaapi Bridge: Offline in ${filename}`);
+      assert.ok(content.includes('id="diag-pull-rc2-btn" type="button" class="btn-secondary diag-rc2-btn" style="display: none;"'), `Must hide diag-pull-rc2-btn by default in ${filename}`);
+      assert.ok(content.includes('Start Aalaapi Bridge:'), `Must include Start Aalaapi Bridge: in ${filename}`);
+      assert.ok(content.includes('npm run bridge'), `Must include npm run bridge in ${filename}`);
+      assert.ok(content.includes('Running Aalaapi Bridge on Android'), `Must include Running Aalaapi Bridge on Android in ${filename}`);
     });
+  });
+
+  test('extractSpatialMissionLayers extracts groundControl, inclusionZones, exclusionZones, and parcels', () => {
+    const mockLayers = [
+      {
+        id: 'layer-fid',
+        name: 'GCP Survey Base',
+        pattern: 'fiducial-markers',
+        isFiducialLayer: true,
+        markerColor: '#f59e0b',
+        fiducialMarkers: [
+          {
+            id: 'gcp-1',
+            code: 'GCP-01',
+            role: 'gcp',
+            type: 'aruco_4x4',
+            markerId: 0,
+            lat: 38.8977,
+            lon: -77.0365,
+            alt: 0.0,
+            physicalSizeMeters: 0.50
+          }
+        ]
+      },
+      {
+        id: 'layer-target',
+        name: 'Roof Target Polygon',
+        pattern: 'facade',
+        targetMode: 'polygon',
+        targetHeight: 12,
+        targetRadius: 30,
+        targetPoly: [
+          { lat: 38.8980, lon: -77.0370, x: 0, y: 0 },
+          { lat: 38.8982, lon: -77.0368, x: 20, y: 0 },
+          { lat: 38.8980, lon: -77.0365, x: 20, y: 20 }
+        ]
+      },
+      {
+        id: 'layer-excl',
+        name: 'Crane Safety Buffer',
+        pattern: 'exclusion-freeform',
+        isExclusionZone: true,
+        enabled: true,
+        minAltitude: 0,
+        maxAltitude: 80,
+        clearanceBuffer: 10,
+        detourMode: 'perimeter',
+        polygonVertices: [
+          { lat: 38.8970, lon: -77.0360 },
+          { lat: 38.8972, lon: -77.0358 },
+          { lat: 38.8970, lon: -77.0356 }
+        ]
+      },
+      {
+        id: 'layer-parcel',
+        name: 'Property Boundary',
+        pattern: 'boundary-polygon',
+        isDrawingLayer: true,
+        strokeColor: '#06b6d4',
+        lineStyle: 'dashed',
+        fillOpacity: 20,
+        polygonVertices: [
+          { lat: 38.8965, lon: -77.0380 },
+          { lat: 38.8990, lon: -77.0380 },
+          { lat: 38.8990, lon: -77.0350 },
+          { lat: 38.8965, lon: -77.0350 }
+        ]
+      }
+    ];
+
+    const fn = vm.runInThisContext('extractSpatialMissionLayers');
+    assert.strictEqual(typeof fn, 'function');
+
+    const result = fn(mockLayers);
+    assert.ok(result);
+    assert.strictEqual(result.groundControl.length, 1);
+    assert.strictEqual(result.groundControl[0].code, 'GCP-01');
+    assert.strictEqual(result.groundControl[0].markerId, 0);
+
+    assert.strictEqual(result.inclusionZones.length, 1);
+    assert.strictEqual(result.inclusionZones[0].layerName, 'Roof Target Polygon');
+    assert.strictEqual(result.inclusionZones[0].polygon.length, 3);
+    assert.strictEqual(result.inclusionZones[0].targetHeight, 12);
+
+    assert.strictEqual(result.exclusionZones.length, 1);
+    assert.strictEqual(result.exclusionZones[0].layerName, 'Crane Safety Buffer');
+    assert.strictEqual(result.exclusionZones[0].maxAltitude, 80);
+    assert.strictEqual(result.exclusionZones[0].clearanceBuffer, 10);
+
+    assert.strictEqual(result.parcels.length, 1);
+    assert.strictEqual(result.parcels[0].layerName, 'Property Boundary');
+    assert.strictEqual(result.parcels[0].strokeColor, '#06b6d4');
+    assert.strictEqual(result.parcels[0].polygon.length, 4);
+  });
+
+  test('buildMissionPlanJSON and buildFlightDiagnosticsJSON serialize spatial layers and counts', () => {
+    const buildPlan = vm.runInThisContext('buildMissionPlanJSON');
+    const buildDiag = vm.runInThisContext('buildFlightDiagnosticsJSON');
+    assert.strictEqual(typeof buildPlan, 'function');
+    assert.strictEqual(typeof buildDiag, 'function');
+
+    const testWps = [
+      { lat: 38.8975, lon: -77.0365, alt: 50, pitch: -60, heading: 0 },
+      { lat: 38.8985, lon: -77.0365, alt: 50, pitch: -60, heading: 0 }
+    ];
+
+    const plan = buildPlan(testWps);
+    assert.ok(plan);
+    assert.strictEqual(plan.schemaVersion, '1.1.0');
+    assert.ok(Array.isArray(plan.groundControl), 'plan must contain groundControl array');
+    assert.ok(Array.isArray(plan.inclusionZones), 'plan must contain inclusionZones array');
+    assert.ok(Array.isArray(plan.exclusionZones), 'plan must contain exclusionZones array');
+    assert.ok(Array.isArray(plan.parcels), 'plan must contain parcels array');
+    assert.strictEqual(typeof plan.statistics.groundControlCount, 'number');
+    assert.strictEqual(typeof plan.statistics.inclusionZoneCount, 'number');
+    assert.strictEqual(typeof plan.statistics.exclusionZoneCount, 'number');
+    assert.strictEqual(typeof plan.statistics.parcelCount, 'number');
+
+    const diag = buildDiag(testWps, { altitude: 50, speed: 4, uuid: 'spatial_test_mission_001' });
+    assert.ok(diag);
+    assert.strictEqual(diag.schemaVersion, '1.56.0');
+    assert.ok(Array.isArray(diag.groundControl), 'diag must contain groundControl array');
+    assert.ok(Array.isArray(diag.inclusionZones), 'diag must contain inclusionZones array');
+    assert.ok(Array.isArray(diag.exclusionZones), 'diag must contain exclusionZones array');
+    assert.ok(Array.isArray(diag.parcels), 'diag must contain parcels array');
+    assert.strictEqual(typeof diag.summary.groundControlCount, 'number');
+    assert.strictEqual(typeof diag.summary.inclusionZoneCount, 'number');
+    assert.strictEqual(typeof diag.summary.exclusionZoneCount, 'number');
+    assert.strictEqual(typeof diag.summary.parcelCount, 'number');
+  });
+
+  test('DiagnosticsDatabase stores and retrieves spatial layers in SQLite', () => {
+    const { DiagnosticsDatabase } = require('./tools/companion/diagnostics_db.js');
+    const db = new DiagnosticsDatabase(':memory:');
+    assert.ok(db);
+
+    const testMission = {
+      uuid: 'mission_spatial_sqlite_001',
+      filename: 'mission_spatial_sqlite_001.kmz',
+      createdAt: '2026-09-18T19:00:00Z',
+      flightPattern: 'single',
+      altitude: 50,
+      speed: 4,
+      gimbalPitch: -60,
+      waypointCount: 4,
+      photoCount: 4,
+      totalDistance: 250,
+      estimatedDuration: 65,
+      groundControl: [
+        { code: 'GCP-01', type: 'aruco_4x4', lat: 38.897, lon: -77.036, physicalSizeMeters: 0.5 }
+      ],
+      inclusionZones: [
+        { layerName: 'Roof Area', targetMode: 'polygon', polygon: [{ lat: 38.897, lon: -77.036 }] }
+      ],
+      exclusionZones: [
+        { layerName: 'Tree Buffer', minAltitude: 0, maxAltitude: 30, clearanceBuffer: 5, polygon: [] }
+      ],
+      parcels: [
+        { layerName: 'Site North', strokeColor: '#06b6d4', polygon: [{ lat: 38.898, lon: -77.037 }] }
+      ],
+      userAgent: { raw: 'TestAgent' },
+      diagnostics: { points: [{ lat: 38.897, lon: -77.036, alt: 50 }] },
+      isValid: true,
+      validationRulesPassed: 10
+    };
+
+    const recResult = db.recordMission(testMission);
+    assert.strictEqual(recResult.success, true, 'Record mission must succeed');
+
+    const retrieved = db.getMission(recResult.archiveId);
+    assert.ok(retrieved, 'Retrieved mission must exist');
+    assert.strictEqual(retrieved.groundControl.length, 1);
+    assert.strictEqual(retrieved.groundControl[0].code, 'GCP-01');
+    assert.strictEqual(retrieved.inclusionZones.length, 1);
+    assert.strictEqual(retrieved.inclusionZones[0].layerName, 'Roof Area');
+    assert.strictEqual(retrieved.exclusionZones.length, 1);
+    assert.strictEqual(retrieved.exclusionZones[0].layerName, 'Tree Buffer');
+    assert.strictEqual(retrieved.parcels.length, 1);
+    assert.strictEqual(retrieved.parcels[0].layerName, 'Site North');
+
+    db.close();
+  });
+});
+
+describe('DJI Flight Log Cloud Decryption & Buffer Overflow Fix Tests (v1.111.2)', () => {
+  test('Version consistency is maintained across package.json, CHANGELOG.md, and templates for v1.111.2', () => {
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+    const cl = fs.readFileSync('CHANGELOG.md', 'utf8');
+    const indexTemplate = fs.readFileSync('index_template.html', 'utf8');
+
+    assert.ok(semverGte(pkg, '1.111.2'), 'package.json version should be >= 1.111.2');
+    assert.ok(cl.includes('## [1.111.2]'), 'CHANGELOG.md missing 1.111.2 header');
+    assert.ok(indexTemplate.includes('class="header-version-badge"'), 'index_template.html missing header badge');
+    assert.ok(indexTemplate.includes('v1.111.2'), 'index_template.html missing v1.111.2 badge');
+    assert.ok(indexTemplate.includes('Version 1.111.2'), 'index_template.html missing Version 1.111.2 tag');
+    assert.ok(indexTemplate.includes('Changelog (v1.111.2):'), 'index_template.html missing Changelog (v1.111.2)');
   });
 });
 

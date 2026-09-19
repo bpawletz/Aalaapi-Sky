@@ -1,5 +1,62 @@
 # Changelog
 
+## [1.111.2] - 2026-09-18
+
+### Fixed & Improved — DJI Native Flight Log Cloud Decryption Pipeline
+- **Fixed `stdout maxBuffer length exceeded` in `decryptFlightRecordWithDjiCli`:**
+  - Resolved an issue where flight log decryption silently failed when a valid DJI Developer API Key was configured.
+  - The Rust CLI tool `dji-log.exe` defaults to streaming full decrypted JSON records to `stdout` when `--output` is omitted, generating multi-megabyte payloads for real flights (2.7 MB for small flights, 25+ MB for multi-kilometer surveys) and immediately exceeding Node.js's default 1 MB `child_process.execFile` buffer limit.
+  - Updated `decryptFlightRecordWithDjiCli` in `tools/companion/server.js` to explicitly route JSON records directly to disk via `--output <cachedJsonPath>` and expanded `maxBuffer` to 100 MB (`100 * 1024 * 1024`), guaranteeing robust execution without buffer overflows.
+- **Flight Diagnostics UI Decryption Status & Error Reporting:**
+  - Enhanced Flight Diagnostics telemetry loader (`loadSelectedFlight`) to preserve authenticated `isDecrypted` status and prevent genuine aircraft telemetry from being overwritten by synthetic waypoint simulations.
+  - Added visual error status badging in `#diag-flight-meta`: if decryption encounters a problem (e.g. invalid key or network issue), the UI now explicitly indicates `⚠️ Decrypt Failed • 🔑 Retry` with actionable tooltip feedback instead of silently falling back without feedback.
+  - Improved `saveDjiApiKey` to automatically load and decrypt the selected or latest flight record immediately after saving a key.
+  - Added `forceDecrypt` support to `/api/flight-telemetry` to allow on-demand telemetry re-decryption.
+
+## [1.111.1] - 2026-09-18
+
+### Fixed & Improved — DJI RC 2 Sync & Transfer Guide Aalaapi Bridge Alignment
+- **Guide Modal (`#guide-modal`) Bridge Rebranding:**
+  - Updated the "DJI RC 2 Sync & Transfer Guide" modal navigation tab 1 from "Bridge Service" to **Aalaapi Bridge**.
+  - Replaced legacy "Companion" phrasing in the Bridge Service Setup pane (`#guide-pane-service`) with **Aalaapi Bridge** descriptions, pointing users to `start-bridge.bat` and `npm run bridge`.
+  - Updated Android & Tablet guide (`#guide-pane-android`) Method 2 to reference **Running Aalaapi Bridge on Android (Termux + ADB)** with `npm run bridge` 1-click copy button.
+  - Added `"bridge:stop"` npm script to `package.json` matching `"companion:stop"` for clean terminal process shutdown.
+  - Updated media ingest modal error feedback to advise starting `start-bridge.bat`.
+  - Maintained all existing DOM IDs (`#guide-pane-service`, `data-tab="service"`, etc.) and backward-compatible script aliases (`npm run companion`, `start-companion.bat`) to ensure zero test or workflow breakage.
+
+## [1.111.0] - 2026-09-18
+
+### Added — Aalaapi Bridge Rebranding, Progressive Disclosure Hardware Controls & Capability Architecture
+- **Aalaapi Bridge Rebranding & Launcher (`start-bridge.bat`):**
+  - Officially transitioned branding from "Companion" to **Aalaapi Bridge**, reflecting its true role as a local hardware link between browser-based flight planning and the physical aircraft/controller ecosystem.
+  - Added `start-bridge.bat` launcher script alongside `start-companion.bat` for seamless execution and backward compatibility.
+  - Added `"bridge": "node tools/companion/server.js"` npm script to `package.json`.
+  - Updated all UI status indicators, setup tooltips, remote host configuration dialogs, and setup guides to reference Aalaapi Bridge.
+- **Progressive Disclosure Architecture (Zero UI Clutter When Standalone):**
+  - Cleaned up the main UI by progressively disclosing hardware-sync buttons only when the bridge is actively communicating with physical devices:
+    - **Diagnostics Replay Header (`#diag-pull-rc2-btn`):** Defaults to `display: none;` on page load, rendering only when Aalaapi Bridge confirms an active USB MTP connection to the DJI RC 2.
+    - **Sidebar Direct Actions (`#rc2-direct-actions`):** *Send to RC 2* (`#direct-rc2-sync-btn`) and *Pull KMZ* (`#direct-rc2-pull-btn`) remain cleanly hidden when offline or unplugged.
+  - Prevents confusing offline errors for pilots using Aalaapi Sky as a standalone web planner without local hardware connected.
+- **Standalone Web vs. Aalaapi Bridge Capability Architecture:**
+  - Clarified and documented the division of capabilities:
+    - **🌐 100% Standalone Web (Zero Install, Any Browser):** Boundary and parcel drawing, geodetic perimeter & area measurements, 3D obstacle avoidance detour routing, photogrammetry grid generation (Nadir, 3D Double Grid, Oblique Orbits), Ground Control Points & fiducial markers placement, vector printable target sheet generation, photo inspection with dynamic parcel/GCP forward pinhole projection, and multi-vendor flight plan export/import (DJI WPML KMZ, KML, Litchi CSV, Autel KML).
+    - **🌉 Aalaapi Bridge (Local Hardware Companion):** 1-click direct USB MTP sync to DJI RC 2 (`Send to RC 2`, `Pull KMZ`), native encrypted `FlightRecord_*.txt` telemetry log extraction & cloud decryption via DJI Cloud API, ASTM F3411 Remote ID Bluetooth/Wi-Fi drone radar scanning, and persistent SQLite mission database storage (`missions.db`).
+- **Intro Guide Hub & Quickstart Comparison Matrix:**
+  - Added a dedicated "Standalone Web vs. Aalaapi Bridge" Capability Comparison Matrix card to **✨ What's New & Feature Highlights** (`#intro-pane-features`).
+  - Added a companion capability tip card to **💡 Pro Pilot Tips & Best Practices** (`#intro-pane-tips`).
+
+## [1.110.0] - 2026-09-18
+
+### Added — Full Spatial Mission Environment Serialization in Flight Diagnostics (`_diag.json`) & Mission Plans
+- **Comprehensive Spatial Digital Twin in `_diag.json` & `_plan.json`:** Expanded `buildMissionPlanJSON()` and `buildFlightDiagnosticsJSON()` (`schemaVersion 1.57.0`) to serialize the complete spatial context of a flight mission:
+  - **🎯 Ground Control Points & Fiducial Markers (`groundControl`):** Serializes all placed GCPs, Check Points, Scale Bars, and Origin Anchors with ArUco/AprilTag IDs, roles, physical sizes, colors, and 8-decimal geodetic coordinates (`lat`, `lon`, `alt`).
+  - **📐 Inclusion Zones & Target Framing Polygons (`inclusionZones`):** Serializes all target polygons (`targetPoly`) that define irregular site surveys, roof boundaries, and facade/orbit target perimeters, preserving polygon vertices, target heights, and framing radii.
+  - **🚫 3D Obstacle Exclusion Zones (`exclusionZones`):** Serializes all safety no-fly keep-out volumes, including polygon boundary perimeters, min/max altitude bounds, clearance safety buffers, and detour modes (Perimeter, Over-the-Top, Smart).
+  - **🗺️ Survey & Property Parcels (`parcels`):** Serializes property lines, project perimeters, and boundary drawing layers (`boundary-polygon`) with stroke colors, dash styles, and fill opacities.
+- **Summary & Count Metrics:** Added `groundControlCount`, `inclusionZoneCount`, `exclusionZoneCount`, and `parcelCount` to both `plan.statistics` and `diagData.summary`.
+- **Photo Inspector Archived Flight Support:** Upgraded Photo Inspector overlay engine (`#photo-inspector-modal`) with an automatic fallback: when reviewing historical flights without active workspace drawing layers, parcel boundary lines and fiducial GCP crosshair rings are projected directly from `FlightDiagnostics.currentLoadedMission`.
+- **Companion SQLite Mission Archive Compatibility:** Upgraded `DiagnosticsDatabase` in `tools/companion/diagnostics_db.js` to preserve and hoist `groundControl`, `inclusionZones`, `exclusionZones`, and `parcels` when saving and retrieving mission diagnostics from SQLite (`missions.db`).
+
 ## [1.109.0] - 2026-09-18
 
 ### Added — Altitude-Based Fiducial Sizing Advisor, Flight Height Warnings & Optical Detection Range Rings

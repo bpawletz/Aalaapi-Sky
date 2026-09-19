@@ -261,7 +261,18 @@ class DiagnosticsDatabase {
       const uaPlatform = ua.platform || '';
       const uaJson = typeof ua === 'object' ? JSON.stringify(ua) : JSON.stringify({ raw: uaRaw });
 
-      const planJson = payload.plan ? JSON.stringify(payload.plan) : (payload.plan_json || '{}');
+      let planObj = payload.plan;
+      if (!planObj && payload.plan_json) {
+        try { planObj = JSON.parse(payload.plan_json); } catch (_) {}
+      }
+      if (!planObj || typeof planObj !== 'object') {
+        planObj = {};
+      }
+      if (!planObj.groundControl && Array.isArray(payload.groundControl)) planObj.groundControl = payload.groundControl;
+      if (!planObj.inclusionZones && Array.isArray(payload.inclusionZones)) planObj.inclusionZones = payload.inclusionZones;
+      if (!planObj.exclusionZones && Array.isArray(payload.exclusionZones)) planObj.exclusionZones = payload.exclusionZones;
+      if (!planObj.parcels && Array.isArray(payload.parcels)) planObj.parcels = payload.parcels;
+      const planJson = JSON.stringify(planObj);
       const diagJson = payload.diagnostics ? JSON.stringify(payload.diagnostics) : (payload.diag_json || JSON.stringify(payload));
 
       const isValid = (payload.isValid !== undefined ? (payload.isValid ? 1 : 0) : (payload.validation?.valid !== undefined ? (payload.validation.valid ? 1 : 0) : (payload.is_valid !== undefined ? (payload.is_valid ? 1 : 0) : 1)));
@@ -344,9 +355,14 @@ class DiagnosticsDatabase {
 
   rowToMission(row) {
     if (!row) return null;
+    const plan = row.plan_json ? JSON.parse(row.plan_json) : null;
     return {
       ...row,
-      plan: row.plan_json ? JSON.parse(row.plan_json) : null,
+      plan,
+      groundControl: plan?.groundControl || [],
+      inclusionZones: plan?.inclusionZones || [],
+      exclusionZones: plan?.exclusionZones || [],
+      parcels: plan?.parcels || [],
       diagnostics: row.diag_json ? JSON.parse(row.diag_json) : null,
       validationReport: row.validation_report_json ? JSON.parse(row.validation_report_json) : null,
       validationErrors: row.validation_errors_json ? JSON.parse(row.validation_errors_json) : [],
@@ -455,6 +471,14 @@ class DiagnosticsDatabase {
 
   getByUuid(identifier) {
     return this.getByIdOrArchiveIdOrUuid(identifier);
+  }
+
+  getMission(identifier) {
+    return this.getByIdOrArchiveIdOrUuid(identifier);
+  }
+
+  recordMission(payload) {
+    return this.saveDiagnostic(payload);
   }
 
   reportExecutionFailure(identifier, errorMessage = 'Waypoint Flight Suspended') {

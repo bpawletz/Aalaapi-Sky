@@ -1,0 +1,2122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aalaapi Sky • Project Evolution & Architecture Mindmap</title>
+  <!-- D3.js v7 and Mermaid.js v10 -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --bg-card: #0f172a;
+      --bg-card-hover: #1e293b;
+      --border-color: rgba(255, 255, 255, 0.1);
+      --border-accent: rgba(6, 182, 212, 0.4);
+      --cyan: #06b6d4;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --violet: #8b5cf6;
+      --pink: #ec4899;
+      --blue: #3b82f6;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    header {
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(9, 13, 22, 0.9) 100%);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 16px 28px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #06b6d4, #3b82f6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 0 24px rgba(6, 182, 212, 0.4);
+    }
+
+    .brand-text h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge-ver {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: rgba(6, 182, 212, 0.15);
+      border: 1px solid rgba(6, 182, 212, 0.4);
+      color: var(--cyan);
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    .brand-text p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .nav-tabs {
+      display: flex;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .nav-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.84rem;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .nav-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-btn.active {
+      background: rgba(6, 182, 212, 0.2);
+      color: var(--cyan);
+      border: 1px solid rgba(6, 182, 212, 0.4);
+      box-shadow: 0 0 12px rgba(6, 182, 212, 0.2);
+    }
+
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 14px;
+      padding: 16px 28px;
+      background: rgba(15, 23, 42, 0.4);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .stat-pill {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 10px 16px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-pill .num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .stat-pill .lbl {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 2px;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .view-pane {
+      display: none;
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      animation: fadeIn 0.25s ease forwards;
+    }
+
+    .view-pane.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .controls-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 12px 28px;
+      background: rgba(15, 23, 42, 0.7);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .search-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-box input {
+      background: rgba(9, 13, 22, 0.9);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 7px 14px 7px 34px;
+      color: #fff;
+      font-size: 0.85rem;
+      width: 260px;
+      transition: all 0.2s;
+    }
+
+    .search-box input:focus {
+      outline: none;
+      border-color: var(--cyan);
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.25);
+      width: 320px;
+    }
+
+    .search-box span.icon {
+      position: absolute;
+      left: 10px;
+      color: var(--text-dim);
+      font-size: 0.9rem;
+    }
+
+    .filter-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pill-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .pill-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .pill-btn.active {
+      background: rgba(6, 182, 212, 0.2);
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+
+    #mindmap-container {
+      position: relative;
+      width: 100%;
+      height: calc(100vh - 200px);
+      min-height: 600px;
+      background: radial-gradient(circle at center, rgba(15, 23, 42, 0.6) 0%, rgba(9, 13, 22, 0.98) 100%);
+      overflow: hidden;
+    }
+
+    #mindmap-svg {
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+    }
+
+    #mindmap-svg:active {
+      cursor: grabbing;
+    }
+
+    .node circle {
+      stroke-width: 2.2px;
+      transition: all 0.2s;
+    }
+
+    .node:hover circle {
+      stroke: #fff !important;
+      filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.6));
+    }
+
+    .node text {
+      font-size: 11.5px;
+      font-family: 'Inter', sans-serif;
+      fill: #f1f5f9;
+      pointer-events: none;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+    }
+
+    .node--internal text {
+      font-weight: 600;
+    }
+
+    .node--leaf text {
+      font-weight: 400;
+      fill: #cbd5e1;
+    }
+
+    .link {
+      fill: none;
+      stroke-opacity: 0.4;
+      stroke-width: 1.8px;
+      transition: stroke-opacity 0.2s, stroke-width 0.2s;
+    }
+
+    .link:hover {
+      stroke-opacity: 0.9 !important;
+      stroke-width: 2.5px !important;
+    }
+
+    .mindmap-floating-bar {
+      position: absolute;
+      bottom: 20px;
+      right: 24px;
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 10;
+    }
+
+    .floating-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-color);
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .floating-btn:hover {
+      background: rgba(6, 182, 212, 0.25);
+      border-color: var(--cyan);
+    }
+
+    #node-drawer {
+      position: absolute;
+      top: 20px;
+      left: 24px;
+      max-width: 380px;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-accent);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+      display: none;
+      z-index: 20;
+      animation: slideIn 0.2s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    #node-drawer .drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
+    #node-drawer h3 {
+      font-size: 1.05rem;
+      color: #fff;
+      line-height: 1.3;
+    }
+
+    #node-drawer .close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 0 4px;
+    }
+
+    #node-drawer .close-btn:hover {
+      color: #fff;
+    }
+
+    #node-drawer p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+
+    #node-drawer .drawer-badge {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+
+    .timeline-container {
+      padding: 30px 40px;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .epoch-card {
+      position: relative;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 30px;
+      transition: all 0.25s ease;
+    }
+
+    .epoch-card:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    }
+
+    .epoch-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .epoch-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .epoch-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+      font-size: 1rem;
+      padding: 5px 12px;
+      border-radius: 8px;
+    }
+
+    .epoch-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .epoch-meta {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .epoch-desc {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 18px;
+    }
+
+    .milestone-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+    }
+
+    .milestone-item {
+      background: rgba(9, 13, 22, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 12px 16px;
+      transition: border-color 0.2s;
+    }
+
+    .milestone-item:hover {
+      border-color: var(--border-accent);
+    }
+
+    .milestone-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .milestone-ver {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--cyan);
+    }
+
+    .milestone-date {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+    }
+
+    .milestone-name {
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .milestone-sub {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .mermaid-container {
+      padding: 30px 40px;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .mermaid-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 30px;
+    }
+
+    .mermaid-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .mermaid-card-header h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .btn-copy {
+      background: rgba(6, 182, 212, 0.15);
+      border: 1px solid rgba(6, 182, 212, 0.4);
+      color: var(--cyan);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+
+    .btn-copy:hover {
+      background: rgba(6, 182, 212, 0.3);
+      color: #fff;
+    }
+
+    .mermaid-viewport {
+      overflow-x: auto;
+      background: #090d16;
+      border-radius: 8px;
+      padding: 24px;
+      display: flex;
+      justify-content: center;
+    }
+
+    /* Universal High-Contrast Text for all Mermaid Diagrams */
+    #mermaid-mindmap-view svg text,
+    #mermaid-mindmap-view svg tspan,
+    #mermaid-timeline-view svg text,
+    #mermaid-timeline-view svg tspan {
+      fill: #ffffff !important;
+      color: #ffffff !important;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+      font-weight: 600 !important;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 2px rgba(0, 0, 0, 0.9) !important;
+    }
+
+    /* Mindmap Specific High-Contrast Palettes per Section */
+    #mermaid-mindmap-view .section--1 .node-bkg,
+    #mermaid-mindmap-view .section-root .node-bkg {
+      fill: #0891b2 !important;
+      stroke: #22d3ee !important;
+      stroke-width: 2.5px !important;
+    }
+    #mermaid-mindmap-view .section-0 .node-bkg {
+      fill: #0369a1 !important;
+      stroke: #38bdf8 !important;
+      stroke-width: 1.8px !important;
+    }
+    #mermaid-mindmap-view .section-1 .node-bkg {
+      fill: #6d28d9 !important;
+      stroke: #a78bfa !important;
+      stroke-width: 1.8px !important;
+    }
+    #mermaid-mindmap-view .section-2 .node-bkg {
+      fill: #047857 !important;
+      stroke: #34d399 !important;
+      stroke-width: 1.8px !important;
+    }
+    #mermaid-mindmap-view .section-3 .node-bkg {
+      fill: #b45309 !important;
+      stroke: #fbbf24 !important;
+      stroke-width: 1.8px !important;
+    }
+    #mermaid-mindmap-view .section-4 .node-bkg {
+      fill: #b91c1c !important;
+      stroke: #f87171 !important;
+      stroke-width: 1.8px !important;
+    }
+    #mermaid-mindmap-view .section-5 .node-bkg {
+      fill: #be185d !important;
+      stroke: #f472b6 !important;
+      stroke-width: 1.8px !important;
+    }
+
+    /* Mindmap connecting lines */
+    #mermaid-mindmap-view path.edge {
+      stroke-width: 2px !important;
+      stroke-opacity: 0.8 !important;
+    }
+
+    /* Timeline Epoch Header Badges: 6 Distinct Vibrant Colors */
+    #mermaid-timeline-view .timeline-node.section--1 .node-bkg {
+      fill: #0891b2 !important;
+      stroke: #22d3ee !important;
+      stroke-width: 2px !important;
+    }
+    #mermaid-timeline-view .timeline-node.section-0 .node-bkg {
+      fill: #7c3aed !important;
+      stroke: #a78bfa !important;
+      stroke-width: 2px !important;
+    }
+    #mermaid-timeline-view .timeline-node.section-1 .node-bkg {
+      fill: #059669 !important;
+      stroke: #34d399 !important;
+      stroke-width: 2px !important;
+    }
+    #mermaid-timeline-view .timeline-node.section-2 .node-bkg {
+      fill: #d97706 !important;
+      stroke: #fbbf24 !important;
+      stroke-width: 2px !important;
+    }
+    #mermaid-timeline-view .timeline-node.section-3 .node-bkg {
+      fill: #dc2626 !important;
+      stroke: #f87171 !important;
+      stroke-width: 2px !important;
+    }
+    #mermaid-timeline-view .timeline-node.section-4 .node-bkg {
+      fill: #2563eb !important;
+      stroke: #60a5fa !important;
+      stroke-width: 2px !important;
+    }
+
+    /* Timeline Event Detail Boxes (Sub-nodes): High-contrast dark slate cards */
+    #mermaid-timeline-view .eventWrapper .node-bkg {
+      fill: #1e293b !important;
+      stroke: rgba(255, 255, 255, 0.35) !important;
+      stroke-width: 1.5px !important;
+    }
+
+    /* Timeline main title */
+    #mermaid-timeline-view text[font-weight="bold"],
+    #mermaid-timeline-view text:first-of-type {
+      fill: #38bdf8 !important;
+      font-size: 1.25rem !important;
+    }
+
+
+    details.code-details {
+      margin-top: 14px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      padding: 10px 14px;
+    }
+
+    details.code-details summary {
+      cursor: pointer;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    details.code-details pre {
+      margin-top: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: #a5f3fc;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+
+    footer {
+      border-top: 1px solid var(--border-color);
+      padding: 16px 28px;
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      background: rgba(9, 13, 22, 0.95);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon">&#9992;&#65039;</div>
+      <div class="brand-text">
+        <h1>Aalaapi Sky &bull; Project Evolution <span class="badge-ver">v1.6.10 &rarr; v1.109.0</span></h1>
+        <p>Architectural Mindmap &bull; Milestone Chronology &bull; System Evolution</p>
+      </div>
+    </div>
+    <div class="nav-tabs">
+      <button class="nav-btn active" data-tab="mindmap-tab">&#129504; Interactive Mindmap</button>
+      <button class="nav-btn" data-tab="timeline-tab">&#9203; Epoch Timeline</button>
+      <button class="nav-btn" data-tab="mermaid-tab">&#128202; Mermaid Diagrams</button>
+    </div>
+  </header>
+
+  <div class="stats-bar">
+    <div class="stat-pill">
+      <span class="num">303</span>
+      <span class="lbl">Total Releases</span>
+    </div>
+    <div class="stat-pill">
+      <span class="num" style="color: var(--cyan);">6</span>
+      <span class="lbl">Major Epochs</span>
+    </div>
+    <div class="stat-pill">
+      <span class="num" style="color: var(--emerald);">8</span>
+      <span class="lbl">Flight Pattern Engines</span>
+    </div>
+    <div class="stat-pill">
+      <span class="num" style="color: var(--amber);">3-Tier</span>
+      <span class="lbl">Cascading Architecture</span>
+    </div>
+    <div class="stat-pill">
+      <span class="num" style="color: var(--violet);">100%</span>
+      <span class="lbl">Client-Side Engine</span>
+    </div>
+  </div>
+
+  <main>
+    <!-- 1. MINDMAP VIEW -->
+    <div id="mindmap-tab" class="view-pane active">
+      <div class="controls-strip">
+        <div class="search-box">
+          <span class="icon">&#128269;</span>
+          <input type="text" id="search-input" placeholder="Search features, versions, keywords...">
+        </div>
+        <div class="filter-pills">
+          <button class="pill-btn active" data-filter="all">All Domains</button>
+          <button class="pill-btn" data-filter="wpml">Core &amp; WPML</button>
+          <button class="pill-btn" data-filter="3d">3D &amp; FPV</button>
+          <button class="pill-btn" data-filter="airspace">Airspace &amp; Weather</button>
+          <button class="pill-btn" data-filter="companion">Companion &amp; Radar</button>
+          <button class="pill-btn" data-filter="diagnostics">Diagnostics &amp; Replay</button>
+          <button class="pill-btn" data-filter="survey">Photogrammetry &amp; GCP</button>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="floating-btn" id="btn-expand-all">&#8862; Expand All</button>
+          <button class="floating-btn" id="btn-collapse-all">&#8863; Collapse to Pillars</button>
+          <button class="floating-btn" id="btn-reset-zoom">&#8635; Reset View</button>
+        </div>
+      </div>
+
+      <div id="mindmap-container">
+        <svg id="mindmap-svg"></svg>
+        <div id="node-drawer">
+          <div class="drawer-header">
+            <h3 id="drawer-title">Node Title</h3>
+            <button class="close-btn" id="drawer-close">&times;</button>
+          </div>
+          <span class="drawer-badge" id="drawer-badge">Category</span>
+          <p id="drawer-desc">Detailed description will appear here.</p>
+          <div id="drawer-details" style="font-size:0.75rem; color:var(--text-dim);"></div>
+        </div>
+        <div class="mindmap-floating-bar">
+          <span style="font-size:0.75rem; color:var(--text-muted);">&#128161; Drag canvas to pan &bull; Scroll to zoom &bull; Click node circle to expand/collapse</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. TIMELINE VIEW -->
+    <div id="timeline-tab" class="view-pane">
+      <div class="timeline-container" id="timeline-cards-container">
+        <!-- Populated dynamically by JS -->
+      </div>
+    </div>
+
+    <!-- 3. MERMAID VIEW -->
+    <div id="mermaid-tab" class="view-pane">
+      <div class="mermaid-container">
+        <div class="mermaid-card">
+          <div class="mermaid-card-header">
+            <h2>&#129504; Architecture &amp; Capability Evolution Mindmap</h2>
+            <button class="btn-copy" onclick="copyMermaidCode('mermaid-mindmap-raw')">&#128203; Copy Mermaid Mindmap</button>
+          </div>
+          <div class="mermaid-viewport">
+            <div id="mermaid-mindmap-view" style="width:100%; display:flex; justify-content:center;"></div>
+          </div>
+          <details class="code-details">
+            <summary>View Raw Mermaid Code (Click to Expand)</summary>
+            <pre id="mermaid-mindmap-raw">mindmap
+  root((Aalaapi Sky Evolution))
+    Core Flight and WPML V2
+      Procedural Flight Patterns
+        2D Nadir and Crosshatch Double Grid
+        Circular and Multi-Tier Oblique Orbit
+        Hybrid Combo Grid and Perimeter
+        Road Follow with Centerline Pitch
+        Target Splat Grid Photogrammetry
+        Freeform Waypoint Editor
+      Three-Tier Hierarchy
+        Tier 1 Global Failsafes and Defaults
+        Tier 2 Layer Properties and Dynamics
+        Tier 3 Individual Waypoint Overrides
+      DJI WPML V2 Compliance
+        template.kml and waylines.wpml
+        RC 2 Native Breakpoint Resume
+        Gimbal Rotate and Smooth Yaw
+      Interactive Editor
+        Map Drag and D-Pad Coordinate Nudging
+        POI Target Locking
+        Revert and Smart Pattern Switch
+    3D Engine and FPV Simulation
+      Three.js 3D Viewport
+        Planned Trajectory Spline and Heatmaps
+        Directional Camera FOV Cones
+        3D Structure Elevation Footprints
+      Virtual Cockpit FPV
+        Drone First-Person Perspective
+        Live Telemetry HUD
+        Shutter Flash and Continuous Timing
+      3D Waypoint Manipulation
+        Direct In-Situ Click and Nudge
+        Camera Frustum Aim Verification
+    Airspace Weather and Safety
+      Live FAA Aviation REST Layers
+        VFR Sectional Aeronautical Tiles
+        Class B C D E Controlled Airspace
+        LAANC UASFM 0-400ft Grids
+        TFR Monitor and Stadium Advisories
+      Real-Time Weather
+        NOAA NEXRAD Composite Radar
+        NWS Weather Hazard Warnings
+        METAR Decoder and Station Switcher
+      Obstacle Avoidance
+        HIFLD Power Transmission Lines
+        3D Cylindrical and Polygonal Exclusion
+        Detour Strategies Around vs Climb
+    Companion Bridge and Remote ID
+      Local Bridge Daemon
+        Node.js ADB USB Interface
+        Direct DJI RC 2 Push Pull Sync
+        Adaptive Polling Backoff
+      ASTM F3411 Remote ID Radar
+        Live 360 Airspace Tracking
+        Distance Speed and Climb Rate
+        Pilot GCS Pinpointing
+    Diagnostics and Decryption
+      Native Log Decryption
+        DJI Cloud API Keychain Exchange
+        dji-log Rust CLI Integration
+        10Hz Telemetry and Stick Inputs
+      3D Trajectory Auditing
+        Planned vs Flown Comparison
+        GPS Drift Metrics and Simulation
+        Battery Voltage Curves
+      Photo Archive and Ingestion
+        SQLite Mission Indexing
+        Bit-for-Bit MD5 Checksums
+        HUD Stamper and Geotagging
+    Survey Suite and GCPs
+      Photogrammetric Engine
+        3D Pinhole Ray-to-Ground Model
+        Dual Slant vs Ground Plane Calipers
+        Sub-Pixel GSD Calculation
+      Parcel Boundaries
+        Boundary and Drawing Layer Isolation
+        Draggable Nodes and Area Readouts
+        Multi-Layer Photo Superimposition
+      Fiducials and Ground Control
+        GCP Check Point and Scale Bar Roles
+        Millimeter-Accurate SVG Generator
+        ArUco AprilTag and Checkerboard
+        Altitude Advisor and Range Rings</pre>
+          </details>
+        </div>
+
+        <div class="mermaid-card">
+          <div class="mermaid-card-header">
+            <h2>&#9203; Chronological Milestones Timeline (Mermaid)</h2>
+            <button class="btn-copy" onclick="copyMermaidCode('mermaid-timeline-raw')">&#128203; Copy Mermaid Timeline</button>
+          </div>
+          <div class="mermaid-viewport">
+            <div id="mermaid-timeline-view" style="width:100%; display:flex; justify-content:center;"></div>
+          </div>
+          <details class="code-details">
+            <summary>View Raw Mermaid Code (Click to Expand)</summary>
+            <pre id="mermaid-timeline-raw">timeline
+    title Aalaapi Sky Evolution (v1.6 to v1.109)
+    section Epoch 1 - Genesis and Core WPML
+        2026-03 to 2026-07 : v1.6 to v1.25 : 2D Nadir and Crosshatch Grids : Circular and Multi-Orbit Patterns : POI Target Locking : Native DJI RC 2 Breakpoint Resume
+    section Epoch 2 - Three-Tier Hierarchy and 3D FPV
+        2026-07 to 2026-08 : v1.26 to v1.50 : Three.js GPU 3D Mission Preview : Virtual FPV Cockpit Mode : Camera FOV Cones and Shutter FX : 3-Tier Parameter Cascading
+    section Epoch 3 - Airspace Weather and Safety
+        2026-08 to 2026-09 : v1.51 to v1.75 : FAA REST Sectionals and LAANC Grids : NOAA NEXRAD and NWS Hazards : METAR Decoder and Weather Switcher : 3D Exclusion Volumes and Detours
+    section Epoch 4 - Companion Bridge and Remote ID
+        2026-09 : v1.76 to v1.95 : Node.js USB ADB Bridge to DJI RC 2 : 1-Click Push Pull KMZ Sync : ASTM F3411 Remote ID Live Radar : Adaptive Polling Backoff
+    section Epoch 5 - Diagnostics and Cloud Decryption
+        2026-09 : v1.96 to v1.103 : Native DJI Cloud API Log Decryption : 3D Planned vs Flown Trajectory : MD5-Verified Media Ingestion : Road Follow Surface Pitch Targeting
+    section Epoch 6 - Photogrammetry and GCP Survey Suite
+        2026-09 : v1.104 to v1.109 : 3D Pinhole Ray-to-Ground Projection : Dual Slant Ground Caliper Engine : Parcel Boundary Layer Isolation : Printable Vector Target SVG Generator : Altitude Sizing Advisor and Range Rings</pre>
+          </details>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    Aalaapi Sky Architectural Evolution &bull; Compiled from 303 Git Releases &bull; Single-File Visual Documentation
+  </footer>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'dark',
+      themeVariables: {
+        darkMode: true,
+        background: '#090d16',
+        primaryColor: '#0891b2',
+        primaryTextColor: '#ffffff',
+        primaryBorderColor: 'rgba(34, 211, 238, 0.6)',
+        lineColor: '#94a3b8',
+        secondaryColor: '#059669',
+        tertiaryColor: '#1e293b',
+        textColor: '#ffffff',
+        nodeTextColor: '#ffffff'
+      }
+    });
+
+    let mermaidRendered = false;
+    async function renderMermaidDiagrams() {
+      if (mermaidRendered) return;
+      try {
+        const mindmapCode = document.getElementById('mermaid-mindmap-raw').textContent;
+        const timelineCode = document.getElementById('mermaid-timeline-raw').textContent;
+        
+        const { svg: svg1 } = await mermaid.render('mermaidMindmapSvg', mindmapCode);
+        document.getElementById('mermaid-mindmap-view').innerHTML = svg1;
+        
+        const { svg: svg2 } = await mermaid.render('mermaidTimelineSvg', timelineCode);
+        document.getElementById('mermaid-timeline-view').innerHTML = svg2;
+        
+        mermaidRendered = true;
+      } catch (err) {
+        console.error('Mermaid render error:', err);
+      }
+    }
+
+    function copyMermaidCode(elemId) {
+      const code = document.getElementById(elemId).innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        alert('Copied Mermaid syntax to clipboard!');
+      });
+    }
+
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.view-pane').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        const tabId = btn.getAttribute('data-tab');
+        document.getElementById(tabId).classList.add('active');
+
+        if (tabId === 'mermaid-tab') {
+          renderMermaidDiagrams();
+        } else if (tabId === 'mindmap-tab') {
+          setTimeout(() => initD3Mindmap(), 50);
+        }
+      });
+    });
+
+    const mindmapData = {
+  "name": "Aalaapi Sky",
+  "badge": "Core Platform",
+  "color": "#06b6d4",
+  "desc": "Browser-native procedural drone flight planner, 3D simulation engine, and survey-grade photogrammetry suite.",
+  "children": [
+    {
+      "name": "Core Flight Planning & WPML V2",
+      "badge": "Flight Engine",
+      "color": "#06b6d4",
+      "desc": "Procedural waypoint pattern generation and strict DJI WPML V2 XML standard export.",
+      "children": [
+        {
+          "name": "Procedural Pattern Engines",
+          "badge": "8 Patterns",
+          "color": "#06b6d4",
+          "desc": "Mathematical flight path generators supporting nadir, crosshatch, circular, corridor, and freeform missions.",
+          "children": [
+            {
+              "name": "2D Nadir Grid",
+              "badge": "v1.6+",
+              "desc": "Parallel flight passes with configurable front/side overlaps, spacing, and flight speed."
+            },
+            {
+              "name": "3D Double Grid",
+              "badge": "v1.6+",
+              "desc": "Crosshatch 90-degree orthogonal flight lines optimized for 3D photogrammetry and oblique models."
+            },
+            {
+              "name": "Orbit & Multi-Orbit",
+              "badge": "v1.10+",
+              "desc": "Smooth orbital loops with multi-tiered altitudes and cascading gimbal pitch angles."
+            },
+            {
+              "name": "Hybrid Combo",
+              "badge": "v1.12+",
+              "desc": "Combines an aerial nadir mapping grid with surrounding circular inspection rings in one mission."
+            },
+            {
+              "name": "Road Follow Corridor",
+              "badge": "v1.70, v1.103",
+              "desc": "OSRM-powered road snapping with cross-track offset, road-surface gimbal pitch, and tangent tracking."
+            },
+            {
+              "name": "Target Splat Grid",
+              "badge": "v1.77+",
+              "desc": "Optimized for 3D Gaussian Splatting with target auto-framing, perimeter lead-ups, and optical cones."
+            },
+            {
+              "name": "Freeform Waypoints",
+              "badge": "v1.8+",
+              "desc": "Manual click-to-place waypoints with individual altitude, heading, and action overrides."
+            }
+          ]
+        },
+        {
+          "name": "Three-Tier Architectural Hierarchy",
+          "badge": "Architecture (v1.81-1.87)",
+          "color": "#06b6d4",
+          "desc": "Clean 3-level parameter cascading: Waypoint Override -> Layer Property -> Global Failsafe Default.",
+          "children": [
+            {
+              "name": "Tier 1: Global Failsafes",
+              "badge": "Section 3",
+              "desc": "Mission-wide fallback parameters: RTH altitude, max ceiling, default speed, hover time, and camera defaults."
+            },
+            {
+              "name": "Tier 2: Layer Properties",
+              "badge": "Section 2",
+              "desc": "Per-layer parameters defaulting to inherit, overriding globals for specific flight phases."
+            },
+            {
+              "name": "Tier 3: Waypoint Overrides",
+              "badge": "Popup & 3D HUD",
+              "desc": "Per-waypoint granular controls overriding layer and global defaults during execution."
+            }
+          ]
+        },
+        {
+          "name": "DJI WPML V2 Compliance",
+          "badge": "DJI Standard",
+          "color": "#06b6d4",
+          "desc": "Strict XML packaging generating valid template.kml and waylines.wpml for DJI Pilot 2 and DJI Fly.",
+          "children": [
+            {
+              "name": "Native RC 2 Breakpoint Resume",
+              "badge": "Failsafe",
+              "desc": "Preserves mission continuity across battery swaps without requiring file re-uploads."
+            },
+            {
+              "name": "Gimbal & Heading Actions",
+              "badge": "WPML Tags",
+              "desc": "Exports precise gimbalRotate pitch commands and smoothTransition heading angles."
+            },
+            {
+              "name": "Multi-Battery Mission Splitting",
+              "badge": "Calculator",
+              "desc": "Estimates battery consumption and automatically organizes flight legs."
+            }
+          ]
+        },
+        {
+          "name": "Interactive Waypoint Editor",
+          "badge": "Map UI",
+          "color": "#06b6d4",
+          "desc": "High-precision coordinate nudging, POI targeting, and state persistence.",
+          "children": [
+            {
+              "name": "2D Leaflet Dragging",
+              "badge": "Interactive",
+              "desc": "Smooth drag-and-drop marker relocation with instant path recalculation."
+            },
+            {
+              "name": "D-Pad Coordinate Nudging",
+              "badge": "Precision",
+              "desc": "Millimeter-scale north/south/east/west nudging for survey-grade alignment."
+            },
+            {
+              "name": "Point of Interest (POI) Lock",
+              "badge": "Heading",
+              "desc": "Locks drone yaw toward fixed coordinates across entire orbits or flight lines."
+            },
+            {
+              "name": "Smart Pattern Switching",
+              "badge": "Persistence",
+              "desc": "Preserves custom waypoint adjustments when toggling between pattern modes."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3D Engine & Virtual FPV HUD",
+      "badge": "Three.js 3D",
+      "color": "#10b981",
+      "desc": "GPU-accelerated 3D mission visualization, virtual cockpit simulation, and camera frustum rendering.",
+      "children": [
+        {
+          "name": "Three.js Viewport Engine",
+          "badge": "v1.26 - v1.50",
+          "color": "#10b981",
+          "desc": "Full 3D WebGL scene displaying real-world altitude profiles, ground meshes, and trajectories.",
+          "children": [
+            {
+              "name": "Planned Trajectory Spline",
+              "badge": "WebGL",
+              "desc": "Smooth 3D flight paths color-coded by altitude, layer, or phase."
+            },
+            {
+              "name": "Directional Camera Cones",
+              "badge": "Optics",
+              "desc": "True aspect-ratio 3D camera pyramids illustrating exact sensor ground coverage."
+            },
+            {
+              "name": "Coverage Density Heatmap",
+              "badge": "Photogrammetry",
+              "desc": "Dynamic ground footprint mesh showing overlap density for 3D reconstruction."
+            },
+            {
+              "name": "Building & Structure Volumes",
+              "badge": "Obstacles",
+              "desc": "Visual 3D structure footprints for verifying vertical and horizontal clearances."
+            }
+          ]
+        },
+        {
+          "name": "Virtual Cockpit FPV Simulation",
+          "badge": "v1.45+",
+          "color": "#10b981",
+          "desc": "Interactive First Person View flight simulation with cockpit controls and telemetry overlay.",
+          "children": [
+            {
+              "name": "Drone Cockpit Camera",
+              "badge": "FPV Mode",
+              "desc": "Simulates flight from the drone gimbal perspective with realistic yaw and pitch."
+            },
+            {
+              "name": "Live Telemetry HUD",
+              "badge": "Cockpit",
+              "desc": "Displays real-time Altitude AGL, Ground Speed, Gimbal Pitch, and Compass Heading."
+            },
+            {
+              "name": "Virtual Shutter Flash",
+              "badge": "Camera FX",
+              "desc": "Visual flash and audio feedback simulating camera captures at exposure waypoints."
+            },
+            {
+              "name": "Continuous vs Stop & Shoot",
+              "badge": "Timing",
+              "desc": "Accurately models shutter intervals and dwell times along the flight path."
+            }
+          ]
+        },
+        {
+          "name": "3D In-Situ Waypoint Editor",
+          "badge": "v1.86+",
+          "color": "#10b981",
+          "desc": "Inspect and edit waypoints directly within the 3D WebGL viewport.",
+          "children": [
+            {
+              "name": "Direct 3D Raycasting",
+              "badge": "Interactive",
+              "desc": "Click any waypoint or photo marker in 3D to open its editor dialog."
+            },
+            {
+              "name": "Live Camera Frustum Pivoting",
+              "badge": "Visual",
+              "desc": "Watch camera cones rotate in real time as pitch and yaw sliders adjust."
+            },
+            {
+              "name": "Multi-Altitude Profiles",
+              "badge": "Terrain",
+              "desc": "Validates ascent and descent tiers against ground elevation offsets."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Airspace, Weather & Safety Architecture",
+      "badge": "Live Data",
+      "color": "#f59e0b",
+      "desc": "Integration with official US government REST APIs for live aviation charts, radar, and obstacles.",
+      "children": [
+        {
+          "name": "Live FAA Aviation REST Layers",
+          "badge": "FAA REST",
+          "color": "#f59e0b",
+          "desc": "Official FAA aeronautical charts and airspace classification overlays.",
+          "children": [
+            {
+              "name": "VFR Sectional Charts",
+              "badge": "Raster Tiles",
+              "desc": "Official high-resolution aeronautical navigation chart tiles."
+            },
+            {
+              "name": "Controlled Airspace",
+              "badge": "Class B/C/D/E",
+              "desc": "Color-coded visual boundaries for terminal and controlled airspaces."
+            },
+            {
+              "name": "Special Use Airspace",
+              "badge": "MOAs/Restricted",
+              "desc": "Military Operations Areas, Restricted, and Prohibited zones."
+            },
+            {
+              "name": "LAANC UAS Facility Maps",
+              "badge": "0-400ft Grids",
+              "desc": "Pre-approved maximum drone flight altitudes mapped across airport sectors."
+            },
+            {
+              "name": "TFR & Stadium Advisories",
+              "badge": "14 CFR 99.7",
+              "desc": "Temporary Flight Restrictions monitor and standby sporting venue buffers."
+            }
+          ]
+        },
+        {
+          "name": "Real-Time Weather & Hazards",
+          "badge": "NOAA / NWS",
+          "color": "#f59e0b",
+          "desc": "Live atmospheric conditions and precipitation feeds.",
+          "children": [
+            {
+              "name": "NEXRAD Weather Radar",
+              "badge": "WMS Reflectivity",
+              "desc": "Composite radar precipitation tiles with color-coded intensity legend."
+            },
+            {
+              "name": "NWS Hazard Warnings",
+              "badge": "Alerts",
+              "desc": "Live polygon overlays of active weather watches, warnings, and advisories."
+            },
+            {
+              "name": "Live METAR Decoder",
+              "badge": "Aviation Weather",
+              "desc": "Nearby weather stations with wind, ceiling, visibility, and flight categories (VFR/IFR)."
+            }
+          ]
+        },
+        {
+          "name": "Infrastructure & Exclusion Volumes",
+          "badge": "Safety Detours",
+          "color": "#f59e0b",
+          "desc": "Hazard protection around power lines and physical structures.",
+          "children": [
+            {
+              "name": "HIFLD Power Transmission Lines",
+              "badge": "Electric Utility",
+              "desc": "Dynamic high-voltage power lines rendered at zoom levels 11 and above."
+            },
+            {
+              "name": "3D Exclusion Volumes",
+              "badge": "Geometry",
+              "desc": "Cylindrical and polygonal keep-out zones with defined altitude floors and ceilings."
+            },
+            {
+              "name": "Detour Climbing Strategies",
+              "badge": "v1.71",
+              "desc": "Configures drone to either divert around boundaries or climb safely over the top."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Companion Bridge & Remote ID Radar",
+      "badge": "Companion Service",
+      "color": "#8b5cf6",
+      "desc": "Local Node.js companion daemon providing direct USB ADB communication and live airspace radar.",
+      "children": [
+        {
+          "name": "Companion Bridge Daemon",
+          "badge": "Node.js / ADB",
+          "color": "#8b5cf6",
+          "desc": "Runs on the pilot computer or Android tablet to bridge browser with DJI hardware.",
+          "children": [
+            {
+              "name": "Direct USB ADB Link",
+              "badge": "RC 2 Link",
+              "desc": "Communicates directly with DJI RC 2 controllers over Android Debug Bridge."
+            },
+            {
+              "name": "1-Click Push/Pull Sync",
+              "badge": "KMZ Sync",
+              "desc": "Transfers missions to and from controller storage (/DJI/Fly/Waypoints) instantly."
+            },
+            {
+              "name": "Adaptive Polling & Backoff",
+              "badge": "v1.106",
+              "desc": "Stepped backoff and page visibility listeners reduce background network traffic by 98%."
+            }
+          ]
+        },
+        {
+          "name": "ASTM F3411 Remote ID Radar",
+          "badge": "Airspace Radar",
+          "color": "#8b5cf6",
+          "desc": "Decodes Broadcast Remote ID radio signals to track nearby airborne drones in real time.",
+          "children": [
+            {
+              "name": "360\u00b0 Airspace Tracking",
+              "badge": "Live Targets",
+              "desc": "Displays drone position, distance, ground speed, heading, and climb rate."
+            },
+            {
+              "name": "Pilot / GCS Location",
+              "badge": "Telemetry",
+              "desc": "Pinpoints pilot ground control station coordinates alongside drone position."
+            },
+            {
+              "name": "Radar Gating & Health Probes",
+              "badge": "Fail-Safe",
+              "desc": "Automatically halts queries when companion bridge is offline, eliminating error spam."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Flight Diagnostics & Telemetry Replay",
+      "badge": "Post-Flight Analysis",
+      "color": "#ec4899",
+      "desc": "Comprehensive post-flight analysis, cloud log decryption, and 3D telemetry audits.",
+      "children": [
+        {
+          "name": "Native DJI Log Decryption",
+          "badge": "v1.105 (Cloud API)",
+          "color": "#ec4899",
+          "desc": "Decrypts encrypted DJI Fly logs (FlightRecord_*.txt) using developer API keys.",
+          "children": [
+            {
+              "name": "DJI Keychain Exchange",
+              "badge": "AES Decrypt",
+              "desc": "Exchanges encrypted header with DJI Cloud API to acquire ephemeral decryption key."
+            },
+            {
+              "name": "dji-log Rust CLI Engine",
+              "badge": "Cross-Platform",
+              "desc": "High-speed Rust binary extracts complete 10 Hz telemetry data."
+            },
+            {
+              "name": "Stick Deflections & Battery",
+              "badge": "RC Telemetry",
+              "desc": "Audits elevator/rudder/throttle stick inputs and individual battery cell voltages."
+            },
+            {
+              "name": "Post-RTH Manual Flight Tracking",
+              "badge": "Full Log",
+              "desc": "Recovers manual flying performed after automated Return-to-Home aborts."
+            }
+          ]
+        },
+        {
+          "name": "3D Trajectory & Drift Auditing",
+          "badge": "v1.96 - v1.107",
+          "color": "#ec4899",
+          "desc": "Compares planned waypoint routes against actual flown GPS telemetry.",
+          "children": [
+            {
+              "name": "Planned vs Flown Comparison",
+              "badge": "Audit",
+              "desc": "Calculates true cross-track deviation and GPS drift metrics across the flight."
+            },
+            {
+              "name": "Simulated Unflown Mission Mode",
+              "badge": "v1.107.1",
+              "desc": "Disambiguates planned simulations from authentic flown flights cleanly in UI."
+            },
+            {
+              "name": "Directional Photo Frustums",
+              "badge": "v1.102.2",
+              "desc": "Visualizes camera orientation and pitch at every captured photo point along path."
+            }
+          ]
+        },
+        {
+          "name": "Media Ingestion & Photo Catalog",
+          "badge": "v1.98 - v1.101",
+          "color": "#ec4899",
+          "desc": "Ingests drone photos from SD cards with cryptographic integrity verification.",
+          "children": [
+            {
+              "name": "Bit-for-Bit MD5 Verification",
+              "badge": "Data Safety",
+              "desc": "Triple-barrier checksum verification before safely deleting photos from drone SD card."
+            },
+            {
+              "name": "SQLite Photo Indexing",
+              "badge": "missions.db",
+              "desc": "Stores photo metadata, EXIF geodetic coordinates, and thumbnails locally."
+            },
+            {
+              "name": "Telemetry HUD Stamper",
+              "badge": "Image Export",
+              "desc": "Bakes flight telemetry, altitude, coordinates, and layer boundaries onto exported JPEGs."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Photogrammetry & Ground Control Survey Suite",
+      "badge": "Survey Suite",
+      "color": "#3b82f6",
+      "desc": "High-precision photogrammetry engine, dual-plane calipers, and ground control marker suite.",
+      "children": [
+        {
+          "name": "3D Projective Optical Engine",
+          "badge": "v1.99 - v1.100",
+          "color": "#3b82f6",
+          "desc": "Rigorous pinhole camera projective model projecting coordinates between 3D space and 2D photos.",
+          "children": [
+            {
+              "name": "Forward Pinhole Projection",
+              "badge": "Camera Model",
+              "desc": "Maps (lat, lon, alt) coordinates into photo pixel coordinates (u, v) with zero parallax."
+            },
+            {
+              "name": "Ray-to-Ground Plane Correction",
+              "badge": "3D Rays",
+              "desc": "Calculates true Euclidean ground coordinates from arbitrary camera angles."
+            },
+            {
+              "name": "Dual Slant vs Ground Plane Calipers",
+              "badge": "v1.99.1",
+              "desc": "Eliminates roof measurement inflation by calibrating distances in target slant plane."
+            }
+          ]
+        },
+        {
+          "name": "Parcel & Boundary Layers",
+          "badge": "v1.101 - v1.102",
+          "color": "#3b82f6",
+          "desc": "Dedicated drawing layers for property boundaries, easements, and inspection zones.",
+          "children": [
+            {
+              "name": "Draggable Boundary Vertices",
+              "badge": "Map Editor",
+              "desc": "Trace custom parcel shapes with real-time perimeter and area readouts in m2 and acres."
+            },
+            {
+              "name": "Multi-Layer Photo Superimposition",
+              "badge": "Photo Inspector",
+              "desc": "Superimposes colored property boundary lines directly onto drone inspection imagery."
+            },
+            {
+              "name": "0-Waypoint Flight Safety",
+              "badge": "Safety Guarantee",
+              "desc": "Guarantees boundary layers generate 0 flight waypoints and never corrupt WPML plans."
+            }
+          ]
+        },
+        {
+          "name": "Ground Control (GCP) & Fiducials Suite",
+          "badge": "v1.104 - v1.109",
+          "color": "#3b82f6",
+          "desc": "Survey-grade georeferencing markers, printable targets, and resolution sizing advisor.",
+          "children": [
+            {
+              "name": "GCP, Check Point & Scale Bar Roles",
+              "badge": "v1.104.0",
+              "desc": "Full support for surveyor marker roles, RTK rover CSV ingest, and geodetic exports."
+            },
+            {
+              "name": "Printable Vector SVG Generator",
+              "badge": "Millimeter-Accurate",
+              "desc": "Produces authentic ArUco 4x4, ArUco 5x5, AprilTag 16h5, and checkerboard targets ready for field printing."
+            },
+            {
+              "name": "Altitude Sizing Advisor & Range Rings",
+              "badge": "v1.109.0",
+              "desc": "Calculates GSD and warns pilots if targets are undersized (<10px) with 2D detection range rings."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+    const timelineEpochs = [
+  {
+    "num": "Epoch 1",
+    "title": "Genesis & Core WPML Engine",
+    "range": "v1.6.10 \u2013 v1.25.0",
+    "period": "March 2026 \u2013 July 2026",
+    "color": "#06b6d4",
+    "desc": "Establishment of the core browser-native flight generator, procedural grid and orbit mathematics, DJI WPML V2 specification adherence, POI target locking, and native DJI RC 2 Breakpoint Resume support.",
+    "milestones": [
+      {
+        "ver": "v1.6.10",
+        "date": "2026-03-05",
+        "name": "Foundational 2D Leaflet Engine",
+        "desc": "Procedural nadir grid generator and DJI WPML export."
+      },
+      {
+        "ver": "v1.10.0",
+        "date": "2026-07-01",
+        "name": "Orbit & Multi-Orbit Patterns",
+        "desc": "Circular structure inspection loops with variable altitudes."
+      },
+      {
+        "ver": "v1.12.0",
+        "date": "2026-07-18",
+        "name": "Hybrid Combo Mapping",
+        "desc": "Integrates nadir aerial grids with perimeter inspection orbits."
+      },
+      {
+        "ver": "v1.20.0",
+        "date": "2026-07-22",
+        "name": "POI Target Locking",
+        "desc": "Dynamically aims drone camera at specified focal coordinates."
+      },
+      {
+        "ver": "v1.25.0",
+        "date": "2026-07-23",
+        "name": "Smart Pattern Switching",
+        "desc": "Maintains user waypoint adjustments across pattern toggles."
+      }
+    ]
+  },
+  {
+    "num": "Epoch 2",
+    "title": "Three-Tier Hierarchy & 3D FPV HUD",
+    "range": "v1.26.0 \u2013 v1.50.0",
+    "period": "July 2026 \u2013 August 2026",
+    "color": "#10b981",
+    "desc": "Architectural consolidation into the strict 3-Tier Parameter Cascading Hierarchy (Global -> Layer -> Waypoint). Introduction of GPU-accelerated Three.js 3D Mission Preview, virtual FPV cockpit simulation, shutter effects, and camera FOV cones.",
+    "milestones": [
+      {
+        "ver": "v1.26.0",
+        "date": "2026-07-26",
+        "name": "Three.js 3D Mission Preview",
+        "desc": "GPU-accelerated WebGL flight path rendering with altitude mesh."
+      },
+      {
+        "ver": "v1.35.0",
+        "date": "2026-08-22",
+        "name": "Camera FOV Cones & Heatmap",
+        "desc": "Sensor ground footprint pyramids and coverage overlap density."
+      },
+      {
+        "ver": "v1.45.0",
+        "date": "2026-08-27",
+        "name": "Virtual Cockpit FPV Simulation",
+        "desc": "First person perspective flight simulator with live telemetry HUD."
+      },
+      {
+        "ver": "v1.48.0",
+        "date": "2026-08-28",
+        "name": "Interactive Shutter Flash FX",
+        "desc": "Models photo exposures and dwell times along the flight path."
+      },
+      {
+        "ver": "v1.50.0",
+        "date": "2026-08-28",
+        "name": "3-Tier Hierarchy Formalization",
+        "desc": "Clean inheritance propagation across Global, Layer, and Waypoint."
+      }
+    ]
+  },
+  {
+    "num": "Epoch 3",
+    "title": "Airspace, Weather & Safety Architecture",
+    "range": "v1.51.0 \u2013 v1.75.0",
+    "period": "August 2026 \u2013 September 2026",
+    "color": "#f59e0b",
+    "desc": "Direct integration with official FAA REST APIs for aeronautical navigation charts, controlled airspace, and LAANC grids. Added live NOAA NEXRAD weather radar, NWS hazard alerts, METAR decoder, and 3D exclusion zone detour climbing.",
+    "milestones": [
+      {
+        "ver": "v1.51.0",
+        "date": "2026-08-28",
+        "name": "FAA VFR Sectionals & Controlled Airspace",
+        "desc": "Raster chart tiles and Class B/C/D/E boundary overlays."
+      },
+      {
+        "ver": "v1.55.0",
+        "date": "2026-08-29",
+        "name": "NOAA NEXRAD & NWS Hazard Layers",
+        "desc": "Live composite radar precipitation and active weather warnings."
+      },
+      {
+        "ver": "v1.60.0",
+        "date": "2026-08-30",
+        "name": "HIFLD Power Transmission Lines",
+        "desc": "High-voltage electric lines dynamically rendered at zoom >= 11."
+      },
+      {
+        "ver": "v1.69.0",
+        "date": "2026-09-03",
+        "name": "Live METAR Decoder & Weather Station Switcher",
+        "desc": "Real-time wind, ceiling, visibility, and flight category badges."
+      },
+      {
+        "ver": "v1.71.0",
+        "date": "2026-09-03",
+        "name": "3D Exclusion Zones & Detour Climber",
+        "desc": "Avoid around obstacle boundaries or climb safely over ceilings."
+      }
+    ]
+  },
+  {
+    "num": "Epoch 4",
+    "title": "Companion Bridge, ADB & Live Remote ID",
+    "range": "v1.76.0 \u2013 v1.95.0",
+    "period": "September 2026",
+    "color": "#8b5cf6",
+    "desc": "Development of the local Companion Bridge daemon with direct USB ADB connection to DJI RC 2 smart controllers for 1-click mission transfer, ASTM F3411 Remote ID 360\u00b0 airspace radar, and adaptive background battery/network throttling.",
+    "milestones": [
+      {
+        "ver": "v1.76.0",
+        "date": "2026-09-04",
+        "name": "Companion Bridge Daemon",
+        "desc": "Local Node.js daemon for direct DJI RC 2 USB communication."
+      },
+      {
+        "ver": "v1.88.0",
+        "date": "2026-09-06",
+        "name": "1-Click KMZ Mission Push & Pull",
+        "desc": "Transfers waypoints directly into /DJI/Fly/Waypoints on controller."
+      },
+      {
+        "ver": "v1.92.0",
+        "date": "2026-09-08",
+        "name": "ASTM F3411 Remote ID Live Radar",
+        "desc": "Real-time 360-degree drone and pilot tracking on 2D map."
+      },
+      {
+        "ver": "v1.95.0",
+        "date": "2026-09-11",
+        "name": "TFR Monitor & Stadium Advisories",
+        "desc": "Live Temporary Flight Restrictions and 14 CFR \u00a7 99.7 briefings."
+      },
+      {
+        "ver": "v1.106.0",
+        "date": "2026-09-18",
+        "name": "Adaptive Radar Gating & Offline Backoff",
+        "desc": "Reduces background polling traffic by 98% when offline or dormant."
+      }
+    ]
+  },
+  {
+    "num": "Epoch 5",
+    "title": "Flight Diagnostics & Cloud Log Decryption",
+    "range": "v1.96.0 \u2013 v1.103.0",
+    "period": "September 2026",
+    "color": "#ec4899",
+    "desc": "Post-flight forensics engine: native DJI Cloud API keychain decryption for encrypted Fly logs (FlightRecord_*.txt), 3D planned vs flown trajectory comparison, GPS drift metrics, photo geotagging, HUD stampers, and Road Follow camera targeting.",
+    "milestones": [
+      {
+        "ver": "v1.96.0",
+        "date": "2026-09-12",
+        "name": "Telemetry HUD Stamper & Photo Ingest",
+        "desc": "Bakes flight telemetry and coordinates onto exported inspection photos."
+      },
+      {
+        "ver": "v1.98.0",
+        "date": "2026-09-12",
+        "name": "SQLite Mission & Media Catalog",
+        "desc": "Local SQLite indexing for flights, photo metadata, and thumbnails."
+      },
+      {
+        "ver": "v1.101.0",
+        "date": "2026-09-13",
+        "name": "Verified SD Ingestion with MD5 Checksums",
+        "desc": "Triple-barrier checksum verification before unlinking source photos."
+      },
+      {
+        "ver": "v1.103.0",
+        "date": "2026-09-13",
+        "name": "Road Follow Dynamic Gimbal Tilt",
+        "desc": "Cross-track yaw and trigonometric camera pitch locking to road surface."
+      },
+      {
+        "ver": "v1.105.0",
+        "date": "2026-09-18",
+        "name": "Native DJI Cloud API Log Decryption",
+        "desc": "Decrypts encrypted v13/v14 FlightRecord logs via Rust dji-log engine."
+      }
+    ]
+  },
+  {
+    "num": "Epoch 6",
+    "title": "Photogrammetry & Ground Control Survey Suite",
+    "range": "v1.104.0 \u2013 v1.109.0",
+    "period": "September 2026",
+    "color": "#3b82f6",
+    "desc": "Survey-grade photogrammetry platform: 3D forward pinhole ray-to-ground projective geometry, dual slant/ground plane caliper calibration, parcel boundary photo projection, Ground Control Points (GCPs), millimeter-accurate printable SVG target generator, altitude GSD advisor, and optical detection range rings.",
+    "milestones": [
+      {
+        "ver": "v1.99.0",
+        "date": "2026-09-12",
+        "name": "3D Ray-to-Ground Projective Correction",
+        "desc": "Pinhole projective model computing true Euclidean ground distances."
+      },
+      {
+        "ver": "v1.99.1",
+        "date": "2026-09-12",
+        "name": "Dual Slant vs Ground Plane Calipers",
+        "desc": "Eliminates roof measurement inflation via target slant view plane mode."
+      },
+      {
+        "ver": "v1.102.0",
+        "date": "2026-09-13",
+        "name": "Parcel & Boundary Drawing Layers",
+        "desc": "Draggable parcel perimeters with multi-layer photo superimposition."
+      },
+      {
+        "ver": "v1.104.0",
+        "date": "2026-09-17",
+        "name": "Ground Control (GCP) & Fiducial Suite",
+        "desc": "GCP, Check Point, and Scale Bar annotations with RTK CSV ingest."
+      },
+      {
+        "ver": "v1.104.0",
+        "date": "2026-09-17",
+        "name": "Printable Vector SVG Target Generator",
+        "desc": "Millimeter-accurate ArUco 4x4, ArUco 5x5, AprilTag, and checkerboards."
+      },
+      {
+        "ver": "v1.109.0",
+        "date": "2026-09-18",
+        "name": "Altitude Sizing Advisor & Range Rings",
+        "desc": "GSD resolution warnings (<10px) and 2D ground optical detection rings."
+      }
+    ]
+  }
+];
+
+    // Render Timeline Cards
+    const timelineContainer = document.getElementById('timeline-cards-container');
+    timelineEpochs.forEach(epoch => {
+      const card = document.createElement('div');
+      card.className = 'epoch-card';
+      card.style.borderLeft = `4px solid ${epoch.color}`;
+
+      let milestonesHtml = '';
+      epoch.milestones.forEach(m => {
+        milestonesHtml += `
+          <div class="milestone-item">
+            <div class="milestone-top">
+              <span class="milestone-ver" style="color:${epoch.color};">${m.ver}</span>
+              <span class="milestone-date">${m.date}</span>
+            </div>
+            <div class="milestone-name">${m.name}</div>
+            <div class="milestone-sub">${m.desc}</div>
+          </div>
+        `;
+      });
+
+      card.innerHTML = `
+        <div class="epoch-header">
+          <div class="epoch-title-group">
+            <span class="epoch-num" style="background:${epoch.color}22; color:${epoch.color}; border: 1px solid ${epoch.color}66;">${epoch.num}</span>
+            <span class="epoch-title">${epoch.title}</span>
+          </div>
+          <div class="epoch-meta">${epoch.range} &bull; ${epoch.period}</div>
+        </div>
+        <p class="epoch-desc">${epoch.desc}</p>
+        <div class="milestone-grid">
+          ${milestonesHtml}
+        </div>
+      `;
+      timelineContainer.appendChild(card);
+    });
+
+    // D3 Interactive Mindmap Setup
+    let rootNode;
+    let svg, g, zoom;
+
+    function initD3Mindmap() {
+      const container = document.getElementById('mindmap-container');
+      const width = container.clientWidth || 1200;
+      const height = container.clientHeight || 700;
+
+      svg = d3.select('#mindmap-svg')
+        .attr('width', width)
+        .attr('height', height);
+
+      svg.selectAll('*').remove();
+
+      g = svg.append('g');
+
+      zoom = d3.zoom()
+        .scaleExtent([0.2, 3.5])
+        .on('zoom', (event) => {
+          g.attr('transform', event.transform);
+        });
+
+      svg.call(zoom);
+
+      rootNode = d3.hierarchy(mindmapData);
+      rootNode.x0 = 0;
+      rootNode.y0 = 0;
+
+      // Expand pillars (depth 1) by default, collapse deeper levels
+      if (rootNode.children) {
+        rootNode.children.forEach(c => {
+          if (c.children) {
+            c._children = c.children;
+            c.children = null;
+          }
+        });
+      }
+
+      updateMindmap(rootNode);
+
+      // Center root vertically at left-center
+      svg.call(zoom.transform, d3.zoomIdentity.translate(120, height / 2).scale(0.85));
+    }
+
+    function updateMindmap(source) {
+      const treeLayout = d3.tree().nodeSize([48, 290]);
+      treeLayout(rootNode);
+
+      const nodes = rootNode.descendants();
+      const links = rootNode.links();
+
+      // Find vertical bounds to center the tree vertically around 0
+      const xExtent = d3.extent(nodes, d => d.x);
+      const xMid = (xExtent[0] + xExtent[1]) / 2;
+
+      nodes.forEach(d => {
+        d.y = d.depth * 290;
+        d.x = d.x - xMid;
+      });
+
+      const node = g.selectAll('g.node')
+        .data(nodes, d => d.id || (d.id = Math.random().toString(36).substr(2, 9)));
+
+      const nodeEnter = node.enter().append('g')
+        .attr('class', d => `node ${d.children || d._children ? 'node--internal' : 'node--leaf'}`)
+        .attr('transform', d => `translate(${source.y0 || 0},${source.x0 || 0})`)
+        .on('click', (event, d) => {
+          if (d.children) {
+            d._children = d.children;
+            d.children = null;
+          } else if (d._children) {
+            d.children = d._children;
+            d._children = null;
+          }
+          updateMindmap(d);
+          showNodeDetails(d);
+        });
+
+      nodeEnter.append('circle')
+        .attr('r', d => d.depth === 0 ? 13 : (d.children || d._children ? 8.5 : 5.5))
+        .attr('fill', d => {
+          if (d.depth === 0) return '#06b6d4';
+          const domainColor = getDomainColor(d);
+          return d._children ? domainColor : '#0f172a';
+        })
+        .attr('stroke', d => getDomainColor(d))
+        .style('cursor', 'pointer');
+
+      nodeEnter.append('text')
+        .attr('dy', '.35em')
+        .attr('x', d => d.depth === 0 ? -16 : (d.children ? -14 : 14))
+        .attr('text-anchor', d => d.depth === 0 ? 'end' : (d.children ? 'end' : 'start'))
+        .text(d => d.data.name)
+        .style('fill-opacity', 0);
+
+      const nodeUpdate = node.merge(nodeEnter).transition().duration(350)
+        .attr('transform', d => `translate(${d.y},${d.x})`);
+
+      nodeUpdate.select('circle')
+        .attr('r', d => d.depth === 0 ? 13 : (d.children || d._children ? 8.5 : 5.5))
+        .attr('fill', d => {
+          if (d.depth === 0) return '#06b6d4';
+          const domainColor = getDomainColor(d);
+          return d._children ? domainColor : '#0f172a';
+        })
+        .attr('stroke', d => getDomainColor(d));
+
+      nodeUpdate.select('text')
+        .style('fill-opacity', 1)
+        .attr('x', d => d.depth === 0 ? -16 : (d.children ? -14 : 14))
+        .attr('text-anchor', d => d.depth === 0 ? 'end' : (d.children ? 'end' : 'start'));
+
+      const nodeExit = node.exit().transition().duration(350)
+        .attr('transform', d => `translate(${source.y},${source.x || 0})`)
+        .remove();
+
+      nodeExit.select('circle').attr('r', 0);
+      nodeExit.select('text').style('fill-opacity', 0);
+
+      const link = g.selectAll('path.link')
+        .data(links, d => d.target.id);
+
+      const linkEnter = link.enter().insert('path', 'g')
+        .attr('class', 'link')
+        .attr('stroke', d => getDomainColor(d.target))
+        .attr('d', d => {
+          const o = { x: source.x0 || 0, y: source.y0 || 0 };
+          return diagonal(o, o);
+        });
+
+      link.merge(linkEnter).transition().duration(350)
+        .attr('d', d => diagonal(d.source, d.target))
+        .attr('stroke', d => getDomainColor(d.target));
+
+      link.exit().transition().duration(350)
+        .attr('d', d => {
+          const o = { x: source.x, y: source.y };
+          return diagonal(o, o);
+        })
+        .remove();
+
+      nodes.forEach(d => {
+        d.x0 = d.x;
+        d.y0 = d.y;
+      });
+    }
+
+    function diagonal(s, d) {
+      return `M ${s.y} ${s.x}
+              C ${(s.y + d.y) / 2} ${s.x},
+                ${(s.y + d.y) / 2} ${d.x},
+                ${d.y} ${d.x}`;
+    }
+
+    function getDomainColor(d) {
+      let curr = d;
+      while (curr) {
+        if (curr.data && curr.data.color) return curr.data.color;
+        curr = curr.parent;
+      }
+      return '#06b6d4';
+    }
+
+    function showNodeDetails(d) {
+      const drawer = document.getElementById('node-drawer');
+      const title = document.getElementById('drawer-title');
+      const badge = document.getElementById('drawer-badge');
+      const desc = document.getElementById('drawer-desc');
+      const details = document.getElementById('drawer-details');
+
+      title.innerText = d.data.name;
+      const color = getDomainColor(d);
+      badge.innerText = d.data.badge || (d.depth === 0 ? 'Root' : `Tier ${d.depth}`);
+      badge.style.background = `${color}22`;
+      badge.style.color = color;
+      badge.style.border = `1px solid ${color}66`;
+
+      desc.innerText = d.data.desc || 'Part of the Aalaapi Sky flight planning architecture.';
+
+      let metaHtml = `<strong>Hierarchy:</strong> Level ${d.depth}`;
+      if (d.children || d._children) {
+        const count = (d.children ? d.children.length : 0) + (d._children ? d._children.length : 0);
+        metaHtml += ` &bull; <strong>Sub-items:</strong> ${count}`;
+      }
+      details.innerHTML = metaHtml;
+
+      drawer.style.display = 'block';
+    }
+
+    document.getElementById('drawer-close').addEventListener('click', () => {
+      document.getElementById('node-drawer').style.display = 'none';
+    });
+
+    document.getElementById('btn-reset-zoom').addEventListener('click', () => {
+      const container = document.getElementById('mindmap-container');
+      const width = container.clientWidth || 1200;
+      const height = container.clientHeight || 700;
+      svg.transition().duration(500).call(
+        zoom.transform,
+        d3.zoomIdentity.translate(120, height / 2).scale(0.85)
+      );
+    });
+
+    document.getElementById('btn-expand-all').addEventListener('click', () => {
+      function expand(d) {
+        if (d._children) {
+          d.children = d._children;
+          d._children = null;
+        }
+        if (d.children) d.children.forEach(expand);
+      }
+      expand(rootNode);
+      updateMindmap(rootNode);
+    });
+
+    document.getElementById('btn-collapse-all').addEventListener('click', () => {
+      function collapseLeaves(d) {
+        if (d.depth >= 1 && d.children) {
+          d._children = d.children;
+          d.children = null;
+        } else if (d.children) {
+          d.children.forEach(collapseLeaves);
+        }
+      }
+      collapseLeaves(rootNode);
+      updateMindmap(rootNode);
+    });
+
+    document.getElementById('search-input').addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      if (!q) {
+        g.selectAll('g.node text').style('fill', '#f1f5f9').style('font-weight', 'normal');
+        return;
+      }
+      g.selectAll('g.node').each(function(d) {
+        const match = d.data.name.toLowerCase().includes(q) || (d.data.desc && d.data.desc.toLowerCase().includes(q));
+        const textElem = d3.select(this).select('text');
+        const circleElem = d3.select(this).select('circle');
+        if (match) {
+          textElem.style('fill', '#fde047').style('font-weight', 'bold');
+          circleElem.attr('stroke', '#fde047').attr('stroke-width', 4);
+        } else {
+          textElem.style('fill', '#64748b').style('font-weight', 'normal');
+          circleElem.attr('stroke', getDomainColor(d)).attr('stroke-width', 2);
+        }
+      });
+    });
+
+    document.querySelectorAll('.filter-pills .pill-btn').forEach(pill => {
+      pill.addEventListener('click', () => {
+        document.querySelectorAll('.filter-pills .pill-btn').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        const filter = pill.getAttribute('data-filter');
+
+        if (filter === 'all') {
+          rootNode.children.forEach(c => {
+            if (c._children) {
+              c.children = c._children;
+              c._children = null;
+            }
+          });
+        } else {
+          const filterMap = {
+            'wpml': 'Core Flight Planning & WPML V2',
+            '3d': '3D Engine & Virtual FPV HUD',
+            'airspace': 'Airspace, Weather & Safety Architecture',
+            'companion': 'Companion Bridge & Remote ID Radar',
+            'diagnostics': 'Flight Diagnostics & Telemetry Replay',
+            'survey': 'Photogrammetry & Ground Control Survey Suite'
+          };
+          const targetName = filterMap[filter];
+          rootNode.children.forEach(c => {
+            if (c.data.name === targetName) {
+              if (c._children) {
+                c.children = c._children;
+                c._children = null;
+              }
+            } else {
+              if (c.children) {
+                c._children = c.children;
+                c.children = null;
+              }
+            }
+          });
+        }
+        updateMindmap(rootNode);
+      });
+    });
+
+    // Execute immediately on script load
+    initD3Mindmap();
+    window.addEventListener('resize', () => {
+      initD3Mindmap();
+    });
+  </script>
+</body>
+</html>
