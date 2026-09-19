@@ -4832,7 +4832,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.109.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.111.2</span></h1>
         </div>
       </div>
 
@@ -6684,18 +6684,18 @@ html, body {
             <div class="companion-status-row" id="companion-service-row">
               <span style="font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
                 <span id="companion-service-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #64748b; display: inline-block;"></span>
-                <span id="companion-service-text">Bridge Service: Offline</span>
+                <span id="companion-service-text">Aalaapi Bridge: Offline</span>
               </span>
               <span style="display: inline-flex; align-items: center; gap: 6px;">
-                <span id="companion-service-label" style="color: var(--text-muted); font-size: 0.68rem;">start-companion.bat</span>
-                <button id="companion-config-host-btn" class="companion-help-circle-btn" type="button" title="Configure Remote Companion IP / Host" style="font-size: 0.65rem;">⚙️</button>
-                <button id="companion-service-help-btn" class="companion-help-circle-btn" type="button" title="How to start Bridge Service">?</button>
+                <span id="companion-service-label" style="color: var(--text-muted); font-size: 0.68rem;">start-bridge.bat</span>
+                <button id="companion-config-host-btn" class="companion-help-circle-btn" type="button" title="Configure Remote Aalaapi Bridge IP / Host" style="font-size: 0.65rem;">⚙️</button>
+                <button id="companion-service-help-btn" class="companion-help-circle-btn" type="button" title="How to start Aalaapi Bridge">?</button>
               </span>
             </div>
             <!-- Host Config Panel (Expandable) -->
             <div id="companion-host-panel" style="display: none; padding: 6px 8px; background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; font-size: 0.72rem; flex-direction: column; gap: 4px;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-weight: 600; color: var(--text-main); font-size: 0.72rem;">Remote Bridge Host / IP:</span>
+                <span style="font-weight: 600; color: var(--text-main); font-size: 0.72rem;">Remote Aalaapi Bridge Host / IP:</span>
                 <button id="companion-host-reset-btn" type="button" style="background: none; border: none; color: #38bdf8; cursor: pointer; font-size: 0.68rem; text-decoration: underline; padding: 0;">Reset</button>
               </div>
               <div style="display: flex; gap: 4px; align-items: center;">
@@ -6725,8 +6725,8 @@ html, body {
             </div>
             <!-- Hidden backward-compatible aliases for legacy selector compatibility -->
             <span id="companion-indicator-dot" style="display:none;"></span>
-            <span id="companion-status-text" style="display:none;">Companion Offline</span>
-            <span id="companion-device-label" style="display:none;">start-companion.bat</span>
+            <span id="companion-status-text" style="display:none;">Aalaapi Bridge Offline</span>
+            <span id="companion-device-label" style="display:none;">start-bridge.bat</span>
             <button id="companion-help-btn" style="display:none;" type="button">?</button>
             <div id="rc2-direct-actions" style="display: none; width: 100%; flex-direction: column; gap: 6px;">
               <div style="display: flex; gap: 6px; width: 100%;">
@@ -7174,6 +7174,49 @@ html, body {
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🌉 Aalaapi Bridge &amp; Progressive Disclosure Architecture (v1.111.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 8px 0; line-height: 1.4;">
+              Rebranded the local companion service to <strong>Aalaapi Bridge</strong> (<code>start-bridge.bat</code>) with progressive disclosure: hardware sync buttons (<em>Send to RC 2</em>, <em>Pull KMZ</em>, and Diagnostics <em>Pull from RC 2</em>) remain hidden when offline to keep the web interface clean, clutter-free, and unbadged.
+            </p>
+            <div style="background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 8px 10px; font-size: 0.74rem; line-height: 1.45;">
+              <strong style="color: var(--text-main); font-size: 0.76rem; display: block; margin-bottom: 4px;">Standalone Web vs. Aalaapi Bridge Capability Matrix:</strong>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div style="background: rgba(6, 182, 212, 0.06); border: 1px solid rgba(6, 182, 212, 0.2); border-radius: 5px; padding: 6px 8px;">
+                  <span style="color: #22d3ee; font-weight: 700;">🌐 Standalone Web (Zero Install)</span>
+                  <ul style="margin: 4px 0 0 0; padding-left: 14px; color: var(--text-muted); font-size: 0.71rem;">
+                    <li>Boundary &amp; parcel drawing (perimeters, areas)</li>
+                    <li>3D obstacle avoidance &amp; detour routing</li>
+                    <li>Full photogrammetry planning (Nadir, Splats, Orbits)</li>
+                    <li>GCPs &amp; vector target sheet generator</li>
+                    <li>Photo Inspector overlay projections</li>
+                    <li>Export/Import KMZ, KML, Litchi, Autel</li>
+                  </ul>
+                </div>
+                <div style="background: rgba(56, 189, 248, 0.06); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 5px; padding: 6px 8px;">
+                  <span style="color: #38bdf8; font-weight: 700;">🌉 Aalaapi Bridge (Local Service)</span>
+                  <ul style="margin: 4px 0 0 0; padding-left: 14px; color: var(--text-muted); font-size: 0.71rem;">
+                    <li>1-Click Direct USB MTP Sync to DJI RC 2</li>
+                    <li>Pull active mission KMZ from controller</li>
+                    <li>Pull native <code>FlightRecord_*.txt</code> telemetry logs</li>
+                    <li>Hardware AES decryption via DJI Cloud API</li>
+                    <li>Real-time Remote ID drone radar scanning</li>
+                    <li>Persistent SQLite mission archive (<code>missions.db</code>)</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #22d3ee; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🌐 Spatial Mission Environment Serialization &amp; Digital Twin (v1.110.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Upgraded Flight Diagnostics (<code>_diag.json</code>) and Mission Plans (<code>_plan.json</code>) into complete spatial digital twins. Every exported package and companion SQLite archive now bundles all placed <strong>Ground Control Points &amp; Fiducial Markers</strong> (ArUco/AprilTag), <strong>Inclusion Zones</strong> (irregular target framing polygons), <strong>3D Obstacle Exclusion Zones</strong> (no-fly safety keep-out volumes), and <strong>Survey Parcels</strong> (property lines). Historical flights loaded in Photo Inspector automatically restore and superimpose ground targets and parcel perimeters over photos with zero re-importing.
+            </p>
+          </div>
           <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #fbbf24; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🎯 Fiducial Altitude Sizing Advisor &amp; Optical Detection Ranges (v1.109.0)
@@ -7490,6 +7533,13 @@ html, body {
                 Deploy Ground Control Points (GCPs) and Check Points (CPs) to achieve sub-centimeter survey accuracy. Use the <strong>🖨️ Target Print Sheet</strong> generator in Section 2 to print high-contrast ArUco/AprilTag targets with center rover crosshairs. Targets automatically superimpose onto captured drone photos in the Photo Inspector.
               </p>
             </div>
+
+            <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 8px; padding: 10px; grid-column: span 2;">
+              <strong style="color: #22d3ee; font-size: 0.82rem; display: flex; align-items: center; gap: 5px;">🌉 Standalone Web vs. Aalaapi Bridge</strong>
+              <p style="font-size: 0.75rem; color: #cbd5e1; margin: 4px 0 0 0; line-height: 1.35;">
+                Aalaapi Sky operates fully standalone in any modern web browser: boundary drawing, obstacle avoidance routing, and KMZ waypoint downloads require zero installations. Launch <strong>Aalaapi Bridge</strong> (<code>start-bridge.bat</code>) whenever you need 1-click USB sync to your DJI RC 2, native flight log extraction, live Remote ID radar, or persistent SQLite mission storage.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -7550,7 +7600,7 @@ html, body {
     </div>
   </div>
 
-  <!-- RC2 File Copy & Companion Sync Instructions Modal -->
+  <!-- RC2 File Copy & Aalaapi Bridge Sync Instructions Modal -->
   <div id="guide-modal" class="modal-overlay hidden">
     <div class="modal glass">
       <header class="modal-header">
@@ -7569,7 +7619,7 @@ html, body {
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
             </svg>
-            Bridge Service
+            Aalaapi Bridge
           </button>
           <button type="button" class="guide-tab-btn" data-tab="usb">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -7601,38 +7651,38 @@ html, body {
           </button>
         </div>
 
-        <!-- TAB 1: Bridge Service Setup -->
+        <!-- TAB 1: Aalaapi Bridge Setup -->
         <div id="guide-pane-service" class="guide-tab-pane">
           <div class="modal-alert info" style="margin-bottom: 14px; border-left-color: var(--accent-cyan); background: rgba(6, 182, 212, 0.06); font-size: 0.84rem; line-height: 1.4; padding: 12px; border-radius: 8px;">
-            <strong>⚡ Bridge Service (Port 8765):</strong> The Companion Bridge is a zero-dependency local Node.js background service (<code>tools/companion/server.js</code>) that enables direct 1-click mission synchronization and flight log replay over USB MTP.
+            <strong>⚡ Aalaapi Bridge (Port 8765):</strong> Aalaapi Bridge is a zero-dependency local Node.js background service (<code>tools/companion/server.js</code>) that enables direct 1-click mission synchronization and flight log replay over USB MTP.
           </div>
 
           <ol class="guide-steps">
             <li>
-              <strong>Start the Companion Service:</strong>
-              Double-click <code>start-companion.bat</code> in the repository root, or run the following command in your terminal:
+              <strong>Start Aalaapi Bridge:</strong>
+              Double-click <code>start-bridge.bat</code> in the repository root, or run the following command in your terminal:
               <div class="code-snippet-box">
-                <code>npm run companion</code>
-                <button type="button" class="btn-copy-cmd" data-copy="npm run companion">Copy</button>
+                <code>npm run bridge</code>
+                <button type="button" class="btn-copy-cmd" data-copy="npm run bridge">Copy</button>
               </div>
             </li>
             <li>
               <strong>Verify Bridge Status:</strong>
-              Once started, the sidebar companion box will illuminate <strong>`🟢 Bridge Service: Online (port 8765)`</strong>.
+              Once started, the sidebar sync card will illuminate <strong>`🟢 Aalaapi Bridge: Online (port 8765)`</strong>.
             </li>
             <li>
               <strong>Prerequisites &amp; Troubleshooting:</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; list-style-type: disc; color: var(--text-muted); font-size: 0.8rem; line-height: 1.5;">
                 <li>Ensure <strong>Node.js</strong> (v18 or higher) is installed on your computer.</li>
-                <li>If port 8765 is occupied or the service fails to start, run <code>npm run companion:stop</code> or terminate lingering Node processes.</li>
-                <li><strong>Remote LAN Access (Tablets &amp; Phones):</strong> The companion service binds to all network interfaces (0.0.0.0). Look at your terminal startup log for your Wi-Fi IP (e.g. <code>http://192.168.1.50:8765</code>) and open that URL directly in your tablet's browser, or click the ⚙️ icon beside Bridge Service in the sidebar to configure the host IP.</li>
+                <li>If port 8765 is occupied or the service fails to start, run <code>npm run bridge:stop</code> or terminate lingering Node processes.</li>
+                <li><strong>Remote LAN Access (Tablets &amp; Phones):</strong> Aalaapi Bridge binds to all network interfaces (0.0.0.0). Look at your terminal startup log for your Wi-Fi IP (e.g. <code>http://192.168.1.50:8765</code>) and open that URL directly in your tablet's browser, or click the ⚙️ icon beside Aalaapi Bridge in the sidebar to configure the host IP.</li>
                 <li>Browser Private Network Access: If your browser prompts for local network permissions, select "Allow".</li>
               </ul>
             </li>
           </ol>
 
           <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; font-size: 0.78rem; color: var(--text-muted); margin-top: 12px; line-height: 1.4;">
-            <strong style="color: var(--text-main);">Next Step:</strong> Once the service is online, switch to the <strong>RC 2 USB Link</strong> tab to connect your remote controller.
+            <strong style="color: var(--text-main);">Next Step:</strong> Once Aalaapi Bridge is online, switch to the <strong>RC 2 USB Link</strong> tab to connect your remote controller.
           </div>
         </div>
 
@@ -7711,7 +7761,7 @@ html, body {
           </ol>
 
           <div style="font-weight: 700; color: var(--text-main); font-size: 0.88rem; margin: 14px 0 6px; display: flex; align-items: center; gap: 6px;">
-            <span>🛠️ Method 2: Running Companion Service on Android (Termux + ADB)</span>
+            <span>🛠️ Method 2: Running Aalaapi Bridge on Android (Termux + ADB)</span>
           </div>
           <ol class="guide-steps">
             <li>
@@ -7725,14 +7775,14 @@ html, body {
               </div>
             </li>
             <li>
-              <strong>Start the Companion Bridge:</strong> Inside the Aalaapi-Sky directory in Termux, run:
+              <strong>Start Aalaapi Bridge:</strong> Inside the Aalaapi-Sky directory in Termux, run:
               <div class="code-snippet-box">
-                <code>npm run companion</code>
-                <button type="button" class="btn-copy-cmd" data-copy="npm run companion">Copy</button>
+                <code>npm run bridge</code>
+                <button type="button" class="btn-copy-cmd" data-copy="npm run bridge">Copy</button>
               </div>
             </li>
             <li>
-              <strong>1-Click Sync in Tablet Browser:</strong> Open Chrome on your tablet, navigate to Aalaapi Sky, and the companion box will illuminate <strong>`🟢 Bridge Service: Online`</strong> with ADB 1-click sync enabled!
+              <strong>1-Click Sync in Tablet Browser:</strong> Open Chrome on your tablet, navigate to Aalaapi Sky, and the sync card will illuminate <strong>`🟢 Aalaapi Bridge: Online`</strong> with ADB 1-click sync enabled!
             </li>
           </ol>
         </div>
@@ -7923,7 +7973,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.109.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.111.2</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -7992,6 +8042,39 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.111.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🔓 Fixed DJI Cloud Decryption Buffer Overflow:</strong> Resolved <code>stdout maxBuffer length exceeded</code> issue in <code>decryptFlightRecordWithDjiCli</code> by routing <code>dji-log.exe</code> JSON output directly to disk via <code>--output</code> with 100 MB buffer allocation.</li>
+              <li><strong>⚠️ Diagnostics UI Error Transparency:</strong> Decryption failures now surface an interactive <code>⚠️ Decrypt Failed • 🔑 Retry</code> badge with detailed error tooltip in `#diag-flight-meta`.</li>
+              <li><strong>🔄 Instant Flight Decrypt on Key Save:</strong> Saving a DJI API key in the diagnostics modal automatically loads and decrypts the selected flight record.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.111.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>📖 RC 2 Sync &amp; Transfer Guide Rebranding:</strong> Synchronized all modal instructions, setup tabs, terminal copy snippets, and Android Termux guidance to <strong>Aalaapi Bridge</strong> (<code>npm run bridge</code>, <code>npm run bridge:stop</code>, and <code>start-bridge.bat</code>).</li>
+              <li><strong>🔄 Backward Compatibility Preserved:</strong> Retained legacy alias endpoints, command scripts (<code>npm run companion</code>), and DOM element IDs for seamless backward compatibility with automated test suites.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.111.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🌉 Aalaapi Bridge Rebranding &amp; Launcher:</strong> Rebranded the local companion service to <strong>Aalaapi Bridge</strong> (<code>start-bridge.bat</code>) with updated UI cards, launcher batch files, and host configuration tooltips.</li>
+              <li><strong>👁️ Progressive Disclosure Architecture:</strong> Cleaned up the main UI by progressively disclosing hardware-sync buttons (<em>Send to RC 2</em>, <em>Pull KMZ</em>, and Diagnostics <em>Pull from RC 2</em> <code>#diag-pull-rc2-btn</code>) only when Aalaapi Bridge is online and the DJI RC 2 is connected over USB MTP.</li>
+              <li><strong>🌐 Standalone Web vs. Bridge Clarification:</strong> Documented boundary and spatial planning independence. Boundary drawing, geodetics, obstacle detour routing, GCPs, and KMZ waypoint generation run 100% in-browser with zero install; Aalaapi Bridge handles direct USB controller sync, native flight log extraction, live drone radar, and persistent SQLite archiving.</li>
+              <li><strong>🎓 Intro Guide Hub Capability Matrix:</strong> Added a detailed capability comparison matrix and pro tips card to the Quickstart Intro Hub.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.110.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🌐 Full Spatial Environment Serialization:</strong> Upgraded <code>_diag.json</code> (schema 1.57.0) and <code>_plan.json</code> (schema 1.1.0) into complete digital twins. Bundles placed <strong>Ground Control Points &amp; Fiducial Markers</strong>, <strong>Inclusion Zones &amp; Target Polygons</strong>, <strong>3D Obstacle Exclusion Zones</strong>, and <strong>Survey Parcels</strong>.</li>
+              <li><strong>📊 Summary &amp; Spatial Counts:</strong> Added <code>groundControlCount</code>, <code>inclusionZoneCount</code>, <code>exclusionZoneCount</code>, and <code>parcelCount</code> to both mission plans and diagnostics summaries.</li>
+              <li><strong>📸 Photo Inspector Archived Flight Support:</strong> Photo Inspector dynamically superimposes parcel boundaries and GCP markers directly from <code>FlightDiagnostics.currentLoadedMission</code> when reviewing past flights.</li>
+              <li><strong>💾 Companion SQLite Storage &amp; Hoisting:</strong> Companion Bridge SQLite mission archive automatically preserves and hoists spatial layer arrays for instant retrieval.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.109.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -10351,7 +10434,7 @@ html, body {
                   <strong style="font-size: 0.82rem; color: var(--text-main);">🔌 Hardware &amp; Remote Links</strong>
                   <span id="badge-count-hardware" class="storage-count-badge default">Checking...</span>
                 </div>
-                <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 2px;">Stored DJI RC 2 UUID, Companion Bridge host IP, and Multi-Vendor toggles</span>
+                <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 2px;">Stored DJI RC 2 UUID, Aalaapi Bridge host IP, and Multi-Vendor toggles</span>
               </div>
             </label>
 
@@ -10842,7 +10925,7 @@ html, body {
               </svg>
               <span>Center 2D Map</span>
             </button>
-            <button id="diag-pull-rc2-btn" type="button" class="btn-secondary diag-rc2-btn" title="Pull latest flight log directly from connected DJI RC 2 over USB MTP">
+            <button id="diag-pull-rc2-btn" type="button" class="btn-secondary diag-rc2-btn" style="display: none;" title="Pull latest flight log directly from connected DJI RC 2 over USB MTP">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
@@ -11253,7 +11336,7 @@ html, body {
           <span id="dji-key-status-msg" style="font-size: 0.75rem; color: var(--text-muted); min-height: 1.2em;"></span>
         </div>
         <div style="background: rgba(0, 194, 255, 0.08); border-left: 3px solid var(--accent-cyan); padding: 8px 12px; border-radius: 4px; font-size: 0.76rem; color: var(--text-main); line-height: 1.4;">
-          <strong>🔒 Local Security Notice:</strong> The key is stored locally in your Companion bridge server (<code>scratch/companion_config.json</code>) or environment variables. It is only transmitted securely directly to DJI's keychain authentication server to retrieve your record's AES decryption token.
+          <strong>🔒 Local Security Notice:</strong> The key is stored locally in your Aalaapi Bridge server (<code>scratch/companion_config.json</code>) or environment variables. It is only transmitted securely directly to DJI's keychain authentication server to retrieve your record's AES decryption token.
         </div>
       </div>
       <footer class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
@@ -17585,18 +17668,18 @@ function initControlledResetManager() {
 
 function switchGuideTab(targetTab) {
   if (typeof document === 'undefined') return;
-  const canonicalTab = (targetTab === 'companion') ? 'service' : targetTab;
+  const canonicalTab = (targetTab === 'companion' || targetTab === 'bridge') ? 'service' : targetTab;
   const tabBtns = document.querySelectorAll('.guide-tab-btn');
   const tabPanes = document.querySelectorAll('.guide-tab-pane');
   tabBtns.forEach(btn => {
-    if (btn.dataset.tab === canonicalTab || (canonicalTab === 'service' && btn.dataset.tab === 'companion')) {
+    if (btn.dataset.tab === canonicalTab || (canonicalTab === 'service' && (btn.dataset.tab === 'companion' || btn.dataset.tab === 'bridge'))) {
       btn.classList.add('active');
     } else {
       btn.classList.remove('active');
     }
   });
   tabPanes.forEach(pane => {
-    if (pane.id === `guide-pane-${canonicalTab}` || (canonicalTab === 'service' && pane.id === 'guide-pane-companion')) {
+    if (pane.id === `guide-pane-${canonicalTab}` || (canonicalTab === 'service' && (pane.id === 'guide-pane-companion' || pane.id === 'guide-pane-bridge'))) {
       pane.classList.remove('hidden');
     } else {
       pane.classList.add('hidden');
@@ -19172,7 +19255,7 @@ function initUIEventListeners() {
   copyCmdBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const textToCopy = btn.dataset.copy || 'npm run companion';
+      const textToCopy = btn.dataset.copy || 'npm run bridge';
       if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(textToCopy).then(() => {
           const originalText = btn.textContent;
@@ -27667,6 +27750,120 @@ function initMultiVendorToggle() {
 // settings, geometry parameters, camera profiles, flight configurations,
 // computed statistics, and waypoint coordinates for troubleshooting or archival.
 
+/**
+ * Extracts and serializes all spatial environment layers (Ground Control Points / Fiducials,
+ * Inclusion Zones / Target Polygons, Exclusion Zones, and Parcel Boundaries)
+ * from active flightLayers for bundling into Mission Plans and Diagnostics archives.
+ */
+function extractSpatialMissionLayers(layers = null) {
+  const allLayers = (layers && Array.isArray(layers))
+    ? layers
+    : ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : []);
+
+  const groundControl = [];
+  const inclusionZones = [];
+  const exclusionZones = [];
+  const parcels = [];
+
+  allLayers.forEach(l => {
+    if (!l) return;
+
+    // 1. Ground Control Points & Optical Fiducial Markers
+    if (Array.isArray(l.fiducialMarkers) && l.fiducialMarkers.length > 0) {
+      l.fiducialMarkers.forEach(m => {
+        if (!m) return;
+        groundControl.push({
+          id: m.id,
+          code: m.code || 'GCP',
+          role: m.role || 'gcp',
+          type: m.type || 'aruco_4x4',
+          markerId: typeof m.markerId === 'number' ? m.markerId : 0,
+          lat: m.lat,
+          lon: m.lon !== undefined ? m.lon : m.lng,
+          alt: typeof m.alt === 'number' ? m.alt : 0.0,
+          physicalSizeMeters: typeof m.physicalSizeMeters === 'number' ? m.physicalSizeMeters : 0.50,
+          color: m.color || l.markerColor || '#f59e0b',
+          notes: m.notes || '',
+          layerId: l.id,
+          layerName: l.name || 'Fiducial Survey'
+        });
+      });
+    }
+
+    // 2. Inclusion Zones & Target Polygons (targetPoly)
+    if (Array.isArray(l.targetPoly) && l.targetPoly.length >= 3) {
+      inclusionZones.push({
+        layerId: l.id,
+        layerName: l.name || 'Target Inclusion Zone',
+        targetMode: l.targetMode || 'polygon',
+        targetHeight: typeof l.targetHeight === 'number' ? l.targetHeight : 8,
+        targetRadius: typeof l.targetRadius === 'number' ? l.targetRadius : 25,
+        polygon: l.targetPoly.map(pt => ({
+          lat: pt.lat,
+          lon: pt.lon !== undefined ? pt.lon : pt.lng,
+          x: typeof pt.x === 'number' ? pt.x : null,
+          y: typeof pt.y === 'number' ? pt.y : null
+        }))
+      });
+    }
+
+    // 3. Exclusion Zones (Obstacles / No-Fly Keep-Out)
+    if (l.isExclusionZone || l.pattern === 'exclusion-box' || l.pattern === 'exclusion-freeform') {
+      const vertices = Array.isArray(l.polygonVertices) && l.polygonVertices.length >= 3
+        ? l.polygonVertices
+        : (Array.isArray(l.boundaryPolygon) && l.boundaryPolygon.length >= 3 ? l.boundaryPolygon : []);
+
+      if (vertices.length >= 3) {
+        exclusionZones.push({
+          layerId: l.id,
+          layerName: l.name || 'Obstacle Exclusion Zone',
+          pattern: l.pattern,
+          enabled: l.enabled !== false,
+          allAltitudes: !!l.allAltitudes,
+          minAltitude: typeof l.minAltitude === 'number' ? l.minAltitude : 0,
+          maxAltitude: typeof l.maxAltitude === 'number' ? l.maxAltitude : 60,
+          clearanceBuffer: typeof l.clearanceBuffer === 'number' ? l.clearanceBuffer : 5,
+          detourMode: l.detourMode || 'inherit',
+          polygon: vertices.map(pt => ({
+            lat: pt.lat,
+            lon: pt.lon !== undefined ? pt.lon : pt.lng
+          }))
+        });
+      }
+    }
+
+    // 4. Parcel & Survey Boundaries (Property / Site Lines)
+    if (l.pattern === 'boundary-polygon' || (l.isDrawingLayer && !l.isFiducialLayer)) {
+      const vertices = Array.isArray(l.polygonVertices) && l.polygonVertices.length >= 3
+        ? l.polygonVertices
+        : (Array.isArray(l.boundaryPolygon) && l.boundaryPolygon.length >= 3 ? l.boundaryPolygon : []);
+
+      if (vertices.length >= 3) {
+        parcels.push({
+          layerId: l.id,
+          layerName: l.name || 'Boundary / Parcel',
+          enabled: l.enabled !== false,
+          strokeColor: l.strokeColor || '#06b6d4',
+          lineStyle: l.lineStyle || 'dashed',
+          fillOpacity: typeof l.fillOpacity === 'number' ? l.fillOpacity : 15,
+          targetHeight: typeof l.targetHeight === 'number' ? l.targetHeight : 0,
+          polygon: vertices.map(pt => ({
+            lat: pt.lat,
+            lon: pt.lon !== undefined ? pt.lon : pt.lng
+          }))
+        });
+      }
+    }
+  });
+
+  return {
+    groundControl,
+    inclusionZones,
+    exclusionZones,
+    parcels
+  };
+}
+
 function buildMissionPlanJSON(customWps = null) {
   const currentWps = customWps || (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
   const centerLatLng = (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) ? centerMarker.getLatLng() : null;
@@ -27720,10 +27917,14 @@ function buildMissionPlanJSON(customWps = null) {
     ? calculateStats(formattedWaypoints, typeof getCurrentPhotos === 'function' ? getCurrentPhotos() : null, speed, null, null, captureMode)
     : null;
 
+  const spatialData = typeof extractSpatialMissionLayers === 'function'
+    ? extractSpatialMissionLayers()
+    : { groundControl: [], inclusionZones: [], exclusionZones: [], parcels: [] };
+
   return {
-    schemaVersion: "1.0.0",
+    schemaVersion: "1.1.0",
     generator: "Aalaapi Sky",
-    version: "1.59.0",
+    version: "1.110.0",
     exportedAt: new Date().toISOString(),
     mission: {
       uuid: storedUuid || null,
@@ -27762,14 +27963,26 @@ function buildMissionPlanJSON(customWps = null) {
       }
     },
     pointsOfInterest: (typeof pointsOfInterest !== 'undefined' && Array.isArray(pointsOfInterest)) ? pointsOfInterest : [],
+    groundControl: spatialData.groundControl,
+    inclusionZones: spatialData.inclusionZones,
+    exclusionZones: spatialData.exclusionZones,
+    parcels: spatialData.parcels,
     statistics: totalStats ? {
       waypointCount: formattedWaypoints.length,
       photoCount: totalStats.photoCount || formattedWaypoints.length,
       totalDistanceMeters: totalStats.distance || 0,
       totalFlightTimeSeconds: totalStats.flightTimeSeconds || 0,
-      flightTimeFormatted: totalStats.timeStr || ''
+      flightTimeFormatted: totalStats.timeStr || '',
+      groundControlCount: spatialData.groundControl.length,
+      inclusionZoneCount: spatialData.inclusionZones.length,
+      exclusionZoneCount: spatialData.exclusionZones.length,
+      parcelCount: spatialData.parcels.length
     } : {
-      waypointCount: formattedWaypoints.length
+      waypointCount: formattedWaypoints.length,
+      groundControlCount: spatialData.groundControl.length,
+      inclusionZoneCount: spatialData.inclusionZones.length,
+      exclusionZoneCount: spatialData.exclusionZones.length,
+      parcelCount: spatialData.parcels.length
     },
     waypoints: formattedWaypoints
   };
@@ -27848,6 +28061,18 @@ function buildFlightDiagnosticsJSON(customWps = null, options = {}) {
   const validationWarnings = options.validationWarnings || options.validation?.warnings || [];
   const validationRulesPassed = options.validationRulesPassed ?? options.validation?.rulesPassed ?? (isValid ? 10 : 10 - validationErrors.length);
 
+  const spatialData = (plan && plan.groundControl) ? {
+    groundControl: plan.groundControl,
+    inclusionZones: plan.inclusionZones || [],
+    exclusionZones: plan.exclusionZones || [],
+    parcels: plan.parcels || []
+  } : (typeof extractSpatialMissionLayers === 'function' ? extractSpatialMissionLayers() : {
+    groundControl: [],
+    inclusionZones: [],
+    exclusionZones: [],
+    parcels: []
+  });
+
   const createdAt = options.createdAt || new Date().toISOString();
   const archiveId = options.archiveId || `${uuid}_${createdAt}`;
 
@@ -27864,6 +28089,10 @@ function buildFlightDiagnosticsJSON(customWps = null, options = {}) {
     userAgent,
     plan,
     diagnostics: telemetry,
+    groundControl: spatialData.groundControl,
+    inclusionZones: spatialData.inclusionZones,
+    exclusionZones: spatialData.exclusionZones,
+    parcels: spatialData.parcels,
     isValid,
     validationRulesPassed,
     validationErrors,
@@ -27880,7 +28109,11 @@ function buildFlightDiagnosticsJSON(customWps = null, options = {}) {
       estimatedDuration: telemetry?.durationSeconds ?? plan?.statistics?.totalFlightTimeSeconds ?? 0,
       durationFormatted: telemetry?.durationFormatted ?? plan?.statistics?.flightTimeFormatted ?? '',
       maxAltitude: telemetry?.maxAltitude ?? altitude,
-      homePoint: telemetry?.homePoint ?? plan?.centerPoint ?? null
+      homePoint: telemetry?.homePoint ?? plan?.centerPoint ?? null,
+      groundControlCount: spatialData.groundControl.length,
+      inclusionZoneCount: spatialData.inclusionZones.length,
+      exclusionZoneCount: spatialData.exclusionZones.length,
+      parcelCount: spatialData.parcels.length
     }
   };
 }
@@ -28171,6 +28404,7 @@ async function pollCompanionStatus() {
   const pullBtn = document.getElementById('direct-rc2-pull-btn');
   const container = document.getElementById('companion-sync-container');
   const hint = document.getElementById('companion-offline-hint');
+  const diagPullBtn = document.getElementById('diag-pull-rc2-btn');
 
   try {
     const controller = new AbortController();
@@ -28202,7 +28436,7 @@ async function pollCompanionStatus() {
       // 1. Update Bridge Service status (Online)
       if (sDot) sDot.style.background = '#22c55e';
       if (sText) {
-        sText.textContent = 'Bridge Service: Online';
+        sText.textContent = 'Aalaapi Bridge: Online';
         sText.style.color = '#22c55e';
       }
       if (sLabel) sLabel.textContent = 'port 8765';
@@ -28237,6 +28471,7 @@ async function pollCompanionStatus() {
         if (directActions) directActions.style.display = 'flex';
         if (directBtn) directBtn.style.display = 'inline-flex';
         if (pullBtn) pullBtn.style.display = 'inline-flex';
+        if (diagPullBtn) diagPullBtn.style.display = 'inline-flex';
       } else {
         isRc2MtpConnected = false;
         if (container && container.classList) container.classList.add('is-offline');
@@ -28268,6 +28503,7 @@ async function pollCompanionStatus() {
         if (directActions) directActions.style.display = 'none';
         if (directBtn) directBtn.style.display = 'none';
         if (pullBtn) pullBtn.style.display = 'none';
+        if (diagPullBtn) diagPullBtn.style.display = 'none';
       }
     } else {
       throw new Error('Non-200 status');
@@ -28288,17 +28524,17 @@ async function pollCompanionStatus() {
       if (labelSpan) {
         labelSpan.innerHTML = `
           <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-          Bridge Offline &bull; Setup Guide`;
+          Aalaapi Bridge Offline &bull; Setup Guide`;
       }
     }
 
     // 1. Service Offline
     if (sDot) sDot.style.background = '#64748b'; // Gray
     if (sText) {
-      sText.textContent = 'Bridge Service: Offline';
+      sText.textContent = 'Aalaapi Bridge: Offline';
       sText.style.color = 'var(--text-main)';
     }
-    if (sLabel) sLabel.textContent = 'start-companion.bat';
+    if (sLabel) sLabel.textContent = 'start-bridge.bat';
 
     // 2. USB Link Waiting
     if (uDot) uDot.style.background = '#64748b'; // Gray
@@ -28311,14 +28547,15 @@ async function pollCompanionStatus() {
     // Legacy compatibility
     if (dot) dot.style.background = '#64748b';
     if (text) {
-      text.textContent = 'Companion Offline';
+      text.textContent = 'Aalaapi Bridge Offline';
       text.style.color = 'var(--text-main)';
     }
-    if (label) label.textContent = 'start-companion.bat';
+    if (label) label.textContent = 'start-bridge.bat';
 
     if (directActions) directActions.style.display = 'none';
     if (directBtn) directBtn.style.display = 'none';
     if (pullBtn) pullBtn.style.display = 'none';
+    if (diagPullBtn) diagPullBtn.style.display = 'none';
   }
 }
 
@@ -30384,8 +30621,13 @@ const FlightDiagnostics = {
         await this.checkDjiApiKeyStatus();
         setTimeout(() => {
           this.closeDjiKeyModal();
-          if (this.selectedFlightId) {
+          if (this.selectedFlightId && this.selectedFlightId !== 'active-mission') {
             this.loadSelectedFlight(this.selectedFlightId);
+          } else {
+            const flightSel = document.getElementById('diag-flight-selector');
+            if (flightSel && flightSel.value && flightSel.value !== 'active-mission') {
+              this.loadSelectedFlight(flightSel.value);
+            }
           }
         }, 800);
       } else {
@@ -30744,10 +30986,11 @@ const FlightDiagnostics = {
             this.isDecrypted = !!data.isDecrypted;
             this.needsDjiApiKey = !!data.needsDjiApiKey;
             this.djiApiKeyConfigured = !!data.djiApiKeyConfigured;
+            this.djiDecryptError = data.djiDecryptError || null;
             let telem = data.telemetry;
-            this.isActualFlown = (telem.isActualFlown !== undefined) ? !!telem.isActualFlown : !telem.isSimulation;
+            this.isActualFlown = (telem.isActualFlown !== undefined) ? !!telem.isActualFlown : (this.isDecrypted || !telem.isSimulation);
             const plannedWps = data.telemetry.plannedWaypoints || data.plannedWaypoints || null;
-            if (telem && telem.points && plannedWps && plannedWps.length > 1) {
+            if (!this.isDecrypted && telem && telem.points && plannedWps && plannedWps.length > 1) {
               const photoAlts = new Set(telem.points.filter(p => p.isPhoto).map(p => p.alt));
               const planAlts = new Set(plannedWps.map(w => w.altitude !== undefined ? w.altitude : (w.alt !== undefined ? w.alt : 50)));
               if (photoAlts.size === 1 && planAlts.size > 1) {
@@ -31081,6 +31324,9 @@ const FlightDiagnostics = {
           decBadge = ' <span style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; margin-left: 6px;">🔓 Decrypted via DJI Cloud API</span>';
         } else if (this.needsDjiApiKey) {
           decBadge = ' <span style="background: rgba(234, 179, 8, 0.2); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.35); padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; margin-left: 6px; cursor: pointer;" onclick="if(typeof FlightDiagnostics!==\'undefined\')FlightDiagnostics.openDjiKeyModal()" title="Click to enter DJI Developer App Key to decrypt encrypted flight record">📐 Modeled (Synthetic KMZ) • 🔑 Decrypt</span>';
+        } else if (this.djiDecryptError) {
+          const errSafe = String(this.djiDecryptError).replace(/"/g, '&quot;');
+          decBadge = ` <span style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; margin-left: 6px; cursor: pointer;" onclick="if(typeof FlightDiagnostics!==\'undefined\')FlightDiagnostics.openDjiKeyModal()" title="Decryption failed: ${errSafe}. Click to check DJI Developer Key.">⚠️ Decrypt Failed • 🔑 Retry</span>`;
         }
         if (decBadge) {
           meta.innerHTML = `Telemetry Log: <strong>${flightName}</strong> • Duration: <strong>${this.telemetryData.durationFormatted}</strong>${decBadge}`;
@@ -40199,7 +40445,8 @@ async function openTfrBriefingModal(notamId) {
   if (!modal || !contentEl) return;
 
   // Find local item metadata
-  const localItem = tfrActiveNotams ? tfrActiveNotams.find(t => t.notamId === notamId || t.title === notamId || String(t.stadiumId) === String(notamId)) : null;
+  const activeList = (typeof window !== 'undefined' && Array.isArray(window.tfrActiveNotams) && window.tfrActiveNotams.length > 0) ? window.tfrActiveNotams : tfrActiveNotams;
+  const localItem = activeList ? activeList.find(t => t.notamId === notamId || t.title === notamId || String(t.stadiumId) === String(notamId)) : null;
 
   modal.classList.remove('hidden');
   if (typeof contentEl.replaceChildren === 'function') contentEl.replaceChildren(); else contentEl.innerHTML = '';
@@ -41541,6 +41788,25 @@ const PhotoInspector = {
         }
       }
 
+      // Fallback: If no workspace boundary layers exist, check if currentLoadedMission in FlightDiagnostics has parcels
+      if (layersToProject.length === 0 && typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.currentLoadedMission) {
+        const mParcels = FlightDiagnostics.currentLoadedMission.parcels || FlightDiagnostics.currentLoadedMission.plan?.parcels;
+        if (Array.isArray(mParcels)) {
+          mParcels.forEach(p => {
+            if (Array.isArray(p.polygon) && p.polygon.length >= 3) {
+              layersToProject.push({
+                polygon: p.polygon,
+                name: p.layerName || 'Boundary / Parcel',
+                strokeColor: p.strokeColor || '#06b6d4',
+                lineStyle: p.lineStyle || 'dashed',
+                fillOpacity: (typeof p.fillOpacity === 'number') ? p.fillOpacity / 100.0 : 0.15,
+                targetHeight: p.targetHeight || 0
+              });
+            }
+          });
+        }
+      }
+
       layersToProject.forEach(item => {
         const projRes = this.projectGeoPolygonToPhoto(item.polygon, camPose, {
           sensorWidthMm: this.activePhoto.sensorWidthMm || 9.6,
@@ -41637,6 +41903,21 @@ const PhotoInspector = {
           });
         });
       });
+
+      // Fallback: If no workspace fiducials exist, check if currentLoadedMission in FlightDiagnostics has groundControl
+      if (markersToProject.length === 0 && typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.currentLoadedMission) {
+        const mission = FlightDiagnostics.currentLoadedMission;
+        const mGcp = mission.groundControl || mission.plan?.groundControl;
+        if (Array.isArray(mGcp)) {
+          mGcp.forEach(m => {
+            markersToProject.push({
+              marker: m,
+              layerColor: m.color || '#f59e0b',
+              layerName: m.layerName || 'GCP Survey'
+            });
+          });
+        }
+      }
 
       const opt = {
         sensorWidthMm: this.activePhoto.sensorWidthMm || 9.6,
@@ -42192,7 +42473,7 @@ async function scanMediaDevices() {
       `;
     }
   } catch (e) {
-    list.innerHTML = `<div style="color: #f87171;">Unable to contact companion service on port 8765. Ensure <code>start-companion.bat</code> is running.</div>`;
+    list.innerHTML = `<div style="color: #f87171;">Unable to contact Aalaapi Bridge on port 8765. Ensure <code>start-bridge.bat</code> is running.</div>`;
   }
 }
 

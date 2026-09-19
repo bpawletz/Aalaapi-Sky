@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.109.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.111.2</span></h1>
         </div>
       </div>
 
@@ -1919,18 +1919,18 @@
             <div class="companion-status-row" id="companion-service-row">
               <span style="font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
                 <span id="companion-service-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #64748b; display: inline-block;"></span>
-                <span id="companion-service-text">Bridge Service: Offline</span>
+                <span id="companion-service-text">Aalaapi Bridge: Offline</span>
               </span>
               <span style="display: inline-flex; align-items: center; gap: 6px;">
-                <span id="companion-service-label" style="color: var(--text-muted); font-size: 0.68rem;">start-companion.bat</span>
-                <button id="companion-config-host-btn" class="companion-help-circle-btn" type="button" title="Configure Remote Companion IP / Host" style="font-size: 0.65rem;">⚙️</button>
-                <button id="companion-service-help-btn" class="companion-help-circle-btn" type="button" title="How to start Bridge Service">?</button>
+                <span id="companion-service-label" style="color: var(--text-muted); font-size: 0.68rem;">start-bridge.bat</span>
+                <button id="companion-config-host-btn" class="companion-help-circle-btn" type="button" title="Configure Remote Aalaapi Bridge IP / Host" style="font-size: 0.65rem;">⚙️</button>
+                <button id="companion-service-help-btn" class="companion-help-circle-btn" type="button" title="How to start Aalaapi Bridge">?</button>
               </span>
             </div>
             <!-- Host Config Panel (Expandable) -->
             <div id="companion-host-panel" style="display: none; padding: 6px 8px; background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; font-size: 0.72rem; flex-direction: column; gap: 4px;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-weight: 600; color: var(--text-main); font-size: 0.72rem;">Remote Bridge Host / IP:</span>
+                <span style="font-weight: 600; color: var(--text-main); font-size: 0.72rem;">Remote Aalaapi Bridge Host / IP:</span>
                 <button id="companion-host-reset-btn" type="button" style="background: none; border: none; color: #38bdf8; cursor: pointer; font-size: 0.68rem; text-decoration: underline; padding: 0;">Reset</button>
               </div>
               <div style="display: flex; gap: 4px; align-items: center;">
@@ -1960,8 +1960,8 @@
             </div>
             <!-- Hidden backward-compatible aliases for legacy selector compatibility -->
             <span id="companion-indicator-dot" style="display:none;"></span>
-            <span id="companion-status-text" style="display:none;">Companion Offline</span>
-            <span id="companion-device-label" style="display:none;">start-companion.bat</span>
+            <span id="companion-status-text" style="display:none;">Aalaapi Bridge Offline</span>
+            <span id="companion-device-label" style="display:none;">start-bridge.bat</span>
             <button id="companion-help-btn" style="display:none;" type="button">?</button>
             <div id="rc2-direct-actions" style="display: none; width: 100%; flex-direction: column; gap: 6px;">
               <div style="display: flex; gap: 6px; width: 100%;">
@@ -2409,6 +2409,49 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🌉 Aalaapi Bridge &amp; Progressive Disclosure Architecture (v1.111.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 8px 0; line-height: 1.4;">
+              Rebranded the local companion service to <strong>Aalaapi Bridge</strong> (<code>start-bridge.bat</code>) with progressive disclosure: hardware sync buttons (<em>Send to RC 2</em>, <em>Pull KMZ</em>, and Diagnostics <em>Pull from RC 2</em>) remain hidden when offline to keep the web interface clean, clutter-free, and unbadged.
+            </p>
+            <div style="background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 8px 10px; font-size: 0.74rem; line-height: 1.45;">
+              <strong style="color: var(--text-main); font-size: 0.76rem; display: block; margin-bottom: 4px;">Standalone Web vs. Aalaapi Bridge Capability Matrix:</strong>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div style="background: rgba(6, 182, 212, 0.06); border: 1px solid rgba(6, 182, 212, 0.2); border-radius: 5px; padding: 6px 8px;">
+                  <span style="color: #22d3ee; font-weight: 700;">🌐 Standalone Web (Zero Install)</span>
+                  <ul style="margin: 4px 0 0 0; padding-left: 14px; color: var(--text-muted); font-size: 0.71rem;">
+                    <li>Boundary &amp; parcel drawing (perimeters, areas)</li>
+                    <li>3D obstacle avoidance &amp; detour routing</li>
+                    <li>Full photogrammetry planning (Nadir, Splats, Orbits)</li>
+                    <li>GCPs &amp; vector target sheet generator</li>
+                    <li>Photo Inspector overlay projections</li>
+                    <li>Export/Import KMZ, KML, Litchi, Autel</li>
+                  </ul>
+                </div>
+                <div style="background: rgba(56, 189, 248, 0.06); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 5px; padding: 6px 8px;">
+                  <span style="color: #38bdf8; font-weight: 700;">🌉 Aalaapi Bridge (Local Service)</span>
+                  <ul style="margin: 4px 0 0 0; padding-left: 14px; color: var(--text-muted); font-size: 0.71rem;">
+                    <li>1-Click Direct USB MTP Sync to DJI RC 2</li>
+                    <li>Pull active mission KMZ from controller</li>
+                    <li>Pull native <code>FlightRecord_*.txt</code> telemetry logs</li>
+                    <li>Hardware AES decryption via DJI Cloud API</li>
+                    <li>Real-time Remote ID drone radar scanning</li>
+                    <li>Persistent SQLite mission archive (<code>missions.db</code>)</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #22d3ee; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🌐 Spatial Mission Environment Serialization &amp; Digital Twin (v1.110.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Upgraded Flight Diagnostics (<code>_diag.json</code>) and Mission Plans (<code>_plan.json</code>) into complete spatial digital twins. Every exported package and companion SQLite archive now bundles all placed <strong>Ground Control Points &amp; Fiducial Markers</strong> (ArUco/AprilTag), <strong>Inclusion Zones</strong> (irregular target framing polygons), <strong>3D Obstacle Exclusion Zones</strong> (no-fly safety keep-out volumes), and <strong>Survey Parcels</strong> (property lines). Historical flights loaded in Photo Inspector automatically restore and superimpose ground targets and parcel perimeters over photos with zero re-importing.
+            </p>
+          </div>
           <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #fbbf24; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🎯 Fiducial Altitude Sizing Advisor &amp; Optical Detection Ranges (v1.109.0)
@@ -2725,6 +2768,13 @@
                 Deploy Ground Control Points (GCPs) and Check Points (CPs) to achieve sub-centimeter survey accuracy. Use the <strong>🖨️ Target Print Sheet</strong> generator in Section 2 to print high-contrast ArUco/AprilTag targets with center rover crosshairs. Targets automatically superimpose onto captured drone photos in the Photo Inspector.
               </p>
             </div>
+
+            <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 8px; padding: 10px; grid-column: span 2;">
+              <strong style="color: #22d3ee; font-size: 0.82rem; display: flex; align-items: center; gap: 5px;">🌉 Standalone Web vs. Aalaapi Bridge</strong>
+              <p style="font-size: 0.75rem; color: #cbd5e1; margin: 4px 0 0 0; line-height: 1.35;">
+                Aalaapi Sky operates fully standalone in any modern web browser: boundary drawing, obstacle avoidance routing, and KMZ waypoint downloads require zero installations. Launch <strong>Aalaapi Bridge</strong> (<code>start-bridge.bat</code>) whenever you need 1-click USB sync to your DJI RC 2, native flight log extraction, live Remote ID radar, or persistent SQLite mission storage.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -2785,7 +2835,7 @@
     </div>
   </div>
 
-  <!-- RC2 File Copy & Companion Sync Instructions Modal -->
+  <!-- RC2 File Copy & Aalaapi Bridge Sync Instructions Modal -->
   <div id="guide-modal" class="modal-overlay hidden">
     <div class="modal glass">
       <header class="modal-header">
@@ -2804,7 +2854,7 @@
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
             </svg>
-            Bridge Service
+            Aalaapi Bridge
           </button>
           <button type="button" class="guide-tab-btn" data-tab="usb">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -2836,38 +2886,38 @@
           </button>
         </div>
 
-        <!-- TAB 1: Bridge Service Setup -->
+        <!-- TAB 1: Aalaapi Bridge Setup -->
         <div id="guide-pane-service" class="guide-tab-pane">
           <div class="modal-alert info" style="margin-bottom: 14px; border-left-color: var(--accent-cyan); background: rgba(6, 182, 212, 0.06); font-size: 0.84rem; line-height: 1.4; padding: 12px; border-radius: 8px;">
-            <strong>⚡ Bridge Service (Port 8765):</strong> The Companion Bridge is a zero-dependency local Node.js background service (<code>tools/companion/server.js</code>) that enables direct 1-click mission synchronization and flight log replay over USB MTP.
+            <strong>⚡ Aalaapi Bridge (Port 8765):</strong> Aalaapi Bridge is a zero-dependency local Node.js background service (<code>tools/companion/server.js</code>) that enables direct 1-click mission synchronization and flight log replay over USB MTP.
           </div>
 
           <ol class="guide-steps">
             <li>
-              <strong>Start the Companion Service:</strong>
-              Double-click <code>start-companion.bat</code> in the repository root, or run the following command in your terminal:
+              <strong>Start Aalaapi Bridge:</strong>
+              Double-click <code>start-bridge.bat</code> in the repository root, or run the following command in your terminal:
               <div class="code-snippet-box">
-                <code>npm run companion</code>
-                <button type="button" class="btn-copy-cmd" data-copy="npm run companion">Copy</button>
+                <code>npm run bridge</code>
+                <button type="button" class="btn-copy-cmd" data-copy="npm run bridge">Copy</button>
               </div>
             </li>
             <li>
               <strong>Verify Bridge Status:</strong>
-              Once started, the sidebar companion box will illuminate <strong>`🟢 Bridge Service: Online (port 8765)`</strong>.
+              Once started, the sidebar sync card will illuminate <strong>`🟢 Aalaapi Bridge: Online (port 8765)`</strong>.
             </li>
             <li>
               <strong>Prerequisites &amp; Troubleshooting:</strong>
               <ul style="margin: 6px 0 0 16px; padding: 0; list-style-type: disc; color: var(--text-muted); font-size: 0.8rem; line-height: 1.5;">
                 <li>Ensure <strong>Node.js</strong> (v18 or higher) is installed on your computer.</li>
-                <li>If port 8765 is occupied or the service fails to start, run <code>npm run companion:stop</code> or terminate lingering Node processes.</li>
-                <li><strong>Remote LAN Access (Tablets &amp; Phones):</strong> The companion service binds to all network interfaces (0.0.0.0). Look at your terminal startup log for your Wi-Fi IP (e.g. <code>http://192.168.1.50:8765</code>) and open that URL directly in your tablet's browser, or click the ⚙️ icon beside Bridge Service in the sidebar to configure the host IP.</li>
+                <li>If port 8765 is occupied or the service fails to start, run <code>npm run bridge:stop</code> or terminate lingering Node processes.</li>
+                <li><strong>Remote LAN Access (Tablets &amp; Phones):</strong> Aalaapi Bridge binds to all network interfaces (0.0.0.0). Look at your terminal startup log for your Wi-Fi IP (e.g. <code>http://192.168.1.50:8765</code>) and open that URL directly in your tablet's browser, or click the ⚙️ icon beside Aalaapi Bridge in the sidebar to configure the host IP.</li>
                 <li>Browser Private Network Access: If your browser prompts for local network permissions, select "Allow".</li>
               </ul>
             </li>
           </ol>
 
           <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; font-size: 0.78rem; color: var(--text-muted); margin-top: 12px; line-height: 1.4;">
-            <strong style="color: var(--text-main);">Next Step:</strong> Once the service is online, switch to the <strong>RC 2 USB Link</strong> tab to connect your remote controller.
+            <strong style="color: var(--text-main);">Next Step:</strong> Once Aalaapi Bridge is online, switch to the <strong>RC 2 USB Link</strong> tab to connect your remote controller.
           </div>
         </div>
 
@@ -2946,7 +2996,7 @@
           </ol>
 
           <div style="font-weight: 700; color: var(--text-main); font-size: 0.88rem; margin: 14px 0 6px; display: flex; align-items: center; gap: 6px;">
-            <span>🛠️ Method 2: Running Companion Service on Android (Termux + ADB)</span>
+            <span>🛠️ Method 2: Running Aalaapi Bridge on Android (Termux + ADB)</span>
           </div>
           <ol class="guide-steps">
             <li>
@@ -2960,14 +3010,14 @@
               </div>
             </li>
             <li>
-              <strong>Start the Companion Bridge:</strong> Inside the Aalaapi-Sky directory in Termux, run:
+              <strong>Start Aalaapi Bridge:</strong> Inside the Aalaapi-Sky directory in Termux, run:
               <div class="code-snippet-box">
-                <code>npm run companion</code>
-                <button type="button" class="btn-copy-cmd" data-copy="npm run companion">Copy</button>
+                <code>npm run bridge</code>
+                <button type="button" class="btn-copy-cmd" data-copy="npm run bridge">Copy</button>
               </div>
             </li>
             <li>
-              <strong>1-Click Sync in Tablet Browser:</strong> Open Chrome on your tablet, navigate to Aalaapi Sky, and the companion box will illuminate <strong>`🟢 Bridge Service: Online`</strong> with ADB 1-click sync enabled!
+              <strong>1-Click Sync in Tablet Browser:</strong> Open Chrome on your tablet, navigate to Aalaapi Sky, and the sync card will illuminate <strong>`🟢 Aalaapi Bridge: Online`</strong> with ADB 1-click sync enabled!
             </li>
           </ol>
         </div>
@@ -3158,7 +3208,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.109.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.111.2</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -3227,6 +3277,39 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.111.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🔓 Fixed DJI Cloud Decryption Buffer Overflow:</strong> Resolved <code>stdout maxBuffer length exceeded</code> issue in <code>decryptFlightRecordWithDjiCli</code> by routing <code>dji-log.exe</code> JSON output directly to disk via <code>--output</code> with 100 MB buffer allocation.</li>
+              <li><strong>⚠️ Diagnostics UI Error Transparency:</strong> Decryption failures now surface an interactive <code>⚠️ Decrypt Failed • 🔑 Retry</code> badge with detailed error tooltip in `#diag-flight-meta`.</li>
+              <li><strong>🔄 Instant Flight Decrypt on Key Save:</strong> Saving a DJI API key in the diagnostics modal automatically loads and decrypts the selected flight record.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.111.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>📖 RC 2 Sync &amp; Transfer Guide Rebranding:</strong> Synchronized all modal instructions, setup tabs, terminal copy snippets, and Android Termux guidance to <strong>Aalaapi Bridge</strong> (<code>npm run bridge</code>, <code>npm run bridge:stop</code>, and <code>start-bridge.bat</code>).</li>
+              <li><strong>🔄 Backward Compatibility Preserved:</strong> Retained legacy alias endpoints, command scripts (<code>npm run companion</code>), and DOM element IDs for seamless backward compatibility with automated test suites.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.111.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🌉 Aalaapi Bridge Rebranding &amp; Launcher:</strong> Rebranded the local companion service to <strong>Aalaapi Bridge</strong> (<code>start-bridge.bat</code>) with updated UI cards, launcher batch files, and host configuration tooltips.</li>
+              <li><strong>👁️ Progressive Disclosure Architecture:</strong> Cleaned up the main UI by progressively disclosing hardware-sync buttons (<em>Send to RC 2</em>, <em>Pull KMZ</em>, and Diagnostics <em>Pull from RC 2</em> <code>#diag-pull-rc2-btn</code>) only when Aalaapi Bridge is online and the DJI RC 2 is connected over USB MTP.</li>
+              <li><strong>🌐 Standalone Web vs. Bridge Clarification:</strong> Documented boundary and spatial planning independence. Boundary drawing, geodetics, obstacle detour routing, GCPs, and KMZ waypoint generation run 100% in-browser with zero install; Aalaapi Bridge handles direct USB controller sync, native flight log extraction, live drone radar, and persistent SQLite archiving.</li>
+              <li><strong>🎓 Intro Guide Hub Capability Matrix:</strong> Added a detailed capability comparison matrix and pro tips card to the Quickstart Intro Hub.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.110.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🌐 Full Spatial Environment Serialization:</strong> Upgraded <code>_diag.json</code> (schema 1.57.0) and <code>_plan.json</code> (schema 1.1.0) into complete digital twins. Bundles placed <strong>Ground Control Points &amp; Fiducial Markers</strong>, <strong>Inclusion Zones &amp; Target Polygons</strong>, <strong>3D Obstacle Exclusion Zones</strong>, and <strong>Survey Parcels</strong>.</li>
+              <li><strong>📊 Summary &amp; Spatial Counts:</strong> Added <code>groundControlCount</code>, <code>inclusionZoneCount</code>, <code>exclusionZoneCount</code>, and <code>parcelCount</code> to both mission plans and diagnostics summaries.</li>
+              <li><strong>📸 Photo Inspector Archived Flight Support:</strong> Photo Inspector dynamically superimposes parcel boundaries and GCP markers directly from <code>FlightDiagnostics.currentLoadedMission</code> when reviewing past flights.</li>
+              <li><strong>💾 Companion SQLite Storage &amp; Hoisting:</strong> Companion Bridge SQLite mission archive automatically preserves and hoists spatial layer arrays for instant retrieval.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.109.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -5586,7 +5669,7 @@
                   <strong style="font-size: 0.82rem; color: var(--text-main);">🔌 Hardware &amp; Remote Links</strong>
                   <span id="badge-count-hardware" class="storage-count-badge default">Checking...</span>
                 </div>
-                <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 2px;">Stored DJI RC 2 UUID, Companion Bridge host IP, and Multi-Vendor toggles</span>
+                <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 2px;">Stored DJI RC 2 UUID, Aalaapi Bridge host IP, and Multi-Vendor toggles</span>
               </div>
             </label>
 
@@ -6077,7 +6160,7 @@
               </svg>
               <span>Center 2D Map</span>
             </button>
-            <button id="diag-pull-rc2-btn" type="button" class="btn-secondary diag-rc2-btn" title="Pull latest flight log directly from connected DJI RC 2 over USB MTP">
+            <button id="diag-pull-rc2-btn" type="button" class="btn-secondary diag-rc2-btn" style="display: none;" title="Pull latest flight log directly from connected DJI RC 2 over USB MTP">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
@@ -6488,7 +6571,7 @@
           <span id="dji-key-status-msg" style="font-size: 0.75rem; color: var(--text-muted); min-height: 1.2em;"></span>
         </div>
         <div style="background: rgba(0, 194, 255, 0.08); border-left: 3px solid var(--accent-cyan); padding: 8px 12px; border-radius: 4px; font-size: 0.76rem; color: var(--text-main); line-height: 1.4;">
-          <strong>🔒 Local Security Notice:</strong> The key is stored locally in your Companion bridge server (<code>scratch/companion_config.json</code>) or environment variables. It is only transmitted securely directly to DJI's keychain authentication server to retrieve your record's AES decryption token.
+          <strong>🔒 Local Security Notice:</strong> The key is stored locally in your Aalaapi Bridge server (<code>scratch/companion_config.json</code>) or environment variables. It is only transmitted securely directly to DJI's keychain authentication server to retrieve your record's AES decryption token.
         </div>
       </div>
       <footer class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">

@@ -1068,18 +1068,21 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       const usbText = document.getElementById('companion-usb-text');
       const serviceHelpBtn = document.getElementById('companion-service-help-btn');
       const usbHelpBtn = document.getElementById('companion-usb-help-btn');
+      const diagPullBtn = document.getElementById('diag-pull-rc2-btn');
 
-      if (!serviceRow || !usbRow || !serviceText || !usbText || !serviceHelpBtn || !usbHelpBtn) {
+      if (!serviceRow || !usbRow || !serviceText || !usbText || !serviceHelpBtn || !usbHelpBtn || !diagPullBtn) {
         return { success: false, reason: 'Elements missing' };
       }
 
-      const serviceHasLabel = serviceText.textContent.includes('Bridge Service:');
+      const serviceHasLabel = serviceText.textContent.includes('Aalaapi Bridge:');
       const usbHasLabel = usbText.textContent.includes('RC 2 USB Link:');
+      const diagPullHidden = diagPullBtn.style.display === 'none' || window.getComputedStyle(diagPullBtn).display === 'none';
 
       return {
-        success: serviceHasLabel && usbHasLabel,
+        success: serviceHasLabel && usbHasLabel && diagPullHidden,
         serviceText: serviceText.textContent,
-        usbText: usbText.textContent
+        usbText: usbText.textContent,
+        diagPullHidden
       };
     });
 

@@ -5880,18 +5880,18 @@ function initControlledResetManager() {
 
 function switchGuideTab(targetTab) {
   if (typeof document === 'undefined') return;
-  const canonicalTab = (targetTab === 'companion') ? 'service' : targetTab;
+  const canonicalTab = (targetTab === 'companion' || targetTab === 'bridge') ? 'service' : targetTab;
   const tabBtns = document.querySelectorAll('.guide-tab-btn');
   const tabPanes = document.querySelectorAll('.guide-tab-pane');
   tabBtns.forEach(btn => {
-    if (btn.dataset.tab === canonicalTab || (canonicalTab === 'service' && btn.dataset.tab === 'companion')) {
+    if (btn.dataset.tab === canonicalTab || (canonicalTab === 'service' && (btn.dataset.tab === 'companion' || btn.dataset.tab === 'bridge'))) {
       btn.classList.add('active');
     } else {
       btn.classList.remove('active');
     }
   });
   tabPanes.forEach(pane => {
-    if (pane.id === `guide-pane-${canonicalTab}` || (canonicalTab === 'service' && pane.id === 'guide-pane-companion')) {
+    if (pane.id === `guide-pane-${canonicalTab}` || (canonicalTab === 'service' && (pane.id === 'guide-pane-companion' || pane.id === 'guide-pane-bridge'))) {
       pane.classList.remove('hidden');
     } else {
       pane.classList.add('hidden');
@@ -7467,7 +7467,7 @@ function initUIEventListeners() {
   copyCmdBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const textToCopy = btn.dataset.copy || 'npm run companion';
+      const textToCopy = btn.dataset.copy || 'npm run bridge';
       if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(textToCopy).then(() => {
           const originalText = btn.textContent;
@@ -15962,6 +15962,120 @@ function initMultiVendorToggle() {
 // settings, geometry parameters, camera profiles, flight configurations,
 // computed statistics, and waypoint coordinates for troubleshooting or archival.
 
+/**
+ * Extracts and serializes all spatial environment layers (Ground Control Points / Fiducials,
+ * Inclusion Zones / Target Polygons, Exclusion Zones, and Parcel Boundaries)
+ * from active flightLayers for bundling into Mission Plans and Diagnostics archives.
+ */
+function extractSpatialMissionLayers(layers = null) {
+  const allLayers = (layers && Array.isArray(layers))
+    ? layers
+    : ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : []);
+
+  const groundControl = [];
+  const inclusionZones = [];
+  const exclusionZones = [];
+  const parcels = [];
+
+  allLayers.forEach(l => {
+    if (!l) return;
+
+    // 1. Ground Control Points & Optical Fiducial Markers
+    if (Array.isArray(l.fiducialMarkers) && l.fiducialMarkers.length > 0) {
+      l.fiducialMarkers.forEach(m => {
+        if (!m) return;
+        groundControl.push({
+          id: m.id,
+          code: m.code || 'GCP',
+          role: m.role || 'gcp',
+          type: m.type || 'aruco_4x4',
+          markerId: typeof m.markerId === 'number' ? m.markerId : 0,
+          lat: m.lat,
+          lon: m.lon !== undefined ? m.lon : m.lng,
+          alt: typeof m.alt === 'number' ? m.alt : 0.0,
+          physicalSizeMeters: typeof m.physicalSizeMeters === 'number' ? m.physicalSizeMeters : 0.50,
+          color: m.color || l.markerColor || '#f59e0b',
+          notes: m.notes || '',
+          layerId: l.id,
+          layerName: l.name || 'Fiducial Survey'
+        });
+      });
+    }
+
+    // 2. Inclusion Zones & Target Polygons (targetPoly)
+    if (Array.isArray(l.targetPoly) && l.targetPoly.length >= 3) {
+      inclusionZones.push({
+        layerId: l.id,
+        layerName: l.name || 'Target Inclusion Zone',
+        targetMode: l.targetMode || 'polygon',
+        targetHeight: typeof l.targetHeight === 'number' ? l.targetHeight : 8,
+        targetRadius: typeof l.targetRadius === 'number' ? l.targetRadius : 25,
+        polygon: l.targetPoly.map(pt => ({
+          lat: pt.lat,
+          lon: pt.lon !== undefined ? pt.lon : pt.lng,
+          x: typeof pt.x === 'number' ? pt.x : null,
+          y: typeof pt.y === 'number' ? pt.y : null
+        }))
+      });
+    }
+
+    // 3. Exclusion Zones (Obstacles / No-Fly Keep-Out)
+    if (l.isExclusionZone || l.pattern === 'exclusion-box' || l.pattern === 'exclusion-freeform') {
+      const vertices = Array.isArray(l.polygonVertices) && l.polygonVertices.length >= 3
+        ? l.polygonVertices
+        : (Array.isArray(l.boundaryPolygon) && l.boundaryPolygon.length >= 3 ? l.boundaryPolygon : []);
+
+      if (vertices.length >= 3) {
+        exclusionZones.push({
+          layerId: l.id,
+          layerName: l.name || 'Obstacle Exclusion Zone',
+          pattern: l.pattern,
+          enabled: l.enabled !== false,
+          allAltitudes: !!l.allAltitudes,
+          minAltitude: typeof l.minAltitude === 'number' ? l.minAltitude : 0,
+          maxAltitude: typeof l.maxAltitude === 'number' ? l.maxAltitude : 60,
+          clearanceBuffer: typeof l.clearanceBuffer === 'number' ? l.clearanceBuffer : 5,
+          detourMode: l.detourMode || 'inherit',
+          polygon: vertices.map(pt => ({
+            lat: pt.lat,
+            lon: pt.lon !== undefined ? pt.lon : pt.lng
+          }))
+        });
+      }
+    }
+
+    // 4. Parcel & Survey Boundaries (Property / Site Lines)
+    if (l.pattern === 'boundary-polygon' || (l.isDrawingLayer && !l.isFiducialLayer)) {
+      const vertices = Array.isArray(l.polygonVertices) && l.polygonVertices.length >= 3
+        ? l.polygonVertices
+        : (Array.isArray(l.boundaryPolygon) && l.boundaryPolygon.length >= 3 ? l.boundaryPolygon : []);
+
+      if (vertices.length >= 3) {
+        parcels.push({
+          layerId: l.id,
+          layerName: l.name || 'Boundary / Parcel',
+          enabled: l.enabled !== false,
+          strokeColor: l.strokeColor || '#06b6d4',
+          lineStyle: l.lineStyle || 'dashed',
+          fillOpacity: typeof l.fillOpacity === 'number' ? l.fillOpacity : 15,
+          targetHeight: typeof l.targetHeight === 'number' ? l.targetHeight : 0,
+          polygon: vertices.map(pt => ({
+            lat: pt.lat,
+            lon: pt.lon !== undefined ? pt.lon : pt.lng
+          }))
+        });
+      }
+    }
+  });
+
+  return {
+    groundControl,
+    inclusionZones,
+    exclusionZones,
+    parcels
+  };
+}
+
 function buildMissionPlanJSON(customWps = null) {
   const currentWps = customWps || (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
   const centerLatLng = (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) ? centerMarker.getLatLng() : null;
@@ -16015,10 +16129,14 @@ function buildMissionPlanJSON(customWps = null) {
     ? calculateStats(formattedWaypoints, typeof getCurrentPhotos === 'function' ? getCurrentPhotos() : null, speed, null, null, captureMode)
     : null;
 
+  const spatialData = typeof extractSpatialMissionLayers === 'function'
+    ? extractSpatialMissionLayers()
+    : { groundControl: [], inclusionZones: [], exclusionZones: [], parcels: [] };
+
   return {
-    schemaVersion: "1.0.0",
+    schemaVersion: "1.1.0",
     generator: "Aalaapi Sky",
-    version: "1.59.0",
+    version: "1.110.0",
     exportedAt: new Date().toISOString(),
     mission: {
       uuid: storedUuid || null,
@@ -16057,14 +16175,26 @@ function buildMissionPlanJSON(customWps = null) {
       }
     },
     pointsOfInterest: (typeof pointsOfInterest !== 'undefined' && Array.isArray(pointsOfInterest)) ? pointsOfInterest : [],
+    groundControl: spatialData.groundControl,
+    inclusionZones: spatialData.inclusionZones,
+    exclusionZones: spatialData.exclusionZones,
+    parcels: spatialData.parcels,
     statistics: totalStats ? {
       waypointCount: formattedWaypoints.length,
       photoCount: totalStats.photoCount || formattedWaypoints.length,
       totalDistanceMeters: totalStats.distance || 0,
       totalFlightTimeSeconds: totalStats.flightTimeSeconds || 0,
-      flightTimeFormatted: totalStats.timeStr || ''
+      flightTimeFormatted: totalStats.timeStr || '',
+      groundControlCount: spatialData.groundControl.length,
+      inclusionZoneCount: spatialData.inclusionZones.length,
+      exclusionZoneCount: spatialData.exclusionZones.length,
+      parcelCount: spatialData.parcels.length
     } : {
-      waypointCount: formattedWaypoints.length
+      waypointCount: formattedWaypoints.length,
+      groundControlCount: spatialData.groundControl.length,
+      inclusionZoneCount: spatialData.inclusionZones.length,
+      exclusionZoneCount: spatialData.exclusionZones.length,
+      parcelCount: spatialData.parcels.length
     },
     waypoints: formattedWaypoints
   };
@@ -16143,6 +16273,18 @@ function buildFlightDiagnosticsJSON(customWps = null, options = {}) {
   const validationWarnings = options.validationWarnings || options.validation?.warnings || [];
   const validationRulesPassed = options.validationRulesPassed ?? options.validation?.rulesPassed ?? (isValid ? 10 : 10 - validationErrors.length);
 
+  const spatialData = (plan && plan.groundControl) ? {
+    groundControl: plan.groundControl,
+    inclusionZones: plan.inclusionZones || [],
+    exclusionZones: plan.exclusionZones || [],
+    parcels: plan.parcels || []
+  } : (typeof extractSpatialMissionLayers === 'function' ? extractSpatialMissionLayers() : {
+    groundControl: [],
+    inclusionZones: [],
+    exclusionZones: [],
+    parcels: []
+  });
+
   const createdAt = options.createdAt || new Date().toISOString();
   const archiveId = options.archiveId || `${uuid}_${createdAt}`;
 
@@ -16159,6 +16301,10 @@ function buildFlightDiagnosticsJSON(customWps = null, options = {}) {
     userAgent,
     plan,
     diagnostics: telemetry,
+    groundControl: spatialData.groundControl,
+    inclusionZones: spatialData.inclusionZones,
+    exclusionZones: spatialData.exclusionZones,
+    parcels: spatialData.parcels,
     isValid,
     validationRulesPassed,
     validationErrors,
@@ -16175,7 +16321,11 @@ function buildFlightDiagnosticsJSON(customWps = null, options = {}) {
       estimatedDuration: telemetry?.durationSeconds ?? plan?.statistics?.totalFlightTimeSeconds ?? 0,
       durationFormatted: telemetry?.durationFormatted ?? plan?.statistics?.flightTimeFormatted ?? '',
       maxAltitude: telemetry?.maxAltitude ?? altitude,
-      homePoint: telemetry?.homePoint ?? plan?.centerPoint ?? null
+      homePoint: telemetry?.homePoint ?? plan?.centerPoint ?? null,
+      groundControlCount: spatialData.groundControl.length,
+      inclusionZoneCount: spatialData.inclusionZones.length,
+      exclusionZoneCount: spatialData.exclusionZones.length,
+      parcelCount: spatialData.parcels.length
     }
   };
 }
@@ -16466,6 +16616,7 @@ async function pollCompanionStatus() {
   const pullBtn = document.getElementById('direct-rc2-pull-btn');
   const container = document.getElementById('companion-sync-container');
   const hint = document.getElementById('companion-offline-hint');
+  const diagPullBtn = document.getElementById('diag-pull-rc2-btn');
 
   try {
     const controller = new AbortController();
@@ -16497,7 +16648,7 @@ async function pollCompanionStatus() {
       // 1. Update Bridge Service status (Online)
       if (sDot) sDot.style.background = '#22c55e';
       if (sText) {
-        sText.textContent = 'Bridge Service: Online';
+        sText.textContent = 'Aalaapi Bridge: Online';
         sText.style.color = '#22c55e';
       }
       if (sLabel) sLabel.textContent = 'port 8765';
@@ -16532,6 +16683,7 @@ async function pollCompanionStatus() {
         if (directActions) directActions.style.display = 'flex';
         if (directBtn) directBtn.style.display = 'inline-flex';
         if (pullBtn) pullBtn.style.display = 'inline-flex';
+        if (diagPullBtn) diagPullBtn.style.display = 'inline-flex';
       } else {
         isRc2MtpConnected = false;
         if (container && container.classList) container.classList.add('is-offline');
@@ -16563,6 +16715,7 @@ async function pollCompanionStatus() {
         if (directActions) directActions.style.display = 'none';
         if (directBtn) directBtn.style.display = 'none';
         if (pullBtn) pullBtn.style.display = 'none';
+        if (diagPullBtn) diagPullBtn.style.display = 'none';
       }
     } else {
       throw new Error('Non-200 status');
@@ -16583,17 +16736,17 @@ async function pollCompanionStatus() {
       if (labelSpan) {
         labelSpan.innerHTML = `
           <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-          Bridge Offline &bull; Setup Guide`;
+          Aalaapi Bridge Offline &bull; Setup Guide`;
       }
     }
 
     // 1. Service Offline
     if (sDot) sDot.style.background = '#64748b'; // Gray
     if (sText) {
-      sText.textContent = 'Bridge Service: Offline';
+      sText.textContent = 'Aalaapi Bridge: Offline';
       sText.style.color = 'var(--text-main)';
     }
-    if (sLabel) sLabel.textContent = 'start-companion.bat';
+    if (sLabel) sLabel.textContent = 'start-bridge.bat';
 
     // 2. USB Link Waiting
     if (uDot) uDot.style.background = '#64748b'; // Gray
@@ -16606,14 +16759,15 @@ async function pollCompanionStatus() {
     // Legacy compatibility
     if (dot) dot.style.background = '#64748b';
     if (text) {
-      text.textContent = 'Companion Offline';
+      text.textContent = 'Aalaapi Bridge Offline';
       text.style.color = 'var(--text-main)';
     }
-    if (label) label.textContent = 'start-companion.bat';
+    if (label) label.textContent = 'start-bridge.bat';
 
     if (directActions) directActions.style.display = 'none';
     if (directBtn) directBtn.style.display = 'none';
     if (pullBtn) pullBtn.style.display = 'none';
+    if (diagPullBtn) diagPullBtn.style.display = 'none';
   }
 }
 
@@ -18679,8 +18833,13 @@ const FlightDiagnostics = {
         await this.checkDjiApiKeyStatus();
         setTimeout(() => {
           this.closeDjiKeyModal();
-          if (this.selectedFlightId) {
+          if (this.selectedFlightId && this.selectedFlightId !== 'active-mission') {
             this.loadSelectedFlight(this.selectedFlightId);
+          } else {
+            const flightSel = document.getElementById('diag-flight-selector');
+            if (flightSel && flightSel.value && flightSel.value !== 'active-mission') {
+              this.loadSelectedFlight(flightSel.value);
+            }
           }
         }, 800);
       } else {
@@ -19039,10 +19198,11 @@ const FlightDiagnostics = {
             this.isDecrypted = !!data.isDecrypted;
             this.needsDjiApiKey = !!data.needsDjiApiKey;
             this.djiApiKeyConfigured = !!data.djiApiKeyConfigured;
+            this.djiDecryptError = data.djiDecryptError || null;
             let telem = data.telemetry;
-            this.isActualFlown = (telem.isActualFlown !== undefined) ? !!telem.isActualFlown : !telem.isSimulation;
+            this.isActualFlown = (telem.isActualFlown !== undefined) ? !!telem.isActualFlown : (this.isDecrypted || !telem.isSimulation);
             const plannedWps = data.telemetry.plannedWaypoints || data.plannedWaypoints || null;
-            if (telem && telem.points && plannedWps && plannedWps.length > 1) {
+            if (!this.isDecrypted && telem && telem.points && plannedWps && plannedWps.length > 1) {
               const photoAlts = new Set(telem.points.filter(p => p.isPhoto).map(p => p.alt));
               const planAlts = new Set(plannedWps.map(w => w.altitude !== undefined ? w.altitude : (w.alt !== undefined ? w.alt : 50)));
               if (photoAlts.size === 1 && planAlts.size > 1) {
@@ -19376,6 +19536,9 @@ const FlightDiagnostics = {
           decBadge = ' <span style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; margin-left: 6px;">🔓 Decrypted via DJI Cloud API</span>';
         } else if (this.needsDjiApiKey) {
           decBadge = ' <span style="background: rgba(234, 179, 8, 0.2); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.35); padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; margin-left: 6px; cursor: pointer;" onclick="if(typeof FlightDiagnostics!==\'undefined\')FlightDiagnostics.openDjiKeyModal()" title="Click to enter DJI Developer App Key to decrypt encrypted flight record">📐 Modeled (Synthetic KMZ) • 🔑 Decrypt</span>';
+        } else if (this.djiDecryptError) {
+          const errSafe = String(this.djiDecryptError).replace(/"/g, '&quot;');
+          decBadge = ` <span style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; margin-left: 6px; cursor: pointer;" onclick="if(typeof FlightDiagnostics!==\'undefined\')FlightDiagnostics.openDjiKeyModal()" title="Decryption failed: ${errSafe}. Click to check DJI Developer Key.">⚠️ Decrypt Failed • 🔑 Retry</span>`;
         }
         if (decBadge) {
           meta.innerHTML = `Telemetry Log: <strong>${flightName}</strong> • Duration: <strong>${this.telemetryData.durationFormatted}</strong>${decBadge}`;
@@ -28494,7 +28657,8 @@ async function openTfrBriefingModal(notamId) {
   if (!modal || !contentEl) return;
 
   // Find local item metadata
-  const localItem = tfrActiveNotams ? tfrActiveNotams.find(t => t.notamId === notamId || t.title === notamId || String(t.stadiumId) === String(notamId)) : null;
+  const activeList = (typeof window !== 'undefined' && Array.isArray(window.tfrActiveNotams) && window.tfrActiveNotams.length > 0) ? window.tfrActiveNotams : tfrActiveNotams;
+  const localItem = activeList ? activeList.find(t => t.notamId === notamId || t.title === notamId || String(t.stadiumId) === String(notamId)) : null;
 
   modal.classList.remove('hidden');
   if (typeof contentEl.replaceChildren === 'function') contentEl.replaceChildren(); else contentEl.innerHTML = '';
@@ -29836,6 +30000,25 @@ const PhotoInspector = {
         }
       }
 
+      // Fallback: If no workspace boundary layers exist, check if currentLoadedMission in FlightDiagnostics has parcels
+      if (layersToProject.length === 0 && typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.currentLoadedMission) {
+        const mParcels = FlightDiagnostics.currentLoadedMission.parcels || FlightDiagnostics.currentLoadedMission.plan?.parcels;
+        if (Array.isArray(mParcels)) {
+          mParcels.forEach(p => {
+            if (Array.isArray(p.polygon) && p.polygon.length >= 3) {
+              layersToProject.push({
+                polygon: p.polygon,
+                name: p.layerName || 'Boundary / Parcel',
+                strokeColor: p.strokeColor || '#06b6d4',
+                lineStyle: p.lineStyle || 'dashed',
+                fillOpacity: (typeof p.fillOpacity === 'number') ? p.fillOpacity / 100.0 : 0.15,
+                targetHeight: p.targetHeight || 0
+              });
+            }
+          });
+        }
+      }
+
       layersToProject.forEach(item => {
         const projRes = this.projectGeoPolygonToPhoto(item.polygon, camPose, {
           sensorWidthMm: this.activePhoto.sensorWidthMm || 9.6,
@@ -29932,6 +30115,21 @@ const PhotoInspector = {
           });
         });
       });
+
+      // Fallback: If no workspace fiducials exist, check if currentLoadedMission in FlightDiagnostics has groundControl
+      if (markersToProject.length === 0 && typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.currentLoadedMission) {
+        const mission = FlightDiagnostics.currentLoadedMission;
+        const mGcp = mission.groundControl || mission.plan?.groundControl;
+        if (Array.isArray(mGcp)) {
+          mGcp.forEach(m => {
+            markersToProject.push({
+              marker: m,
+              layerColor: m.color || '#f59e0b',
+              layerName: m.layerName || 'GCP Survey'
+            });
+          });
+        }
+      }
 
       const opt = {
         sensorWidthMm: this.activePhoto.sensorWidthMm || 9.6,
@@ -30487,7 +30685,7 @@ async function scanMediaDevices() {
       `;
     }
   } catch (e) {
-    list.innerHTML = `<div style="color: #f87171;">Unable to contact companion service on port 8765. Ensure <code>start-companion.bat</code> is running.</div>`;
+    list.innerHTML = `<div style="color: #f87171;">Unable to contact Aalaapi Bridge on port 8765. Ensure <code>start-bridge.bat</code> is running.</div>`;
   }
 }
 
