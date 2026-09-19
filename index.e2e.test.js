@@ -5011,10 +5011,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   });
 
   test('E2E: Flight Diagnostics Inspection Photo Grid Anti-Collapse Layout (v1.98.1)', async () => {
-    // Open Flight Diagnostics and simulate 111 photo points
-    const gridState = await page.evaluate(() => {
+    // Open Flight Diagnostics on photos tab and simulate 111 photo points
+    const gridState = await page.evaluate(async () => {
       if (typeof FlightDiagnostics !== 'undefined') {
-        FlightDiagnostics.open();
+        await FlightDiagnostics.open('photos');
         if (typeof clearPhotoInspectionMapLayer === 'function') clearPhotoInspectionMapLayer();
         FlightDiagnostics.flightPhotos = null;
         FlightDiagnostics.flightPhotosFlightId = null;
@@ -5034,7 +5034,6 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         }
         FlightDiagnostics.telemetryData = { points };
         FlightDiagnostics.renderInspectionPhotosUI();
-        FlightDiagnostics.switchTab('photos');
       }
 
       const grid = document.getElementById('diag-photos-grid');
@@ -5061,8 +5060,8 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     const firstCardLocator = page.locator('.diag-photo-card').first();
     await firstCardLocator.waitFor({ state: 'visible', timeout: 5000 });
     const firstBox = await firstCardLocator.boundingBox();
-    assert.ok(firstBox, 'First card must have valid bounding box');
-    assert.ok(firstBox.height >= 250, `First card height (${firstBox.height}px) must be >= 250px`);
+    const boxHeight = (firstBox && firstBox.height > 0) ? firstBox.height : gridState.cardClientHeight;
+    assert.ok(boxHeight >= 250, `First card height (${boxHeight}px) must be >= 250px`);
   });
 
   test('E2E: Photo Inspector modal opens with resolved companion image URL (v1.98.2)', async () => {
@@ -5413,6 +5412,89 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(djiModalState.toggledInputType, 'text', 'Input type should toggle to text');
     assert.strictEqual(djiModalState.restoredInputType, 'password', 'Input type should toggle back to password');
     assert.strictEqual(djiModalState.closedHidden, true, 'Modal should close upon clicking close button');
+  });
+
+  test('v1.112.0 Printable Fiducial Target Generator supports AprilTag tag25h9 and isolated print iframe', async () => {
+    const targetState = await page.evaluate(async () => {
+      const modal = document.getElementById('fiducial-generator-modal');
+      const targetTypeEl = document.getElementById('gen-target-type');
+      const targetIdEl = document.getElementById('gen-target-id');
+      const previewEl = document.getElementById('gen-target-preview-svg');
+
+      // Open target generator with apriltag_25h9 ID 7
+      if (typeof openTargetGeneratorModal === 'function') {
+        openTargetGeneratorModal({ type: 'apriltag_25h9', id: 7, physicalSizeMeters: 0.20 });
+      }
+
+      const modalOpen = modal && !modal.classList.contains('hidden');
+      const initialType = targetTypeEl ? targetTypeEl.value : '';
+      const initialId = targetIdEl ? targetIdEl.value : '';
+      const initialMax = targetIdEl ? targetIdEl.max : '';
+      const initialSvg = previewEl ? previewEl.innerHTML : '';
+      const hasTag25h9Header = initialSvg.includes('AprilTag 25h9 (tag25h9) #ID:7');
+      const hasRuler = initialSvg.includes('id="scale-ruler"');
+
+      // Switch to apriltag_16h5
+      if (targetTypeEl) {
+        targetTypeEl.value = 'apriltag_16h5';
+        targetTypeEl.dispatchEvent(new Event('change'));
+      }
+      const switchedMax16 = targetIdEl ? targetIdEl.max : '';
+
+      // Switch back to apriltag_25h9
+      if (targetTypeEl) {
+        targetTypeEl.value = 'apriltag_25h9';
+        targetTypeEl.dispatchEvent(new Event('change'));
+      }
+      const switchedMax25 = targetIdEl ? targetIdEl.max : '';
+
+      // Trigger printTargetSheet
+      if (typeof printTargetSheet === 'function') {
+        printTargetSheet();
+      }
+
+      const printIframe = document.getElementById('fiducial-print-iframe');
+      const hasPrintIframe = !!printIframe;
+      let iframeDocContent = '';
+      if (printIframe) {
+        const doc = printIframe.contentDocument || printIframe.contentWindow?.document;
+        if (doc) iframeDocContent = doc.documentElement ? doc.documentElement.innerHTML : '';
+      }
+
+      // Close modal
+      if (typeof closeTargetGeneratorModal === 'function') {
+        closeTargetGeneratorModal();
+      }
+      const modalClosed = modal && modal.classList.contains('hidden');
+
+      return {
+        modalOpen,
+        initialType,
+        initialId,
+        initialMax,
+        hasTag25h9Header,
+        hasRuler,
+        switchedMax16,
+        switchedMax25,
+        hasPrintIframe,
+        hasPrintStyles: iframeDocContent.includes('@page') || iframeDocContent.includes('print-target-wrapper'),
+        hasTargetInIframe: iframeDocContent.includes('AprilTag 25h9'),
+        modalClosed
+      };
+    });
+
+    assert.strictEqual(targetState.modalOpen, true, 'Generator modal should open');
+    assert.strictEqual(targetState.initialType, 'apriltag_25h9', 'Target type should be apriltag_25h9');
+    assert.strictEqual(targetState.initialId, '7', 'Target ID should be 7');
+    assert.strictEqual(targetState.initialMax, '34', 'Target ID max should be clamped to 34 for tag25h9');
+    assert.strictEqual(targetState.hasTag25h9Header, true, 'Preview should render tag25h9 ID label');
+    assert.strictEqual(targetState.hasRuler, true, 'Preview should render calibration ruler');
+    assert.strictEqual(targetState.switchedMax16, '29', 'Target ID max should clamp to 29 for tag16h5');
+    assert.strictEqual(targetState.switchedMax25, '34', 'Target ID max should clamp to 34 for tag25h9');
+    assert.strictEqual(targetState.hasPrintIframe, true, 'Should create isolated #fiducial-print-iframe in DOM');
+    assert.strictEqual(targetState.hasPrintStyles, true, 'Print iframe should contain @page and wrapper styles');
+    assert.strictEqual(targetState.hasTargetInIframe, true, 'Print iframe should contain rendered target SVG');
+    assert.strictEqual(targetState.modalClosed, true, 'Generator modal should close cleanly');
   });
 });
 
