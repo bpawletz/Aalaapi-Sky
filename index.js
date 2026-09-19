@@ -540,13 +540,61 @@ const ARUCO_5X5_DATA = [
 ];
 
 /**
- * Predefined dictionary data for AprilTag 16h5 (OpenCV DICT_APRILTAG_16h5_BYTES)
+ * Predefined dictionary data for AprilTag 16h5 (OpenCV DICT_APRILTAG_16h5_BYTES / AprilRobotics)
  */
 const APRILTAG_16H5_DATA = [
   [216, 196], [165, 116], [86, 44], [157, 162], [101, 158], [214, 254], [26, 205], [233, 49],
   [83, 193], [146, 85], [178, 163], [75, 41], [171, 91], [106, 219], [43, 151], [53, 107],
   [203, 101], [109, 137], [182, 73], [115, 23]
 ];
+
+/**
+ * Official AprilRobotics AprilTag 25h9 Dictionary (35 unique IDs 0–34)
+ * 5x5 data payload with Hamming distance 9 in a 7x7 black frame (9x9 canvas).
+ */
+const APRILTAG_25H9_CODES = [
+  0x0156f1f4, 0x01f28cd5, 0x016ce32c, 0x01ea379c, 0x01390f89,
+  0x0034fad0, 0x007dcdb5, 0x0119ba95, 0x01ae9daa, 0x00df02aa,
+  0x0082fc15, 0x00465123, 0x00ceee98, 0x01f17260, 0x014429cd,
+  0x017248a8, 0x016ad452, 0x009670ad, 0x016f65b2, 0x00b8322b,
+  0x005d715b, 0x01a1c7e7, 0x00d7890d, 0x01813522, 0x01c9c611,
+  0x0099e4a4, 0x00855234, 0x017b81c0, 0x00c294bb, 0x0089fae3,
+  0x0044df5f, 0x01360159, 0x00ec31e8, 0x01bcc0f6, 0x00a64f8d
+];
+const APRILTAG_25H9_BIT_X = [1,2,3,4,2,3,5,5,5,5,4,4,5,4,3,2,4,3,1,1,1,1,2,2,3];
+const APRILTAG_25H9_BIT_Y = [1,1,1,1,2,2,1,2,3,4,2,3,5,5,5,5,4,4,5,4,3,2,4,3,3];
+
+/**
+ * Official AprilRobotics AprilTag 36h11 Dictionary (first 50 IDs 0–49)
+ * 6x6 data payload with Hamming distance 11 in an 8x8 black frame (10x10 canvas).
+ */
+const APRILTAG_36H11_CODES = [
+  0x0dc4a1c821n, 0x0e17b470e9n, 0x0ef91d01b1n, 0x0f429cdd73n, 0x005da29225n,
+  0x01106cba43n, 0x0223bed79dn, 0x021f51213cn, 0x033eb19ca6n, 0x03f76eb0f8n,
+  0x0469a97414n, 0x045dcfe0b0n, 0x04a6465f72n, 0x051801db96n, 0x05eb946b4en,
+  0x068a7cc2ecn, 0x06f0ba2652n, 0x078765559dn, 0x087b83d129n, 0x086cc4a5c5n,
+  0x08b64df90fn, 0x09c577b611n, 0x0a3810f2f5n, 0x0af4d75b83n, 0x0b59a03fefn,
+  0x0bb1096f85n, 0x0d1b92fc76n, 0x0d0dd509d2n, 0x0e2cfda160n, 0x02ff497c63n,
+  0x047240671bn, 0x05047a2e55n, 0x0635ca87c7n, 0x0691254166n, 0x068f43d94an,
+  0x06ef24bdb6n, 0x08cdd8f886n, 0x09de96b718n, 0x0aff6e5a8an, 0x0bae46f029n,
+  0x0d9c490e6cn, 0x0e8d08594dn, 0x0e97be6f54n, 0x0fb0a3a41fn, 0x0059f1d08an,
+  0x011f8e13f9n, 0x01b0b69bc8n, 0x01be486a41n, 0x027cfc1f7fn, 0x02613d943en
+];
+const APRILTAG_36H11_BIT_X = [1,2,3,4,5,2,3,4,3,6,6,6,6,6,5,5,5,4,6,5,4,3,2,4,4,4,3,1,1,1,1,1,2,2,2,3];
+const APRILTAG_36H11_BIT_Y = [1,1,1,1,1,2,2,2,3,1,2,3,4,5,2,3,4,3,6,6,6,6,6,5,4,3,4,6,5,4,3,2,5,4,3,4];
+
+/**
+ * Official AprilRobotics AprilTag 16h5 Dictionary (30 unique IDs 0–29)
+ * 4x4 data payload with Hamming distance 5 in a 6x6 black frame (8x8 canvas).
+ */
+const APRILTAG_16H5_CODES = [
+  0xd6c4, 0xa574, 0x562c, 0x9da2, 0x659e, 0xd6fe, 0x1acd, 0xe931,
+  0x53c1, 0x9255, 0xb2a3, 0x4b29, 0xab5b, 0x6adb, 0x2b97, 0x356b,
+  0xcb65, 0x6d89, 0xb649, 0x7317, 0x550d, 0x44d8, 0x6c96, 0x9376,
+  0x3e18, 0x5825, 0x3a77, 0x7770, 0x23ac, 0xac60
+];
+const APRILTAG_16H5_BIT_X = [1,2,3,2,4,4,4,3,4,3,2,3,1,1,1,2];
+const APRILTAG_16H5_BIT_Y = [1,1,1,2,1,2,3,2,4,4,4,3,4,3,2,3];
 
 /**
  * Adds a new fiducial marker / GCP to the active layer.
@@ -1364,25 +1412,49 @@ function generateFiducialSvg(options = {}) {
         }
       }
     }
-  } else if (type === 'apriltag_36h11' || type === 'apriltag_16h5') {
-    // 6x6 grid with 1-cell black border
-    const dataPair = APRILTAG_16H5_DATA[id % APRILTAG_16H5_DATA.length] || [216, 196];
+  } else if (type === 'apriltag_25h9') {
+    // 7x7 grid: 1-cell black border, inner 5x5 data payload (35 codes, Hamming 9)
+    const code = APRILTAG_25H9_CODES[id % APRILTAG_25H9_CODES.length];
+    const cellSize = targetSize / 7;
+
+    markerContent += `<rect x="${margin}" y="${margin}" width="${targetSize}" height="${targetSize}" fill="#000000" />`;
+
+    for (let i = 0; i < 25; i++) {
+      const bitVal = (code >> (24 - i)) & 1;
+      if (bitVal === 1) {
+        const x = margin + APRILTAG_25H9_BIT_X[i] * cellSize;
+        const y = margin + APRILTAG_25H9_BIT_Y[i] * cellSize;
+        markerContent += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="#ffffff" />`;
+      }
+    }
+  } else if (type === 'apriltag_36h11') {
+    // 8x8 grid: 1-cell black border, inner 6x6 data payload (50+ codes, Hamming 11)
+    const code = APRILTAG_36H11_CODES[id % APRILTAG_36H11_CODES.length];
+    const cellSize = targetSize / 8;
+
+    markerContent += `<rect x="${margin}" y="${margin}" width="${targetSize}" height="${targetSize}" fill="#000000" />`;
+
+    for (let i = 0; i < 36; i++) {
+      const bitVal = Number((code >> BigInt(35 - i)) & 1n);
+      if (bitVal === 1) {
+        const x = margin + APRILTAG_36H11_BIT_X[i] * cellSize;
+        const y = margin + APRILTAG_36H11_BIT_Y[i] * cellSize;
+        markerContent += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="#ffffff" />`;
+      }
+    }
+  } else if (type === 'apriltag_16h5') {
+    // 6x6 grid: 1-cell black border, inner 4x4 data payload (30 codes, Hamming 5)
+    const code = APRILTAG_16H5_CODES[id % APRILTAG_16H5_CODES.length];
     const cellSize = targetSize / 6;
 
     markerContent += `<rect x="${margin}" y="${margin}" width="${targetSize}" height="${targetSize}" fill="#000000" />`;
 
-    for (let r = 0; r < 4; r++) {
-      for (let c = 0; c < 4; c++) {
-        const bitIdx = r * 4 + c;
-        const byteIdx = Math.floor(bitIdx / 8);
-        const bitInByte = 7 - (bitIdx % 8);
-        const bitVal = (dataPair[byteIdx] >> bitInByte) & 1;
-
-        if (bitVal === 1) {
-          const x = margin + (c + 1) * cellSize;
-          const y = margin + (r + 1) * cellSize;
-          markerContent += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="#ffffff" />`;
-        }
+    for (let i = 0; i < 16; i++) {
+      const bitVal = (code >> (15 - i)) & 1;
+      if (bitVal === 1) {
+        const x = margin + APRILTAG_16H5_BIT_X[i] * cellSize;
+        const y = margin + APRILTAG_16H5_BIT_Y[i] * cellSize;
+        markerContent += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="#ffffff" />`;
       }
     }
   } else if (type === 'checkerboard') {
@@ -1464,8 +1536,10 @@ function generateFiducialSvg(options = {}) {
   if (showIdLabel) {
     const typeLabel = type === 'aruco_4x4' ? `ArUco 4x4 (DICT_4X4_50) #ID:${id}` :
       (type === 'aruco_5x5' ? `ArUco 5x5 (DICT_5X5_100) #ID:${id}` :
-      (type === 'apriltag_36h11' || type === 'apriltag_16h5' ? `AprilTag #ID:${id}` :
-      (type === 'checkerboard' ? `Survey Checkerboard 4x4` : `Survey AeroPoint Crosshair`)));
+      (type === 'apriltag_25h9' ? `AprilTag 25h9 (tag25h9) #ID:${id}` :
+      (type === 'apriltag_36h11' ? `AprilTag 36h11 (tag36h11) #ID:${id}` :
+      (type === 'apriltag_16h5' ? `AprilTag 16h5 (tag16h5) #ID:${id}` :
+      (type === 'checkerboard' ? `Survey Checkerboard 4x4` : `Survey AeroPoint Crosshair`)))));
 
     idLabelSvg = `
       <g id="header-label" font-family="sans-serif">
@@ -1523,6 +1597,26 @@ function renderTargetGeneratorPreview() {
   if (!previewEl) return;
 
   const type = document.getElementById('gen-target-type')?.value || 'aruco_4x4';
+  const targetIdEl = document.getElementById('gen-target-id');
+  let maxId = 99;
+  if (type === 'apriltag_25h9') {
+    maxId = 34;
+  } else if (type === 'apriltag_16h5') {
+    maxId = 29;
+  } else if (type === 'apriltag_36h11' || type === 'aruco_4x4') {
+    maxId = 49;
+  } else if (type === 'aruco_5x5') {
+    maxId = 99;
+  }
+
+  if (targetIdEl) {
+    targetIdEl.max = String(maxId);
+    const currVal = parseInt(targetIdEl.value, 10);
+    if (!isNaN(currVal) && currVal > maxId) {
+      targetIdEl.value = String(maxId);
+    }
+  }
+
   const id = parseInt(document.getElementById('gen-target-id')?.value, 10) || 0;
   const size = parseFloat(document.getElementById('gen-target-size')?.value) || 0.20;
   const showCrosshair = document.getElementById('gen-opt-crosshair')?.checked !== false;
@@ -1578,11 +1672,111 @@ function exportTargetSvg() {
 }
 
 /**
- * Prints the target sheet using the browser's native print engine.
+ * Prints the target sheet using an isolated print iframe to prevent main-app DOM styles or overflows from clipping the sheet.
  */
 function printTargetSheet() {
   renderTargetGeneratorPreview();
-  window.print();
+
+  const type = document.getElementById('gen-target-type')?.value || 'aruco_4x4';
+  const id = parseInt(document.getElementById('gen-target-id')?.value, 10) || 0;
+  const size = parseFloat(document.getElementById('gen-target-size')?.value) || 0.20;
+  const showCrosshair = document.getElementById('gen-opt-crosshair')?.checked !== false;
+  const showCornerTicks = document.getElementById('gen-opt-cornerticks')?.checked !== false;
+  const showRuler = document.getElementById('gen-opt-ruler')?.checked !== false;
+  const showIdLabel = document.getElementById('gen-opt-idlabel')?.checked !== false;
+
+  const svgStr = generateFiducialSvg({
+    type,
+    id,
+    physicalSizeMeters: size,
+    showCrosshair,
+    showCornerTicks,
+    showRuler,
+    showIdLabel
+  });
+
+  // Create or reuse an isolated hidden iframe for printing to prevent any main-app DOM styles or overflows from clipping the printout
+  let printIframe = document.getElementById('fiducial-print-iframe');
+  if (!printIframe) {
+    printIframe = document.createElement('iframe');
+    printIframe.id = 'fiducial-print-iframe';
+    printIframe.style.position = 'fixed';
+    printIframe.style.right = '0';
+    printIframe.style.bottom = '0';
+    printIframe.style.width = '0';
+    printIframe.style.height = '0';
+    printIframe.style.border = '0';
+    printIframe.style.visibility = 'hidden';
+    document.body.appendChild(printIframe);
+  }
+
+  const iframeDoc = printIframe.contentDocument || printIframe.contentWindow?.document;
+  if (!iframeDoc) {
+    window.print();
+    return;
+  }
+
+  iframeDoc.open();
+  iframeDoc.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Target_${type}_ID${id}</title>
+  <style>
+    @page {
+      size: auto;
+      margin: 10mm;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: visible;
+    }
+    .print-target-wrapper {
+      width: 100%;
+      height: 100%;
+      max-width: 92vw;
+      max-height: 92vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .print-target-wrapper svg {
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  <div class="print-target-wrapper">
+    ${svgStr}
+  </div>
+</body>
+</html>`);
+  iframeDoc.close();
+
+  // Allow iframe layout to settle before invoking print
+  setTimeout(() => {
+    try {
+      if (printIframe.contentWindow) {
+        printIframe.contentWindow.focus();
+        printIframe.contentWindow.print();
+      } else {
+        window.print();
+      }
+    } catch (e) {
+      window.print();
+    }
+  }, 250);
 }
 
 // Geolocation state

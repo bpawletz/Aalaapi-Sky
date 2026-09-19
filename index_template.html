@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.111.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.112.0</span></h1>
         </div>
       </div>
 
@@ -1461,10 +1461,11 @@
                   <select id="fiducial-default-type" class="form-select" style="font-size: 0.72rem; padding: 4px 6px;">
                     <option value="aruco_4x4" selected>ArUco 4x4 (50)</option>
                     <option value="aruco_5x5">ArUco 5x5 (100)</option>
-                    <option value="apriltag_36h11">AprilTag (36h11)</option>
-                    <option value="checkerboard">Checkerboard</option>
+                    <option value="apriltag_25h9">AprilTag 25h9 (35)</option>
+                    <option value="apriltag_36h11">AprilTag 36h11 (50)</option>
+                    <option value="apriltag_16h5">AprilTag 16h5 (30)</option>
+                    <option value="checkerboard">Checkerboard (4x4)</option>
                     <option value="crosshair">Crosshair / AeroPoint</option>
-                    <option value="circular_coded">Circular Coded</option>
                   </select>
                 </div>
 
@@ -2409,6 +2410,14 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #fbbf24; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🎯 Isolated Fiducial Print Engine &amp; AprilTag tag25h9 Family (v1.112.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Completely overhauls printable fiducial target generation. Eliminates print clipping by using an isolated, dedicated print engine that renders targets into a clean printable iframe with calibrated 10mm margins, ensuring full headers, quiet borders, and millimeter calibration rulers print without cut-offs. Expands marker family support with the complete <strong>AprilTag tag25h9</strong> dictionary (35 IDs, 5x5 grid, Hamming distance 9) alongside official <strong>tag36h11</strong> and <strong>tag16h5</strong> families with authentic AprilRobotics bit layouts.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🌉 Aalaapi Bridge &amp; Progressive Disclosure Architecture (v1.111.0)
@@ -3208,7 +3217,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.111.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.112.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -3228,12 +3237,6 @@
 
         <h4 style="margin: 4px 0 0 0; color: var(--accent-cyan); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">Key Capabilities</h4>
         <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; color: var(--text-muted);">
-          <li>Full support for DJI Mini 4 Pro, Air 3, Mavic 3, Matrice 30, and Matrice 300/350 RTK.</li>
-          <li>Live NOAA aviation weather &amp; flight category (VFR/MVFR/IFR) verification.</li>
-          <li>Direct RC 2 USB Sync: Export missions and pull flight logs directly to your controller over USB.</li>
-          <li>Preserve imported filename and structure on KMZ exports.</li>
-          <li>Procedural flight generation: 2D Nadir Grid, 3D Double Grid, Oblique Orbits, and Multi-Tier Hybrid passes.</li>
-          <li>Multi-layer flight execution: Combine nadir mapping, vertical facades, and perimeter orbits in one file.</li>
           <li>Live KMZ 3D trajectory preview with interactive waypoint altitude inspection.</li>
           <li>Hardware-synchronized camera triggers &amp; custom aircraft heading profiles.</li>
           <li>Real-time mission execution estimates: Flight time, battery consumption, and photo count.</li>
@@ -3277,6 +3280,15 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.112.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🖨️ Isolated Fiducial Print Engine:</strong> Resolved print clipping issue by rendering printable target sheets into a dedicated isolated print iframe with clean <code>@page { size: auto; margin: 10mm; }</code> styling, guaranteeing full-sheet unclipped targets with complete headers, borders, and calibration rulers.</li>
+              <li><strong>🎯 Added AprilTag tag25h9 Marker Family (35 IDs):</strong> Fully integrated official AprilRobotics <code>tag25h9</code> family (5x5 grid, Hamming distance 9, 35 unique IDs 0–34) with verified bit coordinate mapping.</li>
+              <li><strong>📐 Added AprilTag tag36h11 &amp; tag16h5 Families:</strong> Added official <code>tag36h11</code> (50 IDs, 6x6, Hamming 11) and <code>tag16h5</code> (30 IDs, 4x4, Hamming 5) dictionaries.</li>
+              <li><strong>⚙️ Dynamic Marker ID Clamping:</strong> Automatically updates the maximum selectable ID in the generator modal based on the chosen marker family.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.111.2):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -6884,7 +6896,9 @@
             <select id="gen-target-type" class="form-select" style="font-size: 0.75rem; padding: 4px 8px;">
               <option value="aruco_4x4" selected>ArUco 4x4 (DICT_4X4_50)</option>
               <option value="aruco_5x5">ArUco 5x5 (DICT_5X5_100)</option>
-              <option value="apriltag_36h11">AprilTag (Tag36h11)</option>
+              <option value="apriltag_25h9">AprilTag 25h9 (tag25h9 - 35 IDs)</option>
+              <option value="apriltag_36h11">AprilTag 36h11 (tag36h11 - 50 IDs)</option>
+              <option value="apriltag_16h5">AprilTag 16h5 (tag16h5 - 30 IDs)</option>
               <option value="checkerboard">Survey Checkerboard (4x4)</option>
               <option value="crosshair">Survey Crosshair &amp; Bullseye</option>
             </select>

@@ -18914,9 +18914,152 @@ describe('DJI Flight Log Cloud Decryption & Buffer Overflow Fix Tests (v1.111.2)
     assert.ok(semverGte(pkg, '1.111.2'), 'package.json version should be >= 1.111.2');
     assert.ok(cl.includes('## [1.111.2]'), 'CHANGELOG.md missing 1.111.2 header');
     assert.ok(indexTemplate.includes('class="header-version-badge"'), 'index_template.html missing header badge');
-    assert.ok(indexTemplate.includes('v1.111.2'), 'index_template.html missing v1.111.2 badge');
-    assert.ok(indexTemplate.includes('Version 1.111.2'), 'index_template.html missing Version 1.111.2 tag');
+    assert.ok(indexTemplate.includes('class="version-tag"'), 'index_template.html missing version-tag');
     assert.ok(indexTemplate.includes('Changelog (v1.111.2):'), 'index_template.html missing Changelog (v1.111.2)');
+  });
+});
+
+describe('Isolated Fiducial Print Engine & AprilTag tag25h9 Suite Tests (v1.112.0)', () => {
+  test('Version consistency is maintained across package.json, CHANGELOG.md, and templates for v1.112.0', () => {
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+    const cl = fs.readFileSync('CHANGELOG.md', 'utf8');
+    const indexTemplate = fs.readFileSync('index_template.html', 'utf8');
+    const indexHtml = fs.readFileSync('index.html', 'utf8');
+
+    assert.ok(semverGte(pkg, '1.112.0'), 'package.json version should be >= 1.112.0');
+    assert.ok(cl.includes('## [1.112.0] - 2026-09-19'), 'CHANGELOG.md missing 1.112.0 header');
+    assert.ok(/<span class="header-version-badge"[^>]*>v1\.112\.0<\/span>/.test(indexTemplate), 'index_template.html missing v1.112.0 header badge');
+    assert.ok(/<span class="version-tag"[^>]*>Version 1\.112\.0<\/span>/.test(indexTemplate), 'index_template.html missing Version 1.112.0 tag');
+    assert.ok(indexTemplate.includes('Changelog (v1.112.0):'), 'index_template.html missing Changelog (v1.112.0)');
+
+    assert.ok(/<span class="header-version-badge"[^>]*>v1\.112\.0<\/span>/.test(indexHtml), 'index.html missing v1.112.0 header badge');
+    assert.ok(/<span class="version-tag"[^>]*>Version 1\.112\.0<\/span>/.test(indexHtml), 'index.html missing Version 1.112.0 tag');
+    assert.ok(indexHtml.includes('Changelog (v1.112.0):'), 'index.html missing Changelog (v1.112.0)');
+  });
+
+  test('DOM templates contain apriltag_25h9 options in Section 2 Card 6 and Generator Modal', () => {
+    ['index_template.html', 'index.html'].forEach(filename => {
+      const content = fs.readFileSync(path.join(__dirname, filename), 'utf8');
+      assert.ok(content.includes('value="apriltag_25h9"'), `Must include apriltag_25h9 option in ${filename}`);
+      assert.ok(content.includes('AprilTag 25h9'), `Must include AprilTag 25h9 text in ${filename}`);
+      assert.ok(content.includes('value="apriltag_36h11"'), `Must include apriltag_36h11 option in ${filename}`);
+      assert.ok(content.includes('value="apriltag_16h5"'), `Must include apriltag_16h5 option in ${filename}`);
+    });
+  });
+
+  test('generateFiducialSvg correctly generates AprilTag 25h9 with authentic 7x7 grid and ID header', () => {
+    const svgStr = generateFiducialSvg({
+      type: 'apriltag_25h9',
+      id: 0,
+      physicalSizeMeters: 0.20,
+      showCrosshair: true,
+      showCornerTicks: true,
+      showRuler: true,
+      showIdLabel: true
+    });
+
+    assert.ok(svgStr.startsWith('<svg'), 'Should produce a valid SVG element');
+    assert.ok(svgStr.includes('AprilTag 25h9 (tag25h9) #ID:0'), 'Should have AprilTag 25h9 ID label');
+    assert.ok(svgStr.includes('id="scale-ruler"'), 'Should render calibration scale ruler');
+    assert.ok(svgStr.includes('id="header-label"'), 'Should render header label');
+    // Check for fill="#000000" and white bit rects
+    assert.ok(svgStr.includes('fill="#000000"'), 'Should render black border/cells');
+    assert.ok(svgStr.includes('fill="#ffffff"'), 'Should render white background/cells');
+  });
+
+  test('generateFiducialSvg correctly generates AprilTag 36h11 and 16h5', () => {
+    const svg36 = generateFiducialSvg({
+      type: 'apriltag_36h11',
+      id: 5,
+      physicalSizeMeters: 0.30,
+      showCrosshair: true,
+      showCornerTicks: true,
+      showRuler: true,
+      showIdLabel: true
+    });
+    assert.ok(svg36.includes('AprilTag 36h11 (tag36h11) #ID:5'), 'Should label 36h11');
+
+    const svg16 = generateFiducialSvg({
+      type: 'apriltag_16h5',
+      id: 12,
+      physicalSizeMeters: 0.15,
+      showCrosshair: true,
+      showCornerTicks: true,
+      showRuler: true,
+      showIdLabel: true
+    });
+    assert.ok(svg16.includes('AprilTag 16h5 (tag16h5) #ID:12'), 'Should label 16h5');
+  });
+
+  test('printTargetSheet creates an isolated hidden iframe with print styles', async () => {
+    // Set up mock DOM
+    const origWindow = global.window;
+    const origDoc = global.document;
+
+    const mockIframeDoc = {
+      content: '',
+      open() { this.content = ''; },
+      write(str) { this.content += str; },
+      close() {}
+    };
+
+    let printCalled = false;
+    let focusCalled = false;
+    const mockIframe = {
+      id: 'fiducial-print-iframe',
+      style: {},
+      contentDocument: mockIframeDoc,
+      contentWindow: {
+        document: mockIframeDoc,
+        focus() { focusCalled = true; },
+        print() { printCalled = true; }
+      }
+    };
+
+    const mockDoc = {
+      getElementById(id) {
+        if (id === 'fiducial-print-iframe') return null; // simulate initial creation
+        if (id === 'gen-target-type') return { value: 'apriltag_25h9' };
+        if (id === 'gen-target-id') return { value: '3' };
+        if (id === 'gen-target-size') return { value: '0.20' };
+        if (id === 'gen-opt-crosshair') return { checked: true };
+        if (id === 'gen-opt-cornerticks') return { checked: true };
+        if (id === 'gen-opt-ruler') return { checked: true };
+        if (id === 'gen-opt-idlabel') return { checked: true };
+        if (id === 'gen-target-preview-svg') return { innerHTML: '' };
+        return null;
+      },
+      createElement(tag) {
+        if (tag === 'iframe') return mockIframe;
+        return {};
+      },
+      body: {
+        appendChild(el) {}
+      }
+    };
+
+    global.document = mockDoc;
+    global.window = {
+      print() {},
+      setTimeout(fn, ms) { return setTimeout(fn, ms); }
+    };
+
+    try {
+      printTargetSheet();
+      assert.ok(mockIframeDoc.content.includes('@page {'), 'Iframe document should include @page print rule');
+      assert.ok(mockIframeDoc.content.includes('AprilTag 25h9 (tag25h9) #ID:3'), 'Iframe should render target SVG with tag25h9');
+      assert.ok(mockIframeDoc.content.includes('max-width: 92vw;'), 'Iframe should wrap target with max-width: 92vw');
+      assert.ok(mockIframeDoc.content.includes('max-height: 92vh;'), 'Iframe should wrap target with max-height: 92vh');
+
+      // Await 350ms to allow the 250ms iframe render timeout to execute
+      await new Promise(resolve => setTimeout(resolve, 350));
+
+      assert.strictEqual(focusCalled, true, 'Should focus the iframe before printing');
+      assert.strictEqual(printCalled, true, 'Should trigger iframe print()');
+    } finally {
+      global.document = origDoc;
+      global.window = origWindow;
+    }
   });
 });
 

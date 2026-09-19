@@ -4708,30 +4708,50 @@ html, body {
   box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
 }
 
-/* Printable Target Sheet Media Styles (v1.104.0) */
+/* Printable Target Sheet Media Styles (v1.112.0) */
+@page {
+  size: auto;
+  margin: 10mm;
+}
+
 @media print {
+  html, body {
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    overflow: visible !important;
+  }
+
   body * {
     visibility: hidden;
   }
+
   #fiducial-generator-modal,
+  #fiducial-generator-modal .modal,
+  #fiducial-generator-modal .modal-content,
   #fiducial-generator-modal #gen-target-preview-container,
   #fiducial-generator-modal #gen-target-preview-container * {
     visibility: visible;
   }
+
   #fiducial-generator-modal {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100vw;
-    height: 100vh;
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
     background: #ffffff !important;
-    z-index: 99999;
+    z-index: 999999 !important;
     display: flex !important;
-    align-items: center;
-    justify-content: center;
+    align-items: center !important;
+    justify-content: center !important;
     padding: 0 !important;
     margin: 0 !important;
+    overflow: visible !important;
   }
+
   #fiducial-generator-modal .modal {
     background: #ffffff !important;
     border: none !important;
@@ -4739,25 +4759,55 @@ html, body {
     max-width: 100% !important;
     width: 100% !important;
     padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
   }
+
   #fiducial-generator-modal .modal-header,
   #fiducial-generator-modal .modal-content > p,
   #fiducial-generator-modal .modal-content > div:not(#gen-target-preview-container) {
     display: none !important;
   }
+
+  #fiducial-generator-modal .modal-content {
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+
   #fiducial-generator-modal #gen-target-preview-container {
     border: none !important;
     padding: 0 !important;
-    margin: 0 !important;
-    width: 100vw;
-    height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    margin: 0 auto !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
+
+  #fiducial-generator-modal #gen-target-preview-svg {
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
   #fiducial-generator-modal #gen-target-preview-svg svg {
-    max-width: 95vw;
-    max-height: 95vh;
+    max-width: 85vw !important;
+    max-height: 85vh !important;
+    width: 100% !important;
+    height: auto !important;
+    display: block !important;
+    margin: 0 auto !important;
   }
 }
 
