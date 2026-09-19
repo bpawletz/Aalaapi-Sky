@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.112.0] - 2026-09-19
+
+### Added & Fixed — Fiducial Print Isolation & Expanded AprilTag Dictionaries (tag25h9, tag36h11, tag16h5)
+- **Resolved Fiducial Target Print Image Clipping:**
+  - Diagnosed and fixed an issue where printing targets from the Printable Target Sheet Generator modal (`#fiducial-generator-modal`) horizontally clipped the top header, quiet border, and bottom calibration scale ruler.
+  - Implemented an isolated print engine in `printTargetSheet()` that renders and prints the target SVG through a dedicated hidden `<iframe>` with clean `@page { size: auto; margin: 10mm; }` styling, completely immune to modal DOM hierarchy, scroll positions, and container clipping.
+  - Overhauled `@media print` in `index.css` as a robust fallback for direct `Ctrl+P` printing, resetting `#gen-target-preview-container` to `max-height: none !important; overflow: visible !important; height: auto !important;` and scaling SVG within page bounds (`max-width: 85vw; max-height: 85vh;`).
+- **Added Authentic AprilTag tag25h9 Marker Family (35 IDs):**
+  - Integrated complete AprilRobotics `tag25h9` family dictionary (`APRILTAG_25H9_DATA`, 35 unique IDs from 0 to 34) with verified bit coordinate mapping (`bit_x` and `bit_y`).
+  - Features 5x5 data payload with Hamming distance 9 for robust error correction against camera glare, prop wash, and motion blur.
+  - Renders authentic 7x7 black frame with inner 5x5 cells and surrounding quiet border.
+- **Added Authentic AprilTag tag36h11 and tag16h5 Families:**
+  - Integrated official `tag36h11` family (50 IDs, 6x6 data payload, Hamming 11, 8x8 black frame) and `tag16h5` family (30 IDs, 4x4 data payload, Hamming 5, 6x6 black frame) with exact bit layout specifications from AprilRobotics.
+- **Expanded UI Selection & Dynamic ID Clamping:**
+  - Updated Section 2 Card 6 (`#fiducial-default-type`) and Target Generator Modal (`#gen-target-type`) to expose the complete dictionary suite:
+    - ArUco 4x4 (DICT_4X4_50)
+    - ArUco 5x5 (DICT_5X5_100)
+    - AprilTag 25h9 (tag25h9 - 35 IDs)
+    - AprilTag 36h11 (tag36h11 - 50 IDs)
+    - AprilTag 16h5 (tag16h5 - 30 IDs)
+    - Survey Checkerboard (4x4)
+    - Survey Crosshair & Bullseye / AeroPoint
+  - Dynamically clamps the `#gen-target-id` input's `max` attribute based on the active marker family (34 for tag25h9, 29 for tag16h5, 49 for tag36h11 and ArUco).
+
 ## [1.111.2] - 2026-09-18
 
 ### Fixed & Improved — DJI Native Flight Log Cloud Decryption Pipeline
