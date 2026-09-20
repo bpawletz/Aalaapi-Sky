@@ -2745,53 +2745,84 @@ const server = http.createServer(async (req, res) => {
           }
 
           // 1. Check if flightId matches a saved mission in SQLite by date or filename
-          if (!telemetry && flightId && diagDb && diagDb.db) {
+          let matchedMissionPayload = null;
+          if (flightId && diagDb && diagDb.db) {
             const dateMatch = flightId.match(/FlightRecord_(\d{4}-\d{2}-\d{2})/);
             if (dateMatch) {
               const dateStr = dateMatch[1];
               try {
                 const stmt = diagDb.db.prepare(
-                  "SELECT * FROM mission_diagnostics WHERE created_at LIKE ? AND diag_json IS NOT NULL AND diag_json != '' ORDER BY id DESC LIMIT 1"
+                  "SELECT * FROM mission_diagnostics WHERE created_at LIKE ? ORDER BY id DESC"
                 );
-                const matchedRow = stmt.get(dateStr + '%');
-                if (matchedRow && matchedRow.diag_json) {
-                  const savedDiag = JSON.parse(matchedRow.diag_json);
-                  if (savedDiag && Array.isArray(savedDiag.points) && savedDiag.points.length > 0) {
-                    let plannedWps = null;
-                    let plannedStats = {
-                      waypointCount: matchedRow.waypoint_count,
-                      altitude: matchedRow.altitude,
-                      totalDistance: matchedRow.total_distance
-                    };
-                    if (matchedRow.plan_json) {
-                      try {
-                        const plan = JSON.parse(matchedRow.plan_json);
-                        if (Array.isArray(plan.waypoints) && plan.waypoints.length > 0) plannedWps = plan.waypoints;
-                        if (plan.statistics) plannedStats = plan.statistics;
-                      } catch (errPlan) {}
-                    }
-
-                    let telemToUse = savedDiag;
-                    if (plannedWps && plannedWps.length > 1) {
-                      const photoAlts = new Set(savedDiag.points.filter(p => p.isPhoto).map(p => p.alt));
-                      const planAlts = new Set(plannedWps.map(w => w.altitude !== undefined ? w.altitude : (w.alt !== undefined ? w.alt : 50)));
-                      if (photoAlts.size <= 1 && planAlts.size > 1) {
-                        telemToUse = generateTelemetryFromWaypoints(plannedWps, {
-                          altitude: matchedRow.altitude || options.altitude,
-                          speed: matchedRow.speed || options.speed,
-                          gimbalPitch: matchedRow.gimbal_pitch !== undefined ? matchedRow.gimbal_pitch : options.gimbalPitch,
-                          flightId
-                        });
+                const candidates = stmt.all(dateStr + '%');
+                if (candidates && candidates.length > 0) {
+                  let matchedRow = null;
+                  if (telemetry && telemetry.homePoint && typeof telemetry.homePoint.lat === 'number') {
+                    let bestDist = Infinity;
+                    for (const cand of candidates) {
+                      let cLat = cand.center_lat;
+                      let cLon = cand.center_lon;
+                      if (cLat === undefined && cand.plan_json) {
                         try {
-                          diagDb.db.prepare("UPDATE mission_diagnostics SET diag_json = ? WHERE id = ?").run(JSON.stringify(telemToUse), matchedRow.id);
-                          logSuccess('[TELEMETRY UPGRADED]', `Regenerated 3D dynamic altitude profile for archived mission ${matchedRow.uuid}`);
-                        } catch (upErr) {}
+                          const p = JSON.parse(cand.plan_json);
+                          cLat = p.mission?.center?.lat || (p.waypoints && p.waypoints[0]?.lat);
+                          cLon = p.mission?.center?.lon || (p.waypoints && p.waypoints[0]?.lon);
+                        } catch (_) {}
+                      }
+                      if (typeof cLat === 'number' && typeof cLon === 'number') {
+                        const dist = Math.hypot(cLat - telemetry.homePoint.lat, cLon - telemetry.homePoint.lon);
+                        if (dist < bestDist) {
+                          bestDist = dist;
+                          matchedRow = cand;
+                        }
                       }
                     }
-                    telemetry = telemToUse;
-                    telemetry.plannedWaypoints = plannedWps;
-                    comparison = computeFlightComparison(plannedStats, telemetry);
-                    logSuccess('[TELEMETRY RESOLVED]', `Matched flight "${flightId}" to archived mission ${matchedRow.uuid} (${telemetry.points.length} pts, ${telemetry.durationFormatted})`);
+                  }
+                  if (!matchedRow) matchedRow = candidates[0];
+
+                  if (matchedRow) {
+                    matchedMissionPayload = diagDb.rowToMission(matchedRow);
+                    if (matchedMissionPayload) {
+                      const plannedWps = matchedMissionPayload.plan?.waypoints;
+                      if (telemetry) {
+                        if (plannedWps && plannedWps.length > 0 && (!telemetry.plannedWaypoints || !telemetry.plannedWaypoints.length)) {
+                          telemetry.plannedWaypoints = plannedWps;
+                        }
+                        if (Array.isArray(matchedMissionPayload.parcels) && matchedMissionPayload.parcels.length > 0) {
+                          telemetry.parcels = matchedMissionPayload.parcels;
+                        }
+                        if (Array.isArray(matchedMissionPayload.groundControl) && matchedMissionPayload.groundControl.length > 0) {
+                          telemetry.groundControl = matchedMissionPayload.groundControl;
+                        }
+                        const plannedStats = matchedMissionPayload.plan?.statistics || {
+                          waypointCount: matchedMissionPayload.waypoint_count,
+                          altitude: matchedMissionPayload.altitude,
+                          totalDistance: matchedMissionPayload.total_distance
+                        };
+                        comparison = computeFlightComparison(plannedStats, telemetry);
+                      } else if (matchedRow.diag_json) {
+                        const savedDiag = JSON.parse(matchedRow.diag_json);
+                        if (savedDiag && Array.isArray(savedDiag.points) && savedDiag.points.length > 0) {
+                          telemetry = savedDiag;
+                          telemetry.plannedWaypoints = plannedWps;
+                          if (Array.isArray(matchedMissionPayload.parcels)) telemetry.parcels = matchedMissionPayload.parcels;
+                          if (Array.isArray(matchedMissionPayload.groundControl)) telemetry.groundControl = matchedMissionPayload.groundControl;
+                          const plannedStats = matchedMissionPayload.plan?.statistics || {
+                            waypointCount: matchedMissionPayload.waypoint_count,
+                            altitude: matchedMissionPayload.altitude,
+                            totalDistance: matchedMissionPayload.total_distance
+                          };
+                          comparison = computeFlightComparison(plannedStats, telemetry);
+                        }
+                      }
+
+                      // Link in SQLite if not yet linked
+                      try {
+                        diagDb.db.prepare("UPDATE mission_diagnostics SET has_actual_flight = 1, actual_flight_file = ? WHERE id = ?").run(flightId, matchedRow.id);
+                      } catch (_) {}
+
+                      logSuccess('[TELEMETRY RESOLVED]', `Matched flight "${flightId}" to archived mission ${matchedMissionPayload.uuid} (${telemetry?.points?.length || 0} pts, ${matchedMissionPayload.parcels?.length || 0} parcels)`);
+                    }
                   }
                 }
               } catch (dbErr) {
@@ -2815,7 +2846,8 @@ const server = http.createServer(async (req, res) => {
             isDecrypted,
             needsDjiApiKey: !isDecrypted && !getDjiApiKey() && Boolean(candidateLogPath),
             djiApiKeyConfigured: Boolean(getDjiApiKey()),
-            djiDecryptError
+            djiDecryptError,
+            mission: matchedMissionPayload
           }));
         } catch (e) {
           logError('[TELEMETRY ERROR]', e.message);
@@ -3078,6 +3110,32 @@ const server = http.createServer(async (req, res) => {
               mObj.totalPhotos = mObj.photos.length;
               if (mObj.summary) {
                 mObj.summary.totalPhotos = mObj.photos.length;
+              }
+            }
+          }
+
+          if (!mObj.parcels || !mObj.parcels.length) {
+            if (diagDb && diagDb.db) {
+              const flightTagMatch = (flight || manifestUuid).match(/(\d{4}-\d{2}-\d{2})/);
+              if (flightTagMatch) {
+                const dateStr = flightTagMatch[1];
+                try {
+                  const candidateRows = diagDb.db.prepare(
+                    "SELECT * FROM mission_diagnostics WHERE created_at LIKE ? ORDER BY id DESC"
+                  ).all(dateStr + '%');
+                  if (candidateRows && candidateRows.length > 0) {
+                    const missionObj = diagDb.rowToMission(candidateRows[0]);
+                    if (missionObj) {
+                      if (Array.isArray(missionObj.parcels) && missionObj.parcels.length > 0) {
+                        mObj.parcels = missionObj.parcels;
+                      }
+                      if (Array.isArray(missionObj.groundControl) && missionObj.groundControl.length > 0) {
+                        mObj.groundControl = missionObj.groundControl;
+                      }
+                      mObj.matchedMissionUuid = missionObj.uuid;
+                    }
+                  }
+                } catch (_) {}
               }
             }
           }

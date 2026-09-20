@@ -20089,17 +20089,66 @@ describe('Canvas2D willReadFrequently Optimization Tests (v1.114.2)', () => {
 
   test('Version 1.115.4 is consistent across package.json and templates', () => {
     const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
-    assert.strictEqual(pkg.version, '1.115.4');
+    assert.ok(semverGte(pkg.version, '1.115.4'), 'package.json version should be >= 1.115.4');
 
     const changelog = fs.readFileSync('./CHANGELOG.md', 'utf8');
     assert.ok(changelog.includes('## [1.115.4] - 2026-09-20'));
 
     const tmpl = fs.readFileSync('./index_template.html', 'utf8');
-    assert.ok(tmpl.includes('v1.115.4'), 'index_template.html must contain v1.115.4 header badge');
-    assert.ok(tmpl.includes('Version 1.115.4'), 'index_template.html must contain Version 1.115.4');
+    assert.ok(tmpl.includes('Changelog (v1.115.4):'), 'index_template.html must contain Changelog (v1.115.4)');
 
     const indexHtml = fs.readFileSync('./index.html', 'utf8');
-    assert.ok(indexHtml.includes('v1.115.4'), 'index.html must contain v1.115.4 header badge');
-    assert.ok(indexHtml.includes('Version 1.115.4'), 'index.html must contain Version 1.115.4');
+    assert.ok(indexHtml.includes('Changelog (v1.115.4):'), 'index.html must contain Changelog (v1.115.4)');
   });
 });
+
+describe('3D Flight Boundary & Parcel Footprint Projection Suite Tests (v1.116.0)', () => {
+  test('FlightDiagnostics.getDiagnosticsBoundaries derives boundary from mission parcels or planned waypoints', () => {
+    const js = fs.readFileSync('./index.js', 'utf8');
+    assert.ok(
+      js.includes('getDiagnosticsBoundaries()'),
+      'FlightDiagnostics must implement getDiagnosticsBoundaries'
+    );
+    assert.ok(
+      js.includes('this.boundaryMeshes = []'),
+      'FlightDiagnostics must track 3D boundary meshes'
+    );
+    assert.ok(
+      js.includes('diag-legend-boundary'),
+      'FlightDiagnostics must manage diag-legend-boundary in legend'
+    );
+  });
+
+  test('companion server correlates RC2 flight logs with SQLite mission records and parcels', () => {
+    const serverJs = fs.readFileSync('./tools/companion/server.js', 'utf8');
+    assert.ok(
+      serverJs.includes('matchedMissionPayload = diagDb.rowToMission(matchedRow)'),
+      'server.js must convert matched row to mission payload'
+    );
+    assert.ok(
+      serverJs.includes('telemetry.parcels = matchedMissionPayload.parcels'),
+      'server.js must attach parcels from matched mission to telemetry'
+    );
+    assert.ok(
+      serverJs.includes('mission: matchedMissionPayload'),
+      'server.js must return matched mission in response'
+    );
+  });
+
+  test('Version 1.116.0 is consistent across package.json and templates', () => {
+    const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
+    assert.strictEqual(pkg.version, '1.116.0');
+
+    const changelog = fs.readFileSync('./CHANGELOG.md', 'utf8');
+    assert.ok(changelog.includes('## [1.116.0] - 2026-09-20'));
+
+    const tmpl = fs.readFileSync('./index_template.html', 'utf8');
+    assert.ok(tmpl.includes('v1.116.0'), 'index_template.html must contain v1.116.0 header badge');
+    assert.ok(tmpl.includes('Version 1.116.0'), 'index_template.html must contain Version 1.116.0');
+
+    const indexHtml = fs.readFileSync('./index.html', 'utf8');
+    assert.ok(indexHtml.includes('v1.116.0'), 'index.html must contain v1.116.0 header badge');
+    assert.ok(indexHtml.includes('Version 1.116.0'), 'index.html must contain Version 1.116.0');
+  });
+});
+

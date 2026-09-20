@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.116.0] - 2026-09-20
+
+### New Features & Enhancements
+- **3D Flight Boundary & Parcel Footprint Projection in Flight Diagnostics:**
+  - Implemented 3D mission boundary rendering in `FlightDiagnostics` (`buildTrajectoryMeshes`): flight layer boundaries, survey polygons, and property parcels are now rendered directly in the 3D trajectory viewer and Top-Down camera mode with dashed perimeter lines (`THREE.Line`) and semi-transparent terrain surface fills (`THREE.ShapeGeometry`).
+  - Added dedicated dynamic `#diag-legend-boundary` indicator in the 3D viewer legend, automatically appearing when boundaries are present.
+  - Rendered Ground Control Points (GCPs) in the 3D viewport as physical target pads aligned with flight elevation.
+- **Automated RC 2 Flight Log to Mission Plan Correlation:**
+  - In companion `/api/flight-telemetry`, recorded DJI RC 2 flight records (`FlightRecord_YYYY-MM-DD_...`) are now automatically matched against archived SQLite mission plans (`mission_diagnostics`) by date and geographic coordinate proximity.
+  - Telemetry payloads are enriched with the true planned waypoints, layer boundary parcels, and ground control points from the matched flight plan, linking `has_actual_flight = 1` and returning the matched mission to the client.
+  - The Flight Diagnostics header now dynamically displays the matched flight plan badge (`🎯 Plan: ...`).
+- **Media Ingestion & Photo Inspector Parcel Enrichment:**
+  - The `/api/media/manifest` endpoint now dynamically attaches parcels, GCPs, and matched mission UUIDs to inspection manifests.
+  - `PhotoInspector` checks both `activeManifest.parcels` and `FlightDiagnostics.currentLoadedMission.parcels`, projecting the exact layer boundary overlay on flight photos.
+
 ## [1.115.4] - 2026-09-20
 
 ### Performance & Bug Fixes

@@ -4940,7 +4940,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.115.4</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.116.0</span></h1>
 
 
 
@@ -8121,7 +8121,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.115.4</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.116.0</span>
 
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -8185,6 +8185,13 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.116.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🗺️ 3D Flight Boundary &amp; Parcel Projection:</strong> Flight Diagnostics now renders flight layer boundaries, survey boundaries, and property parcels in 3D and Top-Down view with dashed perimeter loops, semi-transparent ground fills, and dynamic legend indicators.</li>
+              <li><strong>🛰️ Automated RC 2 Flight Log Correlation:</strong> Recorded flight records (e.g. Flight 11) now automatically match against archived SQLite mission plans, loading true planned waypoints, parcels, and ground control points.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.115.4):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -11293,6 +11300,10 @@ html, body {
               <div id="diag-legend-photo" style="display: flex; align-items: center; gap: 5px;">
                 <span style="width: 6px; height: 6px; border-radius: 50%; background: #22c55e; display: inline-block;"></span>
                 <span id="diag-legend-photo-text" style="color: var(--text-muted);">Photo Trigger</span>
+              </div>
+              <div id="diag-legend-boundary" style="display: none; align-items: center; gap: 5px;">
+                <span style="width: 10px; height: 3px; border-top: 2px dashed #06b6d4; display: inline-block;"></span>
+                <span id="diag-legend-boundary-text" style="color: var(--text-muted);">Flight Boundary</span>
               </div>
             </div>
           </div>
@@ -30448,6 +30459,7 @@ const FlightDiagnostics = {
   actualLineMesh: null,
   plannedLineMesh: null,
   photoMarkers: [],
+  boundaryMeshes: [],
   currentLoadedMission: null,
   activeTab: '3d',
   _loadGeneration: 0,   // incremented each call to loadSelectedFlight; guards against stale async loads
@@ -31763,7 +31775,10 @@ const FlightDiagnostics = {
             this.djiDecryptError = data.djiDecryptError || null;
             let telem = data.telemetry;
             this.isActualFlown = (telem.isActualFlown !== undefined) ? !!telem.isActualFlown : (this.isDecrypted || !telem.isSimulation);
-            const plannedWps = data.telemetry.plannedWaypoints || data.plannedWaypoints || null;
+            if (data.mission) {
+              this.currentLoadedMission = data.mission;
+            }
+            const plannedWps = data.telemetry.plannedWaypoints || data.plannedWaypoints || (data.mission?.plan?.waypoints) || null;
             if (!this.isDecrypted && telem && telem.points && plannedWps && plannedWps.length > 1) {
               const photoAlts = new Set(telem.points.filter(p => p.isPhoto).map(p => p.alt));
               const planAlts = new Set(plannedWps.map(w => w.altitude !== undefined ? w.altitude : (w.alt !== undefined ? w.alt : 50)));
@@ -32122,9 +32137,12 @@ const FlightDiagnostics = {
           const errSafe = String(this.djiDecryptError).replace(/"/g, '&quot;');
           decBadge = ` <span style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; margin-left: 6px; cursor: pointer;" onclick="if(typeof FlightDiagnostics!==\'undefined\')FlightDiagnostics.openDjiKeyModal()" title="Decryption failed: ${errSafe}. Click to check DJI Developer Key.">⚠️ Decrypt Failed • 🔑 Retry</span>`;
         }
-        if (decBadge) {
-          meta.innerHTML = `Telemetry Log: <strong>${flightName}</strong> • Duration: <strong>${this.telemetryData.durationFormatted}</strong>${decBadge}`;
+        let matchedBadge = '';
+        if (this.currentLoadedMission && (this.currentLoadedMission.filename || this.currentLoadedMission.uuid)) {
+          const planLabel = this.currentLoadedMission.filename || (this.currentLoadedMission.uuid.slice(0, 8) + '...');
+          matchedBadge = ` <span style="background: rgba(6, 182, 212, 0.15); color: #06b6d4; border: 1px solid rgba(6, 182, 212, 0.35); padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; margin-left: 6px;" title="Correlated with mission plan ${this.currentLoadedMission.uuid}">🎯 Plan: ${planLabel}</span>`;
         }
+        meta.innerHTML = `Telemetry Log: <strong>${flightName}</strong> • Duration: <strong>${this.telemetryData.durationFormatted}</strong>${decBadge}${matchedBadge}`;
       }
     }
 
@@ -32311,6 +32329,80 @@ const FlightDiagnostics = {
     }
   },
 
+  getDiagnosticsBoundaries() {
+    const boundaries = [];
+    // 1. Check currentLoadedMission parcels or plan.parcels or telemetryData.parcels
+    const missionParcels = this.currentLoadedMission?.parcels || this.currentLoadedMission?.plan?.parcels || this.telemetryData?.parcels;
+    if (Array.isArray(missionParcels) && missionParcels.length > 0) {
+      missionParcels.forEach(p => {
+        if (p && Array.isArray(p.polygon) && p.polygon.length >= 3) {
+          boundaries.push({
+            polygon: p.polygon,
+            name: p.layerName || 'Mission Boundary',
+            strokeColor: p.strokeColor || '#06b6d4',
+            lineStyle: p.lineStyle || 'dashed',
+            fillOpacity: (typeof p.fillOpacity === 'number') ? p.fillOpacity / 100.0 : 0.15,
+            targetHeight: p.targetHeight || 0
+          });
+        }
+      });
+    }
+
+    // 2. If no parcels, but plannedWaypoints exist with >= 3 points, compute convex hull boundary
+    if (boundaries.length === 0 && Array.isArray(this.plannedWaypoints) && this.plannedWaypoints.length >= 3) {
+      const validWps = this.plannedWaypoints.filter(w => w && typeof w.lat === 'number' && typeof (w.lon !== undefined ? w.lon : w.lng) === 'number');
+      if (validWps.length >= 3 && typeof computeConvexHullGeo === 'function') {
+        boundaries.push({
+          polygon: computeConvexHullGeo(validWps),
+          name: 'Planned Mission Boundary',
+          strokeColor: '#06b6d4',
+          lineStyle: 'dashed',
+          fillOpacity: 0.12,
+          targetHeight: 0
+        });
+      }
+    }
+
+    // 3. If in active-mission simulation mode, check active workspace drawing layers / parcels
+    if (boundaries.length === 0 && this.selectedFlightId === 'active-mission' && typeof extractSpatialMissionLayers === 'function') {
+      try {
+        const spatial = extractSpatialMissionLayers();
+        if (spatial && Array.isArray(spatial.parcels)) {
+          spatial.parcels.forEach(p => {
+            if (p && Array.isArray(p.polygon) && p.polygon.length >= 3) {
+              boundaries.push({
+                polygon: p.polygon,
+                name: p.layerName || 'Workspace Boundary',
+                strokeColor: p.strokeColor || '#06b6d4',
+                lineStyle: p.lineStyle || 'dashed',
+                fillOpacity: (typeof p.fillOpacity === 'number') ? p.fillOpacity / 100.0 : 0.15,
+                targetHeight: p.targetHeight || 0
+              });
+            }
+          });
+        }
+      } catch (_) {}
+    }
+
+    // 4. Fallback for recorded flights with photo triggers or telemetry points
+    if (boundaries.length === 0 && this.telemetryData && Array.isArray(this.telemetryData.points)) {
+      const photoPts = this.telemetryData.points.filter(p => p.isPhoto && typeof p.lat === 'number');
+      const ptsToUse = photoPts.length >= 3 ? photoPts : this.telemetryData.points.filter(p => typeof p.lat === 'number');
+      if (ptsToUse.length >= 3 && typeof computeConvexHullGeo === 'function') {
+        boundaries.push({
+          polygon: computeConvexHullGeo(ptsToUse),
+          name: 'Flown Coverage Boundary',
+          strokeColor: '#38bdf8',
+          lineStyle: 'dashed',
+          fillOpacity: 0.10,
+          targetHeight: 0
+        });
+      }
+    }
+
+    return boundaries;
+  },
+
   buildTrajectoryMeshes() {
     if (!this.telemetryData || !this.telemetryData.points) return;
     const pts = this.telemetryData.points;
@@ -32342,6 +32434,17 @@ const FlightDiagnostics = {
         if (m.geometry) m.geometry.dispose();
       });
       this.photoMarkers = [];
+    }
+    if (this.boundaryMeshes && this.boundaryMeshes.length && this.threeScene) {
+      this.boundaryMeshes.forEach(m => {
+        this.threeScene.remove(m);
+        if (m.geometry) m.geometry.dispose();
+        if (m.material) {
+          if (Array.isArray(m.material)) m.material.forEach(mat => mat.dispose());
+          else m.material.dispose();
+        }
+      });
+      this.boundaryMeshes = [];
     }
 
     if (isActual) {
@@ -32423,7 +32526,7 @@ const FlightDiagnostics = {
     if (this.plannedWaypoints && this.plannedWaypoints.length > 0) {
       // Stored planned waypoints from the loaded flight (saved missions / active-mission mode)
       this.plannedWaypoints.forEach(wp => {
-        plannedCoords.push(this.projectToWorld(wp.lat, wp.lon, wp.altitude || wp.alt || 21.0));
+        plannedCoords.push(this.projectToWorld(wp.lat, wp.lon !== undefined ? wp.lon : wp.lng, wp.altitude || wp.alt || 21.0));
       });
     } else if (isActual && this.telemetryData && this.telemetryData.points) {
       // For RC2 logs: derive approximate planned waypoints from photo-trigger events.
@@ -32454,6 +32557,84 @@ const FlightDiagnostics = {
         this.plannedLineMesh.computeLineDistances();
       }
       this.threeScene.add(this.plannedLineMesh);
+    }
+
+    // Render Flight Boundaries / Parcels in 3D
+    const boundaries = this.getDiagnosticsBoundaries();
+    const legendBoundary = (typeof document !== 'undefined') ? document.getElementById('diag-legend-boundary') : null;
+    if (legendBoundary) {
+      legendBoundary.style.display = boundaries.length > 0 ? 'flex' : 'none';
+    }
+
+    boundaries.forEach(b => {
+      if (!b.polygon || b.polygon.length < 3) return;
+      const worldPts = b.polygon.map(pt => this.projectToWorld(pt.lat, pt.lon !== undefined ? pt.lon : pt.lng, 0.15));
+      const loopPts = [...worldPts, worldPts[0]];
+
+      const hexColor = b.strokeColor ? parseInt(b.strokeColor.replace('#', '0x'), 16) : 0x06b6d4;
+      const boundaryColor = isNaN(hexColor) ? 0x06b6d4 : hexColor;
+
+      // 1. Boundary Perimeter Line Loop
+      if (typeof THREE.BufferGeometry === 'function' && typeof THREE.Line === 'function') {
+        const lineGeo = new THREE.BufferGeometry().setFromPoints(loopPts);
+        const isDashed = b.lineStyle === 'dashed' || !b.lineStyle;
+        const lineMat = (isDashed && typeof THREE.LineDashedMaterial === 'function')
+          ? new THREE.LineDashedMaterial({ color: boundaryColor, dashSize: 4, gapSize: 2, linewidth: 2 })
+          : new THREE.LineBasicMaterial({ color: boundaryColor, linewidth: 2 });
+        const lineMesh = new THREE.Line(lineGeo, lineMat);
+        if (isDashed && typeof lineMesh.computeLineDistances === 'function') {
+          lineMesh.computeLineDistances();
+        }
+        this.threeScene.add(lineMesh);
+        this.boundaryMeshes.push(lineMesh);
+      }
+
+      // 2. Semi-Transparent Ground Fill
+      if (typeof THREE.Shape === 'function' && typeof THREE.ShapeGeometry === 'function' && typeof THREE.Mesh === 'function') {
+        try {
+          const shape = new THREE.Shape();
+          worldPts.forEach((wp, i) => {
+            if (i === 0) shape.moveTo(wp.x, -wp.z);
+            else shape.lineTo(wp.x, -wp.z);
+          });
+          shape.closePath();
+          const shapeGeo = new THREE.ShapeGeometry(shape);
+          const fillMat = new THREE.MeshBasicMaterial({
+            color: boundaryColor,
+            transparent: true,
+            opacity: typeof b.fillOpacity === 'number' ? b.fillOpacity : 0.12,
+            side: THREE.DoubleSide,
+            depthWrite: false
+          });
+          const fillMesh = new THREE.Mesh(shapeGeo, fillMat);
+          fillMesh.rotation.x = -Math.PI / 2;
+          fillMesh.position.y = 0.10;
+          this.threeScene.add(fillMesh);
+          this.boundaryMeshes.push(fillMesh);
+        } catch (_) {}
+      }
+    });
+
+    // Render Ground Control Points (GCPs) in 3D
+    const gcps = this.currentLoadedMission?.groundControl || this.currentLoadedMission?.plan?.groundControl || this.telemetryData?.groundControl;
+    if (Array.isArray(gcps) && gcps.length > 0) {
+      gcps.forEach(gcp => {
+        if (!gcp || typeof gcp.lat !== 'number') return;
+        const lon = gcp.lon !== undefined ? gcp.lon : gcp.lng;
+        if (typeof lon !== 'number') return;
+        const gcpPos = this.projectToWorld(gcp.lat, lon, 0.2);
+
+        if (typeof THREE.PlaneGeometry === 'function' && typeof THREE.MeshBasicMaterial === 'function' && typeof THREE.Mesh === 'function') {
+          const padGeo = new THREE.PlaneGeometry(2, 2);
+          const padColor = gcp.color ? parseInt(gcp.color.replace('#', '0x'), 16) : 0xf59e0b;
+          const padMat = new THREE.MeshBasicMaterial({ color: isNaN(padColor) ? 0xf59e0b : padColor, side: THREE.DoubleSide });
+          const padMesh = new THREE.Mesh(padGeo, padMat);
+          padMesh.rotation.x = -Math.PI / 2;
+          padMesh.position.set(gcpPos.x, 0.18, gcpPos.z);
+          this.threeScene.add(padMesh);
+          this.boundaryMeshes.push(padMesh);
+        }
+      });
     }
   },
 
@@ -43606,9 +43787,13 @@ const PhotoInspector = {
         }
       }
 
-      // Fallback 1: If no workspace boundary layers exist, check if currentLoadedMission in FlightDiagnostics has parcels
-      if (layersToProject.length === 0 && typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.currentLoadedMission) {
-        const mParcels = FlightDiagnostics.currentLoadedMission.parcels || FlightDiagnostics.currentLoadedMission.plan?.parcels;
+      // Fallback 1: If no workspace boundary layers exist, check activeManifest or currentLoadedMission in FlightDiagnostics
+      if (layersToProject.length === 0) {
+        const manifestParcels = this.activeManifest?.parcels;
+        const diagParcels = (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.currentLoadedMission)
+          ? (FlightDiagnostics.currentLoadedMission.parcels || FlightDiagnostics.currentLoadedMission.plan?.parcels)
+          : null;
+        const mParcels = (Array.isArray(manifestParcels) && manifestParcels.length > 0) ? manifestParcels : diagParcels;
         if (Array.isArray(mParcels)) {
           mParcels.forEach(p => {
             if (Array.isArray(p.polygon) && p.polygon.length >= 3) {
@@ -43754,10 +43939,13 @@ const PhotoInspector = {
         });
       });
 
-      // Fallback: If no workspace fiducials exist, check if currentLoadedMission in FlightDiagnostics has groundControl
-      if (markersToProject.length === 0 && typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.currentLoadedMission) {
-        const mission = FlightDiagnostics.currentLoadedMission;
-        const mGcp = mission.groundControl || mission.plan?.groundControl;
+      // Fallback: If no workspace fiducials exist, check activeManifest or currentLoadedMission in FlightDiagnostics
+      if (markersToProject.length === 0) {
+        const manifestGcp = this.activeManifest?.groundControl;
+        const diagGcp = (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.currentLoadedMission)
+          ? (FlightDiagnostics.currentLoadedMission.groundControl || FlightDiagnostics.currentLoadedMission.plan?.groundControl)
+          : null;
+        const mGcp = (Array.isArray(manifestGcp) && manifestGcp.length > 0) ? manifestGcp : diagGcp;
         if (Array.isArray(mGcp)) {
           mGcp.forEach(m => {
             markersToProject.push({
