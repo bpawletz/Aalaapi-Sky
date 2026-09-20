@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.115.0] - 2026-09-20
+
+### New Feature — HUD Overlay Controls for Flight Diagnostics 3D Replay
+- **Added `#diag-hud-controls` Overlay Panel:**
+  - A new glass-morphism control panel is now displayed in the top-right corner of the Flight Diagnostics 3D Telemetry Replay viewport, matching the look and feel of the main 3D preview HUD.
+  - **Auto-Rotate:** Toggles OrbitControls auto-rotation for hands-free scene orbit during playback. Green indicator = active.
+  - **Reset Camera:** Re-frames the camera to fit the entire trajectory bounding sphere (exits FPV mode if active).
+  - **Camera Cones:** Toggles visibility of camera frustum pyramid cones at each photo-trigger waypoint and the drone-body gimbal frustum. Green = visible.
+  - **Footprints:** Toggles visibility of all photo marker groups (sphere + cone at each trigger point). Green = visible.
+  - **3D Drones:** Toggles visibility of the animated drone mesh avatar. Green = visible.
+  - **FPV Mode:** Locks the camera behind the drone in a third-person follow-cam (FPV) perspective. Camera position and look-at update on every `seekTo()` call during playback. Exiting restores the previously saved camera state.
+- **`resetCameraView(mode)`** method added to `FlightDiagnostics` — handles both `'3d'` perspective and `'top'` bird's-eye presets, and now always exits FPV mode when invoked.
+- **`_updateFPVCamera()`** helper method added to `FlightDiagnostics` — positions the camera 8 units behind and 3 units above the drone and looks 10 units ahead along the drone's yaw heading.
+- **CSS:** Added `.diag-hud-controls`, `.diag-hud-controls button`, `.diag-hud-controls button.active`, and `.diag-indicator` rules with glass-morphism styling and responsive media-query overrides for screens ≤1080px.
+- **Version:** Bumped from `1.114.3` → `1.115.0` (minor — new feature).
+
+## [1.114.3] - 2026-09-20
+
+### Removed — Hardcoded Drone Badge in Flight Diagnostics Header
+- **Removed Static `#diag-drone-badge`:**
+  - Removed the hardcoded `<span id="diag-drone-badge">DJI Mini 4 Pro</span>` badge from the Flight Diagnostics modal header (`#flight-diagnostics-modal .diag-title`).
+  - Flight Diagnostics header now displays "Flight Diagnostics & Telemetry Center" without displaying misleading hardcoded drone text when inspecting flights recorded on other aircraft (such as DJI Neo 2, DJI Air 3, or Mavic 3).
+
 ## [1.114.2] - 2026-09-20
 
 ### Fixed & Enhanced — Canvas2D willReadFrequently Optimization for Optical Tag Detection
