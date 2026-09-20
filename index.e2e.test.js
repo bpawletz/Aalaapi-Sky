@@ -5496,6 +5496,98 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(targetState.hasTargetInIframe, true, 'Print iframe should contain rendered target SVG');
     assert.strictEqual(targetState.modalClosed, true, 'Generator modal should close cleanly');
   });
+
+  test('E2E: DJI RC 2 Controller Flight Log Explorer Modal & Interactivity (v1.113.0)', async () => {
+    const rc2State = await page.evaluate(async () => {
+      // 1. Check elements exist
+      const directBrowseBtn = document.getElementById('direct-rc2-browse-logs-btn');
+      const diagBrowseBtn = document.getElementById('diag-browse-rc2-logs-btn');
+      const modal = document.getElementById('rc2-flight-logs-modal');
+      const searchInput = document.getElementById('rc2-logs-search');
+      const refreshBtn = document.getElementById('rc2-logs-refresh-btn');
+      const pullAllBtn = document.getElementById('rc2-logs-pull-all-btn');
+      const tableContainer = document.getElementById('rc2-logs-table-container');
+
+      // 2. Open modal via function
+      if (typeof openRc2LogManagerModal === 'function') {
+        openRc2LogManagerModal();
+      }
+      const modalOpen = modal ? !modal.classList.contains('hidden') : false;
+
+      // 3. Render mock flight logs into table
+      if (typeof renderRc2LogTable === 'function') {
+        renderRc2LogTable([
+          {
+            filename: 'FlightRecord_2026-09-19_[20-22-45].txt',
+            flightDate: '2026-09-19 20:22:45 UTC (DJI Neo 2)',
+            sizeFormatted: '1.38 MB',
+            isDecrypted: true,
+            isDownloaded: true
+          },
+          {
+            filename: 'FlightRecord_2026-09-18_[14-10-00].txt',
+            flightDate: '2026-09-18 14:10:00 UTC (Mini 4 Pro)',
+            sizeFormatted: '850 KB',
+            isDecrypted: false,
+            isDownloaded: false
+          }
+        ]);
+      }
+      const initialRows = tableContainer ? tableContainer.querySelectorAll('tbody tr').length : 0;
+      const hasDecryptedBadge = tableContainer ? tableContainer.innerHTML.includes('Decrypted ✓') : false;
+      const hasLoadBtn = tableContainer ? tableContainer.innerHTML.includes('Load Telemetry') : false;
+
+      // 4. Test live filter
+      if (searchInput) {
+        searchInput.value = 'Neo 2';
+        renderRc2LogTable([
+          {
+            filename: 'FlightRecord_2026-09-19_[20-22-45].txt',
+            flightDate: '2026-09-19 20:22:45 UTC (DJI Neo 2)',
+            sizeFormatted: '1.38 MB',
+            isDecrypted: true,
+            isDownloaded: true
+          },
+          {
+            filename: 'FlightRecord_2026-09-18_[14-10-00].txt',
+            flightDate: '2026-09-18 14:10:00 UTC (Mini 4 Pro)',
+            sizeFormatted: '850 KB',
+            isDecrypted: false,
+            isDownloaded: false
+          }
+        ]);
+      }
+      const filteredRows = tableContainer ? tableContainer.querySelectorAll('tbody tr').length : 0;
+
+      // 5. Close modal
+      if (typeof closeRc2LogManagerModal === 'function') {
+        closeRc2LogManagerModal();
+      }
+      const modalClosed = modal ? modal.classList.contains('hidden') : false;
+
+      return {
+        hasDirectBrowseBtn: Boolean(directBrowseBtn),
+        hasDiagBrowseBtn: Boolean(diagBrowseBtn),
+        hasModal: Boolean(modal),
+        modalOpen,
+        initialRows,
+        hasDecryptedBadge,
+        hasLoadBtn,
+        filteredRows,
+        modalClosed
+      };
+    });
+
+    assert.strictEqual(rc2State.hasDirectBrowseBtn, true, 'Sidebar should contain #direct-rc2-browse-logs-btn');
+    assert.strictEqual(rc2State.hasDiagBrowseBtn, true, 'Diagnostics header should contain #diag-browse-rc2-logs-btn');
+    assert.strictEqual(rc2State.hasModal, true, '#rc2-flight-logs-modal should exist in DOM');
+    assert.strictEqual(rc2State.modalOpen, true, 'RC 2 Log Manager modal should open');
+    assert.strictEqual(rc2State.initialRows, 2, 'Table should render 2 flight records');
+    assert.strictEqual(rc2State.hasDecryptedBadge, true, 'Table should render Decrypted ✓ badge for decrypted logs');
+    assert.strictEqual(rc2State.hasLoadBtn, true, 'Table should render Load Telemetry action button for decrypted logs');
+    assert.strictEqual(rc2State.filteredRows, 1, 'Search filter should narrow table to 1 row');
+    assert.strictEqual(rc2State.modalClosed, true, 'RC 2 Log Manager modal should close cleanly');
+  });
 });
 
 
