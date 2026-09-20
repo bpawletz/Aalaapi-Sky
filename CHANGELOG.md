@@ -1,6 +1,15 @@
 # Changelog
 
+## [1.115.4] - 2026-09-20
+
+### Performance & Bug Fixes
+- **Optical Tag Detector Timeout Fix (`ETIMEDOUT`):**
+  - In `scanPhotoFiducials`, optical tag scanning now prefers the web-optimized preview image (~950 KB) over the heavy 43 MB raw original when available, reducing PowerShell decode and scan times from 35+ seconds to under 1 second.
+  - Increased PowerShell decode timeout threshold from 30s to 90s to ensure graceful execution on busy systems and slow storage media.
+  - Utilizes `os.tmpdir()` with safe error handling to prevent stalls on low-space drives.
+
 ## [1.115.3] - 2026-09-20
+
 
 ### Bug Fixes & Resiliency
 - **Flight Layer Boundary Projection in Photo Inspector:** Added robust multi-tier boundary resolution for flight photos:
