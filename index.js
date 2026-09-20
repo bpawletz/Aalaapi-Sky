@@ -18476,8 +18476,12 @@ const FlightDiagnostics = {
         if (!isNaN(pt) && pt >= t0 && pt <= t1) return true;
       }
 
+      // No parseable timestamp in filename or metadata — include it (no basis to exclude)
+      if (isNaN(pLoc) && isNaN(pUtc) && isNaN(pt)) return true;
+
       return false;
     });
+
   },
 
   getCorrelatedPhotos() {
