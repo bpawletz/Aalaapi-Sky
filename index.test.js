@@ -19583,11 +19583,11 @@ describe('Optical Tag Detector (AprilTag & ArUco) & Ground Control Point Auto-Ma
 
     assert.ok(semverGte(pkg, '1.114.0'), 'package.json version should be >= 1.114.0');
     assert.ok(cl.includes('## [1.114.0] - 2026-09-20'), 'CHANGELOG.md missing 1.114.0 header');
-    assert.ok(indexTemplate.includes('v1.114.0'), 'index_template.html missing v1.114.0 header badge');
-    assert.ok(indexTemplate.includes('Version 1.114.0'), 'index_template.html missing Version 1.114.0');
+    assert.ok(indexTemplate.includes('v1.114.0') || indexTemplate.includes('v1.114.1'), 'index_template.html missing header badge');
+    assert.ok(indexTemplate.includes('Version 1.114.0') || indexTemplate.includes('Version 1.114.1'), 'index_template.html missing Version');
     assert.ok(indexTemplate.includes('Changelog (v1.114.0):'), 'index_template.html missing Changelog (v1.114.0)');
-    assert.ok(indexHtml.includes('v1.114.0'), 'index.html missing v1.114.0 header badge');
-    assert.ok(indexHtml.includes('Version 1.114.0'), 'index.html missing Version 1.114.0');
+    assert.ok(indexHtml.includes('v1.114.0') || indexHtml.includes('v1.114.1'), 'index.html missing header badge');
+    assert.ok(indexHtml.includes('Version 1.114.0') || indexHtml.includes('Version 1.114.1'), 'index.html missing Version');
     assert.ok(indexHtml.includes('Changelog (v1.114.0):'), 'index.html missing Changelog (v1.114.0)');
   });
 
@@ -19757,6 +19757,175 @@ describe('Optical Tag Detector (AprilTag & ArUco) & Ground Control Point Auto-Ma
   test('companion server exports scanPhotoFiducials and handles tag scanning', () => {
     const companion = require('./tools/companion/server.js');
     assert.strictEqual(typeof companion.scanPhotoFiducials, 'function', 'companion server must export scanPhotoFiducials');
+  });
+});
+
+describe('Optical Tag Cross-Origin Tainted Canvas Resilient Pipeline Tests (v1.114.1)', () => {
+  test('Version consistency is maintained across package.json, CHANGELOG.md, and templates for v1.114.1', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version;
+    const cl = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    const indexTemplate = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+    assert.ok(semverGte(pkg, '1.114.1'), 'package.json version should be >= 1.114.1');
+    assert.ok(cl.includes('## [1.114.1] - 2026-09-20'), 'CHANGELOG.md missing 1.114.1 header');
+    assert.ok(indexTemplate.includes('v1.114.1'), 'index_template.html missing v1.114.1 header badge');
+    assert.ok(indexTemplate.includes('Version 1.114.1'), 'index_template.html missing Version 1.114.1');
+    assert.ok(indexTemplate.includes('Changelog (v1.114.1):'), 'index_template.html missing Changelog (v1.114.1)');
+    assert.ok(indexHtml.includes('v1.114.1'), 'index.html missing v1.114.1 header badge');
+    assert.ok(indexHtml.includes('Version 1.114.1'), 'index.html missing Version 1.114.1');
+    assert.ok(indexHtml.includes('Changelog (v1.114.1):'), 'index.html missing Changelog (v1.114.1)');
+  });
+
+  test('DOM Architecture: #photo-inspector-img includes crossorigin="anonymous"', () => {
+    const indexTemplate = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(/<img[^>]+id="photo-inspector-img"[^>]+crossorigin="anonymous"/.test(indexTemplate), 'index_template.html must set crossorigin="anonymous" on #photo-inspector-img');
+    assert.ok(/<img[^>]+id="photo-inspector-img"[^>]+crossorigin="anonymous"/.test(indexHtml), 'index.html must set crossorigin="anonymous" on #photo-inspector-img');
+  });
+
+  test('PhotoInspector.openPhoto: explicitly sets imgEl.crossOrigin to "anonymous"', () => {
+    const origGetElementById = global.document.getElementById;
+    let crossOriginVal = null;
+    let assignedSrc = null;
+    const mockImg = {
+      crossOrigin: '',
+      set src(v) {
+        assignedSrc = v;
+        crossOriginVal = this.crossOrigin;
+      },
+      get src() { return assignedSrc; },
+      complete: true,
+      naturalWidth: 1920,
+      naturalHeight: 1080
+    };
+
+    const mockCanvas = {
+      width: 1000,
+      height: 800,
+      getContext: () => ({
+        clearRect() {}, save() {}, restore() {}, beginPath() {}, arc() {}, fill() {}, stroke() {},
+        moveTo() {}, lineTo() {}, closePath() {}, setLineDash() {}, fillRect() {}, strokeRect() {},
+        fillText() {}, measureText: () => ({ width: 40 }), drawImage() {}
+      })
+    };
+
+    global.document.getElementById = (id) => {
+      if (id === 'photo-inspector-modal') return { classList: { remove() {}, add() {} }, style: {} };
+      if (id === 'photo-inspector-img') return mockImg;
+      if (id === 'photo-annotation-canvas') return mockCanvas;
+      return null;
+    };
+
+    try {
+      PhotoInspector.activePhoto = {
+        photoId: 'TEST_CORS_01',
+        filename: 'TEST_CORS_01.JPG',
+        previewUrl: 'http://127.0.0.1:8765/scratch/mission_archives/test/photos/previews/TEST_CORS_01.JPG'
+      };
+      PhotoInspector.openPhoto();
+      assert.strictEqual(mockImg.crossOrigin, 'anonymous', 'imgEl.crossOrigin must be set to "anonymous"');
+      assert.strictEqual(crossOriginVal, 'anonymous', 'crossOrigin must be set prior to assigning imgEl.src');
+    } finally {
+      global.document.getElementById = origGetElementById;
+    }
+  });
+
+  test('TagDetector.detect safely handles tainted canvas without uncaught SecurityError', () => {
+    const TagDetector = require('./tools/wasm/tag_detector.js');
+    const mockTaintedCanvas = {
+      width: 400,
+      height: 300,
+      getContext: () => ({
+        getImageData() {
+          const err = new Error("Failed to execute 'getImageData' on 'CanvasRenderingContext2D': The canvas has been tainted by cross-origin data.");
+          err.name = 'SecurityError';
+          throw err;
+        }
+      })
+    };
+
+    assert.doesNotThrow(() => {
+      const results = TagDetector.detect(mockTaintedCanvas);
+      assert.deepStrictEqual(results, [], 'Should return empty array when canvas is tainted');
+    });
+  });
+
+  test('PhotoInspector.detectOpticalTags recovers gracefully when canvas is tainted', async () => {
+    const origGetElementById = global.document.getElementById;
+    const origFetch = global.fetch;
+
+    const mockBtn = { disabled: false, innerHTML: '🔍 Detect Tags' };
+    const mockImg = {
+      complete: true,
+      naturalWidth: 1000,
+      naturalHeight: 800,
+      crossOrigin: 'anonymous',
+      src: 'http://127.0.0.1:8765/test.jpg'
+    };
+    const mockCanvas = {
+      width: 1000,
+      height: 800,
+      getContext: () => ({
+        clearRect() {},
+        save() {},
+        restore() {},
+        drawImage() {},
+        getImageData() {
+          const err = new Error("Failed to execute 'getImageData' on 'CanvasRenderingContext2D': The canvas has been tainted by cross-origin data.");
+          err.name = 'SecurityError';
+          throw err;
+        }
+      })
+    };
+
+    global.document.getElementById = (id) => {
+      if (id === 'photo-detect-tags-btn') return mockBtn;
+      if (id === 'photo-inspector-img') return mockImg;
+      if (id === 'photo-annotation-canvas') return mockCanvas;
+      return null;
+    };
+
+    global.fetch = async (url, opts) => {
+      if (url.includes('/api/media/scan-tags')) {
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            detectedTags: [
+              {
+                family: 'apriltag_25h9',
+                id: 7,
+                confidence: 1.0,
+                corners: [{ x: 10, y: 10, u: 0.01, v: 0.01 }],
+                center: { x: 50, y: 50, u: 0.05, v: 0.05 },
+                rotationDeg: 0,
+                matchedGcp: null
+              }
+            ]
+          })
+        };
+      }
+      return { ok: false };
+    };
+
+    try {
+      PhotoInspector.activePhoto = {
+        photoId: 'TEST_TAINTED',
+        filename: 'TEST_TAINTED.JPG',
+        previewUrl: 'http://127.0.0.1:8765/test.jpg',
+        actual: { lat: 40.0, lon: -83.0, altAgl: 25, gimbalPitch: -90, heading: 0 }
+      };
+
+      const tags = await PhotoInspector.detectOpticalTags();
+      assert.ok(Array.isArray(tags), 'detectOpticalTags must return an array');
+      assert.strictEqual(tags.length, 1, 'Should recover via companion fallback');
+      assert.strictEqual(tags[0].id, 7);
+      assert.strictEqual(mockBtn.disabled, false, 'Button should be re-enabled');
+    } finally {
+      global.document.getElementById = origGetElementById;
+      global.fetch = origFetch;
+    }
   });
 });
 

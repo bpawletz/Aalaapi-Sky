@@ -2832,7 +2832,19 @@ const server = http.createServer(async (req, res) => {
       req.on('end', async () => {
         try {
           const payload = body ? JSON.parse(body) : {};
-          const photoPath = payload.filePath || (payload.missionUuid && payload.photoId ? path.join(ARCHIVE_DIR, payload.missionUuid, 'photos', 'raw', payload.photoId) : null);
+          let photoPath = payload.filePath;
+          if (!photoPath && payload.missionUuid && (payload.photoId || payload.filename)) {
+            const photoName = payload.photoId || payload.filename;
+            const rawCandidate = path.join(ARCHIVE_DIR, payload.missionUuid, 'photos', 'raw', photoName);
+            const previewCandidate = path.join(ARCHIVE_DIR, payload.missionUuid, 'photos', 'previews', photoName);
+            if (fs.existsSync(rawCandidate)) {
+              photoPath = rawCandidate;
+            } else if (fs.existsSync(previewCandidate)) {
+              photoPath = previewCandidate;
+            } else {
+              photoPath = rawCandidate;
+            }
+          }
           const tags = scanPhotoFiducials(photoPath, payload);
 
           if (payload.missionUuid) {
@@ -2854,7 +2866,11 @@ const server = http.createServer(async (req, res) => {
             }
           }
 
-          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.writeHead(200, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Private-Network': 'true'
+          });
           res.end(JSON.stringify({
             success: true,
             detectedTags: tags,
@@ -2862,7 +2878,11 @@ const server = http.createServer(async (req, res) => {
             totalTags: tags.length
           }));
         } catch (err) {
-          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.writeHead(500, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Private-Network': 'true'
+          });
           res.end(JSON.stringify({ success: false, error: err.message }));
         }
       });
@@ -3400,7 +3420,11 @@ const server = http.createServer(async (req, res) => {
           '.txt': 'text/plain; charset=utf-8'
         };
         const contentType = mimeTypes[ext] || 'application/octet-stream';
-        res.writeHead(200, { 'Content-Type': contentType });
+        res.writeHead(200, {
+          'Content-Type': contentType,
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Private-Network': 'true'
+        });
         if (req.method === 'HEAD') {
           res.end();
           return;

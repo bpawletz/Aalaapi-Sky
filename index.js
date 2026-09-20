@@ -30133,11 +30133,17 @@ function extractDjiXmpMetadata(data) {
 
       // 1. Resolve raw image dimensions and pixels from browser Canvas / ImageData / Node Buffer
       if (typeof HTMLCanvasElement !== 'undefined' && input instanceof HTMLCanvasElement) {
-        const ctx = input.getContext('2d');
-        const imgData = ctx.getImageData(0, 0, input.width, input.height);
-        width = input.width;
-        height = input.height;
-        gray = toGrayscale(imgData.data, width, height);
+        try {
+          const ctx = input.getContext('2d');
+          const imgData = ctx.getImageData(0, 0, input.width, input.height);
+          width = input.width;
+          height = input.height;
+          gray = toGrayscale(imgData.data, width, height);
+        } catch (canvasErr) {
+          console.warn('[TagDetector] Unable to getImageData from HTMLCanvasElement (possible taint or security restriction):', canvasErr);
+          if (options.throwOnTaint) throw canvasErr;
+          return [];
+        }
       } else if (typeof ImageData !== 'undefined' && input instanceof ImageData) {
         width = input.width;
         height = input.height;
@@ -30147,11 +30153,17 @@ function extractDjiXmpMetadata(data) {
         height = input.height;
         gray = toGrayscale(input.data, width, height);
       } else if (input && typeof input.getContext === 'function') {
-        const ctx = input.getContext('2d');
-        const imgData = ctx.getImageData(0, 0, input.width, input.height);
-        width = input.width;
-        height = input.height;
-        gray = toGrayscale(imgData.data, width, height);
+        try {
+          const ctx = input.getContext('2d');
+          const imgData = ctx.getImageData(0, 0, input.width, input.height);
+          width = input.width;
+          height = input.height;
+          gray = toGrayscale(imgData.data, width, height);
+        } catch (canvasErr) {
+          console.warn('[TagDetector] Unable to getImageData from canvas (possible taint or security restriction):', canvasErr);
+          if (options.throwOnTaint) throw canvasErr;
+          return [];
+        }
       }
 
       if (!gray || width <= 0 || height <= 0) {
@@ -30307,6 +30319,10 @@ const PhotoInspector = {
   extractDjiXmpMetadata,
   eventsBound: false,
 
+  openPhoto(photoOrId, manifest = null) {
+    return this.open(photoOrId, manifest);
+  },
+
   open(photoOrId, manifest = null) {
     if (typeof document === 'undefined') return;
     const modal = document.getElementById('photo-inspector-modal');
@@ -30413,6 +30429,9 @@ const PhotoInspector = {
     }
     
     if (imgEl) {
+      try {
+        imgEl.crossOrigin = 'anonymous';
+      } catch (_) {}
       let triedRaw = false;
       let triedRelative = false;
       let triedPlaceholder = false;
@@ -30423,6 +30442,7 @@ const PhotoInspector = {
           triedRelative = true;
           const relPath = imgSrc.replace(/^https?:\/\/[^/]+/, '');
           if (relPath && relPath !== imgSrc) {
+            try { imgEl.crossOrigin = 'anonymous'; } catch (_) {}
             imgEl.src = relPath;
             return;
           }
@@ -30430,12 +30450,14 @@ const PhotoInspector = {
         // Step 2: Try high-resolution raw photo from companion
         if (!triedRaw && this.activePhoto.filename && manifestUuid) {
           triedRaw = true;
+          try { imgEl.crossOrigin = 'anonymous'; } catch (_) {}
           imgEl.src = `${apiBase}/scratch/mission_archives/${manifestUuid}/photos/raw/${encodeURIComponent(this.activePhoto.filename)}`;
           return;
         }
         // Step 3: Fallback to styled SVG placeholder
         if (!triedPlaceholder) {
           triedPlaceholder = true;
+          try { imgEl.removeAttribute('crossorigin'); } catch (_) {}
           imgEl.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080"><rect width="100%" height="100%" fill="%230f172a"/><text x="50%" y="50%" fill="%2338bdf8" font-size="32" text-anchor="middle" dominant-baseline="middle" font-family="sans-serif">📸 Photo Preview Not Available • ' + (this.activePhoto.filename || 'DJI_0001.JPG') + '</text></svg>';
         }
       };
@@ -30472,8 +30494,10 @@ const PhotoInspector = {
       };
 
       if (!imgSrc) {
+        try { imgEl.removeAttribute('crossorigin'); } catch (_) {}
         imgEl.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080"><rect width="100%" height="100%" fill="%230f172a"/><text x="50%" y="50%" fill="%2338bdf8" font-size="32" text-anchor="middle" dominant-baseline="middle" font-family="sans-serif">📸 Photo Preview Not Available • ' + (this.activePhoto.filename || 'DJI_0001.JPG') + '</text></svg>';
       } else {
+        try { imgEl.crossOrigin = 'anonymous'; } catch (_) {}
         imgEl.src = imgSrc;
         if (imgEl.complete && imgEl.naturalWidth > 0) {
           if (canvas) {
@@ -31474,13 +31498,119 @@ const PhotoInspector = {
       const scanW = Math.round(origW * scale);
       const scanH = Math.round(origH * scale);
 
-      const offCanvas = document.createElement('canvas');
-      offCanvas.width = scanW;
-      offCanvas.height = scanH;
-      const offCtx = offCanvas.getContext('2d');
-      offCtx.drawImage(imgEl, 0, 0, scanW, scanH);
+      const offCanvas = (typeof document !== 'undefined') ? document.createElement('canvas') : null;
+      if (offCanvas) {
+        offCanvas.width = scanW;
+        offCanvas.height = scanH;
+      }
+      const offCtx = (offCanvas && typeof offCanvas.getContext === 'function') ? offCanvas.getContext('2d') : null;
 
-      const rawTags = (typeof TagDetector !== 'undefined') ? TagDetector.detect(offCanvas) : [];
+      let rawTags = [];
+      let isTainted = false;
+
+      try {
+        if (offCtx) {
+          offCtx.drawImage(imgEl, 0, 0, scanW, scanH);
+          // Probe reading 1 pixel to catch tainted canvas early before full detector run
+          if (typeof offCtx.getImageData === 'function') {
+            offCtx.getImageData(0, 0, 1, 1);
+          }
+          rawTags = (typeof TagDetector !== 'undefined') ? TagDetector.detect(offCanvas) : [];
+        } else {
+          isTainted = true;
+        }
+      } catch (taintErr) {
+        console.warn('[PhotoInspector] Canvas tainted or getImageData restricted by cross-origin security:', taintErr);
+        isTainted = true;
+      }
+
+      // Tier 1: In-browser clean fetch recovery (Blob -> ImageBitmap / Object URL)
+      if (isTainted && this.activePhoto.previewUrl && !this.activePhoto.previewUrl.startsWith('data:') && typeof fetch !== 'undefined') {
+        try {
+          const fetchRes = await fetch(this.activePhoto.previewUrl, { mode: 'cors' });
+          if (fetchRes.ok) {
+            const blob = await fetchRes.blob();
+            let cleanDrawable = null;
+            if (typeof createImageBitmap === 'function') {
+              cleanDrawable = await createImageBitmap(blob);
+            } else if (typeof Image !== 'undefined') {
+              cleanDrawable = await new Promise((resolve, reject) => {
+                const tempImg = new Image();
+                try { tempImg.crossOrigin = 'anonymous'; } catch (_) {}
+                tempImg.onload = () => resolve(tempImg);
+                tempImg.onerror = reject;
+                tempImg.src = URL.createObjectURL(blob);
+              });
+            }
+            if (cleanDrawable && typeof document !== 'undefined') {
+              const cleanCanvas = document.createElement('canvas');
+              cleanCanvas.width = scanW;
+              cleanCanvas.height = scanH;
+              const cleanCtx = (cleanCanvas && typeof cleanCanvas.getContext === 'function') ? cleanCanvas.getContext('2d') : null;
+              if (cleanCtx) {
+                cleanCtx.drawImage(cleanDrawable, 0, 0, scanW, scanH);
+                if (typeof cleanCtx.getImageData === 'function') {
+                  cleanCtx.getImageData(0, 0, 1, 1);
+                }
+                rawTags = (typeof TagDetector !== 'undefined') ? TagDetector.detect(cleanCanvas) : [];
+                isTainted = false;
+              }
+            }
+          }
+        } catch (blobErr) {
+          console.warn('[PhotoInspector] In-browser clean blob recovery failed:', blobErr);
+        }
+      }
+
+      // Tier 2: Companion Bridge fallback (POST /api/media/scan-tags)
+      if (isTainted && typeof fetch !== 'undefined') {
+        try {
+          const apiBase = (typeof getCompanionApiBase === 'function')
+            ? getCompanionApiBase()
+            : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
+          const manifestUuid = (this.activeManifest && this.activeManifest.missionUuid)
+            || (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.activeInspectionManifest?.missionUuid)
+            || (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.flightManifest?.missionUuid)
+            || (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.currentLoadedMission?.uuid)
+            || 'layer-1';
+
+          const postBody = {
+            missionUuid: manifestUuid,
+            photoId: this.activePhoto.filename || this.activePhoto.id,
+            filename: this.activePhoto.filename,
+            filePath: this.activePhoto.rawPath || null
+          };
+
+          const bridgeRes = await fetch(`${apiBase}/api/media/scan-tags`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(postBody)
+          });
+          if (bridgeRes.ok) {
+            const bridgeData = await bridgeRes.json();
+            if (bridgeData.success && Array.isArray(bridgeData.detectedTags)) {
+              this.activePhoto.detectedTags = bridgeData.detectedTags;
+              if (bridgeData.detectedTags.some(t => t.matchedGcp)) {
+                this.activePhoto.gcpVerified = true;
+                const best = bridgeData.detectedTags.filter(t => t.matchedGcp).sort((a, b) => a.matchedGcp.varianceCm - b.matchedGcp.varianceCm)[0];
+                this.activePhoto.gcpOffsetCm = best ? best.matchedGcp.varianceCm : null;
+              }
+              try { this.updateHeaderUI(); } catch (_) {}
+              try { this.updateDrawerUI(); } catch (_) {}
+              try { this.renderCanvas(); } catch (_) {}
+              if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = bridgeData.detectedTags.length > 0 ? `✓ ${bridgeData.detectedTags.length} Detected` : '🔍 Detect Tags';
+                setTimeout(() => { if (btn) btn.innerHTML = '🔍 Detect Tags'; }, 3000);
+              }
+              return bridgeData.detectedTags;
+            }
+          }
+        } catch (bridgeErr) {
+          console.warn('[PhotoInspector] Companion bridge scan-tags fallback failed:', bridgeErr);
+        }
+      }
+
       const scaleX = origW / scanW;
       const scaleY = origH / scanH;
 
@@ -31594,7 +31724,7 @@ const PhotoInspector = {
 
       return mappedTags;
     } catch (err) {
-      console.error('Error detecting optical tags:', err);
+      console.warn('[PhotoInspector] Error during optical tag detection:', err);
       if (btn) {
         btn.disabled = false;
         btn.innerHTML = '🔍 Detect Tags';

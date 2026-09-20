@@ -563,11 +563,17 @@
 
       // 1. Resolve raw image dimensions and pixels from browser Canvas / ImageData / Node Buffer
       if (typeof HTMLCanvasElement !== 'undefined' && input instanceof HTMLCanvasElement) {
-        const ctx = input.getContext('2d');
-        const imgData = ctx.getImageData(0, 0, input.width, input.height);
-        width = input.width;
-        height = input.height;
-        gray = toGrayscale(imgData.data, width, height);
+        try {
+          const ctx = input.getContext('2d');
+          const imgData = ctx.getImageData(0, 0, input.width, input.height);
+          width = input.width;
+          height = input.height;
+          gray = toGrayscale(imgData.data, width, height);
+        } catch (canvasErr) {
+          console.warn('[TagDetector] Unable to getImageData from HTMLCanvasElement (possible taint or security restriction):', canvasErr);
+          if (options.throwOnTaint) throw canvasErr;
+          return [];
+        }
       } else if (typeof ImageData !== 'undefined' && input instanceof ImageData) {
         width = input.width;
         height = input.height;
@@ -577,11 +583,17 @@
         height = input.height;
         gray = toGrayscale(input.data, width, height);
       } else if (input && typeof input.getContext === 'function') {
-        const ctx = input.getContext('2d');
-        const imgData = ctx.getImageData(0, 0, input.width, input.height);
-        width = input.width;
-        height = input.height;
-        gray = toGrayscale(imgData.data, width, height);
+        try {
+          const ctx = input.getContext('2d');
+          const imgData = ctx.getImageData(0, 0, input.width, input.height);
+          width = input.width;
+          height = input.height;
+          gray = toGrayscale(imgData.data, width, height);
+        } catch (canvasErr) {
+          console.warn('[TagDetector] Unable to getImageData from canvas (possible taint or security restriction):', canvasErr);
+          if (options.throwOnTaint) throw canvasErr;
+          return [];
+        }
       }
 
       if (!gray || width <= 0 || height <= 0) {
