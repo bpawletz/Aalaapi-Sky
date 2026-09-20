@@ -4940,7 +4940,8 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.115.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.115.3</span></h1>
+
 
 
         </div>
@@ -8119,7 +8120,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.115.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.115.3</span>
 
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -8184,7 +8185,15 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.115.3):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🗺️ Flight Layer Boundary Projection:</strong> Added multi-tiered boundary derivation for photo inspection, including radial boundary circles for orbital patterns (36 vertices) and automated convex hull perimeter projection from flight waypoints and telemetry triggers.</li>
+              <li><strong>💾 Media Ingest Disk Full Warning:</strong> Added detection for <code>ENOSPC</code> (disk full) during companion media pull with a user-facing notification indicating how many photos were saved before space ran out.</li>
+            </ul>
+          </div>
+          <div>
             <strong style="color: var(--text-main);">Changelog (v1.115.2):</strong>
+
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>📸 Sequential Photo Filtering Fixed:</strong> Resolved an issue where photos with standard sequential filenames (e.g. <code>DJI_0001.JPG</code>) lacking embedded timestamp markers were filtered out by time-window filtering. Photos without parseable timestamps now safely pass through into the Inspection gallery.</li>
             </ul>
@@ -41806,6 +41815,39 @@ function projectGeoPolygonToPhoto(geoPolygon, cameraPose, options = {}) {
 }
 
 /**
+ * Computes the 2D convex hull of an array of geographic points ({lat, lon}) using monotone chain algorithm.
+ * Returns an ordered array of polygon vertices forming the exterior boundary.
+ * @param {Array<{lat: number, lon: number}>} points
+ * @returns {Array<{lat: number, lon: number}>}
+ */
+function computeConvexHullGeo(points) {
+  if (!Array.isArray(points) || points.length < 3) return points || [];
+  const pts = points.map(p => ({ lat: p.lat, lon: p.lon })).filter(p => typeof p.lat === 'number' && typeof p.lon === 'number');
+  if (pts.length < 3) return pts;
+  pts.sort((a, b) => a.lon === b.lon ? a.lat - b.lat : a.lon - b.lon);
+  function cross(o, a, b) {
+    return (a.lon - o.lon) * (b.lat - o.lat) - (a.lat - o.lat) * (b.lon - o.lon);
+  }
+  const lower = [];
+  for (let i = 0; i < pts.length; i++) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], pts[i]) <= 0) {
+      lower.pop();
+    }
+    lower.push(pts[i]);
+  }
+  const upper = [];
+  for (let i = pts.length - 1; i >= 0; i--) {
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], pts[i]) <= 0) {
+      upper.pop();
+    }
+    upper.push(pts[i]);
+  }
+  lower.pop();
+  upper.pop();
+  return lower.concat(upper);
+}
+
+/**
  * Extracts or derives the geographic boundary polygon for a flight layer.
  */
 function getLayerBoundaryGeoPolygon(layer) {
@@ -41822,6 +41864,9 @@ function getLayerBoundaryGeoPolygon(layer) {
   if (Array.isArray(layer.freeformWaypoints) && layer.freeformWaypoints.length >= 3) {
     return layer.freeformWaypoints;
   }
+  if (Array.isArray(layer.waypoints) && layer.waypoints.length >= 3) {
+    return computeConvexHullGeo(layer.waypoints);
+  }
 
   // Default survey / grid bounding box
   const cLat = typeof layer.centerLat === 'number' ? layer.centerLat : (typeof activeCenterLat === 'number' ? activeCenterLat : 0);
@@ -41829,6 +41874,28 @@ function getLayerBoundaryGeoPolygon(layer) {
   const w = typeof layer.gridWidth === 'number' ? layer.gridWidth : (typeof gridWidth === 'number' ? gridWidth : 100);
   const h = typeof layer.gridHeight === 'number' ? layer.gridHeight : (typeof gridHeight === 'number' ? gridHeight : 100);
   const rot = typeof layer.gridRotation === 'number' ? layer.gridRotation : (typeof rotationDeg === 'number' ? rotationDeg : 0);
+
+  const isOrbitalOrRadial = (
+    layer.pattern === 'orbit' ||
+    layer.pattern === 'multi-orbit' ||
+    layer.pattern === 'tower' ||
+    layer.pattern === 'grid-orbit-combo' ||
+    layer.pattern === 'grid-multi-orbit-combo' ||
+    (layer.pattern === 'target-splat' && (!Array.isArray(layer.targetPoly) || layer.targetPoly.length < 3))
+  );
+
+  const radiusMeters = layer.orbitRadius || layer.targetRadius || layer.towerRadius || 25;
+  if (isOrbitalOrRadial && (cLat !== 0 || cLon !== 0) && typeof localToGeodetic === 'function') {
+    const circlePoints = [];
+    const numPoints = 36;
+    for (let i = 0; i < numPoints; i++) {
+      const angle = (i / numPoints) * 2 * Math.PI;
+      const x = radiusMeters * Math.cos(angle);
+      const y = radiusMeters * Math.sin(angle);
+      circlePoints.push(localToGeodetic(x, y, cLat, cLon, 0));
+    }
+    return circlePoints;
+  }
 
   if ((cLat !== 0 || cLon !== 0) && typeof localToGeodetic === 'function') {
     const halfW = w / 2.0;
@@ -41842,6 +41909,7 @@ function getLayerBoundaryGeoPolygon(layer) {
   }
   return [];
 }
+
 
 /**
  * Extracts embedded DJI XMP flight telemetry (GPS, altitude, gimbal pitch/yaw, aircraft model)
@@ -42658,8 +42726,10 @@ const PhotoInspector = {
   projectGeoPointToPixel,
   projectGeoPolygonToPhoto,
   getLayerBoundaryGeoPolygon,
+  computeConvexHullGeo,
   extractDjiXmpMetadata,
   eventsBound: false,
+
 
   openPhoto(photoOrId, manifest = null) {
     return this.open(photoOrId, manifest);
@@ -43529,7 +43599,7 @@ const PhotoInspector = {
         }
       }
 
-      // Fallback: If no workspace boundary layers exist, check if currentLoadedMission in FlightDiagnostics has parcels
+      // Fallback 1: If no workspace boundary layers exist, check if currentLoadedMission in FlightDiagnostics has parcels
       if (layersToProject.length === 0 && typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.currentLoadedMission) {
         const mParcels = FlightDiagnostics.currentLoadedMission.parcels || FlightDiagnostics.currentLoadedMission.plan?.parcels;
         if (Array.isArray(mParcels)) {
@@ -43547,6 +43617,38 @@ const PhotoInspector = {
           });
         }
       }
+
+      // Fallback 2: Check FlightDiagnostics planned waypoints (v1.115.3)
+      if (layersToProject.length === 0 && typeof FlightDiagnostics !== 'undefined' && Array.isArray(FlightDiagnostics.plannedWaypoints) && FlightDiagnostics.plannedWaypoints.length >= 3) {
+        const validWps = FlightDiagnostics.plannedWaypoints.filter(w => w && typeof w.lat === 'number' && typeof w.lon === 'number');
+        if (validWps.length >= 3) {
+          layersToProject.push({
+            polygon: computeConvexHullGeo(validWps),
+            name: 'Flight Mission Boundary',
+            strokeColor: '#06b6d4',
+            lineStyle: 'dashed',
+            fillOpacity: 0.12,
+            targetHeight: typeof this.targetHeight === 'number' ? this.targetHeight : 0
+          });
+        }
+      }
+
+      // Fallback 3: Check FlightDiagnostics telemetry points with photo triggers or flown path (v1.115.3)
+      if (layersToProject.length === 0 && typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.telemetryData && Array.isArray(FlightDiagnostics.telemetryData.points)) {
+        const photoPts = FlightDiagnostics.telemetryData.points.filter(p => p.isPhoto && typeof p.lat === 'number' && typeof p.lon === 'number');
+        const ptsToUse = photoPts.length >= 3 ? photoPts : FlightDiagnostics.telemetryData.points.filter(p => typeof p.lat === 'number' && typeof p.lon === 'number');
+        if (ptsToUse.length >= 3) {
+          layersToProject.push({
+            polygon: computeConvexHullGeo(ptsToUse),
+            name: 'Flight Mission Boundary',
+            strokeColor: '#06b6d4',
+            lineStyle: 'dashed',
+            fillOpacity: 0.12,
+            targetHeight: typeof this.targetHeight === 'number' ? this.targetHeight : 0
+          });
+        }
+      }
+
 
       layersToProject.forEach(item => {
         const projRes = this.projectGeoPolygonToPhoto(item.polygon, camPose, {
@@ -45006,7 +45108,10 @@ async function executeMediaPull() {
     if (progPct) progPct.textContent = '100%';
 
     let statusMsg = `Completed! ${data.totalPhotos || 0} photos ingested.`;
-    if (shouldDeleteFromDrone) {
+    if (data.diskSpaceError) {
+      statusMsg = `⚠️ Disk full on drive C:! Ingested ${data.totalPhotos || 0} photos before space ran out. Free up space on C: to ingest remaining photos.`;
+      if (progText) progText.style.color = '#f87171';
+    } else if (shouldDeleteFromDrone) {
       if (data.deletedCount > 0) {
         statusMsg += ` (${data.deletedCount} verified & freed from SD card)`;
       } else if (data.deleteErrors && data.deleteErrors.length > 0) {
@@ -45014,6 +45119,7 @@ async function executeMediaPull() {
       }
     }
     if (progText) progText.textContent = statusMsg;
+
 
     if (data.manifest) {
       if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.selectedFlightId) {

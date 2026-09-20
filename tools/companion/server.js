@@ -1661,6 +1661,9 @@ async function pullMediaPhotos(options = {}) {
   const deleteFromDrone = options.deleteFromDrone === true;
   const deletedFiles = [];
   const deleteErrors = [];
+  const copyErrors = [];
+  let diskSpaceError = false;
+
 
   mediaPullProgress = {
     active: true,
@@ -1739,8 +1742,15 @@ async function pullMediaPhotos(options = {}) {
               fs.copyFileSync(fileObj.path, dest);
               directCopiedCount++;
               copySucceeded = true;
-            } catch (_) {}
+            } catch (copyErr) {
+              console.error(`[MEDIA PULL] Failed to copy ${fileObj.name}:`, copyErr.message);
+              copyErrors.push(`Failed to copy ${fileObj.name}: ${copyErr.message}`);
+              if (copyErr.code === 'ENOSPC' || (copyErr.message && copyErr.message.includes('no space left'))) {
+                diskSpaceError = true;
+              }
+            }
           } else {
+
             // File was previously ingested or already in destination
             copySucceeded = true;
           }
@@ -2168,8 +2178,12 @@ if ($copied.Count -eq 0 -and $thisPC) {
     deletedCount: deletedFiles.length,
     deletedFiles,
     deleteErrors,
+    diskSpaceError: Boolean(diskSpaceError),
+    copyErrors,
     manifest
+
   };
+
 }
 
 function packageInspectionArchive(missionUuid) {
