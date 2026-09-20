@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.114.0] - 2026-09-20
+
+### Added — In-Browser & Bridge Optical Tag Detector & Fiducial GCP Auto-Matching
+- **Full-Spectrum Optical Tag Detection Engine (`tools/wasm/tag_detector.js` & `TagDetector`):**
+  - Implemented high-performance, client-side & server-side computer vision engine supporting **AprilTag 25h9** (35 codes, Hamming 9), **AprilTag 36h11** (50 codes, Hamming 11), **AprilTag 16h5** (30 codes, Hamming 5), **ArUco 4x4** (50 codes), and **ArUco 5x5** (50 codes).
+  - Features integral-image adaptive thresholding, contour extraction, Ramer-Douglas-Peucker polygon approximation, perspective homography rectification, and dual-winding rotation invariance.
+  - Blazing fast performance: decodes targets in **<350ms** with sub-pixel center estimation and physical rotation angle calculation.
+- **Interactive Photo Inspector Tag Detection (`#photo-detect-tags-btn` & `#photo-detect-status-pill`):**
+  - Added "🔍 Detect Tags" toolbar button and live status pill in Photo Inspector header (`#photo-inspector-modal`).
+  - Added "🏷️ Detected Ground Tags" layer toggle (`#layer-toggle-detected-tags`) in Annotation Layers.
+  - Added "Detected Ground Tags" telemetry card (`#detected-tags-box` & `#detected-tags-list`) in the inspection drawer detailing detected family, tag ID, pixel coordinates, rotation angle, and GCP matching metrics.
+  - Enhanced canvas overlay rendering with vibrant green bounding quads (`#22c55e`), yellow corner #0 orientation dot (`#eab308`), tag center crosshair, label pills, and connecting variance vectors.
+- **Automated Ground Control Point (GCP) Cross-Referencing & Variance Metrics:**
+  - Projects planned GCPs and survey markers into drone camera perspective using camera pose and intrinsics.
+  - Automatically matches detected optical tags against planned GCP coordinates, calculating reprojection distance in pixels and real-world centimeters ($GSD \times \text{distance}$).
+  - Automatically flags inspected photos as `gcpVerified = true` with recorded centimeter offset (`gcpOffsetCm`).
+- **Selective Tag Scanning on Photo Ingestion (`#ingest-scan-tags` & `POST /api/media/scan-tags`):**
+  - Added "Auto-scan photos for fiducial tags & GCPs (AprilTag / ArUco)" checkbox in Media Ingest modal (`#ingest-scan-tags`, default: checked).
+  - Added `scanPhotoFiducials()` in Companion Bridge service (`tools/companion/server.js`), scanning photos during `pullMediaPhotos` and enriching `inspection_manifest.json` on pull.
+  - Added dedicated endpoint `POST /api/media/scan-tags` for on-demand server-side tag re-scanning and GCP validation.
+
 ## [1.113.3] - 2026-09-19
 
 ### Fixed & Enhanced — DJI Photo Embedded XMP Metadata Extraction & Companion Flight Log Fallback
