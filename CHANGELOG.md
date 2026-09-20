@@ -1,6 +1,13 @@
 # Changelog
 
+## [1.115.1] - 2026-09-20
+
+### Bug Fixes
+- **Inspection Photos Thumbnails Not Rendering:** Fixed a regression where photo cards in the Inspection Photos tab showed the placeholder camera icon instead of actual photo previews. The `else if` fallback branch in `renderInspectionPhotosUI` that generates a preview URL from the filename had an erroneous `!photo.filename.startsWith('DJI_000')` guard which excluded all standard DJI photo filenames (`DJI_0001.JPG`, `DJI_0002.JPG`, etc.) from URL generation. Removed that exclusion; `.DNG` raw extension also added to the supported list.
+- **Media Ingest Stuck at 98% / Completion Status Overwritten:** Fixed two interacting issues in `executeMediaPull`: (1) the progress poller capped `percent` at `Math.min(98, ...)` unconditionally, so it could never reach 100%; (2) the poller continued writing `pData.status` into the status text element after the main `fetch` had already written the final completion message, causing the server's "Ingestion complete!" string to overwrite "Completed! N photos ingested.". Fixed by detecting `!pData.active || pData.percent >= 100` in the poller and when done: advancing to 100%, stopping the interval, and suppressing further status-text overwrites.
+
 ## [1.115.0] - 2026-09-20
+
 
 ### New Feature — HUD Overlay Controls for Flight Diagnostics 3D Replay
 - **Added `#diag-hud-controls` Overlay Panel:**
