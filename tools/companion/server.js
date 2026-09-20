@@ -3037,8 +3037,13 @@ const server = http.createServer(async (req, res) => {
                   if (!isNaN(pt) && pt >= t0 && pt <= t1) return true;
                 }
 
+                // If no timestamp could be parsed from filename or metadata,
+                // include the photo (no basis to exclude it — e.g. DJI_0001.JPG sequential names)
+                if (isNaN(pLoc) && isNaN(pUtc) && isNaN(pt)) return true;
+
                 return false;
               });
+
               mObj.totalPhotos = mObj.photos.length;
               if (mObj.summary) {
                 mObj.summary.totalPhotos = mObj.photos.length;
