@@ -1,6 +1,12 @@
 # Changelog
 
+## [1.115.2] - 2026-09-20
+
+### Bug Fixes
+- **Sequential DJI Photo Names Filter Fix (`DJI_0001.JPG`):** Fixed an issue in `FlightDiagnostics.filterPhotosForCurrentFlight` and the companion server's `/api/media/manifest` endpoint where photos with standard sequential filenames (e.g. `DJI_0001.JPG` through `DJI_0031.JPG`) lacking embedded timestamps were erroneously excluded by time-window filtering. Photos without a determinable timestamp now pass through by default rather than being filtered out.
+
 ## [1.115.1] - 2026-09-20
+
 
 ### Bug Fixes
 - **Inspection Photos Thumbnails Not Rendering:** Fixed a regression where photo cards in the Inspection Photos tab showed the placeholder camera icon instead of actual photo previews. The `else if` fallback branch in `renderInspectionPhotosUI` that generates a preview URL from the filename had an erroneous `!photo.filename.startsWith('DJI_000')` guard which excluded all standard DJI photo filenames (`DJI_0001.JPG`, `DJI_0002.JPG`, etc.) from URL generation. Removed that exclusion; `.DNG` raw extension also added to the supported list.

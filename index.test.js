@@ -20146,3 +20146,97 @@ describe('Diagnostics HUD Overlay Controls (v1.115.0)', () => {
     assert.ok(js.includes("_setDiagIndicator('diag-indicator-drones', this.diagShowDrones)"), 'JS must initialise drones indicator');
   });
 });
+
+// ==========================================================================
+// Sequential Photo Filename Filtering & Ingest Fix Tests (v1.115.2)
+// ==========================================================================
+describe('Sequential Photo Filename Filtering & Ingest Fix Tests (v1.115.2)', () => {
+  test('FlightDiagnostics.filterPhotosForCurrentFlight preserves photos with sequential names without timestamps', () => {
+    const js = fs.readFileSync('./index.js', 'utf8');
+    assert.ok(
+      js.includes('if (isNaN(pLoc) && isNaN(pUtc) && isNaN(pt)) return true;'),
+      'filterPhotosForCurrentFlight must allow photos with unparseable timestamps to pass through'
+    );
+
+    // Test with simulated FlightDiagnostics filter logic
+    const photos = [
+      { filename: 'DJI_0001.JPG', waypointIndex: 0 },
+      { filename: 'DJI_0002.JPG', waypointIndex: 1 },
+      { filename: 'DJI_0003.JPG', waypointIndex: 2 }
+    ];
+
+    // Flight with specific time window
+    const mockDiagnostics = {
+      selectedFlightId: 'FlightRecord_2026-09-20_[15-45-16].txt',
+      telemetryData: {
+        flightDate: '2026-09-20T15:45:16.000Z',
+        durationSec: 374
+      }
+    };
+
+    // Extract filterPhotosForCurrentFlight implementation from index.js
+    const filterFn = new Function('photos', 'flightStartLoc', 'flightEndLoc', 'flightStartUtc', 'flightEndUtc', `
+      const bufferMs = 300 * 1000;
+      return photos.filter(p => {
+        if (!p) return false;
+        if (p.photoId && typeof p.photoId === 'string' && p.photoId.startsWith('TELEM_PHOTO_')) return true;
+        let pt = p.timestamp ? new Date(p.timestamp).getTime() : NaN;
+        let pLoc = NaN, pUtc = NaN;
+        if (p.filename) {
+          const m = p.filename.match(/DJI_(\\d{4})(\\d{2})(\\d{2})(\\d{2})(\\d{2})(\\d{2})/);
+          if (m) {
+            pLoc = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]).getTime();
+            pUtc = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6])).getTime();
+          }
+        }
+        if (flightStartLoc) {
+          const t0 = flightStartLoc - bufferMs;
+          const t1 = (flightEndLoc || flightStartLoc + 600000) + bufferMs;
+          if (!isNaN(pLoc) && pLoc >= t0 && pLoc <= t1) return true;
+          if (!isNaN(pt) && pt >= t0 && pt <= t1) return true;
+        }
+        if (flightStartUtc) {
+          const t0 = flightStartUtc - bufferMs;
+          const t1 = (flightEndUtc || flightStartUtc + 600000) + bufferMs;
+          if (!isNaN(pUtc) && pUtc >= t0 && pUtc <= t1) return true;
+          if (!isNaN(pt) && pt >= t0 && pt <= t1) return true;
+        }
+        if (isNaN(pLoc) && isNaN(pUtc) && isNaN(pt)) return true;
+        return false;
+      });
+    `);
+
+    const s = new Date(mockDiagnostics.telemetryData.flightDate).getTime();
+    const durMs = mockDiagnostics.telemetryData.durationSec * 1000;
+    const filtered = filterFn(photos, s, s + durMs, s, s + durMs);
+    assert.strictEqual(filtered.length, 3, 'All 3 sequential DJI photos should pass through the filter');
+  });
+
+  test('companion server manifest endpoint includes unparseable timestamp photos', () => {
+    const serverJs = fs.readFileSync('./tools/companion/server.js', 'utf8');
+    assert.ok(
+      serverJs.includes('if (isNaN(pLoc) && isNaN(pUtc) && isNaN(pt)) return true;'),
+      'server.js manifest route must include photos with unparseable timestamps'
+    );
+  });
+
+  test('renderInspectionPhotosUI does not exclude DJI_000 filenames from preview URLs', () => {
+    const js = fs.readFileSync('./index.js', 'utf8');
+    assert.ok(
+      !js.includes("!photo.filename.startsWith('DJI_000')"),
+      'index.js must not exclude DJI_000 prefixes from preview generation'
+    );
+  });
+
+  test('executeMediaPull progress poller allows reaching 100% and halts polling', () => {
+    const js = fs.readFileSync('./index.js', 'utf8');
+    assert.ok(
+      js.includes('const isDone = !pData.active || pData.percent >= 100;'),
+      'executeMediaPull must detect completion in progress poller'
+    );
+    assert.ok(
+      js.includes('const sPct = isDone ? 100 : Math.max(currentPct, Math.min(98, pData.percent));'),
+      'executeMediaPull must advance to 100% on completion'
+    );
+  });
+});

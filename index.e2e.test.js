@@ -4209,10 +4209,12 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
     // 2. Find turn mode badge inside #fpv-editor-panel
     const turnBadge = page.locator('#fpv-turn-phase-badge-container .wp-leg-phase-badge');
-    await turnBadge.waitFor({ state: 'attached', timeout: 5000 });
+    await turnBadge.waitFor({ state: 'visible', timeout: 5000 });
+    await page.waitForTimeout(150);
 
     // Hover over the badge
     await turnBadge.hover();
+
 
     // 3. Verify floating tooltip position and visibility
     const tooltipState = await page.evaluate(() => {
