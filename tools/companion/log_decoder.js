@@ -1121,8 +1121,11 @@ function correlatePhotosWithTelemetry(photos, telemetryPoints, plannedWaypoints 
   const wps = Array.isArray(plannedWaypoints) ? plannedWaypoints : [];
 
   return photos.map((photo, pIdx) => {
-    // 1. Attempt to match photo with telemetry point by timestamp or trigger index
+    // 1. Attempt to match photo with telemetry point
     let matchedTelem = null;
+    const hasPhotoGps = (typeof photo.lat === 'number' && typeof photo.lon === 'number' && (photo.lat !== 0 || photo.lon !== 0));
+
+    // A. Match by timestamp if available on both photo and telemetry point
     if (photo.timestamp && tPoints.length > 0) {
       const pTime = new Date(photo.timestamp).getTime();
       let bestDiff = Infinity;
@@ -1135,9 +1138,29 @@ function correlatePhotosWithTelemetry(photos, telemetryPoints, plannedWaypoints 
           }
         }
       }
+      // If time difference is excessive (> 15s) and photo has GPS, prefer spatial correlation
+      if (bestDiff > 15000 && hasPhotoGps) {
+        matchedTelem = null;
+      }
     }
 
-    // Fallback: match by sequence of photo trigger points (isPhoto: true)
+    // B. Spatial matching: if photo has GPS, match to nearest telemetry point (preferring isPhoto trigger points)
+    if (!matchedTelem && hasPhotoGps && tPoints.length > 0) {
+      let bestDist = Infinity;
+      const photoTriggers = tPoints.filter(tp => tp.isPhoto);
+      const searchPoints = photoTriggers.length > 0 ? photoTriggers : tPoints;
+      for (const tp of searchPoints) {
+        if (typeof tp.lat === 'number' && typeof tp.lon === 'number') {
+          const d = haversineDistance(photo.lat, photo.lon, tp.lat, tp.lon);
+          if (d < bestDist) {
+            bestDist = d;
+            matchedTelem = tp;
+          }
+        }
+      }
+    }
+
+    // C. Fallback: match by sequence of photo trigger points (isPhoto: true)
     if (!matchedTelem && tPoints.length > 0) {
       const photoTriggerPoints = tPoints.filter(tp => tp.isPhoto);
       if (photoTriggerPoints[pIdx]) {
@@ -1148,46 +1171,47 @@ function correlatePhotosWithTelemetry(photos, telemetryPoints, plannedWaypoints 
       }
     }
 
-    // 1. Resolve camera pose: prioritize valid photo GPS/XMP metadata if matched telemetry is absent or 0
-    const hasPhotoGps = (typeof photo.lat === 'number' && typeof photo.lon === 'number' && (photo.lat !== 0 || photo.lon !== 0));
+    // 2. Resolve camera pose: Authoritative photo GPS/XMP metadata ALWAYS takes precedence
     const hasTelemGps = (matchedTelem && typeof matchedTelem.lat === 'number' && typeof matchedTelem.lon === 'number' && (matchedTelem.lat !== 0 || matchedTelem.lon !== 0));
 
-    const lat = hasTelemGps ? matchedTelem.lat : (hasPhotoGps ? photo.lat : (matchedTelem && matchedTelem.lat !== undefined ? matchedTelem.lat : (photo.lat || 0)));
-    const lon = hasTelemGps ? matchedTelem.lon : (hasPhotoGps ? photo.lon : (matchedTelem && matchedTelem.lon !== undefined ? matchedTelem.lon : (photo.lon || 0)));
+    const lat = hasPhotoGps ? photo.lat : (hasTelemGps ? matchedTelem.lat : (matchedTelem?.lat ?? photo.lat ?? 0));
+    const lon = hasPhotoGps ? photo.lon : (hasTelemGps ? matchedTelem.lon : (matchedTelem?.lon ?? photo.lon ?? 0));
 
     const telemAlt = matchedTelem ? (matchedTelem.altAgl !== undefined ? matchedTelem.altAgl : (matchedTelem.alt !== undefined ? matchedTelem.alt : matchedTelem.altitude)) : undefined;
     const photoAlt = photo.altAgl !== undefined ? photo.altAgl : photo.alt;
-    const alt = (telemAlt !== undefined && telemAlt !== null && telemAlt > 0) ? telemAlt : (photoAlt !== undefined && photoAlt !== null ? photoAlt : (telemAlt !== undefined ? telemAlt : 25));
+    const alt = (photoAlt !== undefined && photoAlt !== null) ? photoAlt : ((telemAlt !== undefined && telemAlt !== null && telemAlt > 0) ? telemAlt : (telemAlt !== undefined ? telemAlt : 25));
 
     const telemPitch = matchedTelem ? (matchedTelem.pitch !== undefined ? matchedTelem.pitch : matchedTelem.gimbalPitch) : undefined;
     const photoPitch = photo.gimbalPitch !== undefined ? photo.gimbalPitch : photo.pitch;
-    const pitch = (telemPitch !== undefined && telemPitch !== null) ? telemPitch : (photoPitch !== undefined && photoPitch !== null ? photoPitch : -45);
+    const pitch = (photoPitch !== undefined && photoPitch !== null) ? photoPitch : (telemPitch !== undefined ? telemPitch : -45);
 
     const telemHeading = matchedTelem ? (matchedTelem.yaw !== undefined ? matchedTelem.yaw : matchedTelem.heading) : undefined;
     const photoHeading = photo.heading !== undefined ? photo.heading : (photo.flightYaw !== undefined ? photo.flightYaw : undefined);
-    const heading = (telemHeading !== undefined && telemHeading !== null) ? telemHeading : (photoHeading !== undefined && photoHeading !== null ? photoHeading : 0);
+    const heading = (photoHeading !== undefined && photoHeading !== null) ? photoHeading : (telemHeading !== undefined ? telemHeading : 0);
     const speed = matchedTelem ? (matchedTelem.speed || 0) : 0;
     const battery = matchedTelem ? (matchedTelem.batteryPercent !== undefined ? matchedTelem.batteryPercent : (matchedTelem.battery || null)) : null;
     const satellites = matchedTelem ? (matchedTelem.satellites || 24) : 24;
 
-    // 2. Correlate with planned waypoint
+    // 3. Correlate with planned waypoint by geographical proximity
     let planned = null;
-    let assignedWpIdx = photo.waypointIndex !== undefined ? photo.waypointIndex : (matchedTelem && matchedTelem.waypointIndex !== null ? matchedTelem.waypointIndex : pIdx);
-    if (wps[assignedWpIdx]) {
-      planned = wps[assignedWpIdx];
-    } else if (wps.length > 0) {
-      // Find geographically closest planned waypoint
+    let assignedWpIdx = pIdx;
+    if (wps.length > 0) {
       let bestDist = Infinity;
-      let bestIdx = 0;
       wps.forEach((wp, wIdx) => {
-        const d = haversineDistance(lat, lon, wp.lat, wp.lon);
-        if (d < bestDist) {
-          bestDist = d;
-          bestIdx = wIdx;
+        const wpLat = typeof wp.lat === 'number' ? wp.lat : null;
+        const wpLon = typeof wp.lon === 'number' ? wp.lon : (typeof wp.lng === 'number' ? wp.lng : null);
+        if (wpLat !== null && wpLon !== null) {
+          const d = haversineDistance(lat, lon, wpLat, wpLon);
+          if (d < bestDist) {
+            bestDist = d;
+            bestIdx = wIdx;
+            assignedWpIdx = wIdx;
+            planned = wp;
+          }
         }
       });
-      planned = wps[bestIdx];
-      assignedWpIdx = bestIdx;
+    } else if (photo.waypointIndex !== undefined) {
+      assignedWpIdx = photo.waypointIndex;
     }
 
     // 3. Compute planned vs actual variances
@@ -1769,6 +1793,15 @@ function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv') {
   let lastTime = rawRows[rawRows.length - 1].rowTime !== null ? rawRows[rawRows.length - 1].rowTime : rawRows.length;
   let durationSec = Math.max(1, Math.round(lastTime - firstTime));
   
+  let flightDate = new Date().toISOString();
+  if (typeof flightId === 'string') {
+    const match = flightId.match(/FlightRecord_(\d{4}-\d{2}-\d{2})_\[(\d{2}-\d{2}-\d{2})\]/);
+    if (match) {
+      flightDate = `${match[1]}T${match[2].replace(/-/g, ':')}.000Z`;
+    }
+  }
+  const flightStartMs = new Date(flightDate).getTime();
+
   // Downsample high-frequency telemetry (e.g. 10 Hz) to ~1 Hz for smooth 3D replay
   const points = [];
   let totalDistance = 0;
@@ -1793,9 +1826,12 @@ function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv') {
         totalDistance += haversineDistance(prev.lat, prev.lon, row.lat, row.lon);
       }
 
+      const ptTimestamp = !isNaN(flightStartMs) ? new Date(flightStartMs + sec * 1000).toISOString() : null;
+
       points.push({
         time: sec,
         timeStr: formatTime(sec),
+        timestamp: ptTimestamp,
         lat: row.lat,
         lon: row.lon,
         alt: Math.round(row.alt * 10) / 10,
@@ -1817,14 +1853,6 @@ function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv') {
 
   if (points.length === 0) return null;
   const finalDuration = points[points.length - 1].time || durationSec;
-
-  let flightDate = new Date().toISOString();
-  if (typeof flightId === 'string') {
-    const match = flightId.match(/FlightRecord_(\d{4}-\d{2}-\d{2})_\[(\d{2}-\d{2}-\d{2})\]/);
-    if (match) {
-      flightDate = `${match[1]}T${match[2].replace(/-/g, ':')}.000Z`;
-    }
-  }
 
   let detectedDroneModel = detectedDroneModelFromRows || 'DJI Mini 4 Pro';
   if (typeof flightId === 'string' && _path && _fs) {
