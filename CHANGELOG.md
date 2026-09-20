@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.116.1] - 2026-09-20
+
+### Fixed
+- **Inspection Photo Telemetry & True Camera Pose Correlation:**
+  - Fixed critical correlation bug in `correlatePhotosWithTelemetry` (`tools/companion/log_decoder.js`): camera pose (`lat`, `lon`, `alt`, `pitch`, `heading`) now strictly prioritizes authoritative photo JPEG EXIF/XMP metadata over flight log telemetry points, preventing accurate camera positions and gimbal yaws from being overwritten by miscorrelated flight log samples.
+  - Implemented geographic proximity-based telemetry matching (`haversineDistance`): photos are matched to the closest flight trigger point rather than relying on sequential array indexing, preventing duplicate trigger points in flight logs from skewing subsequent photo-to-waypoint alignments by 80°+.
+  - Waypoint association now matches each photo to its geographically closest planned waypoint, achieving sub-20cm alignment accuracy.
+  - `extractDjiXmpMetadata` in companion server extracts `xmp:CreateDate` / `xmp:ModifyDate`, providing millisecond-accurate shutter timestamps.
+- **Ground Boundary & Property Parcel Projection Accuracy:**
+  - Clamped flight layer boundary polygons and property parcels to ground level (`targetHeight: 0`) in `PhotoInspector.renderAnnotations()` and `extractSpatialMissionLayers()`, eliminating vertical perspective displacement caused by inheriting building/grid roof target heights (e.g. 8m).
+  - Ground boundary lines and fences now project with pixel-perfect alignment against physical ground boundaries (such as property fence lines) across oblique and nadir camera angles.
+  - `extractSpatialMissionLayers()` now detects and exports any flight layer with drawn boundary polygons (`boundaryPolygon` / `polygonVertices`), ensuring user-defined boundaries are preserved in mission archives and flight logs.
+  - `FlightDiagnostics.getDiagnosticsBoundaries()` falls back to `activeInspectionManifest.parcels` and ensures all 3D perimeter loops render at terrain level ($Z = 0$).
+
 ## [1.116.0] - 2026-09-20
 
 ### New Features & Enhancements

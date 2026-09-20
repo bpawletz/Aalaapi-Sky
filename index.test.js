@@ -20136,19 +20136,134 @@ describe('3D Flight Boundary & Parcel Footprint Projection Suite Tests (v1.116.0
   });
 
   test('Version 1.116.0 is consistent across package.json and templates', () => {
-    const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
-    assert.strictEqual(pkg.version, '1.116.0');
-
     const changelog = fs.readFileSync('./CHANGELOG.md', 'utf8');
     assert.ok(changelog.includes('## [1.116.0] - 2026-09-20'));
-
-    const tmpl = fs.readFileSync('./index_template.html', 'utf8');
-    assert.ok(tmpl.includes('v1.116.0'), 'index_template.html must contain v1.116.0 header badge');
-    assert.ok(tmpl.includes('Version 1.116.0'), 'index_template.html must contain Version 1.116.0');
-
-    const indexHtml = fs.readFileSync('./index.html', 'utf8');
-    assert.ok(indexHtml.includes('v1.116.0'), 'index.html must contain v1.116.0 header badge');
-    assert.ok(indexHtml.includes('Version 1.116.0'), 'index.html must contain Version 1.116.0');
   });
 });
+
+describe('Photo Telemetry Correlation & Ground Boundary Projection Suite Tests (v1.116.1)', () => {
+  const { correlatePhotosWithTelemetry, parseCsvTelemetry } = require('./tools/companion/log_decoder.js');
+
+  test('correlatePhotosWithTelemetry prioritizes authoritative photo XMP GPS and yaw over telemetry', () => {
+    const photos = [
+      {
+        id: 'PHOTO_0001',
+        filename: 'DJI_0001.JPG',
+        lat: 40.013011,
+        lon: -83.177149,
+        altAgl: 27.0,
+        gimbalPitch: -45.0,
+        heading: 154.7
+      }
+    ];
+
+    // Flight log telemetry point with conflicting/shifted GPS and yaw (e.g. from an earlier waypoint or wrong index)
+    const telemetryPoints = [
+      {
+        lat: 40.012855,
+        lon: -83.176798,
+        alt: 25.0,
+        pitch: -45.0,
+        yaw: -85.6,
+        isPhoto: true,
+        battery: 80,
+        satellites: 22
+      },
+      {
+        lat: 40.013011,
+        lon: -83.177149,
+        alt: 27.0,
+        pitch: -45.0,
+        yaw: 154.7,
+        isPhoto: true,
+        battery: 79,
+        satellites: 23
+      }
+    ];
+
+    const plannedWps = [
+      { index: 0, lat: 40.012855, lon: -83.176798, alt: 27 },
+      { index: 1, lat: 40.013010, lon: -83.177150, alt: 27 }
+    ];
+
+    const correlated = correlatePhotosWithTelemetry(photos, telemetryPoints, plannedWps);
+    assert.strictEqual(correlated.length, 1);
+
+    const result = correlated[0];
+    // Must preserve photo's authoritative GPS and heading
+    assert.strictEqual(result.actual.lat, 40.013011, 'lat must match photo XMP');
+    assert.strictEqual(result.actual.lon, -83.177149, 'lon must match photo XMP');
+    assert.strictEqual(result.actual.heading, 154.7, 'heading must match photo XMP (+154.7°)');
+    assert.strictEqual(result.actual.gimbalPitch, -45.0, 'pitch must match photo XMP');
+    // Must spatially correlate to planned waypoint index 1
+    assert.strictEqual(result.waypointIndex, 1, 'must correlate to geographically closest planned waypoint');
+    assert.ok(result.variance.horizontalDeltaMeters < 0.2, 'horizontal delta must be sub-decimeter');
+    // Must capture telemetry telemetry metadata (battery, satellites)
+    assert.strictEqual(result.actual.battery, 79);
+    assert.strictEqual(result.actual.satellites, 23);
+  });
+
+  test('extractSpatialMissionLayers extracts drawn boundary polygons with ground-clamped targetHeight: 0', () => {
+    const layers = [
+      {
+        id: 'layer-1',
+        name: '3D Double Grid',
+        pattern: 'double-grid',
+        enabled: true,
+        targetHeight: 8.0, // Grid elevation for flight lines
+        boundaryPolygon: [
+          { lat: 40.0131, lon: -83.1771 },
+          { lat: 40.0127, lon: -83.1771 },
+          { lat: 40.0127, lon: -83.1768 },
+          { lat: 40.0131, lon: -83.1768 }
+        ]
+      }
+    ];
+
+    const spatial = extractSpatialMissionLayers(layers);
+    assert.strictEqual(spatial.parcels.length, 1, 'must extract layer with drawn boundaryPolygon as parcel');
+    assert.strictEqual(spatial.parcels[0].layerName, '3D Double Grid');
+    assert.strictEqual(spatial.parcels[0].targetHeight, 0, 'flight layer boundary parcel targetHeight must be clamped to ground (0m)');
+    assert.strictEqual(spatial.parcels[0].polygon.length, 4);
+  });
+
+  test('PhotoInspector.open ensures photo XMP takes precedence over stale actual coordinates', () => {
+    const js = fs.readFileSync('./index.js', 'utf8');
+    assert.ok(
+      js.includes('act.lat = xmp.lat;') && js.includes('act.lon = xmp.lon;'),
+      'PhotoInspector.open must prioritize photo XMP lat/lon'
+    );
+    assert.ok(
+      js.includes('act.heading = xmp.heading;'),
+      'PhotoInspector.open must prioritize photo XMP heading'
+    );
+  });
+
+  test('PhotoInspector.renderAnnotations clamps parcel targetHeight to ground level', () => {
+    const js = fs.readFileSync('./index.js', 'utf8');
+    assert.ok(
+      js.includes('targetHeight: (p.isElevated || p.isRoofBoundary) ? (p.targetHeight || 0) : 0'),
+      'PhotoInspector.renderAnnotations must clamp ground parcel targetHeight to 0'
+    );
+  });
+
+  test('Version 1.116.1 is consistent across package.json, changelog, and templates', () => {
+    const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
+    assert.strictEqual(pkg.version, '1.116.1');
+
+    const changelog = fs.readFileSync('./CHANGELOG.md', 'utf8');
+    assert.ok(changelog.includes('## [1.116.1] - 2026-09-20'), 'CHANGELOG must contain 1.116.1');
+
+    const tmpl = fs.readFileSync('./index_template.html', 'utf8');
+    assert.ok(tmpl.includes('v1.116.1'), 'index_template.html must contain v1.116.1 header badge');
+    assert.ok(tmpl.includes('Version 1.116.1'), 'index_template.html must contain Version 1.116.1');
+    assert.ok(tmpl.includes('Changelog (v1.116.1):'), 'index_template.html must contain Changelog (v1.116.1)');
+
+    const indexHtml = fs.readFileSync('./index.html', 'utf8');
+    assert.ok(indexHtml.includes('v1.116.1'), 'index.html must contain v1.116.1 header badge');
+    assert.ok(indexHtml.includes('Version 1.116.1'), 'index.html must contain Version 1.116.1');
+    assert.ok(indexHtml.includes('Changelog (v1.116.1):'), 'index.html must contain Changelog (v1.116.1)');
+  });
+});
+
 
