@@ -1529,12 +1529,23 @@ function validateImageHeader(filePath) {
 
 function scanPhotoFiducials(filePath, options = {}) {
   if (!filePath || !fs.existsSync(filePath)) return [];
+  const tmpBin = path.join(os.tmpdir ? os.tmpdir() : SCRATCH_DIR, `temp_scan_${Date.now()}_${Math.random().toString(36).slice(2)}.bin`);
   try {
-    const tmpBin = path.join(SCRATCH_DIR, `temp_scan_${Date.now()}_${Math.random().toString(36).slice(2)}.bin`);
+    // 1. If scanning a 40MB+ raw photo, prefer the pre-generated web preview image in photos/previews
+    let fileToScan = filePath;
+    const dirName = path.dirname(filePath);
+    const baseName = path.basename(filePath);
+    if (dirName.endsWith(path.join('photos', 'raw')) || dirName.endsWith('raw') || dirName.includes('raw')) {
+      const candidatePreview = path.join(path.dirname(dirName), 'previews', baseName);
+      if (fs.existsSync(candidatePreview) && fs.statSync(candidatePreview).size > 1000) {
+        fileToScan = candidatePreview;
+      }
+    }
+
     const maxDim = options.maxDimension || 1600;
     const psScript = `
       Add-Type -AssemblyName System.Drawing
-      $fullPath = [System.IO.Path]::GetFullPath('${filePath.replace(/'/g, "''")}')
+      $fullPath = [System.IO.Path]::GetFullPath('${fileToScan.replace(/'/g, "''")}')
       $bmp = [System.Drawing.Bitmap]::FromFile($fullPath)
       $origW = $bmp.Width
       $origH = $bmp.Height
@@ -1560,10 +1571,16 @@ function scanPhotoFiducials(filePath, options = {}) {
       [System.IO.File]::WriteAllBytes('${tmpBin.replace(/\\/g, '\\\\')}', $outBytes)
     `;
 
-    execFileSync('powershell.exe', ['-NoProfile', '-Command', psScript], { timeout: 30000 });
+    try {
+      execFileSync('powershell.exe', ['-NoProfile', '-Command', psScript], { timeout: 90000 });
+    } catch (execErr) {
+      logWarn('[TAG DETECTOR]', `PowerShell image decoder note for ${path.basename(filePath)}: ${execErr.message}`);
+      return [];
+    }
 
     if (!fs.existsSync(tmpBin)) return [];
     const buf = fs.readFileSync(tmpBin);
+
     try { fs.unlinkSync(tmpBin); } catch (_) {}
 
     const w = buf.readInt32LE(0);
