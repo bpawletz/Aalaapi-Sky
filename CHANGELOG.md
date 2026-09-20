@@ -1,5 +1,52 @@
 # Changelog
 
+## [1.113.3] - 2026-09-19
+
+### Fixed & Enhanced — DJI Photo Embedded XMP Metadata Extraction & Companion Flight Log Fallback
+- **Direct DJI XMP Spatial Metadata Extraction (`extractDjiXmpMetadata`):**
+  - Added robust extraction of embedded DJI XMP metadata packets (`xmlns:drone-dji="http://www.dji.com/drone-dji/1.0/"`) from JPEG headers in both Companion Bridge server and client browser.
+  - Automatically parses drone GPS latitude (`drone-dji:GpsLatitude`), longitude (`drone-dji:GpsLongitude`), relative altitude AGL (`drone-dji:RelativeAltitude`), absolute altitude MSL (`drone-dji:AbsoluteAltitude`), gimbal pitch degree (`drone-dji:GimbalPitchDegree`), gimbal yaw degree (`drone-dji:GimbalYawDegree`), flight heading degree (`drone-dji:FlightYawDegree`), and aircraft model name (`drone-dji:ProductName`).
+- **On-Disk Flight Log Fallback & Resilient Correlation:**
+  - Updated Companion Bridge `pullMediaPhotos` to automatically locate and parse decrypted telemetry (`_decrypted.csv` / `_decrypted.json`) in `scratch/latest_flight/` whenever the client submits an empty telemetry payload.
+  - Updated `correlatePhotosWithTelemetry` to prioritize valid photo XMP coordinates whenever matched telemetry is absent or zero.
+  - Updated `PhotoInspector` in the UI to dynamically inspect image headers and populate actual flight coordinates and camera orientation even if the photo was imported without an associated flight log.
+
+## [1.113.2] - 2026-09-19
+
+### Fixed — Per-Flight Correlated Photos Scoping & Multi-Flight Leaks
+- **Per-Flight Photo Scoping & Time-Window Filtering:**
+  - Resolved an issue where Flight Diagnostics displayed all photos from all past flights on the SD card/aircraft in "Correlated Photos", leaking photos from different days or unrelated flights into the current flight inspection.
+  - Added dual-reference timezone-aware (Local and UTC) timestamp filtering to Companion Bridge `GET /api/media/manifest`, matching DJI photo filenames (`DJI_YYYYMMDDHHMMSS_*.JPG`) and metadata timestamps against the flight's start time and duration.
+  - Enhanced `FlightDiagnostics.loadFlight` and `FlightDiagnostics.getCorrelatedPhotos` with `filterPhotosForCurrentFlight(photos)` to dynamically isolate only photos taken during the selected flight's takeoff-to-landing window.
+  - Scoped photo ingestion in `executeMediaPull` to dedicated flight archives (`mission_${flightTag}`), preventing cross-mission overwrite and preserving per-flight integrity.
+
+## [1.113.1] - 2026-09-19
+
+### Fixed — Real-Time Photo Ingest Progress Bar & Percentage Display
+- **Live Percentage & Dynamic Progress Bar Synchronization:**
+  - Fixed an issue where photo ingestion and controller flight log extraction left the progress percentage element (`#ingest-pct-text` and `#rc2-logs-pct-text`) permanently frozen at `0%`.
+  - Added dedicated endpoint `GET /api/media/progress` to Companion Bridge server returning real-time progress (`percent`, `current`, `total`, `stage`, and human-readable `status`).
+  - Added stage-aware progress reporting in `pullMediaPhotos`: scanning (5%), drive copying (15–48%), MTP copying (25%), previews & thumbnails (50–88%), telemetry correlation (92%), and finalization (100%).
+  - Added live progress polling and smooth progress transitions in `executeMediaPull`, `pullSpecificRc2Log`, and `pullAllRc2Logs`, updating both `#ingest-progress-bar` (width %) and `#ingest-pct-text` (percentage label) through 100% completion.
+
+## [1.113.0] - 2026-09-19
+
+### Added & Fixed — DJI RC 2 Direct Flight Log Explorer & DJI Neo 2 Media Ingestion Pipeline
+- **DJI RC 2 Flight Log Explorer & Direct Manager Modal (`#rc2-flight-logs-modal`):**
+  - Added dedicated controller flight log explorer accessible via "📋 Browse All Controller Logs" in the Companion sidebar (`#direct-rc2-browse-logs-btn`) and "Browse RC 2 Logs" in Flight Diagnostics (`#diag-browse-rc2-logs-btn`).
+  - Directly lists all internal telemetry logs (`FlightRecord_*.txt`) over USB MTP with real-time date search, file size indicators, and decryption status badges.
+  - Supports 1-click on-demand pulling and automatic cloud decryption of any historical flight log, plus batch "📥 Pull & Decrypt All" execution.
+- **Automatic Raw Flight Log Cloud Decryption Pipeline:**
+  - Updated `extractLatestFlight()` and `pullRc2FlightLogs()` in `tools/companion/server.js` to automatically invoke `decryptFlightRecordWithDjiCli()` upon extracting raw flight logs when a DJI Cloud API key is configured, eliminating manual CLI steps and guaranteeing immediate 3D flight trajectory preview.
+- **DJI Neo 2 Direct USB Photo Ingestion & Storage Recognition:**
+  - Enhanced `detectMediaDevices()` and `pullMediaPhotos()` to recognize DJI Neo and Neo 2 internal flash storage (`MISC/NEO2_edcf.db`, `DCIM/DJI_*`, `DJI_001`, and `InternalStorage`).
+  - Dynamically labels mounts as `DJI Neo 2 - Internal Storage` and parses non-traditional DCIM folder structures.
+- **Smart Defaults for Ad-Hoc / Manual Flights:**
+  - Updated `openMediaIngestModal` to automatically uncheck geographic boundary (`#ingest-filter-geo`) and flight time window (`#ingest-filter-time`) filters when no waypoints or telemetry dates exist in the workspace, preventing ad-hoc, indoor, and manual flights (such as DJI Neo) from having their photos discarded.
+- **Correct Date & Drone Model Extraction in Companion Log Decoder:**
+  - Refactored `parseCsvTelemetry()` in `tools/companion/log_decoder.js` to extract true flight dates directly from filenames (`FlightRecord_YYYY-MM-DD_[HH-MM-SS].txt`) rather than defaulting to `new Date()`.
+  - Dynamically inspects companion `_decrypted.json` to extract and display true aircraft model names (e.g., `DJI Neo 2`).
+
 ## [1.112.0] - 2026-09-19
 
 ### Added & Fixed — Fiducial Print Isolation & Expanded AprilTag Dictionaries (tag25h9, tag36h11, tag16h5)

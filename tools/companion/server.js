@@ -1022,7 +1022,246 @@ Get-ChildItem -Path $tempMtpDir -Recurse -ErrorAction SilentlyContinue | Remove-
 } | ConvertTo-Json -Compress
 `;
 
-  return await runMtpScript(psScript);
+  const res = await runMtpScript(psScript);
+  if (res && res.success && res.data && res.data.latestLog) {
+    const rawPath = path.join(LATEST_DIR, res.data.latestLog);
+    const apiKey = getDjiApiKey();
+    if (apiKey && fs.existsSync(DJI_LOG_EXE) && fs.existsSync(rawPath)) {
+      try {
+        const cachedCsvPath = rawPath.replace(/\.txt$/, '_decrypted.csv');
+        if (!fs.existsSync(cachedCsvPath)) {
+          logInfo('[AUTO-DECRYPT]', `Auto-decrypting newly extracted log ${res.data.latestLog}...`);
+          await decryptFlightRecordWithDjiCli(rawPath, apiKey);
+        }
+      } catch (decErr) {
+        logWarn('[AUTO-DECRYPT]', `Auto-decryption note: ${decErr.message}`);
+      }
+    }
+  }
+  return res;
+}
+
+// 4.5 Query and List All Flight Logs on Connected DJI RC 2 over USB MTP
+async function listRc2FlightLogs() {
+  if (!IS_WINDOWS) {
+    const adbCheck = await checkRc2AdbStatus();
+    if (adbCheck.connected) {
+      const serial = adbCheck.deviceName.replace(/.*ADB:\s*([^\)]+).*/, '$1');
+      const lsRes = await runAdbCommand(['-s', serial, 'shell', 'ls -1 /sdcard/Android/data/dji.go.v5/files/FlightRecord']);
+      let logs = [];
+      if (lsRes.success && lsRes.stdout) {
+        const lines = lsRes.stdout.split('\n').map(l => l.trim()).filter(l => l.startsWith('FlightRecord_') && l.endsWith('.txt'));
+        logs = lines.sort().reverse().map(fn => {
+          const match = fn.match(/FlightRecord_(\d{4}-\d{2}-\d{2})_\[(\d{2}-\d{2}-\d{2})\]/);
+          const dateStr = match ? `${match[1]} ${match[2].replace(/-/g, ':')}` : 'Flight';
+          const localTxt = path.join(LATEST_DIR, fn);
+          const localCsv = path.join(LATEST_DIR, fn.replace(/\.txt$/, '_decrypted.csv'));
+          return {
+            filename: fn,
+            date: dateStr,
+            size: 0,
+            isLocal: fs.existsSync(localTxt),
+            isDecrypted: fs.existsSync(localCsv)
+          };
+        });
+      }
+      return { success: true, connected: true, totalLogs: logs.length, logs };
+    }
+    return { success: true, connected: false, totalLogs: 0, logs: [] };
+  }
+
+  const psScript = `
+$shell = New-Object -ComObject Shell.Application
+$thisPC = $shell.Namespace(17)
+$dji = $thisPC.Items() | Where-Object { $_.Name -like "*DJI RC 2*" -or $_.Name -like "*DJI RC*" -or $_.Name -like "*RC2*" } | Select-Object -First 1
+
+function Get-SubItem($folderItem, $name) {
+    if (-not $folderItem) { return $null }
+    $folder = if ($folderItem.GetFolder) { $folderItem.GetFolder } else { $folderItem }
+    return $folder.Items() | Where-Object { $_.Name -eq $name } | Select-Object -First 1
+}
+
+$logList = @()
+if ($dji) {
+    $storage = Get-SubItem $dji "Internal shared storage"
+    if (-not $storage) { $storage = Get-SubItem $dji "Internal storage" }
+    if ($storage) {
+        $android = Get-SubItem $storage "Android"
+        $data    = Get-SubItem $android "data"
+        $djiApp  = Get-SubItem $data "dji.go.v5"
+        $files   = Get-SubItem $djiApp "files"
+        if ($files) {
+            $fl = Get-SubItem $files "FlightRecord"
+            if ($fl) {
+                $logs = @($fl.GetFolder.Items() | Where-Object { $_.Name -like "FlightRecord_*.txt" } | Sort-Object Name -Descending)
+                foreach ($item in $logs) {
+                    $logList += @{
+                        filename = $item.Name
+                        size = $item.Size
+                    }
+                }
+            }
+        }
+    }
+}
+
+@{
+    success = $true
+    connected = ($dji -ne $null)
+    totalLogs = $logList.Count
+    logs = $logList
+} | ConvertTo-Json -Depth 3 -Compress
+`;
+
+  const res = await runMtpScript(psScript, 25000);
+  if (res && res.success && res.data) {
+    const rawLogs = Array.isArray(res.data.logs) ? res.data.logs : [];
+    const logs = rawLogs.map(item => {
+      const fn = item.filename;
+      const match = fn.match(/FlightRecord_(\d{4}-\d{2}-\d{2})_\[(\d{2}-\d{2}-\d{2})\]/);
+      const dateStr = match ? `${match[1]} ${match[2].replace(/-/g, ':')}` : 'Flight';
+      const localTxt = path.join(LATEST_DIR, fn);
+      const localCsv = path.join(LATEST_DIR, fn.replace(/\.txt$/, '_decrypted.csv'));
+      return {
+        filename: fn,
+        date: dateStr,
+        size: item.size || 0,
+        isLocal: fs.existsSync(localTxt),
+        isDecrypted: fs.existsSync(localCsv)
+      };
+    });
+    return { success: true, connected: !!res.data.connected, totalLogs: logs.length, logs };
+  }
+  return { success: false, connected: false, totalLogs: 0, logs: [], error: res?.error || 'Failed to query RC 2' };
+}
+
+// 4.6 Pull Specific Flight Log(s) from DJI RC 2 over USB MTP with Auto-Decryption
+async function pullRc2FlightLogs(requestedFilenames = []) {
+  const fileList = Array.isArray(requestedFilenames) ? requestedFilenames : [requestedFilenames];
+  if (fileList.length === 0) return { success: false, error: 'No filenames specified', pulled: [] };
+
+  const psScript = `
+$shell = New-Object -ComObject Shell.Application
+$thisPC = $shell.Namespace(17)
+$dji = $thisPC.Items() | Where-Object { $_.Name -like "*DJI RC 2*" -or $_.Name -like "*DJI RC*" -or $_.Name -like "*RC2*" } | Select-Object -First 1
+
+function Get-SubItem($folderItem, $name) {
+    if (-not $folderItem) { return $null }
+    $folder = if ($folderItem.GetFolder) { $folderItem.GetFolder } else { $folderItem }
+    return $folder.Items() | Where-Object { $_.Name -eq $name } | Select-Object -First 1
+}
+
+$outDir = '${LATEST_DIR.replace(/\\/g, '\\\\')}'
+$tempMtpDir = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "aalaapi_mtp_temp")
+if (-not (Test-Path $tempMtpDir)) { New-Item -ItemType Directory -Path $tempMtpDir -Force | Out-Null }
+Get-ChildItem -Path $tempMtpDir -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+
+$pulled = @()
+$targets = @(${fileList.map(f => `"${f.replace(/["`$]/g, '')}"`).join(', ')})
+
+if ($dji) {
+    $storage = Get-SubItem $dji "Internal shared storage"
+    if (-not $storage) { $storage = Get-SubItem $dji "Internal storage" }
+    if ($storage) {
+        $android = Get-SubItem $storage "Android"
+        $data    = Get-SubItem $android "data"
+        $djiApp  = Get-SubItem $data "dji.go.v5"
+        $files   = Get-SubItem $djiApp "files"
+        if ($files) {
+            $fl = Get-SubItem $files "FlightRecord"
+            $tempFolder = $shell.Namespace($tempMtpDir)
+            if ($fl -and $tempFolder) {
+                $allItems = @($fl.GetFolder.Items() | Where-Object { $_.Name -like "FlightRecord_*.txt" })
+                foreach ($targetName in $targets) {
+                    $item = $allItems | Where-Object { $_.Name -eq $targetName } | Select-Object -First 1
+                    if ($item) {
+                        $destPath = Join-Path $outDir $targetName
+                        $existing = @(Get-ChildItem -Path $outDir -Filter $targetName -File -ErrorAction SilentlyContinue)
+                        if ($existing.Count -eq 0 -or $existing[0].Length -eq 0) {
+                            $tempFolder.CopyHere($item, 16)
+                            $sw = [System.Diagnostics.Stopwatch]::StartNew()
+                            $ok = $false
+                            while ($sw.Elapsed.TotalSeconds -lt 12) {
+                                Start-Sleep -Milliseconds 300
+                                $tmpItem = @(Get-ChildItem -Path $tempMtpDir -Filter $targetName -File -ErrorAction SilentlyContinue)
+                                if ($tmpItem.Count -gt 0 -and $tmpItem[0].Length -gt 0) {
+                                    try {
+                                        $fs = [System.IO.File]::Open($tmpItem[0].FullName, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::None)
+                                        $fs.Close()
+                                        $fs.Dispose()
+                                        $ok = $true
+                                        break
+                                    } catch {}
+                                }
+                            }
+                            if ($ok) {
+                                $srcFile = Join-Path $tempMtpDir $targetName
+                                [System.IO.File]::Copy($srcFile, $destPath, $true)
+                                $pulled += $targetName
+                            }
+                        } else {
+                            $pulled += $targetName
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+Get-ChildItem -Path $tempMtpDir -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+
+@{
+    success = $true
+    pulled = $pulled
+    totalPulled = $pulled.Count
+} | ConvertTo-Json -Depth 3 -Compress
+`;
+
+  const res = await runMtpScript(psScript, 60000);
+  const pulledList = (res && res.success && res.data && Array.isArray(res.data.pulled)) ? res.data.pulled : [];
+  
+  // Auto-decrypt each newly pulled file
+  const apiKey = getDjiApiKey();
+  const decrypted = [];
+  if (apiKey && fs.existsSync(DJI_LOG_EXE)) {
+    for (const fn of pulledList) {
+      const rawPath = path.join(LATEST_DIR, fn);
+      const csvPath = rawPath.replace(/\.txt$/, '_decrypted.csv');
+      if (fs.existsSync(rawPath) && !fs.existsSync(csvPath)) {
+        try {
+          const decRes = await decryptFlightRecordWithDjiCli(rawPath, apiKey);
+          if (decRes && decRes.success) {
+            decrypted.push(fn);
+          }
+        } catch (_) {}
+      } else if (fs.existsSync(csvPath)) {
+        decrypted.push(fn);
+      }
+    }
+  }
+
+  return {
+    success: true,
+    pulled: pulledList,
+    totalPulled: pulledList.length,
+    decrypted,
+    totalDecrypted: decrypted.length
+  };
+}
+
+// Media Pull Real-Time Progress Tracker
+let mediaPullProgress = {
+  active: false,
+  stage: 'idle',
+  percent: 0,
+  current: 0,
+  total: 0,
+  status: 'Ready'
+};
+
+function getMediaPullProgress() {
+  return mediaPullProgress;
 }
 
 // 5. Media & Photo Ingestion Engine for Mini 4 Pro, SD Cards, & RC 2
@@ -1056,7 +1295,7 @@ function Get-SubFolder($folderItem, $name) {
 if ($thisPC) {
     foreach ($item in $thisPC.Items()) {
         $name = $item.Name
-        if ($name -match "DJI|Mini 4|RC 2|RC2|Drone|Mavic|Air") {
+        if ($name -match "DJI|Mini 4|RC 2|RC2|Drone|Mavic|Air|Neo") {
             $storageList = @()
             $sub = if ($item.GetFolder) { $item.GetFolder } else { $item }
             if ($sub) {
@@ -1064,11 +1303,11 @@ if ($thisPC) {
                     $dcim = Get-SubFolder $s "DCIM"
                     if ($dcim) {
                         $media100 = Get-SubFolder $dcim "100MEDIA"
-                        $album = Get-SubFolder $dcim "DJI Album"
+                        $djiFolder = if ($media100) { $media100 } else { @($dcim.GetFolder.Items() | Where-Object { $_.Name -like "DJI_*" -or $_.Name -eq "DJI Album" } | Select-Object -First 1) }
                         $storageList += @{
                             storageName = $s.Name
-                            hasMedia = ($media100 -ne $null -or $album -ne $null)
-                            path = if ($media100) { "DCIM\\\\100MEDIA" } else { "DCIM\\\\DJI Album" }
+                            hasMedia = ($djiFolder -ne $null)
+                            path = if ($djiFolder) { "DCIM\\\\$($djiFolder.Name)" } else { "DCIM" }
                         }
                     }
                 }
@@ -1076,7 +1315,7 @@ if ($thisPC) {
             $detected += @{
                 name = $name
                 type = "mtp"
-                isDrone = ($name -match "Mini 4|Drone|Aircraft")
+                isDrone = ($name -match "Mini 4|Drone|Aircraft|Neo")
                 isRemote = ($name -match "RC 2|RC2|Remote")
                 storages = $storageList
             }
@@ -1095,10 +1334,13 @@ foreach ($d in $drives) {
     $vol = Get-Volume -DriveLetter $d.Name -ErrorAction SilentlyContinue
     $volName = if ($vol -and $vol.FriendlyName) { $vol.FriendlyName } else { "" }
 
-    $displayName = if ($volName -match "SD_Card") {
+    $isNeo = (Test-Path (Join-Path $d.Root "MISC\\NEO2_edcf.db")) -or ($volName -match "NEO") -or (Test-Path (Join-Path $dcimPath "DJI_001"))
+    $displayName = if ($isNeo) {
+        "DJI Neo 2 - Internal Storage ($($d.Name):)"
+    } elseif ($volName -match "SD_Card") {
         "DJI Mini 4 Pro - MicroSD Card ($($d.Name):)"
     } elseif ($volName -match "InternalStorage") {
-        "DJI Mini 4 Pro - Internal Storage ($($d.Name):)"
+        "DJI Aircraft - Internal Storage ($($d.Name):)"
     } elseif ($totalCount -gt 0) {
         "DJI Removable Media ($($d.Name):)"
     } else {
@@ -1191,6 +1433,57 @@ function extractExifThumbnail(buf) {
 }
 
 /**
+ * Extracts embedded DJI XMP flight telemetry (GPS, altitude, gimbal pitch/yaw, aircraft model) from a JPEG buffer.
+ * @param {Buffer} buf
+ * @returns {object|null}
+ */
+function extractDjiXmpMetadata(buf) {
+  if (!buf || !Buffer.isBuffer(buf) || buf.length < 100) return null;
+  const searchLimit = Math.min(buf.length, 524288);
+  const startIdx = buf.indexOf('<x:xmpmeta', 0, 'utf8');
+  if (startIdx === -1 || startIdx > searchLimit) return null;
+  const endIdx = buf.indexOf('</x:xmpmeta>', startIdx, 'utf8');
+  if (endIdx === -1) return null;
+
+  const xmpStr = buf.subarray(startIdx, endIdx + 12).toString('utf8');
+  const result = {};
+
+  const getAttr = (name) => {
+    const attrRegex = new RegExp(`drone-dji:${name}="([^"]+)"`, 'i');
+    const elemRegex = new RegExp(`<drone-dji:${name}>([^<]+)</drone-dji:${name}>`, 'i');
+    const m = xmpStr.match(attrRegex) || xmpStr.match(elemRegex);
+    return m ? m[1].trim() : null;
+  };
+
+  const latStr = getAttr('GpsLatitude');
+  const lonStr = getAttr('GpsLongitude');
+  const relAltStr = getAttr('RelativeAltitude');
+  const absAltStr = getAttr('AbsoluteAltitude');
+  const gimbalPitchStr = getAttr('GimbalPitchDegree');
+  const gimbalYawStr = getAttr('GimbalYawDegree');
+  const flightPitchStr = getAttr('FlightPitchDegree');
+  const flightYawStr = getAttr('FlightYawDegree');
+  const flightRollStr = getAttr('FlightRollDegree');
+  const modelStr = getAttr('ProductName');
+
+  if (latStr !== null && !isNaN(parseFloat(latStr))) result.lat = parseFloat(latStr);
+  if (lonStr !== null && !isNaN(parseFloat(lonStr))) result.lon = parseFloat(lonStr);
+  if (relAltStr !== null && !isNaN(parseFloat(relAltStr))) {
+    result.altAgl = parseFloat(relAltStr);
+    result.alt = result.altAgl;
+  }
+  if (absAltStr !== null && !isNaN(parseFloat(absAltStr))) result.altMsl = parseFloat(absAltStr);
+  if (gimbalPitchStr !== null && !isNaN(parseFloat(gimbalPitchStr))) result.gimbalPitch = parseFloat(gimbalPitchStr);
+  if (gimbalYawStr !== null && !isNaN(parseFloat(gimbalYawStr))) result.heading = parseFloat(gimbalYawStr);
+  if (flightPitchStr !== null && !isNaN(parseFloat(flightPitchStr))) result.flightPitch = parseFloat(flightPitchStr);
+  if (flightYawStr !== null && !isNaN(parseFloat(flightYawStr))) result.flightYaw = parseFloat(flightYawStr);
+  if (flightRollStr !== null && !isNaN(parseFloat(flightRollStr))) result.flightRoll = parseFloat(flightRollStr);
+  if (modelStr) result.droneModel = modelStr;
+
+  return Object.keys(result).length > 0 ? result : null;
+}
+
+/**
  * Calculates MD5 hex checksum of a file on disk via streaming.
  * @param {string} filePath 
  * @returns {Promise<string>}
@@ -1255,6 +1548,15 @@ async function pullMediaPhotos(options = {}) {
   const deletedFiles = [];
   const deleteErrors = [];
 
+  mediaPullProgress = {
+    active: true,
+    stage: 'scanning',
+    percent: 5,
+    current: 0,
+    total: 0,
+    status: 'Scanning for connected DJI aircraft & SD cards...'
+  };
+
   // 1. Direct Node filesystem copy for detected drive letters (e.g. E:\DCIM)
   let directCopiedCount = 0;
   try {
@@ -1279,7 +1581,7 @@ async function pullMediaPhotos(options = {}) {
         }
 
         const driveFiles = scanDir(dev.rootPath);
-        for (const fileObj of driveFiles) {
+        const candidateFiles = driveFiles.filter(fileObj => {
           let include = true;
           if (filterByTime && timeStart) {
             include = false;
@@ -1302,22 +1604,44 @@ async function pullMediaPhotos(options = {}) {
               }
             }
           }
+          return include;
+        });
 
-          if (include) {
-            const dest = path.join(rawDir, fileObj.name);
-            let copySucceeded = false;
-            if (!fs.existsSync(dest)) {
-              try {
-                fs.copyFileSync(fileObj.path, dest);
-                directCopiedCount++;
-                copySucceeded = true;
-              } catch (_) {}
-            } else {
-              // File was previously ingested or already in destination
+        mediaPullProgress = {
+          active: true,
+          stage: 'copying',
+          percent: 15,
+          current: 0,
+          total: candidateFiles.length,
+          status: `Found ${candidateFiles.length} photos on ${dev.name}. Ingesting...`
+        };
+
+        for (let idx = 0; idx < candidateFiles.length; idx++) {
+          const fileObj = candidateFiles[idx];
+          const dest = path.join(rawDir, fileObj.name);
+          let copySucceeded = false;
+          if (!fs.existsSync(dest)) {
+            try {
+              fs.copyFileSync(fileObj.path, dest);
+              directCopiedCount++;
               copySucceeded = true;
-            }
+            } catch (_) {}
+          } else {
+            // File was previously ingested or already in destination
+            copySucceeded = true;
+          }
 
-            // Triple-Barrier Verification for Safe Deletion:
+          const cPct = Math.min(48, 15 + Math.round(((idx + 1) / Math.max(1, candidateFiles.length)) * 33));
+          mediaPullProgress = {
+            active: true,
+            stage: 'copying',
+            percent: cPct,
+            current: idx + 1,
+            total: candidateFiles.length,
+            status: `Ingesting photo ${idx + 1} of ${candidateFiles.length} (${cPct}%)...`
+          };
+
+          // Triple-Barrier Verification for Safe Deletion:
             // Barrier 1: Non-zero size equality
             // Barrier 2: Bit-for-bit MD5 checksum equality
             // Barrier 3: Valid JPEG/TIFF image header
@@ -1349,7 +1673,6 @@ async function pullMediaPhotos(options = {}) {
           }
         }
       }
-    }
   } catch (directErr) {
     console.warn('[MEDIA PULL] Direct drive copy note:', directErr.message);
   }
@@ -1437,7 +1760,7 @@ foreach ($d in $drives) {
 
 if ($copied.Count -eq 0 -and $thisPC) {
     foreach ($dev in $thisPC.Items()) {
-        if ($dev.Name -match "DJI|Mini 4|RC 2|RC2|Drone") {
+        if ($dev.Name -match "DJI|Mini 4|RC 2|RC2|Drone|Neo") {
             $devFolder = if ($dev.GetFolder) { $dev.GetFolder } else { $dev }
             if ($devFolder) {
                 foreach ($storage in $devFolder.Items()) {
@@ -1446,9 +1769,9 @@ if ($copied.Count -eq 0 -and $thisPC) {
                         $dcim = $sFolder.Items() | Where-Object { $_.Name -eq "DCIM" } | Select-Object -First 1
                         if ($dcim) {
                             $dcimF = if ($dcim.GetFolder) { $dcim.GetFolder } else { $dcim }
-                            $media100 = $dcimF.Items() | Where-Object { $_.Name -eq "100MEDIA" -or $_.Name -eq "DJI Album" } | Select-Object -First 1
-                            if ($media100) {
-                                Copy-MatchingFiles $media100
+                            $mediaFolders = @($dcimF.Items() | Where-Object { $_.Name -eq "100MEDIA" -or $_.Name -eq "DJI Album" -or $_.Name -like "DJI_*" })
+                            foreach ($mf in $mediaFolders) {
+                                Copy-MatchingFiles $mf
                             }
                         }
                     }
@@ -1467,6 +1790,15 @@ if ($copied.Count -eq 0 -and $thisPC) {
     deleteErrors = $delErrors
 } | ConvertTo-Json -Depth 3 -Compress
 `;
+
+    mediaPullProgress = {
+      active: true,
+      stage: 'copying',
+      percent: 25,
+      current: 0,
+      total: 0,
+      status: 'Transferring raw media from DJI aircraft/controller over USB MTP...'
+    };
 
     const mtpRaw = await runMtpScript(psScript, 600000);
     try {
@@ -1487,7 +1819,17 @@ if ($copied.Count -eq 0 -and $thisPC) {
   } catch (e) {}
 
   // 3. Generate web-optimized 960x720 previews and 160x120 thumbnails for all ingested photos
-  rawFiles.forEach(f => {
+  rawFiles.forEach((f, idx) => {
+    const pPct = Math.min(88, 50 + Math.round(((idx + 1) / Math.max(1, rawFiles.length)) * 38));
+    mediaPullProgress = {
+      active: true,
+      stage: 'previews',
+      percent: pPct,
+      current: idx + 1,
+      total: rawFiles.length,
+      status: `Generating preview & thumbnail ${idx + 1} of ${rawFiles.length} (${pPct}%)...`
+    };
+
     const src = path.join(rawDir, f);
     const prevDst = path.join(previewDir, f);
     const thumbDst = path.join(thumbDir, f);
@@ -1526,32 +1868,119 @@ if ($copied.Count -eq 0 -and $thisPC) {
     }
   });
 
-  const { correlatePhotosWithTelemetry } = require('./log_decoder.js');
+  mediaPullProgress = {
+    active: true,
+    stage: 'correlating',
+    percent: 92,
+    current: rawFiles.length,
+    total: rawFiles.length,
+    status: 'Correlating photos with flight telemetry & GPS coordinates...'
+  };
+
+  const { correlatePhotosWithTelemetry, parseCsvTelemetry } = require('./log_decoder.js');
   const photosMetadata = rawFiles.map((fn, idx) => {
     let capturedTime = null;
+    const fullRawPath = path.join(rawDir, fn);
     try {
-      const stats = fs.statSync(path.join(rawDir, fn));
+      const stats = fs.statSync(fullRawPath);
       capturedTime = stats.mtime.toISOString();
     } catch (_) {}
+
+    let xmp = null;
+    try {
+      const fd = fs.openSync(fullRawPath, 'r');
+      const headerBuf = Buffer.alloc(Math.min(524288, fs.fstatSync(fd).size));
+      fs.readSync(fd, headerBuf, 0, headerBuf.length, 0);
+      fs.closeSync(fd);
+      xmp = extractDjiXmpMetadata(headerBuf);
+    } catch (_) {}
+
     return {
       id: `PHOTO_${String(idx + 1).padStart(4, '0')}`,
       filename: fn,
       previewUrl: `/scratch/mission_archives/${missionUuid}/photos/previews/${encodeURIComponent(fn)}`,
       thumbnailUrl: `/scratch/mission_archives/${missionUuid}/photos/thumbnails/${encodeURIComponent(fn)}`,
-      rawPath: path.join(rawDir, fn),
+      rawPath: fullRawPath,
       waypointIndex: idx,
-      timestamp: capturedTime
+      timestamp: capturedTime,
+      lat: xmp?.lat,
+      lon: xmp?.lon,
+      altAgl: xmp?.altAgl,
+      alt: xmp?.alt,
+      altMsl: xmp?.altMsl,
+      gimbalPitch: xmp?.gimbalPitch,
+      heading: xmp?.heading,
+      flightPitch: xmp?.flightPitch,
+      flightYaw: xmp?.flightYaw,
+      flightRoll: xmp?.flightRoll,
+      droneModel: xmp?.droneModel,
+      xmp: xmp || undefined
     };
   });
 
-  const telemetry = (options.telemetry && Array.isArray(options.telemetry.points)) ? options.telemetry : { points: [] };
+  let telemetry = (options.telemetry && Array.isArray(options.telemetry.points) && options.telemetry.points.length > 0) ? options.telemetry : null;
+
+  // On-disk flight log fallback: If options.telemetry has no points, locate decrypted flight log on disk
+  if (!telemetry) {
+    const candidates = [];
+    if (options.flightId) {
+      const flightBase = options.flightId.replace(/\.txt$/i, '');
+      const flightTagMatch = options.flightId.match(/(\d{4}-\d{2}-\d{2}_\[\d{2}-\d{2}-\d{2}\])/);
+      const tag = flightTagMatch ? flightTagMatch[1] : '';
+      candidates.push(
+        path.join(SCRATCH_DIR, 'latest_flight', `${flightBase}_decrypted.csv`),
+        path.join(SCRATCH_DIR, 'latest_flight', `${flightBase}_decrypted.json`),
+        tag ? path.join(SCRATCH_DIR, 'latest_flight', `FlightRecord_${tag}_decrypted.csv`) : null,
+        tag ? path.join(SCRATCH_DIR, 'latest_flight', `FlightRecord_${tag}_decrypted.json`) : null
+      );
+    }
+    const latestDir = path.join(SCRATCH_DIR, 'latest_flight');
+    if (fs.existsSync(latestDir)) {
+      try {
+        const files = fs.readdirSync(latestDir);
+        const decCsv = files.find(f => f.endsWith('_decrypted.csv')) || files.find(f => f.endsWith('.csv'));
+        if (decCsv) candidates.push(path.join(latestDir, decCsv));
+      } catch (_) {}
+    }
+
+    for (const cand of candidates.filter(Boolean)) {
+      if (fs.existsSync(cand)) {
+        try {
+          if (cand.endsWith('.csv')) {
+            const csvText = fs.readFileSync(cand, 'utf8');
+            const parsed = parseCsvTelemetry(csvText, path.basename(cand));
+            if (parsed && Array.isArray(parsed.points) && parsed.points.length > 0) {
+              telemetry = parsed;
+              logSuccess('[MEDIA TELEM DISK FALLBACK]', `Loaded ${parsed.points.length} telemetry points from: ${path.basename(cand)}`);
+              break;
+            }
+          }
+        } catch (_) {}
+      }
+    }
+  }
+
+  if (!telemetry) telemetry = { points: [] };
+
   const waypoints = Array.isArray(options.waypoints) ? options.waypoints : [];
   const correlated = correlatePhotosWithTelemetry(photosMetadata, telemetry.points, waypoints);
 
+  let detectedModel = options.droneModel || (options.telemetry && options.telemetry.droneModel) || null;
+  if (!detectedModel) {
+    const photoWithModel = photosMetadata.find(p => p.droneModel);
+    if (photoWithModel) {
+      detectedModel = photoWithModel.droneModel.startsWith('DJI') ? photoWithModel.droneModel : `DJI ${photoWithModel.droneModel}`;
+    } else if (fs.existsSync('D:\\MISC\\NEO2_edcf.db') || rawFiles.some(f => f.startsWith('DJI_') && fs.existsSync('D:\\DCIM\\DJI_001'))) {
+      detectedModel = 'DJI Neo 2';
+    } else {
+      detectedModel = 'DJI Mini 4 Pro';
+    }
+  }
+
   const manifest = {
     missionUuid,
-    flightDate: options.flightDate || new Date().toISOString(),
-    droneModel: options.droneModel || 'DJI Mini 4 Pro',
+    flightDate: options.flightDate || (options.telemetry && options.telemetry.flightDate) || new Date().toISOString(),
+    droneModel: detectedModel,
     totalPhotos: correlated.length,
     summary: {
       totalDistance: options.totalDistance || 0,
@@ -1577,6 +2006,15 @@ if ($copied.Count -eq 0 -and $thisPC) {
     reportHtml = reportHtml.replace('window.__INSPECTION_MANIFEST__ || {', `JSON.parse(${JSON.stringify(JSON.stringify(manifest))}) || {`);
     fs.writeFileSync(path.join(targetDir, 'inspection_report.html'), reportHtml, 'utf8');
   }
+
+  mediaPullProgress = {
+    active: false,
+    stage: 'complete',
+    percent: 100,
+    current: rawFiles.length,
+    total: rawFiles.length,
+    status: `Ingestion complete! ${rawFiles.length} photos ready.`
+  };
 
   return {
     success: true,
@@ -1919,6 +2357,38 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // 3.1 RC 2 Controller Flight Log Browser (list all on-device logs)
+    if (pathname === '/api/rc2/logs' && req.method === 'GET') {
+      try {
+        const listData = await listRc2FlightLogs();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(listData));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+      return;
+    }
+
+    // 3.2 Pull Targeted Flight Log(s) from RC 2
+    if (pathname === '/api/rc2/pull-log' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', async () => {
+        try {
+          const payload = body ? JSON.parse(body) : {};
+          const filenames = payload.filenames || (payload.filename ? [payload.filename] : []);
+          const pullResult = await pullRc2FlightLogs(filenames);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(pullResult));
+        } catch (err) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
     // 3.5 Network Interfaces Endpoint (for LAN/Remote Discovery)
     if (pathname === '/api/network' && req.method === 'GET') {
       try {
@@ -2189,6 +2659,12 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (pathname === '/api/media/progress' && req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, ...mediaPullProgress }));
+      return;
+    }
+
     if (pathname === '/api/media/pull' && req.method === 'POST') {
       let body = '';
       req.on('data', chunk => { body += chunk; });
@@ -2208,9 +2684,62 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === '/api/media/manifest' && req.method === 'GET') {
       const uuid = url.searchParams.get('uuid') || url.searchParams.get('mission');
-      let mPath = uuid ? path.join(ARCHIVE_DIR, uuid, 'inspection_manifest.json') : null;
-      if (!mPath || !fs.existsSync(mPath)) {
-        // Fallback: search subdirectories in ARCHIVE_DIR for any valid inspection_manifest.json
+      const flight = url.searchParams.get('flight') || '';
+      const startParam = url.searchParams.get('start') || '';
+      const endParam = url.searchParams.get('end') || '';
+
+      let mPath = null;
+
+      // 1. Look for flight-specific mission directory if flight is specified
+      if (flight && fs.existsSync(ARCHIVE_DIR)) {
+        const flightTagMatch = flight.match(/(\d{4}-\d{2}-\d{2}_\[\d{2}-\d{2}-\d{2}\])/);
+        const flightTag = flightTagMatch ? flightTagMatch[1] : '';
+        const flightBase = flight.replace(/\.txt$/i, '');
+        const candidates = [
+          `mission_${flightBase}`,
+          `flight_${flightBase}`,
+          flightBase,
+          flightTag ? `mission_${flightTag}` : '',
+          flightTag ? `flight_${flightTag}` : '',
+          flightTag
+        ].filter(Boolean);
+
+        for (const cand of candidates) {
+          const p = path.join(ARCHIVE_DIR, cand, 'inspection_manifest.json');
+          if (fs.existsSync(p)) {
+            mPath = p;
+            break;
+          }
+        }
+
+        if (!mPath && flightTag) {
+          try {
+            const subdirs = fs.readdirSync(ARCHIVE_DIR, { withFileTypes: true })
+              .filter(d => d.isDirectory())
+              .map(d => d.name);
+            for (const sub of subdirs) {
+              if (sub.includes(flightTag)) {
+                const p = path.join(ARCHIVE_DIR, sub, 'inspection_manifest.json');
+                if (fs.existsSync(p)) {
+                  mPath = p;
+                  break;
+                }
+              }
+            }
+          } catch (_) {}
+        }
+      }
+
+      // 2. Look for explicit uuid directory
+      if (!mPath && uuid) {
+        const p = path.join(ARCHIVE_DIR, uuid, 'inspection_manifest.json');
+        if (fs.existsSync(p)) {
+          mPath = p;
+        }
+      }
+
+      // 3. Fallback: search subdirectories in ARCHIVE_DIR
+      if (!mPath) {
         try {
           if (fs.existsSync(ARCHIVE_DIR)) {
             const subdirs = fs.readdirSync(ARCHIVE_DIR, { withFileTypes: true })
@@ -2226,11 +2755,41 @@ const server = http.createServer(async (req, res) => {
           }
         } catch (e) {}
       }
+
       if (mPath && fs.existsSync(mPath)) {
         try {
           const raw = fs.readFileSync(mPath, 'utf8');
           const mObj = JSON.parse(raw);
           const manifestUuid = mObj.missionUuid || path.basename(path.dirname(mPath)) || 'layer-1';
+
+          // Determine if flight time window filtering applies
+          let timeStartLoc = null, timeEndLoc = null;
+          let timeStartUtc = null, timeEndUtc = null;
+          if (startParam) {
+            const s = new Date(startParam).getTime();
+            if (!isNaN(s)) {
+              timeStartUtc = s;
+              timeStartLoc = s;
+            }
+          }
+          if (endParam) {
+            const e = new Date(endParam).getTime();
+            if (!isNaN(e)) {
+              timeEndUtc = e;
+              timeEndLoc = e;
+            }
+          }
+          if (!timeStartUtc && flight) {
+            const fm = flight.match(/FlightRecord_(\d{4})-(\d{2})-(\d{2})_\[(\d{2})-(\d{2})-(\d{2})\]/);
+            if (fm) {
+              const [_, Y, M, D, h, mnt, s] = fm;
+              timeStartLoc = new Date(+Y, +M - 1, +D, +h, +mnt, +s).getTime();
+              timeEndLoc = timeStartLoc + (600 * 1000);
+              timeStartUtc = new Date(Date.UTC(+Y, +M - 1, +D, +h, +mnt, +s)).getTime();
+              timeEndUtc = timeStartUtc + (600 * 1000);
+            }
+          }
+
           if (Array.isArray(mObj.photos)) {
             mObj.photos.forEach(p => {
               if (!p.previewUrl && p.filename) {
@@ -2240,7 +2799,45 @@ const server = http.createServer(async (req, res) => {
                 p.rawPath = `/scratch/mission_archives/${manifestUuid}/photos/raw/${encodeURIComponent(p.filename)}`;
               }
             });
+
+            if (timeStartLoc || timeStartUtc) {
+              const bufferMs = 300 * 1000; // 5 min safety buffer
+              mObj.photos = mObj.photos.filter(p => {
+                let pt = p.timestamp ? new Date(p.timestamp).getTime() : NaN;
+                let pLoc = NaN, pUtc = NaN;
+                if (p.filename) {
+                  const m = p.filename.match(/DJI_(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/);
+                  if (m) {
+                    pLoc = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]).getTime();
+                    pUtc = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6])).getTime();
+                  }
+                }
+
+                // Check against local reference window
+                if (timeStartLoc) {
+                  const t0 = timeStartLoc - bufferMs;
+                  const t1 = (timeEndLoc || timeStartLoc + 600000) + bufferMs;
+                  if (!isNaN(pLoc) && pLoc >= t0 && pLoc <= t1) return true;
+                  if (!isNaN(pt) && pt >= t0 && pt <= t1) return true;
+                }
+
+                // Check against UTC reference window
+                if (timeStartUtc) {
+                  const t0 = timeStartUtc - bufferMs;
+                  const t1 = (timeEndUtc || timeStartUtc + 600000) + bufferMs;
+                  if (!isNaN(pUtc) && pUtc >= t0 && pUtc <= t1) return true;
+                  if (!isNaN(pt) && pt >= t0 && pt <= t1) return true;
+                }
+
+                return false;
+              });
+              mObj.totalPhotos = mObj.photos.length;
+              if (mObj.summary) {
+                mObj.summary.totalPhotos = mObj.photos.length;
+              }
+            }
           }
+
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify(mObj));
         } catch (e) {
@@ -2801,12 +3398,16 @@ module.exports = {
   transferToRc2,
   pullFromRc2,
   extractLatestFlight,
+  listRc2FlightLogs,
+  pullRc2FlightLogs,
   detectMediaDevices,
   pullMediaPhotos,
+  getMediaPullProgress,
   computeFileMd5,
   validateImageHeader,
   extractMpfPreview,
   extractExifThumbnail,
+  extractDjiXmpMetadata,
   stopScanners,
   killExistingCompanion,
   getLanAddresses,

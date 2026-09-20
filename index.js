@@ -16811,6 +16811,7 @@ async function pollCompanionStatus() {
   const container = document.getElementById('companion-sync-container');
   const hint = document.getElementById('companion-offline-hint');
   const diagPullBtn = document.getElementById('diag-pull-rc2-btn');
+  const diagBrowseBtn = document.getElementById('diag-browse-rc2-logs-btn');
 
   try {
     const controller = new AbortController();
@@ -16878,6 +16879,7 @@ async function pollCompanionStatus() {
         if (directBtn) directBtn.style.display = 'inline-flex';
         if (pullBtn) pullBtn.style.display = 'inline-flex';
         if (diagPullBtn) diagPullBtn.style.display = 'inline-flex';
+        if (diagBrowseBtn) diagBrowseBtn.style.display = 'inline-flex';
       } else {
         isRc2MtpConnected = false;
         if (container && container.classList) container.classList.add('is-offline');
@@ -16910,6 +16912,7 @@ async function pollCompanionStatus() {
         if (directBtn) directBtn.style.display = 'none';
         if (pullBtn) pullBtn.style.display = 'none';
         if (diagPullBtn) diagPullBtn.style.display = 'none';
+        if (diagBrowseBtn) diagBrowseBtn.style.display = 'none';
       }
     } else {
       throw new Error('Non-200 status');
@@ -16962,6 +16965,7 @@ async function pollCompanionStatus() {
     if (directBtn) directBtn.style.display = 'none';
     if (pullBtn) pullBtn.style.display = 'none';
     if (diagPullBtn) diagPullBtn.style.display = 'none';
+    if (diagBrowseBtn) diagBrowseBtn.style.display = 'none';
   }
 }
 
@@ -17356,6 +17360,12 @@ function initRC2Controls() {
   const directPullLogBtn = document.getElementById('direct-rc2-pull-log-btn');
   if (directPullLogBtn) {
     directPullLogBtn.addEventListener('click', () => pullFlightLogFromRC2(directPullLogBtn));
+  }
+
+  // Direct RC 2 browse all flight logs button
+  const directBrowseLogsBtn = document.getElementById('direct-rc2-browse-logs-btn');
+  if (directBrowseLogsBtn) {
+    directBrowseLogsBtn.addEventListener('click', openRc2LogManagerModal);
   }
 
   // Initialize Flight Diagnostics Engine
@@ -18392,14 +18402,84 @@ const FlightDiagnostics = {
     }
   },
 
+  filterPhotosForCurrentFlight(photos) {
+    if (!Array.isArray(photos) || photos.length === 0) return [];
+    let flightStartLoc = null, flightEndLoc = null;
+    let flightStartUtc = null, flightEndUtc = null;
+    let durMs = 600 * 1000;
+
+    if (this.telemetryData && this.telemetryData.flightDate) {
+      const parsed = new Date(this.telemetryData.flightDate).getTime();
+      if (!isNaN(parsed)) {
+        flightStartLoc = parsed;
+        flightStartUtc = parsed;
+        if (typeof this.telemetryData.durationSec === 'number' && this.telemetryData.durationSec > 0) {
+          durMs = this.telemetryData.durationSec * 1000;
+        }
+        flightEndLoc = flightStartLoc + durMs;
+        flightEndUtc = flightStartUtc + durMs;
+      }
+    }
+
+    if (!flightStartLoc && this.selectedFlightId) {
+      const m = this.selectedFlightId.match(/FlightRecord_(\d{4})-(\d{2})-(\d{2})_\[(\d{2})-(\d{2})-(\d{2})\]/);
+      if (m) {
+        const [_, Y, M, D, h, mnt, s] = m;
+        flightStartLoc = new Date(+Y, +M - 1, +D, +h, +mnt, +s).getTime();
+        flightEndLoc = flightStartLoc + durMs;
+        flightStartUtc = new Date(Date.UTC(+Y, +M - 1, +D, +h, +mnt, +s)).getTime();
+        flightEndUtc = flightStartUtc + durMs;
+      }
+    }
+
+    if (!flightStartLoc && !flightStartUtc) {
+      return photos;
+    }
+
+    const bufferMs = 300 * 1000; // 5 min safety buffer
+
+    return photos.filter(p => {
+      if (!p) return false;
+      if (p.photoId && typeof p.photoId === 'string' && p.photoId.startsWith('TELEM_PHOTO_')) {
+        return true;
+      }
+      let pt = p.timestamp ? new Date(p.timestamp).getTime() : NaN;
+      let pLoc = NaN, pUtc = NaN;
+      if (p.filename) {
+        const m = p.filename.match(/DJI_(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/);
+        if (m) {
+          pLoc = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]).getTime();
+          pUtc = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6])).getTime();
+        }
+      }
+
+      if (flightStartLoc) {
+        const t0 = flightStartLoc - bufferMs;
+        const t1 = (flightEndLoc || flightStartLoc + 600000) + bufferMs;
+        if (!isNaN(pLoc) && pLoc >= t0 && pLoc <= t1) return true;
+        if (!isNaN(pt) && pt >= t0 && pt <= t1) return true;
+      }
+
+      if (flightStartUtc) {
+        const t0 = flightStartUtc - bufferMs;
+        const t1 = (flightEndUtc || flightStartUtc + 600000) + bufferMs;
+        if (!isNaN(pUtc) && pUtc >= t0 && pUtc <= t1) return true;
+        if (!isNaN(pt) && pt >= t0 && pt <= t1) return true;
+      }
+
+      return false;
+    });
+  },
+
   getCorrelatedPhotos() {
+    let rawList = [];
     if (this.flightPhotos && Array.isArray(this.flightPhotos) && this.flightPhotos.length > 0 && (!this.flightPhotosFlightId || this.flightPhotosFlightId === this.selectedFlightId)) {
-      return this.flightPhotos;
-    }
-    if (typeof activeInspectionManifest !== 'undefined' && activeInspectionManifest && Array.isArray(activeInspectionManifest.photos) && activeInspectionManifest.photos.length > 0) {
-      return activeInspectionManifest.photos;
-    }
-    if (this.telemetryData && Array.isArray(this.telemetryData.points)) {
+      rawList = this.flightPhotos;
+      return this.filterPhotosForCurrentFlight(rawList);
+    } else if (typeof activeInspectionManifest !== 'undefined' && activeInspectionManifest && Array.isArray(activeInspectionManifest.photos) && activeInspectionManifest.photos.length > 0) {
+      rawList = activeInspectionManifest.photos;
+      return this.filterPhotosForCurrentFlight(rawList);
+    } else if (this.telemetryData && Array.isArray(this.telemetryData.points)) {
       const photoPoints = this.telemetryData.points.filter(p => p.isPhoto);
       if (photoPoints.length > 0) {
         return photoPoints.map((p, idx) => ({
@@ -18819,6 +18899,12 @@ const FlightDiagnostics = {
     const diagPullBtn = document.getElementById('diag-pull-rc2-btn');
     if (diagPullBtn && typeof diagPullBtn.addEventListener === 'function') {
       diagPullBtn.addEventListener('click', () => pullFlightLogFromRC2(diagPullBtn));
+    }
+
+    // Browse all RC 2 logs button in diagnostics header
+    const diagBrowseLogsBtn = document.getElementById('diag-browse-rc2-logs-btn');
+    if (diagBrowseLogsBtn && typeof diagBrowseLogsBtn.addEventListener === 'function') {
+      diagBrowseLogsBtn.addEventListener('click', () => openRc2LogManagerModal());
     }
 
     // Load file button
@@ -19440,25 +19526,45 @@ const FlightDiagnostics = {
     // Automatically discover and attach any saved inspection photos from companion archive
     this.flightPhotos = null;
     this.flightPhotosFlightId = null;
+    this.flightManifest = null;
     try {
-      const mUuid = this.currentLoadedMission?.uuid || (typeof activeLayerId !== 'undefined' && activeLayerId) || 'layer-1';
-      const mRes = await fetch(`${apiBase}/api/media/manifest?uuid=${encodeURIComponent(mUuid)}&flight=${encodeURIComponent(flightId || '')}`, {
-        signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(1500) : undefined
+      let tStart = null;
+      let tEnd = null;
+      if (this.telemetryData && this.telemetryData.flightDate) {
+        const s = new Date(this.telemetryData.flightDate).getTime();
+        if (!isNaN(s)) {
+          tStart = new Date(s).toISOString();
+          const durMs = (this.telemetryData.durationSec || 600) * 1000;
+          tEnd = new Date(s + durMs).toISOString();
+        }
+      }
+      const flightTagMatch = (flightId || '').match(/(\d{4}-\d{2}-\d{2}_\[\d{2}-\d{2}-\d{2}\])/);
+      const flightTag = flightTagMatch ? flightTagMatch[1] : '';
+      const flightBase = (flightId || '').replace(/\.txt$/i, '').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const mUuid = this.currentLoadedMission?.uuid || (flightTag ? `mission_${flightTag}` : (flightBase ? `mission_${flightBase}` : ((typeof activeLayerId !== 'undefined' && activeLayerId) || 'layer-1')));
+
+      let manifestUrl = `${apiBase}/api/media/manifest?flight=${encodeURIComponent(flightId || '')}&uuid=${encodeURIComponent(mUuid)}`;
+      if (tStart) {
+        manifestUrl += `&start=${encodeURIComponent(tStart)}&end=${encodeURIComponent(tEnd || tStart)}`;
+      }
+
+      const mRes = await fetch(manifestUrl, {
+        signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(2000) : undefined
       });
       if (mRes.ok) {
         const mData = await mRes.json();
-        if (mData && Array.isArray(mData.photos) && mData.photos.length > 0) {
-          this.flightPhotos = mData.photos;
+        if (mData && Array.isArray(mData.photos)) {
+          const filtered = this.filterPhotosForCurrentFlight(mData.photos);
+          this.flightPhotos = filtered;
           this.flightPhotosFlightId = flightId;
-          this.flightManifest = mData;
+          this.flightManifest = { ...mData, photos: filtered, totalPhotos: filtered.length };
+          activeInspectionManifest = this.flightManifest;
         }
       }
     } catch (e) {}
 
     this.updateStatsUI();
-    if (this.activeTab === 'photos') {
-      this.renderInspectionPhotosUI();
-    }
+    this.renderInspectionPhotosUI();
     this.init3DScene();
     this.playbackFractionalIndex = 0.0;
     this.seekTo(0, true, true);
@@ -29395,6 +29501,69 @@ function getLayerBoundaryGeoPolygon(layer) {
   return [];
 }
 
+/**
+ * Extracts embedded DJI XMP flight telemetry (GPS, altitude, gimbal pitch/yaw, aircraft model)
+ * from a JPEG ArrayBuffer, Uint8Array, Buffer, or text string.
+ * @param {ArrayBuffer|Uint8Array|Buffer|string} data
+ * @returns {object|null}
+ */
+function extractDjiXmpMetadata(data) {
+  if (!data) return null;
+  let xmpStr = '';
+  if (typeof data === 'string') {
+    const s = data.indexOf('<x:xmpmeta');
+    const e = data.indexOf('</x:xmpmeta>');
+    if (s !== -1 && e !== -1) xmpStr = data.substring(s, e + 12);
+  } else if (typeof Buffer !== 'undefined' && Buffer.isBuffer(data)) {
+    const s = data.indexOf('<x:xmpmeta', 0, 'utf8');
+    const e = data.indexOf('</x:xmpmeta>', s, 'utf8');
+    if (s !== -1 && e !== -1) xmpStr = data.subarray(s, e + 12).toString('utf8');
+  } else if (data instanceof Uint8Array || data instanceof ArrayBuffer) {
+    const u8 = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
+    const searchLimit = Math.min(u8.length, 524288);
+    const headerStr = new TextDecoder('utf-8', { fatal: false }).decode(u8.subarray(0, searchLimit));
+    const s = headerStr.indexOf('<x:xmpmeta');
+    const e = headerStr.indexOf('</x:xmpmeta>');
+    if (s !== -1 && e !== -1) xmpStr = headerStr.substring(s, e + 12);
+  }
+
+  if (!xmpStr) return null;
+  const result = {};
+  const getAttr = (name) => {
+    const attrRegex = new RegExp(`drone-dji:${name}="([^"]+)"`, 'i');
+    const elemRegex = new RegExp(`<drone-dji:${name}>([^<]+)</drone-dji:${name}>`, 'i');
+    const m = xmpStr.match(attrRegex) || xmpStr.match(elemRegex);
+    return m ? m[1].trim() : null;
+  };
+
+  const latStr = getAttr('GpsLatitude');
+  const lonStr = getAttr('GpsLongitude');
+  const relAltStr = getAttr('RelativeAltitude');
+  const absAltStr = getAttr('AbsoluteAltitude');
+  const gimbalPitchStr = getAttr('GimbalPitchDegree');
+  const gimbalYawStr = getAttr('GimbalYawDegree');
+  const flightPitchStr = getAttr('FlightPitchDegree');
+  const flightYawStr = getAttr('FlightYawDegree');
+  const flightRollStr = getAttr('FlightRollDegree');
+  const modelStr = getAttr('ProductName');
+
+  if (latStr !== null && !isNaN(parseFloat(latStr))) result.lat = parseFloat(latStr);
+  if (lonStr !== null && !isNaN(parseFloat(lonStr))) result.lon = parseFloat(lonStr);
+  if (relAltStr !== null && !isNaN(parseFloat(relAltStr))) {
+    result.altAgl = parseFloat(relAltStr);
+    result.alt = result.altAgl;
+  }
+  if (absAltStr !== null && !isNaN(parseFloat(absAltStr))) result.altMsl = parseFloat(absAltStr);
+  if (gimbalPitchStr !== null && !isNaN(parseFloat(gimbalPitchStr))) result.gimbalPitch = parseFloat(gimbalPitchStr);
+  if (gimbalYawStr !== null && !isNaN(parseFloat(gimbalYawStr))) result.heading = parseFloat(gimbalYawStr);
+  if (flightPitchStr !== null && !isNaN(parseFloat(flightPitchStr))) result.flightPitch = parseFloat(flightPitchStr);
+  if (flightYawStr !== null && !isNaN(parseFloat(flightYawStr))) result.flightYaw = parseFloat(flightYawStr);
+  if (flightRollStr !== null && !isNaN(parseFloat(flightRollStr))) result.flightRoll = parseFloat(flightRollStr);
+  if (modelStr) result.droneModel = modelStr;
+
+  return Object.keys(result).length > 0 ? result : null;
+}
+
 // =============================================================================
 // Photo Inspector, Interactive Annotation Marker & Boundary Tools (v1.96.0)
 // =============================================================================
@@ -29429,6 +29598,7 @@ const PhotoInspector = {
   projectGeoPointToPixel,
   projectGeoPolygonToPhoto,
   getLayerBoundaryGeoPolygon,
+  extractDjiXmpMetadata,
   eventsBound: false,
 
   open(photoOrId, manifest = null) {
@@ -29466,6 +29636,33 @@ const PhotoInspector = {
         gsd: { gsdCm: 0.88, gsdMeters: 0.0088 },
         annotations: []
       };
+    }
+
+    // Resolve true GPS / pose from embedded XMP if actual is 0, 0
+    if (this.activePhoto) {
+      if (!this.activePhoto.actual) this.activePhoto.actual = {};
+      const act = this.activePhoto.actual;
+      const xmp = this.activePhoto.xmp || null;
+      if (xmp && typeof xmp.lat === 'number' && typeof xmp.lon === 'number' && (xmp.lat !== 0 || xmp.lon !== 0)) {
+        if (!act.lat && !act.lon) {
+          act.lat = xmp.lat;
+          act.lon = xmp.lon;
+        }
+        if (xmp.altAgl !== undefined && (!act.altAgl || act.altAgl === 25)) act.altAgl = xmp.altAgl;
+        if (xmp.alt !== undefined && (!act.alt || act.alt === 25)) act.alt = xmp.alt;
+        if (xmp.altMsl !== undefined && (!act.altMsl || act.altMsl === 0)) act.altMsl = xmp.altMsl;
+        if (xmp.gimbalPitch !== undefined && (!act.gimbalPitch || act.gimbalPitch === -45)) act.gimbalPitch = xmp.gimbalPitch;
+        if (xmp.heading !== undefined && (!act.heading || act.heading === 0)) act.heading = xmp.heading;
+      } else if (typeof this.activePhoto.lat === 'number' && typeof this.activePhoto.lon === 'number' && (this.activePhoto.lat !== 0 || this.activePhoto.lon !== 0)) {
+        if (!act.lat && !act.lon) {
+          act.lat = this.activePhoto.lat;
+          act.lon = this.activePhoto.lon;
+        }
+        if (this.activePhoto.altAgl !== undefined && (!act.altAgl || act.altAgl === 25)) act.altAgl = this.activePhoto.altAgl;
+        if (this.activePhoto.alt !== undefined && (!act.alt || act.alt === 25)) act.alt = this.activePhoto.alt;
+        if (this.activePhoto.gimbalPitch !== undefined && (!act.gimbalPitch || act.gimbalPitch === -45)) act.gimbalPitch = this.activePhoto.gimbalPitch;
+        if (this.activePhoto.heading !== undefined && (!act.heading || act.heading === 0)) act.heading = this.activePhoto.heading;
+      }
     }
 
     if (!this.activePhoto.annotations) this.activePhoto.annotations = [];
@@ -29544,6 +29741,28 @@ const PhotoInspector = {
         }
         this.fitToViewport();
         this.renderCanvas();
+
+        // If coordinates are 0, dynamically fetch JPEG header to extract embedded DJI XMP metadata
+        if (this.activePhoto && (!this.activePhoto.actual?.lat && !this.activePhoto.actual?.lon) && imgSrc && !imgSrc.startsWith('data:') && typeof fetch !== 'undefined') {
+          fetch(imgSrc)
+            .then(res => res.arrayBuffer())
+            .then(ab => {
+              const xmp = extractDjiXmpMetadata(ab);
+              if (xmp && typeof xmp.lat === 'number' && typeof xmp.lon === 'number' && (xmp.lat !== 0 || xmp.lon !== 0)) {
+                if (!this.activePhoto.actual) this.activePhoto.actual = {};
+                this.activePhoto.actual.lat = xmp.lat;
+                this.activePhoto.actual.lon = xmp.lon;
+                if (xmp.altAgl !== undefined) this.activePhoto.actual.altAgl = xmp.altAgl;
+                if (xmp.alt !== undefined) this.activePhoto.actual.alt = xmp.alt;
+                if (xmp.altMsl !== undefined) this.activePhoto.actual.altMsl = xmp.altMsl;
+                if (xmp.gimbalPitch !== undefined) this.activePhoto.actual.gimbalPitch = xmp.gimbalPitch;
+                if (xmp.heading !== undefined) this.activePhoto.actual.heading = xmp.heading;
+                this.updateHeaderUI();
+                this.renderCanvas();
+              }
+            })
+            .catch(() => {});
+        }
       };
 
       if (!imgSrc) {
@@ -30883,8 +31102,509 @@ async function scanMediaDevices() {
   }
 }
 
+// RC 2 Controller Flight Log Explorer & Manager
+let rc2LogsCache = [];
+
+function openRc2LogManagerModal() {
+  if (typeof document === 'undefined') return;
+  const modal = document.getElementById('rc2-flight-logs-modal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+  refreshRc2LogList();
+}
+
+function closeRc2LogManagerModal() {
+  if (typeof document === 'undefined') return;
+  const modal = document.getElementById('rc2-flight-logs-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function refreshRc2LogList() {
+  const container = document.getElementById('rc2-logs-table-container');
+  const countSummary = document.getElementById('rc2-logs-count-summary');
+  const refreshBtn = document.getElementById('rc2-logs-refresh-btn');
+  if (!container) return;
+
+  if (refreshBtn) {
+    refreshBtn.disabled = true;
+    refreshBtn.textContent = '⏳ Scanning RC 2...';
+  }
+
+  container.innerHTML = `
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 16px; color: var(--text-muted); gap: 10px;">
+      <div style="width: 24px; height: 24px; border: 2px solid rgba(56, 189, 248, 0.2); border-top-color: #38bdf8; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+      <span style="font-size: 0.8rem;">Querying connected DJI RC 2 controller storage over USB MTP...</span>
+    </div>
+  `;
+
+  try {
+    const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+    const fetchOptions = {};
+    if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+      fetchOptions.signal = AbortSignal.timeout(20000);
+    }
+    const res = await fetch(`${apiBase}/api/rc2/logs`, fetchOptions);
+    const data = await res.json();
+
+    if (data.success && Array.isArray(data.logs)) {
+      rc2LogsCache = data.logs;
+      renderRc2LogTable(rc2LogsCache);
+      if (countSummary) {
+        const decryptedCount = rc2LogsCache.filter(l => l.isDecrypted).length;
+        countSummary.textContent = `Found ${rc2LogsCache.length} logs on RC 2 (${decryptedCount} ready / decrypted)`;
+      }
+    } else {
+      rc2LogsCache = [];
+      const errMsg = (data && data.error) ? data.error : 'No flight logs found or RC 2 not connected.';
+      container.innerHTML = `
+        <div style="padding: 24px; text-align: center; color: #f87171; font-size: 0.8rem;">
+          ❌ ${typeof escapeHtml === 'function' ? escapeHtml(errMsg) : errMsg}
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 6px;">Ensure RC 2 is powered on and connected via USB-C.</div>
+        </div>
+      `;
+      if (countSummary) countSummary.textContent = 'RC 2 Disconnected or No Logs';
+    }
+  } catch (err) {
+    rc2LogsCache = [];
+    container.innerHTML = `
+      <div style="padding: 24px; text-align: center; color: #f87171; font-size: 0.8rem;">
+        ❌ Unable to reach Aalaapi Bridge: ${typeof escapeHtml === 'function' ? escapeHtml(err.message) : err.message}
+        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 6px;">Ensure <code>start-bridge.bat</code> is running on port 8765.</div>
+      </div>
+    `;
+    if (countSummary) countSummary.textContent = 'Bridge Service Offline';
+  } finally {
+    if (refreshBtn) {
+      refreshBtn.disabled = false;
+      refreshBtn.textContent = '🔄 Refresh List';
+    }
+  }
+}
+
+function renderRc2LogTable(logs) {
+  const container = document.getElementById('rc2-logs-table-container');
+  if (!container) return;
+
+  const searchInput = document.getElementById('rc2-logs-search');
+  const filterText = (searchInput && searchInput.value) ? searchInput.value.trim().toLowerCase() : '';
+  const filtered = logs.filter(l => {
+    if (!filterText) return true;
+    const nameMatch = (l.filename || '').toLowerCase().includes(filterText);
+    const dateMatch = (l.flightDate || '').toLowerCase().includes(filterText);
+    const mtimeMatch = (l.mtimeFormatted || '').toLowerCase().includes(filterText);
+    return nameMatch || dateMatch || mtimeMatch;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="padding: 28px; text-align: center; color: var(--text-muted); font-size: 0.8rem;">
+        ${logs.length === 0 ? 'No flight records (.txt) found in RC 2 FlightRecord folder.' : 'No flight logs match your search filter.'}
+      </div>
+    `;
+    return;
+  }
+
+  const safeEscape = (str) => (typeof escapeHtml === 'function' ? escapeHtml(str) : String(str || ''));
+
+  let html = `
+    <table style="width: 100%; border-collapse: collapse; font-size: 0.76rem; text-align: left;">
+      <thead>
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.25); color: var(--text-muted);">
+          <th style="padding: 8px 10px; font-weight: 600;">Flight Record / Date</th>
+          <th style="padding: 8px 10px; font-weight: 600;">Size</th>
+          <th style="padding: 8px 10px; font-weight: 600;">Controller Status</th>
+          <th style="padding: 8px 10px; font-weight: 600; text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  filtered.forEach(log => {
+    const isDec = Boolean(log.isDecrypted);
+    const isDown = Boolean(log.isDownloaded);
+
+    let statusBadge = '';
+    if (isDec) {
+      statusBadge = '<span style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 2px 7px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">Decrypted ✓</span>';
+    } else if (isDown) {
+      statusBadge = '<span style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); padding: 2px 7px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">Downloaded (Raw)</span>';
+    } else {
+      statusBadge = '<span style="background: rgba(148, 163, 184, 0.12); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.25); padding: 2px 7px; border-radius: 4px; font-size: 0.7rem;">On Controller</span>';
+    }
+
+    let actionBtn = '';
+    if (isDec) {
+      actionBtn = `
+        <button type="button" class="btn-primary rc2-load-log-btn" data-filename="${safeEscape(log.filename)}" style="padding: 4px 10px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+          📊 Load Telemetry
+        </button>
+      `;
+    } else {
+      actionBtn = `
+        <button type="button" class="btn-secondary rc2-pull-single-btn" data-filename="${safeEscape(log.filename)}" style="padding: 4px 10px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px; background: rgba(14, 165, 233, 0.15); border: 1px solid rgba(14, 165, 233, 0.4); color: #38bdf8; cursor: pointer;">
+          📥 Pull &amp; Decrypt
+        </button>
+      `;
+    }
+
+    html += `
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.15s;">
+        <td style="padding: 8px 10px;">
+          <div style="font-weight: 600; color: var(--text-main); font-family: monospace;">${safeEscape(log.filename)}</div>
+          <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">${safeEscape(log.flightDate || log.mtimeFormatted || '—')}</div>
+        </td>
+        <td style="padding: 8px 10px; color: var(--text-muted); font-size: 0.72rem;">${safeEscape(log.sizeFormatted || '—')}</td>
+        <td style="padding: 8px 10px;">${statusBadge}</td>
+        <td style="padding: 8px 10px; text-align: right;">${actionBtn}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+      </tbody>
+    </table>
+  `;
+
+  container.innerHTML = html;
+
+  const loadBtns = container.querySelectorAll('.rc2-load-log-btn');
+  loadBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const fn = btn.getAttribute('data-filename');
+      if (fn) loadRc2LogToDiagnostics(fn);
+    });
+  });
+
+  const pullBtns = container.querySelectorAll('.rc2-pull-single-btn');
+  pullBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const fn = btn.getAttribute('data-filename');
+      if (fn) pullSpecificRc2Log(fn);
+    });
+  });
+}
+
+async function pullSpecificRc2Log(filename) {
+  if (!filename) return;
+  const progContainer = document.getElementById('rc2-logs-progress-container');
+  const progBar = document.getElementById('rc2-logs-progress-bar');
+  const progText = document.getElementById('rc2-logs-status-text');
+  const progPct = document.getElementById('rc2-logs-pct-text');
+
+  let currentPct = 15;
+  if (progContainer) progContainer.style.display = 'flex';
+  if (progBar) progBar.style.width = '15%';
+  if (progPct) progPct.textContent = '15%';
+  if (progText) progText.textContent = `Extracting ${filename} from RC 2 over USB MTP...`;
+
+  const pollTimer = setInterval(() => {
+    if (currentPct < 90) {
+      currentPct = Math.min(90, currentPct + 8);
+      if (progBar) progBar.style.width = `${currentPct}%`;
+      if (progPct) progPct.textContent = `${currentPct}%`;
+    }
+  }, 250);
+
+  try {
+    const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+    const res = await fetch(`${apiBase}/api/rc2/pull-log`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filenames: [filename] })
+    });
+    const data = await res.json();
+    clearInterval(pollTimer);
+    if (progBar) progBar.style.width = '100%';
+    if (progPct) progPct.textContent = '100%';
+
+    if (data.success && data.pulled && data.pulled.length > 0) {
+      if (progText) progText.textContent = `Successfully pulled and decrypted ${filename}!`;
+      await refreshRc2LogList();
+      loadRc2LogToDiagnostics(filename);
+    } else {
+      if (progText) progText.textContent = `Pull error: ${data.error || 'Failed to pull log from controller'}`;
+    }
+  } catch (err) {
+    clearInterval(pollTimer);
+    if (progText) progText.textContent = `Network error: ${err.message}`;
+  } finally {
+    setTimeout(() => {
+      if (progContainer) progContainer.style.display = 'none';
+    }, 4000);
+  }
+}
+
+async function pullAllRc2Logs() {
+  const progContainer = document.getElementById('rc2-logs-progress-container');
+  const progBar = document.getElementById('rc2-logs-progress-bar');
+  const progText = document.getElementById('rc2-logs-status-text');
+  const progPct = document.getElementById('rc2-logs-pct-text');
+  const pullAllBtn = document.getElementById('rc2-logs-pull-all-btn');
+
+  let currentPct = 10;
+  if (pullAllBtn) pullAllBtn.disabled = true;
+  if (progContainer) progContainer.style.display = 'flex';
+  if (progBar) progBar.style.width = '10%';
+  if (progPct) progPct.textContent = '10%';
+  if (progText) progText.textContent = 'Pulling and decrypting all flight records from RC 2...';
+
+  const pollTimer = setInterval(() => {
+    if (currentPct < 90) {
+      currentPct = Math.min(90, currentPct + 6);
+      if (progBar) progBar.style.width = `${currentPct}%`;
+      if (progPct) progPct.textContent = `${currentPct}%`;
+    }
+  }, 350);
+
+  try {
+    const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+    const res = await fetch(`${apiBase}/api/rc2/pull-log`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pullAll: true })
+    });
+    const data = await res.json();
+    clearInterval(pollTimer);
+    if (progBar) progBar.style.width = '100%';
+    if (progPct) progPct.textContent = '100%';
+
+    if (data.success) {
+      if (progText) progText.textContent = `Batch complete! Pulled ${data.count || 0} flight logs from RC 2.`;
+      await refreshRc2LogList();
+    } else {
+      if (progText) progText.textContent = `Batch error: ${data.error || 'Failed to pull all logs'}`;
+    }
+  } catch (err) {
+    clearInterval(pollTimer);
+    if (progText) progText.textContent = `Network error: ${err.message}`;
+  } finally {
+    if (pullAllBtn) pullAllBtn.disabled = false;
+    setTimeout(() => {
+      if (progContainer) progContainer.style.display = 'none';
+    }, 4500);
+  }
+}
+
+function loadRc2LogToDiagnostics(filename) {
+  closeRc2LogManagerModal();
+  if (typeof FlightDiagnostics !== 'undefined') {
+    if (FlightDiagnostics.open) FlightDiagnostics.open();
+    if (FlightDiagnostics.refreshFlightList) {
+      FlightDiagnostics.refreshFlightList().then(() => {
+        if (FlightDiagnostics.loadSelectedFlight) {
+          FlightDiagnostics.loadSelectedFlight(filename);
+        }
+      });
+    } else if (FlightDiagnostics.loadSelectedFlight) {
+      FlightDiagnostics.loadSelectedFlight(filename);
+    }
+  }
+}
+
+async function executeMediaPull() {
+  const progContainer = document.getElementById('ingest-progress-container');
+  const progBar = document.getElementById('ingest-progress-bar');
+  const progText = document.getElementById('ingest-status-text');
+  const progPct = document.getElementById('ingest-pct-text');
+  const dlBtn = document.getElementById('media-download-archive-btn');
+  const filterTimeCheck = document.getElementById('ingest-filter-time');
+  const filterGeoCheck = document.getElementById('ingest-filter-geo');
+  const deleteDroneCheck = document.getElementById('ingest-delete-from-drone');
+  const startPullBtn = document.getElementById('start-media-pull-btn');
+
+  const shouldDeleteFromDrone = !!(deleteDroneCheck && deleteDroneCheck.checked);
+  if (shouldDeleteFromDrone && typeof window !== 'undefined' && typeof window.confirm === 'function') {
+    const confirmed = window.confirm(
+      '⚠️ Delete from Drone Enabled:\n\n' +
+      'Are you sure you want to delete successfully ingested photos from the drone/SD card after verification?\n\n' +
+      '• Source files will ONLY be removed after bit-for-bit MD5 checksum and byte-size verification on your PC.\n' +
+      '• Photos outside this mission window will be preserved.'
+    );
+    if (!confirmed) {
+      return;
+    }
+  }
+
+  let currentPct = 5;
+  if (progContainer) progContainer.style.display = 'flex';
+  if (progBar) progBar.style.width = '5%';
+  if (progPct) progPct.textContent = '5%';
+  if (progText) progText.textContent = shouldDeleteFromDrone
+    ? 'Connecting to aircraft & verifying storage...'
+    : 'Connecting to aircraft & scanning storage...';
+  if (startPullBtn) startPullBtn.disabled = true;
+
+  const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+
+  // Poll companion server for real-time media pull progress
+  let isPulling = true;
+  const pollInterval = setInterval(async () => {
+    if (!isPulling) {
+      clearInterval(pollInterval);
+      return;
+    }
+    try {
+      const pRes = await fetch(`${apiBase}/api/media/progress`);
+      if (pRes.ok) {
+        const pData = await pRes.json();
+        if (pData && typeof pData.percent === 'number' && pData.percent > 0) {
+          const sPct = Math.max(currentPct, Math.min(98, pData.percent));
+          currentPct = sPct;
+          if (progBar) progBar.style.width = `${sPct}%`;
+          if (progPct) progPct.textContent = `${sPct}%`;
+          if (pData.status && progText) progText.textContent = pData.status;
+        }
+      }
+    } catch (_) {
+      if (currentPct < 90) {
+        currentPct = Math.min(90, currentPct + 2);
+        if (progBar) progBar.style.width = `${currentPct}%`;
+        if (progPct) progPct.textContent = `${currentPct}%`;
+      }
+    }
+  }, 250);
+
+  try {
+    const activeWps = (typeof getCurrentWaypoints === 'function' && Array.isArray(getCurrentWaypoints())) ? getCurrentWaypoints() : [];
+    let telem = (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.telemetryData) ? FlightDiagnostics.telemetryData : null;
+
+    let timeWindow = null;
+    if (telem && telem.flightDate) {
+      const startTime = new Date(telem.flightDate).getTime();
+      const durationSec = telem.durationSec || 600;
+      timeWindow = {
+        start: new Date(startTime).toISOString(),
+        end: new Date(startTime + durationSec * 1000).toISOString()
+      };
+    }
+
+    let bounds = null;
+    if (Array.isArray(activeWps) && activeWps.length > 0) {
+      let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
+      activeWps.forEach(w => {
+        if (w && typeof w.lat === 'number' && typeof w.lon === 'number') {
+          if (w.lat < minLat) minLat = w.lat;
+          if (w.lat > maxLat) maxLat = w.lat;
+          if (w.lon < minLon) minLon = w.lon;
+          if (w.lon > maxLon) maxLon = w.lon;
+        }
+      });
+      if (minLat !== Infinity) {
+        bounds = { minLat, maxLat, minLon, maxLon };
+      }
+    }
+
+    const currentFlightId = (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.selectedFlightId) ? FlightDiagnostics.selectedFlightId : null;
+    let targetMissionUuid = (typeof activeLayerId !== 'undefined' && activeLayerId) || 'mission_' + Date.now();
+    if (currentFlightId) {
+      const flightTagMatch = currentFlightId.match(/(\d{4}-\d{2}-\d{2}_\[\d{2}-\d{2}-\d{2}\])/);
+      targetMissionUuid = flightTagMatch ? `mission_${flightTagMatch[1]}` : `mission_${currentFlightId.replace(/\.txt$/i, '').replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+    }
+
+    const res = await fetch(`${apiBase}/api/media/pull`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        flightId: currentFlightId,
+        missionUuid: targetMissionUuid,
+        waypoints: activeWps,
+        filterByTime: Boolean(filterTimeCheck ? (filterTimeCheck.checked && timeWindow) : Boolean(timeWindow)),
+        filterByGeo: Boolean(filterGeoCheck ? (filterGeoCheck.checked && bounds) : Boolean(bounds)),
+        deleteFromDrone: shouldDeleteFromDrone,
+        timeWindow,
+        bounds,
+        telemetry: telem || { points: [] }
+      })
+    });
+    const data = await res.json();
+    isPulling = false;
+    clearInterval(pollInterval);
+    if (progBar) progBar.style.width = '100%';
+    if (progPct) progPct.textContent = '100%';
+
+    let statusMsg = `Completed! ${data.totalPhotos || 0} photos ingested.`;
+    if (shouldDeleteFromDrone) {
+      if (data.deletedCount > 0) {
+        statusMsg += ` (${data.deletedCount} verified & freed from SD card)`;
+      } else if (data.deleteErrors && data.deleteErrors.length > 0) {
+        statusMsg += ` (SD card write-protected or read-only)`;
+      }
+    }
+    if (progText) progText.textContent = statusMsg;
+
+    if (data.manifest) {
+      if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.selectedFlightId) {
+        const filteredPhotos = FlightDiagnostics.filterPhotosForCurrentFlight ? FlightDiagnostics.filterPhotosForCurrentFlight(data.manifest.photos) : data.manifest.photos;
+        FlightDiagnostics.flightPhotos = filteredPhotos;
+        FlightDiagnostics.flightPhotosFlightId = FlightDiagnostics.selectedFlightId;
+        FlightDiagnostics.flightManifest = { ...data.manifest, photos: filteredPhotos, totalPhotos: filteredPhotos.length };
+        activeInspectionManifest = FlightDiagnostics.flightManifest;
+      } else {
+        activeInspectionManifest = data.manifest;
+      }
+      if (typeof renderPhotoInspectionMapLayer === 'function') {
+        renderPhotoInspectionMapLayer(activeInspectionManifest);
+      }
+      if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.renderInspectionPhotosUI) {
+        FlightDiagnostics.renderInspectionPhotosUI();
+      }
+      if (dlBtn) {
+        dlBtn.style.display = 'inline-flex';
+        dlBtn.onclick = () => {
+          window.location.href = `${apiBase}/api/media/archive-zip?uuid=${encodeURIComponent(data.missionUuid)}`;
+        };
+      }
+    }
+    return data;
+  } catch (err) {
+    isPulling = false;
+    clearInterval(pollInterval);
+    if (progText) progText.textContent = 'Ingest error: ' + err.message;
+    throw err;
+  } finally {
+    if (startPullBtn) startPullBtn.disabled = false;
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.openRc2LogManagerModal = openRc2LogManagerModal;
+  window.closeRc2LogManagerModal = closeRc2LogManagerModal;
+  window.refreshRc2LogList = refreshRc2LogList;
+  window.pullSpecificRc2Log = pullSpecificRc2Log;
+  window.pullAllRc2Logs = pullAllRc2Logs;
+  window.loadRc2LogToDiagnostics = loadRc2LogToDiagnostics;
+  window.executeMediaPull = executeMediaPull;
+}
+
+if (typeof global !== 'undefined') {
+  global.openRc2LogManagerModal = openRc2LogManagerModal;
+  global.closeRc2LogManagerModal = closeRc2LogManagerModal;
+  global.refreshRc2LogList = refreshRc2LogList;
+  global.pullSpecificRc2Log = pullSpecificRc2Log;
+  global.pullAllRc2Logs = pullAllRc2Logs;
+  global.loadRc2LogToDiagnostics = loadRc2LogToDiagnostics;
+  global.executeMediaPull = executeMediaPull;
+}
+
 if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', () => {
+    const closeRc2LogsBtn = document.getElementById('close-rc2-logs-modal-btn');
+    if (closeRc2LogsBtn) closeRc2LogsBtn.addEventListener('click', closeRc2LogManagerModal);
+
+    const closeRc2LogsFooterBtn = document.getElementById('close-rc2-logs-footer-btn');
+    if (closeRc2LogsFooterBtn) closeRc2LogsFooterBtn.addEventListener('click', closeRc2LogManagerModal);
+
+    const rc2LogsRefreshBtn = document.getElementById('rc2-logs-refresh-btn');
+    if (rc2LogsRefreshBtn) rc2LogsRefreshBtn.addEventListener('click', refreshRc2LogList);
+
+    const rc2LogsPullAllBtn = document.getElementById('rc2-logs-pull-all-btn');
+    if (rc2LogsPullAllBtn) rc2LogsPullAllBtn.addEventListener('click', pullAllRc2Logs);
+
+    const rc2LogsSearchInput = document.getElementById('rc2-logs-search');
+    if (rc2LogsSearchInput) {
+      rc2LogsSearchInput.addEventListener('input', () => renderRc2LogTable(rc2LogsCache));
+    }
+
     const ingestBtn = document.getElementById('direct-rc2-photos-btn');
     if (ingestBtn) ingestBtn.addEventListener('click', openMediaIngestModal);
 
@@ -30905,108 +31625,7 @@ if (typeof document !== 'undefined') {
 
     const startPullBtn = document.getElementById('start-media-pull-btn');
     if (startPullBtn) {
-      startPullBtn.addEventListener('click', async () => {
-        const progContainer = document.getElementById('ingest-progress-container');
-        const progBar = document.getElementById('ingest-progress-bar');
-        const progText = document.getElementById('ingest-status-text');
-        const dlBtn = document.getElementById('media-download-archive-btn');
-        const filterTimeCheck = document.getElementById('ingest-filter-time');
-        const filterGeoCheck = document.getElementById('ingest-filter-geo');
-        const deleteDroneCheck = document.getElementById('ingest-delete-from-drone');
-
-        const shouldDeleteFromDrone = !!(deleteDroneCheck && deleteDroneCheck.checked);
-        if (shouldDeleteFromDrone) {
-          const confirmed = window.confirm(
-            '⚠️ Delete from Drone Enabled:\n\n' +
-            'Are you sure you want to delete successfully ingested photos from the drone/SD card after verification?\n\n' +
-            '• Source files will ONLY be removed after bit-for-bit MD5 checksum and byte-size verification on your PC.\n' +
-            '• Photos outside this mission window will be preserved.'
-          );
-          if (!confirmed) {
-            return;
-          }
-        }
-
-        if (progContainer) progContainer.style.display = 'flex';
-        if (progBar) progBar.style.width = '35%';
-        if (progText) progText.textContent = shouldDeleteFromDrone
-          ? 'Pulling and verifying raw images over USB...'
-          : 'Pulling raw images over USB...';
-
-        try {
-          const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
-          const activeWps = (typeof getCurrentWaypoints === 'function' && Array.isArray(getCurrentWaypoints())) ? getCurrentWaypoints() : [];
-          let telem = (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.telemetryData) ? FlightDiagnostics.telemetryData : null;
-
-          let timeWindow = null;
-          if (telem && telem.flightDate) {
-            const startTime = new Date(telem.flightDate).getTime();
-            const durationSec = telem.durationSec || 600;
-            timeWindow = {
-              start: new Date(startTime).toISOString(),
-              end: new Date(startTime + durationSec * 1000).toISOString()
-            };
-          }
-
-          let bounds = null;
-          if (Array.isArray(activeWps) && activeWps.length > 0) {
-            let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
-            activeWps.forEach(w => {
-              if (w && typeof w.lat === 'number' && typeof w.lon === 'number') {
-                if (w.lat < minLat) minLat = w.lat;
-                if (w.lat > maxLat) maxLat = w.lat;
-                if (w.lon < minLon) minLon = w.lon;
-                if (w.lon > maxLon) maxLon = w.lon;
-              }
-            });
-            if (minLat !== Infinity) {
-              bounds = { minLat, maxLat, minLon, maxLon };
-            }
-          }
-
-          const res = await fetch(`${apiBase}/api/media/pull`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              missionUuid: (typeof activeLayerId !== 'undefined' && activeLayerId) || 'mission_' + Date.now(),
-              waypoints: activeWps,
-              filterByTime: filterTimeCheck ? filterTimeCheck.checked : true,
-              filterByGeo: filterGeoCheck ? filterGeoCheck.checked : true,
-              deleteFromDrone: shouldDeleteFromDrone,
-              timeWindow,
-              bounds,
-              telemetry: telem || { points: [] }
-            })
-          });
-          const data = await res.json();
-          if (progBar) progBar.style.width = '100%';
-
-          let statusMsg = `Completed! ${data.totalPhotos || 0} photos ingested.`;
-          if (shouldDeleteFromDrone) {
-            if (data.deletedCount > 0) {
-              statusMsg += ` (${data.deletedCount} verified & freed from SD card)`;
-            } else if (data.deleteErrors && data.deleteErrors.length > 0) {
-              statusMsg += ` (SD card write-protected or read-only)`;
-            }
-          }
-          if (progText) progText.textContent = statusMsg;
-
-          if (data.manifest) {
-            renderPhotoInspectionMapLayer(data.manifest);
-            if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.renderInspectionPhotosUI) {
-              FlightDiagnostics.renderInspectionPhotosUI();
-            }
-            if (dlBtn) {
-              dlBtn.style.display = 'inline-flex';
-              dlBtn.onclick = () => {
-                window.location.href = `${apiBase}/api/media/archive-zip?uuid=${encodeURIComponent(data.missionUuid)}`;
-              };
-            }
-          }
-        } catch (err) {
-          if (progText) progText.textContent = 'Ingest error: ' + err.message;
-        }
-      });
+      startPullBtn.addEventListener('click', executeMediaPull);
     }
   });
 }
