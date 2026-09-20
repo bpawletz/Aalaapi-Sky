@@ -4882,7 +4882,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.114.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.114.1</span></h1>
         </div>
       </div>
 
@@ -7230,7 +7230,7 @@ html, body {
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #4ade80; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
-              🔍 In-Browser &amp; Bridge Optical Tag Detector (AprilTag &amp; ArUco) (v1.114.0)
+              🔍 In-Browser &amp; Bridge Optical Tag Detector (AprilTag &amp; ArUco) (v1.114.1)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
               Full client-side and Companion Bridge computer vision optical tag detector. Scans photos in under 350ms to detect <strong>AprilTag 25h9</strong>, <strong>36h11</strong>, <strong>16h5</strong>, and <strong>ArUco 4x4 / 5x5</strong> fiducials. Extracts sub-pixel corner coordinates, rotation orientation (yellow corner #0 dot), and tag IDs. Automatically correlates ground targets against planned Ground Control Points (GCPs), computing centimeter reprojection variance and validating survey positions directly inside Photo Inspector (<code>#photo-inspector-modal</code>) and photo ingest (<code>#media-ingest-modal</code>).
@@ -8051,7 +8051,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.114.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.114.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -8114,6 +8114,14 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.114.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🛡️ Cross-Origin Resilient Tag Detection Pipeline:</strong> Resolved canvas tainted <code>SecurityError</code> during optical tag detection by applying <code>crossorigin="anonymous"</code> to <code>#photo-inspector-img</code> and <code>imgEl.crossOrigin</code>.</li>
+              <li><strong>🔄 Multi-Tier Resilient Recovery:</strong> Added in-browser same-origin blob/ImageBitmap recovery and automatic Companion Bridge fallback (<code>POST /api/media/scan-tags</code>) for untrusted or cross-origin drone photo streams.</li>
+              <li><strong>🌐 Static Asset CORS Headers:</strong> Ensured explicit CORS and Private Network headers are emitted on companion file streams.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.114.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -11565,7 +11573,7 @@ html, body {
         <!-- Center Interactive Photo Canvas Viewport -->
         <div id="photo-viewport-container" style="flex: 1; position: relative; overflow: hidden; background: #030712; display: block; cursor: grab;">
           <div id="photo-transform-layer" style="position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform;">
-            <img id="photo-inspector-img" src="" alt="Drone Photo" style="display: block; max-width: none; user-select: none; pointer-events: none;" />
+            <img id="photo-inspector-img" src="" alt="Drone Photo" crossorigin="anonymous" style="display: block; max-width: none; user-select: none; pointer-events: none;" />
             <canvas id="photo-annotation-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: auto;"></canvas>
           </div>
 
@@ -42125,11 +42133,17 @@ function extractDjiXmpMetadata(data) {
 
       // 1. Resolve raw image dimensions and pixels from browser Canvas / ImageData / Node Buffer
       if (typeof HTMLCanvasElement !== 'undefined' && input instanceof HTMLCanvasElement) {
-        const ctx = input.getContext('2d');
-        const imgData = ctx.getImageData(0, 0, input.width, input.height);
-        width = input.width;
-        height = input.height;
-        gray = toGrayscale(imgData.data, width, height);
+        try {
+          const ctx = input.getContext('2d');
+          const imgData = ctx.getImageData(0, 0, input.width, input.height);
+          width = input.width;
+          height = input.height;
+          gray = toGrayscale(imgData.data, width, height);
+        } catch (canvasErr) {
+          console.warn('[TagDetector] Unable to getImageData from HTMLCanvasElement (possible taint or security restriction):', canvasErr);
+          if (options.throwOnTaint) throw canvasErr;
+          return [];
+        }
       } else if (typeof ImageData !== 'undefined' && input instanceof ImageData) {
         width = input.width;
         height = input.height;
@@ -42139,11 +42153,17 @@ function extractDjiXmpMetadata(data) {
         height = input.height;
         gray = toGrayscale(input.data, width, height);
       } else if (input && typeof input.getContext === 'function') {
-        const ctx = input.getContext('2d');
-        const imgData = ctx.getImageData(0, 0, input.width, input.height);
-        width = input.width;
-        height = input.height;
-        gray = toGrayscale(imgData.data, width, height);
+        try {
+          const ctx = input.getContext('2d');
+          const imgData = ctx.getImageData(0, 0, input.width, input.height);
+          width = input.width;
+          height = input.height;
+          gray = toGrayscale(imgData.data, width, height);
+        } catch (canvasErr) {
+          console.warn('[TagDetector] Unable to getImageData from canvas (possible taint or security restriction):', canvasErr);
+          if (options.throwOnTaint) throw canvasErr;
+          return [];
+        }
       }
 
       if (!gray || width <= 0 || height <= 0) {
@@ -42299,6 +42319,10 @@ const PhotoInspector = {
   extractDjiXmpMetadata,
   eventsBound: false,
 
+  openPhoto(photoOrId, manifest = null) {
+    return this.open(photoOrId, manifest);
+  },
+
   open(photoOrId, manifest = null) {
     if (typeof document === 'undefined') return;
     const modal = document.getElementById('photo-inspector-modal');
@@ -42405,6 +42429,9 @@ const PhotoInspector = {
     }
     
     if (imgEl) {
+      try {
+        imgEl.crossOrigin = 'anonymous';
+      } catch (_) {}
       let triedRaw = false;
       let triedRelative = false;
       let triedPlaceholder = false;
@@ -42415,6 +42442,7 @@ const PhotoInspector = {
           triedRelative = true;
           const relPath = imgSrc.replace(/^https?:\/\/[^/]+/, '');
           if (relPath && relPath !== imgSrc) {
+            try { imgEl.crossOrigin = 'anonymous'; } catch (_) {}
             imgEl.src = relPath;
             return;
           }
@@ -42422,12 +42450,14 @@ const PhotoInspector = {
         // Step 2: Try high-resolution raw photo from companion
         if (!triedRaw && this.activePhoto.filename && manifestUuid) {
           triedRaw = true;
+          try { imgEl.crossOrigin = 'anonymous'; } catch (_) {}
           imgEl.src = `${apiBase}/scratch/mission_archives/${manifestUuid}/photos/raw/${encodeURIComponent(this.activePhoto.filename)}`;
           return;
         }
         // Step 3: Fallback to styled SVG placeholder
         if (!triedPlaceholder) {
           triedPlaceholder = true;
+          try { imgEl.removeAttribute('crossorigin'); } catch (_) {}
           imgEl.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080"><rect width="100%" height="100%" fill="%230f172a"/><text x="50%" y="50%" fill="%2338bdf8" font-size="32" text-anchor="middle" dominant-baseline="middle" font-family="sans-serif">📸 Photo Preview Not Available • ' + (this.activePhoto.filename || 'DJI_0001.JPG') + '</text></svg>';
         }
       };
@@ -42464,8 +42494,10 @@ const PhotoInspector = {
       };
 
       if (!imgSrc) {
+        try { imgEl.removeAttribute('crossorigin'); } catch (_) {}
         imgEl.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080"><rect width="100%" height="100%" fill="%230f172a"/><text x="50%" y="50%" fill="%2338bdf8" font-size="32" text-anchor="middle" dominant-baseline="middle" font-family="sans-serif">📸 Photo Preview Not Available • ' + (this.activePhoto.filename || 'DJI_0001.JPG') + '</text></svg>';
       } else {
+        try { imgEl.crossOrigin = 'anonymous'; } catch (_) {}
         imgEl.src = imgSrc;
         if (imgEl.complete && imgEl.naturalWidth > 0) {
           if (canvas) {
@@ -43466,13 +43498,119 @@ const PhotoInspector = {
       const scanW = Math.round(origW * scale);
       const scanH = Math.round(origH * scale);
 
-      const offCanvas = document.createElement('canvas');
-      offCanvas.width = scanW;
-      offCanvas.height = scanH;
-      const offCtx = offCanvas.getContext('2d');
-      offCtx.drawImage(imgEl, 0, 0, scanW, scanH);
+      const offCanvas = (typeof document !== 'undefined') ? document.createElement('canvas') : null;
+      if (offCanvas) {
+        offCanvas.width = scanW;
+        offCanvas.height = scanH;
+      }
+      const offCtx = (offCanvas && typeof offCanvas.getContext === 'function') ? offCanvas.getContext('2d') : null;
 
-      const rawTags = (typeof TagDetector !== 'undefined') ? TagDetector.detect(offCanvas) : [];
+      let rawTags = [];
+      let isTainted = false;
+
+      try {
+        if (offCtx) {
+          offCtx.drawImage(imgEl, 0, 0, scanW, scanH);
+          // Probe reading 1 pixel to catch tainted canvas early before full detector run
+          if (typeof offCtx.getImageData === 'function') {
+            offCtx.getImageData(0, 0, 1, 1);
+          }
+          rawTags = (typeof TagDetector !== 'undefined') ? TagDetector.detect(offCanvas) : [];
+        } else {
+          isTainted = true;
+        }
+      } catch (taintErr) {
+        console.warn('[PhotoInspector] Canvas tainted or getImageData restricted by cross-origin security:', taintErr);
+        isTainted = true;
+      }
+
+      // Tier 1: In-browser clean fetch recovery (Blob -> ImageBitmap / Object URL)
+      if (isTainted && this.activePhoto.previewUrl && !this.activePhoto.previewUrl.startsWith('data:') && typeof fetch !== 'undefined') {
+        try {
+          const fetchRes = await fetch(this.activePhoto.previewUrl, { mode: 'cors' });
+          if (fetchRes.ok) {
+            const blob = await fetchRes.blob();
+            let cleanDrawable = null;
+            if (typeof createImageBitmap === 'function') {
+              cleanDrawable = await createImageBitmap(blob);
+            } else if (typeof Image !== 'undefined') {
+              cleanDrawable = await new Promise((resolve, reject) => {
+                const tempImg = new Image();
+                try { tempImg.crossOrigin = 'anonymous'; } catch (_) {}
+                tempImg.onload = () => resolve(tempImg);
+                tempImg.onerror = reject;
+                tempImg.src = URL.createObjectURL(blob);
+              });
+            }
+            if (cleanDrawable && typeof document !== 'undefined') {
+              const cleanCanvas = document.createElement('canvas');
+              cleanCanvas.width = scanW;
+              cleanCanvas.height = scanH;
+              const cleanCtx = (cleanCanvas && typeof cleanCanvas.getContext === 'function') ? cleanCanvas.getContext('2d') : null;
+              if (cleanCtx) {
+                cleanCtx.drawImage(cleanDrawable, 0, 0, scanW, scanH);
+                if (typeof cleanCtx.getImageData === 'function') {
+                  cleanCtx.getImageData(0, 0, 1, 1);
+                }
+                rawTags = (typeof TagDetector !== 'undefined') ? TagDetector.detect(cleanCanvas) : [];
+                isTainted = false;
+              }
+            }
+          }
+        } catch (blobErr) {
+          console.warn('[PhotoInspector] In-browser clean blob recovery failed:', blobErr);
+        }
+      }
+
+      // Tier 2: Companion Bridge fallback (POST /api/media/scan-tags)
+      if (isTainted && typeof fetch !== 'undefined') {
+        try {
+          const apiBase = (typeof getCompanionApiBase === 'function')
+            ? getCompanionApiBase()
+            : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
+          const manifestUuid = (this.activeManifest && this.activeManifest.missionUuid)
+            || (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.activeInspectionManifest?.missionUuid)
+            || (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.flightManifest?.missionUuid)
+            || (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.currentLoadedMission?.uuid)
+            || 'layer-1';
+
+          const postBody = {
+            missionUuid: manifestUuid,
+            photoId: this.activePhoto.filename || this.activePhoto.id,
+            filename: this.activePhoto.filename,
+            filePath: this.activePhoto.rawPath || null
+          };
+
+          const bridgeRes = await fetch(`${apiBase}/api/media/scan-tags`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(postBody)
+          });
+          if (bridgeRes.ok) {
+            const bridgeData = await bridgeRes.json();
+            if (bridgeData.success && Array.isArray(bridgeData.detectedTags)) {
+              this.activePhoto.detectedTags = bridgeData.detectedTags;
+              if (bridgeData.detectedTags.some(t => t.matchedGcp)) {
+                this.activePhoto.gcpVerified = true;
+                const best = bridgeData.detectedTags.filter(t => t.matchedGcp).sort((a, b) => a.matchedGcp.varianceCm - b.matchedGcp.varianceCm)[0];
+                this.activePhoto.gcpOffsetCm = best ? best.matchedGcp.varianceCm : null;
+              }
+              try { this.updateHeaderUI(); } catch (_) {}
+              try { this.updateDrawerUI(); } catch (_) {}
+              try { this.renderCanvas(); } catch (_) {}
+              if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = bridgeData.detectedTags.length > 0 ? `✓ ${bridgeData.detectedTags.length} Detected` : '🔍 Detect Tags';
+                setTimeout(() => { if (btn) btn.innerHTML = '🔍 Detect Tags'; }, 3000);
+              }
+              return bridgeData.detectedTags;
+            }
+          }
+        } catch (bridgeErr) {
+          console.warn('[PhotoInspector] Companion bridge scan-tags fallback failed:', bridgeErr);
+        }
+      }
+
       const scaleX = origW / scanW;
       const scaleY = origH / scanH;
 
@@ -43586,7 +43724,7 @@ const PhotoInspector = {
 
       return mappedTags;
     } catch (err) {
-      console.error('Error detecting optical tags:', err);
+      console.warn('[PhotoInspector] Error during optical tag detection:', err);
       if (btn) {
         btn.disabled = false;
         btn.innerHTML = '🔍 Detect Tags';

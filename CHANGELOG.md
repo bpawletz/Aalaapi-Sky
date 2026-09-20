@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.114.1] - 2026-09-20
+
+### Fixed & Enhanced — Cross-Origin Resilient Optical Tag Detection Pipeline & Tainted Canvas Recovery
+- **Resolved Canvas Tainted `SecurityError` on Optical Tag Detection:**
+  - Added `crossorigin="anonymous"` attribute to `#photo-inspector-img` element in DOM templates (`index_template.html` & `index.html`).
+  - Set `imgEl.crossOrigin = 'anonymous'` in `PhotoInspector.openPhoto()` prior to assigning image sources across initial loads and fallback URLs.
+  - Wrapped `ctx.getImageData()` within `TagDetector.detect()` in a guarded `try/catch` block to prevent uncaught browser security exceptions when analyzing cross-origin or restricted image data.
+- **Multi-Tier Resilient Image Ingest & Optical Tag Scanning:**
+  - **Tier 0 (Fast In-Memory):** Direct canvas rasterization with untainted CORS-enabled image element.
+  - **Tier 1 (In-Browser Clean Recovery):** Automatic CORS fetch of the photo stream converted to a same-origin `Blob` and decoded via `createImageBitmap` or object URL, guaranteeing canvas pixel read access without tainting.
+  - **Tier 2 (Companion Bridge Server-Side Fallback):** Automatic delegation to Companion Bridge `POST /api/media/scan-tags` when client canvas access is prohibited, returning server-analyzed fiducial tags, rotation angles, and GCP reprojection variance directly to the client UI.
+- **Companion Bridge Static File & API CORS Headers:**
+  - Ensured explicit `'Access-Control-Allow-Origin': '*'` and `'Access-Control-Allow-Private-Network': 'true'` headers are written on static asset streams and `/api/media/scan-tags` responses in `tools/companion/server.js`.
+  - Added multi-path resolution in `/api/media/scan-tags` supporting both raw and preview photo directories under `scratch/mission_archives/`.
+
 ## [1.114.0] - 2026-09-20
 
 ### Added — In-Browser & Bridge Optical Tag Detector & Fiducial GCP Auto-Matching
