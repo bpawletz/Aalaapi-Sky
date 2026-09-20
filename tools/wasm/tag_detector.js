@@ -564,7 +564,7 @@
       // 1. Resolve raw image dimensions and pixels from browser Canvas / ImageData / Node Buffer
       if (typeof HTMLCanvasElement !== 'undefined' && input instanceof HTMLCanvasElement) {
         try {
-          const ctx = input.getContext('2d');
+          const ctx = input.getContext('2d', { willReadFrequently: true }) || input.getContext('2d');
           const imgData = ctx.getImageData(0, 0, input.width, input.height);
           width = input.width;
           height = input.height;
@@ -584,7 +584,7 @@
         gray = toGrayscale(input.data, width, height);
       } else if (input && typeof input.getContext === 'function') {
         try {
-          const ctx = input.getContext('2d');
+          const ctx = input.getContext('2d', { willReadFrequently: true }) || input.getContext('2d');
           const imgData = ctx.getImageData(0, 0, input.width, input.height);
           width = input.width;
           height = input.height;

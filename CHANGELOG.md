@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.114.2] - 2026-09-20
+
+### Fixed & Enhanced — Canvas2D willReadFrequently Optimization for Optical Tag Detection
+- **Eliminated Browser Multiple Readback Performance Warning:**
+  - Configured `{ willReadFrequently: true }` context attribute on 2D canvas contexts across `TagDetector.detect()` and `PhotoInspector.detectOpticalTags()`.
+  - Resolves Blink/Chromium warning: `Canvas2D: Multiple readback operations using getImageData are faster with the willReadFrequently attribute set to true.`
+  - Accelerates sub-pixel tag decoding and corner extraction by ensuring canvas pixel data is maintained in CPU system memory rather than forcing GPU texture pipeline stalls on repeated `getImageData()` readbacks.
+
 ## [1.114.1] - 2026-09-20
 
 ### Fixed & Enhanced — Cross-Origin Resilient Optical Tag Detection Pipeline & Tainted Canvas Recovery
