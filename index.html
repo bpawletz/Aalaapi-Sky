@@ -4941,7 +4941,8 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.115.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.115.1</span></h1>
+
         </div>
       </div>
 
@@ -8118,7 +8119,8 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.115.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.115.1</span>
+
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -8182,7 +8184,15 @@ html, body {
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.115.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>📸 Inspection Photo Thumbnails Fixed:</strong> Removed an erroneous filename exclusion that was blocking all standard <code>DJI_000x.JPG</code> photos from generating preview URLs, causing blank thumbnails in the Inspection Photos tab.</li>
+              <li><strong>⏳ Media Ingest Progress Fixed:</strong> Resolved the progress bar getting stuck at 98% and the server's "Ingestion complete!" message overwriting the final status. Ingest now correctly advances to 100% and displays the accurate completion count.</li>
+            </ul>
+          </div>
+          <div>
             <strong style="color: var(--text-main);">Changelog (v1.115.0):</strong>
+
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>🎮 Diagnostics 3D HUD Controls:</strong> Added a new glass-morphism HUD overlay panel (top-right of the 3D replay viewport) with six map-item toggles: <strong>Auto-Rotate</strong>, <strong>Reset Camera</strong>, <strong>Camera Cones</strong>, <strong>Footprints</strong>, <strong>3D Drones</strong>, and <strong>FPV Mode</strong> — identical in style to the main 3D preview controls.</li>
             </ul>
@@ -30764,9 +30774,10 @@ const FlightDiagnostics = {
       let imgSrc = photo.thumbnailUrl || photo.previewUrl || '';
       if (!imgSrc && photo.rawPath) {
         imgSrc = `/scratch/mission_archives/${manifestUuid}/photos/previews/${encodeURIComponent(photo.filename)}`;
-      } else if (!imgSrc && photo.filename && !photo.filename.startsWith('DJI_000') && (photo.filename.endsWith('.JPG') || photo.filename.endsWith('.jpg') || photo.filename.endsWith('.PNG') || photo.filename.endsWith('.png'))) {
+      } else if (!imgSrc && photo.filename && (photo.filename.endsWith('.JPG') || photo.filename.endsWith('.jpg') || photo.filename.endsWith('.PNG') || photo.filename.endsWith('.png') || photo.filename.endsWith('.DNG') || photo.filename.endsWith('.dng'))) {
         imgSrc = `/scratch/mission_archives/${manifestUuid}/photos/previews/${encodeURIComponent(photo.filename)}`;
       }
+
       if (imgSrc && !imgSrc.startsWith('http') && !imgSrc.startsWith('data:')) {
         imgSrc = `${apiBase}${imgSrc.startsWith('/') ? '' : '/'}${imgSrc}`;
       }
@@ -44897,11 +44908,18 @@ async function executeMediaPull() {
       if (pRes.ok) {
         const pData = await pRes.json();
         if (pData && typeof pData.percent === 'number' && pData.percent > 0) {
-          const sPct = Math.max(currentPct, Math.min(98, pData.percent));
+          // Allow the poller to reach 100% if server reports complete
+          const isDone = !pData.active || pData.percent >= 100;
+          const sPct = isDone ? 100 : Math.max(currentPct, Math.min(98, pData.percent));
           currentPct = sPct;
           if (progBar) progBar.style.width = `${sPct}%`;
           if (progPct) progPct.textContent = `${sPct}%`;
-          if (pData.status && progText) progText.textContent = pData.status;
+          // Only update status text while still in-progress (don't overwrite final completion message)
+          if (pData.status && progText && !isDone) progText.textContent = pData.status;
+          if (isDone) {
+            isPulling = false;
+            clearInterval(pollInterval);
+          }
         }
       }
     } catch (_) {
@@ -44912,6 +44930,7 @@ async function executeMediaPull() {
       }
     }
   }, 250);
+
 
   try {
     const activeWps = (typeof getCurrentWaypoints === 'function' && Array.isArray(getCurrentWaypoints())) ? getCurrentWaypoints() : [];

@@ -18664,9 +18664,10 @@ const FlightDiagnostics = {
       let imgSrc = photo.thumbnailUrl || photo.previewUrl || '';
       if (!imgSrc && photo.rawPath) {
         imgSrc = `/scratch/mission_archives/${manifestUuid}/photos/previews/${encodeURIComponent(photo.filename)}`;
-      } else if (!imgSrc && photo.filename && !photo.filename.startsWith('DJI_000') && (photo.filename.endsWith('.JPG') || photo.filename.endsWith('.jpg') || photo.filename.endsWith('.PNG') || photo.filename.endsWith('.png'))) {
+      } else if (!imgSrc && photo.filename && (photo.filename.endsWith('.JPG') || photo.filename.endsWith('.jpg') || photo.filename.endsWith('.PNG') || photo.filename.endsWith('.png') || photo.filename.endsWith('.DNG') || photo.filename.endsWith('.dng'))) {
         imgSrc = `/scratch/mission_archives/${manifestUuid}/photos/previews/${encodeURIComponent(photo.filename)}`;
       }
+
       if (imgSrc && !imgSrc.startsWith('http') && !imgSrc.startsWith('data:')) {
         imgSrc = `${apiBase}${imgSrc.startsWith('/') ? '' : '/'}${imgSrc}`;
       }
@@ -32797,11 +32798,18 @@ async function executeMediaPull() {
       if (pRes.ok) {
         const pData = await pRes.json();
         if (pData && typeof pData.percent === 'number' && pData.percent > 0) {
-          const sPct = Math.max(currentPct, Math.min(98, pData.percent));
+          // Allow the poller to reach 100% if server reports complete
+          const isDone = !pData.active || pData.percent >= 100;
+          const sPct = isDone ? 100 : Math.max(currentPct, Math.min(98, pData.percent));
           currentPct = sPct;
           if (progBar) progBar.style.width = `${sPct}%`;
           if (progPct) progPct.textContent = `${sPct}%`;
-          if (pData.status && progText) progText.textContent = pData.status;
+          // Only update status text while still in-progress (don't overwrite final completion message)
+          if (pData.status && progText && !isDone) progText.textContent = pData.status;
+          if (isDone) {
+            isPulling = false;
+            clearInterval(pollInterval);
+          }
         }
       }
     } catch (_) {
@@ -32812,6 +32820,7 @@ async function executeMediaPull() {
       }
     }
   }, 250);
+
 
   try {
     const activeWps = (typeof getCurrentWaypoints === 'function' && Array.isArray(getCurrentWaypoints())) ? getCurrentWaypoints() : [];
