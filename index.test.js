@@ -20240,3 +20240,90 @@ describe('Sequential Photo Filename Filtering & Ingest Fix Tests (v1.115.2)', ()
     );
   });
 });
+
+// ==========================================================================
+// Flight Layer Boundary Projection & Ingest ENOSPC Warning Tests (v1.115.3)
+// ==========================================================================
+describe('Flight Layer Boundary Projection & Ingest ENOSPC Warning Tests (v1.115.3)', () => {
+  test('computeConvexHullGeo computes correct outer polygon from unordered points', () => {
+    const js = fs.readFileSync('./index.js', 'utf8');
+    assert.ok(js.includes('function computeConvexHullGeo(points)'), 'index.js must define computeConvexHullGeo');
+
+    // Square with an interior point
+    const points = [
+      { lat: 40.0, lon: -83.0 },
+      { lat: 40.0, lon: -83.1 },
+      { lat: 40.1, lon: -83.0 },
+      { lat: 40.1, lon: -83.1 },
+      { lat: 40.05, lon: -83.05 } // interior point
+    ];
+
+    // Extract function from index.js
+    const fnMatch = js.match(/function computeConvexHullGeo\(points\)[\s\S]*?\n\}/);
+    assert.ok(fnMatch, 'computeConvexHullGeo function block must be found in index.js');
+    const computeConvexHullGeo = new Function('points', `
+      ${fnMatch[0]}
+      return computeConvexHullGeo(points);
+    `);
+
+    const hull = computeConvexHullGeo(points);
+    assert.strictEqual(hull.length, 4, 'Convex hull of a square with interior point should have 4 vertices');
+    assert.ok(!hull.some(p => p.lat === 40.05 && p.lon === -83.05), 'Interior point must not be in the hull');
+  });
+
+  test('getLayerBoundaryGeoPolygon generates 36-point boundary ring for orbit layers', () => {
+    const js = fs.readFileSync('./index.js', 'utf8');
+    assert.ok(
+      js.includes("layer.pattern === 'orbit'"),
+      'getLayerBoundaryGeoPolygon must support orbit pattern'
+    );
+    assert.ok(
+      js.includes('const numPoints = 36;'),
+      'Radial patterns must generate 36 boundary polygon vertices'
+    );
+  });
+
+  test('PhotoInspector has plannedWaypoints and telemetry fallback for flight boundaries', () => {
+    const js = fs.readFileSync('./index.js', 'utf8');
+    assert.ok(
+      js.includes('FlightDiagnostics.plannedWaypoints.length >= 3'),
+      'PhotoInspector must fallback to FlightDiagnostics planned waypoints for boundary'
+    );
+    assert.ok(
+      js.includes('FlightDiagnostics.telemetryData.points'),
+      'PhotoInspector must fallback to FlightDiagnostics telemetry points for boundary'
+    );
+  });
+
+  test('companion server tracks copy errors and flags diskSpaceError on ENOSPC', () => {
+    const serverJs = fs.readFileSync('./tools/companion/server.js', 'utf8');
+    assert.ok(
+      serverJs.includes("copyErr.code === 'ENOSPC'"),
+      'server.js must detect ENOSPC during media pull'
+    );
+    assert.ok(
+      serverJs.includes('diskSpaceError: Boolean(diskSpaceError)'),
+      'server.js response must include diskSpaceError flag'
+    );
+  });
+
+  test('executeMediaPull informs user when drive C is full', () => {
+    const js = fs.readFileSync('./index.js', 'utf8');
+    assert.ok(
+      js.includes('Disk full on drive C:!'),
+      'executeMediaPull must notify user when disk full prevents full ingestion'
+    );
+  });
+
+  test('Version 1.115.3 is consistent across package.json and templates', () => {
+    const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
+    assert.strictEqual(pkg.version, '1.115.3');
+
+    const changelog = fs.readFileSync('./CHANGELOG.md', 'utf8');
+    assert.ok(changelog.includes('## [1.115.3] - 2026-09-20'));
+
+    const tmpl = fs.readFileSync('./index_template.html', 'utf8');
+    assert.ok(tmpl.includes('v1.115.3'), 'index_template.html must contain v1.115.3 header badge');
+    assert.ok(tmpl.includes('Version 1.115.3'), 'index_template.html must contain Version 1.115.3');
+  });
+});
