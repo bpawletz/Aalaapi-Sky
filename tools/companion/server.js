@@ -31,6 +31,8 @@ if (!fs.existsSync(ARCHIVE_DIR)) fs.mkdirSync(ARCHIVE_DIR, { recursive: true });
 const { DiagnosticsDatabase } = require('./diagnostics_db.js');
 const diagDb = new DiagnosticsDatabase();
 
+const SCRATCH_DIR = path.resolve(__dirname, '../../scratch');
+const TagDetector = require('../wasm/tag_detector.js');
 const CONFIG_FILE = path.resolve(__dirname, '../../scratch/companion_config.json');
 const DJI_LOG_EXE = path.resolve(__dirname, 'bin/dji-log.exe');
 
@@ -1524,6 +1526,118 @@ function validateImageHeader(filePath) {
   }
 }
 
+
+function scanPhotoFiducials(filePath, options = {}) {
+  if (!filePath || !fs.existsSync(filePath)) return [];
+  try {
+    const tmpBin = path.join(SCRATCH_DIR, `temp_scan_${Date.now()}_${Math.random().toString(36).slice(2)}.bin`);
+    const maxDim = options.maxDimension || 1600;
+    const psScript = `
+      Add-Type -AssemblyName System.Drawing
+      $fullPath = [System.IO.Path]::GetFullPath('${filePath.replace(/'/g, "''")}')
+      $bmp = [System.Drawing.Bitmap]::FromFile($fullPath)
+      $origW = $bmp.Width
+      $origH = $bmp.Height
+      $scale = [Math]::Min(1.0, ${maxDim} / [Math]::Max($origW, $origH))
+      $w = [int]($origW * $scale)
+      $h = [int]($origH * $scale)
+      $resized = New-Object System.Drawing.Bitmap($w, $h)
+      $g = [System.Drawing.Graphics]::FromImage($resized)
+      $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::Bilinear
+      $g.DrawImage($bmp, 0, 0, $w, $h)
+      $rect = New-Object System.Drawing.Rectangle(0, 0, $w, $h)
+      $data = $resized.LockBits($rect, [System.Drawing.Imaging.ImageLockMode]::ReadOnly, [System.Drawing.Imaging.PixelFormat]::Format24bppRgb)
+      $stride = $data.Stride
+      $bytes = New-Object byte[] ($stride * $h)
+      [System.Runtime.InteropServices.Marshal]::Copy($data.Scan0, $bytes, 0, $bytes.Length)
+      $resized.UnlockBits($data)
+      $bmp.Dispose()
+      $resized.Dispose()
+      $g.Dispose()
+
+      $meta = [System.BitConverter]::GetBytes([int]$w) + [System.BitConverter]::GetBytes([int]$h) + [System.BitConverter]::GetBytes([int]$stride) + [System.BitConverter]::GetBytes([int]$origW) + [System.BitConverter]::GetBytes([int]$origH)
+      $outBytes = $meta + $bytes
+      [System.IO.File]::WriteAllBytes('${tmpBin.replace(/\\/g, '\\\\')}', $outBytes)
+    `;
+
+    execFileSync('powershell.exe', ['-NoProfile', '-Command', psScript], { timeout: 30000 });
+
+    if (!fs.existsSync(tmpBin)) return [];
+    const buf = fs.readFileSync(tmpBin);
+    try { fs.unlinkSync(tmpBin); } catch (_) {}
+
+    const w = buf.readInt32LE(0);
+    const h = buf.readInt32LE(4);
+    const stride = buf.readInt32LE(8);
+    const origW = buf.readInt32LE(12);
+    const origH = buf.readInt32LE(16);
+    const rawData = new Uint8Array(buf.buffer, buf.byteOffset + 20);
+
+    const gray = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) {
+      const rowOff = y * stride;
+      const outOff = y * w;
+      for (let x = 0; x < w; x++) {
+        const p = rowOff + x * 3;
+        gray[outOff + x] = (rawData[p + 2] * 77 + rawData[p + 1] * 150 + rawData[p] * 29) >> 8;
+      }
+    }
+
+    const rawTags = TagDetector.detect({ width: w, height: h, data: gray });
+    const scaleX = origW / w;
+    const scaleY = origH / h;
+
+    const gsdCm = options.gsdCm || 0.9;
+    const projectedGcps = Array.isArray(options.projectedGcps) ? options.projectedGcps : [];
+
+    return rawTags.map(t => {
+      const nativeCorners = t.corners.map(c => ({
+        x: Math.round(c.x * scaleX * 10) / 10,
+        y: Math.round(c.y * scaleY * 10) / 10,
+        u: (c.x * scaleX) / origW,
+        v: (c.y * scaleY) / origH
+      }));
+      const nativeCenter = {
+        x: Math.round(t.center.x * scaleX * 10) / 10,
+        y: Math.round(t.center.y * scaleY * 10) / 10,
+        u: (t.center.x * scaleX) / origW,
+        v: (t.center.y * scaleY) / origH
+      };
+
+      let matchedGcp = null;
+      let minDistancePx = Infinity;
+      for (const pg of projectedGcps) {
+        const dPx = Math.hypot(nativeCenter.x - pg.projPxX, nativeCenter.y - pg.projPxY);
+        if (dPx < minDistancePx && (dPx < 300 || String(pg.gcp?.code || '').includes(String(t.id)))) {
+          minDistancePx = dPx;
+          matchedGcp = {
+            code: pg.gcp?.code || `GCP-${t.id}`,
+            role: pg.gcp?.role || 'gcp',
+            lat: pg.gcp?.lat,
+            lon: pg.gcp?.lon,
+            variancePx: Math.round(dPx * 10) / 10,
+            varianceCm: Math.round(dPx * gsdCm * 10) / 10,
+            projectedPixel: { x: Math.round(pg.projPxX), y: Math.round(pg.projPxY) }
+          };
+        }
+      }
+
+      return {
+        family: t.family,
+        id: t.id,
+        confidence: t.confidence,
+        corners: nativeCorners,
+        center: nativeCenter,
+        rotationDeg: t.rotationDeg,
+        matchedGcp
+      };
+    });
+  } catch (e) {
+    logWarn('[TAG DETECTOR]', `Failed to scan ${path.basename(filePath)}: ${e.message}`);
+    return [];
+  }
+}
+
 async function pullMediaPhotos(options = {}) {
   const missionUuid = options.missionUuid || 'mission_' + Date.now();
   const targetDir = path.join(ARCHIVE_DIR, missionUuid);
@@ -1964,6 +2078,36 @@ if ($copied.Count -eq 0 -and $thisPC) {
 
   const waypoints = Array.isArray(options.waypoints) ? options.waypoints : [];
   const correlated = correlatePhotosWithTelemetry(photosMetadata, telemetry.points, waypoints);
+
+  const shouldScanTags = options.scanTags !== false;
+  if (shouldScanTags) {
+    mediaPullProgress = {
+      active: true,
+      stage: 'scanning-tags',
+      percent: 95,
+      current: 0,
+      total: correlated.length,
+      status: 'Scanning photos for fiducial tags & GCPs (AprilTag / ArUco)...'
+    };
+
+    correlated.forEach((photo) => {
+      try {
+        const fullRaw = photo.rawPath || path.join(rawDir, photo.filename);
+        if (fs.existsSync(fullRaw)) {
+          const tags = scanPhotoFiducials(fullRaw, {
+            gsdCm: photo.gsd?.gsdCm || 0.9,
+            plannedGcps: options.plannedGcps || []
+          });
+          photo.detectedTags = tags;
+          if (tags.some(t => t.matchedGcp)) {
+            photo.gcpVerified = true;
+            const best = tags.filter(t => t.matchedGcp).sort((a, b) => a.matchedGcp.varianceCm - b.matchedGcp.varianceCm)[0];
+            photo.gcpOffsetCm = best ? best.matchedGcp.varianceCm : null;
+          }
+        }
+      } catch (_) {}
+    });
+  }
 
   let detectedModel = options.droneModel || (options.telemetry && options.telemetry.droneModel) || null;
   if (!detectedModel) {
@@ -2681,6 +2825,50 @@ const server = http.createServer(async (req, res) => {
       });
       return;
     }
+
+    if (pathname === '/api/media/scan-tags' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', async () => {
+        try {
+          const payload = body ? JSON.parse(body) : {};
+          const photoPath = payload.filePath || (payload.missionUuid && payload.photoId ? path.join(ARCHIVE_DIR, payload.missionUuid, 'photos', 'raw', payload.photoId) : null);
+          const tags = scanPhotoFiducials(photoPath, payload);
+
+          if (payload.missionUuid) {
+            const mPath = path.join(ARCHIVE_DIR, payload.missionUuid, 'inspection_manifest.json');
+            if (fs.existsSync(mPath)) {
+              try {
+                const manifest = JSON.parse(fs.readFileSync(mPath, 'utf8'));
+                if (Array.isArray(manifest.photos)) {
+                  const p = manifest.photos.find(x => x.id === payload.photoId || x.filename === path.basename(photoPath || ''));
+                  if (p) {
+                    p.detectedTags = tags;
+                    p.gcpVerified = tags.some(t => t.matchedGcp);
+                    const best = tags.filter(t => t.matchedGcp).sort((a, b) => a.matchedGcp.varianceCm - b.matchedGcp.varianceCm)[0];
+                    p.gcpOffsetCm = best ? best.matchedGcp.varianceCm : null;
+                    fs.writeFileSync(mPath, JSON.stringify(manifest, null, 2), 'utf8');
+                  }
+                }
+              } catch (_) {}
+            }
+          }
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            success: true,
+            detectedTags: tags,
+            gcpVerified: tags.some(t => t.matchedGcp),
+            totalTags: tags.length
+          }));
+        } catch (err) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
 
     if (pathname === '/api/media/manifest' && req.method === 'GET') {
       const uuid = url.searchParams.get('uuid') || url.searchParams.get('mission');
@@ -3402,6 +3590,7 @@ module.exports = {
   pullRc2FlightLogs,
   detectMediaDevices,
   pullMediaPhotos,
+  scanPhotoFiducials,
   getMediaPullProgress,
   computeFileMd5,
   validateImageHeader,

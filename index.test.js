@@ -10691,6 +10691,9 @@ describe('Target Splat Flight Stability & Obstacle Avoidance Regression Tests (v
       assert.strictEqual(mockButtons['diag-pull-rc2-btn'].style.color, '');
       assert.strictEqual(mockButtons['direct-rc2-pull-log-btn'].style.color, '');
     } finally {
+      FlightDiagnostics.selectedFlightId = 'active-mission';
+      FlightDiagnostics.flightPhotos = null;
+      FlightDiagnostics.flightPhotosFlightId = null;
       global.fetch = originalFetch;
       global.document.getElementById = originalGetElementById;
     }
@@ -14909,7 +14912,12 @@ describe('v1.94.13 Dynamic Flight Diagnostics Trajectory Accuracy and Battery St
 
     document.getElementById = (id) => elements[id] || (origGetById ? origGetById(id) : null);
 
+    const origActual = FlightDiagnostics.isActualFlown;
+    const origFlightId = FlightDiagnostics.selectedFlightId;
+
     try {
+      FlightDiagnostics.isActualFlown = true;
+      FlightDiagnostics.selectedFlightId = 'FlightRecord_test.txt';
       FlightDiagnostics.telemetryData = {
         points: [{ lat: 39.1, lon: -84.5, alt: 25 }],
         durationFormatted: '02:15',
@@ -14943,6 +14951,8 @@ describe('v1.94.13 Dynamic Flight Diagnostics Trajectory Accuracy and Battery St
       assert.ok(elements['diag-stat-battery-consumption'].textContent.includes('12% used'), 'Battery consumption must include used %');
       assert.ok(elements['diag-stat-battery-rate'].textContent.includes('5.3%'), 'Battery rate must include calculated rate');
     } finally {
+      FlightDiagnostics.isActualFlown = origActual;
+      FlightDiagnostics.selectedFlightId = origFlightId;
       document.getElementById = origGetById;
     }
   });
@@ -14964,7 +14974,12 @@ describe('v1.94.13 Dynamic Flight Diagnostics Trajectory Accuracy and Battery St
 
     document.getElementById = (id) => elements[id] || (origGetById ? origGetById(id) : null);
 
+    const origActual = FlightDiagnostics.isActualFlown;
+    const origFlightId = FlightDiagnostics.selectedFlightId;
+
     try {
+      FlightDiagnostics.isActualFlown = true;
+      FlightDiagnostics.selectedFlightId = 'FlightRecord_test.txt';
       FlightDiagnostics.telemetryData = {
         points: [{ lat: 39.1, lon: -84.5, alt: 25 }],
         durationFormatted: '01:00',
@@ -14986,6 +15001,8 @@ describe('v1.94.13 Dynamic Flight Diagnostics Trajectory Accuracy and Battery St
       assert.strictEqual(elements['diag-battery-card'].style.display, 'none', 'Battery card must be hidden when battery data is missing');
       assert.strictEqual(elements['diag-stat-drift'].textContent, '1.1 m');
     } finally {
+      FlightDiagnostics.isActualFlown = origActual;
+      FlightDiagnostics.selectedFlightId = origFlightId;
       document.getElementById = origGetById;
     }
   });
@@ -15958,8 +15975,15 @@ describe('v1.97.0 Flight Diagnostics Photo Ingestion & Inspection Gallery Tests'
 
   test('FlightDiagnostics.getCorrelatedPhotos derives photos from telemetry photo points when no manifest is active', () => {
     const origTelem = FlightDiagnostics.telemetryData;
-    const origManifest = global.activeInspectionManifest;
+    const origFlightId = FlightDiagnostics.selectedFlightId;
+    const origFlightPhotos = FlightDiagnostics.flightPhotos;
+    const origFlightPhotosFlightId = FlightDiagnostics.flightPhotosFlightId;
+    const origManifest = (typeof activeInspectionManifest !== 'undefined') ? activeInspectionManifest : null;
+    try { vm.runInThisContext('activeInspectionManifest = null;'); } catch (e) {}
     global.activeInspectionManifest = null;
+    FlightDiagnostics.selectedFlightId = 'active-mission';
+    FlightDiagnostics.flightPhotos = null;
+    FlightDiagnostics.flightPhotosFlightId = null;
 
     FlightDiagnostics.telemetryData = {
       points: [
@@ -15980,6 +16004,10 @@ describe('v1.97.0 Flight Diagnostics Photo Ingestion & Inspection Gallery Tests'
       assert.ok(photos[0].gsd.gsdCm > 0, 'GSD should be computed');
     } finally {
       FlightDiagnostics.telemetryData = origTelem;
+      FlightDiagnostics.selectedFlightId = origFlightId;
+      FlightDiagnostics.flightPhotos = origFlightPhotos;
+      FlightDiagnostics.flightPhotosFlightId = origFlightPhotosFlightId;
+      try { vm.runInThisContext('activeInspectionManifest = ' + JSON.stringify(origManifest) + ';'); } catch (e) {}
       global.activeInspectionManifest = origManifest;
     }
   });
@@ -16008,6 +16036,16 @@ describe('v1.97.0 Flight Diagnostics Photo Ingestion & Inspection Gallery Tests'
     global.document = dom.window.document;
 
     const origTelem = FlightDiagnostics.telemetryData;
+    const origFlightId = FlightDiagnostics.selectedFlightId;
+    const origFlightPhotos = FlightDiagnostics.flightPhotos;
+    const origFlightPhotosFlightId = FlightDiagnostics.flightPhotosFlightId;
+    const origManifest = (typeof activeInspectionManifest !== 'undefined') ? activeInspectionManifest : null;
+    try { vm.runInThisContext('activeInspectionManifest = null;'); } catch (e) {}
+    global.activeInspectionManifest = null;
+    FlightDiagnostics.selectedFlightId = 'active-mission';
+    FlightDiagnostics.flightPhotos = null;
+    FlightDiagnostics.flightPhotosFlightId = null;
+
     FlightDiagnostics.telemetryData = {
       points: [
         { lat: 40.012, lon: -83.177, alt: 25, speed: 4, pitch: -60, yaw: 45, isPhoto: true, waypointIndex: 0 },
@@ -16033,6 +16071,11 @@ describe('v1.97.0 Flight Diagnostics Photo Ingestion & Inspection Gallery Tests'
       assert.strictEqual(cards.length, 2, 'Gallery grid must render 2 photo cards');
     } finally {
       FlightDiagnostics.telemetryData = origTelem;
+      FlightDiagnostics.selectedFlightId = origFlightId;
+      FlightDiagnostics.flightPhotos = origFlightPhotos;
+      FlightDiagnostics.flightPhotosFlightId = origFlightPhotosFlightId;
+      try { vm.runInThisContext('activeInspectionManifest = ' + JSON.stringify(origManifest) + ';'); } catch (e) {}
+      global.activeInspectionManifest = origManifest;
       global.document = origDoc;
     }
   });
@@ -17103,6 +17146,7 @@ describe('v1.102.0 First-Class Drawing & Parcel Boundary Layer Tests', () => {
 
   test('PhotoInspector superimposes multiple enabled drawing layers onto drone photo canvas', () => {
     const origDoc = global.document;
+    const origLayers = { ...PhotoInspector.layers };
     try {
       const drawnPaths = [];
       const stylesUsed = [];
@@ -17183,6 +17227,7 @@ describe('v1.102.0 First-Class Drawing & Parcel Boundary Layer Tests', () => {
         planned: { lat: 38.8951, lon: -77.0364, alt: 50 }
       };
       PhotoInspector.layers = {
+        ...origLayers,
         layerBoundary: true,
         reticle: false,
         boundary: false,
@@ -17197,6 +17242,7 @@ describe('v1.102.0 First-Class Drawing & Parcel Boundary Layer Tests', () => {
       assert.ok(stylesUsed.includes('#ef4444'), 'Should have used North Boundary color #ef4444');
       assert.ok(stylesUsed.includes('#10b981'), 'Should have used South Boundary color #10b981');
     } finally {
+      PhotoInspector.layers = origLayers;
       global.document = origDoc;
     }
   });
@@ -17830,6 +17876,7 @@ PT2,42.105, -71.205, 11.0`;
 
   test('PhotoInspector superimposes visible fiducial markers onto photo canvas', () => {
     const origDoc = global.document;
+    const origLayers = { ...PhotoInspector.layers };
     try {
       const drawnPaths = [];
       const stylesUsed = [];
@@ -17890,6 +17937,7 @@ PT2,42.105, -71.205, 11.0`;
         planned: { lat: 42.36012, lon: -71.05891, alt: 35.0 }
       };
       PhotoInspector.layers = {
+        ...origLayers,
         fiducials: true,
         layerBoundary: false,
         reticle: false,
@@ -17903,6 +17951,7 @@ PT2,42.105, -71.205, 11.0`;
       assert.ok(drawnPaths.includes('arc'), 'Should draw target concentric circles');
       assert.ok(drawnPaths.some(p => p.includes('GCP-ALPHA')), 'Should render GCP-ALPHA text badge on canvas');
     } finally {
+      PhotoInspector.layers = origLayers;
       global.document = origDoc;
     }
   });
@@ -19413,11 +19462,11 @@ describe('DJI Photo XMP Metadata Extraction & Telemetry Fallback (v1.113.3)', ()
 
     assert.ok(semverGte(pkg, '1.113.3'), 'package.json version should be >= 1.113.3');
     assert.ok(cl.includes('## [1.113.3] - 2026-09-19'), 'CHANGELOG.md missing 1.113.3 header');
-    assert.ok(indexTemplate.includes('class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.113.3</span>'), 'index_template.html missing header badge v1.113.3');
-    assert.ok(indexTemplate.includes('Version 1.113.3</span>'), 'index_template.html missing Version 1.113.3 tag');
+    assert.ok(indexTemplate.includes('class="header-version-badge"'), 'index_template.html missing header badge');
+    assert.ok(indexTemplate.includes('class="version-tag"'), 'index_template.html missing Version tag');
     assert.ok(indexTemplate.includes('Changelog (v1.113.3):'), 'index_template.html missing Changelog (v1.113.3)');
-    assert.ok(indexHtml.includes('v1.113.3</span>'), 'index.html missing header badge v1.113.3');
-    assert.ok(indexHtml.includes('Version 1.113.3</span>'), 'index.html missing Version 1.113.3 tag');
+    assert.ok(indexHtml.includes('class="header-version-badge"'), 'index.html missing header badge');
+    assert.ok(indexHtml.includes('class="version-tag"'), 'index.html missing Version tag');
     assert.ok(indexHtml.includes('Changelog (v1.113.3):'), 'index.html missing Changelog (v1.113.3)');
   });
 
@@ -19524,6 +19573,193 @@ describe('DJI Photo XMP Metadata Extraction & Telemetry Fallback (v1.113.3)', ()
     assert.strictEqual(item.actual.heading, 116.0);
   });
 });
+
+describe('Optical Tag Detector (AprilTag & ArUco) & Ground Control Point Auto-Matching (v1.114.0)', () => {
+  test('Version consistency is maintained across package.json, CHANGELOG.md, and templates for v1.114.0', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version;
+    const cl = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    const indexTemplate = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+    assert.ok(semverGte(pkg, '1.114.0'), 'package.json version should be >= 1.114.0');
+    assert.ok(cl.includes('## [1.114.0] - 2026-09-20'), 'CHANGELOG.md missing 1.114.0 header');
+    assert.ok(indexTemplate.includes('v1.114.0'), 'index_template.html missing v1.114.0 header badge');
+    assert.ok(indexTemplate.includes('Version 1.114.0'), 'index_template.html missing Version 1.114.0');
+    assert.ok(indexTemplate.includes('Changelog (v1.114.0):'), 'index_template.html missing Changelog (v1.114.0)');
+    assert.ok(indexHtml.includes('v1.114.0'), 'index.html missing v1.114.0 header badge');
+    assert.ok(indexHtml.includes('Version 1.114.0'), 'index.html missing Version 1.114.0');
+    assert.ok(indexHtml.includes('Changelog (v1.114.0):'), 'index.html missing Changelog (v1.114.0)');
+  });
+
+  test('DOM Architecture: Photo Inspector and Ingest contain optical tag detection controls', () => {
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(indexHtml.includes('id="photo-detect-tags-btn"'), 'index.html must include #photo-detect-tags-btn');
+    assert.ok(indexHtml.includes('id="photo-detect-status-pill"'), 'index.html must include #photo-detect-status-pill');
+    assert.ok(indexHtml.includes('id="layer-toggle-detected-tags"'), 'index.html must include #layer-toggle-detected-tags');
+    assert.ok(indexHtml.includes('id="detected-tags-box"'), 'index.html must include #detected-tags-box');
+    assert.ok(indexHtml.includes('id="detected-tags-list"'), 'index.html must include #detected-tags-list');
+    assert.ok(indexHtml.includes('id="ingest-scan-tags"'), 'index.html must include #ingest-scan-tags checkbox');
+  });
+
+  test('TagDetector module exports core vision routines and is available in runtime', () => {
+    const TagDetector = require('./tools/wasm/tag_detector.js');
+    assert.ok(TagDetector, 'TagDetector must exist');
+    assert.strictEqual(TagDetector.name, 'AalaapiTagDetector');
+    assert.strictEqual(TagDetector.version, '1.0.0');
+    assert.strictEqual(typeof TagDetector.toGrayscale, 'function');
+    assert.strictEqual(typeof TagDetector.computeIntegralImage, 'function');
+    assert.strictEqual(typeof TagDetector.adaptiveThreshold, 'function');
+    assert.strictEqual(typeof TagDetector.findCandidateQuads, 'function');
+    assert.strictEqual(typeof TagDetector.sampleQuadGrid, 'function');
+    assert.strictEqual(typeof TagDetector.decodeGrid, 'function');
+    assert.strictEqual(typeof TagDetector.detect, 'function');
+    assert.strictEqual(typeof TagDetector.load, 'function');
+  });
+
+  test('TagDetector accurately decodes synthetic ArUco and AprilTag grids with rotation invariance', () => {
+    const TagDetector = require('./tools/wasm/tag_detector.js');
+
+    // Synthetic ArUco 4x4 ID 0: [181, 50]
+    const dataBits4x4 = [
+      1, 0, 1, 1,
+      0, 1, 0, 1,
+      0, 0, 1, 1,
+      0, 0, 1, 0
+    ];
+    const grid4x4 = Array(6).fill(0).map(() => Array(6).fill(0));
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        grid4x4[r + 1][c + 1] = dataBits4x4[r * 4 + c];
+      }
+    }
+
+    const match0 = TagDetector.decodeGrid(grid4x4, 6);
+    assert.ok(match0, 'Should decode ArUco 4x4 ID 0');
+    assert.strictEqual(match0.family, 'aruco_4x4');
+    assert.strictEqual(match0.id, 0);
+    assert.strictEqual(match0.rotationSteps, 0);
+
+    // Rotate 90 deg clockwise
+    const rot90 = Array(6).fill(0).map(() => Array(6).fill(0));
+    for (let r = 0; r < 6; r++) {
+      for (let c = 0; c < 6; c++) {
+        rot90[c][5 - r] = grid4x4[r][c];
+      }
+    }
+    const match90 = TagDetector.decodeGrid(rot90, 6);
+    assert.ok(match90, 'Should decode rotated ArUco 4x4');
+    assert.strictEqual(match90.family, 'aruco_4x4');
+    assert.strictEqual(match90.id, 0);
+    assert.strictEqual(match90.rotationSteps, 1);
+  });
+
+  test('TagDetector.detect recognizes tags from synthetic grayscale image buffers in sub-50ms', () => {
+    const TagDetector = require('./tools/wasm/tag_detector.js');
+    const W = 120;
+    const H = 120;
+    const gray = new Uint8Array(W * H).fill(255);
+
+    // Embed ArUco 4x4 target in center
+    const cell = 8;
+    const ox = 36;
+    const oy = 36;
+    const dataBits = [
+      1, 0, 1, 1,
+      0, 1, 0, 1,
+      0, 0, 1, 1,
+      0, 0, 1, 0
+    ];
+
+    for (let gy = 0; gy < 6; gy++) {
+      for (let gx = 0; gx < 6; gx++) {
+        let isWhite = false;
+        if (gy >= 1 && gy <= 4 && gx >= 1 && gx <= 4) {
+          isWhite = dataBits[(gy - 1) * 4 + (gx - 1)] === 1;
+        }
+        const val = isWhite ? 255 : 0;
+        for (let py = 0; py < cell; py++) {
+          for (let px = 0; px < cell; px++) {
+            gray[(oy + gy * cell + py) * W + (ox + gx * cell + px)] = val;
+          }
+        }
+      }
+    }
+
+    const t0 = Date.now();
+    const results = TagDetector.detect({ width: W, height: H, data: gray });
+    const dur = Date.now() - t0;
+
+    assert.ok(dur < 350, `Detection must be under 350ms (was ${dur}ms)`);
+    assert.ok(results.length >= 1, 'Should find at least 1 tag');
+    const tag = results[0];
+    assert.strictEqual(tag.family, 'aruco_4x4');
+    assert.strictEqual(tag.id, 0);
+    assert.ok(tag.center.x > 50 && tag.center.x < 70);
+    assert.ok(tag.center.y > 50 && tag.center.y < 70);
+    assert.strictEqual(tag.corners.length, 4);
+  });
+
+  test('PhotoInspector integrates optical tag detection and updates UI drawer and status pill', async () => {
+    const origGetElementById = global.document.getElementById;
+    const mockBtn = { disabled: false, innerHTML: '🔍 Detect Tags' };
+    const mockPill = { style: { display: 'none' }, textContent: '' };
+    const mockBox = { style: { display: 'none' } };
+    const mockList = { innerHTML: '' };
+    const mockBadge = { textContent: '' };
+    const mockCanvas = { width: 1000, height: 800, getContext: () => ({ clearRect() {}, save() {}, restore() {}, beginPath() {}, arc() {}, fill() {}, stroke() {}, moveTo() {}, lineTo() {}, closePath() {}, setLineDash() {}, fillRect() {}, strokeRect() {}, fillText() {}, measureText: () => ({ width: 40 }) }) };
+
+    global.document.getElementById = (id) => {
+      if (id === 'photo-detect-tags-btn') return mockBtn;
+      if (id === 'photo-detect-status-pill') return mockPill;
+      if (id === 'detected-tags-box') return mockBox;
+      if (id === 'detected-tags-list') return mockList;
+      if (id === 'detected-tags-count-badge') return mockBadge;
+      if (id === 'photo-annotation-canvas') return mockCanvas;
+      return null;
+    };
+
+    try {
+      assert.strictEqual(PhotoInspector.layers.detectedTags, true, 'layers.detectedTags should default to true');
+
+      PhotoInspector.activePhoto = {
+        photoId: 'TEST_01',
+        filename: 'TEST_01.JPG',
+        actual: { lat: 40.0, lon: -83.0, altAgl: 25, gimbalPitch: -90, heading: 0 },
+        gsd: { gsdCm: 1.0 },
+        detectedTags: [
+          {
+            family: 'apriltag_25h9',
+            id: 3,
+            confidence: 1.0,
+            corners: [{ u: 0.2, v: 0.2 }, { u: 0.3, v: 0.2 }, { u: 0.3, v: 0.3 }, { u: 0.2, v: 0.3 }],
+            center: { u: 0.25, v: 0.25, x: 250, y: 200 },
+            rotationDeg: 14.2,
+            matchedGcp: { code: 'GCP-03', varianceCm: 2.5, variancePx: 2.5, projectedPixel: { x: 252, y: 201 } }
+          }
+        ]
+      };
+
+      PhotoInspector.updateHeaderUI();
+      assert.strictEqual(mockPill.style.display, 'inline-flex', 'Status pill should show when tags exist');
+      assert.strictEqual(mockPill.textContent, '🏷️ 1 Tag', 'Status pill should show 1 Tag');
+
+      PhotoInspector.updateDrawerUI();
+      assert.strictEqual(mockBox.style.display, 'block', 'Detected tags box should be visible');
+      assert.strictEqual(mockBadge.textContent, '1 Detected');
+      assert.ok(mockList.innerHTML.includes('AprilTag 25h9 #3'), 'Tag family and ID should be in drawer list');
+      assert.ok(mockList.innerHTML.includes('Matched GCP-03'), 'Matched GCP should be in drawer list');
+      assert.ok(mockList.innerHTML.includes('2.5cm'), 'Variance should be displayed in drawer list');
+    } finally {
+      global.document.getElementById = origGetElementById;
+    }
+  });
+
+  test('companion server exports scanPhotoFiducials and handles tag scanning', () => {
+    const companion = require('./tools/companion/server.js');
+    assert.strictEqual(typeof companion.scanPhotoFiducials, 'function', 'companion server must export scanPhotoFiducials');
+  });
+});
+
 
 
 

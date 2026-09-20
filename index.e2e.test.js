@@ -5588,6 +5588,85 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(rc2State.filteredRows, 1, 'Search filter should narrow table to 1 row');
     assert.strictEqual(rc2State.modalClosed, true, 'RC 2 Log Manager modal should close cleanly');
   });
+
+  test('E2E: Optical Tag Detector (AprilTag & ArUco) controls in Photo Inspector & Media Ingest (v1.114.0)', async () => {
+    const e2eTagState = await page.evaluate(() => {
+      const detectBtn = document.getElementById('photo-detect-tags-btn');
+      const statusPill = document.getElementById('photo-detect-status-pill');
+      const layerToggle = document.getElementById('layer-toggle-detected-tags');
+      const tagsBox = document.getElementById('detected-tags-box');
+      const tagsList = document.getElementById('detected-tags-list');
+      const ingestScanCheck = document.getElementById('ingest-scan-tags');
+
+      // Test layer toggle interaction
+      let initialChecked = false;
+      let toggledChecked = false;
+      if (layerToggle) {
+        initialChecked = layerToggle.checked;
+        layerToggle.click();
+        toggledChecked = layerToggle.checked;
+        layerToggle.click(); // restore
+      }
+
+      // Test PhotoInspector tag display in drawer and status pill
+      if (typeof PhotoInspector !== 'undefined') {
+        PhotoInspector.activePhoto = {
+          photoId: 'E2E_PHOTO_01',
+          filename: 'DJI_TEST_E2E.JPG',
+          actual: { lat: 40.0, lon: -83.0, altAgl: 25, gimbalPitch: -90, heading: 0 },
+          gsd: { gsdCm: 1.0 },
+          detectedTags: [
+            {
+              family: 'apriltag_25h9',
+              id: 2,
+              confidence: 1.0,
+              corners: [{ u: 0.1, v: 0.1 }, { u: 0.2, v: 0.1 }, { u: 0.2, v: 0.2 }, { u: 0.1, v: 0.2 }],
+              center: { u: 0.15, v: 0.15, x: 150, y: 150 },
+              rotationDeg: -69.1,
+              matchedGcp: { code: 'GCP-02', varianceCm: 1.8, variancePx: 1.8, projectedPixel: { x: 151, y: 151 } }
+            }
+          ]
+        };
+        PhotoInspector.updateHeaderUI();
+        PhotoInspector.updateDrawerUI();
+      }
+
+      const pillVisible = statusPill ? (statusPill.style.display !== 'none') : false;
+      const pillText = statusPill ? statusPill.textContent : '';
+      const boxVisible = tagsBox ? (tagsBox.style.display !== 'none') : false;
+      const listHtml = tagsList ? tagsList.innerHTML : '';
+
+      return {
+        hasDetectBtn: Boolean(detectBtn),
+        hasStatusPill: Boolean(statusPill),
+        hasLayerToggle: Boolean(layerToggle),
+        initialChecked,
+        toggledChecked,
+        hasTagsBox: Boolean(tagsBox),
+        hasTagsList: Boolean(tagsList),
+        hasIngestScanCheck: Boolean(ingestScanCheck),
+        ingestScanChecked: ingestScanCheck ? ingestScanCheck.checked : false,
+        pillVisible,
+        pillText,
+        boxVisible,
+        hasMatchedGcpText: listHtml.includes('Matched GCP-02')
+      };
+    });
+
+    assert.strictEqual(e2eTagState.hasDetectBtn, true, '#photo-detect-tags-btn must exist in Photo Inspector header');
+    assert.strictEqual(e2eTagState.hasStatusPill, true, '#photo-detect-status-pill must exist in Photo Inspector header');
+    assert.strictEqual(e2eTagState.hasLayerToggle, true, '#layer-toggle-detected-tags must exist in Annotation Layers');
+    assert.strictEqual(e2eTagState.initialChecked, true, '#layer-toggle-detected-tags must be checked by default');
+    assert.strictEqual(e2eTagState.toggledChecked, false, '#layer-toggle-detected-tags must toggle cleanly');
+    assert.strictEqual(e2eTagState.hasTagsBox, true, '#detected-tags-box must exist in Photo Inspector drawer');
+    assert.strictEqual(e2eTagState.hasTagsList, true, '#detected-tags-list must exist in Photo Inspector drawer');
+    assert.strictEqual(e2eTagState.hasIngestScanCheck, true, '#ingest-scan-tags must exist in Media Ingest modal');
+    assert.strictEqual(e2eTagState.ingestScanChecked, true, '#ingest-scan-tags must default to checked');
+    assert.strictEqual(e2eTagState.pillVisible, true, 'Status pill must be visible when tags are detected');
+    assert.strictEqual(e2eTagState.pillText, '🏷️ 1 Tag', 'Status pill must indicate 1 Tag');
+    assert.strictEqual(e2eTagState.boxVisible, true, 'Detected tags box must be displayed in drawer');
+    assert.strictEqual(e2eTagState.hasMatchedGcpText, true, 'Detected tags list must include Matched GCP-02');
+  });
 });
 
 

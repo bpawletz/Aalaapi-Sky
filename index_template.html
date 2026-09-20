@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.113.3</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.114.0</span></h1>
         </div>
       </div>
 
@@ -2413,6 +2413,14 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #4ade80; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🔍 In-Browser &amp; Bridge Optical Tag Detector (AprilTag &amp; ArUco) (v1.114.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Full client-side and Companion Bridge computer vision optical tag detector. Scans photos in under 350ms to detect <strong>AprilTag 25h9</strong>, <strong>36h11</strong>, <strong>16h5</strong>, and <strong>ArUco 4x4 / 5x5</strong> fiducials. Extracts sub-pixel corner coordinates, rotation orientation (yellow corner #0 dot), and tag IDs. Automatically correlates ground targets against planned Ground Control Points (GCPs), computing centimeter reprojection variance and validating survey positions directly inside Photo Inspector (<code>#photo-inspector-modal</code>) and photo ingest (<code>#media-ingest-modal</code>).
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               📸 DJI Photo Embedded XMP Spatial Metadata &amp; Resilient Fallback (v1.113.3)
@@ -3228,7 +3236,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.113.3</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.114.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -3291,6 +3299,14 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.114.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🔍 Optical Tag &amp; Fiducial Detector (AprilTag &amp; ArUco):</strong> Built-in computer vision detector in both Photo Inspector and Companion Bridge capable of identifying AprilTag 25h9/36h11/16h5 and ArUco 4x4/5x5 in under 350ms.</li>
+              <li><strong>🎯 Ground Control Point (GCP) Auto-Matching:</strong> Automatically cross-references detected optical targets against planned GCP coordinates, computing centimeter reprojection variance and drawing variance vectors on photo overlays.</li>
+              <li><strong>📥 Selective Tag Ingestion:</strong> Added auto-scan toggle in Media Ingest modal (<code>#ingest-scan-tags</code>) to enrich flight photo manifests with verified ground targets on pull.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.113.3):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -6694,6 +6710,8 @@
         </div>
 
         <div style="display: flex; align-items: center; gap: 8px;">
+          <span id="photo-detect-status-pill" style="display: none; align-items: center; gap: 4px; font-size: 0.70rem; padding: 2px 8px; border-radius: 999px; border: 1px solid rgba(34, 197, 94, 0.4); background: rgba(34, 197, 94, 0.15); color: #4ade80;">🏷️ 0 Tags</span>
+          <button id="photo-detect-tags-btn" class="btn-secondary btn-sm" type="button" style="font-size: 0.72rem; padding: 3px 8px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);" title="Run In-Browser Optical Tag Detector (AprilTag 25h9/36h11/16h5 &amp; ArUco 4x4/5x5) on current photo">🔍 Detect Tags</button>
           <button id="inspector-plane-toggle-btn" class="btn-secondary btn-sm" type="button" style="font-size: 0.72rem; padding: 3px 8px;" title="Toggle Measurement Plane Calibration (Slant Optical Plane for Roofs/Elevated Structures vs Flat Ground Plane)">🏠 Slant (Structure)</button>
           <button id="inspector-unit-toggle-btn" class="btn-secondary btn-sm" type="button" style="font-size: 0.72rem; padding: 3px 8px;" title="Toggle Metric / Imperial Dimension Display">📏 Metric</button>
           <button id="close-photo-inspector-btn" class="close-btn" type="button" aria-label="Close photo inspector">&times;</button>
@@ -6776,6 +6794,10 @@
                 <span>🎯 Fiducial Markers / GCPs</span>
               </label>
               <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" id="layer-toggle-detected-tags" checked />
+                <span>🏷️ Detected Ground Tags</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                 <input type="checkbox" id="layer-toggle-measure" checked />
                 <span>📏 Caliper Measurements</span>
               </label>
@@ -6811,6 +6833,16 @@
           </div>
 
           <hr style="border: 0; border-top: 1px solid var(--border-color);">
+
+          <!-- Detected Ground Tags / Fiducials Box -->
+          <div id="detected-tags-box" style="display: none; background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.25); border-radius: 6px; padding: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <h5 style="font-size: 0.72rem; color: #4ade80; text-transform: uppercase; margin: 0; letter-spacing: 0.05em;">🏷️ Detected Ground Tags</h5>
+              <span id="detected-tags-count-badge" class="badge" style="background: rgba(34, 197, 94, 0.2); color: #86efac; font-size: 0.65rem;">0 Detected</span>
+            </div>
+            <div id="detected-tags-list" style="display: flex; flex-direction: column; gap: 6px; font-size: 0.74rem;">
+            </div>
+          </div>
 
           <!-- Boundary Summary -->
           <div id="boundary-metrics-box" style="display: none; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 6px; padding: 10px;">
@@ -6889,6 +6921,10 @@
           <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
             <input type="checkbox" id="ingest-preserve-raw" checked disabled />
             <span>Preserve raw uncompressed originals in <code>photos/raw/</code></span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+            <input type="checkbox" id="ingest-scan-tags" checked />
+            <span>Auto-scan photos for fiducial tags &amp; GCPs (AprilTag / ArUco)</span>
           </label>
           <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; padding: 6px 8px; border-radius: 6px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); margin-top: 4px;">
             <input type="checkbox" id="ingest-delete-from-drone" style="margin-top: 2px;" />
