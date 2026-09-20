@@ -16239,25 +16239,30 @@ function extractSpatialMissionLayers(layers = null) {
     }
 
     // 4. Parcel & Survey Boundaries (Property / Site Lines)
-    if (l.pattern === 'boundary-polygon' || (l.isDrawingLayer && !l.isFiducialLayer)) {
-      const vertices = Array.isArray(l.polygonVertices) && l.polygonVertices.length >= 3
-        ? l.polygonVertices
-        : (Array.isArray(l.boundaryPolygon) && l.boundaryPolygon.length >= 3 ? l.boundaryPolygon : []);
+    if (!l.isExclusionZone && !l.isFiducialLayer && l.pattern !== 'exclusion-box' && l.pattern !== 'exclusion-freeform' && l.pattern !== 'fiducial-markers') {
+      const hasDrawnBoundary = (Array.isArray(l.boundaryPolygon) && l.boundaryPolygon.length >= 3)
+        || ((l.pattern === 'boundary-polygon' || l.isDrawingLayer) && Array.isArray(l.polygonVertices) && l.polygonVertices.length >= 3);
 
-      if (vertices.length >= 3) {
-        parcels.push({
-          layerId: l.id,
-          layerName: l.name || 'Boundary / Parcel',
-          enabled: l.enabled !== false,
-          strokeColor: l.strokeColor || '#06b6d4',
-          lineStyle: l.lineStyle || 'dashed',
-          fillOpacity: typeof l.fillOpacity === 'number' ? l.fillOpacity : 15,
-          targetHeight: typeof l.targetHeight === 'number' ? l.targetHeight : 0,
-          polygon: vertices.map(pt => ({
-            lat: pt.lat,
-            lon: pt.lon !== undefined ? pt.lon : pt.lng
-          }))
-        });
+      if (l.pattern === 'boundary-polygon' || l.isDrawingLayer || hasDrawnBoundary) {
+        const vertices = Array.isArray(l.polygonVertices) && l.polygonVertices.length >= 3
+          ? l.polygonVertices
+          : (Array.isArray(l.boundaryPolygon) && l.boundaryPolygon.length >= 3 ? l.boundaryPolygon : []);
+
+        if (vertices.length >= 3) {
+          parcels.push({
+            layerId: l.id,
+            layerName: l.name || 'Boundary / Parcel',
+            enabled: l.enabled !== false,
+            strokeColor: l.strokeColor || '#06b6d4',
+            lineStyle: l.lineStyle || 'dashed',
+            fillOpacity: typeof l.fillOpacity === 'number' ? l.fillOpacity : 15,
+            targetHeight: (l.pattern === 'boundary-polygon' || l.isDrawingLayer) ? (typeof l.targetHeight === 'number' ? l.targetHeight : 0) : 0,
+            polygon: vertices.map(pt => ({
+              lat: pt.lat,
+              lon: pt.lon !== undefined ? pt.lon : pt.lng
+            }))
+          });
+        }
       }
     }
   });
@@ -20198,13 +20203,29 @@ const FlightDiagnostics = {
             strokeColor: p.strokeColor || '#06b6d4',
             lineStyle: p.lineStyle || 'dashed',
             fillOpacity: (typeof p.fillOpacity === 'number') ? p.fillOpacity / 100.0 : 0.15,
-            targetHeight: p.targetHeight || 0
+            targetHeight: 0
           });
         }
       });
     }
 
-    // 2. If no parcels, but plannedWaypoints exist with >= 3 points, compute convex hull boundary
+    // 2. Check activeInspectionManifest parcels
+    if (boundaries.length === 0 && this.activeInspectionManifest && Array.isArray(this.activeInspectionManifest.parcels)) {
+      this.activeInspectionManifest.parcels.forEach(p => {
+        if (p && Array.isArray(p.polygon) && p.polygon.length >= 3) {
+          boundaries.push({
+            polygon: p.polygon,
+            name: p.layerName || 'Inspection Boundary',
+            strokeColor: p.strokeColor || '#06b6d4',
+            lineStyle: p.lineStyle || 'dashed',
+            fillOpacity: (typeof p.fillOpacity === 'number') ? p.fillOpacity / 100.0 : 0.15,
+            targetHeight: 0
+          });
+        }
+      });
+    }
+
+    // 3. If no parcels, but plannedWaypoints exist with >= 3 points, compute convex hull boundary
     if (boundaries.length === 0 && Array.isArray(this.plannedWaypoints) && this.plannedWaypoints.length >= 3) {
       const validWps = this.plannedWaypoints.filter(w => w && typeof w.lat === 'number' && typeof (w.lon !== undefined ? w.lon : w.lng) === 'number');
       if (validWps.length >= 3 && typeof computeConvexHullGeo === 'function') {
@@ -20219,7 +20240,7 @@ const FlightDiagnostics = {
       }
     }
 
-    // 3. If in active-mission simulation mode, check active workspace drawing layers / parcels
+    // 4. If in active-mission simulation mode, check active workspace drawing layers / parcels
     if (boundaries.length === 0 && this.selectedFlightId === 'active-mission' && typeof extractSpatialMissionLayers === 'function') {
       try {
         const spatial = extractSpatialMissionLayers();
@@ -20232,7 +20253,7 @@ const FlightDiagnostics = {
                 strokeColor: p.strokeColor || '#06b6d4',
                 lineStyle: p.lineStyle || 'dashed',
                 fillOpacity: (typeof p.fillOpacity === 'number') ? p.fillOpacity / 100.0 : 0.15,
-                targetHeight: p.targetHeight || 0
+                targetHeight: 0
               });
             }
           });
@@ -30816,30 +30837,26 @@ const PhotoInspector = {
       };
     }
 
-    // Resolve true GPS / pose from embedded XMP if actual is 0, 0
+    // Resolve authoritative camera pose: prioritize embedded XMP / photo file geotag metadata
     if (this.activePhoto) {
       if (!this.activePhoto.actual) this.activePhoto.actual = {};
       const act = this.activePhoto.actual;
       const xmp = this.activePhoto.xmp || null;
       if (xmp && typeof xmp.lat === 'number' && typeof xmp.lon === 'number' && (xmp.lat !== 0 || xmp.lon !== 0)) {
-        if (!act.lat && !act.lon) {
-          act.lat = xmp.lat;
-          act.lon = xmp.lon;
-        }
-        if (xmp.altAgl !== undefined && (!act.altAgl || act.altAgl === 25)) act.altAgl = xmp.altAgl;
-        if (xmp.alt !== undefined && (!act.alt || act.alt === 25)) act.alt = xmp.alt;
-        if (xmp.altMsl !== undefined && (!act.altMsl || act.altMsl === 0)) act.altMsl = xmp.altMsl;
-        if (xmp.gimbalPitch !== undefined && (!act.gimbalPitch || act.gimbalPitch === -45)) act.gimbalPitch = xmp.gimbalPitch;
-        if (xmp.heading !== undefined && (!act.heading || act.heading === 0)) act.heading = xmp.heading;
+        act.lat = xmp.lat;
+        act.lon = xmp.lon;
+        if (xmp.altAgl !== undefined) act.altAgl = xmp.altAgl;
+        if (xmp.alt !== undefined) act.alt = xmp.alt;
+        if (xmp.altMsl !== undefined) act.altMsl = xmp.altMsl;
+        if (xmp.gimbalPitch !== undefined) act.gimbalPitch = xmp.gimbalPitch;
+        if (xmp.heading !== undefined) act.heading = xmp.heading;
       } else if (typeof this.activePhoto.lat === 'number' && typeof this.activePhoto.lon === 'number' && (this.activePhoto.lat !== 0 || this.activePhoto.lon !== 0)) {
-        if (!act.lat && !act.lon) {
-          act.lat = this.activePhoto.lat;
-          act.lon = this.activePhoto.lon;
-        }
-        if (this.activePhoto.altAgl !== undefined && (!act.altAgl || act.altAgl === 25)) act.altAgl = this.activePhoto.altAgl;
-        if (this.activePhoto.alt !== undefined && (!act.alt || act.alt === 25)) act.alt = this.activePhoto.alt;
-        if (this.activePhoto.gimbalPitch !== undefined && (!act.gimbalPitch || act.gimbalPitch === -45)) act.gimbalPitch = this.activePhoto.gimbalPitch;
-        if (this.activePhoto.heading !== undefined && (!act.heading || act.heading === 0)) act.heading = this.activePhoto.heading;
+        act.lat = this.activePhoto.lat;
+        act.lon = this.activePhoto.lon;
+        if (this.activePhoto.altAgl !== undefined) act.altAgl = this.activePhoto.altAgl;
+        if (this.activePhoto.alt !== undefined) act.alt = this.activePhoto.alt;
+        if (this.activePhoto.gimbalPitch !== undefined) act.gimbalPitch = this.activePhoto.gimbalPitch;
+        if (this.activePhoto.heading !== undefined) act.heading = this.activePhoto.heading;
       }
     }
 
@@ -31618,7 +31635,7 @@ const PhotoInspector = {
             strokeColor: l.strokeColor || '#06b6d4',
             lineStyle: l.lineStyle || 'dashed',
             fillOpacity: (typeof l.fillOpacity === 'number') ? l.fillOpacity / 100.0 : 0.15,
-            targetHeight: typeof l.targetHeight === 'number' ? l.targetHeight : 0
+            targetHeight: (l.isElevated || l.isRoofBoundary) ? (typeof l.targetHeight === 'number' ? l.targetHeight : 0) : 0
           });
         }
       });
@@ -31638,7 +31655,7 @@ const PhotoInspector = {
             strokeColor: activeLayer.color || '#06b6d4',
             lineStyle: 'dashed',
             fillOpacity: 0.12,
-            targetHeight: typeof this.targetHeight === 'number' ? this.targetHeight : 0
+            targetHeight: (activeLayer.isElevated || activeLayer.isRoofBoundary) ? (typeof this.targetHeight === 'number' ? this.targetHeight : 0) : 0
           });
         }
       }
@@ -31659,7 +31676,7 @@ const PhotoInspector = {
                 strokeColor: p.strokeColor || '#06b6d4',
                 lineStyle: p.lineStyle || 'dashed',
                 fillOpacity: (typeof p.fillOpacity === 'number') ? p.fillOpacity / 100.0 : 0.15,
-                targetHeight: p.targetHeight || 0
+                targetHeight: (p.isElevated || p.isRoofBoundary) ? (p.targetHeight || 0) : 0
               });
             }
           });

@@ -1467,6 +1467,8 @@ function extractDjiXmpMetadata(buf) {
   const flightYawStr = getAttr('FlightYawDegree');
   const flightRollStr = getAttr('FlightRollDegree');
   const modelStr = getAttr('ProductName');
+  const createDateMatch = xmpStr.match(/xmp:CreateDate="([^"]+)"/i) || xmpStr.match(/<xmp:CreateDate>([^<]+)<\/xmp:CreateDate>/i)
+    || xmpStr.match(/xmp:ModifyDate="([^"]+)"/i) || xmpStr.match(/<xmp:ModifyDate>([^<]+)<\/xmp:ModifyDate>/i);
 
   if (latStr !== null && !isNaN(parseFloat(latStr))) result.lat = parseFloat(latStr);
   if (lonStr !== null && !isNaN(parseFloat(lonStr))) result.lon = parseFloat(lonStr);
@@ -1481,6 +1483,7 @@ function extractDjiXmpMetadata(buf) {
   if (flightYawStr !== null && !isNaN(parseFloat(flightYawStr))) result.flightYaw = parseFloat(flightYawStr);
   if (flightRollStr !== null && !isNaN(parseFloat(flightRollStr))) result.flightRoll = parseFloat(flightRollStr);
   if (modelStr) result.droneModel = modelStr;
+  if (createDateMatch) result.createDate = createDateMatch[1].trim();
 
   return Object.keys(result).length > 0 ? result : null;
 }
@@ -2043,7 +2046,7 @@ if ($copied.Count -eq 0 -and $thisPC) {
       thumbnailUrl: `/scratch/mission_archives/${missionUuid}/photos/thumbnails/${encodeURIComponent(fn)}`,
       rawPath: fullRawPath,
       waypointIndex: idx,
-      timestamp: capturedTime,
+      timestamp: xmp?.createDate ? (!isNaN(new Date(xmp.createDate).getTime()) ? new Date(xmp.createDate).toISOString() : capturedTime) : capturedTime,
       lat: xmp?.lat,
       lon: xmp?.lon,
       altAgl: xmp?.altAgl,
@@ -2788,11 +2791,17 @@ const server = http.createServer(async (req, res) => {
                         if (plannedWps && plannedWps.length > 0 && (!telemetry.plannedWaypoints || !telemetry.plannedWaypoints.length)) {
                           telemetry.plannedWaypoints = plannedWps;
                         }
-                        if (Array.isArray(matchedMissionPayload.parcels) && matchedMissionPayload.parcels.length > 0) {
-                          telemetry.parcels = matchedMissionPayload.parcels;
+                        const mParcels = (Array.isArray(matchedMissionPayload.parcels) && matchedMissionPayload.parcels.length > 0)
+                          ? matchedMissionPayload.parcels
+                          : (Array.isArray(matchedMissionPayload.plan?.parcels) && matchedMissionPayload.plan.parcels.length > 0 ? matchedMissionPayload.plan.parcels : null);
+                        if (mParcels) {
+                          telemetry.parcels = mParcels;
                         }
-                        if (Array.isArray(matchedMissionPayload.groundControl) && matchedMissionPayload.groundControl.length > 0) {
-                          telemetry.groundControl = matchedMissionPayload.groundControl;
+                        const mGcps = (Array.isArray(matchedMissionPayload.groundControl) && matchedMissionPayload.groundControl.length > 0)
+                          ? matchedMissionPayload.groundControl
+                          : (Array.isArray(matchedMissionPayload.plan?.groundControl) && matchedMissionPayload.plan.groundControl.length > 0 ? matchedMissionPayload.plan.groundControl : null);
+                        if (mGcps) {
+                          telemetry.groundControl = mGcps;
                         }
                         const plannedStats = matchedMissionPayload.plan?.statistics || {
                           waypointCount: matchedMissionPayload.waypoint_count,
