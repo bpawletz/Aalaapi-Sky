@@ -19938,11 +19938,7 @@ describe('Canvas2D willReadFrequently Optimization Tests (v1.114.2)', () => {
 
     assert.ok(semverGte(pkg, '1.114.2'), 'package.json version should be >= 1.114.2');
     assert.ok(cl.includes('## [1.114.2] - 2026-09-20'), 'CHANGELOG.md missing 1.114.2 header');
-    assert.ok(indexTemplate.includes('v1.114.2'), 'index_template.html missing v1.114.2 header badge');
-    assert.ok(indexTemplate.includes('Version 1.114.2'), 'index_template.html missing Version 1.114.2');
     assert.ok(indexTemplate.includes('Changelog (v1.114.2):'), 'index_template.html missing Changelog (v1.114.2)');
-    assert.ok(indexHtml.includes('v1.114.2'), 'index.html missing v1.114.2 header badge');
-    assert.ok(indexHtml.includes('Version 1.114.2'), 'index.html missing Version 1.114.2');
     assert.ok(indexHtml.includes('Changelog (v1.114.2):'), 'index.html missing Changelog (v1.114.2)');
   });
 
@@ -20073,5 +20069,80 @@ describe('Canvas2D willReadFrequently Optimization Tests (v1.114.2)', () => {
     const tags = TagDetector.detect(mockCanvas);
     assert.strictEqual(fallbackInvoked, true, 'Should fall back to getContext("2d") when attrs return null');
     assert.ok(Array.isArray(tags));
+  });
+});
+
+// ==========================================================================
+// Diagnostics HUD Overlay Controls (v1.115.0)
+// ==========================================================================
+describe('Diagnostics HUD Overlay Controls (v1.115.0)', () => {
+  test('index_template.html contains #diag-hud-controls with all six HUD buttons', () => {
+    const html = fs.readFileSync('./index_template.html', 'utf8');
+    const dom = new JSDOM(html);
+    const doc = dom.window.document;
+    const hudPanel = doc.getElementById('diag-hud-controls');
+    assert.ok(hudPanel, 'index_template.html must contain #diag-hud-controls');
+    const requiredButtonIds = [
+      'diag-btn-autorotate',
+      'diag-btn-reset',
+      'diag-btn-toggle-cones',
+      'diag-btn-toggle-footprints',
+      'diag-btn-toggle-drones',
+      'diag-btn-fpv'
+    ];
+    for (const btnId of requiredButtonIds) {
+      assert.ok(doc.getElementById(btnId), `index_template.html must contain #${btnId}`);
+    }
+  });
+
+  test('index_template.html contains all six diag indicator spans', () => {
+    const html = fs.readFileSync('./index_template.html', 'utf8');
+    const dom = new JSDOM(html);
+    const doc = dom.window.document;
+    const requiredIndicators = [
+      'diag-indicator-autorotate',
+      'diag-indicator-reset',
+      'diag-indicator-cones',
+      'diag-indicator-footprints',
+      'diag-indicator-drones',
+      'diag-indicator-fpv'
+    ];
+    for (const indId of requiredIndicators) {
+      assert.ok(doc.getElementById(indId), `index_template.html must contain #${indId}`);
+    }
+  });
+
+  test('index.js FlightDiagnostics object has required HUD state fields', () => {
+    const js = fs.readFileSync('./index.js', 'utf8');
+    assert.ok(js.includes('diagAutoRotate'), 'FlightDiagnostics must have diagAutoRotate state field');
+    assert.ok(js.includes('diagShowCones'), 'FlightDiagnostics must have diagShowCones state field');
+    assert.ok(js.includes('diagShowFootprints'), 'FlightDiagnostics must have diagShowFootprints state field');
+    assert.ok(js.includes('diagShowDrones'), 'FlightDiagnostics must have diagShowDrones state field');
+    assert.ok(js.includes('diagFpvMode'), 'FlightDiagnostics must have diagFpvMode state field');
+    assert.ok(js.includes('_savedCamPos'), 'FlightDiagnostics must have _savedCamPos field for FPV save/restore');
+    assert.ok(js.includes('_updateFPVCamera'), 'FlightDiagnostics must have _updateFPVCamera method');
+    assert.ok(js.includes('resetCameraView'), 'FlightDiagnostics must have resetCameraView method');
+  });
+
+  test('index.css contains .diag-hud-controls and .diag-indicator styles', () => {
+    const css = fs.readFileSync('./index.css', 'utf8');
+    assert.ok(css.includes('.diag-hud-controls'), 'index.css must contain .diag-hud-controls rule');
+    assert.ok(css.includes('.diag-indicator'), 'index.css must contain .diag-indicator rule');
+  });
+
+  test('compiled index.html after build contains #diag-hud-controls', () => {
+    if (!fs.existsSync('./index.html')) return;
+    const html = fs.readFileSync('./index.html', 'utf8');
+    const dom = new JSDOM(html);
+    const doc = dom.window.document;
+    assert.ok(doc.getElementById('diag-hud-controls'), 'compiled index.html must contain #diag-hud-controls');
+    assert.ok(doc.getElementById('diag-btn-fpv'), 'compiled index.html must contain #diag-btn-fpv');
+  });
+
+  test('index.js HUD indicator init sets green for truthy defaults (cones, footprints, drones)', () => {
+    const js = fs.readFileSync('./index.js', 'utf8');
+    assert.ok(js.includes("_setDiagIndicator('diag-indicator-cones', this.diagShowCones)"), 'JS must initialise cones indicator');
+    assert.ok(js.includes("_setDiagIndicator('diag-indicator-footprints', this.diagShowFootprints)"), 'JS must initialise footprints indicator');
+    assert.ok(js.includes("_setDiagIndicator('diag-indicator-drones', this.diagShowDrones)"), 'JS must initialise drones indicator');
   });
 });

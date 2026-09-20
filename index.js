@@ -18326,6 +18326,15 @@ const FlightDiagnostics = {
   activePhotoFilter: 'all',
   activePhotoSearch: '',
 
+  // HUD overlay toggle state (Diagnostics 3D replay)
+  diagAutoRotate: false,
+  diagShowCones: true,
+  diagShowFootprints: true,
+  diagShowDrones: true,
+  diagFpvMode: false,
+  _savedCamPos: null,
+  _savedCamTarget: null,
+
   switchTab(tabName) {
     this.activeTab = tabName || '3d';
     const tab3dBtn = document.getElementById('diag-nav-3d-btn');
@@ -18862,6 +18871,141 @@ const FlightDiagnostics = {
         this.resetCameraView('top');
       });
     }
+
+    // ── Diagnostics HUD Overlay Controls ─────────────────────────────────────
+    const _setDiagIndicator = (id, active) => {
+      const el = document.getElementById(id);
+      if (el) el.style.background = active ? '#10b981' : '#ef4444';
+    };
+
+    // Initialise indicators to match initial state
+    _setDiagIndicator('diag-indicator-cones', this.diagShowCones);
+    _setDiagIndicator('diag-indicator-footprints', this.diagShowFootprints);
+    _setDiagIndicator('diag-indicator-drones', this.diagShowDrones);
+    _setDiagIndicator('diag-indicator-autorotate', this.diagAutoRotate);
+    _setDiagIndicator('diag-indicator-fpv', this.diagFpvMode);
+
+    const diagBtnAutoRotate = document.getElementById('diag-btn-autorotate');
+    if (diagBtnAutoRotate && typeof diagBtnAutoRotate.addEventListener === 'function') {
+      diagBtnAutoRotate.addEventListener('click', () => {
+        this.diagAutoRotate = !this.diagAutoRotate;
+        if (this.threeControls) this.threeControls.autoRotate = this.diagAutoRotate;
+        diagBtnAutoRotate.classList.toggle('active', this.diagAutoRotate);
+        _setDiagIndicator('diag-indicator-autorotate', this.diagAutoRotate);
+      });
+    }
+
+    const diagBtnReset = document.getElementById('diag-btn-reset');
+    if (diagBtnReset && typeof diagBtnReset.addEventListener === 'function') {
+      diagBtnReset.addEventListener('click', () => {
+        // Exit FPV mode first if active
+        if (this.diagFpvMode) {
+          this.diagFpvMode = false;
+          if (this.threeControls) this.threeControls.enabled = true;
+          const fpvBtn = document.getElementById('diag-btn-fpv');
+          if (fpvBtn) fpvBtn.classList.remove('active');
+          _setDiagIndicator('diag-indicator-fpv', false);
+        }
+        // Re-frame camera to trajectory bounding box
+        const targetMesh = this.actualLineMesh || this.plannedLineMesh;
+        if (targetMesh && targetMesh.geometry && this.threeCamera && this.threeControls) {
+          targetMesh.geometry.computeBoundingSphere();
+          const bs = targetMesh.geometry.boundingSphere;
+          if (bs && bs.center && !isNaN(bs.center.x)) {
+            this.threeControls.target.set(bs.center.x, Math.max(0, bs.center.y), bs.center.z);
+            const dist = Math.max(70, bs.radius * 2.2);
+            this.threeCamera.position.set(bs.center.x, bs.center.y + dist * 0.7, bs.center.z + dist * 0.9);
+            this.threeControls.update();
+          }
+        } else if (this.threeCamera && this.threeControls) {
+          this.threeControls.target.set(0, 0, 0);
+          this.threeCamera.position.set(0, 90, 140);
+          this.threeControls.update();
+        }
+      });
+    }
+
+    const diagBtnCones = document.getElementById('diag-btn-toggle-cones');
+    if (diagBtnCones && typeof diagBtnCones.addEventListener === 'function') {
+      diagBtnCones.addEventListener('click', () => {
+        this.diagShowCones = !this.diagShowCones;
+        // Toggle visibility of cone children in each photo marker group
+        if (this.photoMarkers && this.photoMarkers.length > 0) {
+          this.photoMarkers.forEach(marker => {
+            if (marker && marker.children) {
+              marker.children.forEach(child => {
+                // Cone meshes have a ConeGeometry / pyramid shape — sphere is index 0
+                if (child.type === 'Mesh' && child.geometry &&
+                    child.geometry.type !== 'SphereGeometry') {
+                  child.visible = this.diagShowCones;
+                }
+                // LineSegments edge wires inside the cone mesh
+                if (child.type === 'LineSegments') {
+                  child.visible = this.diagShowCones;
+                }
+              });
+            }
+          });
+        }
+        // Also toggle the drone-body frustum
+        if (this.frustumMesh) this.frustumMesh.visible = this.diagShowCones;
+        diagBtnCones.classList.toggle('active', this.diagShowCones);
+        _setDiagIndicator('diag-indicator-cones', this.diagShowCones);
+      });
+    }
+
+    const diagBtnFootprints = document.getElementById('diag-btn-toggle-footprints');
+    if (diagBtnFootprints && typeof diagBtnFootprints.addEventListener === 'function') {
+      diagBtnFootprints.addEventListener('click', () => {
+        this.diagShowFootprints = !this.diagShowFootprints;
+        // Show/hide photo sphere markers (ground coverage footprint indicators)
+        if (this.photoMarkers && this.photoMarkers.length > 0) {
+          this.photoMarkers.forEach(marker => {
+            if (marker) marker.visible = this.diagShowFootprints;
+          });
+        }
+        diagBtnFootprints.classList.toggle('active', this.diagShowFootprints);
+        _setDiagIndicator('diag-indicator-footprints', this.diagShowFootprints);
+      });
+    }
+
+    const diagBtnDrones = document.getElementById('diag-btn-toggle-drones');
+    if (diagBtnDrones && typeof diagBtnDrones.addEventListener === 'function') {
+      diagBtnDrones.addEventListener('click', () => {
+        this.diagShowDrones = !this.diagShowDrones;
+        if (this.droneMesh) this.droneMesh.visible = this.diagShowDrones;
+        diagBtnDrones.classList.toggle('active', this.diagShowDrones);
+        _setDiagIndicator('diag-indicator-drones', this.diagShowDrones);
+      });
+    }
+
+    const diagBtnFpv = document.getElementById('diag-btn-fpv');
+    if (diagBtnFpv && typeof diagBtnFpv.addEventListener === 'function') {
+      diagBtnFpv.addEventListener('click', () => {
+        this.diagFpvMode = !this.diagFpvMode;
+        if (this.diagFpvMode) {
+          // Save current camera state
+          if (this.threeCamera && this.threeControls) {
+            this._savedCamPos = this.threeCamera.position.clone();
+            this._savedCamTarget = this.threeControls.target.clone();
+            this.threeControls.enabled = false;
+          }
+          // Immediately position to current drone location
+          this._updateFPVCamera();
+        } else {
+          // Restore saved camera
+          if (this.threeCamera && this.threeControls) {
+            if (this._savedCamPos) this.threeCamera.position.copy(this._savedCamPos);
+            if (this._savedCamTarget) this.threeControls.target.copy(this._savedCamTarget);
+            this.threeControls.enabled = true;
+            this.threeControls.update();
+          }
+        }
+        diagBtnFpv.classList.toggle('active', this.diagFpvMode);
+        _setDiagIndicator('diag-indicator-fpv', this.diagFpvMode);
+      });
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     // Flight selector dropdown
     const flightSel = document.getElementById('diag-flight-selector');
@@ -20299,6 +20443,77 @@ const FlightDiagnostics = {
     if (paIcon) paIcon.style.display = 'none';
   },
 
+  resetCameraView(mode) {
+    if (!this.threeCamera || !this.threeControls) return;
+    // Exit FPV if active
+    if (this.diagFpvMode) {
+      this.diagFpvMode = false;
+      this.threeControls.enabled = true;
+      const fpvBtn = document.getElementById('diag-btn-fpv');
+      if (fpvBtn) { fpvBtn.classList.remove('active'); }
+      const fpvInd = document.getElementById('diag-indicator-fpv');
+      if (fpvInd) fpvInd.style.background = '#ef4444';
+    }
+    const targetMesh = this.actualLineMesh || this.plannedLineMesh;
+    if (mode === 'top') {
+      // Bird's-eye orthographic-style view
+      if (targetMesh && targetMesh.geometry) {
+        targetMesh.geometry.computeBoundingSphere();
+        const bs = targetMesh.geometry.boundingSphere;
+        if (bs && bs.center && !isNaN(bs.center.x)) {
+          const dist = Math.max(100, bs.radius * 2.5);
+          this.threeControls.target.set(bs.center.x, 0, bs.center.z);
+          this.threeCamera.position.set(bs.center.x, dist, bs.center.z);
+        } else {
+          this.threeControls.target.set(0, 0, 0);
+          this.threeCamera.position.set(0, 200, 0);
+        }
+      } else {
+        this.threeControls.target.set(0, 0, 0);
+        this.threeCamera.position.set(0, 200, 0);
+      }
+    } else {
+      // Standard 3D perspective view
+      if (targetMesh && targetMesh.geometry) {
+        targetMesh.geometry.computeBoundingSphere();
+        const bs = targetMesh.geometry.boundingSphere;
+        if (bs && bs.center && !isNaN(bs.center.x)) {
+          const dist = Math.max(70, bs.radius * 2.2);
+          this.threeControls.target.set(bs.center.x, Math.max(0, bs.center.y), bs.center.z);
+          this.threeCamera.position.set(bs.center.x, bs.center.y + dist * 0.7, bs.center.z + dist * 0.9);
+        } else {
+          this.threeControls.target.set(0, 0, 0);
+          this.threeCamera.position.set(0, 90, 140);
+        }
+      } else {
+        this.threeControls.target.set(0, 0, 0);
+        this.threeCamera.position.set(0, 90, 140);
+      }
+    }
+    this.threeControls.update();
+  },
+
+  _updateFPVCamera() {
+    if (!this.threeCamera || !this.droneMesh) return;
+    const dronePos = this.droneMesh.position;
+    const yawRad = this.droneMesh.rotation.y; // negative yaw in three.js
+    // Position camera 8 units behind and 3 units above the drone
+    const followDist = 8;
+    const heightOffset = 3;
+    this.threeCamera.position.set(
+      dronePos.x + Math.sin(yawRad) * followDist,
+      dronePos.y + heightOffset,
+      dronePos.z + Math.cos(yawRad) * followDist
+    );
+    // Look at a point 10 units ahead of the drone
+    const lookAhead = 10;
+    this.threeCamera.lookAt(
+      dronePos.x - Math.sin(yawRad) * lookAhead,
+      dronePos.y,
+      dronePos.z - Math.cos(yawRad) * lookAhead
+    );
+  },
+
   seekTo(index, updateSlider = true, syncFraction = true) {
     if (!this.telemetryData || !this.telemetryData.points || !this.telemetryData.points.length) return;
     const pts = this.telemetryData.points;
@@ -20320,6 +20535,11 @@ const FlightDiagnostics = {
         const pitchVal = (pt.pitch !== undefined && pt.pitch !== null && !isNaN(pt.pitch)) ? pt.pitch : -60;
         this.frustumMesh.rotation.x = ((90 + pitchVal) * Math.PI) / 180;
       }
+    }
+
+    // Update FPV camera to follow drone if FPV mode is active
+    if (this.diagFpvMode) {
+      this._updateFPVCamera();
     }
 
     const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
