@@ -1,6 +1,16 @@
 # Changelog
 
+## [1.115.3] - 2026-09-20
+
+### Bug Fixes & Resiliency
+- **Flight Layer Boundary Projection in Photo Inspector:** Added robust multi-tier boundary resolution for flight photos:
+  - Added support for circular and radial flight boundaries in `getLayerBoundaryGeoPolygon` for `orbit`, `multi-orbit`, `tower`, and `target-splat` patterns (generating 36-point boundary rings around center coordinates/POIs).
+  - Implemented `computeConvexHullGeo(points)` using a 2D monotone chain convex hull algorithm to automatically derive the flight mission boundary from waypoints (`layer.waypoints`, `FlightDiagnostics.plannedWaypoints`, or telemetry photo triggers).
+  - Photos inspected directly from `FlightDiagnostics` now cleanly project the outer flight mission boundary even when workspace drawing layers are not loaded.
+- **Disk Full (ENOSPC) Detection & Notification on Media Pull:** Fixed silent swallow of copy failures when downloading photos to `scratch/mission_archives`. If drive `C:` runs out of disk space (`ENOSPC`), the companion server now flags `diskSpaceError: true` and the client displays a clear warning banner detailing how many photos were copied before space ran out.
+
 ## [1.115.2] - 2026-09-20
+
 
 ### Bug Fixes
 - **Sequential DJI Photo Names Filter Fix (`DJI_0001.JPG`):** Fixed an issue in `FlightDiagnostics.filterPhotosForCurrentFlight` and the companion server's `/api/media/manifest` endpoint where photos with standard sequential filenames (e.g. `DJI_0001.JPG` through `DJI_0031.JPG`) lacking embedded timestamps were erroneously excluded by time-window filtering. Photos without a determinable timestamp now pass through by default rather than being filtered out.
