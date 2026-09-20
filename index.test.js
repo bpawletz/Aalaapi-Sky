@@ -18928,12 +18928,12 @@ describe('Isolated Fiducial Print Engine & AprilTag tag25h9 Suite Tests (v1.112.
 
     assert.ok(semverGte(pkg, '1.112.0'), 'package.json version should be >= 1.112.0');
     assert.ok(cl.includes('## [1.112.0] - 2026-09-19'), 'CHANGELOG.md missing 1.112.0 header');
-    assert.ok(/<span class="header-version-badge"[^>]*>v1\.112\.0<\/span>/.test(indexTemplate), 'index_template.html missing v1.112.0 header badge');
-    assert.ok(/<span class="version-tag"[^>]*>Version 1\.112\.0<\/span>/.test(indexTemplate), 'index_template.html missing Version 1.112.0 tag');
+    assert.ok(indexTemplate.includes('class="header-version-badge"'), 'index_template.html missing header badge');
+    assert.ok(indexTemplate.includes('class="version-tag"'), 'index_template.html missing Version tag');
     assert.ok(indexTemplate.includes('Changelog (v1.112.0):'), 'index_template.html missing Changelog (v1.112.0)');
 
-    assert.ok(/<span class="header-version-badge"[^>]*>v1\.112\.0<\/span>/.test(indexHtml), 'index.html missing v1.112.0 header badge');
-    assert.ok(/<span class="version-tag"[^>]*>Version 1\.112\.0<\/span>/.test(indexHtml), 'index.html missing Version 1.112.0 tag');
+    assert.ok(indexHtml.includes('class="header-version-badge"'), 'index.html missing header badge');
+    assert.ok(indexHtml.includes('class="version-tag"'), 'index.html missing Version tag');
     assert.ok(indexHtml.includes('Changelog (v1.112.0):'), 'index.html missing Changelog (v1.112.0)');
   });
 
@@ -19062,4 +19062,468 @@ describe('Isolated Fiducial Print Engine & AprilTag tag25h9 Suite Tests (v1.112.
     }
   });
 });
+
+describe('DJI RC 2 Flight Log Manager & DJI Neo 2 Media Ingest Pipeline (v1.113.0)', () => {
+  test('parseCsvTelemetry extracts true flightDate from filename and recognizes DJI Neo 2 metadata', () => {
+    const { parseCsvTelemetry } = require('./tools/companion/log_decoder.js');
+    const mockCsv = `CUSTOM.updateTime,OSD.latitude,OSD.longitude,OSD.height [m],OSD.flyTime [s],OSD.droneType\n` +
+      `2026/09/19 20:22:45.100,41.500000,-81.700000,1.2,1.0,DJI Neo 2\n` +
+      `2026/09/19 20:22:46.100,41.500010,-81.700010,2.5,2.0,DJI Neo 2\n`;
+
+    const telem = parseCsvTelemetry(mockCsv, 'FlightRecord_2026-09-19_[20-22-45].txt');
+    assert.ok(telem, 'Telemetry object should be returned');
+    assert.strictEqual(telem.flightDate, '2026-09-19T20:22:45.000Z', 'Flight date should be parsed from filename');
+    assert.strictEqual(telem.droneModel, 'DJI Neo 2', 'Drone model should match DJI Neo 2');
+    assert.strictEqual(telem.points.length, 2, 'Should parse 2 telemetry points');
+  });
+
+  test('companion server exports listRc2FlightLogs, pullRc2FlightLogs, and detectMediaDevices', () => {
+    const server = require('./tools/companion/server.js');
+    assert.strictEqual(typeof server.listRc2FlightLogs, 'function', 'listRc2FlightLogs must be exported function');
+    assert.strictEqual(typeof server.pullRc2FlightLogs, 'function', 'pullRc2FlightLogs must be exported function');
+    assert.strictEqual(typeof server.detectMediaDevices, 'function', 'detectMediaDevices must be exported function');
+  });
+
+  test('index.html and index_template.html contain RC 2 flight log explorer elements', () => {
+    ['./index_template.html', './index.html'].forEach(filePath => {
+      const html = fs.readFileSync(filePath, 'utf8');
+      assert.ok(html.includes('id="rc2-flight-logs-modal"'), `${filePath} must contain #rc2-flight-logs-modal`);
+      assert.ok(html.includes('id="direct-rc2-browse-logs-btn"'), `${filePath} must contain #direct-rc2-browse-logs-btn`);
+      assert.ok(html.includes('id="diag-browse-rc2-logs-btn"'), `${filePath} must contain #diag-browse-rc2-logs-btn`);
+      assert.ok(html.includes('id="rc2-logs-search"'), `${filePath} must contain #rc2-logs-search`);
+      assert.ok(html.includes('id="rc2-logs-refresh-btn"'), `${filePath} must contain #rc2-logs-refresh-btn`);
+      assert.ok(html.includes('id="rc2-logs-pull-all-btn"'), `${filePath} must contain #rc2-logs-pull-all-btn`);
+      assert.ok(html.includes('id="rc2-logs-table-container"'), `${filePath} must contain #rc2-logs-table-container`);
+      assert.ok(html.includes('v1.113.0'), `${filePath} must contain v1.113.0`);
+    });
+  });
+
+  test('index.js exposes openRc2LogManagerModal, closeRc2LogManagerModal, refreshRc2LogList, pullSpecificRc2Log, pullAllRc2Logs, and renderRc2LogTable', () => {
+    assert.strictEqual(typeof global.openRc2LogManagerModal, 'function');
+    assert.strictEqual(typeof global.closeRc2LogManagerModal, 'function');
+    assert.strictEqual(typeof global.refreshRc2LogList, 'function');
+    assert.strictEqual(typeof global.pullSpecificRc2Log, 'function');
+    assert.strictEqual(typeof global.pullAllRc2Logs, 'function');
+    assert.strictEqual(typeof global.loadRc2LogToDiagnostics, 'function');
+  });
+
+  test('renderRc2LogTable renders search-filtered rows, status badges, and action buttons', () => {
+    const mockTableContainer = { innerHTML: '', querySelectorAll: () => [] };
+    const mockSearch = { value: 'Neo' };
+    const origGetElementById = global.document.getElementById;
+    global.document.getElementById = (id) => {
+      if (id === 'rc2-logs-table-container') return mockTableContainer;
+      if (id === 'rc2-logs-search') return mockSearch;
+      return origGetElementById(id);
+    };
+
+    try {
+      const mockLogs = [
+        {
+          filename: 'FlightRecord_2026-09-19_[20-22-45].txt',
+          flightDate: '2026-09-19 20:22:45 UTC (Neo 2)',
+          sizeFormatted: '1.38 MB',
+          isDecrypted: true,
+          isDownloaded: true
+        },
+        {
+          filename: 'FlightRecord_2026-09-18_[14-10-00].txt',
+          flightDate: '2026-09-18 14:10:00 UTC (Mini 4 Pro)',
+          sizeFormatted: '850 KB',
+          isDecrypted: false,
+          isDownloaded: false
+        }
+      ];
+
+      renderRc2LogTable(mockLogs);
+      assert.ok(mockTableContainer.innerHTML.includes('FlightRecord_2026-09-19_[20-22-45].txt'), 'Should render matching Neo 2 log');
+      assert.ok(mockTableContainer.innerHTML.includes('Decrypted ✓'), 'Should display Decrypted badge');
+      assert.ok(mockTableContainer.innerHTML.includes('Load Telemetry'), 'Should display Load Telemetry button for decrypted log');
+      assert.ok(!mockTableContainer.innerHTML.includes('FlightRecord_2026-09-18'), 'Should filter out non-matching Mini 4 log based on search');
+    } finally {
+      global.document.getElementById = origGetElementById;
+    }
+  });
+
+  test('openMediaIngestModal displays ad-hoc guidance and start-media-pull-btn gates filterByTime/filterByGeo cleanly when no bounds exist', () => {
+    const origGetCurrentWps = global.getCurrentWaypoints;
+    const origFlightDiag = global.FlightDiagnostics;
+    const origGetElementById = global.document.getElementById;
+
+    const mockModal = { classList: { remove() {}, add() {} } };
+    const mockGeoCheck = { checked: true };
+    const mockTimeCheck = { checked: true };
+    const mockDetails = { textContent: '' };
+    const mockBadge = { textContent: '' };
+
+    global.getCurrentWaypoints = () => [];
+    global.FlightDiagnostics = { telemetryData: null };
+    global.document.getElementById = (id) => {
+      if (id === 'media-ingest-modal') return mockModal;
+      if (id === 'ingest-filter-geo') return mockGeoCheck;
+      if (id === 'ingest-filter-time') return mockTimeCheck;
+      if (id === 'ingest-window-details') return mockDetails;
+      if (id === 'ingest-window-count-badge') return mockBadge;
+      return origGetElementById(id);
+    };
+
+    try {
+      openMediaIngestModal();
+      assert.ok(mockDetails.textContent.includes('Workspace has no planned waypoints'), 'Should display ad-hoc / unconstrained flight message');
+      assert.strictEqual(mockBadge.textContent, '0 Waypoints');
+    } finally {
+      global.getCurrentWaypoints = origGetCurrentWps;
+      global.FlightDiagnostics = origFlightDiag;
+      global.document.getElementById = origGetElementById;
+    }
+  });
+});
+
+describe('Media Ingest & RC 2 Flight Log Live Progress Bar & Percentage Updates (v1.113.1)', () => {
+  test('Version consistency is maintained across package.json, CHANGELOG.md, and templates for v1.113.1', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version;
+    const cl = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    const indexTemplate = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+    assert.ok(semverGte(pkg, '1.113.1'), 'package.json version should be >= 1.113.1');
+    assert.ok(cl.includes('## [1.113.1] - 2026-09-19'), 'CHANGELOG.md missing 1.113.1 header');
+    assert.ok(indexTemplate.includes('class="header-version-badge"'), 'index_template.html missing header badge');
+    assert.ok(indexTemplate.includes('class="version-tag"'), 'index_template.html missing Version tag');
+    assert.ok(indexTemplate.includes('Changelog (v1.113.1):'), 'index_template.html missing Changelog (v1.113.1)');
+    assert.ok(indexHtml.includes('class="header-version-badge"'), 'index.html missing header badge');
+    assert.ok(indexHtml.includes('class="version-tag"'), 'index.html missing Version tag');
+    assert.ok(indexHtml.includes('Changelog (v1.113.1):'), 'index.html missing Changelog (v1.113.1)');
+  });
+
+  test('companion server exports getMediaPullProgress returning structured progress tracking object', () => {
+    const companion = require('./tools/companion/server.js');
+    assert.strictEqual(typeof companion.getMediaPullProgress, 'function');
+    const p = companion.getMediaPullProgress();
+    assert.ok(p !== null && typeof p === 'object');
+    assert.strictEqual(typeof p.active, 'boolean');
+    assert.strictEqual(typeof p.percent, 'number');
+    assert.strictEqual(typeof p.status, 'string');
+    assert.strictEqual(typeof p.stage, 'string');
+  });
+
+  test('pullSpecificRc2Log updates rc2-logs-pct-text and progress bar dynamically to 100%', async () => {
+    const origFetch = global.fetch;
+    const origGetElementById = global.document.getElementById;
+    const origLoad = global.loadRc2LogToDiagnostics;
+    const origRefresh = global.refreshRc2LogList;
+
+    const mockContainer = { style: { display: 'none' } };
+    const mockBar = { style: { width: '0%' } };
+    const mockText = { textContent: '' };
+    const mockPct = { textContent: '0%' };
+
+    global.loadRc2LogToDiagnostics = () => {};
+    global.refreshRc2LogList = async () => {};
+
+    global.fetch = async () => ({
+      json: async () => ({ success: true, pulled: ['FlightRecord_test.txt'] })
+    });
+
+    global.document.getElementById = (id) => {
+      if (id === 'rc2-logs-progress-container') return mockContainer;
+      if (id === 'rc2-logs-progress-bar') return mockBar;
+      if (id === 'rc2-logs-status-text') return mockText;
+      if (id === 'rc2-logs-pct-text') return mockPct;
+      return null;
+    };
+
+    try {
+      assert.strictEqual(typeof pullSpecificRc2Log, 'function');
+      await pullSpecificRc2Log('FlightRecord_test.txt');
+      assert.strictEqual(mockBar.style.width, '100%');
+      assert.strictEqual(mockPct.textContent, '100%');
+      assert.notStrictEqual(mockPct.textContent, '0%');
+    } finally {
+      global.fetch = origFetch;
+      global.document.getElementById = origGetElementById;
+      global.loadRc2LogToDiagnostics = origLoad;
+      global.refreshRc2LogList = origRefresh;
+    }
+  });
+
+  test('pullAllRc2Logs updates rc2-logs-pct-text and progress bar dynamically to 100%', async () => {
+    const origFetch = global.fetch;
+    const origGetElementById = global.document.getElementById;
+    const origRefresh = global.refreshRc2LogList;
+
+    const mockContainer = { style: { display: 'none' } };
+    const mockBar = { style: { width: '0%' } };
+    const mockText = { textContent: '' };
+    const mockPct = { textContent: '0%' };
+    const mockBtn = { disabled: false };
+
+    global.refreshRc2LogList = async () => {};
+
+    global.fetch = async () => ({
+      json: async () => ({ success: true, count: 5 })
+    });
+
+    global.document.getElementById = (id) => {
+      if (id === 'rc2-logs-progress-container') return mockContainer;
+      if (id === 'rc2-logs-progress-bar') return mockBar;
+      if (id === 'rc2-logs-status-text') return mockText;
+      if (id === 'rc2-logs-pct-text') return mockPct;
+      if (id === 'rc2-logs-pull-all-btn') return mockBtn;
+      return null;
+    };
+
+    try {
+      assert.strictEqual(typeof pullAllRc2Logs, 'function');
+      await pullAllRc2Logs();
+      assert.strictEqual(mockBar.style.width, '100%');
+      assert.strictEqual(mockPct.textContent, '100%');
+      assert.notStrictEqual(mockPct.textContent, '0%');
+    } finally {
+      global.fetch = origFetch;
+      global.document.getElementById = origGetElementById;
+      global.refreshRc2LogList = origRefresh;
+    }
+  });
+
+  test('executeMediaPull updates ingest-pct-text and ingest-progress-bar beyond static 0%', async () => {
+    const origFetch = global.fetch;
+    const origGetElementById = global.document.getElementById;
+
+    const mockContainer = { style: { display: 'none' } };
+    const mockBar = { style: { width: '0%' } };
+    const mockText = { textContent: '' };
+    const mockPct = { textContent: '0%' };
+    const mockBtn = { disabled: false };
+
+    global.fetch = async (url) => {
+      if (String(url).includes('/api/media/progress')) {
+        return { ok: true, json: async () => ({ percent: 65, status: 'Ingesting photo 2 of 4...' }) };
+      }
+      return { json: async () => ({ totalPhotos: 4, deletedCount: 0 }) };
+    };
+
+    global.document.getElementById = (id) => {
+      if (id === 'start-media-pull-btn') return mockBtn;
+      if (id === 'ingest-progress-container') return mockContainer;
+      if (id === 'ingest-progress-bar') return mockBar;
+      if (id === 'ingest-status-text') return mockText;
+      if (id === 'ingest-pct-text') return mockPct;
+      return null;
+    };
+
+    try {
+      assert.strictEqual(typeof executeMediaPull, 'function');
+      const res = await executeMediaPull();
+      assert.strictEqual(res.totalPhotos, 4);
+      assert.strictEqual(mockBar.style.width, '100%');
+      assert.strictEqual(mockPct.textContent, '100%');
+      assert.notStrictEqual(mockPct.textContent, '0%');
+    } finally {
+      global.fetch = origFetch;
+      global.document.getElementById = origGetElementById;
+    }
+  });
+});
+
+describe('Per-Flight Correlated Photos Scoping & Filtering (v1.113.2)', () => {
+  test('Version consistency is maintained across package.json, CHANGELOG.md, and templates for v1.113.2', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version;
+    const cl = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    const indexTemplate = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+    assert.ok(semverGte(pkg, '1.113.2'), 'package.json version should be >= 1.113.2');
+    assert.ok(cl.includes('## [1.113.2] - 2026-09-19'), 'CHANGELOG.md missing 1.113.2 header');
+    assert.ok(indexTemplate.includes('class="header-version-badge"'), 'index_template.html missing header badge');
+    assert.ok(indexTemplate.includes('class="version-tag"'), 'index_template.html missing Version tag');
+    assert.ok(indexTemplate.includes('Changelog (v1.113.2):'), 'index_template.html missing Changelog (v1.113.2)');
+    assert.ok(indexHtml.includes('class="header-version-badge"'), 'index.html missing header badge');
+    assert.ok(indexHtml.includes('class="version-tag"'), 'index.html missing Version tag');
+    assert.ok(indexHtml.includes('Changelog (v1.113.2):'), 'index.html missing Changelog (v1.113.2)');
+  });
+
+  test('FlightDiagnostics.filterPhotosForCurrentFlight excludes photos from other dates and flights', () => {
+    const origSelectedFlightId = FlightDiagnostics.selectedFlightId;
+    const origTelem = FlightDiagnostics.telemetryData;
+
+    try {
+      FlightDiagnostics.selectedFlightId = 'FlightRecord_2026-09-19_[20-22-45].txt';
+      FlightDiagnostics.telemetryData = {
+        flightDate: '2026-09-19 20:22:45 UTC',
+        durationSec: 107
+      };
+
+      const mixedPhotos = [
+        { id: '1', filename: 'DJI_20260716204009_0001_D.JPG', timestamp: '2026-07-16T20:40:09Z' },
+        { id: '2', filename: 'DJI_20260904185149_0212_D.JPG', timestamp: '2026-09-04T18:51:49Z' },
+        { id: '3', filename: 'DJI_20260919202304_0013_D.JPG', timestamp: '2026-09-20T00:23:08Z' },
+        { id: '4', filename: 'DJI_20260919202313_0014_D.JPG', timestamp: '2026-09-20T00:23:13Z' },
+        { id: '5', filename: 'DJI_20260919202413_0018_D.JPG', timestamp: '2026-09-20T00:24:13Z' }
+      ];
+
+      const filtered = FlightDiagnostics.filterPhotosForCurrentFlight(mixedPhotos);
+      assert.strictEqual(filtered.length, 3, 'Should only return the 3 photos matching Flight 10');
+      assert.strictEqual(filtered[0].filename, 'DJI_20260919202304_0013_D.JPG');
+      assert.strictEqual(filtered[1].filename, 'DJI_20260919202313_0014_D.JPG');
+      assert.strictEqual(filtered[2].filename, 'DJI_20260919202413_0018_D.JPG');
+    } finally {
+      FlightDiagnostics.selectedFlightId = origSelectedFlightId;
+      FlightDiagnostics.telemetryData = origTelem;
+    }
+  });
+
+  test('FlightDiagnostics.getCorrelatedPhotos applies flight filter and does not leak unassociated photos', () => {
+    const origSelectedFlightId = FlightDiagnostics.selectedFlightId;
+    const origTelem = FlightDiagnostics.telemetryData;
+    const origPhotos = FlightDiagnostics.flightPhotos;
+    const origFlightId = FlightDiagnostics.flightPhotosFlightId;
+
+    try {
+      FlightDiagnostics.selectedFlightId = 'FlightRecord_2026-09-19_[20-22-45].txt';
+      FlightDiagnostics.flightPhotosFlightId = 'FlightRecord_2026-09-19_[20-22-45].txt';
+      FlightDiagnostics.telemetryData = {
+        flightDate: '2026-09-19 20:22:45 UTC',
+        durationSec: 107,
+        points: []
+      };
+      FlightDiagnostics.flightPhotos = [
+        { id: '1', filename: 'DJI_20260904185149_0212_D.JPG' },
+        { id: '2', filename: 'DJI_20260919202313_0014_D.JPG' }
+      ];
+
+      const res = FlightDiagnostics.getCorrelatedPhotos();
+      assert.strictEqual(res.length, 1);
+      assert.strictEqual(res[0].filename, 'DJI_20260919202313_0014_D.JPG');
+    } finally {
+      FlightDiagnostics.selectedFlightId = origSelectedFlightId;
+      FlightDiagnostics.telemetryData = origTelem;
+      FlightDiagnostics.flightPhotos = origPhotos;
+      FlightDiagnostics.flightPhotosFlightId = origFlightId;
+    }
+  });
+});
+
+describe('DJI Photo XMP Metadata Extraction & Telemetry Fallback (v1.113.3)', () => {
+  test('Version consistency is maintained across package.json, CHANGELOG.md, and templates for v1.113.3', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version;
+    const cl = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    const indexTemplate = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+    assert.ok(semverGte(pkg, '1.113.3'), 'package.json version should be >= 1.113.3');
+    assert.ok(cl.includes('## [1.113.3] - 2026-09-19'), 'CHANGELOG.md missing 1.113.3 header');
+    assert.ok(indexTemplate.includes('class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.113.3</span>'), 'index_template.html missing header badge v1.113.3');
+    assert.ok(indexTemplate.includes('Version 1.113.3</span>'), 'index_template.html missing Version 1.113.3 tag');
+    assert.ok(indexTemplate.includes('Changelog (v1.113.3):'), 'index_template.html missing Changelog (v1.113.3)');
+    assert.ok(indexHtml.includes('v1.113.3</span>'), 'index.html missing header badge v1.113.3');
+    assert.ok(indexHtml.includes('Version 1.113.3</span>'), 'index.html missing Version 1.113.3 tag');
+    assert.ok(indexHtml.includes('Changelog (v1.113.3):'), 'index.html missing Changelog (v1.113.3)');
+  });
+
+  test('extractDjiXmpMetadata parses DJI drone XMP XML attributes and elements accurately', () => {
+    const sampleXmp = `
+      <x:xmpmeta xmlns:x="adobe:ns:meta/">
+        <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+          <rdf:Description rdf:about=""
+            xmlns:drone-dji="http://www.dji.com/drone-dji/1.0/"
+            drone-dji:GpsLatitude="+40.012953939"
+            drone-dji:GpsLongitude="-83.177019368"
+            drone-dji:RelativeAltitude="+2.800"
+            drone-dji:AbsoluteAltitude="+265.400"
+            drone-dji:GimbalPitchDegree="-46.80"
+            drone-dji:GimbalYawDegree="+116.00"
+            drone-dji:FlightYawDegree="+121.60"
+            drone-dji:ProductName="NEO2">
+          </rdf:Description>
+        </rdf:RDF>
+      </x:xmpmeta>
+    `;
+
+    assert.strictEqual(typeof extractDjiXmpMetadata, 'function');
+
+    // Test string input
+    const resString = extractDjiXmpMetadata(sampleXmp);
+    assert.ok(resString, 'Should parse string XMP data');
+    assert.strictEqual(resString.lat, 40.012953939);
+    assert.strictEqual(resString.lon, -83.177019368);
+    assert.strictEqual(resString.altAgl, 2.8);
+    assert.strictEqual(resString.altMsl, 265.4);
+    assert.strictEqual(resString.gimbalPitch, -46.8);
+    assert.strictEqual(resString.heading, 116.0);
+    assert.strictEqual(resString.flightYaw, 121.6);
+    assert.strictEqual(resString.droneModel, 'NEO2');
+
+    // Test Buffer input
+    const resBuffer = extractDjiXmpMetadata(Buffer.from(sampleXmp, 'utf8'));
+    assert.ok(resBuffer, 'Should parse Buffer XMP data');
+    assert.strictEqual(resBuffer.lat, 40.012953939);
+    assert.strictEqual(resBuffer.lon, -83.177019368);
+    assert.strictEqual(resBuffer.droneModel, 'NEO2');
+
+    // Test Uint8Array / ArrayBuffer input
+    const uint8 = new Uint8Array(Buffer.from(sampleXmp, 'utf8'));
+    const resUint8 = extractDjiXmpMetadata(uint8);
+    assert.ok(resUint8, 'Should parse Uint8Array XMP data');
+    assert.strictEqual(resUint8.lat, 40.012953939);
+    assert.strictEqual(resUint8.altAgl, 2.8);
+  });
+
+  test('companion server extractDjiXmpMetadata extracts XMP metadata from binary buffers', () => {
+    const companionServer = require(path.join(__dirname, 'tools/companion/server.js'));
+    assert.strictEqual(typeof companionServer.extractDjiXmpMetadata, 'function');
+
+    const rawBuffer = Buffer.from(`
+      FF D8 FF E1 00 50 68 74 74 70 3A 2F 2F 6E 73 2E 61 64 6F 62 65 2E 63 6F 6D 2F 78 61 70 2F 31 2E 30 2F 00
+      <x:xmpmeta xmlns:x="adobe:ns:meta/">
+        <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+          <rdf:Description xmlns:drone-dji="http://www.dji.com/drone-dji/1.0/"
+            drone-dji:GpsLatitude="+39.952583"
+            drone-dji:GpsLongitude="-75.165222"
+            drone-dji:RelativeAltitude="+30.500"
+            drone-dji:GimbalPitchDegree="-90.00"
+            drone-dji:ProductName="Mini 4 Pro" />
+        </rdf:RDF>
+      </x:xmpmeta>
+    `);
+
+    const extracted = companionServer.extractDjiXmpMetadata(rawBuffer);
+    assert.ok(extracted, 'Companion server should extract XMP metadata');
+    assert.strictEqual(extracted.lat, 39.952583);
+    assert.strictEqual(extracted.lon, -75.165222);
+    assert.strictEqual(extracted.altAgl, 30.5);
+    assert.strictEqual(extracted.gimbalPitch, -90);
+    assert.strictEqual(extracted.droneModel, 'Mini 4 Pro');
+  });
+
+  test('correlatePhotosWithTelemetry falls back to photo XMP coordinates when telemetry points are empty', () => {
+    const logDecoder = require(path.join(__dirname, 'tools/companion/log_decoder.js'));
+    assert.strictEqual(typeof logDecoder.correlatePhotosWithTelemetry, 'function');
+
+    const photoWithXmp = {
+      filename: 'DJI_20260919202324_0015_D.JPG',
+      lat: 40.012954,
+      lon: -83.177019,
+      altAgl: 2.8,
+      altMsl: 265.4,
+      gimbalPitch: -46.8,
+      heading: 116.0,
+      droneModel: 'NEO2'
+    };
+
+    const emptyTelemetry = { points: [] };
+    const correlated = logDecoder.correlatePhotosWithTelemetry([photoWithXmp], emptyTelemetry);
+
+    assert.strictEqual(correlated.length, 1);
+    const item = correlated[0];
+    assert.ok(item.actual, 'Item should contain actual telemetry/spatial metadata');
+    assert.strictEqual(item.actual.lat, 40.012954);
+    assert.strictEqual(item.actual.lon, -83.177019);
+    assert.strictEqual(item.actual.altAgl, 2.8);
+    assert.strictEqual(item.actual.gimbalPitch, -46.8);
+    assert.strictEqual(item.actual.heading, 116.0);
+  });
+});
+
+
 

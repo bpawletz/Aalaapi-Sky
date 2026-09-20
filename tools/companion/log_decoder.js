@@ -6,6 +6,9 @@
  * planned-vs-actual variance analytics.
  */
 
+const _fs = (typeof require === 'function') ? (function() { try { return require('fs'); } catch (_) { return null; } })() : null;
+const _path = (typeof require === 'function') ? (function() { try { return require('path'); } catch (_) { return null; } })() : null;
+
 function haversineDistance(lat1, lon1, lat2, lon2) {
   const R = 6371000; // Earth radius in meters
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -764,10 +767,40 @@ function parseKmlOrWpmlTelemetry(xmlText, flightId = 'Imported_Flight.kml') {
 
     if (points.length === 0) return null;
 
+    let flightDate = new Date().toISOString();
+    if (typeof flightId === 'string') {
+      const match = flightId.match(/FlightRecord_(\d{4}-\d{2}-\d{2})_\[(\d{2}-\d{2}-\d{2})\]/);
+      if (match) {
+        flightDate = `${match[1]}T${match[2].replace(/-/g, ':')}.000Z`;
+      }
+    }
+
+    let detectedDroneModel = 'DJI Mini 4 Pro';
+    if (typeof flightId === 'string' && _path && _fs) {
+      const baseDir = typeof __dirname !== 'undefined' ? __dirname : '.';
+      const jsonCandidates = [
+        _path.join(baseDir, '../../scratch/latest_flight', flightId.replace(/\.(csv|txt|kml|wpml)$/, '_decrypted.json')),
+        _path.join(baseDir, '../../scratch/latest_flight', flightId.replace(/\.(csv|txt|kml|wpml)$/, '.json')),
+        _path.join(baseDir, '../../scratch/rc2_flight_logs', flightId.replace(/\.(csv|txt|kml|wpml)$/, '_decrypted.json')),
+        _path.join(baseDir, '../../scratch/rc2_flight_logs', flightId.replace(/\.(csv|txt|kml|wpml)$/, '.json'))
+      ];
+      for (const jc of jsonCandidates) {
+        if (_fs.existsSync(jc)) {
+          try {
+            const jData = JSON.parse(_fs.readFileSync(jc, 'utf8'));
+            if (jData.details && jData.details.aircraftName) {
+              detectedDroneModel = jData.details.aircraftName;
+              break;
+            }
+          } catch (_) {}
+        }
+      }
+    }
+
     return {
       flightId,
-      flightDate: new Date().toISOString(),
-      droneModel: 'DJI Mini 4 Pro',
+      flightDate,
+      droneModel: detectedDroneModel,
       durationSec: curTime || points.length,
       durationFormatted: formatTime(curTime || points.length),
       totalDistance: Math.round(totalDist),
@@ -1115,14 +1148,24 @@ function correlatePhotosWithTelemetry(photos, telemetryPoints, plannedWaypoints 
       }
     }
 
-    const lat = (matchedTelem && matchedTelem.lat !== undefined) ? matchedTelem.lat : (photo.lat || 0);
-    const lon = (matchedTelem && matchedTelem.lon !== undefined) ? matchedTelem.lon : (photo.lon || 0);
-    const telemAlt = matchedTelem ? (matchedTelem.alt !== undefined ? matchedTelem.alt : (matchedTelem.altAgl !== undefined ? matchedTelem.altAgl : matchedTelem.altitude)) : undefined;
-    const alt = telemAlt !== undefined ? telemAlt : (photo.alt || 25);
+    // 1. Resolve camera pose: prioritize valid photo GPS/XMP metadata if matched telemetry is absent or 0
+    const hasPhotoGps = (typeof photo.lat === 'number' && typeof photo.lon === 'number' && (photo.lat !== 0 || photo.lon !== 0));
+    const hasTelemGps = (matchedTelem && typeof matchedTelem.lat === 'number' && typeof matchedTelem.lon === 'number' && (matchedTelem.lat !== 0 || matchedTelem.lon !== 0));
+
+    const lat = hasTelemGps ? matchedTelem.lat : (hasPhotoGps ? photo.lat : (matchedTelem && matchedTelem.lat !== undefined ? matchedTelem.lat : (photo.lat || 0)));
+    const lon = hasTelemGps ? matchedTelem.lon : (hasPhotoGps ? photo.lon : (matchedTelem && matchedTelem.lon !== undefined ? matchedTelem.lon : (photo.lon || 0)));
+
+    const telemAlt = matchedTelem ? (matchedTelem.altAgl !== undefined ? matchedTelem.altAgl : (matchedTelem.alt !== undefined ? matchedTelem.alt : matchedTelem.altitude)) : undefined;
+    const photoAlt = photo.altAgl !== undefined ? photo.altAgl : photo.alt;
+    const alt = (telemAlt !== undefined && telemAlt !== null && telemAlt > 0) ? telemAlt : (photoAlt !== undefined && photoAlt !== null ? photoAlt : (telemAlt !== undefined ? telemAlt : 25));
+
     const telemPitch = matchedTelem ? (matchedTelem.pitch !== undefined ? matchedTelem.pitch : matchedTelem.gimbalPitch) : undefined;
-    const pitch = telemPitch !== undefined ? telemPitch : (photo.pitch || -45);
+    const photoPitch = photo.gimbalPitch !== undefined ? photo.gimbalPitch : photo.pitch;
+    const pitch = (telemPitch !== undefined && telemPitch !== null) ? telemPitch : (photoPitch !== undefined && photoPitch !== null ? photoPitch : -45);
+
     const telemHeading = matchedTelem ? (matchedTelem.yaw !== undefined ? matchedTelem.yaw : matchedTelem.heading) : undefined;
-    const heading = telemHeading !== undefined ? telemHeading : (photo.heading || 0);
+    const photoHeading = photo.heading !== undefined ? photo.heading : (photo.flightYaw !== undefined ? photo.flightYaw : undefined);
+    const heading = (telemHeading !== undefined && telemHeading !== null) ? telemHeading : (photoHeading !== undefined && photoHeading !== null ? photoHeading : 0);
     const speed = matchedTelem ? (matchedTelem.speed || 0) : 0;
     const battery = matchedTelem ? (matchedTelem.batteryPercent !== undefined ? matchedTelem.batteryPercent : (matchedTelem.battery || null)) : null;
     const satellites = matchedTelem ? (matchedTelem.satellites || 24) : 24;
@@ -1673,13 +1716,18 @@ function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv') {
   const aileIdx = findCol([h => h === 'rc.aileron', h => h.includes('rc.aileron') || h.includes('aileron')]);
   const ruddIdx = findCol([h => h === 'rc.rudder', h => h.includes('rc.rudder') || h.includes('rudder')]);
   const throIdx = findCol([h => h === 'rc.throttle', h => h.includes('rc.throttle') || h.includes('throttle')]);
+  const droneTypeIdx = findCol([h => h === 'osd.dronetype', h => h === 'dronetype', h => h === 'drone_type', h => h.includes('drone') || h.includes('model')]);
 
   if (latIdx === -1 || lonIdx === -1) return null;
 
   // First pass: collect raw row data and check time scale
   const rawRows = [];
+  let detectedDroneModelFromRows = null;
   for (let i = 1; i < lines.length; i++) {
     const cols = lines[i].split(/[,;\t]/).map(c => c.trim().replace(/["']/g, ''));
+    if (droneTypeIdx !== -1 && cols[droneTypeIdx] && !detectedDroneModelFromRows) {
+      detectedDroneModelFromRows = cols[droneTypeIdx].trim();
+    }
     if (cols.length <= Math.max(latIdx, lonIdx)) continue;
     const lat = parseFloat(cols[latIdx]);
     const lon = parseFloat(cols[lonIdx]);
@@ -1770,10 +1818,40 @@ function parseCsvTelemetry(csvText, flightId = 'Imported_Flight.csv') {
   if (points.length === 0) return null;
   const finalDuration = points[points.length - 1].time || durationSec;
 
+  let flightDate = new Date().toISOString();
+  if (typeof flightId === 'string') {
+    const match = flightId.match(/FlightRecord_(\d{4}-\d{2}-\d{2})_\[(\d{2}-\d{2}-\d{2})\]/);
+    if (match) {
+      flightDate = `${match[1]}T${match[2].replace(/-/g, ':')}.000Z`;
+    }
+  }
+
+  let detectedDroneModel = detectedDroneModelFromRows || 'DJI Mini 4 Pro';
+  if (typeof flightId === 'string' && _path && _fs) {
+    const baseDir = typeof __dirname !== 'undefined' ? __dirname : '.';
+    const jsonCandidates = [
+      _path.join(baseDir, '../../scratch/latest_flight', flightId.replace(/\.(csv|txt)$/, '_decrypted.json')),
+      _path.join(baseDir, '../../scratch/latest_flight', flightId.replace(/\.(csv|txt)$/, '.json')),
+      _path.join(baseDir, '../../scratch/rc2_flight_logs', flightId.replace(/\.(csv|txt)$/, '_decrypted.json')),
+      _path.join(baseDir, '../../scratch/rc2_flight_logs', flightId.replace(/\.(csv|txt)$/, '.json'))
+    ];
+    for (const jc of jsonCandidates) {
+      if (_fs.existsSync(jc)) {
+        try {
+          const jData = JSON.parse(_fs.readFileSync(jc, 'utf8'));
+          if (jData.details && jData.details.aircraftName) {
+            detectedDroneModel = jData.details.aircraftName;
+            break;
+          }
+        } catch (_) {}
+      }
+    }
+  }
+
   return {
     flightId,
-    flightDate: new Date().toISOString(),
-    droneModel: 'DJI Mini 4 Pro',
+    flightDate,
+    droneModel: detectedDroneModel,
     durationSec: finalDuration,
     durationFormatted: formatTime(finalDuration),
     totalDistance: Math.round(totalDistance),
