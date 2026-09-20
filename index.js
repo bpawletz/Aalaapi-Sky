@@ -30134,7 +30134,7 @@ function extractDjiXmpMetadata(data) {
       // 1. Resolve raw image dimensions and pixels from browser Canvas / ImageData / Node Buffer
       if (typeof HTMLCanvasElement !== 'undefined' && input instanceof HTMLCanvasElement) {
         try {
-          const ctx = input.getContext('2d');
+          const ctx = input.getContext('2d', { willReadFrequently: true }) || input.getContext('2d');
           const imgData = ctx.getImageData(0, 0, input.width, input.height);
           width = input.width;
           height = input.height;
@@ -30154,7 +30154,7 @@ function extractDjiXmpMetadata(data) {
         gray = toGrayscale(input.data, width, height);
       } else if (input && typeof input.getContext === 'function') {
         try {
-          const ctx = input.getContext('2d');
+          const ctx = input.getContext('2d', { willReadFrequently: true }) || input.getContext('2d');
           const imgData = ctx.getImageData(0, 0, input.width, input.height);
           width = input.width;
           height = input.height;
@@ -31503,7 +31503,9 @@ const PhotoInspector = {
         offCanvas.width = scanW;
         offCanvas.height = scanH;
       }
-      const offCtx = (offCanvas && typeof offCanvas.getContext === 'function') ? offCanvas.getContext('2d') : null;
+      const offCtx = (offCanvas && typeof offCanvas.getContext === 'function')
+        ? (offCanvas.getContext('2d', { willReadFrequently: true }) || offCanvas.getContext('2d'))
+        : null;
 
       let rawTags = [];
       let isTainted = false;
@@ -31546,7 +31548,9 @@ const PhotoInspector = {
               const cleanCanvas = document.createElement('canvas');
               cleanCanvas.width = scanW;
               cleanCanvas.height = scanH;
-              const cleanCtx = (cleanCanvas && typeof cleanCanvas.getContext === 'function') ? cleanCanvas.getContext('2d') : null;
+              const cleanCtx = (cleanCanvas && typeof cleanCanvas.getContext === 'function')
+                ? (cleanCanvas.getContext('2d', { willReadFrequently: true }) || cleanCanvas.getContext('2d'))
+                : null;
               if (cleanCtx) {
                 cleanCtx.drawImage(cleanDrawable, 0, 0, scanW, scanH);
                 if (typeof cleanCtx.getImageData === 'function') {

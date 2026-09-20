@@ -4882,7 +4882,7 @@ html, body {
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.114.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.114.2</span></h1>
         </div>
       </div>
 
@@ -7230,7 +7230,7 @@ html, body {
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #4ade80; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
-              🔍 In-Browser &amp; Bridge Optical Tag Detector (AprilTag &amp; ArUco) (v1.114.1)
+              🔍 In-Browser &amp; Bridge Optical Tag Detector (AprilTag &amp; ArUco) (v1.114.2)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
               Full client-side and Companion Bridge computer vision optical tag detector. Scans photos in under 350ms to detect <strong>AprilTag 25h9</strong>, <strong>36h11</strong>, <strong>16h5</strong>, and <strong>ArUco 4x4 / 5x5</strong> fiducials. Extracts sub-pixel corner coordinates, rotation orientation (yellow corner #0 dot), and tag IDs. Automatically correlates ground targets against planned Ground Control Points (GCPs), computing centimeter reprojection variance and validating survey positions directly inside Photo Inspector (<code>#photo-inspector-modal</code>) and photo ingest (<code>#media-ingest-modal</code>).
@@ -8051,7 +8051,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.114.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.114.2</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -8114,6 +8114,12 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.114.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>⚡ Canvas2D willReadFrequently Optimization:</strong> Configured <code>willReadFrequently: true</code> on 2D canvas contexts across <code>TagDetector.detect()</code> and <code>PhotoInspector.detectOpticalTags()</code>, eliminating browser readback warnings and optimizing CPU-backed pixel rasterization for sub-pixel tag decoding.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.114.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -42134,7 +42140,7 @@ function extractDjiXmpMetadata(data) {
       // 1. Resolve raw image dimensions and pixels from browser Canvas / ImageData / Node Buffer
       if (typeof HTMLCanvasElement !== 'undefined' && input instanceof HTMLCanvasElement) {
         try {
-          const ctx = input.getContext('2d');
+          const ctx = input.getContext('2d', { willReadFrequently: true }) || input.getContext('2d');
           const imgData = ctx.getImageData(0, 0, input.width, input.height);
           width = input.width;
           height = input.height;
@@ -42154,7 +42160,7 @@ function extractDjiXmpMetadata(data) {
         gray = toGrayscale(input.data, width, height);
       } else if (input && typeof input.getContext === 'function') {
         try {
-          const ctx = input.getContext('2d');
+          const ctx = input.getContext('2d', { willReadFrequently: true }) || input.getContext('2d');
           const imgData = ctx.getImageData(0, 0, input.width, input.height);
           width = input.width;
           height = input.height;
@@ -43503,7 +43509,9 @@ const PhotoInspector = {
         offCanvas.width = scanW;
         offCanvas.height = scanH;
       }
-      const offCtx = (offCanvas && typeof offCanvas.getContext === 'function') ? offCanvas.getContext('2d') : null;
+      const offCtx = (offCanvas && typeof offCanvas.getContext === 'function')
+        ? (offCanvas.getContext('2d', { willReadFrequently: true }) || offCanvas.getContext('2d'))
+        : null;
 
       let rawTags = [];
       let isTainted = false;
@@ -43546,7 +43554,9 @@ const PhotoInspector = {
               const cleanCanvas = document.createElement('canvas');
               cleanCanvas.width = scanW;
               cleanCanvas.height = scanH;
-              const cleanCtx = (cleanCanvas && typeof cleanCanvas.getContext === 'function') ? cleanCanvas.getContext('2d') : null;
+              const cleanCtx = (cleanCanvas && typeof cleanCanvas.getContext === 'function')
+                ? (cleanCanvas.getContext('2d', { willReadFrequently: true }) || cleanCanvas.getContext('2d'))
+                : null;
               if (cleanCtx) {
                 cleanCtx.drawImage(cleanDrawable, 0, 0, scanW, scanH);
                 if (typeof cleanCtx.getImageData === 'function') {
