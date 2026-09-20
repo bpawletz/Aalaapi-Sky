@@ -67,7 +67,7 @@
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
           </svg>
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.114.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.115.0</span></h1>
         </div>
       </div>
 
@@ -2413,6 +2413,14 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #10b981; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🎮 Diagnostics 3D HUD Overlay Controls (v1.115.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              The <strong>Flight Diagnostics 3D Telemetry Replay</strong> view now includes a glass-morphism HUD overlay panel — matching the main 3D preview — with six scene-toggle buttons: <strong>Auto-Rotate</strong> (hands-free orbit), <strong>Reset Camera</strong> (re-frames to flight extent), <strong>Camera Cones</strong> (toggle frustum cones at photo waypoints), <strong>Footprints</strong> (show/hide photo ground markers), <strong>3D Drones</strong> (show/hide drone mesh avatar), and <strong>FPV Mode</strong> (locks a follow-cam behind the drone during playback). Each button has a live green/red indicator dot.
+            </p>
+          </div>
           <div style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #4ade80; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🔍 In-Browser &amp; Bridge Optical Tag Detector (AprilTag &amp; ArUco) (v1.114.2)
@@ -3236,7 +3244,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.114.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.115.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -3299,6 +3307,18 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.115.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🎮 Diagnostics 3D HUD Controls:</strong> Added a new glass-morphism HUD overlay panel (top-right of the 3D replay viewport) with six map-item toggles: <strong>Auto-Rotate</strong>, <strong>Reset Camera</strong>, <strong>Camera Cones</strong>, <strong>Footprints</strong>, <strong>3D Drones</strong>, and <strong>FPV Mode</strong> — identical in style to the main 3D preview controls.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.114.3):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🏷️ Clean Flight Diagnostics Header:</strong> Removed hardcoded <code>#diag-drone-badge</code> ("DJI Mini 4 Pro") from the modal title, ensuring flights from all aircraft (such as DJI Neo 2, DJI Air 3, or Mavic 3) display without misleading hardcoded drone labels.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.114.2):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -6194,7 +6214,6 @@
           <div class="diag-header-titles">
             <h3 class="diag-title">
               Flight Diagnostics &amp; Telemetry Center
-              <span id="diag-drone-badge" class="diag-drone-badge">DJI Mini 4 Pro</span>
             </h3>
             <div id="diag-flight-meta" class="diag-flight-meta">
               Telemetry Log: FlightRecord_2026-08-20_[19-42-28].txt • Duration: 04m 12s
@@ -6330,6 +6349,22 @@
                 <div style="color: var(--text-muted); font-size: 0.65rem;">GPS POSITION</div>
                 <div id="diag-hud-coords" style="font-weight: 700; color: #f43f5e; font-size: 0.85rem; letter-spacing: -0.2px;">40.013000, -83.176500</div>
               </div>
+            </div>
+
+            <!-- Diagnostic HUD Controls -->
+            <div class="diag-hud-controls" id="diag-hud-controls">
+              <button id="diag-btn-autorotate" class="btn-secondary"><span>↻</span> Auto‑Rotate</button>
+              <span id="diag-indicator-autorotate" class="diag-indicator"></span>
+              <button id="diag-btn-reset" class="btn-secondary"><span>⟲</span> Reset</button>
+              <span id="diag-indicator-reset" class="diag-indicator"></span>
+              <button id="diag-btn-toggle-cones" class="btn-secondary"><span>⦿</span> Camera Cones</button>
+              <span id="diag-indicator-cones" class="diag-indicator"></span>
+              <button id="diag-btn-toggle-footprints" class="btn-secondary"><span>⌘</span> Footprints</button>
+              <span id="diag-indicator-footprints" class="diag-indicator"></span>
+              <button id="diag-btn-toggle-drones" class="btn-secondary"><span>✈</span> 3D Drones</button>
+              <span id="diag-indicator-drones" class="diag-indicator"></span>
+              <button id="diag-btn-fpv" class="btn-secondary"><span>📡</span> FPV Mode</button>
+              <span id="diag-indicator-fpv" class="diag-indicator"></span>
             </div>
 
             <!-- 3D / 2D Camera View Toggle -->
