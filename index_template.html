@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.116.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.117.0</span></h1>
 
 
 
@@ -1489,9 +1489,12 @@
                   <select id="fiducial-default-size" class="form-select" style="font-size: 0.72rem; padding: 4px 6px;">
                     <option value="0.2">0.20 m (~8 in)</option>
                     <option value="0.3">0.30 m (~12 in)</option>
-                    <option value="0.5" selected>0.50 m (~20 in)</option>
-                    <option value="0.6">0.60 m (~24 in)</option>
-                    <option value="1.0">1.00 m (~39 in)</option>
+                    <option value="0.4">0.40 m (~16 in - Tiled)</option>
+                    <option value="0.5" selected>0.50 m (~20 in - Tiled)</option>
+                    <option value="0.6">0.60 m (~24 in - Tiled)</option>
+                    <option value="0.8">0.80 m (~32 in - Tiled)</option>
+                    <option value="1.0">1.00 m (~39 in - Tiled)</option>
+                    <option value="1.2">1.20 m (~48 in - Tiled)</option>
                   </select>
                 </div>
 
@@ -2416,6 +2419,14 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #fbbf24; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              📐 Large-Format Fiducial Tag Tiling Engine (GCP Studio) (v1.117.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Client-side multi-sheet printable target tiling engine inside <code>#fiducial-generator-modal</code> and Section 2 Card 6. Slices massive Ground Control Points (0.40m to 1.20m+) into an $R \times C$ grid matrix of standard desktop sheets (US Letter / ISO A4) with 0.25" overlap margins, dashed trim lines, seam alignment crosshairs, tile coordinate stamps, assembly mini-maps, and 1:1 scale verification rulers. Supports 1-click multi-page printing and PDF export.
+            </p>
+          </div>
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #10b981; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🎮 Diagnostics 3D HUD Overlay Controls (v1.115.0)
@@ -3247,7 +3258,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.116.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.117.0</span>
 
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -3311,6 +3322,12 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.117.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>📐 Large-Format Target Tiling Engine (GCP Studio):</strong> Multi-sheet printable target tiling engine for massive Ground Control Points (0.40m to 1.20m+) with automated $R \times C$ matrix split, 0.25" overlap margins, dashed trim lines, seam alignment crosshairs, tile coordinate stamps, assembly mini-maps, and 1:1 scale verification rulers.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.116.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -7167,9 +7184,66 @@
               <option value="0.15">0.15 m (~6 in)</option>
               <option value="0.20" selected>0.20 m (~8 in)</option>
               <option value="0.30">0.30 m (~12 in)</option>
-              <option value="0.50">0.50 m (~20 in)</option>
-              <option value="1.00">1.00 m (~39 in)</option>
+              <option value="0.40">0.40 m (~16 in - Tiled)</option>
+              <option value="0.50">0.50 m (~20 in - Tiled)</option>
+              <option value="0.60">0.60 m (~24 in / 2x2 ft - Tiled)</option>
+              <option value="0.80">0.80 m (~32 in - Tiled)</option>
+              <option value="1.00">1.00 m (~39 in / 3.3 ft - Tiled)</option>
+              <option value="1.20">1.20 m (~48 in / 4x4 ft - Tiled)</option>
             </select>
+          </div>
+        </div>
+
+        <!-- Large-Format Multi-Sheet Tiling Control Card (GCP Studio) -->
+        <div id="gen-tiling-control-card" style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; font-size: 0.73rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245, 158, 11, 0.2); padding-bottom: 4px;">
+            <strong style="color: #fbbf24; font-size: 0.76rem; display: flex; align-items: center; gap: 5px;">
+              <span>📐</span> Large-Format Multi-Sheet Tiling Studio (GCP Studio)
+            </strong>
+            <span id="gen-tiling-matrix-badge" class="badge" style="font-size: 0.65rem; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); padding: 1px 6px; border-radius: 999px;">Single Sheet</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; align-items: center;">
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-main); font-weight: 600;">
+              <input type="checkbox" id="gen-opt-tiling-enable" style="accent-color: #f59e0b;" />
+              <span>Multi-Sheet Poster Mode</span>
+            </label>
+
+            <div class="control-group" style="margin: 0;">
+              <label for="gen-tiling-overlap" style="font-size: 0.7rem; color: var(--text-muted);">Bleed / Overlap Margin</label>
+              <select id="gen-tiling-overlap" class="form-select" style="font-size: 0.7rem; padding: 2px 6px;">
+                <option value="6.35" selected>0.25 in (6.35 mm) Standard</option>
+                <option value="12.7">0.50 in (12.7 mm) Wide</option>
+                <option value="0">0.00 in (0 mm) Zero Bleed</option>
+              </select>
+            </div>
+
+            <div class="control-group" style="margin: 0;">
+              <label for="gen-tiling-view-mode" style="font-size: 0.7rem; color: var(--text-muted);">Preview Tile View</label>
+              <select id="gen-tiling-view-mode" class="form-select" style="font-size: 0.7rem; padding: 2px 6px;">
+                <option value="assembled" selected>Full Assembled View</option>
+                <option value="tile_grid">Matrix Grid View</option>
+                <option value="single_tile">Single Tile Sheet</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="gen-tiling-suboptions" style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.7rem; color: var(--text-muted); border-top: 1px dashed rgba(255, 255, 255, 0.08); padding-top: 6px;">
+            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+              <input type="checkbox" id="gen-opt-trim-lines" checked />
+              <span>Dashed Trim Cut-Lines</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+              <input type="checkbox" id="gen-opt-seam-crosshairs" checked />
+              <span>Seam Alignment Crosshairs</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+              <input type="checkbox" id="gen-opt-tile-stamps" checked />
+              <span>Tile Coordinate &amp; Mini-Map Stamp</span>
+            </label>
+            <span id="gen-tiling-info-text" style="color: #fbbf24; margin-left: auto; font-weight: 600;">
+              Single sheet output
+            </span>
           </div>
         </div>
 
