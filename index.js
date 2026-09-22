@@ -1562,6 +1562,206 @@ function generateFiducialSvg(options = {}) {
 }
 
 /**
+ * Calculates row and column matrix split for multi-sheet poster tiling (GCP Studio).
+ */
+function calculateFiducialTilingMatrix(targetSizeMeters, paperFormat = 'letter', overlapMm = 6.35) {
+  const targetMm = (parseFloat(targetSizeMeters) || 0.20) * 1000;
+  
+  // Paper sheet dimensions in mm (US Letter vs ISO A4)
+  let sheetW = paperFormat === 'a4' ? 210 : 215.9;
+  let sheetH = paperFormat === 'a4' ? 297 : 279.4;
+  
+  // Printer safety margin (6mm on edges)
+  const printMarginMm = 6.0;
+  const usableSheetW = sheetW - (printMarginMm * 2);
+  const usableSheetH = sheetH - (printMarginMm * 2);
+
+  // Reserve margin for tile headers & ruler footer (~35mm top/bottom)
+  const headerFooterReservedMm = 35.0;
+  const effectivePrintableW = usableSheetW;
+  const effectivePrintableH = usableSheetH - headerFooterReservedMm;
+  
+  // Effective printable square side per sheet accounting for overlap bleed
+  const stepW = effectivePrintableW - overlapMm;
+  const stepH = effectivePrintableH - overlapMm;
+  const minStep = Math.max(250, Math.min(stepW, stepH)); // 250mm (~0.25m) threshold for desktop sheets
+
+  // Single sheet if target <= 0.32m (320mm)
+  if (targetMm <= 320) {
+    return {
+      requiresTiling: false,
+      rows: 1,
+      cols: 1,
+      totalSheets: 1,
+      targetMm,
+      sheetW,
+      sheetH,
+      overlapMm,
+      tileSizeMm: targetMm
+    };
+  }
+
+  const cols = Math.max(1, Math.ceil(targetMm / minStep));
+  const rows = Math.max(1, Math.ceil(targetMm / minStep));
+  const totalSheets = rows * cols;
+  const tileSizeMm = targetMm / cols;
+
+  return {
+    requiresTiling: true,
+    rows,
+    cols,
+    totalSheets,
+    targetMm,
+    sheetW,
+    sheetH,
+    overlapMm,
+    tileSizeMm
+  };
+}
+
+/**
+ * Generates an SVG string for a specific tile sheet (row, col) in a multi-sheet matrix.
+ */
+function generateTiledFiducialSheetSvg(options = {}, row = 0, col = 0, matrixInfo = null) {
+  const type = options.type || 'aruco_4x4';
+  const id = Math.max(0, parseInt(options.id, 10) || 0);
+  const targetEdgeM = parseFloat(options.physicalSizeMeters) || 0.60;
+  const paperFormat = options.paperFormat || 'letter';
+  const overlapMm = parseFloat(options.overlapMm) || 6.35;
+  const showTrimLines = options.showTrimLines !== false;
+  const showSeamCrosshairs = options.showSeamCrosshairs !== false;
+  const showTileStamps = options.showTileStamps !== false;
+
+  const matrix = matrixInfo || calculateFiducialTilingMatrix(targetEdgeM, paperFormat, overlapMm);
+  const rows = matrix.rows;
+  const cols = matrix.cols;
+
+  // Viewport setup (normalized 500x500 for single sheet canvas)
+  const totalCanvasSize = 500;
+  const margin = 40;
+  const headerHeight = 35;
+  const footerHeight = 35;
+  const printableWidth = totalCanvasSize - (margin * 2);
+  const printableHeight = totalCanvasSize - headerHeight - footerHeight;
+
+  // Full fiducial SVG string
+  const fullSvg = generateFiducialSvg({
+    type,
+    id,
+    physicalSizeMeters: targetEdgeM,
+    showCrosshair: options.showCrosshair !== false,
+    showCornerTicks: options.showCornerTicks !== false,
+    showRuler: false, // We render custom per-tile scale ruler
+    showIdLabel: false
+  });
+
+  // Calculate slice viewbox into full 500x500 target
+  const rawTargetSize = 400; // inner target extent in generateFiducialSvg
+  const rawMargin = 50;
+  const sliceSize = rawTargetSize / cols;
+  const sliceX = rawMargin + col * sliceSize;
+  const sliceY = rawMargin + row * sliceSize;
+
+  // Overlap bleed in normalized SVG units
+  const normOverlap = (overlapMm / (matrix.targetMm || 600)) * rawTargetSize;
+  const bleedLeft = col > 0 ? normOverlap : 0;
+  const bleedRight = col < cols - 1 ? normOverlap : 0;
+  const bleedTop = row > 0 ? normOverlap : 0;
+  const bleedBottom = row < rows - 1 ? normOverlap : 0;
+
+  const vbX = sliceX - bleedLeft;
+  const vbY = sliceY - bleedTop;
+  const vbW = sliceSize + bleedLeft + bleedRight;
+  const vbH = sliceSize + bleedTop + bleedBottom;
+
+  // Dashed trim line overlays & seam crosshairs
+  let trimLinesSvg = '';
+  if (showTrimLines) {
+    if (col > 0) {
+      trimLinesSvg += `<line x1="${margin + (bleedLeft / vbW) * printableWidth}" y1="${headerHeight}" x2="${margin + (bleedLeft / vbW) * printableWidth}" y2="${headerHeight + printableHeight}" stroke="#d97706" stroke-width="1.5" stroke-dasharray="5,4" />`;
+    }
+    if (col < cols - 1) {
+      trimLinesSvg += `<line x1="${totalCanvasSize - margin - (bleedRight / vbW) * printableWidth}" y1="${headerHeight}" x2="${totalCanvasSize - margin - (bleedRight / vbW) * printableWidth}" y2="${headerHeight + printableHeight}" stroke="#d97706" stroke-width="1.5" stroke-dasharray="5,4" />`;
+    }
+    if (row > 0) {
+      trimLinesSvg += `<line x1="${margin}" y1="${headerHeight + (bleedTop / vbH) * printableHeight}" x2="${totalCanvasSize - margin}" y2="${headerHeight + (bleedTop / vbH) * printableHeight}" stroke="#d97706" stroke-width="1.5" stroke-dasharray="5,4" />`;
+    }
+    if (row < rows - 1) {
+      trimLinesSvg += `<line x1="${margin}" y1="${headerHeight + printableHeight - (bleedBottom / vbH) * printableHeight}" x2="${totalCanvasSize - margin}" y2="${headerHeight + printableHeight - (bleedBottom / vbH) * printableHeight}" stroke="#d97706" stroke-width="1.5" stroke-dasharray="5,4" />`;
+    }
+  }
+
+  let seamCrosshairsSvg = '';
+  if (showSeamCrosshairs) {
+    const cx = totalCanvasSize / 2;
+    const cy = headerHeight + printableHeight / 2;
+    seamCrosshairsSvg = `
+      <g id="seam-crosshair" stroke="#ef4444" stroke-width="1.5" opacity="0.85">
+        <line x1="${cx - 10}" y1="${cy}" x2="${cx + 10}" y2="${cy}" />
+        <line x1="${cx}" y1="${cy - 10}" x2="${cx}" y2="${cy + 10}" />
+        <circle cx="${cx}" cy="${cy}" r="3" fill="none" stroke="#ef4444" />
+      </g>
+    `;
+  }
+
+  // Header and Footer info
+  let tileStampSvg = '';
+  if (showTileStamps) {
+    const typeLabel = type === 'aruco_4x4' ? `ArUco 4x4 #ID:${id}` :
+      (type === 'aruco_5x5' ? `ArUco 5x5 #ID:${id}` :
+      (type === 'apriltag_25h9' ? `AprilTag 25h9 #ID:${id}` :
+      (type === 'apriltag_36h11' ? `AprilTag 36h11 #ID:${id}` :
+      (type === 'apriltag_16h5' ? `AprilTag 16h5 #ID:${id}` :
+      (type === 'checkerboard' ? `Checkerboard 4x4` : `Crosshair`)))));
+
+    const tileEdgeMm = (matrix.tileSizeMm || 300).toFixed(0);
+    const targetMmStr = (matrix.targetMm || 600).toFixed(0);
+
+    tileStampSvg = `
+      <!-- Header Tile Stamp -->
+      <g font-family="sans-serif">
+        <rect x="0" y="0" width="${totalCanvasSize}" height="${headerHeight}" fill="#0f172a" />
+        <text x="${margin}" y="20" font-size="11" font-weight="700" fill="#fbbf24">TILE [Row ${row + 1} of ${rows}, Col ${col + 1} of ${cols}]</text>
+        <text x="${totalCanvasSize - margin}" y="20" font-size="10" font-weight="600" fill="#94a3b8" text-anchor="end">${escapeHtml(typeLabel)} | Full Target: ${targetMmStr}mm (${(targetEdgeM * 39.37).toFixed(1)}")</text>
+      </g>
+
+      <!-- Footer Stamp & Scale Bar -->
+      <g font-family="sans-serif">
+        <rect x="0" y="${totalCanvasSize - footerHeight}" width="${totalCanvasSize}" height="${footerHeight}" fill="#0f172a" />
+        <text x="${margin}" y="${totalCanvasSize - 14}" font-size="9" fill="#94a3b8">Bleed: ${overlapMm.toFixed(2)}mm (0.25") | Cut along dashed orange lines before taping</text>
+        
+        <!-- 1:1 Scale Verification Ruler (50 mm / 2 in) -->
+        <g transform="translate(${totalCanvasSize - margin - 120}, ${totalCanvasSize - 25})" font-size="8" fill="#e2e8f0">
+          <line x1="0" y1="8" x2="100" y2="8" stroke="#e2e8f0" stroke-width="1.5" />
+          <line x1="0" y1="2" x2="0" y2="14" stroke="#e2e8f0" stroke-width="1.5" />
+          <line x1="50" y1="4" x2="50" y2="12" stroke="#e2e8f0" stroke-width="1" />
+          <line x1="100" y1="2" x2="100" y2="14" stroke="#e2e8f0" stroke-width="1.5" />
+          <text x="50" y="0" text-anchor="middle">50 mm / 2.0 in</text>
+        </g>
+      </g>
+    `;
+  }
+
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalCanvasSize} ${totalCanvasSize}" width="100%" height="100%" style="background-color: #ffffff; display: block; max-width: 100%; height: auto;">
+      <rect x="0" y="0" width="${totalCanvasSize}" height="${totalCanvasSize}" fill="#ffffff" />
+      
+      <!-- Clipped Sub-tile Target Content -->
+      <g transform="translate(${margin}, ${headerHeight})">
+        <svg x="0" y="0" width="${printableWidth}" height="${printableHeight}" viewBox="${vbX} ${vbY} ${vbW} ${vbH}" preserveAspectRatio="none">
+          ${fullSvg}
+        </svg>
+      </g>
+
+      <!-- Trim lines, seam crosshairs, and header/footer stamps -->
+      ${trimLinesSvg}
+      ${seamCrosshairsSvg}
+      ${tileStampSvg}
+    </svg>
+  `.trim();
+}
+
+/**
  * Opens the Printable Target Generator modal.
  */
 function openTargetGeneratorModal(options = {}) {
@@ -1619,60 +1819,159 @@ function renderTargetGeneratorPreview() {
 
   const id = parseInt(document.getElementById('gen-target-id')?.value, 10) || 0;
   const size = parseFloat(document.getElementById('gen-target-size')?.value) || 0.20;
+  const paperFormat = document.getElementById('gen-sheet-size')?.value || 'letter';
   const showCrosshair = document.getElementById('gen-opt-crosshair')?.checked !== false;
   const showCornerTicks = document.getElementById('gen-opt-cornerticks')?.checked !== false;
   const showRuler = document.getElementById('gen-opt-ruler')?.checked !== false;
   const showIdLabel = document.getElementById('gen-opt-idlabel')?.checked !== false;
 
-  const svgStr = generateFiducialSvg({
+  const forceTilingEnable = document.getElementById('gen-opt-tiling-enable')?.checked === true;
+  const overlapMm = parseFloat(document.getElementById('gen-tiling-overlap')?.value) || 6.35;
+  const viewMode = document.getElementById('gen-tiling-view-mode')?.value || 'assembled';
+  const showTrimLines = document.getElementById('gen-opt-trim-lines')?.checked !== false;
+  const showSeamCrosshairs = document.getElementById('gen-opt-seam-crosshairs')?.checked !== false;
+  const showTileStamps = document.getElementById('gen-opt-tile-stamps')?.checked !== false;
+
+  // Compute tiling matrix
+  const matrix = calculateFiducialTilingMatrix(size, paperFormat, overlapMm);
+  const isTiled = forceTilingEnable || matrix.requiresTiling;
+
+  // Auto-check tiling enable checkbox if physical size > min step
+  const enableCheckbox = document.getElementById('gen-opt-tiling-enable');
+  if (enableCheckbox && matrix.requiresTiling && !enableCheckbox.checked) {
+    enableCheckbox.checked = true;
+  }
+
+  // Update Tiling Badge & Info Text
+  const matrixBadge = document.getElementById('gen-tiling-matrix-badge');
+  const infoText = document.getElementById('gen-tiling-info-text');
+  if (isTiled) {
+    if (matrixBadge) {
+      matrixBadge.textContent = `${matrix.totalSheets} Sheets (${matrix.rows} × ${matrix.cols} Grid)`;
+      matrixBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+      matrixBadge.style.color = '#fbbf24';
+    }
+    if (infoText) {
+      infoText.textContent = `Requires ${matrix.totalSheets} ${paperFormat.toUpperCase()} sheets (${matrix.rows}x${matrix.cols}) | Tile: ${(matrix.tileSizeMm || 300).toFixed(0)}mm`;
+    }
+  } else {
+    if (matrixBadge) {
+      matrixBadge.textContent = 'Single Sheet';
+      matrixBadge.style.background = 'rgba(56, 189, 248, 0.15)';
+      matrixBadge.style.color = '#38bdf8';
+    }
+    if (infoText) {
+      infoText.textContent = `Single ${paperFormat.toUpperCase()} sheet output`;
+    }
+  }
+
+  const options = {
     type,
     id,
     physicalSizeMeters: size,
+    paperFormat,
+    overlapMm,
     showCrosshair,
     showCornerTicks,
     showRuler,
-    showIdLabel
-  });
+    showIdLabel,
+    showTrimLines,
+    showSeamCrosshairs,
+    showTileStamps
+  };
 
-  previewEl.innerHTML = svgStr;
+  if (!isTiled || viewMode === 'assembled') {
+    const svgStr = generateFiducialSvg(options);
+    previewEl.innerHTML = svgStr;
+  } else if (viewMode === 'tile_grid') {
+    // Render HTML grid matrix of all tiles
+    let gridHtml = `<div class="tiling-grid-preview-container" style="grid-template-columns: repeat(${matrix.cols}, 1fr);">`;
+    for (let r = 0; r < matrix.rows; r++) {
+      for (let c = 0; c < matrix.cols; c++) {
+        const tileSvg = generateTiledFiducialSheetSvg(options, r, c, matrix);
+        gridHtml += `
+          <div class="tiling-tile-card">
+            <span class="tiling-tile-badge">Tile [${r + 1},${c + 1}]</span>
+            <div style="width: 100%; height: 100%; min-height: 120px; display: flex; align-items: center; justify-content: center;">
+              ${tileSvg}
+            </div>
+          </div>
+        `;
+      }
+    }
+    gridHtml += `</div>`;
+    previewEl.innerHTML = gridHtml;
+  } else {
+    // Single tile preview (Top-Left Tile [1,1])
+    const singleTileSvg = generateTiledFiducialSheetSvg(options, 0, 0, matrix);
+    previewEl.innerHTML = singleTileSvg;
+  }
+
   updateTargetGeneratorAdvisor();
 }
 
 /**
- * Downloads the currently generated target as a vector SVG file.
+ * Downloads the currently generated target as vector SVG file(s).
  */
 function exportTargetSvg() {
   const type = document.getElementById('gen-target-type')?.value || 'aruco_4x4';
   const id = parseInt(document.getElementById('gen-target-id')?.value, 10) || 0;
   const size = parseFloat(document.getElementById('gen-target-size')?.value) || 0.20;
+  const paperFormat = document.getElementById('gen-sheet-size')?.value || 'letter';
   const showCrosshair = document.getElementById('gen-opt-crosshair')?.checked !== false;
   const showCornerTicks = document.getElementById('gen-opt-cornerticks')?.checked !== false;
   const showRuler = document.getElementById('gen-opt-ruler')?.checked !== false;
   const showIdLabel = document.getElementById('gen-opt-idlabel')?.checked !== false;
+  const forceTilingEnable = document.getElementById('gen-opt-tiling-enable')?.checked === true;
+  const overlapMm = parseFloat(document.getElementById('gen-tiling-overlap')?.value) || 6.35;
 
-  const svgStr = generateFiducialSvg({
+  const matrix = calculateFiducialTilingMatrix(size, paperFormat, overlapMm);
+  const isTiled = forceTilingEnable || matrix.requiresTiling;
+
+  const options = {
     type,
     id,
     physicalSizeMeters: size,
+    paperFormat,
+    overlapMm,
     showCrosshair,
     showCornerTicks,
     showRuler,
     showIdLabel
-  });
+  };
 
-  const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.setAttribute('href', url);
-  link.setAttribute('download', `Target_${type}_ID${id}_${(size * 1000).toFixed(0)}mm.svg`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  if (!isTiled) {
+    const svgStr = generateFiducialSvg(options);
+    const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Target_${type}_ID${id}_${(size * 1000).toFixed(0)}mm.svg`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } else {
+    // Multi-tile export: download each tile sheet
+    for (let r = 0; r < matrix.rows; r++) {
+      for (let c = 0; c < matrix.cols; c++) {
+        const tileSvg = generateTiledFiducialSheetSvg(options, r, c, matrix);
+        const blob = new Blob([tileSvg], { type: 'image/svg+xml;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `Target_${type}_ID${id}_Tile_R${r + 1}_C${c + 1}_of_${matrix.totalSheets}.svg`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 1000 + (r * matrix.cols + c) * 150);
+      }
+    }
+  }
 }
 
 /**
- * Prints the target sheet using an isolated print iframe to prevent main-app DOM styles or overflows from clipping the sheet.
+ * Prints the target sheet using an isolated print iframe supporting multi-page `@media print` layouts.
  */
 function printTargetSheet() {
   renderTargetGeneratorPreview();
@@ -1680,22 +1979,52 @@ function printTargetSheet() {
   const type = document.getElementById('gen-target-type')?.value || 'aruco_4x4';
   const id = parseInt(document.getElementById('gen-target-id')?.value, 10) || 0;
   const size = parseFloat(document.getElementById('gen-target-size')?.value) || 0.20;
+  const paperFormat = document.getElementById('gen-sheet-size')?.value || 'letter';
   const showCrosshair = document.getElementById('gen-opt-crosshair')?.checked !== false;
   const showCornerTicks = document.getElementById('gen-opt-cornerticks')?.checked !== false;
   const showRuler = document.getElementById('gen-opt-ruler')?.checked !== false;
   const showIdLabel = document.getElementById('gen-opt-idlabel')?.checked !== false;
+  const forceTilingEnable = document.getElementById('gen-opt-tiling-enable')?.checked === true;
+  const overlapMm = parseFloat(document.getElementById('gen-tiling-overlap')?.value) || 6.35;
 
-  const svgStr = generateFiducialSvg({
+  const matrix = calculateFiducialTilingMatrix(size, paperFormat, overlapMm);
+  const isTiled = forceTilingEnable || matrix.requiresTiling;
+
+  const options = {
     type,
     id,
     physicalSizeMeters: size,
+    paperFormat,
+    overlapMm,
     showCrosshair,
     showCornerTicks,
     showRuler,
     showIdLabel
-  });
+  };
 
-  // Create or reuse an isolated hidden iframe for printing to prevent any main-app DOM styles or overflows from clipping the printout
+  let pagesHtml = '';
+  if (!isTiled) {
+    const svgStr = generateFiducialSvg(options);
+    pagesHtml = `
+      <div class="print-target-wrapper">
+        ${svgStr}
+      </div>
+    `;
+  } else {
+    // Generate multi-page tiled print sheets separated by page breaks
+    for (let r = 0; r < matrix.rows; r++) {
+      for (let c = 0; c < matrix.cols; c++) {
+        const tileSvg = generateTiledFiducialSheetSvg(options, r, c, matrix);
+        pagesHtml += `
+          <div class="print-target-wrapper tiled-page" style="page-break-after: always; break-after: page;">
+            ${tileSvg}
+          </div>
+        `;
+      }
+    }
+  }
+
+  // Create or reuse an isolated hidden iframe for printing
   let printIframe = document.getElementById('fiducial-print-iframe');
   if (!printIframe) {
     printIframe = document.createElement('iframe');
@@ -1721,11 +2050,11 @@ function printTargetSheet() {
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Target_${type}_ID${id}</title>
+  <title>Target_${type}_ID${id}_Print</title>
   <style>
     @page {
       size: auto;
-      margin: 10mm;
+      margin: 8mm;
     }
     html, body {
       margin: 0;
@@ -1733,10 +2062,6 @@ function printTargetSheet() {
       width: 100%;
       height: 100%;
       background: #ffffff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: visible;
     }
     .print-target-wrapper {
       width: 100%;
@@ -1746,6 +2071,12 @@ function printTargetSheet() {
       display: flex;
       align-items: center;
       justify-content: center;
+      box-sizing: border-box;
+    }
+    .tiled-page {
+      page-break-after: always !important;
+      break-after: page !important;
+      height: 98vh !important;
     }
     .print-target-wrapper svg {
       width: 100%;
@@ -1757,14 +2088,11 @@ function printTargetSheet() {
   </style>
 </head>
 <body>
-  <div class="print-target-wrapper">
-    ${svgStr}
-  </div>
+  ${pagesHtml}
 </body>
 </html>`);
   iframeDoc.close();
 
-  // Allow iframe layout to settle before invoking print
   setTimeout(() => {
     try {
       if (printIframe.contentWindow) {
@@ -1778,8 +2106,8 @@ function printTargetSheet() {
     }
   }, 250);
 }
-
-// Geolocation state
+ 
+ // Geolocation state
 let userLocation = null;
 
 // Utility functions
@@ -6889,7 +7217,7 @@ function initUIEventListeners() {
     });
   }
 
-  ['gen-target-type', 'gen-target-id', 'gen-target-size', 'gen-opt-crosshair', 'gen-opt-cornerticks', 'gen-opt-ruler', 'gen-opt-idlabel'].forEach(id => {
+  ['gen-target-type', 'gen-target-id', 'gen-target-size', 'gen-sheet-size', 'gen-opt-crosshair', 'gen-opt-cornerticks', 'gen-opt-ruler', 'gen-opt-idlabel', 'gen-opt-tiling-enable', 'gen-tiling-overlap', 'gen-tiling-view-mode', 'gen-opt-trim-lines', 'gen-opt-seam-crosshairs', 'gen-opt-tile-stamps'].forEach(id => {
     const el = document.getElementById(id);
     if (el) {
       el.addEventListener('input', () => renderTargetGeneratorPreview());

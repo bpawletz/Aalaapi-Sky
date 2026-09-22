@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.117.0] - 2026-09-21
+
+### New Features & Enhancements
+- **Large-Format Fiducial Tag Tiling Engine (GCP Studio / Issue #90):**
+  - Integrated a complete client-side multi-sheet printable tiling engine within `#fiducial-generator-modal` and Section 2 Card 6 (`#layer-card-fiducial`), enabling pilots and surveyors to print massive Ground Control Points (GCPs / AprilTags / ArUco markers / Checkerboards / Crosshairs) from 0.40m up to 1.20m+ (e.g. 2x2 ft to 4x4 ft) using standard desktop printers (US Letter / ISO A4).
+  - Multi-sheet matrix split logic automatically divides large vector targets into an $R \times C$ tile matrix with configurable interior overlap bleed margins (default 0.25 in / 6.35 mm).
+  - Generates dashed trim cut-lines, sub-millimeter seam alignment crosshairs, tile coordinate stamps (`Tile [Row X of R, Col Y of C]`), mini-grid assembly diagrams, and 1:1 scale verification rulers on every sheet.
+  - Multi-page print iframe rendering with `@media print` page breaks (`page-break-after: always`) supports 1-click native printing or browser "Save as PDF".
+
 ## [1.116.1] - 2026-09-20
 
 ### Fixed
