@@ -17874,6 +17874,44 @@ PT2,42.105, -71.205, 11.0`;
     assert.ok(svgCross.includes('Survey AeroPoint Crosshair'));
   });
 
+  test('calculateFiducialTilingMatrix calculates row and col matrix split correctly for single sheet and multi-sheet', () => {
+    // Single sheet: 0.20m on US Letter
+    const m1 = calculateFiducialTilingMatrix(0.20, 'letter', 6.35);
+    assert.strictEqual(m1.requiresTiling, false, '0.20m target on Letter should fit single sheet');
+    assert.strictEqual(m1.rows, 1);
+    assert.strictEqual(m1.cols, 1);
+
+    // Multi-sheet: 0.60m (24") on US Letter
+    const m2 = calculateFiducialTilingMatrix(0.60, 'letter', 6.35);
+    assert.strictEqual(m2.requiresTiling, true, '0.60m target on Letter requires tiling');
+    assert.ok(m2.totalSheets >= 4, '0.60m target requires at least 4 sheets');
+    assert.strictEqual(m2.totalSheets, m2.rows * m2.cols);
+
+    // Multi-sheet: 1.00m (39") on ISO A4
+    const m3 = calculateFiducialTilingMatrix(1.00, 'a4', 6.35);
+    assert.strictEqual(m3.requiresTiling, true);
+    assert.ok(m3.totalSheets >= 9, '1.00m target requires at least 9 sheets');
+  });
+
+  test('generateTiledFiducialSheetSvg generates valid SVG tile sheet with trim lines and tile stamp', () => {
+    const tileSvg = generateTiledFiducialSheetSvg({
+      type: 'aruco_4x4',
+      id: 3,
+      physicalSizeMeters: 0.60,
+      paperFormat: 'letter',
+      overlapMm: 6.35,
+      showTrimLines: true,
+      showSeamCrosshairs: true,
+      showTileStamps: true
+    }, 0, 0);
+
+    assert.ok(tileSvg.startsWith('<svg'), 'Output should start with <svg');
+    assert.ok(tileSvg.endsWith('</svg>'), 'Output should end with </svg>');
+    assert.ok(tileSvg.includes('TILE [Row 1 of'), 'Header stamp should state tile coordinates');
+    assert.ok(tileSvg.includes('50 mm / 2.0 in'), 'Footer scale bar should state 1:1 ruler');
+    assert.ok(tileSvg.includes('stroke-dasharray="5,4"'), 'Dashed trim lines should be rendered');
+  });
+
   test('PhotoInspector superimposes visible fiducial markers onto photo canvas', () => {
     const origDoc = global.document;
     const origLayers = { ...PhotoInspector.layers };
@@ -20247,22 +20285,22 @@ describe('Photo Telemetry Correlation & Ground Boundary Projection Suite Tests (
     );
   });
 
-  test('Version 1.116.1 is consistent across package.json, changelog, and templates', () => {
+  test('Version 1.117.0 is consistent across package.json, changelog, and templates', () => {
     const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
-    assert.strictEqual(pkg.version, '1.116.1');
+    assert.strictEqual(pkg.version, '1.117.0');
 
     const changelog = fs.readFileSync('./CHANGELOG.md', 'utf8');
-    assert.ok(changelog.includes('## [1.116.1] - 2026-09-20'), 'CHANGELOG must contain 1.116.1');
+    assert.ok(changelog.includes('## [1.117.0] - 2026-09-21'), 'CHANGELOG must contain 1.117.0');
 
     const tmpl = fs.readFileSync('./index_template.html', 'utf8');
-    assert.ok(tmpl.includes('v1.116.1'), 'index_template.html must contain v1.116.1 header badge');
-    assert.ok(tmpl.includes('Version 1.116.1'), 'index_template.html must contain Version 1.116.1');
-    assert.ok(tmpl.includes('Changelog (v1.116.1):'), 'index_template.html must contain Changelog (v1.116.1)');
+    assert.ok(tmpl.includes('v1.117.0'), 'index_template.html must contain v1.117.0 header badge');
+    assert.ok(tmpl.includes('Version 1.117.0'), 'index_template.html must contain Version 1.117.0');
+    assert.ok(tmpl.includes('Changelog (v1.117.0):'), 'index_template.html must contain Changelog (v1.117.0)');
 
     const indexHtml = fs.readFileSync('./index.html', 'utf8');
-    assert.ok(indexHtml.includes('v1.116.1'), 'index.html must contain v1.116.1 header badge');
-    assert.ok(indexHtml.includes('Version 1.116.1'), 'index.html must contain Version 1.116.1');
-    assert.ok(indexHtml.includes('Changelog (v1.116.1):'), 'index.html must contain Changelog (v1.116.1)');
+    assert.ok(indexHtml.includes('v1.117.0'), 'index.html must contain v1.117.0 header badge');
+    assert.ok(indexHtml.includes('Version 1.117.0'), 'index.html must contain Version 1.117.0');
+    assert.ok(indexHtml.includes('Changelog (v1.117.0):'), 'index.html must contain Changelog (v1.117.0)');
   });
 });
 
