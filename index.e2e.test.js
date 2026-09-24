@@ -5761,6 +5761,30 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       const container = document.getElementById('photo-sphere-container');
       const containerVisible = container && !container.classList.contains('hidden');
 
+      const layerCardModes = document.getElementById('layer-card-modes');
+      const layerCardModesPhotoSphere = layerCardModes ? layerCardModes.style.display : null;
+
+      // Switch to double grid
+      const doubleCard = document.querySelector('.pattern-card[data-value="double"]');
+      if (doubleCard) {
+        doubleCard.click();
+      } else {
+        gridTypeSelect.value = 'double';
+        gridTypeSelect.dispatchEvent(new Event('change'));
+      }
+      if (typeof updateGrid === 'function') updateGrid();
+      const layerCardModesDouble = layerCardModes ? layerCardModes.style.display : null;
+
+      // Switch back to photo-sphere
+      if (card) {
+        card.click();
+      } else {
+        gridTypeSelect.value = 'photo-sphere';
+        gridTypeSelect.dispatchEvent(new Event('change'));
+      }
+      if (typeof updateGrid === 'function') updateGrid();
+      const layerCardModesRestoredPhotoSphere = layerCardModes ? layerCardModes.style.display : null;
+
       const waypoints = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
       const wpCount = waypoints.length;
       const isAllPhotoSphere = waypoints.length > 0 && waypoints.every(wp => wp.isPhotoSpherePoint);
@@ -5769,6 +5793,9 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       return {
         success: true,
         containerVisible,
+        layerCardModesPhotoSphere,
+        layerCardModesDouble,
+        layerCardModesRestoredPhotoSphere,
         wpCount,
         isAllPhotoSphere,
         pitches
@@ -5777,6 +5804,9 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
     assert.strictEqual(res.success, true, 'Evaluation should complete');
     assert.strictEqual(res.containerVisible, true, 'Photo sphere container should be visible when selected');
+    assert.strictEqual(res.layerCardModesPhotoSphere, 'none', 'layerCardModes should be hidden when photo-sphere is active');
+    assert.strictEqual(res.layerCardModesDouble, 'block', 'layerCardModes should be restored when double grid is active');
+    assert.strictEqual(res.layerCardModesRestoredPhotoSphere, 'none', 'layerCardModes should be hidden again when returning to photo-sphere');
     assert.strictEqual(res.wpCount, 37, 'Should generate exactly 37 waypoints');
     assert.strictEqual(res.isAllPhotoSphere, true, 'All waypoints should have isPhotoSpherePoint flag');
     assert.deepStrictEqual(res.pitches, [-15, -45, -75, -90], 'Pitches should include all 4 rows');
@@ -5967,6 +5997,81 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(stepResult.idxAfterForward, 1, 'Step forward must advance waypoint to idx = 1');
     assert.strictEqual(stepResult.idxAfterBack, 0, 'Step backward must return waypoint to idx = 0');
     assert.strictEqual(stepResult.conesRestored, true, 'Exiting FPV must restore sight cones visibility');
+  });
+
+  test('E2E: 3D FPV Movie View (Follow Cam) vs Cockpit View toggle and active drone mesh (v1.121.0)', async () => {
+    // 1. Open 3D View modal
+    const openBtn = await page.$('#btn-3d-view');
+    if (openBtn) await openBtn.click();
+    await page.waitForTimeout(400);
+
+    // 2. Toggle FPV walkthrough
+    await page.evaluate(() => {
+      const btnFpv = document.getElementById('btn-3d-fpv');
+      if (btnFpv) btnFpv.click();
+    });
+    await page.waitForTimeout(100);
+
+    // 3. Test camera mode toggle button and default follow mode
+    const modeState = await page.evaluate(() => {
+      const camBtn = document.getElementById('fpv-btn-cam-mode');
+      const camText = document.getElementById('fpv-cam-mode-text');
+      const reticle = document.getElementById('fpv-center-reticle');
+      const initialMode = typeof fpvCameraMode !== 'undefined' ? fpvCameraMode : null;
+      const initialDroneMeshVisible = typeof fpvActiveDroneMesh !== 'undefined' && fpvActiveDroneMesh ? fpvActiveDroneMesh.visible : null;
+
+      // Click button to toggle to Cockpit mode
+      if (camBtn) camBtn.click();
+      const cockpitMode = fpvCameraMode;
+      const cockpitBtnText = camText ? camText.textContent : null;
+      const cockpitDroneMeshVisible = fpvActiveDroneMesh ? fpvActiveDroneMesh.visible : null;
+      const cockpitReticleDisplay = reticle ? reticle.style.display : null;
+
+      // Click again to toggle back to Movie mode
+      if (camBtn) camBtn.click();
+      const restoredMode = fpvCameraMode;
+      const restoredBtnText = camText ? camText.textContent : null;
+      const restoredDroneMeshVisible = fpvActiveDroneMesh ? fpvActiveDroneMesh.visible : null;
+      const restoredReticleDisplay = reticle ? reticle.style.display : null;
+
+      // Test hotkey 'c'
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', bubbles: true }));
+      const hotkeyMode = fpvCameraMode;
+
+      // Exit FPV
+      const stopBtn = document.getElementById('fpv-btn-stop');
+      if (stopBtn) stopBtn.click();
+
+      // Close 3D modal
+      const closeBtn = document.getElementById('close-3d-btn');
+      if (closeBtn) closeBtn.click();
+
+      return {
+        initialMode,
+        initialDroneMeshVisible,
+        cockpitMode,
+        cockpitBtnText,
+        cockpitDroneMeshVisible,
+        cockpitReticleDisplay,
+        restoredMode,
+        restoredBtnText,
+        restoredDroneMeshVisible,
+        restoredReticleDisplay,
+        hotkeyMode
+      };
+    });
+
+    assert.strictEqual(modeState.cockpitMode, 'cockpit', 'Clicking cam button should switch mode to cockpit');
+    assert.strictEqual(modeState.cockpitBtnText, 'Cockpit', 'Button text should update to Cockpit');
+    assert.strictEqual(modeState.cockpitDroneMeshVisible, false, 'Drone mesh should be hidden in cockpit view');
+    assert.strictEqual(modeState.cockpitReticleDisplay, 'flex', 'Reticle should be displayed in cockpit view');
+
+    assert.strictEqual(modeState.restoredMode, 'follow', 'Clicking cam button again should switch mode back to follow');
+    assert.strictEqual(modeState.restoredBtnText, 'Movie', 'Button text should update to Movie');
+    assert.strictEqual(modeState.restoredDroneMeshVisible, true, 'Drone mesh should be visible in follow/movie view');
+    assert.strictEqual(modeState.restoredReticleDisplay, 'none', 'Reticle should be hidden in follow/movie view');
+
+    assert.strictEqual(modeState.hotkeyMode, 'cockpit', 'Pressing key C should toggle camera mode');
   });
 });
 

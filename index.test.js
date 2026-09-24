@@ -1969,6 +1969,7 @@ describe('3D FPV Editor Panel Alignment & Viewport Tests', () => {
         fpvProgressIndex = 0;
         fpvNudgeStepIndex = 1; // 1m step
         generatedWaypoints = [{ lat: 41.88, lon: -87.62, x: 10, y: 20, alt: 50, pitch: -45 }];
+        const origUpdateFPVCamera = updateFPVCamera;
         updateFPVCamera = (dt) => { cameraUpdated = true; };
       `);
 
@@ -2001,7 +2002,7 @@ describe('3D FPV Editor Panel Alignment & Viewport Tests', () => {
 
     } finally {
       global.document.getElementById = originalGetElementById;
-      vm.runInThisContext('centerMarker = null; generatedWaypoints = [];');
+      vm.runInThisContext('centerMarker = null; generatedWaypoints = []; if (typeof origUpdateFPVCamera !== "undefined") updateFPVCamera = origUpdateFPVCamera;');
     }
   });
 
@@ -3500,6 +3501,7 @@ describe('Companion Bridge & Direct Sync Tests', () => {
       return origGetElementById ? origGetElementById(id) : null;
     };
 
+    let origGetCurrentWaypoints = null;
     try {
       vm.runInThisContext('isRc2MtpConnected = true;');
       // Mock JSZip
@@ -3510,6 +3512,7 @@ describe('Companion Bridge & Direct Sync Tests', () => {
         generateAsync(opts) { return Promise.resolve(new Uint8Array([80, 75, 3, 4])); }
       };
 
+      origGetCurrentWaypoints = vm.runInThisContext('typeof getCurrentWaypoints !== "undefined" ? getCurrentWaypoints : null');
       vm.runInThisContext(`
         getCurrentWaypoints = () => [
           { lat: 40.012, lon: -83.177, alt: 50, heading: 90, pitch: -45 },
@@ -3524,6 +3527,10 @@ describe('Companion Bridge & Direct Sync Tests', () => {
       assert.strictEqual(fetchPayload.jpgBase64, undefined, 'Preview thumbnail jpgBase64 should be archived/omitted');
       assert.ok(directBtn.innerHTML.includes('Synced to DJI RC 2!'));
     } finally {
+      if (origGetCurrentWaypoints) {
+        global.getCurrentWaypoints = origGetCurrentWaypoints;
+        vm.runInThisContext('getCurrentWaypoints = global.getCurrentWaypoints;');
+      }
       global.document.getElementById = origGetElementById;
       global.fetch = origFetch;
       if (global.localStorage && origGetItem) {
@@ -4653,7 +4660,7 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
     assert.strictEqual(active.length, 2);
   });
 
-  test('FlightDiagnostics has _loadGeneration and _pendingFlightId guards for stale async load prevention (regression: wrong flight in 3D viewer)', () => {
+  test('FlightDiagnostics has _loadGeneration and _pendingFlightId guards for stale async load prevention (regression: wrong flight in 3D viewer)', async () => {
     // Verify the guard properties exist on the FlightDiagnostics singleton
     const fd = vm.runInThisContext('FlightDiagnostics');
     assert.ok('_loadGeneration' in fd, 'FlightDiagnostics must have _loadGeneration property');
@@ -4680,12 +4687,12 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
     fd.pause = () => {};
     try {
       // Calling loadSelectedFlight increments _loadGeneration synchronously before any await
-      fd.loadSelectedFlight('active-mission');
+      const p1 = fd.loadSelectedFlight('active-mission');
       assert.strictEqual(fd._loadGeneration, genBefore + 1, '_loadGeneration must increment by 1 on each loadSelectedFlight call');
       assert.strictEqual(fd._pendingFlightId, 'active-mission', '_pendingFlightId must track the latest requested flight ID');
 
       // Second call further increments
-      fd.loadSelectedFlight('active-mission');
+      const p2 = fd.loadSelectedFlight('active-mission');
       assert.strictEqual(fd._loadGeneration, genBefore + 2, '_loadGeneration must increment again on second call');
 
       // Verify loadSelectedFlight source code contains generation guard pattern
@@ -4693,6 +4700,7 @@ describe('Phase 2 Flight Diagnostics & 3D Replay Tests', () => {
       assert.ok(indexJs.includes('_loadGeneration'), 'index.js must contain _loadGeneration guard');
       assert.ok(indexJs.includes('myGeneration'), 'index.js must contain myGeneration local variable');
       assert.ok(indexJs.includes('this._loadGeneration !== myGeneration'), 'index.js must contain generation mismatch check');
+      await Promise.allSettled([p1, p2]);
     } finally {
       fd.init3DScene = origInit;
       fd.updateStatsUI = origUpdate;
@@ -20412,14 +20420,14 @@ describe('Photo Telemetry Correlation & Ground Boundary Projection Suite Tests (
     assert.ok(changelog.includes('## [1.118.0] - 2026-09-21'), 'CHANGELOG must contain 1.118.0');
 
     const tmpl = fs.readFileSync('./index_template.html', 'utf8');
-    assert.ok(tmpl.includes('v1.118.0') || tmpl.includes('v1.119.0') || tmpl.includes('v1.120.0') || tmpl.includes('v1.120.1'), 'index_template.html must contain header badge');
-    assert.ok(tmpl.includes('Version 1.118.0') || tmpl.includes('Version 1.119.0') || tmpl.includes('Version 1.120.0') || tmpl.includes('Version 1.120.1'), 'index_template.html must contain Version');
-    assert.ok(tmpl.includes('Changelog (v1.118.0):') || tmpl.includes('Changelog (v1.119.0):') || tmpl.includes('Changelog (v1.120.0):') || tmpl.includes('Changelog (v1.120.1):'), 'index_template.html must contain Changelog');
+    assert.ok(tmpl.includes('v1.118.0') || tmpl.includes('v1.119.0') || tmpl.includes('v1.120.0') || tmpl.includes('v1.120.1') || tmpl.includes('v1.121.0') || tmpl.includes('v1.121.1'), 'index_template.html must contain header badge');
+    assert.ok(tmpl.includes('Version 1.118.0') || tmpl.includes('Version 1.119.0') || tmpl.includes('Version 1.120.0') || tmpl.includes('Version 1.120.1') || tmpl.includes('Version 1.121.0') || tmpl.includes('Version 1.121.1'), 'index_template.html must contain Version');
+    assert.ok(tmpl.includes('Changelog (v1.118.0):') || tmpl.includes('Changelog (v1.119.0):') || tmpl.includes('Changelog (v1.120.0):') || tmpl.includes('Changelog (v1.120.1):') || tmpl.includes('Changelog (v1.121.0):') || tmpl.includes('Changelog (v1.121.1):'), 'index_template.html must contain Changelog');
 
     const indexHtml = fs.readFileSync('./index.html', 'utf8');
-    assert.ok(indexHtml.includes('v1.118.0') || indexHtml.includes('v1.119.0') || indexHtml.includes('v1.120.0') || indexHtml.includes('v1.120.1'), 'index.html must contain header badge');
-    assert.ok(indexHtml.includes('Version 1.118.0') || indexHtml.includes('Version 1.119.0') || indexHtml.includes('Version 1.120.0') || indexHtml.includes('Version 1.120.1'), 'index.html must contain Version');
-    assert.ok(indexHtml.includes('Changelog (v1.118.0):') || indexHtml.includes('Changelog (v1.119.0):') || indexHtml.includes('Changelog (v1.120.0):') || indexHtml.includes('Changelog (v1.120.1):'), 'index.html must contain Changelog');
+    assert.ok(indexHtml.includes('v1.118.0') || indexHtml.includes('v1.119.0') || indexHtml.includes('v1.120.0') || indexHtml.includes('v1.120.1') || indexHtml.includes('v1.121.0') || indexHtml.includes('v1.121.1'), 'index.html must contain header badge');
+    assert.ok(indexHtml.includes('Version 1.118.0') || indexHtml.includes('Version 1.119.0') || indexHtml.includes('Version 1.120.0') || indexHtml.includes('Version 1.120.1') || indexHtml.includes('Version 1.121.0') || indexHtml.includes('Version 1.121.1'), 'index.html must contain Version');
+    assert.ok(indexHtml.includes('Changelog (v1.118.0):') || indexHtml.includes('Changelog (v1.119.0):') || indexHtml.includes('Changelog (v1.120.0):') || indexHtml.includes('Changelog (v1.120.1):') || indexHtml.includes('Changelog (v1.121.0):') || indexHtml.includes('Changelog (v1.121.1):'), 'index.html must contain Changelog');
   });
 });
 
@@ -20664,12 +20672,12 @@ describe('v1.120.0 Bridge-Hosted 3D Wireframe Extraction & Telemetry Projection 
 
     assert.ok(semverGte(pkg, '1.120.0'), 'package.json version should be >= 1.120.0');
     assert.ok(cl.includes('## [1.120.0] - 2026-09-24'), 'CHANGELOG.md missing 1.120.0 header');
-    assert.ok(indexTemplate.includes('Version 1.120.0') || indexTemplate.includes('Version 1.120.1'), 'index_template.html missing Version 1.120.0/1');
-    assert.ok(indexHtml.includes('Version 1.120.0') || indexHtml.includes('Version 1.120.1'), 'index.html missing Version 1.120.0/1');
-    assert.ok(indexTemplate.includes('v1.120.0') || indexTemplate.includes('v1.120.1'), 'index_template.html missing v1.120.0/1 badge');
-    assert.ok(indexHtml.includes('v1.120.0') || indexHtml.includes('v1.120.1'), 'index.html missing v1.120.0/1 badge');
-    assert.ok(indexTemplate.includes('Changelog (v1.120.0):'), 'index_template.html missing Changelog (v1.120.0)');
-    assert.ok(indexHtml.includes('Changelog (v1.120.0):'), 'index.html missing Changelog (v1.120.0)');
+    assert.ok(indexTemplate.includes('Version 1.120.0') || indexTemplate.includes('Version 1.120.1') || indexTemplate.includes('Version 1.121.0') || indexTemplate.includes('Version 1.121.1'), 'index_template.html missing Version 1.120.0/1');
+    assert.ok(indexHtml.includes('Version 1.120.0') || indexHtml.includes('Version 1.120.1') || indexHtml.includes('Version 1.121.0') || indexHtml.includes('Version 1.121.1'), 'index.html missing Version 1.120.0/1');
+    assert.ok(indexTemplate.includes('v1.120.0') || indexTemplate.includes('v1.120.1') || indexTemplate.includes('v1.121.0') || indexTemplate.includes('v1.121.1'), 'index_template.html missing v1.120.0/1 badge');
+    assert.ok(indexHtml.includes('v1.120.0') || indexHtml.includes('v1.120.1') || indexHtml.includes('v1.121.0') || indexHtml.includes('v1.121.1'), 'index.html missing v1.120.0/1 badge');
+    assert.ok(indexTemplate.includes('Changelog (v1.120.0):') || indexTemplate.includes('Changelog (v1.121.0):') || indexTemplate.includes('Changelog (v1.121.1):'), 'index_template.html missing Changelog (v1.120.0)');
+    assert.ok(indexHtml.includes('Changelog (v1.120.0):') || indexHtml.includes('Changelog (v1.121.0):') || indexHtml.includes('Changelog (v1.121.1):'), 'index.html missing Changelog (v1.120.0)');
   });
 
   test('DOM Architecture: Wireframe controls exist in templates', () => {
@@ -20830,14 +20838,14 @@ describe('3D FPV Walkthrough & Playback Suite (v1.120.1)', () => {
     const tpl = fs.readFileSync('index_template.html', 'utf8');
     const html = fs.readFileSync('index.html', 'utf8');
 
-    assert.strictEqual(pkg.version, '1.120.1');
+    assert.ok(semverGte(pkg.version, '1.120.1'), 'package.json version should be >= 1.120.1');
     assert.ok(changelog.includes('## [1.120.1] - 2026-09-24'));
-    assert.ok(tpl.includes('v1.120.1</span>'));
-    assert.ok(tpl.includes('Version 1.120.1</span>'));
-    assert.ok(tpl.includes('Changelog (v1.120.1):'));
-    assert.ok(html.includes('v1.120.1</span>'));
-    assert.ok(html.includes('Version 1.120.1</span>'));
-    assert.ok(html.includes('Changelog (v1.120.1):'));
+    assert.ok(tpl.includes('v1.120.1') || tpl.includes('v1.121.0') || tpl.includes('v1.121.1'));
+    assert.ok(tpl.includes('Version 1.120.1') || tpl.includes('Version 1.121.0') || tpl.includes('Version 1.121.1'));
+    assert.ok(tpl.includes('Changelog (v1.120.1):') || tpl.includes('Changelog (v1.121.0):') || tpl.includes('Changelog (v1.121.1):'));
+    assert.ok(html.includes('v1.120.1') || html.includes('v1.121.0') || html.includes('v1.121.1'));
+    assert.ok(html.includes('Version 1.120.1') || html.includes('Version 1.121.0') || html.includes('Version 1.121.1'));
+    assert.ok(html.includes('Changelog (v1.120.1):') || html.includes('Changelog (v1.121.0):') || html.includes('Changelog (v1.121.1):'));
   });
 
   test('Three-Tier FPV helpers resolve speed, hover time, and camera action cleanly', () => {
@@ -20924,6 +20932,314 @@ describe('3D FPV Walkthrough & Playback Suite (v1.120.1)', () => {
   });
 });
 
+describe('3D Cinematic Movie Mode & FPV Flight Simulation Suite (v1.121.0)', () => {
+  test('Version 1.121.0 is consistent across package.json, changelog, index_template.html, and index.html', () => {
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
+    const tpl = fs.readFileSync('index_template.html', 'utf8');
+    const html = fs.readFileSync('index.html', 'utf8');
 
+    assert.ok(semverGte(pkg.version, '1.121.0'), 'package.json version should be >= 1.121.0');
+    assert.ok(changelog.includes('## [1.121.0] - 2026-09-24'));
+    assert.ok(tpl.includes('v1.121.0') || tpl.includes('v1.121.1'));
+    assert.ok(tpl.includes('Version 1.121.0') || tpl.includes('Version 1.121.1'));
+    assert.ok(tpl.includes('Changelog (v1.121.0):') || tpl.includes('Changelog (v1.121.1):'));
+    assert.ok(html.includes('v1.121.0') || html.includes('v1.121.1'));
+    assert.ok(html.includes('Version 1.121.0') || html.includes('Version 1.121.1'));
+    assert.ok(html.includes('Changelog (v1.121.0):') || html.includes('Changelog (v1.121.1):'));
+    assert.ok(tpl.includes('id="fpv-btn-cam-mode"'));
+    assert.ok(html.includes('id="fpv-btn-cam-mode"'));
+    assert.ok(tpl.includes('id="fpv-center-reticle"'));
+    assert.ok(html.includes('id="fpv-center-reticle"'));
+  });
 
+  test('setFPVCameraMode switches between follow (Movie) and cockpit modes and syncs UI', () => {
+    const origMode = fpvCameraMode;
+    const origMesh = fpvActiveDroneMesh;
+    const fakeDroneMesh = { visible: false };
 
+    try {
+      fpvActiveDroneMesh = fakeDroneMesh;
+      fpvActive = true;
+
+      setFPVCameraMode('follow');
+      assert.strictEqual(fpvCameraMode, 'follow');
+      assert.strictEqual(fakeDroneMesh.visible, true, 'Drone mesh must be visible in follow/movie mode');
+
+      setFPVCameraMode('cockpit');
+      assert.strictEqual(fpvCameraMode, 'cockpit');
+      assert.strictEqual(fakeDroneMesh.visible, false, 'Drone mesh must be hidden in cockpit mode to prevent camera collision');
+
+      setFPVCameraMode('follow');
+      assert.strictEqual(fpvCameraMode, 'follow');
+      assert.strictEqual(fakeDroneMesh.visible, true);
+    } finally {
+      fpvCameraMode = origMode;
+      fpvActiveDroneMesh = origMesh;
+      fpvActive = false;
+    }
+  });
+
+  test('updateFPVCamera positions camera in third-person chase mode for follow and cockpit mode for cockpit', () => {
+    class MockVec3 {
+      constructor(x = 0, y = 0, z = 0) { this.x = x; this.y = y; this.z = z; }
+      copy(v) { this.x = v.x; this.y = v.y; this.z = v.z; return this; }
+      set(x, y, z) { this.x = x; this.y = y; this.z = z; return this; }
+    }
+
+    const origTHREE = global.THREE;
+    global.THREE = {
+      Vector3: MockVec3,
+      MathUtils: { lerp: (a, b, t) => a + (b - a) * t }
+    };
+
+    let camPos = new MockVec3();
+    let lookAtTarget = null;
+    const testCamera = {
+      position: {
+        copy: (v) => { camPos.copy(v); },
+        set: (x, y, z) => { camPos.set(x, y, z); }
+      },
+      rotation: { set: () => {} },
+      lookAt: (x, y, z) => { lookAtTarget = new MockVec3(x, y, z); }
+    };
+
+    try {
+      global._testCamera = testCamera;
+      global.threeCamera = testCamera;
+      global.threeScene = {};
+      vm.runInThisContext(`
+        fpvActive = true;
+        importedWaypoints = null;
+        generatedWaypoints = [
+          { x: 0, y: 0, alt: 50, lat: 40.0, lon: -83.0, heading: 0, headingMode: 'fixed' },
+          { x: 0, y: 100, alt: 50, lat: 40.01, lon: -83.0, heading: 0, headingMode: 'fixed' }
+        ];
+        fpvCameraMode = 'follow';
+        fpvProgressIndex = 0;
+        fpvPlaying = false;
+        updateFPVCamera(0);
+      `);
+
+      assert.strictEqual(camPos.x, 0);
+      assert.ok(camPos.y > 50, 'Camera height should be above drone altitude 50m');
+      assert.ok(camPos.z > 0, 'Camera should be positioned behind the drone (+Z when facing North)');
+      assert.ok(lookAtTarget !== null, 'Follow mode must compute lookAt target ahead of drone');
+
+      vm.runInThisContext(`
+        fpvCameraMode = 'cockpit';
+        updateFPVCamera(0);
+      `);
+      assert.strictEqual(camPos.x, 0);
+      assert.strictEqual(camPos.y, 50, 'Cockpit mode must place camera directly at drone altitude');
+      assert.strictEqual(camPos.z === 0 ? 0 : camPos.z, 0, 'Cockpit mode must place camera directly at drone position');
+    } finally {
+      delete global._testCamera;
+      delete global.threeCamera;
+      delete global.threeScene;
+      global.THREE = origTHREE;
+      vm.runInThisContext(`
+        fpvActive = false;
+        threeCamera = null;
+        threeScene = null;
+        generatedWaypoints = [];
+      `);
+    }
+  });
+
+  test('updateFPVCamera does not force 2.0s settling halts when hoverTime is 0', () => {
+    class MockVec3 {
+      constructor(x = 0, y = 0, z = 0) { this.x = x; this.y = y; this.z = z; }
+      copy(v) { this.x = v.x; this.y = v.y; this.z = v.z; return this; }
+      set(x, y, z) { this.x = x; this.y = y; this.z = z; return this; }
+    }
+
+    const origTHREE = global.THREE;
+    global.THREE = {
+      Vector3: MockVec3,
+      MathUtils: { lerp: (a, b, t) => a + (b - a) * t }
+    };
+
+    const testCamera = {
+      position: new MockVec3(),
+      rotation: { set: () => {} },
+      lookAt: () => {}
+    };
+
+    try {
+      global._testCamera = testCamera;
+      global.threeCamera = testCamera;
+      global.threeScene = {};
+      vm.runInThisContext(`
+        fpvActive = true;
+        fpvPlaying = true;
+        fpvPhotoDelayTimer = null;
+        fpvProgressIndex = 0;
+        fpvSubInterpolation = 0.99;
+        fpvSpeed = 1.0;
+        importedWaypoints = null;
+        generatedWaypoints = [
+          { x: 0, y: 0, alt: 50, lat: 40.0, lon: -83.0, hoverTime: 0, cameraAction: 'stopAndShoot', speed: 10 },
+          { x: 10, y: 0, alt: 50, lat: 40.0, lon: -82.99, hoverTime: 0, cameraAction: 'stopAndShoot', speed: 10 },
+          { x: 10, y: 10, alt: 50, lat: 40.01, lon: -82.99, hoverTime: 0, cameraAction: 'stopAndShoot', speed: 10 }
+        ];
+        updateFPVCamera(5.0);
+      `);
+
+      const progressIdx = vm.runInThisContext('fpvProgressIndex');
+      const delayTimer = vm.runInThisContext('fpvPhotoDelayTimer');
+
+      assert.strictEqual(progressIdx, 1, 'Should have arrived at waypoint 1');
+      assert.strictEqual(delayTimer, null, 'fpvPhotoDelayTimer must remain null when hoverTime is 0, ensuring smooth movie playback');
+    } finally {
+      delete global._testCamera;
+      delete global.threeCamera;
+      delete global.threeScene;
+      global.THREE = origTHREE;
+      vm.runInThisContext(`
+        fpvActive = false;
+        fpvPlaying = false;
+        if (fpvPhotoDelayTimer) {
+          clearTimeout(fpvPhotoDelayTimer);
+          fpvPhotoDelayTimer = null;
+        }
+        threeCamera = null;
+        threeScene = null;
+        generatedWaypoints = [];
+      `);
+    }
+  });
+});
+
+describe('Streamlined 360° Photo Sphere Layer Dynamics Suite (v1.121.1)', () => {
+  test('Version 1.121.1 is consistent across package.json, changelog, index_template.html, and index.html', () => {
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
+    const tpl = fs.readFileSync('index_template.html', 'utf8');
+    const html = fs.readFileSync('index.html', 'utf8');
+
+    assert.strictEqual(pkg.version, '1.121.1');
+    assert.ok(changelog.includes('## [1.121.1] - 2026-09-24'));
+    assert.ok(tpl.includes('v1.121.1</span>'));
+    assert.ok(tpl.includes('Version 1.121.1</span>'));
+    assert.ok(tpl.includes('Changelog (v1.121.1):'));
+    assert.ok(html.includes('v1.121.1</span>'));
+    assert.ok(html.includes('Version 1.121.1</span>'));
+    assert.ok(html.includes('Changelog (v1.121.1):'));
+  });
+
+  test('togglePatternParameters conceals layerCardModes for photo-sphere and restores for other patterns', () => {
+    const origGetEl = global.document.getElementById;
+    const fakeContainer = {
+      style: { display: 'block' },
+      querySelector: () => ({ textContent: '' })
+    };
+    const fakeSlider = {
+      value: 50,
+      closest: () => fakeContainer
+    };
+
+    const mockElements = {
+      'grid-type': { value: 'photo-sphere' },
+      'grid-width': fakeSlider,
+      'grid-height': fakeSlider,
+      'grid-rotation': fakeSlider,
+      'gimbal-pitch': fakeSlider,
+      'front-overlap': fakeSlider,
+      'side-overlap': fakeSlider,
+      'altitude': { value: '50' },
+      'capture-mode': { value: 'stopAndShoot' },
+      'layer-card-modes': { style: { display: 'block' } },
+      'layer-card-flight': { style: { display: 'none' } },
+      'layer-card-optics': { style: { display: 'none' } },
+      'layer-card-geometry': { style: { display: 'none' } },
+      'layer-card-geometry-title': { textContent: '' },
+      'layer-card-boundary': { style: { display: 'none' }, classList: { add: () => {}, remove: () => {} } },
+      'layer-card-fiducial': { style: { display: 'none' }, classList: { add: () => {}, remove: () => {} } },
+      'altitude-control-group': { style: { display: 'none' } },
+      'photo-sphere-container': { classList: { add: () => {}, remove: () => {} } },
+      'tower-geometry-container': { classList: { add: () => {}, remove: () => {} } },
+      'target-splat-container': { classList: { add: () => {}, remove: () => {} } },
+      'road-offset-container': { classList: { add: () => {}, remove: () => {} } },
+      'road-snap-container': { classList: { add: () => {}, remove: () => {} } },
+      'exclusion-altitude-container': { classList: { add: () => {}, remove: () => {} } },
+      'exclusion-freeform-note': { classList: { add: () => {}, remove: () => {} } },
+      'freeform-instructions': { classList: { add: () => {}, remove: () => {} } },
+      'heading-mode-container': { style: { display: 'block' } },
+      'heading-help-drawer': { classList: { add: () => {}, remove: () => {} } },
+      'layer-hierarchy-status-badge': { style: { display: 'none' }, textContent: '', classList: { add: () => {}, remove: () => {} } }
+    };
+
+    try {
+      global.document.getElementById = (id) => mockElements[id] || null;
+      vm.runInThisContext(`
+        const _origUpdateGrid = typeof updateGrid !== 'undefined' ? updateGrid : null;
+        const _origSyncDisplayValues = typeof syncDisplayValues !== 'undefined' ? syncDisplayValues : null;
+        updateGrid = () => {};
+        syncDisplayValues = () => {};
+      `);
+
+      // 1. Photo-sphere pattern hides layerCardModes
+      mockElements['grid-type'].value = 'photo-sphere';
+      vm.runInThisContext('togglePatternParameters();');
+      assert.strictEqual(mockElements['layer-card-modes'].style.display, 'none', 'layerCardModes must be hidden for 360 photo-sphere pattern');
+
+      // 2. Switching to double grid restores layerCardModes
+      mockElements['grid-type'].value = 'double';
+      vm.runInThisContext('togglePatternParameters();');
+      assert.strictEqual(mockElements['layer-card-modes'].style.display, 'block', 'layerCardModes must be restored for standard grid patterns');
+
+      // 3. Switching back to photo-sphere conceals layerCardModes again
+      mockElements['grid-type'].value = 'photo-sphere';
+      vm.runInThisContext('togglePatternParameters();');
+      assert.strictEqual(mockElements['layer-card-modes'].style.display, 'none', 'layerCardModes must be hidden again when returning to photo-sphere');
+    } finally {
+      global.document.getElementById = origGetEl;
+      vm.runInThisContext(`
+        if (typeof _origUpdateGrid !== 'undefined' && _origUpdateGrid) updateGrid = _origUpdateGrid;
+        if (typeof _origSyncDisplayValues !== 'undefined' && _origSyncDisplayValues) syncDisplayValues = _origSyncDisplayValues;
+      `);
+    }
+  });
+
+  test('updateLayerHierarchyBadge suppresses Tier 2 warning badge for photo-sphere layers', () => {
+    const origGetEl = global.document.getElementById;
+    const origGetActiveLayer = global.getActiveLayer;
+
+    const mockBadge = {
+      style: { display: 'inline-flex' },
+      textContent: '⚡ Layer Overrides (1)',
+      classList: { add: () => {}, remove: () => {} }
+    };
+
+    try {
+      global.document.getElementById = (id) => {
+        if (id === 'layer-hierarchy-status-badge') return mockBadge;
+        if (id === 'layer-capture-mode') return { value: 'stopAndShoot' }; // Non-inherit value
+        return null;
+      };
+
+      // For standard layer with override, badge should be displayed
+      global.getActiveLayer = () => ({
+        id: 'layer-standard',
+        pattern: 'double',
+        captureMode: 'stopAndShoot'
+      });
+      updateLayerHierarchyBadge();
+      assert.strictEqual(mockBadge.style.display, 'inline-flex', 'Standard layer with override should show badge');
+
+      // For photo-sphere layer, badge must be hidden
+      global.getActiveLayer = () => ({
+        id: 'layer-360',
+        pattern: 'photo-sphere',
+        captureMode: 'stopAndShoot'
+      });
+      updateLayerHierarchyBadge();
+      assert.strictEqual(mockBadge.style.display, 'none', 'Photo sphere layer must suppress hierarchy override badge');
+      assert.strictEqual(mockBadge.textContent, '');
+    } finally {
+      global.document.getElementById = origGetEl;
+      global.getActiveLayer = origGetActiveLayer;
+    }
+  });
+});

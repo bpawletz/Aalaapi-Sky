@@ -5001,7 +5001,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.120.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.121.1</span></h1>
 
 
 
@@ -7408,6 +7408,14 @@ html, body {
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🎬 Cinematic Movie Mode (Follow Cam) &amp; 3D Drone Flight Playback (v1.121.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Experience mission previews like a cinematic movie! Switch dynamically between third-person <strong>Movie View (Follow / Chase Cam)</strong> and first-person <strong>Cockpit FPV View</strong> (hotkey: <kbd style="background: rgba(255,255,255,0.1); padding: 1px 4px; border-radius: 3px;">C</kbd> or click 🎬 Movie). Watch an active 3D quadcopter drone model fly smoothly along the flight path with dynamic gimbal tilt and heading orientation. Unobstructed full-screen flight simulation with fluid continuous traversal and on-the-fly photo captures.
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🏗️ Bridge-Hosted 3D Wireframe Extraction &amp; Interactive Toolkit (v1.120.0)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -8269,7 +8277,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.120.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.121.1</span>
 
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -8333,6 +8341,20 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.121.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>📸 Streamlined 360° Pano Layer Options:</strong> Cleaned up Section 2 Layer Dynamics for 360 Photo Spheres by hiding inapplicable capture modes, path types, heading selectors, and overshoot flight dynamics; automatically restored when switching to grid patterns.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.121.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🎬 Cinematic Movie Mode (Follow Cam):</strong> Added third-person Chase / Follow Cam that tracks behind and above the flying drone looking forward along the flight path; toggle between Movie View and Cockpit FPV View via HUD button or hotkey <kbd>C</kbd>.</li>
+              <li><strong>🚁 Dynamic Flying Drone Avatar Mesh:</strong> Added an active 3D quadcopter drone avatar with synchronized bank/heading orientation and gimbal pitch that flies smoothly along the path during FPV simulation.</li>
+              <li><strong>✨ Fluid Continuous Traversal:</strong> Eliminated artificial 2-second waypoint repositioning halts during playback simulation, restoring smooth movie-like flight traversal while respecting user-configured hover dwell times.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.120.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -10982,7 +11004,7 @@ html, body {
           </div>
 
           <!-- FPV Center Reticle (Viewfinder crosshair overlay) -->
-          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; width: 120px; height: 120px; pointer-events: none; opacity: 0.3;">
+          <div id="fpv-center-reticle" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; align-items: center; justify-content: center; width: 120px; height: 120px; pointer-events: none; opacity: 0.35;">
             <div style="width: 100px; height: 100px; border: 1px solid #06b6d4; border-radius: 50%;"></div>
             <div style="position: absolute; width: 4px; height: 4px; border-radius: 50%; background: #06b6d4;"></div>
             <div style="position: absolute; width: 24px; height: 1px; background: #06b6d4; left: 10px;"></div>
@@ -11207,6 +11229,11 @@ html, body {
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <rect x="4" y="4" width="16" height="16"></rect>
                     </svg>
+                  </button>
+
+                  <button id="fpv-btn-cam-mode" class="btn-secondary" type="button" style="padding: 6px 10px; border-radius: 8px; height: 36px; display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem; margin: 0; border-color: rgba(6,182,212,0.35); color: var(--accent-cyan); background: rgba(6, 182, 212, 0.08);" title="Current: Movie View (Follow Cam). Click to switch to Cockpit FPV (Hot key: C)">
+                    <span id="fpv-cam-mode-icon">🎬</span>
+                    <span id="fpv-cam-mode-text" style="font-weight: 600;">Movie</span>
                   </button>
                 </div>
                 
@@ -15782,7 +15809,7 @@ function updateLayerHierarchyBadge() {
   if (!badge) return;
 
   const layer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
-  if (!layer) {
+  if (!layer || layer.pattern === 'photo-sphere') {
     badge.style.display = 'none';
     badge.textContent = '';
     return;
@@ -22428,7 +22455,7 @@ function togglePatternParameters() {
     if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "📐 360° Sphere Geometry";
     if (layerCardFlight) layerCardFlight.style.display = 'block';
     if (layerCardOptics) layerCardOptics.style.display = 'block';
-    if (layerCardModes) layerCardModes.style.display = 'block';
+    if (layerCardModes) layerCardModes.style.display = 'none';
     if (layerCardBoundary) {
       layerCardBoundary.classList.add('hidden');
       layerCardBoundary.style.display = 'none';
@@ -25735,6 +25762,7 @@ function localToGeodetic(x, y, centerLat, centerLon, rotationDeg) {
 
 // Calculate the default path-following heading for a waypoint
 function getDefaultHeading(idx, waypoints, rotationDeg) {
+  if (!waypoints || !Array.isArray(waypoints) || waypoints.length === 0) return 0;
   if (waypoints && waypoints[idx]) {
     const wp = waypoints[idx];
     if (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
@@ -38458,6 +38486,45 @@ let lastFpvHeading = null;
 let lastFpvPitch = null;
 let lastFpvX = null;
 let lastFpvZ = null;
+let fpvActiveDroneMesh = null;
+let fpvCameraMode = (function() {
+  try {
+    return localStorage.getItem('aalaapi_fpv_camera_mode') || 'follow';
+  } catch (e) {
+    return 'follow';
+  }
+})();
+
+function setFPVCameraMode(mode) {
+  if (mode !== 'follow' && mode !== 'cockpit') mode = 'follow';
+  fpvCameraMode = mode;
+  try {
+    localStorage.setItem('aalaapi_fpv_camera_mode', mode);
+  } catch (e) {}
+
+  const btnText = document.getElementById('fpv-cam-mode-text');
+  const btnIcon = document.getElementById('fpv-cam-mode-icon');
+  const camBtn = document.getElementById('fpv-btn-cam-mode');
+  const reticle = document.getElementById('fpv-center-reticle');
+
+  if (mode === 'follow') {
+    if (btnText) btnText.textContent = 'Movie';
+    if (btnIcon) btnIcon.textContent = '🎬';
+    if (camBtn) camBtn.title = 'Current: Movie View (Follow Cam). Click to switch to Cockpit FPV (Hot key: C)';
+    if (reticle) reticle.style.display = 'none';
+    if (fpvActiveDroneMesh) fpvActiveDroneMesh.visible = (fpvActive === true);
+  } else {
+    if (btnText) btnText.textContent = 'Cockpit';
+    if (btnIcon) btnIcon.textContent = '🎥';
+    if (camBtn) camBtn.title = 'Current: Cockpit FPV. Click to switch to Movie Follow Cam (Hot key: C)';
+    if (reticle) reticle.style.display = 'flex';
+    if (fpvActiveDroneMesh) fpvActiveDroneMesh.visible = false;
+  }
+
+  if (fpvActive && typeof updateFPVCamera === 'function') {
+    updateFPVCamera(0);
+  }
+}
 
 function getEffectiveWaypointSpeed(wp) {
   if (wp && wp.speed !== undefined && wp.speed !== null && !isNaN(wp.speed)) {
@@ -38598,14 +38665,15 @@ function checkNeedsReposition(idx, waypoints) {
 
 // Calculate the heading and pitch for a waypoint index
 function getWaypointHeadingAndPitch(idx, waypoints) {
-  const wp = (waypoints && waypoints[idx]) ? waypoints[idx] : {};
+  const wps = Array.isArray(waypoints) ? waypoints : [];
+  const wp = (wps && wps[idx]) ? wps[idx] : {};
   const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined')
     ? flightLayers.find(l => l.id === wp.layerId)
     : ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
   const rotationDeg = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('grid-rotation'))
     ? parseFloat(document.getElementById('grid-rotation').value) || 0
     : 0;
-  const heading = getEffectiveWaypointHeading(wp, idx, waypoints, rotationDeg, null, wpLayer);
+  const heading = getEffectiveWaypointHeading(wp, idx, wps, rotationDeg, null, wpLayer);
 
   const defaultGimbalPitch = (wpLayer && wpLayer.gimbalPitch !== undefined)
     ? wpLayer.gimbalPitch
@@ -38780,11 +38848,26 @@ function recreate3DWaypointsAndPaths() {
       else if (ring === 3) colorHex = 0x3b82f6; // blue
     }
 
+    // Waypoint target sphere marker
+    const sphereGeom = new THREE.SphereGeometry(r, 12, 12);
+    let sphereMat = materialCache[colorHex];
+    if (!sphereMat) {
+      sphereMat = new THREE.MeshBasicMaterial({ color: colorHex, wireframe: false });
+      materialCache[colorHex] = sphereMat;
+    }
+    const sphereMesh = new THREE.Mesh(sphereGeom, sphereMat);
+    sphereMesh.position.set(x3d, y3d, z3d);
+    sphereMesh.userData = { isWaypointSphere: true };
+    sphereMesh.visible = (!showDroneModels || fpvActive);
+    waypointsGroup.add(sphereMesh);
+
     if (showDroneModels) {
       const hp = getWaypointHeadingAndPitch(idx, waypoints);
       const droneScale = (isStart || isEnd) ? 0.55 : 0.4;
       const droneMesh = create3DDroneMesh(colorHex, droneScale);
       droneMesh.position.set(x3d, y3d, z3d);
+      droneMesh.userData.isWaypointDrone = true;
+      droneMesh.visible = !fpvActive;
 
       // Rotate drone body to face flight heading
       const headingRad = (hp.heading || 0) * Math.PI / 180.0;
@@ -38797,16 +38880,6 @@ function recreate3DWaypointsAndPaths() {
       }
 
       waypointsGroup.add(droneMesh);
-    } else {
-      const sphereGeom = new THREE.SphereGeometry(r, 12, 12);
-      let sphereMat = materialCache[colorHex];
-      if (!sphereMat) {
-        sphereMat = new THREE.MeshBasicMaterial({ color: colorHex, wireframe: false });
-        materialCache[colorHex] = sphereMat;
-      }
-      const sphereMesh = new THREE.Mesh(sphereGeom, sphereMat);
-      sphereMesh.position.set(x3d, y3d, z3d);
-      waypointsGroup.add(sphereMesh);
     }
 
     // Plot Ground Line Projection
@@ -39413,7 +39486,9 @@ function reset3DCamera() {
 // ==========================================
 
 function updateFPVCamera(dt) {
-  if (!threeCamera || !threeScene) return;
+  const activeCamera = threeCamera || (typeof global !== 'undefined' && global.threeCamera) || (typeof window !== 'undefined' && window.threeCamera);
+  const activeScene = threeScene || (typeof global !== 'undefined' && global.threeScene) || (typeof window !== 'undefined' && window.threeScene);
+  if (!activeCamera || !activeScene) return;
 
   const waypoints = getCurrentWaypoints();
   if (!waypoints || waypoints.length === 0) {
@@ -39479,13 +39554,7 @@ function updateFPVCamera(dt) {
           const isVideo = (effAction === 'video');
 
           if (!isVideo) {
-            let hoverDuration = getEffectiveWaypointHoverTime(wp);
-            if (isStopAndShoot && hoverDuration < 2) {
-              const reposInfo = checkNeedsReposition(fpvProgressIndex, waypoints);
-              if (reposInfo.needsReposition) {
-                hoverDuration = 2.0; // Auto-applied settling delay
-              }
-            }
+            const hoverDuration = getEffectiveWaypointHoverTime(wp);
             triggerFPVPhotoCapture(hoverDuration);
           }
         }
@@ -39557,19 +39626,48 @@ function updateFPVCamera(dt) {
 
     pitch = THREE.MathUtils.lerp(hp1.pitch, hp2.pitch, fpvSubInterpolation);
   } else {
-    currentPos.set(p1x, p1alt, -p1y);
+    currentPos.set(p1x, p1alt, (-p1y === 0 ? 0 : -p1y));
     const hp = getWaypointHeadingAndPitch(fpvProgressIndex, waypoints);
     heading = hp.heading;
     pitch = hp.pitch;
   }
 
+  // Update FPV Active Drone Mesh Position and Direction
+  if (fpvActiveDroneMesh) {
+    fpvActiveDroneMesh.position.copy(currentPos);
+    const yawRad = -heading * Math.PI / 180;
+    fpvActiveDroneMesh.rotation.y = yawRad;
+    const pitchRad = pitch * Math.PI / 180;
+    if (fpvActiveDroneMesh.userData && fpvActiveDroneMesh.userData.gimbalGroup) {
+      fpvActiveDroneMesh.userData.gimbalGroup.rotation.x = -pitchRad;
+    }
+    fpvActiveDroneMesh.visible = (fpvActive && fpvCameraMode === 'follow');
+  }
+
   // Update FPV Camera Position and Direction
-  threeCamera.position.copy(currentPos);
-  
-  // Set orientation: Yaw (Y-axis) then Pitch (X-axis)
   const yawRad = -heading * Math.PI / 180;
   const pitchRad = pitch * Math.PI / 180;
-  threeCamera.rotation.set(pitchRad, yawRad, 0, 'YXZ');
+
+  if (fpvCameraMode === 'follow') {
+    // Cinematic Movie Follow Cam: positioned behind and above the flying drone, looking forward
+    const followDist = 10;
+    const heightOffset = 4;
+    activeCamera.position.set(
+      currentPos.x + Math.sin(yawRad) * followDist,
+      currentPos.y + heightOffset,
+      currentPos.z + Math.cos(yawRad) * followDist
+    );
+    const lookAhead = 14;
+    activeCamera.lookAt(
+      currentPos.x - Math.sin(yawRad) * lookAhead,
+      currentPos.y + 0.5,
+      currentPos.z - Math.cos(yawRad) * lookAhead
+    );
+  } else {
+    // Cockpit View: camera at drone position, looking through gimbal
+    activeCamera.position.copy(currentPos);
+    activeCamera.rotation.set(pitchRad, yawRad, 0, 'YXZ');
+  }
 
   // Update HUD Telemetry Labels
   const telemetryAlt = document.getElementById('fpv-telemetry-alt');
@@ -39693,10 +39791,12 @@ function toggleFPVWalkthrough(enable) {
     if (conesGroup) conesGroup.visible = false;
     
     // Save original camera view
-    if (threeCamera && threeControls) {
-      fpvOriginalCamPos = threeCamera.position.clone();
-      fpvOriginalCamTarget = threeControls.target.clone();
-      threeControls.enabled = false;
+    const activeCamera = threeCamera || (typeof global !== 'undefined' && global.threeCamera) || (typeof window !== 'undefined' && window.threeCamera);
+    const activeControls = threeControls || (typeof global !== 'undefined' && global.threeControls) || (typeof window !== 'undefined' && window.threeControls);
+    if (activeCamera && activeControls) {
+      fpvOriginalCamPos = activeCamera.position.clone();
+      fpvOriginalCamTarget = activeControls.target.clone();
+      activeControls.enabled = false;
     }
 
     if (hudOverlay) hudOverlay.classList.remove('hidden');
@@ -39730,7 +39830,31 @@ function toggleFPVWalkthrough(enable) {
       if (mediaTimer) mediaTimer.classList.add('hidden');
     }
 
-    const hp = getWaypointHeadingAndPitch(0, getCurrentWaypoints());
+    // Create active flying drone mesh if not present
+    const activeScene = threeScene || (typeof global !== 'undefined' && global.threeScene) || (typeof window !== 'undefined' && window.threeScene);
+    if (!fpvActiveDroneMesh && activeScene) {
+      fpvActiveDroneMesh = create3DDroneMesh(0x06b6d4, 0.85);
+      activeScene.add(fpvActiveDroneMesh);
+    }
+    if (fpvActiveDroneMesh) {
+      fpvActiveDroneMesh.visible = (fpvCameraMode === 'follow');
+    }
+
+    // Hide static waypoint drone meshes so only waypoint spheres and the active flying drone are visible
+    if (waypointsGroup && waypointsGroup.children) {
+      waypointsGroup.children.forEach(child => {
+        if (child.userData && child.userData.isWaypointDrone) {
+          child.visible = false;
+        }
+        if (child.userData && child.userData.isWaypointSphere) {
+          child.visible = true;
+        }
+      });
+    }
+
+    setFPVCameraMode(fpvCameraMode);
+
+    const hp = getWaypointHeadingAndPitch(0, getCurrentWaypoints() || []);
     redrawGroundPlane(hp.heading, hp.pitch); // Draw active FPV footprint if enabled
     updateFPVEditorUI();
   } else {
@@ -39742,6 +39866,22 @@ function toggleFPVWalkthrough(enable) {
     lastFpvX = null;
     lastFpvZ = null;
     lastFpvRedrawTime = 0;
+
+    if (fpvActiveDroneMesh) {
+      fpvActiveDroneMesh.visible = false;
+    }
+
+    // Restore static waypoint drone meshes
+    if (waypointsGroup && waypointsGroup.children) {
+      waypointsGroup.children.forEach(child => {
+        if (child.userData && child.userData.isWaypointDrone) {
+          child.visible = showDroneModels;
+        }
+        if (child.userData && child.userData.isWaypointSphere) {
+          child.visible = !showDroneModels;
+        }
+      });
+    }
 
     if (conesGroup) conesGroup.visible = showCones;
     
@@ -39762,12 +39902,14 @@ function toggleFPVWalkthrough(enable) {
     if (hudLegend) hudLegend.classList.remove('hidden');
 
     // Restore original camera position and targets
-    if (threeCamera && threeControls) {
-      threeControls.enabled = true;
+    const activeCamera = threeCamera || (typeof global !== 'undefined' && global.threeCamera) || (typeof window !== 'undefined' && window.threeCamera);
+    const activeControls = threeControls || (typeof global !== 'undefined' && global.threeControls) || (typeof window !== 'undefined' && window.threeControls);
+    if (activeCamera && activeControls) {
+      activeControls.enabled = true;
       if (fpvOriginalCamPos && fpvOriginalCamTarget) {
-        threeCamera.position.copy(fpvOriginalCamPos);
-        threeControls.target.copy(fpvOriginalCamTarget);
-        threeControls.update();
+        activeCamera.position.copy(fpvOriginalCamPos);
+        activeControls.target.copy(fpvOriginalCamTarget);
+        activeControls.update();
       } else {
         reset3DCamera();
       }
@@ -40319,6 +40461,13 @@ function setupFPVListeners() {
       }
       fpvSubInterpolation = 0.0;
 
+      const scrubberSlider = document.getElementById('fpv-wp-scrubber-slider');
+      const scrubberText = document.getElementById('fpv-wp-scrubber-text');
+      const waypoints = getCurrentWaypoints();
+      const totalWps = (waypoints && waypoints.length) ? waypoints.length : 1;
+      if (scrubberSlider) scrubberSlider.value = fpvProgressIndex + 1;
+      if (scrubberText) scrubberText.textContent = `${fpvProgressIndex + 1} / ${totalWps}`;
+
       const editorPanel = document.getElementById('fpv-editor-panel');
       if (editorPanel) editorPanel.classList.remove('hidden');
       updateFPVEditorUI();
@@ -40348,6 +40497,12 @@ function setupFPVListeners() {
       }
       fpvSubInterpolation = 0.0;
 
+      const scrubberSlider = document.getElementById('fpv-wp-scrubber-slider');
+      const scrubberText = document.getElementById('fpv-wp-scrubber-text');
+      const totalWps = (waypoints && waypoints.length) ? waypoints.length : 1;
+      if (scrubberSlider) scrubberSlider.value = fpvProgressIndex + 1;
+      if (scrubberText) scrubberText.textContent = `${fpvProgressIndex + 1} / ${totalWps}`;
+
       const editorPanel = document.getElementById('fpv-editor-panel');
       if (editorPanel) editorPanel.classList.remove('hidden');
       updateFPVEditorUI();
@@ -40356,6 +40511,24 @@ function setupFPVListeners() {
       }
     });
   }
+
+  // Camera View Mode (Movie View vs Cockpit FPV)
+  const camModeBtn = document.getElementById('fpv-btn-cam-mode');
+  if (camModeBtn) {
+    camModeBtn.addEventListener('click', () => {
+      setFPVCameraMode(fpvCameraMode === 'follow' ? 'cockpit' : 'follow');
+    });
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (fpvActive && (e.key === 'c' || e.key === 'C')) {
+      const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+      if (activeTag !== 'input' && activeTag !== 'textarea' && activeTag !== 'select') {
+        e.preventDefault();
+        setFPVCameraMode(fpvCameraMode === 'follow' ? 'cockpit' : 'follow');
+      }
+    }
+  });
 
   // Traversal Speed Slider
   const speedSlider = document.getElementById('fpv-speed-slider');
@@ -40381,6 +40554,8 @@ function setupFPVListeners() {
       if (targetIdx >= 0 && targetIdx < waypoints.length) {
         fpvProgressIndex = targetIdx;
         fpvSubInterpolation = 0.0;
+        const scrubberText = document.getElementById('fpv-wp-scrubber-text');
+        if (scrubberText) scrubberText.textContent = `${targetIdx + 1} / ${waypoints.length}`;
         updateFPVEditorUI();
         if (fpvActive) {
           updateFPVCamera(0);
