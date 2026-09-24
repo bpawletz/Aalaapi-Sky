@@ -2168,6 +2168,12 @@ if ($copied.Count -eq 0 -and $thisPC) {
   };
 
   const manifestPath = path.join(targetDir, 'inspection_manifest.json');
+  try {
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
+  } catch (mWriteErr) {
+    logError('[ARCHIVE MANIFEST WRITE]', `Failed to write initial manifest: ${mWriteErr.message}`);
+  }
+
   // Optional 3D Architectural Wireframe Edge Extraction (Issue #95)
   let wireframeData = null;
   if (options.extractWireframe !== false && correlated.length > 0) {
@@ -2261,6 +2267,101 @@ function packageInspectionArchive(missionUuid) {
   } catch (e) {
     return { success: false, error: e.message };
   }
+}
+
+function loadOrRecoverManifest(archiveSubdirPath) {
+  if (!archiveSubdirPath) return null;
+  const mPath = path.join(archiveSubdirPath, 'inspection_manifest.json');
+  if (fs.existsSync(mPath)) {
+    try {
+      const manifest = JSON.parse(fs.readFileSync(mPath, 'utf8'));
+      if (manifest && Array.isArray(manifest.photos)) {
+        return { path: mPath, manifest };
+      }
+    } catch (_) {}
+  }
+
+  // Fallback 1: Extract embedded manifest from inspection_report.html
+  const rPath = path.join(archiveSubdirPath, 'inspection_report.html');
+  if (fs.existsSync(rPath)) {
+    try {
+      const html = fs.readFileSync(rPath, 'utf8');
+      const m = html.match(/JSON\.parse\((.*?)\)\s*\|\|\s*\{/);
+      if (m) {
+        const jsonStr = JSON.parse(m[1]);
+        const manifestObj = JSON.parse(jsonStr);
+        if (manifestObj && Array.isArray(manifestObj.photos)) {
+          try {
+            fs.writeFileSync(mPath, JSON.stringify(manifestObj, null, 2), 'utf8');
+            logSuccess('[MANIFEST RECOVERY]', `Restored inspection_manifest.json from report with ${manifestObj.photos.length} photos`);
+          } catch (_) {}
+          return { path: mPath, manifest: manifestObj };
+        }
+      }
+    } catch (_) {}
+  }
+
+  // Fallback 2: Check SQLite diagDb for stored photo records
+  try {
+    const dirName = path.basename(archiveSubdirPath);
+    if (diagDb && typeof diagDb.getPhotoRecordsByMission === 'function') {
+      const dbPhotos = diagDb.getPhotoRecordsByMission(dirName);
+      if (dbPhotos && dbPhotos.length > 0) {
+        const recoveredManifest = {
+          missionUuid: dirName,
+          flightDate: new Date().toISOString(),
+          droneModel: 'DJI Mini 4 Pro',
+          totalPhotos: dbPhotos.length,
+          summary: { totalPhotos: dbPhotos.length },
+          photos: dbPhotos
+        };
+        try {
+          fs.writeFileSync(mPath, JSON.stringify(recoveredManifest, null, 2), 'utf8');
+          logSuccess('[MANIFEST RECOVERY]', `Synthesized inspection_manifest.json from SQLite DB with ${dbPhotos.length} photos`);
+        } catch (_) {}
+        return { path: mPath, manifest: recoveredManifest };
+      }
+    }
+  } catch (_) {}
+
+  // Fallback 3: Check photos directory on disk
+  try {
+    const photosDir = path.join(archiveSubdirPath, 'photos');
+    const rawDir = path.join(photosDir, 'raw');
+    const thumbDir = path.join(photosDir, 'thumbnails');
+    const prevDir = path.join(photosDir, 'previews');
+    const scanDir = fs.existsSync(rawDir) ? rawDir : (fs.existsSync(thumbDir) ? thumbDir : (fs.existsSync(prevDir) ? prevDir : null));
+    if (scanDir && fs.existsSync(scanDir)) {
+      const files = fs.readdirSync(scanDir).filter(f => /\.(jpe?g|png|dng)$/i.test(f));
+      if (files.length > 0) {
+        const dirName = path.basename(archiveSubdirPath);
+        const diskPhotos = files.map((fn, idx) => ({
+          photoId: `PHOTO_${String(idx + 1).padStart(4, '0')}`,
+          filename: fn,
+          waypointIndex: idx,
+          thumbnailUrl: `/scratch/mission_archives/${dirName}/photos/thumbnails/${encodeURIComponent(fn)}`,
+          previewUrl: `/scratch/mission_archives/${dirName}/photos/previews/${encodeURIComponent(fn)}`,
+          rawPath: path.join(photosDir, 'raw', fn),
+          severity: 'clean'
+        }));
+        const recoveredManifest = {
+          missionUuid: dirName,
+          flightDate: new Date().toISOString(),
+          droneModel: 'DJI Mini 4 Pro',
+          totalPhotos: diskPhotos.length,
+          summary: { totalPhotos: diskPhotos.length },
+          photos: diskPhotos
+        };
+        try {
+          fs.writeFileSync(mPath, JSON.stringify(recoveredManifest, null, 2), 'utf8');
+          logSuccess('[MANIFEST RECOVERY]', `Discovered inspection_manifest.json from photos disk scan with ${diskPhotos.length} photos`);
+        } catch (_) {}
+        return { path: mPath, manifest: recoveredManifest };
+      }
+    }
+  } catch (_) {}
+
+  return null;
 }
 
 
@@ -2960,10 +3061,11 @@ const server = http.createServer(async (req, res) => {
           const tags = scanPhotoFiducials(photoPath, payload);
 
           if (payload.missionUuid) {
-            const mPath = path.join(ARCHIVE_DIR, payload.missionUuid, 'inspection_manifest.json');
-            if (fs.existsSync(mPath)) {
+            const rec = loadOrRecoverManifest(path.join(ARCHIVE_DIR, payload.missionUuid));
+            if (rec && rec.manifest) {
               try {
-                const manifest = JSON.parse(fs.readFileSync(mPath, 'utf8'));
+                const manifest = rec.manifest;
+                const mPath = rec.path;
                 if (Array.isArray(manifest.photos)) {
                   const p = manifest.photos.find(x => x.id === payload.photoId || x.filename === path.basename(photoPath || ''));
                   if (p) {
@@ -3011,10 +3113,10 @@ const server = http.createServer(async (req, res) => {
 
           // If missionUuid is provided, resolve photos and telemetry from archive if not passed in
           if (payload.missionUuid && (!payload.photos || payload.photos.length === 0)) {
-            const mPath = path.join(ARCHIVE_DIR, payload.missionUuid, 'inspection_manifest.json');
-            if (fs.existsSync(mPath)) {
+            const rec = loadOrRecoverManifest(path.join(ARCHIVE_DIR, payload.missionUuid));
+            if (rec && rec.manifest) {
               try {
-                const manifest = JSON.parse(fs.readFileSync(mPath, 'utf8'));
+                const manifest = rec.manifest;
                 if (Array.isArray(manifest.photos)) {
                   payload.photos = manifest.photos.map(p => {
                     const rawP = path.join(ARCHIVE_DIR, payload.missionUuid, 'photos', 'raw', p.filename || p.id);
@@ -3087,12 +3189,16 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/media/manifest' && req.method === 'GET') {
-      const uuid = url.searchParams.get('uuid') || url.searchParams.get('mission');
-      const flight = url.searchParams.get('flight') || '';
+      let rawUuid = url.searchParams.get('uuid') || url.searchParams.get('mission');
+      let rawFlight = url.searchParams.get('flight') || '';
       const startParam = url.searchParams.get('start') || '';
       const endParam = url.searchParams.get('end') || '';
 
+      const uuid = rawUuid ? decodeURIComponent(rawUuid) : '';
+      const flight = rawFlight ? decodeURIComponent(rawFlight) : '';
+
       let mPath = null;
+      let mObj = null;
 
       // 1. Look for flight-specific mission directory if flight is specified
       if (flight && fs.existsSync(ARCHIVE_DIR)) {
@@ -3109,23 +3215,25 @@ const server = http.createServer(async (req, res) => {
         ].filter(Boolean);
 
         for (const cand of candidates) {
-          const p = path.join(ARCHIVE_DIR, cand, 'inspection_manifest.json');
-          if (fs.existsSync(p)) {
-            mPath = p;
+          const rec = loadOrRecoverManifest(path.join(ARCHIVE_DIR, cand));
+          if (rec && rec.manifest) {
+            mPath = rec.path;
+            mObj = rec.manifest;
             break;
           }
         }
 
-        if (!mPath && flightTag) {
+        if (!mObj && flightTag) {
           try {
             const subdirs = fs.readdirSync(ARCHIVE_DIR, { withFileTypes: true })
               .filter(d => d.isDirectory())
               .map(d => d.name);
             for (const sub of subdirs) {
               if (sub.includes(flightTag)) {
-                const p = path.join(ARCHIVE_DIR, sub, 'inspection_manifest.json');
-                if (fs.existsSync(p)) {
-                  mPath = p;
+                const rec = loadOrRecoverManifest(path.join(ARCHIVE_DIR, sub));
+                if (rec && rec.manifest) {
+                  mPath = rec.path;
+                  mObj = rec.manifest;
                   break;
                 }
               }
@@ -3135,24 +3243,26 @@ const server = http.createServer(async (req, res) => {
       }
 
       // 2. Look for explicit uuid directory
-      if (!mPath && uuid) {
-        const p = path.join(ARCHIVE_DIR, uuid, 'inspection_manifest.json');
-        if (fs.existsSync(p)) {
-          mPath = p;
+      if (!mObj && uuid) {
+        const rec = loadOrRecoverManifest(path.join(ARCHIVE_DIR, uuid));
+        if (rec && rec.manifest) {
+          mPath = rec.path;
+          mObj = rec.manifest;
         }
       }
 
-      // 3. Fallback: search subdirectories in ARCHIVE_DIR
-      if (!mPath) {
+      // 3. Fallback: ONLY search subdirectories in ARCHIVE_DIR if NEITHER flight NOR uuid was specified
+      if (!mObj && !flight && !uuid) {
         try {
           if (fs.existsSync(ARCHIVE_DIR)) {
             const subdirs = fs.readdirSync(ARCHIVE_DIR, { withFileTypes: true })
               .filter(d => d.isDirectory())
               .map(d => d.name);
             for (const sub of subdirs) {
-              const candidate = path.join(ARCHIVE_DIR, sub, 'inspection_manifest.json');
-              if (fs.existsSync(candidate)) {
-                mPath = candidate;
+              const rec = loadOrRecoverManifest(path.join(ARCHIVE_DIR, sub));
+              if (rec && rec.manifest) {
+                mPath = rec.path;
+                mObj = rec.manifest;
                 break;
               }
             }
@@ -3160,11 +3270,9 @@ const server = http.createServer(async (req, res) => {
         } catch (e) {}
       }
 
-      if (mPath && fs.existsSync(mPath)) {
+      if (mObj) {
         try {
-          const raw = fs.readFileSync(mPath, 'utf8');
-          const mObj = JSON.parse(raw);
-          const manifestUuid = mObj.missionUuid || path.basename(path.dirname(mPath)) || 'layer-1';
+          const manifestUuid = mObj.missionUuid || (mPath ? path.basename(path.dirname(mPath)) : uuid) || 'layer-1';
 
           // Determine if flight time window filtering applies
           let timeStartLoc = null, timeEndLoc = null;
@@ -3319,13 +3427,14 @@ const server = http.createServer(async (req, res) => {
         try {
           const payload = body ? JSON.parse(body) : {};
           const uuid = payload.missionUuid || 'default-mission';
-          const mPath = path.join(ARCHIVE_DIR, uuid, 'inspection_manifest.json');
-          if (!fs.existsSync(mPath)) {
+          const rec = loadOrRecoverManifest(path.join(ARCHIVE_DIR, uuid));
+          if (!rec || !rec.manifest) {
             res.writeHead(404, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ success: false, error: 'Manifest not found' }));
             return;
           }
-          const manifest = JSON.parse(fs.readFileSync(mPath, 'utf8'));
+          const mPath = rec.path;
+          const manifest = rec.manifest;
           if (payload.photoId && Array.isArray(payload.annotations)) {
             const photo = (manifest.photos || []).find(p => p.photoId === payload.photoId);
             if (photo) {
@@ -3628,7 +3737,11 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' || req.method === 'HEAD') {
       const PROJECT_ROOT = path.resolve(__dirname, '../..');
       const targetRel = (pathname === '/' || pathname === '/app') ? '/index.html' : pathname;
-      const safePath = path.normalize(path.join(PROJECT_ROOT, targetRel));
+      let decodedRel = targetRel;
+      try {
+        decodedRel = decodeURIComponent(targetRel);
+      } catch (_) {}
+      const safePath = path.normalize(path.join(PROJECT_ROOT, decodedRel));
 
       if (safePath.startsWith(PROJECT_ROOT) && fs.existsSync(safePath) && fs.statSync(safePath).isFile()) {
         const ext = path.extname(safePath).toLowerCase();
@@ -3842,6 +3955,7 @@ module.exports = {
   detectMediaDevices,
   pullMediaPhotos,
   scanPhotoFiducials,
+  loadOrRecoverManifest,
   getMediaPullProgress,
   computeFileMd5,
   validateImageHeader,

@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.121.2] - 2026-09-24
+
+### Bug Fixes & Improvements
+- **Flight Diagnostics & Companion Photo Ingestion Recovery:**
+  - **Immediate Manifest Persistence:** Fixed an issue where `inspection_manifest.json` was not saved to disk if 3D wireframe extraction was skipped, failed, or timed out during media ingestion, ensuring photo manifests are written immediately upon correlation.
+  - **Multi-Source Manifest Auto-Recovery:** Implemented `loadOrRecoverManifest` in the companion service to seamlessly reconstruct missing or damaged photo manifests from embedded JSON in `inspection_report.html`, SQLite photo records, or raw/thumbnail photo directories.
+  - **Static URI Decoding for Bracketed Directory Paths:** Added URL component decoding (`decodeURIComponent`) to the Companion Bridge static file server, resolving 404 image load failures for flights archived with timestamp bracket notation (e.g., `mission_2026-09-24_[17-20-08]`).
+  - **Guarded Manifest Fallback & Scoping:** Restricted manifest directory fallbacks to ensure requests with specific flight tags never silently fall back to unrelated flight dates; prioritized flight timestamp tags over generic workspace layer IDs.
+  - **Clean Telemetry Photo Placeholder Rendering:** Suppressed synthetic 404 URL generation on simulated flight telemetry photo points when no physical photos have been ingested, cleanly rendering camera preview placeholders.
+
 ## [1.121.1] - 2026-09-24
 
 ### Bug Fixes & Improvements
