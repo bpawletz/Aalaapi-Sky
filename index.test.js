@@ -3713,6 +3713,7 @@ describe('Companion Bridge & Direct Sync Tests', () => {
       });
     };
 
+    const origParseWPML = vm.runInThisContext("typeof parseWPML !== 'undefined' ? parseWPML : null;");
     vm.runInThisContext(`
       parseWPML = function(xml) {
         window.__lastParsedXml = xml;
@@ -3727,6 +3728,10 @@ describe('Companion Bridge & Direct Sync Tests', () => {
       assert.ok(lastParsed.includes('<Placemark>'));
       assert.ok(statusText.textContent.includes('Imported'));
     } finally {
+      if (origParseWPML) {
+        global.parseWPML = origParseWPML;
+        vm.runInThisContext("parseWPML = global.parseWPML;");
+      }
       global.document.getElementById = origGetElementById;
       global.fetch = origFetch;
     }
@@ -17910,6 +17915,62 @@ PT2,42.105, -71.205, 11.0`;
     assert.ok(tileSvg.includes('TILE [Row 1 of'), 'Header stamp should state tile coordinates');
     assert.ok(tileSvg.includes('50 mm / 2.0 in'), 'Footer scale bar should state 1:1 ruler');
     assert.ok(tileSvg.includes('stroke-dasharray="5,4"'), 'Dashed trim lines should be rendered');
+    assert.ok(tileSvg.includes('id="tile-puzzle-map"'), 'Assembly puzzle map icon should be included');
+  });
+
+  test('generateTiledFiducialSheetSvg renders non-blank marker payload and valid viewports across all 9 tiles in 3x3 matrix', () => {
+    const m = calculateFiducialTilingMatrix(0.60, 'letter', 6.35);
+    assert.strictEqual(m.rows, 3);
+    assert.strictEqual(m.cols, 3);
+    assert.strictEqual(m.totalSheets, 9);
+
+    for (let r = 0; r < m.rows; r++) {
+      for (let c = 0; c < m.cols; c++) {
+        const tileSvg = generateTiledFiducialSheetSvg({
+          type: 'apriltag_36h11',
+          id: 0,
+          physicalSizeMeters: 0.60,
+          paperFormat: 'letter',
+          overlapMm: 6.35,
+          showTrimLines: true,
+          showSeamCrosshairs: true,
+          showTileStamps: true
+        }, r, c, m);
+
+        // Assert valid SVG tags: exactly 2 <svg> tags (outer canvas and inner clipping viewport)
+        const svgCount = (tileSvg.match(/<svg/g) || []).length;
+        assert.strictEqual(svgCount, 2, `Tile [${r},${c}] should contain exactly 2 <svg> tags (canvas and clipping viewport)`);
+
+        // Assert target content is present (black square and white bit cells)
+        assert.ok(tileSvg.includes('width="400" height="400" fill="#000000"'), `Tile [${r},${c}] must contain the target black background payload`);
+
+        // Assert puzzle diagram icon with active piece highlighted
+        assert.ok(tileSvg.includes('id="tile-puzzle-map"'), `Tile [${r},${c}] must contain assembly puzzle diagram`);
+        assert.ok(tileSvg.includes('fill="#fbbf24"'), `Tile [${r},${c}] must highlight current puzzle piece in gold`);
+
+        // Assert coordinate stamp and sheet number
+        assert.ok(tileSvg.includes(`TILE [Row ${r + 1} of 3, Col ${c + 1} of 3]`), `Tile [${r},${c}] must state row and col`);
+        assert.ok(tileSvg.includes(`Sheet ${r * 3 + c + 1} of 9`), `Tile [${r},${c}] must state sheet number`);
+
+        // Assert seam registration crosshairs
+        assert.ok(tileSvg.includes('stroke="#ef4444"'), `Tile [${r},${c}] must contain seam registration crosshairs`);
+      }
+    }
+  });
+
+  test('generateFiducialSvg supports showTilingGrid overlay for Assembled View', () => {
+    const matrix = calculateFiducialTilingMatrix(0.60, 'letter', 6.35);
+    const assembledSvg = generateFiducialSvg({
+      type: 'apriltag_36h11',
+      id: 0,
+      physicalSizeMeters: 0.60,
+      showTilingGrid: true,
+      matrix
+    });
+
+    assert.ok(assembledSvg.includes('id="tiling-assembled-grid"'), 'Assembled view should render tiling grid overlay');
+    assert.ok(assembledSvg.includes('Sheet 1 [1,1]'), 'Assembled view should display sheet badge labels');
+    assert.ok(assembledSvg.includes('Sheet 9 [3,3]'), 'Assembled view should display sheet 9 label');
   });
 
   test('PhotoInspector superimposes visible fiducial markers onto photo canvas', () => {
@@ -20285,23 +20346,314 @@ describe('Photo Telemetry Correlation & Ground Boundary Projection Suite Tests (
     );
   });
 
-  test('Version 1.117.0 is consistent across package.json, changelog, and templates', () => {
+  test('generateFiducialSvg in stencilMode produces dashed cut lines and scissor cut annotations without solid black fills', () => {
+    // 1. ArUco 4x4 in stencil mode
+    const svgAruco = generateFiducialSvg({
+      type: 'aruco_4x4',
+      id: 0,
+      stencilMode: true
+    });
+    assert.ok(svgAruco.includes('stroke-dasharray="6,3"'), 'Stencil SVG must have dashed cut lines');
+    assert.ok(svgAruco.includes('✂ CUT'), 'Stencil SVG must have scissor cut annotations');
+    assert.ok(svgAruco.includes('KEEP'), 'Stencil SVG must have KEEP annotations on white cells');
+    assert.ok(!svgAruco.includes('fill="#000000"'), 'Stencil SVG must not contain heavy solid black fills');
+    assert.ok(svgAruco.includes('✂ STENCIL CUTOUT'), 'Header label must designate stencil cutout');
+    assert.ok(svgAruco.includes('CUT BLACK ZONES • SPRAY PAINT'), 'Header label must instruct spray paint');
+
+    // 2. Checkerboard in stencil mode
+    const svgChecker = generateFiducialSvg({
+      type: 'checkerboard',
+      stencilMode: true
+    });
+    assert.ok(svgChecker.includes('✂ CUT'), 'Checkerboard stencil must have cut labels');
+    assert.ok(!svgChecker.includes('fill="#000000"'), 'Checkerboard stencil must not have solid black fills');
+
+    // 3. Crosshair in stencil mode
+    const svgCross = generateFiducialSvg({
+      type: 'crosshair',
+      stencilMode: true
+    });
+    assert.ok(svgCross.includes('✂ CUT HERE (PAINT)'), 'Crosshair stencil must have cut labels');
+    assert.ok(svgCross.includes('KEEP (WHITE)'), 'Crosshair stencil must have keep labels');
+    assert.ok(!svgCross.includes('fill="#000000"'), 'Crosshair stencil must not have solid black fills');
+
+    // 4. AprilTag 25h9 in stencil mode
+    const svgApril = generateFiducialSvg({
+      type: 'apriltag_25h9',
+      id: 5,
+      stencilMode: true
+    });
+    assert.ok(svgApril.includes('✂ CUT'), 'AprilTag stencil must have cut labels');
+    assert.ok(svgApril.includes('stroke-dasharray="6,3"'), 'AprilTag stencil must have cut stroke dashes');
+    assert.ok(!svgApril.includes('fill="#000000"'), 'AprilTag stencil must not have solid black fills');
+  });
+
+  test('generateTiledFiducialSheetSvg in stencilMode renders STENCIL TILE stamps and spray-paint guidance', () => {
+    const matrix = calculateFiducialTilingMatrix(0.60, 'letter', 6.35);
+    const tileSvg = generateTiledFiducialSheetSvg({
+      type: 'aruco_4x4',
+      id: 0,
+      physicalSizeMeters: 0.60,
+      stencilMode: true
+    }, 0, 0, matrix);
+
+    assert.ok(tileSvg.includes('STENCIL TILE'), 'Header stamp must state STENCIL TILE');
+    assert.ok(tileSvg.includes('✂ Cutout Template'), 'Header stamp must indicate cutout template');
+    assert.ok(tileSvg.includes('Cut out outlined black sections with blade and spray paint'), 'Footer must contain stencil fabrication advice');
+    assert.ok(tileSvg.includes('stroke-dasharray="6,3"'), 'Tile contents must have dashed cut outlines');
+    assert.ok(tileSvg.includes('✂ CUT'), 'Tile contents must have scissor cut labels');
+  });
+
+  test('Version 1.118.0 is consistent across package.json, changelog, and templates', () => {
     const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
-    assert.strictEqual(pkg.version, '1.117.0');
+    assert.ok(semverGte(pkg.version, '1.118.0'), 'Version must be >= 1.118.0');
 
     const changelog = fs.readFileSync('./CHANGELOG.md', 'utf8');
-    assert.ok(changelog.includes('## [1.117.0] - 2026-09-21'), 'CHANGELOG must contain 1.117.0');
+    assert.ok(changelog.includes('## [1.118.0] - 2026-09-21'), 'CHANGELOG must contain 1.118.0');
 
     const tmpl = fs.readFileSync('./index_template.html', 'utf8');
-    assert.ok(tmpl.includes('v1.117.0'), 'index_template.html must contain v1.117.0 header badge');
-    assert.ok(tmpl.includes('Version 1.117.0'), 'index_template.html must contain Version 1.117.0');
-    assert.ok(tmpl.includes('Changelog (v1.117.0):'), 'index_template.html must contain Changelog (v1.117.0)');
+    assert.ok(tmpl.includes('v1.118.0') || tmpl.includes('v1.119.0'), 'index_template.html must contain header badge');
+    assert.ok(tmpl.includes('Version 1.118.0') || tmpl.includes('Version 1.119.0'), 'index_template.html must contain Version');
+    assert.ok(tmpl.includes('Changelog (v1.118.0):') || tmpl.includes('Changelog (v1.119.0):'), 'index_template.html must contain Changelog');
 
     const indexHtml = fs.readFileSync('./index.html', 'utf8');
-    assert.ok(indexHtml.includes('v1.117.0'), 'index.html must contain v1.117.0 header badge');
-    assert.ok(indexHtml.includes('Version 1.117.0'), 'index.html must contain Version 1.117.0');
-    assert.ok(indexHtml.includes('Changelog (v1.117.0):'), 'index.html must contain Changelog (v1.117.0)');
+    assert.ok(indexHtml.includes('v1.118.0') || indexHtml.includes('v1.119.0'), 'index.html must contain header badge');
+    assert.ok(indexHtml.includes('Version 1.118.0') || indexHtml.includes('Version 1.119.0'), 'index.html must contain Version');
+    assert.ok(indexHtml.includes('Changelog (v1.118.0):') || indexHtml.includes('Changelog (v1.119.0):'), 'index.html must contain Changelog');
   });
 });
+
+describe('Automated 360° Photo Sphere Flight Pattern Suite (v1.119.0)', () => {
+  test('Version 1.119.0 is consistent across package.json, changelog, index_template.html, and index.html', () => {
+    const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
+    assert.strictEqual(pkg.version, '1.119.0');
+
+    const changelog = fs.readFileSync('./CHANGELOG.md', 'utf8');
+    assert.ok(changelog.includes('## [1.119.0] - 2026-09-24'), 'CHANGELOG.md must contain 1.119.0 entry');
+
+    const tmpl = fs.readFileSync('./index_template.html', 'utf8');
+    assert.ok(tmpl.includes('class="header-version-badge"') && tmpl.includes('v1.119.0'), 'index_template.html header badge must be v1.119.0');
+    assert.ok(tmpl.includes('class="version-tag"') && tmpl.includes('Version 1.119.0'), 'index_template.html About modal must specify Version 1.119.0');
+    assert.ok(tmpl.includes('Changelog (v1.119.0):'), 'index_template.html must include Changelog (v1.119.0)');
+
+    const indexHtml = fs.readFileSync('./index.html', 'utf8');
+    assert.ok(indexHtml.includes('class="header-version-badge"') && indexHtml.includes('v1.119.0'), 'index.html header badge must be v1.119.0');
+    assert.ok(indexHtml.includes('class="version-tag"') && indexHtml.includes('Version 1.119.0'), 'index.html About modal must specify Version 1.119.0');
+    assert.ok(indexHtml.includes('Changelog (v1.119.0):'), 'index.html must include Changelog (v1.119.0)');
+  });
+
+  test('DOM Architecture: Photo Sphere UI elements exist in index_template.html and index.html', () => {
+    const tmpl = fs.readFileSync('./index_template.html', 'utf8');
+    assert.ok(tmpl.includes('value="photo-sphere"'), 'index_template.html must include photo-sphere option in select');
+    assert.ok(tmpl.includes('data-value="photo-sphere"'), 'index_template.html must include photo-sphere pattern-card');
+    assert.ok(tmpl.includes('id="photo-sphere-container"'), 'index_template.html must include photo-sphere-container');
+    assert.ok(tmpl.includes('360° Photo Sphere') || tmpl.includes('360 Photo Sphere'), 'index_template.html must display 360 Photo Sphere');
+    assert.ok(tmpl.includes('37 Shots Total') || tmpl.includes('37-shot'), 'index_template.html must highlight 37 shots');
+    assert.ok(tmpl.includes('Automated 360° Photo Sphere Flight Pattern') || tmpl.includes('Photo Sphere'), 'index_template.html must have intro feature highlight');
+
+    const indexHtml = fs.readFileSync('./index.html', 'utf8');
+    assert.ok(indexHtml.includes('value="photo-sphere"'), 'index.html must include photo-sphere option in select');
+    assert.ok(indexHtml.includes('data-value="photo-sphere"'), 'index.html must include photo-sphere pattern-card');
+    assert.ok(indexHtml.includes('id="photo-sphere-container"'), 'index.html must include photo-sphere-container');
+  });
+
+  test('generatePhotoSphereCoordinates generates authentic 37-shot sequence with static 3D coordinate lock', () => {
+    assert.strictEqual(typeof generatePhotoSphereCoordinates, 'function', 'generatePhotoSphereCoordinates must be defined');
+
+    const layer = { id: 'layer-pano', name: '360 Pano', altitude: 45, speed: 3 };
+    const res = generatePhotoSphereCoordinates(45, layer);
+    const coords = res.waypoints;
+
+    assert.strictEqual(coords.length, 37, 'Must generate exactly 37 waypoints');
+
+    // All coordinates must have static (0, 0) local offset and layer altitude
+    coords.forEach((wp, idx) => {
+      assert.strictEqual(wp.x, 0, `WP ${idx} x offset must be 0`);
+      assert.strictEqual(wp.y, 0, `WP ${idx} y offset must be 0`);
+      assert.strictEqual(wp.alt, 45, `WP ${idx} alt must match layer altitude 45`);
+      assert.strictEqual(wp.isPhotoSpherePoint, true, `WP ${idx} must be flagged isPhotoSpherePoint`);
+      assert.strictEqual(wp.hoverTime, 2, `WP ${idx} hoverTime must be >= 2s`);
+    });
+
+    // Row 1: Pitch -15°, 12 shots spaced every 30° yaw (0° to 330°)
+    for (let i = 0; i < 12; i++) {
+      assert.strictEqual(coords[i].pitch, -15, `Row 1 shot ${i} pitch must be -15°`);
+      assert.strictEqual(coords[i].heading, i * 30, `Row 1 shot ${i} yaw must be ${i * 30}°`);
+    }
+
+    // Row 2: Pitch -45°, 12 shots spaced every 30° yaw (0° to 330°)
+    for (let i = 12; i < 24; i++) {
+      const step = i - 12;
+      assert.strictEqual(coords[i].pitch, -45, `Row 2 shot ${step} pitch must be -45°`);
+      assert.strictEqual(coords[i].heading, step * 30, `Row 2 shot ${step} yaw must be ${step * 30}°`);
+    }
+
+    // Row 3: Pitch -75°, 12 shots spaced every 30° yaw (0° to 330°)
+    for (let i = 24; i < 36; i++) {
+      const step = i - 24;
+      assert.strictEqual(coords[i].pitch, -75, `Row 3 shot ${step} pitch must be -75°`);
+      assert.strictEqual(coords[i].heading, step * 30, `Row 3 shot ${step} yaw must be ${step * 30}°`);
+    }
+
+    // Nadir: Pitch -90°, 1 ground-lock shot (0° yaw)
+    assert.strictEqual(coords[36].pitch, -90, 'Nadir shot pitch must be -90°');
+    assert.strictEqual(coords[36].heading, 0, 'Nadir shot yaw must be 0°');
+  });
+
+  test('buildWaylinesWpml exports gimbalRotate, rotateYaw, settling hover, and takePhoto actions for photo sphere', () => {
+    assert.strictEqual(typeof buildWaylinesWpml, 'function');
+
+    const layer = { id: 'layer-pano', name: '360 Pano', altitude: 40, speed: 3 };
+    const res = generatePhotoSphereCoordinates(40, layer);
+    const localCoords = res.waypoints;
+    const centerLat = 37.7749;
+    const centerLon = -122.4194;
+
+    const waypoints = localCoords.map((c, i) => {
+      const geo = localToGeodetic(c.x, c.y, centerLat, centerLon, 0);
+      return {
+        ...c,
+        lat: geo.lat,
+        lon: geo.lon,
+        idx: i
+      };
+    });
+
+    const wpml = buildWaylinesWpml(
+      waypoints,
+      40,
+      3,
+      'smoothTransition',
+      'goHome',
+      -60,
+      'stopAndShoot',
+      'curved'
+    );
+
+    assert.ok(wpml.includes('<wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>'), 'Must export gimbalRotate actions');
+    assert.ok(wpml.includes('<wpml:gimbalPitchRotateAngle>-15</wpml:gimbalPitchRotateAngle>'), 'Must include pitch -15° gimbal rotation');
+    assert.ok(wpml.includes('<wpml:gimbalPitchRotateAngle>-45</wpml:gimbalPitchRotateAngle>'), 'Must include pitch -45° gimbal rotation');
+    assert.ok(wpml.includes('<wpml:gimbalPitchRotateAngle>-75</wpml:gimbalPitchRotateAngle>'), 'Must include pitch -75° gimbal rotation');
+    assert.ok(wpml.includes('<wpml:gimbalPitchRotateAngle>-90</wpml:gimbalPitchRotateAngle>'), 'Must include pitch -90° gimbal rotation');
+
+    assert.ok(wpml.includes('<wpml:actionActuatorFunc>rotateYaw</wpml:actionActuatorFunc>'), 'Must export rotateYaw actions');
+    assert.ok(wpml.includes('<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>'), 'Must export hover settling actions');
+    assert.ok(wpml.includes('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>'), 'Must export takePhoto action');
+
+    // Rule 2 verification: Zero headings must be clamped to 0.1°
+    const placemarks = wpml.split('<Placemark>').slice(1);
+    assert.strictEqual(placemarks.length, 37, 'Must export 37 Placemark tags');
+
+    placemarks.forEach((pm, idx) => {
+      const angleMatch = pm.match(/<wpml:waypointHeadingAngle>([^<]+)<\/wpml:waypointHeadingAngle>/);
+      assert.ok(angleMatch, `Waypoint ${idx} must contain waypointHeadingAngle`);
+      const angle = parseFloat(angleMatch[1]);
+      assert.ok(angle !== 0 && Math.abs(angle) >= 0.1, `Waypoint ${idx} heading ${angle} must not be strictly 0.0° to pass Rule 2`);
+    });
+
+    // Validate using validateWpmlMission
+    const validation = validateWpmlMission(wpml, '', { gridType: 'photo-sphere', waypoints });
+    assert.strictEqual(validation.valid, true, 'Mission must be valid against all 10 WPML rules');
+    assert.strictEqual(validation.rulesPassed, 10, 'All 10 validation rules must pass');
+  });
+
+  test('calculateStats produces zero path distance and 37 photo count for photo sphere', () => {
+    assert.strictEqual(typeof calculateStats, 'function');
+
+    const layer = { id: 'layer-pano', name: '360 Pano', altitude: 40 };
+    const res = generatePhotoSphereCoordinates(40, layer);
+    const localCoords = res.waypoints;
+    const waypoints = localCoords.map((c, i) => ({
+      ...c,
+      lat: 37.7749,
+      lon: -122.4194,
+      idx: i
+    }));
+
+    const stats = calculateStats(waypoints, waypoints, 3, 10, 10, 'stopAndShoot');
+    assert.ok(stats, 'calculateStats must return stats object');
+    assert.strictEqual(stats.photoCount, 37, 'Must report 37 photos');
+    assert.strictEqual(stats.distance, 0, 'Total distance must be 0 for in-place photo sphere');
+    assert.strictEqual(stats.hasIsolatedWaypoint, false, 'In-place photo sphere must not flag isolated waypoints');
+  });
+
+  test('generateTelemetryFromWaypoints performs shortest-arc yaw interpolation without backwards spin', () => {
+    assert.strictEqual(typeof generateTelemetryFromWaypoints, 'function');
+
+    const layer = { id: 'layer-pano', name: '360 Pano', altitude: 30 };
+    const res = generatePhotoSphereCoordinates(30, layer);
+    const localCoords = res.waypoints;
+    const waypoints = localCoords.map((c, i) => ({
+      ...c,
+      lat: 37.7749,
+      lon: -122.4194,
+      idx: i
+    }));
+
+    const telemetry = generateTelemetryFromWaypoints(waypoints, {
+      speed: 3,
+      altitude: 30,
+      isSimulation: true,
+      flightId: 'active-mission'
+    });
+
+    assert.ok(telemetry, 'Must generate telemetry object');
+    assert.ok(Array.isArray(telemetry.points) && telemetry.points.length > 37, 'Telemetry must contain interpolated points');
+
+    // Verify photos are triggered
+    const photoPoints = telemetry.points.filter(p => p.isPhoto);
+    assert.strictEqual(photoPoints.length, 37, 'Must flag exactly 37 photo capture points');
+  });
+
+  test('parseWPML parses rotateYaw actuator and extracts aircraftHeading', () => {
+    const sampleWpml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/1.0.6">
+  <Document>
+    <wpml:missionConfig>
+      <wpml:droneEnumValue>68</wpml:droneEnumValue>
+    </wpml:missionConfig>
+    <Placemark>
+      <Point><coordinates>-122.4194,37.7749</coordinates></Point>
+      <wpml:executeHeight>35</wpml:executeHeight>
+      <wpml:waypointSpeed>3</wpml:waypointSpeed>
+      <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+      <wpml:waypointHeadingAngle>60.0</wpml:waypointHeadingAngle>
+      <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+      <wpml:actionGroup>
+        <wpml:action>
+          <wpml:actionActuatorFunc>rotateYaw</wpml:actionActuatorFunc>
+          <wpml:actionActuatorFuncParam>
+            <wpml:aircraftHeading>60.0</wpml:aircraftHeading>
+            <wpml:aircraftPathMode>clockwise</wpml:aircraftPathMode>
+          </wpml:actionActuatorFuncParam>
+        </wpml:action>
+        <wpml:action>
+          <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+        </wpml:action>
+      </wpml:actionGroup>
+    </Placemark>
+  </Document>
+</kml>`;
+
+    const savedParser = global.DOMParser;
+    const jsdomParser = new (new JSDOM().window.DOMParser)();
+    global.DOMParser = class {
+      parseFromString(str, type) {
+        return jsdomParser.parseFromString(str, type);
+      }
+    };
+
+    try {
+      const parsed = parseWPML(sampleWpml);
+      if (!parsed) process.stderr.write(`FAIL REASON: ${global.lastAlert}\n`);
+      assert.ok(parsed, 'parseWPML must return parsed object');
+      assert.strictEqual(parsed.waypoints.length, 1);
+      assert.strictEqual(parsed.waypoints[0].heading, 60.0);
+    } finally {
+      global.DOMParser = savedParser;
+    }
+  });
+});
+
 
 
