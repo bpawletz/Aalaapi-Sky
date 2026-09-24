@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.120.0] - 2026-09-24
+
+### New Features & Enhancements
+- **Bridge-Hosted Real-Time 3D Wireframe Extraction Pipeline (Issue #95):**
+  - **OpenCV Edge Extraction Engine:** Implemented a high-speed computer vision chain hosted within the Companion Bridge daemon (`tools/companion/wireframe_extractor.py` & `wireframe_engine.js`). Downscales imagery to 1080p and applies Gaussian Blur, Canny edge detection, and Probabilistic Hough Line Transform (`cv2.HoughLinesP`). Includes a robust JavaScript fallback for zero-dependency runtime resilience.
+  - **Telemetry Extrusion & Ray Projection:** Parses drone spatial flight logs (GPS, absolute altitude, gimbal pitch, aircraft yaw) and uses camera intrinsic matrices ($K$) to mathematically project 2D image lines into 3D world rays. Calculates intersecting 3D vertices and serializes them into a lightweight `{ "lines": [[x1, y1, z1, x2, y2, z2], ...] }` JSON payload.
+  - **Bridge REST Route Handling:** Exposed dedicated endpoints `POST /api/process/wireframe` and `GET /api/process/wireframe` in `tools/companion/server.js`, and automatically caches `wireframe.json` in mission archives.
+  - **Automated Landing Ingest Workflow:** Integrated an opt-in checkbox (`#ingest-extract-wireframe`) into the Media Ingest modal. When drone photos sync upon landing, the bridge automatically extracts building wireframe geometry and serves it to the browser in seconds.
+- **Interactive 3D Wireframe Toolkit & Viewer (`FlightDiagnostics`):**
+  - **Three.js WebGL Rendering:** Renders 3D architectural building wireframes using `THREE.LineSegments` with neon cyan/electric blue styling (`#38bdf8`) in `FlightDiagnostics.threeScene`.
+  - **HUD Toggle & Status Indicator:** Added `#diag-btn-toggle-wireframe` and `#diag-indicator-wireframe` to the 3D HUD controls, alongside the 3D path legend swatch.
+  - **Raycasting Click-to-Select & Line Inspection:** Pilots can click any line segment in the 3D viewport using `THREE.Raycaster`. The selected segment highlights in glowing amber/gold (`#f59e0b`) while a floating mini-card displays line length in meters, 3D Cartesian coordinates, and parent photo context.
+  - **Modification & Cleanup Toolkit:**
+    - **Delete / Trim Selected:** `🗑️ Delete` button and keyboard `Delete`/`Backspace` support to prune false edges, trees, or specular reflections.
+    - **Elevation / Z-Offset Calibration:** Live vertical slider (`±20m`) to align wireframe base elevation with ground terrain or foundations.
+    - **Noise Prune Filter:** Interactive slider to discard short segment clutter below a user-selected threshold.
+    - **Convert to Flight Layer Boundary:** 1-click action computing the 2D convex hull of the wireframe footprint and importing it into Section 2 as a new Flight Layer Boundary / Parcel for follow-up inspection flights or obstacle keep-out perimeters.
+    - **Export Wireframe:** Exports modified wireframes to structural JSON or 3D Wavefront OBJ (`.obj`) for external CAD/BIM applications.
+  - **Inspection Photos Gallery Button:** Added `🏗️ Project 3D Wireframe` (`#diag-btn-extract-wireframe`) to the Flight Diagnostics Photos toolbar for instant on-demand extraction from loaded inspection photos.
+
 ## [1.119.0] - 2026-09-24
 
 ### New Features & Enhancements

@@ -33,6 +33,7 @@ const diagDb = new DiagnosticsDatabase();
 
 const SCRATCH_DIR = path.resolve(__dirname, '../../scratch');
 const TagDetector = require('../wasm/tag_detector.js');
+const wireframeEngine = require('./wireframe_engine.js');
 const CONFIG_FILE = path.resolve(__dirname, '../../scratch/companion_config.json');
 const DJI_LOG_EXE = path.resolve(__dirname, 'bin/dji-log.exe');
 
@@ -2167,7 +2168,45 @@ if ($copied.Count -eq 0 -and $thisPC) {
   };
 
   const manifestPath = path.join(targetDir, 'inspection_manifest.json');
-  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
+  // Optional 3D Architectural Wireframe Edge Extraction (Issue #95)
+  let wireframeData = null;
+  if (options.extractWireframe !== false && correlated.length > 0) {
+    try {
+      const wireframePayload = {
+        missionUuid,
+        photos: correlated.map(p => {
+          const rawP = p.rawPath || path.join(rawDir, p.filename);
+          const prevP = path.join(previewDir, p.filename);
+          return {
+            filePath: fs.existsSync(rawP) ? rawP : (fs.existsSync(prevP) ? prevP : null),
+            filename: p.filename,
+            telemetry: {
+              worldX: p.worldX || 0,
+              worldY: p.worldY || p.alt || 25,
+              worldZ: p.worldZ || 0,
+              yaw: p.yaw || 0,
+              pitch: p.pitch !== undefined ? p.pitch : -60,
+              roll: p.roll || 0,
+              hfov: p.hfov || 73.7,
+              vfov: p.vfov || 53.1
+            }
+          };
+        }).filter(p => p.filePath && fs.existsSync(p.filePath)),
+        options: options.wireframeOptions || {}
+      };
+      if (wireframePayload.photos.length > 0) {
+        wireframeData = wireframeEngine.extractWireframe(wireframePayload);
+        if (wireframeData && wireframeData.success) {
+          manifest.wireframe = wireframeData;
+          fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
+          fs.writeFileSync(path.join(targetDir, 'wireframe.json'), JSON.stringify(wireframeData, null, 2), 'utf8');
+          logSuccess('[WIREFRAME]', `Extracted ${wireframeData.count} 3D architectural wireframe line segments`);
+        }
+      }
+    } catch (wErr) {
+      logWarn('[WIREFRAME]', `Wireframe extraction note: ${wErr.message}`);
+    }
+  }
 
   // Index photo records into SQLite with thumbnail_url and preview_url
   if (diagDb && typeof diagDb.savePhotoRecords === 'function') {
@@ -2200,8 +2239,8 @@ if ($copied.Count -eq 0 -and $thisPC) {
     deleteErrors,
     diskSpaceError: Boolean(diskSpaceError),
     copyErrors,
-    manifest
-
+    manifest,
+    wireframe: wireframeData
   };
 
 }
@@ -2286,6 +2325,7 @@ function printStartupBanner() {
   console.log(`  ${colors.green}${colors.bold}GET  /api/tfr/geojson${colors.reset}      ${colors.gray}GeoJSON geometry boundaries for active FAA TFR polygons${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /api/media/detect${colors.reset}       ${colors.gray}Scan for Mini 4 Pro, SD Card readers, and RC 2 albums${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}POST /api/media/pull${colors.reset}         ${colors.gray}Ingest flight photos, correlate telemetry, and build archive${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}POST /api/process/wireframe${colors.reset}   ${colors.gray}Real-time OpenCV edge extraction & 3D wireframe projection${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}POST /api/drone/locate${colors.reset}    ${colors.gray}Rest API locate drone & inject live geo coordinates${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}POST /api/shutdown${colors.reset}         ${colors.gray}Cleanly terminate running companion bridge process${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /health${colors.reset}               ${colors.gray}Service heartbeat and status ping${colors.reset}`);
@@ -2961,6 +3001,90 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // Bridge-Hosted 3D Architectural Wireframe Extraction (Issue #95)
+    if (pathname === '/api/process/wireframe' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', async () => {
+        try {
+          const payload = body ? JSON.parse(body) : {};
+
+          // If missionUuid is provided, resolve photos and telemetry from archive if not passed in
+          if (payload.missionUuid && (!payload.photos || payload.photos.length === 0)) {
+            const mPath = path.join(ARCHIVE_DIR, payload.missionUuid, 'inspection_manifest.json');
+            if (fs.existsSync(mPath)) {
+              try {
+                const manifest = JSON.parse(fs.readFileSync(mPath, 'utf8'));
+                if (Array.isArray(manifest.photos)) {
+                  payload.photos = manifest.photos.map(p => {
+                    const rawP = path.join(ARCHIVE_DIR, payload.missionUuid, 'photos', 'raw', p.filename || p.id);
+                    const prevP = path.join(ARCHIVE_DIR, payload.missionUuid, 'photos', 'previews', p.filename || p.id);
+                    const photoPath = fs.existsSync(rawP) ? rawP : (fs.existsSync(prevP) ? prevP : (p.rawPath || p.filePath));
+                    return {
+                      filePath: photoPath,
+                      filename: p.filename || p.id,
+                      telemetry: {
+                        worldX: p.worldX !== undefined ? p.worldX : (p.actualX !== undefined ? p.actualX : 0),
+                        worldY: p.worldY !== undefined ? p.worldY : (p.alt !== undefined ? p.alt : 25),
+                        worldZ: p.worldZ !== undefined ? p.worldZ : (p.actualZ !== undefined ? p.actualZ : 0),
+                        yaw: p.yaw !== undefined ? p.yaw : (p.heading || 0),
+                        pitch: p.pitch !== undefined ? p.pitch : (p.gimbalPitch !== undefined ? p.gimbalPitch : -60),
+                        roll: p.roll || 0,
+                        hfov: p.hfov || 73.7,
+                        vfov: p.vfov || 53.1
+                      }
+                    };
+                  }).filter(p => p.filePath && fs.existsSync(p.filePath));
+                }
+              } catch (_) {}
+            }
+          }
+
+          const result = wireframeEngine.extractWireframe(payload);
+
+          // If missionUuid was provided, cache wireframe.json in archive
+          if (payload.missionUuid && result && result.success) {
+            const wPath = path.join(ARCHIVE_DIR, payload.missionUuid, 'wireframe.json');
+            try {
+              fs.writeFileSync(wPath, JSON.stringify(result, null, 2), 'utf8');
+            } catch (_) {}
+          }
+
+          res.writeHead(200, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Private-Network': 'true'
+          });
+          res.end(JSON.stringify(result));
+        } catch (err) {
+          res.writeHead(500, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Private-Network': 'true'
+          });
+          res.end(JSON.stringify({ success: false, error: err.message, lines: [] }));
+        }
+      });
+      return;
+    }
+
+    if (pathname === '/api/process/wireframe' && req.method === 'GET') {
+      const missionUuid = url.searchParams.get('missionUuid') || url.searchParams.get('uuid');
+      if (missionUuid) {
+        const wPath = path.join(ARCHIVE_DIR, missionUuid, 'wireframe.json');
+        if (fs.existsSync(wPath)) {
+          try {
+            const data = fs.readFileSync(wPath, 'utf8');
+            res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+            res.end(data);
+            return;
+          } catch (_) {}
+        }
+      }
+      res.writeHead(404, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ success: false, error: 'Wireframe not found', lines: [] }));
+      return;
+    }
 
     if (pathname === '/api/media/manifest' && req.method === 'GET') {
       const uuid = url.searchParams.get('uuid') || url.searchParams.get('mission');
@@ -3731,6 +3855,8 @@ module.exports = {
   saveDjiApiKey,
   maskApiKey,
   decryptFlightRecordWithDjiCli,
+  extractWireframe: wireframeEngine.extractWireframe,
+  wireframeEngine,
   VERSION,
   PORT
 };
