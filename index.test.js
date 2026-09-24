@@ -20420,14 +20420,14 @@ describe('Photo Telemetry Correlation & Ground Boundary Projection Suite Tests (
     assert.ok(changelog.includes('## [1.118.0] - 2026-09-21'), 'CHANGELOG must contain 1.118.0');
 
     const tmpl = fs.readFileSync('./index_template.html', 'utf8');
-    assert.ok(tmpl.includes('v1.118.0') || tmpl.includes('v1.119.0') || tmpl.includes('v1.120.0') || tmpl.includes('v1.120.1') || tmpl.includes('v1.121.0') || tmpl.includes('v1.121.1'), 'index_template.html must contain header badge');
-    assert.ok(tmpl.includes('Version 1.118.0') || tmpl.includes('Version 1.119.0') || tmpl.includes('Version 1.120.0') || tmpl.includes('Version 1.120.1') || tmpl.includes('Version 1.121.0') || tmpl.includes('Version 1.121.1'), 'index_template.html must contain Version');
-    assert.ok(tmpl.includes('Changelog (v1.118.0):') || tmpl.includes('Changelog (v1.119.0):') || tmpl.includes('Changelog (v1.120.0):') || tmpl.includes('Changelog (v1.120.1):') || tmpl.includes('Changelog (v1.121.0):') || tmpl.includes('Changelog (v1.121.1):'), 'index_template.html must contain Changelog');
+    assert.ok(tmpl.includes('v1.118.0') || tmpl.includes('v1.119.0') || tmpl.includes('v1.120.0') || tmpl.includes('v1.120.1') || tmpl.includes('v1.121.0') || tmpl.includes('v1.121.1') || tmpl.includes('v1.121.2'), 'index_template.html must contain header badge');
+    assert.ok(tmpl.includes('Version 1.118.0') || tmpl.includes('Version 1.119.0') || tmpl.includes('Version 1.120.0') || tmpl.includes('Version 1.120.1') || tmpl.includes('Version 1.121.0') || tmpl.includes('Version 1.121.1') || tmpl.includes('Version 1.121.2'), 'index_template.html must contain Version');
+    assert.ok(tmpl.includes('Changelog (v1.118.0):') || tmpl.includes('Changelog (v1.119.0):') || tmpl.includes('Changelog (v1.120.0):') || tmpl.includes('Changelog (v1.120.1):') || tmpl.includes('Changelog (v1.121.0):') || tmpl.includes('Changelog (v1.121.1):') || tmpl.includes('Changelog (v1.121.2):'), 'index_template.html must contain Changelog');
 
     const indexHtml = fs.readFileSync('./index.html', 'utf8');
-    assert.ok(indexHtml.includes('v1.118.0') || indexHtml.includes('v1.119.0') || indexHtml.includes('v1.120.0') || indexHtml.includes('v1.120.1') || indexHtml.includes('v1.121.0') || indexHtml.includes('v1.121.1'), 'index.html must contain header badge');
-    assert.ok(indexHtml.includes('Version 1.118.0') || indexHtml.includes('Version 1.119.0') || indexHtml.includes('Version 1.120.0') || indexHtml.includes('Version 1.120.1') || indexHtml.includes('Version 1.121.0') || indexHtml.includes('Version 1.121.1'), 'index.html must contain Version');
-    assert.ok(indexHtml.includes('Changelog (v1.118.0):') || indexHtml.includes('Changelog (v1.119.0):') || indexHtml.includes('Changelog (v1.120.0):') || indexHtml.includes('Changelog (v1.120.1):') || indexHtml.includes('Changelog (v1.121.0):') || indexHtml.includes('Changelog (v1.121.1):'), 'index.html must contain Changelog');
+    assert.ok(indexHtml.includes('v1.118.0') || indexHtml.includes('v1.119.0') || indexHtml.includes('v1.120.0') || indexHtml.includes('v1.120.1') || indexHtml.includes('v1.121.0') || indexHtml.includes('v1.121.1') || indexHtml.includes('v1.121.2'), 'index.html must contain header badge');
+    assert.ok(indexHtml.includes('Version 1.118.0') || indexHtml.includes('Version 1.119.0') || indexHtml.includes('Version 1.120.0') || indexHtml.includes('Version 1.120.1') || indexHtml.includes('Version 1.121.0') || indexHtml.includes('Version 1.121.1') || indexHtml.includes('Version 1.121.2'), 'index.html must contain Version');
+    assert.ok(indexHtml.includes('Changelog (v1.118.0):') || indexHtml.includes('Changelog (v1.119.0):') || indexHtml.includes('Changelog (v1.120.0):') || indexHtml.includes('Changelog (v1.120.1):') || indexHtml.includes('Changelog (v1.121.0):') || indexHtml.includes('Changelog (v1.121.1):') || indexHtml.includes('Changelog (v1.121.2):'), 'index.html must contain Changelog');
   });
 });
 
@@ -20672,12 +20672,12 @@ describe('v1.120.0 Bridge-Hosted 3D Wireframe Extraction & Telemetry Projection 
 
     assert.ok(semverGte(pkg, '1.120.0'), 'package.json version should be >= 1.120.0');
     assert.ok(cl.includes('## [1.120.0] - 2026-09-24'), 'CHANGELOG.md missing 1.120.0 header');
-    assert.ok(indexTemplate.includes('Version 1.120.0') || indexTemplate.includes('Version 1.120.1') || indexTemplate.includes('Version 1.121.0') || indexTemplate.includes('Version 1.121.1'), 'index_template.html missing Version 1.120.0/1');
-    assert.ok(indexHtml.includes('Version 1.120.0') || indexHtml.includes('Version 1.120.1') || indexHtml.includes('Version 1.121.0') || indexHtml.includes('Version 1.121.1'), 'index.html missing Version 1.120.0/1');
-    assert.ok(indexTemplate.includes('v1.120.0') || indexTemplate.includes('v1.120.1') || indexTemplate.includes('v1.121.0') || indexTemplate.includes('v1.121.1'), 'index_template.html missing v1.120.0/1 badge');
-    assert.ok(indexHtml.includes('v1.120.0') || indexHtml.includes('v1.120.1') || indexHtml.includes('v1.121.0') || indexHtml.includes('v1.121.1'), 'index.html missing v1.120.0/1 badge');
-    assert.ok(indexTemplate.includes('Changelog (v1.120.0):') || indexTemplate.includes('Changelog (v1.121.0):') || indexTemplate.includes('Changelog (v1.121.1):'), 'index_template.html missing Changelog (v1.120.0)');
-    assert.ok(indexHtml.includes('Changelog (v1.120.0):') || indexHtml.includes('Changelog (v1.121.0):') || indexHtml.includes('Changelog (v1.121.1):'), 'index.html missing Changelog (v1.120.0)');
+    assert.ok(indexTemplate.includes('Version 1.120.0') || indexTemplate.includes('Version 1.120.1') || indexTemplate.includes('Version 1.121.0') || indexTemplate.includes('Version 1.121.1') || indexTemplate.includes('Version 1.121.2'), 'index_template.html missing Version 1.120.0/1/2');
+    assert.ok(indexHtml.includes('Version 1.120.0') || indexHtml.includes('Version 1.120.1') || indexHtml.includes('Version 1.121.0') || indexHtml.includes('Version 1.121.1') || indexHtml.includes('Version 1.121.2'), 'index.html missing Version 1.120.0/1/2');
+    assert.ok(indexTemplate.includes('v1.120.0') || indexTemplate.includes('v1.120.1') || indexTemplate.includes('v1.121.0') || indexTemplate.includes('v1.121.1') || indexTemplate.includes('v1.121.2'), 'index_template.html missing v1.120.0/1/2 badge');
+    assert.ok(indexHtml.includes('v1.120.0') || indexHtml.includes('v1.120.1') || indexHtml.includes('v1.121.0') || indexHtml.includes('v1.121.1') || indexHtml.includes('v1.121.2'), 'index.html missing v1.120.0/1/2 badge');
+    assert.ok(indexTemplate.includes('Changelog (v1.120.0):') || indexTemplate.includes('Changelog (v1.121.0):') || indexTemplate.includes('Changelog (v1.121.1):') || indexTemplate.includes('Changelog (v1.121.2):'), 'index_template.html missing Changelog (v1.120.0)');
+    assert.ok(indexHtml.includes('Changelog (v1.120.0):') || indexHtml.includes('Changelog (v1.121.0):') || indexHtml.includes('Changelog (v1.121.1):') || indexHtml.includes('Changelog (v1.121.2):'), 'index.html missing Changelog (v1.120.0)');
   });
 
   test('DOM Architecture: Wireframe controls exist in templates', () => {
@@ -20840,12 +20840,12 @@ describe('3D FPV Walkthrough & Playback Suite (v1.120.1)', () => {
 
     assert.ok(semverGte(pkg.version, '1.120.1'), 'package.json version should be >= 1.120.1');
     assert.ok(changelog.includes('## [1.120.1] - 2026-09-24'));
-    assert.ok(tpl.includes('v1.120.1') || tpl.includes('v1.121.0') || tpl.includes('v1.121.1'));
-    assert.ok(tpl.includes('Version 1.120.1') || tpl.includes('Version 1.121.0') || tpl.includes('Version 1.121.1'));
-    assert.ok(tpl.includes('Changelog (v1.120.1):') || tpl.includes('Changelog (v1.121.0):') || tpl.includes('Changelog (v1.121.1):'));
-    assert.ok(html.includes('v1.120.1') || html.includes('v1.121.0') || html.includes('v1.121.1'));
-    assert.ok(html.includes('Version 1.120.1') || html.includes('Version 1.121.0') || html.includes('Version 1.121.1'));
-    assert.ok(html.includes('Changelog (v1.120.1):') || html.includes('Changelog (v1.121.0):') || html.includes('Changelog (v1.121.1):'));
+    assert.ok(tpl.includes('v1.120.1') || tpl.includes('v1.121.0') || tpl.includes('v1.121.1') || tpl.includes('v1.121.2'));
+    assert.ok(tpl.includes('Version 1.120.1') || tpl.includes('Version 1.121.0') || tpl.includes('Version 1.121.1') || tpl.includes('Version 1.121.2'));
+    assert.ok(tpl.includes('Changelog (v1.120.1):') || tpl.includes('Changelog (v1.121.0):') || tpl.includes('Changelog (v1.121.1):') || tpl.includes('Changelog (v1.121.2):'));
+    assert.ok(html.includes('v1.120.1') || html.includes('v1.121.0') || html.includes('v1.121.1') || html.includes('v1.121.2'));
+    assert.ok(html.includes('Version 1.120.1') || html.includes('Version 1.121.0') || html.includes('Version 1.121.1') || html.includes('Version 1.121.2'));
+    assert.ok(html.includes('Changelog (v1.120.1):') || html.includes('Changelog (v1.121.0):') || html.includes('Changelog (v1.121.1):') || html.includes('Changelog (v1.121.2):'));
   });
 
   test('Three-Tier FPV helpers resolve speed, hover time, and camera action cleanly', () => {
@@ -20941,12 +20941,12 @@ describe('3D Cinematic Movie Mode & FPV Flight Simulation Suite (v1.121.0)', () 
 
     assert.ok(semverGte(pkg.version, '1.121.0'), 'package.json version should be >= 1.121.0');
     assert.ok(changelog.includes('## [1.121.0] - 2026-09-24'));
-    assert.ok(tpl.includes('v1.121.0') || tpl.includes('v1.121.1'));
-    assert.ok(tpl.includes('Version 1.121.0') || tpl.includes('Version 1.121.1'));
-    assert.ok(tpl.includes('Changelog (v1.121.0):') || tpl.includes('Changelog (v1.121.1):'));
-    assert.ok(html.includes('v1.121.0') || html.includes('v1.121.1'));
-    assert.ok(html.includes('Version 1.121.0') || html.includes('Version 1.121.1'));
-    assert.ok(html.includes('Changelog (v1.121.0):') || html.includes('Changelog (v1.121.1):'));
+    assert.ok(tpl.includes('v1.121.0') || tpl.includes('v1.121.1') || tpl.includes('v1.121.2'));
+    assert.ok(tpl.includes('Version 1.121.0') || tpl.includes('Version 1.121.1') || tpl.includes('Version 1.121.2'));
+    assert.ok(tpl.includes('Changelog (v1.121.0):') || tpl.includes('Changelog (v1.121.1):') || tpl.includes('Changelog (v1.121.2):'));
+    assert.ok(html.includes('v1.121.0') || html.includes('v1.121.1') || html.includes('v1.121.2'));
+    assert.ok(html.includes('Version 1.121.0') || html.includes('Version 1.121.1') || html.includes('Version 1.121.2'));
+    assert.ok(html.includes('Changelog (v1.121.0):') || html.includes('Changelog (v1.121.1):') || html.includes('Changelog (v1.121.2):'));
     assert.ok(tpl.includes('id="fpv-btn-cam-mode"'));
     assert.ok(html.includes('id="fpv-btn-cam-mode"'));
     assert.ok(tpl.includes('id="fpv-center-reticle"'));
@@ -21118,14 +21118,14 @@ describe('Streamlined 360° Photo Sphere Layer Dynamics Suite (v1.121.1)', () =>
     const tpl = fs.readFileSync('index_template.html', 'utf8');
     const html = fs.readFileSync('index.html', 'utf8');
 
-    assert.strictEqual(pkg.version, '1.121.1');
+    assert.ok(semverGte(pkg.version, '1.121.1'), 'package.json version should be >= 1.121.1');
     assert.ok(changelog.includes('## [1.121.1] - 2026-09-24'));
-    assert.ok(tpl.includes('v1.121.1</span>'));
-    assert.ok(tpl.includes('Version 1.121.1</span>'));
-    assert.ok(tpl.includes('Changelog (v1.121.1):'));
-    assert.ok(html.includes('v1.121.1</span>'));
-    assert.ok(html.includes('Version 1.121.1</span>'));
-    assert.ok(html.includes('Changelog (v1.121.1):'));
+    assert.ok(tpl.includes('v1.121.1') || tpl.includes('v1.121.2'));
+    assert.ok(tpl.includes('Version 1.121.1') || tpl.includes('Version 1.121.2'));
+    assert.ok(tpl.includes('Changelog (v1.121.1):') || tpl.includes('Changelog (v1.121.2):'));
+    assert.ok(html.includes('v1.121.1') || html.includes('v1.121.2'));
+    assert.ok(html.includes('Version 1.121.1') || html.includes('Version 1.121.2'));
+    assert.ok(html.includes('Changelog (v1.121.1):') || html.includes('Changelog (v1.121.2):'));
   });
 
   test('togglePatternParameters conceals layerCardModes for photo-sphere and restores for other patterns', () => {
@@ -21240,6 +21240,112 @@ describe('Streamlined 360° Photo Sphere Layer Dynamics Suite (v1.121.1)', () =>
     } finally {
       global.document.getElementById = origGetEl;
       global.getActiveLayer = origGetActiveLayer;
+    }
+  });
+});
+
+describe('Flight 13 Inspection Photos & Resilient Companion Manifest Recovery (v1.121.2)', () => {
+  test('Version 1.121.2 is consistent across package.json, changelog, index_template.html, and index.html', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version;
+    const cl = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    const indexTemplate = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+    assert.strictEqual(pkg, '1.121.2', 'package.json must be 1.121.2');
+    assert.ok(cl.includes('## [1.121.2] - 2026-09-24'), 'CHANGELOG.md missing 1.121.2 entry');
+    assert.ok(indexTemplate.includes('v1.121.2</span>'), 'index_template.html missing header badge v1.121.2');
+    assert.ok(indexTemplate.includes('Version 1.121.2</span>'), 'index_template.html missing version tag 1.121.2');
+    assert.ok(indexTemplate.includes('Changelog (v1.121.2):'), 'index_template.html missing Changelog (v1.121.2)');
+    assert.ok(indexHtml.includes('v1.121.2</span>'), 'index.html missing header badge v1.121.2');
+    assert.ok(indexHtml.includes('Version 1.121.2</span>'), 'index.html missing version tag 1.121.2');
+    assert.ok(indexHtml.includes('Changelog (v1.121.2):'), 'index.html missing Changelog (v1.121.2)');
+  });
+
+  test('loadOrRecoverManifest reads valid inspection_manifest.json directly', () => {
+    const companion = require('./tools/companion/server.js');
+    assert.strictEqual(typeof companion.loadOrRecoverManifest, 'function', 'loadOrRecoverManifest should be exported');
+
+    const flight13Dir = path.resolve(__dirname, 'scratch/mission_archives/mission_2026-09-24_[17-20-08]');
+    if (fs.existsSync(flight13Dir)) {
+      const rec = companion.loadOrRecoverManifest(flight13Dir);
+      assert.ok(rec, 'Must return manifest record for Flight 13 directory');
+      assert.ok(rec.manifest, 'Must contain manifest object');
+      assert.strictEqual(rec.manifest.totalPhotos, 58, 'Flight 13 must contain 58 photos');
+      assert.strictEqual(rec.manifest.photos.length, 58, 'Flight 13 photos array must have 58 elements');
+    }
+  });
+
+  test('loadOrRecoverManifest auto-recovers manifest from inspection_report.html when manifest JSON is missing', () => {
+    const companion = require('./tools/companion/server.js');
+    const tempTestDir = path.resolve(__dirname, 'scratch/test_recover_archive');
+    if (!fs.existsSync(tempTestDir)) fs.mkdirSync(tempTestDir, { recursive: true });
+
+    try {
+      const sampleReportHtml = `<!DOCTYPE html><html><body>
+        <script>
+          window.__MANIFEST__ = JSON.parse("{\\"missionUuid\\":\\"test_rec\\",\\"totalPhotos\\":2,\\"photos\\":[{\\"photoId\\":\\"P1\\",\\"filename\\":\\"DJI_0001.JPG\\"},{\\"photoId\\":\\"P2\\",\\"filename\\":\\"DJI_0002.JPG\\"}]}") || {};
+        </script>
+      </body></html>`;
+      fs.writeFileSync(path.join(tempTestDir, 'inspection_report.html'), sampleReportHtml, 'utf8');
+
+      // Ensure inspection_manifest.json does not exist initially
+      const mPath = path.join(tempTestDir, 'inspection_manifest.json');
+      if (fs.existsSync(mPath)) fs.unlinkSync(mPath);
+
+      const rec = companion.loadOrRecoverManifest(tempTestDir);
+      assert.ok(rec, 'Must recover from inspection_report.html');
+      assert.strictEqual(rec.manifest.missionUuid, 'test_rec');
+      assert.strictEqual(rec.manifest.totalPhotos, 2);
+      assert.strictEqual(rec.manifest.photos.length, 2);
+      assert.ok(fs.existsSync(mPath), 'Must persist recovered inspection_manifest.json to disk');
+    } finally {
+      try {
+        if (fs.existsSync(path.join(tempTestDir, 'inspection_manifest.json'))) fs.unlinkSync(path.join(tempTestDir, 'inspection_manifest.json'));
+        if (fs.existsSync(path.join(tempTestDir, 'inspection_report.html'))) fs.unlinkSync(path.join(tempTestDir, 'inspection_report.html'));
+        fs.rmdirSync(tempTestDir);
+      } catch (_) {}
+    }
+  });
+
+  test('Static file serving path normalization with decodeURIComponent matches bracketed folder names on disk', () => {
+    const flight13Rel = '/scratch/mission_archives/mission_2026-09-24_%5B17-20-08%5D/photos/thumbnails/DJI_20260924172044_0377_D.JPG';
+    const decodedRel = decodeURIComponent(flight13Rel);
+    const safePathDecoded = path.normalize(path.join(__dirname, decodedRel));
+    const safePathRaw = path.normalize(path.join(__dirname, flight13Rel));
+
+    assert.notStrictEqual(safePathDecoded, safePathRaw, 'Decoded path must differ from percent-encoded path');
+    if (fs.existsSync(path.resolve(__dirname, 'scratch/mission_archives/mission_2026-09-24_[17-20-08]/photos/thumbnails/DJI_20260924172044_0377_D.JPG'))) {
+      assert.strictEqual(fs.existsSync(safePathRaw), false, 'Raw encoded path with %5B fails existsSync');
+      assert.strictEqual(fs.existsSync(safePathDecoded), true, 'Decoded path succeeds existsSync on disk');
+    }
+  });
+
+  test('FlightDiagnostics.filterPhotosForCurrentFlight preserves Flight 13 photos across UTC/local time buffer', () => {
+    const origSelectedFlightId = FlightDiagnostics.selectedFlightId;
+    const origTelem = FlightDiagnostics.telemetryData;
+
+    try {
+      FlightDiagnostics.selectedFlightId = 'FlightRecord_2026-09-24_[17-20-08].txt';
+      FlightDiagnostics.telemetryData = {
+        flightDate: '2026-09-24T17:20:08.000Z',
+        durationSec: 626
+      };
+
+      const flight13SamplePhotos = [
+        { photoId: 'PHOTO_0001', filename: 'DJI_20260924172044_0377_D.JPG', timestamp: '2026-09-24T21:20:44.000Z' },
+        { photoId: 'PHOTO_0002', filename: 'DJI_20260924172052_0378_D.JPG', timestamp: '2026-09-24T21:20:52.000Z' },
+        { photoId: 'PHOTO_0058', filename: 'DJI_20260924172957_0434_D.JPG', timestamp: '2026-09-24T21:29:57.000Z' },
+        { photoId: 'OLD_PHOTO', filename: 'DJI_20260920154522_0001_D.JPG', timestamp: '2026-09-20T19:45:22.000Z' }
+      ];
+
+      const filtered = FlightDiagnostics.filterPhotosForCurrentFlight(flight13SamplePhotos);
+      assert.strictEqual(filtered.length, 3, 'Must retain all 3 Flight 13 photos and exclude 09-20 photo');
+      assert.strictEqual(filtered[0].filename, 'DJI_20260924172044_0377_D.JPG');
+      assert.strictEqual(filtered[1].filename, 'DJI_20260924172052_0378_D.JPG');
+      assert.strictEqual(filtered[2].filename, 'DJI_20260924172957_0434_D.JPG');
+    } finally {
+      FlightDiagnostics.selectedFlightId = origSelectedFlightId;
+      FlightDiagnostics.telemetryData = origTelem;
     }
   });
 });

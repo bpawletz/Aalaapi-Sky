@@ -19579,7 +19579,7 @@ const FlightDiagnostics = {
       let imgSrc = photo.thumbnailUrl || photo.previewUrl || '';
       if (!imgSrc && photo.rawPath) {
         imgSrc = `/scratch/mission_archives/${manifestUuid}/photos/previews/${encodeURIComponent(photo.filename)}`;
-      } else if (!imgSrc && photo.filename && (photo.filename.endsWith('.JPG') || photo.filename.endsWith('.jpg') || photo.filename.endsWith('.PNG') || photo.filename.endsWith('.png') || photo.filename.endsWith('.DNG') || photo.filename.endsWith('.dng'))) {
+      } else if (!imgSrc && photo.filename && !photo.photoId?.startsWith('TELEM_PHOTO_') && (photo.filename.endsWith('.JPG') || photo.filename.endsWith('.jpg') || photo.filename.endsWith('.PNG') || photo.filename.endsWith('.png') || photo.filename.endsWith('.DNG') || photo.filename.endsWith('.dng'))) {
         imgSrc = `/scratch/mission_archives/${manifestUuid}/photos/previews/${encodeURIComponent(photo.filename)}`;
       }
 
@@ -19588,7 +19588,7 @@ const FlightDiagnostics = {
       }
       if (imgSrc) {
         photo.previewUrl = photo.previewUrl || imgSrc;
-        photo.thumbnailUrl = imgSrc;
+        photo.thumbnailUrl = photo.thumbnailUrl || imgSrc;
       }
 
       card.innerHTML = `
@@ -20673,7 +20673,7 @@ const FlightDiagnostics = {
       const flightTagMatch = (flightId || '').match(/(\d{4}-\d{2}-\d{2}_\[\d{2}-\d{2}-\d{2}\])/);
       const flightTag = flightTagMatch ? flightTagMatch[1] : '';
       const flightBase = (flightId || '').replace(/\.txt$/i, '').replace(/[^a-zA-Z0-9_-]/g, '_');
-      const mUuid = this.currentLoadedMission?.uuid || (flightTag ? `mission_${flightTag}` : (flightBase ? `mission_${flightBase}` : ((typeof activeLayerId !== 'undefined' && activeLayerId) || 'layer-1')));
+      const mUuid = flightTag ? `mission_${flightTag}` : (this.currentLoadedMission?.uuid || (flightBase ? `mission_${flightBase}` : ((typeof activeLayerId !== 'undefined' && activeLayerId) || 'layer-1')));
 
       let manifestUrl = `${apiBase}/api/media/manifest?flight=${encodeURIComponent(flightId || '')}&uuid=${encodeURIComponent(mUuid)}`;
       if (tStart) {
