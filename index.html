@@ -5001,7 +5001,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.121.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.121.2</span></h1>
 
 
 
@@ -8277,7 +8277,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.121.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.121.2</span>
 
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -8341,6 +8341,12 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.121.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>📷 Resilient Photo Manifest &amp; Static Recovery:</strong> Ensured media ingestion manifests are persisted immediately to disk; added automated multi-tier manifest recovery from reports, SQLite records, and photo scans; decoded URL path brackets to eliminate 404 image errors on Flight 13.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.121.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -32081,7 +32087,7 @@ const FlightDiagnostics = {
       let imgSrc = photo.thumbnailUrl || photo.previewUrl || '';
       if (!imgSrc && photo.rawPath) {
         imgSrc = `/scratch/mission_archives/${manifestUuid}/photos/previews/${encodeURIComponent(photo.filename)}`;
-      } else if (!imgSrc && photo.filename && (photo.filename.endsWith('.JPG') || photo.filename.endsWith('.jpg') || photo.filename.endsWith('.PNG') || photo.filename.endsWith('.png') || photo.filename.endsWith('.DNG') || photo.filename.endsWith('.dng'))) {
+      } else if (!imgSrc && photo.filename && !photo.photoId?.startsWith('TELEM_PHOTO_') && (photo.filename.endsWith('.JPG') || photo.filename.endsWith('.jpg') || photo.filename.endsWith('.PNG') || photo.filename.endsWith('.png') || photo.filename.endsWith('.DNG') || photo.filename.endsWith('.dng'))) {
         imgSrc = `/scratch/mission_archives/${manifestUuid}/photos/previews/${encodeURIComponent(photo.filename)}`;
       }
 
@@ -32090,7 +32096,7 @@ const FlightDiagnostics = {
       }
       if (imgSrc) {
         photo.previewUrl = photo.previewUrl || imgSrc;
-        photo.thumbnailUrl = imgSrc;
+        photo.thumbnailUrl = photo.thumbnailUrl || imgSrc;
       }
 
       card.innerHTML = `
@@ -33175,7 +33181,7 @@ const FlightDiagnostics = {
       const flightTagMatch = (flightId || '').match(/(\d{4}-\d{2}-\d{2}_\[\d{2}-\d{2}-\d{2}\])/);
       const flightTag = flightTagMatch ? flightTagMatch[1] : '';
       const flightBase = (flightId || '').replace(/\.txt$/i, '').replace(/[^a-zA-Z0-9_-]/g, '_');
-      const mUuid = this.currentLoadedMission?.uuid || (flightTag ? `mission_${flightTag}` : (flightBase ? `mission_${flightBase}` : ((typeof activeLayerId !== 'undefined' && activeLayerId) || 'layer-1')));
+      const mUuid = flightTag ? `mission_${flightTag}` : (this.currentLoadedMission?.uuid || (flightBase ? `mission_${flightBase}` : ((typeof activeLayerId !== 'undefined' && activeLayerId) || 'layer-1')));
 
       let manifestUrl = `${apiBase}/api/media/manifest?flight=${encodeURIComponent(flightId || '')}&uuid=${encodeURIComponent(mUuid)}`;
       if (tStart) {
