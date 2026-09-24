@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.120.1] - 2026-09-24
+
+### Bug Fixes & Improvements
+- **3D Flight Path Preview FPV Playback & Telemetry Suite:**
+  - **Playback Rewind & Replay at Path End:** Fixed an issue where clicking the Play button after a simulation reached the end of the flight path failed to restart traversal; the player now smoothly rewinds to waypoint 1 (`idx = 0`) and replays from the start.
+  - **Dynamic Scrubber & Editor Synchronization:** Synchronized the Waypoint Progress Scrubber slider (`#fpv-wp-scrubber-slider`) and text display with the real-time drone waypoint index throughout playback; upon reaching flight completion, the waypoint editor automatically refreshes with the final waypoint parameters rather than displaying stale initial waypoint values.
+  - **Three-Tier Flight Hierarchy Integration (Speed, Hover, & Camera Actions):** Updated traversal speed and dwell timers to resolve via the strict 3-tier cascade (`wp.speed` $\to$ `layer.speed` $\to$ global `#speed`; `wp.hoverTime` $\to$ `layer.hoverTime` $\to$ global `#global-hover-time`).
+  - **Video Recording Protection:** Prevented white photo flashes and "Photo Captured" status overlays from overwriting the video recording timer and status pill when traversing in Video capture mode.
+  - **Ground Plane Texture & WebGL Stall Throttling:** Throttled ground canvas updates to prevent 60fps GPU texture re-uploads, high memory bandwidth consumption, and WebGL context loss (`CONTEXT_LOST_WEBGL`); aligned active FPV camera footprint UV coordinates (`+ 0.5`) with the photogrammetry coverage heatmap.
+  - **Missing Center Marker Resilience:** Safely defaulted scene origin in `init3DPreview` when `centerMarker` is null or undefined (such as in imported WPML or polygon-only missions), preventing uncaught TypeErrors.
+  - **Sight Cone Clipping Prevention:** Automatically concealed camera sight cones (`conesGroup`) while FPV mode is active so cone geometry does not clip against the drone camera lens.
+
 ## [1.120.0] - 2026-09-24
 
 ### New Features & Enhancements
