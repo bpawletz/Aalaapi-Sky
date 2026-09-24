@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.117.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.119.0</span></h1>
 
 
 
@@ -218,6 +218,7 @@
               <option value="orbit">3D Object (Circular Orbit)</option>
               <option value="multi-orbit">3D Object (Multi-Tiered Orbit)</option>
               <option value="tower">3D Structure (Tower Audit)</option>
+              <option value="photo-sphere">360° Pano (Photo Sphere)</option>
               <option value="grid-orbit-combo">2D + 3D Hybrid (Grid + Orbit Combo)</option>
               <option value="grid-multi-orbit-combo">2D + 3D Hybrid (Grid + Multi-Orbit)</option>
               <option value="freeform">Freeform Flight Plan (Manual Waypoints)</option>
@@ -278,6 +279,15 @@
                   <circle cx="12" cy="2" r="1.5" fill="currentColor"/>
                 </svg>
                 <span>Tower</span>
+              </div>
+              <div class="pattern-card" data-value="photo-sphere" title="360° Photo Sphere (Equirectangular Panorama)">
+                <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="9"/>
+                  <ellipse cx="12" cy="12" rx="9" ry="4" stroke-dasharray="2,2"/>
+                  <line x1="12" y1="3" x2="12" y2="21"/>
+                  <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
+                </svg>
+                <span>360 Pano</span>
               </div>
               <div class="pattern-card" data-value="grid-orbit-combo" title="2D + 3D Hybrid (Grid + Orbit Combo)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -774,6 +784,48 @@
             </div>
           </div>
 
+          <!-- 360 Photo Sphere Sequence Controls & Info Card (v1.119.0) -->
+          <div id="photo-sphere-container" class="control-group hidden" style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 12px; margin-top: 10px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="9"/>
+                  <ellipse cx="12" cy="12" rx="9" ry="4" stroke-dasharray="2,2"/>
+                  <line x1="12" y1="3" x2="12" y2="21"/>
+                  <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
+                </svg>
+                360° Photo Sphere Sequence
+              </strong>
+              <span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; font-size: 0.68rem; padding: 2px 7px; border-radius: 4px; font-weight: 700;">37 Shots Total</span>
+            </div>
+            <div style="font-size: 0.74rem; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4;">
+              Executes a static 3D coordinate lock panorama sequence. Drone systematically rotates yaw and pitches the camera gimbal downward to achieve ~30% overlap for equirectangular stitching.
+            </div>
+            <!-- Shot Breakdown Grid -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; font-size: 0.72rem;">
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 6px 8px;">
+                <div style="color: #38bdf8; font-weight: 700;">Row 1: Pitch -15°</div>
+                <div style="color: var(--text-muted);">12 shots (every 30° yaw)</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 6px 8px;">
+                <div style="color: #06b6d4; font-weight: 700;">Row 2: Pitch -45°</div>
+                <div style="color: var(--text-muted);">12 shots (every 30° yaw)</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 6px 8px;">
+                <div style="color: #f59e0b; font-weight: 700;">Row 3: Pitch -75°</div>
+                <div style="color: var(--text-muted);">12 shots (every 30° yaw)</div>
+              </div>
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 6px 8px;">
+                <div style="color: #10b981; font-weight: 700;">Nadir: Pitch -90°</div>
+                <div style="color: var(--text-muted);">1 ground lock shot</div>
+              </div>
+            </div>
+            <!-- Shutter Mode Notice -->
+            <div style="display: flex; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 6px; padding: 6px 8px; font-size: 0.72rem; color: #34d399;">
+              <span style="font-size: 0.9rem;">🛡️</span>
+              <span><strong>Stop &amp; Shoot Enforced:</strong> Mandatory &ge; 2.0s hover settling per shot prevents rotational motion blur during capture.</span>
+            </div>
+          </div>
 
           <div id="exclusion-altitude-container" class="control-group hidden" style="background: rgba(239, 68, 68, 0.06); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 10px; margin-top: 10px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -2419,12 +2471,28 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
-          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px;">
-            <strong style="color: #fbbf24; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
-              📐 Large-Format Fiducial Tag Tiling Engine (GCP Studio) (v1.117.0)
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🌐 Automated 360° Photo Sphere Flight Pattern (v1.119.0)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
-              Client-side multi-sheet printable target tiling engine inside <code>#fiducial-generator-modal</code> and Section 2 Card 6. Slices massive Ground Control Points (0.40m to 1.20m+) into an $R \times C$ grid matrix of standard desktop sheets (US Letter / ISO A4) with 0.25" overlap margins, dashed trim lines, seam alignment crosshairs, tile coordinate stamps, assembly mini-maps, and 1:1 scale verification rulers. Supports 1-click multi-page printing and PDF export.
+              Capture breathtaking 360° equirectangular panoramas automatically! The new <strong>360 Pano</strong> pattern locks to a static 3D coordinate and executes a 37-shot sequence across three descending pitch rows (Row 1: -15°, Row 2: -45°, Row 3: -75° with 12 shots spaced every 30° yaw) plus a vertical nadir shot (-90°). Fully integrated with DJI WPML V2 <code>rotateYaw</code>, <code>gimbalRotate</code>, and rotational settling hovers in <em>Stop &amp; Shoot</em> mode. Watch the virtual camera cone execute the downward spiral in real time as the ground coverage heatmap paints in 3D Flight Diagnostics!
+            </p>
+          </div>
+          <div style="background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              ✂️ Spray-Paint Stencil &amp; Eco Ink-Saver Mode (GCP Studio) (v1.118.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Fabricate physical Ground Control Points with standard blades and spray-paint cans! Stencil mode replaces heavy solid black fills with dashed cut contours (<code>stroke-dasharray=&quot;6,3&quot;</code>) and explicit <code>✂ CUT</code> annotations, reducing printer ink and toner usage by over 90% across large multi-sheet tile matrices while preserving millimeter target geometry.
+            </p>
+          </div>
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #fbbf24; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              📐 Large-Format Fiducial Tag Tiling Engine &amp; Puzzle Diagram (GCP Studio) (v1.117.1)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Client-side multi-sheet printable target tiling engine inside <code>#fiducial-generator-modal</code> and Section 2 Card 6. Slices massive Ground Control Points (0.40m to 1.20m+) into an $R \times C$ grid matrix of standard desktop sheets (US Letter / ISO A4) with 0.25" overlap margins, dashed trim lines, seam alignment crosshairs, tile coordinate stamps, interactive assembly puzzle helper diagrams, and 1:1 scale verification rulers. Supports 1-click multi-page printing and PDF export.
             </p>
           </div>
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
@@ -3258,7 +3326,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.117.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.119.0</span>
 
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -3322,6 +3390,24 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.119.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🌐 Automated 360° Photo Sphere Flight Pattern:</strong> Added <code>360 Pano</code> pattern generating a static 3D coordinate lock with a 37-shot photo sequence across 3 descending pitch rows (-15°, -45°, -75° @ 30° yaw) plus nadir (-90°). Full DJI WPML V2 export with <code>rotateYaw</code>, <code>gimbalRotate</code>, and rotational settling hovers in <em>Stop &amp; Shoot</em> mode. Three.js simulation engine shows virtual camera FOV cone executing downward spiral while updating coverage heatmap in real time.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.118.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>✂️ Spray-Paint Stencil &amp; Eco Ink-Saver Mode:</strong> Added dedicated stencil fabrication mode in GCP Studio (`#gen-render-style`), outlining black modules with dashed cut lines and `✂ CUT` annotations to enable physical spray-paint target fabrication while saving >90% printer ink across large multi-sheet tile matrices.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.117.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>📐 Tiling Viewport Fix &amp; Assembly Puzzle Diagram:</strong> Fixed nested SVG coordinate clipping causing blank sub-tile sheets; added interactive $R \times C$ matrix puzzle diagrams in UI and print stamps; added sheet selector and previous/next navigation for single sheet inspection.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.117.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -7167,7 +7253,7 @@
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
           <div class="control-group">
             <label for="gen-sheet-size" style="font-size: 0.75rem;">Print Sheet Format</label>
             <select id="gen-sheet-size" class="form-select" style="font-size: 0.75rem; padding: 4px 8px;">
@@ -7190,6 +7276,14 @@
               <option value="0.80">0.80 m (~32 in - Tiled)</option>
               <option value="1.00">1.00 m (~39 in / 3.3 ft - Tiled)</option>
               <option value="1.20">1.20 m (~48 in / 4x4 ft - Tiled)</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="gen-render-style" style="font-size: 0.75rem;">Print &amp; Ink Mode</label>
+            <select id="gen-render-style" class="form-select" style="font-size: 0.75rem; padding: 4px 8px;">
+              <option value="solid" selected>Solid Contrast (Standard Print)</option>
+              <option value="stencil">✂ Spray-Paint Stencil (Eco Ink-Saver)</option>
             </select>
           </div>
         </div>
@@ -7225,6 +7319,28 @@
                 <option value="tile_grid">Matrix Grid View</option>
                 <option value="single_tile">Single Tile Sheet</option>
               </select>
+            </div>
+          </div>
+
+          <!-- Interactive Puzzle Map & Sheet Pager Widget -->
+          <div id="gen-tiling-puzzle-helper" style="display: none; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 6px; padding: 6px 10px; margin-top: 2px; align-items: center; justify-content: space-between; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <!-- Interactive Clickable Puzzle Piece Grid -->
+              <div id="gen-tiling-puzzle-grid" style="display: grid; gap: 3px; min-width: 44px; min-height: 44px; background: rgba(15, 23, 42, 0.9); padding: 3px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.3);"></div>
+              <div style="font-size: 0.69rem; color: #cbd5e1; line-height: 1.35;">
+                <div style="font-weight: 700; color: #fbbf24; display: flex; align-items: center; gap: 4px;">
+                  <span>🧩</span> <span id="gen-tiling-puzzle-active-title">Sheet 1 of 9 &mdash; Tile [1, 1]</span>
+                </div>
+                <div id="gen-tiling-puzzle-active-desc" style="color: var(--text-muted); font-size: 0.65rem;">Top-Left piece &bull; Click any tile in the puzzle to preview</div>
+              </div>
+            </div>
+
+            <!-- Sheet Selector Controls -->
+            <div id="gen-tiling-page-selector-group" style="display: flex; align-items: center; gap: 5px;">
+              <button type="button" id="gen-tiling-prev-page-btn" class="btn-secondary" style="padding: 2px 7px; font-size: 0.72rem; border-radius: 4px;" title="Previous Sheet">◄</button>
+              <select id="gen-tiling-page-select" class="form-select" style="font-size: 0.7rem; padding: 2px 6px; max-width: 140px;">
+              </select>
+              <button type="button" id="gen-tiling-next-page-btn" class="btn-secondary" style="padding: 2px 7px; font-size: 0.72rem; border-radius: 4px;" title="Next Sheet">►</button>
             </div>
           </div>
 
@@ -7309,6 +7425,9 @@
           </div>
           <div>
             <span style="color: var(--text-main); font-weight: 600;">📍 RTK Rover Center Divot:</span> Punch a 4mm–6mm brass grommet through the center crosshair to seat your GNSS rover pole tip with 0mm lateral play. Secure board corners with 8"–10" galvanized ground stakes against drone prop wash.
+          </div>
+          <div>
+            <span style="color: var(--text-main); font-weight: 600;">✂️ Spray-Paint Stencils:</span> Use <strong>Spray-Paint Stencil Mode</strong> to print dashed cutouts. Tape the printed stencil sheets over oilboard, cardboard, or thin Mylar/acetate, cut out the <code>✂ CUT</code> zones with an X-Acto / utility knife, and spray flat ultra-matte black paint over a white primed board.
           </div>
           <div>
             <span style="color: var(--text-main); font-weight: 600;">🎯 Resolution Rule of Thumb:</span> Targets must span &ge;10–15 pixels across in aerial photos (\(\text{Target Size} \ge 10 \times \text{GSD}\)). At 40m altitude with Mini 4 Pro (1.1 cm/px GSD), 0.20m–0.30m is ideal.

@@ -61,6 +61,15 @@ const FLIGHT_TOOLS = {
     description: '3D Tower Structure Vertical/Horizontal Inspection Pattern',
     propertyGroups: ['tower-geometry', 'overlaps', 'altitude', 'speed', 'camera']
   },
+  'photo-sphere': {
+    id: 'photo-sphere',
+    label: '360 Pano',
+    category: 'panoramic',
+    icon: 'photo-sphere',
+    shortcut: 'S',
+    description: '360° Equirectangular Photo Sphere panorama sequence (static position with yaw & gimbal pitch sequence)',
+    propertyGroups: ['photo-sphere-geometry', 'altitude', 'speed', 'camera']
+  },
   'grid-orbit-combo': {
     id: 'grid-orbit-combo',
     label: 'Hybrid Combo',
@@ -1350,144 +1359,251 @@ function exportFiducialMarkersGeoJson(layer) {
 }
 
 /**
- * Generates an authentic, millimeter-accurate vector SVG string for optical fiducial targets.
+ * Extracts raw millimeter-accurate vector primitives for optical fiducial markers.
+ * Coordinate space is normalized to [0..500], where the fiducial marker itself
+ * occupies [50, 50] to [450, 450] (400x400 units).
  */
-function generateFiducialSvg(options = {}) {
+function getFiducialMarkerVectorContent(options = {}) {
   const type = options.type || 'aruco_4x4';
   const id = Math.max(0, parseInt(options.id, 10) || 0);
-  const targetEdgeM = parseFloat(options.physicalSizeMeters) || 0.20;
   const showCrosshair = options.showCrosshair !== false;
   const showCornerTicks = options.showCornerTicks !== false;
-  const showRuler = options.showRuler !== false;
-  const showIdLabel = options.showIdLabel !== false;
 
   const totalSize = 500;
   const margin = 50;
   const targetSize = totalSize - (margin * 2); // 400x400
   const center = totalSize / 2;
 
+  const stencilMode = options.stencilMode === true || options.renderStyle === 'stencil';
+
   let markerContent = '';
+
+  function renderGridCells(grid, gridSize) {
+    let content = '';
+    const cSize = targetSize / gridSize;
+    for (let r = 0; r < gridSize; r++) {
+      for (let c = 0; c < gridSize; c++) {
+        const x = margin + c * cSize;
+        const y = margin + r * cSize;
+        if (grid[r][c]) {
+          content += `<rect x="${x}" y="${y}" width="${cSize}" height="${cSize}" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.75" stroke-dasharray="2,2" />`;
+          if (cSize >= 28) {
+            content += `<text x="${x + cSize / 2}" y="${y + cSize / 2 + 3}" font-family="sans-serif" font-size="${Math.max(7, Math.round(cSize * 0.16))}" font-weight="600" fill="#94a3b8" text-anchor="middle">KEEP</text>`;
+          }
+        } else {
+          content += `<rect x="${x}" y="${y}" width="${cSize}" height="${cSize}" fill="rgba(15, 23, 42, 0.04)" stroke="#0f172a" stroke-width="1.75" stroke-dasharray="6,3" />`;
+          content += `<text x="${x + cSize / 2}" y="${y + cSize / 2 + 3}" font-family="sans-serif" font-size="${Math.max(7, Math.round(cSize * 0.2))}" font-weight="700" fill="#0f172a" text-anchor="middle">✂ CUT</text>`;
+        }
+      }
+    }
+    return content;
+  }
 
   if (type === 'aruco_4x4') {
     // 6x6 grid: 1-cell black border, inner 4x4 data payload
     const dataPair = ARUCO_4X4_50_DATA[id % ARUCO_4X4_50_DATA.length] || [181, 50];
     const cellSize = targetSize / 6;
 
-    // Black background for entire 6x6
-    markerContent += `<rect x="${margin}" y="${margin}" width="${targetSize}" height="${targetSize}" fill="#000000" />`;
+    if (!stencilMode) {
+      markerContent += `<rect x="${margin}" y="${margin}" width="${targetSize}" height="${targetSize}" fill="#000000" />`;
 
-    // Inner 4x4 white cells
-    for (let r = 0; r < 4; r++) {
-      for (let c = 0; c < 4; c++) {
-        const bitIdx = r * 4 + c;
-        const byteIdx = Math.floor(bitIdx / 8);
-        const bitInByte = 7 - (bitIdx % 8);
-        const bitVal = (dataPair[byteIdx] >> bitInByte) & 1;
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          const bitIdx = r * 4 + c;
+          const byteIdx = Math.floor(bitIdx / 8);
+          const bitInByte = 7 - (bitIdx % 8);
+          const bitVal = (dataPair[byteIdx] >> bitInByte) & 1;
 
-        if (bitVal === 1) {
-          const x = margin + (c + 1) * cellSize;
-          const y = margin + (r + 1) * cellSize;
-          markerContent += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="#ffffff" />`;
+          if (bitVal === 1) {
+            const x = margin + (c + 1) * cellSize;
+            const y = margin + (r + 1) * cellSize;
+            markerContent += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="#ffffff" />`;
+          }
         }
       }
+    } else {
+      const grid = Array.from({ length: 6 }, () => Array(6).fill(false));
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          const bitIdx = r * 4 + c;
+          const byteIdx = Math.floor(bitIdx / 8);
+          const bitInByte = 7 - (bitIdx % 8);
+          const bitVal = (dataPair[byteIdx] >> bitInByte) & 1;
+          if (bitVal === 1) grid[r + 1][c + 1] = true;
+        }
+      }
+      markerContent += renderGridCells(grid, 6);
     }
   } else if (type === 'aruco_5x5') {
     // 7x7 grid: 1-cell black border, inner 5x5 data payload
     const dataTuple = ARUCO_5X5_DATA[id % ARUCO_5X5_DATA.length] || [132, 33, 8, 0];
     const cellSize = targetSize / 7;
 
-    markerContent += `<rect x="${margin}" y="${margin}" width="${targetSize}" height="${targetSize}" fill="#000000" />`;
+    if (!stencilMode) {
+      markerContent += `<rect x="${margin}" y="${margin}" width="${targetSize}" height="${targetSize}" fill="#000000" />`;
 
-    for (let r = 0; r < 5; r++) {
-      for (let c = 0; c < 5; c++) {
-        const bitIdx = r * 5 + c;
-        const byteIdx = Math.floor(bitIdx / 8);
-        const bitInByte = 7 - (bitIdx % 8);
-        const bitVal = (dataTuple[byteIdx] >> bitInByte) & 1;
+      for (let r = 0; r < 5; r++) {
+        for (let c = 0; c < 5; c++) {
+          const bitIdx = r * 5 + c;
+          const byteIdx = Math.floor(bitIdx / 8);
+          const bitInByte = 7 - (bitIdx % 8);
+          const bitVal = (dataTuple[byteIdx] >> bitInByte) & 1;
 
-        if (bitVal === 1) {
-          const x = margin + (c + 1) * cellSize;
-          const y = margin + (r + 1) * cellSize;
-          markerContent += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="#ffffff" />`;
+          if (bitVal === 1) {
+            const x = margin + (c + 1) * cellSize;
+            const y = margin + (r + 1) * cellSize;
+            markerContent += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="#ffffff" />`;
+          }
         }
       }
+    } else {
+      const grid = Array.from({ length: 7 }, () => Array(7).fill(false));
+      for (let r = 0; r < 5; r++) {
+        for (let c = 0; c < 5; c++) {
+          const bitIdx = r * 5 + c;
+          const byteIdx = Math.floor(bitIdx / 8);
+          const bitInByte = 7 - (bitIdx % 8);
+          const bitVal = (dataTuple[byteIdx] >> bitInByte) & 1;
+          if (bitVal === 1) grid[r + 1][c + 1] = true;
+        }
+      }
+      markerContent += renderGridCells(grid, 7);
     }
   } else if (type === 'apriltag_25h9') {
     // 7x7 grid: 1-cell black border, inner 5x5 data payload (35 codes, Hamming 9)
     const code = APRILTAG_25H9_CODES[id % APRILTAG_25H9_CODES.length];
     const cellSize = targetSize / 7;
 
-    markerContent += `<rect x="${margin}" y="${margin}" width="${targetSize}" height="${targetSize}" fill="#000000" />`;
+    if (!stencilMode) {
+      markerContent += `<rect x="${margin}" y="${margin}" width="${targetSize}" height="${targetSize}" fill="#000000" />`;
 
-    for (let i = 0; i < 25; i++) {
-      const bitVal = (code >> (24 - i)) & 1;
-      if (bitVal === 1) {
-        const x = margin + APRILTAG_25H9_BIT_X[i] * cellSize;
-        const y = margin + APRILTAG_25H9_BIT_Y[i] * cellSize;
-        markerContent += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="#ffffff" />`;
+      for (let i = 0; i < 25; i++) {
+        const bitVal = (code >> (24 - i)) & 1;
+        if (bitVal === 1) {
+          const x = margin + APRILTAG_25H9_BIT_X[i] * cellSize;
+          const y = margin + APRILTAG_25H9_BIT_Y[i] * cellSize;
+          markerContent += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="#ffffff" />`;
+        }
       }
+    } else {
+      const grid = Array.from({ length: 7 }, () => Array(7).fill(false));
+      for (let i = 0; i < 25; i++) {
+        const bitVal = (code >> (24 - i)) & 1;
+        if (bitVal === 1) grid[APRILTAG_25H9_BIT_Y[i]][APRILTAG_25H9_BIT_X[i]] = true;
+      }
+      markerContent += renderGridCells(grid, 7);
     }
   } else if (type === 'apriltag_36h11') {
     // 8x8 grid: 1-cell black border, inner 6x6 data payload (50+ codes, Hamming 11)
     const code = APRILTAG_36H11_CODES[id % APRILTAG_36H11_CODES.length];
     const cellSize = targetSize / 8;
 
-    markerContent += `<rect x="${margin}" y="${margin}" width="${targetSize}" height="${targetSize}" fill="#000000" />`;
+    if (!stencilMode) {
+      markerContent += `<rect x="${margin}" y="${margin}" width="${targetSize}" height="${targetSize}" fill="#000000" />`;
 
-    for (let i = 0; i < 36; i++) {
-      const bitVal = Number((code >> BigInt(35 - i)) & 1n);
-      if (bitVal === 1) {
-        const x = margin + APRILTAG_36H11_BIT_X[i] * cellSize;
-        const y = margin + APRILTAG_36H11_BIT_Y[i] * cellSize;
-        markerContent += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="#ffffff" />`;
+      for (let i = 0; i < 36; i++) {
+        const bitVal = Number((code >> BigInt(35 - i)) & 1n);
+        if (bitVal === 1) {
+          const x = margin + APRILTAG_36H11_BIT_X[i] * cellSize;
+          const y = margin + APRILTAG_36H11_BIT_Y[i] * cellSize;
+          markerContent += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="#ffffff" />`;
+        }
       }
+    } else {
+      const grid = Array.from({ length: 8 }, () => Array(8).fill(false));
+      for (let i = 0; i < 36; i++) {
+        const bitVal = Number((code >> BigInt(35 - i)) & 1n);
+        if (bitVal === 1) grid[APRILTAG_36H11_BIT_Y[i]][APRILTAG_36H11_BIT_X[i]] = true;
+      }
+      markerContent += renderGridCells(grid, 8);
     }
   } else if (type === 'apriltag_16h5') {
     // 6x6 grid: 1-cell black border, inner 4x4 data payload (30 codes, Hamming 5)
     const code = APRILTAG_16H5_CODES[id % APRILTAG_16H5_CODES.length];
     const cellSize = targetSize / 6;
 
-    markerContent += `<rect x="${margin}" y="${margin}" width="${targetSize}" height="${targetSize}" fill="#000000" />`;
+    if (!stencilMode) {
+      markerContent += `<rect x="${margin}" y="${margin}" width="${targetSize}" height="${targetSize}" fill="#000000" />`;
 
-    for (let i = 0; i < 16; i++) {
-      const bitVal = (code >> (15 - i)) & 1;
-      if (bitVal === 1) {
-        const x = margin + APRILTAG_16H5_BIT_X[i] * cellSize;
-        const y = margin + APRILTAG_16H5_BIT_Y[i] * cellSize;
-        markerContent += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="#ffffff" />`;
+      for (let i = 0; i < 16; i++) {
+        const bitVal = (code >> (15 - i)) & 1;
+        if (bitVal === 1) {
+          const x = margin + APRILTAG_16H5_BIT_X[i] * cellSize;
+          const y = margin + APRILTAG_16H5_BIT_Y[i] * cellSize;
+          markerContent += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="#ffffff" />`;
+        }
       }
+    } else {
+      const grid = Array.from({ length: 6 }, () => Array(6).fill(false));
+      for (let i = 0; i < 16; i++) {
+        const bitVal = (code >> (15 - i)) & 1;
+        if (bitVal === 1) grid[APRILTAG_16H5_BIT_Y[i]][APRILTAG_16H5_BIT_X[i]] = true;
+      }
+      markerContent += renderGridCells(grid, 6);
     }
   } else if (type === 'checkerboard') {
     // 4x4 alternating black & white squares
     const cellSize = targetSize / 4;
-    markerContent += `<rect x="${margin}" y="${margin}" width="${targetSize}" height="${targetSize}" fill="#ffffff" stroke="#000000" stroke-width="2" />`;
 
-    for (let r = 0; r < 4; r++) {
-      for (let c = 0; c < 4; c++) {
-        if ((r + c) % 2 === 0) {
-          const x = margin + c * cellSize;
-          const y = margin + r * cellSize;
-          markerContent += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="#000000" />`;
+    if (!stencilMode) {
+      markerContent += `<rect x="${margin}" y="${margin}" width="${targetSize}" height="${targetSize}" fill="#ffffff" stroke="#000000" stroke-width="2" />`;
+
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          if ((r + c) % 2 === 0) {
+            const x = margin + c * cellSize;
+            const y = margin + r * cellSize;
+            markerContent += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="#000000" />`;
+          }
         }
       }
+    } else {
+      const grid = Array.from({ length: 4 }, () => Array(4).fill(false));
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          grid[r][c] = ((r + c) % 2 !== 0);
+        }
+      }
+      markerContent += renderGridCells(grid, 4);
     }
   } else {
     // High-Contrast Crosshair / AeroPoint target
-    markerContent += `
-      <rect x="${margin}" y="${margin}" width="${targetSize}" height="${targetSize}" fill="#ffffff" stroke="#000000" stroke-width="2" />
-      <!-- Quadrants -->
-      <rect x="${margin}" y="${margin}" width="${targetSize / 2}" height="${targetSize / 2}" fill="#000000" />
-      <rect x="${center}" y="${center}" width="${targetSize / 2}" height="${targetSize / 2}" fill="#000000" />
-      <!-- Concentric Target Circles -->
-      <circle cx="${center}" cy="${center}" r="${targetSize * 0.35}" fill="none" stroke="#f59e0b" stroke-width="3" stroke-dasharray="4,4" />
-      <circle cx="${center}" cy="${center}" r="${targetSize * 0.15}" fill="none" stroke="#000000" stroke-width="2" />
-    `;
+    if (!stencilMode) {
+      markerContent += `
+        <rect x="${margin}" y="${margin}" width="${targetSize}" height="${targetSize}" fill="#ffffff" stroke="#000000" stroke-width="2" />
+        <!-- Quadrants -->
+        <rect x="${margin}" y="${margin}" width="${targetSize / 2}" height="${targetSize / 2}" fill="#000000" />
+        <rect x="${center}" y="${center}" width="${targetSize / 2}" height="${targetSize / 2}" fill="#000000" />
+        <!-- Concentric Target Circles -->
+        <circle cx="${center}" cy="${center}" r="${targetSize * 0.35}" fill="none" stroke="#f59e0b" stroke-width="3" stroke-dasharray="4,4" />
+        <circle cx="${center}" cy="${center}" r="${targetSize * 0.15}" fill="none" stroke="#000000" stroke-width="2" />
+      `;
+    } else {
+      const half = targetSize / 2;
+      markerContent += `
+        <rect x="${margin}" y="${margin}" width="${targetSize}" height="${targetSize}" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+        <!-- Top-Left Cut Quadrant -->
+        <rect x="${margin}" y="${margin}" width="${half}" height="${half}" fill="rgba(15, 23, 42, 0.04)" stroke="#0f172a" stroke-width="1.75" stroke-dasharray="6,3" />
+        <text x="${margin + half / 2}" y="${margin + half / 2 + 4}" font-family="sans-serif" font-size="14" font-weight="700" fill="#0f172a" text-anchor="middle">✂ CUT HERE (PAINT)</text>
+        <!-- Top-Right Keep Quadrant -->
+        <rect x="${center}" y="${margin}" width="${half}" height="${half}" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.75" stroke-dasharray="2,2" />
+        <text x="${center + half / 2}" y="${margin + half / 2 + 4}" font-family="sans-serif" font-size="12" font-weight="600" fill="#94a3b8" text-anchor="middle">KEEP (WHITE)</text>
+        <!-- Bottom-Left Keep Quadrant -->
+        <rect x="${margin}" y="${center}" width="${half}" height="${half}" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.75" stroke-dasharray="2,2" />
+        <text x="${margin + half / 2}" y="${center + half / 2 + 4}" font-family="sans-serif" font-size="12" font-weight="600" fill="#94a3b8" text-anchor="middle">KEEP (WHITE)</text>
+        <!-- Bottom-Right Cut Quadrant -->
+        <rect x="${center}" y="${center}" width="${half}" height="${half}" fill="rgba(15, 23, 42, 0.04)" stroke="#0f172a" stroke-width="1.75" stroke-dasharray="6,3" />
+        <text x="${center + half / 2}" y="${center + half / 2 + 4}" font-family="sans-serif" font-size="14" font-weight="700" fill="#0f172a" text-anchor="middle">✂ CUT HERE (PAINT)</text>
+        <!-- Concentric Target Circles -->
+        <circle cx="${center}" cy="${center}" r="${targetSize * 0.35}" fill="none" stroke="#f59e0b" stroke-width="3" stroke-dasharray="4,4" />
+        <circle cx="${center}" cy="${center}" r="${targetSize * 0.15}" fill="none" stroke="#0f172a" stroke-width="1.5" stroke-dasharray="4,2" />
+      `;
+    }
   }
 
   // Corner alignment ticks
   let cornerTicksSvg = '';
   if (showCornerTicks) {
-    const tickLen = 20;
     cornerTicksSvg = `
       <!-- Top-Left -->
       <path d="M ${margin - 10} ${margin} L ${margin - 10} ${margin - 10} L ${margin} ${margin - 10}" fill="none" stroke="#000000" stroke-width="2" />
@@ -1512,6 +1628,30 @@ function generateFiducialSvg(options = {}) {
     `;
   }
 
+  return {
+    markerContent,
+    cornerTicksSvg,
+    crosshairSvg,
+    margin,
+    targetSize,
+    totalSize,
+    center
+  };
+}
+
+/**
+ * Generates an authentic, millimeter-accurate vector SVG string for optical fiducial targets.
+ */
+function generateFiducialSvg(options = {}) {
+  const type = options.type || 'aruco_4x4';
+  const id = Math.max(0, parseInt(options.id, 10) || 0);
+  const targetEdgeM = parseFloat(options.physicalSizeMeters) || 0.20;
+  const showRuler = options.showRuler !== false;
+  const showIdLabel = options.showIdLabel !== false;
+  const stencilMode = options.stencilMode === true || options.renderStyle === 'stencil';
+
+  const { markerContent, cornerTicksSvg, crosshairSvg, margin, targetSize, totalSize } = getFiducialMarkerVectorContent(options);
+
   // Ruler Scale Bar (10 cm / 4 in)
   let rulerSvg = '';
   if (showRuler) {
@@ -1531,7 +1671,7 @@ function generateFiducialSvg(options = {}) {
     `;
   }
 
-  // Header ID label
+  // Header Target Label
   let idLabelSvg = '';
   if (showIdLabel) {
     const typeLabel = type === 'aruco_4x4' ? `ArUco 4x4 (DICT_4X4_50) #ID:${id}` :
@@ -1543,8 +1683,40 @@ function generateFiducialSvg(options = {}) {
 
     idLabelSvg = `
       <g id="header-label" font-family="sans-serif">
-        <text x="${margin}" y="24" font-size="11" font-weight="700" fill="#0f172a">${escapeHtml(typeLabel)}</text>
-        <text x="${totalSize - margin}" y="24" font-size="10" font-weight="600" fill="#64748b" text-anchor="end">AALAAPI SKY SURVEY</text>
+        <text x="${margin}" y="24" font-size="11" font-weight="700" fill="#0f172a">${escapeHtml(typeLabel)}${stencilMode ? ' • ✂ STENCIL CUTOUT' : ''}</text>
+        <text x="${totalSize - margin}" y="24" font-size="10" font-weight="600" fill="${stencilMode ? '#d97706' : '#64748b'}" text-anchor="end">${stencilMode ? 'CUT BLACK ZONES • SPRAY PAINT' : 'AALAAPI SKY SURVEY'}</text>
+      </g>
+    `;
+  }
+
+  // Optional Tiling Grid Cutline Overlay for Assembled View
+  let tilingGridOverlay = '';
+  if (options.showTilingGrid && options.matrix && options.matrix.requiresTiling) {
+    const mRows = options.matrix.rows;
+    const mCols = options.matrix.cols;
+    const cellW = targetSize / mCols;
+    const cellH = targetSize / mRows;
+    let gridLines = '';
+    let sheetBadges = '';
+    for (let c = 1; c < mCols; c++) {
+      const gx = margin + c * cellW;
+      gridLines += `<line x1="${gx}" y1="${margin}" x2="${gx}" y2="${margin + targetSize}" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.85" />`;
+    }
+    for (let r = 1; r < mRows; r++) {
+      const gy = margin + r * cellH;
+      gridLines += `<line x1="${margin}" y1="${gy}" x2="${margin + targetSize}" y2="${gy}" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.85" />`;
+    }
+    for (let r = 0; r < mRows; r++) {
+      for (let c = 0; c < mCols; c++) {
+        const bx = margin + c * cellW + 6;
+        const by = margin + r * cellH + 14;
+        sheetBadges += `<text x="${bx}" y="${by}" font-family="sans-serif" font-size="8" font-weight="700" fill="#f59e0b" opacity="0.9">Sheet ${r * mCols + c + 1} [${r + 1},${c + 1}]</text>`;
+      }
+    }
+    tilingGridOverlay = `
+      <g id="tiling-assembled-grid">
+        ${gridLines}
+        ${sheetBadges}
       </g>
     `;
   }
@@ -1556,6 +1728,7 @@ function generateFiducialSvg(options = {}) {
       ${markerContent}
       ${cornerTicksSvg}
       ${crosshairSvg}
+      ${tilingGridOverlay}
       ${rulerSvg}
     </svg>
   `.trim();
@@ -1627,84 +1800,100 @@ function generateTiledFiducialSheetSvg(options = {}, row = 0, col = 0, matrixInf
   const id = Math.max(0, parseInt(options.id, 10) || 0);
   const targetEdgeM = parseFloat(options.physicalSizeMeters) || 0.60;
   const paperFormat = options.paperFormat || 'letter';
-  const overlapMm = parseFloat(options.overlapMm) || 6.35;
+  const overlapMm = parseFloat(options.overlapMm) || 0;
   const showTrimLines = options.showTrimLines !== false;
   const showSeamCrosshairs = options.showSeamCrosshairs !== false;
   const showTileStamps = options.showTileStamps !== false;
+  const stencilMode = options.stencilMode === true || options.renderStyle === 'stencil';
 
   const matrix = matrixInfo || calculateFiducialTilingMatrix(targetEdgeM, paperFormat, overlapMm);
-  const rows = matrix.rows;
-  const cols = matrix.cols;
+  const rows = matrix.rows || 1;
+  const cols = matrix.cols || 1;
 
   // Viewport setup (normalized 500x500 for single sheet canvas)
   const totalCanvasSize = 500;
   const margin = 40;
-  const headerHeight = 35;
-  const footerHeight = 35;
-  const printableWidth = totalCanvasSize - (margin * 2);
-  const printableHeight = totalCanvasSize - headerHeight - footerHeight;
+  const headerHeight = 40;
+  const footerHeight = 40;
+  const printableWidth = totalCanvasSize - (margin * 2); // 420
+  const printableHeight = totalCanvasSize - headerHeight - footerHeight; // 420 (square 420x420)
 
-  // Full fiducial SVG string
-  const fullSvg = generateFiducialSvg({
-    type,
-    id,
-    physicalSizeMeters: targetEdgeM,
-    showCrosshair: options.showCrosshair !== false,
-    showCornerTicks: options.showCornerTicks !== false,
-    showRuler: false, // We render custom per-tile scale ruler
-    showIdLabel: false
-  });
+  // Get raw marker vector primitives
+  const { markerContent, cornerTicksSvg, crosshairSvg, margin: targetOrigin, targetSize, totalSize } = getFiducialMarkerVectorContent(options);
 
-  // Calculate slice viewbox into full 500x500 target
-  const rawTargetSize = 400; // inner target extent in generateFiducialSvg
-  const rawMargin = 50;
-  const sliceSize = rawTargetSize / cols;
-  const sliceX = rawMargin + col * sliceSize;
-  const sliceY = rawMargin + row * sliceSize;
+  // Target coordinates: target is placed at [50, 50] with width 400 and height 400.
+  const sliceSize = targetSize / cols;
+  const nominalX = targetOrigin + col * sliceSize;
+  const nominalY = targetOrigin + row * sliceSize;
 
-  // Overlap bleed in normalized SVG units
-  const normOverlap = (overlapMm / (matrix.targetMm || 600)) * rawTargetSize;
+  // Overlap bleed in target vector units
+  const normOverlap = (overlapMm / (matrix.targetMm || (targetEdgeM * 1000))) * targetSize;
   const bleedLeft = col > 0 ? normOverlap : 0;
   const bleedRight = col < cols - 1 ? normOverlap : 0;
   const bleedTop = row > 0 ? normOverlap : 0;
   const bleedBottom = row < rows - 1 ? normOverlap : 0;
 
-  const vbX = sliceX - bleedLeft;
-  const vbY = sliceY - bleedTop;
+  const vbX = nominalX - bleedLeft;
+  const vbY = nominalY - bleedTop;
   const vbW = sliceSize + bleedLeft + bleedRight;
   const vbH = sliceSize + bleedTop + bleedBottom;
 
-  // Dashed trim line overlays & seam crosshairs
+  // Dashed trim line overlays
   let trimLinesSvg = '';
-  if (showTrimLines) {
+  if (showTrimLines && overlapMm > 0) {
     if (col > 0) {
-      trimLinesSvg += `<line x1="${margin + (bleedLeft / vbW) * printableWidth}" y1="${headerHeight}" x2="${margin + (bleedLeft / vbW) * printableWidth}" y2="${headerHeight + printableHeight}" stroke="#d97706" stroke-width="1.5" stroke-dasharray="5,4" />`;
+      const x = margin + (bleedLeft / vbW) * printableWidth;
+      trimLinesSvg += `<line x1="${x}" y1="${headerHeight}" x2="${x}" y2="${headerHeight + printableHeight}" stroke="#d97706" stroke-width="1.5" stroke-dasharray="5,4" />`;
     }
     if (col < cols - 1) {
-      trimLinesSvg += `<line x1="${totalCanvasSize - margin - (bleedRight / vbW) * printableWidth}" y1="${headerHeight}" x2="${totalCanvasSize - margin - (bleedRight / vbW) * printableWidth}" y2="${headerHeight + printableHeight}" stroke="#d97706" stroke-width="1.5" stroke-dasharray="5,4" />`;
+      const x = margin + (1 - bleedRight / vbW) * printableWidth;
+      trimLinesSvg += `<line x1="${x}" y1="${headerHeight}" x2="${x}" y2="${headerHeight + printableHeight}" stroke="#d97706" stroke-width="1.5" stroke-dasharray="5,4" />`;
     }
     if (row > 0) {
-      trimLinesSvg += `<line x1="${margin}" y1="${headerHeight + (bleedTop / vbH) * printableHeight}" x2="${totalCanvasSize - margin}" y2="${headerHeight + (bleedTop / vbH) * printableHeight}" stroke="#d97706" stroke-width="1.5" stroke-dasharray="5,4" />`;
+      const y = headerHeight + (bleedTop / vbH) * printableHeight;
+      trimLinesSvg += `<line x1="${margin}" y1="${y}" x2="${margin + printableWidth}" y2="${y}" stroke="#d97706" stroke-width="1.5" stroke-dasharray="5,4" />`;
     }
     if (row < rows - 1) {
-      trimLinesSvg += `<line x1="${margin}" y1="${headerHeight + printableHeight - (bleedBottom / vbH) * printableHeight}" x2="${totalCanvasSize - margin}" y2="${headerHeight + printableHeight - (bleedBottom / vbH) * printableHeight}" stroke="#d97706" stroke-width="1.5" stroke-dasharray="5,4" />`;
+      const y = headerHeight + (1 - bleedBottom / vbH) * printableHeight;
+      trimLinesSvg += `<line x1="${margin}" y1="${y}" x2="${margin + printableWidth}" y2="${y}" stroke="#d97706" stroke-width="1.5" stroke-dasharray="5,4" />`;
     }
   }
 
+  // Seam alignment crosshairs & registration marks along trim lines / seams
   let seamCrosshairsSvg = '';
   if (showSeamCrosshairs) {
-    const cx = totalCanvasSize / 2;
-    const cy = headerHeight + printableHeight / 2;
-    seamCrosshairsSvg = `
-      <g id="seam-crosshair" stroke="#ef4444" stroke-width="1.5" opacity="0.85">
-        <line x1="${cx - 10}" y1="${cy}" x2="${cx + 10}" y2="${cy}" />
-        <line x1="${cx}" y1="${cy - 10}" x2="${cx}" y2="${cy + 10}" />
-        <circle cx="${cx}" cy="${cy}" r="3" fill="none" stroke="#ef4444" />
-      </g>
-    `;
+    const leftX = col > 0 && overlapMm > 0 ? margin + (bleedLeft / vbW) * printableWidth : (col > 0 ? margin : null);
+    const rightX = col < cols - 1 && overlapMm > 0 ? margin + (1 - bleedRight / vbW) * printableWidth : (col < cols - 1 ? margin + printableWidth : null);
+    const topY = row > 0 && overlapMm > 0 ? headerHeight + (bleedTop / vbH) * printableHeight : (row > 0 ? headerHeight : null);
+    const bottomY = row < rows - 1 && overlapMm > 0 ? headerHeight + (1 - bleedBottom / vbH) * printableHeight : (row < rows - 1 ? headerHeight + printableHeight : null);
+    const midX = margin + printableWidth / 2;
+    const midY = headerHeight + printableHeight / 2;
+
+    const crosshairs = [];
+    if (leftX !== null) crosshairs.push({ x: leftX, y: midY });
+    if (rightX !== null) crosshairs.push({ x: rightX, y: midY });
+    if (topY !== null) crosshairs.push({ x: midX, y: topY });
+    if (bottomY !== null) crosshairs.push({ x: midX, y: bottomY });
+
+    if (leftX !== null && topY !== null) crosshairs.push({ x: leftX, y: topY });
+    if (rightX !== null && topY !== null) crosshairs.push({ x: rightX, y: topY });
+    if (leftX !== null && bottomY !== null) crosshairs.push({ x: leftX, y: bottomY });
+    if (rightX !== null && bottomY !== null) crosshairs.push({ x: rightX, y: bottomY });
+
+    let marks = '';
+    for (const ch of crosshairs) {
+      marks += `
+        <g stroke="#ef4444" stroke-width="1.5" opacity="0.9">
+          <line x1="${ch.x - 7}" y1="${ch.y}" x2="${ch.x + 7}" y2="${ch.y}" />
+          <line x1="${ch.x}" y1="${ch.y - 7}" x2="${ch.x}" y2="${ch.y + 7}" />
+          <circle cx="${ch.x}" cy="${ch.y}" r="2.5" fill="none" stroke="#ef4444" stroke-width="1" />
+        </g>
+      `;
+    }
+    seamCrosshairsSvg = marks;
   }
 
-  // Header and Footer info
+  // Header and Footer info with interactive puzzle matrix diagram
   let tileStampSvg = '';
   if (showTileStamps) {
     const typeLabel = type === 'aruco_4x4' ? `ArUco 4x4 #ID:${id}` :
@@ -1714,29 +1903,58 @@ function generateTiledFiducialSheetSvg(options = {}, row = 0, col = 0, matrixInf
       (type === 'apriltag_16h5' ? `AprilTag 16h5 #ID:${id}` :
       (type === 'checkerboard' ? `Checkerboard 4x4` : `Crosshair`)))));
 
-    const tileEdgeMm = (matrix.tileSizeMm || 300).toFixed(0);
-    const targetMmStr = (matrix.targetMm || 600).toFixed(0);
+    const tileEdgeMm = (matrix.tileSizeMm || (targetEdgeM * 1000 / cols)).toFixed(0);
+    const targetMmStr = (matrix.targetMm || (targetEdgeM * 1000)).toFixed(0);
+
+    // Mini-map puzzle matrix icon (24x24 px)
+    const mmSize = 24;
+    const mmX = margin;
+    const mmY = 8;
+    const cellW = mmSize / cols;
+    const cellH = mmSize / rows;
+    let miniMapCells = '';
+    for (let mr = 0; mr < rows; mr++) {
+      for (let mc = 0; mc < cols; mc++) {
+        const isCurrent = (mr === row && mc === col);
+        const cellFill = isCurrent ? '#fbbf24' : 'rgba(255,255,255,0.2)';
+        const cellStroke = isCurrent ? '#ffffff' : '#64748b';
+        miniMapCells += `<rect x="${mmX + mc * cellW}" y="${mmY + mr * cellH}" width="${cellW}" height="${cellH}" fill="${cellFill}" stroke="${cellStroke}" stroke-width="0.75" />`;
+      }
+    }
 
     tileStampSvg = `
-      <!-- Header Tile Stamp -->
+      <!-- Header Tile Stamp & Assembly Puzzle Diagram -->
       <g font-family="sans-serif">
         <rect x="0" y="0" width="${totalCanvasSize}" height="${headerHeight}" fill="#0f172a" />
-        <text x="${margin}" y="20" font-size="11" font-weight="700" fill="#fbbf24">TILE [Row ${row + 1} of ${rows}, Col ${col + 1} of ${cols}]</text>
-        <text x="${totalCanvasSize - margin}" y="20" font-size="10" font-weight="600" fill="#94a3b8" text-anchor="end">${escapeHtml(typeLabel)} | Full Target: ${targetMmStr}mm (${(targetEdgeM * 39.37).toFixed(1)}")</text>
+        
+        <!-- Assembly Puzzle Diagram Icon -->
+        <g id="tile-puzzle-map">
+          <rect x="${mmX - 2}" y="${mmY - 2}" width="${mmSize + 4}" height="${mmSize + 4}" fill="#1e293b" rx="2" stroke="#475569" stroke-width="0.5" />
+          ${miniMapCells}
+        </g>
+
+        <!-- Tile Identification Text -->
+        <text x="${mmX + mmSize + 10}" y="19" font-size="11" font-weight="700" fill="#fbbf24">${stencilMode ? 'STENCIL TILE' : 'TILE'} [Row ${row + 1} of ${rows}, Col ${col + 1} of ${cols}]</text>
+        <text x="${mmX + mmSize + 10}" y="32" font-size="9" fill="#94a3b8">Sheet ${row * cols + col + 1} of ${rows * cols} | ${(tileEdgeMm)} mm / tile${stencilMode ? ' • ✂ Cutout Template' : ''}</text>
+
+        <!-- Right Header Text -->
+        <text x="${totalCanvasSize - margin}" y="20" font-size="10" font-weight="600" fill="#f1f5f9" text-anchor="end">${escapeHtml(typeLabel)}${stencilMode ? ' • STENCIL' : ''}</text>
+        <text x="${totalCanvasSize - margin}" y="32" font-size="9" fill="#94a3b8" text-anchor="end">Target: ${targetMmStr} mm (${(targetEdgeM * 39.37).toFixed(1)}")</text>
       </g>
 
-      <!-- Footer Stamp & Scale Bar -->
+      <!-- Footer Stamp & Calibration Ruler -->
       <g font-family="sans-serif">
         <rect x="0" y="${totalCanvasSize - footerHeight}" width="${totalCanvasSize}" height="${footerHeight}" fill="#0f172a" />
-        <text x="${margin}" y="${totalCanvasSize - 14}" font-size="9" fill="#94a3b8">Bleed: ${overlapMm.toFixed(2)}mm (0.25") | Cut along dashed orange lines before taping</text>
+        <text x="${margin}" y="${totalCanvasSize - 22}" font-size="9" font-weight="600" fill="#e2e8f0">Overlap Bleed: ${overlapMm.toFixed(2)} mm (${(overlapMm / 25.4).toFixed(2)}")</text>
+        <text x="${margin}" y="${totalCanvasSize - 10}" font-size="8" fill="#94a3b8">${stencilMode ? '✂ Cut out outlined black sections with blade and spray paint onto target backing' : (overlapMm > 0 ? 'Cut along dashed orange lines before taping' : 'Zero bleed (butt joints) — tape sheets edge-to-edge')}</text>
         
         <!-- 1:1 Scale Verification Ruler (50 mm / 2 in) -->
-        <g transform="translate(${totalCanvasSize - margin - 120}, ${totalCanvasSize - 25})" font-size="8" fill="#e2e8f0">
-          <line x1="0" y1="8" x2="100" y2="8" stroke="#e2e8f0" stroke-width="1.5" />
-          <line x1="0" y1="2" x2="0" y2="14" stroke="#e2e8f0" stroke-width="1.5" />
-          <line x1="50" y1="4" x2="50" y2="12" stroke="#e2e8f0" stroke-width="1" />
-          <line x1="100" y1="2" x2="100" y2="14" stroke="#e2e8f0" stroke-width="1.5" />
-          <text x="50" y="0" text-anchor="middle">50 mm / 2.0 in</text>
+        <g transform="translate(${totalCanvasSize - margin - 120}, ${totalCanvasSize - 30})" font-size="8" fill="#e2e8f0">
+          <line x1="0" y1="12" x2="100" y2="12" stroke="#e2e8f0" stroke-width="1.5" />
+          <line x1="0" y1="5" x2="0" y2="19" stroke="#e2e8f0" stroke-width="1.5" />
+          <line x1="50" y1="7" x2="50" y2="17" stroke="#e2e8f0" stroke-width="1" />
+          <line x1="100" y1="5" x2="100" y2="19" stroke="#e2e8f0" stroke-width="1.5" />
+          <text x="50" y="3" text-anchor="middle">50 mm / 2.0 in</text>
         </g>
       </g>
     `;
@@ -1747,11 +1965,12 @@ function generateTiledFiducialSheetSvg(options = {}, row = 0, col = 0, matrixInf
       <rect x="0" y="0" width="${totalCanvasSize}" height="${totalCanvasSize}" fill="#ffffff" />
       
       <!-- Clipped Sub-tile Target Content -->
-      <g transform="translate(${margin}, ${headerHeight})">
-        <svg x="0" y="0" width="${printableWidth}" height="${printableHeight}" viewBox="${vbX} ${vbY} ${vbW} ${vbH}" preserveAspectRatio="none">
-          ${fullSvg}
-        </svg>
-      </g>
+      <svg x="${margin}" y="${headerHeight}" width="${printableWidth}" height="${printableHeight}" viewBox="${vbX} ${vbY} ${vbW} ${vbH}" preserveAspectRatio="none">
+        <rect x="0" y="0" width="${totalSize}" height="${totalSize}" fill="#ffffff" />
+        ${markerContent}
+        ${cornerTicksSvg}
+        ${crosshairSvg}
+      </svg>
 
       <!-- Trim lines, seam crosshairs, and header/footer stamps -->
       ${trimLinesSvg}
@@ -1787,6 +2006,85 @@ function openTargetGeneratorModal(options = {}) {
 function closeTargetGeneratorModal() {
   const modal = document.getElementById('fiducial-generator-modal');
   if (modal) modal.classList.add('hidden');
+}
+
+let currentTilingSheetIndex = 0;
+
+/**
+ * Updates the interactive puzzle piece helper diagram and sheet selector controls.
+ */
+function updateTilingPuzzleDiagram(matrix, activeIndex) {
+  const puzzleHelper = document.getElementById('gen-tiling-puzzle-helper');
+  const puzzleGrid = document.getElementById('gen-tiling-puzzle-grid');
+  const pageSelect = document.getElementById('gen-tiling-page-select');
+  const activeTitle = document.getElementById('gen-tiling-puzzle-active-title');
+  const activeDesc = document.getElementById('gen-tiling-puzzle-active-desc');
+
+  if (!puzzleHelper || !puzzleGrid) return;
+
+  const totalSheets = matrix.totalSheets || (matrix.rows * matrix.cols);
+  const rows = matrix.rows || 1;
+  const cols = matrix.cols || 1;
+  const clampedIndex = Math.max(0, Math.min(activeIndex, totalSheets - 1));
+  const activeRow = Math.floor(clampedIndex / cols);
+  const activeCol = clampedIndex % cols;
+
+  puzzleGrid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  puzzleGrid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+
+  let buttonsHtml = '';
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const idx = r * cols + c;
+      const isActive = (idx === clampedIndex);
+      const bg = isActive ? '#fbbf24' : 'rgba(255, 255, 255, 0.15)';
+      const border = isActive ? '1px solid #ffffff' : '1px solid rgba(255, 255, 255, 0.15)';
+      const color = isActive ? '#0f172a' : '#cbd5e1';
+      buttonsHtml += `<button type="button" class="tiling-puzzle-cell-btn" data-sheet-idx="${idx}" style="background: ${bg}; border: ${border}; color: ${color}; width: 14px; height: 14px; border-radius: 2px; font-size: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;" title="Sheet ${idx + 1}: Tile [Row ${r + 1}, Col ${c + 1}]">${idx + 1}</button>`;
+    }
+  }
+  puzzleGrid.innerHTML = buttonsHtml;
+
+  // Attach click events to puzzle cells
+  puzzleGrid.querySelectorAll('.tiling-puzzle-cell-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const newIdx = parseInt(btn.getAttribute('data-sheet-idx'), 10);
+      if (!isNaN(newIdx)) {
+        currentTilingSheetIndex = newIdx;
+        renderTargetGeneratorPreview();
+      }
+    });
+  });
+
+  // Update Page Selector Dropdown
+  if (pageSelect) {
+    let optionsHtml = '';
+    for (let idx = 0; idx < totalSheets; idx++) {
+      const r = Math.floor(idx / cols);
+      const c = idx % cols;
+      const selected = (idx === clampedIndex) ? 'selected' : '';
+      optionsHtml += `<option value="${idx}" ${selected}>Sheet ${idx + 1} of ${totalSheets} [R${r + 1}, C${c + 1}]</option>`;
+    }
+    pageSelect.innerHTML = optionsHtml;
+  }
+
+  // Positional text description
+  let posDesc = '';
+  if (rows > 1 || cols > 1) {
+    const vPos = activeRow === 0 ? 'Top' : (activeRow === rows - 1 ? 'Bottom' : 'Middle');
+    const hPos = activeCol === 0 ? 'Left' : (activeCol === cols - 1 ? 'Right' : 'Center');
+    posDesc = (vPos === 'Middle' && hPos === 'Center') ? 'Center piece' : `${vPos}-${hPos} piece`;
+  } else {
+    posDesc = 'Complete target';
+  }
+
+  if (activeTitle) {
+    activeTitle.textContent = `Sheet ${clampedIndex + 1} of ${totalSheets} — Tile [${activeRow + 1}, ${activeCol + 1}]`;
+  }
+  if (activeDesc) {
+    activeDesc.textContent = `${posDesc} • Click any piece in the puzzle to preview`;
+  }
 }
 
 /**
@@ -1831,6 +2129,8 @@ function renderTargetGeneratorPreview() {
   const showTrimLines = document.getElementById('gen-opt-trim-lines')?.checked !== false;
   const showSeamCrosshairs = document.getElementById('gen-opt-seam-crosshairs')?.checked !== false;
   const showTileStamps = document.getElementById('gen-opt-tile-stamps')?.checked !== false;
+  const renderStyle = document.getElementById('gen-render-style')?.value || 'solid';
+  const stencilMode = renderStyle === 'stencil';
 
   // Compute tiling matrix
   const matrix = calculateFiducialTilingMatrix(size, paperFormat, overlapMm);
@@ -1871,6 +2171,8 @@ function renderTargetGeneratorPreview() {
     physicalSizeMeters: size,
     paperFormat,
     overlapMm,
+    renderStyle,
+    stencilMode,
     showCrosshair,
     showCornerTicks,
     showRuler,
@@ -1880,18 +2182,36 @@ function renderTargetGeneratorPreview() {
     showTileStamps
   };
 
-  if (!isTiled || viewMode === 'assembled') {
+  const puzzleHelper = document.getElementById('gen-tiling-puzzle-helper');
+  const totalSheets = matrix.totalSheets || (matrix.rows * matrix.cols);
+  currentTilingSheetIndex = Math.max(0, Math.min(currentTilingSheetIndex, totalSheets - 1));
+  const activeRow = Math.floor(currentTilingSheetIndex / matrix.cols);
+  const activeCol = currentTilingSheetIndex % matrix.cols;
+
+  if (!isTiled) {
+    if (puzzleHelper) puzzleHelper.style.display = 'none';
     const svgStr = generateFiducialSvg(options);
     previewEl.innerHTML = svgStr;
+  } else if (viewMode === 'assembled') {
+    if (puzzleHelper) puzzleHelper.style.display = 'none';
+    const svgStr = generateFiducialSvg({ ...options, showTilingGrid: true, matrix });
+    previewEl.innerHTML = svgStr;
   } else if (viewMode === 'tile_grid') {
+    if (puzzleHelper) {
+      puzzleHelper.style.display = 'flex';
+      updateTilingPuzzleDiagram(matrix, currentTilingSheetIndex);
+    }
     // Render HTML grid matrix of all tiles
     let gridHtml = `<div class="tiling-grid-preview-container" style="grid-template-columns: repeat(${matrix.cols}, 1fr);">`;
     for (let r = 0; r < matrix.rows; r++) {
       for (let c = 0; c < matrix.cols; c++) {
+        const idx = r * matrix.cols + c;
+        const isCurrent = (idx === currentTilingSheetIndex);
+        const activeStyle = isCurrent ? 'border: 2px solid #fbbf24; box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);' : '';
         const tileSvg = generateTiledFiducialSheetSvg(options, r, c, matrix);
         gridHtml += `
-          <div class="tiling-tile-card">
-            <span class="tiling-tile-badge">Tile [${r + 1},${c + 1}]</span>
+          <div class="tiling-tile-card" data-sheet-idx="${idx}" style="cursor: pointer; ${activeStyle}">
+            <span class="tiling-tile-badge">Tile [${r + 1},${c + 1}] (Sheet ${idx + 1})</span>
             <div style="width: 100%; height: 100%; min-height: 120px; display: flex; align-items: center; justify-content: center;">
               ${tileSvg}
             </div>
@@ -1901,9 +2221,24 @@ function renderTargetGeneratorPreview() {
     }
     gridHtml += `</div>`;
     previewEl.innerHTML = gridHtml;
+
+    // Card click event in tile_grid view
+    previewEl.querySelectorAll('.tiling-tile-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const cardIdx = parseInt(card.getAttribute('data-sheet-idx'), 10);
+        if (!isNaN(cardIdx)) {
+          currentTilingSheetIndex = cardIdx;
+          renderTargetGeneratorPreview();
+        }
+      });
+    });
   } else {
-    // Single tile preview (Top-Left Tile [1,1])
-    const singleTileSvg = generateTiledFiducialSheetSvg(options, 0, 0, matrix);
+    // Single tile preview
+    if (puzzleHelper) {
+      puzzleHelper.style.display = 'flex';
+      updateTilingPuzzleDiagram(matrix, currentTilingSheetIndex);
+    }
+    const singleTileSvg = generateTiledFiducialSheetSvg(options, activeRow, activeCol, matrix);
     previewEl.innerHTML = singleTileSvg;
   }
 
@@ -1924,6 +2259,8 @@ function exportTargetSvg() {
   const showIdLabel = document.getElementById('gen-opt-idlabel')?.checked !== false;
   const forceTilingEnable = document.getElementById('gen-opt-tiling-enable')?.checked === true;
   const overlapMm = parseFloat(document.getElementById('gen-tiling-overlap')?.value) || 6.35;
+  const renderStyle = document.getElementById('gen-render-style')?.value || 'solid';
+  const stencilMode = renderStyle === 'stencil';
 
   const matrix = calculateFiducialTilingMatrix(size, paperFormat, overlapMm);
   const isTiled = forceTilingEnable || matrix.requiresTiling;
@@ -1934,11 +2271,15 @@ function exportTargetSvg() {
     physicalSizeMeters: size,
     paperFormat,
     overlapMm,
+    renderStyle,
+    stencilMode,
     showCrosshair,
     showCornerTicks,
     showRuler,
     showIdLabel
   };
+
+  const suffix = stencilMode ? '_Stencil' : '';
 
   if (!isTiled) {
     const svgStr = generateFiducialSvg(options);
@@ -1946,7 +2287,7 @@ function exportTargetSvg() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `Target_${type}_ID${id}_${(size * 1000).toFixed(0)}mm.svg`);
+    link.setAttribute('download', `Target_${type}_ID${id}_${(size * 1000).toFixed(0)}mm${suffix}.svg`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1960,7 +2301,7 @@ function exportTargetSvg() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.setAttribute('href', url);
-        link.setAttribute('download', `Target_${type}_ID${id}_Tile_R${r + 1}_C${c + 1}_of_${matrix.totalSheets}.svg`);
+        link.setAttribute('download', `Target_${type}_ID${id}_Tile_R${r + 1}_C${c + 1}_of_${matrix.totalSheets}${suffix}.svg`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -1986,6 +2327,8 @@ function printTargetSheet() {
   const showIdLabel = document.getElementById('gen-opt-idlabel')?.checked !== false;
   const forceTilingEnable = document.getElementById('gen-opt-tiling-enable')?.checked === true;
   const overlapMm = parseFloat(document.getElementById('gen-tiling-overlap')?.value) || 6.35;
+  const renderStyle = document.getElementById('gen-render-style')?.value || 'solid';
+  const stencilMode = renderStyle === 'stencil';
 
   const matrix = calculateFiducialTilingMatrix(size, paperFormat, overlapMm);
   const isTiled = forceTilingEnable || matrix.requiresTiling;
@@ -1996,6 +2339,8 @@ function printTargetSheet() {
     physicalSizeMeters: size,
     paperFormat,
     overlapMm,
+    renderStyle,
+    stencilMode,
     showCrosshair,
     showCornerTicks,
     showRuler,
@@ -2014,9 +2359,11 @@ function printTargetSheet() {
     // Generate multi-page tiled print sheets separated by page breaks
     for (let r = 0; r < matrix.rows; r++) {
       for (let c = 0; c < matrix.cols; c++) {
+        const isLast = (r === matrix.rows - 1 && c === matrix.cols - 1);
+        const pageBreakClass = isLast ? '' : 'has-break';
         const tileSvg = generateTiledFiducialSheetSvg(options, r, c, matrix);
         pagesHtml += `
-          <div class="print-target-wrapper tiled-page" style="page-break-after: always; break-after: page;">
+          <div class="print-target-wrapper tiled-page ${pageBreakClass}">
             ${tileSvg}
           </div>
         `;
@@ -2024,7 +2371,7 @@ function printTargetSheet() {
     }
   }
 
-  // Create or reuse an isolated hidden iframe for printing
+  // Create or reuse an isolated hidden iframe for printing with explicit non-zero dimensions
   let printIframe = document.getElementById('fiducial-print-iframe');
   if (!printIframe) {
     printIframe = document.createElement('iframe');
@@ -2032,10 +2379,12 @@ function printTargetSheet() {
     printIframe.style.position = 'fixed';
     printIframe.style.right = '0';
     printIframe.style.bottom = '0';
-    printIframe.style.width = '0';
-    printIframe.style.height = '0';
+    printIframe.style.width = '1000px';
+    printIframe.style.height = '1000px';
     printIframe.style.border = '0';
-    printIframe.style.visibility = 'hidden';
+    printIframe.style.opacity = '0.01';
+    printIframe.style.pointerEvents = 'none';
+    printIframe.style.zIndex = '-9999';
     document.body.appendChild(printIframe);
   }
 
@@ -2053,15 +2402,15 @@ function printTargetSheet() {
   <title>Target_${type}_ID${id}_Print</title>
   <style>
     @page {
-      size: auto;
+      size: ${paperFormat === 'a4' ? 'A4' : 'letter'} portrait;
       margin: 8mm;
     }
     html, body {
       margin: 0;
       padding: 0;
-      width: 100%;
-      height: 100%;
       background: #ffffff;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
     .print-target-wrapper {
       width: 100%;
@@ -2072,18 +2421,24 @@ function printTargetSheet() {
       align-items: center;
       justify-content: center;
       box-sizing: border-box;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .tiled-page {
+      width: 100%;
+      height: 98vh;
+      box-sizing: border-box;
+    }
+    .tiled-page.has-break {
       page-break-after: always !important;
       break-after: page !important;
-      height: 98vh !important;
     }
     .print-target-wrapper svg {
       width: 100%;
       height: 100%;
       max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
+      max-height: 96vh;
+      display: block;
     }
   </style>
 </head>
@@ -4541,7 +4896,7 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     sLine = (gridType === 'tower') ? lFoot * (1.0 - overlapFront) : wFoot * (1.0 - overlapSide);
     sPhoto = (gridType === 'tower') ? wFoot * (1.0 - overlapSide) : lFoot * (1.0 - overlapFront);
 
-    actualRotation = (gridType === 'orbit' || gridType === 'multi-orbit' || gridType === 'tower') ? 0 : rotation;
+    actualRotation = (gridType === 'orbit' || gridType === 'multi-orbit' || gridType === 'tower' || gridType === 'photo-sphere') ? 0 : rotation;
 
     let gridData;
     if (gridType === 'tower') {
@@ -4550,6 +4905,8 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
       gridData = generateOrbitCoordinates(gridWidth, sPhoto, altitude, defaultGimbalPitch);
     } else if (gridType === 'multi-orbit') {
       gridData = generateMultiOrbitCoordinates(gridWidth, sPhoto, altitude, defaultGimbalPitch);
+    } else if (gridType === 'photo-sphere') {
+      gridData = generatePhotoSphereCoordinates(altitude, layer);
     } else if (gridType === 'grid-orbit-combo') {
       gridData = generateGridOrbitComboCoordinates(gridWidth, actualRotation, captureMode, sLine, sPhoto, altitude, defaultGimbalPitch);
     } else if (gridType === 'grid-multi-orbit-combo') {
@@ -4587,7 +4944,9 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
         isTurnaroundPoint: pt.isTurnaroundPoint || false,
         targetVisible: pt.targetVisible !== undefined ? pt.targetVisible : true,
         isPerimeterOrbit: pt.isPerimeterOrbit || false,
-        gridType: pt.gridType || (gridType === 'target-splat' ? 'target-splat' : undefined),
+        isPhotoSpherePoint: pt.isPhotoSpherePoint || (gridType === 'photo-sphere'),
+        isPhotoSphere: pt.isPhotoSphere || (gridType === 'photo-sphere'),
+        gridType: pt.gridType || (gridType === 'target-splat' ? 'target-splat' : (gridType === 'photo-sphere' ? 'photo-sphere' : undefined)),
         origLat: geo.lat,
         origLon: geo.lon,
         origX: pt.x,
@@ -7217,13 +7576,42 @@ function initUIEventListeners() {
     });
   }
 
-  ['gen-target-type', 'gen-target-id', 'gen-target-size', 'gen-sheet-size', 'gen-opt-crosshair', 'gen-opt-cornerticks', 'gen-opt-ruler', 'gen-opt-idlabel', 'gen-opt-tiling-enable', 'gen-tiling-overlap', 'gen-tiling-view-mode', 'gen-opt-trim-lines', 'gen-opt-seam-crosshairs', 'gen-opt-tile-stamps'].forEach(id => {
+  ['gen-target-type', 'gen-target-id', 'gen-target-size', 'gen-sheet-size', 'gen-render-style', 'gen-opt-crosshair', 'gen-opt-cornerticks', 'gen-opt-ruler', 'gen-opt-idlabel', 'gen-opt-tiling-enable', 'gen-tiling-overlap', 'gen-tiling-view-mode', 'gen-opt-trim-lines', 'gen-opt-seam-crosshairs', 'gen-opt-tile-stamps'].forEach(id => {
     const el = document.getElementById(id);
     if (el) {
       el.addEventListener('input', () => renderTargetGeneratorPreview());
       el.addEventListener('change', () => renderTargetGeneratorPreview());
     }
   });
+
+  const tilingPageSelect = document.getElementById('gen-tiling-page-select');
+  if (tilingPageSelect) {
+    tilingPageSelect.addEventListener('change', () => {
+      const idx = parseInt(tilingPageSelect.value, 10);
+      if (!isNaN(idx)) {
+        currentTilingSheetIndex = idx;
+        renderTargetGeneratorPreview();
+      }
+    });
+  }
+
+  const tilingPrevBtn = document.getElementById('gen-tiling-prev-page-btn');
+  if (tilingPrevBtn) {
+    tilingPrevBtn.addEventListener('click', () => {
+      if (currentTilingSheetIndex > 0) {
+        currentTilingSheetIndex--;
+        renderTargetGeneratorPreview();
+      }
+    });
+  }
+
+  const tilingNextBtn = document.getElementById('gen-tiling-next-page-btn');
+  if (tilingNextBtn) {
+    tilingNextBtn.addEventListener('click', () => {
+      currentTilingSheetIndex++;
+      renderTargetGeneratorPreview();
+    });
+  }
 
   const btnDownloadTargetSvg = document.getElementById('btn-download-target-svg');
   if (btnDownloadTargetSvg) {
@@ -9194,11 +9582,13 @@ function togglePatternParameters() {
     'exclusion-box': 'Exclusion (Box)',
     'exclusion-freeform': 'Exclusion (Polygon)',
     'boundary-polygon': 'Boundary / Parcel',
-    'fiducial-markers': '🎯 Fiducial / GCPs'
+    'fiducial-markers': '🎯 Fiducial / GCPs',
+    'photo-sphere': '360° Photo Sphere'
   };
 
   const targetSplatContainer = document.getElementById('target-splat-container');
   const towerGeometryContainer = document.getElementById('tower-geometry-container');
+  const photoSphereContainer = document.getElementById('photo-sphere-container');
 
   const activePatternBadge = document.getElementById('active-layer-pattern-badge');
   if (activePatternBadge) {
@@ -9231,6 +9621,14 @@ function togglePatternParameters() {
       towerGeometryContainer.classList.remove('hidden');
     } else {
       towerGeometryContainer.classList.add('hidden');
+    }
+  }
+
+  if (photoSphereContainer) {
+    if (gridType === 'photo-sphere') {
+      photoSphereContainer.classList.remove('hidden');
+    } else {
+      photoSphereContainer.classList.add('hidden');
     }
   }
 
@@ -9544,6 +9942,50 @@ function togglePatternParameters() {
       }
     }
 
+  } else if (gridType === 'photo-sphere') {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
+    if (gridGeometrySection) {
+      gridGeometrySection.style.display = 'block';
+      gridGeometrySection.classList.remove('collapsed');
+    }
+    if (layerCardGeometry) layerCardGeometry.style.display = 'block';
+    if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "📐 360° Sphere Geometry";
+    if (layerCardFlight) layerCardFlight.style.display = 'block';
+    if (layerCardOptics) layerCardOptics.style.display = 'block';
+    if (layerCardModes) layerCardModes.style.display = 'block';
+    if (layerCardBoundary) {
+      layerCardBoundary.classList.add('hidden');
+      layerCardBoundary.style.display = 'none';
+    }
+    if (layerCardFiducial) {
+      layerCardFiducial.classList.add('hidden');
+      layerCardFiducial.style.display = 'none';
+    }
+    if (altitudeControlGroup) altitudeControlGroup.style.display = 'block';
+    if (photoSphereContainer) photoSphereContainer.classList.remove('hidden');
+    if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
+    if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
+    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
+    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
+    if (exclusionAltContainer) exclusionAltContainer.classList.add('hidden');
+    if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
+    if (freeformInstructions) freeformInstructions.classList.add('hidden');
+    if (widthContainer) widthContainer.style.display = 'none';
+    if (heightContainer) heightContainer.style.display = 'none';
+    if (rotationContainer) rotationContainer.style.display = 'none';
+    if (frontOverlapContainer) frontOverlapContainer.style.display = 'none';
+    if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
+
+    // Lock capture mode to stopAndShoot to eliminate rotational blur
+    if (activeLayer) {
+      activeLayer.captureMode = 'stopAndShoot';
+    }
+    const captureModeSelect = document.getElementById('capture-mode');
+    if (captureModeSelect) {
+      captureModeSelect.value = 'stopAndShoot';
+    }
+
   } else {
     if (gridGeometrySection) gridGeometrySection.style.display = 'block';
     if (layerCardGeometry) layerCardGeometry.style.display = 'block';
@@ -9603,10 +10045,10 @@ function togglePatternParameters() {
   // Force value displays to synchronize with the new slider values
   syncDisplayValues();
 
-  // Conditionally hide Heading Mode for orbits (which have fixed procedural headings)
+  // Conditionally hide Heading Mode for orbits and photo-spheres (which have fixed procedural headings)
   const headingModeContainer = document.getElementById('heading-mode-container');
   if (headingModeContainer) {
-    if (gridType === 'orbit' || gridType === 'multi-orbit') {
+    if (gridType === 'orbit' || gridType === 'multi-orbit' || gridType === 'photo-sphere') {
       headingModeContainer.style.display = 'none';
       const helpDrawer = document.getElementById('heading-help-drawer');
       if (helpDrawer) helpDrawer.classList.add('hidden');
@@ -10520,7 +10962,9 @@ function setGridCenter(lat, lng) {
   }
 
   if (centerMarker) {
-    centerMarker.setLatLng([lat, lng]);
+    if (typeof centerMarker.setLatLng === 'function') {
+      centerMarker.setLatLng([lat, lng]);
+    }
     if (pois[0]) {
       pois[0].lat = lat;
       pois[0].lon = lng;
@@ -11692,6 +12136,62 @@ function generateGridMultiOrbitComboCoordinates(radius, rotation, captureMode, s
   return { waypoints, photos };
 }
 
+// Generate 360° Photo Sphere coordinates (Issue #89)
+// 37 shots total: 3 rows of 12 shots @ -15°, -45°, -75° gimbal pitch spaced every 30° yaw, + 1 Nadir shot @ -90° pitch
+function generatePhotoSphereCoordinates(baseAltitude, layer) {
+  const waypoints = [];
+  const photos = [];
+
+  const rows = [
+    { pitch: -15, count: 12, step: 30, ringIndex: 0 },
+    { pitch: -45, count: 12, step: 30, ringIndex: 1 },
+    { pitch: -75, count: 12, step: 30, ringIndex: 2 }
+  ];
+
+  let shotIndex = 0;
+  rows.forEach(row => {
+    for (let i = 0; i < row.count; i++) {
+      const heading = (i * row.step) % 360;
+      const pt = {
+        x: 0,
+        y: 0,
+        alt: baseAltitude,
+        pitch: row.pitch,
+        heading: heading,
+        headingMode: 'smoothTransition',
+        gridType: 'photo-sphere',
+        isPhotoSpherePoint: true,
+        ringIndex: row.ringIndex,
+        isRingStart: (i === 0),
+        shotIndex: shotIndex++,
+        hoverTime: 2
+      };
+      waypoints.push(pt);
+      photos.push(pt);
+    }
+  });
+
+  // Nadir Catch: 1 final ground-lock shot at -90° pitch
+  const nadirPt = {
+    x: 0,
+    y: 0,
+    alt: baseAltitude,
+    pitch: -90,
+    heading: 0,
+    headingMode: 'smoothTransition',
+    gridType: 'photo-sphere',
+    isPhotoSpherePoint: true,
+    ringIndex: 3,
+    isRingStart: true,
+    shotIndex: shotIndex++,
+    hoverTime: 2
+  };
+  waypoints.push(nadirPt);
+  photos.push(nadirPt);
+
+  return { waypoints, photos };
+}
+
 // ============================================================================
 // Target Splat 3D Frustum Culling & Geometry Engine (v1.77.0)
 // ============================================================================
@@ -12784,6 +13284,20 @@ function getMarkerIcon(wp, idx, waypoints, rotationDeg, tempHeading, tempPitch, 
   const gridType = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('grid-type'))
     ? document.getElementById('grid-type').value
     : (activeLayer ? activeLayer.pattern : 'double');
+
+  if (wp && (wp.isPhotoSphere || wp.layerPattern === 'photo-sphere' || gridType === 'photo-sphere')) {
+    return L.divIcon({
+      className: 'custom-wp-marker photo-sphere-marker',
+      html: `
+        <div style="background: linear-gradient(135deg, #06b6d4, #2563eb); border: 2px solid #ffffff; width: 28px; height: 28px; border-radius: 50%; box-shadow: 0 0 10px rgba(6, 182, 212, 0.6); display: flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer;">
+          🌐
+        </div>
+      `,
+      iconSize: [28, 28],
+      iconAnchor: [14, 14]
+    });
+  }
+
   const isMultiOrbit = gridType === 'multi-orbit';
   const isCombo = gridType === 'grid-orbit-combo';
   const isMultiCombo = gridType === 'grid-multi-orbit-combo';
@@ -12924,6 +13438,7 @@ function drawFlightPathLines(waypoints, gridType) {
     const p2 = waypoints[i];
     const latlngs = [[p1.lat, p1.lon], [p2.lat, p2.lon]];
     const dist = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+    if (dist < 0.001) continue;
 
     let color = p2.layerColor || defaultPathColor;
     let dashArray = null;
@@ -13369,6 +13884,18 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
     }
   } else if (waypoints.length === 0 || gridType === 'road-following' || gridType === 'freeform' || gridType === 'exclusion-box' || gridType === 'exclusion-freeform') {
     // No boundary overlay when no waypoints are active or for road-following/freeform/exclusion
+  } else if (gridType === 'photo-sphere') {
+    const sphereRadius = Math.max(8, (waypoints[0]?.alt || 30) * 0.4);
+    if (typeof L !== 'undefined' && typeof L.circle === 'function' && typeof map !== 'undefined' && map) {
+      gridBoundsPolygon = L.circle([activeCenterLat, activeCenterLon], {
+        radius: sphereRadius,
+        color: '#06b6d4',
+        weight: 2,
+        dashArray: '4, 4',
+        fillColor: '#06b6d4',
+        fillOpacity: 0.08
+      }).addTo(map);
+    }
   } else if (gridType === 'orbit' || gridType === 'multi-orbit' || gridType === 'grid-orbit-combo' || gridType === 'grid-multi-orbit-combo') {
     const maxRadius = (gridType === 'multi-orbit' || gridType === 'grid-multi-orbit-combo') ? gridWidth * 1.1 : gridWidth;
     if (typeof L !== 'undefined' && typeof L.circle === 'function' && typeof map !== 'undefined' && map) {
@@ -13522,6 +14049,13 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
     : (activeLayer && activeLayer.gimbalPitch !== undefined ? activeLayer.gimbalPitch : -60);
 
   waypoints.forEach((wp, idx) => {
+    const isPhotoSphere = wp.isPhotoSphere || wp.layerPattern === 'photo-sphere' || gridType === 'photo-sphere';
+    if (isPhotoSphere && idx > 0) {
+      wp.droneMarker = waypoints[0] ? waypoints[0].droneMarker : null;
+      wp.mapMarker = waypoints[0] ? waypoints[0].mapMarker : null;
+      return;
+    }
+
     const isRoadWp = wp.isRoadDroneWaypoint || wp.layerPattern === 'road-following';
 
     if (isRoadWp) {
@@ -13630,7 +14164,9 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
       } else if (activeLayer && activeLayer.pattern === 'target-splat') {
         photoStatusHtml = '<br><span style="color: #10b981; font-weight: 600;">📷 Photo: Active (Target in View)</span>';
       }
-      const title = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${heading.toFixed(0)}°<br>Pitch: ${displayPitch}°${photoStatusHtml}`;
+      const title = isPhotoSphere
+        ? `🌐 <strong>360° Photo Sphere</strong><br>37 Photos (Full Equirectangular Coverage)<br>Height: ${formatDistance(wp.alt, 0)}<br>Mode: Stop & Shoot`
+        : `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(wp.alt, 0)}<br>Yaw: ${heading.toFixed(0)}°<br>Pitch: ${displayPitch}°${photoStatusHtml}`;
 
       const isDraggable = true;
       const marker = L.marker([wp.lat, wp.lon], {
@@ -13661,18 +14197,35 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
           const layerCenterLon = (wp.layerId && flightLayers.find(l => l.id === wp.layerId)?.centerLon) || centerLon;
           const offsets = geodeticToLocal(newLatLng.lat, newLatLng.lng, layerCenterLat, layerCenterLon);
 
-          wp.lat = newLatLng.lat;
-          wp.lon = newLatLng.lng;
-          wp.x = offsets.x;
-          wp.y = offsets.y;
-          wp.isModified = true;
+          if (isPhotoSphere) {
+            const activePhotos = getCurrentPhotos();
+            waypoints.forEach((w, wIdx) => {
+              w.lat = newLatLng.lat;
+              w.lon = newLatLng.lng;
+              w.x = offsets.x;
+              w.y = offsets.y;
+              w.isModified = true;
+              if (activePhotos && activePhotos[wIdx]) {
+                activePhotos[wIdx].lat = newLatLng.lat;
+                activePhotos[wIdx].lon = newLatLng.lng;
+                activePhotos[wIdx].x = offsets.x;
+                activePhotos[wIdx].y = offsets.y;
+              }
+            });
+          } else {
+            wp.lat = newLatLng.lat;
+            wp.lon = newLatLng.lng;
+            wp.x = offsets.x;
+            wp.y = offsets.y;
+            wp.isModified = true;
 
-          const activePhotos = getCurrentPhotos();
-          if (activePhotos && activePhotos[idx]) {
-            activePhotos[idx].lat = newLatLng.lat;
-            activePhotos[idx].lon = newLatLng.lng;
-            activePhotos[idx].x = offsets.x;
-            activePhotos[idx].y = offsets.y;
+            const activePhotos = getCurrentPhotos();
+            if (activePhotos && activePhotos[idx]) {
+              activePhotos[idx].lat = newLatLng.lat;
+              activePhotos[idx].lon = newLatLng.lng;
+              activePhotos[idx].x = offsets.x;
+              activePhotos[idx].y = offsets.y;
+            }
           }
 
           updatePathLinesAndStats(waypoints, photoLocations, centerLat, centerLon, gridWidth, gridHeight, rotationDeg);
@@ -15298,6 +15851,22 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
           </wpml:action>`);
     }
 
+    const isPhotoSphere = (gridType === 'photo-sphere') || (wp.isPhotoSphere) || (wp.layerPattern === 'photo-sphere');
+    if (isPhotoSphere) {
+      let targetHeading = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
+      targetHeading = ((targetHeading % 360) + 360) % 360;
+      if (targetHeading > 180) targetHeading -= 360;
+      if (targetHeading === 0) targetHeading = 0.1;
+      waypointActions.push(`          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>rotateYaw</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:aircraftHeading>${targetHeading.toFixed(1)}</wpml:aircraftHeading>
+              <wpml:aircraftPathMode>clockwise</wpml:aircraftPathMode>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>`);
+    }
+
     // 2. Hover duration action (MUST run to stabilize gimbal and yaw)
     if (effectiveHover > 0) {
       waypointActions.push(`          <wpml:action>
@@ -15455,7 +16024,7 @@ ${waypointActions.join('\n')}
         }
       }
     } else {
-      if ((gridType === 'freeform' || gridType === 'target-splat' || gridType === 'road-following' || wp.isRoadDroneWaypoint) && wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
+      if ((gridType === 'freeform' || gridType === 'target-splat' || gridType === 'road-following' || gridType === 'photo-sphere' || wp.isPhotoSphere || wp.isRoadDroneWaypoint) && wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
         actualHeadingMode = 'smoothTransition';
         actualHeadingAngle = wp.heading;
       } else if (effectiveHeadingMode === 'towardPOI') {
@@ -20497,6 +21066,14 @@ const FlightDiagnostics = {
     groundMesh.position.set(planeOffsetX, -0.2, planeOffsetZ);
     this.threeScene.add(groundMesh);
 
+    this.groundCanvas = groundCanvas;
+    this.groundCtx = ctx;
+    this.groundTexture = groundTexture;
+    this.planeOffsetX = planeOffsetX;
+    this.planeOffsetZ = planeOffsetZ;
+    this.planeSize = planeSize;
+    this.paintedPhotoIndices = new Set();
+
     if (typeof Image !== 'undefined') {
       for (let dy = -1; dy <= 1; dy++) {
         for (let dx = -1; dx <= 1; dx++) {
@@ -20516,6 +21093,46 @@ const FlightDiagnostics = {
         }
       }
     }
+  },
+
+  drawFootprintOnGround(pt) {
+    if (!this.groundCtx || !this.groundTexture || !pt) return;
+    const pos = this.projectToWorld(pt.lat, pt.lon, pt.alt);
+    const pitchVal = pt.pitch !== undefined && pt.pitch !== null ? pt.pitch : -60;
+    const yawVal = pt.yaw !== undefined && pt.yaw !== null ? pt.yaw : 0;
+    const pitchRad = (pitchVal * Math.PI) / 180;
+    const yawRad = (yawVal * Math.PI) / 180;
+    const sinPitch = Math.sin(pitchRad);
+    if (Math.abs(sinPitch) < 0.01) return;
+    const t = -pos.y / sinPitch;
+    if (t < 0 || t > 800) return;
+    const dirX = Math.sin(yawRad) * Math.cos(pitchRad);
+    const dirZ = -Math.cos(yawRad) * Math.cos(pitchRad);
+    const gx = pos.x + dirX * t;
+    const gz = pos.z + dirZ * t;
+
+    const planeSize = this.planeSize || 300;
+    const minX = (this.planeOffsetX || 0) - planeSize / 2;
+    const minZ = (this.planeOffsetZ || 0) - planeSize / 2;
+    const u = (gx - minX) / planeSize;
+    const v = (gz - minZ) / planeSize;
+    if (u < 0 || u > 1 || v < 0 || v > 1) return;
+
+    const cx = u * 768;
+    const cy = v * 768;
+    const rad = Math.max(14, Math.min(65, (pt.alt || 30) * 0.75));
+
+    const ctx = this.groundCtx;
+    const grad = ctx.createRadialGradient(cx, cy, 2, cx, cy, rad);
+    grad.addColorStop(0, 'rgba(6, 182, 212, 0.45)');
+    grad.addColorStop(0.6, 'rgba(16, 185, 129, 0.22)');
+    grad.addColorStop(1, 'rgba(6, 182, 212, 0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+    ctx.fill();
+
+    this.groundTexture.needsUpdate = true;
   },
 
   getDiagnosticsBoundaries() {
@@ -21078,6 +21695,19 @@ const FlightDiagnostics = {
     if (updateSlider) {
       const slider = document.getElementById('diag-timeline-slider');
       if (slider && document.activeElement !== slider) slider.value = safeIdx.toString();
+    }
+
+    if (this.groundCtx && this.groundTexture) {
+      if (!this.paintedPhotoIndices || safeIdx < (this.lastPaintedPointIdx || 0)) {
+        this.paintedPhotoIndices = new Set();
+      }
+      this.lastPaintedPointIdx = safeIdx;
+      for (let pi = Math.max(0, safeIdx - 20); pi <= safeIdx; pi++) {
+        if (pts[pi] && pts[pi].isPhoto && !this.paintedPhotoIndices.has(pi)) {
+          this.paintedPhotoIndices.add(pi);
+          this.drawFootprintOnGround(pts[pi]);
+        }
+      }
     }
 
     // Synchronize photo ribbon in 3D sidebar
@@ -22472,7 +23102,8 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
       const baseAlt = prevAlt + (targetAlt - prevAlt) * ratio;
       const curAlt = baseAlt + driftAlt;
       const curPitch = prevPitch + (targetPitch - prevPitch) * ratio;
-      const curYaw = prevYaw + (targetYaw - prevYaw) * ratio;
+      const yawDiff = ((targetYaw - prevYaw + 540) % 360) - 180;
+      const curYaw = ((prevYaw + yawDiff * ratio) % 360 + 360) % 360;
 
       battery -= 0.08;
 
@@ -22700,7 +23331,7 @@ function parseWPML(wpmlText) {
     if (droneEnumNode) {
       const droneVal = droneEnumNode.textContent.trim();
       const droneSelect = document.getElementById('drone-model');
-      if (droneSelect) {
+      if (droneSelect && droneSelect.options) {
         for (let i = 0; i < droneSelect.options.length; i++) {
           if (droneSelect.options[i].value === droneVal) {
             droneSelect.value = droneVal;
@@ -22773,6 +23404,11 @@ function parseWPML(wpmlText) {
               if (pitchNode) {
                 pitch = parseFloat(pitchNode.textContent);
                 isRingStart = true;
+              }
+            } else if (actuatorNode.textContent === "rotateYaw") {
+              const yawNode = act.getElementsByTagName("wpml:aircraftHeading")[0] || act.getElementsByTagName("aircraftHeading")[0];
+              if (yawNode) {
+                heading = parseFloat(yawNode.textContent);
               }
             } else if (actuatorNode.textContent === "takePhoto") {
               hasPhoto = true;
@@ -22884,26 +23520,31 @@ function parseWPML(wpmlText) {
     importedWaypoints = waypoints;
     importedPhotos = photos;
 
-    setGridCenter(refLat, refLon);
-    map.setView([refLat, refLon], 17);
+    if (typeof setGridCenter === 'function') setGridCenter(refLat, refLon);
+    if (typeof map !== 'undefined' && map && typeof map.setView === 'function') map.setView([refLat, refLon], 17);
 
-    toggleUIControlsState(true);
+    if (typeof toggleUIControlsState === 'function') toggleUIControlsState(true);
 
     const statusTextEl = document.getElementById('import-status-text');
-    statusTextEl.textContent = '';
-    const spanEl = document.createElement('span');
-    spanEl.style.color = 'var(--accent-green)';
-    spanEl.style.fontWeight = '600';
-    spanEl.textContent = `Active: ${importedFileName}`;
-    statusTextEl.appendChild(spanEl);
-    document.getElementById('clear-imported-btn').classList.remove('hidden');
+    if (statusTextEl) {
+      statusTextEl.textContent = '';
+      const spanEl = document.createElement('span');
+      spanEl.style.color = 'var(--accent-green)';
+      spanEl.style.fontWeight = '600';
+      spanEl.textContent = `Active: ${importedFileName}`;
+      statusTextEl.appendChild(spanEl);
+    }
+    const clearBtn = document.getElementById('clear-imported-btn');
+    if (clearBtn && clearBtn.classList) clearBtn.classList.remove('hidden');
 
-    updateGrid();
-    
+    if (typeof updateGrid === 'function') updateGrid();
+
+    return { waypoints, photos };
   } catch (err) {
-    Logger.error("XML Parsing error:", err);
-    alert(`Failed to parse KML: ${err.message}`);
-    clearImportedMission();
+    if (typeof Logger !== 'undefined' && Logger && Logger.error) Logger.error("XML Parsing error:", err);
+    if (typeof alert === 'function') alert(`Failed to parse KML: ${err.message}`);
+    if (typeof clearImportedMission === 'function') clearImportedMission();
+    return null;
   }
 }
 

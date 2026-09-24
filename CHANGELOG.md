@@ -1,6 +1,41 @@
 # Changelog
 
-## [1.117.0] - 2026-09-21
+## [1.119.0] - 2026-09-24
+
+### New Features & Enhancements
+- **Automated 360° Photo Sphere Flight Pattern (Issue #89):**
+  - Added the **360 Pano** (`photo-sphere`) flight pattern to the interactive Section 1 pattern selector card grid and native select menu, dedicated to capturing equirectangular panoramas.
+  - Generates a static 3D coordinate lock $(X, Y, Z)$ at the layer center executing a 37-shot photo sequence (~30% optical overlap):
+    - **Row 1:** Gimbal Pitch $-15^\circ$ | 12 shots spaced every $30^\circ$ of Drone Yaw ($0^\circ \dots 330^\circ$).
+    - **Row 2:** Gimbal Pitch $-45^\circ$ | 12 shots spaced every $30^\circ$ of Drone Yaw ($0^\circ \dots 330^\circ$).
+    - **Row 3:** Gimbal Pitch $-75^\circ$ | 12 shots spaced every $30^\circ$ of Drone Yaw ($0^\circ \dots 330^\circ$).
+    - **Nadir Catch:** 1 final ground lock shot at $-90^\circ$ pitch ($0^\circ$ yaw).
+  - **WPML V2 Export Pipeline:** Compiles standard DJI `actionActuatorFunc` routines with `gimbalRotate` (pitch), `rotateYaw` (aircraft heading), `hover` ($\ge 2.0\text{s}$ settling delay), and `takePhoto` triggers. Enforces *Stop & Shoot* mode to eliminate rotational motion blur.
+  - **Section 2 Context-Sensitive Controls:** Displays `#photo-sphere-container` with sequence architecture while hiding redundant planar sliders (width, height, rotation, overlaps).
+  - **Three.js Simulation Engine & Real-Time Coverage Heatmap:**
+    - Virtual camera FOV cone smoothly executes the downward spiral sequence across all pitch tiers and yaw increments in 3D Flight Diagnostics.
+    - Ground coverage heatmap dynamically paints projected optical footprints on the ground plane canvas in real time as photos fire.
+    - 3D Flight Preview scene renders all 37 camera FOV cones radiating outward in 3 descending rings plus nadir.
+  - **2D Map Visualization:** Renders a dedicated 360 Pano Leaflet marker with compass rose iconography and sequence details popup, draggable to reposition the sphere center.
+
+## [1.118.0] - 2026-09-21
+
+### New Features & Enhancements
+- **Spray-Paint Stencil & Eco Ink-Saver Mode (GCP Studio):**
+  - Added dedicated **Spray-Paint Stencil Mode** (`#gen-render-style`), allowing pilots and field surveyors to fabricate physical Ground Control Points by cutting out target regions with a blade and spray-painting them onto plywood, concrete, or tarps.
+  - Replaces solid black ink floods with crisp dashed cut contours (`stroke-dasharray="6,3"`), saving over 90% of printer ink and toner across large multi-sheet prints.
+  - Features millimeter-accurate vector text annotations (`✂ CUT HERE (PAINT BLACK)`) and scissors icons directly inside cutout zones, with distinct `KEEP (WHITE)` labels on preserved modules.
+  - Fully compatible with single-sheet prints and large-format multi-sheet poster matrices ($R \times C$). Sheet stamps automatically update with `STENCIL TILE` identifiers and fabrication cutting guidance.
+
+## [1.117.1] - 2026-09-21
+
+### Fixed & Enhanced
+- **Large-Format Fiducial Tag Tiling Engine & Multi-Sheet Printing (GCP Studio / Issue #90):**
+  - **Vector Viewport Clipping Fix**: Resolved critical coordinate bug where nested SVG viewports shifted sub-tile contents outside parent clipping boxes, causing tile sheets beyond [0,0] to render blank in printouts and exported SVGs. Sub-tile graphics now directly clip and render millimeter-accurate marker modules, borders, and bit payloads.
+  - **Interactive Assembly Puzzle Helper Diagram**: Added an interactive $R \times C$ matrix puzzle diagram to both the Studio UI and every printed sheet/SVG header stamp. The active sheet is highlighted in gold (`#fbbf24`), showing exactly which piece of the puzzle is currently shown and its neighboring sheet connections.
+  - **Single Tile Sheet Pager & Selector**: Added sheet selector dropdown and previous/next (`◄` / `►`) pager buttons in GCP Studio when viewing single tile sheets, allowing pilots to preview and verify every individual sheet prior to printing.
+  - **Multi-Page Print & PDF Engine**: Updated isolated print iframe styling with `print-color-adjust: exact`, explicit dimensions, and trailing page-break prevention so browser "Save as PDF" produces clean, fully-rendered multi-page documents without blank pages.
+
 
 ### New Features & Enhancements
 - **Large-Format Fiducial Tag Tiling Engine (GCP Studio / Issue #90):**

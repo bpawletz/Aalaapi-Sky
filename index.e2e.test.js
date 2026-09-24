@@ -5669,6 +5669,118 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(e2eTagState.boxVisible, true, 'Detected tags box must be displayed in drawer');
     assert.strictEqual(e2eTagState.hasMatchedGcpText, true, 'Detected tags list must include Matched GCP-02');
   });
+
+  test('E2E: Printable Target Generator Spray-Paint Stencil & Eco Ink-Saver Mode (v1.118.0)', async () => {
+    const stencilState = await page.evaluate(async () => {
+      const modal = document.getElementById('fiducial-generator-modal');
+      const renderStyleEl = document.getElementById('gen-render-style');
+      const previewEl = document.getElementById('gen-target-preview-svg');
+
+      if (typeof openTargetGeneratorModal === 'function') {
+        openTargetGeneratorModal({ type: 'aruco_4x4', id: 3, physicalSizeMeters: 0.20 });
+      }
+
+      const hasRenderStyleSelect = !!renderStyleEl;
+      const initialStyle = renderStyleEl ? renderStyleEl.value : '';
+      const initialSvg = previewEl ? previewEl.innerHTML : '';
+      const initialHasSolidBlack = initialSvg.includes('fill="#000000"');
+
+      // Switch to stencil mode
+      if (renderStyleEl) {
+        renderStyleEl.value = 'stencil';
+        renderStyleEl.dispatchEvent(new Event('change'));
+      }
+
+      const stencilSvg = previewEl ? previewEl.innerHTML : '';
+      const hasDashedCuts = stencilSvg.includes('stroke-dasharray="6,3"');
+      const hasCutAnnotations = stencilSvg.includes('✂ CUT');
+      const hasKeepAnnotations = stencilSvg.includes('KEEP');
+      const stencilHasSolidBlack = stencilSvg.includes('fill="#000000"');
+      const hasStencilHeader = stencilSvg.includes('✂ STENCIL CUTOUT');
+
+      // Switch back to solid mode
+      if (renderStyleEl) {
+        renderStyleEl.value = 'solid';
+        renderStyleEl.dispatchEvent(new Event('change'));
+      }
+      const restoredSvg = previewEl ? previewEl.innerHTML : '';
+      const restoredHasSolidBlack = restoredSvg.includes('fill="#000000"');
+
+      if (typeof closeTargetGeneratorModal === 'function') {
+        closeTargetGeneratorModal();
+      }
+
+      return {
+        hasRenderStyleSelect,
+        initialStyle,
+        initialHasSolidBlack,
+        hasDashedCuts,
+        hasCutAnnotations,
+        hasKeepAnnotations,
+        stencilHasSolidBlack,
+        hasStencilHeader,
+        restoredHasSolidBlack
+      };
+    });
+
+    assert.strictEqual(stencilState.hasRenderStyleSelect, true, '#gen-render-style select must exist in generator modal');
+    assert.strictEqual(stencilState.initialStyle, 'solid', 'Default render style must be solid');
+    assert.strictEqual(stencilState.initialHasSolidBlack, true, 'Standard print mode must contain solid black fills');
+    assert.strictEqual(stencilState.hasDashedCuts, true, 'Stencil mode must render dashed cut lines (stroke-dasharray="6,3")');
+    assert.strictEqual(stencilState.hasCutAnnotations, true, 'Stencil mode must render ✂ CUT annotations');
+    assert.strictEqual(stencilState.hasKeepAnnotations, true, 'Stencil mode must render KEEP annotations on preserved modules');
+    assert.strictEqual(stencilState.stencilHasSolidBlack, false, 'Stencil mode must avoid heavy solid black fills');
+    assert.strictEqual(stencilState.hasStencilHeader, true, 'Stencil mode header badge must designate ✂ STENCIL CUTOUT');
+    assert.strictEqual(stencilState.restoredHasSolidBlack, true, 'Switching back to solid mode restores standard high-contrast fills');
+  });
+
+  test('E2E: Selecting 360 Photo Sphere pattern dynamically generates 37 shots and updates UI container', async () => {
+    const res = await page.evaluate(() => {
+      if (typeof flightLayers !== 'undefined') flightLayers = [];
+      if (typeof activeLayerId !== 'undefined') activeLayerId = null;
+
+      if (typeof setGridCenter === 'function') {
+        setGridCenter(41.88, -87.62);
+      }
+
+      const gridTypeSelect = document.getElementById('grid-type');
+      if (!gridTypeSelect) return { success: false, reason: 'grid-type select missing' };
+
+      const card = document.querySelector('.pattern-card[data-value="photo-sphere"]');
+      if (card) {
+        card.click();
+      } else {
+        gridTypeSelect.value = 'photo-sphere';
+        gridTypeSelect.dispatchEvent(new Event('change'));
+      }
+
+      if (typeof updateGrid === 'function') {
+        updateGrid();
+      }
+
+      const container = document.getElementById('photo-sphere-container');
+      const containerVisible = container && !container.classList.contains('hidden');
+
+      const waypoints = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
+      const wpCount = waypoints.length;
+      const isAllPhotoSphere = waypoints.length > 0 && waypoints.every(wp => wp.isPhotoSpherePoint);
+      const pitches = [...new Set(waypoints.map(wp => wp.pitch))].sort((a, b) => b - a);
+
+      return {
+        success: true,
+        containerVisible,
+        wpCount,
+        isAllPhotoSphere,
+        pitches
+      };
+    });
+
+    assert.strictEqual(res.success, true, 'Evaluation should complete');
+    assert.strictEqual(res.containerVisible, true, 'Photo sphere container should be visible when selected');
+    assert.strictEqual(res.wpCount, 37, 'Should generate exactly 37 waypoints');
+    assert.strictEqual(res.isAllPhotoSphere, true, 'All waypoints should have isPhotoSpherePoint flag');
+    assert.deepStrictEqual(res.pitches, [-15, -45, -75, -90], 'Pitches should include all 4 rows');
+  });
 });
 
 
