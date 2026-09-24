@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.119.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.120.0</span></h1>
 
 
 
@@ -2473,6 +2473,14 @@
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🏗️ Bridge-Hosted 3D Wireframe Extraction &amp; Interactive Toolkit (v1.120.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              High-speed computer vision pipeline hosted within the Companion Bridge daemon! Extracts architectural edges from drone imagery via OpenCV (Gaussian blur, Canny, Hough line transform) and projects 2D lines into 3D world space using drone telemetry and camera intrinsics. Includes an interactive 3D WebGL toolkit with click-to-select raycasting, line inspection, noise prune filtering, vertical elevation calibration, line deletion, and 1-click conversion to Flight Layer Boundaries.
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🌐 Automated 360° Photo Sphere Flight Pattern (v1.119.0)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -3326,7 +3334,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.119.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.120.0</span>
 
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -3390,6 +3398,14 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.120.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🏗️ Bridge-Hosted 3D Wireframe Pipeline:</strong> Built-in OpenCV edge extraction (Gaussian blur, Canny, Hough line transform) and telemetry ray extrusion engine (<code>POST /api/process/wireframe</code>).</li>
+              <li><strong>🎮 Interactive 3D Wireframe Toolkit:</strong> Real-time Three.js <code>LineSegments</code> rendering with raycasting click-to-select, live dimensions, noise prune filter, vertical elevation calibration slider, line deletion, and 1-click conversion to Flight Layer Boundaries.</li>
+              <li><strong>🛬 Automated Landing Ingest Projection:</strong> Added <code>#ingest-extract-wireframe</code> toggle to Media Ingest modal with automatic wireframe extraction upon photo synchronization.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.119.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -6513,6 +6529,8 @@
               <span id="diag-indicator-footprints" class="diag-indicator"></span>
               <button id="diag-btn-toggle-drones" class="btn-secondary"><span>✈</span> 3D Drones</button>
               <span id="diag-indicator-drones" class="diag-indicator"></span>
+              <button id="diag-btn-toggle-wireframe" class="btn-secondary active" title="Toggle 3D Architectural Wireframe Extrusion"><span>🏗️</span> Wireframe</button>
+              <span id="diag-indicator-wireframe" class="diag-indicator active"></span>
               <button id="diag-btn-fpv" class="btn-secondary"><span>📡</span> FPV Mode</button>
               <span id="diag-indicator-fpv" class="diag-indicator"></span>
             </div>
@@ -6521,6 +6539,39 @@
             <div class="diag-view-camera-controls">
               <button id="diag-view-3d-btn" type="button" class="btn-secondary active">3D View</button>
               <button id="diag-view-top-btn" type="button" class="btn-secondary">Top Down</button>
+            </div>
+
+            <!-- Interactive 3D Wireframe Toolkit & Inspector Card -->
+            <div id="diag-wireframe-panel" class="diag-wireframe-panel" style="display: none; position: absolute; top: 16px; left: 16px; z-index: 25; background: rgba(15, 23, 42, 0.92); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 10px 14px; backdrop-filter: blur(8px); box-shadow: 0 4px 16px rgba(0,0,0,0.5); width: 280px; font-size: 0.75rem; color: var(--text-main);">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                <span style="font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+                  <span>🏗️ 3D Wireframe Toolkit</span>
+                </span>
+                <span id="diag-wireframe-count-badge" class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.65rem; padding: 1px 6px;">0 lines</span>
+              </div>
+              <div id="diag-wireframe-selected-info" style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 8px; padding: 4px 6px; background: rgba(0,0,0,0.25); border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
+                Click line to select &amp; inspect
+              </div>
+              <!-- Controls row -->
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                  <span style="font-size: 0.68rem; color: var(--text-muted);">↕️ Elevation Offset:</span>
+                  <span id="diag-wireframe-elev-val" style="font-size: 0.68rem; font-family: monospace; color: #38bdf8;">0.0m</span>
+                </div>
+                <input id="diag-wireframe-elevation-slider" type="range" min="-20" max="40" value="0" step="0.5" style="width: 100%; accent-color: #38bdf8; cursor: pointer;" />
+
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                  <span style="font-size: 0.68rem; color: var(--text-muted);">📐 Prune Short Lines:</span>
+                  <span id="diag-wireframe-filter-val" style="font-size: 0.68rem; font-family: monospace; color: #fbbf24;">&lt; 0.5m</span>
+                </div>
+                <input id="diag-wireframe-filter-slider" type="range" min="0" max="15" value="0.5" step="0.5" style="width: 100%; accent-color: #fbbf24; cursor: pointer;" />
+
+                <div style="display: flex; gap: 6px; margin-top: 4px;">
+                  <button id="diag-wireframe-del-btn" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.68rem; color: #f87171; border-color: rgba(239, 68, 68, 0.3);" title="Delete selected line segment">🗑️ Delete</button>
+                  <button id="diag-wireframe-convert-btn" class="btn-secondary" style="flex: 1.4; padding: 4px 6px; font-size: 0.68rem; color: #34d399; border-color: rgba(16, 185, 129, 0.3);" title="Convert wireframe footprint into Flight Layer Boundary">🗺️ To Boundary</button>
+                  <button id="diag-wireframe-export-btn" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.68rem;" title="Export Wireframe JSON or OBJ">💾 Export</button>
+                </div>
+              </div>
             </div>
 
             <!-- Path Legend -->
@@ -6540,6 +6591,10 @@
               <div id="diag-legend-boundary" style="display: none; align-items: center; gap: 5px;">
                 <span style="width: 10px; height: 3px; border-top: 2px dashed #06b6d4; display: inline-block;"></span>
                 <span id="diag-legend-boundary-text" style="color: var(--text-muted);">Flight Boundary</span>
+              </div>
+              <div id="diag-legend-wireframe" style="display: none; align-items: center; gap: 5px;">
+                <span style="width: 10px; height: 3px; background: #38bdf8; display: inline-block; border-radius: 2px; box-shadow: 0 0 6px rgba(56, 189, 248, 0.6);"></span>
+                <span id="diag-legend-wireframe-text" style="color: #38bdf8; font-weight: 600;">3D Wireframe</span>
               </div>
             </div>
           </div>
@@ -6808,6 +6863,9 @@
 
           <div style="display: flex; align-items: center; gap: 8px;">
             <span id="diag-photos-summary-text" style="font-size: 0.72rem; color: var(--text-muted);">0 Photos</span>
+            <button id="diag-btn-extract-wireframe" type="button" class="btn-secondary diag-photos-btn" style="padding: 5px 10px; font-size: 0.75rem; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; background: rgba(56, 189, 248, 0.1);" title="Run OpenCV edge extraction and project 3D wireframe">
+              <span>🏗️</span> Project 3D Wireframe
+            </button>
             <button id="diag-gallery-pull-photos-btn" type="button" class="btn-secondary diag-photos-btn" style="padding: 5px 12px; font-size: 0.75rem;">
               <span>📸</span> Import Photos...
             </button>
@@ -7128,6 +7186,10 @@
           <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
             <input type="checkbox" id="ingest-scan-tags" checked />
             <span>Auto-scan photos for fiducial tags &amp; GCPs (AprilTag / ArUco)</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+            <input type="checkbox" id="ingest-extract-wireframe" checked />
+            <span>🏗️ Extract 3D Architectural Wireframe (OpenCV + Telemetry Extrusion)</span>
           </label>
           <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; padding: 6px 8px; border-radius: 6px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); margin-top: 4px;">
             <input type="checkbox" id="ingest-delete-from-drone" style="margin-top: 2px;" />

@@ -19234,7 +19234,14 @@ const FlightDiagnostics = {
   diagShowCones: true,
   diagShowFootprints: true,
   diagShowDrones: true,
+  diagShowWireframe: true,
   diagFpvMode: false,
+  wireframeData: null,
+  wireframeLinesMesh: null,
+  wireframeHighlightMesh: null,
+  wireframeSelectedLineIndex: null,
+  wireframeElevationOffset: 0.0,
+  wireframeMinLengthFilter: 0.5,
   _savedCamPos: null,
   _savedCamTarget: null,
 
@@ -19884,6 +19891,75 @@ const FlightDiagnostics = {
         if (this.droneMesh) this.droneMesh.visible = this.diagShowDrones;
         diagBtnDrones.classList.toggle('active', this.diagShowDrones);
         _setDiagIndicator('diag-indicator-drones', this.diagShowDrones);
+      });
+    }
+
+    const diagBtnWireframe = document.getElementById('diag-btn-toggle-wireframe');
+    if (diagBtnWireframe && typeof diagBtnWireframe.addEventListener === 'function') {
+      diagBtnWireframe.addEventListener('click', () => {
+        this.toggleWireframe();
+      });
+    }
+
+    const diagWfElevSlider = document.getElementById('diag-wireframe-elevation-slider');
+    const diagWfElevVal = document.getElementById('diag-wireframe-elev-val');
+    if (diagWfElevSlider && typeof diagWfElevSlider.addEventListener === 'function') {
+      diagWfElevSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value) || 0;
+        this.wireframeElevationOffset = val;
+        if (diagWfElevVal) diagWfElevVal.textContent = `${val >= 0 ? '+' : ''}${val.toFixed(1)}m`;
+        this.rebuildWireframeMesh();
+      });
+    }
+
+    const diagWfFilterSlider = document.getElementById('diag-wireframe-filter-slider');
+    const diagWfFilterVal = document.getElementById('diag-wireframe-filter-val');
+    if (diagWfFilterSlider && typeof diagWfFilterSlider.addEventListener === 'function') {
+      diagWfFilterSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value) || 0;
+        this.wireframeMinLengthFilter = val;
+        if (diagWfFilterVal) diagWfFilterVal.textContent = `< ${val.toFixed(1)}m`;
+        this.rebuildWireframeMesh();
+      });
+    }
+
+    const diagWfDelBtn = document.getElementById('diag-wireframe-del-btn');
+    if (diagWfDelBtn && typeof diagWfDelBtn.addEventListener === 'function') {
+      diagWfDelBtn.addEventListener('click', () => {
+        this.deleteSelectedWireframeLine();
+      });
+    }
+
+    const diagWfConvertBtn = document.getElementById('diag-wireframe-convert-btn');
+    if (diagWfConvertBtn && typeof diagWfConvertBtn.addEventListener === 'function') {
+      diagWfConvertBtn.addEventListener('click', () => {
+        this.convertWireframeToBoundary();
+      });
+    }
+
+    const diagWfExportBtn = document.getElementById('diag-wireframe-export-btn');
+    if (diagWfExportBtn && typeof diagWfExportBtn.addEventListener === 'function') {
+      diagWfExportBtn.addEventListener('click', () => {
+        this.exportWireframe('json');
+      });
+    }
+
+    const diagExtractWfBtn = document.getElementById('diag-btn-extract-wireframe');
+    if (diagExtractWfBtn && typeof diagExtractWfBtn.addEventListener === 'function') {
+      diagExtractWfBtn.addEventListener('click', () => {
+        this.extractWireframeFromCurrentPhotos();
+      });
+    }
+
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      window.addEventListener('keydown', (e) => {
+        if ((e.key === 'Delete' || e.key === 'Backspace') && this.wireframeSelectedLineIndex !== null && this.isOpen) {
+          const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+          if (activeTag !== 'input' && activeTag !== 'textarea') {
+            e.preventDefault();
+            this.deleteSelectedWireframeLine();
+          }
+        }
       });
     }
 
@@ -20614,8 +20690,22 @@ const FlightDiagnostics = {
           this.flightPhotosFlightId = flightId;
           this.flightManifest = { ...mData, photos: filtered, totalPhotos: filtered.length };
           activeInspectionManifest = this.flightManifest;
+          if (mData.wireframe && mData.wireframe.success) {
+            this.wireframeData = mData.wireframe;
+          }
         }
       }
+      try {
+        const wfRes = await fetch(`${apiBase}/api/process/wireframe?missionUuid=${encodeURIComponent(mUuid)}`, {
+          signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(1500) : undefined
+        });
+        if (wfRes.ok) {
+          const wfData = await wfRes.json();
+          if (wfData && wfData.success && Array.isArray(wfData.lines) && wfData.lines.length > 0) {
+            this.wireframeData = wfData;
+          }
+        }
+      } catch (_) {}
     } catch (e) {}
 
     this.updateStatsUI();
@@ -20951,18 +21041,40 @@ const FlightDiagnostics = {
       const raycaster = new THREE.Raycaster();
       const mouse = new THREE.Vector2();
       this.threeRenderer.domElement.addEventListener('click', (event) => {
-        if (!this.threeCamera || !this.photoMarkers || this.photoMarkers.length === 0) return;
+        if (!this.threeCamera) return;
         const rect = this.threeRenderer.domElement.getBoundingClientRect();
         mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-        const intersects = raycaster.intersectObjects(this.photoMarkers, true);
-        if (intersects && intersects.length > 0) {
-          let hit = intersects[0].object;
-          while (hit && (!hit.userData || hit.userData.index === undefined) && hit.parent) {
-            hit = hit.parent;
+        if (typeof raycaster.setFromCamera === 'function') {
+          raycaster.setFromCamera(mouse, this.threeCamera);
+        }
+
+        // 1. Raycast on Wireframe line segments
+        if (this.wireframeLinesMesh && this.wireframeLinesMesh.visible && this.wireframeData && Array.isArray(this.wireframeData.lines)) {
+          if (raycaster.params) {
+            if (!raycaster.params.Line) raycaster.params.Line = {};
+            raycaster.params.Line.threshold = 1.8;
           }
-          if (hit && hit.userData && hit.userData.index !== undefined) {
-            this.seekTo(hit.userData.index);
+          const wfIntersects = raycaster.intersectObject(this.wireframeLinesMesh);
+          if (wfIntersects && wfIntersects.length > 0) {
+            const hit = wfIntersects[0];
+            const segIdx = (hit.index !== undefined) ? Math.floor(hit.index / 2) : 0;
+            this.selectWireframeLine(segIdx);
+            return;
+          }
+        }
+
+        // 2. Raycast on Photo Markers
+        if (this.photoMarkers && this.photoMarkers.length > 0) {
+          const intersects = raycaster.intersectObjects(this.photoMarkers, true);
+          if (intersects && intersects.length > 0) {
+            let hit = intersects[0].object;
+            while (hit && (!hit.userData || hit.userData.index === undefined) && hit.parent) {
+              hit = hit.parent;
+            }
+            if (hit && hit.userData && hit.userData.index !== undefined) {
+              this.seekTo(hit.userData.index);
+            }
           }
         }
       });
@@ -21267,6 +21379,10 @@ const FlightDiagnostics = {
         }
       });
       this.boundaryMeshes = [];
+    }
+
+    if (this.wireframeData && typeof this.rebuildWireframeMesh === 'function') {
+      this.rebuildWireframeMesh();
     }
 
     if (isActual) {
@@ -21889,6 +22005,321 @@ const FlightDiagnostics = {
       }
     } catch (err) {
       if (typeof alert === 'function') alert('Could not parse file: ' + err.message);
+    }
+  },
+
+  loadWireframeGeometry(data) {
+    if (!data) return;
+    this.wireframeData = data;
+    this.diagShowWireframe = true;
+    this.rebuildWireframeMesh();
+
+    const panel = (typeof document !== 'undefined') ? document.getElementById('diag-wireframe-panel') : null;
+    if (panel) panel.style.display = 'block';
+
+    const legendWf = (typeof document !== 'undefined') ? document.getElementById('diag-legend-wireframe') : null;
+    if (legendWf) legendWf.style.display = 'flex';
+
+    const btn = (typeof document !== 'undefined') ? document.getElementById('diag-btn-toggle-wireframe') : null;
+    if (btn) btn.classList.add('active');
+    if (typeof _setDiagIndicator === 'function') _setDiagIndicator('diag-indicator-wireframe', true);
+  },
+
+  rebuildWireframeMesh() {
+    if (this.wireframeLinesMesh && this.threeScene) {
+      this.threeScene.remove(this.wireframeLinesMesh);
+      if (this.wireframeLinesMesh.geometry) this.wireframeLinesMesh.geometry.dispose();
+      this.wireframeLinesMesh = null;
+    }
+    if (this.wireframeHighlightMesh && this.threeScene) {
+      this.threeScene.remove(this.wireframeHighlightMesh);
+      if (this.wireframeHighlightMesh.geometry) this.wireframeHighlightMesh.geometry.dispose();
+      this.wireframeHighlightMesh = null;
+    }
+
+    if (!this.wireframeData || !Array.isArray(this.wireframeData.lines) || this.wireframeData.lines.length === 0) {
+      const badge = (typeof document !== 'undefined') ? document.getElementById('diag-wireframe-count-badge') : null;
+      if (badge) badge.textContent = '0 lines';
+      return;
+    }
+
+    const minLen = typeof this.wireframeMinLengthFilter === 'number' ? this.wireframeMinLengthFilter : 0.5;
+    const elevOffset = typeof this.wireframeElevationOffset === 'number' ? this.wireframeElevationOffset : 0.0;
+
+    const validLines = this.wireframeData.lines.filter(line => {
+      if (!Array.isArray(line) || line.length < 6) return false;
+      const [x1, y1, z1, x2, y2, z2] = line;
+      const len = Math.hypot(x2 - x1, y2 - y1, z2 - z1);
+      return len >= minLen;
+    });
+
+    const badge = (typeof document !== 'undefined') ? document.getElementById('diag-wireframe-count-badge') : null;
+    if (badge) badge.textContent = `${validLines.length} lines`;
+
+    if (validLines.length === 0 || typeof THREE === 'undefined' || typeof THREE.BufferGeometry !== 'function' || typeof THREE.BufferAttribute !== 'function' || typeof THREE.LineSegments !== 'function') return;
+
+    const positions = new Float32Array(validLines.length * 6);
+    validLines.forEach((line, idx) => {
+      const [x1, y1, z1, x2, y2, z2] = line;
+      const off = idx * 6;
+      positions[off] = x1;
+      positions[off + 1] = y1 + elevOffset;
+      positions[off + 2] = z1;
+      positions[off + 3] = x2;
+      positions[off + 4] = y2 + elevOffset;
+      positions[off + 5] = z2;
+    });
+
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const mat = new THREE.LineBasicMaterial({
+      color: 0x38bdf8,
+      linewidth: 2,
+      transparent: true,
+      opacity: 0.85
+    });
+
+    this.wireframeLinesMesh = new THREE.LineSegments(geom, mat);
+    this.wireframeLinesMesh.visible = this.diagShowWireframe !== false;
+    this.wireframeLinesMesh.userData = { isWireframe: true, validLines };
+
+    if (this.threeScene) {
+      this.threeScene.add(this.wireframeLinesMesh);
+    }
+  },
+
+  toggleWireframe(visible) {
+    if (visible === undefined) {
+      this.diagShowWireframe = !this.diagShowWireframe;
+    } else {
+      this.diagShowWireframe = Boolean(visible);
+    }
+    if (this.wireframeLinesMesh) {
+      this.wireframeLinesMesh.visible = this.diagShowWireframe;
+    }
+    if (this.wireframeHighlightMesh) {
+      this.wireframeHighlightMesh.visible = this.diagShowWireframe;
+    }
+    const btn = (typeof document !== 'undefined') ? document.getElementById('diag-btn-toggle-wireframe') : null;
+    if (btn && btn.classList) {
+      if (typeof btn.classList.toggle === 'function') {
+        btn.classList.toggle('active', this.diagShowWireframe);
+      } else if (this.diagShowWireframe) {
+        if (typeof btn.classList.add === 'function') btn.classList.add('active');
+      } else {
+        if (typeof btn.classList.remove === 'function') btn.classList.remove('active');
+      }
+    }
+    if (typeof _setDiagIndicator === 'function') {
+      _setDiagIndicator('diag-indicator-wireframe', this.diagShowWireframe);
+    }
+  },
+
+  selectWireframeLine(index) {
+    if (!this.wireframeData || !Array.isArray(this.wireframeData.lines) || index < 0 || index >= this.wireframeData.lines.length) return;
+    this.wireframeSelectedLineIndex = index;
+    const line = this.wireframeData.lines[index];
+    const [x1, y1, z1, x2, y2, z2] = line;
+    const elevOffset = typeof this.wireframeElevationOffset === 'number' ? this.wireframeElevationOffset : 0.0;
+    const len = Math.hypot(x2 - x1, y2 - y1, z2 - z1);
+
+    const info = (typeof document !== 'undefined') ? document.getElementById('diag-wireframe-selected-info') : null;
+    if (info) {
+      info.innerHTML = `<strong>Selected #${index + 1}:</strong> Len: <strong>${len.toFixed(2)}m</strong> • Elev: ${y1.toFixed(1)}m→${y2.toFixed(1)}m<br><span style="color:#38bdf8;">(${x1.toFixed(1)}, ${z1.toFixed(1)}) → (${x2.toFixed(1)}, ${z2.toFixed(1)})</span>`;
+    }
+
+    if (this.wireframeHighlightMesh && this.threeScene) {
+      this.threeScene.remove(this.wireframeHighlightMesh);
+      if (this.wireframeHighlightMesh.geometry) this.wireframeHighlightMesh.geometry.dispose();
+      this.wireframeHighlightMesh = null;
+    }
+
+    if (typeof THREE !== 'undefined' && typeof THREE.Vector3 === 'function' && typeof THREE.BufferGeometry === 'function' && typeof THREE.Line === 'function') {
+      const p1 = new THREE.Vector3(x1, y1 + elevOffset, z1);
+      const p2 = new THREE.Vector3(x2, y2 + elevOffset, z2);
+      const geo = new THREE.BufferGeometry().setFromPoints([p1, p2]);
+      const mat = new THREE.LineBasicMaterial({ color: 0xf59e0b, linewidth: 4 });
+      this.wireframeHighlightMesh = new THREE.Line(geo, mat);
+      if (this.threeScene) this.threeScene.add(this.wireframeHighlightMesh);
+    }
+  },
+
+  deleteSelectedWireframeLine() {
+    if (this.wireframeSelectedLineIndex === null || !this.wireframeData || !Array.isArray(this.wireframeData.lines)) return;
+    const idx = this.wireframeSelectedLineIndex;
+    if (idx >= 0 && idx < this.wireframeData.lines.length) {
+      this.wireframeData.lines.splice(idx, 1);
+      this.wireframeSelectedLineIndex = null;
+      if (this.wireframeHighlightMesh && this.threeScene) {
+        this.threeScene.remove(this.wireframeHighlightMesh);
+        this.wireframeHighlightMesh = null;
+      }
+      const info = (typeof document !== 'undefined') ? document.getElementById('diag-wireframe-selected-info') : null;
+      if (info) info.textContent = 'Line deleted. Click line to select & inspect';
+      this.rebuildWireframeMesh();
+    }
+  },
+
+  unprojectFromWorld(x, z) {
+    const origin = this.getSceneOrigin();
+    const tileZoom = 18;
+    const tileWidthMeters = 40075016.686 * Math.cos(origin.lat * Math.PI / 180) / Math.pow(2, tileZoom);
+    const sinLat0 = Math.sin(origin.lat * Math.PI / 180);
+    const xTile0 = ((origin.lon + 180) / 360) * Math.pow(2, tileZoom);
+    const yTile0 = (0.5 - Math.log((1 + sinLat0) / (1 - sinLat0)) / (4 * Math.PI)) * Math.pow(2, tileZoom);
+
+    const xTile = (x / tileWidthMeters) + xTile0;
+    const yTile = (z / tileWidthMeters) + yTile0;
+
+    const lon = (xTile / Math.pow(2, tileZoom)) * 360 - 180;
+    const n = Math.PI - 2 * Math.PI * (yTile / Math.pow(2, tileZoom));
+    const lat = (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+
+    return { lat, lon, lng: lon };
+  },
+
+  convertWireframeToBoundary() {
+    if (!this.wireframeData || !Array.isArray(this.wireframeData.lines) || this.wireframeData.lines.length < 3) {
+      if (typeof showToast === 'function') showToast('Requires at least 3 wireframe line segments', 'warning');
+      return;
+    }
+
+    const pts2D = [];
+    this.wireframeData.lines.forEach(l => {
+      if (Array.isArray(l) && l.length >= 6) {
+        pts2D.push({ x: l[0], z: l[2] });
+        pts2D.push({ x: l[3], z: l[5] });
+      }
+    });
+
+    if (pts2D.length < 3) return;
+
+    // Compute 2D Convex Hull
+    const sorted = [...pts2D].sort((a, b) => a.x === b.x ? a.z - b.z : a.x - b.x);
+    const cross = (o, a, b) => (a.x - o.x) * (b.z - o.z) - (a.z - o.z) * (b.x - o.x);
+
+    const lower = [];
+    for (const p of sorted) {
+      while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) {
+        lower.pop();
+      }
+      lower.push(p);
+    }
+    const upper = [];
+    for (let i = sorted.length - 1; i >= 0; i--) {
+      const p = sorted[i];
+      while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) {
+        upper.pop();
+      }
+      upper.push(p);
+    }
+    lower.pop();
+    upper.pop();
+    const hullWorld = lower.concat(upper);
+
+    if (hullWorld.length < 3) return;
+
+    // Unproject to Geo Coordinates
+    const geoPolygon = hullWorld.map(wp => this.unprojectFromWorld(wp.x, wp.z));
+
+    // Save as parcel / boundary in active layer
+    if (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers) && flightLayers.length > 0) {
+      const activeIdx = (typeof currentLayerIndex !== 'undefined' && currentLayerIndex >= 0 && currentLayerIndex < flightLayers.length) ? currentLayerIndex : 0;
+      const targetLayer = flightLayers[activeIdx];
+      targetLayer.boundaryPolygon = geoPolygon;
+      targetLayer.boundaryColor = '#38bdf8';
+      targetLayer.boundaryStyle = 'solid';
+      targetLayer.boundaryFillOpacity = 20;
+
+      if (typeof updateLayerBoundaryUI === 'function') updateLayerBoundaryUI();
+      if (typeof renderAllLayerBoundaries === 'function') renderAllLayerBoundaries();
+      if (typeof showToast === 'function') showToast(`✨ Converted 3D wireframe to Layer ${targetLayer.name || activeIdx + 1} Boundary!`, 'success');
+      else alert('✨ Converted 3D wireframe to Flight Layer Boundary!');
+    }
+  },
+
+  exportWireframe(format = 'json') {
+    if (!this.wireframeData || !Array.isArray(this.wireframeData.lines)) return;
+    let mimeType = 'application/json';
+    let fileExt = 'json';
+    let content = '';
+
+    if (format === 'obj') {
+      mimeType = 'text/plain';
+      fileExt = 'obj';
+      let vCount = 1;
+      content = `# Aalaapi Sky 3D Architectural Wireframe\n# Generated: ${new Date().toISOString()}\n\n`;
+      const elevOffset = typeof this.wireframeElevationOffset === 'number' ? this.wireframeElevationOffset : 0.0;
+      this.wireframeData.lines.forEach(line => {
+        if (!Array.isArray(line) || line.length < 6) return;
+        const [x1, y1, z1, x2, y2, z2] = line;
+        content += `v ${x1} ${y1 + elevOffset} ${z1}\n`;
+        content += `v ${x2} ${y2 + elevOffset} ${z2}\n`;
+        content += `l ${vCount} ${vCount + 1}\n`;
+        vCount += 2;
+      });
+    } else {
+      content = JSON.stringify(this.wireframeData, null, 2);
+    }
+
+    if (typeof Blob !== 'undefined' && typeof URL !== 'undefined' && typeof document !== 'undefined') {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `wireframe_${this.selectedFlightId || 'mission'}.${fileExt}`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+    }
+  },
+
+  async extractWireframeFromCurrentPhotos() {
+    const btn = (typeof document !== 'undefined') ? document.getElementById('diag-btn-extract-wireframe') : null;
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '⏳ Extracting...';
+    }
+    try {
+      const apiBase = (typeof getCompanionApiBase === 'function')
+        ? getCompanionApiBase()
+        : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
+
+      const missionUuid = (this.activeInspectionManifest && this.activeInspectionManifest.missionUuid)
+        || (this.currentLoadedMission && this.currentLoadedMission.uuid)
+        || this.selectedFlightId
+        || 'default-mission';
+
+      const res = await fetch(`${apiBase}/api/process/wireframe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          missionUuid,
+          flightId: this.selectedFlightId,
+          photos: (this.flightPhotos && this.flightPhotos.length > 0) ? this.flightPhotos : []
+        })
+      });
+
+      if (!res.ok) throw new Error(`Bridge returned HTTP ${res.status}`);
+      const data = await res.json();
+      if (data && data.success) {
+        this.loadWireframeGeometry(data);
+        this.switchTab('3d');
+        if (typeof showToast === 'function') showToast(`✨ 3D Architectural Wireframe extracted (${data.count || 0} lines)`, 'success');
+      } else {
+        throw new Error(data.error || 'Extraction failed');
+      }
+    } catch (err) {
+      if (typeof showToast === 'function') showToast(`Wireframe extraction failed: ${err.message}`, 'error');
+      else alert(`Wireframe extraction note: ${err.message}`);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<span>🏗️</span> Project 3D Wireframe';
+      }
     }
   }
 };
@@ -34121,6 +34552,8 @@ async function executeMediaPull() {
 
     const scanTagsCheck = document.getElementById('ingest-scan-tags');
     const scanTags = Boolean(scanTagsCheck ? scanTagsCheck.checked : true);
+    const extractWireframeCheck = document.getElementById('ingest-extract-wireframe');
+    const extractWireframe = Boolean(extractWireframeCheck ? extractWireframeCheck.checked : true);
 
     const res = await fetch(`${apiBase}/api/media/pull`, {
       method: 'POST',
@@ -34133,6 +34566,7 @@ async function executeMediaPull() {
         filterByGeo: Boolean(filterGeoCheck ? (filterGeoCheck.checked && bounds) : Boolean(bounds)),
         deleteFromDrone: shouldDeleteFromDrone,
         scanTags: scanTags,
+        extractWireframe: extractWireframe,
         timeWindow,
         bounds,
         telemetry: telem || { points: [] }
@@ -34145,6 +34579,9 @@ async function executeMediaPull() {
     if (progPct) progPct.textContent = '100%';
 
     let statusMsg = `Completed! ${data.totalPhotos || 0} photos ingested.`;
+    if (data.wireframe && data.wireframe.count > 0) {
+      statusMsg += ` (🏗️ ${data.wireframe.count} 3D wireframe lines)`;
+    }
     if (data.diskSpaceError) {
       statusMsg = `⚠️ Disk full on drive C:! Ingested ${data.totalPhotos || 0} photos before space ran out. Free up space on C: to ingest remaining photos.`;
       if (progText) progText.style.color = '#f87171';
@@ -34179,6 +34616,16 @@ async function executeMediaPull() {
         dlBtn.onclick = () => {
           window.location.href = `${apiBase}/api/media/archive-zip?uuid=${encodeURIComponent(data.missionUuid)}`;
         };
+      }
+    }
+
+    if (data.wireframe && data.wireframe.success) {
+      if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.loadWireframeGeometry) {
+        FlightDiagnostics.loadWireframeGeometry(data.wireframe);
+      }
+    } else if (data.manifest && data.manifest.wireframe) {
+      if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.loadWireframeGeometry) {
+        FlightDiagnostics.loadWireframeGeometry(data.manifest.wireframe);
       }
     }
     return data;

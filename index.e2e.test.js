@@ -5781,6 +5781,108 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(res.isAllPhotoSphere, true, 'All waypoints should have isPhotoSpherePoint flag');
     assert.deepStrictEqual(res.pitches, [-15, -45, -75, -90], 'Pitches should include all 4 rows');
   });
+
+  test('E2E: Interactive 3D Wireframe Toolkit and HUD controls (v1.120.0)', async () => {
+    const res = await page.evaluate(() => {
+      // 1. Check DOM elements exist
+      const btnToggle = document.getElementById('diag-btn-toggle-wireframe');
+      const panel = document.getElementById('diag-wireframe-panel');
+      const elevSlider = document.getElementById('diag-wireframe-elevation-slider');
+      const elevVal = document.getElementById('diag-wireframe-elev-val');
+      const filterSlider = document.getElementById('diag-wireframe-filter-slider');
+      const filterVal = document.getElementById('diag-wireframe-filter-val');
+      const countBadge = document.getElementById('diag-wireframe-count-badge');
+      const ingestCheck = document.getElementById('ingest-extract-wireframe');
+      const extractBtn = document.getElementById('diag-btn-extract-wireframe');
+
+      if (!btnToggle || !panel || !elevSlider || !filterSlider || !countBadge) {
+        return { success: false, error: 'Wireframe elements missing from DOM' };
+      }
+
+      // 2. Test FlightDiagnostics wireframe methods
+      const samplePayload = {
+        success: true,
+        lines: [
+          [-15, 0, -20, 15, 0, -20],
+          [15, 0, -20, 15, 0, 20],
+          [15, 0, 20, -15, 0, 20],
+          [-15, 0, 20, -15, 0, -20],
+          [-15, 0, -20, 0, 12, 0],
+          [15, 0, -20, 0, 12, 0]
+        ],
+        count: 6
+      };
+
+      FlightDiagnostics.loadWireframeGeometry(samplePayload);
+      const isPanelVisible = panel.style.display !== 'none';
+      const initialBadgeText = countBadge.textContent;
+
+      // 3. Test Elevation Slider interaction
+      elevSlider.value = 5.0;
+      elevSlider.dispatchEvent(new Event('input'));
+      const newElevText = elevVal.textContent;
+      const isOffsetUpdated = FlightDiagnostics.wireframeElevationOffset === 5.0;
+
+      // 4. Test Filter Slider interaction
+      filterSlider.value = 25.0;
+      filterSlider.dispatchEvent(new Event('input'));
+      const newFilterText = filterVal.textContent;
+      const filteredBadgeText = countBadge.textContent;
+
+      // Reset filter slider to 0.5
+      filterSlider.value = 0.5;
+      filterSlider.dispatchEvent(new Event('input'));
+
+      // 5. Test Select & Delete
+      FlightDiagnostics.selectWireframeLine(0);
+      const selIdx = FlightDiagnostics.wireframeSelectedLineIndex;
+      const delBtn = document.getElementById('diag-wireframe-del-btn');
+      delBtn.click();
+      const linesAfterDelete = FlightDiagnostics.wireframeData.lines.length;
+
+      // 6. Test Convert to Layer Boundary
+      flightLayers = [{ id: 'layer-1', name: 'Inspection Layer', enabled: true }];
+      currentLayerIndex = 0;
+      const convertBtn = document.getElementById('diag-wireframe-convert-btn');
+      convertBtn.click();
+      const boundaryLen = (flightLayers[0].boundaryPolygon && flightLayers[0].boundaryPolygon.length) || 0;
+
+      // 7. Test Toggle Button
+      btnToggle.click();
+      const stateHidden = FlightDiagnostics.diagShowWireframe === false;
+      btnToggle.click();
+      const stateVisible = FlightDiagnostics.diagShowWireframe === true;
+
+      return {
+        success: true,
+        isPanelVisible,
+        initialBadgeText,
+        newElevText,
+        isOffsetUpdated,
+        newFilterText,
+        filteredBadgeText,
+        selIdx,
+        linesAfterDelete,
+        boundaryLen,
+        stateHidden,
+        stateVisible,
+        hasIngestCheck: !!ingestCheck,
+        hasExtractBtn: !!extractBtn
+      };
+    });
+
+    assert.strictEqual(res.success, true, res.error || 'Evaluation should succeed');
+    assert.strictEqual(res.isPanelVisible, true, 'Wireframe toolkit panel should be displayed');
+    assert.strictEqual(res.initialBadgeText, '6 lines', 'Badge should show 6 lines initially');
+    assert.strictEqual(res.newElevText, '+5.0m', 'Elevation label should display +5.0m');
+    assert.strictEqual(res.isOffsetUpdated, true, 'Elevation offset state should update to 5.0');
+    assert.strictEqual(res.linesAfterDelete, 5, 'Should have 5 lines remaining after deleting 1 line');
+    assert.ok(res.boundaryLen >= 3, 'Should convert wireframe into boundary polygon with >= 3 vertices');
+    assert.strictEqual(res.stateHidden, true, 'First toggle click should hide wireframe');
+    assert.strictEqual(res.stateVisible, true, 'Second toggle click should restore wireframe');
+    assert.strictEqual(res.hasIngestCheck, true, '#ingest-extract-wireframe must exist in ingest modal');
+    assert.strictEqual(res.hasExtractBtn, true, '#diag-btn-extract-wireframe must exist in photos toolbar');
+  });
 });
 
 

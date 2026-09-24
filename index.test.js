@@ -20412,33 +20412,33 @@ describe('Photo Telemetry Correlation & Ground Boundary Projection Suite Tests (
     assert.ok(changelog.includes('## [1.118.0] - 2026-09-21'), 'CHANGELOG must contain 1.118.0');
 
     const tmpl = fs.readFileSync('./index_template.html', 'utf8');
-    assert.ok(tmpl.includes('v1.118.0') || tmpl.includes('v1.119.0'), 'index_template.html must contain header badge');
-    assert.ok(tmpl.includes('Version 1.118.0') || tmpl.includes('Version 1.119.0'), 'index_template.html must contain Version');
-    assert.ok(tmpl.includes('Changelog (v1.118.0):') || tmpl.includes('Changelog (v1.119.0):'), 'index_template.html must contain Changelog');
+    assert.ok(tmpl.includes('v1.118.0') || tmpl.includes('v1.119.0') || tmpl.includes('v1.120.0'), 'index_template.html must contain header badge');
+    assert.ok(tmpl.includes('Version 1.118.0') || tmpl.includes('Version 1.119.0') || tmpl.includes('Version 1.120.0'), 'index_template.html must contain Version');
+    assert.ok(tmpl.includes('Changelog (v1.118.0):') || tmpl.includes('Changelog (v1.119.0):') || tmpl.includes('Changelog (v1.120.0):'), 'index_template.html must contain Changelog');
 
     const indexHtml = fs.readFileSync('./index.html', 'utf8');
-    assert.ok(indexHtml.includes('v1.118.0') || indexHtml.includes('v1.119.0'), 'index.html must contain header badge');
-    assert.ok(indexHtml.includes('Version 1.118.0') || indexHtml.includes('Version 1.119.0'), 'index.html must contain Version');
-    assert.ok(indexHtml.includes('Changelog (v1.118.0):') || indexHtml.includes('Changelog (v1.119.0):'), 'index.html must contain Changelog');
+    assert.ok(indexHtml.includes('v1.118.0') || indexHtml.includes('v1.119.0') || indexHtml.includes('v1.120.0'), 'index.html must contain header badge');
+    assert.ok(indexHtml.includes('Version 1.118.0') || indexHtml.includes('Version 1.119.0') || indexHtml.includes('Version 1.120.0'), 'index.html must contain Version');
+    assert.ok(indexHtml.includes('Changelog (v1.118.0):') || indexHtml.includes('Changelog (v1.119.0):') || indexHtml.includes('Changelog (v1.120.0):'), 'index.html must contain Changelog');
   });
 });
 
 describe('Automated 360° Photo Sphere Flight Pattern Suite (v1.119.0)', () => {
   test('Version 1.119.0 is consistent across package.json, changelog, index_template.html, and index.html', () => {
     const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
-    assert.strictEqual(pkg.version, '1.119.0');
+    assert.ok(semverGte(pkg.version, '1.119.0'), 'Version must be >= 1.119.0');
 
     const changelog = fs.readFileSync('./CHANGELOG.md', 'utf8');
     assert.ok(changelog.includes('## [1.119.0] - 2026-09-24'), 'CHANGELOG.md must contain 1.119.0 entry');
 
     const tmpl = fs.readFileSync('./index_template.html', 'utf8');
-    assert.ok(tmpl.includes('class="header-version-badge"') && tmpl.includes('v1.119.0'), 'index_template.html header badge must be v1.119.0');
-    assert.ok(tmpl.includes('class="version-tag"') && tmpl.includes('Version 1.119.0'), 'index_template.html About modal must specify Version 1.119.0');
+    assert.ok(tmpl.includes('class="header-version-badge"'), 'index_template.html must contain header badge');
+    assert.ok(tmpl.includes('class="version-tag"'), 'index_template.html About modal must contain version tag');
     assert.ok(tmpl.includes('Changelog (v1.119.0):'), 'index_template.html must include Changelog (v1.119.0)');
 
     const indexHtml = fs.readFileSync('./index.html', 'utf8');
-    assert.ok(indexHtml.includes('class="header-version-badge"') && indexHtml.includes('v1.119.0'), 'index.html header badge must be v1.119.0');
-    assert.ok(indexHtml.includes('class="version-tag"') && indexHtml.includes('Version 1.119.0'), 'index.html About modal must specify Version 1.119.0');
+    assert.ok(indexHtml.includes('class="header-version-badge"'), 'index.html must contain header badge');
+    assert.ok(indexHtml.includes('class="version-tag"'), 'index.html About modal must contain version tag');
     assert.ok(indexHtml.includes('Changelog (v1.119.0):'), 'index.html must include Changelog (v1.119.0)');
   });
 
@@ -20654,6 +20654,175 @@ describe('Automated 360° Photo Sphere Flight Pattern Suite (v1.119.0)', () => {
     }
   });
 });
+
+describe('v1.120.0 Bridge-Hosted 3D Wireframe Extraction & Telemetry Projection Suite', () => {
+  test('Version 1.120.0 is consistent across package.json, changelog, index_template.html, and index.html', () => {
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+    const cl = fs.readFileSync('CHANGELOG.md', 'utf8');
+    const indexTemplate = fs.readFileSync('index_template.html', 'utf8');
+    const indexHtml = fs.readFileSync('index.html', 'utf8');
+
+    assert.ok(semverGte(pkg, '1.120.0'), 'package.json version should be >= 1.120.0');
+    assert.ok(cl.includes('## [1.120.0] - 2026-09-24'), 'CHANGELOG.md missing 1.120.0 header');
+    assert.ok(indexTemplate.includes('Version 1.120.0'), 'index_template.html missing Version 1.120.0');
+    assert.ok(indexHtml.includes('Version 1.120.0'), 'index.html missing Version 1.120.0');
+    assert.ok(indexTemplate.includes('v1.120.0'), 'index_template.html missing v1.120.0 badge');
+    assert.ok(indexHtml.includes('v1.120.0'), 'index.html missing v1.120.0 badge');
+    assert.ok(indexTemplate.includes('Changelog (v1.120.0):'), 'index_template.html missing Changelog (v1.120.0)');
+    assert.ok(indexHtml.includes('Changelog (v1.120.0):'), 'index.html missing Changelog (v1.120.0)');
+  });
+
+  test('DOM Architecture: Wireframe controls exist in templates', () => {
+    const indexTemplate = fs.readFileSync('index_template.html', 'utf8');
+    const indexHtml = fs.readFileSync('index.html', 'utf8');
+
+    [indexTemplate, indexHtml].forEach((html, i) => {
+      const src = i === 0 ? 'index_template.html' : 'index.html';
+      assert.ok(html.includes('id="diag-btn-toggle-wireframe"'), `${src} missing diag-btn-toggle-wireframe`);
+      assert.ok(html.includes('id="diag-indicator-wireframe"'), `${src} missing diag-indicator-wireframe`);
+      assert.ok(html.includes('id="diag-wireframe-panel"'), `${src} missing diag-wireframe-panel`);
+      assert.ok(html.includes('id="diag-wireframe-elevation-slider"'), `${src} missing diag-wireframe-elevation-slider`);
+      assert.ok(html.includes('id="diag-wireframe-filter-slider"'), `${src} missing diag-wireframe-filter-slider`);
+      assert.ok(html.includes('id="diag-wireframe-del-btn"'), `${src} missing diag-wireframe-del-btn`);
+      assert.ok(html.includes('id="diag-wireframe-convert-btn"'), `${src} missing diag-wireframe-convert-btn`);
+      assert.ok(html.includes('id="diag-wireframe-export-btn"'), `${src} missing diag-wireframe-export-btn`);
+      assert.ok(html.includes('id="diag-btn-extract-wireframe"'), `${src} missing diag-btn-extract-wireframe`);
+      assert.ok(html.includes('id="ingest-extract-wireframe"'), `${src} missing ingest-extract-wireframe`);
+      assert.ok(html.includes('id="diag-legend-wireframe"'), `${src} missing diag-legend-wireframe`);
+    });
+  });
+
+  test('wireframe_engine exports core projection and serialization functions', () => {
+    const engine = require('./tools/companion/wireframe_engine.js');
+    assert.ok(typeof engine.projectPixelToRay === 'function', 'Must export projectPixelToRay');
+    assert.ok(typeof engine.intersectRayWithPlane === 'function', 'Must export intersectRayWithPlane');
+    assert.ok(typeof engine.extractWireframe === 'function', 'Must export extractWireframe');
+    assert.ok(typeof engine.extractWireframeJsFallback === 'function', 'Must export extractWireframeJsFallback');
+    assert.ok(typeof engine.wireframeToObj === 'function', 'Must export wireframeToObj');
+    assert.ok(typeof engine.computeConvexHull2D === 'function', 'Must export computeConvexHull2D');
+  });
+
+  test('projectPixelToRay accurately calculates nadir and oblique 3D rays', () => {
+    const { projectPixelToRay, intersectRayWithPlane } = require('./tools/companion/wireframe_engine.js');
+
+    // Nadir ray (pitch = -90 deg): optical center should point straight down along -Y
+    const nadirRay = projectPixelToRay(960, 540, 1920, 1080, 73.7, 53.1, { x: 0, y: 30, z: 0 }, 0, -90, 0);
+    assert.ok(Math.abs(nadirRay[0]) < 1e-4, 'Nadir ray X should be ~0');
+    assert.ok(nadirRay[1] < -0.99, 'Nadir ray Y should be ~ -1 (downward)');
+    assert.ok(Math.abs(nadirRay[2]) < 1e-4, 'Nadir ray Z should be ~0');
+
+    // Plane intersection at ground Y = 0
+    const groundPt = intersectRayWithPlane({ x: 0, y: 30, z: 0 }, nadirRay, 0.0);
+    assert.ok(Math.abs(groundPt[0]) < 1e-3, 'Intersection X should be ~0');
+    assert.strictEqual(groundPt[1], 0.0, 'Intersection Y should be 0.0');
+    assert.ok(Math.abs(groundPt[2]) < 1e-3, 'Intersection Z should be ~0');
+
+    // Oblique ray (pitch = -45 deg, yaw = 90 deg East)
+    const obliqueRay = projectPixelToRay(960, 540, 1920, 1080, 73.7, 53.1, { x: 0, y: 20, z: 0 }, 90, -45, 0);
+    assert.ok(obliqueRay[0] > 0.6, 'Ray should point East (+X)');
+    assert.ok(obliqueRay[1] < -0.6, 'Ray should point Down (-Y)');
+    const obliquePt = intersectRayWithPlane({ x: 0, y: 20, z: 0 }, obliqueRay, 0.0);
+    assert.ok(obliquePt[0] > 15, 'Intersection should be forward East of camera');
+    assert.strictEqual(obliquePt[1], 0.0);
+  });
+
+  test('wireframeToObj formats standard Wavefront OBJ vertices and lines', () => {
+    const { wireframeToObj } = require('./tools/companion/wireframe_engine.js');
+    const sampleLines = [
+      [-10, 0, -10, 10, 0, -10],
+      [10, 0, -10, 10, 0, 10],
+      [10, 0, 10, -10, 0, 10],
+      [-10, 0, 10, -10, 0, -10]
+    ];
+    const objText = wireframeToObj(sampleLines);
+    assert.ok(objText.includes('v -10 0 -10'), 'Must contain vertex line');
+    assert.ok(objText.includes('l 1 2'), 'Must contain segment index');
+    const vLines = objText.split('\n').filter(l => l.startsWith('v '));
+    const lLines = objText.split('\n').filter(l => l.startsWith('l '));
+    assert.strictEqual(vLines.length, 8, 'Must format 8 vertices');
+    assert.strictEqual(lLines.length, 4, 'Must format 4 lines');
+  });
+
+  test('companion server exports extractWireframe and handles POST /api/process/wireframe', async () => {
+    const serverModule = require('./tools/companion/server.js');
+    assert.ok(typeof serverModule.extractWireframe === 'function', 'Server must export extractWireframe');
+    assert.ok(serverModule.wireframeEngine, 'Server must export wireframeEngine');
+
+    // Run extraction with synthetic photo telemetry
+    const res = serverModule.extractWireframe({
+      photos: [
+        {
+          telemetry: { worldX: 5, worldY: 25, worldZ: -5, yaw: 30, pitch: -60 }
+        }
+      ]
+    });
+    assert.ok(res.success, 'extractWireframe should succeed');
+    assert.ok(Array.isArray(res.lines), 'Result must contain lines array');
+    assert.ok(res.lines.length > 0, 'Must extract line segments');
+    const l0 = res.lines[0];
+    assert.strictEqual(l0.length, 6, 'Line segment must have 6 coordinates [x1,y1,z1,x2,y2,z2]');
+    l0.forEach(coord => {
+      assert.ok(!isNaN(coord) && isFinite(coord), 'Coordinate must be a finite number');
+    });
+  });
+
+  test('FlightDiagnostics wireframe methods (load, toggle, select, delete, unproject, convert)', () => {
+    assert.ok(typeof FlightDiagnostics.loadWireframeGeometry === 'function', 'loadWireframeGeometry must exist');
+    assert.ok(typeof FlightDiagnostics.rebuildWireframeMesh === 'function', 'rebuildWireframeMesh must exist');
+    assert.ok(typeof FlightDiagnostics.toggleWireframe === 'function', 'toggleWireframe must exist');
+    assert.ok(typeof FlightDiagnostics.selectWireframeLine === 'function', 'selectWireframeLine must exist');
+    assert.ok(typeof FlightDiagnostics.deleteSelectedWireframeLine === 'function', 'deleteSelectedWireframeLine must exist');
+    assert.ok(typeof FlightDiagnostics.unprojectFromWorld === 'function', 'unprojectFromWorld must exist');
+    assert.ok(typeof FlightDiagnostics.convertWireframeToBoundary === 'function', 'convertWireframeToBoundary must exist');
+    assert.ok(typeof FlightDiagnostics.exportWireframe === 'function', 'exportWireframe must exist');
+
+    // Test loadWireframeGeometry
+    const samplePayload = {
+      success: true,
+      lines: [
+        [-10, 0, -10, 10, 0, -10],
+        [10, 0, -10, 10, 0, 10],
+        [10, 0, 10, -10, 0, 10],
+        [-10, 0, 10, -10, 0, -10]
+      ],
+      count: 4
+    };
+
+    FlightDiagnostics.loadWireframeGeometry(samplePayload);
+    assert.strictEqual(FlightDiagnostics.wireframeData.lines.length, 4, 'Must store 4 lines');
+    assert.strictEqual(FlightDiagnostics.diagShowWireframe, true, 'Wireframe should default to visible');
+
+    // Test toggleWireframe
+    FlightDiagnostics.toggleWireframe(false);
+    assert.strictEqual(FlightDiagnostics.diagShowWireframe, false);
+    FlightDiagnostics.toggleWireframe(true);
+    assert.strictEqual(FlightDiagnostics.diagShowWireframe, true);
+
+    // Test selectWireframeLine
+    FlightDiagnostics.selectWireframeLine(1);
+    assert.strictEqual(FlightDiagnostics.wireframeSelectedLineIndex, 1);
+
+    // Test deleteSelectedWireframeLine
+    FlightDiagnostics.deleteSelectedWireframeLine();
+    assert.strictEqual(FlightDiagnostics.wireframeData.lines.length, 3, 'Must have deleted selected line');
+    assert.strictEqual(FlightDiagnostics.wireframeSelectedLineIndex, null);
+
+    // Test unprojectFromWorld
+    const expectedOrigin = FlightDiagnostics.getSceneOrigin();
+    const geo = FlightDiagnostics.unprojectFromWorld(0, 0);
+    assert.ok(geo && typeof geo.lat === 'number' && typeof geo.lon === 'number', 'Unproject must return lat/lon');
+    assert.ok(Math.abs(geo.lat - expectedOrigin.lat) < 0.0001, 'Lat should match scene origin');
+    assert.ok(Math.abs(geo.lon - expectedOrigin.lon) < 0.0001, 'Lon should match scene origin');
+
+    // Test convertWireframeToBoundary
+    flightLayers = [{ id: 'layer-1', name: 'Survey Zone', enabled: true }];
+    currentLayerIndex = 0;
+    FlightDiagnostics.convertWireframeToBoundary();
+    assert.ok(Array.isArray(flightLayers[0].boundaryPolygon), 'Must assign boundaryPolygon to active layer');
+    assert.ok(flightLayers[0].boundaryPolygon.length >= 3, 'Boundary polygon must have at least 3 vertices');
+  });
+});
+
 
 
 
