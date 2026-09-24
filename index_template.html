@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.120.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.121.1</span></h1>
 
 
 
@@ -2473,6 +2473,14 @@
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🎬 Cinematic Movie Mode (Follow Cam) &amp; 3D Drone Flight Playback (v1.121.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Experience mission previews like a cinematic movie! Switch dynamically between third-person <strong>Movie View (Follow / Chase Cam)</strong> and first-person <strong>Cockpit FPV View</strong> (hotkey: <kbd style="background: rgba(255,255,255,0.1); padding: 1px 4px; border-radius: 3px;">C</kbd> or click 🎬 Movie). Watch an active 3D quadcopter drone model fly smoothly along the flight path with dynamic gimbal tilt and heading orientation. Unobstructed full-screen flight simulation with fluid continuous traversal and on-the-fly photo captures.
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🏗️ Bridge-Hosted 3D Wireframe Extraction &amp; Interactive Toolkit (v1.120.0)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -3334,7 +3342,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.120.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.121.1</span>
 
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -3398,6 +3406,20 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.121.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>📸 Streamlined 360° Pano Layer Options:</strong> Cleaned up Section 2 Layer Dynamics for 360 Photo Spheres by hiding inapplicable capture modes, path types, heading selectors, and overshoot flight dynamics; automatically restored when switching to grid patterns.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.121.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🎬 Cinematic Movie Mode (Follow Cam):</strong> Added third-person Chase / Follow Cam that tracks behind and above the flying drone looking forward along the flight path; toggle between Movie View and Cockpit FPV View via HUD button or hotkey <kbd>C</kbd>.</li>
+              <li><strong>🚁 Dynamic Flying Drone Avatar Mesh:</strong> Added an active 3D quadcopter drone avatar with synchronized bank/heading orientation and gimbal pitch that flies smoothly along the path during FPV simulation.</li>
+              <li><strong>✨ Fluid Continuous Traversal:</strong> Eliminated artificial 2-second waypoint repositioning halts during playback simulation, restoring smooth movie-like flight traversal while respecting user-configured hover dwell times.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.120.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -6047,7 +6069,7 @@
           </div>
 
           <!-- FPV Center Reticle (Viewfinder crosshair overlay) -->
-          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; width: 120px; height: 120px; pointer-events: none; opacity: 0.3;">
+          <div id="fpv-center-reticle" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; align-items: center; justify-content: center; width: 120px; height: 120px; pointer-events: none; opacity: 0.35;">
             <div style="width: 100px; height: 100px; border: 1px solid #06b6d4; border-radius: 50%;"></div>
             <div style="position: absolute; width: 4px; height: 4px; border-radius: 50%; background: #06b6d4;"></div>
             <div style="position: absolute; width: 24px; height: 1px; background: #06b6d4; left: 10px;"></div>
@@ -6272,6 +6294,11 @@
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <rect x="4" y="4" width="16" height="16"></rect>
                     </svg>
+                  </button>
+
+                  <button id="fpv-btn-cam-mode" class="btn-secondary" type="button" style="padding: 6px 10px; border-radius: 8px; height: 36px; display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem; margin: 0; border-color: rgba(6,182,212,0.35); color: var(--accent-cyan); background: rgba(6, 182, 212, 0.08);" title="Current: Movie View (Follow Cam). Click to switch to Cockpit FPV (Hot key: C)">
+                    <span id="fpv-cam-mode-icon">🎬</span>
+                    <span id="fpv-cam-mode-text" style="font-weight: 600;">Movie</span>
                   </button>
                 </div>
                 

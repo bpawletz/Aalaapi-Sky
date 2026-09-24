@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.121.1] - 2026-09-24
+
+### Bug Fixes & Improvements
+- **Streamlined 360° Photo Sphere Layer Dynamics & Mode Cleanup:**
+  - **Hide Inapplicable Layer Dynamics Card:** Concealed the Section 2 "Layer Dynamics & Modes" card (`#layer-card-modes`) when the active pattern is `360 Pano` (`photo-sphere`). This cleanly eliminates confusing, irrelevant options:
+    - Hidden Capture Mode (photo sphere is strictly automated Stop & Shoot to prevent rotational motion blur).
+    - Hidden Connection Path Type (photo sphere operates as a static hover station; turn curvature does not apply).
+    - Hidden Heading Mode (photo sphere utilizes its own procedural equirectangular 3-ring yaw sequence).
+    - Hidden Flight Dynamics & Stabilization Drawer (turnaround overshoot, transit speed, and corner damping are grid line traversal controls).
+  - **Dynamic Restoration:** Automatically restores `#layer-card-modes` when switching to any standard grid, corridor, or orbit pattern.
+  - **Clean Hierarchy Badge Display:** Suppressed misleading Tier 2 layer override warning pills on the layer header for photo sphere layers.
+
+## [1.121.0] - 2026-09-24
+
+### New Features & Enhancements
+- **3D Cinematic Movie Mode & Active Drone Flight Simulation:**
+  - **Third-Person Chase / Follow Cam (Movie View):** Implemented a cinematic chase camera that smoothly follows 10m behind and 4m above the drone looking forward along the flight path; toggle dynamically between Movie View and Cockpit FPV View via HUD button (`#fpv-btn-cam-mode`) or keyboard shortcut <kbd>C</kbd>.
+  - **Active 3D Flying Drone Avatar Mesh:** Added an active 3D quadcopter drone mesh (`fpvActiveDroneMesh`) that moves along the trajectory with heading yaw rotation, gimbal pitch articulation, and spinning propellers during playback.
+  - **Fluid Continuous Flight Traversal:** Eliminated artificial 2-second waypoint repositioning halts during playback simulation, restoring smooth movie-like flight traversal while respecting user-configured hover dwell times.
+  - **Waypoint Target Spheres in FPV:** Concealed static parked waypoint drone meshes during FPV mode in favor of waypoint marker beacons so the active drone is the sole aircraft flying between waypoints.
+  - **Synchronized Scrubber & Step Controls:** Synchronized `#fpv-wp-scrubber-slider` and `#fpv-wp-scrubber-text` across Step Back, Step Forward, and scrubber scrub actions.
+
 ## [1.120.1] - 2026-09-24
 
 ### Bug Fixes & Improvements
