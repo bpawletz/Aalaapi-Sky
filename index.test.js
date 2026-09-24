@@ -20412,14 +20412,14 @@ describe('Photo Telemetry Correlation & Ground Boundary Projection Suite Tests (
     assert.ok(changelog.includes('## [1.118.0] - 2026-09-21'), 'CHANGELOG must contain 1.118.0');
 
     const tmpl = fs.readFileSync('./index_template.html', 'utf8');
-    assert.ok(tmpl.includes('v1.118.0') || tmpl.includes('v1.119.0') || tmpl.includes('v1.120.0'), 'index_template.html must contain header badge');
-    assert.ok(tmpl.includes('Version 1.118.0') || tmpl.includes('Version 1.119.0') || tmpl.includes('Version 1.120.0'), 'index_template.html must contain Version');
-    assert.ok(tmpl.includes('Changelog (v1.118.0):') || tmpl.includes('Changelog (v1.119.0):') || tmpl.includes('Changelog (v1.120.0):'), 'index_template.html must contain Changelog');
+    assert.ok(tmpl.includes('v1.118.0') || tmpl.includes('v1.119.0') || tmpl.includes('v1.120.0') || tmpl.includes('v1.120.1'), 'index_template.html must contain header badge');
+    assert.ok(tmpl.includes('Version 1.118.0') || tmpl.includes('Version 1.119.0') || tmpl.includes('Version 1.120.0') || tmpl.includes('Version 1.120.1'), 'index_template.html must contain Version');
+    assert.ok(tmpl.includes('Changelog (v1.118.0):') || tmpl.includes('Changelog (v1.119.0):') || tmpl.includes('Changelog (v1.120.0):') || tmpl.includes('Changelog (v1.120.1):'), 'index_template.html must contain Changelog');
 
     const indexHtml = fs.readFileSync('./index.html', 'utf8');
-    assert.ok(indexHtml.includes('v1.118.0') || indexHtml.includes('v1.119.0') || indexHtml.includes('v1.120.0'), 'index.html must contain header badge');
-    assert.ok(indexHtml.includes('Version 1.118.0') || indexHtml.includes('Version 1.119.0') || indexHtml.includes('Version 1.120.0'), 'index.html must contain Version');
-    assert.ok(indexHtml.includes('Changelog (v1.118.0):') || indexHtml.includes('Changelog (v1.119.0):') || indexHtml.includes('Changelog (v1.120.0):'), 'index.html must contain Changelog');
+    assert.ok(indexHtml.includes('v1.118.0') || indexHtml.includes('v1.119.0') || indexHtml.includes('v1.120.0') || indexHtml.includes('v1.120.1'), 'index.html must contain header badge');
+    assert.ok(indexHtml.includes('Version 1.118.0') || indexHtml.includes('Version 1.119.0') || indexHtml.includes('Version 1.120.0') || indexHtml.includes('Version 1.120.1'), 'index.html must contain Version');
+    assert.ok(indexHtml.includes('Changelog (v1.118.0):') || indexHtml.includes('Changelog (v1.119.0):') || indexHtml.includes('Changelog (v1.120.0):') || indexHtml.includes('Changelog (v1.120.1):'), 'index.html must contain Changelog');
   });
 });
 
@@ -20664,10 +20664,10 @@ describe('v1.120.0 Bridge-Hosted 3D Wireframe Extraction & Telemetry Projection 
 
     assert.ok(semverGte(pkg, '1.120.0'), 'package.json version should be >= 1.120.0');
     assert.ok(cl.includes('## [1.120.0] - 2026-09-24'), 'CHANGELOG.md missing 1.120.0 header');
-    assert.ok(indexTemplate.includes('Version 1.120.0'), 'index_template.html missing Version 1.120.0');
-    assert.ok(indexHtml.includes('Version 1.120.0'), 'index.html missing Version 1.120.0');
-    assert.ok(indexTemplate.includes('v1.120.0'), 'index_template.html missing v1.120.0 badge');
-    assert.ok(indexHtml.includes('v1.120.0'), 'index.html missing v1.120.0 badge');
+    assert.ok(indexTemplate.includes('Version 1.120.0') || indexTemplate.includes('Version 1.120.1'), 'index_template.html missing Version 1.120.0/1');
+    assert.ok(indexHtml.includes('Version 1.120.0') || indexHtml.includes('Version 1.120.1'), 'index.html missing Version 1.120.0/1');
+    assert.ok(indexTemplate.includes('v1.120.0') || indexTemplate.includes('v1.120.1'), 'index_template.html missing v1.120.0/1 badge');
+    assert.ok(indexHtml.includes('v1.120.0') || indexHtml.includes('v1.120.1'), 'index.html missing v1.120.0/1 badge');
     assert.ok(indexTemplate.includes('Changelog (v1.120.0):'), 'index_template.html missing Changelog (v1.120.0)');
     assert.ok(indexHtml.includes('Changelog (v1.120.0):'), 'index.html missing Changelog (v1.120.0)');
   });
@@ -20820,6 +20820,107 @@ describe('v1.120.0 Bridge-Hosted 3D Wireframe Extraction & Telemetry Projection 
     FlightDiagnostics.convertWireframeToBoundary();
     assert.ok(Array.isArray(flightLayers[0].boundaryPolygon), 'Must assign boundaryPolygon to active layer');
     assert.ok(flightLayers[0].boundaryPolygon.length >= 3, 'Boundary polygon must have at least 3 vertices');
+  });
+});
+
+describe('3D FPV Walkthrough & Playback Suite (v1.120.1)', () => {
+  test('Version 1.120.1 is consistent across package.json, changelog, index_template.html, and index.html', () => {
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
+    const tpl = fs.readFileSync('index_template.html', 'utf8');
+    const html = fs.readFileSync('index.html', 'utf8');
+
+    assert.strictEqual(pkg.version, '1.120.1');
+    assert.ok(changelog.includes('## [1.120.1] - 2026-09-24'));
+    assert.ok(tpl.includes('v1.120.1</span>'));
+    assert.ok(tpl.includes('Version 1.120.1</span>'));
+    assert.ok(tpl.includes('Changelog (v1.120.1):'));
+    assert.ok(html.includes('v1.120.1</span>'));
+    assert.ok(html.includes('Version 1.120.1</span>'));
+    assert.ok(html.includes('Changelog (v1.120.1):'));
+  });
+
+  test('Three-Tier FPV helpers resolve speed, hover time, and camera action cleanly', () => {
+    // 1. Speed cascade
+    const wpWithSpeed = { speed: 8.5, layerId: 'layer-1' };
+    assert.strictEqual(getEffectiveWaypointSpeed(wpWithSpeed), 8.5);
+
+    const oldLayers = typeof flightLayers !== 'undefined' ? flightLayers : [];
+    flightLayers = [{ id: 'layer-1', speed: 6.2, hoverTime: 3.5, captureMode: 'video' }];
+
+    const wpInheritSpeed = { layerId: 'layer-1' };
+    assert.strictEqual(getEffectiveWaypointSpeed(wpInheritSpeed), 6.2);
+
+    // 2. Hover time cascade
+    const wpWithHover = { hoverTime: 5.0, layerId: 'layer-1' };
+    assert.strictEqual(getEffectiveWaypointHoverTime(wpWithHover), 5.0);
+
+    const wpInheritHover = { layerId: 'layer-1' };
+    assert.strictEqual(getEffectiveWaypointHoverTime(wpInheritHover), 3.5);
+
+    // 3. Camera action cascade
+    const wpWithAction = { cameraAction: 'takePhoto', layerId: 'layer-1' };
+    assert.strictEqual(getEffectiveWaypointCameraAction(wpWithAction), 'takePhoto');
+
+    const wpInheritAction = { cameraAction: 'inherit', layerId: 'layer-1' };
+    assert.strictEqual(getEffectiveWaypointCameraAction(wpInheritAction), 'video');
+
+    flightLayers = oldLayers;
+  });
+
+  test('drawActiveFPVFootprint is resilient against uninitialized or zero groundPlaneSize', () => {
+    const fakeCtx = {
+      save: () => {},
+      translate: () => {},
+      rotate: () => {},
+      beginPath: () => {},
+      ellipse: () => {},
+      createRadialGradient: () => ({ addColorStop: () => {} }),
+      fill: () => {},
+      restore: () => {}
+    };
+
+    const origFpvActive = fpvActive;
+    const origShowFootprints = showFootprints;
+    const origGroundPlaneSize = groundPlaneSize;
+
+    try {
+      fpvActive = true;
+      showFootprints = true;
+      groundPlaneSize = 0; // Uninitialized/zero ground plane
+      // Must not throw or divide by zero
+      assert.doesNotThrow(() => {
+        drawActiveFPVFootprint(fakeCtx, 90, -45);
+      });
+    } finally {
+      fpvActive = origFpvActive;
+      showFootprints = origShowFootprints;
+      groundPlaneSize = origGroundPlaneSize;
+    }
+  });
+
+  test('FPV mode toggling conceals camera sight cones to avoid geometry lens clipping', () => {
+    const fakeCones = { visible: true };
+    const origConesGroup = conesGroup;
+    const origFpvActive = fpvActive;
+    const origShowCones = showCones;
+
+    try {
+      conesGroup = fakeCones;
+      showCones = true;
+
+      // Entering FPV should hide cones
+      toggleFPVWalkthrough(true);
+      assert.strictEqual(conesGroup.visible, false, 'conesGroup must be hidden when FPV is active');
+
+      // Exiting FPV should restore cones
+      toggleFPVWalkthrough(false);
+      assert.strictEqual(conesGroup.visible, true, 'conesGroup must be restored when exiting FPV');
+    } finally {
+      conesGroup = origConesGroup;
+      fpvActive = origFpvActive;
+      showCones = origShowCones;
+    }
   });
 });
 
