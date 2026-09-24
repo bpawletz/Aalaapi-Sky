@@ -4915,4 +4915,19 @@ html, body {
   pointer-events: none;
 }
 
+/* 3D Architectural Wireframe Toolkit (Issue #95) */
+.diag-wireframe-panel {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  user-select: none;
+}
+
+@media (max-width: 640px) {
+  .diag-wireframe-panel {
+    width: calc(100% - 32px) !important;
+    left: 16px !important;
+    top: 52px !important;
+  }
+}
+
+
 
