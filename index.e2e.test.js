@@ -5883,6 +5883,91 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(res.hasIngestCheck, true, '#ingest-extract-wireframe must exist in ingest modal');
     assert.strictEqual(res.hasExtractBtn, true, '#diag-btn-extract-wireframe must exist in photos toolbar');
   });
+
+  test('E2E: 3D FPV Walkthrough & Playback Suite (v1.120.1)', async () => {
+    // 1. Prepare waypoints
+    await page.evaluate(() => {
+      generatedWaypoints = [
+        { lat: 37.7749, lon: -122.4194, alt: 40, x: 0, y: 0, heading: 90, pitch: -45, speed: 5 },
+        { lat: 37.7750, lon: -122.4194, alt: 45, x: 30, y: 15, heading: 90, pitch: -45, speed: 5 },
+        { lat: 37.7751, lon: -122.4194, alt: 50, x: 60, y: 30, heading: 180, pitch: -60, speed: 5 }
+      ];
+      if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+
+      const previewBtn = document.getElementById('preview-3d-btn');
+      if (previewBtn) previewBtn.click();
+    });
+    await page.waitForTimeout(400);
+
+    // 2. Toggle FPV walkthrough
+    const initFpv = await page.evaluate(() => {
+      const btnFpv = document.getElementById('btn-3d-fpv');
+      if (btnFpv) btnFpv.click();
+      return {
+        fpvActive: typeof fpvActive !== 'undefined' ? fpvActive : false,
+        conesVisible: typeof conesGroup !== 'undefined' && conesGroup ? conesGroup.visible : null
+      };
+    });
+    assert.strictEqual(initFpv.fpvActive, true, 'FPV mode must be active');
+    assert.strictEqual(initFpv.conesVisible, false, 'Sight cones must be hidden in FPV mode');
+
+    // 3. Test Play and Replay at end of mission
+    const replayResult = await page.evaluate(async () => {
+      // Fast forward to end of flight
+      fpvProgressIndex = 2; // Last waypoint
+      fpvSubInterpolation = 0.0;
+      fpvPlaying = false;
+
+      // Click play at end
+      const playBtn = document.getElementById('fpv-btn-play-pause');
+      if (playBtn) playBtn.click();
+
+      const restartedIdx = fpvProgressIndex;
+      const isPlaying = fpvPlaying;
+      const scrubberVal = document.getElementById('fpv-wp-scrubber-slider')?.value;
+
+      return {
+        restartedIdx,
+        isPlaying,
+        scrubberVal
+      };
+    });
+
+    assert.strictEqual(replayResult.restartedIdx, 0, 'Clicking Play at end of mission must rewind to Waypoint 1 (idx = 0)');
+    assert.strictEqual(replayResult.isPlaying, true, 'Clicking Play at end must restart playback');
+    assert.strictEqual(replayResult.scrubberVal, '1', 'Scrubber slider must reset to 1 on replay');
+
+    // 4. Test Step Forward and Step Backward
+    const stepResult = await page.evaluate(() => {
+      const stepForwardBtn = document.getElementById('fpv-btn-step-forward');
+      if (stepForwardBtn) stepForwardBtn.click();
+      const idxAfterForward = fpvProgressIndex;
+
+      const stepBackBtn = document.getElementById('fpv-btn-step-back');
+      if (stepBackBtn) stepBackBtn.click();
+      const idxAfterBack = fpvProgressIndex;
+
+      // Exit FPV
+      const stopBtn = document.getElementById('fpv-btn-stop');
+      if (stopBtn) stopBtn.click();
+
+      const conesRestored = typeof conesGroup !== 'undefined' && conesGroup ? conesGroup.visible : null;
+
+      // Close 3D modal
+      const closeBtn = document.getElementById('close-3d-btn');
+      if (closeBtn) closeBtn.click();
+
+      return {
+        idxAfterForward,
+        idxAfterBack,
+        conesRestored
+      };
+    });
+
+    assert.strictEqual(stepResult.idxAfterForward, 1, 'Step forward must advance waypoint to idx = 1');
+    assert.strictEqual(stepResult.idxAfterBack, 0, 'Step backward must return waypoint to idx = 0');
+    assert.strictEqual(stepResult.conesRestored, true, 'Exiting FPV must restore sight cones visibility');
+  });
 });
 
 
