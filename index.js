@@ -3089,6 +3089,7 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     towerGuyWireBuffer: 15,
     towerMovementMode: 'horizontal', // 'horizontal' or 'vertical'
     towerAltitudeOrder: 'max-to-min', // 'max-to-min' or 'min-to-max'
+    photoSphereRings: { ring1: true, ring2: true, ring3: true, nadir: true },
     freeformWaypoints: [],
     freeformPhotos: [],
     roadWaypoints: [],
@@ -3638,6 +3639,22 @@ function saveActiveLayerFromUi() {
   if (towerGuyBuf) layer.towerGuyWireBuffer = parseFloat(towerGuyBuf.value) || 0;
   if (towerMovMode && towerMovMode.value) layer.towerMovementMode = towerMovMode.value;
   if (towerAltOrd && towerAltOrd.value) layer.towerAltitudeOrder = towerAltOrd.value;
+  const psR1 = document.getElementById('photo-sphere-ring-1');
+  const psR2 = document.getElementById('photo-sphere-ring-2');
+  const psR3 = document.getElementById('photo-sphere-ring-3');
+  const psNadir = document.getElementById('photo-sphere-ring-nadir');
+  if (psR1 || psR2 || psR3 || psNadir) {
+    layer.photoSphereRings = {
+      ring1: psR1 ? psR1.checked : true,
+      ring2: psR2 ? psR2.checked : true,
+      ring3: psR3 ? psR3.checked : true,
+      nadir: psNadir ? psNadir.checked : true
+    };
+    if (!layer.photoSphereRings.ring1 && !layer.photoSphereRings.ring2 && !layer.photoSphereRings.ring3 && !layer.photoSphereRings.nadir) {
+      layer.photoSphereRings.ring1 = true;
+      if (psR1) psR1.checked = true;
+    }
+  }
 
   if (globalDetourModeEl && globalDetourModeEl.value) {
     globalExclusionDetourMode = globalDetourModeEl.value;
@@ -3839,6 +3856,20 @@ function syncUiWithActiveLayer() {
         }
       });
     }
+  }
+
+  // Sync 360 Photo Sphere Ring Checkboxes
+  const psRings = layer.photoSphereRings || { ring1: true, ring2: true, ring3: true, nadir: true };
+  const psR1 = document.getElementById('photo-sphere-ring-1');
+  const psR2 = document.getElementById('photo-sphere-ring-2');
+  const psR3 = document.getElementById('photo-sphere-ring-3');
+  const psNadir = document.getElementById('photo-sphere-ring-nadir');
+  if (psR1) psR1.checked = (psRings.ring1 !== false);
+  if (psR2) psR2.checked = (psRings.ring2 !== false);
+  if (psR3) psR3.checked = (psRings.ring3 !== false);
+  if (psNadir) psNadir.checked = (psRings.nadir !== false);
+  if (typeof updatePhotoSphereBadge === 'function') {
+    updatePhotoSphereBadge();
   }
 
   if (typeof syncDisplayValues === 'function') {
@@ -5633,8 +5664,24 @@ function setCameraAspectRatio(ratio, skipUpdate = false) {
   }
 }
 
+// Localhost / offline environment detection utility
+function isLocalhostEnvironment() {
+  if (typeof window === 'undefined' || !window.location) return false;
+  const host = (window.location.hostname || '').toLowerCase();
+  const proto = (window.location.protocol || '').toLowerCase();
+  return (
+    proto === 'file:' ||
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    host === '[::1]' ||
+    host === '0.0.0.0' ||
+    host.endsWith('.local')
+  );
+}
+
 // Standard satellite and street map layers
 let streetLayer;
+let esriStreetLayer;
 let satelliteLayer;
 let topoLayer;
 
@@ -5800,6 +5847,12 @@ function initMap() {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   });
 
+  esriStreetLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 22,
+    maxNativeZoom: 19,
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
+  });
+
   satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
     maxZoom: 22,
     maxNativeZoom: 19,
@@ -5943,10 +5996,14 @@ function initMap() {
     attribution: 'NOAA/NWS Hazards'
   });
 
+  const isLocal = isLocalhostEnvironment();
+  const osmStreetLabel = isLocal ? "Street Map (OSM - Disabled on Localhost)" : "Street Map (OpenStreetMap)";
+
   // Add Layer Control — include only layers that successfully initialized
   const baseMaps = {
     "Satellite View": satelliteLayer,
-    "Street Map": streetLayer,
+    "Street Map (Esri)": esriStreetLayer,
+    [osmStreetLabel]: streetLayer,
     "Topography Map": topoLayer
   };
 
@@ -6050,7 +6107,51 @@ function initMap() {
     RemoteIdRadar.layerGroup = remoteIdAirspaceLayer;
   }
 
-  L.control.layers(baseMaps, overlays, { position: 'topleft' }).addTo(map);
+  const layerControl = L.control.layers(baseMaps, overlays, { position: 'topleft' }).addTo(map);
+
+  // If running on localhost or file://, disable the OpenStreetMap radio button with styled indicator & tooltip
+  if (isLocal) {
+    const applyOsmDisabledStyle = () => {
+      const container = (layerControl && typeof layerControl.getContainer === 'function') ? layerControl.getContainer() : null;
+      if (!container) return;
+      const labels = container.querySelectorAll('.leaflet-control-layers-base label');
+      labels.forEach(lbl => {
+        if (lbl.textContent.includes('Disabled on Localhost') || (lbl.textContent.includes('OSM') && lbl.textContent.includes('Street'))) {
+          const input = lbl.querySelector('input');
+          if (input) {
+            input.disabled = true;
+          }
+          lbl.style.opacity = '0.45';
+          lbl.style.cursor = 'not-allowed';
+          lbl.title = 'OpenStreetMap tiles are disabled on localhost/file:// due to OSM Tile Usage Policy (missing Referer / 403 Access Blocked). Use Street Map (Esri) or Satellite View instead.';
+          const span = lbl.querySelector('span');
+          if (span) {
+            span.style.cursor = 'not-allowed';
+          }
+        }
+      });
+    };
+    if (typeof requestAnimationFrame !== 'undefined') {
+      requestAnimationFrame(applyOsmDisabledStyle);
+    } else {
+      setTimeout(applyOsmDisabledStyle, 0);
+    }
+  }
+
+  // Intercept layer change to prevent activating OSM Street Map on localhost
+  map.on('baselayerchange', function(e) {
+    if (isLocalhostEnvironment() && (e.layer === streetLayer || (e.name && (e.name.includes('OSM') || e.name.includes('OpenStreetMap'))))) {
+      if (typeof showToast === 'function') {
+        showToast('OpenStreetMap tiles are disabled on localhost per OSM policy. Switched to Esri Street Map.', 4000);
+      }
+      if (map.hasLayer(streetLayer)) {
+        map.removeLayer(streetLayer);
+      }
+      if (typeof esriStreetLayer !== 'undefined' && esriStreetLayer) {
+        esriStreetLayer.addTo(map);
+      }
+    }
+  });
 
   // Airspace legend — shown/hidden based on which overlays are active
   initAirspaceLegend();
@@ -7826,6 +7927,69 @@ function initUIEventListeners() {
       saveAllSettingsToLocalStorage();
     });
   }
+
+  // 360 Photo Sphere Ring Controls & Presets (v1.125.1)
+  const setupPhotoSphereRingListeners = () => {
+    const ringIds = [
+      { id: 'photo-sphere-ring-1', prop: 'ring1' },
+      { id: 'photo-sphere-ring-2', prop: 'ring2' },
+      { id: 'photo-sphere-ring-3', prop: 'ring3' },
+      { id: 'photo-sphere-ring-nadir', prop: 'nadir' }
+    ];
+
+    const syncRingsToActiveLayer = () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (!activeLayer) return;
+      if (!activeLayer.photoSphereRings) {
+        activeLayer.photoSphereRings = { ring1: true, ring2: true, ring3: true, nadir: true };
+      }
+      ringIds.forEach(({ id, prop }) => {
+        const el = document.getElementById(id);
+        if (el) activeLayer.photoSphereRings[prop] = el.checked;
+      });
+      // Safety fallback: prevent all rings being disabled
+      const anyChecked = Object.values(activeLayer.photoSphereRings).some(Boolean);
+      if (!anyChecked) {
+        activeLayer.photoSphereRings.ring1 = true;
+        const el1 = document.getElementById('photo-sphere-ring-1');
+        if (el1) el1.checked = true;
+      }
+      if (typeof updatePhotoSphereBadge === 'function') {
+        updatePhotoSphereBadge();
+      }
+      updateGrid();
+      updateMapLegend();
+      saveAllSettingsToLocalStorage();
+    };
+
+    ringIds.forEach(({ id }) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('change', syncRingsToActiveLayer);
+      }
+    });
+
+    const setRings = (r1, r2, r3, rn) => {
+      const el1 = document.getElementById('photo-sphere-ring-1');
+      const el2 = document.getElementById('photo-sphere-ring-2');
+      const el3 = document.getElementById('photo-sphere-ring-3');
+      const elN = document.getElementById('photo-sphere-ring-nadir');
+      if (el1) el1.checked = r1;
+      if (el2) el2.checked = r2;
+      if (el3) el3.checked = r3;
+      if (elN) elN.checked = rn;
+      syncRingsToActiveLayer();
+    };
+
+    const btnFull = document.getElementById('photo-sphere-preset-full');
+    const btnPano = document.getElementById('photo-sphere-preset-pano');
+    const btnOblique = document.getElementById('photo-sphere-preset-oblique');
+
+    if (btnFull) btnFull.addEventListener('click', () => setRings(true, true, true, true));
+    if (btnPano) btnPano.addEventListener('click', () => setRings(true, false, false, false));
+    if (btnOblique) btnOblique.addEventListener('click', () => setRings(true, true, false, false));
+  };
+  setupPhotoSphereRingListeners();
 
   // Handle Camera Model preset change
   const cameraModelEl = document.getElementById('camera-model');
@@ -9627,6 +9791,9 @@ function togglePatternParameters() {
   if (photoSphereContainer) {
     if (gridType === 'photo-sphere') {
       photoSphereContainer.classList.remove('hidden');
+      if (typeof updatePhotoSphereBadge === 'function') {
+        updatePhotoSphereBadge();
+      }
     } else {
       photoSphereContainer.classList.add('hidden');
     }
@@ -12136,17 +12303,56 @@ function generateGridMultiOrbitComboCoordinates(radius, rotation, captureMode, s
   return { waypoints, photos };
 }
 
-// Generate 360° Photo Sphere coordinates (Issue #89)
-// 37 shots total: 3 rows of 12 shots @ -15°, -45°, -75° gimbal pitch spaced every 30° yaw, + 1 Nadir shot @ -90° pitch
+function updatePhotoSphereBadge() {
+  if (typeof document === 'undefined') return;
+  const badge = document.getElementById('photo-sphere-shot-count-badge');
+  if (!badge) return;
+  const r1 = document.getElementById('photo-sphere-ring-1');
+  const r2 = document.getElementById('photo-sphere-ring-2');
+  const r3 = document.getElementById('photo-sphere-ring-3');
+  const rNadir = document.getElementById('photo-sphere-ring-nadir');
+  let count = 0;
+  if (r1 && r1.checked) count += 12;
+  if (r2 && r2.checked) count += 12;
+  if (r3 && r3.checked) count += 12;
+  if (rNadir && rNadir.checked) count += 1;
+  badge.textContent = `${count} Shot${count === 1 ? '' : 's'} Total`;
+}
+
+// Generate 360° Photo Sphere coordinates (Issue #89, v1.125.1)
+// Supports selective elevation rings (Row 1: -15°, Row 2: -45°, Row 3: -75°, Nadir: -90°)
 function generatePhotoSphereCoordinates(baseAltitude, layer) {
   const waypoints = [];
   const photos = [];
 
-  const rows = [
-    { pitch: -15, count: 12, step: 30, ringIndex: 0 },
-    { pitch: -45, count: 12, step: 30, ringIndex: 1 },
-    { pitch: -75, count: 12, step: 30, ringIndex: 2 }
-  ];
+  let rings = (layer && layer.photoSphereRings) ? layer.photoSphereRings : null;
+  if (!rings && typeof document !== 'undefined') {
+    const r1 = document.getElementById('photo-sphere-ring-1');
+    const r2 = document.getElementById('photo-sphere-ring-2');
+    const r3 = document.getElementById('photo-sphere-ring-3');
+    const rNadir = document.getElementById('photo-sphere-ring-nadir');
+    if ((r1 && typeof r1.checked === 'boolean') || (r2 && typeof r2.checked === 'boolean') || (r3 && typeof r3.checked === 'boolean') || (rNadir && typeof rNadir.checked === 'boolean')) {
+      rings = {
+        ring1: r1 && typeof r1.checked === 'boolean' ? r1.checked : true,
+        ring2: r2 && typeof r2.checked === 'boolean' ? r2.checked : true,
+        ring3: r3 && typeof r3.checked === 'boolean' ? r3.checked : true,
+        nadir: rNadir && typeof rNadir.checked === 'boolean' ? rNadir.checked : true
+      };
+    }
+  }
+  if (!rings) {
+    rings = { ring1: true, ring2: true, ring3: true, nadir: true };
+  }
+
+  // Fallback safety: ensure at least one ring is active
+  if (!rings.ring1 && !rings.ring2 && !rings.ring3 && !rings.nadir) {
+    rings.ring1 = true;
+  }
+
+  const rows = [];
+  if (rings.ring1) rows.push({ pitch: -15, count: 12, step: 30, ringIndex: 0 });
+  if (rings.ring2) rows.push({ pitch: -45, count: 12, step: 30, ringIndex: 1 });
+  if (rings.ring3) rows.push({ pitch: -75, count: 12, step: 30, ringIndex: 2 });
 
   let shotIndex = 0;
   rows.forEach(row => {
@@ -12172,22 +12378,24 @@ function generatePhotoSphereCoordinates(baseAltitude, layer) {
   });
 
   // Nadir Catch: 1 final ground-lock shot at -90° pitch
-  const nadirPt = {
-    x: 0,
-    y: 0,
-    alt: baseAltitude,
-    pitch: -90,
-    heading: 0,
-    headingMode: 'smoothTransition',
-    gridType: 'photo-sphere',
-    isPhotoSpherePoint: true,
-    ringIndex: 3,
-    isRingStart: true,
-    shotIndex: shotIndex++,
-    hoverTime: 2
-  };
-  waypoints.push(nadirPt);
-  photos.push(nadirPt);
+  if (rings.nadir) {
+    const nadirPt = {
+      x: 0,
+      y: 0,
+      alt: baseAltitude,
+      pitch: -90,
+      heading: 0,
+      headingMode: 'smoothTransition',
+      gridType: 'photo-sphere',
+      isPhotoSpherePoint: true,
+      ringIndex: 3,
+      isRingStart: true,
+      shotIndex: shotIndex++,
+      hoverTime: 2
+    };
+    waypoints.push(nadirPt);
+    photos.push(nadirPt);
+  }
 
   return { waypoints, photos };
 }
@@ -14473,6 +14681,43 @@ function updateMapLegend() {
         <div class="legend-item"><span class="legend-color" style="background-color: #64748b; border: 1px dashed #94a3b8;"></span> Transit Waypoint (No Photo)</div>
         <div class="legend-item"><span class="legend-color" style="background-color: rgba(16, 185, 129, 0.4); border: 1px dashed #10b981;"></span> Target Object Boundary</div>
       `;
+    } else if (gridType === 'photo-sphere') {
+      title = "360° Pano Rings";
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      let rings = (activeLayer && activeLayer.photoSphereRings) ? activeLayer.photoSphereRings : null;
+      if (!rings && typeof document !== 'undefined') {
+        const r1 = document.getElementById('photo-sphere-ring-1');
+        const r2 = document.getElementById('photo-sphere-ring-2');
+        const r3 = document.getElementById('photo-sphere-ring-3');
+        const rNadir = document.getElementById('photo-sphere-ring-nadir');
+        if ((r1 && typeof r1.checked === 'boolean') || (r2 && typeof r2.checked === 'boolean') || (r3 && typeof r3.checked === 'boolean') || (rNadir && typeof rNadir.checked === 'boolean')) {
+          rings = {
+            ring1: r1 && typeof r1.checked === 'boolean' ? r1.checked : true,
+            ring2: r2 && typeof r2.checked === 'boolean' ? r2.checked : true,
+            ring3: r3 && typeof r3.checked === 'boolean' ? r3.checked : true,
+            nadir: rNadir && typeof rNadir.checked === 'boolean' ? rNadir.checked : true
+          };
+        }
+      }
+      if (!rings) rings = { ring1: true, ring2: true, ring3: true, nadir: true };
+
+      let ringsHtml = '';
+      if (rings.ring1) {
+        ringsHtml += `<div class="legend-item"><span class="legend-color" style="background-color: #38bdf8;"></span> Row 1 (-15°): 12 shots @ ${formatDistance(altitudeVal, 1)}</div>`;
+      }
+      if (rings.ring2) {
+        ringsHtml += `<div class="legend-item"><span class="legend-color" style="background-color: #06b6d4;"></span> Row 2 (-45°): 12 shots @ ${formatDistance(altitudeVal, 1)}</div>`;
+      }
+      if (rings.ring3) {
+        ringsHtml += `<div class="legend-item"><span class="legend-color" style="background-color: #f59e0b;"></span> Row 3 (-75°): 12 shots @ ${formatDistance(altitudeVal, 1)}</div>`;
+      }
+      if (rings.nadir) {
+        ringsHtml += `<div class="legend-item"><span class="legend-color" style="background-color: #10b981;"></span> Nadir (-90°): 1 shot @ ${formatDistance(altitudeVal, 1)}</div>`;
+      }
+      if (!ringsHtml) {
+        ringsHtml = `<div class="legend-item"><span class="legend-color" style="background-color: #38bdf8;"></span> Center Lock: ${formatDistance(altitudeVal, 1)}</div>`;
+      }
+      itemsHtml = ringsHtml;
     } else {
       title = "Altitude Layers";
       itemsHtml = `
@@ -28390,10 +28635,10 @@ function init3DPreview() {
     groundPlaneOffsetX = planeOffsetX;
     groundPlaneOffsetZ = planeOffsetZ;
     groundPlaneSize = planeSize;
-    cachedTileImages = [];
-
     // Fetch tiles asynchronously based on Leaflet active layer
     const isSatellite = map.hasLayer(satelliteLayer);
+    const isEsriStreet = typeof esriStreetLayer !== 'undefined' && esriStreetLayer && map.hasLayer(esriStreetLayer);
+    const isLocal = isLocalhostEnvironment();
     let loadedTilesCount = 0;
     const tileImages = [];
 
@@ -28407,6 +28652,8 @@ function init3DPreview() {
         let url = "";
         if (isSatellite) {
           url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${tileZoom}/${tileY}/${tileX}`;
+        } else if (isEsriStreet || isLocal) {
+          url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/${tileZoom}/${tileY}/${tileX}`;
         } else {
           url = `https://tile.openstreetmap.org/${tileZoom}/${tileX}/${tileY}.png`;
         }
@@ -36715,6 +36962,7 @@ if (typeof window !== 'undefined') {
   window.executeMediaPull = executeMediaPull;
   window.buildThreeDigitalTwinJson = buildThreeDigitalTwinJson;
   window.AdsbAirspaceManager = typeof AdsbAirspaceManager !== 'undefined' ? AdsbAirspaceManager : null;
+  window.isLocalhostEnvironment = typeof isLocalhostEnvironment !== 'undefined' ? isLocalhostEnvironment : null;
 }
 
 if (typeof global !== 'undefined') {
@@ -36729,6 +36977,7 @@ if (typeof global !== 'undefined') {
   global.executeMediaPull = executeMediaPull;
   global.buildThreeDigitalTwinJson = buildThreeDigitalTwinJson;
   global.AdsbAirspaceManager = typeof AdsbAirspaceManager !== 'undefined' ? AdsbAirspaceManager : null;
+  global.isLocalhostEnvironment = typeof isLocalhostEnvironment !== 'undefined' ? isLocalhostEnvironment : null;
 }
 
 if (typeof document !== 'undefined') {
