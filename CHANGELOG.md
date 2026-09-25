@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.127.0] - 2026-09-25
+
+### New Features & Enhancements
+- **Architectural House Edge Extraction & Vegetation Suppression:**
+  - **In-Inspector House Line Detection:** Added interactive `🏗️ Detect House Lines` topbar action (`#photo-detect-wireframe-btn`) and count status pill (`#photo-detect-wireframe-pill`) in the Photo Inspector to run computer vision extraction directly on drone imagery.
+  - **HSV Green Vegetation Masking:** Implemented HSV color masking (`H: 28–88, S: 40–255, V: 35–255`) with morphological dilation in `wireframe_extractor.py` and client-side canvas CV to filter out lawn mower stripes, grass, shrubs, and trees, isolating crisp roof ridges, eaves, valleys, gutters, windows, and structural building corners.
+  - **GPS Web Mercator World Coordinates (`latlonToWorld`):** Added Web Mercator coordinate projection relative to mission home point in `wireframe_extractor.py`, `server.js`, and `wireframe_engine.js`. Automatically derives camera world $(X, Y, Z)$ positions, yaw, and gimbal pitch from telemetry logs, resolving bug where photos defaulted to $(0, 25, 0)$ looking North ($0^\circ$).
+  - **Direct 2D & Frustum-Filtered 3D Overlay:** Photo Inspector now renders high-precision 2D normalized line coordinates detected specifically on the active photo (`perPhotoLines` / `detectedLines`) with high-contrast shadow outlines and cyan strokes, alongside distance-bounded and viewport-clipped 3D wireframe projections.
+  - **Updated Mission Archive Twin:** Re-extracted 3D spatial geometry for `scratch/mission_archives/mission_2026-09-24_[17-20-08]`, replacing repeated 2D ground perimeter boundary segments with 11,221 genuine physical building lines in `wireframe.json`, `wireframe.obj`, and `wireframe_threejs.json`.
+
 ## [1.126.1] - 2026-09-24
 
 ### New Features & Bug Fixes

@@ -6357,6 +6357,46 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(res.toggledOffState, false, 'Unchecking toggle must disable PhotoInspector wireframe layer');
     assert.strictEqual(res.restoredState, true, 'Re-checking toggle must re-enable PhotoInspector wireframe layer');
   });
+
+  test('E2E: Architectural House Edge Extraction & Detect House Lines in Photo Inspector (v1.127.0)', async () => {
+    const res = await page.evaluate(async () => {
+      const detectBtn = document.getElementById('photo-detect-wireframe-btn');
+      const wfPill = document.getElementById('photo-detect-wireframe-pill');
+
+      const hasBtn = !!detectBtn;
+      const hasPill = !!wfPill;
+      const initialPillHidden = wfPill ? (wfPill.style.display === 'none' || getComputedStyle(wfPill).display === 'none') : false;
+
+      // Simulate opening photo in PhotoInspector
+      if (typeof PhotoInspector !== 'undefined') {
+        PhotoInspector.openPhoto({
+          photoId: 'PHOTO_E2E_01',
+          filename: 'E2E_HOUSE.JPG',
+          actual: { lat: 40.0131, lon: -83.1772, altAgl: 30, heading: 164.1, gimbalPitch: -60 },
+          detectedLines: [
+            [0.15, 0.25, 0.85, 0.25],
+            [0.15, 0.45, 0.85, 0.45]
+          ]
+        });
+      }
+
+      const pillShownAfterOpen = wfPill ? (wfPill.style.display !== 'none') : false;
+      const pillTextAfterOpen = wfPill ? wfPill.textContent : '';
+
+      return {
+        hasBtn,
+        hasPill,
+        initialPillHidden,
+        pillShownAfterOpen,
+        pillTextAfterOpen
+      };
+    });
+
+    assert.strictEqual(res.hasBtn, true, '#photo-detect-wireframe-btn must exist in Photo Inspector topbar');
+    assert.strictEqual(res.hasPill, true, '#photo-detect-wireframe-pill must exist in Photo Inspector topbar');
+    assert.strictEqual(res.pillShownAfterOpen, true, 'Wireframe pill must be displayed when photo has detected lines');
+    assert.ok(res.pillTextAfterOpen.includes('House Lines'), 'Wireframe pill must display House Lines count');
+  });
 });
 
 

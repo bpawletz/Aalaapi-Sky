@@ -85,3 +85,11 @@ All flight parameters in Aalaapi Sky (including Capture Mode, Turn / Path Type, 
 
 Whenever modifying or adding flight controls, agents **MUST** ensure the setting cleanly propagates through this 3-tier cascade (`Waypoint Override -> Layer Setting -> Global Default`) and does not bypass the layer.
 
+## 8. Data Privacy & Zero-Sensitive-Information Policy for GitHub
+Never post or store sensitive, personally identifiable, or real-world operational data in GitHub Issues, Pull Requests, commit messages, or public documentation. Specifically:
+1. **No Real Geolocation or Coordinates:** Never include actual flight coordinates, home points, takeoff locations, or client site GPS coordinates. When filing issues, writing test cases, or providing reproduction steps, **always** use generic synthetic dummy coordinates (e.g. `[0.0, 0.0]`, `[37.7749, -122.4194]`, or normalized grid offsets `(0, 0)`).
+2. **No Personally Identifiable Information (PII) or Addresses:** Never include personal names, pilot/operator names, client identities, physical street addresses, phone numbers, or email addresses.
+3. **No Local Machine Paths or Usernames:** Sanitize file paths. Redact Windows user paths (e.g. replace `C:\Users\<username>\...` with `<workspace>/...` or `~/...`).
+4. **No Secrets or Credentials:** Never commit or paste GitHub Personal Access Tokens (PATs), API keys, or credentials into repository files, issue descriptions, or comments. Store credentials exclusively in machine-level or user-level environment variables.
+
+

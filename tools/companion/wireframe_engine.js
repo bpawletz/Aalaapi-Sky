@@ -15,6 +15,26 @@ const { spawnSync } = require('child_process');
 const SCRIPT_PATH = path.join(__dirname, 'wireframe_extractor.py');
 
 /**
+ * Converts GPS latitude and longitude to Three.js world space coordinates (X = East, Z = South)
+ * relative to the flight scene origin (Home Point / photo 0), matching Web Mercator zoom 18.
+ */
+function latlonToWorld(lat, lon, originLat, originLon, zoom = 18) {
+  const tileWidthMeters = 40075016.686 * Math.cos((originLat * Math.PI) / 180) / Math.pow(2, zoom);
+  const sinLat0 = Math.sin((originLat * Math.PI) / 180);
+  const xTile0 = ((originLon + 180) / 360) * Math.pow(2, zoom);
+  const yTile0 = (0.5 - Math.log((1 + sinLat0) / (1 - sinLat0)) / (4 * Math.PI)) * Math.pow(2, zoom);
+
+  const sinLat = Math.sin((lat * Math.PI) / 180);
+  const xTile = ((lon + 180) / 360) * Math.pow(2, zoom);
+  const yTile = (0.5 - Math.log((1 + sinLat) / (1 - sinLat)) / (4 * Math.PI)) * Math.pow(2, zoom);
+
+  return {
+    x: (xTile - xTile0) * tileWidthMeters,
+    z: (yTile - yTile0) * tileWidthMeters
+  };
+}
+
+/**
  * Projects 2D pixel to 3D unit ray in Three.js world space:
  * X = East (+X), Y = Up (+Y), Z = South (+Z, North is -Z).
  */
@@ -225,21 +245,43 @@ function extractWireframeJsFallback(payload = {}) {
   const groundY = (typeof options.groundAltitude === 'number') ? options.groundAltitude : 0.0;
   const rawLines = [];
 
+  // Determine origin for lat/lon conversion if needed
+  let origin = payload.origin;
+  if (!origin && photos.length > 0) {
+    const firstP = photos[0];
+    const firstTelem = firstP.telemetry || firstP;
+    const flat = firstTelem.lat !== undefined ? firstTelem.lat : (firstTelem.actual && firstTelem.actual.lat);
+    const flon = firstTelem.lon !== undefined ? firstTelem.lon : (firstTelem.actual && firstTelem.actual.lon);
+    if (flat !== undefined && flon !== undefined) {
+      origin = { lat: flat, lon: flon };
+    }
+  }
+
   // Extract camera positions and calculate ground target ray hits
   const camPositions = [];
   const groundHits = [];
 
   photos.forEach(photo => {
     const telem = photo.telemetry || photo || {};
-    const camPos = {
-      x: telem.worldX || 0,
-      y: telem.worldY || telem.alt || 25,
-      z: telem.worldZ || 0
-    };
+    const actual = telem.actual || {};
+    const lat = telem.lat !== undefined ? telem.lat : actual.lat;
+    const lon = telem.lon !== undefined ? telem.lon : actual.lon;
+
+    let wx = telem.worldX !== undefined ? telem.worldX : (photo.x !== undefined ? photo.x : 0);
+    let wz = telem.worldZ !== undefined ? telem.worldZ : (photo.z !== undefined ? photo.z : 0);
+
+    if ((wx === 0 && wz === 0) && lat !== undefined && lon !== undefined && origin) {
+      const wPos = latlonToWorld(lat, lon, origin.lat, origin.lon);
+      wx = wPos.x;
+      wz = wPos.z;
+    }
+
+    const wy = telem.worldY !== undefined ? telem.worldY : (telem.altAgl || telem.alt || actual.altAgl || actual.alt || photo.y || 25);
+    const camPos = { x: wx, y: wy, z: wz };
     camPositions.push(camPos);
 
-    const yaw = telem.yaw || 0;
-    const pitch = telem.pitch !== undefined ? telem.pitch : -60;
+    const yaw = telem.yaw !== undefined ? telem.yaw : (telem.heading !== undefined ? telem.heading : (actual.heading || 0));
+    const pitch = telem.pitch !== undefined ? telem.pitch : (telem.gimbalPitch !== undefined ? telem.gimbalPitch : (actual.gimbalPitch !== undefined ? actual.gimbalPitch : -60));
     const roll = telem.roll || 0;
     const hfov = telem.hfov || 73.7;
     const vfov = telem.vfov || 53.1;
@@ -742,6 +784,7 @@ function computeConvexHull2D(pts) {
 }
 
 module.exports = {
+  latlonToWorld,
   projectPixelToRay,
   intersectRayWithPlane,
   extractWireframe,

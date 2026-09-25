@@ -5,10 +5,11 @@ Aalaapi Sky - Real-Time Architectural Edge Extraction & Telemetry Ray Projection
 
 Performs high-speed OpenCV computer vision on drone aerial imagery:
 1. Downscales image to 1080p (maintaining aspect ratio).
-2. Applies Gaussian Blur, Canny edge detection, and Probabilistic Hough Line Transform (cv2.HoughLinesP).
-3. Projects 2D pixel lines into 3D world rays using the camera intrinsic matrix and telemetry spatial logs.
-4. Calculates explicit intersecting 3D vertices [x1, y1, z1, x2, y2, z2] in Three.js / ENU world coordinates.
-5. Returns a lightweight structural JSON payload.
+2. Applies HSV green masking to suppress grass, lawn mower striping, and tree vegetation.
+3. Applies Gaussian Blur, Canny edge detection, and Probabilistic Hough Line Transform (cv2.HoughLinesP).
+4. Projects 2D pixel lines into 3D world rays using the camera intrinsic matrix and telemetry spatial logs.
+5. Calculates explicit intersecting 3D vertices [x1, y1, z1, x2, y2, z2] in Three.js / ENU world coordinates.
+6. Returns both 3D world lines and per-photo 2D normalized line segments [u1, v1, u2, v2].
 """
 
 import sys
@@ -23,6 +24,22 @@ try:
     HAS_OPENCV = True
 except ImportError:
     HAS_OPENCV = False
+
+def latlon_to_world(lat, lon, origin_lat, origin_lon, zoom=18):
+    """
+    Converts GPS latitude and longitude to Three.js world space coordinates (X = East, Z = South)
+    relative to the flight scene origin (Home Point / photo 0), matching Web Mercator zoom 18.
+    """
+    tile_w = 40075016.686 * math.cos(math.radians(origin_lat)) / (2.0 ** zoom)
+    sin_lat0 = math.sin(math.radians(origin_lat))
+    x_tile0 = ((origin_lon + 180.0) / 360.0) * (2.0 ** zoom)
+    y_tile0 = (0.5 - math.log((1.0 + sin_lat0) / (1.0 - sin_lat0)) / (4.0 * math.pi)) * (2.0 ** zoom)
+
+    sin_lat = math.sin(math.radians(lat))
+    x_tile = ((lon + 180.0) / 360.0) * (2.0 ** zoom)
+    y_tile = (0.5 - math.log((1.0 + sin_lat) / (1.0 - sin_lat)) / (4.0 * math.pi)) * (2.0 ** zoom)
+
+    return (x_tile - x_tile0) * tile_w, (y_tile - y_tile0) * tile_w
 
 def project_pixel_to_ray(u, v, width, height, hfov_deg, vfov_deg, cam_pos, yaw_deg, pitch_deg, roll_deg=0.0):
     """
@@ -99,7 +116,7 @@ def intersect_ray_with_plane(cam_pos, ray_dir, plane_y=0.0, max_dist=1200.0):
     t_fallback = min(max_dist, max(15.0, py * 1.5))
     return np.array([px + rx * t_fallback, max(plane_y, py + ry * t_fallback), pz + rz * t_fallback], dtype=np.float64)
 
-def extract_wireframe_from_image(image_path, telemetry=None, options=None):
+def extract_wireframe_from_image(image_path, telemetry=None, options=None, origin=None):
     """
     Core OpenCV edge extraction and telemetry extrusion.
     """
@@ -112,14 +129,16 @@ def extract_wireframe_from_image(image_path, telemetry=None, options=None):
         return {
             "success": False,
             "error": "OpenCV (cv2) is not installed in the Python environment.",
-            "lines": []
+            "lines": [],
+            "lines2D": []
         }
 
     if not os.path.exists(image_path):
         return {
             "success": False,
             "error": f"Image file not found: {image_path}",
-            "lines": []
+            "lines": [],
+            "lines2D": []
         }
 
     # Load image
@@ -128,7 +147,8 @@ def extract_wireframe_from_image(image_path, telemetry=None, options=None):
         return {
             "success": False,
             "error": f"Failed to decode image: {image_path}",
-            "lines": []
+            "lines": [],
+            "lines2D": []
         }
 
     orig_h, orig_w = img.shape[:2]
@@ -144,24 +164,79 @@ def extract_wireframe_from_image(image_path, telemetry=None, options=None):
     else:
         resized = img
 
-    # Grayscale conversion
-    gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+    # Telemetry coordinate resolution
+    actual = telemetry.get("actual", {}) if isinstance(telemetry.get("actual"), dict) else {}
+    lat = telemetry.get("lat") or actual.get("lat")
+    lon = telemetry.get("lon") or actual.get("lon")
 
-    # 1. Performance-optimized Gaussian Blur
+    cam_x = telemetry.get("worldX")
+    cam_z = telemetry.get("worldZ")
+
+    if (cam_x is None or cam_z is None or (cam_x == 0 and cam_z == 0)) and lat is not None and lon is not None:
+        orig_lat = (origin.get("lat") if origin else None) or lat
+        orig_lon = (origin.get("lon") if origin else None) or lon
+        cam_x, cam_z = latlon_to_world(float(lat), float(lon), float(orig_lat), float(orig_lon))
+    else:
+        cam_x = float(cam_x or 0.0)
+        cam_z = float(cam_z or 0.0)
+
+    cam_y = float(
+        telemetry.get("worldY")
+        or telemetry.get("altAgl")
+        or telemetry.get("alt")
+        or actual.get("altAgl")
+        or actual.get("alt")
+        or 25.0
+    )
+    yaw_deg = float(
+        telemetry.get("yaw")
+        if telemetry.get("yaw") is not None
+        else (telemetry.get("heading") if telemetry.get("heading") is not None else actual.get("heading", 0.0))
+    )
+    pitch_deg = float(
+        telemetry.get("pitch")
+        if telemetry.get("pitch") is not None
+        else (telemetry.get("gimbalPitch") if telemetry.get("gimbalPitch") is not None else actual.get("gimbalPitch", -60.0))
+    )
+    roll_deg = float(telemetry.get("roll", 0.0))
+    hfov_deg = float(telemetry.get("hfov", 73.7))
+    vfov_deg = float(telemetry.get("vfov", 53.1))
+    ground_y = float(options.get("groundAltitude", 0.0))
+    max_lines_limit = int(options.get("maxLinesLimit", 500))
+
+    cam_pos = np.array([cam_x, cam_y, cam_z], dtype=np.float64)
+
+    # 1. Vegetation Suppression via HSV green masking
+    suppress_veg = options.get("suppressVegetation", True)
+    non_veg_mask = None
+    if suppress_veg:
+        hsv = cv2.cvtColor(resized, cv2.COLOR_BGR2HSV)
+        lower_green = np.array([28, 40, 35], dtype=np.uint8)
+        upper_green = np.array([88, 255, 255], dtype=np.uint8)
+        veg_mask = cv2.inRange(hsv, lower_green, upper_green)
+        morph_k = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+        veg_mask = cv2.dilate(veg_mask, morph_k, iterations=1)
+        non_veg_mask = cv2.bitwise_not(veg_mask)
+
+    # 2. Performance-optimized Gaussian Blur
+    gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
     blur_kernel = int(options.get("blurKernel", 5))
     if blur_kernel % 2 == 0:
         blur_kernel += 1
     blurred = cv2.GaussianBlur(gray, (blur_kernel, blur_kernel), float(options.get("blurSigma", 1.5)))
 
-    # 2. Canny Edge Isolation
-    canny_low = int(options.get("cannyLow", 50))
-    canny_high = int(options.get("cannyHigh", 150))
+    # 3. Canny Edge Isolation
+    canny_low = int(options.get("cannyLow", 55))
+    canny_high = int(options.get("cannyHigh", 155))
     edges = cv2.Canny(blurred, canny_low, canny_high, apertureSize=3, L2gradient=True)
 
-    # 3. Probabilistic Hough Line Transform
+    if non_veg_mask is not None:
+        edges = cv2.bitwise_and(edges, edges, mask=non_veg_mask)
+
+    # 4. Probabilistic Hough Line Transform
     hough_thresh = int(options.get("houghThreshold", 50))
-    min_line_len = int(options.get("minLineLength", 40))
-    max_line_gap = int(options.get("maxLineGap", 10))
+    min_line_len = int(options.get("minLineLength", 45))
+    max_line_gap = int(options.get("maxLineGap", 12))
 
     hough_lines = cv2.HoughLinesP(
         edges,
@@ -176,29 +251,26 @@ def extract_wireframe_from_image(image_path, telemetry=None, options=None):
         return {
             "success": True,
             "lines": [],
+            "lines2D": [],
             "totalRawLines": 0,
             "count": 0,
             "imageSize": [new_w, new_h]
         }
 
-    # Telemetry parameters
-    cam_x = float(telemetry.get("worldX", 0.0))
-    cam_y = float(telemetry.get("worldY", telemetry.get("alt", 25.0)))
-    cam_z = float(telemetry.get("worldZ", 0.0))
-    cam_pos = np.array([cam_x, cam_y, cam_z], dtype=np.float64)
-
-    yaw_deg = float(telemetry.get("yaw", 0.0))
-    pitch_deg = float(telemetry.get("pitch", -60.0))
-    roll_deg = float(telemetry.get("roll", 0.0))
-    hfov_deg = float(telemetry.get("hfov", 73.7))
-    vfov_deg = float(telemetry.get("vfov", 53.1))
-    ground_y = float(options.get("groundAltitude", 0.0))
-    max_lines_limit = int(options.get("maxLinesLimit", 500))
-
     extracted_lines = []
+    extracted_lines_2d = []
+
+    cam_alt = max(5.0, cam_y - ground_y)
+    est_eave_h = max(4.0, min(18.0, cam_alt * 0.42))
+    est_roof_h = max(2.5, min(7.0, est_eave_h * 0.42))
 
     for item in hough_lines:
-        line_entry = item[0] if (hasattr(item, '__len__') and len(item) > 0 and hasattr(item[0], '__len__') and len(item[0]) == 4) else item
+        # Robust unpacking for both OpenCV 4 (N, 1, 4) and OpenCV 5 (N, 4)
+        if hasattr(item, '__len__') and len(item) == 1 and hasattr(item[0], '__len__'):
+            line_entry = item[0]
+        else:
+            line_entry = item
+
         x1_pix, y1_pix, x2_pix, y2_pix = int(line_entry[0]), int(line_entry[1]), int(line_entry[2]), int(line_entry[3])
 
         # Calculate 2D length in pixels
@@ -208,6 +280,13 @@ def extract_wireframe_from_image(image_path, telemetry=None, options=None):
         if pix_len < min_line_len:
             continue
 
+        # Record normalized 2D line [u1, v1, u2, v2]
+        u1 = round(x1_pix / float(new_w), 4)
+        v1 = round(y1_pix / float(new_h), 4)
+        u2 = round(x2_pix / float(new_w), 4)
+        v2 = round(y2_pix / float(new_h), 4)
+        extracted_lines_2d.append([u1, v1, u2, v2])
+
         # Project 2D endpoints into 3D world rays
         ray1 = project_pixel_to_ray(x1_pix, y1_pix, new_w, new_h, hfov_deg, vfov_deg, cam_pos, yaw_deg, pitch_deg, roll_deg)
         ray2 = project_pixel_to_ray(x2_pix, y2_pix, new_w, new_h, hfov_deg, vfov_deg, cam_pos, yaw_deg, pitch_deg, roll_deg)
@@ -215,19 +294,12 @@ def extract_wireframe_from_image(image_path, telemetry=None, options=None):
         # Check line orientation (is it a vertical structural column or horizontal facade line?)
         is_vertical = abs(dx_pix) < abs(dy_pix) * 0.35
 
-        cam_alt = max(5.0, cam_y - ground_y)
-        est_eave_h = max(4.0, min(18.0, cam_alt * 0.42))
-        est_roof_h = max(2.5, min(7.0, est_eave_h * 0.42))
-
         if is_vertical:
-            # For vertical architectural edges (columns, building corners):
-            # Intersect midpoint ray with ground plane, and estimate height delta
-            u_mid = (x1_pix + x2_pix) / 2.0
+            # For vertical architectural edges (columns, building corners)
             ray_bottom = ray1 if y1_pix > y2_pix else ray2
             ray_top = ray2 if y1_pix > y2_pix else ray1
 
             pt_bottom = intersect_ray_with_plane(cam_pos, ray_bottom, plane_y=ground_y)
-            # Estimate structural height proportionally from optical angle
             dist_to_base = np.linalg.norm(pt_bottom - cam_pos)
             vert_angle = math.acos(np.clip(np.dot(ray_bottom, ray_top), -1.0, 1.0))
             height_delta = max(1.5, min(25.0, dist_to_base * math.tan(vert_angle)))
@@ -271,7 +343,7 @@ def extract_wireframe_from_image(image_path, telemetry=None, options=None):
         if len(extracted_lines) >= max_lines_limit:
             break
 
-    # Deduplicate lines within photo
+    # Deduplicate 3D lines within photo
     deduped = []
     tol_sq = 0.35 * 0.35
     for l in extracted_lines:
@@ -293,6 +365,7 @@ def extract_wireframe_from_image(image_path, telemetry=None, options=None):
     return {
         "success": True,
         "lines": deduped,
+        "lines2D": extracted_lines_2d,
         "count": len(deduped),
         "totalRawLines": len(hough_lines),
         "imageSize": [new_w, new_h]
@@ -331,6 +404,7 @@ def main():
     image_path = args.image or input_payload.get("imagePath") or input_payload.get("filePath")
     telemetry = input_payload.get("telemetry", {})
     options = input_payload.get("options", {})
+    origin = input_payload.get("origin")
 
     if args.telemetry:
         try:
@@ -347,15 +421,30 @@ def main():
     # Batch support: if photos array is provided in payload
     photos = input_payload.get("photos", [])
     if photos and isinstance(photos, list):
+        if not origin:
+            # Derive origin from homePoint or photo 0
+            first_p = photos[0]
+            first_telem = first_p.get("telemetry", first_p)
+            first_act = first_telem.get("actual", {}) if isinstance(first_telem.get("actual"), dict) else {}
+            flat = first_telem.get("lat") or first_act.get("lat")
+            flon = first_telem.get("lon") or first_act.get("lon")
+            if flat is not None and flon is not None:
+                origin = {"lat": float(flat), "lon": float(flon)}
+
         all_lines = []
+        per_photo_lines = {}
         total_raw = 0
         for photo in photos:
             p_path = photo.get("filePath") or photo.get("rawPath") or photo.get("path")
             p_telem = photo.get("telemetry", photo)
-            res = extract_wireframe_from_image(p_path, telemetry=p_telem, options=options)
+            p_key = photo.get("filename") or photo.get("photoId") or os.path.basename(p_path) if p_path else "unknown"
+            res = extract_wireframe_from_image(p_path, telemetry=p_telem, options=options, origin=origin)
             if res.get("success"):
                 all_lines.extend(res.get("lines", []))
                 total_raw += res.get("totalRawLines", 0)
+                per_photo_lines[p_key] = res.get("lines2D", [])
+                if photo.get("photoId") and photo.get("photoId") != p_key:
+                    per_photo_lines[photo["photoId"]] = res.get("lines2D", [])
 
         # Deduplicate combined lines across all photos in batch mode
         batch_deduped = []
@@ -379,12 +468,13 @@ def main():
         out_data = {
             "success": True,
             "lines": batch_deduped,
+            "perPhotoLines": per_photo_lines,
             "count": len(batch_deduped),
             "totalRawLines": total_raw,
             "totalPhotosProcessed": len(photos)
         }
     else:
-        out_data = extract_wireframe_from_image(image_path, telemetry=telemetry, options=options)
+        out_data = extract_wireframe_from_image(image_path, telemetry=telemetry, options=options, origin=origin)
 
     json_str = json.dumps(out_data, indent=2)
 
