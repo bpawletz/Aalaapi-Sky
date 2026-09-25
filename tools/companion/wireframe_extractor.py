@@ -215,6 +215,10 @@ def extract_wireframe_from_image(image_path, telemetry=None, options=None):
         # Check line orientation (is it a vertical structural column or horizontal facade line?)
         is_vertical = abs(dx_pix) < abs(dy_pix) * 0.35
 
+        cam_alt = max(5.0, cam_y - ground_y)
+        est_eave_h = max(4.0, min(18.0, cam_alt * 0.42))
+        est_roof_h = max(2.5, min(7.0, est_eave_h * 0.42))
+
         if is_vertical:
             # For vertical architectural edges (columns, building corners):
             # Intersect midpoint ray with ground plane, and estimate height delta
@@ -226,15 +230,27 @@ def extract_wireframe_from_image(image_path, telemetry=None, options=None):
             # Estimate structural height proportionally from optical angle
             dist_to_base = np.linalg.norm(pt_bottom - cam_pos)
             vert_angle = math.acos(np.clip(np.dot(ray_bottom, ray_top), -1.0, 1.0))
-            height_delta = max(1.0, dist_to_base * math.tan(vert_angle))
+            height_delta = max(1.5, min(25.0, dist_to_base * math.tan(vert_angle)))
 
             pt_top = np.array([pt_bottom[0], pt_bottom[1] + height_delta, pt_bottom[2]], dtype=np.float64)
             p1_3d = pt_bottom
             p2_3d = pt_top
         else:
-            # Horizontal or oblique edge: intersect both rays onto estimated terrain or structure plane
-            p1_3d = intersect_ray_with_plane(cam_pos, ray1, plane_y=ground_y)
-            p2_3d = intersect_ray_with_plane(cam_pos, ray2, plane_y=ground_y)
+            # Horizontal or oblique edge: determine realistic 3D elevation plane from image position
+            y_mid_pix = (y1_pix + y2_pix) / 2.0
+            norm_v = y_mid_pix / float(new_h)
+            if norm_v < 0.38:
+                # Upper frame: roof ridge / upper rafters
+                edge_plane_y = ground_y + est_eave_h + est_roof_h
+            elif norm_v < 0.65:
+                # Mid frame: eaves / upper wall fascia
+                edge_plane_y = ground_y + est_eave_h
+            else:
+                # Lower frame: foundation / sill
+                edge_plane_y = ground_y
+
+            p1_3d = intersect_ray_with_plane(cam_pos, ray1, plane_y=edge_plane_y)
+            p2_3d = intersect_ray_with_plane(cam_pos, ray2, plane_y=edge_plane_y)
 
         # Validate non-NaN and reasonable bounds
         coords = [
@@ -255,10 +271,29 @@ def extract_wireframe_from_image(image_path, telemetry=None, options=None):
         if len(extracted_lines) >= max_lines_limit:
             break
 
+    # Deduplicate lines within photo
+    deduped = []
+    tol_sq = 0.35 * 0.35
+    for l in extracted_lines:
+        x1, y1, z1, x2, y2, z2 = l
+        dup = False
+        for ex in deduped:
+            ex1, ey1, ez1, ex2, ey2, ez2 = ex
+            d11 = (x1-ex1)**2 + (y1-ey1)**2 + (z1-ez1)**2
+            d22 = (x2-ex2)**2 + (y2-ey2)**2 + (z2-ez2)**2
+            if d11 < tol_sq and d22 < tol_sq:
+                dup = True; break
+            d12 = (x1-ex2)**2 + (y1-ey2)**2 + (z1-ez2)**2
+            d21 = (x2-ex1)**2 + (y2-ey1)**2 + (z2-ez1)**2
+            if d12 < tol_sq and d21 < tol_sq:
+                dup = True; break
+        if not dup:
+            deduped.append(l)
+
     return {
         "success": True,
-        "lines": extracted_lines,
-        "count": len(extracted_lines),
+        "lines": deduped,
+        "count": len(deduped),
         "totalRawLines": len(hough_lines),
         "imageSize": [new_w, new_h]
     }
@@ -322,10 +357,29 @@ def main():
                 all_lines.extend(res.get("lines", []))
                 total_raw += res.get("totalRawLines", 0)
 
+        # Deduplicate combined lines across all photos in batch mode
+        batch_deduped = []
+        tol_sq = 0.35 * 0.35
+        for l in all_lines:
+            x1, y1, z1, x2, y2, z2 = l
+            dup = False
+            for ex in batch_deduped:
+                ex1, ey1, ez1, ex2, ey2, ez2 = ex
+                d11 = (x1-ex1)**2 + (y1-ey1)**2 + (z1-ez1)**2
+                d22 = (x2-ex2)**2 + (y2-ey2)**2 + (z2-ez2)**2
+                if d11 < tol_sq and d22 < tol_sq:
+                    dup = True; break
+                d12 = (x1-ex2)**2 + (y1-ey2)**2 + (z1-ez2)**2
+                d21 = (x2-ex1)**2 + (y2-ey1)**2 + (z2-ez1)**2
+                if d12 < tol_sq and d21 < tol_sq:
+                    dup = True; break
+            if not dup:
+                batch_deduped.append(l)
+
         out_data = {
             "success": True,
-            "lines": all_lines,
-            "count": len(all_lines),
+            "lines": batch_deduped,
+            "count": len(batch_deduped),
             "totalRawLines": total_raw,
             "totalPhotosProcessed": len(photos)
         }

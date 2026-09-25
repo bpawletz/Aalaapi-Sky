@@ -2206,7 +2206,11 @@ if ($copied.Count -eq 0 -and $thisPC) {
           manifest.wireframe = wireframeData;
           fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
           fs.writeFileSync(path.join(targetDir, 'wireframe.json'), JSON.stringify(wireframeData, null, 2), 'utf8');
-          logSuccess('[WIREFRAME]', `Extracted ${wireframeData.count} 3D architectural wireframe line segments`);
+          if (Array.isArray(wireframeData.lines) && wireframeData.lines.length > 0) {
+            fs.writeFileSync(path.join(targetDir, 'wireframe.obj'), wireframeEngine.wireframeToObj(wireframeData.lines), 'utf8');
+            fs.writeFileSync(path.join(targetDir, 'wireframe_threejs.json'), JSON.stringify(wireframeEngine.wireframeToThreeJson(wireframeData.lines), null, 2), 'utf8');
+          }
+          logSuccess('[WIREFRAME]', `Extracted ${wireframeData.count} 3D architectural wireframe line segments (JSON, OBJ & Three.js format)`);
         }
       }
     } catch (wErr) {
@@ -2255,9 +2259,50 @@ function packageInspectionArchive(missionUuid) {
   const targetDir = path.join(ARCHIVE_DIR, missionUuid);
   if (!fs.existsSync(targetDir)) return { success: false, error: 'Mission directory not found' };
 
+  // Ensure wireframe assets (wireframe.obj, wireframe_threejs.json) exist and manifest is synced before packaging
+  const wireframeJsonPath = path.join(targetDir, 'wireframe.json');
+  const wireframeObjPath = path.join(targetDir, 'wireframe.obj');
+  const wireframeThreePath = path.join(targetDir, 'wireframe_threejs.json');
+
+  if (fs.existsSync(wireframeJsonPath)) {
+    try {
+      const wData = JSON.parse(fs.readFileSync(wireframeJsonPath, 'utf8'));
+      if (wData && Array.isArray(wData.lines) && wData.lines.length > 0) {
+        if (!fs.existsSync(wireframeObjPath)) {
+          fs.writeFileSync(wireframeObjPath, wireframeEngine.wireframeToObj(wData.lines), 'utf8');
+        }
+        if (!fs.existsSync(wireframeThreePath)) {
+          fs.writeFileSync(wireframeThreePath, JSON.stringify(wireframeEngine.wireframeToThreeJson(wData.lines, { elevationOffset: wData.elevationOffset }), null, 2), 'utf8');
+        }
+        // Verify manifest and report include wireframe
+        const manifestPath = path.join(targetDir, 'inspection_manifest.json');
+        if (fs.existsSync(manifestPath)) {
+          try {
+            const mObj = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+            if (!mObj.wireframe || (mObj.wireframe.count !== wData.lines.length)) {
+              mObj.wireframe = wData;
+              fs.writeFileSync(manifestPath, JSON.stringify(mObj, null, 2), 'utf8');
+              const tmplPath = path.join(__dirname, 'inspection_template.html');
+              if (fs.existsSync(tmplPath)) {
+                let rHtml = fs.readFileSync(tmplPath, 'utf8');
+                rHtml = rHtml.replace('window.__INSPECTION_MANIFEST__ || {', `JSON.parse(${JSON.stringify(JSON.stringify(mObj))}) || {`);
+                fs.writeFileSync(path.join(targetDir, 'inspection_report.html'), rHtml, 'utf8');
+              }
+            }
+          } catch (_) {}
+        }
+      }
+    } catch (_) {}
+  }
+
   const zipFile = path.join(ARCHIVE_DIR, `${missionUuid}_inspection_archive.zip`);
   if (!IS_WINDOWS) {
-    return { success: true, zipPath: zipFile };
+    try {
+      execFileSync('zip', ['-r', '-q', zipFile, '.'], { cwd: targetDir, timeout: 30000 });
+      return { success: true, zipPath: zipFile, filename: `${missionUuid}_inspection_archive.zip` };
+    } catch (_) {
+      return { success: true, zipPath: zipFile, filename: `${missionUuid}_inspection_archive.zip` };
+    }
   }
 
   try {
@@ -3144,12 +3189,37 @@ const server = http.createServer(async (req, res) => {
 
           const result = wireframeEngine.extractWireframe(payload);
 
-          // If missionUuid was provided, cache wireframe.json in archive
+          // If missionUuid was provided, cache wireframe assets in archive
           if (payload.missionUuid && result && result.success) {
-            const wPath = path.join(ARCHIVE_DIR, payload.missionUuid, 'wireframe.json');
-            try {
-              fs.writeFileSync(wPath, JSON.stringify(result, null, 2), 'utf8');
-            } catch (_) {}
+            const mDir = path.join(ARCHIVE_DIR, payload.missionUuid);
+            if (fs.existsSync(mDir)) {
+              try {
+                fs.writeFileSync(path.join(mDir, 'wireframe.json'), JSON.stringify(result, null, 2), 'utf8');
+                if (Array.isArray(result.lines) && result.lines.length > 0) {
+                  fs.writeFileSync(path.join(mDir, 'wireframe.obj'), wireframeEngine.wireframeToObj(result.lines), 'utf8');
+                  fs.writeFileSync(path.join(mDir, 'wireframe_threejs.json'), JSON.stringify(wireframeEngine.wireframeToThreeJson(result.lines, {
+                    elevationOffset: payload.elevationOffset || 0,
+                    flightPath: payload.flightPath,
+                    photos: payload.photos,
+                    boundary: payload.boundary
+                  }), null, 2), 'utf8');
+                }
+                const mPath = path.join(mDir, 'inspection_manifest.json');
+                if (fs.existsSync(mPath)) {
+                  try {
+                    const manifest = JSON.parse(fs.readFileSync(mPath, 'utf8'));
+                    manifest.wireframe = result;
+                    fs.writeFileSync(mPath, JSON.stringify(manifest, null, 2), 'utf8');
+                    const tmplPath = path.join(__dirname, 'inspection_template.html');
+                    if (fs.existsSync(tmplPath)) {
+                      let reportHtml = fs.readFileSync(tmplPath, 'utf8');
+                      reportHtml = reportHtml.replace('window.__INSPECTION_MANIFEST__ || {', `JSON.parse(${JSON.stringify(JSON.stringify(manifest))}) || {`);
+                      fs.writeFileSync(path.join(mDir, 'inspection_report.html'), reportHtml, 'utf8');
+                    }
+                  } catch (_) {}
+                }
+              } catch (_) {}
+            }
           }
 
           res.writeHead(200, {
@@ -3165,6 +3235,75 @@ const server = http.createServer(async (req, res) => {
             'Access-Control-Allow-Private-Network': 'true'
           });
           res.end(JSON.stringify({ success: false, error: err.message, lines: [] }));
+        }
+      });
+      return;
+    }
+
+    // Save user-edited / calibrated 3D Wireframe directly into mission package
+    if (pathname === '/api/process/wireframe/save' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', async () => {
+        try {
+          const payload = body ? JSON.parse(body) : {};
+          const missionUuid = payload.missionUuid;
+          if (!missionUuid) {
+            res.writeHead(400, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+            res.end(JSON.stringify({ success: false, error: 'missionUuid is required' }));
+            return;
+          }
+          const mDir = path.join(ARCHIVE_DIR, missionUuid);
+          if (!fs.existsSync(mDir)) {
+            res.writeHead(404, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+            res.end(JSON.stringify({ success: false, error: 'Mission directory not found' }));
+            return;
+          }
+
+          const lines = Array.isArray(payload.lines) ? payload.lines : [];
+          const elevOffset = typeof payload.elevationOffset === 'number' ? payload.elevationOffset : 0;
+          const wireframeData = {
+            success: true,
+            lines,
+            count: lines.length,
+            elevationOffset: elevOffset,
+            updatedAt: new Date().toISOString(),
+            source: 'user_edited'
+          };
+
+          fs.writeFileSync(path.join(mDir, 'wireframe.json'), JSON.stringify(wireframeData, null, 2), 'utf8');
+          fs.writeFileSync(path.join(mDir, 'wireframe.obj'), wireframeEngine.wireframeToObj(lines), 'utf8');
+          fs.writeFileSync(path.join(mDir, 'wireframe_threejs.json'), JSON.stringify(wireframeEngine.wireframeToThreeJson(lines, {
+            elevationOffset: elevOffset,
+            flightPath: payload.flightPath,
+            photos: payload.photos,
+            boundary: payload.boundary
+          }), null, 2), 'utf8');
+
+          const mPath = path.join(mDir, 'inspection_manifest.json');
+          if (fs.existsSync(mPath)) {
+            try {
+              const manifest = JSON.parse(fs.readFileSync(mPath, 'utf8'));
+              manifest.wireframe = wireframeData;
+              fs.writeFileSync(mPath, JSON.stringify(manifest, null, 2), 'utf8');
+              const tmplPath = path.join(__dirname, 'inspection_template.html');
+              if (fs.existsSync(tmplPath)) {
+                let reportHtml = fs.readFileSync(tmplPath, 'utf8');
+                reportHtml = reportHtml.replace('window.__INSPECTION_MANIFEST__ || {', `JSON.parse(${JSON.stringify(JSON.stringify(manifest))}) || {`);
+                fs.writeFileSync(path.join(mDir, 'inspection_report.html'), reportHtml, 'utf8');
+              }
+            } catch (_) {}
+          }
+
+          res.writeHead(200, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Private-Network': 'true'
+          });
+          res.end(JSON.stringify({ success: true, count: lines.length, wireframe: wireframeData }));
+        } catch (err) {
+          res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
         }
       });
       return;
@@ -3971,6 +4110,7 @@ module.exports = {
   decryptFlightRecordWithDjiCli,
   extractWireframe: wireframeEngine.extractWireframe,
   wireframeEngine,
+  packageInspectionArchive,
   VERSION,
   PORT
 };

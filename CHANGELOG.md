@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.122.0] - 2026-09-24
+
+### New Features & Enhancements
+- **3D Wireframe Package Bundling & Three.js Editor Import Suite:**
+  - **Inspection Archive Package Deliverable (`<uuid>_inspection_archive.zip`):**
+    - Seamlessly bundles extracted 3D architectural wireframes into the mission deliverables package.
+    - Automatically compiles both **Wavefront OBJ (`wireframe.obj`)** and native **Three.js Object JSON (`wireframe_threejs.json`)** alongside `wireframe.json` in the mission directory.
+    - Updated `packageInspectionArchive()` to audit, generate, and synchronize wireframe assets into the deliverable ZIP with cross-platform compression support.
+    - Updates `inspection_manifest.json` with wireframe geometry and re-renders the standalone `inspection_report.html`.
+  - **Three.js Editor Import (`threejs.org/editor`):**
+    - Added direct compatibility for importing wireframes into the official Three.js Editor (https://threejs.org/editor/).
+    - Engineered `wireframeToThreeJson()` in `wireframe_engine.js` producing compliant Three.js Object scene JSON (`BufferGeometry`, `LineSegments`, and `LineBasicMaterial`).
+    - Both `wireframe.obj` and `wireframe_threejs.json` can be dragged and dropped directly into `threejs.org/editor` or imported via CAD/BIM applications.
+    - Added dedicated **🎨 Three.js** export button in the 3D Wireframe Toolkit and direct Three.js Editor links in standalone inspection reports.
+  - **Live Package Synchronization & Editing Persistence:**
+    - Exposed `POST /api/process/wireframe/save` in the Companion Bridge service, allowing pilots to persist user-edited wireframes (post-line deletion, elevation offset calibration, noise filtering) directly into the mission archive.
+    - Added **📦 Save to Package** (`#diag-wireframe-save-btn`) in the 3D Wireframe Toolkit (`FlightDiagnostics`) with instant toast feedback.
+  - **True 3D Volumetric Architectural Wireframes & Digital Twin Scene Graph:**
+    - Upgraded wireframe generation from 2D ground projection to a true 3D volumetric architectural model featuring ground foundations ($Y = groundAltitude$), vertical wall/corner columns ($Y = ground \to eaves$), upper eaves perimeter ($Y = eaves$), elevated 3D roof ridge ($Y = eaves + roofHeight$), and gable/hip rafters.
+    - Integrated multi-object **Three.js Digital Twin Scene Graph (`Group: Aalaapi_Inspection_Digital_Twin`)** bundling:
+      1. `Building_3D_Wireframe` (cyan `#38bdf8` 3D architectural line segments)
+      2. `Drone_Flight_Trajectory` (vibrant amber `#f59e0b` 3D flight trajectory path)
+      3. `Camera_Photo_Frustums` (emerald `#10b981` 3D camera wireframe pyramids at exact photo positions pointing at inspection targets)
+      4. `Mission_Boundary` (teal `#06b6d4` 3D boundary polygon loop)
+    - Implemented spatial line deduplication (`deduplicateLines`) across photos in both JavaScript and OpenCV Python pipelines to eliminate redundant overlapping lines.
+    - Automatically bundles the rich Digital Twin Three.js JSON across client UI export, companion server packaging, and exported `.kmz` packages.
+  - **Standalone Inspection Report Integration (`inspection_report.html`):**
+    - Integrated a dedicated **3D Wireframe** stat card in the deliverable report showing segment count and instant download buttons for OBJ, Three.js JSON, and raw coordinate JSON.
+    - Added `🏗️ 3D Wireframe Included` header badge in the report deliverable.
+  - **Mission KMZ Package Embedding (`generateKMZBlob`):**
+    - Automatically embeds 3D wireframe assets (`wpmz/res/wireframe.json`, `wpmz/res/wireframe.obj`, and `wpmz/res/wireframe_threejs.json`) inside exported KMZ archives when wireframe geometry exists.
+
 ## [1.121.2] - 2026-09-24
 
 ### Bug Fixes & Improvements
