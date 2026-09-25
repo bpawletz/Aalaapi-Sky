@@ -1,3 +1,12 @@
+## [1.128.1] - 2026-09-25
+
+### Fixed
+- **3D Wireframe Incoherence (3 root-cause fixes)**:
+  - Fix 1: Cluster photos by ground-hit centroid so lines from different buildings are never mixed into one scattered blob.
+  - Fix 2: Filter each photo's line projections against the cluster center (not the global scene origin), correctly rejecting far-field rays without discarding valid on-building lines.
+  - Fix 3: Assign architectural height via ground-projected nadir-distance geometry instead of pixel-angle heuristics (which produced wrong heights for all oblique/nadir shots).
+- Regenerated Flight 13 wireframe with 2582 spatially coherent lines across ridge, eave, and ground planes.
+
 # Changelog
  
 ## [1.128.0] - 2026-09-25
