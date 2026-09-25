@@ -17,6 +17,7 @@ import os
 import json
 import math
 import argparse
+import base64
 
 try:
     import cv2
@@ -116,7 +117,7 @@ def intersect_ray_with_plane(cam_pos, ray_dir, plane_y=0.0, max_dist=1200.0):
     t_fallback = min(max_dist, max(15.0, py * 1.5))
     return np.array([px + rx * t_fallback, max(plane_y, py + ry * t_fallback), pz + rz * t_fallback], dtype=np.float64)
 
-def extract_wireframe_from_image(image_path, telemetry=None, options=None, origin=None):
+def extract_wireframe_from_image(image_path, telemetry=None, options=None, origin=None, image_data=None):
     """
     Core OpenCV edge extraction and telemetry extrusion.
     """
@@ -133,20 +134,34 @@ def extract_wireframe_from_image(image_path, telemetry=None, options=None, origi
             "lines2D": []
         }
 
-    if not os.path.exists(image_path):
-        return {
-            "success": False,
-            "error": f"Image file not found: {image_path}",
-            "lines": [],
-            "lines2D": []
-        }
+    # Load image: prioritize image_data (base64) or image_path
+    img = None
+    if image_data:
+        try:
+            if "," in image_data:
+                image_data = image_data.split(",", 1)[1]
+            buf = base64.b64decode(image_data)
+            nparr = np.frombuffer(buf, np.uint8)
+            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        except Exception:
+            pass
 
-    # Load image
-    img = cv2.imread(image_path)
+    if img is None and image_path:
+        if str(image_path).startswith("data:image"):
+            try:
+                b64 = str(image_path).split(",", 1)[1]
+                buf = base64.b64decode(b64)
+                nparr = np.frombuffer(buf, np.uint8)
+                img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            except Exception:
+                pass
+        elif os.path.exists(image_path):
+            img = cv2.imread(image_path)
+
     if img is None:
         return {
             "success": False,
-            "error": f"Failed to decode image: {image_path}",
+            "error": f"Image file not found or invalid: {image_path or 'base64 buffer'}",
             "lines": [],
             "lines2D": []
         }
@@ -402,6 +417,7 @@ def main():
         input_payload = {}
 
     image_path = args.image or input_payload.get("imagePath") or input_payload.get("filePath")
+    image_data = input_payload.get("imageData") or input_payload.get("imageBuffer")
     telemetry = input_payload.get("telemetry", {})
     options = input_payload.get("options", {})
     origin = input_payload.get("origin")
@@ -436,9 +452,10 @@ def main():
         total_raw = 0
         for photo in photos:
             p_path = photo.get("filePath") or photo.get("rawPath") or photo.get("path")
+            p_data = photo.get("imageData")
             p_telem = photo.get("telemetry", photo)
             p_key = photo.get("filename") or photo.get("photoId") or os.path.basename(p_path) if p_path else "unknown"
-            res = extract_wireframe_from_image(p_path, telemetry=p_telem, options=options, origin=origin)
+            res = extract_wireframe_from_image(p_path, telemetry=p_telem, options=options, origin=origin, image_data=p_data)
             if res.get("success"):
                 all_lines.extend(res.get("lines", []))
                 total_raw += res.get("totalRawLines", 0)
@@ -474,7 +491,7 @@ def main():
             "totalPhotosProcessed": len(photos)
         }
     else:
-        out_data = extract_wireframe_from_image(image_path, telemetry=telemetry, options=options, origin=origin)
+        out_data = extract_wireframe_from_image(image_path, telemetry=telemetry, options=options, origin=origin, image_data=image_data)
 
     json_str = json.dumps(out_data, indent=2)
 
