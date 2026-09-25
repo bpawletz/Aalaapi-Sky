@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.123.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.124.0</span></h1>
 
 
 
@@ -2345,6 +2345,17 @@
               </label>
             </div>
 
+            <div class="adsb-card-row" style="margin-top: 10px;">
+              <label for="adsb-trails-toggle" class="adsb-control-label">
+                <span style="font-weight: 600;">Flight History Trails</span>
+                <span class="adsb-control-sub">Breadcrumb track vectors on map</span>
+              </label>
+              <label class="switch" style="position: relative; display: inline-block; width: 38px; height: 20px; margin: 0;">
+                <input type="checkbox" id="adsb-trails-toggle" checked style="opacity: 0; width: 0; height: 0;">
+                <span class="slider round"></span>
+              </label>
+            </div>
+
             <div class="adsb-card-row" style="margin-top: 8px;">
               <span class="adsb-control-label" style="font-size: 0.74rem;">Alert Audio Mode:</span>
               <select id="adsb-sound-type-select" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.72rem; border-radius: 5px; padding: 2px 6px;">
@@ -3560,7 +3571,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.123.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.124.0</span>
 
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -3624,6 +3635,14 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.124.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🛩️ Aircraft Flight History Trails (Breadcrumb Vectors):</strong> Tracked manned aircraft now leave dynamic breadcrumb flight tails on the map canvas showing their flight path history, approach angle, and heading progression.</li>
+              <li><strong>🎨 Status-Differentiated Trail Polylines:</strong> Safe aircraft display a calm cyan/blue vector trail, while breached/advisory traffic renders a high-visibility pulsed red/amber dashed vector path toward your flight perimeter.</li>
+              <li><strong>🔘 Drawer Trails Toggle:</strong> Added a dedicated <strong>Flight History Trails</strong> toggle in the ADS-B Control Drawer with persistent user preference storage.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.123.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">

@@ -19184,6 +19184,9 @@ const AdsbAirspaceManager = {
   previousStatus: new Map(), // hex -> 'safe' | 'breached'
   layerGroup: null,
   mapMarkers: new Map(), // hex -> Leaflet marker
+  showTrails: true,
+  mapTrails: new Map(), // hex -> Leaflet polyline
+  acHistory: new Map(), // hex -> Array<[lat, lon, alt, time]>
   audioContext: null,
   pollTimer: null,
   isPolling: false,
@@ -19211,6 +19214,9 @@ const AdsbAirspaceManager = {
         const savedType = localStorage.getItem('aalaapi_adsb_sound_type');
         if (savedType) this.soundType = savedType;
 
+        const savedTrails = localStorage.getItem('aalaapi_adsb_show_trails');
+        if (savedTrails !== null) this.showTrails = savedTrails === 'true';
+
         const savedRadius = localStorage.getItem('aalaapi_adsb_radius_mi');
         if (savedRadius) this.radiusMiles = parseFloat(savedRadius) || 3.0;
 
@@ -19229,6 +19235,7 @@ const AdsbAirspaceManager = {
         localStorage.setItem('aalaapi_adsb_enabled', String(this.enabled));
         localStorage.setItem('aalaapi_adsb_sound', String(this.soundEnabled));
         localStorage.setItem('aalaapi_adsb_sound_type', this.soundType);
+        localStorage.setItem('aalaapi_adsb_show_trails', String(this.showTrails));
         localStorage.setItem('aalaapi_adsb_radius_mi', String(this.radiusMiles));
         localStorage.setItem('aalaapi_adsb_ceiling_ft', String(this.ceilingFeet));
         localStorage.setItem('aalaapi_adsb_custom_endpoint', this.customEndpoint || '');
@@ -19245,8 +19252,8 @@ const AdsbAirspaceManager = {
   },
 
   initMapLayer() {
-    const m = (typeof map !== 'undefined') ? map : null;
-    const leaflet = (typeof L !== 'undefined') ? L : null;
+    const leaflet = (typeof L !== 'undefined' && L) || (typeof window !== 'undefined' && window.L) || (typeof global !== 'undefined' && global.L);
+    const m = (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map) || (typeof global !== 'undefined' && global.map);
     if (leaflet && m && !this.layerGroup && m.addLayer && leaflet.layerGroup) {
       this.layerGroup = leaflet.layerGroup().addTo(m);
     }
@@ -19379,6 +19386,20 @@ const AdsbAirspaceManager = {
     } else {
       this.stopPolling();
       this.clearAll();
+    }
+    this.updateControlsUI();
+  },
+
+  toggleTrails(forceState) {
+    this.showTrails = forceState !== undefined ? forceState : !this.showTrails;
+    this.saveSettings();
+    if (!this.showTrails) {
+      for (const poly of this.mapTrails.values()) {
+        if (this.layerGroup && this.layerGroup.removeLayer) this.layerGroup.removeLayer(poly);
+      }
+      this.mapTrails.clear();
+    } else {
+      this.updateMapMarkers();
     }
     this.updateControlsUI();
   },
@@ -19655,9 +19676,8 @@ const AdsbAirspaceManager = {
   },
 
   updateMapMarkers() {
-    const leaflet = typeof L !== 'undefined' ? L : null;
-    const m = typeof map !== 'undefined' ? map : null;
-    if (!leaflet || !m) return;
+    const leaflet = (typeof L !== 'undefined' && L) || (typeof window !== 'undefined' && window.L) || (typeof global !== 'undefined' && global.L);
+    if (!leaflet) return;
     this.initMapLayer();
     if (!this.layerGroup) return;
 
@@ -19666,6 +19686,62 @@ const AdsbAirspaceManager = {
     for (const ac of this.aircraft) {
       if (ac.latitude === null || ac.longitude === null) continue;
       currentHexes.add(ac.hex);
+
+      // Accumulate position history
+      let hist = this.acHistory.get(ac.hex);
+      if (!hist) {
+        hist = [];
+        this.acHistory.set(ac.hex, hist);
+      }
+      if (Array.isArray(ac.history) && ac.history.length > 0 && hist.length === 0) {
+        hist.push(...ac.history);
+      }
+      const lastPt = hist[hist.length - 1];
+      if (!lastPt || Math.abs(lastPt[0] - ac.latitude) > 0.00005 || Math.abs(lastPt[1] - ac.longitude) > 0.00005) {
+        hist.push([ac.latitude, ac.longitude, ac.altitude || 0, Date.now()]);
+        if (hist.length > 60) hist.shift();
+      }
+
+      // Render/Update Flight History Trail
+      if (this.showTrails && hist.length >= 2) {
+        const latlngs = hist.map(pt => [pt[0], pt[1]]);
+        let poly = this.mapTrails.get(ac.hex);
+        const trailColor = ac.isBreached ? '#ef4444' : '#38bdf8';
+        const trailWeight = ac.isBreached ? 3 : 2;
+        const trailDash = ac.isBreached ? '4, 4' : null;
+
+        if (!poly) {
+          if (leaflet.polyline) {
+            poly = leaflet.polyline(latlngs, {
+              color: trailColor,
+              weight: trailWeight,
+              opacity: 0.7,
+              dashArray: trailDash,
+              className: `adsb-flight-trail ${ac.isBreached ? 'breached' : ''}`
+            });
+            if (this.layerGroup && this.layerGroup.addLayer) {
+              poly.addTo(this.layerGroup);
+            }
+            this.mapTrails.set(ac.hex, poly);
+          }
+        } else {
+          if (poly.setLatLngs) poly.setLatLngs(latlngs);
+          if (poly.setStyle) {
+            poly.setStyle({
+              color: trailColor,
+              weight: trailWeight,
+              opacity: 0.7,
+              dashArray: trailDash
+            });
+          }
+        }
+      } else if (!this.showTrails) {
+        const poly = this.mapTrails.get(ac.hex);
+        if (poly) {
+          if (this.layerGroup && this.layerGroup.removeLayer) this.layerGroup.removeLayer(poly);
+          this.mapTrails.delete(ac.hex);
+        }
+      }
 
       const isBreached = ac.isBreached;
       const track = ac.track || 0;
@@ -19719,11 +19795,17 @@ const AdsbAirspaceManager = {
       }
     }
 
-    // Remove markers no longer in range
+    // Remove markers & trails no longer in range
     for (const [hex, marker] of this.mapMarkers.entries()) {
       if (!currentHexes.has(hex)) {
-        if (this.layerGroup.removeLayer) this.layerGroup.removeLayer(marker);
+        if (this.layerGroup && this.layerGroup.removeLayer) this.layerGroup.removeLayer(marker);
         this.mapMarkers.delete(hex);
+        const poly = this.mapTrails.get(hex);
+        if (poly) {
+          if (this.layerGroup && this.layerGroup.removeLayer) this.layerGroup.removeLayer(poly);
+          this.mapTrails.delete(hex);
+        }
+        this.acHistory.delete(hex);
       }
     }
   },
@@ -19738,6 +19820,8 @@ const AdsbAirspaceManager = {
       this.layerGroup.clearLayers();
     }
     this.mapMarkers.clear();
+    this.mapTrails.clear();
+    this.acHistory.clear();
     if (this.isDrawerOpen) {
       this.updateDrawerAircraftList();
     }
@@ -19751,6 +19835,9 @@ const AdsbAirspaceManager = {
 
     const soundToggle = document.getElementById('adsb-sound-toggle');
     if (soundToggle) soundToggle.checked = this.soundEnabled;
+
+    const trailsToggle = document.getElementById('adsb-trails-toggle');
+    if (trailsToggle) trailsToggle.checked = this.showTrails;
 
     const soundSelect = document.getElementById('adsb-sound-type-select');
     if (soundSelect) soundSelect.value = this.soundType;
@@ -19867,6 +19954,11 @@ const AdsbAirspaceManager = {
     const soundToggle = document.getElementById('adsb-sound-toggle');
     if (soundToggle) {
       soundToggle.addEventListener('change', (e) => this.toggleSound(e.target.checked));
+    }
+
+    const trailsToggle = document.getElementById('adsb-trails-toggle');
+    if (trailsToggle) {
+      trailsToggle.addEventListener('change', (e) => this.toggleTrails(e.target.checked));
     }
 
     const soundSelect = document.getElementById('adsb-sound-type-select');

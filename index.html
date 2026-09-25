@@ -5352,6 +5352,17 @@ html, body {
   border-color: rgba(239, 68, 68, 0.6) !important;
 }
 
+.adsb-flight-trail {
+  pointer-events: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 3px rgba(56, 189, 248, 0.6));
+}
+
+.adsb-flight-trail.breached {
+  filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.8));
+}
+
 
 
 
@@ -5408,7 +5419,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.123.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.124.0</span></h1>
 
 
 
@@ -7687,6 +7698,17 @@ html, body {
               </label>
             </div>
 
+            <div class="adsb-card-row" style="margin-top: 10px;">
+              <label for="adsb-trails-toggle" class="adsb-control-label">
+                <span style="font-weight: 600;">Flight History Trails</span>
+                <span class="adsb-control-sub">Breadcrumb track vectors on map</span>
+              </label>
+              <label class="switch" style="position: relative; display: inline-block; width: 38px; height: 20px; margin: 0;">
+                <input type="checkbox" id="adsb-trails-toggle" checked style="opacity: 0; width: 0; height: 0;">
+                <span class="slider round"></span>
+              </label>
+            </div>
+
             <div class="adsb-card-row" style="margin-top: 8px;">
               <span class="adsb-control-label" style="font-size: 0.74rem;">Alert Audio Mode:</span>
               <select id="adsb-sound-type-select" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.72rem; border-radius: 5px; padding: 2px 6px;">
@@ -8902,7 +8924,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.123.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.124.0</span>
 
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -8966,6 +8988,14 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.124.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🛩️ Aircraft Flight History Trails (Breadcrumb Vectors):</strong> Tracked manned aircraft now leave dynamic breadcrumb flight tails on the map canvas showing their flight path history, approach angle, and heading progression.</li>
+              <li><strong>🎨 Status-Differentiated Trail Polylines:</strong> Safe aircraft display a calm cyan/blue vector trail, while breached/advisory traffic renders a high-visibility pulsed red/amber dashed vector path toward your flight perimeter.</li>
+              <li><strong>🔘 Drawer Trails Toggle:</strong> Added a dedicated <strong>Flight History Trails</strong> toggle in the ADS-B Control Drawer with persistent user preference storage.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.123.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -32358,6 +32388,9 @@ const AdsbAirspaceManager = {
   previousStatus: new Map(), // hex -> 'safe' | 'breached'
   layerGroup: null,
   mapMarkers: new Map(), // hex -> Leaflet marker
+  showTrails: true,
+  mapTrails: new Map(), // hex -> Leaflet polyline
+  acHistory: new Map(), // hex -> Array<[lat, lon, alt, time]>
   audioContext: null,
   pollTimer: null,
   isPolling: false,
@@ -32385,6 +32418,9 @@ const AdsbAirspaceManager = {
         const savedType = localStorage.getItem('aalaapi_adsb_sound_type');
         if (savedType) this.soundType = savedType;
 
+        const savedTrails = localStorage.getItem('aalaapi_adsb_show_trails');
+        if (savedTrails !== null) this.showTrails = savedTrails === 'true';
+
         const savedRadius = localStorage.getItem('aalaapi_adsb_radius_mi');
         if (savedRadius) this.radiusMiles = parseFloat(savedRadius) || 3.0;
 
@@ -32403,6 +32439,7 @@ const AdsbAirspaceManager = {
         localStorage.setItem('aalaapi_adsb_enabled', String(this.enabled));
         localStorage.setItem('aalaapi_adsb_sound', String(this.soundEnabled));
         localStorage.setItem('aalaapi_adsb_sound_type', this.soundType);
+        localStorage.setItem('aalaapi_adsb_show_trails', String(this.showTrails));
         localStorage.setItem('aalaapi_adsb_radius_mi', String(this.radiusMiles));
         localStorage.setItem('aalaapi_adsb_ceiling_ft', String(this.ceilingFeet));
         localStorage.setItem('aalaapi_adsb_custom_endpoint', this.customEndpoint || '');
@@ -32419,8 +32456,8 @@ const AdsbAirspaceManager = {
   },
 
   initMapLayer() {
-    const m = (typeof map !== 'undefined') ? map : null;
-    const leaflet = (typeof L !== 'undefined') ? L : null;
+    const leaflet = (typeof L !== 'undefined' && L) || (typeof window !== 'undefined' && window.L) || (typeof global !== 'undefined' && global.L);
+    const m = (typeof map !== 'undefined' && map) || (typeof window !== 'undefined' && window.map) || (typeof global !== 'undefined' && global.map);
     if (leaflet && m && !this.layerGroup && m.addLayer && leaflet.layerGroup) {
       this.layerGroup = leaflet.layerGroup().addTo(m);
     }
@@ -32553,6 +32590,20 @@ const AdsbAirspaceManager = {
     } else {
       this.stopPolling();
       this.clearAll();
+    }
+    this.updateControlsUI();
+  },
+
+  toggleTrails(forceState) {
+    this.showTrails = forceState !== undefined ? forceState : !this.showTrails;
+    this.saveSettings();
+    if (!this.showTrails) {
+      for (const poly of this.mapTrails.values()) {
+        if (this.layerGroup && this.layerGroup.removeLayer) this.layerGroup.removeLayer(poly);
+      }
+      this.mapTrails.clear();
+    } else {
+      this.updateMapMarkers();
     }
     this.updateControlsUI();
   },
@@ -32829,9 +32880,8 @@ const AdsbAirspaceManager = {
   },
 
   updateMapMarkers() {
-    const leaflet = typeof L !== 'undefined' ? L : null;
-    const m = typeof map !== 'undefined' ? map : null;
-    if (!leaflet || !m) return;
+    const leaflet = (typeof L !== 'undefined' && L) || (typeof window !== 'undefined' && window.L) || (typeof global !== 'undefined' && global.L);
+    if (!leaflet) return;
     this.initMapLayer();
     if (!this.layerGroup) return;
 
@@ -32840,6 +32890,62 @@ const AdsbAirspaceManager = {
     for (const ac of this.aircraft) {
       if (ac.latitude === null || ac.longitude === null) continue;
       currentHexes.add(ac.hex);
+
+      // Accumulate position history
+      let hist = this.acHistory.get(ac.hex);
+      if (!hist) {
+        hist = [];
+        this.acHistory.set(ac.hex, hist);
+      }
+      if (Array.isArray(ac.history) && ac.history.length > 0 && hist.length === 0) {
+        hist.push(...ac.history);
+      }
+      const lastPt = hist[hist.length - 1];
+      if (!lastPt || Math.abs(lastPt[0] - ac.latitude) > 0.00005 || Math.abs(lastPt[1] - ac.longitude) > 0.00005) {
+        hist.push([ac.latitude, ac.longitude, ac.altitude || 0, Date.now()]);
+        if (hist.length > 60) hist.shift();
+      }
+
+      // Render/Update Flight History Trail
+      if (this.showTrails && hist.length >= 2) {
+        const latlngs = hist.map(pt => [pt[0], pt[1]]);
+        let poly = this.mapTrails.get(ac.hex);
+        const trailColor = ac.isBreached ? '#ef4444' : '#38bdf8';
+        const trailWeight = ac.isBreached ? 3 : 2;
+        const trailDash = ac.isBreached ? '4, 4' : null;
+
+        if (!poly) {
+          if (leaflet.polyline) {
+            poly = leaflet.polyline(latlngs, {
+              color: trailColor,
+              weight: trailWeight,
+              opacity: 0.7,
+              dashArray: trailDash,
+              className: `adsb-flight-trail ${ac.isBreached ? 'breached' : ''}`
+            });
+            if (this.layerGroup && this.layerGroup.addLayer) {
+              poly.addTo(this.layerGroup);
+            }
+            this.mapTrails.set(ac.hex, poly);
+          }
+        } else {
+          if (poly.setLatLngs) poly.setLatLngs(latlngs);
+          if (poly.setStyle) {
+            poly.setStyle({
+              color: trailColor,
+              weight: trailWeight,
+              opacity: 0.7,
+              dashArray: trailDash
+            });
+          }
+        }
+      } else if (!this.showTrails) {
+        const poly = this.mapTrails.get(ac.hex);
+        if (poly) {
+          if (this.layerGroup && this.layerGroup.removeLayer) this.layerGroup.removeLayer(poly);
+          this.mapTrails.delete(ac.hex);
+        }
+      }
 
       const isBreached = ac.isBreached;
       const track = ac.track || 0;
@@ -32893,11 +32999,17 @@ const AdsbAirspaceManager = {
       }
     }
 
-    // Remove markers no longer in range
+    // Remove markers & trails no longer in range
     for (const [hex, marker] of this.mapMarkers.entries()) {
       if (!currentHexes.has(hex)) {
-        if (this.layerGroup.removeLayer) this.layerGroup.removeLayer(marker);
+        if (this.layerGroup && this.layerGroup.removeLayer) this.layerGroup.removeLayer(marker);
         this.mapMarkers.delete(hex);
+        const poly = this.mapTrails.get(hex);
+        if (poly) {
+          if (this.layerGroup && this.layerGroup.removeLayer) this.layerGroup.removeLayer(poly);
+          this.mapTrails.delete(hex);
+        }
+        this.acHistory.delete(hex);
       }
     }
   },
@@ -32912,6 +33024,8 @@ const AdsbAirspaceManager = {
       this.layerGroup.clearLayers();
     }
     this.mapMarkers.clear();
+    this.mapTrails.clear();
+    this.acHistory.clear();
     if (this.isDrawerOpen) {
       this.updateDrawerAircraftList();
     }
@@ -32925,6 +33039,9 @@ const AdsbAirspaceManager = {
 
     const soundToggle = document.getElementById('adsb-sound-toggle');
     if (soundToggle) soundToggle.checked = this.soundEnabled;
+
+    const trailsToggle = document.getElementById('adsb-trails-toggle');
+    if (trailsToggle) trailsToggle.checked = this.showTrails;
 
     const soundSelect = document.getElementById('adsb-sound-type-select');
     if (soundSelect) soundSelect.value = this.soundType;
@@ -33041,6 +33158,11 @@ const AdsbAirspaceManager = {
     const soundToggle = document.getElementById('adsb-sound-toggle');
     if (soundToggle) {
       soundToggle.addEventListener('change', (e) => this.toggleSound(e.target.checked));
+    }
+
+    const trailsToggle = document.getElementById('adsb-trails-toggle');
+    if (trailsToggle) {
+      trailsToggle.addEventListener('change', (e) => this.toggleTrails(e.target.checked));
     }
 
     const soundSelect = document.getElementById('adsb-sound-type-select');
