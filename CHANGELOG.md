@@ -1,5 +1,47 @@
 # Changelog
 
+## [1.123.0] - 2026-09-24
+
+### New Features & Enhancements
+- **Manned Aircraft Airspace Awareness (ADS-B Audio Alerts) Suite (Issue #92):**
+  - **Hardware & Companion Bridge Daemon Pipeline (`tools/companion/adsb_tracker.js`):**
+    - Integrated RTL-SDR.COM bare-metal driver coordination via `dump1090` listening on 1090 MHz.
+    - Decodes Mode S SBS-1 / BaseStation CSV streams on TCP port 30003 (`MSG,1`, `MSG,3`, `MSG,4`, `MSG,6`).
+    - Decodes standard `dump1090` JSON aircraft feeds (`aircraft.json`).
+    - Exposes open local REST endpoints:
+      - `GET /api/airspace/bounds` (aliases: `/api/adsb/bounds`, `/api/adsb/aircraft`): Computes great-circle Haversine distances, initial true bearing ($0^\circ - 360^\circ$), and 16-point cardinal compass vectors relative to the pilot / drone home point.
+      - `GET /api/airspace/status`: Live hardware status, receiver state, and message counters.
+      - `POST /api/airspace/simulate`: Synthetic aircraft injection for offline testing and verification.
+      - `POST /api/airspace/sbs`: Raw SBS telemetry packet ingestion.
+      - `POST /api/airspace/clear`: Clears all tracked aircraft.
+  - **Front-End Audio Listener Pipeline (`AdsbAirspaceManager` in `index.js`):**
+    - Continuous asynchronous deconfliction polling loop querying local bridge proximity data.
+    - **Web Audio Dual-Tone Aviation Chime:** Native browser `AudioContext` synthesizer generating an authentic aviation dual-tone master warning chime ($880\text{ Hz} \to 660\text{ Hz}$) with smooth exponential gain ramping to eliminate clicks and distortion without external audio files.
+    - **Speech Synthesis Vocalized Advisory:** Native `window.speechSynthesis` announcing callsigns, distance vectors, and altitudes (e.g., *"Traffic alert! UAL452, 1.5 miles NE, 1,850 feet"*).
+    - **30-Second Auditory Cooldown Throttling:** Enforced strict per-aircraft cooldown timers keyed by ICAO 24-bit hex address, firing immediately upon transition from `safe` to `breached` and suppressing repeated alerts for 30 seconds.
+  - **Airspace Control Widgets & Visual Alert Banner (`index_template.html` & `index.css`):**
+    - **Flashing Visual Alert Banner (`#adsb-alert-banner`):** High-visibility pulsing top-of-map warning banner with flashing red/amber strobe animation, callsign chip, altitude, distance vector, relative bearing, and 1-click 1-minute snooze and audio mute actions.
+    - **ADS-B Control Drawer (`#adsb-control-drawer`):** Slide-out control drawer with master tracking toggle, audio alert toggle, sound mode selector (Chime, Voice, Both), "Test Audio" synth test button, "Simulate Traffic" trigger, interactive horizontal proximity radius slider ($1.0 - 10.0\text{ mi}$), vertical ceiling buffer slider ($500 - 5,000\text{ ft}$), custom bridge endpoint URL config, and live tracked aircraft list with status tags.
+    - **Interactive 2D Map Overlays:** Renders aircraft icons (`✈️`) rotated along their track heading with color-coded safety indicators (cyan for safe, pulsing red for breached) and informative hover/click tooltips.
+
+## [1.122.1] - 2026-09-24
+
+### Bug Fixes & Improvements
+- **Flight Diagnostics 3D Telemetry Replay & Footprint Reset Suite:**
+  - **Ground Plane Architecture & Base Canvas Separation:**
+    - Decoupled static satellite tile imagery and cyber grid from live telemetry footprint rendering using an offscreen base canvas (`baseGroundCanvas` / `baseGroundCtx`).
+    - Eliminates cumulative over-painting and opacity saturation when replaying flights or scrubbing the timeline.
+  - **Resilient Scrubbing & Reverse-Seek Footprint Sync:**
+    - Implemented `FlightDiagnostics.resetGroundCanvas()` and `FlightDiagnostics.redrawGroundFootprints(upToIndex)`.
+    - Rewinding or seeking backwards cleanly wipes future ground coverage ellipses and only draws footprints corresponding to photos taken up to the active playhead timestamp.
+    - Large jumps forward and loops back to 0 seamlessly update the terrain without skipping photo triggers or compounding radial gradients.
+  - **Footprints Visibility HUD Sync:**
+    - Updated `#diag-btn-toggle-footprints` so toggling footprints off immediately wipes painted coverage footprints from the 3D terrain canvas in addition to hiding 3D aerial photo markers; toggling footprints on redraws strictly up to the current timestamp.
+    - Added dedicated **Clear Footprints (🧹)** button (`#diag-btn-reset-footprints`) in the Diagnostics HUD.
+  - **Timeline Rewind & HUD Reset Integration:**
+    - Added a dedicated **Rewind to Start (⏮)** button (`#diag-rewind-btn`) to the timeline playback bar that pauses playback, seeks to 00:00, and clears ground footprints.
+    - Enhanced the Diagnostics HUD **Reset** button (`#diag-btn-reset`) to pause playback, return to flight start, wipe painted footprints, and re-frame the camera to the flight bounding box.
+
 ## [1.122.0] - 2026-09-24
 
 ### New Features & Enhancements

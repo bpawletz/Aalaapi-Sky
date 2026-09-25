@@ -20420,14 +20420,14 @@ describe('Photo Telemetry Correlation & Ground Boundary Projection Suite Tests (
     assert.ok(changelog.includes('## [1.118.0] - 2026-09-21'), 'CHANGELOG must contain 1.118.0');
 
     const tmpl = fs.readFileSync('./index_template.html', 'utf8');
-    assert.ok(tmpl.includes('v1.118.0') || tmpl.includes('v1.119.0') || tmpl.includes('v1.120.0') || tmpl.includes('v1.120.1') || tmpl.includes('v1.121.0') || tmpl.includes('v1.121.1') || tmpl.includes('v1.121.2') || tmpl.includes('v1.122.0'), 'index_template.html must contain header badge');
-    assert.ok(tmpl.includes('Version 1.118.0') || tmpl.includes('Version 1.119.0') || tmpl.includes('Version 1.120.0') || tmpl.includes('Version 1.120.1') || tmpl.includes('Version 1.121.0') || tmpl.includes('Version 1.121.1') || tmpl.includes('Version 1.121.2') || tmpl.includes('Version 1.122.0'), 'index_template.html must contain Version');
-    assert.ok(tmpl.includes('Changelog (v1.118.0):') || tmpl.includes('Changelog (v1.119.0):') || tmpl.includes('Changelog (v1.120.0):') || tmpl.includes('Changelog (v1.120.1):') || tmpl.includes('Changelog (v1.121.0):') || tmpl.includes('Changelog (v1.121.1):') || tmpl.includes('Changelog (v1.121.2):') || tmpl.includes('Changelog (v1.122.0):'), 'index_template.html must contain Changelog');
+    assert.ok(tmpl.includes('v1.118.0') || tmpl.includes('v1.119.0') || tmpl.includes('v1.120.0') || tmpl.includes('v1.120.1') || tmpl.includes('v1.121.0') || tmpl.includes('v1.121.1') || tmpl.includes('v1.121.2') || tmpl.includes('v1.122.0') || tmpl.includes('v1.122.1') || tmpl.includes('v1.123.0'), 'index_template.html must contain header badge');
+    assert.ok(tmpl.includes('Version 1.118.0') || tmpl.includes('Version 1.119.0') || tmpl.includes('Version 1.120.0') || tmpl.includes('Version 1.120.1') || tmpl.includes('Version 1.121.0') || tmpl.includes('Version 1.121.1') || tmpl.includes('Version 1.121.2') || tmpl.includes('Version 1.122.0') || tmpl.includes('Version 1.122.1') || tmpl.includes('Version 1.123.0'), 'index_template.html must contain Version');
+    assert.ok(tmpl.includes('Changelog (v1.118.0):') || tmpl.includes('Changelog (v1.119.0):') || tmpl.includes('Changelog (v1.120.0):') || tmpl.includes('Changelog (v1.120.1):') || tmpl.includes('Changelog (v1.121.0):') || tmpl.includes('Changelog (v1.121.1):') || tmpl.includes('Changelog (v1.121.2):') || tmpl.includes('Changelog (v1.122.0):') || tmpl.includes('Changelog (v1.122.1):') || tmpl.includes('Changelog (v1.123.0):'), 'index_template.html must contain Changelog');
 
     const indexHtml = fs.readFileSync('./index.html', 'utf8');
-    assert.ok(indexHtml.includes('v1.118.0') || indexHtml.includes('v1.119.0') || indexHtml.includes('v1.120.0') || indexHtml.includes('v1.120.1') || indexHtml.includes('v1.121.0') || indexHtml.includes('v1.121.1') || indexHtml.includes('v1.121.2') || indexHtml.includes('v1.122.0'), 'index.html must contain header badge');
-    assert.ok(indexHtml.includes('Version 1.118.0') || indexHtml.includes('Version 1.119.0') || indexHtml.includes('Version 1.120.0') || indexHtml.includes('Version 1.120.1') || indexHtml.includes('Version 1.121.0') || indexHtml.includes('Version 1.121.1') || indexHtml.includes('Version 1.121.2') || indexHtml.includes('Version 1.122.0'), 'index.html must contain Version');
-    assert.ok(indexHtml.includes('Changelog (v1.118.0):') || indexHtml.includes('Changelog (v1.119.0):') || indexHtml.includes('Changelog (v1.120.0):') || indexHtml.includes('Changelog (v1.120.1):') || indexHtml.includes('Changelog (v1.121.0):') || indexHtml.includes('Changelog (v1.121.1):') || indexHtml.includes('Changelog (v1.121.2):') || indexHtml.includes('Changelog (v1.122.0):'), 'index.html must contain Changelog');
+    assert.ok(indexHtml.includes('v1.118.0') || indexHtml.includes('v1.119.0') || indexHtml.includes('v1.120.0') || indexHtml.includes('v1.120.1') || indexHtml.includes('v1.121.0') || indexHtml.includes('v1.121.1') || indexHtml.includes('v1.121.2') || indexHtml.includes('v1.122.0') || indexHtml.includes('v1.122.1') || indexHtml.includes('v1.123.0'), 'index.html must contain header badge');
+    assert.ok(indexHtml.includes('Version 1.118.0') || indexHtml.includes('Version 1.119.0') || indexHtml.includes('Version 1.120.0') || indexHtml.includes('Version 1.120.1') || indexHtml.includes('Version 1.121.0') || indexHtml.includes('Version 1.121.1') || indexHtml.includes('Version 1.121.2') || indexHtml.includes('Version 1.122.0') || indexHtml.includes('Version 1.122.1') || indexHtml.includes('Version 1.123.0'), 'index.html must contain Version');
+    assert.ok(indexHtml.includes('Changelog (v1.118.0):') || indexHtml.includes('Changelog (v1.119.0):') || indexHtml.includes('Changelog (v1.120.0):') || indexHtml.includes('Changelog (v1.120.1):') || indexHtml.includes('Changelog (v1.121.0):') || indexHtml.includes('Changelog (v1.121.1):') || indexHtml.includes('Changelog (v1.121.2):') || indexHtml.includes('Changelog (v1.122.0):') || indexHtml.includes('Changelog (v1.122.1):') || indexHtml.includes('Changelog (v1.123.0):'), 'index.html must contain Changelog');
   });
 });
 
@@ -20672,12 +20672,12 @@ describe('v1.120.0 Bridge-Hosted 3D Wireframe Extraction & Telemetry Projection 
 
     assert.ok(semverGte(pkg, '1.120.0'), 'package.json version should be >= 1.120.0');
     assert.ok(cl.includes('## [1.120.0] - 2026-09-24'), 'CHANGELOG.md missing 1.120.0 header');
-    assert.ok(indexTemplate.includes('Version 1.120.0') || indexTemplate.includes('Version 1.120.1') || indexTemplate.includes('Version 1.121.0') || indexTemplate.includes('Version 1.121.1') || indexTemplate.includes('Version 1.121.2') || indexTemplate.includes('Version 1.122.0'), 'index_template.html missing Version 1.120.0/1/2/122');
-    assert.ok(indexHtml.includes('Version 1.120.0') || indexHtml.includes('Version 1.120.1') || indexHtml.includes('Version 1.121.0') || indexHtml.includes('Version 1.121.1') || indexHtml.includes('Version 1.121.2') || indexHtml.includes('Version 1.122.0'), 'index.html missing Version 1.120.0/1/2/122');
-    assert.ok(indexTemplate.includes('v1.120.0') || indexTemplate.includes('v1.120.1') || indexTemplate.includes('v1.121.0') || indexTemplate.includes('v1.121.1') || indexTemplate.includes('v1.121.2') || indexTemplate.includes('v1.122.0'), 'index_template.html missing v1.120.0/1/2/122 badge');
-    assert.ok(indexHtml.includes('v1.120.0') || indexHtml.includes('v1.120.1') || indexHtml.includes('v1.121.0') || indexHtml.includes('v1.121.1') || indexHtml.includes('v1.121.2') || indexHtml.includes('v1.122.0'), 'index.html missing v1.120.0/1/2/122 badge');
-    assert.ok(indexTemplate.includes('Changelog (v1.120.0):') || indexTemplate.includes('Changelog (v1.121.0):') || indexTemplate.includes('Changelog (v1.121.1):') || indexTemplate.includes('Changelog (v1.121.2):') || indexTemplate.includes('Changelog (v1.122.0):'), 'index_template.html missing Changelog');
-    assert.ok(indexHtml.includes('Changelog (v1.120.0):') || indexHtml.includes('Changelog (v1.121.0):') || indexHtml.includes('Changelog (v1.121.1):') || indexHtml.includes('Changelog (v1.121.2):') || indexHtml.includes('Changelog (v1.122.0):'), 'index.html missing Changelog');
+    assert.ok(indexTemplate.includes('Version 1.120.0') || indexTemplate.includes('Version 1.120.1') || indexTemplate.includes('Version 1.121.0') || indexTemplate.includes('Version 1.121.1') || indexTemplate.includes('Version 1.121.2') || indexTemplate.includes('Version 1.122.0') || indexTemplate.includes('Version 1.122.1') || indexTemplate.includes('Version 1.123.0'), 'index_template.html missing Version 1.120.0/1/2/122/123');
+    assert.ok(indexHtml.includes('Version 1.120.0') || indexHtml.includes('Version 1.120.1') || indexHtml.includes('Version 1.121.0') || indexHtml.includes('Version 1.121.1') || indexHtml.includes('Version 1.121.2') || indexHtml.includes('Version 1.122.0') || indexHtml.includes('Version 1.122.1') || indexHtml.includes('Version 1.123.0'), 'index.html missing Version 1.120.0/1/2/122/123');
+    assert.ok(indexTemplate.includes('v1.120.0') || indexTemplate.includes('v1.120.1') || indexTemplate.includes('v1.121.0') || indexTemplate.includes('v1.121.1') || indexTemplate.includes('v1.121.2') || indexTemplate.includes('v1.122.0') || indexTemplate.includes('v1.122.1') || indexTemplate.includes('v1.123.0'), 'index_template.html missing v1.120.0/1/2/122/123 badge');
+    assert.ok(indexHtml.includes('v1.120.0') || indexHtml.includes('v1.120.1') || indexHtml.includes('v1.121.0') || indexHtml.includes('v1.121.1') || indexHtml.includes('v1.121.2') || indexHtml.includes('v1.122.0') || indexHtml.includes('v1.122.1') || indexHtml.includes('v1.123.0'), 'index.html missing v1.120.0/1/2/122/123 badge');
+    assert.ok(indexTemplate.includes('Changelog (v1.120.0):') || indexTemplate.includes('Changelog (v1.121.0):') || indexTemplate.includes('Changelog (v1.121.1):') || indexTemplate.includes('Changelog (v1.121.2):') || indexTemplate.includes('Changelog (v1.122.0):') || indexTemplate.includes('Changelog (v1.122.1):') || indexTemplate.includes('Changelog (v1.123.0):'), 'index_template.html missing Changelog');
+    assert.ok(indexHtml.includes('Changelog (v1.120.0):') || indexHtml.includes('Changelog (v1.121.0):') || indexHtml.includes('Changelog (v1.121.1):') || indexHtml.includes('Changelog (v1.121.2):') || indexHtml.includes('Changelog (v1.122.0):') || indexHtml.includes('Changelog (v1.122.1):') || indexHtml.includes('Changelog (v1.123.0):'), 'index.html missing Changelog');
   });
 
   test('DOM Architecture: Wireframe controls exist in templates', () => {
@@ -20840,12 +20840,12 @@ describe('3D FPV Walkthrough & Playback Suite (v1.120.1)', () => {
 
     assert.ok(semverGte(pkg.version, '1.120.1'), 'package.json version should be >= 1.120.1');
     assert.ok(changelog.includes('## [1.120.1] - 2026-09-24'));
-    assert.ok(tpl.includes('v1.120.1') || tpl.includes('v1.121.0') || tpl.includes('v1.121.1') || tpl.includes('v1.121.2') || tpl.includes('v1.122.0'));
-    assert.ok(tpl.includes('Version 1.120.1') || tpl.includes('Version 1.121.0') || tpl.includes('Version 1.121.1') || tpl.includes('Version 1.121.2') || tpl.includes('Version 1.122.0'));
-    assert.ok(tpl.includes('Changelog (v1.120.1):') || tpl.includes('Changelog (v1.121.0):') || tpl.includes('Changelog (v1.121.1):') || tpl.includes('Changelog (v1.121.2):') || tpl.includes('Changelog (v1.122.0):'));
-    assert.ok(html.includes('v1.120.1') || html.includes('v1.121.0') || html.includes('v1.121.1') || html.includes('v1.121.2') || html.includes('v1.122.0'));
-    assert.ok(html.includes('Version 1.120.1') || html.includes('Version 1.121.0') || html.includes('Version 1.121.1') || html.includes('Version 1.121.2') || html.includes('Version 1.122.0'));
-    assert.ok(html.includes('Changelog (v1.120.1):') || html.includes('Changelog (v1.121.0):') || html.includes('Changelog (v1.121.1):') || html.includes('Changelog (v1.121.2):') || html.includes('Changelog (v1.122.0):'));
+    assert.ok(tpl.includes('v1.120.1') || tpl.includes('v1.121.0') || tpl.includes('v1.121.1') || tpl.includes('v1.121.2') || tpl.includes('v1.122.0') || tpl.includes('v1.122.1') || tpl.includes('v1.123.0'));
+    assert.ok(tpl.includes('Version 1.120.1') || tpl.includes('Version 1.121.0') || tpl.includes('Version 1.121.1') || tpl.includes('Version 1.121.2') || tpl.includes('Version 1.122.0') || tpl.includes('Version 1.122.1') || tpl.includes('Version 1.123.0'));
+    assert.ok(tpl.includes('Changelog (v1.120.1):') || tpl.includes('Changelog (v1.121.0):') || tpl.includes('Changelog (v1.121.1):') || tpl.includes('Changelog (v1.121.2):') || tpl.includes('Changelog (v1.122.0):') || tpl.includes('Changelog (v1.122.1):') || tpl.includes('Changelog (v1.123.0):'));
+    assert.ok(html.includes('v1.120.1') || html.includes('v1.121.0') || html.includes('v1.121.1') || html.includes('v1.121.2') || html.includes('v1.122.0') || html.includes('v1.122.1') || html.includes('v1.123.0'));
+    assert.ok(html.includes('Version 1.120.1') || html.includes('Version 1.121.0') || html.includes('Version 1.121.1') || html.includes('Version 1.121.2') || html.includes('Version 1.122.0') || html.includes('Version 1.122.1') || html.includes('Version 1.123.0'));
+    assert.ok(html.includes('Changelog (v1.120.1):') || html.includes('Changelog (v1.121.0):') || html.includes('Changelog (v1.121.1):') || html.includes('Changelog (v1.121.2):') || html.includes('Changelog (v1.122.0):') || html.includes('Changelog (v1.122.1):') || html.includes('Changelog (v1.123.0):'));
   });
 
   test('Three-Tier FPV helpers resolve speed, hover time, and camera action cleanly', () => {
@@ -20941,12 +20941,12 @@ describe('3D Cinematic Movie Mode & FPV Flight Simulation Suite (v1.121.0)', () 
 
     assert.ok(semverGte(pkg.version, '1.121.0'), 'package.json version should be >= 1.121.0');
     assert.ok(changelog.includes('## [1.121.0] - 2026-09-24'));
-    assert.ok(tpl.includes('v1.121.0') || tpl.includes('v1.121.1') || tpl.includes('v1.121.2') || tpl.includes('v1.122.0'));
-    assert.ok(tpl.includes('Version 1.121.0') || tpl.includes('Version 1.121.1') || tpl.includes('Version 1.121.2') || tpl.includes('Version 1.122.0'));
-    assert.ok(tpl.includes('Changelog (v1.121.0):') || tpl.includes('Changelog (v1.121.1):') || tpl.includes('Changelog (v1.121.2):') || tpl.includes('Changelog (v1.122.0):'));
-    assert.ok(html.includes('v1.121.0') || html.includes('v1.121.1') || html.includes('v1.121.2') || html.includes('v1.122.0'));
-    assert.ok(html.includes('Version 1.121.0') || html.includes('Version 1.121.1') || html.includes('Version 1.121.2') || html.includes('Version 1.122.0'));
-    assert.ok(html.includes('Changelog (v1.121.0):') || html.includes('Changelog (v1.121.1):') || html.includes('Changelog (v1.121.2):') || html.includes('Changelog (v1.122.0):'));
+    assert.ok(tpl.includes('v1.121.0') || tpl.includes('v1.121.1') || tpl.includes('v1.121.2') || tpl.includes('v1.122.0') || tpl.includes('v1.122.1') || tpl.includes('v1.123.0'));
+    assert.ok(tpl.includes('Version 1.121.0') || tpl.includes('Version 1.121.1') || tpl.includes('Version 1.121.2') || tpl.includes('Version 1.122.0') || tpl.includes('Version 1.122.1') || tpl.includes('Version 1.123.0'));
+    assert.ok(tpl.includes('Changelog (v1.121.0):') || tpl.includes('Changelog (v1.121.1):') || tpl.includes('Changelog (v1.121.2):') || tpl.includes('Changelog (v1.122.0):') || tpl.includes('Changelog (v1.122.1):') || tpl.includes('Changelog (v1.123.0):'));
+    assert.ok(html.includes('v1.121.0') || html.includes('v1.121.1') || html.includes('v1.121.2') || html.includes('v1.122.0') || html.includes('v1.122.1') || html.includes('v1.123.0'));
+    assert.ok(html.includes('Version 1.121.0') || html.includes('Version 1.121.1') || html.includes('Version 1.121.2') || html.includes('Version 1.122.0') || html.includes('Version 1.122.1') || html.includes('Version 1.123.0'));
+    assert.ok(html.includes('Changelog (v1.121.0):') || html.includes('Changelog (v1.121.1):') || html.includes('Changelog (v1.121.2):') || html.includes('Changelog (v1.122.0):') || html.includes('Changelog (v1.122.1):') || html.includes('Changelog (v1.123.0):'));
     assert.ok(tpl.includes('id="fpv-btn-cam-mode"'));
     assert.ok(html.includes('id="fpv-btn-cam-mode"'));
     assert.ok(tpl.includes('id="fpv-center-reticle"'));
@@ -21120,12 +21120,12 @@ describe('Streamlined 360° Photo Sphere Layer Dynamics Suite (v1.121.1)', () =>
 
     assert.ok(semverGte(pkg.version, '1.121.1'), 'package.json version should be >= 1.121.1');
     assert.ok(changelog.includes('## [1.121.1] - 2026-09-24'));
-    assert.ok(tpl.includes('v1.121.1') || tpl.includes('v1.121.2') || tpl.includes('v1.122.0'));
-    assert.ok(tpl.includes('Version 1.121.1') || tpl.includes('Version 1.121.2') || tpl.includes('Version 1.122.0'));
-    assert.ok(tpl.includes('Changelog (v1.121.1):') || tpl.includes('Changelog (v1.121.2):') || tpl.includes('Changelog (v1.122.0):'));
-    assert.ok(html.includes('v1.121.1') || html.includes('v1.121.2') || html.includes('v1.122.0'));
-    assert.ok(html.includes('Version 1.121.1') || html.includes('Version 1.121.2') || html.includes('Version 1.122.0'));
-    assert.ok(html.includes('Changelog (v1.121.1):') || html.includes('Changelog (v1.121.2):') || html.includes('Changelog (v1.122.0):'));
+    assert.ok(tpl.includes('v1.121.1') || tpl.includes('v1.121.2') || tpl.includes('v1.122.0') || tpl.includes('v1.122.1') || tpl.includes('v1.123.0'));
+    assert.ok(tpl.includes('Version 1.121.1') || tpl.includes('Version 1.121.2') || tpl.includes('Version 1.122.0') || tpl.includes('Version 1.122.1') || tpl.includes('Version 1.123.0'));
+    assert.ok(tpl.includes('Changelog (v1.121.1):') || tpl.includes('Changelog (v1.121.2):') || tpl.includes('Changelog (v1.122.0):') || tpl.includes('Changelog (v1.122.1):') || tpl.includes('Changelog (v1.123.0):'));
+    assert.ok(html.includes('v1.121.1') || html.includes('v1.121.2') || html.includes('v1.122.0') || html.includes('v1.122.1') || html.includes('v1.123.0'));
+    assert.ok(html.includes('Version 1.121.1') || html.includes('Version 1.121.2') || html.includes('Version 1.122.0') || html.includes('Version 1.122.1') || html.includes('Version 1.123.0'));
+    assert.ok(html.includes('Changelog (v1.121.1):') || html.includes('Changelog (v1.121.2):') || html.includes('Changelog (v1.122.0):') || html.includes('Changelog (v1.122.1):') || html.includes('Changelog (v1.123.0):'));
   });
 
   test('togglePatternParameters conceals layerCardModes for photo-sphere and restores for other patterns', () => {
@@ -21253,11 +21253,11 @@ describe('Flight 13 Inspection Photos & Resilient Companion Manifest Recovery (v
 
     assert.ok(semverGte(pkg, '1.121.2'), 'package.json must be >= 1.121.2');
     assert.ok(cl.includes('## [1.121.2] - 2026-09-24'), 'CHANGELOG.md missing 1.121.2 entry');
-    assert.ok(indexTemplate.includes('v1.121.2</span>') || indexTemplate.includes('v1.122.0</span>'), 'index_template.html missing header badge');
-    assert.ok(indexTemplate.includes('Version 1.121.2</span>') || indexTemplate.includes('Version 1.122.0</span>'), 'index_template.html missing version tag');
+    assert.ok(indexTemplate.includes('v1.121.2</span>') || indexTemplate.includes('v1.122.0</span>') || indexTemplate.includes('v1.122.1</span>') || indexTemplate.includes('v1.123.0</span>'), 'index_template.html missing header badge');
+    assert.ok(indexTemplate.includes('Version 1.121.2</span>') || indexTemplate.includes('Version 1.122.0</span>') || indexTemplate.includes('Version 1.122.1</span>') || indexTemplate.includes('Version 1.123.0</span>'), 'index_template.html missing version tag');
     assert.ok(indexTemplate.includes('Changelog (v1.121.2):'), 'index_template.html missing Changelog (v1.121.2)');
-    assert.ok(indexHtml.includes('v1.121.2</span>') || indexHtml.includes('v1.122.0</span>'), 'index.html missing header badge');
-    assert.ok(indexHtml.includes('Version 1.121.2</span>') || indexHtml.includes('Version 1.122.0</span>'), 'index.html missing version tag');
+    assert.ok(indexHtml.includes('v1.121.2</span>') || indexHtml.includes('v1.122.0</span>') || indexHtml.includes('v1.122.1</span>') || indexHtml.includes('v1.123.0</span>'), 'index.html missing header badge');
+    assert.ok(indexHtml.includes('Version 1.121.2</span>') || indexHtml.includes('Version 1.122.0</span>') || indexHtml.includes('Version 1.122.1</span>') || indexHtml.includes('Version 1.123.0</span>'), 'index.html missing version tag');
     assert.ok(indexHtml.includes('Changelog (v1.121.2):'), 'index.html missing Changelog (v1.121.2)');
   });
 
@@ -21357,14 +21357,14 @@ describe('3D Wireframe Package Bundling & Three.js Editor Import Suite (v1.122.0
     const tpl = fs.readFileSync('index_template.html', 'utf8');
     const html = fs.readFileSync('index.html', 'utf8');
 
-    assert.strictEqual(pkg.version, '1.122.0', 'package.json version should be 1.122.0');
+    assert.ok(semverGte(pkg.version, '1.122.0'), 'package.json version should be >= 1.122.0');
     assert.ok(changelog.includes('## [1.122.0] - 2026-09-24'), 'CHANGELOG.md missing v1.122.0 header');
-    assert.ok(tpl.includes('v1.122.0'), 'index_template.html missing v1.122.0 badge');
-    assert.ok(tpl.includes('Version 1.122.0'), 'index_template.html missing Version 1.122.0');
-    assert.ok(tpl.includes('Changelog (v1.122.0):'), 'index_template.html missing Changelog (v1.122.0)');
-    assert.ok(html.includes('v1.122.0'), 'index.html missing v1.122.0 badge');
-    assert.ok(html.includes('Version 1.122.0'), 'index.html missing Version 1.122.0');
-    assert.ok(html.includes('Changelog (v1.122.0):'), 'index.html missing Changelog (v1.122.0)');
+    assert.ok(tpl.includes('v1.122.0') || tpl.includes('v1.122.1') || tpl.includes('v1.123.0'), 'index_template.html missing v1.122.0/1/123 badge');
+    assert.ok(tpl.includes('Version 1.122.0') || tpl.includes('Version 1.122.1') || tpl.includes('Version 1.123.0'), 'index_template.html missing Version 1.122.0/1/123');
+    assert.ok(tpl.includes('Changelog (v1.122.0):') || tpl.includes('Changelog (v1.122.1):') || tpl.includes('Changelog (v1.123.0):'), 'index_template.html missing Changelog (v1.122.0/1/123)');
+    assert.ok(html.includes('v1.122.0') || html.includes('v1.122.1') || html.includes('v1.123.0'), 'index.html missing v1.122.0/1/123 badge');
+    assert.ok(html.includes('Version 1.122.0') || html.includes('Version 1.122.1') || html.includes('Version 1.123.0'), 'index.html missing Version 1.122.0/1/123');
+    assert.ok(html.includes('Changelog (v1.122.0):') || html.includes('Changelog (v1.122.1):') || html.includes('Changelog (v1.123.0):'), 'index.html missing Changelog (v1.122.0/1/123)');
   });
 
   test('DOM Architecture: 3D Wireframe Toolkit contains Save to Package and Three.js buttons', () => {
@@ -21620,4 +21620,359 @@ describe('3D Wireframe Package Bundling & Three.js Editor Import Suite (v1.122.0
     assert.strictEqual(deduped.length, 2, 'Should deduplicate down to 2 unique significant lines');
   });
 });
+
+describe('Flight Diagnostics Ground Footprint Reset & Over-Painting Suite (v1.122.1)', () => {
+  test('Version 1.122.1 is consistent across package.json, changelog, index_template.html, and index.html', () => {
+    const fs = require('fs');
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    assert.ok(semverGte(pkg.version, '1.122.1'), 'package.json version must be >= 1.122.1');
+
+    const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
+    assert.ok(changelog.includes('## [1.122.1] - 2026-09-24'), 'CHANGELOG.md must contain ## [1.122.1]');
+
+    const template = fs.readFileSync('index_template.html', 'utf8');
+    assert.ok(template.includes('v1.122.1') || template.includes('v1.123.0'), 'index_template.html must contain header badge v1.122.1 or newer');
+    assert.ok(template.includes('Version 1.122.1') || template.includes('Version 1.123.0'), 'index_template.html must contain Version 1.122.1 or newer in About modal');
+    assert.ok(template.includes('Changelog (v1.122.1):') || template.includes('Changelog (v1.123.0):'), 'index_template.html must contain Changelog');
+
+    const indexHtml = fs.readFileSync('index.html', 'utf8');
+    assert.ok(indexHtml.includes('v1.122.1') || indexHtml.includes('v1.123.0'), 'index.html must contain header badge v1.122.1 or newer');
+    assert.ok(indexHtml.includes('Version 1.122.1') || indexHtml.includes('Version 1.123.0'), 'index.html must contain Version 1.122.1 or newer in About modal');
+    assert.ok(indexHtml.includes('Changelog (v1.122.1):') || indexHtml.includes('Changelog (v1.123.0):'), 'index.html must contain Changelog');
+  });
+
+  test('DOM Architecture: Diagnostics HUD contains Clear Footprints button and timeline contains Rewind button', () => {
+    const fs = require('fs');
+    const content = fs.readFileSync('index_template.html', 'utf8');
+
+    assert.ok(content.includes('id="diag-btn-reset-footprints"'), 'Must contain diag-btn-reset-footprints in HUD');
+    assert.ok(content.includes('id="diag-rewind-btn"'), 'Must contain diag-rewind-btn on timeline bar');
+
+    const compiled = fs.readFileSync('index.html', 'utf8');
+    assert.ok(compiled.includes('id="diag-btn-reset-footprints"'), 'Compiled index.html must contain diag-btn-reset-footprints');
+    assert.ok(compiled.includes('id="diag-rewind-btn"'), 'Compiled index.html must contain diag-rewind-btn');
+  });
+
+  test('FlightDiagnostics resetGroundCanvas restores base canvas and clears painted indices', () => {
+    const dummyGroundCanvas = { width: 768, height: 768 };
+    let clearRectCalls = 0;
+    let drawImageCalls = 0;
+    const dummyCtx = {
+      clearRect: () => { clearRectCalls++; },
+      drawImage: () => { drawImageCalls++; },
+      fillStyle: '',
+      fillRect: () => {},
+      strokeStyle: '',
+      lineWidth: 1,
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      stroke: () => {}
+    };
+    const dummyBaseCanvas = { width: 768, height: 768 };
+    const dummyBaseCtx = {};
+    const dummyTexture = { needsUpdate: false };
+
+    // Create a standalone mock FlightDiagnostics object with the implementation methods
+    const mockDiag = {
+      groundCanvas: dummyGroundCanvas,
+      groundCtx: dummyCtx,
+      baseGroundCanvas: dummyBaseCanvas,
+      baseGroundCtx: dummyBaseCtx,
+      groundTexture: dummyTexture,
+      paintedPhotoIndices: new Set([1, 2, 3]),
+      lastPaintedPointIdx: 15,
+      diagShowFootprints: true,
+      resetGroundCanvas: FlightDiagnostics.resetGroundCanvas,
+      redrawGroundFootprints: FlightDiagnostics.redrawGroundFootprints,
+      drawFootprintOnGround: FlightDiagnostics.drawFootprintOnGround
+    };
+
+    mockDiag.resetGroundCanvas();
+
+    assert.strictEqual(clearRectCalls, 1, 'resetGroundCanvas must clear the active ground canvas');
+    assert.strictEqual(drawImageCalls, 1, 'resetGroundCanvas must draw the baseGroundCanvas onto the ground canvas');
+    assert.strictEqual(mockDiag.paintedPhotoIndices.size, 0, 'paintedPhotoIndices must be empty after reset');
+    assert.strictEqual(mockDiag.lastPaintedPointIdx, -1, 'lastPaintedPointIdx must be reset to -1');
+    assert.strictEqual(mockDiag.groundTexture.needsUpdate, true, 'Texture must be flagged for WebGL update');
+  });
+
+  test('FlightDiagnostics redrawGroundFootprints paints photo points up to specified index without over-painting', () => {
+    let drawFootprintCalls = 0;
+    const drawnPoints = [];
+
+    const mockPts = [
+      { lat: 40.0, lon: -83.0, alt: 30, isPhoto: false },
+      { lat: 40.001, lon: -83.001, alt: 30, isPhoto: true }, // Photo 1
+      { lat: 40.002, lon: -83.002, alt: 30, isPhoto: false },
+      { lat: 40.003, lon: -83.003, alt: 30, isPhoto: true }, // Photo 3
+      { lat: 40.004, lon: -83.004, alt: 30, isPhoto: true }, // Photo 4
+      { lat: 40.005, lon: -83.005, alt: 30, isPhoto: false }
+    ];
+
+    const mockDiag = {
+      groundCanvas: { width: 768, height: 768 },
+      groundCtx: {
+        clearRect: () => {},
+        drawImage: () => {},
+        fillStyle: '',
+        fillRect: () => {},
+        strokeStyle: '',
+        beginPath: () => {},
+        moveTo: () => {},
+        lineTo: () => {},
+        stroke: () => {}
+      },
+      baseGroundCanvas: { width: 768, height: 768 },
+      baseGroundCtx: {},
+      groundTexture: { needsUpdate: false },
+      paintedPhotoIndices: new Set(),
+      lastPaintedPointIdx: -1,
+      diagShowFootprints: true,
+      telemetryData: { points: mockPts },
+      currentPointIndex: 0,
+      resetGroundCanvas: FlightDiagnostics.resetGroundCanvas,
+      redrawGroundFootprints: FlightDiagnostics.redrawGroundFootprints,
+      drawFootprintOnGround: (pt) => {
+        drawFootprintCalls++;
+        drawnPoints.push(pt);
+      }
+    };
+
+    // Redraw up to index 3 (should paint Photo 1 and Photo 3, but not Photo 4)
+    mockDiag.redrawGroundFootprints(3);
+
+    assert.strictEqual(drawFootprintCalls, 2, 'Should paint exactly 2 photo points up to index 3');
+    assert.strictEqual(mockDiag.paintedPhotoIndices.has(1), true, 'paintedPhotoIndices must include index 1');
+    assert.strictEqual(mockDiag.paintedPhotoIndices.has(3), true, 'paintedPhotoIndices must include index 3');
+    assert.strictEqual(mockDiag.paintedPhotoIndices.has(4), false, 'paintedPhotoIndices must not include index 4');
+    assert.strictEqual(mockDiag.lastPaintedPointIdx, 3, 'lastPaintedPointIdx must be 3');
+
+    // Now reverse seek to index 1: redrawGroundFootprints(1)
+    drawFootprintCalls = 0;
+    drawnPoints.length = 0;
+    mockDiag.redrawGroundFootprints(1);
+
+    assert.strictEqual(drawFootprintCalls, 1, 'Reverse seek must paint only 1 photo point up to index 1');
+    assert.strictEqual(mockDiag.paintedPhotoIndices.has(1), true, 'paintedPhotoIndices must include index 1');
+    assert.strictEqual(mockDiag.paintedPhotoIndices.has(3), false, 'paintedPhotoIndices must no longer include index 3');
+    assert.strictEqual(mockDiag.lastPaintedPointIdx, 1, 'lastPaintedPointIdx must be 1');
+  });
+
+  test('FlightDiagnostics drawFootprintOnGround does nothing when diagShowFootprints is false', () => {
+    let fillCalls = 0;
+    const mockDiag = {
+      groundCtx: {
+        createRadialGradient: () => ({ addColorStop: () => {} }),
+        beginPath: () => {},
+        arc: () => {},
+        fill: () => { fillCalls++; }
+      },
+      groundTexture: { needsUpdate: false },
+      diagShowFootprints: false, // Disabled
+      planeSize: 300,
+      planeOffsetX: 0,
+      planeOffsetZ: 0,
+      projectToWorld: () => ({ x: 0, y: 30, z: 0 }),
+      drawFootprintOnGround: FlightDiagnostics.drawFootprintOnGround
+    };
+
+    mockDiag.drawFootprintOnGround({ lat: 40.0, lon: -83.0, alt: 30, pitch: -60, yaw: 0 });
+    assert.strictEqual(fillCalls, 0, 'drawFootprintOnGround must not paint when diagShowFootprints is false');
+  });
+});
+
+describe('Manned Aircraft ADS-B Airspace Awareness Suite (v1.123.0)', () => {
+  test('Version 1.123.0 is consistent across package.json, changelog, index_template.html, and index.html', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf8'));
+    assert.strictEqual(pkg.version, '1.123.0', 'package.json version should be 1.123.0');
+
+    const changelog = fs.readFileSync(path.resolve(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.123.0]'), 'CHANGELOG.md must have 1.123.0 header');
+
+    const template = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('Version 1.123.0'), 'index_template.html must include Version 1.123.0');
+    assert.ok(template.includes('Changelog (v1.123.0):'), 'index_template.html must include Changelog (v1.123.0):');
+    assert.ok(template.includes('<span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.123.0</span>'), 'index_template.html line 72 header badge must be v1.123.0');
+
+    const indexHtml = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf8');
+    assert.ok(indexHtml.includes('Version 1.123.0'), 'index.html must include Version 1.123.0');
+    assert.ok(indexHtml.includes('Changelog (v1.123.0):'), 'index.html must include Changelog (v1.123.0):');
+    assert.ok(indexHtml.includes('v1.123.0'), 'index.html must include v1.123.0 header badge');
+  });
+
+  test('DOM Architecture: ADS-B alert banner, control drawer, and buttons exist in template and bundle', () => {
+    const template = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf8');
+    const indexHtml = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf8');
+
+    for (const src of [template, indexHtml]) {
+      // Topbar and More menu triggers
+      assert.ok(src.includes('id="adsb-topbar-btn"'), 'Must have #adsb-topbar-btn');
+      assert.ok(src.includes('id="more-menu-adsb-btn"'), 'Must have #more-menu-adsb-btn');
+      assert.ok(src.includes('id="adsb-map-pill"'), 'Must have #adsb-map-pill');
+
+      // Visual Alert Banner
+      assert.ok(src.includes('id="adsb-alert-banner"'), 'Must have #adsb-alert-banner');
+      assert.ok(src.includes('id="adsb-alert-callsign"'), 'Must have #adsb-alert-callsign');
+      assert.ok(src.includes('id="adsb-alert-altitude"'), 'Must have #adsb-alert-altitude');
+      assert.ok(src.includes('id="adsb-alert-distance"'), 'Must have #adsb-alert-distance');
+      assert.ok(src.includes('id="adsb-alert-snooze-btn"'), 'Must have #adsb-alert-snooze-btn');
+      assert.ok(src.includes('id="adsb-alert-mute-btn"'), 'Must have #adsb-alert-mute-btn');
+      assert.ok(src.includes('id="adsb-alert-close-btn"'), 'Must have #adsb-alert-close-btn');
+
+      // ADS-B Control Drawer
+      assert.ok(src.includes('id="adsb-control-drawer"'), 'Must have #adsb-control-drawer');
+      assert.ok(src.includes('id="adsb-enable-toggle"'), 'Must have #adsb-enable-toggle');
+      assert.ok(src.includes('id="adsb-sound-toggle"'), 'Must have #adsb-sound-toggle');
+      assert.ok(src.includes('id="adsb-sound-type-select"'), 'Must have #adsb-sound-type-select');
+      assert.ok(src.includes('id="adsb-test-audio-btn"'), 'Must have #adsb-test-audio-btn');
+      assert.ok(src.includes('id="adsb-sim-trigger-btn"'), 'Must have #adsb-sim-trigger-btn');
+      assert.ok(src.includes('id="adsb-radius-slider"'), 'Must have #adsb-radius-slider');
+      assert.ok(src.includes('id="adsb-ceiling-slider"'), 'Must have #adsb-ceiling-slider');
+      assert.ok(src.includes('id="adsb-endpoint-input"'), 'Must have #adsb-endpoint-input');
+      assert.ok(src.includes('id="adsb-aircraft-list"'), 'Must have #adsb-aircraft-list');
+    }
+  });
+
+  test('AdsbAirspaceManager enforces strict 30-second audio cooldown throttling per ICAO hex', () => {
+    assert.ok(AdsbAirspaceManager, 'AdsbAirspaceManager must exist');
+    
+    // Reset state
+    AdsbAirspaceManager.soundEnabled = true;
+    AdsbAirspaceManager.isSnoozed = false;
+    AdsbAirspaceManager.snoozeUntil = 0;
+    AdsbAirspaceManager.lastAlertTimes.clear();
+
+    let chimeCount = 0;
+    let voiceCount = 0;
+    const origChime = AdsbAirspaceManager.playWarningChime;
+    const origVoice = AdsbAirspaceManager.playVoiceAdvisory;
+
+    AdsbAirspaceManager.playWarningChime = () => { chimeCount++; };
+    AdsbAirspaceManager.playVoiceAdvisory = () => { voiceCount++; };
+
+    try {
+      const ac1 = { hex: 'A12345', callsign: 'TEST1', distanceMiles: 1.2, altitude: 1500, isBreached: true };
+      const ac2 = { hex: 'B67890', callsign: 'TEST2', distanceMiles: 2.1, altitude: 1800, isBreached: true };
+
+      // Initial trigger for AC1
+      AdsbAirspaceManager.triggerAudioAlert(ac1);
+      assert.strictEqual(chimeCount, 1, 'First breach must trigger chime immediately');
+
+      // Second trigger for AC1 within 30 seconds -> MUST BE THROTTLED
+      AdsbAirspaceManager.triggerAudioAlert(ac1);
+      assert.strictEqual(chimeCount, 1, 'Second breach within 30s must be suppressed under cooldown');
+
+      // Trigger for different aircraft AC2 -> MUST FIRE INDEPENDENTLY
+      AdsbAirspaceManager.triggerAudioAlert(ac2);
+      assert.strictEqual(chimeCount, 2, 'Distinct aircraft hex must trigger its own alert');
+
+      // Advance clock past 30 seconds for AC1
+      const pastTime = Date.now() - 31000;
+      AdsbAirspaceManager.lastAlertTimes.set('A12345', pastTime);
+
+      // Now AC1 can trigger again
+      AdsbAirspaceManager.triggerAudioAlert(ac1);
+      assert.strictEqual(chimeCount, 3, 'After 30s elapsed, aircraft may trigger alert again');
+    } finally {
+      AdsbAirspaceManager.playWarningChime = origChime;
+      AdsbAirspaceManager.playVoiceAdvisory = origVoice;
+    }
+  });
+
+  test('AdsbAirspaceManager snooze suppresses all auditory alerts during snooze duration', () => {
+    AdsbAirspaceManager.soundEnabled = true;
+    AdsbAirspaceManager.lastAlertTimes.clear();
+
+    let chimeCount = 0;
+    const origChime = AdsbAirspaceManager.playWarningChime;
+    AdsbAirspaceManager.playWarningChime = () => { chimeCount++; };
+
+    try {
+      const ac = { hex: 'C11223', callsign: 'SNZ01', distanceMiles: 0.5, altitude: 1000, isBreached: true };
+
+      // Snooze for 1 minute
+      AdsbAirspaceManager.snooze(1);
+      assert.strictEqual(AdsbAirspaceManager.isSnoozed, true);
+      assert.ok(AdsbAirspaceManager.snoozeUntil > Date.now());
+
+      // Attempt to trigger while snoozed
+      AdsbAirspaceManager.triggerAudioAlert(ac);
+      assert.strictEqual(chimeCount, 0, 'No audio should fire while snoozed');
+
+      // Expire snooze
+      AdsbAirspaceManager.snoozeUntil = Date.now() - 1000;
+      AdsbAirspaceManager.triggerAudioAlert(ac);
+      assert.strictEqual(chimeCount, 1, 'Audio should fire once snooze expires');
+    } finally {
+      AdsbAirspaceManager.playWarningChime = origChime;
+    }
+  });
+
+  test('AdsbAirspaceManager resolves effective endpoint with companion default and custom override', () => {
+    AdsbAirspaceManager.customEndpoint = '';
+    const defEndpoint = AdsbAirspaceManager.getEffectiveEndpoint();
+    assert.ok(defEndpoint.includes('/api/airspace/bounds'), 'Default endpoint must route to /api/airspace/bounds');
+
+    AdsbAirspaceManager.customEndpoint = 'http://localhost:3000/api/airspace/bounds';
+    const customEndpoint = AdsbAirspaceManager.getEffectiveEndpoint();
+    assert.strictEqual(customEndpoint, 'http://localhost:3000/api/airspace/bounds', 'Custom endpoint must override default');
+
+    AdsbAirspaceManager.customEndpoint = '';
+  });
+
+  test('AdsbAirspaceManager visual alert banner visibility updates cleanly based on breach state', () => {
+    const { JSDOM } = require('jsdom');
+    const dom = new JSDOM(`<!DOCTYPE html>
+      <html><body>
+        <div id="adsb-alert-banner" class="adsb-alert-banner hidden">
+          <span id="adsb-alert-callsign"></span>
+          <span id="adsb-alert-altitude"></span>
+          <span id="adsb-alert-distance"></span>
+          <span id="adsb-alert-speed"></span>
+          <span id="adsb-alert-badge"></span>
+        </div>
+      </body></html>
+    `);
+    const prevDoc = global.document;
+    global.document = dom.window.document;
+
+    const banner = dom.window.document.getElementById('adsb-alert-banner');
+    const callsign = dom.window.document.getElementById('adsb-alert-callsign');
+    const alt = dom.window.document.getElementById('adsb-alert-altitude');
+    const dist = dom.window.document.getElementById('adsb-alert-distance');
+
+    try {
+      // 1. With breached aircraft
+      AdsbAirspaceManager.enabled = true;
+      AdsbAirspaceManager.breachedAircraft = [
+        {
+          hex: 'A99999',
+          callsign: 'UAL452',
+          altitude: 1850,
+          distanceMiles: 1.5,
+          distanceMeters: 2414,
+          speed: 145,
+          bearingDeg: 45,
+          bearingCardinal: 'NE',
+          isBreached: true
+        }
+      ];
+
+      AdsbAirspaceManager.updateVisualBanner();
+      assert.strictEqual(banner.classList.contains('hidden'), false, 'Banner should be visible when aircraft breached');
+      assert.strictEqual(callsign.textContent, 'UAL452');
+      assert.ok(alt.textContent.includes('1,850 ft AGL'));
+      assert.ok(dist.textContent.includes('1.5 mi'));
+
+      // 2. Clear breached aircraft
+      AdsbAirspaceManager.breachedAircraft = [];
+      AdsbAirspaceManager.updateVisualBanner();
+      assert.strictEqual(banner.classList.contains('hidden'), true, 'Banner should hide when no aircraft are breached');
+    } finally {
+      global.document = prevDoc;
+    }
+  });
+});
+
 
