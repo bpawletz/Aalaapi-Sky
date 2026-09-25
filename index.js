@@ -15907,6 +15907,9 @@ function buildTemplateKml(finishAction, speed) {
 
   const rthAltEl = document.getElementById('rth-altitude');
   const rthAltitude = rthAltEl ? (parseFloat(rthAltEl.value) || 50) : 50;
+  const altEl = document.getElementById('altitude');
+  const defaultAlt = altEl ? (parseFloat(altEl.value) || 50) : 50;
+  const safeTakeoffHeight = Math.max(1.5, Math.min(rthAltitude, defaultAlt));
 
   const isEnterprise = (droneEnumValue !== 68 && droneEnumValue !== 89);
   let folderXml = '';
@@ -15938,7 +15941,7 @@ function buildTemplateKml(finishAction, speed) {
       <wpml:finishAction>${finishAction}</wpml:finishAction>
       <wpml:exitOnRCLost>${exitOnRCLost}</wpml:exitOnRCLost>
       <wpml:executeRCLostAction>${executeRCLostAction}</wpml:executeRCLostAction>
-      <wpml:takeOffSecurityHeight>${rthAltitude}</wpml:takeOffSecurityHeight>
+      <wpml:takeOffSecurityHeight>${safeTakeoffHeight}</wpml:takeOffSecurityHeight>
       <wpml:globalTransitionalSpeed>${speed}</wpml:globalTransitionalSpeed>
       <wpml:droneInfo>
         <wpml:droneEnumValue>${droneEnumValue}</wpml:droneEnumValue>
@@ -15994,7 +15997,90 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
   // DJI Fly to reject the mission at "Go" press (observed on double-grid with 81 action groups).
   let actionGroupId = 1;
 
-  waypoints.forEach((wp, idx) => {
+  // Sanitize consecutive duplicate coordinates (DJI APAS collision & zero-distance trajectory solver rule)
+  // When consecutive waypoints share identical coordinates (distance < 0.6m, e.g., in-place 360 photo spheres or stacked points),
+  // apply a micro-orbital radius (1.25m - 1.45m) keyed to waypoint heading to ensure distinct flight nodes >= 0.64m apart.
+  const sanitizedWps = waypoints.map(w => ({ ...w }));
+  let ci = 0;
+  while (ci < sanitizedWps.length) {
+    let cj = ci + 1;
+    while (cj < sanitizedWps.length && typeof haversineDistance === 'function' &&
+           waypoints[ci].lat !== undefined && waypoints[ci].lon !== undefined &&
+           waypoints[cj].lat !== undefined && waypoints[cj].lon !== undefined &&
+           haversineDistance(waypoints[ci].lat, waypoints[ci].lon, waypoints[cj].lat, waypoints[cj].lon) < 0.6) {
+      cj++;
+    }
+    const clusterSize = cj - ci;
+    if (clusterSize > 1) {
+      const clusterLat = waypoints[ci].lat;
+      const clusterLon = waypoints[ci].lon;
+      const latRad = (clusterLat * Math.PI) / 180.0;
+      const seenAngles = new Set();
+      let prevClusterLat = null;
+      let prevClusterLon = null;
+      for (let k = ci; k < cj; k++) {
+        const wp = sanitizedWps[k];
+        const isNadir = (wp.pitch === -90 || wp.pitch === '-90' || (wp.ringIndex === 3 && wp.isPhotoSpherePoint));
+        if (isNadir) {
+          wp.lat = clusterLat;
+          wp.lon = clusterLon;
+        } else {
+          const ringIdx = (wp.ringIndex !== undefined && !isNaN(wp.ringIndex)) ? wp.ringIndex : 0;
+          let radiusMeters = 1.25 + (ringIdx * 0.10);
+          let angleDeg = (wp.heading !== undefined && wp.heading !== null && !isNaN(wp.heading))
+            ? wp.heading
+            : ((k - ci) * (360 / clusterSize));
+          if (seenAngles.has(angleDeg.toFixed(1))) {
+            let foundAngle = null;
+            for (let step = 1; step <= 72; step++) {
+              const candidate = (angleDeg + step * (360 / Math.max(clusterSize, 12))) % 360;
+              let tooClose = false;
+              for (const sa of seenAngles) {
+                let diff = Math.abs(candidate - parseFloat(sa));
+                if (diff > 180) diff = 360 - diff;
+                if (diff < 22) {
+                  tooClose = true;
+                  break;
+                }
+              }
+              if (!tooClose) {
+                foundAngle = candidate;
+                break;
+              }
+            }
+            angleDeg = foundAngle !== null ? foundAngle : ((angleDeg + ((k - ci) * 35)) % 360);
+          }
+          seenAngles.add(angleDeg.toFixed(1));
+          const angleRad = (angleDeg * Math.PI) / 180.0;
+          const dLat = (radiusMeters * Math.cos(angleRad)) / 111320.0;
+          const dLon = (radiusMeters * Math.sin(angleRad)) / (111320.0 * Math.cos(latRad));
+          wp.lat = clusterLat + dLat;
+          wp.lon = clusterLon + dLon;
+        }
+
+        if (prevClusterLat !== null && prevClusterLon !== null) {
+          let d = haversineDistance(prevClusterLat, prevClusterLon, wp.lat, wp.lon);
+          if (d < 0.6) {
+            const dToCenter = haversineDistance(clusterLat, clusterLon, prevClusterLat, prevClusterLon);
+            if (dToCenter >= 0.8) {
+              wp.lat = clusterLat;
+              wp.lon = clusterLon;
+            } else {
+              const angleRad = ((wp.heading || 0) * Math.PI) / 180.0;
+              const r = 1.35 + 0.7;
+              wp.lat = clusterLat + (r * Math.cos(angleRad)) / 111320.0;
+              wp.lon = clusterLon + (r * Math.sin(angleRad)) / (111320.0 * Math.cos(latRad));
+            }
+          }
+        }
+        prevClusterLat = wp.lat;
+        prevClusterLon = wp.lon;
+      }
+    }
+    ci = cj;
+  }
+
+  sanitizedWps.forEach((wp, idx) => {
     const waypointActions = [];
     
     // Resolve Effective Layer & Waypoint Properties (Three-Tier Cascade: Waypoint -> Layer -> Global)
@@ -16012,7 +16098,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     const isVideo = effectiveCaptureMode === 'video';
 
     // Determine if repositioning (gimbal pitch or heading yaw) is required
-    const reposInfo = checkNeedsReposition(idx, waypoints);
+    const reposInfo = checkNeedsReposition(idx, sanitizedWps);
     
     const gridTypeEl = typeof document !== 'undefined' ? document.getElementById('grid-type') : null;
     const gridType = (gridTypeEl && gridTypeEl.value) ? gridTypeEl.value : (waypoints.find(w => w && w.gridType)?.gridType || '');
@@ -16098,7 +16184,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     }
 
     const isPhotoSphere = (gridType === 'photo-sphere') || (wp.isPhotoSphere) || (wp.layerPattern === 'photo-sphere');
-    if (isPhotoSphere) {
+    if (isPhotoSphere && !isConsumer) {
       let targetHeading = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
       targetHeading = ((targetHeading % 360) + 360) % 360;
       if (targetHeading > 180) targetHeading -= 360;
@@ -16460,6 +16546,10 @@ ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
 
   const rthAltEl = document.getElementById('rth-altitude');
   const rthAltitude = rthAltEl ? (parseFloat(rthAltEl.value) || 50) : 50;
+  const firstWpAlt = (sanitizedWps.length > 0 && sanitizedWps[0].alt !== undefined && !isNaN(sanitizedWps[0].alt))
+    ? parseFloat(sanitizedWps[0].alt)
+    : (altitude || 50);
+  const safeTakeoffHeight = Math.max(1.5, Math.min(rthAltitude, firstWpAlt));
 
   const isEnterprise = (droneEnumValue !== 68 && droneEnumValue !== 89);
   let templateTypeXml = isEnterprise ? '      <wpml:templateType>waypoint</wpml:templateType>\n' : '';
@@ -16476,7 +16566,7 @@ ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
       <wpml:finishAction>${finishAction}</wpml:finishAction>
       <wpml:exitOnRCLost>${exitOnRCLost}</wpml:exitOnRCLost>
       <wpml:executeRCLostAction>${executeRCLostAction}</wpml:executeRCLostAction>
-      <wpml:takeOffSecurityHeight>${rthAltitude}</wpml:takeOffSecurityHeight>
+      <wpml:takeOffSecurityHeight>${safeTakeoffHeight}</wpml:takeOffSecurityHeight>
       <wpml:globalTransitionalSpeed>${speed}</wpml:globalTransitionalSpeed>
       <wpml:droneInfo>
         <wpml:droneEnumValue>${droneEnumValue}</wpml:droneEnumValue>
@@ -16698,29 +16788,44 @@ function validateWpmlMission(wpmlXml, templateXml = '', options = {}) {
       r8Passed = false;
       result.errors.push('Enterprise-only <wpml:useStraightLine>1</wpml:useStraightLine> detected on consumer drone mission (must be 0 for Mini 4 Pro / Air 3)');
     }
+    if (wpmlXml.includes('<wpml:actionActuatorFunc>rotateYaw</wpml:actionActuatorFunc>')) {
+      r8Passed = false;
+      result.errors.push('Enterprise-only <wpml:actionActuatorFunc>rotateYaw</wpml:actionActuatorFunc> detected on consumer drone mission (causes DJI Fly execution halt before photo capture)');
+    }
   }
   if (!r8Passed) result.valid = false; else result.rulesPassed++;
   result.rules.push({ id: 8, name: 'Consumer Drone Model XML Compliance', passed: r8Passed, message: r8Msg });
 
   // ── RULE 9: Waypoint Spacing & Proximity Safety ───────────────────────────
   let r9Passed = true;
-  let r9Msg = 'All consecutive waypoints maintain safe spacing (>= 0.5m) to prevent trajectory solver zero-division';
+  let r9Msg = 'All consecutive waypoints maintain safe spacing (>= 0.5m) to prevent trajectory solver zero-division and APAS obstacle triggers';
   let prevCoord = null;
+  let identicalCount = 0;
   placemarks.forEach((pm, idx) => {
     const coordMatch = pm.match(/<coordinates>\s*([^\s<]+)\s*<\/coordinates>/);
+    const hasPhoto = pm.includes('takePhoto') || pm.includes('ShootPhoto');
     if (coordMatch) {
       const parts = coordMatch[1].trim().split(',').map(Number);
       const curr = { lon: parts[0], lat: parts[1] };
       if (prevCoord && typeof haversineDistance === 'function') {
         const dist = haversineDistance(prevCoord.lat, prevCoord.lon, curr.lat, curr.lon);
-        if (dist < 0.5 && dist > 0) {
-          result.warnings.push(`Waypoint ${idx - 1} to ${idx}: Spacing is only ${dist.toFixed(2)}m (< 0.5m minimum recommended)`);
+        if (dist < 0.5) {
+          identicalCount++;
+          // In-place photo capture or clusters of 3+ identical points trigger DJI Fly APAS obstacle stop
+          if (hasPhoto || identicalCount >= 2) {
+            r9Passed = false;
+            result.errors.push(`Waypoint ${idx - 1} to ${idx}: Spacing is only ${dist.toFixed(2)}m (< 0.5m minimum). Zero/near-zero distance between consecutive waypoints triggers DJI APAS obstacle stop.`);
+          } else {
+            result.warnings.push(`Waypoint ${idx - 1} to ${idx}: Spacing is only ${dist.toFixed(2)}m (< 0.5m minimum recommended)`);
+          }
+        } else {
+          identicalCount = 0;
         }
       }
       prevCoord = curr;
     }
   });
-  result.rulesPassed++;
+  if (!r9Passed) result.valid = false; else result.rulesPassed++;
   result.rules.push({ id: 9, name: 'Waypoint Spacing & Proximity Safety', passed: r9Passed, message: r9Msg });
 
   // ── RULE 10: Finite Bounds & Non-NaN Number Verification ───────────────────
@@ -16829,9 +16934,132 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
     fixedWpml = fixedWpml.replace(/toPointAndStopWithDiscontinuityCurvature/g, 'toPointAndStopWithContinuityCurvature');
     fixedWpml = fixedWpml.replace(/toPointAndPassWithDiscontinuityCurvature/g, 'toPointAndPassWithContinuityCurvature');
     fixedWpml = fixedWpml.replace(/<wpml:useStraightLine>\s*1\s*<\/wpml:useStraightLine>/g, '<wpml:useStraightLine>0</wpml:useStraightLine>');
+    // Strip rotateYaw action actuator calls (unsupported on consumer DJI Fly firmware, causing flight halts before photos)
+    fixedWpml = fixedWpml.replace(/\s*<wpml:action>\s*<wpml:actionId>\d+<\/wpml:actionId>\s*<wpml:actionActuatorFunc>rotateYaw<\/wpml:actionActuatorFunc>[\s\S]*?<\/wpml:action>/g, '');
+    // Clamp takeOffSecurityHeight so it does not exceed lowest waypoint height (prevents obstacle detections during steep descents)
+    const heights = [];
+    const hRegex = /<wpml:executeHeight>([^<]+)<\/wpml:executeHeight>/g;
+    let hMatch;
+    while ((hMatch = hRegex.exec(fixedWpml)) !== null) {
+      heights.push(parseFloat(hMatch[1]));
+    }
+    if (heights.length > 0) {
+      const minAlt = Math.min(...heights);
+      fixedWpml = fixedWpml.replace(
+        /<wpml:takeOffSecurityHeight>([^<]+)<\/wpml:takeOffSecurityHeight>/g,
+        (m, val) => `<wpml:takeOffSecurityHeight>${Math.max(1.5, Math.min(parseFloat(val), minAlt))}</wpml:takeOffSecurityHeight>`
+      );
+      if (fixedTemplate) {
+        fixedTemplate = fixedTemplate.replace(
+          /<wpml:takeOffSecurityHeight>([^<]+)<\/wpml:takeOffSecurityHeight>/g,
+          (m, val) => `<wpml:takeOffSecurityHeight>${Math.max(1.5, Math.min(parseFloat(val), minAlt))}</wpml:takeOffSecurityHeight>`
+        );
+      }
+    }
     if (fixedTemplate) {
       fixedTemplate = fixedTemplate.replace(/\s*<Folder>[\s\S]*?<\/Folder>/g, '');
     }
+  }
+
+  // 5. Deduplicate / Micro-Space consecutive identical coordinates (< 0.6m) to prevent APAS obstacle alerts
+  const pmParts = fixedWpml.split('<Placemark>');
+  if (pmParts.length > 2 && typeof haversineDistance === 'function') {
+    const parsedCoords = [];
+    for (let i = 1; i < pmParts.length; i++) {
+      const pm = pmParts[i];
+      const cMatch = pm.match(/<coordinates>\s*([^\s<]+)\s*<\/coordinates>/);
+      const hMatch = pm.match(/<wpml:waypointHeadingAngle>([^<]+)<\/wpml:waypointHeadingAngle>/);
+      const pitchMatch = pm.match(/<wpml:gimbalPitchRotateAngle>([^<]+)<\/wpml:gimbalPitchRotateAngle>/) ||
+                         pm.match(/<wpml:waypointGimbalPitchAngle>([^<]+)<\/wpml:waypointGimbalPitchAngle>/);
+      if (cMatch) {
+        const parts = cMatch[1].trim().split(',').map(Number);
+        parsedCoords.push({
+          pmIdx: i,
+          lon: parts[0],
+          lat: parts[1],
+          heading: hMatch ? parseFloat(hMatch[1]) : 0,
+          pitch: pitchMatch ? parseFloat(pitchMatch[1]) : 0
+        });
+      }
+    }
+
+    let ci = 0;
+    while (ci < parsedCoords.length) {
+      let cj = ci + 1;
+      while (cj < parsedCoords.length && haversineDistance(parsedCoords[ci].lat, parsedCoords[ci].lon, parsedCoords[cj].lat, parsedCoords[cj].lon) < 0.6) {
+        cj++;
+      }
+      const cSize = cj - ci;
+      if (cSize > 1) {
+        const baseLat = parsedCoords[ci].lat;
+        const baseLon = parsedCoords[ci].lon;
+        const latRad = (baseLat * Math.PI) / 180.0;
+        const seenAngles = new Set();
+        let prevClusterLat = null;
+        let prevClusterLon = null;
+        for (let k = ci; k < cj; k++) {
+          const item = parsedCoords[k];
+          const isNadir = (item.pitch <= -85);
+          let newLat = baseLat;
+          let newLon = baseLon;
+          if (!isNadir) {
+            let radiusMeters = 1.25 + (Math.floor((k - ci) / 12) * 0.10);
+            let angleDeg = item.heading;
+            if (seenAngles.has(angleDeg.toFixed(1))) {
+              let foundAngle = null;
+              for (let step = 1; step <= 72; step++) {
+                const candidate = (angleDeg + step * (360 / Math.max(cSize, 12))) % 360;
+                let tooClose = false;
+                for (const sa of seenAngles) {
+                  let diff = Math.abs(candidate - parseFloat(sa));
+                  if (diff > 180) diff = 360 - diff;
+                  if (diff < 22) {
+                    tooClose = true;
+                    break;
+                  }
+                }
+                if (!tooClose) {
+                  foundAngle = candidate;
+                  break;
+                }
+              }
+              angleDeg = foundAngle !== null ? foundAngle : ((angleDeg + ((k - ci) * 35)) % 360);
+            }
+            seenAngles.add(angleDeg.toFixed(1));
+            const angleRad = (angleDeg * Math.PI) / 180.0;
+            const dLat = (radiusMeters * Math.cos(angleRad)) / 111320.0;
+            const dLon = (radiusMeters * Math.sin(angleRad)) / (111320.0 * Math.cos(latRad));
+            newLat = baseLat + dLat;
+            newLon = baseLon + dLon;
+          }
+
+          if (prevClusterLat !== null && prevClusterLon !== null) {
+            let d = haversineDistance(prevClusterLat, prevClusterLon, newLat, newLon);
+            if (d < 0.6) {
+              const dToCenter = haversineDistance(baseLat, baseLon, prevClusterLat, prevClusterLon);
+              if (dToCenter >= 0.8) {
+                newLat = baseLat;
+                newLon = baseLon;
+              } else {
+                const angleRad = (item.heading * Math.PI) / 180.0;
+                const r = 1.35 + 0.7;
+                newLat = baseLat + (r * Math.cos(angleRad)) / 111320.0;
+                newLon = baseLon + (r * Math.sin(angleRad)) / (111320.0 * Math.cos(latRad));
+              }
+            }
+          }
+          prevClusterLat = newLat;
+          prevClusterLon = newLon;
+
+          pmParts[item.pmIdx] = pmParts[item.pmIdx].replace(
+            /<coordinates>[\s\S]*?<\/coordinates>/,
+            `<coordinates>\n            ${newLon.toFixed(13)},${newLat.toFixed(13)}\n          </coordinates>`
+          );
+        }
+      }
+      ci = cj;
+    }
+    fixedWpml = pmParts.join('<Placemark>');
   }
 
   const validation = validateWpmlMission(fixedWpml, fixedTemplate, options);
@@ -18258,45 +18486,10 @@ async function pullFlightLogFromRC2(targetBtn = null) {
         b.style.color = '#38bdf8';
       });
 
-      // Refresh the Flight Diagnostics flight list safely
+      // Open Flight Diagnostics modal and load the pulled flight log sequentially
       try {
-        if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.refreshFlightList) {
-          await FlightDiagnostics.refreshFlightList();
-        }
-      } catch (e) {
-        console.warn('FlightDiagnostics refresh warning:', e);
-      }
-
-      if (logName) {
-        try {
-          const sel = document.getElementById('diag-flight-selector');
-          if (sel) {
-            const optionsList = (sel.options && typeof sel.options[Symbol.iterator] === 'function')
-              ? Array.from(sel.options)
-              : (Array.isArray(sel.options) ? sel.options : []);
-            const exists = optionsList.some(o => o.value === logName);
-            if (!exists && typeof document !== 'undefined' && document.createElement) {
-              try {
-                const opt = document.createElement('option');
-                opt.value = logName;
-                opt.textContent = `🛰️ ${logName}`;
-                sel.appendChild(opt);
-              } catch (e) {}
-            }
-            sel.value = logName;
-          }
-          if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.loadSelectedFlight) {
-            FlightDiagnostics.loadSelectedFlight(logName);
-          }
-        } catch (e) {
-          console.warn('Flight selector update error:', e);
-        }
-      }
-
-      // If triggered from the sidebar, open the Diagnostics modal to show the pulled flight!
-      try {
-        if (primaryBtn && primaryBtn.id === 'direct-rc2-pull-log-btn' && typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.open) {
-          FlightDiagnostics.open();
+        if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.open) {
+          await FlightDiagnostics.open('3d', logName || null);
         }
       } catch (e) {
         console.warn('FlightDiagnostics open error:', e);
@@ -22072,7 +22265,13 @@ const FlightDiagnostics = {
         flightSel.appendChild(groupRc2);
       }
 
-      if (currentVal && Array.from(flightSel.options).some(o => o.value === currentVal)) {
+      if (currentVal && currentVal !== '0' && currentVal !== 'active-mission' && !Array.from(flightSel.options).some(o => o.value === currentVal)) {
+        const opt = document.createElement('option');
+        opt.value = currentVal;
+        opt.textContent = `🛰️ ${currentVal}`;
+        flightSel.appendChild(opt);
+      }
+      if (currentVal) {
         flightSel.value = currentVal;
       } else {
         flightSel.selectedIndex = 0;
@@ -22198,7 +22397,7 @@ const FlightDiagnostics = {
       }
     } else {
       try {
-        const res = await fetch(`${apiBase}/api/flight-telemetry?file=${encodeURIComponent(flightId)}`, {
+        let res = await fetch(`${apiBase}/api/flight-telemetry?file=${encodeURIComponent(flightId)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(45000) : undefined,
@@ -22209,37 +22408,54 @@ const FlightDiagnostics = {
           })
         });
         if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
-        if (res.ok) {
-          const data = await res.json();
-          if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
-          if (data.success && data.telemetry) {
-            this.isDecrypted = !!data.isDecrypted;
-            this.needsDjiApiKey = !!data.needsDjiApiKey;
-            this.djiApiKeyConfigured = !!data.djiApiKeyConfigured;
-            this.djiDecryptError = data.djiDecryptError || null;
-            let telem = data.telemetry;
-            this.isActualFlown = (telem.isActualFlown !== undefined) ? !!telem.isActualFlown : (this.isDecrypted || !telem.isSimulation);
-            if (data.mission) {
-              this.currentLoadedMission = data.mission;
-            }
-            const plannedWps = data.telemetry.plannedWaypoints || data.plannedWaypoints || (data.mission?.plan?.waypoints) || null;
-            if (!this.isDecrypted && telem && telem.points && plannedWps && plannedWps.length > 1) {
-              const photoAlts = new Set(telem.points.filter(p => p.isPhoto).map(p => p.alt));
-              const planAlts = new Set(plannedWps.map(w => w.altitude !== undefined ? w.altitude : (w.alt !== undefined ? w.alt : 50)));
-              if (photoAlts.size === 1 && planAlts.size > 1) {
-                telem = generateTelemetryFromWaypoints(plannedWps, { altitude, speed, gimbalPitch, flightId, isSimulation: !this.isActualFlown });
+        let data = res.ok ? await res.json() : null;
+
+        // If newly pulled flight is still being written/decrypted by companion, retry once after 800ms
+        if ((!data || !data.success || !data.telemetry || !data.telemetry.points || !data.telemetry.points.length) && flightId.startsWith('FlightRecord_')) {
+          await new Promise(r => setTimeout(r, 800));
+          if (this._loadGeneration !== myGeneration) return;
+          try {
+            const retryRes = await fetch(`${apiBase}/api/flight-telemetry?file=${encodeURIComponent(flightId)}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(20000) : undefined,
+              body: JSON.stringify({ flightId, waypoints: wps, options: { altitude, speed, gimbalPitch, flightId } })
+            });
+            if (retryRes.ok) {
+              const retryData = await retryRes.json();
+              if (retryData && retryData.success && retryData.telemetry && retryData.telemetry.points && retryData.telemetry.points.length) {
+                data = retryData;
               }
             }
-            this.telemetryData = telem;
-            this.comparisonData = data.comparison;
-            // Use planned waypoints returned by the companion (from the log's matched mission),
-            // falling back to null so buildTrajectoryMeshes uses the active workspace only as a last resort.
-            this.plannedWaypoints = plannedWps;
-          } else {
-            throw new Error('Telemetry not in payload');
+          } catch (_) {}
+        }
+        if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
+
+        if (data && data.success && data.telemetry) {
+          this.isDecrypted = !!data.isDecrypted;
+          this.needsDjiApiKey = !!data.needsDjiApiKey;
+          this.djiApiKeyConfigured = !!data.djiApiKeyConfigured;
+          this.djiDecryptError = data.djiDecryptError || null;
+          let telem = data.telemetry;
+          this.isActualFlown = (telem.isActualFlown !== undefined) ? !!telem.isActualFlown : (this.isDecrypted || !telem.isSimulation);
+          if (data.mission) {
+            this.currentLoadedMission = data.mission;
           }
+          const plannedWps = data.telemetry.plannedWaypoints || data.plannedWaypoints || (data.mission?.plan?.waypoints) || null;
+          if (!this.isDecrypted && telem && telem.points && plannedWps && plannedWps.length > 1) {
+            const photoAlts = new Set(telem.points.filter(p => p.isPhoto).map(p => p.alt));
+            const planAlts = new Set(plannedWps.map(w => w.altitude !== undefined ? w.altitude : (w.alt !== undefined ? w.alt : 50)));
+            if (photoAlts.size === 1 && planAlts.size > 1) {
+              telem = generateTelemetryFromWaypoints(plannedWps, { altitude, speed, gimbalPitch, flightId, isSimulation: !this.isActualFlown });
+            }
+          }
+          this.telemetryData = telem;
+          this.comparisonData = data.comparison;
+          // Use planned waypoints returned by the companion (from the log's matched mission),
+          // falling back to null so buildTrajectoryMeshes uses the active workspace only as a last resort.
+          this.plannedWaypoints = plannedWps;
         } else {
-          throw new Error('Companion unreachable');
+          throw new Error('Telemetry not in payload');
         }
       } catch (e) {
         if (this._loadGeneration !== myGeneration) return; // superseded by a newer selection
@@ -22359,15 +22575,32 @@ const FlightDiagnostics = {
   async open(customDataOrTab = null, maybeTabOrCustom = null) {
     let customData = null;
     let targetTab = '3d';
+    let targetFlightId = null;
+
     if (typeof customDataOrTab === 'string') {
-      targetTab = customDataOrTab;
-      if (maybeTabOrCustom && typeof maybeTabOrCustom === 'object') {
-        customData = maybeTabOrCustom;
+      if (customDataOrTab === '3d' || customDataOrTab === 'audit' || customDataOrTab === 'photos') {
+        targetTab = customDataOrTab;
+        if (typeof maybeTabOrCustom === 'string') {
+          targetFlightId = maybeTabOrCustom;
+        } else if (maybeTabOrCustom && typeof maybeTabOrCustom === 'object') {
+          customData = maybeTabOrCustom;
+        }
+      } else {
+        // First argument is a flightId (e.g. FlightRecord_... or diag:...)
+        targetTab = '3d';
+        targetFlightId = customDataOrTab;
+        if (maybeTabOrCustom && typeof maybeTabOrCustom === 'object') {
+          customData = maybeTabOrCustom;
+        }
       }
     } else if (customDataOrTab && typeof customDataOrTab === 'object') {
       customData = customDataOrTab;
-      if (maybeTabOrCustom && typeof maybeTabOrCustom === 'string') {
-        targetTab = maybeTabOrCustom;
+      if (typeof maybeTabOrCustom === 'string') {
+        if (maybeTabOrCustom === '3d' || maybeTabOrCustom === 'audit' || maybeTabOrCustom === 'photos') {
+          targetTab = maybeTabOrCustom;
+        } else {
+          targetFlightId = maybeTabOrCustom;
+        }
       }
     }
 
@@ -22397,7 +22630,7 @@ const FlightDiagnostics = {
     if (targetTab === '3d') {
       if (customData) {
         const flightSel = document.getElementById('diag-flight-selector');
-        this.selectedFlightId = customData.flightId || (flightSel && flightSel.value) || 'active-mission';
+        this.selectedFlightId = customData.flightId || targetFlightId || (flightSel && flightSel.value) || 'active-mission';
         this.isActualFlown = customData.isActualFlown !== undefined ? !!customData.isActualFlown : !!customData.telemetry?.isActualFlown;
         this.telemetryData = customData.telemetry;
         this.comparisonData = customData.comparison;
@@ -22409,7 +22642,19 @@ const FlightDiagnostics = {
       } else {
         await this.refreshFlightList();
         const flightSel = document.getElementById('diag-flight-selector');
-        const selectedFlightId = (flightSel && flightSel.value && flightSel.value !== '0' && flightSel.value !== '') ? flightSel.value : 'active-mission';
+        if (flightSel && targetFlightId) {
+          const optionsList = Array.from(flightSel.options || []);
+          if (!optionsList.some(o => o.value === targetFlightId) && document.createElement) {
+            try {
+              const opt = document.createElement('option');
+              opt.value = targetFlightId;
+              opt.textContent = `🛰️ ${targetFlightId}`;
+              flightSel.appendChild(opt);
+            } catch (_) {}
+          }
+          flightSel.value = targetFlightId;
+        }
+        const selectedFlightId = targetFlightId || (flightSel && flightSel.value && flightSel.value !== '0' && flightSel.value !== '') ? (targetFlightId || flightSel.value) : 'active-mission';
         await this.loadSelectedFlight(selectedFlightId);
       }
     }
@@ -22495,7 +22740,8 @@ const FlightDiagnostics = {
       if (slider) { slider.max = '0'; slider.value = '0'; }
       const meta = (typeof document !== 'undefined') ? document.getElementById('diag-flight-meta') : null;
       if (meta) {
-        meta.textContent = `Telemetry Log: ${this.selectedFlightId || 'None'} • No telemetry points`;
+        const safeFlightName = (this.selectedFlightId || 'None').replace(/[<>&"]/g, '');
+        meta.innerHTML = `Telemetry Log: <strong>${safeFlightName}</strong> • <span style="color: #f87171;">⚠️ No telemetry points</span> <button type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 0.7rem; margin-left: 6px; cursor: pointer;" onclick="if(typeof FlightDiagnostics!=='undefined')FlightDiagnostics.loadSelectedFlight('${safeFlightName}')">🔄 Retry</button>`;
       }
       const timeDisplay = (typeof document !== 'undefined') ? document.getElementById('diag-time-display') : null;
       if (timeDisplay) { timeDisplay.textContent = '00:00 / 00:00'; }
@@ -22622,98 +22868,134 @@ const FlightDiagnostics = {
       this.animFrameId = null;
     }
 
-    const oldCanvas = container.querySelector('canvas');
-    if (oldCanvas) container.removeChild(oldCanvas);
-
     const width = container.clientWidth || 800;
     const height = container.clientHeight || 500;
 
-    this.threeScene = new THREE.Scene();
-    this.threeScene.background = new THREE.Color(0x070a13);
-    this.threeScene.fog = new THREE.FogExp2(0x070a13, 0.0008);
+    // Reuse existing WebGLRenderer if already created to prevent WebGL context exhaustion (CONTEXT_LOST_WEBGL)
+    if (!this.threeRenderer) {
+      this.threeRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      this.threeRenderer.setPixelRatio(window.devicePixelRatio || 1);
+      container.appendChild(this.threeRenderer.domElement);
 
-    this.threeCamera = new THREE.PerspectiveCamera(45, width / height, 1, 3000);
-    this.threeCamera.position.set(0, 90, 140);
-
-    this.threeRenderer = new THREE.WebGLRenderer({ antialias: true });
+      const canvas = this.threeRenderer.domElement;
+      canvas.addEventListener('webglcontextlost', (e) => {
+        e.preventDefault();
+        console.warn('WebGL context lost, pausing render loop');
+        if (this.animFrameId) {
+          cancelAnimationFrame(this.animFrameId);
+          this.animFrameId = null;
+        }
+      }, false);
+      canvas.addEventListener('webglcontextrestored', () => {
+        console.log('WebGL context restored, rebuilding 3D scene');
+        this.threeRenderer = null;
+        this.threeScene = null;
+        this.threeControls = null;
+        this.groundMesh = null;
+        this.groundTexture = null;
+        this.droneMesh = null;
+        this.init3DScene();
+      }, false);
+    } else {
+      if (!container.contains(this.threeRenderer.domElement)) {
+        const strayCanvas = container.querySelector('canvas');
+        if (strayCanvas && strayCanvas !== this.threeRenderer.domElement) {
+          container.removeChild(strayCanvas);
+        }
+        container.appendChild(this.threeRenderer.domElement);
+      }
+    }
     this.threeRenderer.setSize(width, height);
-    this.threeRenderer.setPixelRatio(window.devicePixelRatio || 1);
-    container.appendChild(this.threeRenderer.domElement);
 
-    if (THREE.OrbitControls) {
-      this.threeControls = new THREE.OrbitControls(this.threeCamera, this.threeRenderer.domElement);
-      this.threeControls.enableDamping = true;
-      this.threeControls.dampingFactor = 0.05;
-      this.threeControls.maxPolarAngle = Math.PI / 2 - 0.01;
-    }
+    if (!this.threeScene) {
+      this.threeScene = new THREE.Scene();
+      this.threeScene.background = new THREE.Color(0x070a13);
+      this.threeScene.fog = new THREE.FogExp2(0x070a13, 0.0008);
 
-    if (typeof THREE !== 'undefined' && THREE.Raycaster && THREE.Vector2 && this.threeRenderer && this.threeRenderer.domElement) {
-      const raycaster = new THREE.Raycaster();
-      const mouse = new THREE.Vector2();
-      this.threeRenderer.domElement.addEventListener('click', (event) => {
-        if (!this.threeCamera) return;
-        const rect = this.threeRenderer.domElement.getBoundingClientRect();
-        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-        if (typeof raycaster.setFromCamera === 'function') {
-          raycaster.setFromCamera(mouse, this.threeCamera);
-        }
+      this.threeCamera = new THREE.PerspectiveCamera(45, width / height, 1, 3000);
+      this.threeCamera.position.set(0, 90, 140);
 
-        // 1. Raycast on Wireframe line segments
-        if (this.wireframeLinesMesh && this.wireframeLinesMesh.visible && this.wireframeData && Array.isArray(this.wireframeData.lines)) {
-          if (raycaster.params) {
-            if (!raycaster.params.Line) raycaster.params.Line = {};
-            raycaster.params.Line.threshold = 1.8;
+      if (THREE.OrbitControls) {
+        this.threeControls = new THREE.OrbitControls(this.threeCamera, this.threeRenderer.domElement);
+        this.threeControls.enableDamping = true;
+        this.threeControls.dampingFactor = 0.05;
+        this.threeControls.maxPolarAngle = Math.PI / 2 - 0.01;
+      }
+
+      if (!this._raycasterBound && typeof THREE !== 'undefined' && THREE.Raycaster && THREE.Vector2 && this.threeRenderer && this.threeRenderer.domElement) {
+        this._raycasterBound = true;
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        this.threeRenderer.domElement.addEventListener('click', (event) => {
+          if (!this.threeCamera) return;
+          const rect = this.threeRenderer.domElement.getBoundingClientRect();
+          mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+          mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+          if (typeof raycaster.setFromCamera === 'function') {
+            raycaster.setFromCamera(mouse, this.threeCamera);
           }
-          const wfIntersects = raycaster.intersectObject(this.wireframeLinesMesh);
-          if (wfIntersects && wfIntersects.length > 0) {
-            const hit = wfIntersects[0];
-            const segIdx = (hit.index !== undefined) ? Math.floor(hit.index / 2) : 0;
-            this.selectWireframeLine(segIdx);
-            return;
-          }
-        }
 
-        // 2. Raycast on Photo Markers
-        if (this.photoMarkers && this.photoMarkers.length > 0) {
-          const intersects = raycaster.intersectObjects(this.photoMarkers, true);
-          if (intersects && intersects.length > 0) {
-            let hit = intersects[0].object;
-            while (hit && (!hit.userData || hit.userData.index === undefined) && hit.parent) {
-              hit = hit.parent;
+          // 1. Raycast on Wireframe line segments
+          if (this.wireframeLinesMesh && this.wireframeLinesMesh.visible && this.wireframeData && Array.isArray(this.wireframeData.lines)) {
+            if (raycaster.params) {
+              if (!raycaster.params.Line) raycaster.params.Line = {};
+              raycaster.params.Line.threshold = 1.8;
             }
-            if (hit && hit.userData && hit.userData.index !== undefined) {
-              this.seekTo(hit.userData.index);
+            const wfIntersects = raycaster.intersectObject(this.wireframeLinesMesh);
+            if (wfIntersects && wfIntersects.length > 0) {
+              const hit = wfIntersects[0];
+              const segIdx = (hit.index !== undefined) ? Math.floor(hit.index / 2) : 0;
+              this.selectWireframeLine(segIdx);
+              return;
             }
           }
-        }
-      });
+
+          // 2. Raycast on Photo Markers
+          if (this.photoMarkers && this.photoMarkers.length > 0) {
+            const intersects = raycaster.intersectObjects(this.photoMarkers, true);
+            if (intersects && intersects.length > 0) {
+              let hit = intersects[0].object;
+              while (hit && (!hit.userData || hit.userData.index === undefined) && hit.parent) {
+                hit = hit.parent;
+              }
+              if (hit && hit.userData && hit.userData.index !== undefined) {
+                this.seekTo(hit.userData.index);
+              }
+            }
+          }
+        });
+      }
+
+      // Lighting
+      const amb = new THREE.AmbientLight(0xffffff, 1.2);
+      this.threeScene.add(amb);
+      const dir = new THREE.DirectionalLight(0xffffff, 1.0);
+      dir.position.set(100, 300, 100);
+      this.threeScene.add(dir);
+
+      // Ground Grid
+      const grid = new THREE.GridHelper(400, 40, 0x06b6d4, 0x1e293b);
+      this.threeScene.add(grid);
+
+      // Home Point Marker (Green Ring)
+      const homeGeo = new THREE.RingGeometry(2, 2.5, 32);
+      const homeMat = new THREE.MeshBasicMaterial({ color: 0x22c55e, side: THREE.DoubleSide });
+      const homeMesh = new THREE.Mesh(homeGeo, homeMat);
+      homeMesh.rotation.x = -Math.PI / 2;
+      homeMesh.position.set(0, 0.1, 0);
+      this.threeScene.add(homeMesh);
+
+      this.buildDroneAvatar();
+    } else {
+      if (this.threeCamera) {
+        this.threeCamera.aspect = width / height;
+        this.threeCamera.updateProjectionMatrix();
+      }
     }
 
-    // Lighting
-    const amb = new THREE.AmbientLight(0xffffff, 1.2);
-    this.threeScene.add(amb);
-    const dir = new THREE.DirectionalLight(0xffffff, 1.0);
-    dir.position.set(100, 300, 100);
-    this.threeScene.add(dir);
-
-    // Ground Grid
-    const grid = new THREE.GridHelper(400, 40, 0x06b6d4, 0x1e293b);
-    this.threeScene.add(grid);
-
-    // Satellite Map Floor (aligned with flight origin)
+    // Dynamic flight visualizers
     this.addSatelliteFloor();
-
-    // Home Point Marker (Green Ring)
-    const homeGeo = new THREE.RingGeometry(2, 2.5, 32);
-    const homeMat = new THREE.MeshBasicMaterial({ color: 0x22c55e, side: THREE.DoubleSide });
-    const homeMesh = new THREE.Mesh(homeGeo, homeMat);
-    homeMesh.rotation.x = -Math.PI / 2;
-    homeMesh.position.set(0, 0.1, 0);
-    this.threeScene.add(homeMesh);
-
     this.buildTrajectoryMeshes();
-    this.buildDroneAvatar();
 
     // Auto-frame camera to trajectory bounding box so the flight is always centered in view
     const targetMesh = this.actualLineMesh || this.plannedLineMesh;
@@ -22735,6 +23017,21 @@ const FlightDiagnostics = {
 
   addSatelliteFloor() {
     if (!this.telemetryData || typeof document === 'undefined' || !document.createElement) return;
+
+    if (this.groundMesh && this.threeScene) {
+      this.threeScene.remove(this.groundMesh);
+      if (this.groundMesh.geometry) this.groundMesh.geometry.dispose();
+      if (this.groundMesh.material) {
+        if (this.groundMesh.material.map) this.groundMesh.material.map.dispose();
+        this.groundMesh.material.dispose();
+      }
+      this.groundMesh = null;
+    }
+    if (this.groundTexture) {
+      this.groundTexture.dispose();
+      this.groundTexture = null;
+    }
+
     const origin = this.getSceneOrigin();
     const cLat = origin.lat;
     const cLon = origin.lon;
@@ -22803,6 +23100,7 @@ const FlightDiagnostics = {
     this.baseGroundCanvas = baseGroundCanvas;
     this.baseGroundCtx = baseCtx;
     this.groundTexture = groundTexture;
+    this.groundMesh = groundMesh;
     this.planeOffsetX = planeOffsetX;
     this.planeOffsetZ = planeOffsetZ;
     this.planeSize = planeSize;
@@ -22826,7 +23124,7 @@ const FlightDiagnostics = {
             }
             if (!this.paintedPhotoIndices || this.paintedPhotoIndices.size === 0) {
               ctx.drawImage(img, posX, posY, 256, 256);
-              groundTexture.needsUpdate = true;
+              this.scheduleGroundTextureUpdate();
             } else {
               this.redrawGroundFootprints(this.currentPointIndex);
             }
@@ -22835,6 +23133,20 @@ const FlightDiagnostics = {
         }
       }
     }
+  },
+
+  scheduleGroundTextureUpdate() {
+    if (this._groundTexUpdateTimer) clearTimeout(this._groundTexUpdateTimer);
+    this._groundTexUpdateTimer = setTimeout(() => {
+      this._groundTexUpdateTimer = null;
+      try {
+        if (this.groundTexture && this.threeRenderer) {
+          const gl = this.threeRenderer.getContext ? this.threeRenderer.getContext() : null;
+          if (gl && gl.isContextLost && gl.isContextLost()) return;
+          this.groundTexture.needsUpdate = true;
+        }
+      } catch (_) {}
+    }, 120);
   },
 
   resetGroundCanvas() {
@@ -23247,6 +23559,18 @@ const FlightDiagnostics = {
   },
 
   buildDroneAvatar() {
+    if (this.droneMesh && this.threeScene) {
+      this.threeScene.remove(this.droneMesh);
+      this.droneMesh.traverse(child => {
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) {
+          if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+          else child.material.dispose();
+        }
+      });
+      this.droneMesh = null;
+    }
+
     this.droneMesh = new THREE.Group();
 
     const bodyGeo = new THREE.BoxGeometry(2.5, 0.8, 3.5);
@@ -37283,17 +37607,8 @@ async function pullAllRc2Logs() {
 
 function loadRc2LogToDiagnostics(filename) {
   closeRc2LogManagerModal();
-  if (typeof FlightDiagnostics !== 'undefined') {
-    if (FlightDiagnostics.open) FlightDiagnostics.open();
-    if (FlightDiagnostics.refreshFlightList) {
-      FlightDiagnostics.refreshFlightList().then(() => {
-        if (FlightDiagnostics.loadSelectedFlight) {
-          FlightDiagnostics.loadSelectedFlight(filename);
-        }
-      });
-    } else if (FlightDiagnostics.loadSelectedFlight) {
-      FlightDiagnostics.loadSelectedFlight(filename);
-    }
+  if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.open) {
+    FlightDiagnostics.open('3d', filename);
   }
 }
 
