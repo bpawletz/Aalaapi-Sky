@@ -21201,7 +21201,9 @@ const FlightDiagnostics = {
 
       const openInspector = () => {
         if (typeof PhotoInspector !== 'undefined' && PhotoInspector.open) {
-          PhotoInspector.open(photo, (typeof activeInspectionManifest !== 'undefined' && activeInspectionManifest) ? activeInspectionManifest : (this.activeInspectionManifest || this.flightManifest || null));
+          const m = (typeof activeInspectionManifest !== 'undefined' && activeInspectionManifest) ? activeInspectionManifest : (this.activeInspectionManifest || this.flightManifest || null);
+          const pList = (photos && photos.length > 0) ? photos : ((this.flightPhotos && this.flightPhotos.length > 0) ? this.flightPhotos : null);
+          PhotoInspector.open(photo, m, pList);
         }
       };
 
@@ -34287,6 +34289,7 @@ if (typeof global !== 'undefined') global.TagDetector = TagDetector;
 const PhotoInspector = {
   activePhoto: null,
   activeManifest: null,
+  photoList: null,
   currentTool: 'pan',
   currentColor: '#ef4444',
   unit: 'metric',
@@ -34318,6 +34321,77 @@ const PhotoInspector = {
   getLayerBoundaryGeoPolygon,
   computeConvexHullGeo,
   extractDjiXmpMetadata,
+
+  getPhotoList() {
+    if (Array.isArray(this.photoList) && this.photoList.length > 0) {
+      return this.photoList;
+    }
+    if (this.activeManifest && Array.isArray(this.activeManifest.photos) && this.activeManifest.photos.length > 0) {
+      return this.activeManifest.photos;
+    }
+    if (typeof activeInspectionManifest !== 'undefined' && activeInspectionManifest && Array.isArray(activeInspectionManifest.photos) && activeInspectionManifest.photos.length > 0) {
+      return activeInspectionManifest.photos;
+    }
+    if (typeof FlightDiagnostics !== 'undefined') {
+      if (FlightDiagnostics.activeInspectionManifest && Array.isArray(FlightDiagnostics.activeInspectionManifest.photos) && FlightDiagnostics.activeInspectionManifest.photos.length > 0) {
+        return FlightDiagnostics.activeInspectionManifest.photos;
+      }
+      if (FlightDiagnostics.flightManifest && Array.isArray(FlightDiagnostics.flightManifest.photos) && FlightDiagnostics.flightManifest.photos.length > 0) {
+        return FlightDiagnostics.flightManifest.photos;
+      }
+      if (Array.isArray(FlightDiagnostics.flightPhotos) && FlightDiagnostics.flightPhotos.length > 0) {
+        return FlightDiagnostics.flightPhotos;
+      }
+      if (typeof FlightDiagnostics.getCorrelatedPhotos === 'function') {
+        const cp = FlightDiagnostics.getCorrelatedPhotos();
+        if (Array.isArray(cp) && cp.length > 0) return cp;
+      }
+    }
+    if (this.activePhoto) {
+      return [this.activePhoto];
+    }
+    return [];
+  },
+
+  getCurrentPhotoIndex() {
+    const list = this.getPhotoList();
+    if (!list || list.length === 0 || !this.activePhoto) return -1;
+    return list.findIndex(p =>
+      p === this.activePhoto ||
+      (p.photoId && this.activePhoto.photoId && p.photoId === this.activePhoto.photoId) ||
+      (p.filename && this.activePhoto.filename && p.filename === this.activePhoto.filename)
+    );
+  },
+
+  goToPhoto(index) {
+    const list = this.getPhotoList();
+    if (!list || list.length === 0) return;
+    if (index < 0 || index >= list.length) return;
+    const targetPhoto = list[index];
+    if (!targetPhoto) return;
+
+    this.activeBoundaryPoints = [];
+    this.activeMeasurePoints = [];
+    this.activeArrowStart = null;
+    this.activeBoxStart = null;
+
+    this.open(targetPhoto, this.activeManifest, list);
+  },
+
+  previousPhoto() {
+    const idx = this.getCurrentPhotoIndex();
+    if (idx > 0) {
+      this.goToPhoto(idx - 1);
+    }
+  },
+
+  nextPhoto() {
+    const idx = this.getCurrentPhotoIndex();
+    const list = this.getPhotoList();
+    if (idx >= 0 && idx < list.length - 1) {
+      this.goToPhoto(idx + 1);
+    }
+  },
 
   projectWorldPointToCamera(pt, camPose, options = {}) {
     if (!pt || typeof pt.x !== 'number') return null;
@@ -34381,14 +34455,18 @@ const PhotoInspector = {
   eventsBound: false,
 
 
-  openPhoto(photoOrId, manifest = null) {
-    return this.open(photoOrId, manifest);
+  openPhoto(photoOrId, manifest = null, photoList = null) {
+    return this.open(photoOrId, manifest, photoList);
   },
 
-  open(photoOrId, manifest = null) {
+  open(photoOrId, manifest = null, photoList = null) {
     if (typeof document === 'undefined') return;
     const modal = document.getElementById('photo-inspector-modal');
     if (!modal) return;
+
+    if (Array.isArray(photoList) && photoList.length > 0) {
+      this.photoList = photoList;
+    }
 
     if (manifest) this.activeManifest = manifest;
     else if (!this.activeManifest) {
@@ -34403,6 +34481,8 @@ const PhotoInspector = {
 
     if (typeof photoOrId === 'object' && photoOrId !== null) {
       this.activePhoto = photoOrId;
+    } else if (Array.isArray(this.photoList) && this.photoList.length > 0) {
+      this.activePhoto = this.photoList.find(p => p.photoId === photoOrId || p.filename === photoOrId) || this.photoList[0];
     } else if (this.activeManifest && Array.isArray(this.activeManifest.photos)) {
       this.activePhoto = this.activeManifest.photos.find(p => p.photoId === photoOrId || p.filename === photoOrId) || this.activeManifest.photos[0];
     } else if (typeof FlightDiagnostics !== 'undefined' && Array.isArray(FlightDiagnostics.flightPhotos)) {
@@ -34611,6 +34691,29 @@ const PhotoInspector = {
     const dot = document.getElementById('inspector-severity-dot');
     const varText = document.getElementById('inspector-variance-text');
     const planeToggleBtn = document.getElementById('inspector-plane-toggle-btn');
+
+    const photoList = this.getPhotoList();
+    const currentIdx = this.getCurrentPhotoIndex();
+    const totalCount = photoList.length > 0 ? photoList.length : 1;
+    const displayIdx = currentIdx >= 0 ? currentIdx + 1 : 1;
+
+    const counterBadge = document.getElementById('photo-inspector-counter-badge');
+    if (counterBadge) {
+      counterBadge.textContent = `Photo ${displayIdx} of ${totalCount}`;
+    }
+
+    const prevBtn = document.getElementById('photo-inspector-prev-btn');
+    const nextBtn = document.getElementById('photo-inspector-next-btn');
+    const viewportPrevBtn = document.getElementById('photo-viewport-prev-btn');
+    const viewportNextBtn = document.getElementById('photo-viewport-next-btn');
+
+    const canGoPrev = currentIdx > 0;
+    const canGoNext = currentIdx >= 0 && currentIdx < totalCount - 1;
+
+    if (prevBtn) prevBtn.disabled = !canGoPrev;
+    if (nextBtn) nextBtn.disabled = !canGoNext;
+    if (viewportPrevBtn) viewportPrevBtn.disabled = !canGoPrev;
+    if (viewportNextBtn) viewportNextBtn.disabled = !canGoNext;
 
     if (fnEl) fnEl.textContent = p.filename || 'DJI_0001.JPG';
     if (wpBadge) wpBadge.textContent = `WP #${p.waypointIndex !== undefined ? p.waypointIndex : '—'}`;
@@ -36437,6 +36540,34 @@ const PhotoInspector = {
     if (clearBtn) clearBtn.onclick = () => this.clear();
     if (saveBtn) saveBtn.onclick = () => this.save();
     if (exportBtn) exportBtn.onclick = () => this.exportStampedImage();
+
+    const prevBtn = document.getElementById('photo-inspector-prev-btn');
+    const nextBtn = document.getElementById('photo-inspector-next-btn');
+    const viewportPrevBtn = document.getElementById('photo-viewport-prev-btn');
+    const viewportNextBtn = document.getElementById('photo-viewport-next-btn');
+
+    if (prevBtn) prevBtn.onclick = () => this.previousPhoto();
+    if (nextBtn) nextBtn.onclick = () => this.nextPhoto();
+    if (viewportPrevBtn) viewportPrevBtn.onclick = () => this.previousPhoto();
+    if (viewportNextBtn) viewportNextBtn.onclick = () => this.nextPhoto();
+
+    window.addEventListener('keydown', (e) => {
+      const modal = document.getElementById('photo-inspector-modal');
+      if (!modal || modal.classList.contains('hidden')) return;
+
+      const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+      if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') return;
+
+      if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        this.previousPhoto();
+      } else if (e.key === 'ArrowRight' || e.key === 'PageDown') {
+        e.preventDefault();
+        this.nextPhoto();
+      } else if (e.key === 'Escape') {
+        this.close();
+      }
+    });
 
     document.querySelectorAll('.photo-tool-btn').forEach(btn => {
       btn.onclick = () => {

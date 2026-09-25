@@ -1,5 +1,16 @@
 # Changelog
  
+## [1.128.0] - 2026-09-25
+
+### New Features & Enhancements
+- **In-Viewer Sequential Photo Navigation (`PhotoInspector`):**
+  - **Tri-Modal Photo Stepping:** Added the ability to move smoothly from photo to photo directly inside the Photo Inspector modal (`#photo-inspector-modal`) without closing or exiting back to the 2D map or flight diagnostics gallery.
+  - **Header Navigation Bar (`#photo-inspector-nav`):** Integrated `[◀ Prev]` and `[Next ▶]` buttons flanking a live photo position badge (`#photo-inspector-counter-badge`, e.g., `Photo 3 of 12`) in the inspector header.
+  - **Floating Viewport Side Chevrons (`#photo-viewport-prev-btn` & `#photo-viewport-next-btn`):** Added responsive, semi-transparent lightbox-style floating side chevrons (`‹` and `›`) on the left and right edges of the canvas viewport for effortless single-click browsing during full-screen analysis.
+  - **Keyboard Navigation (`ArrowLeft` / `ArrowRight`):** Configured keyboard shortcuts (`ArrowLeft` / `ArrowRight`, `PageUp` / `PageDown`) to step sequentially through photos, automatically suppressed when editing text inputs.
+  - **Flight Sequence Integrity & Boundary Clamping:** Photos respect waypoint capture sequence (`WP #0` $\to$ `WP #N`) with clear disabled boundary states at the beginning and end of the photo list.
+  - **Non-Destructive Annotation State Preservation:** All placed defect callout pins, caliper measurements, and boundary polygons are preserved in-memory on each photo object while switching back and forth.
+
 ## [1.127.3] - 2026-09-25
 
 ### Bug Fixes & Architectural Enhancements

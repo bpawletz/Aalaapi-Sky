@@ -4568,6 +4568,82 @@ html, body {
   box-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
 }
 
+/* Sequential Photo Navigation Controls (v1.128.0) */
+.photo-inspector-nav-group {
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.photo-inspector-nav-btn {
+  transition: all 0.15s ease;
+}
+
+.photo-inspector-nav-btn:not(:disabled):hover {
+  background: rgba(56, 189, 248, 0.2) !important;
+  border-color: #38bdf8 !important;
+  color: #fff !important;
+  transform: translateY(-1px);
+}
+
+.photo-inspector-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
+.photo-nav-chevron {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #f1f5f9;
+  font-size: 2rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 20;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  padding: 0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.photo-nav-prev {
+  left: 16px;
+  padding-right: 2px;
+}
+
+.photo-nav-next {
+  right: 16px;
+  padding-left: 2px;
+}
+
+.photo-nav-chevron:hover:not(:disabled) {
+  background: rgba(14, 165, 233, 0.35);
+  border-color: #38bdf8;
+  color: #fff;
+  transform: translateY(-50%) scale(1.12);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.5);
+}
+
+.photo-nav-chevron:active:not(:disabled) {
+  transform: translateY(-50%) scale(0.96);
+}
+
+.photo-nav-chevron:disabled {
+  opacity: 0.15;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .color-dot-btn {
   transition: transform 0.15s ease, border-color 0.15s ease;
 }

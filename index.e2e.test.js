@@ -6397,6 +6397,81 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(res.pillShownAfterOpen, true, 'Wireframe pill must be displayed when photo has detected lines');
     assert.ok(res.pillTextAfterOpen.includes('House Lines'), 'Wireframe pill must display House Lines count');
   });
+
+  test('E2E: In-Viewer Sequential Photo Navigation & Controls in Photo Inspector (v1.128.0)', async () => {
+    const res = await page.evaluate(async () => {
+      const prevBtn = document.getElementById('photo-inspector-prev-btn');
+      const nextBtn = document.getElementById('photo-inspector-next-btn');
+      const counterBadge = document.getElementById('photo-inspector-counter-badge');
+      const vpPrevBtn = document.getElementById('photo-viewport-prev-btn');
+      const vpNextBtn = document.getElementById('photo-viewport-next-btn');
+
+      const samplePhotos = [
+        { photoId: 'E2E_P1', filename: 'DJI_0001.JPG', waypointIndex: 0, actual: { lat: 40.0, lon: -80.0, altAgl: 25, gimbalPitch: -45, heading: 0 } },
+        { photoId: 'E2E_P2', filename: 'DJI_0002.JPG', waypointIndex: 1, actual: { lat: 40.001, lon: -80.001, altAgl: 30, gimbalPitch: -45, heading: 90 } },
+        { photoId: 'E2E_P3', filename: 'DJI_0003.JPG', waypointIndex: 2, actual: { lat: 40.002, lon: -80.002, altAgl: 35, gimbalPitch: -45, heading: 180 } }
+      ];
+
+      // Open PhotoInspector with samplePhotos
+      if (typeof PhotoInspector !== 'undefined') {
+        PhotoInspector.open(samplePhotos[0], null, samplePhotos);
+      }
+
+      const initialCounter = counterBadge ? counterBadge.textContent : '';
+      const initialPrevDisabled = prevBtn ? prevBtn.disabled : false;
+      const initialNextDisabled = nextBtn ? nextBtn.disabled : false;
+      const initialVpPrevDisabled = vpPrevBtn ? vpPrevBtn.disabled : false;
+      const initialVpNextDisabled = vpNextBtn ? vpNextBtn.disabled : false;
+
+      // Click Next button
+      if (nextBtn) nextBtn.click();
+      const afterNextCounter = counterBadge ? counterBadge.textContent : '';
+      const afterNextActiveFilename = PhotoInspector.activePhoto ? PhotoInspector.activePhoto.filename : '';
+      const afterNextPrevDisabled = prevBtn ? prevBtn.disabled : false;
+
+      // Click Viewport Next chevron
+      if (vpNextBtn) vpNextBtn.click();
+      const atLastCounter = counterBadge ? counterBadge.textContent : '';
+      const atLastNextDisabled = nextBtn ? nextBtn.disabled : false;
+
+      // Click Viewport Prev chevron
+      if (vpPrevBtn) vpPrevBtn.click();
+      const backToMiddleCounter = counterBadge ? counterBadge.textContent : '';
+
+      // Close modal
+      if (typeof PhotoInspector !== 'undefined') {
+        PhotoInspector.close();
+      }
+
+      return {
+        hasControls: !!(prevBtn && nextBtn && counterBadge && vpPrevBtn && vpNextBtn),
+        initialCounter,
+        initialPrevDisabled,
+        initialNextDisabled,
+        initialVpPrevDisabled,
+        initialVpNextDisabled,
+        afterNextCounter,
+        afterNextActiveFilename,
+        afterNextPrevDisabled,
+        atLastCounter,
+        atLastNextDisabled,
+        backToMiddleCounter
+      };
+    });
+
+    assert.strictEqual(res.hasControls, true, 'All photo navigation controls must exist in DOM');
+    assert.strictEqual(res.initialCounter, 'Photo 1 of 3', 'Initial counter badge should be Photo 1 of 3');
+    assert.strictEqual(res.initialPrevDisabled, true, 'Prev button must be disabled at start');
+    assert.strictEqual(res.initialNextDisabled, false, 'Next button must be enabled at start');
+    assert.strictEqual(res.initialVpPrevDisabled, true, 'Viewport Prev chevron must be disabled at start');
+    assert.strictEqual(res.initialVpNextDisabled, false, 'Viewport Next chevron must be enabled at start');
+    assert.strictEqual(res.afterNextCounter, 'Photo 2 of 3', 'Counter should update to Photo 2 of 3 after stepping forward');
+    assert.strictEqual(res.afterNextActiveFilename, 'DJI_0002.JPG', 'Active photo should be DJI_0002.JPG');
+    assert.strictEqual(res.afterNextPrevDisabled, false, 'Prev button should be enabled on middle photo');
+    assert.strictEqual(res.atLastCounter, 'Photo 3 of 3', 'Counter should be Photo 3 of 3 on last photo');
+    assert.strictEqual(res.atLastNextDisabled, true, 'Next button must be disabled on last photo');
+    assert.strictEqual(res.backToMiddleCounter, 'Photo 2 of 3', 'Counter should update to Photo 2 of 3 after stepping back');
+  });
 });
 
 
