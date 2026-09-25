@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.127.3</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.128.0</span></h1>
 
 
 
@@ -2709,6 +2709,14 @@
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              📸 In-Viewer Sequential Photo Navigation (v1.128.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Pilots and inspection auditors can now step seamlessly from photo to photo directly inside the <strong>Photo Inspector</strong> without exiting the modal! Features tri-modal navigation: top-bar <strong>[◀ Prev]</strong> and <strong>[Next ▶]</strong> buttons with a live position counter (<code>Photo X of Y</code>), responsive floating side chevrons (<code>‹</code> and <code>›</code>) for rapid 1-click stepping, and keyboard arrow hotkeys (<code>ArrowLeft</code> / <code>ArrowRight</code>). Preserves waypoint flight sequences and retains all defect pins and measurements in-memory across photos.
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🏗️ Architectural House Edge Extraction &amp; Vegetation Suppression (v1.127.0)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -3618,7 +3626,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.127.3</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.128.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -3681,6 +3689,14 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.128.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>📸 In-Viewer Sequential Photo Navigation:</strong> Move forward and backward between inspection photos directly inside the Photo Inspector modal without having to exit back to the map or diagnostics gallery.</li>
+              <li><strong>🕹️ Tri-Modal Navigation:</strong> Features topbar <code>[◀ Prev]</code> and <code>[Next ▶]</code> buttons with an active position counter (<code>Photo X of Y</code>), responsive floating side chevrons (<code>‹</code> and <code>›</code>) on the canvas viewport, and keyboard arrow hotkeys (<code>ArrowLeft</code> / <code>ArrowRight</code>).</li>
+              <li><strong>🛡️ Sequence Integrity &amp; State Retention:</strong> Respects waypoint capture order with disabled boundary clamping at the start and end of lists, while preserving all in-memory defect pins, calipers, and annotations across photos.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.127.3):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -7401,6 +7417,13 @@
           <span id="inspector-variance-text">ΔH: 0.18m • ΔV: 0.08m (Compliant)</span>
         </div>
 
+        <!-- Sequential Photo Navigation Controls (v1.128.0) -->
+        <div id="photo-inspector-nav" class="photo-inspector-nav-group" style="display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.05); padding: 3px 8px; border-radius: 999px; border: 1px solid var(--border-color);">
+          <button id="photo-inspector-prev-btn" class="btn-secondary btn-sm photo-inspector-nav-btn" type="button" title="Previous Photo (Left Arrow)" style="padding: 2px 8px; font-size: 0.72rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">◀ Prev</button>
+          <span id="photo-inspector-counter-badge" class="badge" style="font-size: 0.70rem; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 4px; padding: 1px 7px; min-width: 64px; text-align: center;">Photo 1 of 1</span>
+          <button id="photo-inspector-next-btn" class="btn-secondary btn-sm photo-inspector-nav-btn" type="button" title="Next Photo (Right Arrow)" style="padding: 2px 8px; font-size: 0.72rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">Next ▶</button>
+        </div>
+
         <div style="display: flex; align-items: center; gap: 8px;">
           <span id="photo-detect-wireframe-pill" style="display: none; align-items: center; gap: 4px; font-size: 0.70rem; padding: 2px 8px; border-radius: 999px; border: 1px solid rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.15); color: #38bdf8;">🏗️ 0 Lines</span>
           <button id="photo-detect-wireframe-btn" class="btn-secondary btn-sm" type="button" style="font-size: 0.72rem; padding: 3px 8px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);" title="Extract Architectural House Lines (Roof Ridges, Eaves, Gutters, Siding &amp; Wall Edges) on current photo">🏗️ Detect House Lines</button>
@@ -7443,6 +7466,10 @@
 
         <!-- Center Interactive Photo Canvas Viewport -->
         <div id="photo-viewport-container" style="flex: 1; position: relative; overflow: hidden; background: #030712; display: block; cursor: grab;">
+          <!-- Floating Viewport Prev/Next Navigation Chevrons (v1.128.0) -->
+          <button id="photo-viewport-prev-btn" class="photo-nav-chevron photo-nav-prev" type="button" title="Previous Photo (Left Arrow)" aria-label="Previous photo">&#8249;</button>
+          <button id="photo-viewport-next-btn" class="photo-nav-chevron photo-nav-next" type="button" title="Next Photo (Right Arrow)" aria-label="Next photo">&#8250;</button>
+
           <div id="photo-transform-layer" style="position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform;">
             <img id="photo-inspector-img" src="" alt="Drone Photo" crossorigin="anonymous" style="display: block; max-width: none; user-select: none; pointer-events: none;" />
             <canvas id="photo-annotation-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: auto;"></canvas>
