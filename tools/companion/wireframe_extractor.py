@@ -535,6 +535,26 @@ def synthesize_architectural_wireframe(photos, origin=None, options=None):
     return cad_lines
 
 def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None, options=None):
+    """
+    Robust authentic 3D architectural line unprojection from drone survey photos.
+
+    Fixes three root-cause bugs that made the previous version incoherent:
+      Fix 1 - Photo clustering by ground-hit centroid:
+        Photos are grouped by where their center ray hits the ground.  Only photos
+        looking at the SAME structure are processed together, preventing line sets
+        from different buildings from mixing into one scattered blob.
+      Fix 2 - Per-photo local spatial filter:
+        Line endpoints are filtered against the CLUSTER CENTER (the shared ground
+        hit of the selected photos), not the global scene origin at (0,0).  This
+        correctly rejects far-field horizon rays without discarding valid lines on
+        buildings that are offset from the scene origin.
+      Fix 3 - Geometry-based height assignment:
+        Height is assigned from the ground-projected distance of each line endpoint
+        to the camera nadir point (directly below the camera).  Features close to
+        nadir are on the roof ridge; mid-range features are at eave height; distant
+        features are at ground level.  The previous pixel-angle heuristic broke for
+        all oblique/nadir shots.
+    """
     if not photos or not per_photo_lines:
         return []
     if options is None:
@@ -553,52 +573,24 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
 
     ground_y = float(options.get("groundAltitude", 0.0))
 
-    # Collect steep-pitch downward survey photos that have detected lines
-    steep = []
-    cam_altitudes = []
+    # -----------------------------------------------------------------------
+    # Phase 1: Build per-photo metadata.
+    # For each steep (pitch <= -35 deg) photo that has detected lines, compute:
+    #   - camera world position (wx, wy, wz)
+    #   - center-ray ground hit (gx, gz): where the image center lands on terrain
+    # -----------------------------------------------------------------------
+    photo_meta = []
     for p in photos:
         telem = p.get("telemetry", p)
         act = telem.get("actual", {}) if isinstance(telem.get("actual"), dict) else {}
-        pitch = float(telem.get("pitch") if telem.get("pitch") is not None else (telem.get("gimbalPitch") if telem.get("gimbalPitch") is not None else act.get("gimbalPitch", -60.0)))
-        if pitch <= -35.0:
-            pid = p.get("photoId") or p.get("filename")
-            line_count = len(per_photo_lines.get(pid, []))
-            if line_count > 0:
-                heading = float(telem.get("yaw") if telem.get("yaw") is not None else (telem.get("heading") if telem.get("heading") is not None else act.get("heading", 0.0)))
-                steep.append((p, line_count, heading))
-            wy = float(telem.get("worldY") or telem.get("altAgl") or telem.get("alt") or act.get("altAgl") or act.get("alt") or 30.0)
-            cam_altitudes.append(wy - ground_y)
-
-    if not steep:
-        return []
-
-    # Select prime orthogonal survey passes to capture cross-angles
-    steep.sort(key=lambda x: x[1], reverse=True)
-    selected = [steep[0][0]]
-    h0 = steep[0][2]
-    for p, c, h in steep[1:]:
-        diff = abs((h - h0 + 180.0) % 360.0 - 180.0)
-        if diff > 40.0:
-            selected.append(p)
-            break
-    if len(selected) < 2 and len(steep) > 1:
-        selected.append(steep[1][0])
-
-    avg_alt = float(np.mean(cam_altitudes)) if cam_altitudes else 25.0
-    wall_h = float(options.get("buildingHeight") or min(10.0, max(5.5, avg_alt * 0.35)))
-    roof_h = float(options.get("roofHeight") or min(5.5, max(2.8, wall_h * 0.48)))
-    eaves_y = ground_y + wall_h
-    ridge_y = eaves_y + roof_h
-
-    raw_3d = []
-    eave_corners = []
-
-    for photo in selected:
-        telem = photo.get("telemetry", photo)
-        act = telem.get("actual", {}) if isinstance(telem.get("actual"), dict) else {}
-        pid = photo.get("photoId") or photo.get("filename")
-        lines2d = per_photo_lines.get(pid, [])
-        if not lines2d:
+        pitch = float(telem.get("pitch") if telem.get("pitch") is not None
+                      else (telem.get("gimbalPitch") if telem.get("gimbalPitch") is not None
+                            else act.get("gimbalPitch", -60.0)))
+        if pitch > -35.0:
+            continue
+        pid = p.get("photoId") or p.get("filename")
+        line_count = len(per_photo_lines.get(pid, []))
+        if line_count == 0:
             continue
 
         lat = telem.get("lat") or act.get("lat")
@@ -609,61 +601,177 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
             wx = float(telem.get("worldX", 0.0))
             wz = float(telem.get("worldZ", 0.0))
 
-        wy = float(telem.get("worldY") or telem.get("altAgl") or telem.get("alt") or act.get("altAgl") or act.get("alt") or 30.0)
-        yaw = float(telem.get("yaw") if telem.get("yaw") is not None else (telem.get("heading") if telem.get("heading") is not None else act.get("heading", 0.0)))
-        pitch = float(telem.get("pitch") if telem.get("pitch") is not None else (telem.get("gimbalPitch") if telem.get("gimbalPitch") is not None else act.get("gimbalPitch", -60.0)))
+        wy = float(telem.get("worldY") or telem.get("altAgl") or telem.get("alt")
+                   or act.get("altAgl") or act.get("alt") or 30.0)
+        yaw = float(telem.get("yaw") if telem.get("yaw") is not None
+                    else (telem.get("heading") if telem.get("heading") is not None
+                          else act.get("heading", 0.0)))
         roll = float(telem.get("roll", 0.0))
         hfov = float(telem.get("hfov", 73.7))
         vfov = float(telem.get("vfov", 53.1))
+
         cam_pos = np.array([wx, wy, wz], dtype=np.float64)
 
-        for l in lines2d:
-            u1, v1, u2, v2 = l
-            dx_px = (u2 - u1) * 1920.0
-            dy_px = (v2 - v1) * 1080.0
-            if math.hypot(dx_px, dy_px) < 32.0:
+        # Center-ray ground hit
+        center_ray = project_pixel_to_ray(960, 540, 1920, 1080, hfov, vfov,
+                                          cam_pos, yaw, pitch, roll)
+        gx, gz = wx, wz  # fallback: nadir
+        if abs(center_ray[1]) > 1e-4:
+            t_c = (ground_y - wy) / center_ray[1]
+            if 0 < t_c < 350:
+                gx = wx + center_ray[0] * t_c
+                gz = wz + center_ray[2] * t_c
+
+        photo_meta.append({
+            "photo": p, "pid": pid, "line_count": line_count,
+            "cam_pos": cam_pos, "wx": wx, "wy": wy, "wz": wz,
+            "yaw": yaw, "pitch": pitch, "roll": roll, "hfov": hfov, "vfov": vfov,
+            "gx": gx, "gz": gz,
+            "alt_agl": wy - ground_y,
+        })
+
+    if not photo_meta:
+        return []
+
+    # -----------------------------------------------------------------------
+    # Phase 2 (Fix 1): Cluster photos by ground-hit centroid.
+    # Photos viewing the same structure share a nearby ground-hit area.
+    # This prevents mixing lines from two separate buildings.
+    # -----------------------------------------------------------------------
+    cluster_radius = float(options.get("clusterRadius", 18.0))
+    clusters = []
+    assigned = [False] * len(photo_meta)
+
+    for i in range(len(photo_meta)):
+        if assigned[i]:
+            continue
+        cluster = [i]
+        assigned[i] = True
+        for j in range(len(photo_meta)):
+            if assigned[j]:
+                continue
+            dist = math.hypot(photo_meta[i]["gx"] - photo_meta[j]["gx"],
+                              photo_meta[i]["gz"] - photo_meta[j]["gz"])
+            if dist <= cluster_radius:
+                cluster.append(j)
+                assigned[j] = True
+        clusters.append(cluster)
+
+    # -----------------------------------------------------------------------
+    # Phase 3: Scene-wide structural height estimates.
+    # -----------------------------------------------------------------------
+    avg_alt = float(np.mean([pm["alt_agl"] for pm in photo_meta]))
+    wall_h = float(options.get("buildingHeight") or min(10.0, max(5.5, avg_alt * 0.32)))
+    roof_h = float(options.get("roofHeight") or min(5.5, max(2.5, wall_h * 0.48)))
+    eaves_y = ground_y + wall_h
+    ridge_y = eaves_y + roof_h
+
+    raw_3d = []
+    eave_corners = []
+
+    # -----------------------------------------------------------------------
+    # Phase 4: Per-cluster photo selection and line unprojection.
+    # -----------------------------------------------------------------------
+    for cluster in clusters:
+        cluster_sorted = sorted(cluster, key=lambda i: photo_meta[i]["line_count"], reverse=True)
+
+        # Select best photo, then add an orthogonal-heading photo for cross-view
+        selected_indices = [cluster_sorted[0]]
+        h0 = photo_meta[cluster_sorted[0]]["yaw"]
+        for ci in cluster_sorted[1:]:
+            diff = abs((photo_meta[ci]["yaw"] - h0 + 180.0) % 360.0 - 180.0)
+            if diff > 40.0:
+                selected_indices.append(ci)
+                break
+        if len(selected_indices) < 2 and len(cluster_sorted) > 1:
+            if cluster_sorted[1] not in selected_indices:
+                selected_indices.append(cluster_sorted[1])
+
+        # Cluster center ground point (used as Fix 2 filter anchor)
+        cx = float(np.mean([photo_meta[i]["gx"] for i in cluster]))
+        cz = float(np.mean([photo_meta[i]["gz"] for i in cluster]))
+
+        for idx in selected_indices:
+            pm = photo_meta[idx]
+            cam_pos = pm["cam_pos"]
+            pid = pm["pid"]
+            lines2d = per_photo_lines.get(pid, [])
+            if not lines2d:
                 continue
 
-            r1 = project_pixel_to_ray(u1 * 1920.0, v1 * 1080.0, 1920.0, 1080.0, hfov, vfov, cam_pos, yaw, pitch, roll)
-            r2 = project_pixel_to_ray(u2 * 1920.0, v2 * 1080.0, 1920.0, 1080.0, hfov, vfov, cam_pos, yaw, pitch, roll)
-            if r1[1] >= -0.04 or r2[1] >= -0.04:
-                continue
+            alt_agl = pm["alt_agl"]
+            # Spatial filter radius: ground projection must land near cluster center
+            filter_r = min(32.0, max(12.0, alt_agl * 0.90))
 
-            t1_0 = (ground_y - wy) / r1[1]
-            t2_0 = (ground_y - wy) / r2[1]
-            g1 = cam_pos + r1 * t1_0
-            g2 = cam_pos + r2 * t2_0
-            mid_gx = (g1[0] + g2[0]) / 2.0
-            mid_gz = (g1[2] + g2[2]) / 2.0
+            # Height assignment thresholds (Fix 3): distance from camera nadir
+            # on the ground plane determines which horizontal height plane to use.
+            ridge_thresh = alt_agl * 0.42   # ~12.6 m at 30 m AGL -> roof ridge
+            eave_thresh  = alt_agl * 0.78   # ~23.4 m at 30 m AGL -> eave line
+            nadir_x = pm["wx"]
+            nadir_z = pm["wz"]
 
-            # Distance from origin check to prevent horizon rays
-            if math.hypot(mid_gx, mid_gz) > 120.0:
-                continue
+            for l in lines2d:
+                u1, v1, u2, v2 = l
+                dx_px = (u2 - u1) * 1920.0
+                dy_px = (v2 - v1) * 1080.0
+                if math.hypot(dx_px, dy_px) < 32.0:
+                    continue
 
-            ang = abs(math.atan2(dy_px, dx_px))
-            if ang < 0.28 or ang > 2.86:
-                h1, h2 = ridge_y, ridge_y
-            elif 0.50 < ang < 2.64:
-                h1, h2 = eaves_y, ridge_y
-            else:
-                h1, h2 = eaves_y, eaves_y
+                r1 = project_pixel_to_ray(u1 * 1920.0, v1 * 1080.0, 1920.0, 1080.0,
+                                          pm["hfov"], pm["vfov"], cam_pos,
+                                          pm["yaw"], pm["pitch"], pm["roll"])
+                r2 = project_pixel_to_ray(u2 * 1920.0, v2 * 1080.0, 1920.0, 1080.0,
+                                          pm["hfov"], pm["vfov"], cam_pos,
+                                          pm["yaw"], pm["pitch"], pm["roll"])
 
-            t1 = (h1 - wy) / r1[1]
-            t2 = (h2 - wy) / r2[1]
-            p1 = cam_pos + r1 * t1
-            p2 = cam_pos + r2 * t2
+                if r1[1] >= -0.04 or r2[1] >= -0.04:
+                    continue
 
-            seg_len = np.linalg.norm(p2 - p1)
-            if 0.65 < seg_len < 32.0:
-                p1_rnd = [round(float(p1[0]), 3), round(float(p1[1]), 3), round(float(p1[2]), 3)]
-                p2_rnd = [round(float(p2[0]), 3), round(float(p2[1]), 3), round(float(p2[2]), 3)]
-                raw_3d.append(p1_rnd + p2_rnd)
-                if abs(h1 - eaves_y) < 0.1: eave_corners.append(p1_rnd)
-                if abs(h2 - eaves_y) < 0.1: eave_corners.append(p2_rnd)
+                # Project endpoints to ground plane
+                t1_g = (ground_y - pm["wy"]) / r1[1]
+                t2_g = (ground_y - pm["wy"]) / r2[1]
+                g1 = cam_pos + r1 * t1_g
+                g2 = cam_pos + r2 * t2_g
+                mid_gx = (g1[0] + g2[0]) / 2.0
+                mid_gz = (g1[2] + g2[2]) / 2.0
 
-    # Deduplicate overlapping lines
+                # Fix 2: filter against cluster center, not global (0,0) origin
+                if math.hypot(mid_gx - cx, mid_gz - cz) > filter_r:
+                    continue
+
+                # Fix 3: height assignment based on nadir distance
+                d1 = math.hypot(g1[0] - nadir_x, g1[2] - nadir_z)
+                d2 = math.hypot(g2[0] - nadir_x, g2[2] - nadir_z)
+                d_avg = (d1 + d2) / 2.0
+
+                if d_avg <= ridge_thresh:
+                    h1 = h2 = ridge_y
+                elif d_avg <= eave_thresh:
+                    h1 = h2 = eaves_y
+                else:
+                    h1 = h2 = ground_y
+
+                t1 = (h1 - pm["wy"]) / r1[1]
+                t2 = (h2 - pm["wy"]) / r2[1]
+                if t1 <= 0 or t2 <= 0 or t1 > 350 or t2 > 350:
+                    continue
+
+                p1 = cam_pos + r1 * t1
+                p2 = cam_pos + r2 * t2
+
+                seg_len = np.linalg.norm(p2 - p1)
+                if 0.50 <= seg_len <= 35.0:
+                    p1_rnd = [round(float(p1[0]), 3), round(float(p1[1]), 3), round(float(p1[2]), 3)]
+                    p2_rnd = [round(float(p2[0]), 3), round(float(p2[1]), 3), round(float(p2[2]), 3)]
+                    raw_3d.append(p1_rnd + p2_rnd)
+                    if abs(h1 - eaves_y) < 0.2:
+                        eave_corners.append(p1_rnd)
+                    if abs(h2 - eaves_y) < 0.2:
+                        eave_corners.append(p2_rnd)
+
+    # Deduplicate overlapping line segments
     deduped = []
-    tol_sq = 0.35 * 0.35
+    tol_sq = 0.4 * 0.4
     for l in raw_3d:
         x1, y1, z1, x2, y2, z2 = l
         is_dup = False
@@ -680,13 +788,13 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
         if not is_dup:
             deduped.append(l)
 
-    # Add corner structural columns connecting outer eave corners to ground
+    # Add structural corner columns (eave corners down to ground)
     if eave_corners:
         eaves_arr = np.array(eave_corners)
         min_x = np.min(eaves_arr[:, 0])
         max_x = np.max(eaves_arr[:, 0])
         sub_groups = []
-        if (max_x - min_x) >= 20.0:
+        if (max_x - min_x) >= 18.0:
             mid_x = (min_x + max_x) / 2.0
             sub_groups.append(eaves_arr[eaves_arr[:, 0] < mid_x])
             sub_groups.append(eaves_arr[eaves_arr[:, 0] >= mid_x])
@@ -694,16 +802,15 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
             sub_groups.append(eaves_arr)
 
         for grp in sub_groups:
-            if len(grp) >= 4:
-                min_x_pt = grp[np.argmin(grp[:, 0])]
-                max_x_pt = grp[np.argmax(grp[:, 0])]
-                min_z_pt = grp[np.argmin(grp[:, 2])]
-                max_z_pt = grp[np.argmax(grp[:, 2])]
-                for pt in [min_x_pt, max_x_pt, min_z_pt, max_z_pt]:
-                    col = [round(float(pt[0]), 3), ground_y, round(float(pt[2]), 3), round(float(pt[0]), 3), round(float(pt[1]), 3), round(float(pt[2]), 3)]
+            if len(grp) >= 3:
+                for pt in [grp[np.argmin(grp[:, 0])], grp[np.argmax(grp[:, 0])],
+                           grp[np.argmin(grp[:, 2])], grp[np.argmax(grp[:, 2])]]:
+                    col = [round(float(pt[0]), 3), ground_y, round(float(pt[2]), 3),
+                           round(float(pt[0]), 3), round(float(pt[1]), 3), round(float(pt[2]), 3)]
                     deduped.append(col)
 
     return deduped
+
 
 def main():
     parser = argparse.ArgumentParser(description="Aalaapi Sky Architectural Wireframe Extractor")
