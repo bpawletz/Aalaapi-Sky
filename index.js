@@ -23734,7 +23734,11 @@ const FlightDiagnostics = {
     const validLines = this.wireframeData.lines.filter(line => {
       if (!Array.isArray(line) || line.length < 6) return false;
       const [x1, y1, z1, x2, y2, z2] = line;
+      if (!Number.isFinite(x1) || !Number.isFinite(y1) || !Number.isFinite(z1) ||
+          !Number.isFinite(x2) || !Number.isFinite(y2) || !Number.isFinite(z2)) return false;
       const len = Math.hypot(x2 - x1, y2 - y1, z2 - z1);
+      if (len > 60.0) return false;
+      if (Math.hypot(x1, z1) > 300.0 || Math.hypot(x2, z2) > 300.0) return false;
       return len >= minLen;
     });
 
