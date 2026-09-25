@@ -1,5 +1,8 @@
 $ErrorActionPreference = "Stop"
 
+Write-Host "🌐 Refreshing FAA TFR & NOTAM data cache..." -ForegroundColor Cyan
+node tools/fetch_tfr_data.js
+
 Write-Host "🔨 Building single-file bundle..." -ForegroundColor Cyan
 python scratch/build.py
 

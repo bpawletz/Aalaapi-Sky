@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+echo "🌐 Refreshing FAA TFR & NOTAM data cache..."
+node tools/fetch_tfr_data.js
+
 echo "🔨 Building single-file bundle..."
 python scratch/build.py
 
