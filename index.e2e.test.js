@@ -6073,7 +6073,76 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
     assert.strictEqual(modeState.hotkeyMode, 'cockpit', 'Pressing key C should toggle camera mode');
   });
+
+  test('E2E: 3D Wireframe Package Bundling & Three.js Editor Import controls (v1.122.0)', async () => {
+    const res = await page.evaluate(() => {
+      const saveBtn = document.getElementById('diag-wireframe-save-btn');
+      const threeBtn = document.getElementById('diag-wireframe-threejs-btn');
+      const hasSaveBtn = !!saveBtn;
+      const hasThreeBtn = !!threeBtn;
+
+      // Mock wireframe data
+      FlightDiagnostics.wireframeData = {
+        success: true,
+        count: 2,
+        lines: [
+          [0, 0, 0, 10, 0, 0],
+          [10, 0, 0, 10, 0, 10]
+        ]
+      };
+      FlightDiagnostics.wireframeElevationOffset = 2.0;
+
+      // Test Three.js export function directly
+      let exportedObj = null;
+      let exportedThree = null;
+
+      // Intercept Blob/URL creation to verify export contents
+      const origBlob = window.Blob;
+      window.Blob = class MockBlob extends origBlob {
+        constructor(parts, opts) {
+          super(parts, opts);
+          if (opts && opts.type === 'application/json') {
+            try {
+              exportedThree = JSON.parse(parts[0]);
+            } catch (_) {}
+          } else if (opts && opts.type === 'text/plain') {
+            exportedObj = parts[0];
+          }
+        }
+      };
+
+      try {
+        FlightDiagnostics.exportWireframe('obj');
+        FlightDiagnostics.exportWireframe('threejs');
+      } finally {
+        window.Blob = origBlob;
+      }
+
+      return {
+        hasSaveBtn,
+        hasThreeBtn,
+        hasExportedObj: !!exportedObj,
+        hasExportedThree: !!exportedThree,
+        threeType: exportedThree && exportedThree.metadata && exportedThree.metadata.type,
+        threeSource: exportedThree && exportedThree.metadata && exportedThree.metadata.source,
+        threeObjectType: exportedThree && exportedThree.object && exportedThree.object.type,
+        threeObjectName: exportedThree && exportedThree.object && exportedThree.object.name,
+        hasChildren: exportedThree && exportedThree.object && Array.isArray(exportedThree.object.children) && exportedThree.object.children.length > 0
+      };
+    });
+
+    assert.strictEqual(res.hasSaveBtn, true, '#diag-wireframe-save-btn must exist in DOM');
+    assert.strictEqual(res.hasThreeBtn, true, '#diag-wireframe-threejs-btn must exist in DOM');
+    assert.strictEqual(res.hasExportedObj, true, 'exportWireframe(obj) must produce Wavefront OBJ');
+    assert.strictEqual(res.hasExportedThree, true, 'exportWireframe(threejs) must produce Three.js JSON');
+    assert.strictEqual(res.threeType, 'Object', 'Three.js JSON metadata.type must be Object');
+    assert.strictEqual(res.threeSource, 'threejs.org compatible', 'Three.js JSON must indicate threejs.org compatibility');
+    assert.strictEqual(res.threeObjectType, 'Group', 'Exported Digital Twin must be a Three.js Group');
+    assert.strictEqual(res.threeObjectName, 'Aalaapi_Inspection_Digital_Twin', 'Digital Twin Group must have descriptive name');
+    assert.strictEqual(res.hasChildren, true, 'Digital Twin Group must contain child scene elements');
+  });
 });
+
 
 
 

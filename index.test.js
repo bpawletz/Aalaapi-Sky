@@ -20420,14 +20420,14 @@ describe('Photo Telemetry Correlation & Ground Boundary Projection Suite Tests (
     assert.ok(changelog.includes('## [1.118.0] - 2026-09-21'), 'CHANGELOG must contain 1.118.0');
 
     const tmpl = fs.readFileSync('./index_template.html', 'utf8');
-    assert.ok(tmpl.includes('v1.118.0') || tmpl.includes('v1.119.0') || tmpl.includes('v1.120.0') || tmpl.includes('v1.120.1') || tmpl.includes('v1.121.0') || tmpl.includes('v1.121.1') || tmpl.includes('v1.121.2'), 'index_template.html must contain header badge');
-    assert.ok(tmpl.includes('Version 1.118.0') || tmpl.includes('Version 1.119.0') || tmpl.includes('Version 1.120.0') || tmpl.includes('Version 1.120.1') || tmpl.includes('Version 1.121.0') || tmpl.includes('Version 1.121.1') || tmpl.includes('Version 1.121.2'), 'index_template.html must contain Version');
-    assert.ok(tmpl.includes('Changelog (v1.118.0):') || tmpl.includes('Changelog (v1.119.0):') || tmpl.includes('Changelog (v1.120.0):') || tmpl.includes('Changelog (v1.120.1):') || tmpl.includes('Changelog (v1.121.0):') || tmpl.includes('Changelog (v1.121.1):') || tmpl.includes('Changelog (v1.121.2):'), 'index_template.html must contain Changelog');
+    assert.ok(tmpl.includes('v1.118.0') || tmpl.includes('v1.119.0') || tmpl.includes('v1.120.0') || tmpl.includes('v1.120.1') || tmpl.includes('v1.121.0') || tmpl.includes('v1.121.1') || tmpl.includes('v1.121.2') || tmpl.includes('v1.122.0'), 'index_template.html must contain header badge');
+    assert.ok(tmpl.includes('Version 1.118.0') || tmpl.includes('Version 1.119.0') || tmpl.includes('Version 1.120.0') || tmpl.includes('Version 1.120.1') || tmpl.includes('Version 1.121.0') || tmpl.includes('Version 1.121.1') || tmpl.includes('Version 1.121.2') || tmpl.includes('Version 1.122.0'), 'index_template.html must contain Version');
+    assert.ok(tmpl.includes('Changelog (v1.118.0):') || tmpl.includes('Changelog (v1.119.0):') || tmpl.includes('Changelog (v1.120.0):') || tmpl.includes('Changelog (v1.120.1):') || tmpl.includes('Changelog (v1.121.0):') || tmpl.includes('Changelog (v1.121.1):') || tmpl.includes('Changelog (v1.121.2):') || tmpl.includes('Changelog (v1.122.0):'), 'index_template.html must contain Changelog');
 
     const indexHtml = fs.readFileSync('./index.html', 'utf8');
-    assert.ok(indexHtml.includes('v1.118.0') || indexHtml.includes('v1.119.0') || indexHtml.includes('v1.120.0') || indexHtml.includes('v1.120.1') || indexHtml.includes('v1.121.0') || indexHtml.includes('v1.121.1') || indexHtml.includes('v1.121.2'), 'index.html must contain header badge');
-    assert.ok(indexHtml.includes('Version 1.118.0') || indexHtml.includes('Version 1.119.0') || indexHtml.includes('Version 1.120.0') || indexHtml.includes('Version 1.120.1') || indexHtml.includes('Version 1.121.0') || indexHtml.includes('Version 1.121.1') || indexHtml.includes('Version 1.121.2'), 'index.html must contain Version');
-    assert.ok(indexHtml.includes('Changelog (v1.118.0):') || indexHtml.includes('Changelog (v1.119.0):') || indexHtml.includes('Changelog (v1.120.0):') || indexHtml.includes('Changelog (v1.120.1):') || indexHtml.includes('Changelog (v1.121.0):') || indexHtml.includes('Changelog (v1.121.1):') || indexHtml.includes('Changelog (v1.121.2):'), 'index.html must contain Changelog');
+    assert.ok(indexHtml.includes('v1.118.0') || indexHtml.includes('v1.119.0') || indexHtml.includes('v1.120.0') || indexHtml.includes('v1.120.1') || indexHtml.includes('v1.121.0') || indexHtml.includes('v1.121.1') || indexHtml.includes('v1.121.2') || indexHtml.includes('v1.122.0'), 'index.html must contain header badge');
+    assert.ok(indexHtml.includes('Version 1.118.0') || indexHtml.includes('Version 1.119.0') || indexHtml.includes('Version 1.120.0') || indexHtml.includes('Version 1.120.1') || indexHtml.includes('Version 1.121.0') || indexHtml.includes('Version 1.121.1') || indexHtml.includes('Version 1.121.2') || indexHtml.includes('Version 1.122.0'), 'index.html must contain Version');
+    assert.ok(indexHtml.includes('Changelog (v1.118.0):') || indexHtml.includes('Changelog (v1.119.0):') || indexHtml.includes('Changelog (v1.120.0):') || indexHtml.includes('Changelog (v1.120.1):') || indexHtml.includes('Changelog (v1.121.0):') || indexHtml.includes('Changelog (v1.121.1):') || indexHtml.includes('Changelog (v1.121.2):') || indexHtml.includes('Changelog (v1.122.0):'), 'index.html must contain Changelog');
   });
 });
 
@@ -20672,12 +20672,12 @@ describe('v1.120.0 Bridge-Hosted 3D Wireframe Extraction & Telemetry Projection 
 
     assert.ok(semverGte(pkg, '1.120.0'), 'package.json version should be >= 1.120.0');
     assert.ok(cl.includes('## [1.120.0] - 2026-09-24'), 'CHANGELOG.md missing 1.120.0 header');
-    assert.ok(indexTemplate.includes('Version 1.120.0') || indexTemplate.includes('Version 1.120.1') || indexTemplate.includes('Version 1.121.0') || indexTemplate.includes('Version 1.121.1') || indexTemplate.includes('Version 1.121.2'), 'index_template.html missing Version 1.120.0/1/2');
-    assert.ok(indexHtml.includes('Version 1.120.0') || indexHtml.includes('Version 1.120.1') || indexHtml.includes('Version 1.121.0') || indexHtml.includes('Version 1.121.1') || indexHtml.includes('Version 1.121.2'), 'index.html missing Version 1.120.0/1/2');
-    assert.ok(indexTemplate.includes('v1.120.0') || indexTemplate.includes('v1.120.1') || indexTemplate.includes('v1.121.0') || indexTemplate.includes('v1.121.1') || indexTemplate.includes('v1.121.2'), 'index_template.html missing v1.120.0/1/2 badge');
-    assert.ok(indexHtml.includes('v1.120.0') || indexHtml.includes('v1.120.1') || indexHtml.includes('v1.121.0') || indexHtml.includes('v1.121.1') || indexHtml.includes('v1.121.2'), 'index.html missing v1.120.0/1/2 badge');
-    assert.ok(indexTemplate.includes('Changelog (v1.120.0):') || indexTemplate.includes('Changelog (v1.121.0):') || indexTemplate.includes('Changelog (v1.121.1):') || indexTemplate.includes('Changelog (v1.121.2):'), 'index_template.html missing Changelog (v1.120.0)');
-    assert.ok(indexHtml.includes('Changelog (v1.120.0):') || indexHtml.includes('Changelog (v1.121.0):') || indexHtml.includes('Changelog (v1.121.1):') || indexHtml.includes('Changelog (v1.121.2):'), 'index.html missing Changelog (v1.120.0)');
+    assert.ok(indexTemplate.includes('Version 1.120.0') || indexTemplate.includes('Version 1.120.1') || indexTemplate.includes('Version 1.121.0') || indexTemplate.includes('Version 1.121.1') || indexTemplate.includes('Version 1.121.2') || indexTemplate.includes('Version 1.122.0'), 'index_template.html missing Version 1.120.0/1/2/122');
+    assert.ok(indexHtml.includes('Version 1.120.0') || indexHtml.includes('Version 1.120.1') || indexHtml.includes('Version 1.121.0') || indexHtml.includes('Version 1.121.1') || indexHtml.includes('Version 1.121.2') || indexHtml.includes('Version 1.122.0'), 'index.html missing Version 1.120.0/1/2/122');
+    assert.ok(indexTemplate.includes('v1.120.0') || indexTemplate.includes('v1.120.1') || indexTemplate.includes('v1.121.0') || indexTemplate.includes('v1.121.1') || indexTemplate.includes('v1.121.2') || indexTemplate.includes('v1.122.0'), 'index_template.html missing v1.120.0/1/2/122 badge');
+    assert.ok(indexHtml.includes('v1.120.0') || indexHtml.includes('v1.120.1') || indexHtml.includes('v1.121.0') || indexHtml.includes('v1.121.1') || indexHtml.includes('v1.121.2') || indexHtml.includes('v1.122.0'), 'index.html missing v1.120.0/1/2/122 badge');
+    assert.ok(indexTemplate.includes('Changelog (v1.120.0):') || indexTemplate.includes('Changelog (v1.121.0):') || indexTemplate.includes('Changelog (v1.121.1):') || indexTemplate.includes('Changelog (v1.121.2):') || indexTemplate.includes('Changelog (v1.122.0):'), 'index_template.html missing Changelog');
+    assert.ok(indexHtml.includes('Changelog (v1.120.0):') || indexHtml.includes('Changelog (v1.121.0):') || indexHtml.includes('Changelog (v1.121.1):') || indexHtml.includes('Changelog (v1.121.2):') || indexHtml.includes('Changelog (v1.122.0):'), 'index.html missing Changelog');
   });
 
   test('DOM Architecture: Wireframe controls exist in templates', () => {
@@ -20840,12 +20840,12 @@ describe('3D FPV Walkthrough & Playback Suite (v1.120.1)', () => {
 
     assert.ok(semverGte(pkg.version, '1.120.1'), 'package.json version should be >= 1.120.1');
     assert.ok(changelog.includes('## [1.120.1] - 2026-09-24'));
-    assert.ok(tpl.includes('v1.120.1') || tpl.includes('v1.121.0') || tpl.includes('v1.121.1') || tpl.includes('v1.121.2'));
-    assert.ok(tpl.includes('Version 1.120.1') || tpl.includes('Version 1.121.0') || tpl.includes('Version 1.121.1') || tpl.includes('Version 1.121.2'));
-    assert.ok(tpl.includes('Changelog (v1.120.1):') || tpl.includes('Changelog (v1.121.0):') || tpl.includes('Changelog (v1.121.1):') || tpl.includes('Changelog (v1.121.2):'));
-    assert.ok(html.includes('v1.120.1') || html.includes('v1.121.0') || html.includes('v1.121.1') || html.includes('v1.121.2'));
-    assert.ok(html.includes('Version 1.120.1') || html.includes('Version 1.121.0') || html.includes('Version 1.121.1') || html.includes('Version 1.121.2'));
-    assert.ok(html.includes('Changelog (v1.120.1):') || html.includes('Changelog (v1.121.0):') || html.includes('Changelog (v1.121.1):') || html.includes('Changelog (v1.121.2):'));
+    assert.ok(tpl.includes('v1.120.1') || tpl.includes('v1.121.0') || tpl.includes('v1.121.1') || tpl.includes('v1.121.2') || tpl.includes('v1.122.0'));
+    assert.ok(tpl.includes('Version 1.120.1') || tpl.includes('Version 1.121.0') || tpl.includes('Version 1.121.1') || tpl.includes('Version 1.121.2') || tpl.includes('Version 1.122.0'));
+    assert.ok(tpl.includes('Changelog (v1.120.1):') || tpl.includes('Changelog (v1.121.0):') || tpl.includes('Changelog (v1.121.1):') || tpl.includes('Changelog (v1.121.2):') || tpl.includes('Changelog (v1.122.0):'));
+    assert.ok(html.includes('v1.120.1') || html.includes('v1.121.0') || html.includes('v1.121.1') || html.includes('v1.121.2') || html.includes('v1.122.0'));
+    assert.ok(html.includes('Version 1.120.1') || html.includes('Version 1.121.0') || html.includes('Version 1.121.1') || html.includes('Version 1.121.2') || html.includes('Version 1.122.0'));
+    assert.ok(html.includes('Changelog (v1.120.1):') || html.includes('Changelog (v1.121.0):') || html.includes('Changelog (v1.121.1):') || html.includes('Changelog (v1.121.2):') || html.includes('Changelog (v1.122.0):'));
   });
 
   test('Three-Tier FPV helpers resolve speed, hover time, and camera action cleanly', () => {
@@ -20941,12 +20941,12 @@ describe('3D Cinematic Movie Mode & FPV Flight Simulation Suite (v1.121.0)', () 
 
     assert.ok(semverGte(pkg.version, '1.121.0'), 'package.json version should be >= 1.121.0');
     assert.ok(changelog.includes('## [1.121.0] - 2026-09-24'));
-    assert.ok(tpl.includes('v1.121.0') || tpl.includes('v1.121.1') || tpl.includes('v1.121.2'));
-    assert.ok(tpl.includes('Version 1.121.0') || tpl.includes('Version 1.121.1') || tpl.includes('Version 1.121.2'));
-    assert.ok(tpl.includes('Changelog (v1.121.0):') || tpl.includes('Changelog (v1.121.1):') || tpl.includes('Changelog (v1.121.2):'));
-    assert.ok(html.includes('v1.121.0') || html.includes('v1.121.1') || html.includes('v1.121.2'));
-    assert.ok(html.includes('Version 1.121.0') || html.includes('Version 1.121.1') || html.includes('Version 1.121.2'));
-    assert.ok(html.includes('Changelog (v1.121.0):') || html.includes('Changelog (v1.121.1):') || html.includes('Changelog (v1.121.2):'));
+    assert.ok(tpl.includes('v1.121.0') || tpl.includes('v1.121.1') || tpl.includes('v1.121.2') || tpl.includes('v1.122.0'));
+    assert.ok(tpl.includes('Version 1.121.0') || tpl.includes('Version 1.121.1') || tpl.includes('Version 1.121.2') || tpl.includes('Version 1.122.0'));
+    assert.ok(tpl.includes('Changelog (v1.121.0):') || tpl.includes('Changelog (v1.121.1):') || tpl.includes('Changelog (v1.121.2):') || tpl.includes('Changelog (v1.122.0):'));
+    assert.ok(html.includes('v1.121.0') || html.includes('v1.121.1') || html.includes('v1.121.2') || html.includes('v1.122.0'));
+    assert.ok(html.includes('Version 1.121.0') || html.includes('Version 1.121.1') || html.includes('Version 1.121.2') || html.includes('Version 1.122.0'));
+    assert.ok(html.includes('Changelog (v1.121.0):') || html.includes('Changelog (v1.121.1):') || html.includes('Changelog (v1.121.2):') || html.includes('Changelog (v1.122.0):'));
     assert.ok(tpl.includes('id="fpv-btn-cam-mode"'));
     assert.ok(html.includes('id="fpv-btn-cam-mode"'));
     assert.ok(tpl.includes('id="fpv-center-reticle"'));
@@ -21120,12 +21120,12 @@ describe('Streamlined 360° Photo Sphere Layer Dynamics Suite (v1.121.1)', () =>
 
     assert.ok(semverGte(pkg.version, '1.121.1'), 'package.json version should be >= 1.121.1');
     assert.ok(changelog.includes('## [1.121.1] - 2026-09-24'));
-    assert.ok(tpl.includes('v1.121.1') || tpl.includes('v1.121.2'));
-    assert.ok(tpl.includes('Version 1.121.1') || tpl.includes('Version 1.121.2'));
-    assert.ok(tpl.includes('Changelog (v1.121.1):') || tpl.includes('Changelog (v1.121.2):'));
-    assert.ok(html.includes('v1.121.1') || html.includes('v1.121.2'));
-    assert.ok(html.includes('Version 1.121.1') || html.includes('Version 1.121.2'));
-    assert.ok(html.includes('Changelog (v1.121.1):') || html.includes('Changelog (v1.121.2):'));
+    assert.ok(tpl.includes('v1.121.1') || tpl.includes('v1.121.2') || tpl.includes('v1.122.0'));
+    assert.ok(tpl.includes('Version 1.121.1') || tpl.includes('Version 1.121.2') || tpl.includes('Version 1.122.0'));
+    assert.ok(tpl.includes('Changelog (v1.121.1):') || tpl.includes('Changelog (v1.121.2):') || tpl.includes('Changelog (v1.122.0):'));
+    assert.ok(html.includes('v1.121.1') || html.includes('v1.121.2') || html.includes('v1.122.0'));
+    assert.ok(html.includes('Version 1.121.1') || html.includes('Version 1.121.2') || html.includes('Version 1.122.0'));
+    assert.ok(html.includes('Changelog (v1.121.1):') || html.includes('Changelog (v1.121.2):') || html.includes('Changelog (v1.122.0):'));
   });
 
   test('togglePatternParameters conceals layerCardModes for photo-sphere and restores for other patterns', () => {
@@ -21251,13 +21251,13 @@ describe('Flight 13 Inspection Photos & Resilient Companion Manifest Recovery (v
     const indexTemplate = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
     const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
 
-    assert.strictEqual(pkg, '1.121.2', 'package.json must be 1.121.2');
+    assert.ok(semverGte(pkg, '1.121.2'), 'package.json must be >= 1.121.2');
     assert.ok(cl.includes('## [1.121.2] - 2026-09-24'), 'CHANGELOG.md missing 1.121.2 entry');
-    assert.ok(indexTemplate.includes('v1.121.2</span>'), 'index_template.html missing header badge v1.121.2');
-    assert.ok(indexTemplate.includes('Version 1.121.2</span>'), 'index_template.html missing version tag 1.121.2');
+    assert.ok(indexTemplate.includes('v1.121.2</span>') || indexTemplate.includes('v1.122.0</span>'), 'index_template.html missing header badge');
+    assert.ok(indexTemplate.includes('Version 1.121.2</span>') || indexTemplate.includes('Version 1.122.0</span>'), 'index_template.html missing version tag');
     assert.ok(indexTemplate.includes('Changelog (v1.121.2):'), 'index_template.html missing Changelog (v1.121.2)');
-    assert.ok(indexHtml.includes('v1.121.2</span>'), 'index.html missing header badge v1.121.2');
-    assert.ok(indexHtml.includes('Version 1.121.2</span>'), 'index.html missing version tag 1.121.2');
+    assert.ok(indexHtml.includes('v1.121.2</span>') || indexHtml.includes('v1.122.0</span>'), 'index.html missing header badge');
+    assert.ok(indexHtml.includes('Version 1.121.2</span>') || indexHtml.includes('Version 1.122.0</span>'), 'index.html missing version tag');
     assert.ok(indexHtml.includes('Changelog (v1.121.2):'), 'index.html missing Changelog (v1.121.2)');
   });
 
@@ -21349,3 +21349,275 @@ describe('Flight 13 Inspection Photos & Resilient Companion Manifest Recovery (v
     }
   });
 });
+
+describe('3D Wireframe Package Bundling & Three.js Editor Import Suite (v1.122.0)', () => {
+  test('Version 1.122.0 is consistent across package.json, changelog, index_template.html, and index.html', () => {
+    const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
+    const tpl = fs.readFileSync('index_template.html', 'utf8');
+    const html = fs.readFileSync('index.html', 'utf8');
+
+    assert.strictEqual(pkg.version, '1.122.0', 'package.json version should be 1.122.0');
+    assert.ok(changelog.includes('## [1.122.0] - 2026-09-24'), 'CHANGELOG.md missing v1.122.0 header');
+    assert.ok(tpl.includes('v1.122.0'), 'index_template.html missing v1.122.0 badge');
+    assert.ok(tpl.includes('Version 1.122.0'), 'index_template.html missing Version 1.122.0');
+    assert.ok(tpl.includes('Changelog (v1.122.0):'), 'index_template.html missing Changelog (v1.122.0)');
+    assert.ok(html.includes('v1.122.0'), 'index.html missing v1.122.0 badge');
+    assert.ok(html.includes('Version 1.122.0'), 'index.html missing Version 1.122.0');
+    assert.ok(html.includes('Changelog (v1.122.0):'), 'index.html missing Changelog (v1.122.0)');
+  });
+
+  test('DOM Architecture: 3D Wireframe Toolkit contains Save to Package and Three.js buttons', () => {
+    ['index_template.html', 'index.html'].forEach(src => {
+      const content = fs.readFileSync(src, 'utf8');
+      assert.ok(content.includes('id="diag-wireframe-save-btn"'), `${src} missing #diag-wireframe-save-btn`);
+      assert.ok(content.includes('id="diag-wireframe-threejs-btn"'), `${src} missing #diag-wireframe-threejs-btn`);
+    });
+
+    const inspTpl = fs.readFileSync('tools/companion/inspection_template.html', 'utf8');
+    assert.ok(inspTpl.includes('id="badge-wireframe"'), 'inspection_template.html missing #badge-wireframe');
+    assert.ok(inspTpl.includes('id="card-wireframe"'), 'inspection_template.html missing #card-wireframe');
+    assert.ok(inspTpl.includes('wireframe.obj'), 'inspection_template.html missing wireframe.obj download link');
+    assert.ok(inspTpl.includes('wireframe_threejs.json'), 'inspection_template.html missing wireframe_threejs.json link');
+    assert.ok(inspTpl.includes('threejs.org/editor'), 'inspection_template.html missing threejs.org/editor link');
+  });
+
+  test('wireframeToThreeJson produces Three.js Object format compatible with threejs.org/editor', () => {
+    const { wireframeToThreeJson } = require('./tools/companion/wireframe_engine.js');
+    assert.ok(typeof wireframeToThreeJson === 'function', 'wireframeToThreeJson must be exported');
+
+    const sampleLines = [
+      [0, 5, 0, 10, 5, 0],
+      [10, 5, 0, 10, 5, 10]
+    ];
+    const threeObj = wireframeToThreeJson(sampleLines, { elevationOffset: 2.5 });
+
+    assert.ok(threeObj && threeObj.metadata, 'Must have metadata');
+    assert.strictEqual(threeObj.metadata.type, 'Object');
+    assert.ok(Array.isArray(threeObj.geometries) && threeObj.geometries.length === 1);
+    assert.strictEqual(threeObj.geometries[0].type, 'BufferGeometry');
+    assert.strictEqual(threeObj.object.type, 'LineSegments');
+    assert.strictEqual(threeObj.materials[0].type, 'LineBasicMaterial');
+
+    // Check positions with elevation offset (5 + 2.5 = 7.5)
+    const pos = threeObj.geometries[0].data.attributes.position.array;
+    assert.strictEqual(pos.length, 12, '2 lines * 2 vertices * 3 coords = 12');
+    assert.strictEqual(pos[0], 0);
+    assert.strictEqual(pos[1], 7.5, 'Y1 must include elevationOffset 2.5');
+    assert.strictEqual(pos[2], 0);
+    assert.strictEqual(pos[3], 10);
+    assert.strictEqual(pos[4], 7.5, 'Y2 must include elevationOffset 2.5');
+    assert.strictEqual(pos[5], 0);
+  });
+
+  test('packageInspectionArchive verifies wireframe assets and generates wireframe.obj & wireframe_threejs.json', () => {
+    const companionServer = require('./tools/companion/server.js');
+    const ARCHIVE_DIR = path.resolve(__dirname, 'scratch/mission_archives');
+    const testUuid = 'test_wf_package_' + Date.now();
+    const testDir = path.join(ARCHIVE_DIR, testUuid);
+
+    try {
+      if (!fs.existsSync(ARCHIVE_DIR)) fs.mkdirSync(ARCHIVE_DIR, { recursive: true });
+      fs.mkdirSync(testDir, { recursive: true });
+
+      // Write mock wireframe.json and manifest
+      const mockWf = {
+        success: true,
+        count: 2,
+        lines: [
+          [0, 0, 0, 5, 0, 0],
+          [5, 0, 0, 5, 0, 5]
+        ]
+      };
+      fs.writeFileSync(path.join(testDir, 'wireframe.json'), JSON.stringify(mockWf, null, 2), 'utf8');
+      fs.writeFileSync(path.join(testDir, 'inspection_manifest.json'), JSON.stringify({ missionUuid: testUuid, photos: [] }), 'utf8');
+
+      // Call packageInspectionArchive
+      const pkgRes = companionServer.packageInspectionArchive(testUuid);
+      assert.strictEqual(pkgRes.success, true, 'Packaging must succeed');
+
+      // Verify wireframe.obj was automatically generated in the package directory
+      assert.ok(fs.existsSync(path.join(testDir, 'wireframe.obj')), 'wireframe.obj must be generated before packaging');
+      const objContent = fs.readFileSync(path.join(testDir, 'wireframe.obj'), 'utf8');
+      assert.ok(objContent.includes('v 0 0 0'), 'OBJ must contain vertices');
+
+      // Verify wireframe_threejs.json was generated
+      assert.ok(fs.existsSync(path.join(testDir, 'wireframe_threejs.json')), 'wireframe_threejs.json must be generated');
+      const threeContent = JSON.parse(fs.readFileSync(path.join(testDir, 'wireframe_threejs.json'), 'utf8'));
+      assert.strictEqual(threeContent.metadata.type, 'Object');
+
+      // Verify inspection_manifest.json was updated with wireframe
+      const updatedManifest = JSON.parse(fs.readFileSync(path.join(testDir, 'inspection_manifest.json'), 'utf8'));
+      assert.ok(updatedManifest.wireframe && updatedManifest.wireframe.count === 2, 'Manifest must include wireframe');
+    } finally {
+      try {
+        if (fs.existsSync(path.join(testDir, 'wireframe.json'))) fs.unlinkSync(path.join(testDir, 'wireframe.json'));
+        if (fs.existsSync(path.join(testDir, 'wireframe.obj'))) fs.unlinkSync(path.join(testDir, 'wireframe.obj'));
+        if (fs.existsSync(path.join(testDir, 'wireframe_threejs.json'))) fs.unlinkSync(path.join(testDir, 'wireframe_threejs.json'));
+        if (fs.existsSync(path.join(testDir, 'inspection_manifest.json'))) fs.unlinkSync(path.join(testDir, 'inspection_manifest.json'));
+        if (fs.existsSync(path.join(testDir, 'inspection_report.html'))) fs.unlinkSync(path.join(testDir, 'inspection_report.html'));
+        if (fs.existsSync(path.join(ARCHIVE_DIR, `${testUuid}_inspection_archive.zip`))) fs.unlinkSync(path.join(ARCHIVE_DIR, `${testUuid}_inspection_archive.zip`));
+        fs.rmdirSync(testDir);
+      } catch (_) {}
+    }
+  });
+
+  test('generateKMZBlob includes wireframe.json, wireframe.obj, and wireframe_threejs.json when wireframeData exists', async () => {
+    const origWfData = FlightDiagnostics.wireframeData;
+    const origElev = FlightDiagnostics.wireframeElevationOffset;
+    const origJSZip = global.JSZip;
+
+    const capturedFiles = {};
+    global.JSZip = class MockJSZip {
+      file(name, content) {
+        capturedFiles[name] = content;
+        return this;
+      }
+      generateAsync() {
+        return Promise.resolve({ size: 1024 });
+      }
+    };
+
+    try {
+      FlightDiagnostics.wireframeData = {
+        success: true,
+        count: 2,
+        lines: [
+          [1, 2, 3, 4, 5, 6],
+          [4, 5, 6, 7, 8, 9]
+        ]
+      };
+      FlightDiagnostics.wireframeElevationOffset = 1.0;
+
+      const dummyWps = [{ lat: 42.36, lon: -71.05, alt: 50 }];
+      const res = await generateKMZBlob(dummyWps);
+      assert.ok(res, 'KMZ blob must be generated');
+
+      assert.ok(capturedFiles['wpmz/template.kml'], 'Must include template.kml');
+      assert.ok(capturedFiles['wpmz/waylines.wpml'], 'Must include waylines.wpml');
+      assert.ok(capturedFiles['wpmz/res/wireframe.json'], 'Must include wpmz/res/wireframe.json');
+      assert.ok(capturedFiles['wpmz/res/wireframe.obj'], 'Must include wpmz/res/wireframe.obj');
+      assert.ok(capturedFiles['wpmz/res/wireframe_threejs.json'], 'Must include wpmz/res/wireframe_threejs.json');
+
+      assert.ok(capturedFiles['wpmz/res/wireframe.obj'].includes('v 1 3 3'), 'OBJ in KMZ must reflect Y + elevationOffset (2 + 1 = 3)');
+      const threeJson = JSON.parse(capturedFiles['wpmz/res/wireframe_threejs.json']);
+      assert.strictEqual(threeJson.metadata.type, 'Object');
+      assert.strictEqual(threeJson.metadata.source, 'threejs.org compatible');
+    } finally {
+      global.JSZip = origJSZip;
+      FlightDiagnostics.wireframeData = origWfData;
+      FlightDiagnostics.wireframeElevationOffset = origElev;
+    }
+  });
+
+  test('FlightDiagnostics exportWireframe supports threejs format and saveWireframeToPackage exists', () => {
+    assert.ok(typeof FlightDiagnostics.exportWireframe === 'function');
+    assert.ok(typeof FlightDiagnostics.saveWireframeToPackage === 'function');
+  });
+
+  test('extractWireframeJsFallback generates volumetric 3D architectural model with vertical walls, eaves, and elevated roof ridge (not flat on ground)', () => {
+    const { extractWireframeJsFallback } = require('./tools/companion/wireframe_engine.js');
+    const mockPayload = {
+      photos: [
+        {
+          filePath: 'mock1.jpg',
+          telemetry: { worldX: 10, worldY: 30, worldZ: 20, alt: 30, yaw: 45, pitch: -55, hfov: 73.7, vfov: 53.1 }
+        },
+        {
+          filePath: 'mock2.jpg',
+          telemetry: { worldX: -10, worldY: 30, worldZ: -20, alt: 30, yaw: 225, pitch: -55, hfov: 73.7, vfov: 53.1 }
+        }
+      ],
+      options: { groundAltitude: 0.0 }
+    };
+
+    const res = extractWireframeJsFallback(mockPayload);
+    assert.strictEqual(res.success, true, 'Extraction must succeed');
+    assert.ok(Array.isArray(res.lines) && res.lines.length >= 10, 'Must produce architectural wireframe lines');
+    assert.ok(res.wallHeight > 0, 'Wall height must be positive');
+    assert.ok(res.roofHeight > 0, 'Roof height must be positive');
+
+    // Verify lines contain true 3D vertical elevation (NOT all Y=0)
+    let hasVerticalColumns = false;
+    let hasElevatedRoof = false;
+    let hasGroundLines = false;
+
+    res.lines.forEach(l => {
+      const [x1, y1, z1, x2, y2, z2] = l;
+      // Vertical line: delta X and delta Z near 0, delta Y > 0
+      if (Math.hypot(x2 - x1, z2 - z1) < 0.1 && Math.abs(y2 - y1) > 2.0) {
+        hasVerticalColumns = true;
+      }
+      // Roof line: elevated above eaves
+      if (y1 >= res.wallHeight || y2 >= res.wallHeight) {
+        hasElevatedRoof = true;
+      }
+      // Ground foundation
+      if (Math.abs(y1) < 0.1 && Math.abs(y2) < 0.1) {
+        hasGroundLines = true;
+      }
+    });
+
+    assert.ok(hasVerticalColumns, 'Wireframe must contain vertical wall corner columns spanning Y=groundY to Y=eaves');
+    assert.ok(hasElevatedRoof, 'Wireframe must contain elevated roof ridge/rafters with Y >= wallHeight');
+    assert.ok(hasGroundLines, 'Wireframe must contain ground foundation lines at Y=groundAltitude');
+  });
+
+  test('wireframeToThreeJson packages comprehensive Digital Twin Scene Graph with flight trajectory and camera frustum pyramids', () => {
+    const { wireframeToThreeJson } = require('./tools/companion/wireframe_engine.js');
+    const sampleLines = [
+      [0, 0, 0, 10, 0, 0],
+      [0, 0, 0, 0, 8, 0],
+      [0, 8, 0, 5, 12, 0]
+    ];
+    const dtOptions = {
+      elevationOffset: 1.0,
+      flightPath: [
+        [0, 25, 0],
+        [10, 25, 10],
+        [20, 25, 0]
+      ],
+      photos: [
+        { x: 0, y: 25, z: 0, yaw: 0, pitch: -60, hfov: 73.7, vfov: 53.1 },
+        { x: 10, y: 25, z: 10, yaw: 90, pitch: -60, hfov: 73.7, vfov: 53.1 }
+      ],
+      boundary: [
+        [-5, 0, -5],
+        [15, 0, -5],
+        [15, 0, 15],
+        [-5, 0, 15]
+      ]
+    };
+
+    const threeObj = wireframeToThreeJson(sampleLines, dtOptions);
+    assert.strictEqual(threeObj.metadata.type, 'Object');
+    assert.strictEqual(threeObj.object.type, 'Group');
+    assert.strictEqual(threeObj.object.name, 'Aalaapi_Inspection_Digital_Twin');
+
+    const childNames = threeObj.object.children.map(c => c.name);
+    assert.ok(childNames.includes('Building_3D_Wireframe'), 'Group must contain Building_3D_Wireframe child');
+    assert.ok(childNames.includes('Drone_Flight_Trajectory'), 'Group must contain Drone_Flight_Trajectory child');
+    assert.ok(childNames.includes('Camera_Photo_Frustums'), 'Group must contain Camera_Photo_Frustums child');
+    assert.ok(childNames.includes('Mission_Boundary'), 'Group must contain Mission_Boundary child');
+
+    // Verify materials
+    assert.ok(threeObj.materials.length >= 4, 'Must have materials for all scene elements');
+    // Verify geometries
+    assert.ok(threeObj.geometries.length >= 4, 'Must have geometries for all scene elements');
+  });
+
+  test('deduplicateLines removes duplicate and reversed line segments within spatial tolerance', () => {
+    const { deduplicateLines } = require('./tools/companion/wireframe_engine.js');
+    const input = [
+      [0, 0, 0, 10, 0, 0],
+      [0.05, 0, 0, 9.98, 0, 0], // Duplicate within 0.2m tolerance
+      [10, 0, 0, 0, 0, 0],       // Exact reverse
+      [0, 0, 0, 0, 10, 0],       // Different vertical line
+      [0, 0, 0, 0.01, 0, 0]      // Zero-length line (< 0.05m)
+    ];
+
+    const deduped = deduplicateLines(input, 0.2);
+    assert.strictEqual(deduped.length, 2, 'Should deduplicate down to 2 unique significant lines');
+  });
+});
+
