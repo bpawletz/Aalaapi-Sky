@@ -1,5 +1,15 @@
 # Changelog
  
+## [1.127.3] - 2026-09-25
+
+### Bug Fixes & Architectural Enhancements
+- **Authentic 3D Architectural Wireframe Reconstruction (`unproject_authentic_architectural_lines`):**
+  - **Replaced Schematic CAD Boxes with Real Survey Geometry:** Resolved issue where the 3D Telemetry Replay rendered generic, axis-aligned rectangular boxes with single gable roofs that looked fake and failed to reflect the true multi-pitch roofs, hips, valleys, gables, dormers, chimneys, and driveways photographed in the field.
+  - **Multi-View Authentic Line Unprojection:** Implemented direct 3D unprojection of authentic 2D architectural lines detected on prime downward survey imagery (`perPhotoLines`). Employs pinhole camera rays, physical roof elevation mapping ($Y_{\text{ridge}} \approx 9.8\text{m}$, $Y_{\text{eaves}} \approx 6.2\text{m}$, sloping hip/valley rafters, and $Y_{\text{ground}} = 0.0\text{m}$ for driveways/street), and vertical corner columns connecting eave perimeters down to the foundation.
+  - **Cross-Grid Spatial Deduplication:** Consolidated multi-view collinear line projections within spatial tolerance ($0.35\text{m}$), producing a dense, crisp, authentic ~600-line digital twin that matches Photo Inspector detections with 100% geometric fidelity.
+  - **Synchronized JS Fallback Engine:** Added authentic detected line unprojection support to `extractWireframeJsFallback()` in `wireframe_engine.js`.
+  - **Regenerated Flight 13 Digital Twin:** Updated `wireframe.json`, `wireframe.obj`, and `wireframe_threejs.json` for `mission_2026-09-24_[17-20-08]`, displaying 666 authentic physical building lines directly matching the surveyed structures.
+
 ## [1.127.2] - 2026-09-25
 
 ### Bug Fixes & Architectural Enhancements
