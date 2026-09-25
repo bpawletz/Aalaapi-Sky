@@ -5812,6 +5812,95 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.deepStrictEqual(res.pitches, [-15, -45, -75, -90], 'Pitches should include all 4 rows');
   });
 
+  test('E2E: 360 Photo Sphere selective ring checkboxes, presets, and dynamic badge/legend (v1.125.1)', async () => {
+    const res = await page.evaluate(() => {
+      // 1. Activate photo-sphere pattern
+      const card = document.querySelector('.pattern-card[data-value="photo-sphere"]');
+      const gridTypeSelect = document.getElementById('grid-type');
+      if (card) {
+        card.click();
+      } else if (gridTypeSelect) {
+        gridTypeSelect.value = 'photo-sphere';
+        gridTypeSelect.dispatchEvent(new Event('change'));
+      }
+
+      const badge = document.getElementById('photo-sphere-shot-count-badge');
+      const btnFull = document.getElementById('photo-sphere-preset-full');
+      const btnPano = document.getElementById('photo-sphere-preset-pano');
+      const btnOblique = document.getElementById('photo-sphere-preset-oblique');
+      const r1 = document.getElementById('photo-sphere-ring-1');
+      const r2 = document.getElementById('photo-sphere-ring-2');
+      const r3 = document.getElementById('photo-sphere-ring-3');
+      const rNadir = document.getElementById('photo-sphere-ring-nadir');
+
+      if (!badge || !btnFull || !btnPano || !btnOblique || !r1 || !r2 || !r3 || !rNadir) {
+        return { success: false, error: '360 Pano selective ring controls missing' };
+      }
+
+      // Initial state: full sphere 37 shots
+      const initialBadge = badge.textContent;
+      const initialWpCount = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : []).length;
+
+      // Click Horizon Pano preset (Row 1 only -> 12 shots)
+      btnPano.click();
+      const panoBadge = badge.textContent;
+      const panoWpCount = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : []).length;
+      const panoR1Checked = r1.checked;
+      const panoR2Checked = r2.checked;
+
+      // Click Wide Oblique preset (Rows 1 & 2 -> 24 shots)
+      btnOblique.click();
+      const obliqueBadge = badge.textContent;
+      const obliqueWpCount = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : []).length;
+      const obliqueR1Checked = r1.checked;
+      const obliqueR2Checked = r2.checked;
+      const obliqueR3Checked = r3.checked;
+
+      // Click Full Sphere preset -> 37 shots
+      btnFull.click();
+      const fullBadge = badge.textContent;
+      const fullWpCount = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : []).length;
+
+      // Check legend title
+      const legendHeader = document.querySelector('.map-legend .legend-header h4');
+      const legendTitle = legendHeader ? legendHeader.textContent : '';
+
+      return {
+        success: true,
+        initialBadge,
+        initialWpCount,
+        panoBadge,
+        panoWpCount,
+        panoR1Checked,
+        panoR2Checked,
+        obliqueBadge,
+        obliqueWpCount,
+        obliqueR1Checked,
+        obliqueR2Checked,
+        obliqueR3Checked,
+        fullBadge,
+        fullWpCount,
+        legendTitle
+      };
+    });
+
+    assert.strictEqual(res.success, true, res.error || 'Evaluation succeeded');
+    assert.strictEqual(res.initialBadge, '37 Shots Total');
+    assert.strictEqual(res.initialWpCount, 37);
+    assert.strictEqual(res.panoBadge, '12 Shots Total');
+    assert.strictEqual(res.panoWpCount, 12);
+    assert.strictEqual(res.panoR1Checked, true);
+    assert.strictEqual(res.panoR2Checked, false);
+    assert.strictEqual(res.obliqueBadge, '24 Shots Total');
+    assert.strictEqual(res.obliqueWpCount, 24);
+    assert.strictEqual(res.obliqueR1Checked, true);
+    assert.strictEqual(res.obliqueR2Checked, true);
+    assert.strictEqual(res.obliqueR3Checked, false);
+    assert.strictEqual(res.fullBadge, '37 Shots Total');
+    assert.strictEqual(res.fullWpCount, 37);
+    assert.strictEqual(res.legendTitle, '360° Pano Rings');
+  });
+
   test('E2E: Interactive 3D Wireframe Toolkit and HUD controls (v1.120.0)', async () => {
     const res = await page.evaluate(() => {
       // 1. Check DOM elements exist

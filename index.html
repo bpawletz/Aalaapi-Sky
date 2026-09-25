@@ -5419,7 +5419,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.125.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.126.1</span></h1>
 
 
 
@@ -6146,7 +6146,7 @@ html, body {
             </div>
           </div>
 
-          <!-- 360 Photo Sphere Sequence Controls & Info Card (v1.119.0) -->
+          <!-- 360 Photo Sphere Sequence Controls & Info Card (v1.125.1) -->
           <div id="photo-sphere-container" class="control-group hidden" style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 12px; margin-top: 10px; margin-bottom: 10px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
@@ -6158,29 +6158,52 @@ html, body {
                 </svg>
                 360° Photo Sphere Sequence
               </strong>
-              <span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; font-size: 0.68rem; padding: 2px 7px; border-radius: 4px; font-weight: 700;">37 Shots Total</span>
+              <span id="photo-sphere-shot-count-badge" class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; font-size: 0.68rem; padding: 2px 7px; border-radius: 4px; font-weight: 700;">37 Shots Total</span>
             </div>
             <div style="font-size: 0.74rem; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4;">
-              Executes a static 3D coordinate lock panorama sequence. Drone systematically rotates yaw and pitches the camera gimbal downward to achieve ~30% overlap for equirectangular stitching.
+              Executes a static 3D coordinate lock panorama sequence. Enable or disable individual elevation rings below, or use a quick preset for cylindrical horizon panos or full spheres.
             </div>
-            <!-- Shot Breakdown Grid -->
+
+            <!-- Quick Presets -->
+            <div style="display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap;">
+              <button type="button" id="photo-sphere-preset-full" class="btn btn-secondary btn-sm" style="flex: 1; min-width: 90px; padding: 4px 6px; font-size: 0.72rem; text-align: center;" title="Row 1, 2, 3 + Nadir (37 shots)">Full Sphere (37)</button>
+              <button type="button" id="photo-sphere-preset-pano" class="btn btn-secondary btn-sm" style="flex: 1; min-width: 90px; padding: 4px 6px; font-size: 0.72rem; text-align: center;" title="Row 1 only: 360° horizon cylinder (12 shots)">Horizon Pano (12)</button>
+              <button type="button" id="photo-sphere-preset-oblique" class="btn btn-secondary btn-sm" style="flex: 1; min-width: 90px; padding: 4px 6px; font-size: 0.72rem; text-align: center;" title="Rows 1 & 2: Wide oblique panorama (24 shots)">Wide Oblique (24)</button>
+            </div>
+
+            <!-- Shot Breakdown Grid & Layer Toggles -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; font-size: 0.72rem;">
-              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 6px 8px;">
-                <div style="color: #38bdf8; font-weight: 700;">Row 1: Pitch -15°</div>
-                <div style="color: var(--text-muted);">12 shots (every 30° yaw)</div>
-              </div>
-              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 6px 8px;">
-                <div style="color: #06b6d4; font-weight: 700;">Row 2: Pitch -45°</div>
-                <div style="color: var(--text-muted);">12 shots (every 30° yaw)</div>
-              </div>
-              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 6px 8px;">
-                <div style="color: #f59e0b; font-weight: 700;">Row 3: Pitch -75°</div>
-                <div style="color: var(--text-muted);">12 shots (every 30° yaw)</div>
-              </div>
-              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 6px 8px;">
-                <div style="color: #10b981; font-weight: 700;">Nadir: Pitch -90°</div>
-                <div style="color: var(--text-muted);">1 ground lock shot</div>
-              </div>
+              <label style="display: flex; align-items: flex-start; gap: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 6px 8px; cursor: pointer; user-select: none;">
+                <input type="checkbox" id="photo-sphere-ring-1" checked style="margin-top: 2px; accent-color: #38bdf8;">
+                <div>
+                  <div style="color: #38bdf8; font-weight: 700;">Row 1: Pitch -15°</div>
+                  <div style="color: var(--text-muted); font-size: 0.70rem;">12 shots (every 30°)</div>
+                </div>
+              </label>
+
+              <label style="display: flex; align-items: flex-start; gap: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 6px 8px; cursor: pointer; user-select: none;">
+                <input type="checkbox" id="photo-sphere-ring-2" checked style="margin-top: 2px; accent-color: #06b6d4;">
+                <div>
+                  <div style="color: #06b6d4; font-weight: 700;">Row 2: Pitch -45°</div>
+                  <div style="color: var(--text-muted); font-size: 0.70rem;">12 shots (every 30°)</div>
+                </div>
+              </label>
+
+              <label style="display: flex; align-items: flex-start; gap: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 6px 8px; cursor: pointer; user-select: none;">
+                <input type="checkbox" id="photo-sphere-ring-3" checked style="margin-top: 2px; accent-color: #f59e0b;">
+                <div>
+                  <div style="color: #f59e0b; font-weight: 700;">Row 3: Pitch -75°</div>
+                  <div style="color: var(--text-muted); font-size: 0.70rem;">12 shots (every 30°)</div>
+                </div>
+              </label>
+
+              <label style="display: flex; align-items: flex-start; gap: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 6px 8px; cursor: pointer; user-select: none;">
+                <input type="checkbox" id="photo-sphere-ring-nadir" checked style="margin-top: 2px; accent-color: #10b981;">
+                <div>
+                  <div style="color: #10b981; font-weight: 700;">Nadir: Pitch -90°</div>
+                  <div style="color: var(--text-muted); font-size: 0.70rem;">1 ground lock shot</div>
+                </div>
+              </label>
             </div>
             <!-- Shutter Mode Notice -->
             <div style="display: flex; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 6px; padding: 6px 8px; font-size: 0.72rem; color: #34d399;">
@@ -8039,6 +8062,14 @@ html, body {
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🗺️ Esri World Street Map Base Layer &amp; Localhost OSM Protection (v1.126.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Full-featured <strong>Street Map (Esri)</strong> base layer provides unblocked high-resolution street, highway, and landmark coverage across both local and production environments. When running locally (<code>localhost</code> or <code>file://</code>), OpenStreetMap is gracefully disabled with an explanatory tooltip and auto-rerouted to Esri Street Map, fully preventing 403 &quot;Access blocked&quot; placeholder errors per OSM Tile Usage Policy while ensuring uninterrupted flight planning and 3D FPV ground texture rendering.
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🏗️ 3D Architectural Wireframe Photo Superimposition (v1.125.0)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -8932,7 +8963,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.125.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.126.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -8995,6 +9026,22 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.126.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🌐 Selective 360° Pano Elevation Rings:</strong> Added interactive ring toggles for 360 Photo Sphere (Row 1: -15°, Row 2: -45°, Row 3: -75°, Nadir: -90°) with instant waypoint generation.</li>
+              <li><strong>⚡ Quick Pano Presets:</strong> One-click presets for <code>Full Sphere (37)</code>, <code>Horizon Pano (12)</code> (for cylindrical panoramas), and <code>Wide Oblique (24)</code>.</li>
+              <li><strong>🗺️ Fixed 360° Map Legend:</strong> Resolved bug where 360 Pano fell through to Tower Orbit altitude layers; now accurately displays active pano rings and shooting counts with altitude.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.126.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🗺️ Esri World Street Map Base Layer:</strong> Added <code>Street Map (Esri)</code> as an official base layer option powered by Esri World Street Map tiles with high-detail roads, terrain contours, and landmarks.</li>
+              <li><strong>🛡️ Localhost OSM Disabling &amp; 403 Protection:</strong> OpenStreetMap Street layer is safely disabled on localhost and <code>file://</code> environments with an explanatory tooltip and auto-redirect to Esri Street Map, preventing 403 &quot;Access blocked&quot; placeholder errors.</li>
+              <li><strong>🌐 3D Preview Ground Texture Fallback:</strong> Three.js 3D ground canvas texture automatically routes to Esri Street or Satellite on localhost.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.125.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -16319,6 +16366,7 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     towerGuyWireBuffer: 15,
     towerMovementMode: 'horizontal', // 'horizontal' or 'vertical'
     towerAltitudeOrder: 'max-to-min', // 'max-to-min' or 'min-to-max'
+    photoSphereRings: { ring1: true, ring2: true, ring3: true, nadir: true },
     freeformWaypoints: [],
     freeformPhotos: [],
     roadWaypoints: [],
@@ -16868,6 +16916,22 @@ function saveActiveLayerFromUi() {
   if (towerGuyBuf) layer.towerGuyWireBuffer = parseFloat(towerGuyBuf.value) || 0;
   if (towerMovMode && towerMovMode.value) layer.towerMovementMode = towerMovMode.value;
   if (towerAltOrd && towerAltOrd.value) layer.towerAltitudeOrder = towerAltOrd.value;
+  const psR1 = document.getElementById('photo-sphere-ring-1');
+  const psR2 = document.getElementById('photo-sphere-ring-2');
+  const psR3 = document.getElementById('photo-sphere-ring-3');
+  const psNadir = document.getElementById('photo-sphere-ring-nadir');
+  if (psR1 || psR2 || psR3 || psNadir) {
+    layer.photoSphereRings = {
+      ring1: psR1 ? psR1.checked : true,
+      ring2: psR2 ? psR2.checked : true,
+      ring3: psR3 ? psR3.checked : true,
+      nadir: psNadir ? psNadir.checked : true
+    };
+    if (!layer.photoSphereRings.ring1 && !layer.photoSphereRings.ring2 && !layer.photoSphereRings.ring3 && !layer.photoSphereRings.nadir) {
+      layer.photoSphereRings.ring1 = true;
+      if (psR1) psR1.checked = true;
+    }
+  }
 
   if (globalDetourModeEl && globalDetourModeEl.value) {
     globalExclusionDetourMode = globalDetourModeEl.value;
@@ -17069,6 +17133,20 @@ function syncUiWithActiveLayer() {
         }
       });
     }
+  }
+
+  // Sync 360 Photo Sphere Ring Checkboxes
+  const psRings = layer.photoSphereRings || { ring1: true, ring2: true, ring3: true, nadir: true };
+  const psR1 = document.getElementById('photo-sphere-ring-1');
+  const psR2 = document.getElementById('photo-sphere-ring-2');
+  const psR3 = document.getElementById('photo-sphere-ring-3');
+  const psNadir = document.getElementById('photo-sphere-ring-nadir');
+  if (psR1) psR1.checked = (psRings.ring1 !== false);
+  if (psR2) psR2.checked = (psRings.ring2 !== false);
+  if (psR3) psR3.checked = (psRings.ring3 !== false);
+  if (psNadir) psNadir.checked = (psRings.nadir !== false);
+  if (typeof updatePhotoSphereBadge === 'function') {
+    updatePhotoSphereBadge();
   }
 
   if (typeof syncDisplayValues === 'function') {
@@ -18863,8 +18941,24 @@ function setCameraAspectRatio(ratio, skipUpdate = false) {
   }
 }
 
+// Localhost / offline environment detection utility
+function isLocalhostEnvironment() {
+  if (typeof window === 'undefined' || !window.location) return false;
+  const host = (window.location.hostname || '').toLowerCase();
+  const proto = (window.location.protocol || '').toLowerCase();
+  return (
+    proto === 'file:' ||
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    host === '[::1]' ||
+    host === '0.0.0.0' ||
+    host.endsWith('.local')
+  );
+}
+
 // Standard satellite and street map layers
 let streetLayer;
+let esriStreetLayer;
 let satelliteLayer;
 let topoLayer;
 
@@ -19030,6 +19124,12 @@ function initMap() {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   });
 
+  esriStreetLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 22,
+    maxNativeZoom: 19,
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
+  });
+
   satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
     maxZoom: 22,
     maxNativeZoom: 19,
@@ -19173,10 +19273,14 @@ function initMap() {
     attribution: 'NOAA/NWS Hazards'
   });
 
+  const isLocal = isLocalhostEnvironment();
+  const osmStreetLabel = isLocal ? "Street Map (OSM - Disabled on Localhost)" : "Street Map (OpenStreetMap)";
+
   // Add Layer Control — include only layers that successfully initialized
   const baseMaps = {
     "Satellite View": satelliteLayer,
-    "Street Map": streetLayer,
+    "Street Map (Esri)": esriStreetLayer,
+    [osmStreetLabel]: streetLayer,
     "Topography Map": topoLayer
   };
 
@@ -19280,7 +19384,51 @@ function initMap() {
     RemoteIdRadar.layerGroup = remoteIdAirspaceLayer;
   }
 
-  L.control.layers(baseMaps, overlays, { position: 'topleft' }).addTo(map);
+  const layerControl = L.control.layers(baseMaps, overlays, { position: 'topleft' }).addTo(map);
+
+  // If running on localhost or file://, disable the OpenStreetMap radio button with styled indicator & tooltip
+  if (isLocal) {
+    const applyOsmDisabledStyle = () => {
+      const container = (layerControl && typeof layerControl.getContainer === 'function') ? layerControl.getContainer() : null;
+      if (!container) return;
+      const labels = container.querySelectorAll('.leaflet-control-layers-base label');
+      labels.forEach(lbl => {
+        if (lbl.textContent.includes('Disabled on Localhost') || (lbl.textContent.includes('OSM') && lbl.textContent.includes('Street'))) {
+          const input = lbl.querySelector('input');
+          if (input) {
+            input.disabled = true;
+          }
+          lbl.style.opacity = '0.45';
+          lbl.style.cursor = 'not-allowed';
+          lbl.title = 'OpenStreetMap tiles are disabled on localhost/file:// due to OSM Tile Usage Policy (missing Referer / 403 Access Blocked). Use Street Map (Esri) or Satellite View instead.';
+          const span = lbl.querySelector('span');
+          if (span) {
+            span.style.cursor = 'not-allowed';
+          }
+        }
+      });
+    };
+    if (typeof requestAnimationFrame !== 'undefined') {
+      requestAnimationFrame(applyOsmDisabledStyle);
+    } else {
+      setTimeout(applyOsmDisabledStyle, 0);
+    }
+  }
+
+  // Intercept layer change to prevent activating OSM Street Map on localhost
+  map.on('baselayerchange', function(e) {
+    if (isLocalhostEnvironment() && (e.layer === streetLayer || (e.name && (e.name.includes('OSM') || e.name.includes('OpenStreetMap'))))) {
+      if (typeof showToast === 'function') {
+        showToast('OpenStreetMap tiles are disabled on localhost per OSM policy. Switched to Esri Street Map.', 4000);
+      }
+      if (map.hasLayer(streetLayer)) {
+        map.removeLayer(streetLayer);
+      }
+      if (typeof esriStreetLayer !== 'undefined' && esriStreetLayer) {
+        esriStreetLayer.addTo(map);
+      }
+    }
+  });
 
   // Airspace legend — shown/hidden based on which overlays are active
   initAirspaceLegend();
@@ -21056,6 +21204,69 @@ function initUIEventListeners() {
       saveAllSettingsToLocalStorage();
     });
   }
+
+  // 360 Photo Sphere Ring Controls & Presets (v1.125.1)
+  const setupPhotoSphereRingListeners = () => {
+    const ringIds = [
+      { id: 'photo-sphere-ring-1', prop: 'ring1' },
+      { id: 'photo-sphere-ring-2', prop: 'ring2' },
+      { id: 'photo-sphere-ring-3', prop: 'ring3' },
+      { id: 'photo-sphere-ring-nadir', prop: 'nadir' }
+    ];
+
+    const syncRingsToActiveLayer = () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (!activeLayer) return;
+      if (!activeLayer.photoSphereRings) {
+        activeLayer.photoSphereRings = { ring1: true, ring2: true, ring3: true, nadir: true };
+      }
+      ringIds.forEach(({ id, prop }) => {
+        const el = document.getElementById(id);
+        if (el) activeLayer.photoSphereRings[prop] = el.checked;
+      });
+      // Safety fallback: prevent all rings being disabled
+      const anyChecked = Object.values(activeLayer.photoSphereRings).some(Boolean);
+      if (!anyChecked) {
+        activeLayer.photoSphereRings.ring1 = true;
+        const el1 = document.getElementById('photo-sphere-ring-1');
+        if (el1) el1.checked = true;
+      }
+      if (typeof updatePhotoSphereBadge === 'function') {
+        updatePhotoSphereBadge();
+      }
+      updateGrid();
+      updateMapLegend();
+      saveAllSettingsToLocalStorage();
+    };
+
+    ringIds.forEach(({ id }) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('change', syncRingsToActiveLayer);
+      }
+    });
+
+    const setRings = (r1, r2, r3, rn) => {
+      const el1 = document.getElementById('photo-sphere-ring-1');
+      const el2 = document.getElementById('photo-sphere-ring-2');
+      const el3 = document.getElementById('photo-sphere-ring-3');
+      const elN = document.getElementById('photo-sphere-ring-nadir');
+      if (el1) el1.checked = r1;
+      if (el2) el2.checked = r2;
+      if (el3) el3.checked = r3;
+      if (elN) elN.checked = rn;
+      syncRingsToActiveLayer();
+    };
+
+    const btnFull = document.getElementById('photo-sphere-preset-full');
+    const btnPano = document.getElementById('photo-sphere-preset-pano');
+    const btnOblique = document.getElementById('photo-sphere-preset-oblique');
+
+    if (btnFull) btnFull.addEventListener('click', () => setRings(true, true, true, true));
+    if (btnPano) btnPano.addEventListener('click', () => setRings(true, false, false, false));
+    if (btnOblique) btnOblique.addEventListener('click', () => setRings(true, true, false, false));
+  };
+  setupPhotoSphereRingListeners();
 
   // Handle Camera Model preset change
   const cameraModelEl = document.getElementById('camera-model');
@@ -22857,6 +23068,9 @@ function togglePatternParameters() {
   if (photoSphereContainer) {
     if (gridType === 'photo-sphere') {
       photoSphereContainer.classList.remove('hidden');
+      if (typeof updatePhotoSphereBadge === 'function') {
+        updatePhotoSphereBadge();
+      }
     } else {
       photoSphereContainer.classList.add('hidden');
     }
@@ -25366,17 +25580,56 @@ function generateGridMultiOrbitComboCoordinates(radius, rotation, captureMode, s
   return { waypoints, photos };
 }
 
-// Generate 360° Photo Sphere coordinates (Issue #89)
-// 37 shots total: 3 rows of 12 shots @ -15°, -45°, -75° gimbal pitch spaced every 30° yaw, + 1 Nadir shot @ -90° pitch
+function updatePhotoSphereBadge() {
+  if (typeof document === 'undefined') return;
+  const badge = document.getElementById('photo-sphere-shot-count-badge');
+  if (!badge) return;
+  const r1 = document.getElementById('photo-sphere-ring-1');
+  const r2 = document.getElementById('photo-sphere-ring-2');
+  const r3 = document.getElementById('photo-sphere-ring-3');
+  const rNadir = document.getElementById('photo-sphere-ring-nadir');
+  let count = 0;
+  if (r1 && r1.checked) count += 12;
+  if (r2 && r2.checked) count += 12;
+  if (r3 && r3.checked) count += 12;
+  if (rNadir && rNadir.checked) count += 1;
+  badge.textContent = `${count} Shot${count === 1 ? '' : 's'} Total`;
+}
+
+// Generate 360° Photo Sphere coordinates (Issue #89, v1.125.1)
+// Supports selective elevation rings (Row 1: -15°, Row 2: -45°, Row 3: -75°, Nadir: -90°)
 function generatePhotoSphereCoordinates(baseAltitude, layer) {
   const waypoints = [];
   const photos = [];
 
-  const rows = [
-    { pitch: -15, count: 12, step: 30, ringIndex: 0 },
-    { pitch: -45, count: 12, step: 30, ringIndex: 1 },
-    { pitch: -75, count: 12, step: 30, ringIndex: 2 }
-  ];
+  let rings = (layer && layer.photoSphereRings) ? layer.photoSphereRings : null;
+  if (!rings && typeof document !== 'undefined') {
+    const r1 = document.getElementById('photo-sphere-ring-1');
+    const r2 = document.getElementById('photo-sphere-ring-2');
+    const r3 = document.getElementById('photo-sphere-ring-3');
+    const rNadir = document.getElementById('photo-sphere-ring-nadir');
+    if ((r1 && typeof r1.checked === 'boolean') || (r2 && typeof r2.checked === 'boolean') || (r3 && typeof r3.checked === 'boolean') || (rNadir && typeof rNadir.checked === 'boolean')) {
+      rings = {
+        ring1: r1 && typeof r1.checked === 'boolean' ? r1.checked : true,
+        ring2: r2 && typeof r2.checked === 'boolean' ? r2.checked : true,
+        ring3: r3 && typeof r3.checked === 'boolean' ? r3.checked : true,
+        nadir: rNadir && typeof rNadir.checked === 'boolean' ? rNadir.checked : true
+      };
+    }
+  }
+  if (!rings) {
+    rings = { ring1: true, ring2: true, ring3: true, nadir: true };
+  }
+
+  // Fallback safety: ensure at least one ring is active
+  if (!rings.ring1 && !rings.ring2 && !rings.ring3 && !rings.nadir) {
+    rings.ring1 = true;
+  }
+
+  const rows = [];
+  if (rings.ring1) rows.push({ pitch: -15, count: 12, step: 30, ringIndex: 0 });
+  if (rings.ring2) rows.push({ pitch: -45, count: 12, step: 30, ringIndex: 1 });
+  if (rings.ring3) rows.push({ pitch: -75, count: 12, step: 30, ringIndex: 2 });
 
   let shotIndex = 0;
   rows.forEach(row => {
@@ -25402,22 +25655,24 @@ function generatePhotoSphereCoordinates(baseAltitude, layer) {
   });
 
   // Nadir Catch: 1 final ground-lock shot at -90° pitch
-  const nadirPt = {
-    x: 0,
-    y: 0,
-    alt: baseAltitude,
-    pitch: -90,
-    heading: 0,
-    headingMode: 'smoothTransition',
-    gridType: 'photo-sphere',
-    isPhotoSpherePoint: true,
-    ringIndex: 3,
-    isRingStart: true,
-    shotIndex: shotIndex++,
-    hoverTime: 2
-  };
-  waypoints.push(nadirPt);
-  photos.push(nadirPt);
+  if (rings.nadir) {
+    const nadirPt = {
+      x: 0,
+      y: 0,
+      alt: baseAltitude,
+      pitch: -90,
+      heading: 0,
+      headingMode: 'smoothTransition',
+      gridType: 'photo-sphere',
+      isPhotoSpherePoint: true,
+      ringIndex: 3,
+      isRingStart: true,
+      shotIndex: shotIndex++,
+      hoverTime: 2
+    };
+    waypoints.push(nadirPt);
+    photos.push(nadirPt);
+  }
 
   return { waypoints, photos };
 }
@@ -27703,6 +27958,43 @@ function updateMapLegend() {
         <div class="legend-item"><span class="legend-color" style="background-color: #64748b; border: 1px dashed #94a3b8;"></span> Transit Waypoint (No Photo)</div>
         <div class="legend-item"><span class="legend-color" style="background-color: rgba(16, 185, 129, 0.4); border: 1px dashed #10b981;"></span> Target Object Boundary</div>
       `;
+    } else if (gridType === 'photo-sphere') {
+      title = "360° Pano Rings";
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      let rings = (activeLayer && activeLayer.photoSphereRings) ? activeLayer.photoSphereRings : null;
+      if (!rings && typeof document !== 'undefined') {
+        const r1 = document.getElementById('photo-sphere-ring-1');
+        const r2 = document.getElementById('photo-sphere-ring-2');
+        const r3 = document.getElementById('photo-sphere-ring-3');
+        const rNadir = document.getElementById('photo-sphere-ring-nadir');
+        if ((r1 && typeof r1.checked === 'boolean') || (r2 && typeof r2.checked === 'boolean') || (r3 && typeof r3.checked === 'boolean') || (rNadir && typeof rNadir.checked === 'boolean')) {
+          rings = {
+            ring1: r1 && typeof r1.checked === 'boolean' ? r1.checked : true,
+            ring2: r2 && typeof r2.checked === 'boolean' ? r2.checked : true,
+            ring3: r3 && typeof r3.checked === 'boolean' ? r3.checked : true,
+            nadir: rNadir && typeof rNadir.checked === 'boolean' ? rNadir.checked : true
+          };
+        }
+      }
+      if (!rings) rings = { ring1: true, ring2: true, ring3: true, nadir: true };
+
+      let ringsHtml = '';
+      if (rings.ring1) {
+        ringsHtml += `<div class="legend-item"><span class="legend-color" style="background-color: #38bdf8;"></span> Row 1 (-15°): 12 shots @ ${formatDistance(altitudeVal, 1)}</div>`;
+      }
+      if (rings.ring2) {
+        ringsHtml += `<div class="legend-item"><span class="legend-color" style="background-color: #06b6d4;"></span> Row 2 (-45°): 12 shots @ ${formatDistance(altitudeVal, 1)}</div>`;
+      }
+      if (rings.ring3) {
+        ringsHtml += `<div class="legend-item"><span class="legend-color" style="background-color: #f59e0b;"></span> Row 3 (-75°): 12 shots @ ${formatDistance(altitudeVal, 1)}</div>`;
+      }
+      if (rings.nadir) {
+        ringsHtml += `<div class="legend-item"><span class="legend-color" style="background-color: #10b981;"></span> Nadir (-90°): 1 shot @ ${formatDistance(altitudeVal, 1)}</div>`;
+      }
+      if (!ringsHtml) {
+        ringsHtml = `<div class="legend-item"><span class="legend-color" style="background-color: #38bdf8;"></span> Center Lock: ${formatDistance(altitudeVal, 1)}</div>`;
+      }
+      itemsHtml = ringsHtml;
     } else {
       title = "Altitude Layers";
       itemsHtml = `
@@ -41620,10 +41912,10 @@ function init3DPreview() {
     groundPlaneOffsetX = planeOffsetX;
     groundPlaneOffsetZ = planeOffsetZ;
     groundPlaneSize = planeSize;
-    cachedTileImages = [];
-
     // Fetch tiles asynchronously based on Leaflet active layer
     const isSatellite = map.hasLayer(satelliteLayer);
+    const isEsriStreet = typeof esriStreetLayer !== 'undefined' && esriStreetLayer && map.hasLayer(esriStreetLayer);
+    const isLocal = isLocalhostEnvironment();
     let loadedTilesCount = 0;
     const tileImages = [];
 
@@ -41637,6 +41929,8 @@ function init3DPreview() {
         let url = "";
         if (isSatellite) {
           url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${tileZoom}/${tileY}/${tileX}`;
+        } else if (isEsriStreet || isLocal) {
+          url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/${tileZoom}/${tileY}/${tileX}`;
         } else {
           url = `https://tile.openstreetmap.org/${tileZoom}/${tileX}/${tileY}.png`;
         }
@@ -49945,6 +50239,7 @@ if (typeof window !== 'undefined') {
   window.executeMediaPull = executeMediaPull;
   window.buildThreeDigitalTwinJson = buildThreeDigitalTwinJson;
   window.AdsbAirspaceManager = typeof AdsbAirspaceManager !== 'undefined' ? AdsbAirspaceManager : null;
+  window.isLocalhostEnvironment = typeof isLocalhostEnvironment !== 'undefined' ? isLocalhostEnvironment : null;
 }
 
 if (typeof global !== 'undefined') {
@@ -49959,6 +50254,7 @@ if (typeof global !== 'undefined') {
   global.executeMediaPull = executeMediaPull;
   global.buildThreeDigitalTwinJson = buildThreeDigitalTwinJson;
   global.AdsbAirspaceManager = typeof AdsbAirspaceManager !== 'undefined' ? AdsbAirspaceManager : null;
+  global.isLocalhostEnvironment = typeof isLocalhostEnvironment !== 'undefined' ? isLocalhostEnvironment : null;
 }
 
 if (typeof document !== 'undefined') {
