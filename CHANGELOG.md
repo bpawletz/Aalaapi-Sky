@@ -1,3 +1,22 @@
+## [1.128.4] - 2026-09-25
+
+### Fixed
+- **FAA Temporary Flight Restrictions (TFR) Ingestion & Display Resilience (`fetchAndProcessTFRs` & `openTfrBriefingModal`)**:
+  - **Live TFR Ingestion for Static / GitHub Pages Deployments**: Resolved bug where live FAA TFR NOTAMs and GeoServer boundaries (such as VIP TFR `6/4933` in Ohio) failed to show in the TFR card on static web deployments (e.g. GitHub Pages on mobile) due to lack of CORS on official FAA servers and dead proxy fallbacks. Added a repository-bundled data cache (`data/tfr_notams.json` and `data/tfr_geojson.json`) with an automated fetch pipeline (`tools/fetch_tfr_data.js`).
+  - **Dual-Layer Coexistence (Active TFRs + Standby Stadium Advisories)**: Fixed issue where querying native FAA ArcGIS Online feature layers overwrote GeoJSON features with stadium geometries only, preventing GeoServer TFRs from displaying. Now merges GeoServer TFR polygons with ArcGIS stadium advisories so pilots see both active emergency/VIP restrictions and stadium perimeters.
+  - **Dynamic Companion Base Resolution**: Updated TFR querying in `fetchAndProcessTFRs` and `openTfrBriefingModal` to use `getCompanionApiBase()` instead of hardcoded `http://127.0.0.1:8765`, enabling remote tablet/phone devices on LAN to query the companion bridge seamlessly.
+  - **Modern FAA TFR Portal Deep-Linking**: Updated briefing links from legacy `save_pages` paths to the modern FAA TFR web portal (`https://tfr.faa.gov/tfr3/?page=detail_${notamId}`), matching official FAA portal routing.
+
+## [1.128.3] - 2026-09-25
+
+### Fixed
+- **RC2 Flight Log Pull & 3D Diagnostics Telemetry Pipeline (`pullFlightLogFromRC2` & `FlightDiagnostics`):**
+  - **Sequential Modal & Log Loading Orchestration:** Resolved race condition where pulling a log from a connected DJI RC 2 controller fired multiple asynchronous requests simultaneously (`open()` and un-awaited `refreshFlightList()` + `loadSelectedFlight(logName)`), resetting the selector back to `active-mission` or 0 telemetry points. `FlightDiagnostics.open('3d', targetFlightId)` now accepts the target flight ID directly, adds and selects the option immediately in the dropdown, and sequentially awaits flight loading.
+  - **Single Three.js WebGL Scene Lifecycle & Context Loss Prevention:** Refactored `init3DScene()` to create the WebGL renderer, perspective camera, OrbitControls, directional/ambient lights, and ground grid once, reusing them across telemetry switches instead of constantly destroying and reallocating GPU contexts. Added robust `webglcontextlost` and `webglcontextrestored` event handlers.
+  - **Debounced Ground Satellite Texture Updates:** Eliminated GPU watchdog crashes caused by 9 concurrent tile image load events triggering immediate `groundTexture.needsUpdate = true` calls. `scheduleGroundTextureUpdate()` debounces updates over 120ms to prevent driver stalls.
+  - **Companion Server Decryption Retry Resilience:** Added automatic 800ms retry logic to `loadSelectedFlight(flightId)` when querying newly pulled RC2 logs, allowing the companion background decryption worker to finish flushing decrypted CSV data before failing.
+  - **Actionable Telemetry Recovery UI:** Updated `updateStatsUI()` to display an inline retry button (`🔄 Retry`) with clear status messaging when 0 telemetry points are detected, preventing the 3D viewer from silently blanking out.
+
 ## [1.128.2] - 2026-09-25
 
 ### Fixed

@@ -23794,13 +23794,13 @@ const FlightDiagnostics = {
     }
 
     const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    setTxt('diag-hud-alt', `${pt.alt.toFixed(1)} m`);
-    setTxt('diag-hud-speed', `${pt.speed.toFixed(1)} m/s`);
-    setTxt('diag-hud-pitch', `${pt.pitch.toFixed(1)}°`);
-    setTxt('diag-hud-battery', `${pt.battery.toFixed(0)}%`);
-    setTxt('diag-hud-sats', pt.satellites.toString());
-    setTxt('diag-hud-coords', `${pt.lat.toFixed(6)}, ${pt.lon.toFixed(6)}`);
-    setTxt('diag-time-display', `${pt.timeStr} / ${this.telemetryData.durationFormatted}`);
+    setTxt('diag-hud-alt', `${(pt.alt !== undefined && pt.alt !== null ? pt.alt : 0).toFixed(1)} m`);
+    setTxt('diag-hud-speed', `${(pt.speed !== undefined && pt.speed !== null ? pt.speed : 0).toFixed(1)} m/s`);
+    setTxt('diag-hud-pitch', `${(pt.pitch !== undefined && pt.pitch !== null ? pt.pitch : 0).toFixed(1)}°`);
+    setTxt('diag-hud-battery', `${(pt.battery !== undefined && pt.battery !== null ? pt.battery : 100).toFixed(0)}%`);
+    setTxt('diag-hud-sats', (pt.satellites !== undefined && pt.satellites !== null ? pt.satellites : 0).toString());
+    setTxt('diag-hud-coords', `${(pt.lat !== undefined && pt.lat !== null ? pt.lat : 0).toFixed(6)}, ${(pt.lon !== undefined && pt.lon !== null ? pt.lon : 0).toFixed(6)}`);
+    setTxt('diag-time-display', `${pt.timeStr || '00:00'} / ${this.telemetryData?.durationFormatted || '00:00'}`);
 
     if (updateSlider) {
       const slider = document.getElementById('diag-timeline-slider');
@@ -32690,75 +32690,73 @@ async function fetchAndProcessTFRs(centerLat, centerLon, force = false) {
   let notamList = [];
   let geojson = null;
 
-  // Tier 1: Companion Bridge Proxy (Port 8765)
+  // Tier 1: Companion Bridge Proxy (dynamically resolved host, e.g. Port 8765)
+  const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
   try {
-    const notamRes = await fetch(`http://127.0.0.1:8765/api/tfr/notams${force ? '?refresh=true' : ''}`, { signal: AbortSignal.timeout(3000) });
+    const notamRes = await fetch(`${apiBase}/api/tfr/notams${force ? '?refresh=true' : ''}`, { signal: AbortSignal.timeout(3000) });
     if (notamRes.ok) {
       const json = await notamRes.json();
       if (json && json.success && Array.isArray(json.data)) notamList = json.data;
     }
-    const geoRes = await fetch(`http://127.0.0.1:8765/api/tfr/geojson${force ? '?refresh=true' : ''}`, { signal: AbortSignal.timeout(4000) });
+  } catch (err) {}
+
+  try {
+    const geoRes = await fetch(`${apiBase}/api/tfr/geojson${force ? '?refresh=true' : ''}`, { signal: AbortSignal.timeout(4000) });
     if (geoRes.ok) {
       const json = await geoRes.json();
       if (json && json.success && json.data) geojson = json.data;
     }
-  } catch (err) {
-    // Companion offline or unavailable; proceed to fallbacks
-  }
+  } catch (err) {}
 
-  // Tier 2: Public CORS Proxy fallback for NOTAM list
+  // Tier 2: Static repository cache (zero-latency, CORS-safe bundle for GitHub Pages / web hosting)
   if (notamList.length === 0) {
     try {
-      const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://tfr.faa.gov/tfrapi/getTfrList');
-      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(5000) });
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) notamList = data;
+      const staticNotamRes = await fetch('./data/tfr_notams.json', { signal: AbortSignal.timeout(4000) });
+      if (staticNotamRes.ok) {
+        const data = await staticNotamRes.json();
+        if (Array.isArray(data) && data.length > 0) notamList = data;
       }
     } catch (e) {}
   }
 
-  // Tier 3: Native FAA ArcGIS Online FeatureServers (CORS: *)
   if (!geojson || !geojson.features || geojson.features.length === 0) {
     try {
-      const arcgisUrls = [
-        { url: 'https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/arcgis/rest/services/National_Defense_Airspace_TFR_Areas/FeatureServer/0/query?where=1%3D1&outFields=*&returnGeometry=true&f=geojson', type: 'defense' },
-        { url: 'https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/arcgis/rest/services/Stadiums/FeatureServer/0/query?where=1%3D1&outFields=*&returnGeometry=true&f=geojson', type: 'stadium' },
-        { url: 'https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/arcgis/rest/services/Part_Time_National_Security_UAS_Flight_Restrictions/FeatureServer/0/query?where=1%3D1&outFields=*&returnGeometry=true&f=geojson', type: 'security' }
-      ];
-      const results = await Promise.allSettled(arcgisUrls.map(item => fetch(item.url, { signal: AbortSignal.timeout(6000) }).then(r => r.json()).then(data => ({ data, type: item.type }))));
-      const combined = [];
-      for (const r of results) {
-        if (r.status === 'fulfilled' && r.value && r.value.data && Array.isArray(r.value.data.features)) {
-          const ftype = r.value.type;
-          r.value.data.features.forEach(f => {
-            if (!f.properties) f.properties = {};
-            if (ftype === 'stadium') {
-              f.properties._sourceType = 'stadium';
-              f.properties.isStadium = true;
-            }
-            combined.push(f);
-          });
-        }
-      }
-      if (combined.length > 0) {
-        geojson = { type: 'FeatureCollection', features: combined };
+      const staticGeoRes = await fetch('./data/tfr_geojson.json', { signal: AbortSignal.timeout(4000) });
+      if (staticGeoRes.ok) {
+        const g = await staticGeoRes.json();
+        if (g && Array.isArray(g.features) && g.features.length > 0) geojson = g;
       }
     } catch (e) {}
   }
 
-  // GeoServer proxy fallback if geojson still empty
-  if (!geojson && notamList.length > 0) {
-    try {
-      const wfsUrl = 'https://tfr.faa.gov/geoserver/TFR/ows?service=WFS&version=1.1.0&request=GetFeature&typeName=TFR:V_TFR_LOC&maxFeatures=300&outputFormat=application/json';
-      const proxyGeo = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(wfsUrl);
-      const res = await fetch(proxyGeo, { signal: AbortSignal.timeout(6000) });
-      if (res.ok) {
-        const g = await res.json();
-        if (g && Array.isArray(g.features)) geojson = g;
+  // Tier 3: Native FAA ArcGIS Online FeatureServers (Stadiums, Defense Airspace, Part-Time Security UAS)
+  // Merged into geojson features so active TFR polygons and stadiums both coexist cleanly
+  try {
+    const arcgisUrls = [
+      { url: 'https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/arcgis/rest/services/National_Defense_Airspace_TFR_Areas/FeatureServer/0/query?where=1%3D1&outFields=*&returnGeometry=true&f=geojson', type: 'defense' },
+      { url: 'https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/arcgis/rest/services/Stadiums/FeatureServer/0/query?where=1%3D1&outFields=*&returnGeometry=true&f=geojson', type: 'stadium' },
+      { url: 'https://services6.arcgis.com/ssFJjBXIUyZDrSYZ/arcgis/rest/services/Part_Time_National_Security_UAS_Flight_Restrictions/FeatureServer/0/query?where=1%3D1&outFields=*&returnGeometry=true&f=geojson', type: 'security' }
+    ];
+    const results = await Promise.allSettled(arcgisUrls.map(item => fetch(item.url, { signal: AbortSignal.timeout(6000) }).then(r => r.json()).then(data => ({ data, type: item.type }))));
+    const arcgisFeatures = [];
+    for (const r of results) {
+      if (r.status === 'fulfilled' && r.value && r.value.data && Array.isArray(r.value.data.features)) {
+        const ftype = r.value.type;
+        r.value.data.features.forEach(f => {
+          if (!f.properties) f.properties = {};
+          if (ftype === 'stadium') {
+            f.properties._sourceType = 'stadium';
+            f.properties.isStadium = true;
+          }
+          arcgisFeatures.push(f);
+        });
       }
-    } catch (e) {}
-  }
+    }
+    if (arcgisFeatures.length > 0) {
+      const existingFeatures = (geojson && Array.isArray(geojson.features)) ? geojson.features : [];
+      geojson = { type: 'FeatureCollection', features: [...existingFeatures, ...arcgisFeatures] };
+    }
+  } catch (e) {}
 
   processTfrData(geojson, notamList, centerLat, centerLon);
 }
@@ -33274,7 +33272,7 @@ async function openTfrBriefingModal(notamId) {
   if (titleEl) titleEl.textContent = `FAA NOTAM Briefing: FDC ${notamId}`;
   if (extLink) {
     const formattedId = notamId ? notamId.replace('/', '_') : '';
-    extLink.href = `https://tfr.faa.gov/save_pages/detail_${formattedId}.html`;
+    extLink.href = `https://tfr.faa.gov/tfr3/?page=detail_${formattedId}`;
     extLink.textContent = 'View on FAA Portal ↗';
   }
 
@@ -33287,7 +33285,8 @@ async function openTfrBriefingModal(notamId) {
 
   // Try Companion
   try {
-    const res = await fetch(`http://127.0.0.1:8765/api/tfr/detail?notamId=${encodeURIComponent(notamId)}`, { signal: AbortSignal.timeout(3500) });
+    const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+    const res = await fetch(`${apiBase}/api/tfr/detail?notamId=${encodeURIComponent(notamId)}`, { signal: AbortSignal.timeout(3500) });
     if (res.ok) {
       const json = await res.json();
       if (json && json.data && json.data[0] && json.data[0].text) {
@@ -33295,19 +33294,6 @@ async function openTfrBriefingModal(notamId) {
       }
     }
   } catch (e) {}
-
-  // Fallback to CORS proxy
-  if (!notamText) {
-    try {
-      const directUrl = `https://tfr.faa.gov/tfrapi/getWebText?notamId=${encodeURIComponent(notamId)}`;
-      const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(directUrl);
-      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(5000) });
-      if (res.ok) {
-        const json = await res.json();
-        if (json && json[0] && json[0].text) notamText = json[0].text;
-      }
-    } catch (e) {}
-  }
 
   if (typeof contentEl.replaceChildren === 'function') contentEl.replaceChildren(); else contentEl.innerHTML = '';
 
@@ -33330,10 +33316,11 @@ async function openTfrBriefingModal(notamId) {
   } else {
     const fallbackNotice = document.createElement('div');
     fallbackNotice.style.cssText = 'padding: 16px; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); border-radius: 8px; font-size: 0.78rem; color: var(--text-muted); line-height: 1.4;';
+    const formattedId = notamId ? notamId.replace('/', '_') : '';
     fallbackNotice.innerHTML = `
       <div style="font-weight: 700; color: #f59e0b; margin-bottom: 4px;">⚠️ Live Text Briefing Offline</div>
-      <div>Direct text payload could not be loaded from FAA servers at this moment. You can view the full graphic NOTAM and official text directly on the FAA TFR Portal.</div>
-      <div style="margin-top: 8px;"><a href="https://tfr.faa.gov/" target="_blank" rel="noopener noreferrer" style="color: var(--accent-cyan); text-decoration: underline;">Open FAA Temporary Flight Restrictions Portal ↗</a></div>
+      <div>Direct text payload could not be loaded from FAA servers at this moment. You can view the full graphic NOTAM, lateral limits, and official text directly on the FAA TFR Portal.</div>
+      <div style="margin-top: 8px;"><a href="https://tfr.faa.gov/tfr3/?page=detail_${formattedId}" target="_blank" rel="noopener noreferrer" style="color: var(--accent-cyan); text-decoration: underline; font-weight: 600;">Open FDC ${notamId} on FAA TFR Portal ↗</a></div>
     `;
     contentEl.appendChild(fallbackNotice);
   }
