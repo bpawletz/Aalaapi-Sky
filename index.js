@@ -34481,6 +34481,30 @@ const PhotoInspector = {
     if (imgSrc) {
       this.activePhoto.previewUrl = imgSrc;
     }
+
+    if (!this.wireframeData && manifestUuid && typeof fetch !== 'undefined' && apiBase) {
+      fetch(`${apiBase}/scratch/mission_archives/${manifestUuid}/wireframe.json`)
+        .then(r => r.ok ? r.json() : null)
+        .then(wfData => {
+          if (wfData && (wfData.lines || wfData.perPhotoLines)) {
+            this.wireframeData = wfData;
+            if (this.activePhoto) {
+              const pk = this.activePhoto.filename || this.activePhoto.photoId || '';
+              const pl = wfData.perPhotoLines && (wfData.perPhotoLines[pk] || wfData.perPhotoLines[this.activePhoto.filename] || wfData.perPhotoLines[this.activePhoto.photoId]);
+              if (pl && pl.length > 0 && (!this.activePhoto.detectedLines || this.activePhoto.detectedLines.length === 0)) {
+                this.activePhoto.detectedLines = pl;
+              }
+              try { this.renderCanvas(); } catch (_) {}
+              const pill = document.getElementById('photo-detect-wireframe-pill');
+              if (pill && this.activePhoto.detectedLines?.length > 0) {
+                pill.style.display = 'inline-flex';
+                pill.textContent = `🏗️ ${this.activePhoto.detectedLines.length} House Lines`;
+              }
+            }
+          }
+        })
+        .catch(() => {});
+    }
     
     if (imgEl) {
       try {
@@ -35571,7 +35595,10 @@ const PhotoInspector = {
       if (renderedLineCount > 0 && firstVisPt) {
         const bx = Math.max(10, Math.min(canvas.width - 200, firstVisPt.x));
         const by = Math.max(25, Math.min(canvas.height - 15, firstVisPt.y - 12));
-        const badgeText = `🏗️ 3D Wireframe (${renderedLineCount} lines)`;
+        const is2d = Array.isArray(photo2dLines) && photo2dLines.length > 0;
+        const badgeText = is2d
+          ? `🏗️ Architectural Lines (${renderedLineCount})`
+          : `🏗️ 3D Wireframe (${renderedLineCount} lines)`;
         ctx.font = 'bold 11px sans-serif';
         const badgeW = ctx.measureText(badgeText).width + 16;
         ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
@@ -35779,6 +35806,40 @@ const PhotoInspector = {
   },
 
 
+  _simplifyContourRDP(points, epsilon) {
+    if (!points || points.length <= 2) return points || [];
+    let dmax = 0;
+    let index = 0;
+    const p1 = points[0];
+    const p2 = points[points.length - 1];
+    const dx = p2[0] - p1[0];
+    const dy = p2[1] - p1[1];
+    const lineLenSq = dx * dx + dy * dy;
+
+    for (let i = 1; i < points.length - 1; i++) {
+      const pt = points[i];
+      let d;
+      if (lineLenSq === 0) {
+        d = Math.hypot(pt[0] - p1[0], pt[1] - p1[1]);
+      } else {
+        const num = Math.abs(dy * pt[0] - dx * pt[1] + p2[0] * p1[1] - p2[1] * p1[0]);
+        d = num / Math.sqrt(lineLenSq);
+      }
+      if (d > dmax) {
+        dmax = d;
+        index = i;
+      }
+    }
+
+    if (dmax > epsilon) {
+      const rec1 = this._simplifyContourRDP(points.slice(0, index + 1), epsilon);
+      const rec2 = this._simplifyContourRDP(points.slice(index), epsilon);
+      return rec1.slice(0, -1).concat(rec2);
+    } else {
+      return [p1, p2];
+    }
+  },
+
   async detectHouseLines() {
     if (!this.activePhoto) return [];
     const btn = document.getElementById('photo-detect-wireframe-btn');
@@ -35793,44 +35854,84 @@ const PhotoInspector = {
       let detectedLines = null;
       let wireframe3d = null;
 
-      // Tier 1: Companion API endpoint /api/process/wireframe
-      const apiBase = (typeof isLocalhostEnvironment === 'function' && isLocalhostEnvironment()) ? 'http://127.0.0.1:3000' : '';
-      const photoPath = p.rawPath || p.filePath || null;
-      const originLat = p.actual?.lat ?? p.lat ?? 40.013195;
-      const originLon = p.actual?.lon ?? p.lon ?? -83.177193;
-
-      if (typeof fetch !== 'undefined') {
-        try {
-          const res = await fetch(`${apiBase}/api/process/wireframe`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              imagePath: photoPath,
-              telemetry: {
-                lat: originLat,
-                lon: originLon,
-                altAgl: p.actual?.altAgl ?? p.altAgl ?? 25.0,
-                heading: p.actual?.heading ?? p.heading ?? 0,
-                gimbalPitch: p.actual?.gimbalPitch ?? p.gimbalPitch ?? -60
-              },
-              options: { suppressVegetation: true, maxDimension: 1920 }
-            })
-          });
-          if (res.ok) {
-            const data = await res.json();
-            if (data && data.success && Array.isArray(data.lines2D) && data.lines2D.length > 0) {
-              detectedLines = data.lines2D;
-              wireframe3d = data.lines || [];
-            }
-          }
-        } catch (_) {}
+      // Tier 0: Check precomputed wireframeData in manifest / memory
+      const wf = this.wireframeData
+        || (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.wireframeData)
+        || this.activeManifest?.wireframe
+        || (typeof activeInspectionManifest !== 'undefined' && activeInspectionManifest?.wireframe)
+        || null;
+      const pKey = p.filename || p.photoId || '';
+      if (wf && wf.perPhotoLines) {
+        const cached = wf.perPhotoLines[pKey] || wf.perPhotoLines[p.filename] || wf.perPhotoLines[p.photoId];
+        if (Array.isArray(cached) && cached.length > 0) {
+          detectedLines = cached;
+        }
       }
 
-      // Tier 2: In-browser canvas computer vision fallback
+      // Tier 1: Companion API endpoint /api/process/wireframe (Port 8765)
+      if (!detectedLines || detectedLines.length === 0) {
+        const apiBase = (typeof getCompanionApiBase === 'function')
+          ? getCompanionApiBase()
+          : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
+        const photoPath = p.rawPath || p.filePath || null;
+        const originLat = p.actual?.lat ?? p.lat ?? 40.013195;
+        const originLon = p.actual?.lon ?? p.lon ?? -83.177193;
+        const manifestUuid = (this.activeManifest && this.activeManifest.missionUuid)
+          || (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.activeInspectionManifest?.missionUuid)
+          || (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.flightManifest?.missionUuid)
+          || (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.currentLoadedMission?.uuid)
+          || null;
+
+        const postBody = {
+          missionUuid: manifestUuid,
+          imagePath: photoPath,
+          filename: p.filename,
+          photoId: p.photoId || p.id,
+          telemetry: {
+            lat: originLat,
+            lon: originLon,
+            altAgl: p.actual?.altAgl ?? p.altAgl ?? 25.0,
+            heading: p.actual?.heading ?? p.heading ?? 0,
+            gimbalPitch: p.actual?.gimbalPitch ?? p.gimbalPitch ?? -60
+          },
+          options: { suppressVegetation: true, maxDimension: 1920 }
+        };
+
+        const imgEl = document.getElementById('photo-inspector-img');
+        if (!photoPath && imgEl && imgEl.complete && imgEl.naturalWidth > 0) {
+          try {
+            const sc = document.createElement('canvas');
+            sc.width = Math.min(1920, imgEl.naturalWidth);
+            sc.height = Math.round((sc.width / imgEl.naturalWidth) * imgEl.naturalHeight);
+            const sctx = sc.getContext('2d');
+            sctx.drawImage(imgEl, 0, 0, sc.width, sc.height);
+            postBody.imageData = sc.toDataURL('image/jpeg', 0.85);
+          } catch (_) {}
+        }
+
+        if (typeof fetch !== 'undefined' && apiBase) {
+          try {
+            const res = await fetch(`${apiBase}/api/process/wireframe`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(postBody)
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data && data.success && Array.isArray(data.lines2D) && data.lines2D.length > 0) {
+                detectedLines = data.lines2D;
+                wireframe3d = data.lines || [];
+              }
+            }
+          } catch (_) {}
+        }
+      }
+
+      // Tier 2: In-browser canvas computer vision fallback (Contiguous Edge Tracing + RDP)
       if (!detectedLines || detectedLines.length === 0) {
         const imgEl = document.getElementById('photo-inspector-img');
         if (imgEl && imgEl.complete && imgEl.naturalWidth > 0) {
-          const w = Math.min(1920, imgEl.naturalWidth);
+          const w = Math.min(1280, imgEl.naturalWidth);
           const h = Math.round((w / imgEl.naturalWidth) * imgEl.naturalHeight);
           const c = document.createElement('canvas');
           c.width = w;
@@ -35846,72 +35947,120 @@ const PhotoInspector = {
             if (imgData && imgData.data) {
               const data = imgData.data;
               const gray = new Uint8Array(w * h);
+              const vegMask = new Uint8Array(w * h);
+
+              // 1. Color-space vegetation identification (Excess Green Index: ExG = 2G - R - B)
               for (let i = 0, pIdx = 0; i < data.length; i += 4, pIdx++) {
                 const r = data[i], g = data[i + 1], b = data[i + 2];
-                // Suppress lawn and tree green
-                const isVeg = (g > r + 15 && g > b + 10 && g > 45) || (g > 70 && r < 80 && b < 80);
+                const exg = 2 * g - r - b;
+                const isVeg = (exg > 16 && g > 40) || (g > r * 1.08 && g > b * 1.15 && g > 40);
                 if (isVeg) {
+                  vegMask[pIdx] = 1;
                   gray[pIdx] = 0;
                 } else {
                   gray[pIdx] = (r * 77 + g * 150 + b * 29) >> 8;
                 }
               }
 
-              // Fast Sobel edge detection on non-vegetation pixels
-              const edges = [];
-              const threshold = 65;
-              const stride = 4;
-              for (let y = 2; y < h - 2; y += stride) {
-                for (let x = 2; x < w - 2; x += stride) {
+              // 2. Dilate vegetation mask by 2px to eliminate vegetation border gradient artifacts
+              const dilatedVeg = new Uint8Array(w * h);
+              for (let y = 2; y < h - 2; y++) {
+                for (let x = 2; x < w - 2; x++) {
                   const idx = y * w + x;
-                  if (gray[idx] === 0) continue;
-                  const gx = -gray[idx - w - 1] - 2 * gray[idx - 1] - gray[idx + w - 1]
-                            + gray[idx - w + 1] + 2 * gray[idx + 1] + gray[idx + w + 1];
-                  const gy = -gray[idx - w - 1] - 2 * gray[idx - w] - gray[idx - w + 1]
-                            + gray[idx + w - 1] + 2 * gray[idx + w] + gray[idx + w + 1];
-                  const mag = Math.hypot(gx, gy);
-                  if (mag > threshold) {
-                    edges.push({ x, y, angle: Math.atan2(gy, gx) });
+                  if (vegMask[idx]) {
+                    for (let dy = -2; dy <= 2; dy++) {
+                      for (let dx = -2; dx <= 2; dx++) {
+                        dilatedVeg[(y + dy) * w + (x + dx)] = 1;
+                      }
+                    }
                   }
                 }
               }
 
-              // Group collinear edge points
-              const detected = [];
-              const visited = new Uint8Array(edges.length);
-              for (let i = 0; i < edges.length; i++) {
-                if (visited[i]) continue;
-                const ptA = edges[i];
-                let bestPt = null;
-                let maxDist = 0;
-                for (let j = i + 1; j < edges.length; j++) {
-                  if (visited[j]) continue;
-                  const ptB = edges[j];
-                  const d = Math.hypot(ptB.x - ptA.x, ptB.y - ptA.y);
-                  if (d >= 40 && d <= 450) {
-                    const lineAngle = Math.atan2(ptB.y - ptA.y, ptB.x - ptA.x);
-                    const angleDiff = Math.abs(lineAngle - (ptA.angle + Math.PI / 2));
-                    const normDiff = Math.min(angleDiff, Math.PI - angleDiff);
-                    if (normDiff < 0.25 && d > maxDist) {
-                      maxDist = d;
-                      bestPt = ptB;
-                      visited[j] = 1;
-                    }
+              // 3. Sobel edge detection exclusively on structural (non-vegetation) pixels
+              const edgeMap = new Uint8Array(w * h);
+              const threshold = 70;
+              for (let y = 2; y < h - 2; y++) {
+                for (let x = 2; x < w - 2; x++) {
+                  const idx = y * w + x;
+                  if (dilatedVeg[idx] === 1 || gray[idx] === 0) continue;
+                  const gx = -gray[idx - w - 1] - 2 * gray[idx - 1] - gray[idx + w - 1]
+                            + gray[idx - w + 1] + 2 * gray[idx + 1] + gray[idx + w + 1];
+                  const gy = -gray[idx - w - 1] - 2 * gray[idx - w] - gray[idx - w + 1]
+                            + gray[idx + w - 1] + 2 * gray[idx + w] + gray[idx + w + 1];
+                  if (Math.hypot(gx, gy) > threshold) {
+                    edgeMap[idx] = 1;
                   }
                 }
-                if (bestPt && maxDist >= 50) {
-                  visited[i] = 1;
-                  detected.push([
-                    Math.round((ptA.x / w) * 10000) / 10000,
-                    Math.round((ptA.y / h) * 10000) / 10000,
-                    Math.round((bestPt.x / w) * 10000) / 10000,
-                    Math.round((bestPt.y / h) * 10000) / 10000
-                  ]);
-                  if (detected.length >= 250) break;
-                }
               }
+
+              // 4. Contiguous 8-connected edge contour tracing
+              const visited = new Uint8Array(w * h);
+              const detected = [];
+
+              for (let y = 2; y < h - 2; y += 2) {
+                for (let x = 2; x < w - 2; x += 2) {
+                  const idx = y * w + x;
+                  if (edgeMap[idx] === 0 || visited[idx] === 1) continue;
+
+                  const chain = [];
+                  let curX = x, curY = y;
+                  while (curX >= 2 && curX < w - 2 && curY >= 2 && curY < h - 2) {
+                    const cIdx = curY * w + curX;
+                    if (edgeMap[cIdx] === 0 || visited[cIdx] === 1) break;
+                    visited[cIdx] = 1;
+                    chain.push([curX, curY]);
+
+                    let nextX = -1, nextY = -1;
+                    for (let dy = -1; dy <= 1; dy++) {
+                      for (let dx = -1; dx <= 1; dx++) {
+                        if (dx === 0 && dy === 0) continue;
+                        const nx = curX + dx, ny = curY + dy;
+                        if (nx >= 2 && nx < w - 2 && ny >= 2 && ny < h - 2) {
+                          const nIdx = ny * w + nx;
+                          if (edgeMap[nIdx] === 1 && visited[nIdx] === 0) {
+                            nextX = nx;
+                            nextY = ny;
+                            break;
+                          }
+                        }
+                      }
+                      if (nextX !== -1) break;
+                    }
+                    curX = nextX;
+                    curY = nextY;
+                  }
+
+                  // 5. Ramer-Douglas-Peucker polygonal simplification into straight line segments
+                  if (chain.length >= 25) {
+                    const simplified = this._simplifyContourRDP(chain, 2.5);
+                    for (let s = 0; s < simplified.length - 1; s++) {
+                      const pA = simplified[s];
+                      const pB = simplified[s + 1];
+                      const d = Math.hypot(pB[0] - pA[0], pB[1] - pA[1]);
+                      if (d >= 30) {
+                        detected.push([
+                          Math.round((pA[0] / w) * 10000) / 10000,
+                          Math.round((pA[1] / h) * 10000) / 10000,
+                          Math.round((pB[0] / w) * 10000) / 10000,
+                          Math.round((pB[1] / h) * 10000) / 10000
+                        ]);
+                      }
+                    }
+                  }
+                  if (detected.length >= 200) break;
+                }
+                if (detected.length >= 200) break;
+              }
+
               if (detected.length > 0) {
-                detectedLines = detected;
+                // Sort by line length descending to prioritize major ridges, eaves, and facade columns
+                detected.sort((a, b) => {
+                  const lenA = Math.hypot(a[2] - a[0], a[3] - a[1]);
+                  const lenB = Math.hypot(b[2] - b[0], b[3] - b[1]);
+                  return lenB - lenA;
+                });
+                detectedLines = detected.slice(0, 150);
               }
             }
           }
