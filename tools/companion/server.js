@@ -2468,6 +2468,24 @@ function printStartupBanner() {
   } catch (e) {}
   logDetailLast('Downloads Scan', `${dlKmzCount} KMZ file(s), ${dlLogCount} FlightRecord file(s) found`);
 
+  console.log(`\n${colors.bold}📻 ADS-B Manned Aircraft Awareness (1090 MHz):${colors.reset}`);
+  const adsbHw = adsbTracker.detectHardware();
+  if (adsbHw.detected) {
+    if (adsbHw.driverStatus === 'needs_zadig') {
+      logDetail('RTL-SDR USB Dongle', `${colors.yellow}${adsbHw.deviceName} (VID 0BDA, PID 2838) - Driver Missing (Action: Install WinUSB with Zadig)${colors.reset}`);
+    } else {
+      logDetail('RTL-SDR USB Dongle', `${colors.green}${adsbHw.deviceName} - Ready (WinUSB active)${colors.reset}`);
+    }
+  } else {
+    logDetail('RTL-SDR USB Dongle', `${colors.gray}Not Detected (Plug in an RTL-SDR v3/v4 USB dongle)${colors.reset}`);
+  }
+  const adsbStatus = adsbTracker.getStatus();
+  if (adsbStatus.connected) {
+    logDetailLast('dump1090 Daemon Stream', `${colors.green}Connected (127.0.0.1:${adsbStatus.tcpPort}) - Streaming live Mode S${colors.reset}`);
+  } else {
+    logDetailLast('dump1090 Daemon Stream', `${colors.yellow}Waiting on 127.0.0.1:${adsbStatus.tcpPort} (Start dump1090.exe --net)${colors.reset}`);
+  }
+
   console.log(`\n${colors.bold}🌐 Active Web & REST API Endpoints:${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /${colors.reset}                  ${colors.gray}Aalaapi Sky full web application interface${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /api/status${colors.reset}           ${colors.gray}Real-time DJI RC 2 connection status & mission inventory${colors.reset}`);
@@ -2476,6 +2494,8 @@ function printStartupBanner() {
   console.log(`  ${colors.green}${colors.bold}POST /api/flight-telemetry${colors.reset} ${colors.gray}3D flight trajectory solver, photo markers & variances${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /api/latest-flight${colors.reset}    ${colors.gray}Auto-extract latest flight log & KMZ over USB MTP${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /api/remote-id/drones${colors.reset} ${colors.gray}Live ASTM F3411 Remote ID detected drones in airspace${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/airspace/bounds${colors.reset}   ${colors.gray}Proximity-filtered manned aircraft & deconfliction state${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/airspace/status${colors.reset}   ${colors.gray}Live ADS-B hardware & dump1090 daemon connection health${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /api/tfr/notams${colors.reset}       ${colors.gray}Live FAA Temporary Flight Restrictions (TFR) NOTAM list${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /api/tfr/geojson${colors.reset}      ${colors.gray}GeoJSON geometry boundaries for active FAA TFR polygons${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /api/media/detect${colors.reset}       ${colors.gray}Scan for Mini 4 Pro, SD Card readers, and RC 2 albums${colors.reset}`);
@@ -2487,7 +2507,7 @@ function printStartupBanner() {
 
   if (process.stdin.isTTY) {
     console.log(`\n${colors.bold}⌨️  Interactive CLI Commands:${colors.reset}`);
-    console.log(`  ${colors.yellow}[s]${colors.reset} Probe RC 2 status   ${colors.yellow}[r]${colors.reset} Probe Remote ID radar   ${colors.yellow}[f]${colors.reset} List flight logs   ${colors.yellow}[c]${colors.reset} Clear   ${colors.yellow}[q]${colors.reset} Exit\n`);
+    console.log(`  ${colors.yellow}[s]${colors.reset} Probe RC 2 status   ${colors.yellow}[a]${colors.reset} Probe ADS-B status   ${colors.yellow}[r]${colors.reset} Probe Remote ID radar   ${colors.yellow}[f]${colors.reset} List flight logs   ${colors.yellow}[c]${colors.reset} Clear   ${colors.yellow}[q]${colors.reset} Exit\n`);
   }
 
   console.log(`${colors.gray}────────────────────────────────────────────────────────────────────────${colors.reset}`);
@@ -4055,6 +4075,15 @@ if (process.stdin.isTTY) {
         } else {
           logWarn('[RC 2 STATUS]', 'DJI RC 2 is not currently connected over USB MTP.');
         }
+      }
+      if (key && key.name === 'a') {
+        console.log(`\n${colors.cyan}[*] Probing Manned Aircraft ADS-B Airspace Status...${colors.reset}`);
+        const hw = adsbTracker.detectHardware();
+        console.log(`    ${colors.bold}USB Hardware:${colors.reset} ${hw.deviceName || 'None'} [${hw.driverStatus}] - ${hw.details}`);
+        const st = adsbTracker.getStatus();
+        const connStr = st.connected ? (colors.green + 'Connected (Port ' + st.tcpPort + ')') : (colors.yellow + 'Waiting on ' + st.tcpHost + ':' + st.tcpPort);
+        console.log(`    ${colors.bold}dump1090 Stream:${colors.reset} ${connStr}${colors.reset}`);
+        console.log(`    ${colors.bold}Traffic:${colors.reset} ${st.totalPackets} packets received | ${st.activeAircraftCount} active aircraft in memory`);
       }
       if (key && key.name === 'f') {
         console.log(`\n${colors.cyan}[*] Scanning cached flight logs in ${LATEST_DIR}...${colors.reset}`);

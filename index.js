@@ -19391,8 +19391,87 @@ const AdsbAirspaceManager = {
       drawer.classList.remove('hidden');
       this.initAudioContext();
       this.updateDrawerAircraftList();
+      this.fetchAirspaceStatus();
     } else {
       drawer.classList.add('hidden');
+    }
+  },
+
+  async fetchAirspaceStatus() {
+    try {
+      const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+      const res = await fetch(`${apiBase}/api/airspace/status`);
+      if (!res.ok) return;
+      const st = await res.json();
+      this.updateDiagnosticsUI(st);
+    } catch (e) {
+      this.updateDiagnosticsUI(null);
+    }
+  },
+
+  updateDiagnosticsUI(st) {
+    if (typeof document === 'undefined') return;
+    const hwEl = document.getElementById('adsb-hw-status');
+    const streamEl = document.getElementById('adsb-stream-status');
+    const summaryEl = document.getElementById('adsb-diag-summary');
+    const tipEl = document.getElementById('adsb-diag-tip');
+    if (!hwEl || !streamEl) return;
+
+    if (!st) {
+      hwEl.textContent = 'Bridge Offline';
+      hwEl.style.color = '#ef4444';
+      streamEl.textContent = 'Offline';
+      streamEl.style.color = '#ef4444';
+      if (summaryEl) {
+        summaryEl.textContent = 'OFFLINE';
+        summaryEl.style.background = 'rgba(239, 68, 68, 0.2)';
+        summaryEl.style.color = '#ef4444';
+      }
+      return;
+    }
+
+    // Hardware status
+    if (st.hardware && st.hardware.detected) {
+      if (st.hardware.driverStatus === 'needs_zadig') {
+        hwEl.textContent = 'Detected (Driver Missing)';
+        hwEl.style.color = '#f59e0b';
+        if (tipEl) {
+          tipEl.style.display = 'block';
+          tipEl.innerHTML = '⚠️ <strong>Driver Needed:</strong> Windows sees your RTL-SDR dongle, but needs the <strong>WinUSB</strong> driver. Run <a href="https://zadig.akeo.ie/" target="_blank" style="color: #60a5fa; text-decoration: underline;">Zadig</a>, select <em>Bulk-In, Interface</em>, and click <em>Install WinUSB</em>.';
+        }
+      } else {
+        hwEl.textContent = 'Ready (WinUSB Active)';
+        hwEl.style.color = '#10b981';
+      }
+    } else {
+      hwEl.textContent = 'Not Detected';
+      hwEl.style.color = '#94a3b8';
+    }
+
+    // dump1090 daemon stream status
+    if (st.connected) {
+      streamEl.textContent = `Connected (Port ${st.tcpPort || 30003})`;
+      streamEl.style.color = '#10b981';
+      if (summaryEl) {
+        summaryEl.textContent = 'ACTIVE';
+        summaryEl.style.background = 'rgba(16, 185, 129, 0.2)';
+        summaryEl.style.color = '#10b981';
+      }
+      if (tipEl && (!st.hardware || st.hardware.driverStatus !== 'needs_zadig')) {
+        tipEl.style.display = 'none';
+      }
+    } else {
+      streamEl.textContent = `Waiting on Port ${st.tcpPort || 30003}...`;
+      streamEl.style.color = '#f59e0b';
+      if (summaryEl) {
+        summaryEl.textContent = 'WAITING';
+        summaryEl.style.background = 'rgba(245, 158, 11, 0.2)';
+        summaryEl.style.color = '#f59e0b';
+      }
+      if (tipEl && (!st.hardware || st.hardware.driverStatus !== 'needs_zadig')) {
+        tipEl.style.display = 'block';
+        tipEl.innerHTML = '💡 <strong>Waiting for dump1090:</strong> Start <code>dump1090.exe --interactive --net</code> to stream Mode S messages on TCP port 30003.';
+      }
     }
   },
 
@@ -19470,6 +19549,7 @@ const AdsbAirspaceManager = {
         this.updateMapMarkers();
         if (this.isDrawerOpen) {
           this.updateDrawerAircraftList();
+          this.fetchAirspaceStatus();
         }
       }
     } catch (e) {
