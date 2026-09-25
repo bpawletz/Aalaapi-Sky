@@ -4929,5 +4929,412 @@ html, body {
   }
 }
 
+/* ==========================================================================
+   Manned Aircraft Airspace Awareness (ADS-B Alerts & Control Drawer) - Issue #92
+   ========================================================================== */
+
+/* Flashing Visual Alert Banner */
+.adsb-alert-banner {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  width: calc(100% - 32px);
+  max-width: 620px;
+  background: rgba(26, 11, 15, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 2px solid #ef4444;
+  border-radius: 12px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 24px rgba(239, 68, 68, 0.45);
+  padding: 10px 14px;
+  color: #fff;
+  font-family: inherit;
+  animation: adsbStrobe 1.4s infinite ease-in-out, adsbSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
+  user-select: none;
+}
+
+.adsb-alert-banner.hidden {
+  display: none !important;
+}
+
+@keyframes adsbStrobe {
+  0%, 100% {
+    border-color: #ef4444;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 24px rgba(239, 68, 68, 0.55);
+  }
+  50% {
+    border-color: #f59e0b;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 24px rgba(245, 158, 11, 0.55);
+  }
+}
+
+@keyframes adsbSlideDown {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -18px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+.adsb-alert-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.adsb-alert-strobe-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  background: rgba(239, 68, 68, 0.2);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.adsb-alert-emoji {
+  font-size: 1.3rem;
+  z-index: 2;
+}
+
+.adsb-pulse-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid #ef4444;
+  animation: adsbPulseRing 1.4s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+@keyframes adsbPulseRing {
+  0% {
+    transform: scale(0.85);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.85);
+    opacity: 0;
+  }
+}
+
+.adsb-alert-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.adsb-alert-headline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.adsb-alert-title {
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #f87171;
+  text-transform: uppercase;
+}
+
+.adsb-alert-callsign {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.adsb-alert-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: rgba(239, 68, 68, 0.3);
+  border: 1px solid rgba(239, 68, 68, 0.6);
+  color: #fca5a5;
+  padding: 1px 6px;
+  border-radius: 10px;
+  letter-spacing: 0.03em;
+}
+
+.adsb-alert-details {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.88);
+  font-weight: 500;
+  flex-wrap: wrap;
+}
+
+.adsb-alert-metric {
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+.adsb-alert-sep {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.adsb-alert-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.adsb-btn-snooze,
+.adsb-btn-mute {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.adsb-btn-snooze:hover,
+.adsb-btn-mute:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.adsb-btn-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.adsb-btn-close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ADS-B Airspace Control Side Drawer */
+.adsb-control-drawer {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1060;
+  width: 350px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 60px);
+  background: rgba(15, 23, 42, 0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--text-main);
+  animation: fadeInPopover 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.adsb-control-drawer.hidden {
+  display: none !important;
+}
+
+.adsb-drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.adsb-drawer-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.adsb-drawer-body {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  max-height: calc(100vh - 120px);
+}
+
+.adsb-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.adsb-card-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-main);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.adsb-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.adsb-control-label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.76rem;
+  color: var(--text-main);
+}
+
+.adsb-control-sub {
+  font-size: 0.66rem;
+  color: var(--text-muted);
+}
+
+.adsb-slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.adsb-slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.adsb-slider-range-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.62rem;
+  color: var(--text-muted);
+}
+
+.adsb-hw-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.adsb-hw-item {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 6px;
+  text-align: center;
+}
+
+.adsb-hw-lbl {
+  display: block;
+  font-size: 0.62rem;
+  color: var(--text-muted);
+}
+
+.adsb-hw-val {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+}
+
+.adsb-aircraft-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.adsb-aircraft-card {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.15s ease;
+}
+
+.adsb-aircraft-card.breached {
+  border-color: rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* Leaflet Map Aircraft Markers */
+.adsb-map-aircraft-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  transition: transform 0.4s ease-out;
+  cursor: pointer;
+}
+
+.adsb-marker-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1.5px solid #38bdf8;
+  color: #38bdf8;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  transition: all 0.2s ease;
+}
+
+.adsb-marker-inner.breached {
+  border-color: #ef4444;
+  color: #f87171;
+  background: rgba(30, 10, 15, 0.95);
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.5), 0 0 8px rgba(239, 68, 68, 0.6);
+  animation: adsbPulseRing 1.5s infinite ease-out;
+}
+
+.leaflet-tooltip.adsb-plane-tooltip {
+  background: rgba(15, 23, 42, 0.96) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(56, 189, 248, 0.4) !important;
+  color: #fff !important;
+  border-radius: 6px !important;
+  padding: 6px 10px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+  font-family: inherit !important;
+}
+
+.leaflet-tooltip.adsb-plane-tooltip.breached {
+  border-color: rgba(239, 68, 68, 0.6) !important;
+}
+
+
 
 

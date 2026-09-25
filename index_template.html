@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.122.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.123.0</span></h1>
 
 
 
@@ -125,6 +125,11 @@
         </button>
         <button id="about-btn" class="btn-secondary header-about-btn" type="button" title="About &amp; Changelog">About</button>
         <button id="useful-links-btn" class="btn-secondary header-about-btn" type="button" title="Useful Links">Links</button>
+        <button id="adsb-topbar-btn" class="btn-secondary header-about-btn" type="button" title="Manned Aircraft Airspace Awareness (ADS-B Alerts)">
+          <span id="adsb-topbar-icon">✈️</span>
+          <span id="adsb-topbar-label">ADS-B</span>
+          <span id="adsb-topbar-badge" class="badge-tag hidden" style="font-size: 0.6rem; padding: 1px 5px; border-radius: 4px; background: rgba(239, 68, 68, 0.25); color: #fca5a5; font-weight: 700;">0</span>
+        </button>
         <!-- Mobile More Menu Button (visible on small screens) -->
         <button id="header-more-btn" class="btn-secondary header-more-btn" type="button" title="More Options" aria-label="More options">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
@@ -137,6 +142,10 @@
 
       <!-- Mobile More Actions Dropdown Menu Popover -->
       <div id="header-more-menu" class="header-more-menu glass hidden">
+        <button id="more-menu-adsb-btn" class="more-menu-item" type="button">
+          <span class="more-menu-icon">✈️</span>
+          <span class="more-menu-label">ADS-B Airspace Awareness</span>
+        </button>
         <button id="more-menu-diagnostics-btn" class="more-menu-item" type="button">
           <span class="more-menu-icon">📊</span>
           <span class="more-menu-label">Flight Diagnostics &amp; Replay</span>
@@ -2112,9 +2121,42 @@
     <main class="main-map-container">
       <div id="map"></div>
 
+      <!-- Floating Flashing Visual ADS-B Traffic Alert Banner (Issue #92) -->
+      <div id="adsb-alert-banner" class="adsb-alert-banner hidden" role="alert" aria-live="assertive">
+        <div class="adsb-alert-banner-content">
+          <div class="adsb-alert-strobe-icon">
+            <span class="adsb-pulse-ring"></span>
+            <span class="adsb-alert-emoji">🚨</span>
+          </div>
+          <div class="adsb-alert-body">
+            <div class="adsb-alert-headline">
+              <span class="adsb-alert-title">TRAFFIC ALERT</span>
+              <span id="adsb-alert-callsign" class="adsb-alert-callsign">AIRCRAFT</span>
+              <span id="adsb-alert-badge" class="adsb-alert-badge">BREACH</span>
+            </div>
+            <div class="adsb-alert-details">
+              <span id="adsb-alert-altitude" class="adsb-alert-metric">--</span>
+              <span class="adsb-alert-sep">•</span>
+              <span id="adsb-alert-distance" class="adsb-alert-metric">--</span>
+              <span class="adsb-alert-sep">•</span>
+              <span id="adsb-alert-speed" class="adsb-alert-metric">--</span>
+            </div>
+          </div>
+          <div class="adsb-alert-actions">
+            <button id="adsb-alert-snooze-btn" type="button" class="adsb-btn-snooze" title="Snooze audio alerts for 1 minute">Snooze (1m)</button>
+            <button id="adsb-alert-mute-btn" type="button" class="adsb-btn-mute" title="Toggle sound alerts">Mute</button>
+            <button id="adsb-alert-close-btn" type="button" class="adsb-btn-close" aria-label="Dismiss Alert" title="Dismiss Alert">✕</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Floating Live Remote ID Airspace Radar & Calibration HUD on Map -->
       <div id="remote-id-airspace-hud" class="remote-id-airspace-hud hidden">
         <div class="remote-id-pill-row">
+          <button id="adsb-map-pill" class="remote-id-map-pill hidden" type="button" title="Live ADS-B Manned Aircraft Radar • Click to Open Controls">
+            <span class="pulsing-beacon-dot" id="adsb-beacon-dot" style="background: #38bdf8;"></span>
+            <span id="adsb-map-pill-text">✈️ ADS-B Clear</span>
+          </button>
           <button id="remote-id-badge" class="remote-id-map-pill hidden" type="button" title="Live ASTM Remote ID Drone Detected • Click to Center Map">
             <span class="pulsing-beacon-dot"></span>
             <span id="remote-id-badge-text">📡 1 Drone in Airspace</span>
@@ -2241,6 +2283,149 @@
             </div>
             <div class="ptfr-summary" id="pop-tfr-summary" style="font-size: 0.75rem; font-weight: 600; color: #34d399; margin-bottom: 4px;">No active TFRs within 30 NM</div>
             <div class="ptfr-list" id="pop-tfr-list" style="display: flex; flex-direction: column; gap: 4px; max-height: 140px; overflow-y: auto;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADS-B Airspace Control Side Drawer (Issue #92) -->
+      <div id="adsb-control-drawer" class="adsb-control-drawer hidden" aria-labelledby="adsb-drawer-title">
+        <div class="adsb-drawer-header">
+          <div class="adsb-drawer-title" id="adsb-drawer-title">
+            <span style="font-size: 1.15rem;">✈️</span>
+            <div>
+              <div style="font-weight: 700; font-size: 0.88rem; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+                <span>Manned Aircraft Radar</span>
+                <span id="adsb-status-tag" class="badge-tag is-operational" style="font-size: 0.6rem; padding: 1px 5px; border-radius: 4px;">ACTIVE</span>
+              </div>
+              <div style="font-size: 0.68rem; color: var(--text-muted);">1090 MHz ADS-B Transponder Monitor</div>
+            </div>
+          </div>
+          <button id="adsb-drawer-close-btn" type="button" class="popover-close-btn" aria-label="Close ADS-B Drawer" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.95rem; padding: 2px 6px;">✕</button>
+        </div>
+
+        <div class="adsb-drawer-body">
+          <!-- Master Controls Card -->
+          <div class="adsb-card">
+            <div class="adsb-card-row">
+              <label for="adsb-enable-toggle" class="adsb-control-label">
+                <span style="font-weight: 600;">Airspace Monitoring</span>
+                <span class="adsb-control-sub">Continuous deconfliction polling</span>
+              </label>
+              <label class="switch" style="position: relative; display: inline-block; width: 38px; height: 20px; margin: 0;">
+                <input type="checkbox" id="adsb-enable-toggle" checked style="opacity: 0; width: 0; height: 0;">
+                <span class="slider round"></span>
+              </label>
+            </div>
+            
+            <div class="adsb-card-row" style="margin-top: 10px;">
+              <label for="adsb-sound-toggle" class="adsb-control-label">
+                <span style="font-weight: 600;">Auditory Warning Chime</span>
+                <span class="adsb-control-sub">30s cooldown per aircraft</span>
+              </label>
+              <label class="switch" style="position: relative; display: inline-block; width: 38px; height: 20px; margin: 0;">
+                <input type="checkbox" id="adsb-sound-toggle" checked style="opacity: 0; width: 0; height: 0;">
+                <span class="slider round"></span>
+              </label>
+            </div>
+
+            <div class="adsb-card-row" style="margin-top: 8px;">
+              <span class="adsb-control-label" style="font-size: 0.74rem;">Alert Audio Mode:</span>
+              <select id="adsb-sound-type-select" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.72rem; border-radius: 5px; padding: 2px 6px;">
+                <option value="both" selected>Chime &amp; Voice</option>
+                <option value="chime">Dual-Tone Chime Only</option>
+                <option value="voice">Vocal Advisory Only</option>
+              </select>
+            </div>
+
+            <div style="margin-top: 8px; display: flex; gap: 6px;">
+              <button id="adsb-test-audio-btn" type="button" class="btn-secondary" style="flex: 1; padding: 5px 8px; font-size: 0.72rem; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer;" title="Test Audio Synth &amp; Speech">
+                <span>🔊</span> Test Audio
+              </button>
+              <button id="adsb-sim-trigger-btn" type="button" class="btn-secondary" style="flex: 1; padding: 5px 8px; font-size: 0.72rem; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: rgba(245, 158, 11, 0.12); color: #fbbf24; border-color: rgba(245, 158, 11, 0.35); cursor: pointer;" title="Simulate Approaching Aircraft Breach">
+                <span>⚠️</span> Simulate Traffic
+              </button>
+            </div>
+          </div>
+
+          <!-- Spatial Boundaries Card -->
+          <div class="adsb-card">
+            <div class="adsb-card-title">Spatial Alert Boundaries</div>
+
+            <!-- Proximity Radius Slider -->
+            <div class="adsb-slider-group">
+              <div class="adsb-slider-header">
+                <label for="adsb-radius-slider" style="font-size: 0.72rem; color: var(--text-muted);">Horizontal Proximity Radius:</label>
+                <span id="adsb-radius-val" style="font-size: 0.75rem; font-weight: 700; color: var(--accent-cyan);">3.0 mi (4.8 km)</span>
+              </div>
+              <input type="range" id="adsb-radius-slider" min="1.0" max="10.0" step="0.5" value="3.0" style="width: 100%; cursor: pointer;">
+              <div class="adsb-slider-range-labels">
+                <span>1.0 mi</span>
+                <span>5.0 mi</span>
+                <span>10.0 mi</span>
+              </div>
+            </div>
+
+            <!-- Warning Ceiling Slider -->
+            <div class="adsb-slider-group" style="margin-top: 8px;">
+              <div class="adsb-slider-header">
+                <label for="adsb-ceiling-slider" style="font-size: 0.72rem; color: var(--text-muted);">Vertical Ceiling Buffer:</label>
+                <span id="adsb-ceiling-val" style="font-size: 0.75rem; font-weight: 700; color: #fbbf24;">2,500 ft (762 m)</span>
+              </div>
+              <input type="range" id="adsb-ceiling-slider" min="500" max="5000" step="250" value="2500" style="width: 100%; cursor: pointer;">
+              <div class="adsb-slider-range-labels">
+                <span>500 ft</span>
+                <span>2,500 ft</span>
+                <span>5,000 ft</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Receiver & Hardware Card -->
+          <div class="adsb-card">
+            <div class="adsb-card-title" style="display: flex; justify-content: space-between; align-items: center;">
+              <span>Receiver &amp; Hardware</span>
+              <span id="adsb-hardware-badge" style="font-size: 0.62rem; color: #34d399; font-weight: 600;">READY</span>
+            </div>
+            <div class="adsb-hw-grid">
+              <div class="adsb-hw-item">
+                <span class="adsb-hw-lbl">Driver</span>
+                <span class="adsb-hw-val" id="adsb-hw-driver">RTL-SDR / dump1090</span>
+              </div>
+              <div class="adsb-hw-item">
+                <span class="adsb-hw-lbl">Frequency</span>
+                <span class="adsb-hw-val">1090 MHz</span>
+              </div>
+              <div class="adsb-hw-item">
+                <span class="adsb-hw-lbl">Packets</span>
+                <span class="adsb-hw-val" id="adsb-hw-packets">0</span>
+              </div>
+              <div class="adsb-hw-item">
+                <span class="adsb-hw-lbl">Aircraft</span>
+                <span class="adsb-hw-val" id="adsb-hw-count">0</span>
+              </div>
+            </div>
+
+            <!-- Custom ADS-B Endpoint Config (Collapsible/Optional) -->
+            <div style="margin-top: 8px;">
+              <details style="font-size: 0.7rem; color: var(--text-muted);">
+                <summary style="cursor: pointer; user-select: none;">Custom Endpoint URL (Optional)</summary>
+                <div style="margin-top: 6px; display: flex; gap: 4px;">
+                  <input type="text" id="adsb-endpoint-input" placeholder="e.g. http://localhost:8765/api/airspace/bounds" style="flex: 1; font-size: 0.68rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 3px 6px;">
+                  <button type="button" id="adsb-endpoint-save-btn" class="btn-sm" style="padding: 2px 8px; font-size: 0.68rem; cursor: pointer;">Save</button>
+                </div>
+              </details>
+            </div>
+          </div>
+
+          <!-- Live Tracked Aircraft List -->
+          <div class="adsb-card">
+            <div class="adsb-card-title" style="display: flex; justify-content: space-between; align-items: center;">
+              <span>Tracked Aircraft</span>
+              <span id="adsb-tracked-count-badge" class="badge-tag" style="font-size: 0.62rem; padding: 1px 5px; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: #38bdf8;">0 in Range</span>
+            </div>
+            <div id="adsb-aircraft-list" class="adsb-aircraft-list">
+              <div style="font-size: 0.72rem; color: var(--text-muted); text-align: center; padding: 12px 0;">No aircraft currently in range</div>
+            </div>
           </div>
         </div>
       </div>
@@ -2471,6 +2656,14 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #f87171; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              ✈️ Manned Aircraft Airspace Awareness &amp; ADS-B Audio Alerts (v1.123.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Real-time airspace deconfliction using locally connected RTL-SDR.COM USB receivers on 1090 MHz! Continuous bridge daemon coordinates <code>dump1090</code> hardware, decodes Mode S / SBS-1 transponder frames, and tracks nearby manned aircraft relative to your drone home point. Includes a dedicated <strong>ADS-B Control Drawer</strong> with configurable proximity radius (1–10 mi) and altitude ceiling (500–5,000 ft), high-visibility flashing visual alert banner with bearing and distance vectors, and Web Audio synthesized warning chimes and vocalized traffic advisories with 30-second per-aircraft cooldown throttling.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               📦 3D Wireframe Package Bundling &amp; Three.js Editor Import (v1.122.0)
@@ -3350,7 +3543,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.122.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.123.0</span>
 
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
@@ -3414,6 +3607,23 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.123.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>✈️ Manned Aircraft Airspace Awareness (ADS-B Alerts):</strong> Integrated real-time 1090 MHz ADS-B transponder deconfliction tracking via RTL-SDR.COM dongles and <code>dump1090</code> hardware daemons.</li>
+              <li><strong>🔊 Web Audio &amp; Voice Synthesis Alerts:</strong> Immediate dual-tone aviation warning chimes and synthesized vocal advisories with strict 30-second per-aircraft cooldown throttling to prevent cockpit audio clipping.</li>
+              <li><strong>🚨 Flashing Visual Alert Banner:</strong> Dynamic top-of-map warning banner rendering active callsigns, AGL altitudes, distance vectors, and relative bearings with 1-click 1-minute snooze and mute controls.</li>
+              <li><strong>🎛️ ADS-B Airspace Control Drawer:</strong> Dedicated sliding overlay drawer to adjust proximity radius (1–10 mi), vertical ceiling buffer (500–5,000 ft), and custom bridge endpoint routing.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.122.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🧹 Flight Diagnostics Ground Footprint Reset:</strong> Separated base ground imagery from live footprint painting with an offscreen base canvas; fixed cumulative over-painting when replaying missions or seeking backwards.</li>
+              <li><strong>⏮️ Timeline Rewind &amp; Reset Controls:</strong> Added a dedicated <strong>Rewind to Start (⏮)</strong> button on the timeline controller and a <strong>Clear Footprints (🧹)</strong> button in the Diagnostics HUD; enhanced the HUD Reset button to pause, seek to start, and wipe ground footprints.</li>
+              <li><strong>⌘ Dynamic Footprints Toggle Sync:</strong> Toggling Footprints off now immediately clears all ground footprint overlays, and toggling on redraws only up to the active playhead timestamp.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.122.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -6578,12 +6788,13 @@
             <div class="diag-hud-controls" id="diag-hud-controls">
               <button id="diag-btn-autorotate" class="btn-secondary"><span>↻</span> Auto‑Rotate</button>
               <span id="diag-indicator-autorotate" class="diag-indicator"></span>
-              <button id="diag-btn-reset" class="btn-secondary"><span>⟲</span> Reset</button>
+              <button id="diag-btn-reset" class="btn-secondary" title="Reset camera view, rewind flight to start, and reset ground footprints"><span>⟲</span> Reset</button>
               <span id="diag-indicator-reset" class="diag-indicator"></span>
               <button id="diag-btn-toggle-cones" class="btn-secondary"><span>⦿</span> Camera Cones</button>
               <span id="diag-indicator-cones" class="diag-indicator"></span>
               <button id="diag-btn-toggle-footprints" class="btn-secondary"><span>⌘</span> Footprints</button>
               <span id="diag-indicator-footprints" class="diag-indicator"></span>
+              <button id="diag-btn-reset-footprints" class="btn-secondary" title="Clear and reset all painted ground coverage footprints"><span>🧹</span> Clear Footprints</button>
               <button id="diag-btn-toggle-drones" class="btn-secondary"><span>✈</span> 3D Drones</button>
               <span id="diag-indicator-drones" class="diag-indicator"></span>
               <button id="diag-btn-toggle-wireframe" class="btn-secondary active" title="Toggle 3D Architectural Wireframe Extrusion"><span>🏗️</span> Wireframe</button>
@@ -6662,7 +6873,10 @@
 
           <!-- Bottom Timeline Controller -->
           <div class="diag-timeline-controller" style="padding: 10px 16px; background: rgba(15, 23, 42, 0.95); border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px;">
-            <div class="diag-timeline-row" style="display: flex; align-items: center; gap: 12px;">
+            <div class="diag-timeline-row" style="display: flex; align-items: center; gap: 10px;">
+              <button id="diag-rewind-btn" type="button" title="Rewind to start & reset footprints" style="width: 32px; height: 32px; border-radius: 50%; background: rgba(255, 255, 255, 0.08); border: 1px solid var(--border-color); color: var(--text-muted); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;" onmouseover="this.style.color='#22d3ee'; this.style.borderColor='rgba(6, 182, 212, 0.4)';" onmouseout="this.style.color='var(--text-muted)'; this.style.borderColor='var(--border-color)';">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><polygon points="11 19 2 12 11 5 11 19"/><polygon points="22 19 13 12 22 5 22 19"/></svg>
+              </button>
               <button id="diag-play-btn" type="button" style="width: 34px; height: 34px; border-radius: 50%; background: var(--primary-gradient); border: none; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; box-shadow: 0 2px 8px rgba(6, 182, 212, 0.4);">
                 <svg id="diag-play-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                 <svg id="diag-pause-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="display: none;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>

@@ -18317,6 +18317,11 @@ function initRC2Controls() {
   // Initialize Remote ID Airspace Radar
   RemoteIdRadar.init();
 
+  // Initialize Manned Aircraft ADS-B Radar (Issue #92)
+  if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager.init) {
+    AdsbAirspaceManager.init();
+  }
+
   // Start polling Companion service status & Remote ID radar with adaptive backoff & visibility gating
   initCompanionPolling();
 }
@@ -19162,6 +19167,759 @@ if (typeof window !== 'undefined') {
   window.RemoteIdRadar = RemoteIdRadar;
 }
 
+// ─── Manned Aircraft Airspace Awareness (ADS-B Audio Alerts) - Issue #92 ───────
+const AdsbAirspaceManager = {
+  enabled: true,
+  soundEnabled: true,
+  soundType: 'both', // 'both' | 'chime' | 'voice'
+  radiusMiles: 3.0,
+  ceilingFeet: 2500,
+  customEndpoint: '',
+  isDrawerOpen: false,
+  isSnoozed: false,
+  snoozeUntil: 0,
+  aircraft: [],
+  breachedAircraft: [],
+  lastAlertTimes: new Map(), // hex -> timestamp (30s cooldown)
+  previousStatus: new Map(), // hex -> 'safe' | 'breached'
+  layerGroup: null,
+  mapMarkers: new Map(), // hex -> Leaflet marker
+  audioContext: null,
+  pollTimer: null,
+  isPolling: false,
+  hardwareStatus: { connected: false, driverType: 'unknown', packets: 0 },
+
+  init() {
+    this.loadSettings();
+    this.initMapLayer();
+    this.bindEvents();
+    this.updateControlsUI();
+    if (this.enabled) {
+      this.startPolling();
+    }
+  },
+
+  loadSettings() {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const savedEnabled = localStorage.getItem('aalaapi_adsb_enabled');
+        if (savedEnabled !== null) this.enabled = savedEnabled === 'true';
+
+        const savedSound = localStorage.getItem('aalaapi_adsb_sound');
+        if (savedSound !== null) this.soundEnabled = savedSound === 'true';
+
+        const savedType = localStorage.getItem('aalaapi_adsb_sound_type');
+        if (savedType) this.soundType = savedType;
+
+        const savedRadius = localStorage.getItem('aalaapi_adsb_radius_mi');
+        if (savedRadius) this.radiusMiles = parseFloat(savedRadius) || 3.0;
+
+        const savedCeiling = localStorage.getItem('aalaapi_adsb_ceiling_ft');
+        if (savedCeiling) this.ceilingFeet = parseInt(savedCeiling, 10) || 2500;
+
+        const savedEndpoint = localStorage.getItem('aalaapi_adsb_custom_endpoint');
+        if (savedEndpoint) this.customEndpoint = savedEndpoint;
+      }
+    } catch (e) {}
+  },
+
+  saveSettings() {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('aalaapi_adsb_enabled', String(this.enabled));
+        localStorage.setItem('aalaapi_adsb_sound', String(this.soundEnabled));
+        localStorage.setItem('aalaapi_adsb_sound_type', this.soundType);
+        localStorage.setItem('aalaapi_adsb_radius_mi', String(this.radiusMiles));
+        localStorage.setItem('aalaapi_adsb_ceiling_ft', String(this.ceilingFeet));
+        localStorage.setItem('aalaapi_adsb_custom_endpoint', this.customEndpoint || '');
+      }
+    } catch (e) {}
+  },
+
+  getEffectiveEndpoint() {
+    if (this.customEndpoint && this.customEndpoint.trim()) {
+      return this.customEndpoint.trim();
+    }
+    const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+    return `${apiBase}/api/airspace/bounds`;
+  },
+
+  initMapLayer() {
+    const m = (typeof map !== 'undefined') ? map : null;
+    const leaflet = (typeof L !== 'undefined') ? L : null;
+    if (leaflet && m && !this.layerGroup && m.addLayer && leaflet.layerGroup) {
+      this.layerGroup = leaflet.layerGroup().addTo(m);
+    }
+  },
+
+  initAudioContext() {
+    if (!this.audioContext && typeof window !== 'undefined') {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        try {
+          this.audioContext = new AudioCtx();
+        } catch (e) {}
+      }
+    }
+    if (this.audioContext && this.audioContext.state === 'suspended') {
+      this.audioContext.resume().catch(() => {});
+    }
+  },
+
+  playWarningChime() {
+    try {
+      this.initAudioContext();
+      if (!this.audioContext) return;
+      const ctx = this.audioContext;
+      const now = ctx.currentTime;
+
+      const masterGain = ctx.createGain();
+      masterGain.connect(ctx.destination);
+      masterGain.gain.setValueAtTime(0.3, now);
+
+      // Tone 1: 880 Hz (A5)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(880, now);
+      gain1.gain.setValueAtTime(0.35, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+      osc1.connect(gain1);
+      gain1.connect(masterGain);
+      osc1.start(now);
+      osc1.stop(now + 0.18);
+
+      // Tone 2: 660 Hz (E5)
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(660, now + 0.19);
+      gain2.gain.setValueAtTime(0.35, now + 0.19);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+      osc2.connect(gain2);
+      gain2.connect(masterGain);
+      osc2.start(now + 0.19);
+      osc2.stop(now + 0.45);
+    } catch (e) {}
+  },
+
+  playVoiceAdvisory(aircraft) {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+    try {
+      window.speechSynthesis.cancel();
+      const isMetric = typeof isMetricMode === 'function' ? isMetricMode() : false;
+      const callsign = (aircraft.callsign || 'Traffic').replace(/[^A-Za-z0-9]/g, ' ');
+      let distText = '';
+      let altText = '';
+      if (isMetric) {
+        const km = aircraft.distanceMeters ? (aircraft.distanceMeters / 1000).toFixed(1) : 'unknown';
+        const m = aircraft.altitude ? Math.round(aircraft.altitude * 0.3048) : 'unknown';
+        distText = `${km} kilometers`;
+        altText = `${m} meters`;
+      } else {
+        const mi = aircraft.distanceMiles !== null ? aircraft.distanceMiles : 'unknown';
+        const ft = aircraft.altitude !== null ? aircraft.altitude : 'unknown';
+        distText = `${mi} miles`;
+        altText = `${ft} feet`;
+      }
+      const cardinal = aircraft.bearingCardinal ? ` ${aircraft.bearingCardinal}` : '';
+      const text = `Traffic alert! ${callsign}, ${distText}${cardinal}, ${altText}.`;
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.05;
+      utterance.pitch = 1.0;
+      utterance.volume = 0.9;
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {}
+  },
+
+  triggerAudioAlert(aircraft) {
+    if (!this.soundEnabled) return;
+    const now = Date.now();
+    if (this.isSnoozed) {
+      if (now < this.snoozeUntil) return;
+      this.isSnoozed = false;
+    }
+
+    const hex = aircraft.hex;
+    const lastTime = this.lastAlertTimes.get(hex) || 0;
+    if (now - lastTime < 30000) {
+      // Cooldown active (<30s)
+      return;
+    }
+    this.lastAlertTimes.set(hex, now);
+
+    if (this.soundType === 'chime' || this.soundType === 'both') {
+      this.playWarningChime();
+    }
+    if (this.soundType === 'voice' || this.soundType === 'both') {
+      setTimeout(() => {
+        this.playVoiceAdvisory(aircraft);
+      }, 220);
+    }
+  },
+
+  snooze(minutes = 1) {
+    this.isSnoozed = true;
+    this.snoozeUntil = Date.now() + (minutes * 60 * 1000);
+    const btn = typeof document !== 'undefined' ? document.getElementById('adsb-alert-snooze-btn') : null;
+    if (btn) btn.textContent = 'Snoozed (1m)';
+  },
+
+  toggleSound(forceState) {
+    this.soundEnabled = forceState !== undefined ? forceState : !this.soundEnabled;
+    this.saveSettings();
+    this.updateControlsUI();
+  },
+
+  toggleTracking(forceState) {
+    this.enabled = forceState !== undefined ? forceState : !this.enabled;
+    this.saveSettings();
+    if (this.enabled) {
+      this.startPolling();
+    } else {
+      this.stopPolling();
+      this.clearAll();
+    }
+    this.updateControlsUI();
+  },
+
+  toggleDrawer(forceState) {
+    const drawer = typeof document !== 'undefined' ? document.getElementById('adsb-control-drawer') : null;
+    if (!drawer) return;
+    this.isDrawerOpen = forceState !== undefined ? forceState : !this.isDrawerOpen;
+    if (this.isDrawerOpen) {
+      drawer.classList.remove('hidden');
+      this.initAudioContext();
+      this.updateDrawerAircraftList();
+    } else {
+      drawer.classList.add('hidden');
+    }
+  },
+
+  startPolling() {
+    if (this.pollTimer) clearInterval(this.pollTimer);
+    this.isPolling = true;
+    this.pollAirspace();
+    this.pollTimer = setInterval(() => {
+      if (this.enabled) {
+        this.pollAirspace();
+      }
+    }, 2000);
+  },
+
+  stopPolling() {
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
+    this.isPolling = false;
+  },
+
+  async pollAirspace() {
+    if (!this.enabled) return;
+    try {
+      let homeLat = 40.0130;
+      let homeLon = -83.1765;
+      if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) {
+        const ll = centerMarker.getLatLng();
+        homeLat = ll.lat;
+        homeLon = ll.lng;
+      } else if (typeof map !== 'undefined' && map && map.getCenter) {
+        const ll = map.getCenter();
+        homeLat = ll.lat;
+        homeLon = ll.lng;
+      }
+
+      const endpoint = this.getEffectiveEndpoint();
+      const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&includeSafe=true`;
+      
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      if (data && data.success) {
+        this.aircraft = Array.isArray(data.aircraft) ? data.aircraft : [];
+        this.breachedAircraft = this.aircraft.filter(a => a.isBreached);
+
+        // State transition detection & 30s audio throttling
+        for (const ac of this.aircraft) {
+          const prev = this.previousStatus.get(ac.hex) || 'safe';
+          if (ac.isBreached) {
+            if (prev === 'safe') {
+              this.triggerAudioAlert(ac);
+            } else {
+              const now = Date.now();
+              if (now - (this.lastAlertTimes.get(ac.hex) || 0) >= 30000) {
+                this.triggerAudioAlert(ac);
+              }
+            }
+            this.previousStatus.set(ac.hex, 'breached');
+          } else {
+            this.previousStatus.set(ac.hex, 'safe');
+          }
+        }
+
+        // Clean up previousStatus for aircraft that left coverage
+        const activeHexes = new Set(this.aircraft.map(a => a.hex));
+        for (const hex of this.previousStatus.keys()) {
+          if (!activeHexes.has(hex)) this.previousStatus.delete(hex);
+        }
+
+        this.updateVisualBanner();
+        this.updateTopbarAndHud();
+        this.updateMapMarkers();
+        if (this.isDrawerOpen) {
+          this.updateDrawerAircraftList();
+        }
+      }
+    } catch (e) {
+      // Endpoint error or companion offline
+    }
+  },
+
+  updateVisualBanner() {
+    const banner = typeof document !== 'undefined' ? document.getElementById('adsb-alert-banner') : null;
+    if (!banner) return;
+
+    if (this.breachedAircraft.length > 0 && this.enabled) {
+      const primary = this.breachedAircraft[0];
+      const callsignEl = document.getElementById('adsb-alert-callsign');
+      const altEl = document.getElementById('adsb-alert-altitude');
+      const distEl = document.getElementById('adsb-alert-distance');
+      const speedEl = document.getElementById('adsb-alert-speed');
+      const badgeEl = document.getElementById('adsb-alert-badge');
+
+      if (callsignEl) callsignEl.textContent = primary.callsign || `HEX:${primary.hex}`;
+      if (altEl) {
+        const isMetric = typeof isMetricMode === 'function' ? isMetricMode() : false;
+        if (primary.altitude !== null) {
+          altEl.textContent = isMetric 
+            ? `${Math.round(primary.altitude * 0.3048)} m AGL` 
+            : `${primary.altitude.toLocaleString()} ft AGL`;
+        } else {
+          altEl.textContent = 'Alt N/A';
+        }
+      }
+      if (distEl) {
+        const isMetric = typeof isMetricMode === 'function' ? isMetricMode() : false;
+        const cardinal = primary.bearingCardinal ? ` ${primary.bearingCardinal}` : '';
+        const deg = primary.bearingDeg !== null ? ` (${String(primary.bearingDeg).padStart(3, '0')}°)` : '';
+        if (isMetric) {
+          const km = primary.distanceMeters ? (primary.distanceMeters / 1000).toFixed(1) : '--';
+          distEl.textContent = `${km} km${cardinal}${deg}`;
+        } else {
+          const mi = primary.distanceMiles !== null ? primary.distanceMiles.toFixed(1) : '--';
+          distEl.textContent = `${mi} mi${cardinal}${deg}`;
+        }
+      }
+      if (speedEl) {
+        speedEl.textContent = primary.speed ? `${primary.speed} kts` : '-- kts';
+      }
+      if (badgeEl) {
+        badgeEl.textContent = this.breachedAircraft.length > 1 
+          ? `BREACH (${this.breachedAircraft.length})` 
+          : 'BREACH';
+      }
+
+      banner.classList.remove('hidden');
+    } else {
+      banner.classList.add('hidden');
+    }
+  },
+
+  updateTopbarAndHud() {
+    if (typeof document === 'undefined') return;
+    const topbarBadge = document.getElementById('adsb-topbar-badge');
+    const topbarBtn = document.getElementById('adsb-topbar-btn');
+    const mapPill = document.getElementById('adsb-map-pill');
+    const mapPillText = document.getElementById('adsb-map-pill-text');
+    const beaconDot = document.getElementById('adsb-beacon-dot');
+
+    const breachedCount = this.breachedAircraft.length;
+    const totalCount = this.aircraft.length;
+
+    if (topbarBadge) {
+      if (breachedCount > 0) {
+        topbarBadge.textContent = `${breachedCount} ALERT`;
+        topbarBadge.style.background = 'rgba(239, 68, 68, 0.4)';
+        topbarBadge.style.color = '#fff';
+        topbarBadge.classList.remove('hidden');
+      } else if (totalCount > 0) {
+        topbarBadge.textContent = `${totalCount}`;
+        topbarBadge.style.background = 'rgba(56, 189, 248, 0.2)';
+        topbarBadge.style.color = '#38bdf8';
+        topbarBadge.classList.remove('hidden');
+      } else {
+        topbarBadge.classList.add('hidden');
+      }
+    }
+
+    if (mapPill) {
+      if (breachedCount > 0) {
+        mapPill.classList.remove('hidden');
+        if (mapPillText) mapPillText.textContent = `🚨 ${breachedCount} Traffic Alert`;
+        if (beaconDot) {
+          beaconDot.style.background = '#ef4444';
+          beaconDot.classList.add('pulsing-beacon-dot');
+        }
+      } else if (totalCount > 0) {
+        mapPill.classList.remove('hidden');
+        if (mapPillText) mapPillText.textContent = `✈️ ${totalCount} Aircraft`;
+        if (beaconDot) {
+          beaconDot.style.background = '#38bdf8';
+        }
+      } else {
+        mapPill.classList.add('hidden');
+      }
+    }
+  },
+
+  updateMapMarkers() {
+    const leaflet = typeof L !== 'undefined' ? L : null;
+    const m = typeof map !== 'undefined' ? map : null;
+    if (!leaflet || !m) return;
+    this.initMapLayer();
+    if (!this.layerGroup) return;
+
+    const currentHexes = new Set();
+
+    for (const ac of this.aircraft) {
+      if (ac.latitude === null || ac.longitude === null) continue;
+      currentHexes.add(ac.hex);
+
+      const isBreached = ac.isBreached;
+      const track = ac.track || 0;
+      const altStr = ac.altitude ? `${ac.altitude} ft` : 'Alt N/A';
+      const speedStr = ac.speed ? `${ac.speed} kt` : '';
+      const tooltipContent = `<strong>${ac.callsign || ac.hex}</strong><br>Alt: ${altStr} • ${speedStr}<br>Dist: ${ac.distanceMiles || '--'} mi ${ac.bearingCardinal || ''}`;
+
+      let marker = this.mapMarkers.get(ac.hex);
+      if (!marker) {
+        const svgColor = isBreached ? '#ef4444' : '#38bdf8';
+        const innerClass = isBreached ? 'adsb-marker-inner breached' : 'adsb-marker-inner';
+        const iconHtml = `
+          <div class="adsb-map-aircraft-marker" style="transform: rotate(${track}deg);">
+            <div class="${innerClass}">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+              </svg>
+            </div>
+          </div>
+        `;
+        const divIcon = leaflet.divIcon({
+          className: 'adsb-leaflet-marker-container',
+          html: iconHtml,
+          iconSize: [32, 32],
+          iconAnchor: [16, 16]
+        });
+
+        marker = leaflet.marker([ac.latitude, ac.longitude], { icon: divIcon });
+        if (marker.bindTooltip) {
+          marker.bindTooltip(tooltipContent, {
+            className: `adsb-plane-tooltip ${isBreached ? 'breached' : ''}`,
+            direction: 'top',
+            offset: [0, -12]
+          });
+        }
+        marker.addTo(this.layerGroup);
+        this.mapMarkers.set(ac.hex, marker);
+      } else {
+        marker.setLatLng([ac.latitude, ac.longitude]);
+        const inner = marker.getElement()?.querySelector('.adsb-map-aircraft-marker');
+        if (inner) {
+          inner.style.transform = `rotate(${track}deg)`;
+          const innerRing = inner.querySelector('.adsb-marker-inner');
+          if (innerRing) {
+            innerRing.className = isBreached ? 'adsb-marker-inner breached' : 'adsb-marker-inner';
+          }
+        }
+        if (marker.setTooltipContent) {
+          marker.setTooltipContent(tooltipContent);
+        }
+      }
+    }
+
+    // Remove markers no longer in range
+    for (const [hex, marker] of this.mapMarkers.entries()) {
+      if (!currentHexes.has(hex)) {
+        if (this.layerGroup.removeLayer) this.layerGroup.removeLayer(marker);
+        this.mapMarkers.delete(hex);
+      }
+    }
+  },
+
+  clearAll() {
+    this.aircraft = [];
+    this.breachedAircraft = [];
+    this.previousStatus.clear();
+    this.updateVisualBanner();
+    this.updateTopbarAndHud();
+    if (this.layerGroup && this.layerGroup.clearLayers) {
+      this.layerGroup.clearLayers();
+    }
+    this.mapMarkers.clear();
+    if (this.isDrawerOpen) {
+      this.updateDrawerAircraftList();
+    }
+  },
+
+  updateControlsUI() {
+    if (typeof document === 'undefined') return;
+
+    const enableToggle = document.getElementById('adsb-enable-toggle');
+    if (enableToggle) enableToggle.checked = this.enabled;
+
+    const soundToggle = document.getElementById('adsb-sound-toggle');
+    if (soundToggle) soundToggle.checked = this.soundEnabled;
+
+    const soundSelect = document.getElementById('adsb-sound-type-select');
+    if (soundSelect) soundSelect.value = this.soundType;
+
+    const radiusSlider = document.getElementById('adsb-radius-slider');
+    const radiusVal = document.getElementById('adsb-radius-val');
+    if (radiusSlider) radiusSlider.value = this.radiusMiles;
+    if (radiusVal) {
+      const isMetric = typeof isMetricMode === 'function' ? isMetricMode() : false;
+      const km = (this.radiusMiles * 1.609344).toFixed(1);
+      radiusVal.textContent = isMetric 
+        ? `${km} km (${this.radiusMiles} mi)` 
+        : `${this.radiusMiles.toFixed(1)} mi (${km} km)`;
+    }
+
+    const ceilingSlider = document.getElementById('adsb-ceiling-slider');
+    const ceilingVal = document.getElementById('adsb-ceiling-val');
+    if (ceilingSlider) ceilingSlider.value = this.ceilingFeet;
+    if (ceilingVal) {
+      const isMetric = typeof isMetricMode === 'function' ? isMetricMode() : false;
+      const m = Math.round(this.ceilingFeet * 0.3048);
+      ceilingVal.textContent = isMetric 
+        ? `${m.toLocaleString()} m (${this.ceilingFeet.toLocaleString()} ft)` 
+        : `${this.ceilingFeet.toLocaleString()} ft (${m.toLocaleString()} m)`;
+    }
+
+    const endpointInput = document.getElementById('adsb-endpoint-input');
+    if (endpointInput) endpointInput.value = this.customEndpoint || '';
+  },
+
+  updateDrawerAircraftList() {
+    if (typeof document === 'undefined') return;
+    const listEl = document.getElementById('adsb-aircraft-list');
+    const badgeEl = document.getElementById('adsb-tracked-count-badge');
+    const hwPacketsEl = document.getElementById('adsb-hw-packets');
+    const hwCountEl = document.getElementById('adsb-hw-count');
+
+    if (hwCountEl) hwCountEl.textContent = this.aircraft.length;
+    if (badgeEl) {
+      badgeEl.textContent = `${this.aircraft.length} in Range`;
+      if (this.breachedAircraft.length > 0) {
+        badgeEl.style.background = 'rgba(239, 68, 68, 0.25)';
+        badgeEl.style.color = '#fca5a5';
+      } else {
+        badgeEl.style.background = 'rgba(56, 189, 248, 0.15)';
+        badgeEl.style.color = '#38bdf8';
+      }
+    }
+
+    if (!listEl) return;
+    if (this.aircraft.length === 0) {
+      listEl.innerHTML = '<div style="font-size: 0.72rem; color: var(--text-muted); text-align: center; padding: 12px 0;">No aircraft currently in range</div>';
+      return;
+    }
+
+    const isMetric = typeof isMetricMode === 'function' ? isMetricMode() : false;
+    let html = '';
+    for (const ac of this.aircraft) {
+      const isBreached = ac.isBreached;
+      const altStr = ac.altitude !== null ? (isMetric ? `${Math.round(ac.altitude * 0.3048)}m` : `${ac.altitude}ft`) : 'Alt N/A';
+      const distStr = ac.distanceMiles !== null ? (isMetric ? `${(ac.distanceMeters / 1000).toFixed(1)}km` : `${ac.distanceMiles}mi`) : '--';
+      const statusChip = isBreached 
+        ? '<span style="font-size: 0.62rem; font-weight: 700; background: rgba(239, 68, 68, 0.3); border: 1px solid rgba(239, 68, 68, 0.6); color: #fca5a5; padding: 1px 6px; border-radius: 8px;">ALERT</span>'
+        : '<span style="font-size: 0.62rem; font-weight: 600; background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 1px 6px; border-radius: 8px;">SAFE</span>';
+
+      html += `
+        <div class="adsb-aircraft-card ${isBreached ? 'breached' : ''}">
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-weight: 700; font-size: 0.78rem; color: #fff;">${ac.callsign || ac.hex}</span>
+              <span style="font-size: 0.64rem; color: var(--text-muted); font-family: monospace;">[${ac.hex}]</span>
+            </div>
+            <div style="font-size: 0.68rem; color: var(--text-muted);">
+              <span>${altStr}</span> • <span>${ac.speed ? ac.speed + ' kts' : '-- kts'}</span> • <span>${ac.track ? ac.track + '°' : ''}</span>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 3px;">
+            ${statusChip}
+            <span style="font-size: 0.68rem; font-weight: 600; color: #fbbf24;">${distStr} ${ac.bearingCardinal || ''}</span>
+          </div>
+        </div>
+      `;
+    }
+    listEl.innerHTML = html;
+  },
+
+  bindEvents() {
+    if (typeof document === 'undefined') return;
+
+    // Topbar & More menu buttons
+    const topbarBtn = document.getElementById('adsb-topbar-btn');
+    if (topbarBtn) topbarBtn.addEventListener('click', () => this.toggleDrawer());
+
+    const moreMenuBtn = document.getElementById('more-menu-adsb-btn');
+    if (moreMenuBtn) moreMenuBtn.addEventListener('click', () => {
+      const moreMenu = document.getElementById('header-more-menu');
+      if (moreMenu) moreMenu.classList.add('hidden');
+      this.toggleDrawer(true);
+    });
+
+    const mapPill = document.getElementById('adsb-map-pill');
+    if (mapPill) mapPill.addEventListener('click', () => this.toggleDrawer(true));
+
+    // Drawer close button
+    const closeBtn = document.getElementById('adsb-drawer-close-btn');
+    if (closeBtn) closeBtn.addEventListener('click', () => this.toggleDrawer(false));
+
+    // Drawer controls
+    const enableToggle = document.getElementById('adsb-enable-toggle');
+    if (enableToggle) {
+      enableToggle.addEventListener('change', (e) => this.toggleTracking(e.target.checked));
+    }
+
+    const soundToggle = document.getElementById('adsb-sound-toggle');
+    if (soundToggle) {
+      soundToggle.addEventListener('change', (e) => this.toggleSound(e.target.checked));
+    }
+
+    const soundSelect = document.getElementById('adsb-sound-type-select');
+    if (soundSelect) {
+      soundSelect.addEventListener('change', (e) => {
+        this.soundType = e.target.value;
+        this.saveSettings();
+      });
+    }
+
+    const testAudioBtn = document.getElementById('adsb-test-audio-btn');
+    if (testAudioBtn) {
+      testAudioBtn.addEventListener('click', () => {
+        this.initAudioContext();
+        this.playWarningChime();
+        setTimeout(() => {
+          this.playVoiceAdvisory({
+            callsign: 'UAL452',
+            distanceMiles: 1.5,
+            distanceMeters: 2414,
+            altitude: 1850,
+            bearingCardinal: 'NE'
+          });
+        }, 220);
+      });
+    }
+
+    const simTriggerBtn = document.getElementById('adsb-sim-trigger-btn');
+    if (simTriggerBtn) {
+      simTriggerBtn.addEventListener('click', async () => {
+        this.initAudioContext();
+        let homeLat = 40.0130;
+        let homeLon = -83.1765;
+        if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) {
+          const ll = centerMarker.getLatLng();
+          homeLat = ll.lat;
+          homeLon = ll.lng;
+        }
+
+        const simAircraft = {
+          hex: 'A99999',
+          callsign: 'CESSNA172',
+          lat: homeLat + 0.012, // ~0.9 mi away
+          lon: homeLon + 0.012,
+          alt: 1600, // below 2,500 ft ceiling!
+          speed: 120,
+          track: 225
+        };
+
+        try {
+          const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+          await fetch(`${apiBase}/api/airspace/simulate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(simAircraft)
+          });
+        } catch (e) {
+          // If offline, inject directly into manager
+          simAircraft.distanceMeters = 1500;
+          simAircraft.distanceMiles = 0.93;
+          simAircraft.bearingDeg = 45;
+          simAircraft.bearingCardinal = 'NE';
+          simAircraft.isBreached = true;
+          simAircraft.status = 'breached';
+          this.aircraft = [simAircraft];
+          this.breachedAircraft = [simAircraft];
+          this.triggerAudioAlert(simAircraft);
+          this.updateVisualBanner();
+          this.updateTopbarAndHud();
+          this.updateDrawerAircraftList();
+        }
+        await this.pollAirspace();
+      });
+    }
+
+    const radiusSlider = document.getElementById('adsb-radius-slider');
+    if (radiusSlider) {
+      radiusSlider.addEventListener('input', (e) => {
+        this.radiusMiles = parseFloat(e.target.value) || 3.0;
+        this.saveSettings();
+        this.updateControlsUI();
+        this.pollAirspace();
+      });
+    }
+
+    const ceilingSlider = document.getElementById('adsb-ceiling-slider');
+    if (ceilingSlider) {
+      ceilingSlider.addEventListener('input', (e) => {
+        this.ceilingFeet = parseInt(e.target.value, 10) || 2500;
+        this.saveSettings();
+        this.updateControlsUI();
+        this.pollAirspace();
+      });
+    }
+
+    const endpointSaveBtn = document.getElementById('adsb-endpoint-save-btn');
+    const endpointInput = document.getElementById('adsb-endpoint-input');
+    if (endpointSaveBtn && endpointInput) {
+      endpointSaveBtn.addEventListener('click', () => {
+        this.customEndpoint = endpointInput.value.trim();
+        this.saveSettings();
+        endpointSaveBtn.textContent = 'Saved!';
+        setTimeout(() => { endpointSaveBtn.textContent = 'Save'; }, 1500);
+        this.pollAirspace();
+      });
+    }
+
+    // Visual Alert Banner Actions
+    const snoozeBtn = document.getElementById('adsb-alert-snooze-btn');
+    if (snoozeBtn) snoozeBtn.addEventListener('click', () => this.snooze(1));
+
+    const muteBtn = document.getElementById('adsb-alert-mute-btn');
+    if (muteBtn) {
+      muteBtn.addEventListener('click', () => {
+        this.toggleSound(!this.soundEnabled);
+        muteBtn.textContent = this.soundEnabled ? 'Mute' : 'Unmute';
+      });
+    }
+
+    const alertCloseBtn = document.getElementById('adsb-alert-close-btn');
+    if (alertCloseBtn) {
+      alertCloseBtn.addEventListener('click', () => {
+        const banner = document.getElementById('adsb-alert-banner');
+        if (banner) banner.classList.add('hidden');
+      });
+    }
+  }
+};
+
+if (typeof window !== 'undefined') {
+  window.AdsbAirspaceManager = AdsbAirspaceManager;
+}
+
 // ─── Flight Diagnostics & 3D Telemetry Replay Engine ──────────────────────────
 
 function getActiveMissionWaypoints() {
@@ -19603,6 +20361,9 @@ const FlightDiagnostics = {
   plannedLineMesh: null,
   photoMarkers: [],
   boundaryMeshes: [],
+  baseGroundCanvas: null,
+  baseGroundCtx: null,
+  lastPaintedPointIdx: -1,
   currentLoadedMission: null,
   activeTab: '3d',
   _loadGeneration: 0,   // incremented each call to loadSelectedFlight; guards against stale async loads
@@ -20116,6 +20877,17 @@ const FlightDiagnostics = {
       });
     }
 
+    const rewindBtn = document.getElementById('diag-rewind-btn');
+    if (rewindBtn && typeof rewindBtn.addEventListener === 'function') {
+      rewindBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.pause();
+        this.playbackFractionalIndex = 0.0;
+        this.seekTo(0, true, true);
+        this.resetGroundCanvas();
+      });
+    }
+
     const playBtn = document.getElementById('diag-play-btn');
     if (playBtn && typeof playBtn.addEventListener === 'function') playBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -20206,6 +20978,12 @@ const FlightDiagnostics = {
           if (fpvBtn) fpvBtn.classList.remove('active');
           _setDiagIndicator('diag-indicator-fpv', false);
         }
+        // Pause playback, reset timeline to start, and reset ground footprints
+        this.pause();
+        this.playbackFractionalIndex = 0.0;
+        this.seekTo(0, true, true);
+        this.resetGroundCanvas();
+
         // Re-frame camera to trajectory bounding box
         const targetMesh = this.actualLineMesh || this.plannedLineMesh;
         if (targetMesh && targetMesh.geometry && this.threeCamera && this.threeControls) {
@@ -20264,8 +21042,21 @@ const FlightDiagnostics = {
             if (marker) marker.visible = this.diagShowFootprints;
           });
         }
+        // Synchronously update ground canvas footprints
+        if (!this.diagShowFootprints) {
+          this.resetGroundCanvas();
+        } else {
+          this.redrawGroundFootprints(this.currentPointIndex);
+        }
         diagBtnFootprints.classList.toggle('active', this.diagShowFootprints);
         _setDiagIndicator('diag-indicator-footprints', this.diagShowFootprints);
+      });
+    }
+
+    const diagBtnResetFootprints = document.getElementById('diag-btn-reset-footprints');
+    if (diagBtnResetFootprints && typeof diagBtnResetFootprints.addEventListener === 'function') {
+      diagBtnResetFootprints.addEventListener('click', () => {
+        this.resetGroundCanvas();
       });
     }
 
@@ -21554,16 +22345,26 @@ const FlightDiagnostics = {
     const ctx = groundCanvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.fillStyle = "#070a13";
-    ctx.fillRect(0, 0, 768, 768);
+    const baseGroundCanvas = document.createElement('canvas');
+    baseGroundCanvas.width = 768;
+    baseGroundCanvas.height = 768;
+    const baseCtx = baseGroundCanvas.getContext ? baseGroundCanvas.getContext('2d') : null;
 
-    ctx.strokeStyle = "rgba(6, 182, 212, 0.15)";
-    ctx.lineWidth = 1;
-    for (let i = 0; i <= 12; i++) {
-      const coord = i * 64;
-      ctx.beginPath(); ctx.moveTo(coord, 0); ctx.lineTo(coord, 768); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0, coord); ctx.lineTo(768, coord); ctx.stroke();
-    }
+    const drawGrid = (c) => {
+      if (!c) return;
+      c.fillStyle = "#070a13";
+      c.fillRect(0, 0, 768, 768);
+      c.strokeStyle = "rgba(6, 182, 212, 0.15)";
+      c.lineWidth = 1;
+      for (let i = 0; i <= 12; i++) {
+        const coord = i * 64;
+        c.beginPath(); c.moveTo(coord, 0); c.lineTo(coord, 768); c.stroke();
+        c.beginPath(); c.moveTo(0, coord); c.lineTo(768, coord); c.stroke();
+      }
+    };
+
+    drawGrid(ctx);
+    if (baseCtx) drawGrid(baseCtx);
 
     const groundTexture = new THREE.CanvasTexture(groundCanvas);
     const groundMaterial = new THREE.MeshBasicMaterial({
@@ -21580,11 +22381,14 @@ const FlightDiagnostics = {
 
     this.groundCanvas = groundCanvas;
     this.groundCtx = ctx;
+    this.baseGroundCanvas = baseGroundCanvas;
+    this.baseGroundCtx = baseCtx;
     this.groundTexture = groundTexture;
     this.planeOffsetX = planeOffsetX;
     this.planeOffsetZ = planeOffsetZ;
     this.planeSize = planeSize;
     this.paintedPhotoIndices = new Set();
+    this.lastPaintedPointIdx = -1;
 
     if (typeof Image !== 'undefined') {
       for (let dy = -1; dy <= 1; dy++) {
@@ -21598,8 +22402,15 @@ const FlightDiagnostics = {
           const img = new Image();
           img.crossOrigin = "anonymous";
           img.onload = () => {
-            ctx.drawImage(img, posX, posY, 256, 256);
-            groundTexture.needsUpdate = true;
+            if (this.baseGroundCtx) {
+              this.baseGroundCtx.drawImage(img, posX, posY, 256, 256);
+            }
+            if (!this.paintedPhotoIndices || this.paintedPhotoIndices.size === 0) {
+              ctx.drawImage(img, posX, posY, 256, 256);
+              groundTexture.needsUpdate = true;
+            } else {
+              this.redrawGroundFootprints(this.currentPointIndex);
+            }
           };
           img.src = tileUrl;
         }
@@ -21607,8 +22418,48 @@ const FlightDiagnostics = {
     }
   },
 
+  resetGroundCanvas() {
+    if (!this.groundCtx || !this.groundCanvas) return;
+    if (this.baseGroundCanvas && this.baseGroundCtx) {
+      this.groundCtx.clearRect(0, 0, 768, 768);
+      this.groundCtx.drawImage(this.baseGroundCanvas, 0, 0);
+    } else {
+      this.groundCtx.fillStyle = "#070a13";
+      this.groundCtx.fillRect(0, 0, 768, 768);
+      this.groundCtx.strokeStyle = "rgba(6, 182, 212, 0.15)";
+      this.groundCtx.lineWidth = 1;
+      for (let i = 0; i <= 12; i++) {
+        const coord = i * 64;
+        this.groundCtx.beginPath(); this.groundCtx.moveTo(coord, 0); this.groundCtx.lineTo(coord, 768); this.groundCtx.stroke();
+        this.groundCtx.beginPath(); this.groundCtx.moveTo(0, coord); this.groundCtx.lineTo(768, coord); this.groundCtx.stroke();
+      }
+    }
+    this.paintedPhotoIndices = new Set();
+    this.lastPaintedPointIdx = -1;
+    if (this.groundTexture) {
+      this.groundTexture.needsUpdate = true;
+    }
+  },
+
+  redrawGroundFootprints(upToIndex) {
+    this.resetGroundCanvas();
+    if (!this.diagShowFootprints || !this.telemetryData || !this.telemetryData.points) return;
+    const pts = this.telemetryData.points;
+    const targetIdx = Math.max(0, Math.min(upToIndex !== undefined ? upToIndex : this.currentPointIndex, pts.length - 1));
+    for (let pi = 0; pi <= targetIdx; pi++) {
+      if (pts[pi] && pts[pi].isPhoto) {
+        this.paintedPhotoIndices.add(pi);
+        this.drawFootprintOnGround(pts[pi]);
+      }
+    }
+    this.lastPaintedPointIdx = targetIdx;
+    if (this.groundTexture) {
+      this.groundTexture.needsUpdate = true;
+    }
+  },
+
   drawFootprintOnGround(pt) {
-    if (!this.groundCtx || !this.groundTexture || !pt) return;
+    if (!this.groundCtx || !this.groundTexture || !pt || !this.diagShowFootprints) return;
     const pos = this.projectToWorld(pt.lat, pt.lon, pt.alt);
     const pitchVal = pt.pitch !== undefined && pt.pitch !== null ? pt.pitch : -60;
     const yawVal = pt.yaw !== undefined && pt.yaw !== null ? pt.yaw : 0;
@@ -22214,14 +23065,31 @@ const FlightDiagnostics = {
     }
 
     if (this.groundCtx && this.groundTexture) {
-      if (!this.paintedPhotoIndices || safeIdx < (this.lastPaintedPointIdx || 0)) {
+      if (!this.paintedPhotoIndices || this.lastPaintedPointIdx === undefined || this.lastPaintedPointIdx < 0) {
         this.paintedPhotoIndices = new Set();
-      }
-      this.lastPaintedPointIdx = safeIdx;
-      for (let pi = Math.max(0, safeIdx - 20); pi <= safeIdx; pi++) {
-        if (pts[pi] && pts[pi].isPhoto && !this.paintedPhotoIndices.has(pi)) {
-          this.paintedPhotoIndices.add(pi);
-          this.drawFootprintOnGround(pts[pi]);
+        this.lastPaintedPointIdx = 0;
+        if (safeIdx > 0) {
+          this.redrawGroundFootprints(safeIdx);
+        } else if (pts[0] && pts[0].isPhoto && this.diagShowFootprints) {
+          this.paintedPhotoIndices.add(0);
+          this.drawFootprintOnGround(pts[0]);
+        }
+      } else if (safeIdx < this.lastPaintedPointIdx) {
+        // Reverse seek or rewind: reset and redraw strictly up to safeIdx
+        this.redrawGroundFootprints(safeIdx);
+      } else if (safeIdx > this.lastPaintedPointIdx) {
+        if (safeIdx - this.lastPaintedPointIdx > 30) {
+          // Large jump forward: clean redraw to catch all photos
+          this.redrawGroundFootprints(safeIdx);
+        } else {
+          // Sequential forward playback
+          for (let pi = this.lastPaintedPointIdx + 1; pi <= safeIdx; pi++) {
+            if (pts[pi] && pts[pi].isPhoto && !this.paintedPhotoIndices.has(pi)) {
+              this.paintedPhotoIndices.add(pi);
+              this.drawFootprintOnGround(pts[pi]);
+            }
+          }
+          this.lastPaintedPointIdx = safeIdx;
         }
       }
     }
@@ -35483,6 +36351,7 @@ if (typeof window !== 'undefined') {
   window.loadRc2LogToDiagnostics = loadRc2LogToDiagnostics;
   window.executeMediaPull = executeMediaPull;
   window.buildThreeDigitalTwinJson = buildThreeDigitalTwinJson;
+  window.AdsbAirspaceManager = typeof AdsbAirspaceManager !== 'undefined' ? AdsbAirspaceManager : null;
 }
 
 if (typeof global !== 'undefined') {
@@ -35496,6 +36365,7 @@ if (typeof global !== 'undefined') {
   global.loadRc2LogToDiagnostics = loadRc2LogToDiagnostics;
   global.executeMediaPull = executeMediaPull;
   global.buildThreeDigitalTwinJson = buildThreeDigitalTwinJson;
+  global.AdsbAirspaceManager = typeof AdsbAirspaceManager !== 'undefined' ? AdsbAirspaceManager : null;
 }
 
 if (typeof document !== 'undefined') {
