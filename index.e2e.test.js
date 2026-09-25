@@ -6472,6 +6472,79 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(res.atLastNextDisabled, true, 'Next button must be disabled on last photo');
     assert.strictEqual(res.backToMiddleCounter, 'Photo 2 of 3', 'Counter should update to Photo 2 of 3 after stepping back');
   });
+
+  test('E2E: RC2 Log Pull & 3D Diagnostics Replay Telemetry Pipeline (v1.128.3)', async () => {
+    await page.route('**/api/flight-telemetry*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          isDecrypted: true,
+          telemetry: {
+            isActualFlown: true,
+            totalDistance: 540,
+            durationFormatted: '01:39',
+            durationSec: 99,
+            maxAltitude: 25.5,
+            points: [
+              { time: 0, lat: 40.0128, lon: -83.1770, alt: 10, speed: 2, pitch: -30, yaw: 0, battery: 98, satellites: 20, timeStr: '00:00' },
+              { time: 10, lat: 40.0129, lon: -83.1771, alt: 25.5, speed: 4, pitch: -45, yaw: 45, battery: 92, satellites: 22, timeStr: '00:10' }
+            ]
+          }
+        })
+      });
+    });
+
+    const e2eResult = await page.evaluate(async () => {
+      const directBtn = document.getElementById('direct-rc2-pull-log-btn');
+      const diagBtn = document.getElementById('diag-pull-rc2-btn');
+      const modal = document.getElementById('flight-diagnostics-modal');
+      const flightSel = document.getElementById('diag-flight-selector');
+
+      const testFlightId = 'FlightRecord_2026-09-25_[17-58-44].txt';
+
+      if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.open) {
+        await FlightDiagnostics.open('3d', testFlightId);
+      }
+
+      const modalVisible = modal && !modal.classList.contains('hidden');
+      const selectedValue = flightSel ? flightSel.value : '';
+      const hasActualLine = !!(FlightDiagnostics && FlightDiagnostics.actualLineMesh);
+      const pointCount = FlightDiagnostics?.telemetryData?.points?.length || 0;
+      const isActualFlown = FlightDiagnostics ? FlightDiagnostics.isActualFlown : false;
+      const timeDisplay = document.getElementById('diag-time-display')?.textContent || '';
+      const sliderMax = document.getElementById('diag-timeline-slider')?.max || '0';
+
+      if (FlightDiagnostics && FlightDiagnostics.close) {
+        FlightDiagnostics.close();
+      }
+
+      return {
+        hasDirectBtn: !!directBtn,
+        hasDiagBtn: !!diagBtn,
+        modalVisible,
+        selectedValue,
+        hasActualLine,
+        pointCount,
+        isActualFlown,
+        timeDisplay,
+        sliderMax
+      };
+    });
+
+    await page.unroute('**/api/flight-telemetry*');
+
+    assert.strictEqual(e2eResult.hasDirectBtn, true, 'Sidebar direct pull button must exist');
+    assert.strictEqual(e2eResult.hasDiagBtn, true, 'Diagnostics header pull button must exist');
+    assert.strictEqual(e2eResult.modalVisible, true, 'Flight Diagnostics modal should be visible');
+    assert.strictEqual(e2eResult.selectedValue, 'FlightRecord_2026-09-25_[17-58-44].txt', 'Selector must have target flight selected');
+    assert.strictEqual(e2eResult.isActualFlown, true, 'isActualFlown must be true');
+    assert.ok(e2eResult.pointCount > 0, 'Target flight must load telemetry points');
+    assert.strictEqual(e2eResult.hasActualLine, true, '3D scene must render actualLineMesh trajectory');
+    assert.notStrictEqual(e2eResult.timeDisplay, '00:00 / 00:00', 'Time display must reflect valid flight duration');
+    assert.strictEqual(e2eResult.sliderMax, '1', 'Timeline slider max should match point indices');
+  });
 });
 
 
