@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.126.1] - 2026-09-24
+
+### New Features & Bug Fixes
+- **Selective 360° Pano Elevation Rings & Horizontal Panorama Presets:**
+  - **Dynamic Elevation Ring Toggles:** Added granular layer checkboxes in `#photo-sphere-container` allowing drone pilots to enable or disable individual rings: Row 1 (-15° pitch, 12 shots), Row 2 (-45° pitch, 12 shots), Row 3 (-75° pitch, 12 shots), and Nadir (-90° pitch, 1 ground lock shot).
+  - **Single-Click Pano Presets:** Added quick preset chips for `Full Sphere (37)`, `Horizon Pano (12)` (single 360° cylindrical horizontal row at -15° pitch), and `Wide Oblique (24)` (Rows 1 & 2).
+  - **Dynamic Layer State Persistence & Badge:** Added `layer.photoSphereRings` property seamlessly synchronized across UI inputs, localStorage, and active layer switching, with real-time total shot count badge updates.
+- **Fixed 360° Photo Sphere Map Legend Display:**
+  - **Dedicated Map Legend Branch:** Resolved bug where `photo-sphere` fell through to the Tower Orbit 3-ring altitude layers in `updateMapLegend()`.
+  - **Real-Time Pano Ring Legend:** Legend now dynamically displays `"360° Pano Rings"`, listing each active row with pitch, shot count, and target altitude.
+
+## [1.126.0] - 2026-09-24
+
+### New Features & Enhancements
+- **Esri World Street Map Base Layer:**
+  - Added `"Street Map (Esri)"` as an official base map option in the Leaflet base layer control powered by `https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}`.
+  - Delivers unthrottled, high-contrast street and road geography without cross-origin referer blocks or strict rate limits.
+- **Localhost OpenStreetMap Auto-Disabling & Policy Compliance:**
+  - **Localhost Environment Detection (`isLocalhostEnvironment`):** Added centralized detection for `localhost`, `127.0.0.1`, `[::1]`, `0.0.0.0`, `.local`, and `file:` protocol environments.
+  - **Graceful OSM Disabling:** When running in a local environment, the OpenStreetMap Street Map layer is safely labeled `"Street Map (OSM - Disabled on Localhost)"` with disabled radio input, dimmed visual styling, and an explanatory tooltip detailing OSM's missing Referer / 403 Access Block policy.
+  - **Base Layer Change Safeguard:** Selecting or programmatically switching to OSM Street Map while running on localhost triggers an informational toast and automatically redirects to the Esri Street Map layer.
+  - **3D Ground Texture Fallback:** In Three.js 3D FPV ground texture rendering (`init3DPreview`), requests on localhost or local files automatically route to Esri World Street Map or Satellite imagery, eliminating 403 placeholder tile graphics.
+
 ## [1.125.0] - 2026-09-24
 
 ### New Features & Enhancements
