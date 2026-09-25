@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.123.1] - 2026-09-24
+
+### Enhancements & Diagnostics
+- **RTL-SDR USB Hardware & dump1090 Bridge Diagnostics:**
+  - Added bare-metal PnP USB device scanner `detectHardware()` detecting `VID_0BDA&PID_2838`/`2832` Realtek dongles and diagnosing WinUSB driver status (`ready` vs `needs_zadig` Problem Code 28).
+  - Enhanced Companion Bridge startup banner with live ADS-B 1090 MHz hardware presence, WinUSB driver guidance, and daemon stream connection state.
+  - Added real-time terminal logging on the bridge console for dump1090 connection, disconnect, throttled reconnection waits, and live aircraft sightings.
+  - Added interactive keyboard shortcut `[a]` to companion bridge to instantly probe ADS-B hardware and dump1090 stream health.
+  - Added dedicated **Receiver Diagnostics Panel** inside `#adsb-control-drawer` with real-time USB hardware, daemon status, and Zadig setup guidance.
+
 ## [1.123.0] - 2026-09-24
 
 ### New Features & Enhancements

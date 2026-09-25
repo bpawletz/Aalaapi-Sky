@@ -257,4 +257,18 @@ describe('AdsbAirspaceTracker Tests', () => {
       await new Promise((resolve) => server.close(resolve));
     }
   });
+
+  test('detectHardware reports RTL-SDR dongle presence and driver health', () => {
+    const tracker = new AdsbAirspaceTracker({ autoConnect: false, silent: true });
+    const hw = tracker.detectHardware();
+    assert.ok(typeof hw === 'object' && hw !== null);
+    assert.strictEqual(typeof hw.detected, 'boolean');
+    assert.ok(['ready', 'needs_zadig', 'not_found', 'error', 'unsupported'].includes(hw.driverStatus));
+    assert.strictEqual(typeof hw.details, 'string');
+
+    const status = tracker.getStatus();
+    assert.ok(status.hardware, 'getStatus must include hardware object');
+    assert.strictEqual(typeof status.hardware.detected, 'boolean');
+    tracker.destroy();
+  });
 });

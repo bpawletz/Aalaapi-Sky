@@ -93,6 +93,12 @@ class AdsbAirspaceTracker {
     this.dumpProcess = null;
     this.driverType = 'unknown'; // 'dump1090-tcp' | 'dump1090-proc' | 'simulated' | 'disconnected'
     
+    this.silent = options.silent !== undefined ? options.silent : (process.env.NODE_ENV === 'test');
+    this.lastWaitingLog = 0;
+    this.lastSightLog = new Map();
+    this.cachedHardware = null;
+    this.cachedHardwareTime = 0;
+
     // Auto-clean interval
     this.cleanupTimer = setInterval(() => this.pruneStaleAircraft(), 15000);
     if (this.cleanupTimer.unref) this.cleanupTimer.unref();
@@ -100,6 +106,15 @@ class AdsbAirspaceTracker {
     if (options.autoConnect) {
       this.connectTcp();
     }
+  }
+
+  /**
+   * Diagnostic logger formatted with timestamps.
+   */
+  log(tag, msg) {
+    if (this.silent) return;
+    const timeStr = new Date().toLocaleTimeString();
+    console.log(`\x1b[36m[${timeStr}]\x1b[0m \x1b[33m${tag}\x1b[0m ${msg}`);
   }
 
   /**
@@ -214,6 +229,15 @@ class AdsbAirspaceTracker {
       if (parts[11] && !isNaN(parseInt(parts[11], 10))) {
         record.altitude = parseInt(parts[11], 10);
       }
+    }
+
+    // Log live aircraft sightings (throttled to once per 15s per aircraft)
+    const nowLog = Date.now();
+    const lastLog = this.lastSightLog.get(hex) || 0;
+    if (record.callsign && record.altitude !== null && nowLog - lastLog > 15000) {
+      this.lastSightLog.set(hex, nowLog);
+      const posStr = (record.latitude && record.longitude) ? `${record.latitude.toFixed(4)}, ${record.longitude.toFixed(4)}` : 'Position pending';
+      this.log('[ADS-B]', `Traffic Sighting: ${record.callsign} (${hex}) | Alt: ${record.altitude} ft | Speed: ${record.speed || 0} kts | ${posStr}`);
     }
 
     return record;
@@ -482,6 +506,64 @@ class AdsbAirspaceTracker {
   }
 
   /**
+   * Scans system USB peripherals for RTL-SDR dongle presence and driver health.
+   * Caches results for 10 seconds to eliminate repeated CLI overhead.
+   * @returns {{ detected: boolean, driverStatus: string, deviceName: string|null, details: string }}
+   */
+  detectHardware() {
+    const now = Date.now();
+    if (this.cachedHardware && (now - this.cachedHardwareTime < 10000)) {
+      return this.cachedHardware;
+    }
+
+    let result = {
+      detected: false,
+      driverStatus: 'not_found',
+      deviceName: null,
+      details: 'No RTL-SDR USB dongle detected.'
+    };
+
+    if (process.platform === 'win32') {
+      try {
+        const { execSync } = require('node:child_process');
+        const out = execSync('pnputil /enum-devices /connected', { encoding: 'utf8', timeout: 3000 });
+        if (out.includes('0BDA&PID_2838') || out.includes('0BDA&PID_2832')) {
+          result.detected = true;
+          result.deviceName = 'Realtek RTL2832U / RTL-SDR';
+          const blocks = out.split(/(?=Instance ID:)/g);
+          const rtlBlocks = blocks.filter(b => b.includes('0BDA&PID_2838') || b.includes('0BDA&PID_2832'));
+          const hasProblem = rtlBlocks.some(b => b.includes('Problem Code: 28') || b.includes('Status:                     Problem'));
+          if (hasProblem) {
+            result.driverStatus = 'needs_zadig';
+            result.details = 'RTL-SDR USB dongle detected, but WinUSB driver is missing (Problem Code 28). Please run Zadig to install WinUSB driver.';
+          } else {
+            result.driverStatus = 'ready';
+            result.details = 'RTL-SDR USB dongle detected and WinUSB driver is operational.';
+          }
+        }
+      } catch (e) {
+        result.driverStatus = 'error';
+        result.details = e.message;
+      }
+    } else if (process.platform === 'linux') {
+      try {
+        const { execSync } = require('node:child_process');
+        const out = execSync('lsusb', { encoding: 'utf8', timeout: 3000 });
+        if (/0bda:2838|0bda:2832/i.test(out)) {
+          result.detected = true;
+          result.driverStatus = 'ready';
+          result.deviceName = 'Realtek RTL2832U / RTL-SDR';
+          result.details = 'RTL-SDR USB dongle detected via lsusb.';
+        }
+      } catch (e) {}
+    }
+
+    this.cachedHardware = result;
+    this.cachedHardwareTime = now;
+    return result;
+  }
+
+  /**
    * Returns current hardware and receiver daemon status.
    */
   getStatus() {
@@ -493,7 +575,8 @@ class AdsbAirspaceTracker {
       tcpPort: this.tcpPort,
       totalPackets: this.totalPackets,
       lastPacketTimestamp: this.lastPacketTimestamp,
-      activeAircraftCount: this.aircraft.size
+      activeAircraftCount: this.aircraft.size,
+      hardware: this.detectHardware()
     };
   }
 
@@ -512,6 +595,7 @@ class AdsbAirspaceTracker {
         this.connected = true;
         this.connecting = false;
         this.driverType = 'dump1090-tcp';
+        this.log('[ADS-B TRACKER]', `Connected to dump1090 daemon on ${this.tcpHost}:${this.tcpPort} - streaming Mode S frames`);
         if (this.reconnectTimer) {
           clearTimeout(this.reconnectTimer);
           this.reconnectTimer = null;
@@ -530,8 +614,16 @@ class AdsbAirspaceTracker {
       });
 
       this.socket.on('error', () => {
+        const wasConnected = this.connected;
         this.connected = false;
         this.connecting = false;
+        const now = Date.now();
+        if (wasConnected) {
+          this.log('[ADS-B TRACKER]', `Lost connection to dump1090 on ${this.tcpHost}:${this.tcpPort}. Reconnecting in 10s...`);
+        } else if (!this.lastWaitingLog || now - this.lastWaitingLog > 60000) {
+          this.lastWaitingLog = now;
+          this.log('[ADS-B TRACKER]', `Waiting for dump1090 daemon on ${this.tcpHost}:${this.tcpPort} (Ensure dump1090 is running with --net)...`);
+        }
       });
 
       this.socket.on('close', () => {
