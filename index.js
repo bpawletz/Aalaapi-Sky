@@ -68,7 +68,7 @@ const FLIGHT_TOOLS = {
     icon: 'photo-sphere',
     shortcut: 'S',
     description: '360° Equirectangular Photo Sphere panorama sequence (static position with yaw & gimbal pitch sequence)',
-    propertyGroups: ['photo-sphere-geometry', 'altitude', 'speed', 'camera']
+    propertyGroups: ['photo-sphere-geometry', 'altitude', 'speed']
   },
   'grid-orbit-combo': {
     id: 'grid-orbit-combo',
@@ -9952,7 +9952,7 @@ function togglePatternParameters() {
     if (layerCardGeometry) layerCardGeometry.style.display = 'block';
     if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "📐 360° Sphere Geometry";
     if (layerCardFlight) layerCardFlight.style.display = 'block';
-    if (layerCardOptics) layerCardOptics.style.display = 'block';
+    if (layerCardOptics) layerCardOptics.style.display = 'none';
     if (layerCardModes) layerCardModes.style.display = 'none';
     if (layerCardBoundary) {
       layerCardBoundary.classList.add('hidden');
@@ -34055,6 +34055,7 @@ const PhotoInspector = {
     hud: true,
     boundary: true,
     layerBoundary: true, // Auto-superimpose active flight layer boundary!
+    wireframe: true, // Auto-superimpose 3D architectural wireframe!
     fiducials: true, // Auto-superimpose fiducial markers / GCPs!
     detectedTags: true, // Auto-detect & highlight optical tags (AprilTag / ArUco)!
     measure: true,
@@ -34066,6 +34067,66 @@ const PhotoInspector = {
   getLayerBoundaryGeoPolygon,
   computeConvexHullGeo,
   extractDjiXmpMetadata,
+
+  projectWorldPointToCamera(pt, camPose, options = {}) {
+    if (!pt || typeof pt.x !== 'number') return null;
+
+    let camWorld = null;
+    if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.projectToWorld === 'function') {
+      try {
+        const altVal = (camPose.altAgl && camPose.altAgl > 0) ? camPose.altAgl : (camPose.alt || 25.0);
+        const cw = FlightDiagnostics.projectToWorld(camPose.lat, camPose.lon, altVal);
+        if (cw && !isNaN(cw.x) && !isNaN(cw.z)) camWorld = cw;
+      } catch (_) {}
+    }
+    if (!camWorld) {
+      camWorld = { x: 0, y: (camPose.altAgl && camPose.altAgl > 0) ? camPose.altAgl : (camPose.alt || 25.0), z: 0 };
+    }
+
+    const dE = pt.x - camWorld.x;
+    const dN = -(pt.z - camWorld.z);
+    const dU = pt.y - camWorld.y;
+
+    const yawDeg = typeof camPose.heading === 'number' ? camPose.heading : (typeof camPose.yaw === 'number' ? camPose.yaw : 0.0);
+    const psi = (yawDeg * Math.PI) / 180.0;
+    const Xh = dE * Math.cos(psi) - dN * Math.sin(psi);
+    const Yh = dE * Math.sin(psi) + dN * Math.cos(psi);
+    const Zh = dU;
+
+    const pitchDeg = typeof camPose.gimbalPitch === 'number' ? camPose.gimbalPitch : (typeof camPose.pitch === 'number' ? camPose.pitch : -90.0);
+    const theta = (pitchDeg * Math.PI) / 180.0;
+    const cosTheta = Math.cos(theta);
+    const sinTheta = Math.sin(theta);
+
+    const Xcam = Xh;
+    const Ycam = Yh * cosTheta + Zh * sinTheta; // Optical depth in front of lens
+    const Zcam = -Yh * sinTheta + Zh * cosTheta; // Vertical in camera sensor frame
+
+    const sW = parseFloat(options.sensorWidthMm) || 9.6;
+    const fL = parseFloat(options.focalLengthMm) || 6.72;
+    const aspect = options.aspectRatio || (options.imageWidth && options.imageHeight ? options.imageWidth / options.imageHeight : (16 / 9));
+    const sH = sW / aspect;
+
+    const tanHalfH = sW / (2.0 * fL);
+    const tanHalfV = sH / (2.0 * fL);
+
+    const isInFront = Ycam > 0.05;
+    const u = isInFront ? 0.5 + (Xcam / (2.0 * Ycam * tanHalfH)) : 0.5;
+    const v = isInFront ? 0.5 - (Zcam / (2.0 * Ycam * tanHalfV)) : 0.5;
+    const isInsideFrame = isInFront && (u >= 0.0 && u <= 1.0 && v >= 0.0 && v <= 1.0);
+
+    return {
+      Xcam,
+      Ycam,
+      Zcam,
+      isInFront,
+      isInsideFrame,
+      u,
+      v,
+      tanHalfH,
+      tanHalfV
+    };
+  },
   eventsBound: false,
 
 
@@ -35060,6 +35121,136 @@ const PhotoInspector = {
       });
     }
 
+    // 7b. Auto-Superimposed 3D Architectural Wireframe (v1.125.0)
+    if (this.layers.wireframe) {
+      const wf = this.wireframeData
+        || (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.wireframeData)
+        || this.activeManifest?.wireframe
+        || (typeof activeInspectionManifest !== 'undefined' && activeInspectionManifest?.wireframe)
+        || null;
+
+      if (wf && Array.isArray(wf.lines) && wf.lines.length > 0) {
+        const camPose = {
+          lat: this.activePhoto.actual?.lat ?? this.activePhoto.planned?.lat ?? 0,
+          lon: this.activePhoto.actual?.lon ?? this.activePhoto.planned?.lon ?? 0,
+          altAgl: (this.activePhoto.actual?.altAgl && this.activePhoto.actual.altAgl > 0)
+            ? this.activePhoto.actual.altAgl
+            : (this.activePhoto.actual?.alt ?? this.activePhoto.planned?.alt ?? 25.0),
+          gimbalPitch: (this.activePhoto.actual?.gimbalPitch !== undefined) ? this.activePhoto.actual.gimbalPitch : -90,
+          heading: this.activePhoto.actual?.heading ?? this.activePhoto.planned?.heading ?? 0
+        };
+
+        const elevOffset = (typeof this.targetHeight === 'number' && this.targetHeight !== 0)
+          ? this.targetHeight
+          : ((typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.wireframeElevationOffset === 'number')
+              ? FlightDiagnostics.wireframeElevationOffset
+              : (wf.elevationOffset || 0.0));
+
+        const minLen = (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.wireframeMinLengthFilter === 'number')
+          ? FlightDiagnostics.wireframeMinLengthFilter
+          : 0.5;
+
+        const options = {
+          sensorWidthMm: this.activePhoto.sensorWidthMm || 9.6,
+          focalLengthMm: this.activePhoto.focalLengthMm || 6.72,
+          aspectRatio: canvas.width / canvas.height
+        };
+
+        ctx.save();
+        let renderedLineCount = 0;
+        let firstVisPt = null;
+
+        wf.lines.forEach(line => {
+          if (!Array.isArray(line) || line.length < 6) return;
+          const [x1, y1, z1, x2, y2, z2] = line;
+          if (Math.hypot(x2 - x1, y2 - y1, z2 - z1) < minLen) return;
+
+          const p1 = { x: x1, y: y1 + elevOffset, z: z1 };
+          const p2 = { x: x2, y: y2 + elevOffset, z: z2 };
+
+          const c1 = (typeof this.projectWorldPointToCamera === 'function') ? this.projectWorldPointToCamera(p1, camPose, options) : null;
+          const c2 = (typeof this.projectWorldPointToCamera === 'function') ? this.projectWorldPointToCamera(p2, camPose, options) : null;
+
+          if (!c1 || !c2 || (!c1.isInFront && !c2.isInFront)) return;
+
+          let u1 = c1.u, v1 = c1.v;
+          let u2 = c2.u, v2 = c2.v;
+
+          // Near-plane clipping against Ycam = 0.05m
+          if (c1.isInFront && !c2.isInFront) {
+            const t = (0.05 - c1.Ycam) / (c2.Ycam - c1.Ycam);
+            const Xclip = c1.Xcam + t * (c2.Xcam - c1.Xcam);
+            const Zclip = c1.Zcam + t * (c2.Zcam - c1.Zcam);
+            u2 = 0.5 + (Xclip / (2.0 * 0.05 * c1.tanHalfH));
+            v2 = 0.5 - (Zclip / (2.0 * 0.05 * c1.tanHalfV));
+          } else if (!c1.isInFront && c2.isInFront) {
+            const t = (0.05 - c2.Ycam) / (c1.Ycam - c2.Ycam);
+            const Xclip = c2.Xcam + t * (c1.Xcam - c2.Xcam);
+            const Zclip = c2.Zcam + t * (c1.Zcam - c2.Zcam);
+            u1 = 0.5 + (Xclip / (2.0 * 0.05 * c2.tanHalfH));
+            v1 = 0.5 - (Zclip / (2.0 * 0.05 * c2.tanHalfV));
+          }
+
+          const px1 = u1 * canvas.width;
+          const py1 = v1 * canvas.height;
+          const px2 = u2 * canvas.width;
+          const py2 = v2 * canvas.height;
+
+          // 1. Shadow outline for high contrast
+          ctx.strokeStyle = 'rgba(15, 23, 42, 0.75)';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(px1, py1);
+          ctx.lineTo(px2, py2);
+          ctx.stroke();
+
+          // 2. Main cyan architectural wireframe line
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.moveTo(px1, py1);
+          ctx.lineTo(px2, py2);
+          ctx.stroke();
+
+          // 3. Vertex nodes
+          [[px1, py1, c1.isInsideFrame], [px2, py2, c2.isInsideFrame]].forEach(([x, y, inside]) => {
+            if (inside) {
+              ctx.fillStyle = '#38bdf8';
+              ctx.beginPath();
+              ctx.arc(x, y, 3, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.strokeStyle = '#ffffff';
+              ctx.lineWidth = 1;
+              ctx.stroke();
+            }
+          });
+
+          renderedLineCount++;
+          if (!firstVisPt && (c1.isInsideFrame || c2.isInsideFrame)) {
+            firstVisPt = c1.isInsideFrame ? { x: px1, y: py1 } : { x: px2, y: py2 };
+          }
+        });
+
+        // Corner badge in Photo Inspector showing active line count
+        if (renderedLineCount > 0 && firstVisPt) {
+          const bx = Math.max(10, Math.min(canvas.width - 200, firstVisPt.x));
+          const by = Math.max(25, Math.min(canvas.height - 15, firstVisPt.y - 12));
+          const badgeText = `🏗️ 3D Wireframe (${renderedLineCount} lines)`;
+          ctx.font = 'bold 11px sans-serif';
+          const badgeW = ctx.measureText(badgeText).width + 16;
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+          ctx.fillRect(bx, by - 16, badgeW, 20);
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(bx, by - 16, badgeW, 20);
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillText(badgeText, bx + 8, by - 2);
+        }
+
+        ctx.restore();
+      }
+    }
+
     // 8. Auto-Superimposed Fiducial Markers & Ground Control Points (v1.104.0)
     if (this.layers.fiducials) {
       const camPose = {
@@ -35615,8 +35806,8 @@ const PhotoInspector = {
       detectTagsBtn.onclick = () => this.detectOpticalTags();
     }
 
-    ['hud', 'boundary', 'layerBoundary', 'fiducials', 'detectedTags', 'measure', 'pins', 'reticle'].forEach(lKey => {
-      const elemId = lKey === 'detectedTags' ? 'layer-toggle-detected-tags' : (lKey === 'layerBoundary' ? 'layer-toggle-layer-boundary' : `layer-toggle-${lKey}`);
+    ['hud', 'boundary', 'layerBoundary', 'wireframe', 'fiducials', 'detectedTags', 'measure', 'pins', 'reticle'].forEach(lKey => {
+      const elemId = lKey === 'detectedTags' ? 'layer-toggle-detected-tags' : (lKey === 'layerBoundary' ? 'layer-toggle-layer-boundary' : (lKey === 'wireframe' ? 'layer-toggle-wireframe' : `layer-toggle-${lKey}`));
       const cb = document.getElementById(elemId) || document.getElementById(`layer-toggle-${lKey.toLowerCase()}`);
       if (cb) {
         cb.onchange = () => {

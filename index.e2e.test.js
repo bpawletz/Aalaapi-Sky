@@ -6236,6 +6236,38 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(res.bannerDismissed, true, 'Dismiss button must hide alert banner');
     assert.strictEqual(res.drawerClosed, true, 'Close button must hide drawer');
   });
+
+  test('E2E: 3D Architectural Wireframe Photo Superimposition in Photo Inspector (v1.125.0)', async () => {
+    const res = await page.evaluate(async () => {
+      const toggle = document.getElementById('layer-toggle-wireframe');
+      const hasToggle = !!toggle;
+      const initialLayerState = (typeof PhotoInspector !== 'undefined') ? PhotoInspector.layers.wireframe : null;
+
+      if (toggle) {
+        toggle.checked = false;
+        toggle.dispatchEvent(new Event('change'));
+      }
+      const toggledOffState = (typeof PhotoInspector !== 'undefined') ? PhotoInspector.layers.wireframe : null;
+
+      if (toggle) {
+        toggle.checked = true;
+        toggle.dispatchEvent(new Event('change'));
+      }
+      const restoredState = (typeof PhotoInspector !== 'undefined') ? PhotoInspector.layers.wireframe : null;
+
+      return {
+        hasToggle,
+        initialLayerState,
+        toggledOffState,
+        restoredState
+      };
+    });
+
+    assert.strictEqual(res.hasToggle, true, '#layer-toggle-wireframe must exist in Photo Inspector drawer');
+    assert.strictEqual(res.initialLayerState, true, 'PhotoInspector.layers.wireframe must be true by default');
+    assert.strictEqual(res.toggledOffState, false, 'Unchecking toggle must disable PhotoInspector wireframe layer');
+    assert.strictEqual(res.restoredState, true, 'Re-checking toggle must re-enable PhotoInspector wireframe layer');
+  });
 });
 
 
