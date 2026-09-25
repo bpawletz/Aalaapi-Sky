@@ -271,4 +271,43 @@ describe('AdsbAirspaceTracker Tests', () => {
     assert.strictEqual(typeof status.hardware.detected, 'boolean');
     tracker.destroy();
   });
+
+  test('Aircraft flight history trail accumulates coordinate vectors up to max limit', () => {
+    const tracker = new AdsbAirspaceTracker();
+
+    // Send 3 sequential SBS position reports with movement
+    tracker.parseSbsMessage('MSG,3,1,1,A11111,1,2026/09/24,20:00:00.000,2026/09/24,20:00:00.000,,2000,,,40.0100,-83.1700,,,0,0,0,0');
+    tracker.parseSbsMessage('MSG,3,1,1,A11111,1,2026/09/24,20:00:01.000,2026/09/24,20:00:01.000,,2050,,,40.0120,-83.1680,,,0,0,0,0');
+    tracker.parseSbsMessage('MSG,3,1,1,A11111,1,2026/09/24,20:00:02.000,2026/09/24,20:00:02.000,,2100,,,40.0140,-83.1660,,,0,0,0,0');
+
+    const ac = tracker.aircraft.get('A11111');
+    assert.ok(ac, 'Aircraft record should exist');
+    assert.strictEqual(ac.history.length, 3, 'Should have accumulated 3 history points');
+    assert.strictEqual(ac.history[0][0], 40.0100);
+    assert.strictEqual(ac.history[1][0], 40.0120);
+    assert.strictEqual(ac.history[2][0], 40.0140);
+    assert.strictEqual(ac.history[2][2], 2100);
+
+    // Verify bounds output includes history
+    const bounds = tracker.getAirspaceBounds({
+      homeLat: 40.0130,
+      homeLon: -83.1765,
+      radiusMeters: 5000,
+      ceilingFeet: 3000
+    });
+    const tracked = bounds.aircraft.find(a => a.hex === 'A11111');
+    assert.ok(tracked, 'Aircraft should be in bounds list');
+    assert.ok(Array.isArray(tracked.history), 'Aircraft must have history array in bounds output');
+    assert.strictEqual(tracked.history.length, 3);
+
+    // Verify history capping
+    for (let i = 0; i < 70; i++) {
+      const lat = 40.02 + (i * 0.001);
+      const lon = -83.16 + (i * 0.001);
+      tracker.parseSbsMessage(`MSG,3,1,1,A11111,1,2026/09/24,20:00:00.000,2026/09/24,20:00:00.000,,2500,,,${lat.toFixed(4)},${lon.toFixed(4)},,,0,0,0,0`);
+    }
+    assert.strictEqual(ac.history.length, 60, 'History should cap at 60 points to preserve memory');
+
+    tracker.destroy();
+  });
 });
