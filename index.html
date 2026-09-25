@@ -4585,6 +4585,82 @@ html, body {
   box-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
 }
 
+/* Sequential Photo Navigation Controls (v1.128.0) */
+.photo-inspector-nav-group {
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.photo-inspector-nav-btn {
+  transition: all 0.15s ease;
+}
+
+.photo-inspector-nav-btn:not(:disabled):hover {
+  background: rgba(56, 189, 248, 0.2) !important;
+  border-color: #38bdf8 !important;
+  color: #fff !important;
+  transform: translateY(-1px);
+}
+
+.photo-inspector-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
+.photo-nav-chevron {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #f1f5f9;
+  font-size: 2rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 20;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  padding: 0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.photo-nav-prev {
+  left: 16px;
+  padding-right: 2px;
+}
+
+.photo-nav-next {
+  right: 16px;
+  padding-left: 2px;
+}
+
+.photo-nav-chevron:hover:not(:disabled) {
+  background: rgba(14, 165, 233, 0.35);
+  border-color: #38bdf8;
+  color: #fff;
+  transform: translateY(-50%) scale(1.12);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.5);
+}
+
+.photo-nav-chevron:active:not(:disabled) {
+  transform: translateY(-50%) scale(0.96);
+}
+
+.photo-nav-chevron:disabled {
+  opacity: 0.15;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .color-dot-btn {
   transition: transform 0.15s ease, border-color 0.15s ease;
 }
@@ -5419,7 +5495,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.127.3</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.128.0</span></h1>
 
 
 
@@ -8062,6 +8138,14 @@ html, body {
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              📸 In-Viewer Sequential Photo Navigation (v1.128.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Pilots and inspection auditors can now step seamlessly from photo to photo directly inside the <strong>Photo Inspector</strong> without exiting the modal! Features tri-modal navigation: top-bar <strong>[◀ Prev]</strong> and <strong>[Next ▶]</strong> buttons with a live position counter (<code>Photo X of Y</code>), responsive floating side chevrons (<code>‹</code> and <code>›</code>) for rapid 1-click stepping, and keyboard arrow hotkeys (<code>ArrowLeft</code> / <code>ArrowRight</code>). Preserves waypoint flight sequences and retains all defect pins and measurements in-memory across photos.
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🏗️ Architectural House Edge Extraction &amp; Vegetation Suppression (v1.127.0)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -8971,7 +9055,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.127.3</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.128.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -9034,6 +9118,14 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.128.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>📸 In-Viewer Sequential Photo Navigation:</strong> Move forward and backward between inspection photos directly inside the Photo Inspector modal without having to exit back to the map or diagnostics gallery.</li>
+              <li><strong>🕹️ Tri-Modal Navigation:</strong> Features topbar <code>[◀ Prev]</code> and <code>[Next ▶]</code> buttons with an active position counter (<code>Photo X of Y</code>), responsive floating side chevrons (<code>‹</code> and <code>›</code>) on the canvas viewport, and keyboard arrow hotkeys (<code>ArrowLeft</code> / <code>ArrowRight</code>).</li>
+              <li><strong>🛡️ Sequence Integrity &amp; State Retention:</strong> Respects waypoint capture order with disabled boundary clamping at the start and end of lists, while preserving all in-memory defect pins, calipers, and annotations across photos.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.127.3):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -12754,6 +12846,13 @@ html, body {
           <span id="inspector-variance-text">ΔH: 0.18m • ΔV: 0.08m (Compliant)</span>
         </div>
 
+        <!-- Sequential Photo Navigation Controls (v1.128.0) -->
+        <div id="photo-inspector-nav" class="photo-inspector-nav-group" style="display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.05); padding: 3px 8px; border-radius: 999px; border: 1px solid var(--border-color);">
+          <button id="photo-inspector-prev-btn" class="btn-secondary btn-sm photo-inspector-nav-btn" type="button" title="Previous Photo (Left Arrow)" style="padding: 2px 8px; font-size: 0.72rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">◀ Prev</button>
+          <span id="photo-inspector-counter-badge" class="badge" style="font-size: 0.70rem; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 4px; padding: 1px 7px; min-width: 64px; text-align: center;">Photo 1 of 1</span>
+          <button id="photo-inspector-next-btn" class="btn-secondary btn-sm photo-inspector-nav-btn" type="button" title="Next Photo (Right Arrow)" style="padding: 2px 8px; font-size: 0.72rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">Next ▶</button>
+        </div>
+
         <div style="display: flex; align-items: center; gap: 8px;">
           <span id="photo-detect-wireframe-pill" style="display: none; align-items: center; gap: 4px; font-size: 0.70rem; padding: 2px 8px; border-radius: 999px; border: 1px solid rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.15); color: #38bdf8;">🏗️ 0 Lines</span>
           <button id="photo-detect-wireframe-btn" class="btn-secondary btn-sm" type="button" style="font-size: 0.72rem; padding: 3px 8px; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);" title="Extract Architectural House Lines (Roof Ridges, Eaves, Gutters, Siding &amp; Wall Edges) on current photo">🏗️ Detect House Lines</button>
@@ -12796,6 +12895,10 @@ html, body {
 
         <!-- Center Interactive Photo Canvas Viewport -->
         <div id="photo-viewport-container" style="flex: 1; position: relative; overflow: hidden; background: #030712; display: block; cursor: grab;">
+          <!-- Floating Viewport Prev/Next Navigation Chevrons (v1.128.0) -->
+          <button id="photo-viewport-prev-btn" class="photo-nav-chevron photo-nav-prev" type="button" title="Previous Photo (Left Arrow)" aria-label="Previous photo">&#8249;</button>
+          <button id="photo-viewport-next-btn" class="photo-nav-chevron photo-nav-next" type="button" title="Next Photo (Right Arrow)" aria-label="Next photo">&#8250;</button>
+
           <div id="photo-transform-layer" style="position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform;">
             <img id="photo-inspector-img" src="" alt="Drone Photo" crossorigin="anonymous" style="display: block; max-width: none; user-select: none; pointer-events: none;" />
             <canvas id="photo-annotation-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: auto;"></canvas>
@@ -34523,7 +34626,9 @@ const FlightDiagnostics = {
 
       const openInspector = () => {
         if (typeof PhotoInspector !== 'undefined' && PhotoInspector.open) {
-          PhotoInspector.open(photo, (typeof activeInspectionManifest !== 'undefined' && activeInspectionManifest) ? activeInspectionManifest : (this.activeInspectionManifest || this.flightManifest || null));
+          const m = (typeof activeInspectionManifest !== 'undefined' && activeInspectionManifest) ? activeInspectionManifest : (this.activeInspectionManifest || this.flightManifest || null);
+          const pList = (photos && photos.length > 0) ? photos : ((this.flightPhotos && this.flightPhotos.length > 0) ? this.flightPhotos : null);
+          PhotoInspector.open(photo, m, pList);
         }
       };
 
@@ -47609,6 +47714,7 @@ if (typeof global !== 'undefined') global.TagDetector = TagDetector;
 const PhotoInspector = {
   activePhoto: null,
   activeManifest: null,
+  photoList: null,
   currentTool: 'pan',
   currentColor: '#ef4444',
   unit: 'metric',
@@ -47640,6 +47746,77 @@ const PhotoInspector = {
   getLayerBoundaryGeoPolygon,
   computeConvexHullGeo,
   extractDjiXmpMetadata,
+
+  getPhotoList() {
+    if (Array.isArray(this.photoList) && this.photoList.length > 0) {
+      return this.photoList;
+    }
+    if (this.activeManifest && Array.isArray(this.activeManifest.photos) && this.activeManifest.photos.length > 0) {
+      return this.activeManifest.photos;
+    }
+    if (typeof activeInspectionManifest !== 'undefined' && activeInspectionManifest && Array.isArray(activeInspectionManifest.photos) && activeInspectionManifest.photos.length > 0) {
+      return activeInspectionManifest.photos;
+    }
+    if (typeof FlightDiagnostics !== 'undefined') {
+      if (FlightDiagnostics.activeInspectionManifest && Array.isArray(FlightDiagnostics.activeInspectionManifest.photos) && FlightDiagnostics.activeInspectionManifest.photos.length > 0) {
+        return FlightDiagnostics.activeInspectionManifest.photos;
+      }
+      if (FlightDiagnostics.flightManifest && Array.isArray(FlightDiagnostics.flightManifest.photos) && FlightDiagnostics.flightManifest.photos.length > 0) {
+        return FlightDiagnostics.flightManifest.photos;
+      }
+      if (Array.isArray(FlightDiagnostics.flightPhotos) && FlightDiagnostics.flightPhotos.length > 0) {
+        return FlightDiagnostics.flightPhotos;
+      }
+      if (typeof FlightDiagnostics.getCorrelatedPhotos === 'function') {
+        const cp = FlightDiagnostics.getCorrelatedPhotos();
+        if (Array.isArray(cp) && cp.length > 0) return cp;
+      }
+    }
+    if (this.activePhoto) {
+      return [this.activePhoto];
+    }
+    return [];
+  },
+
+  getCurrentPhotoIndex() {
+    const list = this.getPhotoList();
+    if (!list || list.length === 0 || !this.activePhoto) return -1;
+    return list.findIndex(p =>
+      p === this.activePhoto ||
+      (p.photoId && this.activePhoto.photoId && p.photoId === this.activePhoto.photoId) ||
+      (p.filename && this.activePhoto.filename && p.filename === this.activePhoto.filename)
+    );
+  },
+
+  goToPhoto(index) {
+    const list = this.getPhotoList();
+    if (!list || list.length === 0) return;
+    if (index < 0 || index >= list.length) return;
+    const targetPhoto = list[index];
+    if (!targetPhoto) return;
+
+    this.activeBoundaryPoints = [];
+    this.activeMeasurePoints = [];
+    this.activeArrowStart = null;
+    this.activeBoxStart = null;
+
+    this.open(targetPhoto, this.activeManifest, list);
+  },
+
+  previousPhoto() {
+    const idx = this.getCurrentPhotoIndex();
+    if (idx > 0) {
+      this.goToPhoto(idx - 1);
+    }
+  },
+
+  nextPhoto() {
+    const idx = this.getCurrentPhotoIndex();
+    const list = this.getPhotoList();
+    if (idx >= 0 && idx < list.length - 1) {
+      this.goToPhoto(idx + 1);
+    }
+  },
 
   projectWorldPointToCamera(pt, camPose, options = {}) {
     if (!pt || typeof pt.x !== 'number') return null;
@@ -47703,14 +47880,18 @@ const PhotoInspector = {
   eventsBound: false,
 
 
-  openPhoto(photoOrId, manifest = null) {
-    return this.open(photoOrId, manifest);
+  openPhoto(photoOrId, manifest = null, photoList = null) {
+    return this.open(photoOrId, manifest, photoList);
   },
 
-  open(photoOrId, manifest = null) {
+  open(photoOrId, manifest = null, photoList = null) {
     if (typeof document === 'undefined') return;
     const modal = document.getElementById('photo-inspector-modal');
     if (!modal) return;
+
+    if (Array.isArray(photoList) && photoList.length > 0) {
+      this.photoList = photoList;
+    }
 
     if (manifest) this.activeManifest = manifest;
     else if (!this.activeManifest) {
@@ -47725,6 +47906,8 @@ const PhotoInspector = {
 
     if (typeof photoOrId === 'object' && photoOrId !== null) {
       this.activePhoto = photoOrId;
+    } else if (Array.isArray(this.photoList) && this.photoList.length > 0) {
+      this.activePhoto = this.photoList.find(p => p.photoId === photoOrId || p.filename === photoOrId) || this.photoList[0];
     } else if (this.activeManifest && Array.isArray(this.activeManifest.photos)) {
       this.activePhoto = this.activeManifest.photos.find(p => p.photoId === photoOrId || p.filename === photoOrId) || this.activeManifest.photos[0];
     } else if (typeof FlightDiagnostics !== 'undefined' && Array.isArray(FlightDiagnostics.flightPhotos)) {
@@ -47933,6 +48116,29 @@ const PhotoInspector = {
     const dot = document.getElementById('inspector-severity-dot');
     const varText = document.getElementById('inspector-variance-text');
     const planeToggleBtn = document.getElementById('inspector-plane-toggle-btn');
+
+    const photoList = this.getPhotoList();
+    const currentIdx = this.getCurrentPhotoIndex();
+    const totalCount = photoList.length > 0 ? photoList.length : 1;
+    const displayIdx = currentIdx >= 0 ? currentIdx + 1 : 1;
+
+    const counterBadge = document.getElementById('photo-inspector-counter-badge');
+    if (counterBadge) {
+      counterBadge.textContent = `Photo ${displayIdx} of ${totalCount}`;
+    }
+
+    const prevBtn = document.getElementById('photo-inspector-prev-btn');
+    const nextBtn = document.getElementById('photo-inspector-next-btn');
+    const viewportPrevBtn = document.getElementById('photo-viewport-prev-btn');
+    const viewportNextBtn = document.getElementById('photo-viewport-next-btn');
+
+    const canGoPrev = currentIdx > 0;
+    const canGoNext = currentIdx >= 0 && currentIdx < totalCount - 1;
+
+    if (prevBtn) prevBtn.disabled = !canGoPrev;
+    if (nextBtn) nextBtn.disabled = !canGoNext;
+    if (viewportPrevBtn) viewportPrevBtn.disabled = !canGoPrev;
+    if (viewportNextBtn) viewportNextBtn.disabled = !canGoNext;
 
     if (fnEl) fnEl.textContent = p.filename || 'DJI_0001.JPG';
     if (wpBadge) wpBadge.textContent = `WP #${p.waypointIndex !== undefined ? p.waypointIndex : '—'}`;
@@ -49759,6 +49965,34 @@ const PhotoInspector = {
     if (clearBtn) clearBtn.onclick = () => this.clear();
     if (saveBtn) saveBtn.onclick = () => this.save();
     if (exportBtn) exportBtn.onclick = () => this.exportStampedImage();
+
+    const prevBtn = document.getElementById('photo-inspector-prev-btn');
+    const nextBtn = document.getElementById('photo-inspector-next-btn');
+    const viewportPrevBtn = document.getElementById('photo-viewport-prev-btn');
+    const viewportNextBtn = document.getElementById('photo-viewport-next-btn');
+
+    if (prevBtn) prevBtn.onclick = () => this.previousPhoto();
+    if (nextBtn) nextBtn.onclick = () => this.nextPhoto();
+    if (viewportPrevBtn) viewportPrevBtn.onclick = () => this.previousPhoto();
+    if (viewportNextBtn) viewportNextBtn.onclick = () => this.nextPhoto();
+
+    window.addEventListener('keydown', (e) => {
+      const modal = document.getElementById('photo-inspector-modal');
+      if (!modal || modal.classList.contains('hidden')) return;
+
+      const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+      if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') return;
+
+      if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        this.previousPhoto();
+      } else if (e.key === 'ArrowRight' || e.key === 'PageDown') {
+        e.preventDefault();
+        this.nextPhoto();
+      } else if (e.key === 'Escape') {
+        this.close();
+      }
+    });
 
     document.querySelectorAll('.photo-tool-btn').forEach(btn => {
       btn.onclick = () => {
