@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.125.0] - 2026-09-24
+
+### New Features & Enhancements
+- **3D Architectural Wireframe Photo Superimposition in Photo Inspector:**
+  - **Optical Matrix & 3D Telemetry Ray Projection:** Projects 3D building wireframe lines directly onto captured inspection drone photos within `PhotoInspector`. Calculates exact camera extrinsic transformations using physical GPS coordinates, AGL altitude, gimbal pitch, and heading.
+  - **Near-Plane 3D Clipping:** Implemented mathematical near-plane clipping ($Y_{\text{cam}} = 0.05\text{m}$) to smoothly clip 3D lines extending behind or around the drone lens, preventing inverted projection artifacts.
+  - **Annotation Layers Toggle (`#layer-toggle-wireframe`):** Added a dedicated `🏗️ 3D Architectural Wireframe` toggle in the Photo Inspector right sidebar drawer with immediate canvas re-rendering and persistent layer state.
+  - **Dynamic Elevation Offset Calibration:** Wireframe projection dynamically respects and responds to the `Target Elev / Offset` calibration input in real time, allowing pilots to fine-tune and align roof ridges and wall eaves directly against physical imagery.
+  - **High-Contrast CAD Styling & HUD Badge:** Renders high-visibility cyan `#38bdf8` lines with dark contrast borders, circular vertex pins, and a corner HUD badge showing active projected line count.
+
+## [1.124.1] - 2026-09-24
+
+### Bug Fixes & Ergonomics
+- **Streamlined 360° Photo Sphere Layer Optics & Ergonomics:**
+  - **Concealed Camera Optics Card:** Concealed `#layer-card-optics` in Section 2 Layer Properties when `360 Pano` (`photo-sphere`) pattern is active.
+  - **Procedural Sequence Safeguards:** Eliminated manual gimbal pitch and optical zoom controls for 360 panoramas since gimbal pitch is governed procedurally across 4 elevation rings (-15°, -45°, -75°, -90°) and sensor zoom is locked to native uncropped 1.0x wide-angle for equirectangular stitching fidelity.
+  - **Pattern Preset Property Groups:** Updated `PATTERN_PRESETS['photo-sphere'].propertyGroups` from `['photo-sphere-geometry', 'altitude', 'speed', 'camera']` to `['photo-sphere-geometry', 'altitude', 'speed']`.
+
 ## [1.124.0] - 2026-09-24
 
 ### New Features & Enhancements
