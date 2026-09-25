@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.128.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.128.2</span></h1>
 
 
 
@@ -3626,7 +3626,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.128.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.128.2</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -3690,11 +3690,11 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
-            <strong style="color: var(--text-main);">Changelog (v1.128.1):</strong>
+            <strong style="color: var(--text-main);">Changelog (v1.128.2):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
-              <li><strong>📸 In-Viewer Sequential Photo Navigation:</strong> Move forward and backward between inspection photos directly inside the Photo Inspector modal without having to exit back to the map or diagnostics gallery.</li>
-              <li><strong>🕹️ Tri-Modal Navigation:</strong> Features topbar <code>[◀ Prev]</code> and <code>[Next ▶]</code> buttons with an active position counter (<code>Photo X of Y</code>), responsive floating side chevrons (<code>‹</code> and <code>›</code>) on the canvas viewport, and keyboard arrow hotkeys (<code>ArrowLeft</code> / <code>ArrowRight</code>).</li>
-              <li><strong>🛡️ Sequence Integrity &amp; State Retention:</strong> Respects waypoint capture order with disabled boundary clamping at the start and end of lists, while preserving all in-memory defect pins, calipers, and annotations across photos.</li>
+              <li><strong>🛡️ Photo Sphere APAS Obstacle Prevention:</strong> Applies a 1.25m micro-orbital radius offset to consecutive stationary pano waypoints, eliminating zero-distance collision alerts and trajectory solver failures in DJI Fly.</li>
+              <li><strong>🛑 Consumer Drone Action Group Fix:</strong> Strips Enterprise-only <code>rotateYaw</code> action from Mini 4 Pro and Air 3 missions, preventing mission halts before photo capture.</li>
+              <li><strong>🛫 Takeoff Security Height Clamping:</strong> Clamps takeoff climb height to mission altitude to eliminate steep descents and obstacle warnings.</li>
             </ul>
           </div>
           <div>
@@ -3706,7 +3706,9 @@
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.128.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
-              <li>In-Viewer Sequential Photo Navigation: Prev/Next header bar and viewport chevrons in Photo Inspector.</li>
+              <li><strong>📸 In-Viewer Sequential Photo Navigation:</strong> Move forward and backward between inspection photos directly inside the Photo Inspector modal without having to exit back to the map or diagnostics gallery.</li>
+              <li><strong>🕹️ Tri-Modal Navigation:</strong> Features topbar <code>[◀ Prev]</code> and <code>[Next ▶]</code> buttons with an active position counter (<code>Photo X of Y</code>), responsive floating side chevrons (<code>‹</code> and <code>›</code>) on the canvas viewport, and keyboard arrow hotkeys (<code>ArrowLeft</code> / <code>ArrowRight</code>).</li>
+              <li><strong>🛡️ Sequence Integrity &amp; State Retention:</strong> Respects waypoint capture order with disabled boundary clamping at the start and end of lists, while preserving all in-memory defect pins, calipers, and annotations across photos.</li>
             </ul>
           </div>
           <div>
