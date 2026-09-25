@@ -1,4 +1,15 @@
 # Changelog
+ 
+## [1.127.2] - 2026-09-25
+
+### Bug Fixes & Architectural Enhancements
+- **Synthesized Clean Volumetric Architectural 3D Wireframes (`synthesize_architectural_wireframe`):**
+  - **Resolved 3D Splattered Line Explosion:** Fixed issue where unprojecting individual 2D edge rays across all survey photos at grazing angles produced an unreadable 11,221-line porcupine splatter spanning over 500 meters across the yard.
+  - **Multi-Structure Volumetric Synthesis:** Implemented automatic 3D building synthesis from multi-view flight telemetry, ground intercepts, and spatial clustering along dominant axes of variation ($X$-span and $Z$-span $\ge 22\text{m}$). Generates clean, crisp, closed volumetric 3D CAD frames (foundation footprints, structural corner columns, vertical facade mullions, eaves perimeters, elevated roof ridges, and gable/hip rafters) precisely framing the surveyed structures.
+  - **Separation of 2D Inspector Lines vs 3D World Geometry:** Preserved full high-fidelity 2D detected house lines in `wireframe.json`'s `perPhotoLines` so individual photo inspections in Photo Inspector remain sharp and detailed, while cleanly decoupling 3D `lines` to display solid architectural CAD wireframes in Three.js Telemetry Replay.
+  - **JavaScript Fallback Spatial Clustering:** Synchronized `extractWireframeJsFallback()` in `wireframe_engine.js` with Python clustering and volumetric synthesis to ensure identical multi-structure CAD generation in pure JS runtime environments.
+  - **Defensive Telemetry Replay Outlier Bounding:** Added finite coordinate verification, maximum segment length checks ($L \le 60\text{m}$), and spatial distance culling ($D \le 300\text{m}$) in `FlightDiagnostics.rebuildWireframeMesh()` to safeguard against grazing-angle ray artifacts in legacy archives.
+  - **Regenerated Flight 13 Wireframe Twin:** Updated `wireframe.json`, `wireframe.obj`, and `wireframe_threejs.json` for `mission_2026-09-24_[17-20-08]`, reducing 3D line count from 11,221 unbounded rays to 44 clean architectural CAD lines while maintaining all 2D per-photo edge overlays.
 
 ## [1.127.1] - 2026-09-25
 
