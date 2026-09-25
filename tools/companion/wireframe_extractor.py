@@ -534,6 +534,177 @@ def synthesize_architectural_wireframe(photos, origin=None, options=None):
 
     return cad_lines
 
+def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None, options=None):
+    if not photos or not per_photo_lines:
+        return []
+    if options is None:
+        options = {}
+
+    orig_lat = float(origin["lat"]) if origin and "lat" in origin else None
+    orig_lon = float(origin["lon"]) if origin and "lon" in origin else None
+    if orig_lat is None or orig_lon is None:
+        first_p = photos[0]
+        first_telem = first_p.get("telemetry", first_p)
+        first_act = first_telem.get("actual", {}) if isinstance(first_telem.get("actual"), dict) else {}
+        flat = first_telem.get("lat") or first_act.get("lat")
+        flon = first_telem.get("lon") or first_act.get("lon")
+        if flat is not None and flon is not None:
+            orig_lat, orig_lon = float(flat), float(flon)
+
+    ground_y = float(options.get("groundAltitude", 0.0))
+
+    # Collect steep-pitch downward survey photos that have detected lines
+    steep = []
+    cam_altitudes = []
+    for p in photos:
+        telem = p.get("telemetry", p)
+        act = telem.get("actual", {}) if isinstance(telem.get("actual"), dict) else {}
+        pitch = float(telem.get("pitch") if telem.get("pitch") is not None else (telem.get("gimbalPitch") if telem.get("gimbalPitch") is not None else act.get("gimbalPitch", -60.0)))
+        if pitch <= -35.0:
+            pid = p.get("photoId") or p.get("filename")
+            line_count = len(per_photo_lines.get(pid, []))
+            if line_count > 0:
+                heading = float(telem.get("yaw") if telem.get("yaw") is not None else (telem.get("heading") if telem.get("heading") is not None else act.get("heading", 0.0)))
+                steep.append((p, line_count, heading))
+            wy = float(telem.get("worldY") or telem.get("altAgl") or telem.get("alt") or act.get("altAgl") or act.get("alt") or 30.0)
+            cam_altitudes.append(wy - ground_y)
+
+    if not steep:
+        return []
+
+    # Select prime orthogonal survey passes to capture cross-angles
+    steep.sort(key=lambda x: x[1], reverse=True)
+    selected = [steep[0][0]]
+    h0 = steep[0][2]
+    for p, c, h in steep[1:]:
+        diff = abs((h - h0 + 180.0) % 360.0 - 180.0)
+        if diff > 40.0:
+            selected.append(p)
+            break
+    if len(selected) < 2 and len(steep) > 1:
+        selected.append(steep[1][0])
+
+    avg_alt = float(np.mean(cam_altitudes)) if cam_altitudes else 25.0
+    wall_h = float(options.get("buildingHeight") or min(10.0, max(5.5, avg_alt * 0.35)))
+    roof_h = float(options.get("roofHeight") or min(5.5, max(2.8, wall_h * 0.48)))
+    eaves_y = ground_y + wall_h
+    ridge_y = eaves_y + roof_h
+
+    raw_3d = []
+    eave_corners = []
+
+    for photo in selected:
+        telem = photo.get("telemetry", photo)
+        act = telem.get("actual", {}) if isinstance(telem.get("actual"), dict) else {}
+        pid = photo.get("photoId") or photo.get("filename")
+        lines2d = per_photo_lines.get(pid, [])
+        if not lines2d:
+            continue
+
+        lat = telem.get("lat") or act.get("lat")
+        lon = telem.get("lon") or act.get("lon")
+        if lat is not None and lon is not None and orig_lat is not None and orig_lon is not None:
+            wx, wz = latlon_to_world(float(lat), float(lon), orig_lat, orig_lon)
+        else:
+            wx = float(telem.get("worldX", 0.0))
+            wz = float(telem.get("worldZ", 0.0))
+
+        wy = float(telem.get("worldY") or telem.get("altAgl") or telem.get("alt") or act.get("altAgl") or act.get("alt") or 30.0)
+        yaw = float(telem.get("yaw") if telem.get("yaw") is not None else (telem.get("heading") if telem.get("heading") is not None else act.get("heading", 0.0)))
+        pitch = float(telem.get("pitch") if telem.get("pitch") is not None else (telem.get("gimbalPitch") if telem.get("gimbalPitch") is not None else act.get("gimbalPitch", -60.0)))
+        roll = float(telem.get("roll", 0.0))
+        hfov = float(telem.get("hfov", 73.7))
+        vfov = float(telem.get("vfov", 53.1))
+        cam_pos = np.array([wx, wy, wz], dtype=np.float64)
+
+        for l in lines2d:
+            u1, v1, u2, v2 = l
+            dx_px = (u2 - u1) * 1920.0
+            dy_px = (v2 - v1) * 1080.0
+            if math.hypot(dx_px, dy_px) < 32.0:
+                continue
+
+            r1 = project_pixel_to_ray(u1 * 1920.0, v1 * 1080.0, 1920.0, 1080.0, hfov, vfov, cam_pos, yaw, pitch, roll)
+            r2 = project_pixel_to_ray(u2 * 1920.0, v2 * 1080.0, 1920.0, 1080.0, hfov, vfov, cam_pos, yaw, pitch, roll)
+            if r1[1] >= -0.04 or r2[1] >= -0.04:
+                continue
+
+            t1_0 = (ground_y - wy) / r1[1]
+            t2_0 = (ground_y - wy) / r2[1]
+            g1 = cam_pos + r1 * t1_0
+            g2 = cam_pos + r2 * t2_0
+            mid_gx = (g1[0] + g2[0]) / 2.0
+            mid_gz = (g1[2] + g2[2]) / 2.0
+
+            # Distance from origin check to prevent horizon rays
+            if math.hypot(mid_gx, mid_gz) > 120.0:
+                continue
+
+            ang = abs(math.atan2(dy_px, dx_px))
+            if ang < 0.28 or ang > 2.86:
+                h1, h2 = ridge_y, ridge_y
+            elif 0.50 < ang < 2.64:
+                h1, h2 = eaves_y, ridge_y
+            else:
+                h1, h2 = eaves_y, eaves_y
+
+            t1 = (h1 - wy) / r1[1]
+            t2 = (h2 - wy) / r2[1]
+            p1 = cam_pos + r1 * t1
+            p2 = cam_pos + r2 * t2
+
+            seg_len = np.linalg.norm(p2 - p1)
+            if 0.65 < seg_len < 32.0:
+                p1_rnd = [round(float(p1[0]), 3), round(float(p1[1]), 3), round(float(p1[2]), 3)]
+                p2_rnd = [round(float(p2[0]), 3), round(float(p2[1]), 3), round(float(p2[2]), 3)]
+                raw_3d.append(p1_rnd + p2_rnd)
+                if abs(h1 - eaves_y) < 0.1: eave_corners.append(p1_rnd)
+                if abs(h2 - eaves_y) < 0.1: eave_corners.append(p2_rnd)
+
+    # Deduplicate overlapping lines
+    deduped = []
+    tol_sq = 0.35 * 0.35
+    for l in raw_3d:
+        x1, y1, z1, x2, y2, z2 = l
+        is_dup = False
+        for ex in deduped:
+            ex1, ey1, ez1, ex2, ey2, ez2 = ex
+            d11 = (x1-ex1)**2 + (y1-ey1)**2 + (z1-ez1)**2
+            d22 = (x2-ex2)**2 + (y2-ey2)**2 + (z2-ez2)**2
+            if d11 < tol_sq and d22 < tol_sq:
+                is_dup = True; break
+            d12 = (x1-ex2)**2 + (y1-ey2)**2 + (z1-ez2)**2
+            d21 = (x2-ex1)**2 + (y2-ey1)**2 + (z2-ez1)**2
+            if d12 < tol_sq and d21 < tol_sq:
+                is_dup = True; break
+        if not is_dup:
+            deduped.append(l)
+
+    # Add corner structural columns connecting outer eave corners to ground
+    if eave_corners:
+        eaves_arr = np.array(eave_corners)
+        min_x = np.min(eaves_arr[:, 0])
+        max_x = np.max(eaves_arr[:, 0])
+        sub_groups = []
+        if (max_x - min_x) >= 20.0:
+            mid_x = (min_x + max_x) / 2.0
+            sub_groups.append(eaves_arr[eaves_arr[:, 0] < mid_x])
+            sub_groups.append(eaves_arr[eaves_arr[:, 0] >= mid_x])
+        else:
+            sub_groups.append(eaves_arr)
+
+        for grp in sub_groups:
+            if len(grp) >= 4:
+                min_x_pt = grp[np.argmin(grp[:, 0])]
+                max_x_pt = grp[np.argmax(grp[:, 0])]
+                min_z_pt = grp[np.argmin(grp[:, 2])]
+                max_z_pt = grp[np.argmax(grp[:, 2])]
+                for pt in [min_x_pt, max_x_pt, min_z_pt, max_z_pt]:
+                    col = [round(float(pt[0]), 3), ground_y, round(float(pt[2]), 3), round(float(pt[0]), 3), round(float(pt[1]), 3), round(float(pt[2]), 3)]
+                    deduped.append(col)
+
+    return deduped
+
 def main():
     parser = argparse.ArgumentParser(description="Aalaapi Sky Architectural Wireframe Extractor")
     parser.add_argument("--input", type=str, help="Path to input JSON payload or image file")
@@ -611,30 +782,17 @@ def main():
                 if photo.get("photoId") and photo.get("photoId") != p_key:
                     per_photo_lines[photo["photoId"]] = res.get("lines2D", [])
 
-        # Synthesize clean 3D architectural CAD wireframe from multi-view flight telemetry
-        cad_lines = synthesize_architectural_wireframe(photos, origin=origin, options=options)
-        if cad_lines:
-            final_3d_lines = cad_lines
+        # Priority 1: Unproject authentic detected architectural lines from photos
+        authentic_lines = unproject_authentic_architectural_lines(photos, per_photo_lines, origin=origin, options=options)
+        if authentic_lines and len(authentic_lines) >= 15:
+            final_3d_lines = authentic_lines
         else:
-            # Fallback to deduplicated raw lines if telemetry was insufficient
-            batch_deduped = []
-            tol_sq = 0.35 * 0.35
-            for l in all_lines:
-                x1, y1, z1, x2, y2, z2 = l
-                dup = False
-                for ex in batch_deduped:
-                    ex1, ey1, ez1, ex2, ey2, ez2 = ex
-                    d11 = (x1-ex1)**2 + (y1-ey1)**2 + (z1-ez1)**2
-                    d22 = (x2-ex2)**2 + (y2-ey2)**2 + (z2-ez2)**2
-                    if d11 < tol_sq and d22 < tol_sq:
-                        dup = True; break
-                    d12 = (x1-ex2)**2 + (y1-ey2)**2 + (z1-ez2)**2
-                    d21 = (x2-ex1)**2 + (y2-ey1)**2 + (z2-ez1)**2
-                    if d12 < tol_sq and d21 < tol_sq:
-                        dup = True; break
-                if not dup:
-                    batch_deduped.append(l)
-            final_3d_lines = batch_deduped
+            # Priority 2: Multi-structure CAD synthesis fallback
+            cad_lines = synthesize_architectural_wireframe(photos, origin=origin, options=options)
+            if cad_lines:
+                final_3d_lines = cad_lines
+            else:
+                final_3d_lines = all_lines
 
         out_data = {
             "success": True,
