@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.127.1] - 2026-09-25
+
+### Bug Fixes & Architectural Improvements
+- **Resolved Spurious Cross-Yard Spiderweb Lines in Photo Inspector:**
+  - **Companion Port 8765 Connection:** Corrected companion endpoint resolution in `PhotoInspector.detectHouseLines()` from `http://127.0.0.1:3000` to `http://127.0.0.1:8765` (`getCompanionApiBase()`), ensuring requests successfully reach the bridge and run true OpenCV edge extraction.
+  - **Base64 Canvas Image Ingestion (`imageData`):** Added base64 image payload support in `wireframe_extractor.py`, allowing the companion to directly process photos from the browser canvas when local disk paths are unavailable.
+  - **Contiguous 8-Connected Edge Tracing & Ramer-Douglas-Peucker (RDP):** Replaced the naive $O(N^2)$ chord connection in the client-side canvas fallback with 8-connected contour edge tracing and RDP polygonal simplification ($\epsilon = 2.5\text{px}$). Discarded non-contiguous jumps across empty air/lawn, guaranteeing all extracted segments follow real physical structural boundaries.
+  - **Excess Green Index ($ExG$) & Boundary Dilation:** Upgraded lawn and foliage suppression with Excess Green Index ($ExG = 2G - R - B > 16$) and 2px mask dilation to eliminate step-function gradient artifacts at turf boundaries.
+  - **Auto-Sync Wireframe Lines on Photo Open:** Enhanced `PhotoInspector.open()` to automatically fetch and attach precomputed `wireframe.json` lines from the mission archive to `activePhoto.detectedLines` upon opening.
+
 ## [1.127.0] - 2026-09-25
 
 ### New Features & Enhancements

@@ -431,7 +431,7 @@ function extractWireframe(payload = {}) {
     if (proc.status === 0 && proc.stdout) {
       try {
         const parsed = JSON.parse(proc.stdout.trim());
-        if (parsed.success) {
+        if (parsed.success && Array.isArray(parsed.lines) && parsed.lines.length > 0) {
           parsed.executionTimeMs = Date.now() - startTime;
           parsed.engine = 'opencv_python';
           return parsed;

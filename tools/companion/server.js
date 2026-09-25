@@ -3237,6 +3237,14 @@ const server = http.createServer(async (req, res) => {
             }
           }
 
+          if (!payload.imagePath && payload.missionUuid && (payload.filename || payload.photoId)) {
+            const fname = payload.filename || payload.photoId;
+            const rawP = path.join(ARCHIVE_DIR, payload.missionUuid, 'photos', 'raw', fname);
+            const prevP = path.join(ARCHIVE_DIR, payload.missionUuid, 'photos', 'previews', fname);
+            if (fs.existsSync(rawP)) payload.imagePath = rawP;
+            else if (fs.existsSync(prevP)) payload.imagePath = prevP;
+          }
+
           if (payload.imagePath && payload.telemetry) {
             const t = payload.telemetry;
             const actual = t.actual || {};
