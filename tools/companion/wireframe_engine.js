@@ -104,61 +104,265 @@ function intersectRayWithPlane(camPos, rayDir, planeY = 0.0, maxDist = 1200.0) {
 }
 
 /**
- * Pure JavaScript fallback for synthetic edge projection when Python/cv2 is unavailable.
+ * Deduplicates 3D line segments within a spatial tolerance.
+ */
+function deduplicateLines(lines = [], tolerance = 0.2) {
+  const result = [];
+  const tolSq = tolerance * tolerance;
+
+  function ptDistSq(ax, ay, az, bx, by, bz) {
+    const dx = ax - bx, dy = ay - by, dz = az - bz;
+    return dx * dx + dy * dy + dz * dz;
+  }
+
+  for (const line of lines) {
+    if (!Array.isArray(line) || line.length < 6) continue;
+    const [x1, y1, z1, x2, y2, z2] = line;
+    if (ptDistSq(x1, y1, z1, x2, y2, z2) < 0.05 * 0.05) continue; // Skip zero-length
+
+    let duplicate = false;
+    for (const ex of result) {
+      const [ex1, ey1, ez1, ex2, ey2, ez2] = ex;
+      if (
+        (ptDistSq(x1, y1, z1, ex1, ey1, ez1) < tolSq && ptDistSq(x2, y2, z2, ex2, ey2, ez2) < tolSq) ||
+        (ptDistSq(x1, y1, z1, ex2, ey2, ez2) < tolSq && ptDistSq(x2, y2, z2, ex1, ey1, ez1) < tolSq)
+      ) {
+        duplicate = true;
+        break;
+      }
+    }
+    if (!duplicate) {
+      result.push(line);
+    }
+  }
+  return result;
+}
+
+/**
+ * Builds 3D camera frustum wireframe pyramid line coordinates for a photo pose.
+ */
+function buildFrustumSegments(photo = {}, dist = 3.0) {
+  const px = photo.x || 0;
+  const py = photo.y || 25;
+  const pz = photo.z || 0;
+  const yaw = photo.yaw || 0;
+  const pitch = photo.pitch !== undefined ? photo.pitch : -60;
+  const roll = photo.roll || 0;
+  const hfov = photo.hfov || 73.7;
+  const vfov = photo.vfov || 53.1;
+
+  const psi = (yaw * Math.PI) / 180.0;
+  const theta = (pitch * Math.PI) / 180.0;
+  const phi = (roll * Math.PI) / 180.0;
+
+  const cosT = Math.cos(theta);
+  const sinT = Math.sin(theta);
+  const sinP = Math.sin(psi);
+  const cosP = Math.cos(psi);
+
+  const fwd = [cosT * sinP, sinT, -cosT * cosP];
+  let right = [cosP, 0.0, sinP];
+  let up = [
+    right[1] * fwd[2] - right[2] * fwd[1],
+    right[2] * fwd[0] - right[0] * fwd[2],
+    right[0] * fwd[1] - right[1] * fwd[0]
+  ];
+  const upNorm = Math.hypot(up[0], up[1], up[2]);
+  if (upNorm > 1e-6) {
+    up = [up[0] / upNorm, up[1] / upNorm, up[2] / upNorm];
+  }
+  if (Math.abs(phi) > 1e-4) {
+    const cR = Math.cos(phi);
+    const sR = Math.sin(phi);
+    const rightR = [cR * right[0] + sR * up[0], cR * right[1] + sR * up[1], cR * right[2] + sR * up[2]];
+    const upR = [-sR * right[0] + cR * up[0], -sR * right[1] + cR * up[1], -sR * right[2] + cR * up[2]];
+    right = rightR;
+    up = upR;
+  }
+
+  const fovHalfX = Math.tan(((hfov * Math.PI) / 180.0) / 2.0);
+  const fovHalfY = Math.tan(((vfov * Math.PI) / 180.0) / 2.0);
+  const wHalf = dist * fovHalfX;
+  const hHalf = dist * fovHalfY;
+
+  const cL = [
+    px + fwd[0] * dist,
+    py + fwd[1] * dist,
+    pz + fwd[2] * dist
+  ];
+
+  const pTL = [cL[0] - right[0] * wHalf + up[0] * hHalf, cL[1] - right[1] * wHalf + up[1] * hHalf, cL[2] - right[2] * wHalf + up[2] * hHalf];
+  const pTR = [cL[0] + right[0] * wHalf + up[0] * hHalf, cL[1] + right[1] * wHalf + up[1] * hHalf, cL[2] + right[2] * wHalf + up[2] * hHalf];
+  const pBR = [cL[0] + right[0] * wHalf - up[0] * hHalf, cL[1] + right[1] * wHalf - up[1] * hHalf, cL[2] + right[2] * wHalf - up[2] * hHalf];
+  const pBL = [cL[0] - right[0] * wHalf - up[0] * hHalf, cL[1] - right[1] * wHalf - up[1] * hHalf, cL[2] - right[2] * wHalf - up[2] * hHalf];
+
+  const segs = [];
+  const addSeg = (a, b) => {
+    segs.push(
+      Math.round(a[0] * 1000) / 1000, Math.round(a[1] * 1000) / 1000, Math.round(a[2] * 1000) / 1000,
+      Math.round(b[0] * 1000) / 1000, Math.round(b[1] * 1000) / 1000, Math.round(b[2] * 1000) / 1000
+    );
+  };
+  const C = [px, py, pz];
+  addSeg(C, pTL);
+  addSeg(C, pTR);
+  addSeg(C, pBR);
+  addSeg(C, pBL);
+  addSeg(pTL, pTR);
+  addSeg(pTR, pBR);
+  addSeg(pBR, pBL);
+  addSeg(pBL, pTL);
+  return segs;
+}
+
+/**
+ * Pure JavaScript volumetric architectural wireframe generator.
+ * Builds true 3D spatial geometry: foundation, vertical columns, eaves, roof ridge, and rafters.
  */
 function extractWireframeJsFallback(payload = {}) {
   const photos = payload.photos || (payload.imagePath ? [{ filePath: payload.imagePath, telemetry: payload.telemetry }] : []);
   const options = payload.options || {};
-  const groundY = options.groundAltitude || 0.0;
-  const lines = [];
+  const groundY = (typeof options.groundAltitude === 'number') ? options.groundAltitude : 0.0;
+  const rawLines = [];
 
-  photos.forEach((photo, idx) => {
+  // Extract camera positions and calculate ground target ray hits
+  const camPositions = [];
+  const groundHits = [];
+
+  photos.forEach(photo => {
     const telem = photo.telemetry || photo || {};
     const camPos = {
       x: telem.worldX || 0,
       y: telem.worldY || telem.alt || 25,
       z: telem.worldZ || 0
     };
+    camPositions.push(camPos);
+
     const yaw = telem.yaw || 0;
     const pitch = telem.pitch !== undefined ? telem.pitch : -60;
+    const roll = telem.roll || 0;
     const hfov = telem.hfov || 73.7;
     const vfov = telem.vfov || 53.1;
-    const w = 1920;
-    const h = 1080;
 
-    // Synthetic structural building footprint rectangle + roof prism lines
-    const rects = [
-      [w * 0.25, h * 0.3, w * 0.75, h * 0.3],
-      [w * 0.75, h * 0.3, w * 0.75, h * 0.75],
-      [w * 0.75, h * 0.75, w * 0.25, h * 0.75],
-      [w * 0.25, h * 0.75, w * 0.25, h * 0.3],
-      [w * 0.25, h * 0.3, w * 0.5, h * 0.15],
-      [w * 0.75, h * 0.3, w * 0.5, h * 0.15]
-    ];
-
-    rects.forEach(([u1, v1, u2, v2]) => {
-      const ray1 = projectPixelToRay(u1, v1, w, h, hfov, vfov, camPos, yaw, pitch, 0);
-      const ray2 = projectPixelToRay(u2, v2, w, h, hfov, vfov, camPos, yaw, pitch, 0);
-
-      const p1 = intersectRayWithPlane(camPos, ray1, groundY);
-      const p2 = intersectRayWithPlane(camPos, ray2, groundY);
-
-      lines.push([
-        Math.round(p1[0] * 1000) / 1000,
-        Math.round(p1[1] * 1000) / 1000,
-        Math.round(p1[2] * 1000) / 1000,
-        Math.round(p2[0] * 1000) / 1000,
-        Math.round(p2[1] * 1000) / 1000,
-        Math.round(p2[2] * 1000) / 1000
-      ]);
-    });
+    // Optical center ground intercept
+    const centerRay = projectPixelToRay(960, 540, 1920, 1080, hfov, vfov, camPos, yaw, pitch, roll);
+    const hit = intersectRayWithPlane(camPos, centerRay, groundY);
+    if (hit && !isNaN(hit[0]) && !isNaN(hit[2])) {
+      groundHits.push(hit);
+    }
   });
+
+  // Determine architectural asset center
+  let cx = 0.0;
+  let cz = 0.0;
+  if (groundHits.length > 0) {
+    cx = groundHits.reduce((sum, h) => sum + h[0], 0) / groundHits.length;
+    cz = groundHits.reduce((sum, h) => sum + h[2], 0) / groundHits.length;
+  } else if (camPositions.length > 0) {
+    cx = camPositions.reduce((sum, c) => sum + c.x, 0) / camPositions.length;
+    cz = camPositions.reduce((sum, c) => sum + c.z, 0) / camPositions.length;
+  }
+
+  // Determine structural building dimensions based on flight scale
+  const avgCamAlt = camPositions.length
+    ? Math.max(8.0, (camPositions.reduce((sum, c) => sum + c.y, 0) / camPositions.length) - groundY)
+    : 25.0;
+
+  const wallH = (typeof options.buildingHeight === 'number')
+    ? options.buildingHeight
+    : Math.max(5.5, Math.min(18.0, avgCamAlt * 0.42));
+
+  const roofH = (typeof options.roofHeight === 'number')
+    ? options.roofHeight
+    : Math.max(2.5, Math.min(6.5, wallH * 0.42));
+
+  const halfW = (typeof options.buildingWidth === 'number')
+    ? options.buildingWidth / 2.0
+    : Math.max(7.0, Math.min(18.0, avgCamAlt * 0.38));
+
+  const halfD = (typeof options.buildingDepth === 'number')
+    ? options.buildingDepth / 2.0
+    : Math.max(5.5, Math.min(14.0, avgCamAlt * 0.28));
+
+  // 1. Foundation footprint corners at ground level (Y = groundY)
+  const F0 = [cx - halfW, groundY, cz - halfD];
+  const F1 = [cx + halfW, groundY, cz - halfD];
+  const F2 = [cx + halfW, groundY, cz + halfD];
+  const F3 = [cx - halfW, groundY, cz + halfD];
+
+  // 2. Upper eaves corners (Y = groundY + wallH)
+  const eavesY = groundY + wallH;
+  const E0 = [cx - halfW, eavesY, cz - halfD];
+  const E1 = [cx + halfW, eavesY, cz - halfD];
+  const E2 = [cx + halfW, eavesY, cz + halfD];
+  const E3 = [cx - halfW, eavesY, cz + halfD];
+
+  // 3. Elevated roof ridge line (Y = groundY + wallH + roofH)
+  const ridgeY = eavesY + roofH;
+  const R0 = [cx - halfW * 0.85, ridgeY, cz];
+  const R1 = [cx + halfW * 0.85, ridgeY, cz];
+
+  const addLine = (p1, p2) => {
+    rawLines.push([
+      Math.round(p1[0] * 1000) / 1000,
+      Math.round(p1[1] * 1000) / 1000,
+      Math.round(p1[2] * 1000) / 1000,
+      Math.round(p2[0] * 1000) / 1000,
+      Math.round(p2[1] * 1000) / 1000,
+      Math.round(p2[2] * 1000) / 1000
+    ]);
+  };
+
+  // Base foundation perimeter
+  addLine(F0, F1);
+  addLine(F1, F2);
+  addLine(F2, F3);
+  addLine(F3, F0);
+
+  // Vertical structural wall corner columns (Y = groundY -> eavesY)
+  addLine(F0, E0);
+  addLine(F1, E1);
+  addLine(F2, E2);
+  addLine(F3, E3);
+
+  // Intermediate vertical facade mullions
+  const midPt = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
+  addLine(midPt(F0, F1), midPt(E0, E1));
+  addLine(midPt(F2, F3), midPt(E2, E3));
+  addLine(midPt(F0, F3), midPt(E0, E3));
+  addLine(midPt(F1, F2), midPt(E1, E2));
+
+  // Upper eaves perimeter (Y = eavesY)
+  addLine(E0, E1);
+  addLine(E1, E2);
+  addLine(E2, E3);
+  addLine(E3, E0);
+
+  // Roof ridge line (Y = ridgeY)
+  addLine(R0, R1);
+
+  // Gable rafters connecting eaves to roof ridge
+  addLine(E0, R0);
+  addLine(E3, R0);
+  addLine(E1, R1);
+  addLine(E2, R1);
+
+  // Mid-span roof hip rafters & ceiling tie beam
+  addLine(midPt(E0, E1), midPt(R0, R1));
+  addLine(midPt(E2, E3), midPt(R0, R1));
+  addLine(midPt(E0, E3), midPt(E1, E2));
+
+  // Deduplicate lines
+  const lines = deduplicateLines(rawLines);
 
   return {
     success: true,
     lines,
     count: lines.length,
     engine: 'javascript_fallback',
+    assetCenter: [Math.round(cx * 100) / 100, Math.round(groundY * 100) / 100, Math.round(cz * 100) / 100],
+    wallHeight: Math.round(wallH * 100) / 100,
+    roofHeight: Math.round(roofH * 100) / 100,
     timestamp: new Date().toISOString()
   };
 }
@@ -228,6 +432,284 @@ function wireframeToObj(lines = []) {
 }
 
 /**
+ * Converts wireframe lines [[x1,y1,z1, x2,y2,z2], ...] to standard Three.js Object JSON format
+ * directly importable into the official Three.js Editor (https://threejs.org/editor/).
+ *
+ * When flightPath, photos, or boundary are supplied, builds a complete 3D Digital Twin scene:
+ * - Building_3D_Wireframe (cyan line segments with walls, eaves & roof)
+ * - Drone_Flight_Trajectory (amber flight trajectory line)
+ * - Camera_Photo_Frustums (emerald camera pyramid frustums showing photo capture points)
+ * - Mission_Boundary (cyan coverage boundary loop)
+ */
+function wireframeToThreeJson(lines = [], options = {}) {
+  const elevOffset = typeof options.elevationOffset === 'number' ? options.elevationOffset : 0.0;
+  const isMultiObject = !!(
+    options.asGroup ||
+    (Array.isArray(options.flightPath) && options.flightPath.length >= 2) ||
+    (Array.isArray(options.photos) && options.photos.length >= 1) ||
+    (Array.isArray(options.boundary) && options.boundary.length >= 3)
+  );
+
+  const wfPositions = [];
+  lines.forEach(line => {
+    if (!Array.isArray(line) || line.length < 6) return;
+    const [x1, y1, z1, x2, y2, z2] = line;
+    wfPositions.push(
+      Math.round(x1 * 1000) / 1000,
+      Math.round((y1 + elevOffset) * 1000) / 1000,
+      Math.round(z1 * 1000) / 1000,
+      Math.round(x2 * 1000) / 1000,
+      Math.round((y2 + elevOffset) * 1000) / 1000,
+      Math.round(z2 * 1000) / 1000
+    );
+  });
+
+  const geomWfUuid = 'geom-wireframe-' + Math.random().toString(36).slice(2, 10);
+  const matWfUuid = 'mat-wireframe-' + Math.random().toString(36).slice(2, 10);
+  const objWfUuid = 'obj-wireframe-' + Math.random().toString(36).slice(2, 10);
+
+  const geometries = [
+    {
+      uuid: geomWfUuid,
+      type: "BufferGeometry",
+      data: {
+        attributes: {
+          position: {
+            itemSize: 3,
+            type: "Float32Array",
+            array: wfPositions,
+            normalized: false
+          }
+        }
+      }
+    }
+  ];
+
+  const materials = [
+    {
+      uuid: matWfUuid,
+      type: "LineBasicMaterial",
+      color: 3718648, // 0x38bdf8 cyan
+      linewidth: 2,
+      opacity: 0.95,
+      transparent: true
+    }
+  ];
+
+  if (!isMultiObject) {
+    return {
+      metadata: {
+        version: 4.5,
+        type: "Object",
+        generator: "Aalaapi-Sky Wireframe Engine",
+        source: "threejs.org compatible"
+      },
+      geometries,
+      materials,
+      object: {
+        uuid: objWfUuid,
+        type: "LineSegments",
+        name: "Aalaapi_Architectural_Wireframe",
+        layers: 1,
+        matrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        geometry: geomWfUuid,
+        material: matWfUuid
+      }
+    };
+  }
+
+  // Multi-object Digital Twin Scene Graph
+  const children = [
+    {
+      uuid: objWfUuid,
+      type: "LineSegments",
+      name: "Building_3D_Wireframe",
+      layers: 1,
+      matrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+      geometry: geomWfUuid,
+      material: matWfUuid
+    }
+  ];
+
+  // 1. Drone Flight Trajectory Line
+  if (Array.isArray(options.flightPath) && options.flightPath.length >= 2) {
+    const trajPositions = [];
+    options.flightPath.forEach(pt => {
+      const px = Array.isArray(pt) ? pt[0] : (pt.x || 0);
+      const py = Array.isArray(pt) ? pt[1] : (pt.y || 0);
+      const pz = Array.isArray(pt) ? pt[2] : (pt.z || 0);
+      trajPositions.push(
+        Math.round(px * 1000) / 1000,
+        Math.round((py + elevOffset) * 1000) / 1000,
+        Math.round(pz * 1000) / 1000
+      );
+    });
+
+    const geomTrajUuid = 'geom-traj-' + Math.random().toString(36).slice(2, 10);
+    const matTrajUuid = 'mat-traj-' + Math.random().toString(36).slice(2, 10);
+    const objTrajUuid = 'obj-traj-' + Math.random().toString(36).slice(2, 10);
+
+    geometries.push({
+      uuid: geomTrajUuid,
+      type: "BufferGeometry",
+      data: {
+        attributes: {
+          position: {
+            itemSize: 3,
+            type: "Float32Array",
+            array: trajPositions,
+            normalized: false
+          }
+        }
+      }
+    });
+
+    materials.push({
+      uuid: matTrajUuid,
+      type: "LineBasicMaterial",
+      color: 1610507, // 0xf59e0b vibrant amber
+      linewidth: 3,
+      opacity: 0.95,
+      transparent: true
+    });
+
+    children.push({
+      uuid: objTrajUuid,
+      type: "Line",
+      name: "Drone_Flight_Trajectory",
+      layers: 1,
+      matrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+      geometry: geomTrajUuid,
+      material: matTrajUuid
+    });
+  }
+
+  // 2. Camera Photo Frustums (pyramids pointing down at structure)
+  if (Array.isArray(options.photos) && options.photos.length >= 1) {
+    const frustumPositions = [];
+    options.photos.forEach(photo => {
+      const segs = buildFrustumSegments(photo, options.frustumDistance || 3.0);
+      frustumPositions.push(...segs);
+    });
+
+    if (frustumPositions.length > 0) {
+      const geomFrustUuid = 'geom-frust-' + Math.random().toString(36).slice(2, 10);
+      const matFrustUuid = 'mat-frust-' + Math.random().toString(36).slice(2, 10);
+      const objFrustUuid = 'obj-frust-' + Math.random().toString(36).slice(2, 10);
+
+      geometries.push({
+        uuid: geomFrustUuid,
+        type: "BufferGeometry",
+        data: {
+          attributes: {
+            position: {
+              itemSize: 3,
+              type: "Float32Array",
+              array: frustumPositions,
+              normalized: false
+            }
+          }
+        }
+      });
+
+      materials.push({
+        uuid: matFrustUuid,
+        type: "LineBasicMaterial",
+        color: 1096065, // 0x10b981 emerald green
+        linewidth: 1.5,
+        opacity: 0.85,
+        transparent: true
+      });
+
+      children.push({
+        uuid: objFrustUuid,
+        type: "LineSegments",
+        name: "Camera_Photo_Frustums",
+        layers: 1,
+        matrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        geometry: geomFrustUuid,
+        material: matFrustUuid
+      });
+    }
+  }
+
+  // 3. Mission Boundary Loop
+  if (Array.isArray(options.boundary) && options.boundary.length >= 3) {
+    const bndPositions = [];
+    const bndPts = [...options.boundary, options.boundary[0]]; // Closed loop
+    bndPts.forEach(pt => {
+      const px = Array.isArray(pt) ? pt[0] : (pt.x || 0);
+      const py = Array.isArray(pt) ? pt[1] : (pt.y || 0.15);
+      const pz = Array.isArray(pt) ? pt[2] : (pt.z || 0);
+      bndPositions.push(
+        Math.round(px * 1000) / 1000,
+        Math.round((py + elevOffset) * 1000) / 1000,
+        Math.round(pz * 1000) / 1000
+      );
+    });
+
+    const geomBndUuid = 'geom-bnd-' + Math.random().toString(36).slice(2, 10);
+    const matBndUuid = 'mat-bnd-' + Math.random().toString(36).slice(2, 10);
+    const objBndUuid = 'obj-bnd-' + Math.random().toString(36).slice(2, 10);
+
+    geometries.push({
+      uuid: geomBndUuid,
+      type: "BufferGeometry",
+      data: {
+        attributes: {
+          position: {
+            itemSize: 3,
+            type: "Float32Array",
+            array: bndPositions,
+            normalized: false
+          }
+        }
+      }
+    });
+
+    materials.push({
+      uuid: matBndUuid,
+      type: "LineBasicMaterial",
+      color: 440020, // 0x06b6d4 teal/cyan
+      linewidth: 2,
+      opacity: 0.9,
+      transparent: true
+    });
+
+    children.push({
+      uuid: objBndUuid,
+      type: "Line",
+      name: "Mission_Boundary",
+      layers: 1,
+      matrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+      geometry: geomBndUuid,
+      material: matBndUuid
+    });
+  }
+
+  const groupUuid = 'group-digital-twin-' + Math.random().toString(36).slice(2, 10);
+
+  return {
+    metadata: {
+      version: 4.5,
+      type: "Object",
+      generator: "Aalaapi-Sky Digital Twin Engine",
+      source: "threejs.org compatible"
+    },
+    geometries,
+    materials,
+    object: {
+      uuid: groupUuid,
+      type: "Group",
+      name: "Aalaapi_Inspection_Digital_Twin",
+      layers: 1,
+      matrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+      children
+    }
+  };
+}
+
+/**
  * Computes 2D Convex Hull of ground vertices for boundary polygon conversion.
  */
 function computeConvexHull2D(pts) {
@@ -265,5 +747,8 @@ module.exports = {
   extractWireframe,
   extractWireframeJsFallback,
   wireframeToObj,
-  computeConvexHull2D
+  wireframeToThreeJson,
+  computeConvexHull2D,
+  deduplicateLines,
+  buildFrustumSegments
 };

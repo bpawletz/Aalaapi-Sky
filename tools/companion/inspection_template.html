@@ -56,8 +56,9 @@
       </h1>
       <p id="mission-info" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Loading mission manifest...</p>
     </div>
-    <div id="overall-status">
+    <div id="overall-status" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
       <span class="badge badge-clean">Audit Complete</span>
+      <span id="badge-wireframe" class="badge" style="display: none; background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4);">🏗️ 3D Wireframe Included</span>
     </div>
   </header>
 
@@ -68,6 +69,16 @@
     <div class="stat-card"><div class="label">Max Altitude</div><div id="stat-alt" class="value">—</div></div>
     <div class="stat-card"><div class="label">Max Positional Variance</div><div id="stat-variance" class="value">—</div></div>
     <div class="stat-card"><div class="label">Ground Resolution (GSD)</div><div id="stat-gsd" class="value">—</div></div>
+    <div class="stat-card" id="card-wireframe" style="display: none; border-color: rgba(56, 189, 248, 0.35); background: rgba(56, 189, 248, 0.05);">
+      <div class="label" style="color: #38bdf8;">🏗️ 3D Wireframe</div>
+      <div id="stat-wireframe" class="value" style="color: #38bdf8;">0 Segments</div>
+      <div style="margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap;">
+        <a id="link-wf-obj" href="wireframe.obj" download="wireframe.obj" class="filter-btn" style="padding: 2px 8px; font-size: 0.68rem; text-decoration: none; color: #38bdf8; border-color: rgba(56,189,248,0.4);" title="Wavefront OBJ - drag into threejs.org/editor">OBJ</a>
+        <a id="link-wf-three" href="wireframe_threejs.json" download="wireframe_threejs.json" class="filter-btn" style="padding: 2px 8px; font-size: 0.68rem; text-decoration: none; color: #a78bfa; border-color: rgba(167,139,250,0.4);" title="Native Three.js Object JSON - drag into threejs.org/editor">Three.js JSON</a>
+        <a id="link-wf-json" href="wireframe.json" download="wireframe.json" class="filter-btn" style="padding: 2px 8px; font-size: 0.68rem; text-decoration: none; color: #94a3b8;" title="Raw Line Coordinates JSON">JSON</a>
+        <a href="https://threejs.org/editor/" target="_blank" rel="noopener noreferrer" class="filter-btn" style="padding: 2px 8px; font-size: 0.68rem; text-decoration: none; color: #34d399; border-color: rgba(52,211,153,0.4);" title="Open official Three.js Editor in a new tab">🎨 Three.js Editor ↗</a>
+      </div>
+    </div>
   </div>
 
   <div id="map"></div>
@@ -119,6 +130,16 @@
       document.getElementById('stat-alt').textContent = manifest.summary.maxAltitude ? `${manifest.summary.maxAltitude} m` : '—';
       document.getElementById('stat-variance').textContent = manifest.summary.maxDeviation || '0.2 m';
       document.getElementById('stat-gsd').textContent = manifest.summary.averageGsd ? `${manifest.summary.averageGsd} cm/px` : '0.9 cm/px';
+    }
+
+    if (manifest.wireframe && Array.isArray(manifest.wireframe.lines) && manifest.wireframe.lines.length > 0) {
+      const count = manifest.wireframe.count || manifest.wireframe.lines.length;
+      const bWf = document.getElementById('badge-wireframe');
+      if (bWf) bWf.style.display = 'inline-flex';
+      const cWf = document.getElementById('card-wireframe');
+      if (cWf) cWf.style.display = 'block';
+      const sWf = document.getElementById('stat-wireframe');
+      if (sWf) sWf.textContent = `${count} Segments`;
     }
 
     // Map init
