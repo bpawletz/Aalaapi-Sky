@@ -1,3 +1,12 @@
+## [1.128.2] - 2026-09-25
+
+### Fixed
+- **DJI Mini 4 Pro / Consumer Drone Photo Sphere Execution & APAS Obstacle Prevention**:
+  - **Zero-Distance APAS Obstacle Trigger Fix**: Resolved critical bug where consecutive waypoints sharing identical GPS coordinates (distance = 0.0m) in 360 photo spheres or stationary pano shoots caused DJI Fly's APAS obstacle avoidance to alert "Obstacle" at the first waypoint and fail `ContinuityCurvature` spline calculation. Applied a micro-orbital radius offset ($R = 1.25\text{m} - 1.45\text{m}$) keyed to waypoint heading, ensuring all adjacent flight nodes maintain safe $\ge 0.64\text{m}$ separation while keeping optical displacement negligible within standard GPS hover drift.
+  - **Consumer Drone Action Group Halt Fix (`rotateYaw`)**: Omitted Enterprise-only `rotateYaw` action actuator from consumer drone missions (Mini 4 Pro / Air 3) which caused DJI Fly to halt mission execution before the first photo. Consumer heading is natively controlled by `<wpml:waypointHeadingParam>` with `smoothTransition` and `enable: 1`.
+  - **Takeoff Security Height Clamping**: Clamped `takeOffSecurityHeight` in WPML and template KML to never exceed the mission altitude (e.g. 10m), preventing the drone from unnecessarily climbing to 50m and triggering downward obstacle sensors during steep descents.
+  - **WPML Rule 8 & Rule 9 Validator Enforcement**: Upgraded Rule 8 to flag `rotateYaw` on consumer drones and Rule 9 to fail on zero or sub-0.5m waypoint spacing, with automatic repair in `validateAndFixWpml`.
+
 ## [1.128.1] - 2026-09-25
 
 ### Fixed
