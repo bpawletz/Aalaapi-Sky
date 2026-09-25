@@ -294,106 +294,155 @@ function extractWireframeJsFallback(payload = {}) {
     }
   });
 
-  // Priority 1: Unproject authentic detected architectural lines if perPhotoLines or lines2D are present
+  // Priority 1: Unproject authentic detected architectural lines (3-fix version).
+  // Fix 1 - Photo clustering by ground-hit centroid (photos looking at the same
+  //         building are grouped; lines from different buildings never mix).
+  // Fix 2 - Per-photo local spatial filter using cluster center, not global origin.
+  // Fix 3 - Height assignment via nadir-distance geometry, not pixel-angle heuristic.
   const ppl = payload.perPhotoLines || {};
-  const steepWithLines = [];
+
+  // Build per-photo metadata (camera world pos + center-ray ground hit)
+  const photoMeta = [];
   photos.forEach(photo => {
     const telem = photo.telemetry || photo || {};
     const actual = telem.actual || {};
-    const pitch = telem.pitch !== undefined ? telem.pitch : (telem.gimbalPitch !== undefined ? telem.gimbalPitch : (actual.gimbalPitch !== undefined ? actual.gimbalPitch : -60));
+    const pitch = telem.pitch !== undefined ? telem.pitch
+                : (telem.gimbalPitch !== undefined ? telem.gimbalPitch
+                : (actual.gimbalPitch !== undefined ? actual.gimbalPitch : -60));
+    if (pitch > -35) return;
     const pid = photo.photoId || photo.filename;
     const lines2d = ppl[pid] || photo.lines2D || photo.detectedLines || [];
-    if (pitch <= -35 && lines2d.length > 0) {
-      steepWithLines.push({ photo, lines2d });
+    if (lines2d.length === 0) return;
+
+    const lat = telem.lat !== undefined ? telem.lat : actual.lat;
+    const lon = telem.lon !== undefined ? telem.lon : actual.lon;
+    let wx = telem.worldX !== undefined ? telem.worldX : (photo.x !== undefined ? photo.x : 0);
+    let wz = telem.worldZ !== undefined ? telem.worldZ : (photo.z !== undefined ? photo.z : 0);
+    if ((wx === 0 && wz === 0) && lat !== undefined && lon !== undefined && origin) {
+      const wPos = latlonToWorld(lat, lon, origin.lat, origin.lon);
+      wx = wPos.x; wz = wPos.z;
     }
+    const wy = telem.worldY !== undefined ? telem.worldY
+             : (telem.altAgl || telem.alt || actual.altAgl || actual.alt || photo.y || 25);
+    const yaw = telem.yaw !== undefined ? telem.yaw
+              : (telem.heading !== undefined ? telem.heading : (actual.heading || 0));
+    const roll = telem.roll || 0;
+    const hfov = telem.hfov || 73.7;
+    const vfov = telem.vfov || 53.1;
+    const camPos = { x: wx, y: wy, z: wz };
+
+    // Compute center-ray ground hit
+    const centerRay = projectPixelToRay(960, 540, 1920, 1080, hfov, vfov, camPos, yaw, pitch, roll);
+    let gx = wx, gz = wz;
+    if (Math.abs(centerRay[1]) > 1e-4) {
+      const tC = (groundY - wy) / centerRay[1];
+      if (tC > 0 && tC < 350) { gx = wx + centerRay[0] * tC; gz = wz + centerRay[2] * tC; }
+    }
+    photoMeta.push({ photo, pid, lines2d, camPos, wx, wy, wz, yaw, pitch, roll, hfov, vfov, gx, gz,
+                     altAgl: wy - groundY, lineCount: lines2d.length });
   });
 
-  if (steepWithLines.length > 0) {
-    steepWithLines.sort((a, b) => b.lines2d.length - a.lines2d.length);
-    const selected = steepWithLines.slice(0, 2);
+  if (photoMeta.length > 0) {
+    // Fix 1: Cluster photos by ground-hit centroid (DBSCAN-style, radius=18m)
+    const CLUSTER_R = (typeof options.clusterRadius === 'number') ? options.clusterRadius : 18.0;
+    const clusters = [];
+    const assigned = new Array(photoMeta.length).fill(false);
+    for (let i = 0; i < photoMeta.length; i++) {
+      if (assigned[i]) continue;
+      const cluster = [i]; assigned[i] = true;
+      for (let j = 0; j < photoMeta.length; j++) {
+        if (assigned[j]) continue;
+        const d = Math.hypot(photoMeta[i].gx - photoMeta[j].gx, photoMeta[i].gz - photoMeta[j].gz);
+        if (d <= CLUSTER_R) { cluster.push(j); assigned[j] = true; }
+      }
+      clusters.push(cluster);
+    }
 
-    const avgCamAlt = camPositions.length
-      ? Math.max(8.0, (camPositions.reduce((sum, c) => sum + c.y, 0) / camPositions.length) - groundY)
-      : 25.0;
-    const wallH = (typeof options.buildingHeight === 'number') ? options.buildingHeight : Math.max(5.5, Math.min(10.0, avgCamAlt * 0.35));
-    const roofH = (typeof options.roofHeight === 'number') ? options.roofHeight : Math.max(2.8, Math.min(5.5, wallH * 0.48));
+    // Scene-wide height estimates
+    const avgCamAlt = Math.max(8.0,
+      photoMeta.reduce((s, pm) => s + pm.altAgl, 0) / photoMeta.length);
+    const wallH = (typeof options.buildingHeight === 'number') ? options.buildingHeight
+                : Math.max(5.5, Math.min(10.0, avgCamAlt * 0.32));
+    const roofH = (typeof options.roofHeight === 'number') ? options.roofHeight
+                : Math.max(2.5, Math.min(5.5, wallH * 0.48));
     const eavesY = groundY + wallH;
     const ridgeY = eavesY + roofH;
 
     const unprojectedRaw = [];
-    selected.forEach(({ photo, lines2d }) => {
-      const telem = photo.telemetry || photo || {};
-      const actual = telem.actual || {};
-      const lat = telem.lat !== undefined ? telem.lat : actual.lat;
-      const lon = telem.lon !== undefined ? telem.lon : actual.lon;
-      let wx = telem.worldX !== undefined ? telem.worldX : (photo.x !== undefined ? photo.x : 0);
-      let wz = telem.worldZ !== undefined ? telem.worldZ : (photo.z !== undefined ? photo.z : 0);
-      if ((wx === 0 && wz === 0) && lat !== undefined && lon !== undefined && origin) {
-        const wPos = latlonToWorld(lat, lon, origin.lat, origin.lon);
-        wx = wPos.x; wz = wPos.z;
+
+    clusters.forEach(cluster => {
+      // Sort cluster by line count, select best + one orthogonal
+      const sorted = [...cluster].sort((a, b) => photoMeta[b].lineCount - photoMeta[a].lineCount);
+      const selIdx = [sorted[0]];
+      const h0 = photoMeta[sorted[0]].yaw;
+      for (let k = 1; k < sorted.length; k++) {
+        const diff = Math.abs(((photoMeta[sorted[k]].yaw - h0 + 180) % 360) - 180);
+        if (diff > 40) { selIdx.push(sorted[k]); break; }
       }
-      const wy = telem.worldY !== undefined ? telem.worldY : (telem.altAgl || telem.alt || actual.altAgl || actual.alt || photo.y || 25);
-      const camPos = { x: wx, y: wy, z: wz };
-      const yaw = telem.yaw !== undefined ? telem.yaw : (telem.heading !== undefined ? telem.heading : (actual.heading || 0));
-      const pitch = telem.pitch !== undefined ? telem.pitch : (telem.gimbalPitch !== undefined ? telem.gimbalPitch : (actual.gimbalPitch !== undefined ? actual.gimbalPitch : -60));
-      const roll = telem.roll || 0;
-      const hfov = telem.hfov || 73.7;
-      const vfov = telem.vfov || 53.1;
+      if (selIdx.length < 2 && sorted.length > 1 && !selIdx.includes(sorted[1])) {
+        selIdx.push(sorted[1]);
+      }
 
-      lines2d.forEach(l => {
-        const [u1, v1, u2, v2] = l;
-        const dxPx = (u2 - u1) * 1920.0;
-        const dyPx = (v2 - v1) * 1080.0;
-        if (Math.hypot(dxPx, dyPx) < 32.0) return;
+      // Cluster center (Fix 2 filter anchor)
+      const cx = cluster.reduce((s, i) => s + photoMeta[i].gx, 0) / cluster.length;
+      const cz = cluster.reduce((s, i) => s + photoMeta[i].gz, 0) / cluster.length;
 
-        const r1 = projectPixelToRay(u1 * 1920, v1 * 1080, 1920, 1080, hfov, vfov, camPos, yaw, pitch, roll);
-        const r2 = projectPixelToRay(u2 * 1920, v2 * 1080, 1920, 1080, hfov, vfov, camPos, yaw, pitch, roll);
-        if (r1[1] >= -0.04 || r2[1] >= -0.04) return;
+      selIdx.forEach(idx => {
+        const pm = photoMeta[idx];
+        const { camPos, wy, yaw, pitch, roll, hfov, vfov, altAgl, wx, wz } = pm;
+        const filterR = Math.min(32.0, Math.max(12.0, altAgl * 0.90));
+        const ridgeThresh = altAgl * 0.42;
+        const eaveThresh  = altAgl * 0.78;
 
-        const t1_0 = (groundY - wy) / r1[1];
-        const t2_0 = (groundY - wy) / r2[1];
-        const g1 = [camPos.x + r1[0] * t1_0, groundY, camPos.z + r1[2] * t1_0];
-        const g2 = [camPos.x + r2[0] * t2_0, groundY, camPos.z + r2[2] * t2_0];
-        const midGx = (g1[0] + g2[0]) / 2.0;
-        const midGz = (g1[2] + g2[2]) / 2.0;
+        pm.lines2d.forEach(l => {
+          const [u1, v1, u2, v2] = l;
+          const dxPx = (u2 - u1) * 1920.0, dyPx = (v2 - v1) * 1080.0;
+          if (Math.hypot(dxPx, dyPx) < 32.0) return;
 
-        if (Math.hypot(midGx, midGz) > 120.0) return;
+          const r1 = projectPixelToRay(u1 * 1920, v1 * 1080, 1920, 1080, hfov, vfov, camPos, yaw, pitch, roll);
+          const r2 = projectPixelToRay(u2 * 1920, v2 * 1080, 1920, 1080, hfov, vfov, camPos, yaw, pitch, roll);
+          if (r1[1] >= -0.04 || r2[1] >= -0.04) return;
 
-        const ang = Math.abs(Math.atan2(dyPx, dxPx));
-        let h1, h2;
-        if (ang < 0.28 || ang > 2.86) {
-          h1 = ridgeY; h2 = ridgeY;
-        } else if (ang > 0.50 && ang < 2.64) {
-          h1 = eavesY; h2 = ridgeY;
-        } else {
-          h1 = eavesY; h2 = eavesY;
-        }
+          const t1g = (groundY - wy) / r1[1], t2g = (groundY - wy) / r2[1];
+          const g1x = camPos.x + r1[0] * t1g, g1z = camPos.z + r1[2] * t1g;
+          const g2x = camPos.x + r2[0] * t2g, g2z = camPos.z + r2[2] * t2g;
+          const midGx = (g1x + g2x) / 2.0, midGz = (g1z + g2z) / 2.0;
 
-        const t1 = (h1 - wy) / r1[1];
-        const t2 = (h2 - wy) / r2[1];
-        const p1 = [camPos.x + r1[0] * t1, h1, camPos.z + r1[2] * t1];
-        const p2 = [camPos.x + r2[0] * t2, h2, camPos.z + r2[2] * t2];
+          // Fix 2: filter against cluster center, not global (0,0)
+          if (Math.hypot(midGx - cx, midGz - cz) > filterR) return;
 
-        const segLen = Math.hypot(p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]);
-        if (segLen > 0.65 && segLen < 32.0) {
-          unprojectedRaw.push([
-            Math.round(p1[0] * 1000) / 1000, Math.round(p1[1] * 1000) / 1000, Math.round(p1[2] * 1000) / 1000,
-            Math.round(p2[0] * 1000) / 1000, Math.round(p2[1] * 1000) / 1000, Math.round(p2[2] * 1000) / 1000
-          ]);
-        }
+          // Fix 3: height from nadir-distance, not pixel-angle heuristic
+          const d1 = Math.hypot(g1x - wx, g1z - wz);
+          const d2 = Math.hypot(g2x - wx, g2z - wz);
+          const dAvg = (d1 + d2) / 2.0;
+          const h = dAvg <= ridgeThresh ? ridgeY : (dAvg <= eaveThresh ? eavesY : groundY);
+
+          const t1 = (h - wy) / r1[1], t2 = (h - wy) / r2[1];
+          if (t1 <= 0 || t2 <= 0 || t1 > 350 || t2 > 350) return;
+
+          const p1 = [camPos.x + r1[0] * t1, h, camPos.z + r1[2] * t1];
+          const p2 = [camPos.x + r2[0] * t2, h, camPos.z + r2[2] * t2];
+          const segLen = Math.hypot(p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]);
+          if (segLen >= 0.5 && segLen <= 35.0) {
+            unprojectedRaw.push([
+              Math.round(p1[0] * 1000) / 1000, Math.round(p1[1] * 1000) / 1000, Math.round(p1[2] * 1000) / 1000,
+              Math.round(p2[0] * 1000) / 1000, Math.round(p2[1] * 1000) / 1000, Math.round(p2[2] * 1000) / 1000
+            ]);
+          }
+        });
       });
     });
 
     if (unprojectedRaw.length >= 15) {
       const deduped = deduplicateLines(unprojectedRaw);
-      const cx = groundHits.length ? groundHits.reduce((s, h) => s + h[0], 0) / groundHits.length : 0;
-      const cz = groundHits.length ? groundHits.reduce((s, h) => s + h[2], 0) / groundHits.length : 0;
+      const cxAll = photoMeta.reduce((s, pm) => s + pm.gx, 0) / photoMeta.length;
+      const czAll = photoMeta.reduce((s, pm) => s + pm.gz, 0) / photoMeta.length;
       return {
         success: true,
         lines: deduped,
         count: deduped.length,
         engine: 'javascript_authentic_unprojection',
-        assetCenter: [Math.round(cx * 100) / 100, Math.round(groundY * 100) / 100, Math.round(cz * 100) / 100],
+        assetCenter: [Math.round(cxAll * 100) / 100, Math.round(groundY * 100) / 100, Math.round(czAll * 100) / 100],
         wallHeight: Math.round(wallH * 100) / 100,
         roofHeight: Math.round(roofH * 100) / 100,
         timestamp: new Date().toISOString()
