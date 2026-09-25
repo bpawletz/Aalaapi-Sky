@@ -165,7 +165,8 @@ class AdsbAirspaceTracker {
         firstSeen: Date.now(),
         lastSeen: Date.now(),
         packetCount: 0,
-        dataSource: 'sbs-1'
+        dataSource: 'sbs-1',
+        history: []
       };
       this.aircraft.set(hex, record);
     }
@@ -189,6 +190,12 @@ class AdsbAirspaceTracker {
         if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180 && (lat !== 0 || lon !== 0)) {
           record.latitude = lat;
           record.longitude = lon;
+          if (!record.history) record.history = [];
+          const lastPt = record.history[record.history.length - 1];
+          if (!lastPt || Math.abs(lastPt[0] - lat) > 0.0001 || Math.abs(lastPt[1] - lon) > 0.0001) {
+            record.history.push([lat, lon, record.altitude || 0, Date.now()]);
+            if (record.history.length > 60) record.history.shift();
+          }
         }
       }
       if (parts[21] !== undefined) {
@@ -277,7 +284,8 @@ class AdsbAirspaceTracker {
           firstSeen: now,
           lastSeen: now,
           packetCount: 0,
-          dataSource: 'dump1090-json'
+          dataSource: 'dump1090-json',
+          history: []
         };
         this.aircraft.set(hex, record);
       }
@@ -291,6 +299,13 @@ class AdsbAirspaceTracker {
       if (typeof ac.lat === 'number' && typeof ac.lon === 'number') {
         record.latitude = ac.lat;
         record.longitude = ac.lon;
+        if (!record.history) record.history = [];
+        const lastPt = record.history[record.history.length - 1];
+        if (!lastPt || Math.abs(lastPt[0] - ac.lat) > 0.0001 || Math.abs(lastPt[1] - ac.lon) > 0.0001) {
+          const altVal = typeof ac.alt_baro === 'number' ? ac.alt_baro : (typeof ac.alt_geom === 'number' ? ac.alt_geom : 0);
+          record.history.push([ac.lat, ac.lon, altVal, now]);
+          if (record.history.length > 60) record.history.shift();
+        }
       }
       if (typeof ac.alt_baro === 'number') {
         record.altitude = ac.alt_baro;
@@ -416,7 +431,8 @@ class AdsbAirspaceTracker {
           isWithinRadius,
           isBreached,
           breachReason,
-          status: isBreached ? 'breached' : 'safe'
+          status: isBreached ? 'breached' : 'safe',
+          history: Array.isArray(ac.history) ? ac.history : []
         });
       }
     }
@@ -474,7 +490,12 @@ class AdsbAirspaceTracker {
       firstSeen: now,
       lastSeen: now,
       packetCount: 1,
-      dataSource: 'simulated'
+      dataSource: 'simulated',
+      history: Array.isArray(ac.history) ? [...ac.history] : [
+        [(ac.latitude !== undefined ? ac.latitude : (ac.lat !== undefined ? ac.lat : 40.0150)) + 0.012, (ac.longitude !== undefined ? ac.longitude : (ac.lon !== undefined ? ac.lon : -83.1700)) + 0.012, 2200, now - 30000],
+        [(ac.latitude !== undefined ? ac.latitude : (ac.lat !== undefined ? ac.lat : 40.0150)) + 0.006, (ac.longitude !== undefined ? ac.longitude : (ac.lon !== undefined ? ac.lon : -83.1700)) + 0.006, 2000, now - 15000],
+        [(ac.latitude !== undefined ? ac.latitude : (ac.lat !== undefined ? ac.lat : 40.0150)), (ac.longitude !== undefined ? ac.longitude : (ac.lon !== undefined ? ac.lon : -83.1700)), (ac.altitude !== undefined ? ac.altitude : (ac.alt !== undefined ? ac.alt : 1800)), now]
+      ]
     };
 
     this.aircraft.set(hex, record);

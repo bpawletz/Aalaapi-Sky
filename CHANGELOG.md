@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.124.0] - 2026-09-24
+
+### New Features & Enhancements
+- **Aircraft Flight History Trails & Breadcrumb Vectors:**
+  - **Dynamic Flight Path Polyline Rendering:** Tracked manned aircraft leave a breadcrumb flight trail on the Leaflet map representing their past trajectory and approach progression.
+  - **Status-Differentiated Vector Styling:**
+    - Safe aircraft render with a clear, subtle cyan/blue vector trail (`#38bdf8`, weight 2, 70% opacity).
+    - Breached / advisory aircraft display a high-contrast red/amber dashed vector path (`#ef4444`, weight 3, 4px dashed) clearly highlighting the aircraft's approach angle into the drone's flight envelope.
+  - **Dual-Layer Coordinate Accumulation:** Both server-side (`adsb_tracker.js` retaining up to 60 historical GPS points) and client-side (`AdsbAirspaceManager.acHistory`) maintain continuous position histories across poll cycles.
+  - **Flight History Trails Toggle:** Added an interactive switch in `#adsb-control-drawer` allowing pilots to toggle breadcrumb tails on or off with persistent browser state.
+
 ## [1.123.1] - 2026-09-24
 
 ### Enhancements & Diagnostics
