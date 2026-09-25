@@ -294,15 +294,35 @@ function extractWireframeJsFallback(payload = {}) {
     }
   });
 
-  // Determine architectural asset center
-  let cx = 0.0;
-  let cz = 0.0;
-  if (groundHits.length > 0) {
-    cx = groundHits.reduce((sum, h) => sum + h[0], 0) / groundHits.length;
-    cz = groundHits.reduce((sum, h) => sum + h[2], 0) / groundHits.length;
-  } else if (camPositions.length > 0) {
-    cx = camPositions.reduce((sum, c) => sum + c.x, 0) / camPositions.length;
-    cz = camPositions.reduce((sum, c) => sum + c.z, 0) / camPositions.length;
+  // Group ground hits into spatial clusters if multiple structures exist
+  let clusters = [];
+  if (groundHits.length >= 8) {
+    const xs = groundHits.map(h => h[0]);
+    const zs = groundHits.map(h => h[2]);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minZ = Math.min(...zs), maxZ = Math.max(...zs);
+    const xSpan = maxX - minX;
+    const zSpan = maxZ - minZ;
+
+    if (xSpan >= 22.0) {
+      const midX = (minX + maxX) / 2.0;
+      const c1 = groundHits.filter(h => h[0] < midX);
+      const c2 = groundHits.filter(h => h[0] >= midX);
+      if (c1.length >= 4 && c2.length >= 4) {
+        clusters = [c1, c2];
+      }
+    } else if (zSpan >= 22.0) {
+      const midZ = (minZ + maxZ) / 2.0;
+      const c1 = groundHits.filter(h => h[2] < midZ);
+      const c2 = groundHits.filter(h => h[2] >= midZ);
+      if (c1.length >= 4 && c2.length >= 4) {
+        clusters = [c1, c2];
+      }
+    }
+  }
+
+  if (clusters.length === 0) {
+    clusters = [groundHits.length > 0 ? groundHits : (camPositions.length > 0 ? camPositions.map(c => [c.x, groundY, c.z]) : [[0, groundY, 0]])];
   }
 
   // Determine structural building dimensions based on flight scale
@@ -318,32 +338,6 @@ function extractWireframeJsFallback(payload = {}) {
     ? options.roofHeight
     : Math.max(2.5, Math.min(6.5, wallH * 0.42));
 
-  const halfW = (typeof options.buildingWidth === 'number')
-    ? options.buildingWidth / 2.0
-    : Math.max(7.0, Math.min(18.0, avgCamAlt * 0.38));
-
-  const halfD = (typeof options.buildingDepth === 'number')
-    ? options.buildingDepth / 2.0
-    : Math.max(5.5, Math.min(14.0, avgCamAlt * 0.28));
-
-  // 1. Foundation footprint corners at ground level (Y = groundY)
-  const F0 = [cx - halfW, groundY, cz - halfD];
-  const F1 = [cx + halfW, groundY, cz - halfD];
-  const F2 = [cx + halfW, groundY, cz + halfD];
-  const F3 = [cx - halfW, groundY, cz + halfD];
-
-  // 2. Upper eaves corners (Y = groundY + wallH)
-  const eavesY = groundY + wallH;
-  const E0 = [cx - halfW, eavesY, cz - halfD];
-  const E1 = [cx + halfW, eavesY, cz - halfD];
-  const E2 = [cx + halfW, eavesY, cz + halfD];
-  const E3 = [cx - halfW, eavesY, cz + halfD];
-
-  // 3. Elevated roof ridge line (Y = groundY + wallH + roofH)
-  const ridgeY = eavesY + roofH;
-  const R0 = [cx - halfW * 0.85, ridgeY, cz];
-  const R1 = [cx + halfW * 0.85, ridgeY, cz];
-
   const addLine = (p1, p2) => {
     rawLines.push([
       Math.round(p1[0] * 1000) / 1000,
@@ -354,45 +348,83 @@ function extractWireframeJsFallback(payload = {}) {
       Math.round(p2[2] * 1000) / 1000
     ]);
   };
-
-  // Base foundation perimeter
-  addLine(F0, F1);
-  addLine(F1, F2);
-  addLine(F2, F3);
-  addLine(F3, F0);
-
-  // Vertical structural wall corner columns (Y = groundY -> eavesY)
-  addLine(F0, E0);
-  addLine(F1, E1);
-  addLine(F2, E2);
-  addLine(F3, E3);
-
-  // Intermediate vertical facade mullions
   const midPt = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
-  addLine(midPt(F0, F1), midPt(E0, E1));
-  addLine(midPt(F2, F3), midPt(E2, E3));
-  addLine(midPt(F0, F3), midPt(E0, E3));
-  addLine(midPt(F1, F2), midPt(E1, E2));
 
-  // Upper eaves perimeter (Y = eavesY)
-  addLine(E0, E1);
-  addLine(E1, E2);
-  addLine(E2, E3);
-  addLine(E3, E0);
+  let primaryCenter = [0, groundY, 0];
 
-  // Roof ridge line (Y = ridgeY)
-  addLine(R0, R1);
+  clusters.forEach((clusterPts, cIdx) => {
+    const cXs = clusterPts.map(pt => pt[0]);
+    const cZs = clusterPts.map(pt => pt[2]);
+    const cx = cXs.reduce((a, b) => a + b, 0) / clusterPts.length;
+    const cz = cZs.reduce((a, b) => a + b, 0) / clusterPts.length;
+    if (cIdx === 0) primaryCenter = [Math.round(cx * 100) / 100, Math.round(groundY * 100) / 100, Math.round(cz * 100) / 100];
+    const cXSpan = Math.max(...cXs) - Math.min(...cXs);
+    const cZSpan = Math.max(...cZs) - Math.min(...cZs);
 
-  // Gable rafters connecting eaves to roof ridge
-  addLine(E0, R0);
-  addLine(E3, R0);
-  addLine(E1, R1);
-  addLine(E2, R1);
+    const halfW = (typeof options.buildingWidth === 'number')
+      ? options.buildingWidth / 2.0
+      : Math.max(5.5, Math.min(12.0, cXSpan > 4.0 ? cXSpan * 0.38 : avgCamAlt * 0.35));
 
-  // Mid-span roof hip rafters & ceiling tie beam
-  addLine(midPt(E0, E1), midPt(R0, R1));
-  addLine(midPt(E2, E3), midPt(R0, R1));
-  addLine(midPt(E0, E3), midPt(E1, E2));
+    const halfD = (typeof options.buildingDepth === 'number')
+      ? options.buildingDepth / 2.0
+      : Math.max(5.5, Math.min(12.0, cZSpan > 4.0 ? cZSpan * 0.38 : avgCamAlt * 0.28));
+
+    // 1. Foundation footprint corners at ground level (Y = groundY)
+    const F0 = [cx - halfW, groundY, cz - halfD];
+    const F1 = [cx + halfW, groundY, cz - halfD];
+    const F2 = [cx + halfW, groundY, cz + halfD];
+    const F3 = [cx - halfW, groundY, cz + halfD];
+
+    // 2. Upper eaves corners (Y = groundY + wallH)
+    const eavesY = groundY + wallH;
+    const E0 = [cx - halfW, eavesY, cz - halfD];
+    const E1 = [cx + halfW, eavesY, cz - halfD];
+    const E2 = [cx + halfW, eavesY, cz + halfD];
+    const E3 = [cx - halfW, eavesY, cz + halfD];
+
+    // 3. Elevated roof ridge line (Y = groundY + wallH + roofH)
+    const ridgeY = eavesY + roofH;
+    const R0 = [cx - halfW * 0.85, ridgeY, cz];
+    const R1 = [cx + halfW * 0.85, ridgeY, cz];
+
+    // Base foundation perimeter
+    addLine(F0, F1);
+    addLine(F1, F2);
+    addLine(F2, F3);
+    addLine(F3, F0);
+
+    // Vertical structural wall corner columns (Y = groundY -> eavesY)
+    addLine(F0, E0);
+    addLine(F1, E1);
+    addLine(F2, E2);
+    addLine(F3, E3);
+
+    // Intermediate vertical facade mullions
+    addLine(midPt(F0, F1), midPt(E0, E1));
+    addLine(midPt(F2, F3), midPt(E2, E3));
+    addLine(midPt(F0, F3), midPt(E0, E3));
+    addLine(midPt(F1, F2), midPt(E1, E2));
+
+    // Upper eaves perimeter (Y = eavesY)
+    addLine(E0, E1);
+    addLine(E1, E2);
+    addLine(E2, E3);
+    addLine(E3, E0);
+
+    // Roof ridge line (Y = ridgeY)
+    addLine(R0, R1);
+
+    // Gable rafters connecting eaves to roof ridge
+    addLine(E0, R0);
+    addLine(E3, R0);
+    addLine(E1, R1);
+    addLine(E2, R1);
+
+    // Mid-span roof hip rafters & ceiling tie beam
+    addLine(midPt(E0, E1), midPt(R0, R1));
+    addLine(midPt(E2, E3), midPt(R0, R1));
+    addLine(midPt(E0, E3), midPt(E1, E2));
+  });
 
   // Deduplicate lines
   const lines = deduplicateLines(rawLines);
@@ -402,7 +434,7 @@ function extractWireframeJsFallback(payload = {}) {
     lines,
     count: lines.length,
     engine: 'javascript_fallback',
-    assetCenter: [Math.round(cx * 100) / 100, Math.round(groundY * 100) / 100, Math.round(cz * 100) / 100],
+    assetCenter: primaryCenter,
     wallHeight: Math.round(wallH * 100) / 100,
     roofHeight: Math.round(roofH * 100) / 100,
     timestamp: new Date().toISOString()
