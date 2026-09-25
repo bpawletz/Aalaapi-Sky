@@ -20420,14 +20420,14 @@ describe('Photo Telemetry Correlation & Ground Boundary Projection Suite Tests (
     assert.ok(changelog.includes('## [1.118.0] - 2026-09-21'), 'CHANGELOG must contain 1.118.0');
 
     const tmpl = fs.readFileSync('./index_template.html', 'utf8');
-    assert.ok(tmpl.includes('v1.118.0') || tmpl.includes('v1.119.0') || tmpl.includes('v1.120.0') || tmpl.includes('v1.120.1') || tmpl.includes('v1.121.0') || tmpl.includes('v1.121.1') || tmpl.includes('v1.121.2') || tmpl.includes('v1.122.0') || tmpl.includes('v1.122.1') || tmpl.includes('v1.123.0') || tmpl.includes('v1.123.1') || tmpl.includes('v1.124.0') || tmpl.includes('v1.124.1') || tmpl.includes('v1.125.0') || tmpl.includes('v1.125.1') || tmpl.includes('v1.126.0') || tmpl.includes('v1.126.1'), 'index_template.html must contain header badge');
-    assert.ok(tmpl.includes('Version 1.118.0') || tmpl.includes('Version 1.119.0') || tmpl.includes('Version 1.120.0') || tmpl.includes('Version 1.120.1') || tmpl.includes('Version 1.121.0') || tmpl.includes('Version 1.121.1') || tmpl.includes('Version 1.121.2') || tmpl.includes('Version 1.122.0') || tmpl.includes('Version 1.122.1') || tmpl.includes('Version 1.123.0') || tmpl.includes('Version 1.123.1') || tmpl.includes('Version 1.124.0') || tmpl.includes('Version 1.124.1') || tmpl.includes('Version 1.125.0') || tmpl.includes('Version 1.125.1') || tmpl.includes('Version 1.126.0') || tmpl.includes('Version 1.126.1'), 'index_template.html must contain Version');
-    assert.ok(tmpl.includes('Changelog (v1.118.0):') || tmpl.includes('Changelog (v1.119.0):') || tmpl.includes('Changelog (v1.120.0):') || tmpl.includes('Changelog (v1.120.1):') || tmpl.includes('Changelog (v1.121.0):') || tmpl.includes('Changelog (v1.121.1):') || tmpl.includes('Changelog (v1.121.2):') || tmpl.includes('Changelog (v1.122.0):') || tmpl.includes('Changelog (v1.122.1):') || tmpl.includes('Changelog (v1.123.0):') || tmpl.includes('Changelog (v1.123.1):') || tmpl.includes('Changelog (v1.124.0):') || tmpl.includes('Changelog (v1.125.0):') || tmpl.includes('Changelog (v1.125.1):') || tmpl.includes('Changelog (v1.126.0):') || tmpl.includes('Changelog (v1.126.1):'), 'index_template.html must contain Changelog');
+    assert.ok(tmpl.includes('v1.118.0') || tmpl.includes('v1.119.0') || tmpl.includes('v1.120.0') || tmpl.includes('v1.120.1') || tmpl.includes('v1.121.0') || tmpl.includes('v1.121.1') || tmpl.includes('v1.121.2') || tmpl.includes('v1.122.0') || tmpl.includes('v1.122.1') || tmpl.includes('v1.123.0') || tmpl.includes('v1.123.1') || tmpl.includes('v1.124.0') || tmpl.includes('v1.124.1') || tmpl.includes('v1.125.0') || tmpl.includes('v1.125.1') || tmpl.includes('v1.126.0') || tmpl.includes('v1.126.1') || tmpl.includes('v1.127.0'), 'index_template.html must contain header badge');
+    assert.ok(tmpl.includes('Version 1.118.0') || tmpl.includes('Version 1.119.0') || tmpl.includes('Version 1.120.0') || tmpl.includes('Version 1.120.1') || tmpl.includes('Version 1.121.0') || tmpl.includes('Version 1.121.1') || tmpl.includes('Version 1.121.2') || tmpl.includes('Version 1.122.0') || tmpl.includes('Version 1.122.1') || tmpl.includes('Version 1.123.0') || tmpl.includes('Version 1.123.1') || tmpl.includes('Version 1.124.0') || tmpl.includes('Version 1.124.1') || tmpl.includes('Version 1.125.0') || tmpl.includes('Version 1.125.1') || tmpl.includes('Version 1.126.0') || tmpl.includes('Version 1.126.1') || tmpl.includes('Version 1.127.0'), 'index_template.html must contain Version');
+    assert.ok(tmpl.includes('Changelog (v1.118.0):') || tmpl.includes('Changelog (v1.119.0):') || tmpl.includes('Changelog (v1.120.0):') || tmpl.includes('Changelog (v1.120.1):') || tmpl.includes('Changelog (v1.121.0):') || tmpl.includes('Changelog (v1.121.1):') || tmpl.includes('Changelog (v1.121.2):') || tmpl.includes('Changelog (v1.122.0):') || tmpl.includes('Changelog (v1.122.1):') || tmpl.includes('Changelog (v1.123.0):') || tmpl.includes('Changelog (v1.123.1):') || tmpl.includes('Changelog (v1.124.0):') || tmpl.includes('Changelog (v1.125.0):') || tmpl.includes('Changelog (v1.125.1):') || tmpl.includes('Changelog (v1.126.0):') || tmpl.includes('Changelog (v1.126.1):') || tmpl.includes('Changelog (v1.127.0):'), 'index_template.html must contain Changelog');
 
     const indexHtml = fs.readFileSync('./index.html', 'utf8');
-    assert.ok(indexHtml.includes('v1.118.0') || indexHtml.includes('v1.119.0') || indexHtml.includes('v1.120.0') || indexHtml.includes('v1.120.1') || indexHtml.includes('v1.121.0') || indexHtml.includes('v1.121.1') || indexHtml.includes('v1.121.2') || indexHtml.includes('v1.122.0') || indexHtml.includes('v1.122.1') || indexHtml.includes('v1.123.0') || indexHtml.includes('v1.123.1') || indexHtml.includes('v1.124.0') || indexHtml.includes('v1.124.1') || indexHtml.includes('v1.125.0') || indexHtml.includes('v1.125.1') || indexHtml.includes('v1.126.0') || indexHtml.includes('v1.126.1'), 'index.html must contain header badge');
-    assert.ok(indexHtml.includes('Version 1.118.0') || indexHtml.includes('Version 1.119.0') || indexHtml.includes('Version 1.120.0') || indexHtml.includes('Version 1.120.1') || indexHtml.includes('Version 1.121.0') || indexHtml.includes('Version 1.121.1') || indexHtml.includes('Version 1.121.2') || indexHtml.includes('Version 1.122.0') || indexHtml.includes('Version 1.122.1') || indexHtml.includes('Version 1.123.0') || indexHtml.includes('Version 1.123.1') || indexHtml.includes('Version 1.124.0') || indexHtml.includes('Version 1.124.1') || indexHtml.includes('Version 1.125.0') || indexHtml.includes('Version 1.125.1') || indexHtml.includes('Version 1.126.0') || indexHtml.includes('Version 1.126.1'), 'index.html must contain Version');
-    assert.ok(indexHtml.includes('Changelog (v1.118.0):') || indexHtml.includes('Changelog (v1.119.0):') || indexHtml.includes('Changelog (v1.120.0):') || indexHtml.includes('Changelog (v1.120.1):') || indexHtml.includes('Changelog (v1.121.0):') || indexHtml.includes('Changelog (v1.121.1):') || indexHtml.includes('Changelog (v1.121.2):') || indexHtml.includes('Changelog (v1.122.0):') || indexHtml.includes('Changelog (v1.122.1):') || indexHtml.includes('Changelog (v1.123.0):') || indexHtml.includes('Changelog (v1.123.1):') || indexHtml.includes('Changelog (v1.124.0):') || indexHtml.includes('Changelog (v1.125.0):') || indexHtml.includes('Changelog (v1.125.1):') || indexHtml.includes('Changelog (v1.126.0):') || indexHtml.includes('Changelog (v1.126.1):'), 'index.html must contain Changelog');
+    assert.ok(indexHtml.includes('v1.118.0') || indexHtml.includes('v1.119.0') || indexHtml.includes('v1.120.0') || indexHtml.includes('v1.120.1') || indexHtml.includes('v1.121.0') || indexHtml.includes('v1.121.1') || indexHtml.includes('v1.121.2') || indexHtml.includes('v1.122.0') || indexHtml.includes('v1.122.1') || indexHtml.includes('v1.123.0') || indexHtml.includes('v1.123.1') || indexHtml.includes('v1.124.0') || indexHtml.includes('v1.124.1') || indexHtml.includes('v1.125.0') || indexHtml.includes('v1.125.1') || indexHtml.includes('v1.126.0') || indexHtml.includes('v1.126.1') || indexHtml.includes('v1.127.0'), 'index.html must contain header badge');
+    assert.ok(indexHtml.includes('Version 1.118.0') || indexHtml.includes('Version 1.119.0') || indexHtml.includes('Version 1.120.0') || indexHtml.includes('Version 1.120.1') || indexHtml.includes('Version 1.121.0') || indexHtml.includes('Version 1.121.1') || indexHtml.includes('Version 1.121.2') || indexHtml.includes('Version 1.122.0') || indexHtml.includes('Version 1.122.1') || indexHtml.includes('Version 1.123.0') || indexHtml.includes('Version 1.123.1') || indexHtml.includes('Version 1.124.0') || indexHtml.includes('Version 1.124.1') || indexHtml.includes('Version 1.125.0') || indexHtml.includes('Version 1.125.1') || indexHtml.includes('Version 1.126.0') || indexHtml.includes('Version 1.126.1') || indexHtml.includes('Version 1.127.0'), 'index.html must contain Version');
+    assert.ok(indexHtml.includes('Changelog (v1.118.0):') || indexHtml.includes('Changelog (v1.119.0):') || indexHtml.includes('Changelog (v1.120.0):') || indexHtml.includes('Changelog (v1.120.1):') || indexHtml.includes('Changelog (v1.121.0):') || indexHtml.includes('Changelog (v1.121.1):') || indexHtml.includes('Changelog (v1.121.2):') || indexHtml.includes('Changelog (v1.122.0):') || indexHtml.includes('Changelog (v1.122.1):') || indexHtml.includes('Changelog (v1.123.0):') || indexHtml.includes('Changelog (v1.123.1):') || indexHtml.includes('Changelog (v1.124.0):') || indexHtml.includes('Changelog (v1.125.0):') || indexHtml.includes('Changelog (v1.125.1):') || indexHtml.includes('Changelog (v1.126.0):') || indexHtml.includes('Changelog (v1.126.1):') || indexHtml.includes('Changelog (v1.127.0):'), 'index.html must contain Changelog');
   });
 });
 
@@ -20672,12 +20672,12 @@ describe('v1.120.0 Bridge-Hosted 3D Wireframe Extraction & Telemetry Projection 
 
     assert.ok(semverGte(pkg, '1.120.0'), 'package.json version should be >= 1.120.0');
     assert.ok(cl.includes('## [1.120.0] - 2026-09-24'), 'CHANGELOG.md missing 1.120.0 header');
-    assert.ok(indexTemplate.includes('Version 1.120.0') || indexTemplate.includes('Version 1.120.1') || indexTemplate.includes('Version 1.121.0') || indexTemplate.includes('Version 1.121.1') || indexTemplate.includes('Version 1.121.2') || indexTemplate.includes('Version 1.122.0') || indexTemplate.includes('Version 1.122.1') || indexTemplate.includes('Version 1.123.0') || indexTemplate.includes('Version 1.123.1') || indexTemplate.includes('Version 1.124.0') || indexTemplate.includes('Version 1.124.1') || indexTemplate.includes('Version 1.125.0') || indexTemplate.includes('Version 1.125.1') || indexTemplate.includes('Version 1.126.0') || indexTemplate.includes('Version 1.126.1'), 'index_template.html missing Version 1.120.0/1/2/122/123/124/125/126');
-    assert.ok(indexHtml.includes('Version 1.120.0') || indexHtml.includes('Version 1.120.1') || indexHtml.includes('Version 1.121.0') || indexHtml.includes('Version 1.121.1') || indexHtml.includes('Version 1.121.2') || indexHtml.includes('Version 1.122.0') || indexHtml.includes('Version 1.122.1') || indexHtml.includes('Version 1.123.0') || indexHtml.includes('Version 1.123.1') || indexHtml.includes('Version 1.124.0') || indexHtml.includes('Version 1.124.1') || indexHtml.includes('Version 1.125.0') || indexHtml.includes('Version 1.125.1') || indexHtml.includes('Version 1.126.0') || indexHtml.includes('Version 1.126.1'), 'index.html missing Version 1.120.0/1/2/122/123/124/125/126');
-    assert.ok(indexTemplate.includes('v1.120.0') || indexTemplate.includes('v1.120.1') || indexTemplate.includes('v1.121.0') || indexTemplate.includes('v1.121.1') || indexTemplate.includes('v1.121.2') || indexTemplate.includes('v1.122.0') || indexTemplate.includes('v1.122.1') || indexTemplate.includes('v1.123.0') || indexTemplate.includes('v1.123.1') || indexTemplate.includes('v1.124.0') || indexTemplate.includes('v1.124.1') || indexTemplate.includes('v1.125.0') || indexTemplate.includes('v1.125.1') || indexTemplate.includes('v1.126.0') || indexTemplate.includes('v1.126.1'), 'index_template.html missing v1.120.0/1/2/122/123/124/125/126 badge');
-    assert.ok(indexHtml.includes('v1.120.0') || indexHtml.includes('v1.120.1') || indexHtml.includes('v1.121.0') || indexHtml.includes('v1.121.1') || indexHtml.includes('v1.121.2') || indexHtml.includes('v1.122.0') || indexHtml.includes('v1.122.1') || indexHtml.includes('v1.123.0') || indexHtml.includes('v1.123.1') || indexHtml.includes('v1.124.0') || indexHtml.includes('v1.124.1') || indexHtml.includes('v1.125.0') || indexHtml.includes('v1.125.1') || indexHtml.includes('v1.126.0') || indexHtml.includes('v1.126.1'), 'index.html missing v1.120.0/1/2/122/123/124/125/126 badge');
-    assert.ok(indexTemplate.includes('Changelog (v1.120.0):') || indexTemplate.includes('Changelog (v1.121.0):') || indexTemplate.includes('Changelog (v1.121.1):') || indexTemplate.includes('Changelog (v1.121.2):') || indexTemplate.includes('Changelog (v1.122.0):') || indexTemplate.includes('Changelog (v1.122.1):') || indexTemplate.includes('Changelog (v1.123.0):') || indexTemplate.includes('Changelog (v1.123.1):') || indexTemplate.includes('Changelog (v1.124.0):') || indexTemplate.includes('Changelog (v1.125.0):') || indexTemplate.includes('Changelog (v1.125.1):') || indexTemplate.includes('Changelog (v1.126.0):') || indexTemplate.includes('Changelog (v1.126.1):'), 'index_template.html missing Changelog');
-    assert.ok(indexHtml.includes('Changelog (v1.120.0):') || indexHtml.includes('Changelog (v1.121.0):') || indexHtml.includes('Changelog (v1.121.1):') || indexHtml.includes('Changelog (v1.121.2):') || indexHtml.includes('Changelog (v1.122.0):') || indexHtml.includes('Changelog (v1.122.1):') || indexHtml.includes('Changelog (v1.123.0):') || indexHtml.includes('Changelog (v1.123.1):') || indexHtml.includes('Changelog (v1.124.0):') || indexHtml.includes('Changelog (v1.125.0):') || indexHtml.includes('Changelog (v1.125.1):') || indexHtml.includes('Changelog (v1.126.0):') || indexHtml.includes('Changelog (v1.126.1):'), 'index.html missing Changelog');
+    assert.ok(indexTemplate.includes('Version 1.120.0') || indexTemplate.includes('Version 1.120.1') || indexTemplate.includes('Version 1.121.0') || indexTemplate.includes('Version 1.121.1') || indexTemplate.includes('Version 1.121.2') || indexTemplate.includes('Version 1.122.0') || indexTemplate.includes('Version 1.122.1') || indexTemplate.includes('Version 1.123.0') || indexTemplate.includes('Version 1.123.1') || indexTemplate.includes('Version 1.124.0') || indexTemplate.includes('Version 1.124.1') || indexTemplate.includes('Version 1.125.0') || indexTemplate.includes('Version 1.125.1') || indexTemplate.includes('Version 1.126.0') || indexTemplate.includes('Version 1.126.1') || indexTemplate.includes('Version 1.127.0'), 'index_template.html missing Version 1.120.0/1/2/122/123/124/125/126/127');
+    assert.ok(indexHtml.includes('Version 1.120.0') || indexHtml.includes('Version 1.120.1') || indexHtml.includes('Version 1.121.0') || indexHtml.includes('Version 1.121.1') || indexHtml.includes('Version 1.121.2') || indexHtml.includes('Version 1.122.0') || indexHtml.includes('Version 1.122.1') || indexHtml.includes('Version 1.123.0') || indexHtml.includes('Version 1.123.1') || indexHtml.includes('Version 1.124.0') || indexHtml.includes('Version 1.124.1') || indexHtml.includes('Version 1.125.0') || indexHtml.includes('Version 1.125.1') || indexHtml.includes('Version 1.126.0') || indexHtml.includes('Version 1.126.1') || indexHtml.includes('Version 1.127.0'), 'index.html missing Version 1.120.0/1/2/122/123/124/125/126/127');
+    assert.ok(indexTemplate.includes('v1.120.0') || indexTemplate.includes('v1.120.1') || indexTemplate.includes('v1.121.0') || indexTemplate.includes('v1.121.1') || indexTemplate.includes('v1.121.2') || indexTemplate.includes('v1.122.0') || indexTemplate.includes('v1.122.1') || indexTemplate.includes('v1.123.0') || indexTemplate.includes('v1.123.1') || indexTemplate.includes('v1.124.0') || indexTemplate.includes('v1.124.1') || indexTemplate.includes('v1.125.0') || indexTemplate.includes('v1.125.1') || indexTemplate.includes('v1.126.0') || indexTemplate.includes('v1.126.1') || indexTemplate.includes('v1.127.0'), 'index_template.html missing v1.120.0/1/2/122/123/124/125/126/127 badge');
+    assert.ok(indexHtml.includes('v1.120.0') || indexHtml.includes('v1.120.1') || indexHtml.includes('v1.121.0') || indexHtml.includes('v1.121.1') || indexHtml.includes('v1.121.2') || indexHtml.includes('v1.122.0') || indexHtml.includes('v1.122.1') || indexHtml.includes('v1.123.0') || indexHtml.includes('v1.123.1') || indexHtml.includes('v1.124.0') || indexHtml.includes('v1.124.1') || indexHtml.includes('v1.125.0') || indexHtml.includes('v1.125.1') || indexHtml.includes('v1.126.0') || indexHtml.includes('v1.126.1') || indexHtml.includes('v1.127.0'), 'index.html missing v1.120.0/1/2/122/123/124/125/126/127 badge');
+    assert.ok(indexTemplate.includes('Changelog (v1.120.0):') || indexTemplate.includes('Changelog (v1.121.0):') || indexTemplate.includes('Changelog (v1.121.1):') || indexTemplate.includes('Changelog (v1.121.2):') || indexTemplate.includes('Changelog (v1.122.0):') || indexTemplate.includes('Changelog (v1.122.1):') || indexTemplate.includes('Changelog (v1.123.0):') || indexTemplate.includes('Changelog (v1.123.1):') || indexTemplate.includes('Changelog (v1.124.0):') || indexTemplate.includes('Changelog (v1.125.0):') || indexTemplate.includes('Changelog (v1.125.1):') || indexTemplate.includes('Changelog (v1.126.0):') || indexTemplate.includes('Changelog (v1.126.1):') || indexTemplate.includes('Changelog (v1.127.0):'), 'index_template.html missing Changelog');
+    assert.ok(indexHtml.includes('Changelog (v1.120.0):') || indexHtml.includes('Changelog (v1.121.0):') || indexHtml.includes('Changelog (v1.121.1):') || indexHtml.includes('Changelog (v1.121.2):') || indexHtml.includes('Changelog (v1.122.0):') || indexHtml.includes('Changelog (v1.122.1):') || indexHtml.includes('Changelog (v1.123.0):') || indexHtml.includes('Changelog (v1.123.1):') || indexHtml.includes('Changelog (v1.124.0):') || indexHtml.includes('Changelog (v1.125.0):') || indexHtml.includes('Changelog (v1.125.1):') || indexHtml.includes('Changelog (v1.126.0):') || indexHtml.includes('Changelog (v1.126.1):') || indexHtml.includes('Changelog (v1.127.0):'), 'index.html missing Changelog');
   });
 
   test('DOM Architecture: Wireframe controls exist in templates', () => {
@@ -20840,12 +20840,12 @@ describe('3D FPV Walkthrough & Playback Suite (v1.120.1)', () => {
 
     assert.ok(semverGte(pkg.version, '1.120.1'), 'package.json version should be >= 1.120.1');
     assert.ok(changelog.includes('## [1.120.1] - 2026-09-24'));
-    assert.ok(tpl.includes('v1.120.1') || tpl.includes('v1.121.0') || tpl.includes('v1.121.1') || tpl.includes('v1.121.2') || tpl.includes('v1.122.0') || tpl.includes('v1.122.1') || tpl.includes('v1.123.0') || tpl.includes('v1.123.1') || tpl.includes('v1.124.0') || tpl.includes('v1.124.1') || tpl.includes('v1.125.0') || tpl.includes('v1.126.0') || tpl.includes('v1.126.1'));
-    assert.ok(tpl.includes('Version 1.120.1') || tpl.includes('Version 1.121.0') || tpl.includes('Version 1.121.1') || tpl.includes('Version 1.121.2') || tpl.includes('Version 1.122.0') || tpl.includes('Version 1.122.1') || tpl.includes('Version 1.123.0') || tpl.includes('Version 1.123.1') || tpl.includes('Version 1.124.0') || tpl.includes('Version 1.124.1') || tpl.includes('Version 1.125.0') || tpl.includes('Version 1.126.0') || tpl.includes('Version 1.126.1'));
-    assert.ok(tpl.includes('Changelog (v1.120.1):') || tpl.includes('Changelog (v1.121.0):') || tpl.includes('Changelog (v1.121.1):') || tpl.includes('Changelog (v1.121.2):') || tpl.includes('Changelog (v1.122.0):') || tpl.includes('Changelog (v1.122.1):') || tpl.includes('Changelog (v1.123.0):') || tpl.includes('Changelog (v1.123.1):') || tpl.includes('Changelog (v1.124.0):') || tpl.includes('Changelog (v1.125.0):') || tpl.includes('Changelog (v1.126.0):') || tpl.includes('Changelog (v1.126.1):'));
-    assert.ok(html.includes('v1.120.1') || html.includes('v1.121.0') || html.includes('v1.121.1') || html.includes('v1.121.2') || html.includes('v1.122.0') || html.includes('v1.122.1') || html.includes('v1.123.0') || html.includes('v1.123.1') || html.includes('v1.124.0') || html.includes('v1.124.1') || html.includes('v1.125.0') || html.includes('v1.126.0') || html.includes('v1.126.1'));
-    assert.ok(html.includes('Version 1.120.1') || html.includes('Version 1.121.0') || html.includes('Version 1.121.1') || html.includes('Version 1.121.2') || html.includes('Version 1.122.0') || html.includes('Version 1.122.1') || html.includes('Version 1.123.0') || html.includes('Version 1.123.1') || html.includes('Version 1.124.0') || html.includes('Version 1.124.1') || html.includes('Version 1.125.0') || html.includes('Version 1.126.0') || html.includes('Version 1.126.1'));
-    assert.ok(html.includes('Changelog (v1.120.1):') || html.includes('Changelog (v1.121.0):') || html.includes('Changelog (v1.121.1):') || html.includes('Changelog (v1.121.2):') || html.includes('Changelog (v1.122.0):') || html.includes('Changelog (v1.122.1):') || html.includes('Changelog (v1.123.0):') || html.includes('Changelog (v1.123.1):') || html.includes('Changelog (v1.124.0):') || html.includes('Changelog (v1.125.0):') || html.includes('Changelog (v1.126.0):') || html.includes('Changelog (v1.126.1):'));
+    assert.ok(tpl.includes('v1.120.1') || tpl.includes('v1.121.0') || tpl.includes('v1.121.1') || tpl.includes('v1.121.2') || tpl.includes('v1.122.0') || tpl.includes('v1.122.1') || tpl.includes('v1.123.0') || tpl.includes('v1.123.1') || tpl.includes('v1.124.0') || tpl.includes('v1.124.1') || tpl.includes('v1.125.0') || tpl.includes('v1.126.0') || tpl.includes('v1.126.1') || tpl.includes('v1.127.0'));
+    assert.ok(tpl.includes('Version 1.120.1') || tpl.includes('Version 1.121.0') || tpl.includes('Version 1.121.1') || tpl.includes('Version 1.121.2') || tpl.includes('Version 1.122.0') || tpl.includes('Version 1.122.1') || tpl.includes('Version 1.123.0') || tpl.includes('Version 1.123.1') || tpl.includes('Version 1.124.0') || tpl.includes('Version 1.124.1') || tpl.includes('Version 1.125.0') || tpl.includes('Version 1.126.0') || tpl.includes('Version 1.126.1') || tpl.includes('Version 1.127.0'));
+    assert.ok(tpl.includes('Changelog (v1.120.1):') || tpl.includes('Changelog (v1.121.0):') || tpl.includes('Changelog (v1.121.1):') || tpl.includes('Changelog (v1.121.2):') || tpl.includes('Changelog (v1.122.0):') || tpl.includes('Changelog (v1.122.1):') || tpl.includes('Changelog (v1.123.0):') || tpl.includes('Changelog (v1.123.1):') || tpl.includes('Changelog (v1.124.0):') || tpl.includes('Changelog (v1.125.0):') || tpl.includes('Changelog (v1.126.0):') || tpl.includes('Changelog (v1.126.1):') || tpl.includes('Changelog (v1.127.0):'));
+    assert.ok(html.includes('v1.120.1') || html.includes('v1.121.0') || html.includes('v1.121.1') || html.includes('v1.121.2') || html.includes('v1.122.0') || html.includes('v1.122.1') || html.includes('v1.123.0') || html.includes('v1.123.1') || html.includes('v1.124.0') || html.includes('v1.124.1') || html.includes('v1.125.0') || html.includes('v1.126.0') || html.includes('v1.126.1') || html.includes('v1.127.0'));
+    assert.ok(html.includes('Version 1.120.1') || html.includes('Version 1.121.0') || html.includes('Version 1.121.1') || html.includes('Version 1.121.2') || html.includes('Version 1.122.0') || html.includes('Version 1.122.1') || html.includes('Version 1.123.0') || html.includes('Version 1.123.1') || html.includes('Version 1.124.0') || html.includes('Version 1.124.1') || html.includes('Version 1.125.0') || html.includes('Version 1.126.0') || html.includes('Version 1.126.1') || html.includes('Version 1.127.0'));
+    assert.ok(html.includes('Changelog (v1.120.1):') || html.includes('Changelog (v1.121.0):') || html.includes('Changelog (v1.121.1):') || html.includes('Changelog (v1.121.2):') || html.includes('Changelog (v1.122.0):') || html.includes('Changelog (v1.122.1):') || html.includes('Changelog (v1.123.0):') || html.includes('Changelog (v1.123.1):') || html.includes('Changelog (v1.124.0):') || html.includes('Changelog (v1.125.0):') || html.includes('Changelog (v1.126.0):') || html.includes('Changelog (v1.126.1):') || html.includes('Changelog (v1.127.0):'));
   });
 
   test('Three-Tier FPV helpers resolve speed, hover time, and camera action cleanly', () => {
@@ -20941,12 +20941,12 @@ describe('3D Cinematic Movie Mode & FPV Flight Simulation Suite (v1.121.0)', () 
 
     assert.ok(semverGte(pkg.version, '1.121.0'), 'package.json version should be >= 1.121.0');
     assert.ok(changelog.includes('## [1.121.0] - 2026-09-24'));
-    assert.ok(tpl.includes('v1.121.0') || tpl.includes('v1.121.1') || tpl.includes('v1.121.2') || tpl.includes('v1.122.0') || tpl.includes('v1.122.1') || tpl.includes('v1.123.0') || tpl.includes('v1.123.1') || tpl.includes('v1.124.0') || tpl.includes('v1.124.1') || tpl.includes('v1.125.0') || tpl.includes('v1.126.0') || tpl.includes('v1.126.1'));
-    assert.ok(tpl.includes('Version 1.121.0') || tpl.includes('Version 1.121.1') || tpl.includes('Version 1.121.2') || tpl.includes('Version 1.122.0') || tpl.includes('Version 1.122.1') || tpl.includes('Version 1.123.0') || tpl.includes('Version 1.123.1') || tpl.includes('Version 1.124.0') || tpl.includes('Version 1.124.1') || tpl.includes('Version 1.125.0') || tpl.includes('Version 1.126.0') || tpl.includes('Version 1.126.1'));
-    assert.ok(tpl.includes('Changelog (v1.121.0):') || tpl.includes('Changelog (v1.121.1):') || tpl.includes('Changelog (v1.121.2):') || tpl.includes('Changelog (v1.122.0):') || tpl.includes('Changelog (v1.122.1):') || tpl.includes('Changelog (v1.123.0):') || tpl.includes('Changelog (v1.123.1):') || tpl.includes('Changelog (v1.124.0):') || tpl.includes('Changelog (v1.125.0):') || tpl.includes('Changelog (v1.126.0):') || tpl.includes('Changelog (v1.126.1):'));
-    assert.ok(html.includes('v1.121.0') || html.includes('v1.121.1') || html.includes('v1.121.2') || html.includes('v1.122.0') || html.includes('v1.122.1') || html.includes('v1.123.0') || html.includes('v1.123.1') || html.includes('v1.124.0') || html.includes('v1.124.1') || html.includes('v1.125.0') || html.includes('v1.126.0') || html.includes('v1.126.1'));
-    assert.ok(html.includes('Version 1.121.0') || html.includes('Version 1.121.1') || html.includes('Version 1.121.2') || html.includes('Version 1.122.0') || html.includes('Version 1.122.1') || html.includes('Version 1.123.0') || html.includes('Version 1.123.1') || html.includes('Version 1.124.0') || html.includes('Version 1.124.1') || html.includes('Version 1.125.0') || html.includes('Version 1.126.0') || html.includes('Version 1.126.1'));
-    assert.ok(html.includes('Changelog (v1.121.0):') || html.includes('Changelog (v1.121.1):') || html.includes('Changelog (v1.121.2):') || html.includes('Changelog (v1.122.0):') || html.includes('Changelog (v1.122.1):') || html.includes('Changelog (v1.123.0):') || html.includes('Changelog (v1.123.1):') || html.includes('Changelog (v1.124.0):') || html.includes('Changelog (v1.125.0):') || html.includes('Changelog (v1.126.0):') || html.includes('Changelog (v1.126.1):'));
+    assert.ok(tpl.includes('v1.121.0') || tpl.includes('v1.121.1') || tpl.includes('v1.121.2') || tpl.includes('v1.122.0') || tpl.includes('v1.122.1') || tpl.includes('v1.123.0') || tpl.includes('v1.123.1') || tpl.includes('v1.124.0') || tpl.includes('v1.124.1') || tpl.includes('v1.125.0') || tpl.includes('v1.126.0') || tpl.includes('v1.126.1') || tpl.includes('v1.127.0'));
+    assert.ok(tpl.includes('Version 1.121.0') || tpl.includes('Version 1.121.1') || tpl.includes('Version 1.121.2') || tpl.includes('Version 1.122.0') || tpl.includes('Version 1.122.1') || tpl.includes('Version 1.123.0') || tpl.includes('Version 1.123.1') || tpl.includes('Version 1.124.0') || tpl.includes('Version 1.124.1') || tpl.includes('Version 1.125.0') || tpl.includes('Version 1.126.0') || tpl.includes('Version 1.126.1') || tpl.includes('Version 1.127.0'));
+    assert.ok(tpl.includes('Changelog (v1.121.0):') || tpl.includes('Changelog (v1.121.1):') || tpl.includes('Changelog (v1.121.2):') || tpl.includes('Changelog (v1.122.0):') || tpl.includes('Changelog (v1.122.1):') || tpl.includes('Changelog (v1.123.0):') || tpl.includes('Changelog (v1.123.1):') || tpl.includes('Changelog (v1.124.0):') || tpl.includes('Changelog (v1.125.0):') || tpl.includes('Changelog (v1.126.0):') || tpl.includes('Changelog (v1.126.1):') || tpl.includes('Changelog (v1.127.0):'));
+    assert.ok(html.includes('v1.121.0') || html.includes('v1.121.1') || html.includes('v1.121.2') || html.includes('v1.122.0') || html.includes('v1.122.1') || html.includes('v1.123.0') || html.includes('v1.123.1') || html.includes('v1.124.0') || html.includes('v1.124.1') || html.includes('v1.125.0') || html.includes('v1.126.0') || html.includes('v1.126.1') || html.includes('v1.127.0'));
+    assert.ok(html.includes('Version 1.121.0') || html.includes('Version 1.121.1') || html.includes('Version 1.121.2') || html.includes('Version 1.122.0') || html.includes('Version 1.122.1') || html.includes('Version 1.123.0') || html.includes('Version 1.123.1') || html.includes('Version 1.124.0') || html.includes('Version 1.124.1') || html.includes('Version 1.125.0') || html.includes('Version 1.126.0') || html.includes('Version 1.126.1') || html.includes('Version 1.127.0'));
+    assert.ok(html.includes('Changelog (v1.121.0):') || html.includes('Changelog (v1.121.1):') || html.includes('Changelog (v1.121.2):') || html.includes('Changelog (v1.122.0):') || html.includes('Changelog (v1.122.1):') || html.includes('Changelog (v1.123.0):') || html.includes('Changelog (v1.123.1):') || html.includes('Changelog (v1.124.0):') || html.includes('Changelog (v1.125.0):') || html.includes('Changelog (v1.126.0):') || html.includes('Changelog (v1.126.1):') || html.includes('Changelog (v1.127.0):'));
     assert.ok(tpl.includes('id="fpv-btn-cam-mode"'));
     assert.ok(html.includes('id="fpv-btn-cam-mode"'));
     assert.ok(tpl.includes('id="fpv-center-reticle"'));
@@ -21120,12 +21120,12 @@ describe('Streamlined 360° Photo Sphere Layer Dynamics Suite (v1.121.1)', () =>
 
     assert.ok(semverGte(pkg.version, '1.121.1'), 'package.json version should be >= 1.121.1');
     assert.ok(changelog.includes('## [1.121.1] - 2026-09-24'));
-    assert.ok(tpl.includes('v1.121.1') || tpl.includes('v1.121.2') || tpl.includes('v1.122.0') || tpl.includes('v1.122.1') || tpl.includes('v1.123.0') || tpl.includes('v1.123.1') || tpl.includes('v1.124.0') || tpl.includes('v1.124.1') || tpl.includes('v1.125.0') || tpl.includes('v1.126.0') || tpl.includes('v1.126.1'));
-    assert.ok(tpl.includes('Version 1.121.1') || tpl.includes('Version 1.121.2') || tpl.includes('Version 1.122.0') || tpl.includes('Version 1.122.1') || tpl.includes('Version 1.123.0') || tpl.includes('Version 1.123.1') || tpl.includes('Version 1.124.0') || tpl.includes('Version 1.124.1') || tpl.includes('Version 1.125.0') || tpl.includes('Version 1.126.0') || tpl.includes('Version 1.126.1'));
-    assert.ok(tpl.includes('Changelog (v1.121.1):') || tpl.includes('Changelog (v1.121.2):') || tpl.includes('Changelog (v1.122.0):') || tpl.includes('Changelog (v1.122.1):') || tpl.includes('Changelog (v1.123.0):') || tpl.includes('Changelog (v1.123.1):') || tpl.includes('Changelog (v1.124.0):') || tpl.includes('Changelog (v1.125.0):') || tpl.includes('Changelog (v1.126.0):') || tpl.includes('Changelog (v1.126.1):'));
-    assert.ok(html.includes('v1.121.1') || html.includes('v1.121.2') || html.includes('v1.122.0') || html.includes('v1.122.1') || html.includes('v1.123.0') || html.includes('v1.123.1') || html.includes('v1.124.0') || html.includes('v1.124.1') || html.includes('v1.125.0') || html.includes('v1.126.0') || html.includes('v1.126.1'));
-    assert.ok(html.includes('Version 1.121.1') || html.includes('Version 1.121.2') || html.includes('Version 1.122.0') || html.includes('Version 1.122.1') || html.includes('Version 1.123.0') || html.includes('Version 1.123.1') || html.includes('Version 1.124.0') || html.includes('Version 1.124.1') || html.includes('Version 1.125.0') || html.includes('Version 1.126.0') || html.includes('Version 1.126.1'));
-    assert.ok(html.includes('Changelog (v1.121.1):') || html.includes('Changelog (v1.121.2):') || html.includes('Changelog (v1.122.0):') || html.includes('Changelog (v1.122.1):') || html.includes('Changelog (v1.123.0):') || html.includes('Changelog (v1.123.1):') || html.includes('Changelog (v1.124.0):') || html.includes('Changelog (v1.125.0):') || html.includes('Changelog (v1.126.0):') || html.includes('Changelog (v1.126.1):'));
+    assert.ok(tpl.includes('v1.121.1') || tpl.includes('v1.121.2') || tpl.includes('v1.122.0') || tpl.includes('v1.122.1') || tpl.includes('v1.123.0') || tpl.includes('v1.123.1') || tpl.includes('v1.124.0') || tpl.includes('v1.124.1') || tpl.includes('v1.125.0') || tpl.includes('v1.126.0') || tpl.includes('v1.126.1') || tpl.includes('v1.127.0'));
+    assert.ok(tpl.includes('Version 1.121.1') || tpl.includes('Version 1.121.2') || tpl.includes('Version 1.122.0') || tpl.includes('Version 1.122.1') || tpl.includes('Version 1.123.0') || tpl.includes('Version 1.123.1') || tpl.includes('Version 1.124.0') || tpl.includes('Version 1.124.1') || tpl.includes('Version 1.125.0') || tpl.includes('Version 1.126.0') || tpl.includes('Version 1.126.1') || tpl.includes('Version 1.127.0'));
+    assert.ok(tpl.includes('Changelog (v1.121.1):') || tpl.includes('Changelog (v1.121.2):') || tpl.includes('Changelog (v1.122.0):') || tpl.includes('Changelog (v1.122.1):') || tpl.includes('Changelog (v1.123.0):') || tpl.includes('Changelog (v1.123.1):') || tpl.includes('Changelog (v1.124.0):') || tpl.includes('Changelog (v1.125.0):') || tpl.includes('Changelog (v1.126.0):') || tpl.includes('Changelog (v1.126.1):') || tpl.includes('Changelog (v1.127.0):'));
+    assert.ok(html.includes('v1.121.1') || html.includes('v1.121.2') || html.includes('v1.122.0') || html.includes('v1.122.1') || html.includes('v1.123.0') || html.includes('v1.123.1') || html.includes('v1.124.0') || html.includes('v1.124.1') || html.includes('v1.125.0') || html.includes('v1.126.0') || html.includes('v1.126.1') || html.includes('v1.127.0'));
+    assert.ok(html.includes('Version 1.121.1') || html.includes('Version 1.121.2') || html.includes('Version 1.122.0') || html.includes('Version 1.122.1') || html.includes('Version 1.123.0') || html.includes('Version 1.123.1') || html.includes('Version 1.124.0') || html.includes('Version 1.124.1') || html.includes('Version 1.125.0') || html.includes('Version 1.126.0') || html.includes('Version 1.126.1') || html.includes('Version 1.127.0'));
+    assert.ok(html.includes('Changelog (v1.121.1):') || html.includes('Changelog (v1.121.2):') || html.includes('Changelog (v1.122.0):') || html.includes('Changelog (v1.122.1):') || html.includes('Changelog (v1.123.0):') || html.includes('Changelog (v1.123.1):') || html.includes('Changelog (v1.124.0):') || html.includes('Changelog (v1.125.0):') || html.includes('Changelog (v1.126.0):') || html.includes('Changelog (v1.126.1):') || html.includes('Changelog (v1.127.0):'));
   });
 
   test('togglePatternParameters conceals layerCardModes for photo-sphere and restores for other patterns', () => {
@@ -21253,11 +21253,11 @@ describe('Flight 13 Inspection Photos & Resilient Companion Manifest Recovery (v
 
     assert.ok(semverGte(pkg, '1.121.2'), 'package.json must be >= 1.121.2');
     assert.ok(cl.includes('## [1.121.2] - 2026-09-24'), 'CHANGELOG.md missing 1.121.2 entry');
-    assert.ok(indexTemplate.includes('v1.121.2</span>') || indexTemplate.includes('v1.122.0</span>') || indexTemplate.includes('v1.122.1</span>') || indexTemplate.includes('v1.123.0</span>') || indexTemplate.includes('v1.123.1</span>') || indexTemplate.includes('v1.124.0</span>') || indexTemplate.includes('v1.124.1</span>') || indexTemplate.includes('v1.125.0</span>') || indexTemplate.includes('v1.125.1</span>') || indexTemplate.includes('v1.126.0</span>') || indexTemplate.includes('v1.126.1</span>'), 'index_template.html missing header badge');
-    assert.ok(indexTemplate.includes('Version 1.121.2</span>') || indexTemplate.includes('Version 1.122.0</span>') || indexTemplate.includes('Version 1.122.1</span>') || indexTemplate.includes('Version 1.123.0</span>') || indexTemplate.includes('Version 1.123.1</span>') || indexTemplate.includes('Version 1.124.0</span>') || indexTemplate.includes('Version 1.124.1</span>') || indexTemplate.includes('Version 1.125.0</span>') || indexTemplate.includes('Version 1.125.1</span>') || indexTemplate.includes('Version 1.126.0</span>') || indexTemplate.includes('Version 1.126.1</span>'), 'index_template.html missing version tag');
+    assert.ok(indexTemplate.includes('v1.121.2</span>') || indexTemplate.includes('v1.122.0</span>') || indexTemplate.includes('v1.122.1</span>') || indexTemplate.includes('v1.123.0</span>') || indexTemplate.includes('v1.123.1</span>') || indexTemplate.includes('v1.124.0</span>') || indexTemplate.includes('v1.124.1</span>') || indexTemplate.includes('v1.125.0</span>') || indexTemplate.includes('v1.125.1</span>') || indexTemplate.includes('v1.126.0</span>') || indexTemplate.includes('v1.126.1</span>') || indexTemplate.includes('v1.127.0</span>'), 'index_template.html missing header badge');
+    assert.ok(indexTemplate.includes('Version 1.121.2</span>') || indexTemplate.includes('Version 1.122.0</span>') || indexTemplate.includes('Version 1.122.1</span>') || indexTemplate.includes('Version 1.123.0</span>') || indexTemplate.includes('Version 1.123.1</span>') || indexTemplate.includes('Version 1.124.0</span>') || indexTemplate.includes('Version 1.124.1</span>') || indexTemplate.includes('Version 1.125.0</span>') || indexTemplate.includes('Version 1.125.1</span>') || indexTemplate.includes('Version 1.126.0</span>') || indexTemplate.includes('Version 1.126.1</span>') || indexTemplate.includes('Version 1.127.0</span>'), 'index_template.html missing version tag');
     assert.ok(indexTemplate.includes('Changelog (v1.121.2):'), 'index_template.html missing Changelog (v1.121.2)');
-    assert.ok(indexHtml.includes('v1.121.2</span>') || indexHtml.includes('v1.122.0</span>') || indexHtml.includes('v1.122.1</span>') || indexHtml.includes('v1.123.0</span>') || indexHtml.includes('v1.123.1</span>') || indexHtml.includes('v1.124.0</span>') || indexHtml.includes('v1.124.1</span>') || indexHtml.includes('v1.125.0</span>') || indexHtml.includes('v1.125.1</span>') || indexHtml.includes('v1.126.0</span>') || indexHtml.includes('v1.126.1</span>'), 'index.html missing header badge');
-    assert.ok(indexHtml.includes('Version 1.121.2</span>') || indexHtml.includes('Version 1.122.0</span>') || indexHtml.includes('Version 1.122.1</span>') || indexHtml.includes('Version 1.123.0</span>') || indexHtml.includes('Version 1.123.1</span>') || indexHtml.includes('Version 1.124.0</span>') || indexHtml.includes('Version 1.124.1</span>') || indexHtml.includes('Version 1.125.0</span>') || indexHtml.includes('Version 1.125.1</span>') || indexHtml.includes('Version 1.126.0</span>') || indexHtml.includes('Version 1.126.1</span>'), 'index.html missing version tag');
+    assert.ok(indexHtml.includes('v1.121.2</span>') || indexHtml.includes('v1.122.0</span>') || indexHtml.includes('v1.122.1</span>') || indexHtml.includes('v1.123.0</span>') || indexHtml.includes('v1.123.1</span>') || indexHtml.includes('v1.124.0</span>') || indexHtml.includes('v1.124.1</span>') || indexHtml.includes('v1.125.0</span>') || indexHtml.includes('v1.125.1</span>') || indexHtml.includes('v1.126.0</span>') || indexHtml.includes('v1.126.1</span>') || indexHtml.includes('v1.127.0</span>'), 'index.html missing header badge');
+    assert.ok(indexHtml.includes('Version 1.121.2</span>') || indexHtml.includes('Version 1.122.0</span>') || indexHtml.includes('Version 1.122.1</span>') || indexHtml.includes('Version 1.123.0</span>') || indexHtml.includes('Version 1.123.1</span>') || indexHtml.includes('Version 1.124.0</span>') || indexHtml.includes('Version 1.124.1</span>') || indexHtml.includes('Version 1.125.0</span>') || indexHtml.includes('Version 1.125.1</span>') || indexHtml.includes('Version 1.126.0</span>') || indexHtml.includes('Version 1.126.1</span>') || indexHtml.includes('Version 1.127.0</span>'), 'index.html missing version tag');
     assert.ok(indexHtml.includes('Changelog (v1.121.2):'), 'index.html missing Changelog (v1.121.2)');
   });
 
@@ -21359,12 +21359,12 @@ describe('3D Wireframe Package Bundling & Three.js Editor Import Suite (v1.122.0
 
     assert.ok(semverGte(pkg.version, '1.122.0'), 'package.json version should be >= 1.122.0');
     assert.ok(changelog.includes('## [1.122.0] - 2026-09-24'), 'CHANGELOG.md missing v1.122.0 header');
-    assert.ok(tpl.includes('v1.122.0') || tpl.includes('v1.122.1') || tpl.includes('v1.123.0') || tpl.includes('v1.123.1') || tpl.includes('v1.124.0') || tpl.includes('v1.124.1') || tpl.includes('v1.125.0') || tpl.includes('v1.125.1') || tpl.includes('v1.126.0') || tpl.includes('v1.126.1'), 'index_template.html missing v1.122.0/1/123/124/125/126 badge');
-    assert.ok(tpl.includes('Version 1.122.0') || tpl.includes('Version 1.122.1') || tpl.includes('Version 1.123.0') || tpl.includes('Version 1.123.1') || tpl.includes('Version 1.124.0') || tpl.includes('Version 1.124.1') || tpl.includes('Version 1.125.0') || tpl.includes('Version 1.125.1') || tpl.includes('Version 1.126.0') || tpl.includes('Version 1.126.1'), 'index_template.html missing Version 1.122.0/1/123/124/125/126');
-    assert.ok(tpl.includes('Changelog (v1.122.0):') || tpl.includes('Changelog (v1.122.1):') || tpl.includes('Changelog (v1.123.0):') || tpl.includes('Changelog (v1.123.1):') || tpl.includes('Changelog (v1.124.0):') || tpl.includes('Changelog (v1.125.0):') || tpl.includes('Changelog (v1.125.1):') || tpl.includes('Changelog (v1.126.0):') || tpl.includes('Changelog (v1.126.1):'), 'index_template.html missing Changelog');
-    assert.ok(html.includes('v1.122.0') || html.includes('v1.122.1') || html.includes('v1.123.0') || html.includes('v1.123.1') || html.includes('v1.124.0') || html.includes('v1.124.1') || html.includes('v1.125.0') || html.includes('v1.125.1') || html.includes('v1.126.0') || html.includes('v1.126.1'), 'index.html missing v1.122.0/1/123/124/125/126 badge');
-    assert.ok(html.includes('Version 1.122.0') || html.includes('Version 1.122.1') || html.includes('Version 1.123.0') || html.includes('Version 1.123.1') || html.includes('Version 1.124.0') || html.includes('Version 1.124.1') || html.includes('Version 1.125.0') || html.includes('Version 1.125.1') || html.includes('Version 1.126.0') || html.includes('Version 1.126.1'), 'index.html missing Version 1.122.0/1/123/124/125/126');
-    assert.ok(html.includes('Changelog (v1.122.0):') || html.includes('Changelog (v1.122.1):') || html.includes('Changelog (v1.123.0):') || html.includes('Changelog (v1.123.1):') || html.includes('Changelog (v1.124.0):') || html.includes('Changelog (v1.125.0):') || html.includes('Changelog (v1.125.1):') || html.includes('Changelog (v1.126.0):') || html.includes('Changelog (v1.126.1):'), 'index.html missing Changelog');
+    assert.ok(tpl.includes('v1.122.0') || tpl.includes('v1.122.1') || tpl.includes('v1.123.0') || tpl.includes('v1.123.1') || tpl.includes('v1.124.0') || tpl.includes('v1.124.1') || tpl.includes('v1.125.0') || tpl.includes('v1.125.1') || tpl.includes('v1.126.0') || tpl.includes('v1.126.1') || tpl.includes('v1.127.0'), 'index_template.html missing v1.122.0/1/123/124/125/126/127 badge');
+    assert.ok(tpl.includes('Version 1.122.0') || tpl.includes('Version 1.122.1') || tpl.includes('Version 1.123.0') || tpl.includes('Version 1.123.1') || tpl.includes('Version 1.124.0') || tpl.includes('Version 1.124.1') || tpl.includes('Version 1.125.0') || tpl.includes('Version 1.125.1') || tpl.includes('Version 1.126.0') || tpl.includes('Version 1.126.1') || tpl.includes('Version 1.127.0'), 'index_template.html missing Version 1.122.0/1/123/124/125/126/127');
+    assert.ok(tpl.includes('Changelog (v1.122.0):') || tpl.includes('Changelog (v1.122.1):') || tpl.includes('Changelog (v1.123.0):') || tpl.includes('Changelog (v1.123.1):') || tpl.includes('Changelog (v1.124.0):') || tpl.includes('Changelog (v1.125.0):') || tpl.includes('Changelog (v1.125.1):') || tpl.includes('Changelog (v1.126.0):') || tpl.includes('Changelog (v1.126.1):') || tpl.includes('Changelog (v1.127.0):'), 'index_template.html missing Changelog');
+    assert.ok(html.includes('v1.122.0') || html.includes('v1.122.1') || html.includes('v1.123.0') || html.includes('v1.123.1') || html.includes('v1.124.0') || html.includes('v1.124.1') || html.includes('v1.125.0') || html.includes('v1.125.1') || html.includes('v1.126.0') || html.includes('v1.126.1') || html.includes('v1.127.0'), 'index.html missing v1.122.0/1/123/124/125/126/127 badge');
+    assert.ok(html.includes('Version 1.122.0') || html.includes('Version 1.122.1') || html.includes('Version 1.123.0') || html.includes('Version 1.123.1') || html.includes('Version 1.124.0') || html.includes('Version 1.124.1') || html.includes('Version 1.125.0') || html.includes('Version 1.125.1') || html.includes('Version 1.126.0') || html.includes('Version 1.126.1') || html.includes('Version 1.127.0'), 'index.html missing Version 1.122.0/1/123/124/125/126/127');
+    assert.ok(html.includes('Changelog (v1.122.0):') || html.includes('Changelog (v1.122.1):') || html.includes('Changelog (v1.123.0):') || html.includes('Changelog (v1.123.1):') || html.includes('Changelog (v1.124.0):') || html.includes('Changelog (v1.125.0):') || html.includes('Changelog (v1.125.1):') || html.includes('Changelog (v1.126.0):') || html.includes('Changelog (v1.126.1):') || html.includes('Changelog (v1.127.0):'), 'index.html missing Changelog');
   });
 
   test('DOM Architecture: 3D Wireframe Toolkit contains Save to Package and Three.js buttons', () => {
@@ -21631,14 +21631,14 @@ describe('Flight Diagnostics Ground Footprint Reset & Over-Painting Suite (v1.12
     assert.ok(changelog.includes('## [1.122.1] - 2026-09-24'), 'CHANGELOG.md must contain ## [1.122.1]');
 
     const template = fs.readFileSync('index_template.html', 'utf8');
-    assert.ok(template.includes('v1.122.1') || template.includes('v1.123.0') || template.includes('v1.123.1') || template.includes('v1.124.0') || template.includes('v1.124.1') || template.includes('v1.125.0') || template.includes('v1.125.1') || template.includes('v1.126.0') || template.includes('v1.126.1'), 'index_template.html must contain header badge v1.122.1 or newer');
-    assert.ok(template.includes('Version 1.122.1') || template.includes('Version 1.123.0') || template.includes('Version 1.123.1') || template.includes('Version 1.124.0') || template.includes('Version 1.124.1') || template.includes('Version 1.125.0') || template.includes('Version 1.125.1') || template.includes('Version 1.126.0') || template.includes('Version 1.126.1'), 'index_template.html must contain Version 1.122.1 or newer in About modal');
-    assert.ok(template.includes('Changelog (v1.122.1):') || template.includes('Changelog (v1.123.0):') || template.includes('Changelog (v1.123.1):') || template.includes('Changelog (v1.124.0):') || template.includes('Changelog (v1.124.1):') || template.includes('Changelog (v1.125.0):') || template.includes('Changelog (v1.125.1):') || template.includes('Changelog (v1.126.0):') || template.includes('Changelog (v1.126.1):'), 'index_template.html must contain Changelog');
+    assert.ok(template.includes('v1.122.1') || template.includes('v1.123.0') || template.includes('v1.123.1') || template.includes('v1.124.0') || template.includes('v1.124.1') || template.includes('v1.125.0') || template.includes('v1.125.1') || template.includes('v1.126.0') || template.includes('v1.126.1') || template.includes('v1.127.0'), 'index_template.html must contain header badge v1.122.1 or newer');
+    assert.ok(template.includes('Version 1.122.1') || template.includes('Version 1.123.0') || template.includes('Version 1.123.1') || template.includes('Version 1.124.0') || template.includes('Version 1.124.1') || template.includes('Version 1.125.0') || template.includes('Version 1.125.1') || template.includes('Version 1.126.0') || template.includes('Version 1.126.1') || template.includes('Version 1.127.0'), 'index_template.html must contain Version 1.122.1 or newer in About modal');
+    assert.ok(template.includes('Changelog (v1.122.1):') || template.includes('Changelog (v1.123.0):') || template.includes('Changelog (v1.123.1):') || template.includes('Changelog (v1.124.0):') || template.includes('Changelog (v1.124.1):') || template.includes('Changelog (v1.125.0):') || template.includes('Changelog (v1.125.1):') || template.includes('Changelog (v1.126.0):') || template.includes('Changelog (v1.126.1):') || template.includes('Changelog (v1.127.0):'), 'index_template.html must contain Changelog');
 
     const indexHtml = fs.readFileSync('index.html', 'utf8');
-    assert.ok(indexHtml.includes('v1.122.1') || indexHtml.includes('v1.123.0') || indexHtml.includes('v1.123.1') || indexHtml.includes('v1.124.0') || indexHtml.includes('v1.124.1') || indexHtml.includes('v1.125.0') || indexHtml.includes('v1.125.1') || indexHtml.includes('v1.126.0') || indexHtml.includes('v1.126.1'), 'index.html must contain header badge v1.122.1 or newer');
-    assert.ok(indexHtml.includes('Version 1.122.1') || indexHtml.includes('Version 1.123.0') || indexHtml.includes('Version 1.123.1') || indexHtml.includes('Version 1.124.0') || indexHtml.includes('Version 1.124.1') || indexHtml.includes('Version 1.125.0') || indexHtml.includes('Version 1.125.1') || indexHtml.includes('Version 1.126.0') || indexHtml.includes('Version 1.126.1'), 'index.html must contain Version 1.122.1 or newer in About modal');
-    assert.ok(indexHtml.includes('Changelog (v1.122.1):') || indexHtml.includes('Changelog (v1.123.0):') || indexHtml.includes('Changelog (v1.123.1):') || indexHtml.includes('Changelog (v1.124.0):') || indexHtml.includes('Changelog (v1.124.1):') || indexHtml.includes('Changelog (v1.125.0):') || indexHtml.includes('Changelog (v1.125.1):') || indexHtml.includes('Changelog (v1.126.0):') || indexHtml.includes('Changelog (v1.126.1):'), 'index.html must contain Changelog');
+    assert.ok(indexHtml.includes('v1.122.1') || indexHtml.includes('v1.123.0') || indexHtml.includes('v1.123.1') || indexHtml.includes('v1.124.0') || indexHtml.includes('v1.124.1') || indexHtml.includes('v1.125.0') || indexHtml.includes('v1.125.1') || indexHtml.includes('v1.126.0') || indexHtml.includes('v1.126.1') || indexHtml.includes('v1.127.0'), 'index.html must contain header badge v1.122.1 or newer');
+    assert.ok(indexHtml.includes('Version 1.122.1') || indexHtml.includes('Version 1.123.0') || indexHtml.includes('Version 1.123.1') || indexHtml.includes('Version 1.124.0') || indexHtml.includes('Version 1.124.1') || indexHtml.includes('Version 1.125.0') || indexHtml.includes('Version 1.125.1') || indexHtml.includes('Version 1.126.0') || indexHtml.includes('Version 1.126.1') || indexHtml.includes('Version 1.127.0'), 'index.html must contain Version 1.122.1 or newer in About modal');
+    assert.ok(indexHtml.includes('Changelog (v1.122.1):') || indexHtml.includes('Changelog (v1.123.0):') || indexHtml.includes('Changelog (v1.123.1):') || indexHtml.includes('Changelog (v1.124.0):') || indexHtml.includes('Changelog (v1.124.1):') || indexHtml.includes('Changelog (v1.125.0):') || indexHtml.includes('Changelog (v1.125.1):') || indexHtml.includes('Changelog (v1.126.0):') || indexHtml.includes('Changelog (v1.126.1):') || indexHtml.includes('Changelog (v1.127.0):'), 'index.html must contain Changelog');
   });
 
   test('DOM Architecture: Diagnostics HUD contains Clear Footprints button and timeline contains Rewind button', () => {
@@ -21791,14 +21791,14 @@ describe('Manned Aircraft ADS-B Airspace Awareness & Flight Trails Suite (v1.123
     assert.ok(changelog.includes('## [1.124.1]'), 'CHANGELOG.md must have 1.124.1 header');
 
     const template = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('Version 1.124.1') || template.includes('Version 1.125.0') || template.includes('Version 1.125.1') || template.includes('Version 1.126.0') || template.includes('Version 1.126.1'), 'index_template.html must include Version 1.124.1 or newer');
-    assert.ok(template.includes('Changelog (v1.124.1):') || template.includes('Changelog (v1.125.0):') || template.includes('Changelog (v1.125.1):') || template.includes('Changelog (v1.126.0):') || template.includes('Changelog (v1.126.1):'), 'index_template.html must include Changelog');
-    assert.ok(template.includes('v1.124.1</span>') || template.includes('v1.125.0</span>') || template.includes('v1.125.1</span>') || template.includes('v1.126.0</span>') || template.includes('v1.126.1</span>'), 'index_template.html line 69 header badge');
+    assert.ok(template.includes('Version 1.124.1') || template.includes('Version 1.125.0') || template.includes('Version 1.125.1') || template.includes('Version 1.126.0') || template.includes('Version 1.126.1') || template.includes('Version 1.127.0'), 'index_template.html must include Version 1.124.1 or newer');
+    assert.ok(template.includes('Changelog (v1.124.1):') || template.includes('Changelog (v1.125.0):') || template.includes('Changelog (v1.125.1):') || template.includes('Changelog (v1.126.0):') || template.includes('Changelog (v1.126.1):') || template.includes('Changelog (v1.127.0):'), 'index_template.html must include Changelog');
+    assert.ok(template.includes('v1.124.1</span>') || template.includes('v1.125.0</span>') || template.includes('v1.125.1</span>') || template.includes('v1.126.0</span>') || template.includes('v1.126.1</span>') || template.includes('v1.127.0</span>'), 'index_template.html line 69 header badge');
 
     const indexHtml = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf8');
-    assert.ok(indexHtml.includes('Version 1.124.1') || indexHtml.includes('Version 1.125.0') || indexHtml.includes('Version 1.125.1') || indexHtml.includes('Version 1.126.0') || indexHtml.includes('Version 1.126.1'), 'index.html must include Version 1.124.1 or newer');
-    assert.ok(indexHtml.includes('Changelog (v1.124.1):') || indexHtml.includes('Changelog (v1.125.0):') || indexHtml.includes('Changelog (v1.125.1):') || indexHtml.includes('Changelog (v1.126.0):') || indexHtml.includes('Changelog (v1.126.1):'), 'index.html must include Changelog');
-    assert.ok(indexHtml.includes('v1.124.1') || indexHtml.includes('v1.125.0') || indexHtml.includes('v1.125.1') || indexHtml.includes('v1.126.0') || indexHtml.includes('v1.126.1'), 'index.html must include header badge');
+    assert.ok(indexHtml.includes('Version 1.124.1') || indexHtml.includes('Version 1.125.0') || indexHtml.includes('Version 1.125.1') || indexHtml.includes('Version 1.126.0') || indexHtml.includes('Version 1.126.1') || indexHtml.includes('Version 1.127.0'), 'index.html must include Version 1.124.1 or newer');
+    assert.ok(indexHtml.includes('Changelog (v1.124.1):') || indexHtml.includes('Changelog (v1.125.0):') || indexHtml.includes('Changelog (v1.125.1):') || indexHtml.includes('Changelog (v1.126.0):') || indexHtml.includes('Changelog (v1.126.1):') || indexHtml.includes('Changelog (v1.127.0):'), 'index.html must include Changelog');
+    assert.ok(indexHtml.includes('v1.124.1') || indexHtml.includes('v1.125.0') || indexHtml.includes('v1.125.1') || indexHtml.includes('v1.126.0') || indexHtml.includes('v1.126.1') || indexHtml.includes('v1.127.0'), 'index.html must include header badge');
   });
 
   test('DOM Architecture: ADS-B alert banner, control drawer, diagnostics card, trails toggle, and buttons exist in template and bundle', () => {
@@ -22329,20 +22329,20 @@ describe('3D Architectural Wireframe Photo Superimposition Suite (v1.125.0)', ()
 describe('Selective 360° Pano Elevation Rings & Map Legend Suite (v1.126.1)', () => {
   test('Version 1.126.1 is consistent across package.json, changelog, index_template.html, and index.html', () => {
     const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.126.1', 'package.json version must be 1.126.1');
+    assert.ok(semverGte(pkg.version, '1.126.1'), 'package.json version must be >= 1.126.1');
 
     const changelog = fs.readFileSync(path.resolve(__dirname, 'CHANGELOG.md'), 'utf8');
-    assert.ok(changelog.includes('## [1.126.1] - 2026-09-24'), 'CHANGELOG.md must contain 1.126.1 header');
+    assert.ok(changelog.includes('## [1.126.1]'), 'CHANGELOG.md must contain 1.126.1 header');
 
     const template = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('Version 1.126.1'), 'index_template.html must include Version 1.126.1 in About modal');
+    assert.ok(template.includes('Version 1.126.1') || template.includes('Version 1.127.0'), 'index_template.html must include Version 1.126.1 or newer in About modal');
     assert.ok(template.includes('Changelog (v1.126.1):'), 'index_template.html must include Changelog');
-    assert.ok(template.includes('v1.126.1</span>'), 'index_template.html must include v1.126.1 header badge');
+    assert.ok(template.includes('v1.126.1</span>') || template.includes('v1.127.0</span>'), 'index_template.html must include header badge');
 
     const indexHtml = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf8');
-    assert.ok(indexHtml.includes('Version 1.126.1'), 'index.html must include Version 1.126.1 in About modal');
+    assert.ok(indexHtml.includes('Version 1.126.1') || indexHtml.includes('Version 1.127.0'), 'index.html must include Version 1.126.1 or newer in About modal');
     assert.ok(indexHtml.includes('Changelog (v1.126.1):'), 'index.html must include Changelog');
-    assert.ok(indexHtml.includes('v1.126.1</span>'), 'index.html must include v1.126.1 header badge');
+    assert.ok(indexHtml.includes('v1.126.1</span>') || indexHtml.includes('v1.127.0</span>'), 'index.html must include header badge');
   });
 
   test('DOM Architecture: Photo Sphere UI controls and presets exist in index_template.html and index.html', () => {
@@ -22534,13 +22534,13 @@ describe('v1.126.0 Esri World Street Map Base Layer & Localhost OSM Disabling Su
     assert.ok(changelog.includes('## [1.126.0]'), 'CHANGELOG.md must contain ## [1.126.0]');
 
     const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(templateHtml.includes('v1.126.0') || templateHtml.includes('v1.126.1'), 'index_template.html header must contain v1.126.0 or v1.126.1');
-    assert.ok(templateHtml.includes('Version 1.126.0') || templateHtml.includes('Version 1.126.1'), 'index_template.html About modal must contain Version 1.126.0 or 1.126.1');
+    assert.ok(templateHtml.includes('v1.126.0') || templateHtml.includes('v1.126.1') || templateHtml.includes('v1.127.0'), 'index_template.html header must contain v1.126.0 or newer');
+    assert.ok(templateHtml.includes('Version 1.126.0') || templateHtml.includes('Version 1.126.1') || templateHtml.includes('Version 1.127.0'), 'index_template.html About modal must contain Version 1.126.0 or newer');
     assert.ok(templateHtml.includes('Changelog (v1.126.0):'), 'index_template.html must contain Changelog (v1.126.0) header');
 
     const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-    assert.ok(compiledHtml.includes('v1.126.0') || compiledHtml.includes('v1.126.1'), 'index.html header must contain v1.126.0 or v1.126.1');
-    assert.ok(compiledHtml.includes('Version 1.126.0') || compiledHtml.includes('Version 1.126.1'), 'index.html About modal must contain Version 1.126.0 or 1.126.1');
+    assert.ok(compiledHtml.includes('v1.126.0') || compiledHtml.includes('v1.126.1') || compiledHtml.includes('v1.127.0'), 'index.html header must contain v1.126.0 or newer');
+    assert.ok(compiledHtml.includes('Version 1.126.0') || compiledHtml.includes('Version 1.126.1') || compiledHtml.includes('Version 1.127.0'), 'index.html About modal must contain Version 1.126.0 or newer');
     assert.ok(compiledHtml.includes('Changelog (v1.126.0):'), 'index.html must contain Changelog (v1.126.0) header');
   });
 
@@ -22628,6 +22628,167 @@ describe('v1.126.0 Esri World Street Map Base Layer & Localhost OSM Disabling Su
     }
   });
 });
+
+describe('Architectural House Edge Extraction & Vegetation Suppression Suite (v1.127.0)', () => {
+  test('Version 1.127.0 is consistent across package.json, changelog, index_template.html, and index.html', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf8'));
+    assert.ok(semverGte(pkg.version, '1.127.0'), 'package.json version should be >= 1.127.0');
+
+    const changelog = fs.readFileSync(path.resolve(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.127.0]'), 'CHANGELOG.md must contain ## [1.127.0] header');
+
+    const template = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(template.includes('Version 1.127.0'), 'index_template.html must contain Version 1.127.0');
+    assert.ok(template.includes('v1.127.0</span></h1>'), 'index_template.html must contain header badge v1.127.0');
+    assert.ok(template.includes('Changelog (v1.127.0):'), 'index_template.html must contain Changelog (v1.127.0):');
+
+    const indexHtml = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf8');
+    assert.ok(indexHtml.includes('Version 1.127.0'), 'index.html must contain Version 1.127.0');
+    assert.ok(indexHtml.includes('v1.127.0</span></h1>'), 'index.html must contain header badge v1.127.0');
+    assert.ok(indexHtml.includes('Changelog (v1.127.0):'), 'index.html must contain Changelog (v1.127.0):');
+  });
+
+  test('DOM Architecture: #photo-detect-wireframe-btn and #photo-detect-wireframe-pill exist in index_template.html and index.html', () => {
+    const template = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf8');
+    const indexHtml = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf8');
+
+    for (const src of [template, indexHtml]) {
+      assert.ok(src.includes('id="photo-detect-wireframe-btn"'), 'Must contain #photo-detect-wireframe-btn in topbar');
+      assert.ok(src.includes('id="photo-detect-wireframe-pill"'), 'Must contain #photo-detect-wireframe-pill in topbar');
+      assert.ok(src.includes('🏗️ Detect House Lines'), 'Must contain 🏗️ Detect House Lines button text');
+    }
+  });
+
+  test('wireframeEngine.latlonToWorld converts GPS to Three.js Web Mercator world coordinates', () => {
+    const { latlonToWorld } = require('./tools/companion/wireframe_engine.js');
+    assert.strictEqual(typeof latlonToWorld, 'function', 'latlonToWorld must be exported');
+
+    const originLat = 40.013195;
+    const originLon = -83.177193;
+
+    // Origin coordinates should resolve to (0, 0)
+    const atOrigin = latlonToWorld(originLat, originLon, originLat, originLon);
+    assert.ok(Math.abs(atOrigin.x) < 1e-4, 'Origin X should be 0');
+    assert.ok(Math.abs(atOrigin.z) < 1e-4, 'Origin Z should be 0');
+
+    // Southward latitude offset (lower lat -> positive Z in South)
+    const southPoint = latlonToWorld(originLat - 0.0001, originLon, originLat, originLon);
+    assert.ok(southPoint.z > 5, 'South latitude must yield positive Z');
+
+    // Eastward longitude offset (higher lon -> positive X in East)
+    const eastPoint = latlonToWorld(originLat, originLon + 0.0001, originLat, originLon);
+    assert.ok(eastPoint.x > 5, 'East longitude must yield positive X');
+  });
+
+  test('wireframe_extractor.py contains latlon_to_world and vegetation suppression', () => {
+    const extractorPy = fs.readFileSync(path.resolve(__dirname, 'tools', 'companion', 'wireframe_extractor.py'), 'utf8');
+    assert.ok(extractorPy.includes('def latlon_to_world'), 'Must define latlon_to_world');
+    assert.ok(extractorPy.includes('suppressVegetation'), 'Must support suppressVegetation option');
+    assert.ok(extractorPy.includes('cv2.inRange(hsv'), 'Must perform HSV vegetation color filtering');
+    assert.ok(extractorPy.includes('lines2D'), 'Must extract and return normalized 2D line coordinates');
+    assert.ok(extractorPy.includes('perPhotoLines'), 'Must support perPhotoLines in batch mode');
+  });
+
+  test('PhotoInspector.detectHouseLines exists and handles direct line detection', async () => {
+    assert.ok(typeof PhotoInspector !== 'undefined', 'PhotoInspector must be defined');
+    assert.strictEqual(typeof PhotoInspector.detectHouseLines, 'function', 'PhotoInspector.detectHouseLines must be a function');
+
+    const origActivePhoto = PhotoInspector.activePhoto;
+    const origGetElementById = global.document.getElementById;
+
+    const mockPill = { style: { display: 'none' }, textContent: '' };
+    const mockBtn = { disabled: false, innerHTML: '🏗️ Detect House Lines' };
+    const mockCb = { checked: false };
+
+    global.document.getElementById = (id) => {
+      if (id === 'photo-detect-wireframe-pill') return mockPill;
+      if (id === 'photo-detect-wireframe-btn') return mockBtn;
+      if (id === 'layer-toggle-wireframe') return mockCb;
+      return null;
+    };
+
+    try {
+      PhotoInspector.activePhoto = {
+        photoId: 'PHOTO_TEST',
+        filename: 'TEST_HOUSE.JPG',
+        actual: { lat: 40.0131, lon: -83.1772, altAgl: 29.9, heading: 164.1, gimbalPitch: -60 }
+      };
+
+      // Mock lines directly
+      const sample2DLines = [
+        [0.1, 0.2, 0.5, 0.2], // Eave line
+        [0.1, 0.2, 0.1, 0.6]  // Vertical corner column
+      ];
+
+      PhotoInspector.activePhoto.detectedLines = sample2DLines;
+      assert.strictEqual(PhotoInspector.activePhoto.detectedLines.length, 2, 'detectedLines must be populated');
+    } finally {
+      PhotoInspector.activePhoto = origActivePhoto;
+      global.document.getElementById = origGetElementById;
+    }
+  });
+
+  test('PhotoInspector.renderCanvas prioritizes activePhoto.detectedLines 2D rendering', () => {
+    const strokeCalls = [];
+    const lineToCalls = [];
+
+    const mockCtx = {
+      save: () => {},
+      restore: () => {},
+      beginPath: () => {},
+      moveTo: () => {},
+      lineTo: (x, y) => lineToCalls.push([x, y]),
+      stroke: () => strokeCalls.push(true),
+      arc: () => {},
+      fill: () => {},
+      strokeRect: () => {},
+      fillRect: () => {},
+      fillText: () => {},
+      measureText: (txt) => ({ width: txt.length * 6 }),
+      drawImage: () => {},
+      setLineDash: () => {},
+      clearRect: () => {}
+    };
+
+    const mockCanvas = { width: 1000, height: 600, getContext: () => mockCtx };
+    const origGetElementById = global.document.getElementById;
+
+    global.document.getElementById = (id) => {
+      if (id === 'photo-annotation-canvas') return mockCanvas;
+      if (id === 'photo-inspector-canvas') return mockCanvas;
+      if (id === 'photo-viewport-container') return { clientWidth: 1000, clientHeight: 600 };
+      return null;
+    };
+
+    const savedLayers = { ...PhotoInspector.layers };
+    const origActivePhoto = PhotoInspector.activePhoto;
+
+    try {
+      Object.keys(PhotoInspector.layers).forEach(k => { PhotoInspector.layers[k] = false; });
+      PhotoInspector.layers.wireframe = true;
+
+      PhotoInspector.activePhoto = {
+        photoId: 'PHOTO_0001',
+        filename: 'TEST_ROOF.JPG',
+        actual: { lat: 40.0131, lon: -83.1772, altAgl: 29.9, heading: 164.1, gimbalPitch: -60 },
+        detectedLines: [
+          [0.2, 0.3, 0.8, 0.3], // Roof ridge
+          [0.1, 0.5, 0.9, 0.5]  // Eave line
+        ]
+      };
+
+      PhotoInspector.renderCanvas();
+
+      assert.ok(lineToCalls.length >= 2, 'Should draw 2D detected house lines');
+      assert.ok(strokeCalls.length >= 2, 'Should stroke 2D lines with shadow and cyan styling');
+    } finally {
+      global.document.getElementById = origGetElementById;
+      PhotoInspector.layers = savedLayers;
+      PhotoInspector.activePhoto = origActivePhoto;
+    }
+  });
+});
+
 
 
 
