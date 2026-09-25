@@ -4005,7 +4005,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       };
     });
     assert.strictEqual(moreMenuOpenState.menuVisible, true, 'More menu should be visible after clicking more button');
-    assert.strictEqual(moreMenuOpenState.itemsCount, 5, 'More menu should contain 5 action items (Diagnostics, Photos, Intro, About, Links)');
+    assert.strictEqual(moreMenuOpenState.itemsCount, 6, 'More menu should contain 6 action items (Diagnostics, Photos, ADS-B, Intro, About, Links)');
 
     // Click About from More Menu
     await page.locator('#more-menu-about-btn').click();
@@ -6141,7 +6141,103 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(res.threeObjectName, 'Aalaapi_Inspection_Digital_Twin', 'Digital Twin Group must have descriptive name');
     assert.strictEqual(res.hasChildren, true, 'Digital Twin Group must contain child scene elements');
   });
+
+  test('E2E: Manned Aircraft ADS-B Airspace Awareness (Issue #92)', async () => {
+    const res = await page.evaluate(async () => {
+      const topbarBtn = document.getElementById('adsb-topbar-btn');
+      const drawer = document.getElementById('adsb-control-drawer');
+      const closeBtn = document.getElementById('adsb-drawer-close-btn');
+      const enableToggle = document.getElementById('adsb-enable-toggle');
+      const soundToggle = document.getElementById('adsb-sound-toggle');
+      const radiusSlider = document.getElementById('adsb-radius-slider');
+      const radiusVal = document.getElementById('adsb-radius-val');
+      const ceilingSlider = document.getElementById('adsb-ceiling-slider');
+      const ceilingVal = document.getElementById('adsb-ceiling-val');
+      const banner = document.getElementById('adsb-alert-banner');
+      const callsignEl = document.getElementById('adsb-alert-callsign');
+      const snoozeBtn = document.getElementById('adsb-alert-snooze-btn');
+      const alertCloseBtn = document.getElementById('adsb-alert-close-btn');
+
+      if (!topbarBtn || !drawer || !banner) {
+        return { success: false, reason: 'Missing ADS-B core DOM elements' };
+      }
+
+      // 1. Open drawer via topbar button
+      topbarBtn.click();
+      const isDrawerOpen = !drawer.classList.contains('hidden');
+
+      // 2. Adjust radius slider
+      radiusSlider.value = '4.5';
+      radiusSlider.dispatchEvent(new Event('input'));
+      const radiusLabelUpdated = radiusVal.textContent.includes('4.5');
+
+      // 3. Adjust ceiling slider
+      ceilingSlider.value = '3500';
+      ceilingSlider.dispatchEvent(new Event('input'));
+      const ceilingLabelUpdated = ceilingVal.textContent.includes('3,500');
+
+      // 4. Simulate breached aircraft via AdsbAirspaceManager
+      const manager = window.AdsbAirspaceManager;
+      if (!manager) return { success: false, reason: 'AdsbAirspaceManager not in window' };
+
+      const mockBreachedAc = {
+        hex: 'A44332',
+        callsign: 'UAL990',
+        altitude: 1750,
+        distanceMiles: 1.4,
+        distanceMeters: 2253,
+        speed: 155,
+        bearingDeg: 35,
+        bearingCardinal: 'NE',
+        isBreached: true
+      };
+
+      manager.aircraft = [mockBreachedAc];
+      manager.breachedAircraft = [mockBreachedAc];
+      manager.updateVisualBanner();
+      manager.updateTopbarAndHud();
+      manager.updateDrawerAircraftList();
+
+      const bannerVisible = !banner.classList.contains('hidden');
+      const callsignMatch = callsignEl.textContent === 'UAL990';
+
+      // 5. Test Snooze button
+      snoozeBtn.click();
+      const isSnoozed = manager.isSnoozed;
+
+      // 6. Test Dismiss Banner
+      alertCloseBtn.click();
+      const bannerDismissed = banner.classList.contains('hidden');
+
+      // Close drawer
+      closeBtn.click();
+      const drawerClosed = drawer.classList.contains('hidden');
+
+      return {
+        success: isDrawerOpen && radiusLabelUpdated && ceilingLabelUpdated && bannerVisible && callsignMatch && isSnoozed && bannerDismissed && drawerClosed,
+        isDrawerOpen,
+        radiusLabelUpdated,
+        ceilingLabelUpdated,
+        bannerVisible,
+        callsignMatch,
+        isSnoozed,
+        bannerDismissed,
+        drawerClosed
+      };
+    });
+
+    assert.strictEqual(res.success, true, `E2E ADS-B test failed: ${JSON.stringify(res)}`);
+    assert.strictEqual(res.isDrawerOpen, true, 'Clicking topbar button must open ADS-B drawer');
+    assert.strictEqual(res.radiusLabelUpdated, true, 'Moving radius slider must update label');
+    assert.strictEqual(res.ceilingLabelUpdated, true, 'Moving ceiling slider must update label');
+    assert.strictEqual(res.bannerVisible, true, 'Breached aircraft must render visual alert banner');
+    assert.strictEqual(res.callsignMatch, true, 'Banner must display correct aircraft callsign');
+    assert.strictEqual(res.isSnoozed, true, 'Snooze button must activate snooze state');
+    assert.strictEqual(res.bannerDismissed, true, 'Dismiss button must hide alert banner');
+    assert.strictEqual(res.drawerClosed, true, 'Close button must hide drawer');
+  });
 });
+
 
 
 

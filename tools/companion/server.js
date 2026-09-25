@@ -131,7 +131,13 @@ const {
   parseRemoteIdPayload
 } = require('./remote_id_decoder.js');
 
+const {
+  AdsbAirspaceTracker,
+  METERS_PER_STATUTE_MILE
+} = require('./adsb_tracker.js');
+
 const airspaceTracker = new RemoteIdAirspaceTracker(15);
+const adsbTracker = new AdsbAirspaceTracker({ autoConnect: true });
 let bleScannerProc = null;
 let bleScannerActive = false;
 let totalBlePackets = 0;
@@ -377,6 +383,9 @@ function stopScanners() {
     } catch (e) {}
     wifiScannerProc = null;
     wifiScannerActive = false;
+  }
+  if (adsbTracker) {
+    try { adsbTracker.destroy(); } catch (e) {}
   }
 }
 
@@ -3768,6 +3777,106 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // 9a. ADS-B Manned Aircraft Airspace Awareness Endpoints (Issue #92)
+    if ((pathname === '/api/airspace/bounds' || pathname === '/api/adsb/bounds' || pathname === '/api/adsb/aircraft') && req.method === 'GET') {
+      const latParam = url.searchParams.get('lat') || url.searchParams.get('latitude');
+      const lonParam = url.searchParams.get('lon') || url.searchParams.get('lng') || url.searchParams.get('longitude');
+      const radiusParam = url.searchParams.get('radius') || url.searchParams.get('range');
+      const ceilingParam = url.searchParams.get('ceiling') || url.searchParams.get('altitude');
+      const includeSafeParam = url.searchParams.get('includeSafe');
+
+      const homeLat = latParam !== null ? parseFloat(latParam) : 0;
+      const homeLon = lonParam !== null ? parseFloat(lonParam) : 0;
+      
+      let radiusMeters = 3.0 * METERS_PER_STATUTE_MILE;
+      if (radiusParam !== null) {
+        const parsedRad = parseFloat(radiusParam);
+        if (!isNaN(parsedRad) && parsedRad > 0) {
+          radiusMeters = parsedRad <= 50 ? parsedRad * METERS_PER_STATUTE_MILE : parsedRad;
+        }
+      }
+
+      let maxCeilingFeet = 2500;
+      if (ceilingParam !== null) {
+        const parsedCeiling = parseFloat(ceilingParam);
+        if (!isNaN(parsedCeiling) && parsedCeiling > 0) {
+          maxCeilingFeet = parsedCeiling;
+        }
+      }
+
+      const includeSafe = includeSafeParam !== 'false' && includeSafeParam !== '0';
+
+      const boundsResult = adsbTracker.getAirspaceBounds({
+        homeLat,
+        homeLon,
+        radiusMeters,
+        maxCeilingFeet,
+        includeSafe
+      });
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(boundsResult));
+      return;
+    }
+
+    // 9a-2. ADS-B Receiver Status
+    if ((pathname === '/api/airspace/status' || pathname === '/api/adsb/status') && req.method === 'GET') {
+      const status = adsbTracker.getStatus();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(Object.assign({ success: true }, status)));
+      return;
+    }
+
+    // 9a-3. ADS-B Simulation Injector
+    if ((pathname === '/api/airspace/simulate' || pathname === '/api/adsb/simulate') && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const payload = body ? JSON.parse(body) : {};
+          const record = adsbTracker.injectSimulatedAircraft(payload);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, aircraft: record }));
+        } catch (e) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: e.message }));
+        }
+      });
+      return;
+    }
+
+    // 9a-4. ADS-B Raw SBS-1 Ingestion
+    if ((pathname === '/api/airspace/sbs' || pathname === '/api/adsb/sbs') && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const lines = body.split(/\r?\n/);
+          let count = 0;
+          for (const line of lines) {
+            if (line.trim()) {
+              const ac = adsbTracker.parseSbsMessage(line);
+              if (ac) count++;
+            }
+          }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, updatedCount: count }));
+        } catch (e) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: e.message }));
+        }
+      });
+      return;
+    }
+
+    // 9a-5. ADS-B Clear All Aircraft
+    if ((pathname === '/api/airspace/clear' || pathname === '/api/adsb/clear') && req.method === 'POST') {
+      adsbTracker.clear();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true }));
+      return;
+    }
+
     // 9b. Temporary Flight Restrictions (TFR) & NOTAM Proxy Endpoints
     if (pathname === '/api/tfr/notams' && req.method === 'GET') {
       const forceRefresh = url.searchParams.get('refresh') === 'true' || url.searchParams.get('refresh') === '1';
@@ -4111,6 +4220,7 @@ module.exports = {
   extractWireframe: wireframeEngine.extractWireframe,
   wireframeEngine,
   packageInspectionArchive,
+  adsbTracker,
   VERSION,
   PORT
 };
