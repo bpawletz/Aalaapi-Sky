@@ -3191,20 +3191,41 @@ const server = http.createServer(async (req, res) => {
             if (rec && rec.manifest) {
               try {
                 const manifest = rec.manifest;
+                const originLat = manifest.homePoint?.lat || manifest.photos?.[0]?.actual?.lat || manifest.photos?.[0]?.lat || 40.013195;
+                const originLon = manifest.homePoint?.lon || manifest.photos?.[0]?.actual?.lon || manifest.photos?.[0]?.lon || -83.177193;
+                payload.origin = { lat: originLat, lon: originLon };
+
                 if (Array.isArray(manifest.photos)) {
                   payload.photos = manifest.photos.map(p => {
                     const rawP = path.join(ARCHIVE_DIR, payload.missionUuid, 'photos', 'raw', p.filename || p.id);
                     const prevP = path.join(ARCHIVE_DIR, payload.missionUuid, 'photos', 'previews', p.filename || p.id);
                     const photoPath = fs.existsSync(rawP) ? rawP : (fs.existsSync(prevP) ? prevP : (p.rawPath || p.filePath));
+
+                    const lat = p.actual?.lat ?? p.lat ?? originLat;
+                    const lon = p.actual?.lon ?? p.lon ?? originLon;
+                    const altAgl = p.actual?.altAgl ?? p.altAgl ?? p.actual?.alt ?? p.alt ?? 25;
+                    const yaw = p.actual?.heading ?? p.heading ?? p.yaw ?? 0;
+                    const pitch = p.actual?.gimbalPitch ?? p.gimbalPitch ?? p.pitch ?? -60;
+
+                    let worldPos = { x: 0, z: 0 };
+                    if (typeof wireframeEngine.latlonToWorld === 'function') {
+                      worldPos = wireframeEngine.latlonToWorld(lat, lon, originLat, originLon);
+                    }
+
                     return {
                       filePath: photoPath,
                       filename: p.filename || p.id,
+                      photoId: p.photoId || p.id,
+                      lat,
+                      lon,
                       telemetry: {
-                        worldX: p.worldX !== undefined ? p.worldX : (p.actualX !== undefined ? p.actualX : 0),
-                        worldY: p.worldY !== undefined ? p.worldY : (p.alt !== undefined ? p.alt : 25),
-                        worldZ: p.worldZ !== undefined ? p.worldZ : (p.actualZ !== undefined ? p.actualZ : 0),
-                        yaw: p.yaw !== undefined ? p.yaw : (p.heading || 0),
-                        pitch: p.pitch !== undefined ? p.pitch : (p.gimbalPitch !== undefined ? p.gimbalPitch : -60),
+                        lat,
+                        lon,
+                        worldX: p.worldX !== undefined ? p.worldX : worldPos.x,
+                        worldY: p.worldY !== undefined ? p.worldY : altAgl,
+                        worldZ: p.worldZ !== undefined ? p.worldZ : worldPos.z,
+                        yaw,
+                        pitch,
                         roll: p.roll || 0,
                         hfov: p.hfov || 73.7,
                         vfov: p.vfov || 53.1
@@ -3213,6 +3234,19 @@ const server = http.createServer(async (req, res) => {
                   }).filter(p => p.filePath && fs.existsSync(p.filePath));
                 }
               } catch (_) {}
+            }
+          }
+
+          if (payload.imagePath && payload.telemetry) {
+            const t = payload.telemetry;
+            const actual = t.actual || {};
+            const lat = t.lat ?? actual.lat;
+            const lon = t.lon ?? actual.lon;
+            const orig = payload.origin || (lat && lon ? { lat, lon } : null);
+            if ((t.worldX === undefined || t.worldZ === undefined) && lat && lon && orig && typeof wireframeEngine.latlonToWorld === 'function') {
+              const w = wireframeEngine.latlonToWorld(lat, lon, orig.lat, orig.lon);
+              t.worldX = w.x;
+              t.worldZ = w.z;
             }
           }
 

@@ -34607,6 +34607,25 @@ const PhotoInspector = {
       }
     }
 
+    const wfPill = document.getElementById('photo-detect-wireframe-pill');
+    if (wfPill) {
+      const wf = this.wireframeData
+        || (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.wireframeData)
+        || this.activeManifest?.wireframe
+        || (typeof activeInspectionManifest !== 'undefined' && activeInspectionManifest?.wireframe)
+        || null;
+      const pKey = p.filename || p.photoId || '';
+      const photoLines = (p.detectedLines && Array.isArray(p.detectedLines))
+        ? p.detectedLines
+        : ((wf && wf.perPhotoLines && (wf.perPhotoLines[pKey] || wf.perPhotoLines[p.filename] || wf.perPhotoLines[p.photoId])) || []);
+      if (photoLines.length > 0) {
+        wfPill.style.display = 'inline-flex';
+        wfPill.textContent = `🏗️ ${photoLines.length} House Lines`;
+      } else {
+        wfPill.style.display = 'none';
+      }
+    }
+
     if (planeToggleBtn) {
       planeToggleBtn.textContent = this.calibrationMode === 'slant' ? '🏠 Slant (Structure)' : '🌍 Flat Ground';
       planeToggleBtn.title = this.calibrationMode === 'slant'
@@ -35376,7 +35395,59 @@ const PhotoInspector = {
         || (typeof activeInspectionManifest !== 'undefined' && activeInspectionManifest?.wireframe)
         || null;
 
-      if (wf && Array.isArray(wf.lines) && wf.lines.length > 0) {
+      const pKey = this.activePhoto.filename || this.activePhoto.photoId || '';
+      const photo2dLines = (Array.isArray(this.activePhoto.detectedLines) && this.activePhoto.detectedLines.length > 0)
+        ? this.activePhoto.detectedLines
+        : ((wf && wf.perPhotoLines && (wf.perPhotoLines[pKey] || wf.perPhotoLines[this.activePhoto.filename] || wf.perPhotoLines[this.activePhoto.photoId])) || null);
+
+      ctx.save();
+      let renderedLineCount = 0;
+      let firstVisPt = null;
+
+      // Tier A: Direct High-Precision 2D Detected Architectural Lines
+      if (Array.isArray(photo2dLines) && photo2dLines.length > 0) {
+        photo2dLines.forEach(l => {
+          if (!Array.isArray(l) || l.length < 4) return;
+          const [u1, v1, u2, v2] = l;
+          const px1 = u1 * canvas.width;
+          const py1 = v1 * canvas.height;
+          const px2 = u2 * canvas.width;
+          const py2 = v2 * canvas.height;
+
+          // 1. Shadow outline for high contrast
+          ctx.strokeStyle = 'rgba(15, 23, 42, 0.75)';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(px1, py1);
+          ctx.lineTo(px2, py2);
+          ctx.stroke();
+
+          // 2. Main cyan architectural line
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.moveTo(px1, py1);
+          ctx.lineTo(px2, py2);
+          ctx.stroke();
+
+          // 3. Vertex nodes
+          [[px1, py1], [px2, py2]].forEach(([x, y]) => {
+            ctx.fillStyle = '#38bdf8';
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          });
+
+          renderedLineCount++;
+          if (!firstVisPt) {
+            firstVisPt = { x: px1, y: py1 };
+          }
+        });
+      } else if (wf && Array.isArray(wf.lines) && wf.lines.length > 0) {
+        // Tier B: Project 3D World Lines into Camera Optical Plane
         const camPose = {
           lat: this.activePhoto.actual?.lat ?? this.activePhoto.planned?.lat ?? 0,
           lon: this.activePhoto.actual?.lon ?? this.activePhoto.planned?.lon ?? 0,
@@ -35403,14 +35474,26 @@ const PhotoInspector = {
           aspectRatio: canvas.width / canvas.height
         };
 
-        ctx.save();
-        let renderedLineCount = 0;
-        let firstVisPt = null;
+        let camWorld = null;
+        if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.projectToWorld === 'function') {
+          try {
+            const cw = FlightDiagnostics.projectToWorld(camPose.lat, camPose.lon, camPose.altAgl);
+            if (cw && !isNaN(cw.x) && !isNaN(cw.z)) camWorld = cw;
+          } catch (_) {}
+        }
+        if (!camWorld) {
+          camWorld = { x: 0, y: camPose.altAgl, z: 0 };
+        }
+        const maxRange = Math.max(90, camPose.altAgl * 3.5);
 
         wf.lines.forEach(line => {
           if (!Array.isArray(line) || line.length < 6) return;
           const [x1, y1, z1, x2, y2, z2] = line;
           if (Math.hypot(x2 - x1, y2 - y1, z2 - z1) < minLen) return;
+
+          const d1 = Math.hypot(x1 - camWorld.x, (y1 + elevOffset) - camWorld.y, z1 - camWorld.z);
+          const d2 = Math.hypot(x2 - camWorld.x, (y2 + elevOffset) - camWorld.y, z2 - camWorld.z);
+          if (d1 > maxRange && d2 > maxRange) return;
 
           const p1 = { x: x1, y: y1 + elevOffset, z: z1 };
           const p2 = { x: x2, y: y2 + elevOffset, z: z2 };
@@ -35436,6 +35519,11 @@ const PhotoInspector = {
             const Zclip = c2.Zcam + t * (c1.Zcam - c2.Zcam);
             u1 = 0.5 + (Xclip / (2.0 * 0.05 * c2.tanHalfH));
             v1 = 0.5 - (Zclip / (2.0 * 0.05 * c2.tanHalfV));
+          }
+
+          if ((u1 < -0.2 && u2 < -0.2) || (u1 > 1.2 && u2 > 1.2) ||
+              (v1 < -0.2 && v2 < -0.2) || (v1 > 1.2 && v2 > 1.2)) {
+            return;
           }
 
           const px1 = u1 * canvas.width;
@@ -35477,25 +35565,25 @@ const PhotoInspector = {
             firstVisPt = c1.isInsideFrame ? { x: px1, y: py1 } : { x: px2, y: py2 };
           }
         });
-
-        // Corner badge in Photo Inspector showing active line count
-        if (renderedLineCount > 0 && firstVisPt) {
-          const bx = Math.max(10, Math.min(canvas.width - 200, firstVisPt.x));
-          const by = Math.max(25, Math.min(canvas.height - 15, firstVisPt.y - 12));
-          const badgeText = `🏗️ 3D Wireframe (${renderedLineCount} lines)`;
-          ctx.font = 'bold 11px sans-serif';
-          const badgeW = ctx.measureText(badgeText).width + 16;
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-          ctx.fillRect(bx, by - 16, badgeW, 20);
-          ctx.strokeStyle = '#38bdf8';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(bx, by - 16, badgeW, 20);
-          ctx.fillStyle = '#38bdf8';
-          ctx.fillText(badgeText, bx + 8, by - 2);
-        }
-
-        ctx.restore();
       }
+
+      // Corner badge in Photo Inspector showing active line count
+      if (renderedLineCount > 0 && firstVisPt) {
+        const bx = Math.max(10, Math.min(canvas.width - 200, firstVisPt.x));
+        const by = Math.max(25, Math.min(canvas.height - 15, firstVisPt.y - 12));
+        const badgeText = `🏗️ 3D Wireframe (${renderedLineCount} lines)`;
+        ctx.font = 'bold 11px sans-serif';
+        const badgeW = ctx.measureText(badgeText).width + 16;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.fillRect(bx, by - 16, badgeW, 20);
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(bx, by - 16, badgeW, 20);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText(badgeText, bx + 8, by - 2);
+      }
+
+      ctx.restore();
     }
 
     // 8. Auto-Superimposed Fiducial Markers & Ground Control Points (v1.104.0)
@@ -35690,6 +35778,173 @@ const PhotoInspector = {
     }
   },
 
+
+  async detectHouseLines() {
+    if (!this.activePhoto) return [];
+    const btn = document.getElementById('photo-detect-wireframe-btn');
+    const origBtnText = btn ? btn.innerHTML : '🏗️ Detect House Lines';
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Extracting...';
+    }
+
+    try {
+      const p = this.activePhoto;
+      let detectedLines = null;
+      let wireframe3d = null;
+
+      // Tier 1: Companion API endpoint /api/process/wireframe
+      const apiBase = (typeof isLocalhostEnvironment === 'function' && isLocalhostEnvironment()) ? 'http://127.0.0.1:3000' : '';
+      const photoPath = p.rawPath || p.filePath || null;
+      const originLat = p.actual?.lat ?? p.lat ?? 40.013195;
+      const originLon = p.actual?.lon ?? p.lon ?? -83.177193;
+
+      if (typeof fetch !== 'undefined') {
+        try {
+          const res = await fetch(`${apiBase}/api/process/wireframe`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              imagePath: photoPath,
+              telemetry: {
+                lat: originLat,
+                lon: originLon,
+                altAgl: p.actual?.altAgl ?? p.altAgl ?? 25.0,
+                heading: p.actual?.heading ?? p.heading ?? 0,
+                gimbalPitch: p.actual?.gimbalPitch ?? p.gimbalPitch ?? -60
+              },
+              options: { suppressVegetation: true, maxDimension: 1920 }
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.success && Array.isArray(data.lines2D) && data.lines2D.length > 0) {
+              detectedLines = data.lines2D;
+              wireframe3d = data.lines || [];
+            }
+          }
+        } catch (_) {}
+      }
+
+      // Tier 2: In-browser canvas computer vision fallback
+      if (!detectedLines || detectedLines.length === 0) {
+        const imgEl = document.getElementById('photo-inspector-img');
+        if (imgEl && imgEl.complete && imgEl.naturalWidth > 0) {
+          const w = Math.min(1920, imgEl.naturalWidth);
+          const h = Math.round((w / imgEl.naturalWidth) * imgEl.naturalHeight);
+          const c = document.createElement('canvas');
+          c.width = w;
+          c.height = h;
+          const ctx = c.getContext('2d', { willReadFrequently: true });
+          if (ctx) {
+            ctx.drawImage(imgEl, 0, 0, w, h);
+            let imgData = null;
+            try {
+              imgData = ctx.getImageData(0, 0, w, h);
+            } catch (_) {}
+
+            if (imgData && imgData.data) {
+              const data = imgData.data;
+              const gray = new Uint8Array(w * h);
+              for (let i = 0, pIdx = 0; i < data.length; i += 4, pIdx++) {
+                const r = data[i], g = data[i + 1], b = data[i + 2];
+                // Suppress lawn and tree green
+                const isVeg = (g > r + 15 && g > b + 10 && g > 45) || (g > 70 && r < 80 && b < 80);
+                if (isVeg) {
+                  gray[pIdx] = 0;
+                } else {
+                  gray[pIdx] = (r * 77 + g * 150 + b * 29) >> 8;
+                }
+              }
+
+              // Fast Sobel edge detection on non-vegetation pixels
+              const edges = [];
+              const threshold = 65;
+              const stride = 4;
+              for (let y = 2; y < h - 2; y += stride) {
+                for (let x = 2; x < w - 2; x += stride) {
+                  const idx = y * w + x;
+                  if (gray[idx] === 0) continue;
+                  const gx = -gray[idx - w - 1] - 2 * gray[idx - 1] - gray[idx + w - 1]
+                            + gray[idx - w + 1] + 2 * gray[idx + 1] + gray[idx + w + 1];
+                  const gy = -gray[idx - w - 1] - 2 * gray[idx - w] - gray[idx - w + 1]
+                            + gray[idx + w - 1] + 2 * gray[idx + w] + gray[idx + w + 1];
+                  const mag = Math.hypot(gx, gy);
+                  if (mag > threshold) {
+                    edges.push({ x, y, angle: Math.atan2(gy, gx) });
+                  }
+                }
+              }
+
+              // Group collinear edge points
+              const detected = [];
+              const visited = new Uint8Array(edges.length);
+              for (let i = 0; i < edges.length; i++) {
+                if (visited[i]) continue;
+                const ptA = edges[i];
+                let bestPt = null;
+                let maxDist = 0;
+                for (let j = i + 1; j < edges.length; j++) {
+                  if (visited[j]) continue;
+                  const ptB = edges[j];
+                  const d = Math.hypot(ptB.x - ptA.x, ptB.y - ptA.y);
+                  if (d >= 40 && d <= 450) {
+                    const lineAngle = Math.atan2(ptB.y - ptA.y, ptB.x - ptA.x);
+                    const angleDiff = Math.abs(lineAngle - (ptA.angle + Math.PI / 2));
+                    const normDiff = Math.min(angleDiff, Math.PI - angleDiff);
+                    if (normDiff < 0.25 && d > maxDist) {
+                      maxDist = d;
+                      bestPt = ptB;
+                      visited[j] = 1;
+                    }
+                  }
+                }
+                if (bestPt && maxDist >= 50) {
+                  visited[i] = 1;
+                  detected.push([
+                    Math.round((ptA.x / w) * 10000) / 10000,
+                    Math.round((ptA.y / h) * 10000) / 10000,
+                    Math.round((bestPt.x / w) * 10000) / 10000,
+                    Math.round((bestPt.y / h) * 10000) / 10000
+                  ]);
+                  if (detected.length >= 250) break;
+                }
+              }
+              if (detected.length > 0) {
+                detectedLines = detected;
+              }
+            }
+          }
+        }
+      }
+
+      if (detectedLines && detectedLines.length > 0) {
+        p.detectedLines = detectedLines;
+        if (wireframe3d && wireframe3d.length > 0) {
+          p.wireframeLines = wireframe3d;
+        }
+
+        const wfPill = document.getElementById('photo-detect-wireframe-pill');
+        if (wfPill) {
+          wfPill.style.display = 'inline-flex';
+          wfPill.textContent = `🏗️ ${detectedLines.length} House Lines`;
+        }
+
+        this.layers.wireframe = true;
+        const cb = document.getElementById('layer-toggle-wireframe');
+        if (cb) cb.checked = true;
+
+        this.renderCanvas();
+      }
+
+      return detectedLines || [];
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = origBtnText;
+      }
+    }
+  },
 
   async detectOpticalTags() {
     if (!this.activePhoto) return [];
@@ -36047,6 +36302,11 @@ const PhotoInspector = {
         this.currentColor = btn.dataset.color || '#ef4444';
       };
     });
+
+    const detectWfBtn = document.getElementById('photo-detect-wireframe-btn');
+    if (detectWfBtn) {
+      detectWfBtn.onclick = () => this.detectHouseLines();
+    }
 
     const detectTagsBtn = document.getElementById('photo-detect-tags-btn');
     if (detectTagsBtn) {
