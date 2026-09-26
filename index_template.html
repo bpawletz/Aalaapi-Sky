@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.129.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.130.0</span></h1>
 
 
 
@@ -2466,6 +2466,33 @@
                 <input type="number" id="adsb-port-input" placeholder="Port" value="30003" min="1" max="65535" style="width: 65px; font-size: 0.68rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 3px 6px;">
                 <button type="button" id="adsb-server-save-btn" class="btn-sm" style="padding: 3px 8px; font-size: 0.68rem; cursor: pointer; white-space: nowrap;">Connect</button>
               </div>
+
+              <!-- Port Presets & Remote Host Port Setup Helper -->
+              <div style="display: flex; gap: 4px; margin-top: 6px; align-items: center; flex-wrap: wrap;">
+                <span style="font-size: 0.64rem; color: var(--text-muted);">Presets:</span>
+                <button type="button" class="btn-xs adsb-port-chip" data-port="30003" style="font-size: 0.62rem; padding: 1px 5px; cursor: pointer; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 3px; color: #93c5fd;" title="Standard BaseStation / SBS-1 CSV stream (Port 30003)">30003 (SBS)</button>
+                <button type="button" class="btn-xs adsb-port-chip" data-port="30002" style="font-size: 0.62rem; padding: 1px 5px; cursor: pointer; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 3px; color: #93c5fd;" title="Raw Mode S AVR hex stream (*...; frames) (Port 30002)">30002 (Mode S)</button>
+                <button type="button" class="btn-xs adsb-port-chip" data-port="8080" style="font-size: 0.62rem; padding: 1px 5px; cursor: pointer; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 3px; color: #93c5fd;" title="dump1090 / readsb HTTP Web interface (Port 8080)">8080 (Web)</button>
+                <button type="button" id="adsb-probe-host-btn" class="btn-xs" style="font-size: 0.62rem; padding: 1px 6px; margin-left: auto; cursor: pointer; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 3px; color: #38bdf8;" title="Auto-detect open ADS-B ports on the target host">🔍 Probe Host</button>
+              </div>
+
+              <!-- Diagnostic Probe Feedback Display -->
+              <div id="adsb-probe-feedback" style="display: none; margin-top: 6px; padding: 6px 8px; border-radius: 4px; font-size: 0.65rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(56,189,248,0.25);"></div>
+
+              <!-- Collapsible Remote Receiver Port Setup Helper Cheat Sheet -->
+              <details id="adsb-ports-cheatsheet" style="margin-top: 6px; font-size: 0.66rem; color: var(--text-muted);">
+                <summary style="cursor: pointer; user-select: none; color: #93c5fd;">Remote Port Setup Helper &amp; Cheat Sheet</summary>
+                <div style="margin-top: 5px; line-height: 1.4; background: rgba(0,0,0,0.25); padding: 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.06);">
+                  <div style="font-weight: 600; color: #e2e8f0; margin-bottom: 2px;">Standard Receiver Ports:</div>
+                  <div>• <code>30003</code>: SBS-1 BaseStation CSV (dump1090, readsb, PiAware)</div>
+                  <div>• <code>30002</code>: Raw Mode S AVR (*...; frames)</div>
+                  <div>• <code>30005</code>: Beast Binary stream</div>
+                  <div>• <code>80 / 8080</code>: Web Map JSON (<code>/data/aircraft.json</code>)</div>
+                  <div style="font-weight: 600; color: #e2e8f0; margin-top: 5px; margin-bottom: 2px;">Daemon Launch Flags:</div>
+                  <div style="font-family: monospace; font-size: 0.62rem; color: #a5f3fc;">dump1090 --net --net-sbs-port 30003</div>
+                  <div style="font-family: monospace; font-size: 0.62rem; color: #a5f3fc;">readsb --net --net-sbs-port 30003 --net-bo-port 30005</div>
+                </div>
+              </details>
             </div>
 
             <!-- Custom ADS-B Endpoint Config (Collapsible/Optional) -->
@@ -2719,6 +2746,14 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              📡 Remote ADS-B Port Setup Helper, Raw Mode S AVR &amp; Layer Control (v1.130.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Seamlessly connect to remote ADS-B receivers (such as readsb, dump1090, or PiAware running on local Raspberry Pi / Z83 / mini-PCs) with automated 1-click port probing (<code>[🔍 Probe Host]</code>), quick-select port chips (<code>30003 SBS</code>, <code>30002 Mode S</code>, <code>8080 Web</code>), and collapsible setup cheat sheets. Includes native Raw Mode S AVR frame ingestion (<code>*...;</code>) with unmasked ICAO and altitude decoding, position-pending aircraft visibility in the airspace drawer, and Leaflet layer control registration (<code>Manned Aircraft (ADS-B Airspace)</code>) for custom overlay toggling.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               📡 Configurable ADS-B Remote Feed &amp; Server Port (v1.129.0)
@@ -3662,7 +3697,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.129.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.130.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -3725,6 +3760,22 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.130.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>📡 Remote ADS-B Host Port Setup Helper:</strong> Added interactive diagnostic probing (<code>[🔍 Probe Host]</code>), quick-click port preset chips (<code>30003 SBS</code>, <code>30002 Mode S</code>, <code>8080 Web</code>), and a collapsible receiver setup cheat sheet to streamline remote network receiver configuration.</li>
+              <li><strong>⚡ Raw Mode S AVR Message Ingestion:</strong> Built native support for <code>*...;</code> hex frames with unmasked DF11/DF17/DF18 ICAO extraction, Q-bit altitude decoding, ground status flags, and callsign extraction.</li>
+              <li><strong>✈️ Position-Pending Mode S Aircraft Cards:</strong> Displays non-GPS Mode S aircraft in the airspace drawer list with dedicated <code>MODE S</code> badges and pending fix status until CPR position frames resolve.</li>
+              <li><strong>🗺️ Leaflet Layer Control Registration:</strong> Registered <code>Manned Aircraft (ADS-B Airspace)</code> directly in Leaflet's base and overlay layer control so pilots can freely toggle airspace traffic markers on and off.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.129.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🛡️ Photo Ingestion Circular Structure Exception Fix:</strong> Eliminates the <code>Converting circular structure to JSON</code> crash during photo ingestion by sanitizing planned waypoints and telemetry, stripping attached Leaflet markers and cyclic tooltip references.</li>
+              <li><strong>🔒 safeJsonStringify Utility:</strong> Introduced a cycle-safe JSON serializer with reference tracking and Leaflet DOM property filtering for rock-solid network payloads.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.129.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">

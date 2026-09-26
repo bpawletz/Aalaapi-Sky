@@ -6107,6 +6107,13 @@ function initMap() {
     RemoteIdRadar.layerGroup = remoteIdAirspaceLayer;
   }
 
+  // Live Manned Aircraft Airspace Overlay (ADS-B / Mode S)
+  const adsbAirspaceLayer = L.layerGroup().addTo(map);
+  overlays["Manned Aircraft (ADS-B Airspace)"] = adsbAirspaceLayer;
+  if (typeof AdsbAirspaceManager !== 'undefined' && AdsbAirspaceManager) {
+    AdsbAirspaceManager.layerGroup = adsbAirspaceLayer;
+  }
+
   const layerControl = L.control.layers(baseMaps, overlays, { position: 'topleft' }).addTo(map);
 
   // If running on localhost or file://, disable the OpenStreetMap radio button with styled indicator & tooltip
@@ -19957,6 +19964,8 @@ const AdsbAirspaceManager = {
     const streamEl = document.getElementById('adsb-stream-status');
     const summaryEl = document.getElementById('adsb-diag-summary');
     const tipEl = document.getElementById('adsb-diag-tip');
+    const hwPacketsEl = document.getElementById('adsb-hw-packets');
+    const hwDriverEl = document.getElementById('adsb-hw-driver');
     if (!hwEl || !streamEl) return;
 
     if (!st) {
@@ -20029,6 +20038,17 @@ const AdsbAirspaceManager = {
       if (tipEl && (!st.hardware || st.hardware.driverStatus !== 'needs_zadig')) {
         tipEl.style.display = 'block';
         tipEl.innerHTML = `💡 <strong>Waiting for dump1090:</strong> Ensure dump1090 or your SBS feed is running on <code>${hostPortStr}</code>.`;
+      }
+    }
+
+    if (hwPacketsEl && typeof st.totalPackets === 'number') {
+      hwPacketsEl.textContent = st.totalPackets.toLocaleString();
+    }
+    if (hwDriverEl) {
+      if (st.driverType === 'dump1090-tcp') {
+        hwDriverEl.textContent = `TCP Stream (${targetPort})`;
+      } else if (st.driverType) {
+        hwDriverEl.textContent = st.driverType;
       }
     }
   },
@@ -20424,7 +20444,15 @@ const AdsbAirspaceManager = {
 
     if (hwCountEl) hwCountEl.textContent = this.aircraft.length;
     if (badgeEl) {
-      badgeEl.textContent = `${this.aircraft.length} in Range`;
+      const withPos = this.aircraft.filter(a => a.latitude !== null && a.longitude !== null).length;
+      const noPos = this.aircraft.length - withPos;
+      if (noPos > 0 && withPos > 0) {
+        badgeEl.textContent = `${withPos} in Range • ${noPos} Mode S`;
+      } else if (noPos > 0 && withPos === 0) {
+        badgeEl.textContent = `${noPos} Mode S (Pending Fix)`;
+      } else {
+        badgeEl.textContent = `${this.aircraft.length} in Range`;
+      }
       if (this.breachedAircraft.length > 0) {
         badgeEl.style.background = 'rgba(239, 68, 68, 0.25)';
         badgeEl.style.color = '#fca5a5';
@@ -20444,26 +20472,41 @@ const AdsbAirspaceManager = {
     let html = '';
     for (const ac of this.aircraft) {
       const isBreached = ac.isBreached;
+      const hasPos = ac.latitude !== null && ac.longitude !== null;
       const altStr = ac.altitude !== null ? (isMetric ? `${Math.round(ac.altitude * 0.3048)}m` : `${ac.altitude}ft`) : 'Alt N/A';
       const distStr = ac.distanceMiles !== null ? (isMetric ? `${(ac.distanceMeters / 1000).toFixed(1)}km` : `${ac.distanceMiles}mi`) : '--';
-      const statusChip = isBreached 
-        ? '<span style="font-size: 0.62rem; font-weight: 700; background: rgba(239, 68, 68, 0.3); border: 1px solid rgba(239, 68, 68, 0.6); color: #fca5a5; padding: 1px 6px; border-radius: 8px;">ALERT</span>'
-        : '<span style="font-size: 0.62rem; font-weight: 600; background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 1px 6px; border-radius: 8px;">SAFE</span>';
+      
+      let statusChip = '';
+      let distDisplay = '';
+      if (!hasPos) {
+        statusChip = '<span style="font-size: 0.62rem; font-weight: 600; background: rgba(148, 163, 184, 0.2); color: #94a3b8; padding: 1px 6px; border-radius: 8px;">MODE S</span>';
+        distDisplay = '<span style="font-size: 0.65rem; color: #94a3b8; font-style: italic;">Position pending</span>';
+      } else if (isBreached) {
+        statusChip = '<span style="font-size: 0.62rem; font-weight: 700; background: rgba(239, 68, 68, 0.3); border: 1px solid rgba(239, 68, 68, 0.6); color: #fca5a5; padding: 1px 6px; border-radius: 8px;">ALERT</span>';
+        distDisplay = `<span style="font-size: 0.68rem; font-weight: 600; color: #fbbf24;">${distStr} ${ac.bearingCardinal || ''}</span>`;
+      } else {
+        statusChip = '<span style="font-size: 0.62rem; font-weight: 600; background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 1px 6px; border-radius: 8px;">SAFE</span>';
+        distDisplay = `<span style="font-size: 0.68rem; font-weight: 600; color: #fbbf24;">${distStr} ${ac.bearingCardinal || ''}</span>`;
+      }
+
+      const speedSubtitle = ac.speed ? `${ac.speed} kts` : (hasPos ? '-- kts' : 'Speed N/A');
+      const trackSubtitle = ac.track ? ` • <span>${ac.track}°</span>` : '';
+      const groundSubtitle = ac.isOnGround ? ' • <span style="color: #6ee7b7;">Ground</span>' : '';
 
       html += `
-        <div class="adsb-aircraft-card ${isBreached ? 'breached' : ''}">
+        <div class="adsb-aircraft-card ${isBreached ? 'breached' : ''} ${!hasPos ? 'mode-s-pending' : ''}">
           <div style="display: flex; flex-direction: column; gap: 2px;">
             <div style="display: flex; align-items: center; gap: 6px;">
               <span style="font-weight: 700; font-size: 0.78rem; color: #fff;">${ac.callsign || ac.hex}</span>
               <span style="font-size: 0.64rem; color: var(--text-muted); font-family: monospace;">[${ac.hex}]</span>
             </div>
             <div style="font-size: 0.68rem; color: var(--text-muted);">
-              <span>${altStr}</span> • <span>${ac.speed ? ac.speed + ' kts' : '-- kts'}</span> • <span>${ac.track ? ac.track + '°' : ''}</span>
+              <span>${altStr}</span> • <span>${speedSubtitle}</span>${trackSubtitle}${groundSubtitle}
             </div>
           </div>
           <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 3px;">
             ${statusChip}
-            <span style="font-size: 0.68rem; font-weight: 600; color: #fbbf24;">${distStr} ${ac.bearingCardinal || ''}</span>
+            ${distDisplay}
           </div>
         </div>
       `;
@@ -20636,6 +20679,84 @@ const AdsbAirspaceManager = {
         }, 1500);
 
         this.pollAirspace();
+      });
+    }
+
+    // Port preset chips (30003, 30002, 8080)
+    const portChips = document.querySelectorAll('.adsb-port-chip');
+    portChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        const portVal = chip.getAttribute('data-port');
+        if (portVal && portInput) {
+          portInput.value = portVal;
+          if (serverSaveBtn) {
+            serverSaveBtn.style.outline = '2px solid #38bdf8';
+            setTimeout(() => { if (serverSaveBtn) serverSaveBtn.style.outline = ''; }, 600);
+          }
+        }
+      });
+    });
+
+    // Remote ADS-B Host Port Probe Button
+    const probeBtn = document.getElementById('adsb-probe-host-btn');
+    const probeFeedback = document.getElementById('adsb-probe-feedback');
+    if (probeBtn && probeFeedback) {
+      probeBtn.addEventListener('click', async () => {
+        const targetHost = hostInput ? hostInput.value.trim() : '127.0.0.1';
+        probeFeedback.style.display = 'block';
+        probeFeedback.innerHTML = `<span style="color: #38bdf8;">🔍 Probing ${targetHost} ports (30003, 30002, 30005, 8080)...</span>`;
+        probeBtn.disabled = true;
+        probeBtn.textContent = 'Probing...';
+
+        try {
+          const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://localhost:8765';
+          const res = await fetch(`${apiBase}/api/config/adsb/probe?host=${encodeURIComponent(targetHost)}`);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          if (data && data.success && data.ports) {
+            let listHtml = '';
+            for (const [p, pInfo] of Object.entries(data.ports)) {
+              const isOpen = pInfo.open;
+              const statusColor = isOpen ? '#34d399' : '#94a3b8';
+              const icon = isOpen ? '✅' : '❌';
+              const useBtn = isOpen ? `<button type="button" class="btn-xs adsb-use-port-btn" data-port="${p}" style="font-size: 0.6rem; padding: 1px 5px; cursor: pointer; background: rgba(56, 189, 248, 0.2); border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 3px; color: #38bdf8;">Use</button>` : '<span style="color: #64748b; font-size: 0.6rem;">Closed</span>';
+              listHtml += `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                  <span style="color: ${statusColor};">${icon} <strong>${p}</strong> (${pInfo.name})</span>
+                  ${useBtn}
+                </div>
+              `;
+            }
+            const recHtml = data.recommendedPort 
+              ? `<div style="margin-top: 4px; padding-top: 3px; border-top: 1px solid rgba(255,255,255,0.08); color: #38bdf8;">💡 Recommended Port: <strong>${data.recommendedPort}</strong></div>`
+              : '<div style="margin-top: 4px; color: #f59e0b;">⚠️ No open ADS-B ports detected on host.</div>';
+            probeFeedback.innerHTML = `
+              <div style="font-weight: 600; color: #e2e8f0; margin-bottom: 3px;">Probe Results (${data.host}):</div>
+              ${listHtml}
+              ${recHtml}
+            `;
+            // Bind Use buttons
+            probeFeedback.querySelectorAll('.adsb-use-port-btn').forEach(b => {
+              b.addEventListener('click', () => {
+                const chosenPort = b.getAttribute('data-port');
+                if (chosenPort && portInput) {
+                  portInput.value = chosenPort;
+                  if (serverSaveBtn) {
+                    serverSaveBtn.style.outline = '2px solid #38bdf8';
+                    setTimeout(() => { if (serverSaveBtn) serverSaveBtn.style.outline = ''; }, 600);
+                  }
+                }
+              });
+            });
+          } else {
+            probeFeedback.innerHTML = `<span style="color: #ef4444;">Probe returned invalid response.</span>`;
+          }
+        } catch (err) {
+          probeFeedback.innerHTML = `<span style="color: #ef4444;">Probe failed: ${err.message || 'Companion offline'}</span>`;
+        } finally {
+          probeBtn.disabled = false;
+          probeBtn.textContent = '🔍 Probe Host';
+        }
       });
     }
 
@@ -37754,6 +37875,43 @@ function loadRc2LogToDiagnostics(filename) {
   }
 }
 
+/**
+ * Safely stringifies an object into JSON, stripping circular references,
+ * Leaflet markers, DOM elements, and internal Leaflet properties.
+ */
+function safeJsonStringify(obj, space) {
+  const seen = new WeakSet();
+  return JSON.stringify(obj, (key, value) => {
+    // Drop Leaflet and DOM properties that introduce cycles or large state
+    if (typeof key === 'string' && (
+      key.startsWith('_') ||
+      key === 'mapMarker' ||
+      key === 'droneMarker' ||
+      key === 'roadMarker' ||
+      key === 'marker' ||
+      key === 'layerGroup' ||
+      key === '_tooltip' ||
+      key === '_source' ||
+      key === '_map' ||
+      key === '_events' ||
+      key === '_layers' ||
+      key === '_leaflet_id' ||
+      key === 'element'
+    )) {
+      return undefined;
+    }
+    if (typeof value === 'object' && value !== null) {
+      if (typeof HTMLElement !== 'undefined' && value instanceof HTMLElement) return undefined;
+      if (typeof window !== 'undefined' && value === window) return undefined;
+      if (seen.has(value)) {
+        return undefined; // Drop circular reference
+      }
+      seen.add(value);
+    }
+    return value;
+  }, space);
+}
+
 async function executeMediaPull() {
   const progContainer = document.getElementById('ingest-progress-container');
   const progBar = document.getElementById('ingest-progress-bar');
@@ -37867,13 +38025,60 @@ async function executeMediaPull() {
     const extractWireframeCheck = document.getElementById('ingest-extract-wireframe');
     const extractWireframe = Boolean(extractWireframeCheck ? extractWireframeCheck.checked : true);
 
+    const cleanWps = activeWps.map((w, idx) => ({
+      idx: typeof w.idx === 'number' ? w.idx : idx,
+      lat: typeof w.lat === 'function' ? w.lat() : Number(w.lat || 0),
+      lon: typeof w.lon === 'function' ? w.lon() : (w.lng !== undefined ? Number(w.lng) : Number(w.lon || 0)),
+      alt: Number(w.alt !== undefined ? w.alt : (w.altitude || 0)),
+      altitude: Number(w.altitude !== undefined ? w.altitude : (w.alt || 0)),
+      pitch: typeof w.pitch === 'number' ? w.pitch : (typeof w.gimbalPitch === 'number' ? w.gimbalPitch : undefined),
+      gimbalPitch: typeof w.gimbalPitch === 'number' ? w.gimbalPitch : (typeof w.pitch === 'number' ? w.pitch : undefined),
+      heading: typeof w.heading === 'number' ? w.heading : undefined,
+      speed: typeof w.speed === 'number' ? w.speed : undefined,
+      turnMode: w.turnMode,
+      flightPathMode: w.flightPathMode,
+      isPhoto: Boolean(w.isPhoto)
+    }));
+
+    let cleanTelem = null;
+    if (telem) {
+      cleanTelem = {
+        flightId: telem.flightId,
+        flightDate: telem.flightDate,
+        durationSec: telem.durationSec,
+        durationFormatted: telem.durationFormatted,
+        droneModel: telem.droneModel,
+        totalDistance: telem.totalDistance,
+        maxAltitude: telem.maxAltitude,
+        isSimulation: Boolean(telem.isSimulation),
+        points: Array.isArray(telem.points) ? telem.points.map(p => ({
+          time: p.time,
+          timeStr: p.timeStr,
+          timestamp: p.timestamp,
+          lat: typeof p.lat === 'number' ? p.lat : Number(p.lat || 0),
+          lon: typeof p.lon === 'number' ? p.lon : Number(p.lon || 0),
+          alt: typeof p.alt === 'number' ? p.alt : Number(p.alt || 0),
+          altAgl: typeof p.altAgl === 'number' ? p.altAgl : undefined,
+          speed: typeof p.speed === 'number' ? p.speed : undefined,
+          pitch: typeof p.pitch === 'number' ? p.pitch : (typeof p.gimbalPitch === 'number' ? p.gimbalPitch : undefined),
+          gimbalPitch: typeof p.gimbalPitch === 'number' ? p.gimbalPitch : (typeof p.pitch === 'number' ? p.pitch : undefined),
+          yaw: typeof p.yaw === 'number' ? p.yaw : (typeof p.heading === 'number' ? p.heading : undefined),
+          heading: typeof p.heading === 'number' ? p.heading : (typeof p.yaw === 'number' ? p.yaw : undefined),
+          battery: typeof p.battery === 'number' ? p.battery : undefined,
+          satellites: typeof p.satellites === 'number' ? p.satellites : undefined,
+          isPhoto: Boolean(p.isPhoto),
+          waypointIndex: p.waypointIndex
+        })) : []
+      };
+    }
+
     const res = await fetch(`${apiBase}/api/media/pull`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+      body: safeJsonStringify({
         flightId: currentFlightId,
         missionUuid: targetMissionUuid,
-        waypoints: activeWps,
+        waypoints: cleanWps,
         filterByTime: Boolean(filterTimeCheck ? (filterTimeCheck.checked && timeWindow) : Boolean(timeWindow)),
         filterByGeo: Boolean(filterGeoCheck ? (filterGeoCheck.checked && bounds) : Boolean(bounds)),
         deleteFromDrone: shouldDeleteFromDrone,
@@ -37881,7 +38086,7 @@ async function executeMediaPull() {
         extractWireframe: extractWireframe,
         timeWindow,
         bounds,
-        telemetry: telem || { points: [] }
+        telemetry: cleanTelem || { points: [] }
       })
     });
     const data = await res.json();
@@ -37961,6 +38166,7 @@ if (typeof window !== 'undefined') {
   window.pullAllRc2Logs = pullAllRc2Logs;
   window.loadRc2LogToDiagnostics = loadRc2LogToDiagnostics;
   window.executeMediaPull = executeMediaPull;
+  window.safeJsonStringify = safeJsonStringify;
   window.buildThreeDigitalTwinJson = buildThreeDigitalTwinJson;
   window.AdsbAirspaceManager = typeof AdsbAirspaceManager !== 'undefined' ? AdsbAirspaceManager : null;
   window.isLocalhostEnvironment = typeof isLocalhostEnvironment !== 'undefined' ? isLocalhostEnvironment : null;
@@ -37976,6 +38182,7 @@ if (typeof global !== 'undefined') {
   global.pullAllRc2Logs = pullAllRc2Logs;
   global.loadRc2LogToDiagnostics = loadRc2LogToDiagnostics;
   global.executeMediaPull = executeMediaPull;
+  global.safeJsonStringify = safeJsonStringify;
   global.buildThreeDigitalTwinJson = buildThreeDigitalTwinJson;
   global.AdsbAirspaceManager = typeof AdsbAirspaceManager !== 'undefined' ? AdsbAirspaceManager : null;
   global.isLocalhostEnvironment = typeof isLocalhostEnvironment !== 'undefined' ? isLocalhostEnvironment : null;

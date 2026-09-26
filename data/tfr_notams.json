@@ -539,17 +539,6 @@
     "gid": "6/4106"
   },
   {
-    "notam_id": "6/4101",
-    "facility": "ZJX",
-    "state": "FL",
-    "type": "SECURITY",
-    "description": "MAYPORT, FL, Monday, September 21, 2026 through Saturday, September 26, 2026 Local",
-    "mod_date": "09/20/2026 20:13:00",
-    "mod_abs_time": "202609202013",
-    "is_new": "N",
-    "gid": "6/4101"
-  },
-  {
     "notam_id": "6/4077",
     "facility": "ZME",
     "state": "TN",
