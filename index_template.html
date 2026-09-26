@@ -2456,10 +2456,22 @@
               </div>
             </div>
 
+            <!-- ADS-B Feed Server Host & Port Config -->
+            <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08);">
+              <div style="font-size: 0.7rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">
+                dump1090 / SBS Server Settings:
+              </div>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <input type="text" id="adsb-host-input" placeholder="Server Host (e.g. 127.0.0.1)" value="127.0.0.1" style="flex: 2; font-size: 0.68rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 3px 6px;">
+                <input type="number" id="adsb-port-input" placeholder="Port" value="30003" min="1" max="65535" style="width: 65px; font-size: 0.68rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 3px 6px;">
+                <button type="button" id="adsb-server-save-btn" class="btn-sm" style="padding: 3px 8px; font-size: 0.68rem; cursor: pointer; white-space: nowrap;">Connect</button>
+              </div>
+            </div>
+
             <!-- Custom ADS-B Endpoint Config (Collapsible/Optional) -->
             <div style="margin-top: 8px;">
               <details style="font-size: 0.7rem; color: var(--text-muted);">
-                <summary style="cursor: pointer; user-select: none;">Custom Endpoint URL (Optional)</summary>
+                <summary style="cursor: pointer; user-select: none;">Bridge API Bounds URL (Optional)</summary>
                 <div style="margin-top: 6px; display: flex; gap: 4px;">
                   <input type="text" id="adsb-endpoint-input" placeholder="e.g. http://localhost:8765/api/airspace/bounds" style="flex: 1; font-size: 0.68rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 3px 6px;">
                   <button type="button" id="adsb-endpoint-save-btn" class="btn-sm" style="padding: 2px 8px; font-size: 0.68rem; cursor: pointer;">Save</button>

@@ -201,6 +201,24 @@ describe('AdsbAirspaceTracker Tests', () => {
     tracker.destroy();
   });
 
+  test('AdsbAirspaceTracker updateServerConfig dynamically updates target host and port', () => {
+    const tracker = new AdsbAirspaceTracker({ tcpHost: '127.0.0.1', tcpPort: 30003, autoConnect: false, silent: true });
+    assert.strictEqual(tracker.tcpHost, '127.0.0.1');
+    assert.strictEqual(tracker.tcpPort, 30003);
+
+    const res = tracker.updateServerConfig({ tcpHost: '192.168.1.100', tcpPort: 30005 });
+    assert.strictEqual(res.success, true);
+    assert.strictEqual(tracker.tcpHost, '192.168.1.100');
+    assert.strictEqual(tracker.tcpPort, 30005);
+
+    const st = tracker.getStatus();
+    assert.strictEqual(st.tcpHost, '192.168.1.100');
+    assert.strictEqual(st.tcpPort, 30005);
+    assert.strictEqual(st.isRemoteServer, true);
+
+    tracker.destroy();
+  });
+
   test('Companion Server exposes /api/airspace/bounds, /api/airspace/status, and /api/airspace/simulate', async () => {
     const { server, adsbTracker } = require('./server.js');
     adsbTracker.clear();
@@ -217,6 +235,25 @@ describe('AdsbAirspaceTracker Tests', () => {
       const statusData = await statusRes.json();
       assert.strictEqual(statusData.success, true);
       assert.strictEqual(typeof statusData.totalPackets, 'number');
+
+      // 1b. GET and POST /api/config/adsb
+      const cfgGetRes = await fetch(`${baseUrl}/api/config/adsb`);
+      assert.strictEqual(cfgGetRes.status, 200);
+      const cfgGetData = await cfgGetRes.json();
+      assert.strictEqual(cfgGetData.success, true);
+
+      const cfgPostRes = await fetch(`${baseUrl}/api/config/adsb`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adsbHost: '10.0.0.50', adsbPort: 30003 })
+      });
+      assert.strictEqual(cfgPostRes.status, 200);
+      const cfgPostData = await cfgPostRes.json();
+      assert.strictEqual(cfgPostData.success, true);
+      assert.strictEqual(cfgPostData.adsbHost, '10.0.0.50');
+      assert.strictEqual(cfgPostData.adsbPort, 30003);
+      assert.strictEqual(cfgPostData.tcpHost, '10.0.0.50');
+      assert.strictEqual(cfgPostData.tcpPort, 30003);
 
       // 2. POST /api/airspace/simulate
       const simRes = await fetch(`${baseUrl}/api/airspace/simulate`, {

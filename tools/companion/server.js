@@ -74,6 +74,28 @@ function saveDjiApiKey(key) {
   return trimmed;
 }
 
+function getAdsbConfig() {
+  const cfg = loadCompanionConfig();
+  const host = process.env.ADSB_HOST || process.env.DUMP1090_HOST || cfg.adsbHost || '127.0.0.1';
+  const port = parseInt(process.env.ADSB_PORT || process.env.DUMP1090_PORT || cfg.adsbPort || 30003, 10);
+  return {
+    adsbHost: host,
+    adsbPort: isNaN(port) ? 30003 : port
+  };
+}
+
+function saveAdsbConfig(host, port) {
+  const cleanHost = (typeof host === 'string' && host.trim()) ? host.trim() : '127.0.0.1';
+  const parsedPort = parseInt(port, 10);
+  const cleanPort = (!isNaN(parsedPort) && parsedPort > 0 && parsedPort <= 65535) ? parsedPort : 30003;
+
+  saveCompanionConfig({ adsbHost: cleanHost, adsbPort: cleanPort });
+  if (adsbTracker && typeof adsbTracker.updateServerConfig === 'function') {
+    adsbTracker.updateServerConfig({ tcpHost: cleanHost, tcpPort: cleanPort });
+  }
+  return { adsbHost: cleanHost, adsbPort: cleanPort };
+}
+
 function maskApiKey(key) {
   if (!key || typeof key !== 'string') return '';
   const trimmed = key.trim();
@@ -136,8 +158,13 @@ const {
   METERS_PER_STATUTE_MILE
 } = require('./adsb_tracker.js');
 
+const initialAdsbCfg = getAdsbConfig();
 const airspaceTracker = new RemoteIdAirspaceTracker(15);
-const adsbTracker = new AdsbAirspaceTracker({ autoConnect: true });
+const adsbTracker = new AdsbAirspaceTracker({
+  tcpHost: initialAdsbCfg.adsbHost,
+  tcpPort: initialAdsbCfg.adsbPort,
+  autoConnect: true
+});
 let bleScannerProc = null;
 let bleScannerActive = false;
 let totalBlePackets = 0;
@@ -2481,9 +2508,9 @@ function printStartupBanner() {
   }
   const adsbStatus = adsbTracker.getStatus();
   if (adsbStatus.connected) {
-    logDetailLast('dump1090 Daemon Stream', `${colors.green}Connected (127.0.0.1:${adsbStatus.tcpPort}) - Streaming live Mode S${colors.reset}`);
+    logDetailLast('dump1090 Daemon Stream', `${colors.green}Connected (${adsbStatus.tcpHost}:${adsbStatus.tcpPort}) - Streaming live Mode S${colors.reset}`);
   } else {
-    logDetailLast('dump1090 Daemon Stream', `${colors.yellow}Waiting on 127.0.0.1:${adsbStatus.tcpPort} (Start dump1090.exe --net)${colors.reset}`);
+    logDetailLast('dump1090 Daemon Stream', `${colors.yellow}Waiting on ${adsbStatus.tcpHost}:${adsbStatus.tcpPort} (Start dump1090 with --net)${colors.reset}`);
   }
 
   console.log(`\n${colors.bold}🌐 Active Web & REST API Endpoints:${colors.reset}`);
@@ -3881,11 +3908,59 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // 9a-2. ADS-B Receiver Status
+    // 9a-2. ADS-B Receiver Status & Config
     if ((pathname === '/api/airspace/status' || pathname === '/api/adsb/status') && req.method === 'GET') {
       const status = adsbTracker.getStatus();
+      const cfg = getAdsbConfig();
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(Object.assign({ success: true }, status)));
+      res.end(JSON.stringify(Object.assign({ success: true, adsbHost: cfg.adsbHost, adsbPort: cfg.adsbPort }, status)));
+      return;
+    }
+
+    if ((pathname === '/api/config/adsb' || pathname === '/api/airspace/config' || pathname === '/api/adsb/config') && req.method === 'GET') {
+      const config = getAdsbConfig();
+      const status = adsbTracker.getStatus();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        adsbHost: config.adsbHost,
+        adsbPort: config.adsbPort,
+        tcpHost: status.tcpHost,
+        tcpPort: status.tcpPort,
+        connected: status.connected,
+        connecting: status.connecting
+      }));
+      return;
+    }
+
+    if ((pathname === '/api/config/adsb' || pathname === '/api/airspace/config' || pathname === '/api/adsb/config') && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const data = body ? JSON.parse(body) : {};
+          const targetHost = data.adsbHost || data.tcpHost || data.host;
+          const targetPort = data.adsbPort !== undefined ? data.adsbPort : (data.tcpPort !== undefined ? data.tcpPort : data.port);
+
+          const saved = saveAdsbConfig(targetHost, targetPort);
+          logSuccess('[ADS-B CONFIG]', `Server host/port set to ${saved.adsbHost}:${saved.adsbPort}`);
+
+          const status = adsbTracker.getStatus();
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            success: true,
+            adsbHost: saved.adsbHost,
+            adsbPort: saved.adsbPort,
+            tcpHost: status.tcpHost,
+            tcpPort: status.tcpPort,
+            connected: status.connected,
+            connecting: status.connecting
+          }));
+        } catch (e) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: e.message }));
+        }
+      });
       return;
     }
 
@@ -4287,6 +4362,8 @@ module.exports = {
   getDjiApiKey,
   saveDjiApiKey,
   maskApiKey,
+  getAdsbConfig,
+  saveAdsbConfig,
   decryptFlightRecordWithDjiCli,
   extractWireframe: wireframeEngine.extractWireframe,
   wireframeEngine,
