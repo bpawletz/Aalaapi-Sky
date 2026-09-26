@@ -251,6 +251,125 @@ class AdsbAirspaceTracker {
   }
 
   /**
+   * Ingest Raw Mode S AVR frame (e.g. *895cf42534660206ed8c4552ec34; or @000000000000*...; format).
+   * Decodes DF11, DF17, DF18 ICAO addresses, Type Codes 1-4 (callsign), 5-8 (ground status),
+   * and 9-18, 20-22 (barometric and GNSS altitude).
+   * @param {string} line
+   * @returns {object|null} Updated aircraft object or null
+   */
+  parseAvrMessage(line) {
+    if (!line || typeof line !== 'string') return null;
+    let clean = line.trim();
+    if (clean.startsWith('@')) {
+      // Strip AVR timestamp prefix (@ followed by 12 hex digits)
+      clean = clean.substring(13);
+    }
+    if (clean.startsWith('*')) {
+      clean = clean.substring(1);
+    }
+    if (clean.endsWith(';')) {
+      clean = clean.substring(0, clean.length - 1);
+    }
+    clean = clean.trim();
+    if (!/^[0-9A-Fa-f]{14}$|^[0-9A-Fa-f]{28}$/.test(clean)) return null;
+
+    const rawBytes = Buffer.from(clean, 'hex');
+    const df = (rawBytes[0] >> 3) & 0x1F;
+    let hex = null;
+
+    // DF 11 (All-Call), DF 17 (Extended Squitter), DF 18 (Non-transponder Extended Squitter / ADS-R / TIS-B)
+    if (df === 11 || df === 17 || df === 18) {
+      hex = clean.substring(2, 8).toUpperCase();
+    }
+
+    this.totalPackets++;
+    this.lastPacketTimestamp = Date.now();
+
+    if (!hex || !/^[0-9A-F]{6}$/i.test(hex)) return null;
+
+    let record = this.aircraft.get(hex);
+    if (!record) {
+      record = {
+        hex,
+        callsign: null,
+        latitude: null,
+        longitude: null,
+        altitude: null,
+        altitudeGeometric: null,
+        speed: null,
+        track: null,
+        verticalRate: null,
+        squawk: null,
+        isOnGround: false,
+        firstSeen: Date.now(),
+        lastSeen: Date.now(),
+        packetCount: 0,
+        dataSource: 'mode-s-avr',
+        history: []
+      };
+      this.aircraft.set(hex, record);
+    }
+
+    record.lastSeen = Date.now();
+    record.packetCount++;
+
+    // For DF17 / DF18 (112-bit = 28 hex chars), decode ME field (bytes 4..10)
+    if (clean.length === 28 && (df === 17 || df === 18)) {
+      const tc = (rawBytes[4] >> 3) & 0x1F;
+      // Type Codes 1-4: Aircraft Identification (Callsign)
+      if (tc >= 1 && tc <= 4) {
+        const b = [rawBytes[5], rawBytes[6], rawBytes[7], rawBytes[8], rawBytes[9], rawBytes[10]];
+        const charset = '?ABCDEFGHIJKLMNOPQRSTUVWXYZ????? ???????????????0123456789??????';
+        const c = [
+          b[0] >> 2,
+          ((b[0] & 0x03) << 4) | (b[1] >> 4),
+          ((b[1] & 0x0F) << 2) | (b[2] >> 6),
+          b[2] & 0x3F,
+          b[3] >> 2,
+          ((b[3] & 0x03) << 4) | (b[4] >> 4),
+          ((b[4] & 0x0F) << 2) | (b[5] >> 6),
+          b[5] & 0x3F
+        ];
+        const cs = c.map(val => charset[val] || ' ').join('').trim().replace(/[^A-Za-z0-9]/g, '');
+        if (cs) record.callsign = cs;
+      } else if (tc >= 5 && tc <= 8) {
+        // Type Codes 5-8: Surface Position (aircraft is on the ground)
+        record.isOnGround = true;
+      } else if ((tc >= 9 && tc <= 18) || (tc >= 20 && tc <= 22)) {
+        // Type Codes 9-18: Airborne Position (Baro Altitude)
+        // Type Codes 20-22: Airborne Position (GNSS Altitude)
+        record.isOnGround = false;
+        const altCode = (rawBytes[5] << 4) | ((rawBytes[6] >> 4) & 0x0F);
+        // Bit 4 of altCode is the Q-bit (0x10)
+        if ((altCode & 0x10) !== 0) {
+          const n = ((altCode >> 5) << 4) | (altCode & 0x0F);
+          const altFt = (n * 25) - 1000;
+          if (altFt >= -1000 && altFt <= 85000) {
+            record.altitude = altFt;
+            if (tc >= 20) {
+              record.altitudeGeometric = altFt;
+            }
+          }
+        }
+      } else if (tc === 19) {
+        // Airborne Velocity
+        record.isOnGround = false;
+      }
+    }
+
+    // Throttled logging for live sightings
+    const nowLog = Date.now();
+    const lastLog = this.lastSightLog.get(hex) || 0;
+    if (record.callsign && record.altitude !== null && nowLog - lastLog > 15000) {
+      this.lastSightLog.set(hex, nowLog);
+      const posStr = (record.latitude && record.longitude) ? `${record.latitude.toFixed(4)}, ${record.longitude.toFixed(4)}` : 'Position pending';
+      this.log('[ADS-B]', `Traffic Sighting (Mode S): ${record.callsign} (${hex}) | Alt: ${record.altitude} ft | ${posStr}`);
+    }
+
+    return record;
+  }
+
+  /**
    * Ingest dump1090 JSON format (as produced in aircraft.json).
    * @param {object} json 
    * @returns {number} Number of aircraft updated
@@ -423,6 +542,7 @@ class AdsbAirspaceTracker {
           ageSeconds: Math.round((now - ac.lastSeen) / 1000),
           packetCount: ac.packetCount,
           dataSource: ac.dataSource,
+          hasPosition: (ac.latitude !== null && ac.longitude !== null),
           distanceMeters,
           distanceMiles,
           distanceNm,
@@ -437,10 +557,12 @@ class AdsbAirspaceTracker {
       }
     }
 
-    // Sort: Breached aircraft first, then closest distance
+    // Sort: Breached aircraft first, then closest distance, with position-having aircraft prioritized
     activeList.sort((a, b) => {
       if (a.isBreached && !b.isBreached) return -1;
       if (!a.isBreached && b.isBreached) return 1;
+      if (a.hasPosition && !b.hasPosition) return -1;
+      if (!a.hasPosition && b.hasPosition) return 1;
       const distA = a.distanceMeters !== null ? a.distanceMeters : Infinity;
       const distB = b.distanceMeters !== null ? b.distanceMeters : Infinity;
       return distA - distB;
@@ -459,6 +581,8 @@ class AdsbAirspaceTracker {
       summary: {
         totalTracked: this.aircraft.size,
         activeAircraft: activeList.length,
+        withPosition: activeList.filter(a => a.hasPosition).length,
+        positionPending: activeList.filter(a => !a.hasPosition).length,
         withinRadius: withinRadiusCount,
         breachedCount,
         hasBreach: breachedCount > 0
@@ -689,8 +813,16 @@ class AdsbAirspaceTracker {
         const lines = buffer.split(/\r?\n/);
         buffer = lines.pop(); // Keep incomplete tail
         for (const line of lines) {
-          if (line.trim()) {
-            this.parseSbsMessage(line);
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          if (trimmed.startsWith('*') || trimmed.startsWith('@')) {
+            this.parseAvrMessage(trimmed);
+          } else if (trimmed.startsWith('MSG')) {
+            this.parseSbsMessage(trimmed);
+          } else if (/^[0-9A-Fa-f]{14};?$|^[0-9A-Fa-f]{28};?$/.test(trimmed)) {
+            this.parseAvrMessage(trimmed);
+          } else {
+            this.parseSbsMessage(trimmed);
           }
         }
       });

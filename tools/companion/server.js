@@ -96,6 +96,132 @@ function saveAdsbConfig(host, port) {
   return { adsbHost: cleanHost, adsbPort: cleanPort };
 }
 
+function probeTcpPort(host, port, timeoutMs = 1200) {
+  return new Promise((resolve) => {
+    const net = require('node:net');
+    const socket = new net.Socket();
+    let responded = false;
+    let connected = false;
+    let sampleData = '';
+
+    socket.setTimeout(timeoutMs);
+
+    socket.on('connect', () => {
+      connected = true;
+      setTimeout(() => {
+        if (!responded) {
+          responded = true;
+          try { socket.destroy(); } catch (e) {}
+          resolve({ open: true, connected: true, sample: sampleData.trim() });
+        }
+      }, 350);
+    });
+
+    socket.on('data', (chunk) => {
+      sampleData += chunk.toString('utf8').slice(0, 100);
+      if (!responded) {
+        responded = true;
+        try { socket.destroy(); } catch (e) {}
+        resolve({ open: true, connected: true, sample: sampleData.trim() });
+      }
+    });
+
+    socket.on('timeout', () => {
+      if (!responded) {
+        responded = true;
+        try { socket.destroy(); } catch (e) {}
+        resolve({ open: connected, connected, error: connected ? null : 'timeout' });
+      }
+    });
+
+    socket.on('error', (err) => {
+      if (!responded) {
+        responded = true;
+        try { socket.destroy(); } catch (e) {}
+        resolve({ open: false, connected: false, error: err.code || err.message });
+      }
+    });
+
+    try {
+      socket.connect(port, host);
+    } catch (e) {
+      resolve({ open: false, connected: false, error: e.message });
+    }
+  });
+}
+
+function probeHttpJson(host, port, timeoutMs = 1200) {
+  return new Promise((resolve) => {
+    const http = require('node:http');
+    let responded = false;
+    const req = http.get({
+      host,
+      port,
+      path: '/data/aircraft.json',
+      timeout: timeoutMs
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => { data += chunk.toString('utf8'); });
+      res.on('end', () => {
+        if (responded) return;
+        responded = true;
+        let count = 0;
+        try {
+          const parsed = JSON.parse(data);
+          count = Array.isArray(parsed.aircraft) ? parsed.aircraft.length : 0;
+        } catch (e) {}
+        resolve({ open: res.statusCode === 200, statusCode: res.statusCode, aircraftCount: count });
+      });
+    });
+    req.on('timeout', () => {
+      if (!responded) {
+        responded = true;
+        try { req.destroy(); } catch (e) {}
+        resolve({ open: false, error: 'timeout' });
+      }
+    });
+    req.on('error', (err) => {
+      if (!responded) {
+        responded = true;
+        resolve({ open: false, error: err.code || err.message });
+      }
+    });
+  });
+}
+
+async function probeAdsbHost(targetHost) {
+  const cleanHost = (typeof targetHost === 'string' && targetHost.trim()) ? targetHost.trim() : '127.0.0.1';
+  
+  const [res30003, res30002, res30005, res80, res8080] = await Promise.all([
+    probeTcpPort(cleanHost, 30003),
+    probeTcpPort(cleanHost, 30002),
+    probeTcpPort(cleanHost, 30005),
+    probeHttpJson(cleanHost, 80),
+    probeHttpJson(cleanHost, 8080)
+  ]);
+
+  let recommendedPort = null;
+  if (res30003.open) recommendedPort = 30003;
+  else if (res30002.open) recommendedPort = 30002;
+  else if (res8080.open) recommendedPort = 8080;
+  else if (res80.open) recommendedPort = 80;
+  else if (res30005.open) recommendedPort = 30005;
+
+  return {
+    success: true,
+    host: cleanHost,
+    timestamp: Date.now(),
+    ports: {
+      30003: { name: 'SBS / BaseStation (TCP)', ...res30003 },
+      30002: { name: 'Raw Mode S AVR (TCP)', ...res30002 },
+      30005: { name: 'Beast Binary (TCP)', ...res30005 },
+      80: { name: 'HTTP Web (/data/aircraft.json)', ...res80 },
+      8080: { name: 'HTTP Web 8080 (/data/aircraft.json)', ...res8080 }
+    },
+    recommendedPort
+  };
+}
+
 function maskApiKey(key) {
   if (!key || typeof key !== 'string') return '';
   const trimmed = key.trim();
@@ -2143,7 +2269,18 @@ if ($copied.Count -eq 0 -and $thisPC) {
 
   if (!telemetry) telemetry = { points: [] };
 
-  const waypoints = Array.isArray(options.waypoints) ? options.waypoints : [];
+  const rawWaypoints = Array.isArray(options.waypoints) ? options.waypoints : [];
+  const waypoints = rawWaypoints.map((w, idx) => ({
+    idx: typeof w.idx === 'number' ? w.idx : idx,
+    lat: typeof w.lat === 'function' ? w.lat() : Number(w.lat || 0),
+    lon: typeof w.lon === 'function' ? w.lon() : (w.lng !== undefined ? Number(w.lng) : Number(w.lon || 0)),
+    alt: Number(w.alt !== undefined ? w.alt : (w.altitude || 0)),
+    altitude: Number(w.altitude !== undefined ? w.altitude : (w.alt || 0)),
+    pitch: typeof w.pitch === 'number' ? w.pitch : (typeof w.gimbalPitch === 'number' ? w.gimbalPitch : undefined),
+    gimbalPitch: typeof w.gimbalPitch === 'number' ? w.gimbalPitch : (typeof w.pitch === 'number' ? w.pitch : undefined),
+    heading: typeof w.heading === 'number' ? w.heading : undefined,
+    speed: typeof w.speed === 'number' ? w.speed : undefined
+  }));
   const correlated = correlatePhotosWithTelemetry(photosMetadata, telemetry.points, waypoints);
 
   const shouldScanTags = options.scanTags !== false;
@@ -3917,6 +4054,16 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // 9a-2b. ADS-B Host Port Probe Diagnostic
+    if ((pathname === '/api/config/adsb/probe' || pathname === '/api/airspace/probe' || pathname === '/api/adsb/probe') && req.method === 'GET') {
+      const cfg = getAdsbConfig();
+      const targetHost = parsedUrl.searchParams.get('host') || cfg.adsbHost || '127.0.0.1';
+      const probeResult = await probeAdsbHost(targetHost);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(probeResult));
+      return;
+    }
+
     if ((pathname === '/api/config/adsb' || pathname === '/api/airspace/config' || pathname === '/api/adsb/config') && req.method === 'GET') {
       const config = getAdsbConfig();
       const status = adsbTracker.getStatus();
@@ -4198,7 +4345,7 @@ if (process.stdin.isTTY) {
         const hw = adsbTracker.detectHardware();
         console.log(`    ${colors.bold}USB Hardware:${colors.reset} ${hw.deviceName || 'None'} [${hw.driverStatus}] - ${hw.details}`);
         const st = adsbTracker.getStatus();
-        const connStr = st.connected ? (colors.green + 'Connected (Port ' + st.tcpPort + ')') : (colors.yellow + 'Waiting on ' + st.tcpHost + ':' + st.tcpPort);
+        const connStr = st.connected ? (colors.green + `Connected (${st.tcpHost}:${st.tcpPort}) [${st.driverType}]`) : (colors.yellow + 'Waiting on ' + st.tcpHost + ':' + st.tcpPort);
         console.log(`    ${colors.bold}dump1090 Stream:${colors.reset} ${connStr}${colors.reset}`);
         console.log(`    ${colors.bold}Traffic:${colors.reset} ${st.totalPackets} packets received | ${st.activeAircraftCount} active aircraft in memory`);
       }
@@ -4364,6 +4511,8 @@ module.exports = {
   maskApiKey,
   getAdsbConfig,
   saveAdsbConfig,
+  probeAdsbHost,
+  probeTcpPort,
   decryptFlightRecordWithDjiCli,
   extractWireframe: wireframeEngine.extractWireframe,
   wireframeEngine,

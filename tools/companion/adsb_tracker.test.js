@@ -353,4 +353,75 @@ describe('AdsbAirspaceTracker Tests', () => {
 
     tracker.destroy();
   });
+
+  test('parseAvrMessage accurately decodes raw Mode S AVR frames (*...; format)', () => {
+    const tracker = new AdsbAirspaceTracker({ autoConnect: false, silent: true });
+
+    // Test frame 1 from readsb syslog: DF18, ICAO 07A9BA
+    const frame1 = '*9607a9bad9b6c7a116d901ecd235;';
+    const ac1 = tracker.parseAvrMessage(frame1);
+    assert.ok(ac1, 'Frame 1 should be parsed');
+    assert.strictEqual(ac1.hex, '07A9BA');
+    assert.strictEqual(ac1.dataSource, 'mode-s-avr');
+    assert.strictEqual(tracker.totalPackets, 1);
+
+    // Test frame 2 from readsb syslog: DF17 TC=6 (Surface Position), ICAO 5CF425
+    const frame2 = '*895cf42534660206ed8c4552ec34;';
+    const ac2 = tracker.parseAvrMessage(frame2);
+    assert.ok(ac2, 'Frame 2 should be parsed');
+    assert.strictEqual(ac2.hex, '5CF425');
+    assert.strictEqual(ac2.isOnGround, true, 'TC 6 should flag aircraft as on ground');
+    assert.strictEqual(tracker.totalPackets, 2);
+
+    // Test airborne frame with altitude: DF17, ICAO A12345, TC=11
+    // Construct valid 28-char frame with altitude
+    // DF=17 (0x8D), ICAO=A12345, ME=58C382...
+    // 0x58 >> 3 = 11 (Airborne Position, 25ft alt)
+    // altCode: (rawBytes[5] << 4) | (rawBytes[6] >> 4)
+    // Let rawBytes[5] = 0x61 (0b01100001, Q-bit is 1)
+    // Let rawBytes[6] = 0x40 (upper 4 bits = 4)
+    // altCode = 0x614 = 0b0110 0001 0100
+    // upper 7 = 0b011000 = 24; lower 4 = 4 -> n = (24 << 4) | 4 = 388 -> alt = 388 * 25 - 1000 = 8700 ft
+    const testHex = '8da1234558614000000000000000';
+    const ac3 = tracker.parseAvrMessage(`*${testHex};`);
+    assert.ok(ac3, 'Airborne frame should parse');
+    assert.strictEqual(ac3.hex, 'A12345');
+    assert.strictEqual(ac3.altitude, 18300);
+
+    // Verify bounds summary includes positionPending aircraft
+    const bounds = tracker.getAirspaceBounds({
+      homeLat: 40.0130,
+      homeLon: -83.1765,
+      includeSafe: true
+    });
+    assert.strictEqual(bounds.summary.totalTracked, 3);
+    assert.strictEqual(bounds.summary.positionPending, 3);
+    assert.strictEqual(bounds.aircraft[0].hasPosition, false);
+
+    tracker.destroy();
+  });
+
+  test('probeAdsbHost tests common ports and returns diagnostic recommendations', async () => {
+    const { probeAdsbHost } = require('./server.js');
+    const net = require('node:net');
+
+    // Create a mock TCP server on an ephemeral port
+    const mockTcp = net.createServer((sock) => {
+      sock.write('*895cf42534660206ed8c4552ec34;\r\n');
+    });
+    await new Promise((resolve) => mockTcp.listen(0, '127.0.0.1', resolve));
+    const mockPort = mockTcp.address().port;
+
+    try {
+      const probeRes = await probeAdsbHost('127.0.0.1');
+      assert.strictEqual(probeRes.success, true);
+      assert.strictEqual(probeRes.host, '127.0.0.1');
+      assert.ok(probeRes.ports);
+      assert.ok(probeRes.ports['30003']);
+      assert.ok(probeRes.ports['30002']);
+      assert.strictEqual(typeof probeRes.ports['30003'].open, 'boolean');
+    } finally {
+      await new Promise((resolve) => mockTcp.close(resolve));
+    }
+  });
 });
