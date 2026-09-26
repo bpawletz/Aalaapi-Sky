@@ -1,3 +1,30 @@
+## [1.130.0] - 2026-09-26
+
+### Added
+- **Remote ADS-B Host Port Setup Helper & Automated Port Probing (`tools/companion/server.js`, `index.js`, `index_template.html`)**:
+  - **Automated Host Port Probing**: Added `[🔍 Probe Host]` button in the ADS-B drawer and companion endpoint `GET /api/config/adsb/probe?host=<host>` to scan TCP 30003 (SBS BaseStation), TCP 30002 (Raw Mode S AVR), TCP 30005 (Beast Binary), and HTTP 80/8080 (`/data/aircraft.json`).
+  - **Port Preset Chips**: 1-click preset chips for `30003 (SBS)`, `30002 (Mode S)`, and `8080 (Web)` allowing pilots to instantly configure standard ports on remote receivers (e.g. Raspberry Pi, Z83, readsb, dump1090).
+  - **Receiver Setup Cheat Sheet**: Added collapsible in-drawer setup guide with common port assignments and launch flags (`dump1090 --net --net-sbs-port 30003`, `readsb --net --net-sbs-port 30003 --net-bo-port 30005`).
+  - **Diagnostic Feedback & 1-Click Port Applicator**: Renders probe feedback with visual status indicators (✅/❌) and 1-click `[Use]` buttons to apply open ports directly to the configuration.
+- **Raw Mode S AVR Hex Frame Ingestion (`parseAvrMessage` in `tools/companion/adsb_tracker.js`)**:
+  - **Native Mode S Frame Support**: Decodes `*...;` and `@...;` AVR hex messages from port 30002 and raw feeds, incrementing packet counters and updating traffic telemetry.
+  - **Unmasked ICAO Extraction**: Extracts 24-bit ICAO aircraft addresses from DF11, DF17, and DF18 squitters directly.
+  - **Altitude, Ground Status & Callsign Decoding**: Parses Type Codes 1-4 (callsign characters), Type Codes 5-8 (surface/ground status), and Type Codes 9-18 & 20-22 (barometric and GNSS altitude via 25ft Q-bit extraction).
+- **Position-Pending Mode S Aircraft Cards & Airspace Awareness (`AdsbAirspaceManager`)**:
+  - **Non-GPS Mode S Aircraft Visibility**: Displays aircraft broadcasting Mode S without an active GPS CPR position fix in the drawer list with `MODE S` chips, `Position pending` status, and altitude, preventing 0-count reports when traffic is in feed.
+  - **Drawer Badge Breakdown**: Updates drawer badge to show both in-range GPS aircraft and Mode S pending aircraft (e.g. `2 in Range • 1 Mode S`).
+- **Leaflet Layer Control Registration (`index.js`)**:
+  - **Manned Aircraft Overlay**: Registered `Manned Aircraft (ADS-B Airspace)` in Leaflet `L.control.layers` overlays alongside Remote ID, weather radar, and FAA airspace layers, giving pilots independent control to toggle manned aircraft markers on the map.
+
+## [1.129.2] - 2026-09-26
+
+### Fixed
+- **Photo Ingestion Circular Structure Exception & Safe JSON Serialization (`executeMediaPull` & `safeJsonStringify`)**:
+  - **Circular Reference Immunity**: Resolved `Ingest error: Converting circular structure to JSON --> starting at object with constructor 'e' | property '_tooltip' -> object with constructor 'e' --- property '_source' closes the circle` triggered when clicking **Ingest & Correlate Photos** with active planned waypoints or road-following nodes.
+  - **Leaflet Marker Stripping & Data Sanitization**: `executeMediaPull` now sanitizes raw waypoint objects (`activeWps`) and telemetry data (`telem`) prior to JSON serialization, stripping out attached Leaflet marker instances (`wp.roadMarker`, `wp.mapMarker`, `wp.droneMarker`, etc.) and internal tooltip circular references (`_tooltip._source`).
+  - **`safeJsonStringify` Global Utility**: Introduced a cycle-safe JSON serializer with `WeakSet` reference tracking and explicit filtering of Leaflet / DOM elements (`_tooltip`, `_source`, `_map`, `_layers`, `_events`, `mapMarker`, `droneMarker`, `roadMarker`).
+  - **Companion Server Defensive Ingestion (`tools/companion/server.js`)**: Sanitized incoming waypoints in `pullMediaPhotos` to ensure robust correlation even when payloads are received from external tools.
+
 ## [1.129.1] - 2026-09-26
 
 ### Fixed
