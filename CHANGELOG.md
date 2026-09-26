@@ -1,3 +1,13 @@
+## [1.131.0] - 2026-09-26
+
+### Added
+- **Real-Time Server-Sent Events (SSE) Airspace Stream (`tools/companion/server.js`, `tools/companion/adsb_tracker.js`, `index.js`, `index_template.html`)**:
+  - **Sub-Second ADS-B Push Stream (`/api/airspace/stream`)**: Introduced native Server-Sent Events (SSE) push streaming endpoint on the companion bridge, eliminating the 2-second REST polling cycle and broadcasting live manned aircraft traffic updates with $\le 500\text{ms}$ latency as soon as radio frames are received.
+  - **Instantaneous Audio Alarm Triggering**: State transitions into perimeter breach status fire auditory warning chimes and voice alerts immediately instead of lagging up to 2 seconds behind aircraft travel.
+  - **Resilient Fallback Polling & Auto-Recovery**: `AdsbAirspaceManager` implements automatic connection recovery via native browser `EventSource` with seamless watchdog fallback to standard 2-second REST polling if the companion stream disconnects.
+  - **Live Transport Delivery Badge**: Added real-time delivery mode indicator in the receiver diagnostics drawer (displaying `SSE Stream (Sub-second)` when streaming vs `REST Polling (2s Fallback)`).
+  - **Event-Driven Tracker Architecture**: Extended `AdsbAirspaceTracker` from Node.js `EventEmitter` with throttled 500ms broadcast scheduling (`scheduleBroadcast`) and immediate push on boundary breaches or manual simulation events.
+
 ## [1.130.0] - 2026-09-26
 
 ### Added

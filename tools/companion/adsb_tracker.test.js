@@ -301,6 +301,83 @@ describe('AdsbAirspaceTracker Tests', () => {
     }
   });
 
+  test('Companion Server /api/airspace/stream pushes real-time Server-Sent Events (SSE) updates to connected clients', async () => {
+    const { server, adsbTracker, getSseAirspaceClientsCount } = require('./server.js');
+    adsbTracker.clear();
+
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const port = server.address().port;
+    const streamUrl = `http://127.0.0.1:${port}/api/airspace/stream?lat=40.0130&lon=-83.1765&radius=3&ceiling=2500`;
+
+    const http = require('node:http');
+    let reqClient = null;
+
+    try {
+      const chunks = [];
+      await new Promise((resolve, reject) => {
+        reqClient = http.get(streamUrl, (res) => {
+          assert.strictEqual(res.statusCode, 200);
+          assert.strictEqual(res.headers['content-type'], 'text/event-stream');
+          res.setEncoding('utf8');
+          res.on('data', (chunk) => {
+            chunks.push(chunk);
+            if (chunks.some(c => c.includes('data:'))) {
+              resolve();
+            }
+          });
+          res.on('error', reject);
+        });
+        reqClient.on('error', reject);
+      });
+
+      assert.ok(getSseAirspaceClientsCount() >= 1, 'Should have at least 1 registered SSE client');
+
+      // Now inject an aircraft and verify the tracker broadcasts immediately
+      const pushedPromise = new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          clearInterval(checkInterval);
+          reject(new Error('Timeout waiting for SSE push'));
+        }, 2000);
+        if (timeout.unref) timeout.unref();
+
+        const checkInterval = setInterval(() => {
+          const allText = chunks.join('');
+          if (allText.includes('STREAM_TEST_99')) {
+            clearTimeout(timeout);
+            clearInterval(checkInterval);
+            resolve();
+          }
+        }, 30);
+        if (checkInterval.unref) checkInterval.unref();
+      });
+
+      adsbTracker.injectSimulatedAircraft({
+        hex: 'STR999',
+        callsign: 'STREAM_TEST_99',
+        lat: 40.0135,
+        lon: -83.1760,
+        alt: 1500
+      });
+
+      await pushedPromise;
+      const combined = chunks.join('');
+      assert.ok(combined.includes('STREAM_TEST_99'), 'SSE stream must receive pushed aircraft update');
+      assert.ok(combined.includes('STR999'), 'SSE stream must contain aircraft hex');
+
+      // Check status reports sseClients
+      const statusRes = await fetch(`http://127.0.0.1:${port}/api/airspace/status`);
+      const statusData = await statusRes.json();
+      assert.ok(statusData.sseClients >= 1, 'status must report active sseClients');
+    } finally {
+      if (reqClient) {
+        try { reqClient.destroy(); } catch (_) {}
+      }
+      adsbTracker.clear();
+      adsbTracker.destroy();
+      await new Promise((resolve) => server.close(resolve));
+    }
+  });
+
   test('detectHardware reports RTL-SDR dongle presence and driver health', () => {
     const tracker = new AdsbAirspaceTracker({ autoConnect: false, silent: true });
     const hw = tracker.detectHardware();
