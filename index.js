@@ -19613,6 +19613,8 @@ const AdsbAirspaceManager = {
   radiusMiles: 3.0,
   ceilingFeet: 2500,
   customEndpoint: '',
+  serverHost: '127.0.0.1',
+  serverPort: 30003,
   isDrawerOpen: false,
   isSnoozed: false,
   snoozeUntil: 0,
@@ -19663,6 +19665,12 @@ const AdsbAirspaceManager = {
 
         const savedEndpoint = localStorage.getItem('aalaapi_adsb_custom_endpoint');
         if (savedEndpoint) this.customEndpoint = savedEndpoint;
+
+        const savedHost = localStorage.getItem('aalaapi_adsb_host');
+        if (savedHost) this.serverHost = savedHost.trim();
+
+        const savedPort = localStorage.getItem('aalaapi_adsb_port');
+        if (savedPort) this.serverPort = parseInt(savedPort, 10) || 30003;
       }
     } catch (e) {}
   },
@@ -19677,6 +19685,8 @@ const AdsbAirspaceManager = {
         localStorage.setItem('aalaapi_adsb_radius_mi', String(this.radiusMiles));
         localStorage.setItem('aalaapi_adsb_ceiling_ft', String(this.ceilingFeet));
         localStorage.setItem('aalaapi_adsb_custom_endpoint', this.customEndpoint || '');
+        localStorage.setItem('aalaapi_adsb_host', this.serverHost || '127.0.0.1');
+        localStorage.setItem('aalaapi_adsb_port', String(this.serverPort || 30003));
       }
     } catch (e) {}
   },
@@ -19889,8 +19899,8 @@ const AdsbAirspaceManager = {
       return;
     }
 
-    const targetHost = st.tcpHost || st.adsbHost || '127.0.0.1';
-    const targetPort = st.tcpPort || st.adsbPort || 30003;
+    const targetHost = (st && (st.tcpHost || st.adsbHost)) ? (st.tcpHost || st.adsbHost) : (this.serverHost || '127.0.0.1');
+    const targetPort = (st && (st.tcpPort || st.adsbPort)) ? (st.tcpPort || st.adsbPort) : (this.serverPort || 30003);
     const hostPortStr = `${targetHost}:${targetPort}`;
 
     const hostInput = document.getElementById('adsb-host-input');
@@ -20320,6 +20330,16 @@ const AdsbAirspaceManager = {
 
     const endpointInput = document.getElementById('adsb-endpoint-input');
     if (endpointInput) endpointInput.value = this.customEndpoint || '';
+
+    const hostInput = document.getElementById('adsb-host-input');
+    if (hostInput && document.activeElement !== hostInput) {
+      hostInput.value = this.serverHost || '127.0.0.1';
+    }
+
+    const portInput = document.getElementById('adsb-port-input');
+    if (portInput && document.activeElement !== portInput) {
+      portInput.value = this.serverPort || 30003;
+    }
   },
 
   updateDrawerAircraftList() {
@@ -20515,6 +20535,9 @@ const AdsbAirspaceManager = {
       serverSaveBtn.addEventListener('click', async () => {
         const hostVal = hostInput ? hostInput.value.trim() : '127.0.0.1';
         const portVal = portInput ? portInput.value.trim() : '30003';
+        this.serverHost = hostVal;
+        this.serverPort = parseInt(portVal, 10) || 30003;
+        this.saveSettings();
         serverSaveBtn.textContent = 'Connecting...';
         serverSaveBtn.disabled = true;
 
@@ -22448,13 +22471,21 @@ const FlightDiagnostics = {
       }
     } else {
       try {
+        const cleanWps = Array.isArray(wps) ? wps.map(w => ({
+          lat: typeof w.lat === 'function' ? w.lat() : Number(w.lat || 0),
+          lon: typeof w.lon === 'function' ? w.lon() : (w.lng !== undefined ? Number(w.lng) : Number(w.lon || 0)),
+          altitude: Number(w.altitude || w.alt || altitude || 21.0),
+          speed: Number(w.speed || speed || 4.0),
+          gimbalPitch: Number(w.gimbalPitch !== undefined ? w.gimbalPitch : gimbalPitch)
+        })) : [];
+
         let res = await fetch(`${apiBase}/api/flight-telemetry?file=${encodeURIComponent(flightId)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(45000) : undefined,
           body: JSON.stringify({
             flightId,
-            waypoints: wps,
+            waypoints: cleanWps,
             options: { altitude, speed, gimbalPitch, flightId }
           })
         });
@@ -22470,7 +22501,7 @@ const FlightDiagnostics = {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(20000) : undefined,
-              body: JSON.stringify({ flightId, waypoints: wps, options: { altitude, speed, gimbalPitch, flightId } })
+              body: JSON.stringify({ flightId, waypoints: cleanWps, options: { altitude, speed, gimbalPitch, flightId } })
             });
             if (retryRes.ok) {
               const retryData = await retryRes.json();

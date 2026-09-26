@@ -163,7 +163,7 @@ const airspaceTracker = new RemoteIdAirspaceTracker(15);
 const adsbTracker = new AdsbAirspaceTracker({
   tcpHost: initialAdsbCfg.adsbHost,
   tcpPort: initialAdsbCfg.adsbPort,
-  autoConnect: true
+  autoConnect: process.env.NODE_ENV !== 'test' && !process.env.npm_lifecycle_event?.includes('test') && !process.argv.includes('--test')
 });
 let bleScannerProc = null;
 let bleScannerActive = false;

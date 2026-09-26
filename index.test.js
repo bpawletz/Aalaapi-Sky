@@ -1,3 +1,4 @@
+process.env.NODE_ENV = 'test';
 const { test, describe, mock, beforeEach } = require('node:test');
 const assert = require('node:assert');
 const fs = require('node:fs');
@@ -22647,13 +22648,13 @@ describe('Architectural House Edge Extraction & Vegetation Suppression Suite (v1
     assert.ok(changelog.includes('## [1.127.0]'), 'CHANGELOG.md must contain ## [1.127.0] header');
 
     const template = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('Version 1.127.0') || template.includes('Version 1.127.1') || template.includes('Version 1.127.2') || template.includes('Version 1.127.3') || template.includes('Version 1.128.0') || template.includes('Version 1.128.1') || template.includes('Version 1.128.2') || template.includes('Version 1.128.3') || template.includes('Version 1.128.4'), 'index_template.html must contain Version 1.127.0 or newer');
-    assert.ok(template.includes('v1.127.0</span></h1>') || template.includes('v1.127.1</span></h1>') || template.includes('v1.127.2</span></h1>') || template.includes('v1.127.3</span></h1>') || template.includes('v1.128.0</span></h1>') || template.includes('v1.128.1</span></h1>') || template.includes('v1.128.2</span></h1>') || template.includes('v1.128.3</span></h1>') || template.includes('v1.128.4</span></h1>'), 'index_template.html must contain header badge v1.127.0 or newer');
+    assert.ok(template.includes('Version 1.127.0') || template.includes('Version 1.127.1') || template.includes('Version 1.127.2') || template.includes('Version 1.127.3') || template.includes('Version 1.128.0') || template.includes('Version 1.128.1') || template.includes('Version 1.128.2') || template.includes('Version 1.128.3') || template.includes('Version 1.128.4') || template.includes('Version 1.129.0'), 'index_template.html must contain Version 1.127.0 or newer');
+    assert.ok(template.includes('v1.127.0</span></h1>') || template.includes('v1.127.1</span></h1>') || template.includes('v1.127.2</span></h1>') || template.includes('v1.127.3</span></h1>') || template.includes('v1.128.0</span></h1>') || template.includes('v1.128.1</span></h1>') || template.includes('v1.128.2</span></h1>') || template.includes('v1.128.3</span></h1>') || template.includes('v1.128.4</span></h1>') || template.includes('v1.129.0</span></h1>'), 'index_template.html must contain header badge v1.127.0 or newer');
     assert.ok(template.includes('Changelog (v1.127.0):'), 'index_template.html must contain Changelog (v1.127.0):');
 
     const indexHtml = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf8');
-    assert.ok(indexHtml.includes('Version 1.127.0') || indexHtml.includes('Version 1.127.1') || indexHtml.includes('Version 1.127.2') || indexHtml.includes('Version 1.127.3') || indexHtml.includes('Version 1.128.0') || indexHtml.includes('Version 1.128.1') || indexHtml.includes('Version 1.128.2') || indexHtml.includes('Version 1.128.3') || indexHtml.includes('Version 1.128.4'), 'index.html must contain Version 1.127.0 or newer');
-    assert.ok(indexHtml.includes('v1.127.0</span></h1>') || indexHtml.includes('v1.127.1</span></h1>') || indexHtml.includes('v1.127.2</span></h1>') || indexHtml.includes('v1.127.3</span></h1>') || indexHtml.includes('v1.128.0</span></h1>') || indexHtml.includes('v1.128.1</span></h1>') || indexHtml.includes('v1.128.2</span></h1>') || indexHtml.includes('v1.128.3</span></h1>') || indexHtml.includes('v1.128.4</span></h1>'), 'index.html must contain header badge v1.127.0 or newer');
+    assert.ok(indexHtml.includes('Version 1.127.0') || indexHtml.includes('Version 1.127.1') || indexHtml.includes('Version 1.127.2') || indexHtml.includes('Version 1.127.3') || indexHtml.includes('Version 1.128.0') || indexHtml.includes('Version 1.128.1') || indexHtml.includes('Version 1.128.2') || indexHtml.includes('Version 1.128.3') || indexHtml.includes('Version 1.128.4') || indexHtml.includes('Version 1.129.0'), 'index.html must contain Version 1.127.0 or newer');
+    assert.ok(indexHtml.includes('v1.127.0</span></h1>') || indexHtml.includes('v1.127.1</span></h1>') || indexHtml.includes('v1.127.2</span></h1>') || indexHtml.includes('v1.127.3</span></h1>') || indexHtml.includes('v1.128.0</span></h1>') || indexHtml.includes('v1.128.1</span></h1>') || indexHtml.includes('v1.128.2</span></h1>') || indexHtml.includes('v1.128.3</span></h1>') || indexHtml.includes('v1.128.4</span></h1>') || indexHtml.includes('v1.129.0</span></h1>'), 'index.html must contain header badge v1.127.0 or newer');
     assert.ok(indexHtml.includes('Changelog (v1.127.0):'), 'index.html must contain Changelog (v1.127.0):');
   });
 
@@ -22807,13 +22808,13 @@ describe('Photo Inspector Cross-Yard Line Artifact Fix & Contiguous Edge Tracing
     assert.ok(changelog.includes('## [1.127.1]'), 'CHANGELOG.md must contain ## [1.127.1] header');
 
     const template = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('Version 1.127.1') || template.includes('Version 1.127.2') || template.includes('Version 1.127.3') || template.includes('Version 1.128.0') || template.includes('Version 1.128.1') || template.includes('Version 1.128.2') || template.includes('Version 1.128.3') || template.includes('Version 1.128.4'), 'index_template.html must contain Version 1.127.1');
-    assert.ok(template.includes('v1.127.1</span></h1>') || template.includes('v1.127.2</span></h1>') || template.includes('v1.127.3</span></h1>') || template.includes('v1.128.0</span></h1>') || template.includes('v1.128.1</span></h1>') || template.includes('v1.128.2</span></h1>') || template.includes('v1.128.3</span></h1>') || template.includes('v1.128.4</span></h1>'), 'index_template.html must contain header badge v1.127.1');
+    assert.ok(template.includes('Version 1.127.1') || template.includes('Version 1.127.2') || template.includes('Version 1.127.3') || template.includes('Version 1.128.0') || template.includes('Version 1.128.1') || template.includes('Version 1.128.2') || template.includes('Version 1.128.3') || template.includes('Version 1.128.4') || template.includes('Version 1.129.0'), 'index_template.html must contain Version 1.127.1');
+    assert.ok(template.includes('v1.127.1</span></h1>') || template.includes('v1.127.2</span></h1>') || template.includes('v1.127.3</span></h1>') || template.includes('v1.128.0</span></h1>') || template.includes('v1.128.1</span></h1>') || template.includes('v1.128.2</span></h1>') || template.includes('v1.128.3</span></h1>') || template.includes('v1.128.4</span></h1>') || template.includes('v1.129.0</span></h1>'), 'index_template.html must contain header badge v1.127.1');
     assert.ok(template.includes('Changelog (v1.127.1):'), 'index_template.html must contain Changelog (v1.127.1):');
 
     const indexHtml = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf8');
-    assert.ok(indexHtml.includes('Version 1.127.1') || indexHtml.includes('Version 1.127.2') || indexHtml.includes('Version 1.127.3') || indexHtml.includes('Version 1.128.0') || indexHtml.includes('Version 1.128.1') || indexHtml.includes('Version 1.128.2') || indexHtml.includes('Version 1.128.3') || indexHtml.includes('Version 1.128.4'), 'index.html must contain Version 1.127.1');
-    assert.ok(indexHtml.includes('v1.127.1</span></h1>') || indexHtml.includes('v1.127.2</span></h1>') || indexHtml.includes('v1.127.3</span></h1>') || indexHtml.includes('v1.128.0</span></h1>') || indexHtml.includes('v1.128.1</span></h1>') || indexHtml.includes('v1.128.2</span></h1>') || indexHtml.includes('v1.128.3</span></h1>') || indexHtml.includes('v1.128.4</span></h1>'), 'index.html must contain header badge v1.127.1');
+    assert.ok(indexHtml.includes('Version 1.127.1') || indexHtml.includes('Version 1.127.2') || indexHtml.includes('Version 1.127.3') || indexHtml.includes('Version 1.128.0') || indexHtml.includes('Version 1.128.1') || indexHtml.includes('Version 1.128.2') || indexHtml.includes('Version 1.128.3') || indexHtml.includes('Version 1.128.4') || indexHtml.includes('Version 1.129.0'), 'index.html must contain Version 1.127.1');
+    assert.ok(indexHtml.includes('v1.127.1</span></h1>') || indexHtml.includes('v1.127.2</span></h1>') || indexHtml.includes('v1.127.3</span></h1>') || indexHtml.includes('v1.128.0</span></h1>') || indexHtml.includes('v1.128.1</span></h1>') || indexHtml.includes('v1.128.2</span></h1>') || indexHtml.includes('v1.128.3</span></h1>') || indexHtml.includes('v1.128.4</span></h1>') || indexHtml.includes('v1.129.0</span></h1>'), 'index.html must contain header badge v1.127.1');
     assert.ok(indexHtml.includes('Changelog (v1.127.1):'), 'index.html must contain Changelog (v1.127.1):');
   });
 
@@ -22864,13 +22865,13 @@ describe('Volumetric Architectural 3D Wireframe Synthesis Suite (v1.127.2)', () 
     assert.ok(changelog.includes('## [1.127.2]'), 'CHANGELOG.md must contain ## [1.127.2] header');
 
     const template = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('Version 1.127.2') || template.includes('Version 1.127.3') || template.includes('Version 1.128.0') || template.includes('Version 1.128.1') || template.includes('Version 1.128.2') || template.includes('Version 1.128.3') || template.includes('Version 1.128.4'), 'index_template.html must contain Version 1.127.2');
-    assert.ok(template.includes('v1.127.2</span></h1>') || template.includes('v1.127.3</span></h1>') || template.includes('v1.128.0</span></h1>') || template.includes('v1.128.1</span></h1>') || template.includes('v1.128.2</span></h1>') || template.includes('v1.128.3</span></h1>') || template.includes('v1.128.4</span></h1>'), 'index_template.html must contain header badge v1.127.2');
+    assert.ok(template.includes('Version 1.127.2') || template.includes('Version 1.127.3') || template.includes('Version 1.128.0') || template.includes('Version 1.128.1') || template.includes('Version 1.128.2') || template.includes('Version 1.128.3') || template.includes('Version 1.128.4') || template.includes('Version 1.129.0'), 'index_template.html must contain Version 1.127.2');
+    assert.ok(template.includes('v1.127.2</span></h1>') || template.includes('v1.127.3</span></h1>') || template.includes('v1.128.0</span></h1>') || template.includes('v1.128.1</span></h1>') || template.includes('v1.128.2</span></h1>') || template.includes('v1.128.3</span></h1>') || template.includes('v1.128.4</span></h1>') || template.includes('v1.129.0</span></h1>'), 'index_template.html must contain header badge v1.127.2');
     assert.ok(template.includes('Changelog (v1.127.2):'), 'index_template.html must contain Changelog (v1.127.2):');
 
     const indexHtml = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf8');
-    assert.ok(indexHtml.includes('Version 1.127.2') || indexHtml.includes('Version 1.127.3') || indexHtml.includes('Version 1.128.0') || indexHtml.includes('Version 1.128.1') || indexHtml.includes('Version 1.128.2') || indexHtml.includes('Version 1.128.3') || indexHtml.includes('Version 1.128.4'), 'index.html must contain Version 1.127.2');
-    assert.ok(indexHtml.includes('v1.127.2</span></h1>') || indexHtml.includes('v1.127.3</span></h1>') || indexHtml.includes('v1.128.0</span></h1>') || indexHtml.includes('v1.128.1</span></h1>') || indexHtml.includes('v1.128.2</span></h1>') || indexHtml.includes('v1.128.3</span></h1>') || indexHtml.includes('v1.128.4</span></h1>'), 'index.html must contain header badge v1.127.2');
+    assert.ok(indexHtml.includes('Version 1.127.2') || indexHtml.includes('Version 1.127.3') || indexHtml.includes('Version 1.128.0') || indexHtml.includes('Version 1.128.1') || indexHtml.includes('Version 1.128.2') || indexHtml.includes('Version 1.128.3') || indexHtml.includes('Version 1.128.4') || indexHtml.includes('Version 1.129.0'), 'index.html must contain Version 1.127.2');
+    assert.ok(indexHtml.includes('v1.127.2</span></h1>') || indexHtml.includes('v1.127.3</span></h1>') || indexHtml.includes('v1.128.0</span></h1>') || indexHtml.includes('v1.128.1</span></h1>') || indexHtml.includes('v1.128.2</span></h1>') || indexHtml.includes('v1.128.3</span></h1>') || indexHtml.includes('v1.128.4</span></h1>') || indexHtml.includes('v1.129.0</span></h1>'), 'index.html must contain header badge v1.127.2');
     assert.ok(indexHtml.includes('Changelog (v1.127.2):'), 'index.html must contain Changelog (v1.127.2):');
   });
 
@@ -22931,13 +22932,13 @@ describe('Authentic 3D Architectural Wireframe Reconstruction Suite (v1.127.3)',
     assert.ok(changelog.includes('## [1.127.3]'), 'CHANGELOG.md must contain ## [1.127.3] header');
 
     const template = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('Version 1.127.3') || template.includes('Version 1.128.0') || template.includes('Version 1.128.1') || template.includes('Version 1.128.2') || template.includes('Version 1.128.3') || template.includes('Version 1.128.4'), 'index_template.html must contain Version 1.127.3 or newer');
-    assert.ok(template.includes('v1.127.3</span></h1>') || template.includes('v1.128.0</span></h1>') || template.includes('v1.128.1</span></h1>') || template.includes('v1.128.2</span></h1>') || template.includes('v1.128.3</span></h1>') || template.includes('v1.128.4</span></h1>'), 'index_template.html must contain header badge v1.127.3 or newer');
+    assert.ok(template.includes('Version 1.127.3') || template.includes('Version 1.128.0') || template.includes('Version 1.128.1') || template.includes('Version 1.128.2') || template.includes('Version 1.128.3') || template.includes('Version 1.128.4') || template.includes('Version 1.129.0'), 'index_template.html must contain Version 1.127.3 or newer');
+    assert.ok(template.includes('v1.127.3</span></h1>') || template.includes('v1.128.0</span></h1>') || template.includes('v1.128.1</span></h1>') || template.includes('v1.128.2</span></h1>') || template.includes('v1.128.3</span></h1>') || template.includes('v1.128.4</span></h1>') || template.includes('v1.129.0</span></h1>'), 'index_template.html must contain header badge v1.127.3 or newer');
     assert.ok(template.includes('Changelog (v1.127.3):'), 'index_template.html must contain Changelog (v1.127.3):');
 
     const indexHtml = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf8');
-    assert.ok(indexHtml.includes('Version 1.127.3') || indexHtml.includes('Version 1.128.0') || indexHtml.includes('Version 1.128.1') || indexHtml.includes('Version 1.128.2') || indexHtml.includes('Version 1.128.3') || indexHtml.includes('Version 1.128.4'), 'index.html must contain Version 1.127.3 or newer');
-    assert.ok(indexHtml.includes('v1.127.3</span></h1>') || indexHtml.includes('v1.128.0</span></h1>') || indexHtml.includes('v1.128.1</span></h1>') || indexHtml.includes('v1.128.2</span></h1>') || indexHtml.includes('v1.128.3</span></h1>') || indexHtml.includes('v1.128.4</span></h1>'), 'index.html must contain header badge v1.127.3 or newer');
+    assert.ok(indexHtml.includes('Version 1.127.3') || indexHtml.includes('Version 1.128.0') || indexHtml.includes('Version 1.128.1') || indexHtml.includes('Version 1.128.2') || indexHtml.includes('Version 1.128.3') || indexHtml.includes('Version 1.128.4') || indexHtml.includes('Version 1.129.0'), 'index.html must contain Version 1.127.3 or newer');
+    assert.ok(indexHtml.includes('v1.127.3</span></h1>') || indexHtml.includes('v1.128.0</span></h1>') || indexHtml.includes('v1.128.1</span></h1>') || indexHtml.includes('v1.128.2</span></h1>') || indexHtml.includes('v1.128.3</span></h1>') || indexHtml.includes('v1.128.4</span></h1>') || indexHtml.includes('v1.129.0</span></h1>'), 'index.html must contain header badge v1.127.3 or newer');
     assert.ok(indexHtml.includes('Changelog (v1.127.3):'), 'index.html must contain Changelog (v1.127.3):');
   });
 
@@ -23021,13 +23022,13 @@ describe('In-Viewer Sequential Photo Navigation Suite (v1.128.0)', () => {
     assert.ok(changelog.includes('## [1.128.0]'), 'CHANGELOG.md must contain ## [1.128.0] header');
 
     const template = fs.readFileSync(path.resolve(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('Version 1.128.0') || template.includes('Version 1.128.1') || template.includes('Version 1.128.2') || template.includes('Version 1.128.3') || template.includes('Version 1.128.4'), 'index_template.html must contain Version 1.128.0');
-    assert.ok(template.includes('v1.128.0</span></h1>') || template.includes('v1.128.1</span></h1>') || template.includes('v1.128.2</span></h1>') || template.includes('v1.128.3</span></h1>') || template.includes('v1.128.4</span></h1>'), 'index_template.html must contain header badge v1.128.0');
+    assert.ok(template.includes('Version 1.128.0') || template.includes('Version 1.128.1') || template.includes('Version 1.128.2') || template.includes('Version 1.128.3') || template.includes('Version 1.128.4') || template.includes('Version 1.129.0'), 'index_template.html must contain Version 1.128.0');
+    assert.ok(template.includes('v1.128.0</span></h1>') || template.includes('v1.128.1</span></h1>') || template.includes('v1.128.2</span></h1>') || template.includes('v1.128.3</span></h1>') || template.includes('v1.128.4</span></h1>') || template.includes('v1.129.0</span></h1>'), 'index_template.html must contain header badge v1.128.0');
     assert.ok(template.includes('Changelog (v1.128.0):') || template.includes('Changelog (v1.128.1):') || template.includes('Changelog (v1.128.2):'), 'index_template.html must contain Changelog (v1.128.0):');
 
     const indexHtml = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf8');
-    assert.ok(indexHtml.includes('Version 1.128.0') || indexHtml.includes('Version 1.128.1') || indexHtml.includes('Version 1.128.2') || indexHtml.includes('Version 1.128.3') || indexHtml.includes('Version 1.128.4'), 'index.html must contain Version 1.128.0');
-    assert.ok(indexHtml.includes('v1.128.0</span></h1>') || indexHtml.includes('v1.128.1</span></h1>') || indexHtml.includes('v1.128.2</span></h1>') || indexHtml.includes('v1.128.3</span></h1>') || indexHtml.includes('v1.128.4</span></h1>'), 'index.html must contain header badge v1.128.0');
+    assert.ok(indexHtml.includes('Version 1.128.0') || indexHtml.includes('Version 1.128.1') || indexHtml.includes('Version 1.128.2') || indexHtml.includes('Version 1.128.3') || indexHtml.includes('Version 1.128.4') || indexHtml.includes('Version 1.129.0'), 'index.html must contain Version 1.128.0');
+    assert.ok(indexHtml.includes('v1.128.0</span></h1>') || indexHtml.includes('v1.128.1</span></h1>') || indexHtml.includes('v1.128.2</span></h1>') || indexHtml.includes('v1.128.3</span></h1>') || indexHtml.includes('v1.128.4</span></h1>') || indexHtml.includes('v1.129.0</span></h1>'), 'index.html must contain header badge v1.128.0');
     assert.ok(indexHtml.includes('Changelog (v1.128.0):') || indexHtml.includes('Changelog (v1.128.1):') || indexHtml.includes('Changelog (v1.128.2):'), 'index.html must contain Changelog (v1.128.0):');
   });
 
@@ -23256,13 +23257,13 @@ describe('DJI Mini 4 Pro Photo Sphere KMZ Execution & APAS Obstacle Prevention S
     assert.ok(changelog.includes('## [1.128.2] - 2026-09-25'), 'CHANGELOG.md must contain 1.128.2 entry');
 
     const tmpl = fs.readFileSync('./index_template.html', 'utf8');
-    assert.ok(tmpl.includes('v1.128.2</span>') || tmpl.includes('v1.128.3</span>') || tmpl.includes('v1.128.4</span>') || tmpl.includes('v1.128.4</span>'), 'index_template.html must contain v1.128.2 or newer header badge');
-    assert.ok(tmpl.includes('Version 1.128.2</span>') || tmpl.includes('Version 1.128.3</span>') || tmpl.includes('Version 1.128.4</span>'), 'index_template.html About modal must contain Version 1.128.2 or newer');
+    assert.ok(tmpl.includes('v1.128.2</span>') || tmpl.includes('v1.128.3</span>') || tmpl.includes('v1.128.4</span>') || tmpl.includes('v1.129.0</span>'), 'index_template.html must contain v1.128.2 or newer header badge');
+    assert.ok(tmpl.includes('Version 1.128.2</span>') || tmpl.includes('Version 1.128.3</span>') || tmpl.includes('Version 1.128.4</span>') || tmpl.includes('Version 1.129.0</span>'), 'index_template.html About modal must contain Version 1.128.2 or newer');
     assert.ok(tmpl.includes('Changelog (v1.128.2):'), 'index_template.html must include Changelog (v1.128.2)');
 
     const indexHtml = fs.readFileSync('./index.html', 'utf8');
-    assert.ok(indexHtml.includes('v1.128.2') || indexHtml.includes('v1.128.3') || indexHtml.includes('v1.128.4'), 'index.html must contain v1.128.2');
-    assert.ok(indexHtml.includes('Version 1.128.2') || indexHtml.includes('Version 1.128.3') || indexHtml.includes('Version 1.128.4'), 'index.html must contain Version 1.128.2');
+    assert.ok(indexHtml.includes('v1.128.2') || indexHtml.includes('v1.128.3') || indexHtml.includes('v1.128.4') || indexHtml.includes('v1.129.0'), 'index.html must contain v1.128.2');
+    assert.ok(indexHtml.includes('Version 1.128.2') || indexHtml.includes('Version 1.128.3') || indexHtml.includes('Version 1.128.4') || indexHtml.includes('Version 1.129.0'), 'index.html must contain Version 1.128.2');
     assert.ok(indexHtml.includes('Changelog (v1.128.2):'), 'index.html must contain Changelog (v1.128.2)');
   });
 
@@ -23421,12 +23422,12 @@ describe('RC2 Flight Log Pull & 3D Diagnostics Telemetry Pipeline Suite (v1.128.
     assert.ok(changelog.includes('## [1.128.3] - 2026-09-25'), 'CHANGELOG.md must contain 1.128.3 header');
 
     const template = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(template.includes('Version 1.128.3') || template.includes('Version 1.128.4'), 'index_template.html must contain Version 1.128.3 or newer in about modal');
-    assert.ok(template.includes('v1.128.3') || template.includes('v1.128.4'), 'index_template.html must contain v1.128.3 or newer header badge');
+    assert.ok(template.includes('Version 1.128.3') || template.includes('Version 1.128.4') || template.includes('Version 1.129.0'), 'index_template.html must contain Version 1.128.3 or newer in about modal');
+    assert.ok(template.includes('v1.128.3') || template.includes('v1.128.4') || template.includes('v1.129.0'), 'index_template.html must contain v1.128.3 or newer header badge');
 
     const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-    assert.ok(indexHtml.includes('Version 1.128.3') || indexHtml.includes('Version 1.128.4'), 'index.html must contain Version 1.128.3 or newer in about modal');
-    assert.ok(indexHtml.includes('v1.128.3') || indexHtml.includes('v1.128.4'), 'index.html must contain v1.128.3 or newer header badge');
+    assert.ok(indexHtml.includes('Version 1.128.3') || indexHtml.includes('Version 1.128.4') || indexHtml.includes('Version 1.129.0'), 'index.html must contain Version 1.128.3 or newer in about modal');
+    assert.ok(indexHtml.includes('v1.128.3') || indexHtml.includes('v1.128.4') || indexHtml.includes('v1.129.0'), 'index.html must contain v1.128.3 or newer header badge');
   });
 
   test('FlightDiagnostics.open accepts targetFlightId and sets selector without falling back to active-mission', async () => {
@@ -23602,17 +23603,17 @@ describe('RC2 Flight Log Pull & 3D Diagnostics Telemetry Pipeline Suite (v1.128.
 describe('v1.128.4 FAA TFR Ingestion & Display Resilience Tests (VIP 6/4933 & Dual-Layer Coexistence)', () => {
   test('Version consistency: v1.128.4 everywhere', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.version, '1.128.4', 'package.json version must be 1.128.4');
+    assert.ok(pkg.version === '1.128.4' || pkg.version === '1.129.0', 'package.json version must be 1.128.4 or newer');
 
     const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
     assert.ok(changelog.includes('## [1.128.4] - 2026-09-25'), 'CHANGELOG.md must contain 1.128.4 header');
 
     const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
-    assert.ok(templateHtml.includes('Version 1.128.4'), 'index_template.html must contain Version 1.128.4');
-    assert.ok(templateHtml.includes('v1.128.4'), 'index_template.html must contain v1.128.4 badge');
+    assert.ok(templateHtml.includes('Version 1.128.4') || templateHtml.includes('Version 1.129.0'), 'index_template.html must contain Version 1.128.4 or newer');
+    assert.ok(templateHtml.includes('v1.128.4') || templateHtml.includes('v1.129.0'), 'index_template.html must contain v1.128.4 or newer badge');
 
     const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-    assert.ok(compiledHtml.includes('Version 1.128.4'), 'index.html must contain Version 1.128.4');
+    assert.ok(compiledHtml.includes('Version 1.128.4') || compiledHtml.includes('Version 1.129.0'), 'index.html must contain Version 1.128.4 or newer');
   });
 
   test('Local data cache contains VIP TFR 6/4933 in both NOTAM list and GeoServer boundaries', () => {
@@ -23794,5 +23795,141 @@ describe('v1.128.4 FAA TFR Ingestion & Display Resilience Tests (VIP 6/4933 & Du
     }
   });
 });
+
+describe('v1.129.0 Configurable ADS-B Server Host/Port & Offline Persistence Suite', () => {
+  test('Version consistency: v1.129.0 everywhere', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+    assert.strictEqual(pkg.version, '1.129.0', 'package.json version must be 1.129.0');
+
+    const changelog = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    assert.ok(changelog.includes('## [1.129.0] - 2026-09-26'), 'CHANGELOG.md must contain 1.129.0 header');
+
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    assert.ok(templateHtml.includes('Version 1.129.0'), 'index_template.html must contain Version 1.129.0');
+    assert.ok(templateHtml.includes('v1.129.0'), 'index_template.html must contain v1.129.0 badge');
+
+    const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+    assert.ok(compiledHtml.includes('Version 1.129.0'), 'index.html must contain Version 1.129.0');
+    assert.ok(compiledHtml.includes('v1.129.0'), 'index.html must contain v1.129.0 badge');
+  });
+
+  test('DOM Architecture: ADS-B server host and port inputs and Connect button exist', () => {
+    const templateHtml = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    const compiledHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+    for (const src of [templateHtml, compiledHtml]) {
+      assert.ok(src.includes('id="adsb-host-input"'), 'Must contain #adsb-host-input');
+      assert.ok(src.includes('id="adsb-port-input"'), 'Must contain #adsb-port-input');
+      assert.ok(src.includes('id="adsb-server-save-btn"'), 'Must contain #adsb-server-save-btn');
+    }
+  });
+
+  test('AdsbAirspaceManager persists custom serverHost and serverPort in localStorage', () => {
+    assert.ok(AdsbAirspaceManager, 'AdsbAirspaceManager must exist');
+    const mockStorage = {};
+    const origLocalStorage = global.localStorage;
+    global.localStorage = {
+      getItem: (k) => mockStorage[k] || null,
+      setItem: (k, v) => { mockStorage[k] = String(v); },
+      removeItem: (k) => { delete mockStorage[k]; }
+    };
+
+    try {
+      AdsbAirspaceManager.serverHost = '127.0.0.1';
+      AdsbAirspaceManager.serverPort = 30003;
+
+      // Save custom host and port
+      AdsbAirspaceManager.serverHost = '192.168.1.150';
+      AdsbAirspaceManager.serverPort = 30005;
+      AdsbAirspaceManager.saveSettings();
+
+      assert.strictEqual(mockStorage['aalaapi_adsb_host'], '192.168.1.150');
+      assert.strictEqual(mockStorage['aalaapi_adsb_port'], '30005');
+
+      // Test loadSettings restores them
+      AdsbAirspaceManager.serverHost = '127.0.0.1';
+      AdsbAirspaceManager.serverPort = 30003;
+      AdsbAirspaceManager.loadSettings();
+
+      assert.strictEqual(AdsbAirspaceManager.serverHost, '192.168.1.150');
+      assert.strictEqual(AdsbAirspaceManager.serverPort, 30005);
+    } finally {
+      global.localStorage = origLocalStorage;
+      AdsbAirspaceManager.serverHost = '127.0.0.1';
+      AdsbAirspaceManager.serverPort = 30003;
+    }
+  });
+
+  test('AdsbAirspaceManager.updateDiagnosticsUI renders Remote Feed status correctly', () => {
+    assert.ok(AdsbAirspaceManager, 'AdsbAirspaceManager must exist');
+    const dom = new JSDOM(`
+      <input id="adsb-host-input" value="127.0.0.1" />
+      <input id="adsb-port-input" value="30003" />
+      <div id="adsb-hw-status"></div>
+      <div id="adsb-stream-status"></div>
+      <div id="adsb-diag-summary"></div>
+      <div id="adsb-diag-tip" style="display:none;"></div>
+    `);
+
+    const prevDoc = global.document;
+    global.document = dom.window.document;
+
+    const hwEl = dom.window.document.getElementById('adsb-hw-status');
+    const streamEl = dom.window.document.getElementById('adsb-stream-status');
+
+    try {
+      // 1. Remote host connected
+      AdsbAirspaceManager.updateDiagnosticsUI({
+        connected: true,
+        tcpHost: '192.168.1.200',
+        tcpPort: 30003,
+        isRemoteServer: true,
+        hardware: { detected: false }
+      });
+
+      assert.strictEqual(hwEl.textContent, 'Remote Feed (No USB Dongle Needed)');
+      assert.strictEqual(streamEl.textContent, 'Connected (192.168.1.200:30003)');
+
+      // 2. Localhost disconnected
+      AdsbAirspaceManager.updateDiagnosticsUI({
+        connected: false,
+        tcpHost: '127.0.0.1',
+        tcpPort: 30003,
+        isRemoteServer: false,
+        hardware: { detected: false }
+      });
+
+      assert.strictEqual(hwEl.textContent, 'Not Detected');
+      assert.ok(streamEl.textContent.includes('Waiting on 127.0.0.1:30003...'));
+    } finally {
+      global.document = prevDoc;
+    }
+  });
+
+  test('tools/companion/server.js exports getAdsbConfig and saveAdsbConfig', () => {
+    const { getAdsbConfig, saveAdsbConfig } = require('./tools/companion/server.js');
+    assert.strictEqual(typeof getAdsbConfig, 'function');
+    assert.strictEqual(typeof saveAdsbConfig, 'function');
+
+    const cfg = getAdsbConfig();
+    assert.ok(typeof cfg.adsbHost === 'string');
+    assert.ok(typeof cfg.adsbPort === 'number');
+
+    const saved = saveAdsbConfig('10.0.0.99', 30005);
+    assert.strictEqual(saved.adsbHost, '10.0.0.99');
+    assert.strictEqual(saved.adsbPort, 30005);
+
+    const reloaded = getAdsbConfig();
+    assert.strictEqual(reloaded.adsbHost, '10.0.0.99');
+    assert.strictEqual(reloaded.adsbPort, 30005);
+
+    // Teardown restore
+    saveAdsbConfig('127.0.0.1', 30003);
+    const restored = getAdsbConfig();
+    assert.strictEqual(restored.adsbHost, '127.0.0.1');
+    assert.strictEqual(restored.adsbPort, 30003);
+  });
+});
+
 
 

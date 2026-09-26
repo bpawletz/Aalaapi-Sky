@@ -1,3 +1,13 @@
+## [1.129.0] - 2026-09-26
+
+### Added
+- **Configurable ADS-B Server Host & Port (`AdsbAirspaceTracker`, `AdsbAirspaceManager` & Companion REST API)**:
+  - **Dynamic ADS-B Server Configuration**: Added host and port controls in the ADS-B drawer (`#adsb-host-input`, `#adsb-port-input`, `#adsb-server-save-btn` "Connect") enabling pilots to connect to dump1090/SBS feeds across local networks or remote servers.
+  - **Companion REST API Endpoints**: Exposed `/api/config/adsb` (GET/POST) to query and update target ADS-B daemon host/port, dynamically reconnecting the socket stream without restarting the bridge.
+  - **Remote Feed Hardware Indicator**: Updated diagnostic status to display `Remote Feed (No USB Dongle Needed)` in cyan (`#38bdf8`) when connecting to remote hosts, bypassing local RTL-SDR USB dongle and WinUSB Zadig driver prompts.
+  - **Cross-Session & Offline Persistence**: Persists settings in `scratch/companion_config.json` with fallback to `ADSB_HOST`/`ADSB_PORT` environment variables, and stores user values in browser `localStorage` (`aalaapi_adsb_host` / `aalaapi_adsb_port`) for offline resilience.
+  - **Socket Connection Timeout**: Added a 2500ms connection timeout to prevent hanging indefinite TCP connect states during server switches.
+
 ## [1.128.4] - 2026-09-25
 
 ### Fixed

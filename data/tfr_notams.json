@@ -1,5 +1,60 @@
 [
   {
+    "notam_id": "6/5573",
+    "facility": "ZHU",
+    "state": "TX",
+    "type": "SPACE OPERATIONS",
+    "description": "Starbase, TX, Monday, September 28, 2026 Local",
+    "mod_date": "09/26/2026 02:00:00",
+    "mod_abs_time": "202609260200",
+    "is_new": "Y",
+    "gid": "6/5573"
+  },
+  {
+    "notam_id": "6/5574",
+    "facility": "ZHU",
+    "state": "TX",
+    "type": "SPACE OPERATIONS",
+    "description": "Starbase, TX, Tuesday, September 29, 2026 Local",
+    "mod_date": "09/26/2026 02:00:00",
+    "mod_abs_time": "202609260200",
+    "is_new": "Y",
+    "gid": "6/5574"
+  },
+  {
+    "notam_id": "6/5575",
+    "facility": "ZHU",
+    "state": "TX",
+    "type": "SPACE OPERATIONS",
+    "description": "Starbase, TX, Wednesday, September 30, 2026 Local",
+    "mod_date": "09/26/2026 02:00:00",
+    "mod_abs_time": "202609260200",
+    "is_new": "Y",
+    "gid": "6/5575"
+  },
+  {
+    "notam_id": "6/5570",
+    "facility": "ZID",
+    "state": "WV",
+    "type": "HAZARDS",
+    "description": "SAUNDERS CREEK ROAD, WV, Saturday, September 26, 2026 through Sunday, September 27, 2026 UTC",
+    "mod_date": "09/26/2026 01:29:00",
+    "mod_abs_time": "202609260129",
+    "is_new": "Y",
+    "gid": null
+  },
+  {
+    "notam_id": "6/5561",
+    "facility": "ZLC",
+    "state": "OR",
+    "type": "HAZARDS",
+    "description": "14 NM NE OF PRAIRIE CITY, OR, Sunday, September 27, 2026 through Tuesday, September 29, 2026 UTC",
+    "mod_date": "09/25/2026 23:07:00",
+    "mod_abs_time": "202609252307",
+    "is_new": "Y",
+    "gid": "6/5561"
+  },
+  {
     "notam_id": "6/5559",
     "facility": "ZLC",
     "state": "OR",
@@ -88,17 +143,6 @@
     "gid": "6/5545"
   },
   {
-    "notam_id": "6/5499",
-    "facility": "ZID",
-    "state": "WV",
-    "type": "HAZARDS",
-    "description": "SAUNDERS CREEK ROAD, WV, Friday, September 25, 2026 through Saturday, September 26, 2026 UTC",
-    "mod_date": "09/25/2026 12:00:00",
-    "mod_abs_time": "202609251200",
-    "is_new": "Y",
-    "gid": null
-  },
-  {
     "notam_id": "6/5476",
     "facility": "ZSE",
     "state": "WA",
@@ -106,7 +150,7 @@
     "description": "11 NM SW OF ELLENSBURG, WA, Friday, September 25, 2026 through Sunday, September 27, 2026 UTC",
     "mod_date": "09/25/2026 03:59:00",
     "mod_abs_time": "202609250359",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/5476"
   },
   {
@@ -117,7 +161,7 @@
     "description": "8NM SE BIG SUR, CA, Friday, September 25, 2026 through Monday, October 5, 2026 UTC",
     "mod_date": "09/25/2026 02:28:00",
     "mod_abs_time": "202609250228",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/5462"
   },
   {
@@ -350,17 +394,6 @@
     "mod_abs_time": "202609211935",
     "is_new": "N",
     "gid": "6/4323"
-  },
-  {
-    "notam_id": "6/4321",
-    "facility": "ZLC",
-    "state": "NV",
-    "type": "SPACE OPERATIONS",
-    "description": "21 ZLC AIRSPACE BLACK ROCK, NV, Friday, September 25, 2026 through Saturday, September 26, 2026 UTC",
-    "mod_date": "09/21/2026 19:33:00",
-    "mod_abs_time": "202609211933",
-    "is_new": "N",
-    "gid": "6/4321"
   },
   {
     "notam_id": "6/4246",

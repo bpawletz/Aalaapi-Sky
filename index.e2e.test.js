@@ -6326,6 +6326,63 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(res.drawerClosed, true, 'Close button must hide drawer');
   });
 
+  test('E2E: Configurable ADS-B Server Host & Port Remote Feed (v1.129.0)', async () => {
+    const res = await page.evaluate(async () => {
+      const topbarBtn = document.getElementById('adsb-topbar-btn');
+      const drawer = document.getElementById('adsb-control-drawer');
+      const hostInput = document.getElementById('adsb-host-input');
+      const portInput = document.getElementById('adsb-port-input');
+      const connectBtn = document.getElementById('adsb-server-save-btn');
+      const hwEl = document.getElementById('adsb-hw-status');
+      const streamEl = document.getElementById('adsb-stream-status');
+
+      if (!topbarBtn || !drawer || !hostInput || !portInput || !connectBtn) {
+        return { success: false, reason: 'Missing ADS-B server configuration elements' };
+      }
+
+      // Open drawer
+      topbarBtn.click();
+
+      // Enter remote host and port
+      hostInput.value = '192.168.1.120';
+      portInput.value = '30005';
+      hostInput.dispatchEvent(new Event('input'));
+      portInput.dispatchEvent(new Event('input'));
+
+      // Click connect button
+      connectBtn.click();
+
+      // Simulate diagnostic status update from remote feed
+      const manager = window.AdsbAirspaceManager;
+      if (manager) {
+        manager.updateDiagnosticsUI({
+          connected: true,
+          tcpHost: '192.168.1.120',
+          tcpPort: 30005,
+          isRemoteServer: true,
+          hardware: { detected: false }
+        });
+      }
+
+      const hwText = hwEl ? hwEl.textContent : '';
+      const streamText = streamEl ? streamEl.textContent : '';
+      const localHost = localStorage.getItem('aalaapi_adsb_host');
+      const localPort = localStorage.getItem('aalaapi_adsb_port');
+
+      return {
+        success: hwText.includes('Remote Feed') && streamText.includes('192.168.1.120:30005') && localHost === '192.168.1.120' && localPort === '30005',
+        hwText,
+        streamText,
+        localHost,
+        localPort
+      };
+    });
+
+    assert.strictEqual(res.success, true, `E2E Configurable ADS-B test failed: ${JSON.stringify(res)}`);
+    assert.ok(res.hwText.includes('Remote Feed'), 'Hardware status must indicate Remote Feed');
+    assert.ok(res.streamText.includes('192.168.1.120:30005'), 'Stream status must show custom remote host and port');
+  });
+
   test('E2E: 3D Architectural Wireframe Photo Superimposition in Photo Inspector (v1.125.0)', async () => {
     const res = await page.evaluate(async () => {
       const toggle = document.getElementById('layer-toggle-wireframe');
@@ -6474,7 +6531,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   });
 
   test('E2E: RC2 Log Pull & 3D Diagnostics Replay Telemetry Pipeline (v1.128.3)', async () => {
-    await page.route('**/api/flight-telemetry*', async (route) => {
+    await page.route(/\/api\/flight-telemetry/, async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -6533,7 +6590,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       };
     });
 
-    await page.unroute('**/api/flight-telemetry*');
+    await page.unroute(/\/api\/flight-telemetry/);
 
     assert.strictEqual(e2eResult.hasDirectBtn, true, 'Sidebar direct pull button must exist');
     assert.strictEqual(e2eResult.hasDiagBtn, true, 'Diagnostics header pull button must exist');
