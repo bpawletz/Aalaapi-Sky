@@ -19889,6 +19889,19 @@ const AdsbAirspaceManager = {
       return;
     }
 
+    const targetHost = st.tcpHost || st.adsbHost || '127.0.0.1';
+    const targetPort = st.tcpPort || st.adsbPort || 30003;
+    const hostPortStr = `${targetHost}:${targetPort}`;
+
+    const hostInput = document.getElementById('adsb-host-input');
+    const portInput = document.getElementById('adsb-port-input');
+    if (hostInput && document.activeElement !== hostInput) {
+      hostInput.value = targetHost;
+    }
+    if (portInput && document.activeElement !== portInput) {
+      portInput.value = targetPort;
+    }
+
     // Hardware status
     if (st.hardware && st.hardware.detected) {
       if (st.hardware.driverStatus === 'needs_zadig') {
@@ -19902,6 +19915,9 @@ const AdsbAirspaceManager = {
         hwEl.textContent = 'Ready (WinUSB Active)';
         hwEl.style.color = '#10b981';
       }
+    } else if (st.isRemoteServer || targetHost !== '127.0.0.1') {
+      hwEl.textContent = 'Remote Feed (No USB Dongle Needed)';
+      hwEl.style.color = '#38bdf8';
     } else {
       hwEl.textContent = 'Not Detected';
       hwEl.style.color = '#94a3b8';
@@ -19909,7 +19925,7 @@ const AdsbAirspaceManager = {
 
     // dump1090 daemon stream status
     if (st.connected) {
-      streamEl.textContent = `Connected (Port ${st.tcpPort || 30003})`;
+      streamEl.textContent = `Connected (${hostPortStr})`;
       streamEl.style.color = '#10b981';
       if (summaryEl) {
         summaryEl.textContent = 'ACTIVE';
@@ -19920,7 +19936,7 @@ const AdsbAirspaceManager = {
         tipEl.style.display = 'none';
       }
     } else {
-      streamEl.textContent = `Waiting on Port ${st.tcpPort || 30003}...`;
+      streamEl.textContent = `Waiting on ${hostPortStr}...`;
       streamEl.style.color = '#f59e0b';
       if (summaryEl) {
         summaryEl.textContent = 'WAITING';
@@ -19929,7 +19945,7 @@ const AdsbAirspaceManager = {
       }
       if (tipEl && (!st.hardware || st.hardware.driverStatus !== 'needs_zadig')) {
         tipEl.style.display = 'block';
-        tipEl.innerHTML = '💡 <strong>Waiting for dump1090:</strong> Start <code>dump1090.exe --interactive --net</code> to stream Mode S messages on TCP port 30003.';
+        tipEl.innerHTML = `💡 <strong>Waiting for dump1090:</strong> Ensure dump1090 or your SBS feed is running on <code>${hostPortStr}</code>.`;
       }
     }
   },
@@ -20488,6 +20504,41 @@ const AdsbAirspaceManager = {
         this.ceilingFeet = parseInt(e.target.value, 10) || 2500;
         this.saveSettings();
         this.updateControlsUI();
+        this.pollAirspace();
+      });
+    }
+
+    const serverSaveBtn = document.getElementById('adsb-server-save-btn');
+    const hostInput = document.getElementById('adsb-host-input');
+    const portInput = document.getElementById('adsb-port-input');
+    if (serverSaveBtn && (hostInput || portInput)) {
+      serverSaveBtn.addEventListener('click', async () => {
+        const hostVal = hostInput ? hostInput.value.trim() : '127.0.0.1';
+        const portVal = portInput ? portInput.value.trim() : '30003';
+        serverSaveBtn.textContent = 'Connecting...';
+        serverSaveBtn.disabled = true;
+
+        try {
+          const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://localhost:8765';
+          const res = await fetch(`${apiBase}/api/config/adsb`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ adsbHost: hostVal, adsbPort: portVal })
+          });
+          if (res.ok) {
+            serverSaveBtn.textContent = 'Saved!';
+          } else {
+            serverSaveBtn.textContent = 'Error';
+          }
+        } catch (e) {
+          serverSaveBtn.textContent = 'Saved Local';
+        }
+
+        setTimeout(() => {
+          serverSaveBtn.textContent = 'Connect';
+          serverSaveBtn.disabled = false;
+        }, 1500);
+
         this.pollAirspace();
       });
     }

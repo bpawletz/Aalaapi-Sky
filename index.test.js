@@ -21841,6 +21841,9 @@ describe('Manned Aircraft ADS-B Airspace Awareness & Flight Trails Suite (v1.123
       assert.ok(src.includes('id="adsb-radius-slider"'), 'Must have #adsb-radius-slider');
       assert.ok(src.includes('id="adsb-ceiling-slider"'), 'Must have #adsb-ceiling-slider');
       assert.ok(src.includes('id="adsb-endpoint-input"'), 'Must have #adsb-endpoint-input');
+      assert.ok(src.includes('id="adsb-host-input"'), 'Must have #adsb-host-input');
+      assert.ok(src.includes('id="adsb-port-input"'), 'Must have #adsb-port-input');
+      assert.ok(src.includes('id="adsb-server-save-btn"'), 'Must have #adsb-server-save-btn');
       assert.ok(src.includes('id="adsb-aircraft-list"'), 'Must have #adsb-aircraft-list');
     }
   });
@@ -22016,7 +22019,7 @@ describe('Manned Aircraft ADS-B Airspace Awareness & Flight Trails Suite (v1.123
         }
       });
       assert.ok(hwEl.textContent.includes('Driver Missing'));
-      assert.ok(streamEl.textContent.includes('Waiting on Port 30003'));
+      assert.ok(streamEl.textContent.includes('127.0.0.1:30003'));
       assert.strictEqual(summaryEl.textContent, 'WAITING');
       assert.strictEqual(tipEl.style.display, 'block');
       assert.ok(tipEl.innerHTML.includes('Zadig'));
