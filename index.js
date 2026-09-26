@@ -19710,6 +19710,12 @@ const AdsbAirspaceManager = {
   audioContext: null,
   pollTimer: null,
   isPolling: false,
+  eventSource: null,
+  streamConnected: false,
+  streamMode: 'disconnected', // 'sse' | 'polling' | 'disconnected'
+  streamLat: null,
+  streamLon: null,
+  streamRadius: null,
   hardwareStatus: { connected: false, driverType: 'unknown', packets: 0 },
 
   init() {
@@ -19777,6 +19783,14 @@ const AdsbAirspaceManager = {
     }
     const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
     return `${apiBase}/api/airspace/bounds`;
+  },
+
+  getEffectiveStreamEndpoint() {
+    if (this.customEndpoint && this.customEndpoint.trim()) {
+      return this.customEndpoint.trim().replace(/\/api\/airspace\/bounds\/?$/, '/api/airspace/stream');
+    }
+    const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+    return `${apiBase}/api/airspace/stream`;
   },
 
   initMapLayer() {
@@ -20051,25 +20065,186 @@ const AdsbAirspaceManager = {
         hwDriverEl.textContent = st.driverType;
       }
     }
+
+    this.updateStreamTransportUI();
   },
 
-  startPolling() {
-    if (this.pollTimer) clearInterval(this.pollTimer);
+  updateStreamTransportUI() {
+    if (typeof document === 'undefined') return;
+    const badge = document.getElementById('adsb-transport-badge');
+    if (!badge) return;
+    if (this.streamMode === 'sse') {
+      badge.textContent = 'SSE Stream (Sub-second)';
+      badge.style.color = '#38bdf8';
+    } else if (this.streamMode === 'polling') {
+      badge.textContent = 'REST Polling (2s Fallback)';
+      badge.style.color = '#f59e0b';
+    } else {
+      badge.textContent = 'Disconnected';
+      badge.style.color = '#94a3b8';
+    }
+  },
+
+  connectStream() {
+    if (!this.enabled) return;
+    const EventSourceCtor = (typeof window !== 'undefined' && window.EventSource) || (typeof EventSource !== 'undefined' && EventSource) || null;
+    if (!EventSourceCtor) {
+      this.ensureFallbackPolling();
+      return;
+    }
+
+    let homeLat = 40.0130;
+    let homeLon = -83.1765;
+    if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) {
+      const ll = centerMarker.getLatLng();
+      homeLat = ll.lat;
+      homeLon = ll.lng;
+    } else if (typeof map !== 'undefined' && map && map.getCenter) {
+      const ll = map.getCenter();
+      homeLat = ll.lat;
+      homeLon = ll.lng;
+    }
+
+    const endpoint = this.getEffectiveStreamEndpoint();
+    const url = `${endpoint}?lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.radiusMiles}&ceiling=${this.ceilingFeet}&includeSafe=true`;
+
+    if (this.eventSource) {
+      try { this.eventSource.close(); } catch (_) {}
+      this.eventSource = null;
+    }
+
+    this.streamLat = homeLat;
+    this.streamLon = homeLon;
+    this.streamRadius = this.radiusMiles;
+
+    try {
+      this.eventSource = new EventSourceCtor(url);
+
+      this.eventSource.onopen = () => {
+        this.streamConnected = true;
+        this.streamMode = 'sse';
+        this.updateStreamTransportUI();
+      };
+
+      this.eventSource.onmessage = (event) => {
+        if (!event || !event.data) return;
+        try {
+          const data = JSON.parse(event.data);
+          this.streamConnected = true;
+          this.streamMode = 'sse';
+          this.processAirspaceData(data);
+          this.updateStreamTransportUI();
+        } catch (e) {}
+      };
+
+      this.eventSource.onerror = () => {
+        this.streamConnected = false;
+        this.streamMode = 'polling';
+        this.updateStreamTransportUI();
+        this.ensureFallbackPolling();
+      };
+    } catch (e) {
+      this.streamConnected = false;
+      this.streamMode = 'polling';
+      this.updateStreamTransportUI();
+      this.ensureFallbackPolling();
+    }
+  },
+
+  ensureFallbackPolling() {
+    if (this.pollTimer) return;
     this.isPolling = true;
     this.pollAirspace();
     this.pollTimer = setInterval(() => {
-      if (this.enabled) {
+      if (this.enabled && !this.streamConnected) {
         this.pollAirspace();
       }
     }, 2000);
   },
 
+  startPolling() {
+    this.isPolling = true;
+    // Attempt real-time SSE stream first
+    this.connectStream();
+
+    // Setup fallback watchdog / map center change monitor
+    if (this.pollTimer) clearInterval(this.pollTimer);
+    this.pollTimer = setInterval(() => {
+      if (!this.enabled) return;
+
+      if (!this.streamConnected) {
+        this.pollAirspace();
+      } else if (this.streamLat !== null) {
+        // Check if home point moved significantly (> ~500m) or radius changed
+        let curLat = 40.0130;
+        let curLon = -83.1765;
+        if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) {
+          const ll = centerMarker.getLatLng();
+          curLat = ll.lat;
+          curLon = ll.lng;
+        } else if (typeof map !== 'undefined' && map && map.getCenter) {
+          const ll = map.getCenter();
+          curLat = ll.lat;
+          curLon = ll.lng;
+        }
+        if (Math.abs(curLat - this.streamLat) > 0.005 || Math.abs(curLon - this.streamLon) > 0.005 || this.streamRadius !== this.radiusMiles) {
+          this.connectStream();
+        }
+      }
+    }, 2000);
+  },
+
   stopPolling() {
+    if (this.eventSource) {
+      try { this.eventSource.close(); } catch (_) {}
+      this.eventSource = null;
+    }
     if (this.pollTimer) {
       clearInterval(this.pollTimer);
       this.pollTimer = null;
     }
+    this.streamConnected = false;
+    this.streamMode = 'disconnected';
     this.isPolling = false;
+    this.updateStreamTransportUI();
+  },
+
+  processAirspaceData(data) {
+    if (!data || !data.success) return;
+    this.aircraft = Array.isArray(data.aircraft) ? data.aircraft : [];
+    this.breachedAircraft = this.aircraft.filter(a => a.isBreached);
+
+    // State transition detection & 30s audio throttling
+    for (const ac of this.aircraft) {
+      const prev = this.previousStatus.get(ac.hex) || 'safe';
+      if (ac.isBreached) {
+        if (prev === 'safe') {
+          this.triggerAudioAlert(ac);
+        } else {
+          const now = Date.now();
+          if (now - (this.lastAlertTimes.get(ac.hex) || 0) >= 30000) {
+            this.triggerAudioAlert(ac);
+          }
+        }
+        this.previousStatus.set(ac.hex, 'breached');
+      } else {
+        this.previousStatus.set(ac.hex, 'safe');
+      }
+    }
+
+    // Clean up previousStatus for aircraft that left coverage
+    const activeHexes = new Set(this.aircraft.map(a => a.hex));
+    for (const hex of this.previousStatus.keys()) {
+      if (!activeHexes.has(hex)) this.previousStatus.delete(hex);
+    }
+
+    this.updateVisualBanner();
+    this.updateTopbarAndHud();
+    this.updateMapMarkers();
+    if (this.isDrawerOpen) {
+      this.updateDrawerAircraftList();
+      this.fetchAirspaceStatus();
+    }
   },
 
   async pollAirspace() {
@@ -20093,43 +20268,7 @@ const AdsbAirspaceManager = {
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-
-      if (data && data.success) {
-        this.aircraft = Array.isArray(data.aircraft) ? data.aircraft : [];
-        this.breachedAircraft = this.aircraft.filter(a => a.isBreached);
-
-        // State transition detection & 30s audio throttling
-        for (const ac of this.aircraft) {
-          const prev = this.previousStatus.get(ac.hex) || 'safe';
-          if (ac.isBreached) {
-            if (prev === 'safe') {
-              this.triggerAudioAlert(ac);
-            } else {
-              const now = Date.now();
-              if (now - (this.lastAlertTimes.get(ac.hex) || 0) >= 30000) {
-                this.triggerAudioAlert(ac);
-              }
-            }
-            this.previousStatus.set(ac.hex, 'breached');
-          } else {
-            this.previousStatus.set(ac.hex, 'safe');
-          }
-        }
-
-        // Clean up previousStatus for aircraft that left coverage
-        const activeHexes = new Set(this.aircraft.map(a => a.hex));
-        for (const hex of this.previousStatus.keys()) {
-          if (!activeHexes.has(hex)) this.previousStatus.delete(hex);
-        }
-
-        this.updateVisualBanner();
-        this.updateTopbarAndHud();
-        this.updateMapMarkers();
-        if (this.isDrawerOpen) {
-          this.updateDrawerAircraftList();
-          this.fetchAirspaceStatus();
-        }
-      }
+      this.processAirspaceData(data);
     } catch (e) {
       // Endpoint error or companion offline
     }
@@ -20161,12 +20300,12 @@ const AdsbAirspaceManager = {
       if (distEl) {
         const isMetric = typeof isMetricMode === 'function' ? isMetricMode() : false;
         const cardinal = primary.bearingCardinal ? ` ${primary.bearingCardinal}` : '';
-        const deg = primary.bearingDeg !== null ? ` (${String(primary.bearingDeg).padStart(3, '0')}°)` : '';
+        const deg = (typeof primary.bearingDeg === 'number') ? ` (${String(primary.bearingDeg).padStart(3, '0')}°)` : '';
         if (isMetric) {
-          const km = primary.distanceMeters ? (primary.distanceMeters / 1000).toFixed(1) : '--';
+          const km = (typeof primary.distanceMeters === 'number') ? (primary.distanceMeters / 1000).toFixed(1) : '--';
           distEl.textContent = `${km} km${cardinal}${deg}`;
         } else {
-          const mi = primary.distanceMiles !== null ? primary.distanceMiles.toFixed(1) : '--';
+          const mi = (typeof primary.distanceMiles === 'number') ? primary.distanceMiles.toFixed(1) : '--';
           distEl.textContent = `${mi} mi${cardinal}${deg}`;
         }
       }
