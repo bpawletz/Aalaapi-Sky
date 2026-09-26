@@ -15165,8 +15165,13 @@ function getSubMissionFlightTime(wps, startIdx, endIdx, speed, captureMode) {
     const gridTypeEl = typeof document !== 'undefined' ? document.getElementById('grid-type') : null;
     const gridTypeVal = (gridTypeEl && gridTypeEl.value) ? gridTypeEl.value : (wps.find(w => w && w.gridType)?.gridType || '');
     const isTargetSplat = gridTypeVal === 'target-splat' ||
+      gridTypeVal === 'photo-sphere' ||
       (wp.gridType === 'target-splat') ||
-      (wp.layerId && typeof flightLayers !== 'undefined' && flightLayers.some(l => l.id === wp.layerId && l.pattern === 'target-splat')) ||
+      (wp.gridType === 'photo-sphere') ||
+      (wp.isPhotoSpherePoint) ||
+      (wp.isPhotoSphere) ||
+      (wp.layerPattern === 'photo-sphere') ||
+      (wp.layerId && typeof flightLayers !== 'undefined' && flightLayers.some(l => l.id === wp.layerId && (l.pattern === 'target-splat' || l.pattern === 'photo-sphere'))) ||
       (wp.majorTurnSettlingTime !== undefined && wp.layerId);
 
     if (wpIsStopAndShoot && autoSettling && reposInfo.needsReposition) {
@@ -15652,8 +15657,13 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
     const gridTypeEl = typeof document !== 'undefined' ? document.getElementById('grid-type') : null;
     const gridTypeVal = (gridTypeEl && gridTypeEl.value) ? gridTypeEl.value : (waypoints.find(w => w && w.gridType)?.gridType || '');
     const isTargetSplat = gridTypeVal === 'target-splat' ||
+      gridTypeVal === 'photo-sphere' ||
       (wp.gridType === 'target-splat') ||
-      (wp.layerId && typeof flightLayers !== 'undefined' && flightLayers.some(l => l.id === wp.layerId && l.pattern === 'target-splat')) ||
+      (wp.gridType === 'photo-sphere') ||
+      (wp.isPhotoSpherePoint) ||
+      (wp.isPhotoSphere) ||
+      (wp.layerPattern === 'photo-sphere') ||
+      (wp.layerId && typeof flightLayers !== 'undefined' && flightLayers.some(l => l.id === wp.layerId && (l.pattern === 'target-splat' || l.pattern === 'photo-sphere'))) ||
       (wp.majorTurnSettlingTime !== undefined && wp.layerId);
 
     if (wpIsStopAndShoot && autoSettling && reposInfo.needsReposition) {
@@ -15963,7 +15973,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
   const globalHoverEl = document.getElementById('global-hover-time');
   const globalHoverTime = globalHoverEl ? parseInt(globalHoverEl.value) : 0;
 
-  const droneModelEl = document.getElementById('drone-model');
+  const droneModelEl = typeof document !== 'undefined' ? document.getElementById('drone-model') : null;
   const parsedDroneVal = droneModelEl ? parseInt(droneModelEl.value, 10) : NaN;
   const droneEnumValue = !isNaN(parsedDroneVal) ? parsedDroneVal : 68;
   const isConsumer = (parsedDroneVal === 68 || parsedDroneVal === 89);
@@ -16020,6 +16030,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
       let prevClusterLon = null;
       for (let k = ci; k < cj; k++) {
         const wp = sanitizedWps[k];
+        wp._clusterSize = clusterSize;
         const isNadir = (wp.pitch === -90 || wp.pitch === '-90' || (wp.ringIndex === 3 && wp.isPhotoSpherePoint));
         if (isNadir) {
           wp.lat = clusterLat;
@@ -16124,11 +16135,18 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     const modTurnSettling = wp.moderateTurnSettlingTime !== undefined ? wp.moderateTurnSettlingTime : 4.0;
     const pitchSettling = wp.pitchSettlingTime !== undefined ? wp.pitchSettlingTime : 3.0;
 
-    const isExtendedSettling = (gridType === 'target-splat') ||
-      (wp.gridType === 'target-splat') ||
-      (wp.layerId && (wp.majorTurnSettlingTime !== undefined || (typeof flightLayers !== 'undefined' && flightLayers.some(l => l.id === wp.layerId && l.pattern === 'target-splat'))));
+    const isPhotoSphere = (gridType === 'photo-sphere') || (wp.isPhotoSphere) || (wp.isPhotoSpherePoint) || (wp.layerPattern === 'photo-sphere');
 
-    if (isStopAndShoot && autoSettlingEnabled) {
+    const isExtendedSettling = (gridType === 'target-splat') ||
+      (gridType === 'photo-sphere') ||
+      isPhotoSphere ||
+      (wp.gridType === 'target-splat') ||
+      (wp.gridType === 'photo-sphere') ||
+      (wp.isPhotoSpherePoint) ||
+      (wp._clusterSize > 1) ||
+      (wp.layerId && (wp.majorTurnSettlingTime !== undefined || (typeof flightLayers !== 'undefined' && flightLayers.some(l => l.id === wp.layerId && (l.pattern === 'target-splat' || l.pattern === 'photo-sphere')))));
+
+    if ((isStopAndShoot || isPhotoSphere) && autoSettlingEnabled) {
       if (effectiveHover < baseSettling) {
         effectiveHover = baseSettling;
       }
@@ -16138,7 +16156,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
         } else if (reposInfo.headingDiff >= 25) {
           effectiveHover = Math.max(effectiveHover, modTurnSettling);
         } else if (reposInfo.isGimbalChanged) {
-          effectiveHover = Math.max(effectiveHover, pitchSettling);
+          effectiveHover = Math.max(effectiveHover, isPhotoSphere ? Math.max(modTurnSettling, pitchSettling) : pitchSettling);
         }
       }
     }
@@ -16183,7 +16201,6 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
           </wpml:action>`);
     }
 
-    const isPhotoSphere = (gridType === 'photo-sphere') || (wp.isPhotoSphere) || (wp.layerPattern === 'photo-sphere');
     if (isPhotoSphere && !isConsumer) {
       let targetHeading = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
       targetHeading = ((targetHeading % 360) + 360) % 360;
@@ -16250,7 +16267,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     }
 
     // 5. If Stop & Shoot is active, also add photo trigger at this waypoint (skipping transit turnaround overshoot waypoints)
-    if (isStopAndShoot && wp.skipPhoto !== true) {
+    if ((isStopAndShoot || isPhotoSphere) && wp.skipPhoto !== true) {
       waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
@@ -16456,13 +16473,24 @@ ${waypointActions.join('\n')}
     if (wp.isTurnaroundPoint && wp.turnaroundSpeed !== null && wp.turnaroundSpeed !== undefined && !isNaN(wp.turnaroundSpeed)) {
       actualSpeed = wp.turnaroundSpeed;
     }
+    // Photo Sphere / Micro-Cluster Speed Clamping:
+    // When waypoints belong to a photo-sphere or micro-spaced cluster (distance < 2.0m),
+    // clamp speed to 1.0 m/s so the aircraft does not violently pitch, accelerate, or overshoot over sub-meter distances.
+    if (isPhotoSphere) {
+      actualSpeed = Math.min(actualSpeed, 1.0);
+    }
 
     // Consumer Drone Golden Rule & Turn Mode resolution:
     // Consumer drones (Mini 4 Pro / Air 3) strictly require ContinuityCurvature and useStraightLine: 0
     let actualTurnMode;
     let actualUseStraightLine = 0;
 
-    if (isConsumer) {
+    if (isPhotoSphere) {
+      actualTurnMode = isConsumer 
+        ? 'toPointAndStopWithContinuityCurvature'
+        : 'toPointAndStopWithDiscontinuityCurvature';
+      actualUseStraightLine = 0;
+    } else if (isConsumer) {
       actualTurnMode = isStopAndShoot 
         ? 'toPointAndStopWithContinuityCurvature'
         : 'toPointAndPassWithContinuityCurvature';
@@ -17055,6 +17083,51 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
             /<coordinates>[\s\S]*?<\/coordinates>/,
             `<coordinates>\n            ${newLon.toFixed(13)},${newLat.toFixed(13)}\n          </coordinates>`
           );
+
+          // Photo Sphere / Micro-Cluster Stability Enforcement:
+          // 1. Clamp waypointSpeed to 1.0 m/s to prevent violent bursts over sub-meter distances
+          pmParts[item.pmIdx] = pmParts[item.pmIdx].replace(
+            /<wpml:waypointSpeed>[^<]+<\/wpml:waypointSpeed>/g,
+            '<wpml:waypointSpeed>1</wpml:waypointSpeed>'
+          );
+          // 2. Ensure stop turnMode
+          pmParts[item.pmIdx] = pmParts[item.pmIdx].replace(
+            /<wpml:waypointTurnMode>[^<]+<\/wpml:waypointTurnMode>/g,
+            isConsumer ? '<wpml:waypointTurnMode>toPointAndStopWithContinuityCurvature</wpml:waypointTurnMode>' : '<wpml:waypointTurnMode>toPointAndStopWithDiscontinuityCurvature</wpml:waypointTurnMode>'
+          );
+          // 3. Ensure hover action precedes takePhoto with adequate dwell time (>= 4.0s for turns >= 25°, >= 5.0s for turns >= 60°)
+          const hasPhoto = pmParts[item.pmIdx].includes('takePhoto');
+          if (hasPhoto) {
+            let requiredHover = 4.0;
+            if (k > ci) {
+              let hDiff = Math.abs(item.heading - parsedCoords[k - 1].heading) % 360;
+              if (hDiff > 180) hDiff = 360 - hDiff;
+              if (hDiff >= 60) requiredHover = 5.0;
+            }
+            const hoverMatch = pmParts[item.pmIdx].match(/<wpml:hoverTime>([^<]+)<\/wpml:hoverTime>/);
+            if (hoverMatch) {
+              const currentHover = parseFloat(hoverMatch[1]);
+              if (currentHover < requiredHover) {
+                pmParts[item.pmIdx] = pmParts[item.pmIdx].replace(
+                  /<wpml:hoverTime>[^<]+<\/wpml:hoverTime>/g,
+                  `<wpml:hoverTime>${requiredHover}</wpml:hoverTime>`
+                );
+              }
+            } else {
+              // Inject hover action immediately before takePhoto
+              const hoverAct = `          <wpml:action>
+            <wpml:actionId>990${k}</wpml:actionId>
+            <wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:hoverTime>${requiredHover}</wpml:hoverTime>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>\n`;
+              pmParts[item.pmIdx] = pmParts[item.pmIdx].replace(
+                /(\s*<wpml:action>[\s\S]*?<wpml:actionActuatorFunc>takePhoto<\/wpml:actionActuatorFunc>)/,
+                `${hoverAct}$1`
+              );
+            }
+          }
         }
       }
       ci = cj;
