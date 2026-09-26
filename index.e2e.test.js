@@ -6602,6 +6602,57 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.notStrictEqual(e2eResult.timeDisplay, '00:00 / 00:00', 'Time display must reflect valid flight duration');
     assert.strictEqual(e2eResult.sliderMax, '1', 'Timeline slider max should match point indices');
   });
+
+  test('E2E: About modal Key Capabilities renders summarized pillars and updated version tag (v1.131.2)', async () => {
+    const result = await page.evaluate(async () => {
+      const aboutBtn = document.getElementById('about-btn');
+      const aboutModal = document.getElementById('about-modal');
+      const closeBtn = document.getElementById('close-about-btn');
+
+      if (!aboutBtn || !aboutModal || !closeBtn) {
+        return { success: false, reason: 'Elements missing' };
+      }
+
+      // Open modal
+      aboutBtn.click();
+      const isOpen = !aboutModal.classList.contains('hidden');
+
+      const versionTag = aboutModal.querySelector('.version-tag')?.textContent || '';
+      const keyCapHeader = Array.from(aboutModal.querySelectorAll('h4')).find(h => h.textContent.includes('Key Capabilities'));
+      const keyCapList = keyCapHeader?.nextElementSibling;
+      const listItems = keyCapList ? Array.from(keyCapList.querySelectorAll('li')).map(li => li.textContent) : [];
+
+      // Close modal
+      closeBtn.click();
+      const isClosed = aboutModal.classList.contains('hidden');
+
+      return {
+        success: true,
+        isOpen,
+        isClosed,
+        versionTag,
+        listItemsCount: listItems.length,
+        hasPatternGen: listItems.some(t => t.includes('Autonomous Flight Pattern Generation:')),
+        hasTrajectory: listItems.some(t => t.includes('Interactive 2D/3D Trajectory & FPV HUD:')),
+        hasAirspace: listItems.some(t => t.includes('Airspace Intelligence & Safety Detours:')),
+        hasHierarchy: listItems.some(t => t.includes('Precision Dynamics & Three-Tier Hierarchy:')),
+        hasAnalytics: listItems.some(t => t.includes('Mission Analytics & Instant RC Sync:')),
+        hasDiagnostics: listItems.some(t => t.includes('Flight Diagnostics & Inspection Telemetry:'))
+      };
+    });
+
+    assert.strictEqual(result.success, true);
+    assert.strictEqual(result.isOpen, true, 'About modal should be visible upon clicking about button');
+    assert.strictEqual(result.isClosed, true, 'About modal should close upon clicking close button');
+    assert.strictEqual(result.versionTag, 'Version 1.131.2', 'About modal version tag should be Version 1.131.2');
+    assert.strictEqual(result.listItemsCount, 6, 'Key capabilities should be summarized into 6 structured pillars');
+    assert.strictEqual(result.hasPatternGen, true);
+    assert.strictEqual(result.hasTrajectory, true);
+    assert.strictEqual(result.hasAirspace, true);
+    assert.strictEqual(result.hasHierarchy, true);
+    assert.strictEqual(result.hasAnalytics, true);
+    assert.strictEqual(result.hasDiagnostics, true);
+  });
 });
 
 

@@ -1,3 +1,11 @@
+## [1.131.2] - 2026-09-26
+
+### Changed
+- **About Modal Key Capabilities Synthesis & Summary (`index_template.html`, `index.html`)**:
+  - Summarized and restructured the About dialog's "Key Capabilities" into six comprehensive pillars: Autonomous Flight Pattern Generation, Interactive 2D/3D Trajectory & FPV HUD, Airspace Intelligence & Safety Detours, Precision Dynamics & Three-Tier Hierarchy, Mission Analytics & Instant RC Sync, and Flight Diagnostics & Inspection Telemetry.
+  - Replaced raw LaTeX math markup (`$-90^\circ$ to $+60^\circ$`) with proper HTML character entities (`&minus;90&deg; to +60&deg;`).
+  - Improved visual typography and readability with structured bold headers, normalized line heights, and compact spacing.
+
 ## [1.131.1] - 2026-09-26
 
 ### Fixed

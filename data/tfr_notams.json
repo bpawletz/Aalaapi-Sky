@@ -1,5 +1,16 @@
 [
   {
+    "notam_id": "6/5701",
+    "facility": "ZSE",
+    "state": "OR",
+    "type": "HAZARDS",
+    "description": "14 NM NE OF PRAIRIE CITY, OR, Sunday, September 27, 2026 through Tuesday, September 29, 2026 UTC",
+    "mod_date": "09/26/2026 15:59:00",
+    "mod_abs_time": "202609261559",
+    "is_new": "Y",
+    "gid": "6/5701"
+  },
+  {
     "notam_id": "6/5573",
     "facility": "ZHU",
     "state": "TX",
@@ -73,7 +84,7 @@
     "description": "Grand Junction, CO, Thursday, October 1, 2026 through Sunday, October 4, 2026 UTC",
     "mod_date": "09/25/2026 20:55:00",
     "mod_abs_time": "202609252055",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/5558"
   },
   {
@@ -84,7 +95,7 @@
     "description": "MAYPORT, FL, Sunday, September 27, 2026 through Friday, October 2, 2026 Local",
     "mod_date": "09/25/2026 20:26:00",
     "mod_abs_time": "202609252026",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/5553"
   },
   {
@@ -95,7 +106,7 @@
     "description": "14 NM NW BURNS, OR, Sunday, September 27, 2026 UTC",
     "mod_date": "09/25/2026 19:14:00",
     "mod_abs_time": "202609251914",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/5552"
   },
   {
@@ -106,7 +117,7 @@
     "description": "Austin, TX, Friday, October 2, 2026 through Monday, October 12, 2026 UTC",
     "mod_date": "09/25/2026 18:22:00",
     "mod_abs_time": "202609251822",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/5548"
   },
   {
@@ -117,7 +128,7 @@
     "description": "Macon, GA, Tuesday, September 29, 2026 Local",
     "mod_date": "09/25/2026 17:59:00",
     "mod_abs_time": "202609251759",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/5547"
   },
   {
@@ -128,7 +139,7 @@
     "description": "Macon, GA, Wednesday, September 30, 2026 Local",
     "mod_date": "09/25/2026 17:57:00",
     "mod_abs_time": "202609251757",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/5546"
   },
   {
@@ -139,7 +150,7 @@
     "description": "Macon, GA, Monday, September 28, 2026 Local",
     "mod_date": "09/25/2026 17:56:00",
     "mod_abs_time": "202609251756",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/5545"
   },
   {
@@ -174,17 +185,6 @@
     "mod_abs_time": "202609242203",
     "is_new": "N",
     "gid": "6/5449"
-  },
-  {
-    "notam_id": "6/5413",
-    "facility": "ZTL",
-    "state": "TN",
-    "type": "VIP",
-    "description": "Knoxville, TN, Saturday, September 26, 2026 Local",
-    "mod_date": "09/24/2026 20:00:00",
-    "mod_abs_time": "202609242000",
-    "is_new": "N",
-    "gid": "6/5413"
   },
   {
     "notam_id": "6/5408",
@@ -319,17 +319,6 @@
     "gid": "6/4932"
   },
   {
-    "notam_id": "6/4820",
-    "facility": "ZKC",
-    "state": "KS",
-    "type": "SECURITY",
-    "description": "Atchison, KS, Saturday, September 26, 2026 Local",
-    "mod_date": "09/22/2026 19:55:00",
-    "mod_abs_time": "202609221955",
-    "is_new": "N",
-    "gid": "6/4820"
-  },
-  {
     "notam_id": "6/4808",
     "facility": "ZLA",
     "state": "CA",
@@ -460,17 +449,6 @@
     "mod_abs_time": "202609211510",
     "is_new": "N",
     "gid": "6/4222"
-  },
-  {
-    "notam_id": "6/4159",
-    "facility": "ZDC",
-    "state": "VA",
-    "type": "AIR SHOWS/SPORTS",
-    "description": "Leesburg, VA, Saturday, September 26, 2026 UTC",
-    "mod_date": "09/21/2026 12:08:00",
-    "mod_abs_time": "202609211208",
-    "is_new": "N",
-    "gid": "6/4159"
   },
   {
     "notam_id": "6/4135",
@@ -614,17 +592,6 @@
     "mod_abs_time": "202609151911",
     "is_new": "N",
     "gid": "6/3251"
-  },
-  {
-    "notam_id": "6/3119",
-    "facility": "ZNY",
-    "state": "NY",
-    "type": "SECURITY",
-    "description": "New York, NY, Sunday, September 20, 2026 through Saturday, September 26, 2026 Local",
-    "mod_date": "09/15/2026 12:57:00",
-    "mod_abs_time": "202609151257",
-    "is_new": "N",
-    "gid": "6/3119"
   },
   {
     "notam_id": "6/3124",
