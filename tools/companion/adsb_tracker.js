@@ -14,6 +14,7 @@
  */
 
 const net = require('node:net');
+const { EventEmitter } = require('node:events');
 const { spawn, execFile } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -70,15 +71,17 @@ function degreesToCardinal(deg) {
   return CARDINAL_POINTS[index];
 }
 
-class AdsbAirspaceTracker {
+class AdsbAirspaceTracker extends EventEmitter {
   /**
    * @param {object} options
    * @param {number} [options.staleTimeoutMs=60000] Time in ms after which aircraft with no updates are pruned
    * @param {number} [options.tcpPort=30003] dump1090 SBS TCP port
    * @param {string} [options.tcpHost='127.0.0.1'] dump1090 SBS TCP host
    * @param {boolean} [options.autoConnect=false] Whether to attempt TCP connection immediately
+   * @param {number} [options.broadcastIntervalMs=500] Throttled broadcast interval in ms for real-time SSE push
    */
   constructor(options = {}) {
+    super();
     this.staleTimeoutMs = options.staleTimeoutMs || 60000;
     this.tcpPort = options.tcpPort || 30003;
     this.tcpHost = options.tcpHost || '127.0.0.1';
@@ -99,12 +102,46 @@ class AdsbAirspaceTracker {
     this.cachedHardware = null;
     this.cachedHardwareTime = 0;
 
+    // Sub-second SSE push broadcast management
+    this.broadcastTimer = null;
+    this.pendingBroadcast = false;
+    this.broadcastIntervalMs = options.broadcastIntervalMs || 500;
+
     // Auto-clean interval
     this.cleanupTimer = setInterval(() => this.pruneStaleAircraft(), 15000);
     if (this.cleanupTimer.unref) this.cleanupTimer.unref();
 
     if (options.autoConnect) {
       this.connectTcp();
+    }
+  }
+
+  /**
+   * Schedules a sub-second push broadcast to all active streaming clients (SSE).
+   * Coalesces high-frequency burst packets into smooth 500ms intervals,
+   * or pushes immediately if immediate is true (e.g. on new breach or manual inject).
+   * @param {boolean} [immediate=false]
+   */
+  scheduleBroadcast(immediate = false) {
+    if (immediate) {
+      if (this.broadcastTimer) {
+        clearTimeout(this.broadcastTimer);
+        this.broadcastTimer = null;
+      }
+      this.pendingBroadcast = false;
+      this.emit('broadcast');
+      return;
+    }
+    this.pendingBroadcast = true;
+    if (!this.broadcastTimer) {
+      this.broadcastTimer = setTimeout(() => {
+        this.broadcastTimer = null;
+        if (this.pendingBroadcast) {
+          this.pendingBroadcast = false;
+          this.emit('broadcast');
+        }
+      }, this.broadcastIntervalMs);
+      if (this.broadcastTimer.unref) this.broadcastTimer.unref();
     }
   }
 
@@ -247,6 +284,7 @@ class AdsbAirspaceTracker {
       this.log('[ADS-B]', `Traffic Sighting: ${record.callsign} (${hex}) | Alt: ${record.altitude} ft | Speed: ${record.speed || 0} kts | ${posStr}`);
     }
 
+    this.scheduleBroadcast();
     return record;
   }
 
@@ -366,6 +404,7 @@ class AdsbAirspaceTracker {
       this.log('[ADS-B]', `Traffic Sighting (Mode S): ${record.callsign} (${hex}) | Alt: ${record.altitude} ft | ${posStr}`);
     }
 
+    this.scheduleBroadcast();
     return record;
   }
 
@@ -452,6 +491,9 @@ class AdsbAirspaceTracker {
       count++;
     }
 
+    if (count > 0) {
+      this.scheduleBroadcast();
+    }
     return count;
   }
 
@@ -625,6 +667,7 @@ class AdsbAirspaceTracker {
     this.aircraft.set(hex, record);
     this.totalPackets++;
     this.lastPacketTimestamp = now;
+    this.scheduleBroadcast(true);
     return record;
   }
 
@@ -640,6 +683,9 @@ class AdsbAirspaceTracker {
         pruned++;
       }
     }
+    if (pruned > 0) {
+      this.scheduleBroadcast(true);
+    }
     return pruned;
   }
 
@@ -647,7 +693,11 @@ class AdsbAirspaceTracker {
    * Clear all tracked aircraft.
    */
   clear() {
+    const count = this.aircraft.size;
     this.aircraft.clear();
+    if (count > 0) {
+      this.scheduleBroadcast(true);
+    }
   }
 
   /**
@@ -865,6 +915,10 @@ class AdsbAirspaceTracker {
    * Shuts down any active socket or timer.
    */
   destroy() {
+    if (this.broadcastTimer) {
+      clearTimeout(this.broadcastTimer);
+      this.broadcastTimer = null;
+    }
     if (this.cleanupTimer) clearInterval(this.cleanupTimer);
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     if (this.socket) {

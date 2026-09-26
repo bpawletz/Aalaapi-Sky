@@ -291,6 +291,41 @@ const adsbTracker = new AdsbAirspaceTracker({
   tcpPort: initialAdsbCfg.adsbPort,
   autoConnect: process.env.NODE_ENV !== 'test' && !process.env.npm_lifecycle_event?.includes('test') && !process.argv.includes('--test')
 });
+
+// Server-Sent Events (SSE) active streaming client pool
+const sseAirspaceClients = new Set();
+
+adsbTracker.on('broadcast', () => {
+  if (sseAirspaceClients.size === 0) return;
+  for (const client of sseAirspaceClients) {
+    try {
+      const payload = adsbTracker.getAirspaceBounds(client.criteria);
+      client.res.write(`data: ${JSON.stringify(payload)}\n\n`);
+    } catch (e) {
+      try { client.res.end(); } catch (_) {}
+      sseAirspaceClients.delete(client);
+    }
+  }
+});
+
+// SSE Keepalive heartbeat every 15s to keep connections alive through proxies
+const sseKeepaliveTimer = setInterval(() => {
+  if (sseAirspaceClients.size === 0) return;
+  for (const client of sseAirspaceClients) {
+    try {
+      client.res.write(': keepalive\n\n');
+    } catch (e) {
+      try { client.res.end(); } catch (_) {}
+      sseAirspaceClients.delete(client);
+    }
+  }
+}, 15000);
+if (sseKeepaliveTimer.unref) sseKeepaliveTimer.unref();
+
+function getSseAirspaceClientsCount() {
+  return sseAirspaceClients.size;
+}
+
 let bleScannerProc = null;
 let bleScannerActive = false;
 let totalBlePackets = 0;
@@ -2658,6 +2693,7 @@ function printStartupBanner() {
   console.log(`  ${colors.green}${colors.bold}POST /api/flight-telemetry${colors.reset} ${colors.gray}3D flight trajectory solver, photo markers & variances${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /api/latest-flight${colors.reset}    ${colors.gray}Auto-extract latest flight log & KMZ over USB MTP${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /api/remote-id/drones${colors.reset} ${colors.gray}Live ASTM F3411 Remote ID detected drones in airspace${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/airspace/stream${colors.reset}   ${colors.gray}Real-time Server-Sent Events (SSE) sub-second aircraft stream${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /api/airspace/bounds${colors.reset}   ${colors.gray}Proximity-filtered manned aircraft & deconfliction state${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /api/airspace/status${colors.reset}   ${colors.gray}Live ADS-B hardware & dump1090 daemon connection health${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /api/tfr/notams${colors.reset}       ${colors.gray}Live FAA Temporary Flight Restrictions (TFR) NOTAM list${colors.reset}`);
@@ -4003,6 +4039,66 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // 9a-0. Real-time Server-Sent Events (SSE) Airspace Stream
+    if ((pathname === '/api/airspace/stream' || pathname === '/api/adsb/stream') && req.method === 'GET') {
+      const latParam = url.searchParams.get('lat') || url.searchParams.get('latitude');
+      const lonParam = url.searchParams.get('lon') || url.searchParams.get('lng') || url.searchParams.get('longitude');
+      const radiusParam = url.searchParams.get('radius') || url.searchParams.get('range');
+      const ceilingParam = url.searchParams.get('ceiling') || url.searchParams.get('altitude');
+      const includeSafeParam = url.searchParams.get('includeSafe');
+
+      const homeLat = latParam !== null ? parseFloat(latParam) : 0;
+      const homeLon = lonParam !== null ? parseFloat(lonParam) : 0;
+      
+      let radiusMeters = 3.0 * METERS_PER_STATUTE_MILE;
+      if (radiusParam !== null) {
+        const parsedRad = parseFloat(radiusParam);
+        if (!isNaN(parsedRad) && parsedRad > 0) {
+          radiusMeters = parsedRad <= 50 ? parsedRad * METERS_PER_STATUTE_MILE : parsedRad;
+        }
+      }
+
+      let maxCeilingFeet = 2500;
+      if (ceilingParam !== null) {
+        const parsedCeiling = parseFloat(ceilingParam);
+        if (!isNaN(parsedCeiling) && parsedCeiling > 0) {
+          maxCeilingFeet = parsedCeiling;
+        }
+      }
+
+      const includeSafe = includeSafeParam !== 'false' && includeSafeParam !== '0';
+
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*'
+      });
+      if (res.flushHeaders) res.flushHeaders();
+
+      const client = {
+        res,
+        req,
+        criteria: {
+          homeLat,
+          homeLon,
+          radiusMeters,
+          maxCeilingFeet,
+          includeSafe
+        }
+      };
+
+      sseAirspaceClients.add(client);
+      req.on('close', () => {
+        sseAirspaceClients.delete(client);
+      });
+
+      res.write(': connected\n\n');
+      const initialPayload = adsbTracker.getAirspaceBounds(client.criteria);
+      res.write(`data: ${JSON.stringify(initialPayload)}\n\n`);
+      return;
+    }
+
     // 9a. ADS-B Manned Aircraft Airspace Awareness Endpoints (Issue #92)
     if ((pathname === '/api/airspace/bounds' || pathname === '/api/adsb/bounds' || pathname === '/api/adsb/aircraft') && req.method === 'GET') {
       const latParam = url.searchParams.get('lat') || url.searchParams.get('latitude');
@@ -4050,7 +4146,12 @@ const server = http.createServer(async (req, res) => {
       const status = adsbTracker.getStatus();
       const cfg = getAdsbConfig();
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(Object.assign({ success: true, adsbHost: cfg.adsbHost, adsbPort: cfg.adsbPort }, status)));
+      res.end(JSON.stringify(Object.assign({
+        success: true,
+        adsbHost: cfg.adsbHost,
+        adsbPort: cfg.adsbPort,
+        sseClients: sseAirspaceClients.size
+      }, status)));
       return;
     }
 
@@ -4518,6 +4619,8 @@ module.exports = {
   wireframeEngine,
   packageInspectionArchive,
   adsbTracker,
+  getSseAirspaceClientsCount,
+  sseAirspaceClients,
   VERSION,
   PORT
 };
