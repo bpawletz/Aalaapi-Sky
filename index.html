@@ -7885,10 +7885,22 @@ html, body {
               </div>
             </div>
 
+            <!-- ADS-B Feed Server Host & Port Config -->
+            <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08);">
+              <div style="font-size: 0.7rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">
+                dump1090 / SBS Server Settings:
+              </div>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <input type="text" id="adsb-host-input" placeholder="Server Host (e.g. 127.0.0.1)" value="127.0.0.1" style="flex: 2; font-size: 0.68rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 3px 6px;">
+                <input type="number" id="adsb-port-input" placeholder="Port" value="30003" min="1" max="65535" style="width: 65px; font-size: 0.68rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 3px 6px;">
+                <button type="button" id="adsb-server-save-btn" class="btn-sm" style="padding: 3px 8px; font-size: 0.68rem; cursor: pointer; white-space: nowrap;">Connect</button>
+              </div>
+            </div>
+
             <!-- Custom ADS-B Endpoint Config (Collapsible/Optional) -->
             <div style="margin-top: 8px;">
               <details style="font-size: 0.7rem; color: var(--text-muted);">
-                <summary style="cursor: pointer; user-select: none;">Custom Endpoint URL (Optional)</summary>
+                <summary style="cursor: pointer; user-select: none;">Bridge API Bounds URL (Optional)</summary>
                 <div style="margin-top: 6px; display: flex; gap: 4px;">
                   <input type="text" id="adsb-endpoint-input" placeholder="e.g. http://localhost:8765/api/airspace/bounds" style="flex: 1; font-size: 0.68rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 3px 6px;">
                   <button type="button" id="adsb-endpoint-save-btn" class="btn-sm" style="padding: 2px 8px; font-size: 0.68rem; cursor: pointer;">Save</button>
@@ -33384,6 +33396,19 @@ const AdsbAirspaceManager = {
       return;
     }
 
+    const targetHost = st.tcpHost || st.adsbHost || '127.0.0.1';
+    const targetPort = st.tcpPort || st.adsbPort || 30003;
+    const hostPortStr = `${targetHost}:${targetPort}`;
+
+    const hostInput = document.getElementById('adsb-host-input');
+    const portInput = document.getElementById('adsb-port-input');
+    if (hostInput && document.activeElement !== hostInput) {
+      hostInput.value = targetHost;
+    }
+    if (portInput && document.activeElement !== portInput) {
+      portInput.value = targetPort;
+    }
+
     // Hardware status
     if (st.hardware && st.hardware.detected) {
       if (st.hardware.driverStatus === 'needs_zadig') {
@@ -33397,6 +33422,9 @@ const AdsbAirspaceManager = {
         hwEl.textContent = 'Ready (WinUSB Active)';
         hwEl.style.color = '#10b981';
       }
+    } else if (st.isRemoteServer || targetHost !== '127.0.0.1') {
+      hwEl.textContent = 'Remote Feed (No USB Dongle Needed)';
+      hwEl.style.color = '#38bdf8';
     } else {
       hwEl.textContent = 'Not Detected';
       hwEl.style.color = '#94a3b8';
@@ -33404,7 +33432,7 @@ const AdsbAirspaceManager = {
 
     // dump1090 daemon stream status
     if (st.connected) {
-      streamEl.textContent = `Connected (Port ${st.tcpPort || 30003})`;
+      streamEl.textContent = `Connected (${hostPortStr})`;
       streamEl.style.color = '#10b981';
       if (summaryEl) {
         summaryEl.textContent = 'ACTIVE';
@@ -33415,7 +33443,7 @@ const AdsbAirspaceManager = {
         tipEl.style.display = 'none';
       }
     } else {
-      streamEl.textContent = `Waiting on Port ${st.tcpPort || 30003}...`;
+      streamEl.textContent = `Waiting on ${hostPortStr}...`;
       streamEl.style.color = '#f59e0b';
       if (summaryEl) {
         summaryEl.textContent = 'WAITING';
@@ -33424,7 +33452,7 @@ const AdsbAirspaceManager = {
       }
       if (tipEl && (!st.hardware || st.hardware.driverStatus !== 'needs_zadig')) {
         tipEl.style.display = 'block';
-        tipEl.innerHTML = '💡 <strong>Waiting for dump1090:</strong> Start <code>dump1090.exe --interactive --net</code> to stream Mode S messages on TCP port 30003.';
+        tipEl.innerHTML = `💡 <strong>Waiting for dump1090:</strong> Ensure dump1090 or your SBS feed is running on <code>${hostPortStr}</code>.`;
       }
     }
   },
@@ -33983,6 +34011,41 @@ const AdsbAirspaceManager = {
         this.ceilingFeet = parseInt(e.target.value, 10) || 2500;
         this.saveSettings();
         this.updateControlsUI();
+        this.pollAirspace();
+      });
+    }
+
+    const serverSaveBtn = document.getElementById('adsb-server-save-btn');
+    const hostInput = document.getElementById('adsb-host-input');
+    const portInput = document.getElementById('adsb-port-input');
+    if (serverSaveBtn && (hostInput || portInput)) {
+      serverSaveBtn.addEventListener('click', async () => {
+        const hostVal = hostInput ? hostInput.value.trim() : '127.0.0.1';
+        const portVal = portInput ? portInput.value.trim() : '30003';
+        serverSaveBtn.textContent = 'Connecting...';
+        serverSaveBtn.disabled = true;
+
+        try {
+          const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://localhost:8765';
+          const res = await fetch(`${apiBase}/api/config/adsb`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ adsbHost: hostVal, adsbPort: portVal })
+          });
+          if (res.ok) {
+            serverSaveBtn.textContent = 'Saved!';
+          } else {
+            serverSaveBtn.textContent = 'Error';
+          }
+        } catch (e) {
+          serverSaveBtn.textContent = 'Saved Local';
+        }
+
+        setTimeout(() => {
+          serverSaveBtn.textContent = 'Connect';
+          serverSaveBtn.disabled = false;
+        }, 1500);
+
         this.pollAirspace();
       });
     }

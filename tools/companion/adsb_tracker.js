@@ -587,17 +587,59 @@ class AdsbAirspaceTracker {
   /**
    * Returns current hardware and receiver daemon status.
    */
+  /**
+   * Dynamically updates the target ADS-B / dump1090 TCP server host and port.
+   * Closes any existing socket connection and immediately attempts to connect to the new server.
+   * @param {object} config
+   * @param {string} [config.tcpHost]
+   * @param {number|string} [config.tcpPort]
+   */
+  updateServerConfig(config = {}) {
+    if (config.tcpHost && typeof config.tcpHost === 'string') {
+      const trimmedHost = config.tcpHost.trim();
+      if (trimmedHost) {
+        this.tcpHost = trimmedHost;
+      }
+    }
+    if (config.tcpPort !== undefined && config.tcpPort !== null) {
+      const portNum = parseInt(config.tcpPort, 10);
+      if (!isNaN(portNum) && portNum > 0 && portNum <= 65535) {
+        this.tcpPort = portNum;
+      }
+    }
+
+    this.lastWaitingLog = 0;
+
+    if (this.socket) {
+      try { this.socket.destroy(); } catch (e) {}
+      this.socket = null;
+    }
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.connected = false;
+    this.connecting = false;
+
+    this.log('[ADS-B TRACKER]', `Target server updated to ${this.tcpHost}:${this.tcpPort}. Reconnecting...`);
+    this.connectTcp();
+    return { success: true, tcpHost: this.tcpHost, tcpPort: this.tcpPort };
+  }
+
   getStatus() {
+    const hw = this.detectHardware();
+    const isRemoteServer = (this.tcpHost !== '127.0.0.1' && this.tcpHost !== 'localhost');
     return {
       connected: this.connected,
       connecting: this.connecting,
       driverType: this.driverType,
       tcpHost: this.tcpHost,
       tcpPort: this.tcpPort,
+      isRemoteServer,
       totalPackets: this.totalPackets,
       lastPacketTimestamp: this.lastPacketTimestamp,
       activeAircraftCount: this.aircraft.size,
-      hardware: this.detectHardware()
+      hardware: hw
     };
   }
 
@@ -610,9 +652,26 @@ class AdsbAirspaceTracker {
 
     try {
       this.socket = new net.Socket();
+      this.socket.setTimeout(2500);
       let buffer = '';
 
+      this.socket.on('timeout', () => {
+        const wasConnected = this.connected;
+        this.connected = false;
+        this.connecting = false;
+        if (this.socket) {
+          try { this.socket.destroy(); } catch (e) {}
+          this.socket = null;
+        }
+        if (wasConnected) {
+          this.log('[ADS-B TRACKER]', `Connection timeout to dump1090 on ${this.tcpHost}:${this.tcpPort}. Reconnecting in 10s...`);
+        }
+      });
+
       this.socket.connect(this.tcpPort, this.tcpHost, () => {
+        if (this.socket) {
+          this.socket.setTimeout(0);
+        }
         this.connected = true;
         this.connecting = false;
         this.driverType = 'dump1090-tcp';
