@@ -1,3 +1,14 @@
+## [1.129.1] - 2026-09-26
+
+### Fixed
+- **Photo Sphere Premature Photo Capture & Motion Stabilization (`buildWaylinesWpml` & `validateAndFixWpml`)**:
+  - **In-Flight Settling Hovers for 360 Pano Angles**: Resolved bug on DJI Mini 4 Pro where photos during 360 photo sphere missions were captured before the aircraft had finished translating, rotating yaw (30° steps), and settling rotational inertia and gimbal pitch.
+  - **Extended Auto-Settling Propagation**: Expanded `isExtendedSettling` to automatically cover `photo-sphere` missions, enforcing $\ge 4.0\text{s}$ settling hovers on turns $\ge 25^\circ$, $\ge 5.0\text{s}$ on turns $\ge 60^\circ$, and $\ge 3.0\text{s}$ on gimbal pitch adjustments prior to shutter trigger.
+  - **Sub-Meter Translation Speed Clamping**: Clamped waypoint traversal speed to $\le 1.0\text{ m/s}$ across micro-spaced photo-sphere points ($\approx 0.65\text{m} - 1.25\text{m}$ separation), preventing rapid acceleration, excessive pitch tilt, and momentum overshoot.
+  - **Sequential Turn Mode Enforcement**: Enforced `toPointAndStopWithContinuityCurvature` (consumer) and stop modes on all photo sphere waypoints to guarantee complete stops at each photo node.
+  - **KMZ Auto-Repair Injection**: In `validateAndFixWpml`, automatically injects or repairs preceding settling hovers ($\ge 4.0\text{s}$) and clamps transit speed to $1.0\text{ m/s}$ on micro-spaced clusters missing dwell times.
+  - **Synchronized Duration Estimations**: Updated `calculateStats` and `getSubMissionFlightTime` to account for photo-sphere turn settling delays.
+
 ## [1.129.0] - 2026-09-26
 
 ### Added
