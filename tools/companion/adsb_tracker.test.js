@@ -291,6 +291,12 @@ describe('AdsbAirspaceTracker Tests', () => {
       assert.strictEqual(clearData.success, true);
       assert.strictEqual(adsbTracker.aircraft.size, 0);
     } finally {
+      const { saveAdsbConfig } = require('./server.js');
+      saveAdsbConfig('127.0.0.1', 30003);
+      if (adsbTracker) {
+        adsbTracker.updateServerConfig({ tcpHost: '127.0.0.1', tcpPort: 30003 });
+        adsbTracker.destroy();
+      }
       await new Promise((resolve) => server.close(resolve));
     }
   });

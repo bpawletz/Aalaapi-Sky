@@ -652,6 +652,7 @@ class AdsbAirspaceTracker {
 
     try {
       this.socket = new net.Socket();
+      if (this.socket.unref) this.socket.unref();
       this.socket.setTimeout(2500);
       let buffer = '';
 
@@ -671,6 +672,7 @@ class AdsbAirspaceTracker {
       this.socket.connect(this.tcpPort, this.tcpHost, () => {
         if (this.socket) {
           this.socket.setTimeout(0);
+          if (this.socket.unref) this.socket.unref();
         }
         this.connected = true;
         this.connecting = false;

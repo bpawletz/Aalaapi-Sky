@@ -5495,7 +5495,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.128.4</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.129.0</span></h1>
 
 
 
@@ -8150,6 +8150,14 @@ html, body {
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              📡 Configurable ADS-B Remote Feed &amp; Server Port (v1.129.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Pilots can now connect the Aalaapi Sky companion bridge to dump1090 or SBS Mode S feeds running on remote local network devices or dedicated receiver stations! Features custom host and port inputs in the ADS-B control drawer with dynamic socket switching, REST API persistence (<code>/api/config/adsb</code>), browser offline fallback, and automatic status recognition (<code>Remote Feed (No USB Dongle Needed)</code>) without local RTL-SDR driver warnings.
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🚫 Resilient Live FAA TFR Ingestion &amp; Static Web Support (v1.128.4)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -9083,7 +9091,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.128.4</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.129.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -9146,6 +9154,14 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.129.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>📡 Configurable ADS-B Server Host &amp; Port:</strong> Added server host/port inputs and Connect button in the ADS-B drawer, supporting custom remote dump1090/SBS network feeds with dynamic socket switching.</li>
+              <li><strong>🛰️ Remote Feed Hardware Status:</strong> Displays <code>Remote Feed (No USB Dongle Needed)</code> in cyan when connecting across local networks, preventing false RTL-SDR dongle and Zadig driver prompts.</li>
+              <li><strong>🔄 Cross-Session &amp; Offline Persistence:</strong> Persists configuration in <code>companion_config.json</code> (with <code>ADSB_HOST</code>/<code>ADSB_PORT</code> env fallbacks) and browser <code>localStorage</code> for offline resilience.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.128.4):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -33120,6 +33136,8 @@ const AdsbAirspaceManager = {
   radiusMiles: 3.0,
   ceilingFeet: 2500,
   customEndpoint: '',
+  serverHost: '127.0.0.1',
+  serverPort: 30003,
   isDrawerOpen: false,
   isSnoozed: false,
   snoozeUntil: 0,
@@ -33170,6 +33188,12 @@ const AdsbAirspaceManager = {
 
         const savedEndpoint = localStorage.getItem('aalaapi_adsb_custom_endpoint');
         if (savedEndpoint) this.customEndpoint = savedEndpoint;
+
+        const savedHost = localStorage.getItem('aalaapi_adsb_host');
+        if (savedHost) this.serverHost = savedHost.trim();
+
+        const savedPort = localStorage.getItem('aalaapi_adsb_port');
+        if (savedPort) this.serverPort = parseInt(savedPort, 10) || 30003;
       }
     } catch (e) {}
   },
@@ -33184,6 +33208,8 @@ const AdsbAirspaceManager = {
         localStorage.setItem('aalaapi_adsb_radius_mi', String(this.radiusMiles));
         localStorage.setItem('aalaapi_adsb_ceiling_ft', String(this.ceilingFeet));
         localStorage.setItem('aalaapi_adsb_custom_endpoint', this.customEndpoint || '');
+        localStorage.setItem('aalaapi_adsb_host', this.serverHost || '127.0.0.1');
+        localStorage.setItem('aalaapi_adsb_port', String(this.serverPort || 30003));
       }
     } catch (e) {}
   },
@@ -33396,8 +33422,8 @@ const AdsbAirspaceManager = {
       return;
     }
 
-    const targetHost = st.tcpHost || st.adsbHost || '127.0.0.1';
-    const targetPort = st.tcpPort || st.adsbPort || 30003;
+    const targetHost = (st && (st.tcpHost || st.adsbHost)) ? (st.tcpHost || st.adsbHost) : (this.serverHost || '127.0.0.1');
+    const targetPort = (st && (st.tcpPort || st.adsbPort)) ? (st.tcpPort || st.adsbPort) : (this.serverPort || 30003);
     const hostPortStr = `${targetHost}:${targetPort}`;
 
     const hostInput = document.getElementById('adsb-host-input');
@@ -33827,6 +33853,16 @@ const AdsbAirspaceManager = {
 
     const endpointInput = document.getElementById('adsb-endpoint-input');
     if (endpointInput) endpointInput.value = this.customEndpoint || '';
+
+    const hostInput = document.getElementById('adsb-host-input');
+    if (hostInput && document.activeElement !== hostInput) {
+      hostInput.value = this.serverHost || '127.0.0.1';
+    }
+
+    const portInput = document.getElementById('adsb-port-input');
+    if (portInput && document.activeElement !== portInput) {
+      portInput.value = this.serverPort || 30003;
+    }
   },
 
   updateDrawerAircraftList() {
@@ -34022,6 +34058,9 @@ const AdsbAirspaceManager = {
       serverSaveBtn.addEventListener('click', async () => {
         const hostVal = hostInput ? hostInput.value.trim() : '127.0.0.1';
         const portVal = portInput ? portInput.value.trim() : '30003';
+        this.serverHost = hostVal;
+        this.serverPort = parseInt(portVal, 10) || 30003;
+        this.saveSettings();
         serverSaveBtn.textContent = 'Connecting...';
         serverSaveBtn.disabled = true;
 
@@ -35955,13 +35994,21 @@ const FlightDiagnostics = {
       }
     } else {
       try {
+        const cleanWps = Array.isArray(wps) ? wps.map(w => ({
+          lat: typeof w.lat === 'function' ? w.lat() : Number(w.lat || 0),
+          lon: typeof w.lon === 'function' ? w.lon() : (w.lng !== undefined ? Number(w.lng) : Number(w.lon || 0)),
+          altitude: Number(w.altitude || w.alt || altitude || 21.0),
+          speed: Number(w.speed || speed || 4.0),
+          gimbalPitch: Number(w.gimbalPitch !== undefined ? w.gimbalPitch : gimbalPitch)
+        })) : [];
+
         let res = await fetch(`${apiBase}/api/flight-telemetry?file=${encodeURIComponent(flightId)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(45000) : undefined,
           body: JSON.stringify({
             flightId,
-            waypoints: wps,
+            waypoints: cleanWps,
             options: { altitude, speed, gimbalPitch, flightId }
           })
         });
@@ -35977,7 +36024,7 @@ const FlightDiagnostics = {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               signal: (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') ? AbortSignal.timeout(20000) : undefined,
-              body: JSON.stringify({ flightId, waypoints: wps, options: { altitude, speed, gimbalPitch, flightId } })
+              body: JSON.stringify({ flightId, waypoints: cleanWps, options: { altitude, speed, gimbalPitch, flightId } })
             });
             if (retryRes.ok) {
               const retryData = await retryRes.json();
