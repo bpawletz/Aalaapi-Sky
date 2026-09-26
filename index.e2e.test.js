@@ -4779,7 +4779,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
   test('E2E: Stadium Advisory Briefing Modal renders 14 CFR 99.7 guidelines and standby status (v1.104.2)', async () => {
     // Inject a mock standby stadium into window.tfrActiveNotams
-    await page.evaluate(() => {
+    await page.evaluate(async () => {
       window.tfrActiveNotams = [
         {
           notamId: 'Ohio Stadium',
@@ -4800,7 +4800,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         }
       ];
       if (typeof window.openTfrBriefingModal === 'function') {
-        window.openTfrBriefingModal('Ohio Stadium');
+        await window.openTfrBriefingModal('Ohio Stadium');
       }
     });
     await page.waitForTimeout(100);

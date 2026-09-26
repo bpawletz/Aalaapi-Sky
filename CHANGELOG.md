@@ -1,3 +1,13 @@
+## [1.131.1] - 2026-09-26
+
+### Fixed
+- **Mission Photo Archive ZIP Compression on Windows (`packageInspectionArchive` in `tools/companion/server.js`)**:
+  - Fixed `Compress-Archive` error (`ArchiveCmdletPathNotFound`) when clicking "Download ZIP" from the Import Photos dialog on Windows.
+  - PowerShell's `Compress-Archive -Path` interprets square brackets (such as DJI flight tags `[10-02-19]`) as wildcard character classes, causing path resolution failure.
+  - Replaced `-Path ...\*` PowerShell invocation with native .NET `[System.IO.Compression.ZipFile]::CreateFromDirectory()` and literal path resolution (`Get-ChildItem -LiteralPath`), properly handling folder names containing brackets and special characters.
+  - Increased packaging timeout from 30s to 120s to prevent timeouts on large multi-gigabyte inspection photo datasets.
+  - Added dedicated unit regression test asserting successful archive packaging for mission directories with bracketed names.
+
 ## [1.131.0] - 2026-09-26
 
 ### Added
