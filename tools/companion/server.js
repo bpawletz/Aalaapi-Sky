@@ -2506,16 +2506,16 @@ function packageInspectionArchive(missionUuid) {
   const zipFile = path.join(ARCHIVE_DIR, `${missionUuid}_inspection_archive.zip`);
   if (!IS_WINDOWS) {
     try {
-      execFileSync('zip', ['-r', '-q', zipFile, '.'], { cwd: targetDir, timeout: 30000 });
+      execFileSync('zip', ['-r', '-q', zipFile, '.'], { cwd: targetDir, timeout: 120000 });
       return { success: true, zipPath: zipFile, filename: `${missionUuid}_inspection_archive.zip` };
-    } catch (_) {
-      return { success: true, zipPath: zipFile, filename: `${missionUuid}_inspection_archive.zip` };
+    } catch (err) {
+      return { success: false, error: err.message };
     }
   }
 
   try {
-    const psCmd = `Compress-Archive -Path "${targetDir.replace(/\\/g, '\\\\')}\\*" -DestinationPath "${zipFile.replace(/\\/g, '\\\\')}" -Force`;
-    execFileSync('powershell.exe', ['-NoProfile', '-Command', psCmd], { timeout: 30000 });
+    const psScript = `Add-Type -AssemblyName System.IO.Compression.FileSystem; $src = '${targetDir.replace(/'/g, "''")}'; $dst = '${zipFile.replace(/'/g, "''")}'; if (Test-Path -LiteralPath $dst) { Remove-Item -LiteralPath $dst -Force }; try { [System.IO.Compression.ZipFile]::CreateFromDirectory($src, $dst, [System.IO.Compression.CompressionLevel]::Fastest, $false) } catch { Get-ChildItem -LiteralPath $src | Compress-Archive -DestinationPath $dst -Force }`;
+    execFileSync('powershell.exe', ['-NoProfile', '-Command', psScript], { timeout: 120000 });
     return { success: true, zipPath: zipFile, filename: `${missionUuid}_inspection_archive.zip` };
   } catch (e) {
     return { success: false, error: e.message };
