@@ -4339,7 +4339,9 @@ function findDetourPathAroundZone(p1, p2, zone, centerLat, centerLon, bufferMete
       isDetour: true,
       isAvoidance: true,
       isPhoto: false,
-      isExclusionDetour: true
+      isExclusionDetour: true,
+      skipPhoto: true,       // Detour waypoints are transit-only: never trigger camera actions
+      cameraAction: 'none'   // Explicitly suppress per-waypoint camera action in WPML export
     });
   }
 
@@ -4420,7 +4422,9 @@ function findDetourPathOverZone(p1, p2, zone, centerLat, centerLon, bufferMeters
       isAvoidance: true,
       isPhoto: false,
       isExclusionDetour: true,
-      isClimbOver: true
+      isClimbOver: true,
+      skipPhoto: true,       // Detour waypoints are transit-only: never trigger camera actions
+      cameraAction: 'none'   // Explicitly suppress per-waypoint camera action in WPML export
     });
 
     // 2. Exit cruise waypoint (maintains clearance altitude until leaving zone boundary)
@@ -4437,7 +4441,9 @@ function findDetourPathOverZone(p1, p2, zone, centerLat, centerLon, bufferMeters
       isAvoidance: true,
       isPhoto: false,
       isExclusionDetour: true,
-      isClimbOver: true
+      isClimbOver: true,
+      skipPhoto: true,       // Detour waypoints are transit-only: never trigger camera actions
+      cameraAction: 'none'   // Explicitly suppress per-waypoint camera action in WPML export
     });
   } else if (intersections.length === 1) {
     const pt = intersections[0];
@@ -4455,7 +4461,9 @@ function findDetourPathOverZone(p1, p2, zone, centerLat, centerLon, bufferMeters
       isAvoidance: true,
       isPhoto: false,
       isExclusionDetour: true,
-      isClimbOver: true
+      isClimbOver: true,
+      skipPhoto: true,       // Detour waypoints are transit-only: never trigger camera actions
+      cameraAction: 'none'   // Explicitly suppress per-waypoint camera action in WPML export
     });
   } else {
     // If segment intersects without edge hits (e.g. within zone)
@@ -4475,7 +4483,9 @@ function findDetourPathOverZone(p1, p2, zone, centerLat, centerLon, bufferMeters
       isAvoidance: true,
       isPhoto: false,
       isExclusionDetour: true,
-      isClimbOver: true
+      isClimbOver: true,
+      skipPhoto: true,       // Detour waypoints are transit-only: never trigger camera actions
+      cameraAction: 'none'   // Explicitly suppress per-waypoint camera action in WPML export
     });
   }
 
@@ -5101,6 +5111,7 @@ function generateTransitionWaypoints(prevLayer, prevLastWp, nextLayer, nextFirst
         cameraAction: 'none',
         zoom: 1.0,
         isTransition: true,
+        skipPhoto: true,   // Transition waypoints are transit-only: never trigger camera actions
         transitionFrom: prevLayer.id,
         transitionTo: nextLayer.id,
         layerId: prevLayer.id,
@@ -5123,6 +5134,7 @@ function generateTransitionWaypoints(prevLayer, prevLastWp, nextLayer, nextFirst
         cameraAction: 'none',
         zoom: 1.0,
         isTransition: true,
+        skipPhoto: true,   // Transition waypoints are transit-only: never trigger camera actions
         transitionFrom: prevLayer.id,
         transitionTo: nextLayer.id,
         layerId: prevLayer.id,
@@ -5147,6 +5159,7 @@ function generateTransitionWaypoints(prevLayer, prevLastWp, nextLayer, nextFirst
       cameraAction: 'none',
       zoom: 1.0,
       isTransition: true,
+      skipPhoto: true,   // Transition waypoints are transit-only: never trigger camera actions
       transitionFrom: prevLayer.id,
       transitionTo: nextLayer.id,
       layerId: prevLayer.id,
@@ -5168,6 +5181,7 @@ function generateTransitionWaypoints(prevLayer, prevLastWp, nextLayer, nextFirst
       cameraAction: 'none',
       zoom: 1.0,
       isTransition: true,
+      skipPhoto: true,   // Transition waypoints are transit-only: never trigger camera actions
       transitionFrom: prevLayer.id,
       transitionTo: nextLayer.id,
       layerId: prevLayer.id,

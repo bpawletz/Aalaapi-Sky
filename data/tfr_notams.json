@@ -1,5 +1,27 @@
 [
   {
+    "notam_id": "6/5755",
+    "facility": "ZID",
+    "state": "OH",
+    "type": "VIP",
+    "description": "ROCKBRIDGE, OH",
+    "mod_date": "09/27/2026 15:44:00",
+    "mod_abs_time": "202609271544",
+    "is_new": "Y",
+    "gid": "6/5755"
+  },
+  {
+    "notam_id": "6/5737",
+    "facility": "ZOA",
+    "state": "CA",
+    "type": "HAZARDS",
+    "description": "22NM W RED BLUFF, CA, Monday, September 28, 2026 through Saturday, October 3, 2026 UTC",
+    "mod_date": "09/27/2026 06:20:00",
+    "mod_abs_time": "202609270620",
+    "is_new": "Y",
+    "gid": "6/5737"
+  },
+  {
     "notam_id": "6/5701",
     "facility": "ZSE",
     "state": "OR",
@@ -7,7 +29,7 @@
     "description": "14 NM NE OF PRAIRIE CITY, OR, Sunday, September 27, 2026 through Tuesday, September 29, 2026 UTC",
     "mod_date": "09/26/2026 15:59:00",
     "mod_abs_time": "202609261559",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/5701"
   },
   {
@@ -18,7 +40,7 @@
     "description": "Starbase, TX, Monday, September 28, 2026 Local",
     "mod_date": "09/26/2026 02:00:00",
     "mod_abs_time": "202609260200",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/5573"
   },
   {
@@ -29,7 +51,7 @@
     "description": "Starbase, TX, Tuesday, September 29, 2026 Local",
     "mod_date": "09/26/2026 02:00:00",
     "mod_abs_time": "202609260200",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/5574"
   },
   {
@@ -40,19 +62,8 @@
     "description": "Starbase, TX, Wednesday, September 30, 2026 Local",
     "mod_date": "09/26/2026 02:00:00",
     "mod_abs_time": "202609260200",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/5575"
-  },
-  {
-    "notam_id": "6/5570",
-    "facility": "ZID",
-    "state": "WV",
-    "type": "HAZARDS",
-    "description": "SAUNDERS CREEK ROAD, WV, Saturday, September 26, 2026 through Sunday, September 27, 2026 UTC",
-    "mod_date": "09/26/2026 01:29:00",
-    "mod_abs_time": "202609260129",
-    "is_new": "Y",
-    "gid": null
   },
   {
     "notam_id": "6/5561",
@@ -62,7 +73,7 @@
     "description": "14 NM NE OF PRAIRIE CITY, OR, Sunday, September 27, 2026 through Tuesday, September 29, 2026 UTC",
     "mod_date": "09/25/2026 23:07:00",
     "mod_abs_time": "202609252307",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/5561"
   },
   {
@@ -73,7 +84,7 @@
     "description": "20NM SE JOHN DAY, OR, Monday, September 28, 2026 through Thursday, October 1, 2026 UTC",
     "mod_date": "09/25/2026 22:13:00",
     "mod_abs_time": "202609252213",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/5559"
   },
   {
@@ -154,17 +165,6 @@
     "gid": "6/5545"
   },
   {
-    "notam_id": "6/5476",
-    "facility": "ZSE",
-    "state": "WA",
-    "type": "HAZARDS",
-    "description": "11 NM SW OF ELLENSBURG, WA, Friday, September 25, 2026 through Sunday, September 27, 2026 UTC",
-    "mod_date": "09/25/2026 03:59:00",
-    "mod_abs_time": "202609250359",
-    "is_new": "N",
-    "gid": "6/5476"
-  },
-  {
     "notam_id": "6/5462",
     "facility": "ZOA",
     "state": "CA",
@@ -187,17 +187,6 @@
     "gid": "6/5449"
   },
   {
-    "notam_id": "6/5408",
-    "facility": "ZAB",
-    "state": "AZ",
-    "type": "SECURITY",
-    "description": "Libby AAF, AZ, Friday, September 25, 2026 through Sunday, September 27, 2026 Local",
-    "mod_date": "09/24/2026 19:10:00",
-    "mod_abs_time": "202609241910",
-    "is_new": "N",
-    "gid": "6/5408"
-  },
-  {
     "notam_id": "6/5407",
     "facility": "ZAU",
     "state": "IL",
@@ -207,17 +196,6 @@
     "mod_abs_time": "202609241853",
     "is_new": "N",
     "gid": "6/5407"
-  },
-  {
-    "notam_id": "6/5406",
-    "facility": "ZTL",
-    "state": "TN",
-    "type": "SECURITY",
-    "description": "Knoxville, TN, Saturday, September 26, 2026 Local",
-    "mod_date": "09/24/2026 18:39:00",
-    "mod_abs_time": "202609241839",
-    "is_new": "N",
-    "gid": "6/5406"
   },
   {
     "notam_id": "6/5216",
@@ -297,17 +275,6 @@
     "gid": "6/5039"
   },
   {
-    "notam_id": "6/4933",
-    "facility": "ZID",
-    "state": "OH",
-    "type": "VIP",
-    "description": "Rockbridge, OH, Friday, September 25, 2026 through Sunday, September 27, 2026 Local",
-    "mod_date": "09/22/2026 23:57:00",
-    "mod_abs_time": "202609222357",
-    "is_new": "N",
-    "gid": "6/4933"
-  },
-  {
     "notam_id": "6/4932",
     "facility": "ZSE",
     "state": "MT",
@@ -341,17 +308,6 @@
     "gid": "6/4431"
   },
   {
-    "notam_id": "6/4427",
-    "facility": "ZSE",
-    "state": "WA",
-    "type": "HAZARDS",
-    "description": "20NM N LEAVENWORTH, WA, Tuesday, September 22, 2026 through Tuesday, October 6, 2026 UTC",
-    "mod_date": "09/22/2026 03:23:00",
-    "mod_abs_time": "202609220323",
-    "is_new": "N",
-    "gid": "6/4427"
-  },
-  {
     "notam_id": "6/4364",
     "facility": "ZOA",
     "state": "CA",
@@ -374,17 +330,6 @@
     "gid": "6/4325"
   },
   {
-    "notam_id": "6/4323",
-    "facility": "ZLC",
-    "state": "NV",
-    "type": "SPACE OPERATIONS",
-    "description": "23 ZLC AIRSPACE BLACK ROCK, NV, Saturday, September 26, 2026 through Sunday, September 27, 2026 UTC",
-    "mod_date": "09/21/2026 19:35:00",
-    "mod_abs_time": "202609211935",
-    "is_new": "N",
-    "gid": "6/4323"
-  },
-  {
     "notam_id": "6/4246",
     "facility": "ZFW",
     "state": "TX",
@@ -394,28 +339,6 @@
     "mod_abs_time": "202609211540",
     "is_new": "N",
     "gid": "6/4246"
-  },
-  {
-    "notam_id": "6/4244",
-    "facility": "ZKC",
-    "state": "KS",
-    "type": "UAS PUBLIC GATHERING",
-    "description": "Bonner Springs, KS, Saturday, September 26, 2026 through Sunday, September 27, 2026 UTC",
-    "mod_date": "09/21/2026 15:30:00",
-    "mod_abs_time": "202609211530",
-    "is_new": "N",
-    "gid": "6/4244"
-  },
-  {
-    "notam_id": "6/4243",
-    "facility": "ZAU",
-    "state": "WI",
-    "type": "UAS PUBLIC GATHERING",
-    "description": "East Troy, WI, Saturday, September 26, 2026 through Sunday, September 27, 2026 UTC",
-    "mod_date": "09/21/2026 15:29:00",
-    "mod_abs_time": "202609211529",
-    "is_new": "N",
-    "gid": "6/4243"
   },
   {
     "notam_id": "6/4241",
@@ -429,17 +352,6 @@
     "gid": "6/4241"
   },
   {
-    "notam_id": "6/4225",
-    "facility": "ZMP",
-    "state": "WI",
-    "type": "UAS PUBLIC GATHERING",
-    "description": "Appleton, WI, Saturday, September 26, 2026 UTC",
-    "mod_date": "09/21/2026 15:16:00",
-    "mod_abs_time": "202609211516",
-    "is_new": "N",
-    "gid": "6/4225"
-  },
-  {
     "notam_id": "6/4222",
     "facility": "ZSE",
     "state": "WA",
@@ -449,39 +361,6 @@
     "mod_abs_time": "202609211510",
     "is_new": "N",
     "gid": "6/4222"
-  },
-  {
-    "notam_id": "6/4135",
-    "facility": "ZBW",
-    "state": "MA",
-    "type": "UAS PUBLIC GATHERING",
-    "description": "Foxborough, MA, Friday, September 25, 2026 through Sunday, September 27, 2026 UTC",
-    "mod_date": "09/21/2026 10:21:00",
-    "mod_abs_time": "202609211021",
-    "is_new": "N",
-    "gid": "6/4135"
-  },
-  {
-    "notam_id": "6/4136",
-    "facility": "ZDC",
-    "state": "MD",
-    "type": "UAS PUBLIC GATHERING",
-    "description": "Baltimore, MD, Saturday, September 26, 2026 through Sunday, September 27, 2026 UTC",
-    "mod_date": "09/21/2026 10:21:00",
-    "mod_abs_time": "202609211021",
-    "is_new": "N",
-    "gid": "6/4136"
-  },
-  {
-    "notam_id": "6/4134",
-    "facility": "ZDC",
-    "state": "NC",
-    "type": "UAS PUBLIC GATHERING",
-    "description": "Raleigh, NC, Saturday, September 26, 2026 UTC",
-    "mod_date": "09/21/2026 10:20:00",
-    "mod_abs_time": "202609211020",
-    "is_new": "N",
-    "gid": "6/4134"
   },
   {
     "notam_id": "6/4133",
@@ -515,17 +394,6 @@
     "mod_abs_time": "202609202309",
     "is_new": "N",
     "gid": "6/4106"
-  },
-  {
-    "notam_id": "6/4077",
-    "facility": "ZME",
-    "state": "TN",
-    "type": "AIR SHOWS/SPORTS",
-    "description": "Somerville, TN, Saturday, September 26, 2026 through Sunday, September 27, 2026 UTC",
-    "mod_date": "09/20/2026 12:18:00",
-    "mod_abs_time": "202609201218",
-    "is_new": "N",
-    "gid": "6/4077"
   },
   {
     "notam_id": "6/4050",
@@ -581,28 +449,6 @@
     "mod_abs_time": "202609161718",
     "is_new": "N",
     "gid": "6/3563"
-  },
-  {
-    "notam_id": "6/3251",
-    "facility": "ZNY",
-    "state": "NY",
-    "type": "SECURITY",
-    "description": "Jamaica, NY, Sunday, September 20, 2026 through Saturday, September 26, 2026 Local",
-    "mod_date": "09/15/2026 19:11:00",
-    "mod_abs_time": "202609151911",
-    "is_new": "N",
-    "gid": "6/3251"
-  },
-  {
-    "notam_id": "6/3124",
-    "facility": "ZNY",
-    "state": "NY",
-    "type": "SECURITY",
-    "description": "New York, NY, Sunday, September 20, 2026 through Saturday, September 26, 2026 Local",
-    "mod_date": "09/15/2026 12:57:00",
-    "mod_abs_time": "202609151257",
-    "is_new": "N",
-    "gid": "6/3124"
   },
   {
     "notam_id": "6/2853",

@@ -5,7 +5,12 @@ node_modules/
 *.kmz
 *.zip
 *.mp4
+*.webm
+*.mov
 *.log
+recordings/
+videos/
+test-results/
 
 # Debug & Error Dumps
 error/
