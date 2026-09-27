@@ -3647,27 +3647,31 @@ html, body {
 }
 #wp-heading-help-popover .wp-help-close:hover { color: #f8fafc; }
 
-/* Waypoint Editor Popup Custom Leaflet Styling (v1.88.1) */
+/* Waypoint Editor Popup Custom Leaflet Styling (v1.134.1) */
 .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content-wrapper {
   background: rgba(15, 23, 42, 0.96) !important;
   border: 1px solid rgba(6, 182, 212, 0.3) !important;
   border-radius: 12px !important;
   box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.85), 0 0 20px rgba(6, 182, 212, 0.18) !important;
   box-sizing: border-box !important;
-  width: 310px !important;
-  min-width: 310px !important;
+  width: min(310px, calc(100vw - 32px)) !important;
+  max-width: calc(100vw - 32px) !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
 }
 
 .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content {
   margin: 12px 14px !important;
-  width: 280px !important;
-  min-width: 280px !important;
+  width: calc(100% - 28px) !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
   box-sizing: border-box !important;
 }
 
 .leaflet-popup.wp-editor-leaflet-popup .wp-editor-popup {
-  width: 280px !important;
+  width: 100% !important;
   max-width: 100% !important;
+  min-width: 0 !important;
   box-sizing: border-box !important;
 }
 
@@ -4188,6 +4192,25 @@ html, body {
    Mobile Responsive Diagnostics (Screens <= 768px)
    ========================================================================== */
 @media (max-width: 768px) {
+  .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content-wrapper {
+    width: min(310px, calc(100vw - 24px)) !important;
+    max-width: calc(100vw - 24px) !important;
+    box-sizing: border-box !important;
+  }
+
+  .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content {
+    margin: 10px 12px !important;
+    width: calc(100% - 24px) !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  #fpv-editor-panel {
+    right: 12px !important;
+    width: min(310px, calc(100vw - 24px)) !important;
+    max-width: calc(100vw - 24px) !important;
+    box-sizing: border-box !important;
+  }
   #flight-diagnostics-modal {
     padding: 0 !important;
   }
@@ -5495,7 +5518,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.134.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.134.1</span></h1>
 
 
 
@@ -9146,7 +9169,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.134.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.134.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -12145,7 +12168,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 12px; width: 100%; align-items: center;">
             
           <!-- Floating FPV Waypoint Editor Side-panel (Upper-Right position to avoid obscuring FPV view) -->
-          <div id="fpv-editor-panel" class="hidden" style="position: absolute; top: 60px; right: 16px; width: 310px; max-height: calc(100% - 130px); overflow-y: auto; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(6, 182, 212, 0.3); padding: 12px 14px; border-radius: 12px; pointer-events: auto; backdrop-filter: blur(12px); display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); z-index: 25;">
+          <div id="fpv-editor-panel" class="hidden" style="position: absolute; top: 60px; right: 16px; width: min(310px, calc(100vw - 32px)); max-width: calc(100vw - 32px); box-sizing: border-box; max-height: calc(100% - 130px); overflow-y: auto; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(6, 182, 212, 0.3); padding: 12px 14px; border-radius: 12px; pointer-events: auto; backdrop-filter: blur(12px); display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); z-index: 25;">
             <div style="font-weight: 600; color: #06b6d4; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
               <div style="display: flex; align-items: center; gap: 6px;">
                 <span>🛠️ Edit Waypoint <span id="fpv-editor-wp-index">0</span></span>
@@ -40825,7 +40848,9 @@ function showHeadingHelpPopover(anchorEl) {
 function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsList = null) {
   const popupContent = document.createElement('div');
   popupContent.className = 'wp-editor-popup';
-  popupContent.style.width = '280px';
+  popupContent.style.width = '100%';
+  popupContent.style.maxWidth = '100%';
+  popupContent.style.boxSizing = 'border-box';
   popupContent.style.color = '#f8fafc';
   popupContent.style.fontFamily = 'Outfit, sans-serif';
 
@@ -41259,11 +41284,11 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
       </div>
 
       <!-- Action Buttons (matching FPV button style) -->
-      <div style="display: flex; gap: 6px; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; font-size: 0.72rem;">
-        <button id="save-wp-btn" class="btn-primary" type="button" style="flex: 1; padding: 5px 6px; background: var(--primary-gradient); border-radius: 6px; font-weight: 600;">Save</button>
-        <button id="reset-wp-btn" class="btn-secondary" type="button" style="flex: 1; padding: 5px 6px; color: #eab308; border-color: rgba(234, 179, 8, 0.3); border-radius: 6px; font-weight: 600;">Revert</button>
-        <button id="delete-wp-btn" class="btn-secondary" type="button" style="flex: 1; padding: 5px 6px; border-color: rgba(239, 68, 68, 0.3); color: #ef4444; border-radius: 6px; font-weight: 600;">Delete</button>
-        <button id="insert-wp-btn" class="btn-secondary" type="button" style="flex: 1; padding: 5px 6px; color: #06b6d4; border-color: rgba(6, 182, 212, 0.3); border-radius: 6px; font-weight: 600;">Insert</button>
+      <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; font-size: 0.72rem; box-sizing: border-box; width: 100%;">
+        <button id="save-wp-btn" class="btn-primary" type="button" style="flex: 1 1 calc(50% - 3px); min-width: 0; box-sizing: border-box; padding: 5px 4px; background: var(--primary-gradient); border-radius: 6px; font-weight: 600;">Save</button>
+        <button id="reset-wp-btn" class="btn-secondary" type="button" style="flex: 1 1 calc(50% - 3px); min-width: 0; box-sizing: border-box; padding: 5px 4px; color: #eab308; border-color: rgba(234, 179, 8, 0.3); border-radius: 6px; font-weight: 600;">Revert</button>
+        <button id="delete-wp-btn" class="btn-secondary" type="button" style="flex: 1 1 calc(50% - 3px); min-width: 0; box-sizing: border-box; padding: 5px 4px; border-color: rgba(239, 68, 68, 0.3); color: #ef4444; border-radius: 6px; font-weight: 600;">Delete</button>
+        <button id="insert-wp-btn" class="btn-secondary" type="button" style="flex: 1 1 calc(50% - 3px); min-width: 0; box-sizing: border-box; padding: 5px 4px; color: #06b6d4; border-color: rgba(6, 182, 212, 0.3); border-radius: 6px; font-weight: 600;">Insert</button>
       </div>
     </div>
   `;

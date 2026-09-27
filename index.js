@@ -27173,7 +27173,9 @@ function showHeadingHelpPopover(anchorEl) {
 function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsList = null) {
   const popupContent = document.createElement('div');
   popupContent.className = 'wp-editor-popup';
-  popupContent.style.width = '280px';
+  popupContent.style.width = '100%';
+  popupContent.style.maxWidth = '100%';
+  popupContent.style.boxSizing = 'border-box';
   popupContent.style.color = '#f8fafc';
   popupContent.style.fontFamily = 'Outfit, sans-serif';
 
@@ -27607,11 +27609,11 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
       </div>
 
       <!-- Action Buttons (matching FPV button style) -->
-      <div style="display: flex; gap: 6px; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; font-size: 0.72rem;">
-        <button id="save-wp-btn" class="btn-primary" type="button" style="flex: 1; padding: 5px 6px; background: var(--primary-gradient); border-radius: 6px; font-weight: 600;">Save</button>
-        <button id="reset-wp-btn" class="btn-secondary" type="button" style="flex: 1; padding: 5px 6px; color: #eab308; border-color: rgba(234, 179, 8, 0.3); border-radius: 6px; font-weight: 600;">Revert</button>
-        <button id="delete-wp-btn" class="btn-secondary" type="button" style="flex: 1; padding: 5px 6px; border-color: rgba(239, 68, 68, 0.3); color: #ef4444; border-radius: 6px; font-weight: 600;">Delete</button>
-        <button id="insert-wp-btn" class="btn-secondary" type="button" style="flex: 1; padding: 5px 6px; color: #06b6d4; border-color: rgba(6, 182, 212, 0.3); border-radius: 6px; font-weight: 600;">Insert</button>
+      <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; font-size: 0.72rem; box-sizing: border-box; width: 100%;">
+        <button id="save-wp-btn" class="btn-primary" type="button" style="flex: 1 1 calc(50% - 3px); min-width: 0; box-sizing: border-box; padding: 5px 4px; background: var(--primary-gradient); border-radius: 6px; font-weight: 600;">Save</button>
+        <button id="reset-wp-btn" class="btn-secondary" type="button" style="flex: 1 1 calc(50% - 3px); min-width: 0; box-sizing: border-box; padding: 5px 4px; color: #eab308; border-color: rgba(234, 179, 8, 0.3); border-radius: 6px; font-weight: 600;">Revert</button>
+        <button id="delete-wp-btn" class="btn-secondary" type="button" style="flex: 1 1 calc(50% - 3px); min-width: 0; box-sizing: border-box; padding: 5px 4px; border-color: rgba(239, 68, 68, 0.3); color: #ef4444; border-radius: 6px; font-weight: 600;">Delete</button>
+        <button id="insert-wp-btn" class="btn-secondary" type="button" style="flex: 1 1 calc(50% - 3px); min-width: 0; box-sizing: border-box; padding: 5px 4px; color: #06b6d4; border-color: rgba(6, 182, 212, 0.3); border-radius: 6px; font-weight: 600;">Insert</button>
       </div>
     </div>
   `;
