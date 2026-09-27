@@ -6644,7 +6644,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(result.success, true);
     assert.strictEqual(result.isOpen, true, 'About modal should be visible upon clicking about button');
     assert.strictEqual(result.isClosed, true, 'About modal should close upon clicking close button');
-    assert.ok(['Version 1.131.2', 'Version 1.132.0', 'Version 1.132.1', 'Version 1.133.0'].includes(result.versionTag), 'About modal version tag should be Version 1.131.2, Version 1.132.0, Version 1.132.1, or Version 1.133.0');
+    assert.ok(['Version 1.131.2', 'Version 1.132.0', 'Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0'].includes(result.versionTag), 'About modal version tag should be Version 1.131.2 or newer');
     assert.strictEqual(result.listItemsCount, 6, 'Key capabilities should be summarized into 6 structured pillars');
     assert.strictEqual(result.hasPatternGen, true);
     assert.strictEqual(result.hasTrajectory, true);
@@ -6656,10 +6656,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
   test('E2E: v1.132.1 header badge and About modal reflect Version 1.132.1', async () => {
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.132.1', 'v1.133.0'].includes(badgeText.trim()), 'Header version badge should be v1.132.1 or newer');
+    assert.ok(['v1.132.1', 'v1.133.0', 'v1.134.0'].includes(badgeText.trim()), 'Header version badge should be v1.132.1 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(['Version 1.132.1', 'Version 1.133.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.132.1 or newer');
+    assert.ok(['Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.132.1 or newer');
   });
 
   test('E2E: Standalone inspection report template features offline satellite default and road providers (v1.132.1)', async () => {
@@ -6670,6 +6670,48 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.ok(tpl.includes('id="map-basemap-bar"'), 'Must include map basemap quick switcher');
     assert.ok(tpl.includes('id="btn-layer-sat"'), 'Must include satellite button');
     assert.ok(tpl.includes('id="btn-layer-esri"'), 'Must include Esri streets button');
+  });
+
+  test('E2E: Multi-POI Association & Three-Tier Cascading Hierarchy (v1.134.0, Issue #77)', async () => {
+    // 1. Header version badge and About modal reflect v1.134.0
+    const badgeText = await page.locator('.header-version-badge').first().innerText();
+    assert.strictEqual(badgeText.trim(), 'v1.134.0', 'Header version badge should be v1.134.0');
+
+    // 2. Section 2 Layer Card contains #layer-poi-select & responds to towardPOI mode
+    const poiTestResult = await page.evaluate(() => {
+      const layerPoiSelect = document.getElementById('layer-poi-select');
+      const layerPoiContainer = document.getElementById('layer-poi-container');
+      const headingSelect = document.getElementById('layer-heading-mode');
+      const fpvPoiSelect = document.getElementById('fpv-edit-poi-select');
+      const introFeatures = document.getElementById('intro-pane-features');
+
+      if (!layerPoiSelect || !layerPoiContainer || !headingSelect || !fpvPoiSelect) {
+        return { success: false, reason: 'POI elements missing in DOM' };
+      }
+
+      // Initial container should be hidden when not towardPOI
+      const initialHidden = layerPoiContainer.classList.contains('hidden');
+
+      // Change headingSelect to towardPOI
+      headingSelect.value = 'towardPOI';
+      headingSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+      const unhidden = !layerPoiContainer.classList.contains('hidden');
+
+      return {
+        success: true,
+        initialHidden,
+        unhidden,
+        hasFpvSelect: !!fpvPoiSelect,
+        hasIntroFeature: !!(introFeatures && introFeatures.innerHTML.includes('Multi-POI Association &amp; 3-Tier Cascading Hierarchy (v1.134.0)'))
+      };
+    });
+
+    assert.strictEqual(poiTestResult.success, true);
+    assert.strictEqual(poiTestResult.initialHidden, true, 'POI container should initially be hidden');
+    assert.strictEqual(poiTestResult.unhidden, true, 'POI container should unhide when towardPOI is selected');
+    assert.strictEqual(poiTestResult.hasFpvSelect, true, '#fpv-edit-poi-select must exist in DOM');
+    assert.strictEqual(poiTestResult.hasIntroFeature, true, 'Intro features pane must highlight Multi-POI Association v1.134.0');
   });
 });
 

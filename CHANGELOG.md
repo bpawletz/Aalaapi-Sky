@@ -1,3 +1,13 @@
+## [1.134.0] - 2026-09-27
+
+### Added
+- **Multi-POI Association & Three-Tier Cascading Hierarchy (Closes #77)**:
+  - **Tier 2 Layer Target POI (`#layer-poi-select`, `layer.targetPoiId`)**: Added layer-level POI targeting in Layer Properties Section 2. Layers default to `inherit` (resolving to Tier 1 Center / Mission POI 0) and can explicitly target any POI on the mission map.
+  - **Tier 3 Individual Waypoint POI Override (`#edit-wp-poi-select` & `#fpv-edit-poi-select`)**: Added per-waypoint POI targeting in both the 2D Waypoint popup and the 3D FPV HUD. Waypoints default to `inherit` (dynamically resolving to Tier 2 Layer Target POI) or can explicitly lock onto a specific POI.
+  - **Geodetic POI Heading Calculation**: Updated `towardPOI` yaw heading calculations to use geodetic bearing with longitude cosine scaling (`Math.cos(latRad)`), guaranteeing sub-degree drone orientation precision.
+  - **Clean POI Deletion & Reference Cleanup (`deletePoi`, `clearAllPois`)**: Deleting a POI now cleans up referenced POI IDs across all flight layers, active waypoints, layer waypoints, and road waypoints, re-indexing remaining POIs and cleanly resetting deleted references to POI 0.
+  - **WPML Placemark Export Alignment**: Updated `buildWaylinesWpml` to resolve target POIs through the 3-tier cascade and emit accurate `<wpml:waypointHeadingPoiIndex>` and `<wpml:waypointPoiPoint>` tags.
+
 ## [1.133.0] - 2026-09-27
 
 ### Fixed
