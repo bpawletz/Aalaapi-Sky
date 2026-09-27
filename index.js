@@ -3199,13 +3199,13 @@ function calculate3DPoiPitch(wp, targetPoi, defaultAlt = 50) {
 }
 
 function getTargetPoiCoordinates(wp, layer) {
-  const resolvedLayer = layer || (wp && wp.layerId && typeof flightLayers !== 'undefined' ? flightLayers.find(l => l.id === wp.layerId) : null) || ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
+  const wpLayer = (wp && wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : null;
+  const resolvedLayer = wpLayer || layer || ((typeof getActiveLayer === 'function') ? getActiveLayer() : null);
   const poiList = (typeof pois !== 'undefined' && Array.isArray(pois)) ? pois : [];
   
-  // 1. Target POI ID on WP or Layer
-  const targetPoiId = (wp && wp.targetPoiId) || (resolvedLayer && resolvedLayer.targetPoiId);
-  if (targetPoiId && poiList.length > 0) {
-    const found = poiList.find(p => p.id === targetPoiId);
+  // 1. Waypoint Explicit Target POI ID (Tier 3)
+  if (wp && wp.targetPoiId && wp.targetPoiId !== 'inherit' && poiList.length > 0) {
+    const found = poiList.find(p => p.id === wp.targetPoiId);
     if (found && found.lat !== undefined && (found.lon !== undefined || found.lng !== undefined)) {
       return {
         lat: found.lat,
@@ -3219,8 +3219,44 @@ function getTargetPoiCoordinates(wp, layer) {
     }
   }
   
-  // 2. POI Index on WP
-  const poiIdx = (wp && wp.poiIndex !== undefined && wp.poiIndex !== null) ? wp.poiIndex : 0;
+  // 2. Waypoint Explicit POI Index (Tier 3 override)
+  if (wp && wp.poiIndex !== undefined && wp.poiIndex !== null && (!wp.targetPoiId || wp.targetPoiId !== 'inherit')) {
+    const poiIdx = wp.poiIndex;
+    if (poiList[poiIdx] && poiList[poiIdx].lat !== undefined && (poiList[poiIdx].lon !== undefined || poiList[poiIdx].lng !== undefined)) {
+      if (wp.isModified || wp.headingMode === 'towardPOI' || !resolvedLayer || !resolvedLayer.targetPoiId || resolvedLayer.targetPoiId === 'inherit') {
+        const p = poiList[poiIdx];
+        return {
+          lat: p.lat,
+          lon: p.lon !== undefined ? p.lon : p.lng,
+          alt: (p.alt !== undefined && !isNaN(p.alt)) ? Number(p.alt) : 0,
+          x: p.x,
+          y: p.y,
+          id: p.id,
+          name: p.name
+        };
+      }
+    }
+  }
+
+  // 3. Layer Target POI ID (Tier 2)
+  const layerTargetPoiId = resolvedLayer && resolvedLayer.targetPoiId;
+  if (layerTargetPoiId && layerTargetPoiId !== 'inherit' && poiList.length > 0) {
+    const found = poiList.find(p => p.id === layerTargetPoiId);
+    if (found && found.lat !== undefined && (found.lon !== undefined || found.lng !== undefined)) {
+      return {
+        lat: found.lat,
+        lon: found.lon !== undefined ? found.lon : found.lng,
+        alt: (found.alt !== undefined && !isNaN(found.alt)) ? Number(found.alt) : 0,
+        x: found.x,
+        y: found.y,
+        id: found.id,
+        name: found.name
+      };
+    }
+  }
+
+  // 4. Any remaining wp.poiIndex fallback
+  const poiIdx = (wp && wp.poiIndex !== undefined && wp.poiIndex !== null && (!wp.targetPoiId || wp.targetPoiId !== 'inherit')) ? wp.poiIndex : 0;
   if (poiList[poiIdx] && poiList[poiIdx].lat !== undefined && (poiList[poiIdx].lon !== undefined || poiList[poiIdx].lng !== undefined)) {
     const p = poiList[poiIdx];
     return {
@@ -3234,7 +3270,7 @@ function getTargetPoiCoordinates(wp, layer) {
     };
   }
   
-  // 3. Fallback to first POI
+  // 5. Fallback to first POI (Tier 1)
   if (poiList.length > 0 && poiList[0].lat !== undefined && (poiList[0].lon !== undefined || poiList[0].lng !== undefined)) {
     const p = poiList[0];
     return {
@@ -3248,7 +3284,7 @@ function getTargetPoiCoordinates(wp, layer) {
     };
   }
   
-  // 4. Fallback to center marker
+  // 6. Fallback to center marker
   if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
     const ll = centerMarker.getLatLng();
     if (ll && !isNaN(ll.lat) && !isNaN(ll.lng)) {
@@ -5012,6 +5048,7 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
           if (oldWp.headingMode !== undefined) waypoints[oldIdx].headingMode = oldWp.headingMode;
           if (oldWp.gridType !== undefined) waypoints[oldIdx].gridType = oldWp.gridType;
           if (oldWp.poiIndex !== undefined) waypoints[oldIdx].poiIndex = oldWp.poiIndex;
+          if (oldWp.targetPoiId !== undefined) waypoints[oldIdx].targetPoiId = oldWp.targetPoiId;
           if (oldWp.speed !== undefined) waypoints[oldIdx].speed = oldWp.speed;
           if (oldWp.hoverTime !== undefined) waypoints[oldIdx].hoverTime = oldWp.hoverTime;
           if (oldWp.turnMode !== undefined) waypoints[oldIdx].turnMode = oldWp.turnMode;
@@ -5059,7 +5096,9 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     wp.layerCaptureMode = layer.captureMode || 'inherit';
     wp.layerPathMode = layer.pathMode || 'inherit';
     wp.layerHeadingMode = layer.headingMode || 'inherit';
-    wp.targetPoiId = layer.targetPoiId || null;
+    if (!wp.isModified || !wp.targetPoiId) {
+      wp.targetPoiId = layer.targetPoiId || null;
+    }
     wp.baseSettlingTime = layer.baseSettlingTime !== undefined ? layer.baseSettlingTime : 2.0;
     wp.majorTurnSettlingTime = layer.majorTurnSettlingTime !== undefined ? layer.majorTurnSettlingTime : 5.0;
     wp.moderateTurnSettlingTime = layer.moderateTurnSettlingTime !== undefined ? layer.moderateTurnSettlingTime : 4.0;
@@ -11341,14 +11380,17 @@ function deletePoi(idx) {
       }
     }
 
+    const deletedPoiId = poi ? poi.id : null;
     // Reset any waypoint pointing to this POI or higher
     const wps = getCurrentWaypoints();
     if (wps) {
       wps.forEach(wp => {
-        if (wp.poiIndex === idx) {
+        if (wp.targetPoiId === deletedPoiId || wp.poiIndex === idx) {
           wp.poiIndex = 0;
+          wp.targetPoiId = (pois[0] && pois[0].id) || null;
         } else if (wp.poiIndex > idx) {
           wp.poiIndex--;
+          wp.targetPoiId = (pois[wp.poiIndex] && pois[wp.poiIndex].id) || null;
         }
       });
     }
@@ -11356,10 +11398,32 @@ function deletePoi(idx) {
     // Do the same for roadWaypoints
     if (roadWaypoints) {
       roadWaypoints.forEach(wp => {
-        if (wp.poiIndex === idx) {
+        if (wp.targetPoiId === deletedPoiId || wp.poiIndex === idx) {
           wp.poiIndex = 0;
+          wp.targetPoiId = (pois[0] && pois[0].id) || null;
         } else if (wp.poiIndex > idx) {
           wp.poiIndex--;
+          wp.targetPoiId = (pois[wp.poiIndex] && pois[wp.poiIndex].id) || null;
+        }
+      });
+    }
+
+    // Keep layer targetPoiIds and waypoints consistent across all flight layers
+    if (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) {
+      flightLayers.forEach(l => {
+        if (l.targetPoiId === deletedPoiId) {
+          l.targetPoiId = (pois[0] && pois[0].id) || null;
+        }
+        if (Array.isArray(l.waypoints)) {
+          l.waypoints.forEach(wp => {
+            if (wp.targetPoiId === deletedPoiId || wp.poiIndex === idx) {
+              wp.poiIndex = 0;
+              wp.targetPoiId = (pois[0] && pois[0].id) || null;
+            } else if (wp.poiIndex > idx) {
+              wp.poiIndex--;
+              wp.targetPoiId = (pois[wp.poiIndex] && pois[wp.poiIndex].id) || null;
+            }
+          });
         }
       });
     }
@@ -11483,7 +11547,35 @@ function clearAllPois() {
     };
     updatePoiMarkerPopup(pois[0], 0);
   }
+
+  const defaultPoiId = (pois[0] && pois[0].id) || null;
+  const wps = getCurrentWaypoints();
+  if (wps) {
+    wps.forEach(wp => {
+      wp.poiIndex = 0;
+      wp.targetPoiId = defaultPoiId;
+    });
+  }
+  if (roadWaypoints) {
+    roadWaypoints.forEach(wp => {
+      wp.poiIndex = 0;
+      wp.targetPoiId = defaultPoiId;
+    });
+  }
+  if (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) {
+    flightLayers.forEach(l => {
+      l.targetPoiId = defaultPoiId;
+      if (Array.isArray(l.waypoints)) {
+        l.waypoints.forEach(wp => {
+          wp.poiIndex = 0;
+          wp.targetPoiId = defaultPoiId;
+        });
+      }
+    });
+  }
+
   updatePoiListUI();
+  updateGrid();
 }
 
 
@@ -13511,9 +13603,12 @@ function getDefaultHeading(idx, waypoints, rotationDeg) {
 // Generate Leaflet divIcon with color and rotation logic
 function getMarkerIcon(wp, idx, waypoints, rotationDeg, tempHeading, tempPitch, isTempModified) {
   const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
-  const gridType = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('grid-type'))
-    ? document.getElementById('grid-type').value
-    : (activeLayer ? activeLayer.pattern : 'double');
+  const wpLayer = (wp && wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : activeLayer;
+  const gridType = (wp && wp.layerPattern)
+    ? wp.layerPattern
+    : ((typeof document !== 'undefined' && document && document.getElementById && document.getElementById('grid-type'))
+      ? document.getElementById('grid-type').value
+      : (wpLayer ? wpLayer.pattern : 'double'));
 
   if (wp && (wp.isPhotoSphere || wp.layerPattern === 'photo-sphere' || gridType === 'photo-sphere')) {
     return L.divIcon({
@@ -13567,7 +13662,7 @@ function getMarkerIcon(wp, idx, waypoints, rotationDeg, tempHeading, tempPitch, 
     : ((typeof document !== 'undefined' && document && document.getElementById && document.getElementById('grid-rotation'))
       ? parseFloat(document.getElementById('grid-rotation').value) || 0
       : 0);
-  const heading = getEffectiveWaypointHeading(wp, idx, waypoints, rot, tempHeading, activeLayer);
+  const heading = getEffectiveWaypointHeading(wp, idx, waypoints, rot, tempHeading, wpLayer);
 
   // Pitch calculation
   const pitch = tempPitch !== undefined && tempPitch !== null ? tempPitch : (wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : defaultGimbalPitch);
@@ -14165,13 +14260,15 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
     ];
     
     const polygonLatLngs = corners.map(c => [c.lat, c.lon]);
-    gridBoundsPolygon = L.polygon(polygonLatLngs, {
-      color: '#f59e0b',
-      weight: 2,
-      dashArray: '5, 5',
-      fillColor: '#f59e0b',
-      fillOpacity: 0.05
-    }).addTo(map);
+    if (typeof L !== 'undefined' && L && typeof L.polygon === 'function' && typeof map !== 'undefined' && map) {
+      gridBoundsPolygon = L.polygon(polygonLatLngs, {
+        color: '#f59e0b',
+        weight: 2,
+        dashArray: '5, 5',
+        fillColor: '#f59e0b',
+        fillOpacity: 0.05
+      }).addTo(map);
+    }
   }
 
   // 3. Draw flight path line segments
@@ -14379,12 +14476,10 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
       const isEnd = idx === waypoints.length - 1;
       const markerIcon = getMarkerIcon(wp, idx, waypoints, rotationDeg);
 
-      let heading = 0;
-      if (wp.heading !== null && wp.heading !== undefined) {
-        heading = wp.heading;
-      } else {
-        heading = getDefaultHeading(idx, waypoints, rotationDeg);
-      }
+      const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : activeLayer;
+      let heading = (wp.heading !== null && wp.heading !== undefined)
+        ? wp.heading
+        : getEffectiveWaypointHeading(wp, idx, waypoints, rotationDeg, null, wpLayer);
 
       const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch;
       const displayPitch = (typeof pitch === 'number' && !isNaN(pitch)) ? Math.round(pitch) : pitch;
@@ -15284,6 +15379,11 @@ function addFreeformWaypoint(lat, lng) {
     isRingStart: false,
     ringIndex: null,
     idx: idx,
+    layerId: activeLayer ? activeLayer.id : null,
+    layerName: activeLayer ? activeLayer.name : null,
+    layerPattern: 'freeform',
+    layerHeadingMode: activeLayer ? (activeLayer.headingMode || 'inherit') : 'inherit',
+    targetPoiId: (activeLayer && activeLayer.targetPoiId) ? activeLayer.targetPoiId : null,
     origLat: lat,
     origLon: lng,
     origX: offsets.x,
@@ -16367,12 +16467,22 @@ ${waypointActions.join('\n')}
     let poiPoint = "0.000000,0.000000,0.000000";
 
     const wpMode = wp.headingMode || 'inherit';
-    let targetPoiIndex = wp.poiIndex || 0;
-    const targetPoiId = wp.targetPoiId || (wpLayer && wpLayer.targetPoiId);
+    let targetPoiIndex = 0;
+    const wpTargetPoiId = (wp.targetPoiId && wp.targetPoiId !== 'inherit') ? wp.targetPoiId : null;
+    const layerTargetPoiId = (wpLayer && wpLayer.targetPoiId && wpLayer.targetPoiId !== 'inherit') ? wpLayer.targetPoiId : null;
+    const targetPoiId = ((wpMode === 'towardPOI' || wp.isModified) && wpTargetPoiId)
+      ? wpTargetPoiId
+      : (layerTargetPoiId || wpTargetPoiId);
     // Resolve target POI from layer or wp if set
     if (targetPoiId && typeof pois !== 'undefined' && pois && pois.length > 0) {
       const poiFoundIdx = pois.findIndex(p => p.id === targetPoiId);
-      if (poiFoundIdx !== -1) targetPoiIndex = poiFoundIdx;
+      if (poiFoundIdx !== -1) {
+        targetPoiIndex = poiFoundIdx;
+      } else if (wp.poiIndex !== undefined && wp.poiIndex !== null && pois[wp.poiIndex]) {
+        targetPoiIndex = wp.poiIndex;
+      }
+    } else if (wp.poiIndex !== undefined && wp.poiIndex !== null && pois && pois[wp.poiIndex]) {
+      targetPoiIndex = wp.poiIndex;
     }
 
     if (wpMode !== 'inherit') {
@@ -27229,12 +27339,25 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
   );
 
   const curMode = wp.headingMode || 'inherit';
-  const poiIndex = wp.poiIndex || 0;
+  let layerPoiName = 'Default (POI 0)';
+  if (wpLayer && wpLayer.targetPoiId && wpLayer.targetPoiId !== 'inherit' && Array.isArray(pois)) {
+    const lp = pois.find(p => p.id === wpLayer.targetPoiId);
+    if (lp) layerPoiName = lp.name;
+  } else if (Array.isArray(pois) && pois[0]) {
+    layerPoiName = pois[0].name;
+  }
+
+  const isInheritedPoi = !wp.targetPoiId || wp.targetPoiId === 'inherit';
+  const poiIndex = (!isInheritedPoi && wp.targetPoiId && Array.isArray(pois) && pois.findIndex(p => p.id === wp.targetPoiId) !== -1)
+    ? pois.findIndex(p => p.id === wp.targetPoiId)
+    : (!isInheritedPoi && wp.poiIndex !== undefined && wp.poiIndex !== null ? wp.poiIndex : null);
   const isPoiMode = (getEffectiveWaypointHeadingMode(wp) === 'towardPOI');
-  let poiSelectOptions = '';
-  pois.forEach((poi, idx) => {
-    poiSelectOptions += `<option value="${idx}" ${poiIndex === idx ? 'selected' : ''}>${poi.name}</option>`;
-  });
+  let poiSelectOptions = `<option value="inherit" ${isInheritedPoi ? 'selected' : ''}>🌐 Inherit Layer POI (${layerPoiName})</option>`;
+  if (Array.isArray(pois)) {
+    pois.forEach((poi, idx) => {
+      poiSelectOptions += `<option value="${idx}" ${(!isInheritedPoi && poiIndex === idx) ? 'selected' : ''}>${poi.name}</option>`;
+    });
+  }
 
   // Calculate waypoint total and boundary context for leg indicators (v1.82.0)
   const allWaypoints = customWaypointsList || (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || (typeof generatedWaypoints !== 'undefined' ? generatedWaypoints : null) || [];
@@ -27709,11 +27832,20 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
     } else if (effectiveMode === 'fixed') {
       tempHeading = 0;
     } else if (effectiveMode === 'towardPOI') {
-      const selectedPoiIndex = poiSelect ? parseInt(poiSelect.value) : (wp.poiIndex || 0);
-      const targetPoi = pois[selectedPoiIndex];
+      let targetPoi = null;
+      if (poiSelect && poiSelect.value === 'inherit') {
+        const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : null;
+        const tempWp = { ...wp, targetPoiId: 'inherit', lat: (isNaN(latVal) ? wp.lat : latVal), lon: (isNaN(lonVal) ? wp.lon : lonVal) };
+        targetPoi = getTargetPoiCoordinates(tempWp, wpLayer);
+      } else {
+        const selectedPoiIndex = poiSelect ? parseInt(poiSelect.value) : (wp.poiIndex || 0);
+        targetPoi = (Array.isArray(pois) && pois[selectedPoiIndex]) ? pois[selectedPoiIndex] : null;
+      }
       if (targetPoi) {
-        const dy = targetPoi.lat - (isNaN(latVal) ? wp.lat : latVal);
-        const dx = targetPoi.lon - (isNaN(lonVal) ? wp.lon : lonVal);
+        const centerLat = (isNaN(latVal) ? wp.lat : latVal);
+        const latRad = centerLat * Math.PI / 180;
+        const dy = (targetPoi.lat - centerLat) * 111139;
+        const dx = (targetPoi.lon - (isNaN(lonVal) ? wp.lon : lonVal)) * 111139 * Math.cos(latRad);
         tempHeading = (90 - (Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
       } else {
         tempHeading = 0;
@@ -27725,7 +27857,14 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
     wp.pitch = tempPitch;
     wp.heading = (mode === 'custom') ? tempHeading : null;
     wp.headingMode = mode;
-    wp.poiIndex = poiSelect ? parseInt(poiSelect.value) : (wp.poiIndex || 0);
+    if (poiSelect && poiSelect.value === 'inherit') {
+      wp.targetPoiId = 'inherit';
+    } else {
+      wp.poiIndex = poiSelect ? parseInt(poiSelect.value) : (wp.poiIndex || 0);
+      if (pois && pois[wp.poiIndex] && pois[wp.poiIndex].id) {
+        wp.targetPoiId = pois[wp.poiIndex].id;
+      }
+    }
 
     if (!isNaN(latVal) && !isNaN(lonVal)) {
       marker.setLatLng([latVal, lonVal]);
@@ -28231,7 +28370,8 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
       const pitchVal = parseFloat(pitchSlider.value);
       const mode = headingModeSelect.value;
       const headingVal = (mode === 'custom') ? parseFloat(headingSlider.value) : null;
-      const poiIndexVal = poiSelect ? parseInt(poiSelect.value) : 0;
+      const isPoiInherit = (poiSelect && poiSelect.value === 'inherit');
+      const poiIndexVal = isPoiInherit ? 0 : (poiSelect ? parseInt(poiSelect.value) : 0);
       const latVal = parseFloat(latInput.value);
       const lonVal = parseFloat(lonInput.value);
 
@@ -28278,7 +28418,14 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
       wp.pitch = isAutoPitch ? 'auto' : pitchVal;
       wp.heading = headingVal;
       wp.headingMode = mode;
-      wp.poiIndex = poiIndexVal;
+      if (isPoiInherit) {
+        wp.targetPoiId = 'inherit';
+      } else {
+        wp.poiIndex = poiIndexVal;
+        if (pois && pois[poiIndexVal] && pois[poiIndexVal].id) {
+          wp.targetPoiId = pois[poiIndexVal].id;
+        }
+      }
       if (!isNaN(speedVal)) wp.speed = speedVal;
       if (!isNaN(hoverVal)) wp.hoverTime = hoverVal;
       if (turnModeVal) wp.turnMode = turnModeVal;
@@ -28308,7 +28455,14 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
         rWp.pitch = isAutoPitch ? 'auto' : pitchVal;
         rWp.heading = headingVal;
         rWp.headingMode = mode;
-        rWp.poiIndex = poiIndexVal;
+        if (isPoiInherit) {
+          rWp.targetPoiId = 'inherit';
+        } else {
+          rWp.poiIndex = poiIndexVal;
+          if (pois && pois[poiIndexVal] && pois[poiIndexVal].id) {
+            rWp.targetPoiId = pois[poiIndexVal].id;
+          }
+        }
         if (!isNaN(speedVal)) rWp.speed = speedVal;
         if (!isNaN(hoverVal)) rWp.hoverTime = hoverVal;
         if (turnModeVal) rWp.turnMode = turnModeVal;
@@ -30182,8 +30336,9 @@ function updateFPVEditorUI() {
       } else if (effectiveMode === 'towardPOI') {
         const targetPoi = getTargetPoiCoordinates(wp, wpLayer);
         if (targetPoi) {
-          const dy = targetPoi.lat - wp.lat;
-          const dx = targetPoi.lon - wp.lon;
+          const latRad = wp.lat * Math.PI / 180;
+          const dy = (targetPoi.lat - wp.lat) * 111139;
+          const dx = (targetPoi.lon - wp.lon) * 111139 * Math.cos(latRad);
           displayAngle = (90 - (Math.atan2(dy, dx) * 180 / Math.PI) + 360) % 360;
         } else {
           displayAngle = 0;
@@ -30193,17 +30348,38 @@ function updateFPVEditorUI() {
       }
 
       const poiSelect = document.getElementById('fpv-edit-poi-select');
-      if (poiSelect) {
+      if (poiSelect && typeof poiSelect.appendChild === 'function') {
         poiSelect.innerHTML = '';
-        pois.forEach((poi, idx) => {
-          const opt = document.createElement('option');
-          opt.value = idx;
-          opt.textContent = poi.name;
-          if (idx === (wp.poiIndex || 0)) {
-            opt.selected = true;
-          }
-          poiSelect.appendChild(opt);
-        });
+        const isInheritedPoi = !wp.targetPoiId || wp.targetPoiId === 'inherit';
+        const effectivePoiIdx = (!isInheritedPoi && wp.targetPoiId && Array.isArray(pois) && pois.findIndex(p => p.id === wp.targetPoiId) !== -1)
+          ? pois.findIndex(p => p.id === wp.targetPoiId)
+          : (!isInheritedPoi && wp.poiIndex !== undefined && wp.poiIndex !== null ? wp.poiIndex : null);
+
+        let layerPoiName = 'Default (POI 0)';
+        if (wpLayer && wpLayer.targetPoiId && wpLayer.targetPoiId !== 'inherit' && Array.isArray(pois)) {
+          const lp = pois.find(p => p.id === wpLayer.targetPoiId);
+          if (lp) layerPoiName = lp.name;
+        } else if (Array.isArray(pois) && pois[0]) {
+          layerPoiName = pois[0].name;
+        }
+
+        const inheritOpt = document.createElement('option');
+        inheritOpt.value = 'inherit';
+        inheritOpt.textContent = `🌐 Inherit Layer POI (${layerPoiName})`;
+        if (isInheritedPoi) inheritOpt.selected = true;
+        poiSelect.appendChild(inheritOpt);
+
+        if (Array.isArray(pois)) {
+          pois.forEach((poi, idx) => {
+            const opt = document.createElement('option');
+            opt.value = idx;
+            opt.textContent = poi.name;
+            if (!isInheritedPoi && idx === effectivePoiIdx) {
+              opt.selected = true;
+            }
+            poiSelect.appendChild(opt);
+          });
+        }
         poiSelect.style.display = (effectiveMode === 'towardPOI') ? 'block' : 'none';
       }
 
@@ -30760,15 +30936,31 @@ function setupFPVListeners() {
     const editPoiSelect = document.getElementById('fpv-edit-poi-select');
     if (editPoiSelect) {
       editPoiSelect.addEventListener('change', (e) => {
-        const idxVal = parseInt(e.target.value);
+        const val = e.target.value;
         const waypoints = getCurrentWaypoints();
         if (waypoints && waypoints[fpvProgressIndex]) {
-          waypoints[fpvProgressIndex].poiIndex = idxVal;
+          if (val === 'inherit') {
+            waypoints[fpvProgressIndex].targetPoiId = 'inherit';
+          } else {
+            const idxVal = parseInt(val);
+            waypoints[fpvProgressIndex].poiIndex = idxVal;
+            if (pois && pois[idxVal] && pois[idxVal].id) {
+              waypoints[fpvProgressIndex].targetPoiId = pois[idxVal].id;
+            }
+          }
           waypoints[fpvProgressIndex].isModified = true;
           
           const gridType = document.getElementById('grid-type').value;
           if (gridType === 'road-following' && roadWaypoints && roadWaypoints[fpvProgressIndex]) {
-            roadWaypoints[fpvProgressIndex].poiIndex = idxVal;
+            if (val === 'inherit') {
+              roadWaypoints[fpvProgressIndex].targetPoiId = 'inherit';
+            } else {
+              const idxVal = parseInt(val);
+              roadWaypoints[fpvProgressIndex].poiIndex = idxVal;
+              if (pois && pois[idxVal] && pois[idxVal].id) {
+                roadWaypoints[fpvProgressIndex].targetPoiId = pois[idxVal].id;
+              }
+            }
             roadWaypoints[fpvProgressIndex].isModified = true;
           }
 
@@ -31117,7 +31309,16 @@ function setupFPVListeners() {
           wp.heading = null;
         }
       }
-      if (poiInput) wp.poiIndex = parseInt(poiInput.value);
+      if (poiInput) {
+        if (poiInput.value === 'inherit') {
+          wp.targetPoiId = 'inherit';
+        } else {
+          wp.poiIndex = parseInt(poiInput.value);
+          if (pois && pois[wp.poiIndex] && pois[wp.poiIndex].id) {
+            wp.targetPoiId = pois[wp.poiIndex].id;
+          }
+        }
+      }
 
       wp.isRingStart = true;
       wp.isModified = true;
@@ -31132,6 +31333,7 @@ function setupFPVListeners() {
         roadWaypoints[fpvProgressIndex].heading = wp.heading;
         roadWaypoints[fpvProgressIndex].headingMode = wp.headingMode || 'inherit';
         roadWaypoints[fpvProgressIndex].poiIndex = wp.poiIndex || 0;
+        if (wp.targetPoiId) roadWaypoints[fpvProgressIndex].targetPoiId = wp.targetPoiId;
         roadWaypoints[fpvProgressIndex].speed = wp.speed;
         roadWaypoints[fpvProgressIndex].hoverTime = wp.hoverTime;
         roadWaypoints[fpvProgressIndex].turnMode = wp.turnMode;
