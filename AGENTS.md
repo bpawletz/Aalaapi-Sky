@@ -92,4 +92,26 @@ Never post or store sensitive, personally identifiable, or real-world operationa
 3. **No Local Machine Paths or Usernames:** Sanitize file paths. Redact Windows user paths (e.g. replace `C:\Users\<username>\...` with `<workspace>/...` or `~/...`).
 4. **No Secrets or Credentials:** Never commit or paste GitHub Personal Access Tokens (PATs), API keys, or credentials into repository files, issue descriptions, or comments. Store credentials exclusively in machine-level or user-level environment variables.
 
+## 9. Mandatory Visual & Video Verification for Features & Issue Fixes
+Whenever implementing a new feature or fixing an issue/bug in Aalaapi Sky, the AI agent **MUST** capture visual verification demonstrating the capability in action:
+1. **Automated Feature Video Recordings (`record_features.sh` / `record_features.ps1`)**:
+   - For UI features, pattern generators, 3D HUD visualizations, or interactive workflows, record a video demonstrating the user flow using Playwright:
+     ```bash
+     # Linux / macOS / Git Bash:
+     ./record_features.sh [feature_name]
+     # PowerShell / Windows:
+     .\record_features.ps1 [feature_name]
+     # Or via npm:
+     npm run record:features
+     ```
+   - Automated video recordings are saved into the `recordings/` directory as `.webm` files.
+2. **Git Hygiene & Zero Video Tracking in Git**:
+   - All video files (`*.webm`, `*.mp4`, `recordings/`, `videos/`) MUST remain strictly gitignored. Never stage, commit, or push video binaries to the repository.
+3. **Strict Default Location & Map Centering Policy**:
+   - In accordance with Section 8 (Data Privacy Policy), all recorded videos and screenshots **MUST** exclusively use the app's default rural location (`[41.3215, -88.9950]`, Grand Village of the Illinois / Utica, IL rural countryside; do not use a major city center) or normalized grid offsets `(0, 0)`. Never show real-world client coordinates, home points, or operational flight paths.
+   - When tools are used or patterns are generated, ensure the center marker and flight path remain positioned squarely in the center of the map viewport (avoiding Leaflet auto-pan offset toward the bottom).
+4. **Walkthrough & Verification Reporting**:
+   - Reference the generated visual artifacts or screenshots in your implementation walkthrough and verification reports to prove correct UI behavior.
+
+
 
