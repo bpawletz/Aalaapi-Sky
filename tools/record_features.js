@@ -311,6 +311,44 @@ const scenarios = [
     }
   },
   {
+    id: 'feature_multi_poi_layers',
+    name: 'Multi-POI Association & Three-Tier Hierarchy',
+    description: 'Dynamic association of flight layers and waypoints with custom POIs or cascading inheritance.',
+    issueRef: 'Issue #77',
+    run: async (page) => {
+      // 1. Set global heading mode to towardPOI
+      await page.evaluate(() => {
+        const headingSelect = document.getElementById('heading-mode');
+        if (headingSelect) {
+          headingSelect.value = 'towardPOI';
+          headingSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+      await page.waitForTimeout(600);
+
+      // 2. Open Layer Advanced Dynamics Drawer in Section 2
+      await page.evaluate(() => {
+        const toggle = document.getElementById('layer-advanced-dynamics-toggle-btn');
+        if (toggle) toggle.click();
+      });
+      await page.waitForTimeout(600);
+
+      // 3. Set Layer Heading Mode to towardPOI to reveal layer-poi-container
+      await page.evaluate(() => {
+        const layerHead = document.getElementById('layer-heading-mode');
+        if (layerHead) {
+          layerHead.value = 'towardPOI';
+          layerHead.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+      await page.waitForTimeout(800);
+
+      // 4. Center map squarely
+      await centerMapOnPoint(page);
+      await page.waitForTimeout(800);
+    }
+  },
+  {
     id: 'feature_3d_fpv_hud',
     name: '3D FPV HUD Virtual Cockpit & Trajectory View',
     description: 'Interactive Three.js 3D perspective viewer with virtual HUD instruments and flight waylines.',
