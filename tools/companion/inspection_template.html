@@ -31,7 +31,7 @@
     .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
     .stat-card .label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
     .stat-card .value { font-size: 1.25rem; font-weight: 700; color: #fff; margin-top: 4px; }
-    #map { height: 380px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 24px; }
+    #map { height: 420px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 24px; }
     .filter-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
     .filter-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); padding: 6px 14px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
     .filter-btn.active, .filter-btn:hover { background: var(--accent-glow); color: var(--accent); border-color: var(--accent); }
@@ -46,6 +46,40 @@
     table { width: 100%; border-collapse: collapse; margin-top: 16px; background: var(--surface); border-radius: 8px; overflow: hidden; border: 1px solid var(--border); font-size: 0.8rem; }
     th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
     th { background: rgba(255, 255, 255, 0.04); color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 0.7rem; }
+
+    /* Leaflet Dark Theme & Layer Control Overrides */
+    .leaflet-control-layers {
+      background: var(--surface) !important;
+      color: var(--text) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 6px !important;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5) !important;
+    }
+    .leaflet-control-layers-expanded {
+      padding: 8px 12px !important;
+      background: var(--surface) !important;
+      color: var(--text) !important;
+      font-size: 0.8rem !important;
+    }
+    .leaflet-control-layers-base label {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+      color: var(--text) !important;
+    }
+    .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+      background: var(--surface) !important;
+      color: var(--text) !important;
+      border: 1px solid var(--border) !important;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5) !important;
+    }
+    .leaflet-popup-content {
+      color: var(--text) !important;
+      font-size: 0.8rem !important;
+      line-height: 1.4 !important;
+    }
   </style>
 </head>
 <body>
@@ -78,6 +112,18 @@
         <a id="link-wf-json" href="wireframe.json" download="wireframe.json" class="filter-btn" style="padding: 2px 8px; font-size: 0.68rem; text-decoration: none; color: #94a3b8;" title="Raw Line Coordinates JSON">JSON</a>
         <a href="https://threejs.org/editor/" target="_blank" rel="noopener noreferrer" class="filter-btn" style="padding: 2px 8px; font-size: 0.68rem; text-decoration: none; color: #34d399; border-color: rgba(52,211,153,0.4);" title="Open official Three.js Editor in a new tab">🎨 Three.js Editor ↗</a>
       </div>
+    </div>
+  </div>
+
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+    <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+      <span>🗺️ Flight Trajectory &amp; Camera Positions</span>
+    </div>
+    <div class="filter-bar" id="map-basemap-bar" style="margin-bottom: 0;">
+      <button class="filter-btn active" id="btn-layer-sat" type="button" title="High-resolution Esri World Imagery satellite basemap (unblocked on local file://)">🛰️ Satellite</button>
+      <button class="filter-btn" id="btn-layer-esri" type="button" title="Esri World Street Map road provider (unblocked on local file://)">🗺️ Streets (Esri)</button>
+      <button class="filter-btn" id="btn-layer-carto" type="button" title="CartoDB Voyager road provider (unblocked on local file://)">🧭 CartoDB Roads</button>
+      <button class="filter-btn" id="btn-layer-osm" type="button" title="Standard OpenStreetMap (online)">🌐 OpenStreetMap</button>
     </div>
   </div>
 
@@ -147,10 +193,75 @@
     if (typeof L !== 'undefined') {
       const firstCoord = (manifest.photos && manifest.photos[0] && manifest.photos[0].actual) ? [manifest.photos[0].actual.lat, manifest.photos[0].actual.lon] : [42.36, -71.05];
       map = L.map('map').setView(firstCoord, 18);
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+
+      // Base layers: Default to Satellite (Esri) and non-blocked road providers (Esri Streets, CartoDB)
+      const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 22,
+        maxNativeZoom: 19,
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+      });
+
+      const esriStreetLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 22,
+        maxNativeZoom: 19,
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
+      });
+
+      const cartoVoyagerLayer = L.tileLayer('https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        maxZoom: 20,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>'
+      });
+
+      const osmLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 21,
-        attribution: '&copy; OpenStreetMap contributors'
-      }).addTo(map);
+        maxNativeZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'
+      });
+
+      // Default to Satellite view (best for drone flight inspection review, unblocked on file://)
+      satLayer.addTo(map);
+
+      // Register Leaflet Layer Control
+      const baseMaps = {
+        "🛰️ Satellite": satLayer,
+        "🗺️ Streets (Esri)": esriStreetLayer,
+        "🧭 CartoDB Roads": cartoVoyagerLayer,
+        "🌐 OpenStreetMap": osmLayer
+      };
+      L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
+
+      // Map toolbar quick switcher
+      const layerMap = {
+        'btn-layer-sat': satLayer,
+        'btn-layer-esri': esriStreetLayer,
+        'btn-layer-carto': cartoVoyagerLayer,
+        'btn-layer-osm': osmLayer
+      };
+
+      function activateLayer(targetLayer, activeBtnId) {
+        [satLayer, esriStreetLayer, cartoVoyagerLayer, osmLayer].forEach(l => {
+          if (map.hasLayer(l)) map.removeLayer(l);
+        });
+        targetLayer.addTo(map);
+        Object.keys(layerMap).forEach(id => {
+          const btn = document.getElementById(id);
+          if (btn) btn.classList.toggle('active', id === activeBtnId);
+        });
+      }
+
+      Object.keys(layerMap).forEach(btnId => {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+          btn.addEventListener('click', () => activateLayer(layerMap[btnId], btnId));
+        }
+      });
+
+      map.on('baselayerchange', e => {
+        Object.keys(layerMap).forEach(id => {
+          const btn = document.getElementById(id);
+          if (btn) btn.classList.toggle('active', layerMap[id] === e.layer);
+        });
+      });
 
       const latlngs = [];
       (manifest.photos || []).forEach(p => {
@@ -191,12 +302,16 @@
       filtered.forEach(p => {
         const card = document.createElement('div');
         card.className = 'photo-card';
-        const imgPath = p.previewUrl || `photos/previews/${p.filename}`;
+        let imgPath = p.previewUrl || `photos/previews/${p.filename}`;
+        // In standalone file:// reports or if previewUrl is an absolute web path (e.g. /scratch/...), use relative package path
+        if (window.location.protocol === 'file:' || (p.previewUrl && p.previewUrl.startsWith('/'))) {
+          imgPath = `photos/previews/${p.filename}`;
+        }
         const sevBadge = p.severity === 'critical' ? '<span class="badge badge-critical">🔴 Critical</span>' : (p.severity === 'warning' ? '<span class="badge badge-warning">🟡 Warning</span>' : '<span class="badge badge-clean">🟢 Clean</span>');
         const annCount = p.annotations ? p.annotations.length : 0;
 
         card.innerHTML = `
-          <img src="${imgPath}" alt="${p.filename}" onerror="this.style.background='#1e293b'; this.style.padding='60px 10px'; this.alt='[Preview Not Cached]'"/>
+          <img src="${imgPath}" alt="${p.filename}" onerror="if (!this.dataset.triedRel) { this.dataset.triedRel = '1'; this.src = 'photos/previews/' + encodeURIComponent('${p.filename}'); return; } if (!this.dataset.triedRaw) { this.dataset.triedRaw = '1'; this.src = 'photos/raw/' + encodeURIComponent('${p.filename}'); return; } this.style.background='#1e293b'; this.style.padding='60px 10px'; this.alt='[Preview Not Cached]'"/>
           <div class="photo-card-body">
             <div class="photo-card-title">
               <span>WP #${p.waypointIndex} • ${p.filename}</span>
@@ -233,9 +348,9 @@
     renderPhotos('all');
 
     // Filter bar listener
-    document.querySelectorAll('.filter-btn').forEach(btn => {
+    document.querySelectorAll('#filter-bar .filter-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('#filter-bar .filter-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         renderPhotos(btn.dataset.filter);
       });

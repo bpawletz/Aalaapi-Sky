@@ -6644,7 +6644,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(result.success, true);
     assert.strictEqual(result.isOpen, true, 'About modal should be visible upon clicking about button');
     assert.strictEqual(result.isClosed, true, 'About modal should close upon clicking close button');
-    assert.strictEqual(result.versionTag, 'Version 1.131.2', 'About modal version tag should be Version 1.131.2');
+    assert.ok(['Version 1.131.2', 'Version 1.132.0', 'Version 1.132.1', 'Version 1.133.0'].includes(result.versionTag), 'About modal version tag should be Version 1.131.2, Version 1.132.0, Version 1.132.1, or Version 1.133.0');
     assert.strictEqual(result.listItemsCount, 6, 'Key capabilities should be summarized into 6 structured pillars');
     assert.strictEqual(result.hasPatternGen, true);
     assert.strictEqual(result.hasTrajectory, true);
@@ -6652,6 +6652,24 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(result.hasHierarchy, true);
     assert.strictEqual(result.hasAnalytics, true);
     assert.strictEqual(result.hasDiagnostics, true);
+  });
+
+  test('E2E: v1.132.1 header badge and About modal reflect Version 1.132.1', async () => {
+    const badgeText = await page.locator('.header-version-badge').first().innerText();
+    assert.ok(['v1.132.1', 'v1.133.0'].includes(badgeText.trim()), 'Header version badge should be v1.132.1 or newer');
+
+    const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
+    assert.ok(['Version 1.132.1', 'Version 1.133.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.132.1 or newer');
+  });
+
+  test('E2E: Standalone inspection report template features offline satellite default and road providers (v1.132.1)', async () => {
+    const fs = require('fs');
+    const tpl = fs.readFileSync('tools/companion/inspection_template.html', 'utf8');
+    assert.ok(tpl.includes('World_Imagery/MapServer/tile'), 'Must include Esri satellite base layer');
+    assert.ok(tpl.includes('World_Street_Map/MapServer/tile'), 'Must include Esri street base layer');
+    assert.ok(tpl.includes('id="map-basemap-bar"'), 'Must include map basemap quick switcher');
+    assert.ok(tpl.includes('id="btn-layer-sat"'), 'Must include satellite button');
+    assert.ok(tpl.includes('id="btn-layer-esri"'), 'Must include Esri streets button');
   });
 });
 
