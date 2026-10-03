@@ -1,3 +1,13 @@
+## [1.135.2] - 2026-10-03
+
+### Fixed
+- **Deleted Freeform Waypoint Persistence Across Layer Switching (Closes #109)**:
+  - Resolved an issue where deleted waypoints on Freeform flight layers reappeared after navigating away to another flight layer or section and returning.
+  - Implemented `deleteFlightWaypoint(wp, idx)` to properly locate waypoints within `layer.freeformWaypoints` and `layer.roadWaypoints` using waypoint object identity and geodetic coordinate matching rather than relying on global multi-layer waypoint array offsets.
+  - Spliced deleted waypoints, photos, and polygon vertices from the target flight layer's persistent state arrays (`layer.freeformWaypoints`, `layer.freeformPhotos`, `layer.polygonVertices`, and `layer.waypoints`), re-indexing remaining waypoints cleanly.
+  - Synchronized `convertToFreeformMission` and `togglePatternParameters` imported KMZ transitions to properly initialize `activeLayer.freeformWaypoints` and `activeLayer.freeformPhotos`.
+  - Updated both the 2D Waypoint Editor popup and the 3D FPV HUD delete mechanisms (`fpvDeleteWaypoint` and `fpvInsertWaypoint`) to delegate through `deleteFlightWaypoint`, triggering `updateGrid()` and refreshing the Pattern Layers Stack card counts.
+
 ## [1.135.1] - 2026-10-03
 
 ### Fixed
