@@ -1627,7 +1627,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         freeformXml = buildWaylinesWpml(freeformWps, 30, 4, 'followWayline', 'goHome', -90, 'stopAndShoot', 'curved');
       }
 
-      const hasFreeformFollowWayline = freeformXml.includes('<wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>');
+      const hasFreeformSmoothTransition = freeformXml.includes('<wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>');
       const hasHeadingAngleEnable = freeformXml.includes('<wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>');
 
       // Switch back to single 2D grid
@@ -1644,7 +1644,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       return {
         hasDoubleFollowWayline,
         noDoubleSmoothTransition,
-        hasFreeformFollowWayline,
+        hasFreeformSmoothTransition,
         hasHeadingAngleEnable,
         doubleWpsCount: doubleWps ? doubleWps.length : 0,
         freeformWpsCount: freeformWps ? freeformWps.length : 0
@@ -1653,7 +1653,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
     assert.ok(wpmlResult.hasDoubleFollowWayline, 'Double Grid with oblique pitch must use followWayline heading mode');
     assert.ok(wpmlResult.noDoubleSmoothTransition, 'Double Grid with oblique pitch must not have smoothTransition conflicts');
-    assert.ok(wpmlResult.hasFreeformFollowWayline, 'Freeform without custom headings should follow wayline path');
+    assert.ok(wpmlResult.hasFreeformSmoothTransition, 'Freeform without custom headings should use smoothTransition heading mode');
     assert.ok(wpmlResult.hasHeadingAngleEnable, 'Freeform should have headingAngleEnable=1');
   });
 
@@ -6644,7 +6644,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(result.success, true);
     assert.strictEqual(result.isOpen, true, 'About modal should be visible upon clicking about button');
     assert.strictEqual(result.isClosed, true, 'About modal should close upon clicking close button');
-    assert.ok(['Version 1.131.2', 'Version 1.132.0', 'Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0'].includes(result.versionTag), 'About modal version tag should be Version 1.131.2 or newer');
+    assert.ok(['Version 1.131.2', 'Version 1.132.0', 'Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1'].includes(result.versionTag), 'About modal version tag should be Version 1.131.2 or newer');
     assert.strictEqual(result.listItemsCount, 6, 'Key capabilities should be summarized into 6 structured pillars');
     assert.strictEqual(result.hasPatternGen, true);
     assert.strictEqual(result.hasTrajectory, true);
@@ -6656,10 +6656,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
   test('E2E: v1.132.1 header badge and About modal reflect Version 1.132.1', async () => {
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.132.1', 'v1.133.0', 'v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0'].includes(badgeText.trim()), 'Header version badge should be v1.132.1 or newer');
+    assert.ok(['v1.132.1', 'v1.133.0', 'v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1'].includes(badgeText.trim()), 'Header version badge should be v1.132.1 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(['Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.132.1 or newer');
+    assert.ok(['Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.132.1 or newer');
   });
 
   test('E2E: Standalone inspection report template features offline satellite default and road providers (v1.132.1)', async () => {
@@ -6675,7 +6675,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Multi-POI Association & Three-Tier Cascading Hierarchy (v1.134.0, Issue #77)', async () => {
     // 1. Header version badge and About modal reflect v1.134.0 or newer
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.0 or newer');
+    assert.ok(['v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1'].includes(badgeText.trim()), 'Header version badge should be v1.134.0 or newer');
 
     // 2. Section 2 Layer Card contains #layer-poi-select & responds to towardPOI mode
     const poiTestResult = await page.evaluate(() => {
@@ -6717,10 +6717,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Edit Waypoint Popup & Mobile Overflow Zero Overhang (v1.134.1, Issue #107)', async () => {
     // 1. Header version badge and About modal reflect v1.134.1 or newer
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.134.1', 'v1.134.2', 'v1.135.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.1 or newer');
+    assert.ok(['v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1'].includes(badgeText.trim()), 'Header version badge should be v1.134.1 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(['Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.1 or newer');
+    assert.ok(['Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.1 or newer');
 
     // 2. Emulate mobile viewport (360x640)
     await page.setViewportSize({ width: 360, height: 640 });
@@ -6805,10 +6805,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Exclusion-Freeform & Custom Heading WPML Execution on DJI Mini 4 Pro (v1.134.2, Issue #110)', async () => {
     // 1. Header version badge and About modal reflect v1.134.2 or newer
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.134.2', 'v1.135.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.2 or newer');
+    assert.ok(['v1.134.2', 'v1.135.0', 'v1.135.1'].includes(badgeText.trim()), 'Header version badge should be v1.134.2 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(['Version 1.134.2', 'Version 1.135.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.2 or newer');
+    assert.ok(['Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.2 or newer');
 
     // 2. Evaluate in browser context: buildWaylinesWpml with exclusion-freeform layer and custom headings
     const testResult = await page.evaluate(() => {
@@ -6855,10 +6855,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Next-24-Hour Solar Ephemeris & Part 107 Tracker Card (v1.135.0, Issue #100)', async () => {
     // 1. Header version badge and About modal reflect v1.135.0
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.strictEqual(badgeText.trim(), 'v1.135.0', 'Header version badge should be v1.135.0');
+    assert.ok(['v1.135.0', 'v1.135.1'].includes(badgeText.trim()), 'Header version badge should be v1.135.0 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.strictEqual(modalVersion.trim(), 'Version 1.135.0', 'About modal version tag should be Version 1.135.0');
+    assert.ok(['Version 1.135.0', 'Version 1.135.1'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.135.0 or newer');
 
     // 2. Validate DOM Architecture and Dynamic Update in Browser Context
     const solarResult = await page.evaluate(() => {
@@ -6922,6 +6922,69 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(solarResult.statRemainingValid, true, 'Sidebar Daylight Remaining metric must be computed');
     assert.strictEqual(solarResult.toggleWorks, true, 'Solar timeline toggle expands and collapses timeline');
     assert.strictEqual(solarResult.hasIntroHighlight, true, 'Intro Guide Features pane must highlight v1.135.0 Solar Ephemeris');
+  });
+
+  test('E2E: Freeform Pattern KMZ Execution on DJI Mini 4 Pro (v1.135.1, Issue #111)', async () => {
+    // 1. Header version badge and About modal reflect v1.135.1
+    const badgeText = await page.locator('.header-version-badge').first().innerText();
+    assert.strictEqual(badgeText.trim(), 'v1.135.1', 'Header version badge should be v1.135.1');
+
+    const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
+    assert.strictEqual(modalVersion.trim(), 'Version 1.135.1', 'About modal version tag should be Version 1.135.1');
+
+    // 2. Evaluate in browser context: buildWaylinesWpml with freeform layer, 31 waypoints, DJI Mini 4 Pro
+    const testResult = await page.evaluate(() => {
+      const droneModelEl = document.getElementById('drone-model');
+      if (droneModelEl) droneModelEl.value = '68'; // DJI Mini 4 Pro
+
+      const hoverEl = document.getElementById('global-hover-time');
+      if (hoverEl) hoverEl.value = '0';
+
+      const wps = [];
+      const baseLat = 41.3215;
+      const baseLon = -88.9950;
+      for (let i = 0; i < 31; i++) {
+        wps.push({
+          lat: baseLat + (i * 0.0001),
+          lon: baseLon + (i * 0.0001),
+          alt: 50.0,
+          heading: (i * 12.0) % 360,
+          headingMode: 'inherit',
+          gridType: 'freeform',
+          layerPattern: 'freeform',
+          turnMode: 'inherit'
+        });
+      }
+
+      const wpml = buildWaylinesWpml(wps, 50.0, 4.0, 'followWayline', 'goHome', -60, 'stopAndShoot', 'curved');
+      const validation = validateWpmlMission(wpml, '', { gridType: 'freeform', waypoints: wps });
+
+      const placemarkCount = (wpml.match(/<Placemark>/g) || []).length;
+      const smoothCount = (wpml.match(/<wpml:waypointHeadingMode>smoothTransition<\/wpml:waypointHeadingMode>/g) || []).length;
+      const enableCount = (wpml.match(/<wpml:waypointHeadingAngleEnable>1<\/wpml:waypointHeadingAngleEnable>/g) || []).length;
+      const hasFollowWayline = wpml.includes('<wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>');
+      const hasRawZero = wpml.includes('<wpml:waypointHeadingAngle>0</wpml:waypointHeadingAngle>') ||
+                         wpml.includes('<wpml:waypointHeadingAngle>0.0</wpml:waypointHeadingAngle>');
+
+      return {
+        success: true,
+        placemarkCount,
+        smoothCount,
+        enableCount,
+        hasFollowWayline,
+        hasRawZero,
+        isValid: validation.valid,
+        errors: validation.errors
+      };
+    });
+
+    assert.strictEqual(testResult.success, true);
+    assert.strictEqual(testResult.placemarkCount, 31, 'Must export all 31 placemarks');
+    assert.strictEqual(testResult.smoothCount, 31, 'All 31 placemarks must use smoothTransition');
+    assert.strictEqual(testResult.enableCount, 31, 'All 31 placemarks must have headingAngleEnable: 1');
+    assert.strictEqual(testResult.hasFollowWayline, false, 'No placemarks should use followWayline in freeform missions');
+    assert.strictEqual(testResult.hasRawZero, false, 'No placemarks should have un-clamped 0 or 0.0 heading angles');
+    assert.strictEqual(testResult.isValid, true, `Validation must pass cleanly: ${testResult.errors.join(', ')}`);
   });
 });
 
