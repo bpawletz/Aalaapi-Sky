@@ -16267,7 +16267,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
       (wp._clusterSize > 1) ||
       (wp.layerId && (wp.majorTurnSettlingTime !== undefined || (typeof flightLayers !== 'undefined' && flightLayers.some(l => l.id === wp.layerId && (l.pattern === 'target-splat' || l.pattern === 'photo-sphere')))));
 
-    if ((isStopAndShoot || isPhotoSphere) && autoSettlingEnabled) {
+    if ((isStopAndShoot || isPhotoSphere) && autoSettlingEnabled && !wp.skipPhoto && !wp.isDetour && !wp.isTransition) {
       if (effectiveHover < baseSettling) {
         effectiveHover = baseSettling;
       }
@@ -16486,7 +16486,7 @@ ${waypointActions.join('\n')}
     }
 
     if (wpMode !== 'inherit') {
-      if (wpMode === 'custom' || wpMode === 'smoothTransition' || (gridType === 'target-splat' && wpMode === 'followWayline')) {
+      if (wpMode === 'custom' || wpMode === 'smoothTransition' || ((gridType === 'target-splat' || gridType === 'exclusion-freeform' || (wpLayer && wpLayer.pattern === 'exclusion-freeform')) && wpMode === 'followWayline')) {
         actualHeadingMode = 'smoothTransition';
         actualHeadingAngle = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
       } else {
@@ -16504,7 +16504,7 @@ ${waypointActions.join('\n')}
         }
       }
     } else {
-      if ((gridType === 'freeform' || gridType === 'target-splat' || gridType === 'road-following' || gridType === 'photo-sphere' || wp.isPhotoSphere || wp.isRoadDroneWaypoint) && wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
+      if ((gridType === 'freeform' || gridType === 'exclusion-freeform' || gridType === 'target-splat' || gridType === 'road-following' || gridType === 'photo-sphere' || wp.isPhotoSphere || wp.isRoadDroneWaypoint || wp.layerPattern === 'freeform' || wp.layerPattern === 'exclusion-freeform' || (wp.gridType && (wp.gridType === 'freeform' || wp.gridType === 'exclusion-freeform')) || (wpLayer && (wpLayer.pattern === 'freeform' || wpLayer.pattern === 'exclusion-freeform'))) && wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) {
         actualHeadingMode = 'smoothTransition';
         actualHeadingAngle = wp.heading;
       } else if (effectiveHeadingMode === 'towardPOI') {
@@ -16780,11 +16780,15 @@ function validateWpmlMission(wpmlXml, templateXml = '', options = {}) {
 
   // ── RULE 1: Heading Mode & waypointHeadingAngleEnable Coherence ────────────
   let r1Passed = true;
-  let r1Msg = 'Heading modes properly assign waypointHeadingAngleEnable (intermediate followWayline waypoints use 0, endpoints use 1; target-splat uses smoothTransition with enable 1)';
+  let r1Msg = 'Heading modes properly assign waypointHeadingAngleEnable (intermediate followWayline waypoints use 0, endpoints use 1; target-splat/exclusion-freeform uses smoothTransition with enable 1)';
   const isSinglePattern = (options && (options.gridType === 'single' || options.pattern === 'single'));
   const isDoublePattern = (options && (options.gridType === 'double' || options.pattern === 'double'));
   const isTargetSplatPattern = (options && (options.gridType === 'target-splat' || options.pattern === 'target-splat' || options.isTargetSplat)) ||
     (options && Array.isArray(options.waypoints) && options.waypoints.some(w => w && (w.gridType === 'target-splat' || w.isPerimeterOrbit)));
+  const isExclusionFreeformPattern = (options && (options.gridType === 'exclusion-freeform' || options.pattern === 'exclusion-freeform' || options.isExclusionFreeform)) ||
+    (options && Array.isArray(options.waypoints) && options.waypoints.some(w => w && (w.gridType === 'exclusion-freeform' || w.layerPattern === 'exclusion-freeform')));
+  const isFreeformPattern = (options && (options.gridType === 'freeform' || options.pattern === 'freeform')) ||
+    (options && Array.isArray(options.waypoints) && options.waypoints.some(w => w && (w.gridType === 'freeform' || w.layerPattern === 'freeform')));
   placemarks.forEach((pm, idx) => {
     const modeMatch = pm.match(/<wpml:waypointHeadingMode>([^<]+)<\/wpml:waypointHeadingMode>/);
     const enableMatch = pm.match(/<wpml:waypointHeadingAngleEnable>([^<]+)<\/wpml:waypointHeadingAngleEnable>/);
@@ -16792,13 +16796,19 @@ function validateWpmlMission(wpmlXml, templateXml = '', options = {}) {
       const mode = modeMatch[1].trim();
       const enable = enableMatch ? enableMatch[1].trim() : '0';
       const isEndpoint = (idx === 0 || idx === placemarks.length - 1);
-      if (isTargetSplatPattern) {
+      const wpHasCustomHeading = options && Array.isArray(options.waypoints) && options.waypoints[idx] &&
+        options.waypoints[idx].heading !== null && options.waypoints[idx].heading !== undefined && !isNaN(options.waypoints[idx].heading);
+      const isCustomHeadingWp = isTargetSplatPattern || isExclusionFreeformPattern || (isFreeformPattern && wpHasCustomHeading);
+
+      if (isCustomHeadingWp) {
         if (mode === 'followWayline') {
           r1Passed = false;
-          result.errors.push(`Waypoint ${idx}: pattern is 'target-splat' but waypointHeadingMode is 'followWayline' (target-splat missions must use 'smoothTransition' mode with locked headings to prevent getting stuck on first waypoint)`);
+          const patName = isTargetSplatPattern ? 'target-splat' : (isExclusionFreeformPattern ? 'exclusion-freeform' : 'freeform');
+          result.errors.push(`Waypoint ${idx}: pattern is '${patName}' but waypointHeadingMode is 'followWayline' (must use 'smoothTransition' mode with locked headings to prevent getting stuck on first waypoint or flight abort)`);
         } else if (enable !== '1') {
           r1Passed = false;
-          result.errors.push(`Waypoint ${idx}: pattern is 'target-splat' but waypointHeadingAngleEnable is 0 (must be 1 to maintain target-locked heading orientation)`);
+          const patName = isTargetSplatPattern ? 'target-splat' : (isExclusionFreeformPattern ? 'exclusion-freeform' : 'freeform');
+          result.errors.push(`Waypoint ${idx}: pattern is '${patName}' but waypointHeadingAngleEnable is 0 (must be 1 to maintain custom heading orientation)`);
         }
       } else if (mode === 'followWayline') {
         if (!isEndpoint && enable === '1') {
@@ -17012,6 +17022,10 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
   // For target-splat missions, repair followWayline to smoothTransition with enable 1 to prevent getting stuck at Waypoint 0
   const isTargetSplat = (options && (options.gridType === 'target-splat' || options.pattern === 'target-splat' || options.isTargetSplat)) ||
     (options && Array.isArray(options.waypoints) && options.waypoints.some(w => w && (w.gridType === 'target-splat' || w.isPerimeterOrbit)));
+  const isExclusionFreeform = (options && (options.gridType === 'exclusion-freeform' || options.pattern === 'exclusion-freeform' || options.isExclusionFreeform)) ||
+    (options && Array.isArray(options.waypoints) && options.waypoints.some(w => w && (w.gridType === 'exclusion-freeform' || w.layerPattern === 'exclusion-freeform')));
+  const isFreeformWithHeadings = (options && (options.gridType === 'freeform' || options.pattern === 'freeform')) &&
+    (options && Array.isArray(options.waypoints) && options.waypoints.some(w => w && w.heading !== null && w.heading !== undefined && !isNaN(w.heading)));
 
   const pms = fixedWpml.split('<Placemark>');
   if (pms.length > 1) {
@@ -17020,7 +17034,11 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
       const wpIdx = i - 1;
       const modeMatch = pms[i].match(/<wpml:waypointHeadingMode>([^<]+)<\/wpml:waypointHeadingMode>/);
       const mode = modeMatch ? modeMatch[1].trim() : '';
-      if (isTargetSplat) {
+      const wpObj = (options && options.waypoints && options.waypoints[wpIdx]) ? options.waypoints[wpIdx] : null;
+      const isCustomHeadingWp = isTargetSplat || isExclusionFreeform || isFreeformWithHeadings ||
+        (wpObj && (wpObj.gridType === 'target-splat' || wpObj.gridType === 'exclusion-freeform' || wpObj.layerPattern === 'exclusion-freeform' || (wpObj.heading !== null && wpObj.heading !== undefined && !isNaN(wpObj.heading))));
+
+      if (isCustomHeadingWp) {
         if (mode === 'followWayline') {
           pms[i] = pms[i].replace(
             /<wpml:waypointHeadingMode>followWayline<\/wpml:waypointHeadingMode>/g,
@@ -17032,8 +17050,8 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
           '$11$2'
         );
         let angleVal = 0.1;
-        if (options && options.waypoints && options.waypoints[wpIdx] && options.waypoints[wpIdx].heading !== undefined && !isNaN(options.waypoints[wpIdx].heading)) {
-          let h = options.waypoints[wpIdx].heading;
+        if (wpObj && wpObj.heading !== undefined && wpObj.heading !== null && !isNaN(wpObj.heading)) {
+          let h = wpObj.heading;
           h = ((h % 360) + 360) % 360;
           if (h > 180) h -= 360;
           if (Math.abs(h) < 0.05 || h === 0) h = 0.1;
@@ -17065,6 +17083,18 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
             pms[i] = pms[i].replace(
               /(<wpml:waypointHeadingAngleEnable>)\s*0\s*(<\/wpml:waypointHeadingAngleEnable>)/g,
               '$11$2'
+            );
+          }
+        }
+      } else {
+        const enableMatch = pms[i].match(/<wpml:waypointHeadingAngleEnable>([^<]+)<\/wpml:waypointHeadingAngleEnable>/);
+        const angleMatch = pms[i].match(/<wpml:waypointHeadingAngle>([^<]+)<\/wpml:waypointHeadingAngle>/);
+        if (enableMatch && enableMatch[1].trim() === '1' && angleMatch) {
+          let h = parseFloat(angleMatch[1]);
+          if (Math.abs(h) < 0.05 || h === 0) {
+            pms[i] = pms[i].replace(
+              /(<wpml:waypointHeadingAngle>)[^<]+(<\/wpml:waypointHeadingAngle>)/,
+              '$10.1$2'
             );
           }
         }

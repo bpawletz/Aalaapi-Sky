@@ -1,3 +1,13 @@
+## [1.134.2] - 2026-10-03
+
+### Fixed
+- **Exclusion-Freeform & Custom Heading WPML Execution on DJI Mini 4 Pro (Issue #110)**:
+  - Resolved an issue where generating KMZ missions with `exclusion-freeform` and freeform patterns containing custom waypoint headings caused mission failures/aborts on DJI Mini 4 Pro (droneVal 68).
+  - Updated `buildWaylinesWpml` to recognize `exclusion-freeform`, layer-level patterns, and custom waypoint headings, correctly exporting `<wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>` and `<wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>`.
+  - Added safe clamping away from strictly `0.0°` (to `0.1°`) for `smoothTransition` with angle enable 1, preventing the DJI Fly firmware suspension bug.
+  - Enhanced `validateAndFixWpml` and `validateWpmlMission` (Rule 1) to audit and automatically repair `exclusion-freeform` and freeform custom headings.
+  - Suppressed auto-settling delay hovers on transit/detour waypoints where photos are skipped (`skipPhoto: true`, `isDetour: true`, `isTransition: true`).
+
 ## [1.134.1] - 2026-09-27
 
 ### Fixed
