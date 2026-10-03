@@ -27443,66 +27443,67 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
       ${overlappingHTML}
 
       <!-- 2-column grid: Altitude, Pitch, Speed, Hover -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
 
         <!-- Altitude Slider -->
-        <div style="display: flex; flex-direction: column; gap: 3px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 5px;">
+        <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center; min-width: 0;">
+            <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; white-space: nowrap;">
               <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><line x1="3" y1="21" x2="21" y2="21" stroke="#c2622d"/><path d="M12 21v-12M9 12l3-3 3 3" stroke="#06b6d4" fill="none"/><circle cx="12" cy="7" r="1.5" fill="#f5f0e8"/></svg>
               Altitude:
               ${altBadgeHTML}
             </span>
-            <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-alt-val">${altDisp}</span> ${altUnitStr}</span>
+            <span style="color: #06b6d4; font-weight: 600; font-size: 0.72rem; white-space: nowrap;"><span id="edit-wp-alt-val">${altDisp}</span> ${altUnitStr}</span>
           </div>
-          <input type="range" id="edit-wp-alt" min="5" max="120" value="${wp.alt.toFixed(0)}" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer;">
+          <input type="range" id="edit-wp-alt" min="5" max="120" value="${wp.alt.toFixed(0)}" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer; min-width: 0; box-sizing: border-box;">
         </div>
 
         <!-- Pitch Slider -->
-        <div style="display: flex; flex-direction: column; gap: 3px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 5px;">
+        <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center; min-width: 0; gap: 4px;">
+            <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; white-space: nowrap;">
               <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="8" cy="8" r="3" stroke="#c2622d" fill="none"/><line x1="8" y1="5" x2="8" y2="2" stroke="#c2622d"/><line x1="8" y1="8" x2="16" y2="16" stroke="#06b6d4"/><path d="M13 17l4-1-1-4" fill="#06b6d4" stroke="#06b6d4"/></svg>
               Pitch:
               ${pitchBadgeHTML}
             </span>
-            <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-pitch-val">${pitchValTextDisplay}</span></span>
+            <span style="color: #06b6d4; font-weight: 600; font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right;"><span id="edit-wp-pitch-val">${pitchValTextDisplay}</span></span>
           </div>
-          <div style="display: flex; gap: 4px; align-items: center;">
-            <input type="range" id="edit-wp-pitch" min="-90" max="60" value="${pitchVal}" style="flex: 1; height: 4px; accent-color: #06b6d4; cursor: pointer;">
-            <button id="edit-wp-pitch-auto-btn" type="button" style="padding: 2px 5px; font-size: 0.65rem; font-weight: 600; border-radius: 4px; background: ${isAutoPitch ? 'rgba(6, 182, 212, 0.2)' : 'rgba(255,255,255,0.06)'}; border: 1px solid ${isAutoPitch ? 'rgba(6, 182, 212, 0.4)' : 'rgba(255,255,255,0.1)'}; color: ${isAutoPitch ? 'var(--accent-cyan)' : 'var(--text-muted)'}; cursor: pointer; line-height: 1; white-space: nowrap;" title="Toggle 3D Auto POI Tracking">🎯 Auto</button>
+          <div style="display: flex; gap: 4px; align-items: center; min-width: 0;">
+            <input type="range" id="edit-wp-pitch" min="-90" max="60" value="${pitchVal}" style="flex: 1; width: 0; min-width: 0; height: 4px; accent-color: #06b6d4; cursor: pointer; box-sizing: border-box;">
+            <button id="edit-wp-pitch-auto-btn" type="button" style="padding: 2px 5px; font-size: 0.65rem; font-weight: 600; border-radius: 4px; background: ${isAutoPitch ? 'rgba(6, 182, 212, 0.2)' : 'rgba(255,255,255,0.06)'}; border: 1px solid ${isAutoPitch ? 'rgba(6, 182, 212, 0.4)' : 'rgba(255,255,255,0.1)'}; color: ${isAutoPitch ? 'var(--accent-cyan)' : 'var(--text-muted)'}; cursor: pointer; line-height: 1; white-space: nowrap; flex-shrink: 0;" title="Toggle 3D Auto POI Tracking">🎯 Auto</button>
           </div>
         </div>
 
         <!-- Speed Override Slider -->
-        <div id="edit-wp-speed-container" class="${isEndWp ? 'wp-leg-control-disabled' : ''}" style="display: flex; flex-direction: column; gap: 3px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 5px;">
+        <div id="edit-wp-speed-container" class="${isEndWp ? 'wp-leg-control-disabled' : ''}" style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center; min-width: 0; gap: 4px;">
+            <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; white-space: nowrap;">
               <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M3 12a9 9 0 0 1 15-6.7M21 12a9 9 0 0 1-9 9" stroke="#06b6d4" fill="none"/><line x1="12" y1="12" x2="17" y2="8" stroke="#c2622d"/><circle cx="12" cy="12" r="1.5" fill="#f5f0e8"/></svg>
               Speed:
               ${speedBadgeHTML}
             </span>
-            <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-speed-val">${isEndWp ? 'N/A' : (wp.speed ? wp.speed + ' m/s' : `Auto (${resolvedSpeedStr})`)}</span></span>
+            <span style="color: #06b6d4; font-weight: 600; font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right;"><span id="edit-wp-speed-val">${isEndWp ? 'N/A' : (wp.speed ? wp.speed + ' m/s' : `Auto (${resolvedSpeedStr})`)}</span></span>
           </div>
-          <input type="range" id="edit-wp-speed" min="0.2" max="15" step="0.1" value="${wp.speed || 5}" ${isEndWp ? 'disabled' : ''} style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: ${isEndWp ? 'not-allowed' : 'pointer'};">
+          <input type="range" id="edit-wp-speed" min="0.2" max="15" step="0.1" value="${wp.speed || 5}" ${isEndWp ? 'disabled' : ''} style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: ${isEndWp ? 'not-allowed' : 'pointer'}; min-width: 0; box-sizing: border-box;">
           ${isEndWp ? `<span class="wp-leg-na-notice">🏁 Final waypoint: no departure leg. Speed is not applicable.</span>` : ''}
         </div>
 
         <!-- Hover Duration Slider -->
-        <div style="display: flex; flex-direction: column; gap: 3px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 5px;">
+        <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center; min-width: 0; gap: 4px;">
+            <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; white-space: nowrap;">
               <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="12" cy="12" r="9" stroke="#06b6d4" fill="none"/><polyline points="12 6 12 12 16 14" stroke="#c2622d"/></svg>
               Hover:
               ${hoverBadgeHTML}
             </span>
-            <span style="color: #06b6d4; font-weight: 600;"><span id="edit-wp-hover-val">${wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit' ? wp.hoverTime : ((wp.layerHoverTime !== undefined && wp.layerHoverTime !== 'inherit') ? wp.layerHoverTime : (document.getElementById('global-hover-time') ? parseInt(document.getElementById('global-hover-time').value) : 0))}</span>s</span>
+            <span style="color: #06b6d4; font-weight: 600; font-size: 0.72rem; white-space: nowrap;"><span id="edit-wp-hover-val">${wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit' ? wp.hoverTime : ((wp.layerHoverTime !== undefined && wp.layerHoverTime !== 'inherit') ? wp.layerHoverTime : (document.getElementById('global-hover-time') ? parseInt(document.getElementById('global-hover-time').value) : 0))}</span>s</span>
           </div>
-          <input type="range" id="edit-wp-hover" min="0" max="60" step="1" value="${wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit' ? wp.hoverTime : ((wp.layerHoverTime !== undefined && wp.layerHoverTime !== 'inherit') ? wp.layerHoverTime : (document.getElementById('global-hover-time') ? parseInt(document.getElementById('global-hover-time').value) : 0))}" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer;">
+          <input type="range" id="edit-wp-hover" min="0" max="60" step="1" value="${wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit' ? wp.hoverTime : ((wp.layerHoverTime !== undefined && wp.layerHoverTime !== 'inherit') ? wp.layerHoverTime : (document.getElementById('global-hover-time') ? parseInt(document.getElementById('global-hover-time').value) : 0))}" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer; min-width: 0; box-sizing: border-box;">
           <div id="edit-wp-hover-warning" style="display: none; font-size: 0.65rem; color: #f59e0b; margin-top: 2px; line-height: 1.2;">
             ⚠️ Repositioning detected: auto-settling delay will be applied in KML export.
           </div>
         </div>
+
 
         <!-- Turn Mode Selector (full width) -->
         <div id="edit-wp-turn-mode-container" class="${isEndWp ? 'wp-leg-control-disabled' : ''}" style="display: flex; flex-direction: column; gap: 3px; grid-column: 1 / -1;">

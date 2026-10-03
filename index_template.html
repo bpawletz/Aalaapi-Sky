@@ -3779,6 +3779,12 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.134.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🐛 Edit Waypoint Popup &amp; Mobile Overflow Fix (Closes #107):</strong> Constrained Leaflet 2D Waypoint Editor popup and 3D FPV HUD editor panel with fluid viewport max-width rules and box-sizing containment. Enforced minimum zero width (<code>minmax(0, 1fr)</code>) across slider grid columns and labels to prevent pitch slider, Auto POI tracking button, and speed controls from overflowing or clipping beyond card bounds. Added responsive flex wrapping for action buttons on mobile screens.</li>
+            </ul>
+          </div>
+          <div>
             <strong style="color: var(--text-main);">Changelog (v1.134.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>🎯 Multi-POI Association &amp; Cascading Hierarchy (Closes #77):</strong> Fully implemented 3-tier parameter cascading for POI tracking across Global Defaults (Tier 1), Layer Properties (Tier 2: <code>#layer-poi-select</code>), and Individual Waypoints (Tier 3: <code>#edit-wp-poi-select</code> &amp; <code>#fpv-edit-poi-select</code>). Waypoints and layers can dynamically inherit parent targets or lock onto specific points of interest.</li>
@@ -6727,54 +6733,54 @@
             
             <div id="fpv-editor-body" style="display: flex; flex-direction: column; gap: 10px;">
               <!-- Sliders: Altitude, Gimbal Pitch, Speed Override, Hover Duration, Turn Mode -->
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.75rem;">
-                <div style="display: flex; flex-direction: column; gap: 3px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 5px;">
+              <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; font-size: 0.75rem;">
+                <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; min-width: 0;">
+                    <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; white-space: nowrap;">
                       <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><line x1="3" y1="21" x2="21" y2="21" stroke="#c2622d"/><path d="M12 21v-12M9 12l3-3 3 3" stroke="#06b6d4" fill="none"/><circle cx="12" cy="7" r="1.5" fill="#f5f0e8"/></svg>
                       Altitude:
                       <span id="fpv-alt-phase-badge-container"></span>
                     </span>
-                    <span style="color: #06b6d4; font-weight: 600;"><span id="fpv-edit-alt-val">50</span> <span id="fpv-edit-alt-unit">m</span></span>
+                    <span style="color: #06b6d4; font-weight: 600; font-size: 0.72rem; white-space: nowrap;"><span id="fpv-edit-alt-val">50</span> <span id="fpv-edit-alt-unit">m</span></span>
                   </div>
-                  <input type="range" id="fpv-edit-alt" min="5" max="120" value="50" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer;">
+                  <input type="range" id="fpv-edit-alt" min="5" max="120" value="50" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer; min-width: 0; box-sizing: border-box;">
                 </div>
                 
-                <div style="display: flex; flex-direction: column; gap: 3px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 5px;">
+                <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; min-width: 0; gap: 4px;">
+                    <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; white-space: nowrap;">
                       <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="8" cy="8" r="3" stroke="#c2622d" fill="none"/><line x1="8" y1="5" x2="8" y2="2" stroke="#c2622d"/><line x1="8" y1="8" x2="16" y2="16" stroke="#06b6d4"/><path d="M13 17l4-1-1-4" fill="#06b6d4" stroke="#06b6d4"/></svg>
                       Pitch:
                       <span id="fpv-pitch-phase-badge-container"></span>
                     </span>
-                    <span style="color: #06b6d4; font-weight: 600;"><span id="fpv-edit-pitch-val">-60</span>&deg;</span>
+                    <span style="color: #06b6d4; font-weight: 600; font-size: 0.72rem; white-space: nowrap;"><span id="fpv-edit-pitch-val">-60</span>&deg;</span>
                   </div>
-                  <input type="range" id="fpv-edit-pitch" min="-90" max="60" value="-60" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer;">
+                  <input type="range" id="fpv-edit-pitch" min="-90" max="60" value="-60" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer; min-width: 0; box-sizing: border-box;">
                 </div>
 
-                <div id="fpv-edit-speed-container" style="display: flex; flex-direction: column; gap: 3px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 5px;">
+                <div id="fpv-edit-speed-container" style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; min-width: 0; gap: 4px;">
+                    <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; white-space: nowrap;">
                       <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M3 12a9 9 0 0 1 15-6.7M21 12a9 9 0 0 1-9 9" stroke="#06b6d4" fill="none"/><line x1="12" y1="12" x2="17" y2="8" stroke="#c2622d"/><circle cx="12" cy="12" r="1.5" fill="#f5f0e8"/></svg>
                       Speed:
                       <span id="fpv-speed-phase-badge-container"></span>
                     </span>
-                    <span style="color: #06b6d4; font-weight: 600;"><span id="fpv-edit-speed-val">Auto</span></span>
+                    <span style="color: #06b6d4; font-weight: 600; font-size: 0.72rem; white-space: nowrap;"><span id="fpv-edit-speed-val">Auto</span></span>
                   </div>
-                  <input type="range" id="fpv-edit-speed" min="1" max="15" step="0.5" value="5" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer;">
+                  <input type="range" id="fpv-edit-speed" min="1" max="15" step="0.5" value="5" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer; min-width: 0; box-sizing: border-box;">
                   <span id="fpv-speed-na-notice" class="wp-leg-na-notice" style="display: none;">🏁 Final waypoint: no departure leg. Speed is not applicable.</span>
                 </div>
 
-                <div style="display: flex; flex-direction: column; gap: 3px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 5px;">
+                <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; min-width: 0; gap: 4px;">
+                    <span style="color: #94a3b8; display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; white-space: nowrap;">
                       <svg viewBox="0 0 24 24" width="14" height="14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><circle cx="12" cy="12" r="9" stroke="#06b6d4" fill="none"/><polyline points="12 6 12 12 16 14" stroke="#c2622d"/></svg>
                       Hover:
                       <span id="fpv-hover-phase-badge-container"></span>
                     </span>
-                    <span style="color: #06b6d4; font-weight: 600;"><span id="fpv-edit-hover-val">0</span>s</span>
+                    <span style="color: #06b6d4; font-weight: 600; font-size: 0.72rem; white-space: nowrap;"><span id="fpv-edit-hover-val">0</span>s</span>
                   </div>
-                  <input type="range" id="fpv-edit-hover" min="0" max="60" step="1" value="0" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer;">
+                  <input type="range" id="fpv-edit-hover" min="0" max="60" step="1" value="0" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer; min-width: 0; box-sizing: border-box;">
                 </div>
 
                 <div id="fpv-edit-turn-mode-container" style="display: flex; flex-direction: column; gap: 3px; grid-column: 1 / -1;">

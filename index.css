@@ -3658,6 +3658,15 @@ html, body {
   box-sizing: border-box !important;
 }
 
+.wp-editor-popup * {
+  box-sizing: border-box;
+}
+
+.wp-editor-popup input[type="range"] {
+  min-width: 0;
+  max-width: 100%;
+}
+
 /* Pattern Card Corner Badges */
 .pattern-badge-tool,
 .pattern-badge-restricted {
