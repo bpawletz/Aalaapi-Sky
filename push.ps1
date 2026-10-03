@@ -7,7 +7,7 @@ Write-Host "🔨 Building single-file bundle..." -ForegroundColor Cyan
 python scratch/build.py
 
 Write-Host '🧪 Running unit & E2E tests...' -ForegroundColor Cyan
-node --test index.test.js index.e2e.test.js
+node --test tools/companion/tile_cache.test.js index.test.js index.e2e.test.js
 
 Write-Host "📦 Staging git changes..." -ForegroundColor Cyan
 git add .

@@ -798,6 +798,85 @@ const scenarios = [
       await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
       await page.waitForTimeout(800);
     }
+  },
+  {
+    id: 'bridge_tile_cache',
+    name: 'Map Tile & Asset Caching Proxy on Bridge (Issue #91)',
+    issueRef: 'Issue #91',
+    run: async (page) => {
+      // 1. Center squarely on default rural location (Utica, IL)
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1000);
+
+      // 2. Open Companion Host Drawer / Panel
+      await page.evaluate(() => {
+        const toggle = document.getElementById('companion-toggle') || document.getElementById('btn-companion-toggle');
+        if (toggle) toggle.click();
+        const panel = document.getElementById('companion-host-panel');
+        if (panel) panel.classList.remove('hidden');
+      });
+      await page.waitForTimeout(1200);
+
+      // 3. Highlight Bridge Tile Cache section and interact with toggle
+      await page.evaluate(() => {
+        const cacheToggle = document.getElementById('bridge-tile-cache-toggle');
+        const statsEl = document.getElementById('bridge-cache-stats-text');
+        const hitrateEl = document.getElementById('bridge-cache-hitrate-text');
+        if (statsEl) statsEl.textContent = 'Cached: 142 tiles (18.4 MB / 2048 MB)';
+        if (hitrateEl) hitrateEl.textContent = 'Hit Rate: 78.5%';
+        if (cacheToggle) {
+          cacheToggle.checked = false;
+          cacheToggle.dispatchEvent(new Event('change'));
+        }
+      });
+      await page.waitForTimeout(1000);
+
+      // Re-enable toggle
+      await page.evaluate(() => {
+        const cacheToggle = document.getElementById('bridge-tile-cache-toggle');
+        if (cacheToggle) {
+          cacheToggle.checked = true;
+          cacheToggle.dispatchEvent(new Event('change'));
+        }
+      });
+      await page.waitForTimeout(1000);
+
+      // 4. Click purge cache button
+      await page.evaluate(() => {
+        const clearBtn = document.getElementById('bridge-cache-clear-btn');
+        if (clearBtn) clearBtn.click();
+      });
+      await page.waitForTimeout(1200);
+
+      // 5. Close companion panel
+      await page.evaluate(() => {
+        const closeBtn = document.getElementById('companion-close') || document.querySelector('#companion-host-panel .drawer-close');
+        if (closeBtn) closeBtn.click();
+        const panel = document.getElementById('companion-host-panel');
+        if (panel) panel.classList.add('hidden');
+      });
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1000);
+
+      // 6. Open Intro Guide Hub / What's New tab to show v1.137.0 highlights
+      await page.evaluate(() => {
+        const qsBtn = document.getElementById('quickstart-help-btn');
+        if (qsBtn) qsBtn.click();
+        const featuresTab = document.getElementById('intro-tab-features');
+        if (featuresTab) featuresTab.click();
+        const qsModal = document.getElementById('quickstart-modal');
+        if (qsModal) qsModal.classList.remove('hidden');
+      });
+      await page.waitForTimeout(2000);
+
+      // 7. Close Intro Guide Hub
+      await page.evaluate(() => {
+        const qsModal = document.getElementById('quickstart-modal');
+        if (qsModal) qsModal.classList.add('hidden');
+      });
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(800);
+    }
   }
 ];
 
