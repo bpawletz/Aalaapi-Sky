@@ -564,6 +564,72 @@ html, body {
   animation: fadeInPopover 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Solar Ephemeris & Daylight Tracker */
+.popover-solar-card,
+.stat-solar-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--text-main);
+  transition: var(--transition-fast);
+}
+
+.psolar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.psolar-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #f59e0b;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.psolar-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.psolar-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.psolar-metric-label {
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.psolar-timeline-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+
+.psolar-timeline-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.psolar-timeline-item.is-key-event {
+  font-weight: 600;
+  color: #38bdf8;
+}
+
 @keyframes fadeInPopover {
   from {
     opacity: 0;

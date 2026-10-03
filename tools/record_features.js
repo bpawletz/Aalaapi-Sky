@@ -656,6 +656,62 @@ const scenarios = [
       await page.waitForTimeout(500);
       await centerMapOnPoint(page);
     }
+  },
+  {
+    id: 'solar_ephemeris',
+    name: 'Next-24-Hour Solar Ephemeris & FAA Part 107 Twilight Tracker',
+    issueRef: 'Issue #100, v1.135.0',
+    description: 'Demonstrates offline astronomical solar ephemeris calculation, Weather Popover solar card with 24h timeline drawer, and Section 4 sidebar solar panel.',
+    run: async (page) => {
+      // 1. Center squarely on default rural Utica location
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(600);
+
+      // 2. Open Mission Details / Weather Popover to show Popover Solar Card
+      await page.evaluate(() => {
+        const telemetryPill = document.getElementById('telemetry-weather-pill') || document.getElementById('telemetry-satellites-pill');
+        if (telemetryPill) telemetryPill.click();
+      });
+      await page.waitForTimeout(1000);
+
+      // 3. Expand the 24-hour timeline in the popover
+      await page.evaluate(() => {
+        const toggleBtn = document.getElementById('pop-btn-toggle-solar-timeline');
+        if (toggleBtn) toggleBtn.click();
+      });
+      await page.waitForTimeout(1500);
+
+      // 4. Close the popover
+      await page.evaluate(() => {
+        const popover = document.getElementById('telemetry-weather-popover');
+        if (popover) popover.classList.add('hidden');
+      });
+      await page.waitForTimeout(600);
+
+      // 5. Expand Section 4 (Mission Summary / Weather) in the sidebar to show the Sidebar Solar Card
+      await page.evaluate(() => {
+        const sec4Header = document.querySelector('.section-header[data-section="4"]');
+        const sec4Content = document.getElementById('section-4-content');
+        if (sec4Header && sec4Content && sec4Content.classList.contains('collapsed')) {
+          sec4Header.click();
+        }
+        // Scroll sidebar down to the solar card
+        const statCard = document.getElementById('stat-solar-card');
+        if (statCard) statCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+      await page.waitForTimeout(1000);
+
+      // 6. Expand the 24-hour timeline in the sidebar card
+      await page.evaluate(() => {
+        const toggleBtn = document.getElementById('stat-btn-toggle-solar-timeline');
+        if (toggleBtn) toggleBtn.click();
+      });
+      await page.waitForTimeout(1500);
+
+      // Keep map centered squarely on point (AGENTS.md Rule 8 & 9)
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(600);
+    }
   }
 ];
 
@@ -763,8 +819,18 @@ async function recordAll() {
 // CLI Argument Handling
 if (require.main === module) {
   const args = process.argv.slice(2);
-  const featureArg = args.find(a => a.startsWith('--feature='));
-  const targetFeature = featureArg ? featureArg.split('=')[1] : null;
+  let targetFeature = null;
+  const featEq = args.find(a => a.startsWith('--feature=') || a.startsWith('--scenario='));
+  if (featEq) {
+    targetFeature = featEq.split('=')[1];
+  } else {
+    const featIdx = args.findIndex(a => a === '--feature' || a === '--scenario');
+    if (featIdx !== -1 && args[featIdx + 1] && !args[featIdx + 1].startsWith('-')) {
+      targetFeature = args[featIdx + 1];
+    } else if (args[0] && !args[0].startsWith('-')) {
+      targetFeature = args[0];
+    }
+  }
 
   if (args.includes('--help') || args.includes('-h')) {
     console.log(`Aalaapi Sky Automated Feature Video Recorder\n`);

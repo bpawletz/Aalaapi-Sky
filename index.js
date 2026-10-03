@@ -5834,6 +5834,17 @@ document.addEventListener("DOMContentLoaded", () => {
   // No updateGrid() here — map starts clean; user clicks map or uses Auto-Plan/Import to begin
   syncDisplayValues();
   togglePatternParameters();
+
+  if (typeof updateSolarEphemeris === 'function') {
+    updateSolarEphemeris();
+    if (typeof setInterval === 'function' && !solarEphemerisTickerInterval) {
+      solarEphemerisTickerInterval = setInterval(() => {
+        if (typeof updateSolarEphemeris === 'function') {
+          updateSolarEphemeris();
+        }
+      }, 60000);
+    }
+  }
 });
 
 // Initialize Leaflet Map
@@ -32296,10 +32307,405 @@ function parseMetar(raw) {
   };
 }
 
+/**
+ * Offline Astronomical Solar Ephemeris & Flight Window Calculator
+ * Implements pure JavaScript astronomical algorithms (NOAA / Jean Meeus equations).
+ * Computes solar coordinates, solar noon, sunrise, sunset, civil/nautical/astronomical twilights,
+ * sun elevation/azimuth, daylight remaining, and FAA Part 107 flight window states.
+ */
+const SolarEphemeris = {
+  RAD: Math.PI / 180,
+  DEG: 180 / Math.PI,
+
+  toJulian(date) {
+    const d = (date instanceof Date) ? date : new Date(date);
+    return d.getTime() / 86400000 + 2440587.5;
+  },
+
+  fromJulian(j) {
+    return new Date((j - 2440587.5) * 86400000);
+  },
+
+  toDays(date) {
+    return this.toJulian(date) - 2451545.0;
+  },
+
+  solarCoordinates(d) {
+    const M = (357.5291 + 0.98560028 * d) * this.RAD;
+    const C = (1.9148 * Math.sin(M) + 0.02 * Math.sin(2 * M) + 0.0003 * Math.sin(3 * M)) * this.RAD;
+    const P = 102.9372 * this.RAD;
+    const L = M + C + P + Math.PI;
+    const e = 23.4397 * this.RAD;
+    const sinDec = Math.sin(L) * Math.sin(e);
+    const dec = Math.asin(sinDec);
+    const ra = Math.atan2(Math.sin(L) * Math.cos(e), Math.cos(L));
+    return { dec, ra, L, M };
+  },
+
+  getSunPosition(date, lat, lon) {
+    const d = this.toDays(date);
+    const lw = -lon * this.RAD;
+    const phi = lat * this.RAD;
+    const sc = this.solarCoordinates(d);
+
+    const theta = (280.1600 + 360.9856235 * d) * this.RAD - lw;
+    const H = theta - sc.ra;
+
+    const sinAlt = Math.sin(phi) * Math.sin(sc.dec) + Math.cos(phi) * Math.cos(sc.dec) * Math.cos(H);
+    const alt = Math.asin(Math.max(-1, Math.min(1, sinAlt)));
+
+    const az = Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(phi) - Math.tan(sc.dec) * Math.cos(phi));
+    let azDeg = (az * this.DEG + 180) % 360;
+    if (azDeg < 0) azDeg += 360;
+
+    const compass = this.bearingToCompassDirection(azDeg);
+
+    return {
+      altitudeDeg: alt * this.DEG,
+      azimuthDeg: azDeg,
+      compassDirection: compass
+    };
+  },
+
+  bearingToCompassDirection(bearing) {
+    const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+    const idx = Math.round(((bearing % 360 + 360) % 360) / 22.5) % 16;
+    return directions[idx];
+  },
+
+  getSolarTimesForDay(date, lat, lon) {
+    const d = this.toDays(date);
+    const phi = lat * this.RAD;
+    const n = Math.round(d - 0.0009 - (-lon / 360));
+    const Japprox = 2451545.0 + 0.0009 + (-lon / 360) + n;
+    const sc = this.solarCoordinates(Japprox - 2451545.0);
+    const Jnoon = Japprox + 0.0053 * Math.sin(sc.M) - 0.0069 * Math.sin(2 * sc.L);
+
+    const self = this;
+    function getTimes(h0) {
+      const sinH0 = Math.sin(h0 * self.RAD);
+      const cosH0 = (sinH0 - Math.sin(phi) * Math.sin(sc.dec)) / (Math.cos(phi) * Math.cos(sc.dec));
+      if (cosH0 > 1) return { rise: null, set: null, status: 'always_down' };
+      if (cosH0 < -1) return { rise: null, set: null, status: 'always_up' };
+      const H0 = Math.acos(cosH0);
+      const Jrise = Jnoon - H0 / (2 * Math.PI);
+      const Jset = Jnoon + H0 / (2 * Math.PI);
+      return { rise: self.fromJulian(Jrise), set: self.fromJulian(Jset), status: 'normal' };
+    }
+
+    return {
+      noon: this.fromJulian(Jnoon),
+      official: getTimes(-0.833),
+      civil: getTimes(-6.0),
+      nautical: getTimes(-12.0),
+      astronomical: getTimes(-18.0),
+      goldenHour: getTimes(6.0)
+    };
+  },
+
+  formatTime(date) {
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) return '--:--';
+    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  },
+
+  formatDuration(minutes) {
+    if (minutes == null || isNaN(minutes) || minutes < 0) return '0m';
+    const hrs = Math.floor(minutes / 60);
+    const mins = Math.floor(minutes % 60);
+    if (hrs > 0) return `${hrs}h ${mins}m`;
+    return `${mins}m`;
+  },
+
+  getSolar24hWindow(nowInput, lat, lon) {
+    const now = (nowInput instanceof Date) ? nowInput : new Date(nowInput || Date.now());
+    const tNow = now.getTime();
+
+    const timesToday = this.getSolarTimesForDay(now, lat, lon);
+    const tomorrow = new Date(tNow + 86400000);
+    const timesTomorrow = this.getSolarTimesForDay(tomorrow, lat, lon);
+    const yesterday = new Date(tNow - 86400000);
+    const timesYesterday = this.getSolarTimesForDay(yesterday, lat, lon);
+
+    const allEvents = [];
+    [timesYesterday, timesToday, timesTomorrow].forEach(t => {
+      if (t.astronomical.rise) allEvents.push({ type: 'astronomical_dawn', name: 'Astronomical Dawn', time: t.astronomical.rise, icon: '🌌' });
+      if (t.nautical.rise) allEvents.push({ type: 'nautical_dawn', name: 'Nautical Dawn', time: t.nautical.rise, icon: '⚓' });
+      if (t.civil.rise) allEvents.push({ type: 'civil_dawn', name: 'Civil Dawn', time: t.civil.rise, icon: '🌅', faaTwilight: true });
+      if (t.official.rise) allEvents.push({ type: 'sunrise', name: 'Sunrise', time: t.official.rise, icon: '☀️', isKey: true });
+      if (t.goldenHour.rise) allEvents.push({ type: 'golden_hour_end', name: 'Golden Hour Ends', time: t.goldenHour.rise, icon: '📸' });
+      if (t.noon) allEvents.push({ type: 'solar_noon', name: 'Solar Noon', time: t.noon, icon: '☀️' });
+      if (t.goldenHour.set) allEvents.push({ type: 'golden_hour_start', name: 'Golden Hour Begins', time: t.goldenHour.set, icon: '📸' });
+      if (t.official.set) allEvents.push({ type: 'sunset', name: 'Sunset', time: t.official.set, icon: '🌇', isKey: true });
+      if (t.civil.set) allEvents.push({ type: 'civil_dusk', name: 'Civil Dusk', time: t.civil.set, icon: '🌆', faaTwilight: true });
+      if (t.nautical.set) allEvents.push({ type: 'nautical_dusk', name: 'Nautical Dusk', time: t.nautical.set, icon: '⚓' });
+      if (t.astronomical.set) allEvents.push({ type: 'astronomical_dusk', name: 'Astronomical Dusk', time: t.astronomical.set, icon: '🌌' });
+    });
+
+    allEvents.sort((a, b) => a.time.getTime() - b.time.getTime());
+
+    const windowEnd = tNow + 86400000;
+    const timeline24h = allEvents.filter(e => e.time.getTime() >= tNow && e.time.getTime() <= windowEnd);
+
+    const nextSunriseEvent = allEvents.find(e => e.type === 'sunrise' && e.time.getTime() >= tNow);
+    const nextSunsetEvent = allEvents.find(e => e.type === 'sunset' && e.time.getTime() >= tNow);
+
+    const pastEvents = allEvents.filter(e => e.time.getTime() <= tNow);
+    const lastSunrise = [...pastEvents].reverse().find(e => e.type === 'sunrise');
+    const lastSunset = [...pastEvents].reverse().find(e => e.type === 'sunset');
+    const lastCivilDawn = [...pastEvents].reverse().find(e => e.type === 'civil_dawn');
+    const lastCivilDusk = [...pastEvents].reverse().find(e => e.type === 'civil_dusk');
+
+    let isDaylight = false;
+    let isCivilTwilight = false;
+    let daylightRemainingMs = 0;
+    let faaCategory = 'NIGHT';
+    let faaBadgeText = 'Night';
+    let faaBadgeColor = '#ef4444';
+    let faaAdvisory = '';
+
+    const nextCivilDuskEvent = allEvents.find(e => e.type === 'civil_dusk' && e.time.getTime() >= tNow);
+
+    if (timesToday.official.status === 'always_up') {
+      isDaylight = true;
+      faaCategory = 'POLAR_DAY';
+      faaBadgeText = 'Midnight Sun';
+      faaBadgeColor = '#10b981';
+      daylightRemainingMs = 86400000;
+      faaAdvisory = '24-Hour Continuous Daylight (Midnight Sun)';
+    } else if (timesToday.official.status === 'always_down') {
+      isDaylight = false;
+      faaCategory = 'POLAR_NIGHT';
+      faaBadgeText = 'Polar Night';
+      faaBadgeColor = '#ef4444';
+      daylightRemainingMs = 0;
+      faaAdvisory = '24-Hour Continuous Night (Anti-Collision Strobe Required)';
+    } else if (lastSunrise && (!lastSunset || lastSunrise.time.getTime() > lastSunset.time.getTime())) {
+      isDaylight = true;
+      const sunsetMs = nextSunsetEvent ? nextSunsetEvent.time.getTime() : 0;
+      daylightRemainingMs = Math.max(0, sunsetMs - tNow);
+      faaCategory = 'DAYLIGHT';
+      faaBadgeText = 'Daylight';
+      faaBadgeColor = '#10b981';
+      const duskStr = nextCivilDuskEvent ? this.formatTime(nextCivilDuskEvent.time) : '';
+      faaAdvisory = duskStr
+        ? `Legal civil twilight flight permitted until ${duskStr} (+30 min with anti-collision lights).`
+        : 'Standard FAA daylight flight operations permitted.';
+    } else if (lastSunset && (!lastCivilDusk || lastSunset.time.getTime() > lastCivilDusk.time.getTime())) {
+      isCivilTwilight = true;
+      faaCategory = 'CIVIL_TWILIGHT_EVENING';
+      faaBadgeText = 'Civil Twilight';
+      faaBadgeColor = '#f59e0b';
+      const remainingDuskMs = nextCivilDuskEvent ? Math.max(0, nextCivilDuskEvent.time.getTime() - tNow) : 0;
+      const duskStr = nextCivilDuskEvent ? this.formatTime(nextCivilDuskEvent.time) : '';
+      faaAdvisory = `Evening civil twilight: ${this.formatDuration(Math.floor(remainingDuskMs / 60000))} remaining (ends ${duskStr}). Anti-collision strobe required.`;
+    } else if (lastCivilDawn && (!lastSunrise || lastCivilDawn.time.getTime() > lastSunrise.time.getTime())) {
+      isCivilTwilight = true;
+      faaCategory = 'CIVIL_TWILIGHT_MORNING';
+      faaBadgeText = 'Civil Twilight';
+      faaBadgeColor = '#f59e0b';
+      const riseStr = nextSunriseEvent ? this.formatTime(nextSunriseEvent.time) : '';
+      faaAdvisory = `Morning civil twilight: Sunrise at ${riseStr}. Anti-collision strobe required.`;
+    } else {
+      faaCategory = 'NIGHT';
+      faaBadgeText = 'Night';
+      faaBadgeColor = '#ef4444';
+      const nextDawnEvent = allEvents.find(e => e.type === 'civil_dawn' && e.time.getTime() >= tNow);
+      const dawnStr = nextDawnEvent ? this.formatTime(nextDawnEvent.time) : '';
+      const dawnCountdown = nextDawnEvent ? this.formatDuration(Math.floor((nextDawnEvent.time.getTime() - tNow) / 60000)) : '';
+      faaAdvisory = dawnStr
+        ? `Night flight: Next civil dawn in ${dawnCountdown} (${dawnStr}). Part 107.29 anti-collision strobe & training required.`
+        : 'Night flight: Part 107.29 anti-collision strobe & night training required.';
+    }
+
+    const pos = this.getSunPosition(now, lat, lon);
+
+    return {
+      now,
+      coordinates: { lat, lon },
+      isDaylight,
+      isCivilTwilight,
+      daylightRemainingMinutes: Math.floor(daylightRemainingMs / 60000),
+      daylightRemainingFormatted: this.formatDuration(Math.floor(daylightRemainingMs / 60000)),
+      faaCategory,
+      faaBadgeText,
+      faaBadgeColor,
+      faaAdvisory,
+      nextSunrise: nextSunriseEvent ? nextSunriseEvent.time : null,
+      nextSunset: nextSunsetEvent ? nextSunsetEvent.time : null,
+      currentPosition: pos,
+      twilights: {
+        civilDawn: timesToday.civil.rise,
+        civilDusk: timesToday.civil.set,
+        nauticalDawn: timesToday.nautical.rise,
+        nauticalDusk: timesToday.nautical.set,
+        astronomicalDawn: timesToday.astronomical.rise,
+        astronomicalDusk: timesToday.astronomical.set,
+        solarNoon: timesToday.noon
+      },
+      timeline24h
+    };
+  }
+};
+
+let currentSolarEphemeris = null;
+let solarEphemerisTickerInterval = null;
+
+function renderSolarCardUI(ephemeris) {
+  if (!ephemeris || typeof document === 'undefined' || !document || !document.getElementById) return;
+
+  const now = ephemeris.now || new Date();
+
+  function formatRelative(targetDate) {
+    if (!targetDate) return '';
+    const diffMs = targetDate.getTime() - now.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins <= 0) return 'now';
+    return `in ${SolarEphemeris.formatDuration(diffMins)}`;
+  }
+
+  const sunriseText = ephemeris.nextSunrise
+    ? `${SolarEphemeris.formatTime(ephemeris.nextSunrise)} <span style="opacity:0.75; font-size:0.68rem; font-weight:normal;">(${formatRelative(ephemeris.nextSunrise)})</span>`
+    : 'No Sunrise (Polar)';
+
+  const sunsetText = ephemeris.nextSunset
+    ? `${SolarEphemeris.formatTime(ephemeris.nextSunset)} <span style="opacity:0.75; font-size:0.68rem; font-weight:normal;">(${formatRelative(ephemeris.nextSunset)})</span>`
+    : 'No Sunset (Polar)';
+
+  let remainingText = '';
+  if (ephemeris.isDaylight) {
+    remainingText = `${ephemeris.daylightRemainingFormatted} remaining`;
+  } else if (ephemeris.isCivilTwilight) {
+    remainingText = `Civil Twilight (${ephemeris.faaBadgeText})`;
+  } else {
+    remainingText = `0h 0m (Night Flight)`;
+  }
+
+  const anglesText = `☀️ Alt: ${ephemeris.currentPosition.altitudeDeg >= 0 ? '+' : ''}${ephemeris.currentPosition.altitudeDeg.toFixed(1)}° • Az: ${ephemeris.currentPosition.azimuthDeg.toFixed(0)}° (${ephemeris.currentPosition.compassDirection})`;
+
+  function buildTimelineHtml(timeline) {
+    if (!Array.isArray(timeline) || timeline.length === 0) {
+      return '<div style="color: var(--text-muted); font-size: 0.68rem;">No solar events within 24h</div>';
+    }
+    return timeline.map(ev => {
+      const rel = formatRelative(ev.time);
+      const isKey = ev.isKey ? 'font-weight: 700; color: #38bdf8;' : 'color: var(--text-main);';
+      return `
+        <div class="psolar-timeline-item" style="display: flex; justify-content: space-between; align-items: center; padding: 2px 4px; border-radius: 4px; ${isKey}">
+          <span>${ev.icon} ${escapeHtml(ev.name)}</span>
+          <span><b>${SolarEphemeris.formatTime(ev.time)}</b> <span style="opacity: 0.7; font-size: 0.64rem;">(${rel})</span></span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Update Topbar Popover
+  const popSunrise = document.getElementById('pop-solar-sunrise');
+  const popSunset = document.getElementById('pop-solar-sunset');
+  const popRemaining = document.getElementById('pop-solar-remaining');
+  const popFaaBadge = document.getElementById('pop-solar-faa-badge');
+  const popAdvisory = document.getElementById('pop-solar-window-advisory');
+  const popAngles = document.getElementById('pop-solar-angles');
+  const popTimeline = document.getElementById('pop-solar-timeline');
+
+  if (popSunrise) popSunrise.innerHTML = sunriseText;
+  if (popSunset) popSunset.innerHTML = sunsetText;
+  if (popRemaining) popRemaining.innerHTML = remainingText;
+  if (popFaaBadge) {
+    popFaaBadge.textContent = ephemeris.faaBadgeText;
+    popFaaBadge.style.color = ephemeris.faaBadgeColor;
+    popFaaBadge.style.borderColor = ephemeris.faaBadgeColor;
+    popFaaBadge.style.background = ephemeris.faaBadgeColor === '#10b981' ? 'rgba(16, 185, 129, 0.15)' : (ephemeris.faaBadgeColor === '#f59e0b' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)');
+  }
+  if (popAdvisory) popAdvisory.textContent = ephemeris.faaAdvisory;
+  if (popAngles) popAngles.textContent = anglesText;
+  if (popTimeline) popTimeline.innerHTML = buildTimelineHtml(ephemeris.timeline24h);
+
+  // Update Sidebar Card
+  const statSunrise = document.getElementById('stat-solar-sunrise');
+  const statSunset = document.getElementById('stat-solar-sunset');
+  const statRemaining = document.getElementById('stat-solar-remaining');
+  const statFaaBadge = document.getElementById('stat-solar-faa-badge');
+  const statAdvisory = document.getElementById('stat-solar-window-advisory');
+  const statAngles = document.getElementById('stat-solar-angles');
+  const statTimeline = document.getElementById('stat-solar-timeline');
+
+  if (statSunrise) statSunrise.innerHTML = sunriseText;
+  if (statSunset) statSunset.innerHTML = sunsetText;
+  if (statRemaining) statRemaining.innerHTML = remainingText;
+  if (statFaaBadge) {
+    statFaaBadge.textContent = ephemeris.faaBadgeText;
+    statFaaBadge.style.color = ephemeris.faaBadgeColor;
+    statFaaBadge.style.borderColor = ephemeris.faaBadgeColor;
+    statFaaBadge.style.background = ephemeris.faaBadgeColor === '#10b981' ? 'rgba(16, 185, 129, 0.15)' : (ephemeris.faaBadgeColor === '#f59e0b' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)');
+  }
+  if (statAdvisory) statAdvisory.textContent = ephemeris.faaAdvisory;
+  if (statAngles) statAngles.textContent = anglesText;
+  if (statTimeline) statTimeline.innerHTML = buildTimelineHtml(ephemeris.timeline24h);
+
+  // Hook toggle button listeners if not already bound
+  initSolarEphemerisEventListeners();
+}
+
+let solarListenersBound = false;
+function initSolarEphemerisEventListeners() {
+  if (solarListenersBound || typeof document === 'undefined' || !document || !document.getElementById) return;
+  solarListenersBound = true;
+
+  const popToggleBtn = document.getElementById('pop-btn-toggle-solar-timeline');
+  const popTimeline = document.getElementById('pop-solar-timeline');
+  if (popToggleBtn && popTimeline) {
+    popToggleBtn.onclick = (e) => {
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+      const isHidden = popTimeline.classList.toggle('hidden');
+      popToggleBtn.textContent = isHidden ? '▾ 24h Timeline' : '▴ 24h Timeline';
+    };
+  }
+
+  const statToggleBtn = document.getElementById('stat-btn-toggle-solar-timeline');
+  const statTimeline = document.getElementById('stat-solar-timeline');
+  if (statToggleBtn && statTimeline) {
+    statToggleBtn.onclick = (e) => {
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+      const isHidden = statTimeline.classList.toggle('hidden');
+      statToggleBtn.textContent = isHidden ? '▾ 24h Timeline' : '▴ 24h Timeline';
+    };
+  }
+}
+
+function updateSolarEphemeris(centerLat, centerLon, forceTime = null) {
+  let lat = centerLat;
+  let lon = centerLon;
+
+  if (lat == null || lon == null || isNaN(lat) || isNaN(lon)) {
+    if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+      const ll = centerMarker.getLatLng();
+      lat = ll.lat;
+      lon = ll.lng;
+    } else if (typeof map !== 'undefined' && map && typeof map.getCenter === 'function') {
+      const c = map.getCenter();
+      lat = c.lat;
+      lon = c.lng;
+    } else {
+      lat = 41.3215;
+      lon = -88.9950;
+    }
+  }
+
+  const now = forceTime || new Date();
+  const ephemeris = SolarEphemeris.getSolar24hWindow(now, lat, lon);
+  currentSolarEphemeris = ephemeris;
+
+  renderSolarCardUI(ephemeris);
+  return ephemeris;
+}
+
 let lastWeatherFetchCenter = null;
 
 async function fetchAndProcessWeather(centerLat, centerLon, force = false) {
   try {
+    if (typeof updateSolarEphemeris === 'function') {
+      updateSolarEphemeris(centerLat, centerLon);
+    }
     // Only fetch weather if center changed by > 5km, wasn't fetched yet, or forced
     if (!force && lastWeatherFetchCenter) {
       const dist = calculateDistance(centerLat, centerLon, lastWeatherFetchCenter.lat, lastWeatherFetchCenter.lon);
@@ -32783,6 +33189,7 @@ function selectActiveWeatherStationFromPopup(idx) {
 
 function toggleWeatherDetails(forceState) {
   const dirsEl = document.getElementById('stat-weather-dirs');
+  const solarCard = document.getElementById('stat-solar-card');
   const toggleBtn = document.getElementById('btn-toggle-weather-details');
   if (!dirsEl) return;
 
@@ -32791,10 +33198,12 @@ function toggleWeatherDetails(forceState) {
 
   if (shouldShow) {
     dirsEl.classList.remove('hidden');
+    if (solarCard) solarCard.classList.remove('hidden');
     if (toggleBtn) toggleBtn.textContent = '▴ Details';
     try { localStorage.setItem('aalaapi_weather_details_expanded', 'true'); } catch (e) {}
   } else {
     dirsEl.classList.add('hidden');
+    if (solarCard) solarCard.classList.add('hidden');
     if (toggleBtn) toggleBtn.textContent = '▾ Details';
     try { localStorage.setItem('aalaapi_weather_details_expanded', 'false'); } catch (e) {}
   }
@@ -32824,6 +33233,7 @@ function focusWeatherStationOnMap(targetStation) {
 function updateWeatherPanelUI(directions, statusMsg, isLoading) {
   const windowEl = document.getElementById('stat-weather-window');
   const dirsEl = document.getElementById('stat-weather-dirs');
+  const solarCard = document.getElementById('stat-solar-card');
   const locateHeaderBtn = document.getElementById('btn-locate-weather-station');
   const toggleBtn = document.getElementById('btn-toggle-weather-details');
 
@@ -32834,6 +33244,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     windowEl.style.color = "var(--text-secondary)";
     if (typeof dirsEl.replaceChildren === 'function') dirsEl.replaceChildren(); else dirsEl.innerHTML = '';
     dirsEl.classList.add("hidden");
+    if (solarCard) solarCard.classList.add("hidden");
     if (locateHeaderBtn) locateHeaderBtn.classList.add('hidden');
     if (toggleBtn) toggleBtn.textContent = '▾ Details';
     updateWeatherStationMarker(null);
@@ -32845,6 +33256,7 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
     windowEl.style.color = "var(--error-color)";
     if (typeof dirsEl.replaceChildren === 'function') dirsEl.replaceChildren(); else dirsEl.innerHTML = '';
     dirsEl.classList.add("hidden");
+    if (solarCard) solarCard.classList.add("hidden");
     if (locateHeaderBtn) locateHeaderBtn.classList.add('hidden');
     if (toggleBtn) toggleBtn.textContent = '▾ Details';
     updateWeatherStationMarker(null);
@@ -33077,9 +33489,11 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
 
   if (shouldExpand) {
     dirsEl.classList.remove("hidden");
+    if (solarCard) solarCard.classList.remove("hidden");
     if (toggleBtn) toggleBtn.textContent = '▴ Details';
   } else {
     dirsEl.classList.add("hidden");
+    if (solarCard) solarCard.classList.add("hidden");
     if (toggleBtn) toggleBtn.textContent = '▾ Details';
   }
 
@@ -33150,6 +33564,10 @@ function updateWeatherPanelUI(directions, statusMsg, isLoading) {
 
   // Update map marker
   updateWeatherStationMarker(closest, directions.stations, directions.activeIndex || 0);
+
+  if (typeof updateSolarEphemeris === 'function') {
+    updateSolarEphemeris();
+  }
 }
 
 function getCompassBearing(fromLat, fromLon, toLat, toLon) {
@@ -38558,6 +38976,8 @@ if (typeof window !== 'undefined') {
   window.buildThreeDigitalTwinJson = buildThreeDigitalTwinJson;
   window.AdsbAirspaceManager = typeof AdsbAirspaceManager !== 'undefined' ? AdsbAirspaceManager : null;
   window.isLocalhostEnvironment = typeof isLocalhostEnvironment !== 'undefined' ? isLocalhostEnvironment : null;
+  window.SolarEphemeris = typeof SolarEphemeris !== 'undefined' ? SolarEphemeris : null;
+  window.updateSolarEphemeris = typeof updateSolarEphemeris !== 'undefined' ? updateSolarEphemeris : null;
 }
 
 if (typeof global !== 'undefined') {
@@ -38574,6 +38994,8 @@ if (typeof global !== 'undefined') {
   global.buildThreeDigitalTwinJson = buildThreeDigitalTwinJson;
   global.AdsbAirspaceManager = typeof AdsbAirspaceManager !== 'undefined' ? AdsbAirspaceManager : null;
   global.isLocalhostEnvironment = typeof isLocalhostEnvironment !== 'undefined' ? isLocalhostEnvironment : null;
+  global.SolarEphemeris = typeof SolarEphemeris !== 'undefined' ? SolarEphemeris : null;
+  global.updateSolarEphemeris = typeof updateSolarEphemeris !== 'undefined' ? updateSolarEphemeris : null;
 }
 
 if (typeof document !== 'undefined') {

@@ -34,6 +34,8 @@ const diagDb = new DiagnosticsDatabase();
 const SCRATCH_DIR = path.resolve(__dirname, '../../scratch');
 const TagDetector = require('../wasm/tag_detector.js');
 const wireframeEngine = require('./wireframe_engine.js');
+const SolarEphemeris = require('./solar_ephemeris.js');
+let cachedWeatherTelemetry = null;
 const CONFIG_FILE = path.resolve(__dirname, '../../scratch/companion_config.json');
 const DJI_LOG_EXE = path.resolve(__dirname, 'bin/dji-log.exe');
 
@@ -2702,6 +2704,7 @@ function printStartupBanner() {
   console.log(`  ${colors.green}${colors.bold}POST /api/media/pull${colors.reset}         ${colors.gray}Ingest flight photos, correlate telemetry, and build archive${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}POST /api/process/wireframe${colors.reset}   ${colors.gray}Real-time OpenCV edge extraction & 3D wireframe projection${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}POST /api/drone/locate${colors.reset}    ${colors.gray}Rest API locate drone & inject live geo coordinates${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/weather/current${colors.reset}  ${colors.gray}Synchronized METAR weather & 24h solar ephemeris${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}POST /api/shutdown${colors.reset}         ${colors.gray}Cleanly terminate running companion bridge process${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /health${colors.reset}               ${colors.gray}Service heartbeat and status ping${colors.reset}`);
 
@@ -4346,7 +4349,49 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // 10. Heartbeat / Health Check
+    // 10. Live Weather & 24-Hour Solar Ephemeris Endpoint
+    if (pathname === '/api/weather/current' && req.method === 'GET') {
+      const latParam = parseFloat(url.searchParams.get('lat'));
+      const lonParam = parseFloat(url.searchParams.get('lon'));
+      const lat = (!isNaN(latParam)) ? latParam : (typeof lastDronePosition !== 'undefined' && lastDronePosition ? lastDronePosition.lat : 41.3215);
+      const lon = (!isNaN(lonParam)) ? lonParam : (typeof lastDronePosition !== 'undefined' && lastDronePosition ? lastDronePosition.lon : -88.9950);
+
+      const now = new Date();
+      const solar = SolarEphemeris.getSolar24hWindow(now, lat, lon);
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        status: 'ok',
+        timestamp: now.toISOString(),
+        coordinates: { lat, lon },
+        solar,
+        weather: cachedWeatherTelemetry || null
+      }));
+      return;
+    }
+
+    if (pathname === '/api/weather/current' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const data = JSON.parse(body || '{}');
+          cachedWeatherTelemetry = {
+            ...(cachedWeatherTelemetry || {}),
+            ...data,
+            updatedAt: new Date().toISOString()
+          };
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ status: 'ok', updated: true, timestamp: new Date().toISOString() }));
+        } catch (e) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ status: 'error', message: 'Invalid JSON payload' }));
+        }
+      });
+      return;
+    }
+
+    // 11. Heartbeat / Health Check
     if (pathname === '/health') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ status: 'running', service: 'Aalaapi Sky Companion', version: VERSION, rc2: cachedRc2Status }));

@@ -1,3 +1,14 @@
+## [1.135.0] - 2026-10-03
+
+### Added
+- **Solar Ephemeris & Next-24-Hour Solar Tracker Card (Closes #100)**:
+  - **Client-Side Offline Astronomical Calculator (`SolarEphemeris`)**: Implemented pure JavaScript astronomical algorithms (NOAA / Jean Meeus equations) computing solar coordinates, solar noon, official sunrise/sunset ($-0.833^\circ$), civil twilight ($-6.0^\circ$), nautical twilight ($-12.0^\circ$), astronomical twilight ($-18.0^\circ$), and golden hour windows with zero external network requests or API keys.
+  - **Dynamic 24-Hour Rolling Window**: Structured a chronological forward 24-hour horizon query based on map center coordinates (`centerMarker.getLatLng()` / active viewport center) displaying immediate upcoming solar events across calendar day boundaries.
+  - **FAA Part 107 Legal Flight Window Tracking**: Live detection of FAA Part 107.29 flight operational categories (Daylight, Morning/Evening Civil Twilight with 30-minute anti-collision strobe window countdown, and Night Operations).
+  - **Dual Weather Menu Solar Cards**: Responsive UI component integrated into both the Sidebar Weather Panel (`#stat-weather-dirs` / `#stat-solar-card`) and the Topbar Telemetry Popover (`#telemetry-weather-popover` / `#pop-solar-card`) featuring functional visual anchors (☀️ / 🌙), scan-path metrics for **Next Sunrise**, **Next Sunset**, real-time **Daylight Remaining** countdown, live solar angles (Altitude & Azimuth with compass heading), and an expandable 24-hour chronological timeline drawer.
+  - **Bridge-Hosted Telemetry & Fallback Integration**: Added `GET /api/weather/current` and `POST /api/weather/current` to the companion bridge server (`tools/companion/server.js`) returning synchronized astronomical snapshots alongside localized barometric and atmospheric visibility arrays.
+  - **Static Test Fixture Restoration**: Restored missing NOTAM `6/4933` VIP fixture in `data/tfr_notams.json` and `data/tfr_geojson.json` ensuring 100% test suite pass rate.
+
 ## [1.134.2] - 2026-10-03
 
 ### Fixed
