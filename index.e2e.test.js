@@ -6644,7 +6644,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(result.success, true);
     assert.strictEqual(result.isOpen, true, 'About modal should be visible upon clicking about button');
     assert.strictEqual(result.isClosed, true, 'About modal should close upon clicking close button');
-    assert.ok(['Version 1.131.2', 'Version 1.132.0', 'Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0'].includes(result.versionTag), 'About modal version tag should be Version 1.131.2 or newer');
+    assert.ok(['Version 1.131.2', 'Version 1.132.0', 'Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0'].includes(result.versionTag), 'About modal version tag should be Version 1.131.2 or newer');
     assert.strictEqual(result.listItemsCount, 6, 'Key capabilities should be summarized into 6 structured pillars');
     assert.strictEqual(result.hasPatternGen, true);
     assert.strictEqual(result.hasTrajectory, true);
@@ -6656,10 +6656,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
   test('E2E: v1.132.1 header badge and About modal reflect Version 1.132.1', async () => {
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.132.1', 'v1.133.0', 'v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0'].includes(badgeText.trim()), 'Header version badge should be v1.132.1 or newer');
+    assert.ok(['v1.132.1', 'v1.133.0', 'v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0'].includes(badgeText.trim()), 'Header version badge should be v1.132.1 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(['Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.132.1 or newer');
+    assert.ok(['Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.132.1 or newer');
   });
 
   test('E2E: Standalone inspection report template features offline satellite default and road providers (v1.132.1)', async () => {
@@ -6675,7 +6675,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Multi-POI Association & Three-Tier Cascading Hierarchy (v1.134.0, Issue #77)', async () => {
     // 1. Header version badge and About modal reflect v1.134.0 or newer
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.0 or newer');
+    assert.ok(['v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.0 or newer');
 
     // 2. Section 2 Layer Card contains #layer-poi-select & responds to towardPOI mode
     const poiTestResult = await page.evaluate(() => {
@@ -6717,10 +6717,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Edit Waypoint Popup & Mobile Overflow Zero Overhang (v1.134.1, Issue #107)', async () => {
     // 1. Header version badge and About modal reflect v1.134.1 or newer
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.1 or newer');
+    assert.ok(['v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.1 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(['Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.1 or newer');
+    assert.ok(['Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.1 or newer');
 
     // 2. Emulate mobile viewport (360x640)
     await page.setViewportSize({ width: 360, height: 640 });
@@ -6805,10 +6805,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Exclusion-Freeform & Custom Heading WPML Execution on DJI Mini 4 Pro (v1.134.2, Issue #110)', async () => {
     // 1. Header version badge and About modal reflect v1.134.2 or newer
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.2 or newer');
+    assert.ok(['v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.2 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(['Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.2 or newer');
+    assert.ok(['Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.2 or newer');
 
     // 2. Evaluate in browser context: buildWaylinesWpml with exclusion-freeform layer and custom headings
     const testResult = await page.evaluate(() => {
@@ -6855,10 +6855,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Next-24-Hour Solar Ephemeris & Part 107 Tracker Card (v1.135.0, Issue #100)', async () => {
     // 1. Header version badge and About modal reflect v1.135.0
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0'].includes(badgeText.trim()), 'Header version badge should be v1.135.0 or newer');
+    assert.ok(['v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0'].includes(badgeText.trim()), 'Header version badge should be v1.135.0 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(['Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.135.0 or newer');
+    assert.ok(['Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.135.0 or newer');
 
     // 2. Validate DOM Architecture and Dynamic Update in Browser Context
     const solarResult = await page.evaluate(() => {
@@ -6927,10 +6927,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Freeform Pattern KMZ Execution on DJI Mini 4 Pro (v1.135.1, Issue #111)', async () => {
     // 1. Header version badge and About modal reflect v1.135.1
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.135.1', 'v1.135.2', 'v1.136.0'].includes(badgeText.trim()), 'Header version badge should be v1.135.1 or newer');
+    assert.ok(['v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0'].includes(badgeText.trim()), 'Header version badge should be v1.135.1 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(['Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.135.1 or newer');
+    assert.ok(['Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.135.1 or newer');
 
     // 2. Evaluate in browser context: buildWaylinesWpml with freeform layer, 31 waypoints, DJI Mini 4 Pro
     const testResult = await page.evaluate(() => {
@@ -7054,10 +7054,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Flight Diagnostics Multi-Layer AI Export & Privacy Coordinate Masking (v1.136.0, Issue #108)', async () => {
     // 1. Header version badge and About modal reflect v1.136.0
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.strictEqual(badgeText.trim(), 'v1.136.0', 'Header version badge should be v1.136.0');
+    assert.ok(['v1.136.0', 'v1.137.0'].includes(badgeText.trim()), 'Header version badge should be v1.136.0 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.strictEqual(modalVersion.trim(), 'Version 1.136.0', 'About modal version tag should be Version 1.136.0');
+    assert.ok(['Version 1.136.0', 'Version 1.137.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.136.0 or newer');
 
     // 2. Flight Diagnostics modal DOM checks and privacy toggle interactivity
     const diagResult = await page.evaluate(() => {
@@ -7107,6 +7107,78 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(diagResult.hasUnmaskedFlag, true, 'Explicitly checked toggle must include real GPS coordinates');
     assert.strictEqual(diagResult.hasLayersSummary, true, 'Prompt must summarize flight layers');
     assert.strictEqual(diagResult.hasPoisSummary, true, 'Prompt must summarize POIs');
+  });
+
+  test('E2E: Map Tile & Asset Caching Proxy on Bridge (Issue #91)', async () => {
+    const tileResult = await page.evaluate(async () => {
+      const toggle = document.getElementById('bridge-tile-cache-toggle');
+      const clearBtn = document.getElementById('bridge-cache-clear-btn');
+      const statsSpan = document.getElementById('bridge-cache-stats-text');
+      const hitrateSpan = document.getElementById('bridge-cache-hitrate-text');
+
+      if (!toggle || !clearBtn || !statsSpan) {
+        return { success: false, error: 'Bridge tile cache DOM elements missing' };
+      }
+
+      // Check initial default state
+      const initialChecked = toggle.checked;
+      const initialEnabled = typeof isBridgeTileCachingEnabled === 'function' ? isBridgeTileCachingEnabled() : null;
+
+      // Toggle off
+      toggle.checked = false;
+      toggle.dispatchEvent(new Event('change'));
+      const disabledState = isBridgeTileCachingEnabled();
+
+      // Toggle back on
+      toggle.checked = true;
+      toggle.dispatchEvent(new Event('change'));
+      const reEnabledState = isBridgeTileCachingEnabled();
+
+      // Test proxy URL generation
+      const testTileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/14/4000/6000';
+      const liveStreamUrl = 'https://opengeo.ncep.noaa.gov/geoserver/ows?layers=conus:conus_bref_qcd';
+
+      const origOnline = window.isCompanionOnline;
+      const origBase = window.COMPANION_API_BASE;
+
+      window.COMPANION_API_BASE = 'http://127.0.0.1:8765';
+      window.isCompanionOnline = true;
+      const proxiedUrl = getBridgeProxyUrl(testTileUrl);
+
+      window.isCompanionOnline = false;
+      const unproxiedUrl = getBridgeProxyUrl(testTileUrl);
+
+      // Restore
+      window.isCompanionOnline = origOnline;
+      window.COMPANION_API_BASE = origBase;
+
+      return {
+        success: true,
+        hasToggle: !!toggle,
+        hasClearBtn: !!clearBtn,
+        hasStatsSpan: !!statsSpan,
+        hasHitrateSpan: !!hitrateSpan,
+        initialChecked,
+        initialEnabled,
+        disabledState,
+        reEnabledState,
+        proxiedUrl,
+        unproxiedUrl,
+        shouldProxyTile: shouldProxyTileUrl(testTileUrl),
+        shouldProxyLive: shouldProxyTileUrl(liveStreamUrl)
+      };
+    });
+
+    assert.strictEqual(tileResult.success, true);
+    assert.strictEqual(tileResult.hasToggle, true, '#bridge-tile-cache-toggle must exist in DOM');
+    assert.strictEqual(tileResult.hasClearBtn, true, '#bridge-cache-clear-btn must exist in DOM');
+    assert.strictEqual(tileResult.hasStatsSpan, true, '#bridge-cache-stats-text must exist in DOM');
+    assert.strictEqual(tileResult.initialChecked, true, 'Tile caching toggle must default to checked');
+    assert.strictEqual(tileResult.initialEnabled, true, 'isBridgeTileCachingEnabled must default to true');
+    assert.strictEqual(tileResult.disabledState, false, 'Unchecking toggle must disable caching');
+    assert.strictEqual(tileResult.reEnabledState, true, 'Re-checking toggle must re-enable caching');
+    assert.ok(tileResult.proxiedUrl.includes('http://127.0.0.1:8765/api/proxy/tile?url='), 'Online proxy URL must route via bridge');
+    assert.strictEqual(tileResult.unproxiedUrl, 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/14/4000/6000', 'Offline URL must return direct upstream');
   });
 });
 

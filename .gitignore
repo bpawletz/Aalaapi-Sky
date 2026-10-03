@@ -11,6 +11,7 @@ node_modules/
 recordings/
 videos/
 test-results/
+data/tile_cache/
 
 # Debug & Error Dumps
 error/

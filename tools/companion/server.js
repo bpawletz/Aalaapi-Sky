@@ -35,6 +35,8 @@ const SCRATCH_DIR = path.resolve(__dirname, '../../scratch');
 const TagDetector = require('../wasm/tag_detector.js');
 const wireframeEngine = require('./wireframe_engine.js');
 const SolarEphemeris = require('./solar_ephemeris.js');
+const { TileCacheManager } = require('./tile_cache.js');
+const tileCache = new TileCacheManager();
 let cachedWeatherTelemetry = null;
 const CONFIG_FILE = path.resolve(__dirname, '../../scratch/companion_config.json');
 const DJI_LOG_EXE = path.resolve(__dirname, 'bin/dji-log.exe');
@@ -60,6 +62,69 @@ function saveCompanionConfig(updates) {
     logError('[CONFIG ERROR]', `Failed to save config: ${e.message}`);
     return null;
   }
+}
+
+function fetchUpstreamBinary(targetUrl, clientHeaders = {}, maxRedirects = 4) {
+  return new Promise((resolve, reject) => {
+    let parsed;
+    try {
+      parsed = new URL(targetUrl);
+    } catch (e) {
+      return reject(new Error('Invalid URL'));
+    }
+
+    const client = parsed.protocol === 'https:' ? https : http;
+    const reqHeaders = {
+      'User-Agent': `Aalaapi-Sky-Bridge/${VERSION} (+https://github.com/bpawletz/Aalaapi-Sky)`,
+      'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+      'Accept-Encoding': 'identity',
+      'Referer': parsed.origin + '/'
+    };
+
+    if (clientHeaders['if-none-match']) {
+      reqHeaders['If-None-Match'] = clientHeaders['if-none-match'];
+    }
+    if (clientHeaders['if-modified-since']) {
+      reqHeaders['If-Modified-Since'] = clientHeaders['if-modified-since'];
+    }
+
+    const options = {
+      protocol: parsed.protocol,
+      hostname: parsed.hostname,
+      port: parsed.port || (parsed.protocol === 'https:' ? 443 : 80),
+      path: parsed.pathname + parsed.search,
+      method: 'GET',
+      headers: reqHeaders,
+      timeout: 12000
+    };
+
+    const req = client.request(options, (res) => {
+      // Follow redirects
+      if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location && maxRedirects > 0) {
+        try {
+          const nextUrl = new URL(res.headers.location, targetUrl).toString();
+          return fetchUpstreamBinary(nextUrl, clientHeaders, maxRedirects - 1).then(resolve).catch(reject);
+        } catch (_) {}
+      }
+
+      const chunks = [];
+      res.on('data', chunk => chunks.push(chunk));
+      res.on('end', () => {
+        resolve({
+          statusCode: res.statusCode,
+          headers: res.headers,
+          buffer: Buffer.concat(chunks)
+        });
+      });
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Upstream timeout'));
+    });
+    req.on('error', err => reject(err));
+    req.end();
+  });
 }
 
 function getDjiApiKey() {
@@ -2655,6 +2720,7 @@ function printStartupBanner() {
   logDetail('Local Endpoint', `http://127.0.0.1:${PORT}/api/status`);
   logDetail('Staging Path', STAGING_DIR);
   logDetail('Flight Logs', LATEST_DIR);
+  logDetail('Tile Cache', `${colors.green}Active${colors.reset} (${tileCache.cacheDir}) [${(tileCache.maxSizeBytes / (1024 * 1024 * 1024)).toFixed(1)} GB LRU]`);
 
   // Scan local Downloads folder for KMZ and flight logs
   const downloadsDir = path.join(os.homedir(), 'Downloads');
@@ -2690,6 +2756,9 @@ function printStartupBanner() {
   console.log(`\n${colors.bold}🌐 Active Web & REST API Endpoints:${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /${colors.reset}                  ${colors.gray}Aalaapi Sky full web application interface${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /api/status${colors.reset}           ${colors.gray}Real-time DJI RC 2 connection status & mission inventory${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/proxy/tile${colors.reset}       ${colors.gray}Map tile & spatial asset caching proxy (2GB LRU ceiling)${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/cache/tiles/stats${colors.reset} ${colors.gray}Map tile cache capacity, hit rates & statistics${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}POST /api/cache/tiles/clear${colors.reset} ${colors.gray}Purge local tile cache pool${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}POST /api/sync${colors.reset}             ${colors.gray}Direct 1-click in-memory KMZ & preview sync to RC 2${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /api/flights${colors.reset}          ${colors.gray}List extracted telemetry flight records & metadata${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}POST /api/flight-telemetry${colors.reset} ${colors.gray}3D flight trajectory solver, photo markers & variances${colors.reset}`);
@@ -2710,7 +2779,7 @@ function printStartupBanner() {
 
   if (process.stdin.isTTY) {
     console.log(`\n${colors.bold}⌨️  Interactive CLI Commands:${colors.reset}`);
-    console.log(`  ${colors.yellow}[s]${colors.reset} Probe RC 2 status   ${colors.yellow}[a]${colors.reset} Probe ADS-B status   ${colors.yellow}[r]${colors.reset} Probe Remote ID radar   ${colors.yellow}[f]${colors.reset} List flight logs   ${colors.yellow}[c]${colors.reset} Clear   ${colors.yellow}[q]${colors.reset} Exit\n`);
+    console.log(`  ${colors.yellow}[s]${colors.reset} Probe RC 2 status   ${colors.yellow}[a]${colors.reset} Probe ADS-B status   ${colors.yellow}[m]${colors.reset} Probe tile cache   ${colors.yellow}[r]${colors.reset} Probe Remote ID radar   ${colors.yellow}[f]${colors.reset} List flight logs   ${colors.yellow}[c]${colors.reset} Clear   ${colors.yellow}[q]${colors.reset} Exit\n`);
   }
 
   console.log(`${colors.gray}────────────────────────────────────────────────────────────────────────${colors.reset}`);
@@ -4411,6 +4480,133 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // 10b. Map Tile & Spatial Asset Caching Proxy (Issue #91)
+    if ((pathname === '/api/proxy/tile' || pathname === '/proxy' || pathname === '/api/proxy' || pathname === '/proxy/tile') && req.method === 'GET') {
+      const targetUrl = url.searchParams.get('url');
+      if (!targetUrl) {
+        res.writeHead(400, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ success: false, error: 'Missing required "url" parameter' }));
+        return;
+      }
+
+      let parsedTarget;
+      try {
+        parsedTarget = new URL(targetUrl);
+        if (parsedTarget.protocol !== 'http:' && parsedTarget.protocol !== 'https:') {
+          throw new Error('Unsupported protocol');
+        }
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ success: false, error: 'Invalid URL parameter: ' + e.message }));
+        return;
+      }
+
+      // 1. Live environmental streams (NOAA NEXRAD, NWS hazards, bypassCache=true) -> Direct stream pass-through
+      if (tileCache.isLiveBypassUrl(targetUrl)) {
+        try {
+          const upstream = await fetchUpstreamBinary(targetUrl, req.headers);
+          const ct = upstream.headers['content-type'] || 'image/png';
+          res.writeHead(upstream.statusCode || 200, {
+            'Content-Type': ct,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'X-Aalaapi-Cache': 'BYPASS',
+            'Access-Control-Allow-Origin': '*'
+          });
+          res.end(upstream.buffer);
+        } catch (fetchErr) {
+          res.writeHead(502, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+          res.end(JSON.stringify({ success: false, error: 'Failed to fetch live stream: ' + fetchErr.message }));
+        }
+        return;
+      }
+
+      // 2. Check local disk cache
+      const cached = tileCache.get(targetUrl, req.headers);
+      if (cached.hit) {
+        if (cached.status === 304) {
+          res.writeHead(304, {
+            'X-Aalaapi-Cache': 'HIT',
+            'ETag': cached.etag,
+            'Last-Modified': cached.lastModified,
+            'Access-Control-Allow-Origin': '*'
+          });
+          res.end();
+          return;
+        }
+
+        res.writeHead(200, {
+          'Content-Type': cached.contentType || 'image/png',
+          'Content-Length': cached.buffer.length,
+          'X-Aalaapi-Cache': 'HIT',
+          'ETag': cached.etag,
+          'Last-Modified': cached.lastModified,
+          'Age': cached.age || 0,
+          'Cache-Control': 'public, max-age=2592000',
+          'Access-Control-Allow-Origin': '*'
+        });
+        res.end(cached.buffer);
+        return;
+      }
+
+      // 3. Cache Miss: Fetch upstream, cache to disk, and respond
+      try {
+        const upstream = await fetchUpstreamBinary(targetUrl, req.headers);
+        const ct = upstream.headers['content-type'] || 'image/png';
+
+        if (upstream.statusCode === 200 && upstream.buffer.length > 0) {
+          tileCache.set(targetUrl, upstream.buffer, ct, upstream.headers);
+          res.writeHead(200, {
+            'Content-Type': ct,
+            'Content-Length': upstream.buffer.length,
+            'X-Aalaapi-Cache': 'MISS',
+            'ETag': upstream.headers.etag || `"${crypto.createHash('md5').update(upstream.buffer).digest('hex')}"`,
+            'Last-Modified': upstream.headers['last-modified'] || new Date().toUTCString(),
+            'Cache-Control': 'public, max-age=2592000',
+            'Access-Control-Allow-Origin': '*'
+          });
+          res.end(upstream.buffer);
+        } else if (upstream.statusCode === 304) {
+          res.writeHead(304, {
+            'X-Aalaapi-Cache': 'MISS',
+            'Access-Control-Allow-Origin': '*'
+          });
+          res.end();
+        } else {
+          res.writeHead(upstream.statusCode || 502, {
+            'Content-Type': ct,
+            'X-Aalaapi-Cache': 'MISS',
+            'Access-Control-Allow-Origin': '*'
+          });
+          res.end(upstream.buffer);
+        }
+      } catch (err) {
+        res.writeHead(502, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ success: false, error: 'Upstream fetch failed: ' + err.message }));
+      }
+      return;
+    }
+
+    // 10c. Map Tile Cache Diagnostics & Clear Endpoints
+    if ((pathname === '/api/cache/tiles/stats' || pathname === '/api/proxy/stats' || pathname === '/api/cache/stats') && req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify(tileCache.getStats()));
+      return;
+    }
+
+    if ((pathname === '/api/cache/tiles/clear' || pathname === '/api/proxy/clear' || pathname === '/api/cache/clear') && req.method === 'POST') {
+      const clearResult = tileCache.clear();
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify(clearResult));
+      return;
+    }
+
+    if (pathname === '/api/cache/tiles/inspect' && req.method === 'GET') {
+      const targetUrl = url.searchParams.get('url') || '';
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify(tileCache.inspect(targetUrl)));
+      return;
+    }
+
     // 11. Static File Serving (Aalaapi Sky Web App)
     if (req.method === 'GET' || req.method === 'HEAD') {
       const PROJECT_ROOT = path.resolve(__dirname, '../..');
@@ -4494,6 +4690,13 @@ if (process.stdin.isTTY) {
         const connStr = st.connected ? (colors.green + `Connected (${st.tcpHost}:${st.tcpPort}) [${st.driverType}]`) : (colors.yellow + 'Waiting on ' + st.tcpHost + ':' + st.tcpPort);
         console.log(`    ${colors.bold}dump1090 Stream:${colors.reset} ${connStr}${colors.reset}`);
         console.log(`    ${colors.bold}Traffic:${colors.reset} ${st.totalPackets} packets received | ${st.activeAircraftCount} active aircraft in memory`);
+      }
+      if (key && key.name === 'm') {
+        console.log(`\n${colors.cyan}[*] Probing Map Tile Cache Status...${colors.reset}`);
+        const st = tileCache.getStats();
+        console.log(`    ${colors.bold}Tiles Cached:${colors.reset} ${st.totalFiles.toLocaleString()} files (${st.totalSizeMb} MB / ${st.maxSizeMb} MB cap)`);
+        console.log(`    ${colors.bold}Performance:${colors.reset} ${st.hitCount} hits, ${st.missCount} misses (${st.hitRatePercent}% hit rate) | ${st.bypassCount} live bypassed | ${st.lruPruneCount} LRU evictions`);
+        console.log(`    ${colors.bold}Storage Dir:${colors.reset} ${st.cacheDir}`);
       }
       if (key && key.name === 'f') {
         console.log(`\n${colors.cyan}[*] Scanning cached flight logs in ${LATEST_DIR}...${colors.reset}`);
@@ -4666,6 +4869,9 @@ module.exports = {
   adsbTracker,
   getSseAirspaceClientsCount,
   sseAirspaceClients,
+  tileCache,
+  TileCacheManager,
+  fetchUpstreamBinary,
   VERSION,
   PORT
 };

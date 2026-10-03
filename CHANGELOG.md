@@ -1,3 +1,15 @@
+## [1.137.0] - 2026-10-03
+
+### Added
+- **Map Tile & Asset Caching Proxy inside Bridge App (Closes #91)**:
+  - **Bridge Proxy Routing Pipeline (`tools/companion/tile_cache.js`)**: Implemented a local caching proxy within the companion bridge daemon (`GET /api/proxy/tile?url=...`, `/proxy?url=...`, `/api/proxy?url=...`) intercepting map layer fetches (FAA VFR Sectionals, Esri World Imagery/Street, OpenStreetMap, OpenTopoMap, ArcGIS infrastructure layers, and 3D terrain canvas textures).
+  - **Dynamic Lifespan & TTL Policies**: Enforced 30-day retention (`30 * 24 * 60 * 60 * 1000` ms) for long-term static spatial arrays and tiles. Automatically identifies and bypasses live environmental streams (NOAA NEXRAD composites `conus_bref_qcd`, NWS active hazards `wwa:hazards`, RainViewer, and query param `bypassCache=true`), routing live radar directly upstream with `X-Aalaapi-Cache: BYPASS` and `Cache-Control: no-cache, no-store`.
+  - **Storage Bounds Optimization & 2.0 GB LRU Pruning**: Enforced a strict 2.0 GB disk storage ceiling (`AALAAPI_CACHE_MAX_BYTES`) in `data/tile_cache/` (strictly gitignored). When the storage cap is breached upon committing a tile, an automated Least Recently Used (LRU) pruning routine evicts the oldest accessed tiles until disk usage drops to 85% of the ceiling (~300 MB headroom).
+  - **HTTP 304 Conditional Validation & Upstream Header Synthesis**: Added support for client `If-None-Match` (ETag) and `If-Modified-Since` conditional headers, serving instant `HTTP 304 Not Modified` responses. Upstream requests synthesize legitimate `User-Agent` and `Referer` headers, eliminating OpenStreetMap 403 Forbidden tile policy errors on localhost/file:// environments.
+  - **Direct Bridge Web App Hosting**: Verified and documented direct web application hosting from the bridge daemon (`http://localhost:8765/` or `http://<lan-ip>:8765/`), delivering zero-configuration field access for laptops, iPads, tablets, and phones on local Wi-Fi hotspots with same-origin REST API connectivity.
+  - **Front-End Controls & Live Cache Telemetry**: Added a **Map Tile & Asset Cache** toggle (`#bridge-tile-cache-toggle`), live stats indicator (`#bridge-cache-stats-text`), hit-rate readout, and 1-click **Purge Cache** button (`#bridge-cache-clear-btn`) inside the Bridge sidebar configuration panel. Registered keypress shortcut `[m]` in the interactive bridge CLI to display live cache metrics.
+  - **Unit & E2E Verification Suite**: Added comprehensive unit test coverage (`tools/companion/tile_cache.test.js`) validating hashing, cache hit/miss cycles, live stream bypass, TTL expiration, conditional 304s, LRU eviction, and cache purging.
+
 ## [1.136.0] - 2026-10-03
 
 ### Added
