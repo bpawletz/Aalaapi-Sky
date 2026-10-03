@@ -6644,7 +6644,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(result.success, true);
     assert.strictEqual(result.isOpen, true, 'About modal should be visible upon clicking about button');
     assert.strictEqual(result.isClosed, true, 'About modal should close upon clicking close button');
-    assert.ok(['Version 1.131.2', 'Version 1.132.0', 'Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1'].includes(result.versionTag), 'About modal version tag should be Version 1.131.2 or newer');
+    assert.ok(['Version 1.131.2', 'Version 1.132.0', 'Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2'].includes(result.versionTag), 'About modal version tag should be Version 1.131.2 or newer');
     assert.strictEqual(result.listItemsCount, 6, 'Key capabilities should be summarized into 6 structured pillars');
     assert.strictEqual(result.hasPatternGen, true);
     assert.strictEqual(result.hasTrajectory, true);
@@ -6656,10 +6656,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
   test('E2E: v1.132.1 header badge and About modal reflect Version 1.132.1', async () => {
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.132.1', 'v1.133.0', 'v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1'].includes(badgeText.trim()), 'Header version badge should be v1.132.1 or newer');
+    assert.ok(['v1.132.1', 'v1.133.0', 'v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2'].includes(badgeText.trim()), 'Header version badge should be v1.132.1 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(['Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.132.1 or newer');
+    assert.ok(['Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.132.1 or newer');
   });
 
   test('E2E: Standalone inspection report template features offline satellite default and road providers (v1.132.1)', async () => {
@@ -6675,7 +6675,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Multi-POI Association & Three-Tier Cascading Hierarchy (v1.134.0, Issue #77)', async () => {
     // 1. Header version badge and About modal reflect v1.134.0 or newer
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1'].includes(badgeText.trim()), 'Header version badge should be v1.134.0 or newer');
+    assert.ok(['v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2'].includes(badgeText.trim()), 'Header version badge should be v1.134.0 or newer');
 
     // 2. Section 2 Layer Card contains #layer-poi-select & responds to towardPOI mode
     const poiTestResult = await page.evaluate(() => {
@@ -6717,10 +6717,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Edit Waypoint Popup & Mobile Overflow Zero Overhang (v1.134.1, Issue #107)', async () => {
     // 1. Header version badge and About modal reflect v1.134.1 or newer
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1'].includes(badgeText.trim()), 'Header version badge should be v1.134.1 or newer');
+    assert.ok(['v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2'].includes(badgeText.trim()), 'Header version badge should be v1.134.1 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(['Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.1 or newer');
+    assert.ok(['Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.1 or newer');
 
     // 2. Emulate mobile viewport (360x640)
     await page.setViewportSize({ width: 360, height: 640 });
@@ -6805,10 +6805,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Exclusion-Freeform & Custom Heading WPML Execution on DJI Mini 4 Pro (v1.134.2, Issue #110)', async () => {
     // 1. Header version badge and About modal reflect v1.134.2 or newer
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.134.2', 'v1.135.0', 'v1.135.1'].includes(badgeText.trim()), 'Header version badge should be v1.134.2 or newer');
+    assert.ok(['v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2'].includes(badgeText.trim()), 'Header version badge should be v1.134.2 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(['Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.2 or newer');
+    assert.ok(['Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.2 or newer');
 
     // 2. Evaluate in browser context: buildWaylinesWpml with exclusion-freeform layer and custom headings
     const testResult = await page.evaluate(() => {
@@ -6855,10 +6855,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Next-24-Hour Solar Ephemeris & Part 107 Tracker Card (v1.135.0, Issue #100)', async () => {
     // 1. Header version badge and About modal reflect v1.135.0
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.135.0', 'v1.135.1'].includes(badgeText.trim()), 'Header version badge should be v1.135.0 or newer');
+    assert.ok(['v1.135.0', 'v1.135.1', 'v1.135.2'].includes(badgeText.trim()), 'Header version badge should be v1.135.0 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(['Version 1.135.0', 'Version 1.135.1'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.135.0 or newer');
+    assert.ok(['Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.135.0 or newer');
 
     // 2. Validate DOM Architecture and Dynamic Update in Browser Context
     const solarResult = await page.evaluate(() => {
@@ -6927,10 +6927,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Freeform Pattern KMZ Execution on DJI Mini 4 Pro (v1.135.1, Issue #111)', async () => {
     // 1. Header version badge and About modal reflect v1.135.1
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.strictEqual(badgeText.trim(), 'v1.135.1', 'Header version badge should be v1.135.1');
+    assert.ok(['v1.135.1', 'v1.135.2'].includes(badgeText.trim()), 'Header version badge should be v1.135.1 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.strictEqual(modalVersion.trim(), 'Version 1.135.1', 'About modal version tag should be Version 1.135.1');
+    assert.ok(['Version 1.135.1', 'Version 1.135.2'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.135.1 or newer');
 
     // 2. Evaluate in browser context: buildWaylinesWpml with freeform layer, 31 waypoints, DJI Mini 4 Pro
     const testResult = await page.evaluate(() => {
@@ -6986,7 +6986,72 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(testResult.hasRawZero, false, 'No placemarks should have un-clamped 0 or 0.0 heading angles');
     assert.strictEqual(testResult.isValid, true, `Validation must pass cleanly: ${testResult.errors.join(', ')}`);
   });
+
+  test('E2E: Issue #109 Deleted freeform waypoint persists across layer switching', async () => {
+    const testResult = await page.evaluate(async () => {
+      // 1. Reset and initialize layers
+      flightLayers = [];
+      activeLayerId = null;
+      roadWaypoints = [];
+
+      // Place center
+      setGridCenter(41.3215, -88.9950);
+      updateGrid();
+
+      // Layer 1: Double Grid
+      const l1 = flightLayers[0];
+
+      // Layer 2: Freeform
+      const l2 = addFlightLayer('freeform');
+      setActiveLayer(l2.id);
+
+      // Add 4 freeform waypoints
+      addFreeformWaypoint(41.3220, -88.9940);
+      addFreeformWaypoint(41.3225, -88.9935);
+      addFreeformWaypoint(41.3230, -88.9930);
+      addFreeformWaypoint(41.3235, -88.9925);
+
+      const countBefore = l2.freeformWaypoints.length;
+
+      // 2. Delete waypoint at index 1 via deleteFlightWaypoint
+      const targetWp = l2.freeformWaypoints[1];
+      deleteFlightWaypoint(targetWp, 1);
+
+      const countAfterDelete = l2.freeformWaypoints.length;
+
+      // 3. Switch away to Layer 1
+      setActiveLayer(l1.id);
+      const activeSwitched = activeLayerId;
+
+      // 4. Switch back to Layer 2 (Freeform)
+      setActiveLayer(l2.id);
+      const activeReturned = activeLayerId;
+
+      const countAfterReturn = l2.freeformWaypoints.length;
+      const waypointsAfterReturn = l2.waypoints ? l2.waypoints.length : 0;
+      const hasDeletedWp = l2.freeformWaypoints.some(w => w.lat === 41.3225);
+
+      return {
+        success: true,
+        countBefore,
+        countAfterDelete,
+        activeSwitched,
+        activeReturned,
+        countAfterReturn,
+        waypointsAfterReturn,
+        hasDeletedWp
+      };
+    });
+
+    assert.strictEqual(testResult.success, true);
+    assert.strictEqual(testResult.countBefore, 4, 'Initially 4 freeform waypoints');
+    assert.strictEqual(testResult.countAfterDelete, 3, 'After delete must have 3 waypoints');
+    assert.strictEqual(testResult.countAfterReturn, 3, 'Returning to freeform layer must still have 3 waypoints (deleted waypoint must not reappear)');
+    assert.strictEqual(testResult.waypointsAfterReturn, 3, 'Compiled layer waypoints must reflect 3 waypoints');
+    assert.strictEqual(testResult.hasDeletedWp, false, 'Deleted waypoint coordinate must not be present');
+  });
 });
+
 
 
 

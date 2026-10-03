@@ -9677,6 +9677,20 @@ function togglePatternParameters() {
     if (gridType === 'freeform') {
       generatedWaypoints = [...importedWaypoints];
       generatedPhotos = [...importedPhotos];
+      if (activeLayer) {
+        activeLayer.freeformWaypoints = generatedWaypoints.map(w => ({
+          ...w,
+          layerId: activeLayer.id,
+          layerName: activeLayer.name,
+          layerPattern: 'freeform'
+        }));
+        activeLayer.freeformPhotos = generatedPhotos.map(p => ({
+          ...p,
+          layerId: activeLayer.id
+        }));
+        activeLayer.waypoints = activeLayer.freeformWaypoints;
+        activeLayer.photos = activeLayer.freeformPhotos;
+      }
     } else if (gridType === 'road-following') {
       const altitude = parseFloat(document.getElementById('altitude').value);
       roadWaypoints = importedWaypoints.map((wp, idx) => ({
@@ -13748,8 +13762,9 @@ function getMarkerIcon(wp, idx, waypoints, rotationDeg, tempHeading, tempPitch, 
 
 // Draw flight path lines segment by segment (highlighting >100m in dashed red)
 function drawFlightPathLines(waypoints, gridType) {
-  if (flightPathPolyline) flightPathPolyline.clearLayers();
-  if (waypoints.length < 2) return;
+  if (typeof L === 'undefined' || !L || !flightPathPolyline) return;
+  if (flightPathPolyline.clearLayers) flightPathPolyline.clearLayers();
+  if (!waypoints || waypoints.length < 2) return;
 
   const importedWaypoints = !!importedFileName;
 
@@ -14149,6 +14164,7 @@ function drawTargetSplatOverlay(layer, centerLat, centerLon, rotationDeg) {
 // Render bounding box, flight path, and markers on Leaflet
 function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWidth, gridHeight, rotationDeg) {
   recalculateSplitStarts();
+  if (typeof L === 'undefined' || !L || typeof map === 'undefined' || !map) return;
   // 1. Clear previous layers
   if (typeof map !== 'undefined' && map && typeof map.closePopup === 'function') {
     map.closePopup();
@@ -26865,6 +26881,29 @@ function convertToFreeformMission() {
   roadWaypoints = [];
   importedWaypoints = null;
 
+  const activeLayer = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+  if (activeLayer) {
+    activeLayer.pattern = 'freeform';
+    activeLayer.freeformWaypoints = generatedWaypoints.map(w => ({
+      ...w,
+      layerId: activeLayer.id,
+      layerName: activeLayer.name,
+      layerPattern: 'freeform'
+    }));
+    activeLayer.freeformPhotos = generatedWaypoints.map(w => ({
+      lat: w.lat,
+      lon: w.lon,
+      x: w.x,
+      y: w.y,
+      alt: w.alt,
+      pitch: w.pitch,
+      heading: w.heading,
+      layerId: activeLayer.id
+    }));
+    activeLayer.waypoints = activeLayer.freeformWaypoints;
+    activeLayer.photos = activeLayer.freeformPhotos;
+  }
+
   const gridTypeSelect = document.getElementById('grid-type');
   if (gridTypeSelect) {
     gridTypeSelect.value = 'freeform';
@@ -27213,6 +27252,114 @@ function showHeadingHelpPopover(anchorEl) {
   popover.style.left = `${Math.max(4, left)}px`;
   popover.style.top = `${Math.max(4, top)}px`;
   popover.style.display = 'flex';
+}
+
+function deleteFlightWaypoint(wp, idx) {
+  if (!wp && (idx === undefined || idx === null)) return;
+  const gridType = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('grid-type'))
+    ? document.getElementById('grid-type').value
+    : '';
+  const isRoadFollow = (gridType === 'road-following');
+
+  // Determine target layer from wp.layerId or active layer
+  const targetLayer = (wp && wp.layerId && typeof flightLayers !== 'undefined' && Array.isArray(flightLayers))
+    ? flightLayers.find(l => l.id === wp.layerId)
+    : (typeof getActiveLayer === 'function' ? getActiveLayer() : null);
+
+  if (isRoadFollow) {
+    if (typeof roadWaypoints !== 'undefined' && Array.isArray(roadWaypoints) && roadWaypoints.length > idx) {
+      roadWaypoints.splice(idx, 1);
+      roadWaypoints.forEach((w, newIdx) => { w.idx = newIdx; });
+    }
+    if (typeof generatedWaypoints !== 'undefined' && Array.isArray(generatedWaypoints) && generatedWaypoints.length > idx) {
+      generatedWaypoints.splice(idx, 1);
+      generatedWaypoints.forEach((w, newIdx) => { w.idx = newIdx; });
+    }
+    if (targetLayer && Array.isArray(targetLayer.roadWaypoints)) {
+      let rIdx = wp ? targetLayer.roadWaypoints.indexOf(wp) : idx;
+      if (rIdx === -1 && wp && wp.idx !== undefined && wp.idx < targetLayer.roadWaypoints.length) {
+        rIdx = wp.idx;
+      }
+      if (rIdx !== -1 && rIdx < targetLayer.roadWaypoints.length) {
+        targetLayer.roadWaypoints.splice(rIdx, 1);
+        targetLayer.roadWaypoints.forEach((w, newIdx) => { w.idx = newIdx; });
+      }
+    }
+  } else {
+    // 1. If targetLayer is freeform (or current gridType is freeform), clean up targetLayer's internal arrays
+    if (targetLayer && (targetLayer.pattern === 'freeform' || gridType === 'freeform')) {
+      if (Array.isArray(targetLayer.freeformWaypoints) && targetLayer.freeformWaypoints.length > 0) {
+        let fIdx = wp ? targetLayer.freeformWaypoints.indexOf(wp) : -1;
+        if (fIdx === -1 && wp && wp.idx !== undefined && wp.idx !== null && targetLayer.freeformWaypoints[wp.idx]) {
+          fIdx = wp.idx;
+        }
+        if (fIdx === -1 && wp) {
+          fIdx = targetLayer.freeformWaypoints.findIndex(w =>
+            Math.abs(w.lat - wp.lat) < 1e-7 && Math.abs(w.lon - wp.lon) < 1e-7
+          );
+        }
+        if (fIdx === -1 && idx !== undefined && idx !== null && idx < targetLayer.freeformWaypoints.length) {
+          fIdx = idx;
+        }
+        if (fIdx !== -1 && fIdx < targetLayer.freeformWaypoints.length) {
+          targetLayer.freeformWaypoints.splice(fIdx, 1);
+          targetLayer.freeformWaypoints.forEach((w, newIdx) => {
+            w.layerWaypointIndex = newIdx;
+          });
+          if (Array.isArray(targetLayer.freeformPhotos) && targetLayer.freeformPhotos.length > fIdx) {
+            targetLayer.freeformPhotos.splice(fIdx, 1);
+          }
+          if (Array.isArray(targetLayer.polygonVertices) && targetLayer.polygonVertices.length > fIdx) {
+            targetLayer.polygonVertices.splice(fIdx, 1);
+          }
+        }
+      }
+      if (Array.isArray(targetLayer.waypoints) && targetLayer.waypoints.length > 0) {
+        let lWpIdx = wp ? targetLayer.waypoints.indexOf(wp) : -1;
+        if (lWpIdx !== -1 && lWpIdx < targetLayer.waypoints.length) {
+          targetLayer.waypoints.splice(lWpIdx, 1);
+          targetLayer.waypoints.forEach((w, newIdx) => {
+            w.layerWaypointIndex = newIdx;
+          });
+          if (Array.isArray(targetLayer.photos) && targetLayer.photos.length > lWpIdx) {
+            targetLayer.photos.splice(lWpIdx, 1);
+          }
+        } else {
+          targetLayer.waypoints = (targetLayer.freeformWaypoints || []).slice();
+          targetLayer.photos = (targetLayer.freeformPhotos || []).slice();
+        }
+      }
+    }
+
+    // 2. Remove from active mission waypoints and photos
+    const activeWps = typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : (typeof generatedWaypoints !== 'undefined' ? generatedWaypoints : null);
+    const activePts = typeof getCurrentPhotos === 'function' ? getCurrentPhotos() : (typeof generatedPhotos !== 'undefined' ? generatedPhotos : null);
+    let gIdx = (wp && activeWps) ? activeWps.indexOf(wp) : -1;
+    if (gIdx === -1 && idx !== undefined && idx !== null && activeWps && idx < activeWps.length) {
+      gIdx = idx;
+    }
+    if (gIdx === -1 && wp && activeWps) {
+      gIdx = activeWps.findIndex(w =>
+        Math.abs(w.lat - wp.lat) < 1e-7 && Math.abs(w.lon - wp.lon) < 1e-7
+      );
+    }
+    if (gIdx !== -1 && activeWps && activeWps[gIdx]) {
+      activeWps.splice(gIdx, 1);
+      activeWps.forEach((w, newIdx) => { w.idx = newIdx; });
+    }
+    if (activePts && gIdx !== -1 && activePts[gIdx]) {
+      activePts.splice(gIdx, 1);
+    }
+  }
+
+  // 3. Update view / map / 3D scenes
+  if (targetLayer && targetLayer.pattern === 'freeform' && typeof updateGrid === 'function') {
+    updateGrid();
+  } else {
+    if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+    if (typeof renderLayersList === 'function') renderLayersList();
+    if (typeof recreate3DWaypointsAndPaths === 'function') recreate3DWaypointsAndPaths();
+  }
 }
 
 function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsList = null) {
@@ -28668,40 +28815,8 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
       const label = isRoadFollow ? 'Road Node / Waypoint' : 'Waypoint';
       if (confirm(`Are you sure you want to delete ${label} ${idx}?`)) {
         unbindRevert();
-
-        if (isRoadFollow) {
-          if (roadWaypoints && roadWaypoints.length > idx) {
-            roadWaypoints.splice(idx, 1);
-            roadWaypoints.forEach((w, newIdx) => { w.idx = newIdx; });
-          }
-          if (generatedWaypoints && generatedWaypoints.length > idx) {
-            generatedWaypoints.splice(idx, 1);
-            generatedWaypoints.forEach((w, newIdx) => { w.idx = newIdx; });
-          }
-        } else {
-          const activeLayer = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
-          if (activeLayer && activeLayer.pattern === 'freeform' && activeLayer.freeformWaypoints) {
-            if (activeLayer.freeformWaypoints[idx]) {
-              activeLayer.freeformWaypoints.splice(idx, 1);
-              activeLayer.freeformWaypoints.forEach((w, newIdx) => { w.idx = newIdx; });
-            }
-            if (activeLayer.freeformPhotos && activeLayer.freeformPhotos[idx]) {
-              activeLayer.freeformPhotos.splice(idx, 1);
-            }
-          }
-          const activeWps = getCurrentWaypoints();
-          const activePts = getCurrentPhotos();
-          if (activeWps && activeWps[idx]) {
-            activeWps.splice(idx, 1);
-            activeWps.forEach((w, newIdx) => { w.idx = newIdx; });
-          }
-          if (activePts && activePts[idx]) {
-            activePts.splice(idx, 1);
-          }
-        }
-
+        deleteFlightWaypoint(wp, idx);
         if (popupObj) popupObj.close ? popupObj.close() : (marker && marker.closePopup());
-        redrawCurrentMission();
       }
     });
   }
@@ -30546,26 +30661,8 @@ function fpvDeleteWaypoint() {
   const isRoadFollow = (gridType === 'road-following');
   const label = isRoadFollow ? 'Road Node / Waypoint' : 'Waypoint';
   if (confirm(`Are you sure you want to delete ${label} ${fpvProgressIndex + 1}?`)) {
-    if (isRoadFollow) {
-      if (roadWaypoints && roadWaypoints.length > fpvProgressIndex) {
-        roadWaypoints.splice(fpvProgressIndex, 1);
-        roadWaypoints.forEach((wp, idx) => { wp.idx = idx; });
-      }
-      if (generatedWaypoints && generatedWaypoints.length > fpvProgressIndex) {
-        generatedWaypoints.splice(fpvProgressIndex, 1);
-        generatedWaypoints.forEach((wp, idx) => { wp.idx = idx; });
-      }
-    } else {
-      const activeWps = getCurrentWaypoints();
-      const activePts = getCurrentPhotos();
-      if (activeWps && activeWps[fpvProgressIndex]) {
-        activeWps.splice(fpvProgressIndex, 1);
-        activeWps.forEach((wp, idx) => { wp.idx = idx; });
-      }
-      if (activePts && activePts[fpvProgressIndex]) {
-        activePts.splice(fpvProgressIndex, 1);
-      }
-    }
+    const wp = (waypoints && waypoints.length > fpvProgressIndex) ? waypoints[fpvProgressIndex] : null;
+    deleteFlightWaypoint(wp, fpvProgressIndex);
 
     const currentWps = getCurrentWaypoints();
     if (fpvProgressIndex >= currentWps.length) {
@@ -30573,10 +30670,6 @@ function fpvDeleteWaypoint() {
     }
     fpvSubInterpolation = 0.0;
 
-    // Redraw Leaflet markers, path line geometries, and stats
-    redrawCurrentMission();
-    // Rebuild Three.js waypoints & line meshes
-    recreate3DWaypointsAndPaths();
     // Refresh FPV Editor sliders to active point
     updateFPVEditorUI();
 
@@ -30625,6 +30718,10 @@ function fpvInsertWaypoint() {
     };
   }
 
+  const targetLayer = (currentWp && currentWp.layerId && typeof flightLayers !== 'undefined' && Array.isArray(flightLayers))
+    ? flightLayers.find(l => l.id === currentWp.layerId)
+    : (typeof getActiveLayer === 'function' ? getActiveLayer() : null);
+
   const newWp = {
     x: newX,
     y: newY,
@@ -30644,7 +30741,10 @@ function fpvInsertWaypoint() {
     origPoiIndex: 0,
     origX: newX,
     origY: newY,
-    isModified: true
+    isModified: true,
+    layerId: targetLayer ? targetLayer.id : (currentWp ? currentWp.layerId : null),
+    layerName: targetLayer ? targetLayer.name : (currentWp ? currentWp.layerName : null),
+    layerPattern: targetLayer ? targetLayer.pattern : (currentWp ? currentWp.layerPattern : null)
   };
 
   waypoints.splice(fpvProgressIndex + 1, 0, newWp);
@@ -30654,13 +30754,30 @@ function fpvInsertWaypoint() {
     wp.idx = idx;
   });
 
+  if (targetLayer && targetLayer.pattern === 'freeform') {
+    if (!Array.isArray(targetLayer.freeformWaypoints)) targetLayer.freeformWaypoints = [];
+    let fIdx = targetLayer.freeformWaypoints.indexOf(currentWp);
+    if (fIdx !== -1) {
+      targetLayer.freeformWaypoints.splice(fIdx + 1, 0, newWp);
+    } else {
+      targetLayer.freeformWaypoints.push(newWp);
+    }
+    targetLayer.freeformWaypoints.forEach((w, newIdx) => { w.idx = newIdx; });
+    targetLayer.waypoints = targetLayer.freeformWaypoints.slice();
+  }
+
   // Target focus on the newly inserted waypoint
   fpvProgressIndex++;
   fpvSubInterpolation = 0.0;
 
   // Redraw overlays and UI
-  redrawCurrentMission();
-  recreate3DWaypointsAndPaths();
+  if (targetLayer && targetLayer.pattern === 'freeform' && typeof updateGrid === 'function') {
+    updateGrid();
+  } else {
+    redrawCurrentMission();
+    if (typeof renderLayersList === 'function') renderLayersList();
+    recreate3DWaypointsAndPaths();
+  }
   updateFPVEditorUI();
 
   if (fpvActive) {
@@ -38982,6 +39099,7 @@ if (typeof window !== 'undefined') {
   window.isLocalhostEnvironment = typeof isLocalhostEnvironment !== 'undefined' ? isLocalhostEnvironment : null;
   window.SolarEphemeris = typeof SolarEphemeris !== 'undefined' ? SolarEphemeris : null;
   window.updateSolarEphemeris = typeof updateSolarEphemeris !== 'undefined' ? updateSolarEphemeris : null;
+  window.deleteFlightWaypoint = typeof deleteFlightWaypoint !== 'undefined' ? deleteFlightWaypoint : null;
 }
 
 if (typeof global !== 'undefined') {
@@ -39000,6 +39118,7 @@ if (typeof global !== 'undefined') {
   global.isLocalhostEnvironment = typeof isLocalhostEnvironment !== 'undefined' ? isLocalhostEnvironment : null;
   global.SolarEphemeris = typeof SolarEphemeris !== 'undefined' ? SolarEphemeris : null;
   global.updateSolarEphemeris = typeof updateSolarEphemeris !== 'undefined' ? updateSolarEphemeris : null;
+  global.deleteFlightWaypoint = typeof deleteFlightWaypoint !== 'undefined' ? deleteFlightWaypoint : null;
 }
 
 if (typeof document !== 'undefined') {
