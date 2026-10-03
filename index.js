@@ -5904,6 +5904,20 @@ function initMap() {
     }
   }
 
+  // Map Tile & Spatial Asset Proxy Interceptor (Issue #91)
+  if (typeof L !== 'undefined' && L.TileLayer && !L.TileLayer.prototype._proxyHookInstalled) {
+    L.TileLayer.prototype._proxyHookInstalled = true;
+    const _origGetTileUrl = L.TileLayer.prototype.getTileUrl;
+    L.TileLayer.prototype.getTileUrl = function(coords) {
+      const tileUrl = _origGetTileUrl.call(this, coords);
+      if (!tileUrl) return tileUrl;
+      if (typeof getBridgeProxyUrl === 'function') {
+        return getBridgeProxyUrl(tileUrl);
+      }
+      return tileUrl;
+    };
+  }
+
   // Setup Tile Layers
   streetLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 22,
@@ -8700,6 +8714,29 @@ function initUIEventListeners() {
         if (typeof setCompanionApiBase === 'function') setCompanionApiBase('');
         companionHostInput.value = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
         companionHostPanel.style.display = 'none';
+      });
+    }
+
+    const bridgeTileCacheToggle = document.getElementById('bridge-tile-cache-toggle');
+    if (bridgeTileCacheToggle) {
+      bridgeTileCacheToggle.checked = (typeof isBridgeTileCachingEnabled === 'function') ? isBridgeTileCachingEnabled() : true;
+      bridgeTileCacheToggle.addEventListener('change', () => {
+        if (typeof setBridgeTileCachingEnabled === 'function') {
+          setBridgeTileCachingEnabled(bridgeTileCacheToggle.checked);
+        }
+        if (typeof showToast === 'function') {
+          showToast(`Bridge map tile caching ${bridgeTileCacheToggle.checked ? 'enabled' : 'disabled'}.`, 2500);
+        }
+      });
+    }
+
+    const bridgeCacheClearBtn = document.getElementById('bridge-cache-clear-btn');
+    if (bridgeCacheClearBtn) {
+      bridgeCacheClearBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (typeof purgeBridgeTileCache === 'function') {
+          purgeBridgeTileCache();
+        }
       });
     }
   }
@@ -18521,6 +18558,119 @@ let consecutiveRadarFailures = 0;
 let lastStatusCheckTime = 0;
 let remoteIdDroneCount = 0;
 
+function isBridgeTileCachingEnabled() {
+  if (typeof localStorage === 'undefined') return true;
+  try {
+    const val = localStorage.getItem('aalaapi-bridge-tile-caching');
+    return val !== 'false';
+  } catch (e) {
+    return true;
+  }
+}
+
+function setBridgeTileCachingEnabled(enabled) {
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem('aalaapi-bridge-tile-caching', enabled ? 'true' : 'false');
+    } catch (e) {}
+  }
+  const toggle = (typeof document !== 'undefined') ? document.getElementById('bridge-tile-cache-toggle') : null;
+  if (toggle) toggle.checked = !!enabled;
+
+  refreshActiveMapTileLayers();
+}
+
+function refreshActiveMapTileLayers() {
+  if (typeof map !== 'undefined' && map && typeof map.eachLayer === 'function') {
+    map.eachLayer(layer => {
+      if (layer && typeof layer.redraw === 'function') {
+        try { layer.redraw(); } catch (e) {}
+      }
+    });
+  }
+}
+
+function shouldProxyTileUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  if (url.startsWith('data:') || url.startsWith('blob:')) return false;
+
+  const lower = url.toLowerCase();
+  if (lower.includes('/api/proxy/tile') || lower.includes('/proxy?url=')) return false;
+
+  return lower.includes('arcgisonline.com') ||
+         lower.includes('tiles.arcgis.com') ||
+         lower.includes('openstreetmap.org') ||
+         lower.includes('opentopomap.org') ||
+         lower.includes('services6.arcgis.com') ||
+         lower.includes('services1.arcgis.com') ||
+         lower.includes('opengeo.ncep.noaa.gov');
+}
+
+function getBridgeProxyUrl(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== 'string') return rawUrl;
+  const online = (typeof window !== 'undefined' && typeof window.isCompanionOnline === 'boolean')
+    ? window.isCompanionOnline
+    : ((typeof global !== 'undefined' && typeof global.isCompanionOnline === 'boolean')
+      ? global.isCompanionOnline
+      : (typeof isCompanionOnline !== 'undefined' && isCompanionOnline));
+  if (!online) return rawUrl;
+  if (typeof isBridgeTileCachingEnabled === 'function' && !isBridgeTileCachingEnabled()) return rawUrl;
+  if (!shouldProxyTileUrl(rawUrl)) return rawUrl;
+
+  const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+  return `${apiBase}/api/proxy/tile?url=${encodeURIComponent(rawUrl)}`;
+}
+
+async function fetchBridgeCacheStats() {
+  if (typeof isCompanionOnline === 'undefined' || !isCompanionOnline || typeof document === 'undefined') return;
+  const statsSpan = document.getElementById('bridge-cache-stats-text');
+  const hitrateSpan = document.getElementById('bridge-cache-hitrate-text');
+  if (!statsSpan) return;
+
+  try {
+    const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+    const res = await fetch(`${apiBase}/api/cache/tiles/stats`);
+    if (res.ok) {
+      const data = await res.json();
+      statsSpan.textContent = `Cached: ${data.totalFiles.toLocaleString()} tiles (${data.totalSizeMb} MB / ${data.maxSizeMb} MB)`;
+      if (hitrateSpan) {
+        hitrateSpan.textContent = `Hit Rate: ${data.hitRatePercent}%`;
+      }
+    }
+  } catch (_) {}
+}
+
+async function purgeBridgeTileCache() {
+  if (typeof isCompanionOnline === 'undefined' || !isCompanionOnline) {
+    if (typeof showToast === 'function') showToast('Aalaapi Bridge is offline.', 3000);
+    return;
+  }
+  const clearBtn = (typeof document !== 'undefined') ? document.getElementById('bridge-cache-clear-btn') : null;
+  if (clearBtn) {
+    clearBtn.disabled = true;
+    clearBtn.textContent = 'Purging...';
+  }
+
+  try {
+    const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+    const res = await fetch(`${apiBase}/api/cache/tiles/clear`, { method: 'POST' });
+    if (res.ok) {
+      if (typeof showToast === 'function') showToast('Bridge map tile cache purged successfully.', 3000);
+      await fetchBridgeCacheStats();
+      refreshActiveMapTileLayers();
+    } else {
+      if (typeof showToast === 'function') showToast('Failed to purge tile cache.', 3000);
+    }
+  } catch (err) {
+    if (typeof showToast === 'function') showToast('Error purging cache: ' + err.message, 3000);
+  } finally {
+    if (clearBtn) {
+      clearBtn.disabled = false;
+      clearBtn.textContent = 'Purge';
+    }
+  }
+}
+
 async function pollCompanionStatus() {
   if (typeof document === 'undefined') return;
   const sDot = document.getElementById('companion-service-dot');
@@ -18577,6 +18727,7 @@ async function pollCompanionStatus() {
         sText.style.color = '#22c55e';
       }
       if (sLabel) sLabel.textContent = 'port 8765';
+      if (typeof fetchBridgeCacheStats === 'function') fetchBridgeCacheStats();
 
       // 2. Update RC 2 USB Link status
       if (data.connected) {
@@ -18674,6 +18825,8 @@ async function pollCompanionStatus() {
       sText.style.color = 'var(--text-main)';
     }
     if (sLabel) sLabel.textContent = 'start-bridge.bat';
+    const bStats = document.getElementById('bridge-cache-stats-text');
+    if (bStats) bStats.textContent = 'Bridge offline';
 
     // 2. USB Link Waiting
     if (uDot) uDot.style.background = '#64748b'; // Gray
@@ -30030,6 +30183,9 @@ function init3DPreview() {
           url = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/${tileZoom}/${tileY}/${tileX}`;
         } else {
           url = `https://tile.openstreetmap.org/${tileZoom}/${tileX}/${tileY}.png`;
+        }
+        if (typeof getBridgeProxyUrl === 'function') {
+          url = getBridgeProxyUrl(url);
         }
 
         tileImages.push({ img, dx: dx + 1, dy: dy + 1 });
