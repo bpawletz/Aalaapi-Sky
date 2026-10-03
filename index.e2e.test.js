@@ -6644,7 +6644,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(result.success, true);
     assert.strictEqual(result.isOpen, true, 'About modal should be visible upon clicking about button');
     assert.strictEqual(result.isClosed, true, 'About modal should close upon clicking close button');
-    assert.ok(['Version 1.131.2', 'Version 1.132.0', 'Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2'].includes(result.versionTag), 'About modal version tag should be Version 1.131.2 or newer');
+    assert.ok(['Version 1.131.2', 'Version 1.132.0', 'Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0'].includes(result.versionTag), 'About modal version tag should be Version 1.131.2 or newer');
     assert.strictEqual(result.listItemsCount, 6, 'Key capabilities should be summarized into 6 structured pillars');
     assert.strictEqual(result.hasPatternGen, true);
     assert.strictEqual(result.hasTrajectory, true);
@@ -6656,10 +6656,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
   test('E2E: v1.132.1 header badge and About modal reflect Version 1.132.1', async () => {
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.132.1', 'v1.133.0', 'v1.134.0', 'v1.134.1', 'v1.134.2'].includes(badgeText.trim()), 'Header version badge should be v1.132.1 or newer');
+    assert.ok(['v1.132.1', 'v1.133.0', 'v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0'].includes(badgeText.trim()), 'Header version badge should be v1.132.1 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(['Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.132.1 or newer');
+    assert.ok(['Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.132.1 or newer');
   });
 
   test('E2E: Standalone inspection report template features offline satellite default and road providers (v1.132.1)', async () => {
@@ -6675,7 +6675,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Multi-POI Association & Three-Tier Cascading Hierarchy (v1.134.0, Issue #77)', async () => {
     // 1. Header version badge and About modal reflect v1.134.0 or newer
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.134.0', 'v1.134.1', 'v1.134.2'].includes(badgeText.trim()), 'Header version badge should be v1.134.0 or newer');
+    assert.ok(['v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.0 or newer');
 
     // 2. Section 2 Layer Card contains #layer-poi-select & responds to towardPOI mode
     const poiTestResult = await page.evaluate(() => {
@@ -6717,10 +6717,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Edit Waypoint Popup & Mobile Overflow Zero Overhang (v1.134.1, Issue #107)', async () => {
     // 1. Header version badge and About modal reflect v1.134.1 or newer
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.134.1', 'v1.134.2'].includes(badgeText.trim()), 'Header version badge should be v1.134.1 or newer');
+    assert.ok(['v1.134.1', 'v1.134.2', 'v1.135.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.1 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(['Version 1.134.1', 'Version 1.134.2'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.1 or newer');
+    assert.ok(['Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.1 or newer');
 
     // 2. Emulate mobile viewport (360x640)
     await page.setViewportSize({ width: 360, height: 640 });
@@ -6803,12 +6803,12 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   });
 
   test('E2E: Exclusion-Freeform & Custom Heading WPML Execution on DJI Mini 4 Pro (v1.134.2, Issue #110)', async () => {
-    // 1. Header version badge and About modal reflect v1.134.2
+    // 1. Header version badge and About modal reflect v1.134.2 or newer
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.strictEqual(badgeText.trim(), 'v1.134.2', 'Header version badge should be v1.134.2');
+    assert.ok(['v1.134.2', 'v1.135.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.2 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.strictEqual(modalVersion.trim(), 'Version 1.134.2', 'About modal version tag should be Version 1.134.2');
+    assert.ok(['Version 1.134.2', 'Version 1.135.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.2 or newer');
 
     // 2. Evaluate in browser context: buildWaylinesWpml with exclusion-freeform layer and custom headings
     const testResult = await page.evaluate(() => {
@@ -6850,6 +6850,78 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(testResult.hasSmoothTransition, true, 'Uses smoothTransition');
     assert.strictEqual(testResult.hasZeroClamped, true, 'Zero angle clamped to 0.1');
     assert.strictEqual(testResult.detourNoHover, true, 'Detour waypoint suppresses auto-settling hover');
+  });
+
+  test('E2E: Next-24-Hour Solar Ephemeris & Part 107 Tracker Card (v1.135.0, Issue #100)', async () => {
+    // 1. Header version badge and About modal reflect v1.135.0
+    const badgeText = await page.locator('.header-version-badge').first().innerText();
+    assert.strictEqual(badgeText.trim(), 'v1.135.0', 'Header version badge should be v1.135.0');
+
+    const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
+    assert.strictEqual(modalVersion.trim(), 'Version 1.135.0', 'About modal version tag should be Version 1.135.0');
+
+    // 2. Validate DOM Architecture and Dynamic Update in Browser Context
+    const solarResult = await page.evaluate(() => {
+      // Force an ephemeris calculation for Utica, IL
+      if (typeof updateSolarEphemeris === 'function') {
+        updateSolarEphemeris(41.3215, -88.9950);
+      }
+
+      const popCard = document.getElementById('pop-solar-card');
+      const statCard = document.getElementById('stat-solar-card');
+      const popSunrise = document.getElementById('pop-solar-sunrise')?.innerHTML || '';
+      const popSunset = document.getElementById('pop-solar-sunset')?.innerHTML || '';
+      const popRemaining = document.getElementById('pop-solar-remaining')?.innerHTML || '';
+      const popBadge = document.getElementById('pop-solar-faa-badge')?.textContent || '';
+      const popAngles = document.getElementById('pop-solar-angles')?.textContent || '';
+      const statSunrise = document.getElementById('stat-solar-sunrise')?.innerHTML || '';
+      const statSunset = document.getElementById('stat-solar-sunset')?.innerHTML || '';
+      const statRemaining = document.getElementById('stat-solar-remaining')?.innerHTML || '';
+
+      const popTimeline = document.getElementById('pop-solar-timeline');
+      const popToggle = document.getElementById('pop-btn-toggle-solar-timeline');
+
+      let toggleWorks = false;
+      if (popToggle && popTimeline) {
+        const wasHidden = popTimeline.classList.contains('hidden');
+        popToggle.click();
+        const nowHidden = popTimeline.classList.contains('hidden');
+        popToggle.click();
+        const restored = popTimeline.classList.contains('hidden');
+        toggleWorks = (nowHidden !== wasHidden) && (restored === wasHidden);
+      }
+
+      const introFeatures = document.getElementById('intro-pane-features');
+      const hasIntroHighlight = introFeatures && introFeatures.innerHTML.includes('Solar Ephemeris');
+
+      return {
+        popCardExists: !!popCard,
+        statCardExists: !!statCard,
+        popSunriseValid: popSunrise.length > 0 && popSunrise !== '-',
+        popSunsetValid: popSunset.length > 0 && popSunset !== '-',
+        popRemainingValid: popRemaining.length > 0 && popRemaining !== '-',
+        popBadgeValid: popBadge.length > 0,
+        popAnglesValid: popAngles.includes('Alt:') && popAngles.includes('Az:'),
+        statSunriseValid: statSunrise.length > 0 && statSunrise !== '-',
+        statSunsetValid: statSunset.length > 0 && statSunset !== '-',
+        statRemainingValid: statRemaining.length > 0 && statRemaining !== '-',
+        toggleWorks,
+        hasIntroHighlight: !!hasIntroHighlight
+      };
+    });
+
+    assert.strictEqual(solarResult.popCardExists, true, 'Popover solar card must exist in DOM');
+    assert.strictEqual(solarResult.statCardExists, true, 'Sidebar solar card must exist in DOM');
+    assert.strictEqual(solarResult.popSunriseValid, true, 'Popover Next Sunrise metric must be computed');
+    assert.strictEqual(solarResult.popSunsetValid, true, 'Popover Next Sunset metric must be computed');
+    assert.strictEqual(solarResult.popRemainingValid, true, 'Popover Daylight Remaining metric must be computed');
+    assert.strictEqual(solarResult.popBadgeValid, true, 'Popover FAA badge must be populated');
+    assert.strictEqual(solarResult.popAnglesValid, true, 'Popover Solar angles must display Altitude and Azimuth');
+    assert.strictEqual(solarResult.statSunriseValid, true, 'Sidebar Next Sunrise metric must be computed');
+    assert.strictEqual(solarResult.statSunsetValid, true, 'Sidebar Next Sunset metric must be computed');
+    assert.strictEqual(solarResult.statRemainingValid, true, 'Sidebar Daylight Remaining metric must be computed');
+    assert.strictEqual(solarResult.toggleWorks, true, 'Solar timeline toggle expands and collapses timeline');
+    assert.strictEqual(solarResult.hasIntroHighlight, true, 'Intro Guide Features pane must highlight v1.135.0 Solar Ephemeris');
   });
 });
 

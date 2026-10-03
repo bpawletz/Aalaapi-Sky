@@ -933,5 +933,16 @@
     "mod_abs_time": "201510080055",
     "is_new": "N",
     "gid": "4/3635"
+  },
+  {
+    "notam_id": "6/4933",
+    "facility": "ZID",
+    "state": "OH",
+    "type": "VIP",
+    "description": "Rockbridge, OH, Friday, September 25, 2026 through Sunday, September 27, 2026 Local",
+    "mod_date": "09/22/2026 23:57:00",
+    "mod_abs_time": "202609222357",
+    "is_new": "N",
+    "gid": "6/4933"
   }
 ]

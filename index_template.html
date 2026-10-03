@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.134.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.135.0</span></h1>
 
 
 
@@ -2286,6 +2286,36 @@
             <div class="pweather-summary" id="pop-weather-summary" style="font-size: 0.78rem; font-weight: 600; color: #38bdf8; margin-bottom: 4px;">-</div>
             <div class="pweather-details" id="pop-weather-details" style="font-size: 0.72rem; color: var(--text-muted); line-height: 1.4;"></div>
           </div>
+          <!-- Next-24-Hour Solar Ephemeris & Daylight Flight Window -->
+          <div class="popover-solar-card" id="pop-solar-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
+            <div class="psolar-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span class="psolar-title" style="font-size: 0.75rem; font-weight: 700; color: #f59e0b; display: flex; align-items: center; gap: 5px;">
+                <span>☀️</span>
+                <span>Solar Ephemeris &amp; Daylight</span>
+              </span>
+              <span id="pop-solar-faa-badge" class="badge-tag" style="font-size: 0.62rem; padding: 1px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);">Daylight</span>
+            </div>
+            <div class="psolar-metrics" id="pop-solar-metrics" style="font-size: 0.74rem; line-height: 1.45; color: var(--text-main);">
+              <div class="psolar-row" style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="psolar-metric-label"><span style="color: #fbbf24;">🌅</span> <b>Next Sunrise:</b></span>
+                <span id="pop-solar-sunrise" style="font-weight: 600;">-</span>
+              </div>
+              <div class="psolar-row" style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="psolar-metric-label"><span style="color: #f97316;">🌇</span> <b>Next Sunset:</b></span>
+                <span id="pop-solar-sunset" style="font-weight: 600;">-</span>
+              </div>
+              <div class="psolar-row" style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
+                <span class="psolar-metric-label"><span style="color: #38bdf8;">⏱️</span> <b>Daylight Remaining:</b></span>
+                <span id="pop-solar-remaining" style="font-weight: 700; color: #38bdf8;">-</span>
+              </div>
+              <div id="pop-solar-window-advisory" style="font-size: 0.68rem; color: var(--text-muted); margin-top: 4px; line-height: 1.35;"></div>
+            </div>
+            <div style="margin-top: 6px; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center;">
+              <span id="pop-solar-angles" style="font-size: 0.68rem; color: var(--text-muted);">☀️ Alt: - • Az: -</span>
+              <button id="pop-btn-toggle-solar-timeline" class="btn-sm" type="button" style="padding: 1px 6px; font-size: 0.66rem; background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;">▾ 24h Timeline</button>
+            </div>
+            <div id="pop-solar-timeline" class="hidden" style="margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.7rem; display: flex; flex-direction: column; gap: 4px; max-height: 160px; overflow-y: auto;"></div>
+          </div>
           <!-- Active TFR & NOTAM Airspace Monitor -->
           <div class="popover-tfr-card" id="popover-tfr-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px;">
             <div class="ptfr-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
@@ -2573,6 +2603,36 @@
             </div>
           </div>
           <div id="stat-weather-dirs" class="hidden" style="padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px; margin-top: 8px;"></div>
+          <!-- Next-24-Hour Solar Ephemeris & Daylight Flight Window (Sidebar) -->
+          <div id="stat-solar-card" class="stat-solar-card hidden" style="padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; margin-top: 8px;">
+            <div class="psolar-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span class="psolar-title" style="font-size: 0.78rem; font-weight: 700; color: #f59e0b; display: flex; align-items: center; gap: 5px;">
+                <span>☀️</span>
+                <span>Solar Ephemeris &amp; Daylight</span>
+              </span>
+              <span id="stat-solar-faa-badge" class="badge-tag" style="font-size: 0.65rem; padding: 1px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);">Daylight</span>
+            </div>
+            <div class="psolar-metrics" id="stat-solar-metrics" style="font-size: 0.76rem; line-height: 1.5; color: var(--text-main);">
+              <div class="psolar-row" style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="psolar-metric-label"><span style="color: #fbbf24;">🌅</span> <b>Next Sunrise:</b></span>
+                <span id="stat-solar-sunrise" style="font-weight: 600;">-</span>
+              </div>
+              <div class="psolar-row" style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="psolar-metric-label"><span style="color: #f97316;">🌇</span> <b>Next Sunset:</b></span>
+                <span id="stat-solar-sunset" style="font-weight: 600;">-</span>
+              </div>
+              <div class="psolar-row" style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
+                <span class="psolar-metric-label"><span style="color: #38bdf8;">⏱️</span> <b>Daylight Remaining:</b></span>
+                <span id="stat-solar-remaining" style="font-weight: 700; color: #38bdf8;">-</span>
+              </div>
+              <div id="stat-solar-window-advisory" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; line-height: 1.35;"></div>
+            </div>
+            <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center;">
+              <span id="stat-solar-angles" style="font-size: 0.7rem; color: var(--text-muted);">☀️ Alt: - • Az: -</span>
+              <button id="stat-btn-toggle-solar-timeline" class="btn-sm" type="button" style="padding: 1px 6px; font-size: 0.68rem; background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;">▾ 24h Timeline</button>
+            </div>
+            <div id="stat-solar-timeline" class="hidden" style="margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.72rem; display: flex; flex-direction: column; gap: 4px; max-height: 180px; overflow-y: auto;"></div>
+          </div>
         </div>
       </div>
     </main>
@@ -2750,6 +2810,14 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #f59e0b; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              ☀️ Solar Ephemeris &amp; Next-24-Hour Daylight Tracker (v1.135.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Localized offline astronomical calculation engine in the Weather Menu panel and Topbar Telemetry Popover! Computes solar coordinates, solar noon, official sunrise/sunset, golden hours, and twilight phases (Civil, Nautical, Astronomical) natively with zero network calls. Features real-time countdowns for <strong>Next Sunrise</strong>, <strong>Next Sunset</strong>, and <strong>Daylight Remaining</strong> under FAA Part 107 legal flight window rules, live solar elevation/azimuth angles, and an expandable 24-hour chronological timeline drawer.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🎯 Multi-POI Association &amp; 3-Tier Cascading Hierarchy (v1.134.0)
@@ -3717,7 +3785,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.134.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.135.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -3778,6 +3846,13 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.135.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>☀️ Solar Ephemeris &amp; Next-24-Hour Solar Tracker Card (Closes #100):</strong> Added client-side offline astronomical calculator computing high-precision solar transit, civil/nautical/astronomical twilight, and golden hour windows natively with zero network calls or API keys. Integrated responsive solar tracker cards inside the Weather Menu panel and Topbar Telemetry Popover featuring functional visual anchors (☀️ / 🌙), scan-path metrics for <strong>Next Sunrise</strong>, <strong>Next Sunset</strong>, real-time <strong>Daylight Remaining</strong> countdown, live solar angles (Altitude &amp; Azimuth), FAA Part 107 legal flight window tracking, and a collapsible 24-hour chronological timeline drawer.</li>
+              <li><strong>🌐 Bridge Weather Telemetry Integration:</strong> Implemented <code>GET /api/weather/current</code> and <code>POST /api/weather/current</code> on the companion bridge server (<code>tools/companion/server.js</code>) to serialize synchronized astronomical data snapshots alongside localized barometric and atmospheric visibility arrays.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.134.2):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
