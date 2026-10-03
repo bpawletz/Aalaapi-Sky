@@ -5593,7 +5593,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.135.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.136.0</span></h1>
 
 
 
@@ -8338,6 +8338,14 @@ html, body {
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #a5b4fc; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🤖 Multi-Layer AI Export &amp; Privacy Coordinate Masking (v1.136.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Export comprehensive diagnostic prompts for AI assistants (Google Antigravity, Claude, ChatGPT) across the entire multi-layer mission stack! Exports all flight layers, patterns, dynamics, and Points of Interest (POIs) in one unified diagnostic text blob. By default, raw GPS coordinates are securely masked and normalized to the app default rural reference location (<code>[41.3215, -88.9950]</code>) with relative meter offsets to protect operational and client privacy, with an optional toggle to export real coordinates when required.
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #f59e0b; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               ☀️ Solar Ephemeris &amp; Next-24-Hour Daylight Tracker (v1.135.0)
             </strong>
@@ -9312,7 +9320,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.135.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.136.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -9373,6 +9381,12 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.136.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🤖 Multi-Layer AI Export &amp; Privacy Coordinate Masking (Closes #108):</strong> Expanded Flight Diag AI diagnostic export (<code>generateAntigravityPrompt</code> / <code>diag-copy-antigravity-btn</code>) to include all layers across the multi-layer mission stack with their respective patterns, flight dynamics, and waypoints. All Points of Interest (POIs) are exported alongside layer data. By default, raw GPS coordinates are safely masked and normalized to the app default rural reference (<code>[41.3215, -88.9950]</code>) with relative meter offsets to protect operational client privacy, with a new UI toggle (<code>#diag-include-coords-checkbox</code>) to include raw coordinates when desired.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.135.2):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -13010,8 +13024,12 @@ html, body {
 
           <!-- Action Buttons -->
           <div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
-            <button id="diag-copy-antigravity-btn" type="button" class="btn-secondary" style="width: 100%; padding: 8px 12px; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.35); color: #a5b4fc; cursor: pointer;" title="Copy comprehensive bug diagnosis prompt for Antigravity AI assistant">
-              📋 Copy Antigravity Fix Prompt
+            <label id="diag-include-coords-label" style="display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--text-muted); cursor: pointer; user-select: none; padding: 2px 4px; border-radius: 4px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);" title="Check to include raw unmasked GPS coordinates in the exported AI diagnostic prompt">
+              <input type="checkbox" id="diag-include-coords-checkbox" style="accent-color: #6366f1; cursor: pointer;" />
+              <span>Include real GPS coordinates in AI export</span>
+            </label>
+            <button id="diag-copy-antigravity-btn" type="button" class="btn-secondary" style="width: 100%; padding: 8px 12px; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.35); color: #a5b4fc; cursor: pointer;" title="Export comprehensive multi-layer diagnostics and bug triage prompt for AI assistants">
+              📋 Export to AI (Copy Text)
             </button>
             <button id="diag-export-json-btn" type="button" class="btn-secondary" style="width: 100%; padding: 8px 12px; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24; cursor: pointer;">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -31817,6 +31835,13 @@ function buildMissionPlanJSON(customWps = null) {
     ? extractSpatialMissionLayers()
     : { groundControl: [], inclusionZones: [], exclusionZones: [], parcels: [] };
 
+  const allPois = (typeof global !== 'undefined' && Array.isArray(global.pois) && global.pois.length > 0)
+    ? global.pois
+    : ((typeof pois !== 'undefined' && Array.isArray(pois)) ? pois : ((typeof pointsOfInterest !== 'undefined' && Array.isArray(pointsOfInterest)) ? pointsOfInterest : []));
+  const allLayers = (typeof global !== 'undefined' && Array.isArray(global.flightLayers) && global.flightLayers.length > 0)
+    ? global.flightLayers
+    : ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : []);
+
   return {
     schemaVersion: "1.1.0",
     generator: "Aalaapi Sky",
@@ -31858,7 +31883,28 @@ function buildMissionPlanJSON(customWps = null) {
         globalHoverTimeSeconds: globalHoverTime
       }
     },
-    pointsOfInterest: (typeof pointsOfInterest !== 'undefined' && Array.isArray(pointsOfInterest)) ? pointsOfInterest : [],
+
+    pointsOfInterest: allPois.map(p => ({
+      id: p.id,
+      name: p.name,
+      lat: p.lat,
+      lon: p.lon !== undefined ? p.lon : p.lng,
+      alt: p.alt || 0,
+      marker: p.marker
+    })),
+    layers: allLayers.map(l => ({
+      id: l.id,
+      name: l.name,
+      pattern: l.pattern,
+      enabled: l.enabled !== false,
+      altitude: l.altitude,
+      speed: l.speed,
+      gimbalPitch: l.gimbalPitch,
+      headingMode: l.headingMode,
+      captureMode: l.captureMode,
+      pathMode: l.pathMode,
+      waypointCount: (l.waypoints && l.waypoints.length) || (l.freeformWaypoints && l.freeformWaypoints.length) || 0
+    })),
     groundControl: spatialData.groundControl,
     inclusionZones: spatialData.inclusionZones,
     exclusionZones: spatialData.exclusionZones,
@@ -31985,6 +32031,27 @@ function buildFlightDiagnosticsJSON(customWps = null, options = {}) {
     userAgent,
     plan,
     diagnostics: telemetry,
+    layers: (plan && plan.layers) ? plan.layers : ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers.map(l => ({
+      id: l.id,
+      name: l.name,
+      pattern: l.pattern,
+      enabled: l.enabled !== false,
+      altitude: l.altitude,
+      speed: l.speed,
+      gimbalPitch: l.gimbalPitch,
+      headingMode: l.headingMode,
+      captureMode: l.captureMode,
+      pathMode: l.pathMode,
+      waypointCount: (l.waypoints && l.waypoints.length) || (l.freeformWaypoints && l.freeformWaypoints.length) || 0
+    })) : []),
+    pointsOfInterest: (plan && plan.pointsOfInterest) ? plan.pointsOfInterest : ((typeof pois !== 'undefined' && Array.isArray(pois)) ? pois.map(p => ({
+      id: p.id,
+      name: p.name,
+      lat: p.lat,
+      lon: p.lon !== undefined ? p.lon : p.lng,
+      alt: p.alt || 0,
+      marker: p.marker
+    })) : []),
     groundControl: spatialData.groundControl,
     inclusionZones: spatialData.inclusionZones,
     exclusionZones: spatialData.exclusionZones,
@@ -36551,16 +36618,18 @@ const FlightDiagnostics = {
   },
 
   copyAntigravityPrompt() {
+    const includeCoords = (typeof document !== 'undefined' && document.getElementById('diag-include-coords-checkbox')?.checked) || false;
     let promptText = '';
     if (this.currentLoadedMission) {
       const m = this.currentLoadedMission;
       promptText = KMZInspector.generateAntigravityPrompt(
         m.validationReport || { rulesPassed: m.validation_rules_passed || 0, errors: m.validationErrors || [], warnings: m.validationWarnings || [] },
         m.wpml_xml,
-        m.plan?.waypoints
+        m.plan?.waypoints,
+        { hideLocation: !includeCoords, mission: m }
       );
     } else {
-      promptText = KMZInspector.generateAntigravityPrompt();
+      promptText = KMZInspector.generateAntigravityPrompt(null, '', null, { hideLocation: !includeCoords });
     }
 
     if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
@@ -36575,12 +36644,16 @@ const FlightDiagnostics = {
             btn.style.color = '#a5b4fc';
           }, 2500);
         }
+        if (typeof showToast === 'function') {
+          showToast(includeCoords ? '📋 Copied AI Export (Real GPS Coordinates)' : '📋 Copied AI Export (Masked to Default Reference)', 'info');
+        }
       }).catch(() => {
         if (typeof prompt === 'function') prompt('Copy Antigravity Fix Prompt:', promptText);
       });
     } else {
       if (typeof prompt === 'function') prompt('Copy Antigravity Fix Prompt:', promptText);
     }
+    return promptText;
   },
 
   centerMapOnFlight() {
@@ -39131,15 +39204,21 @@ const KMZInspector = {
     if (tmplEl) tmplEl.textContent = this.activeTemplateXml;
   },
 
-  generateAntigravityPrompt(report = null, wpml = '', wps = null) {
+  generateAntigravityPrompt(report = null, wpml = '', wps = null, options = {}) {
     const r = report || this.activeReport;
     const xml = wpml || this.activeWpmlXml || '';
-    const activeWps = wps || (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
+    const hideLocation = (options && options.hideLocation !== undefined) ? !!options.hideLocation : true;
+
+    // Global / Mission defaults
     let drone = 'DJI Mini 4 Pro (68)';
     let pattern = 'single';
     let alt = '50';
     let speed = '4';
     let pitch = '-90';
+    let headingMode = 'followWayline';
+    let captureMode = 'hover';
+    let pathMode = 'normal';
+
     if (typeof document !== 'undefined') {
       try {
         const droneEl = document.getElementById('drone-model');
@@ -39150,14 +39229,141 @@ const KMZInspector = {
         alt = document.getElementById('altitude')?.value || alt;
         speed = document.getElementById('speed')?.value || speed;
         pitch = document.getElementById('gimbal-pitch')?.value || pitch;
+        headingMode = document.getElementById('heading-mode')?.value || headingMode;
+        captureMode = document.getElementById('capture-mode')?.value || captureMode;
+        pathMode = document.getElementById('path-mode')?.value || pathMode;
       } catch (e) {}
+    }
+
+    // 1. Resolve layers
+    let allLayers = [];
+    if (options && Array.isArray(options.layers) && options.layers.length > 0) {
+      allLayers = options.layers;
+    } else if (options && options.mission && Array.isArray(options.mission.layers) && options.mission.layers.length > 0) {
+      allLayers = options.mission.layers;
+    } else if (options && options.mission && options.mission.plan && Array.isArray(options.mission.plan.layers) && options.mission.plan.layers.length > 0) {
+      allLayers = options.mission.plan.layers;
+    } else if (options && options.mission && options.mission.plan && Array.isArray(options.mission.plan.waypoints) && options.mission.plan.waypoints.length > 0) {
+      allLayers = [{
+        id: options.mission.uuid || 'loaded-mission',
+        name: options.mission.name || 'Mission Route',
+        pattern: options.mission.pattern || pattern,
+        enabled: true,
+        altitude: alt,
+        speed: speed,
+        waypoints: options.mission.plan.waypoints
+      }];
+    } else if (typeof global !== 'undefined' && Array.isArray(global.flightLayers) && global.flightLayers.length > 0) {
+      allLayers = global.flightLayers;
+    } else if (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers) && flightLayers.length > 0) {
+      allLayers = flightLayers;
+    }
+
+    // 2. Resolve POIs
+    let allPois = [];
+    if (options && Array.isArray(options.pois)) {
+      allPois = options.pois;
+    } else if (options && options.mission && Array.isArray(options.mission.pointsOfInterest)) {
+      allPois = options.mission.pointsOfInterest;
+    } else if (options && options.mission && Array.isArray(options.mission.pois)) {
+      allPois = options.mission.pois;
+    } else if (options && options.mission && options.mission.plan && Array.isArray(options.mission.plan.pointsOfInterest)) {
+      allPois = options.mission.plan.pointsOfInterest;
+    } else if (typeof global !== 'undefined' && Array.isArray(global.pois) && global.pois.length > 0) {
+      allPois = global.pois;
+    } else if (typeof pois !== 'undefined' && Array.isArray(pois)) {
+      allPois = pois;
+    }
+
+    // 3. Fallback / Active waypoints
+    const activeWps = wps || (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || (typeof generatedWaypoints !== 'undefined' ? generatedWaypoints : null) || [];
+
+    // App Default Rural Reference Location: Grand Village of the Illinois / Utica, IL rural countryside
+    const DEFAULT_APP_LAT = 41.3215;
+    const DEFAULT_APP_LON = -88.9950;
+
+    // Determine reference center for coordinate shifting / normalization
+    let refLat = null;
+    let refLon = null;
+    if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+      const c = centerMarker.getLatLng();
+      if (c && typeof c.lat === 'number' && typeof c.lng === 'number' && !isNaN(c.lat) && !isNaN(c.lng)) {
+        refLat = c.lat;
+        refLon = c.lng;
+      }
+    }
+    if (refLat === null && allLayers.length > 0) {
+      for (const l of allLayers) {
+        if (typeof l.centerLat === 'number' && typeof l.centerLon === 'number' && !isNaN(l.centerLat) && !isNaN(l.centerLon)) {
+          refLat = l.centerLat;
+          refLon = l.centerLon;
+          break;
+        }
+      }
+    }
+    if (refLat === null && Array.isArray(activeWps) && activeWps.length > 0 && typeof activeWps[0].lat === 'number') {
+      refLat = activeWps[0].lat;
+      refLon = activeWps[0].lon ?? activeWps[0].lng;
+    }
+    if (refLat === null && allPois.length > 0 && typeof allPois[0].lat === 'number') {
+      refLat = allPois[0].lat;
+      refLon = allPois[0].lon ?? allPois[0].lng;
+    }
+    if (refLat === null || isNaN(refLat) || refLon === null || isNaN(refLon)) {
+      refLat = DEFAULT_APP_LAT;
+      refLon = DEFAULT_APP_LON;
+    }
+
+    const dLat = DEFAULT_APP_LAT - refLat;
+    const dLon = DEFAULT_APP_LON - refLon;
+
+    function formatCoord(lat, lon) {
+      if (typeof lat !== 'number' || typeof lon !== 'number' || isNaN(lat) || isNaN(lon)) {
+        return { lat: DEFAULT_APP_LAT, lon: DEFAULT_APP_LON, offsetMeters: { x: 0, y: 0 } };
+      }
+      if (!hideLocation) {
+        return {
+          lat: Number(lat.toFixed(7)),
+          lon: Number(lon.toFixed(7))
+        };
+      }
+      const normLat = Number((lat + dLat).toFixed(7));
+      const normLon = Number((lon + dLon).toFixed(7));
+      const latDist = (lat - refLat) * 111320;
+      const lonDist = (lon - refLon) * (111320 * Math.cos(refLat * Math.PI / 180));
+      return {
+        lat: normLat,
+        lon: normLon,
+        offsetMeters: {
+          x: Number(lonDist.toFixed(1)),
+          y: Number(latDist.toFixed(1))
+        }
+      };
+    }
+
+    // Calculate total waypoints across all layers
+    let totalWaypointsCount = 0;
+    if (allLayers.length > 0) {
+      allLayers.forEach(l => {
+        if (l.enabled !== false) {
+          const count = (l.waypoints && l.waypoints.length) || (l.freeformWaypoints && l.freeformWaypoints.length) || 0;
+          totalWaypointsCount += count;
+        }
+      });
+    }
+    if (totalWaypointsCount === 0 && Array.isArray(activeWps)) {
+      totalWaypointsCount = activeWps.length;
     }
 
     let prompt = `### 🤖 ANTIGRAVITY BUG REPORT: Bad KMZ Mission Execution Issue\n\n`;
     prompt += `**Mission Context:**\n`;
     prompt += `- **Target Drone Model:** ${drone}\n`;
     prompt += `- **Pattern:** ${pattern} (Altitude: ${alt}m, Speed: ${speed}m/s, Pitch: ${pitch}°)\n`;
-    prompt += `- **Waypoints Total:** ${activeWps.length}\n`;
+    prompt += `- **Total Flight Layers:** ${allLayers.length > 0 ? allLayers.length : 1}\n`;
+    prompt += `- **Waypoints Total:** ${totalWaypointsCount}\n`;
+    prompt += `- **Points of Interest (POIs):** ${allPois.length}\n`;
+    prompt += `- **Location Privacy:** ${hideLocation ? '🔒 Masked / Normalized to App Default Rural Reference [41.3215, -88.9950] (Real GPS Redacted)' : '🔓 Real GPS Coordinates Included'}\n`;
+
     if (r) {
       prompt += `- **Validation Health Score:** ${r.rulesPassed ?? r.validation_rules_passed ?? 0}/10 Passed (${r.valid || r.is_valid ? 'Valid' : 'Invalid'})\n`;
       const errList = r.errors || r.validationErrors || [];
@@ -39172,21 +39378,131 @@ const KMZInspector = {
       }
     }
 
-    if (activeWps.length > 0) {
-      const sample = activeWps.slice(0, 5).map((wp, i) => ({
-        index: i,
-        lat: wp.lat,
-        lon: wp.lon,
-        alt: wp.altitude || alt,
-        heading: wp.heading,
-        turnMode: wp.turnMode
-      }));
+    // Points of Interest (POIs) Section
+    if (allPois.length > 0) {
+      prompt += `\n**Points of Interest (POIs):**\n`;
+      allPois.forEach((p, idx) => {
+        const c = formatCoord(p.lat, p.lon ?? p.lng);
+        prompt += `- **POI ${idx + 1} (${p.name || 'Target ' + (idx + 1)}):** id=\`${p.id || 'poi-' + idx}\`, coords=${JSON.stringify(c)}, alt=${p.alt || 0}m, role=${p.role || p.marker || 'standard'}\n`;
+      });
+    }
+
+    // Multi-Layer Mission Stack Section
+    if (allLayers.length > 0) {
+      prompt += `\n**Multi-Layer Mission Stack (${allLayers.length} Layers):**\n`;
+      allLayers.forEach((layer, idx) => {
+        const isEnabled = layer.enabled !== false;
+        const lAlt = layer.altitude ?? alt;
+        const lSpeed = layer.speed ?? speed;
+        const lPitch = layer.gimbalPitch ?? pitch;
+        const lHeading = layer.headingMode || headingMode;
+        const lCapture = layer.captureMode || captureMode;
+        const lPath = layer.pathMode || pathMode;
+        const lZoom = layer.cameraZoom || 1.0;
+        const lHover = layer.hoverTime || 0;
+
+        let layerWps = [];
+        if (Array.isArray(layer.waypoints) && layer.waypoints.length > 0) {
+          layerWps = layer.waypoints;
+        } else if (Array.isArray(layer.freeformWaypoints) && layer.freeformWaypoints.length > 0) {
+          layerWps = layer.freeformWaypoints;
+        } else if ((allLayers.length === 1 || layer.id === (typeof activeLayerId !== 'undefined' ? activeLayerId : null)) && activeWps.length > 0) {
+          layerWps = activeWps;
+        } else if (typeof generateLayerWaypoints === 'function' && !layer.isExclusionZone && !layer.isDrawingLayer && layer.pattern !== 'exclusion-box' && layer.pattern !== 'exclusion-freeform' && layer.pattern !== 'boundary-polygon' && layer.pattern !== 'fiducial-markers') {
+          try {
+            const res = generateLayerWaypoints(layer, layer.centerLat ?? refLat, layer.centerLon ?? refLon);
+            layerWps = res.waypoints || [];
+          } catch (_) {
+            layerWps = [];
+          }
+        }
+
+        prompt += `\n#### Layer ${idx + 1}: ${layer.name || 'Layer ' + (idx + 1)} (\`${layer.pattern || 'default'}\`)\n`;
+        prompt += `- **Status:** ${isEnabled ? '✅ Enabled' : '⏸️ Disabled'} | **ID:** \`${layer.id || 'layer-' + idx}\`\n`;
+        prompt += `- **Dynamics:** Alt: ${lAlt}m | Speed: ${lSpeed}m/s | Pitch: ${lPitch}° | Heading: ${lHeading} | Turn: ${lPath} | Capture: ${lCapture} | Zoom: ${lZoom}x | Dwell: ${lHover}s\n`;
+
+        // Pattern specific attributes
+        if (layer.pattern === 'double' || layer.pattern === 'single' || layer.pattern === 'smart-oblique') {
+          prompt += `- **Grid Properties:** Width: ${layer.gridWidth || 100}m | Height: ${layer.gridHeight || 100}m | Rotation: ${layer.gridRotation || 0}° | Overlap: ${layer.frontOverlap || 80}% front, ${layer.sideOverlap || 75}% side\n`;
+        } else if (layer.pattern === 'exclusion-box' || layer.pattern === 'exclusion-freeform' || layer.isExclusionZone) {
+          prompt += `- **Exclusion Envelope:** Clearance: ${layer.clearanceBuffer || 5}m | Detour: ${layer.detourMode || 'inherit'} | Alt Bounds: [${layer.minAltitude || 0}m, ${layer.maxAltitude || 60}m] | Vertices: ${layer.polygonVertices?.length || 0}\n`;
+        } else if (layer.pattern === 'boundary-polygon' || layer.isDrawingLayer) {
+          prompt += `- **Boundary Polygon:** Vertices: ${layer.boundaryPolygon?.length || layer.polygonVertices?.length || 0}\n`;
+        } else if (layer.pattern === 'tower' || layer.pattern === 'spiral-cylinder') {
+          prompt += `- **Tower Target (Target Splat):** Mode: ${layer.targetMode || 'radius'} | Radius: ${layer.targetRadius || 25}m | Height: ${layer.targetHeight || 8}m | Framing: ${layer.targetFramingMode || 'balanced'} | Culling: ${layer.targetCullingMode || 'smartTrim'}\n`;
+        } else if (layer.pattern === 'fiducial-markers' || layer.isFiducialLayer) {
+          prompt += `- **Fiducials:** Markers: ${layer.fiducialMarkers?.length || 0}\n`;
+        } else if (layer.pattern === 'corridor' || layer.roadSnap) {
+          prompt += `- **Corridor Properties:** Offset: ${layer.roadOffset || 15}m | Snap: ${layer.roadSnap ? 'Yes' : 'No'} | Focus: ${layer.roadFocusMode || 'focusRoad'}\n`;
+        }
+
+        prompt += `- **Waypoints Count:** ${layerWps.length}\n`;
+        if (layerWps.length > 0) {
+          const sample = layerWps.slice(0, 5).map((wp, wIdx) => {
+            const c = formatCoord(wp.lat, wp.lon ?? wp.lng);
+            return {
+              index: wIdx,
+              lat: c.lat,
+              lon: c.lon,
+              offsetMeters: c.offsetMeters,
+              alt: wp.altitude || wp.alt || lAlt,
+              heading: wp.heading,
+              turnMode: wp.turnMode || wp.pathMode,
+              gimbalPitch: wp.gimbalPitch ?? wp.pitch ?? lPitch
+            };
+          });
+          prompt += `  \`\`\`json\n${JSON.stringify(sample, null, 2)}\n  \`\`\`\n`;
+        }
+      });
+    }
+
+    // Include sample waypoints block if no individual layer printed waypoints
+    let anyLayerHadWps = false;
+    allLayers.forEach(l => {
+      if ((l.waypoints && l.waypoints.length > 0) || (l.freeformWaypoints && l.freeformWaypoints.length > 0)) anyLayerHadWps = true;
+    });
+    if ((!anyLayerHadWps || allLayers.length === 0) && activeWps.length > 0) {
+      const sample = activeWps.slice(0, 5).map((wp, i) => {
+        const c = formatCoord(wp.lat, wp.lon ?? wp.lng);
+        return {
+          index: i,
+          lat: c.lat,
+          lon: c.lon,
+          offsetMeters: c.offsetMeters,
+          alt: wp.altitude || wp.alt || alt,
+          heading: wp.heading,
+          turnMode: wp.turnMode
+        };
+      });
       prompt += `\n**Sample Waypoints Input:**\n\`\`\`json\n${JSON.stringify(sample, null, 2)}\n\`\`\`\n`;
     }
 
     if (xml) {
-      const placemarks = xml.split('<Placemark>');
-      const xmlExtract = placemarks.length > 1 ? '<Placemark>' + placemarks[1].substring(0, 450) + '...\n</Placemark>' : xml.substring(0, 600);
+      let sanitizedXml = xml;
+      if (hideLocation) {
+        sanitizedXml = sanitizedXml.replace(/<coordinates>\s*([-0-9.]+)\s*,\s*([-0-9.]+)(?:,\s*([-0-9.]+))?\s*<\/coordinates>/g, (m, lonStr, latStr, altStr) => {
+          const rawLon = parseFloat(lonStr);
+          const rawLat = parseFloat(latStr);
+          if (!isNaN(rawLon) && !isNaN(rawLat)) {
+            const sLon = (rawLon + dLon).toFixed(7);
+            const sLat = (rawLat + dLat).toFixed(7);
+            return `<coordinates>${sLon},${sLat}${altStr !== undefined ? ',' + altStr : ''}</coordinates>`;
+          }
+          return m;
+        });
+        sanitizedXml = sanitizedXml.replace(/<wpml:waypointPoiPoint>\s*([-0-9.]+)\s*,\s*([-0-9.]+)(?:,\s*([-0-9.]+))?\s*<\/wpml:waypointPoiPoint>/g, (m, latStr, lonStr, altStr) => {
+          const rawLat = parseFloat(latStr);
+          const rawLon = parseFloat(lonStr);
+          if (!isNaN(rawLat) && !isNaN(rawLon)) {
+            const sLat = (rawLat + dLat).toFixed(7);
+            const sLon = (rawLon + dLon).toFixed(7);
+            return `<wpml:waypointPoiPoint>${sLat},${sLon}${altStr !== undefined ? ',' + altStr : ''}</wpml:waypointPoiPoint>`;
+          }
+          return m;
+        });
+      }
+      const placemarks = sanitizedXml.split('<Placemark>');
+      const xmlExtract = placemarks.length > 1 ? '<Placemark>' + placemarks[1].substring(0, 450) + '...\n</Placemark>' : sanitizedXml.substring(0, 600);
       prompt += `\n**Offending / Generated WPML Snippet:**\n\`\`\`xml\n${xmlExtract}\n\`\`\`\n`;
     }
 
@@ -39200,7 +39516,7 @@ const KMZInspector = {
   },
 
   copyAntigravityPrompt() {
-    const promptText = this.generateAntigravityPrompt();
+    const promptText = this.generateAntigravityPrompt(null, '', null, { hideLocation: true });
     if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(promptText).then(() => {
         const btn = document.getElementById('inspector-copy-antigravity-btn');
