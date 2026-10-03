@@ -1,5 +1,16 @@
 [
   {
+    "notam_id": "6/7020",
+    "facility": "ZMP",
+    "state": "NE",
+    "type": "SECURITY",
+    "description": "Grand Island, NE, Monday, October 5, 2026 through Monday, October 5, 2026 Local",
+    "mod_date": "10/03/2026 14:03:00",
+    "mod_abs_time": "202610031403",
+    "is_new": "Y",
+    "gid": "6/7020"
+  },
+  {
     "notam_id": "6/6947",
     "facility": "ZOA",
     "state": "CA",
@@ -62,7 +73,7 @@
     "description": "NASHWAUK, MN, Tuesday, October 6, 2026 UTC",
     "mod_date": "10/02/2026 14:39:00",
     "mod_abs_time": "202610021439",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/6848"
   },
   {
@@ -73,7 +84,7 @@
     "description": "Evansville, IN, Monday, October 5, 2026 through Saturday, October 10, 2026 Local",
     "mod_date": "10/02/2026 13:25:00",
     "mod_abs_time": "202610021325",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/6843"
   },
   {
@@ -240,17 +251,6 @@
     "mod_abs_time": "202610011437",
     "is_new": "N",
     "gid": "6/6590"
-  },
-  {
-    "notam_id": "6/6580",
-    "facility": "ZDC",
-    "state": "MD",
-    "type": "VIP",
-    "description": "THURMONT, MD, Friday, October 2, 2026 through Saturday, October 3, 2026 Local",
-    "mod_date": "10/01/2026 13:53:00",
-    "mod_abs_time": "202610011353",
-    "is_new": "N",
-    "gid": "6/6580"
   },
   {
     "notam_id": "6/6576",

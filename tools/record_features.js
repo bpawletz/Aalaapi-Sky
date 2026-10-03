@@ -712,6 +712,92 @@ const scenarios = [
       await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
       await page.waitForTimeout(600);
     }
+  },
+  {
+    id: 'feature_freeform_mission_execution',
+    name: 'Freeform Pattern Execution on DJI Mini 4 Pro',
+    description: 'Autonomous multi-waypoint freeform flight path execution on DJI Mini 4 Pro with smoothTransition heading compliance and 0-error preflight audit.',
+    issueRef: 'Issue #111',
+    run: async (page) => {
+      // 1. Switch to Freeform pattern
+      await selectPattern(page, 'freeform');
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(600);
+
+      // 2. Select DJI Mini 4 Pro drone model and configure parameters
+      await page.evaluate(() => {
+        const droneSelect = document.getElementById('drone-model');
+        if (droneSelect) {
+          droneSelect.value = '68'; // DJI Mini 4 Pro
+          droneSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        const altInput = document.getElementById('altitude');
+        if (altInput) {
+          altInput.value = '50';
+          altInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        const speedInput = document.getElementById('speed');
+        if (speedInput) {
+          speedInput.value = '4';
+          speedInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        const pitchInput = document.getElementById('gimbal-pitch');
+        if (pitchInput) {
+          pitchInput.value = '-60';
+          pitchInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      });
+      await page.waitForTimeout(500);
+
+      // 3. Populate 31 synthetic freeform waypoints forming an exploratory path in default rural Utica, IL area
+      await page.evaluate(({ baseLat, baseLon }) => {
+        if (typeof waypoints !== 'undefined') {
+          waypoints.length = 0;
+          for (let i = 0; i < 31; i++) {
+            // Serpentine spiral pattern around default rural center
+            const angle = i * 0.45;
+            const dist = 0.00015 + (i * 0.00004);
+            const lat = baseLat + Math.sin(angle) * dist;
+            const lon = baseLon + Math.cos(angle) * dist * 1.3;
+            waypoints.push({
+              lat: lat,
+              lon: lon,
+              alt: 50,
+              speed: 4,
+              heading: null, // click placement default
+              headingMode: 'inherit',
+              gridType: 'freeform',
+              layerPattern: 'freeform',
+              turnMode: 'inherit'
+            });
+          }
+          if (typeof renderAllLayers === 'function') {
+            renderAllLayers();
+          } else if (typeof updateGrid === 'function') {
+            updateGrid();
+          }
+        }
+      }, { baseLat: DEFAULT_LAT, baseLon: DEFAULT_LON });
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1000);
+
+      // 4. Open and run Preflight WPML Audit modal to demonstrate 10/10 rules pass and smoothTransition compliance
+      await page.evaluate(() => {
+        const auditBtn = document.getElementById('btn-preflight-audit') || document.getElementById('audit-mission-btn');
+        if (auditBtn) auditBtn.click();
+      });
+      await page.waitForTimeout(1800);
+
+      // 5. Close Preflight Audit modal
+      await page.evaluate(() => {
+        const closeBtn = document.getElementById('preflight-modal-close') || document.querySelector('#preflight-modal .modal-close');
+        if (closeBtn) closeBtn.click();
+        const modal = document.getElementById('preflight-modal');
+        if (modal) modal.classList.add('hidden');
+      });
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(800);
+    }
   }
 ];
 

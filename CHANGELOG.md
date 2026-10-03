@@ -1,3 +1,12 @@
+## [1.135.1] - 2026-10-03
+
+### Fixed
+- **Freeform Pattern KMZ Mission Execution on DJI Mini 4 Pro (Closes #111)**:
+  - Resolved an issue where KMZ missions generated for `freeform` flight patterns on DJI Mini 4 Pro (model ID 68) with 31 waypoints failed during execution due to improper `followWayline` heading mode emission.
+  - Updated `buildWaylinesWpml` to recognize standalone `freeform` flight patterns, multi-layer assignments, and waypoint overrides, emitting compliant `smoothTransition` mode with `waypointHeadingAngleEnable: 1` and calculating geodetic flight-leg bearing headings when waypoint headings are unspecified.
+  - Enforced strict 0.1° safety clamping on zero or near-zero headings (`Math.abs(angle) < 0.05` or strictly `0.0°`) across all `smoothTransition` placemarks with `enable: 1`, preventing the DJI Fly firmware suspension bug.
+  - Enhanced `validateAndFixWpml` and `validateWpmlMission` (Rule 1) to audit, repair, and enforce `smoothTransition` mode across all `freeform` missions, rounding floating-point headings with `.toFixed(1)` to eliminate precision artifacts.
+
 ## [1.135.0] - 2026-10-03
 
 ### Added
