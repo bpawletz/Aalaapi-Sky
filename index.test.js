@@ -24562,13 +24562,13 @@ describe('v1.131.1 Mission Photo Archive ZIP Wildcard Resolution Suite', () => {
     assert.ok(changelog.includes('## [1.131.1] - 2026-09-26'), 'CHANGELOG.md must contain ## [1.131.1] - 2026-09-26');
 
     const template = fs.readFileSync('index_template.html', 'utf8');
-    assert.ok(template.includes('v1.131.1</span>') || template.includes('v1.131.2</span>') || template.includes('v1.132.0</span>') || template.includes('v1.132.1</span>') || template.includes('v1.133.0</span>') || template.includes('v1.134.0</span>'), 'index_template.html must contain header badge v1.131.1 or newer');
-    assert.ok(template.includes('Version 1.131.1</span>') || template.includes('Version 1.131.2</span>') || template.includes('Version 1.132.0</span>') || template.includes('Version 1.132.1</span>') || template.includes('Version 1.133.0</span>') || template.includes('Version 1.134.0</span>'), 'index_template.html must contain About modal Version 1.131.1 or newer');
+    assert.ok(template.includes('v1.131.1</span>') || template.includes('v1.131.2</span>') || template.includes('v1.132.0</span>') || template.includes('v1.132.1</span>') || template.includes('v1.133.0</span>') || template.includes('v1.134.0</span>') || template.includes('v1.134.1</span>'), 'index_template.html must contain header badge v1.131.1 or newer');
+    assert.ok(template.includes('Version 1.131.1</span>') || template.includes('Version 1.131.2</span>') || template.includes('Version 1.132.0</span>') || template.includes('Version 1.132.1</span>') || template.includes('Version 1.133.0</span>') || template.includes('Version 1.134.0</span>') || template.includes('Version 1.134.1</span>'), 'index_template.html must contain About modal Version 1.131.1 or newer');
     assert.ok(template.includes('Changelog (v1.131.1):'), 'index_template.html must contain Changelog (v1.131.1)');
 
     const bundle = fs.readFileSync('index.html', 'utf8');
-    assert.ok(bundle.includes('v1.131.1</span>') || bundle.includes('v1.131.2</span>') || bundle.includes('v1.132.0</span>') || bundle.includes('v1.132.1</span>') || bundle.includes('v1.133.0</span>') || bundle.includes('v1.134.0</span>'), 'index.html must contain header badge v1.131.1 or newer');
-    assert.ok(bundle.includes('Version 1.131.1</span>') || bundle.includes('Version 1.131.2</span>') || bundle.includes('Version 1.132.0</span>') || bundle.includes('Version 1.132.1</span>') || bundle.includes('Version 1.133.0</span>') || bundle.includes('Version 1.134.0</span>'), 'index.html must contain About modal Version 1.131.1 or newer');
+    assert.ok(bundle.includes('v1.131.1</span>') || bundle.includes('v1.131.2</span>') || bundle.includes('v1.132.0</span>') || bundle.includes('v1.132.1</span>') || bundle.includes('v1.133.0</span>') || bundle.includes('v1.134.0</span>') || bundle.includes('v1.134.1</span>'), 'index.html must contain header badge v1.131.1 or newer');
+    assert.ok(bundle.includes('Version 1.131.1</span>') || bundle.includes('Version 1.131.2</span>') || bundle.includes('Version 1.132.0</span>') || bundle.includes('Version 1.132.1</span>') || bundle.includes('Version 1.133.0</span>') || bundle.includes('Version 1.134.0</span>') || bundle.includes('Version 1.134.1</span>'), 'index.html must contain About modal Version 1.131.1 or newer');
     assert.ok(bundle.includes('Changelog (v1.131.1):'), 'index.html must contain Changelog (v1.131.1)');
   });
 });
@@ -24582,13 +24582,13 @@ describe('v1.131.2 About Modal Key Capabilities Synthesis Suite', () => {
     assert.ok(changelog.includes('## [1.131.2] - 2026-09-26'), 'CHANGELOG.md must contain ## [1.131.2] - 2026-09-26');
 
     const template = fs.readFileSync('index_template.html', 'utf8');
-    assert.ok(template.includes('v1.131.2</span>') || template.includes('v1.132.0</span>') || template.includes('v1.132.1</span>') || template.includes('v1.133.0</span>') || template.includes('v1.134.0</span>'), 'index_template.html must contain header badge v1.131.2');
-    assert.ok(template.includes('Version 1.131.2</span>') || template.includes('Version 1.132.0</span>') || template.includes('Version 1.132.1</span>') || template.includes('Version 1.133.0</span>') || template.includes('Version 1.134.0</span>'), 'index_template.html must contain About modal Version 1.131.2');
+    assert.ok(template.includes('v1.131.2</span>') || template.includes('v1.132.0</span>') || template.includes('v1.132.1</span>') || template.includes('v1.133.0</span>') || template.includes('v1.134.0</span>') || template.includes('v1.134.1</span>'), 'index_template.html must contain header badge v1.131.2');
+    assert.ok(template.includes('Version 1.131.2</span>') || template.includes('Version 1.132.0</span>') || template.includes('Version 1.132.1</span>') || template.includes('Version 1.133.0</span>') || template.includes('Version 1.134.0</span>') || template.includes('Version 1.134.1</span>'), 'index_template.html must contain About modal Version 1.131.2');
     assert.ok(template.includes('Changelog (v1.131.2):'), 'index_template.html must contain Changelog (v1.131.2)');
 
     const bundle = fs.readFileSync('index.html', 'utf8');
-    assert.ok(bundle.includes('v1.131.2</span>') || bundle.includes('v1.132.0</span>') || bundle.includes('v1.132.1</span>') || bundle.includes('v1.133.0</span>') || bundle.includes('v1.134.0</span>'), 'index.html must contain header badge v1.131.2');
-    assert.ok(bundle.includes('Version 1.131.2</span>') || bundle.includes('Version 1.132.0</span>') || bundle.includes('Version 1.132.1</span>') || bundle.includes('Version 1.133.0</span>') || bundle.includes('Version 1.134.0</span>'), 'index.html must contain About modal Version 1.131.2');
+    assert.ok(bundle.includes('v1.131.2</span>') || bundle.includes('v1.132.0</span>') || bundle.includes('v1.132.1</span>') || bundle.includes('v1.133.0</span>') || bundle.includes('v1.134.0</span>') || bundle.includes('v1.134.1</span>'), 'index.html must contain header badge v1.131.2');
+    assert.ok(bundle.includes('Version 1.131.2</span>') || bundle.includes('Version 1.132.0</span>') || bundle.includes('Version 1.132.1</span>') || bundle.includes('Version 1.133.0</span>') || bundle.includes('Version 1.134.0</span>') || bundle.includes('Version 1.134.1</span>'), 'index.html must contain About modal Version 1.131.2');
     assert.ok(bundle.includes('Changelog (v1.131.2):'), 'index.html must contain Changelog (v1.131.2)');
   });
 
@@ -24624,13 +24624,13 @@ describe('v1.132.0 Automated Feature Video Recording Suite & Agent Guidelines', 
     assert.ok(changelog.includes('## [1.132.0] - 2026-09-26')  || changelog.includes('## [1.132.1] - 2026-09-26'), 'CHANGELOG.md must contain ## [1.132.0] - 2026-09-26');
 
     const template = fs.readFileSync('index_template.html', 'utf8');
-    assert.ok(template.includes('v1.132.0</span>')  || template.includes('v1.132.1</span>') || template.includes('v1.133.0</span>') || template.includes('v1.134.0</span>'), 'index_template.html must contain header badge v1.132.0 or newer');
-    assert.ok(template.includes('Version 1.132.0</span>')  || template.includes('Version 1.132.1</span>') || template.includes('Version 1.133.0</span>') || template.includes('Version 1.134.0</span>'), 'index_template.html must contain About modal Version 1.132.0 or newer');
+    assert.ok(template.includes('v1.132.0</span>')  || template.includes('v1.132.1</span>') || template.includes('v1.133.0</span>') || template.includes('v1.134.0</span>') || template.includes('v1.134.1</span>'), 'index_template.html must contain header badge v1.132.0 or newer');
+    assert.ok(template.includes('Version 1.132.0</span>')  || template.includes('Version 1.132.1</span>') || template.includes('Version 1.133.0</span>') || template.includes('Version 1.134.0</span>') || template.includes('Version 1.134.1</span>'), 'index_template.html must contain About modal Version 1.132.0 or newer');
     assert.ok(template.includes('Changelog (v1.132.0):')  || template.includes('Changelog (v1.132.1):'), 'index_template.html must contain Changelog (v1.132.0)');
 
     const bundle = fs.readFileSync('index.html', 'utf8');
-    assert.ok(bundle.includes('v1.132.0</span>')  || bundle.includes('v1.132.1</span>') || bundle.includes('v1.133.0</span>') || bundle.includes('v1.134.0</span>'), 'index.html must contain header badge v1.132.0 or newer');
-    assert.ok(bundle.includes('Version 1.132.0</span>')  || bundle.includes('Version 1.132.1</span>') || bundle.includes('Version 1.133.0</span>') || bundle.includes('Version 1.134.0</span>'), 'index.html must contain About modal Version 1.132.0 or newer');
+    assert.ok(bundle.includes('v1.132.0</span>')  || bundle.includes('v1.132.1</span>') || bundle.includes('v1.133.0</span>') || bundle.includes('v1.134.0</span>') || bundle.includes('v1.134.1</span>'), 'index.html must contain header badge v1.132.0 or newer');
+    assert.ok(bundle.includes('Version 1.132.0</span>')  || bundle.includes('Version 1.132.1</span>') || bundle.includes('Version 1.133.0</span>') || bundle.includes('Version 1.134.0</span>') || bundle.includes('Version 1.134.1</span>'), 'index.html must contain About modal Version 1.132.0 or newer');
     assert.ok(bundle.includes('Changelog (v1.132.0):')  || bundle.includes('Changelog (v1.132.1):'), 'index.html must contain Changelog (v1.132.0)');
   });
 
@@ -24704,13 +24704,13 @@ describe('Standalone Inspection Report Offline Map & Basemap Providers Suite (v1
     assert.ok(changelog.includes('## [1.132.1] - 2026-09-26'), 'CHANGELOG.md must contain ## [1.132.1] - 2026-09-26');
 
     const template = fs.readFileSync('index_template.html', 'utf8');
-    assert.ok(template.includes('v1.132.1</span>') || template.includes('v1.133.0</span>') || template.includes('v1.134.0</span>'), 'index_template.html must contain header badge v1.132.1 or newer');
-    assert.ok(template.includes('Version 1.132.1</span>') || template.includes('Version 1.133.0</span>') || template.includes('Version 1.134.0</span>'), 'index_template.html must contain Version 1.132.1 or newer');
+    assert.ok(template.includes('v1.132.1</span>') || template.includes('v1.133.0</span>') || template.includes('v1.134.0</span>') || template.includes('v1.134.1</span>'), 'index_template.html must contain header badge v1.132.1 or newer');
+    assert.ok(template.includes('Version 1.132.1</span>') || template.includes('Version 1.133.0</span>') || template.includes('Version 1.134.0</span>') || template.includes('Version 1.134.1</span>'), 'index_template.html must contain Version 1.132.1 or newer');
     assert.ok(template.includes('Changelog (v1.132.1):') || template.includes('Changelog (v1.133.0):'), 'index_template.html must contain Changelog (v1.132.1) or newer');
 
     const bundle = fs.readFileSync('index.html', 'utf8');
-    assert.ok(bundle.includes('v1.132.1</span>') || bundle.includes('v1.133.0</span>') || bundle.includes('v1.134.0</span>'), 'index.html must contain header badge v1.132.1 or newer');
-    assert.ok(bundle.includes('Version 1.132.1</span>') || bundle.includes('Version 1.133.0</span>') || bundle.includes('Version 1.134.0</span>'), 'index.html must contain Version 1.132.1 or newer');
+    assert.ok(bundle.includes('v1.132.1</span>') || bundle.includes('v1.133.0</span>') || bundle.includes('v1.134.0</span>') || bundle.includes('v1.134.1</span>'), 'index.html must contain header badge v1.132.1 or newer');
+    assert.ok(bundle.includes('Version 1.132.1</span>') || bundle.includes('Version 1.133.0</span>') || bundle.includes('Version 1.134.0</span>') || bundle.includes('Version 1.134.1</span>'), 'index.html must contain Version 1.132.1 or newer');
     assert.ok(bundle.includes('Changelog (v1.132.1):') || bundle.includes('Changelog (v1.133.0):'), 'index.html must contain Changelog (v1.132.1) or newer');
   });
 
@@ -24895,19 +24895,19 @@ describe('v1.133.0 Bug Fix: Phantom Camera Action at Layer Transition Boundary',
 
   test('Version consistency: v1.134.0 across package.json, changelog, index_template.html, and index.html', () => {
     const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-    assert.strictEqual(pkg.version, '1.134.0', 'package.json version must be 1.134.0');
+    assert.ok(semverGte(pkg.version, '1.134.0'), 'package.json version must be >= 1.134.0');
 
     const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
     assert.ok(changelog.includes('## [1.134.0]'), 'CHANGELOG.md must contain ## [1.134.0]');
 
     const template = fs.readFileSync('index_template.html', 'utf8');
-    assert.ok(template.includes('v1.134.0</span>'), 'index_template.html must contain header badge v1.134.0');
-    assert.ok(template.includes('Version 1.134.0</span>'), 'index_template.html must contain Version 1.134.0');
+    assert.ok(template.includes('v1.134.0</span>') || template.includes('v1.134.1</span>'), 'index_template.html must contain header badge v1.134.0 or newer');
+    assert.ok(template.includes('Version 1.134.0</span>') || template.includes('Version 1.134.1</span>'), 'index_template.html must contain Version 1.134.0 or newer');
     assert.ok(template.includes('Changelog (v1.134.0):'), 'index_template.html must contain Changelog (v1.134.0)');
 
     const bundle = fs.readFileSync('index.html', 'utf8');
-    assert.ok(bundle.includes('v1.134.0</span>'), 'index.html must contain header badge v1.134.0');
-    assert.ok(bundle.includes('Version 1.134.0</span>'), 'index.html must contain Version 1.134.0');
+    assert.ok(bundle.includes('v1.134.0</span>') || bundle.includes('v1.134.1</span>'), 'index.html must contain header badge v1.134.0 or newer');
+    assert.ok(bundle.includes('Version 1.134.0</span>') || bundle.includes('Version 1.134.1</span>'), 'index.html must contain Version 1.134.0 or newer');
     assert.ok(bundle.includes('Changelog (v1.134.0):'), 'index.html must contain Changelog (v1.134.0)');
   });
 });
@@ -25074,5 +25074,45 @@ describe('Issue #77: Multi-POI Association & Three-Tier Cascading Hierarchy', ()
     // poi-east has index 2 in pois
     assert.ok(wpml.includes('<wpml:waypointHeadingPoiIndex>2</wpml:waypointHeadingPoiIndex>'), 'WPML must specify POI index 2');
     assert.ok(wpml.includes('<wpml:waypointPoiPoint>41.321500,-88.994000,20.000000</wpml:waypointPoiPoint>'), 'WPML waypointPoiPoint must match poi-east coordinates and altitude');
+  });
+});
+
+describe('Issue #107: Edit Waypoint Popup & Mobile Overflow Suite (v1.134.1)', () => {
+  test('Version consistency is maintained across package.json, CHANGELOG.md, and templates for v1.134.1', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version;
+    const cl = fs.readFileSync(path.join(__dirname, 'CHANGELOG.md'), 'utf8');
+    const indexTemplate = fs.readFileSync(path.join(__dirname, 'index_template.html'), 'utf8');
+    const indexHtml = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+
+    assert.strictEqual(pkg, '1.134.1', 'package.json version should be 1.134.1');
+    assert.ok(cl.includes('## [1.134.1]'), 'CHANGELOG.md missing 1.134.1 header');
+    assert.ok(indexTemplate.includes('v1.134.1'), 'index_template.html missing header badge v1.134.1');
+    assert.ok(indexTemplate.includes('Version 1.134.1'), 'index_template.html missing Version 1.134.1 tag');
+    assert.ok(indexHtml.includes('v1.134.1'), 'index.html missing header badge v1.134.1');
+    assert.ok(indexHtml.includes('Version 1.134.1'), 'index.html missing Version 1.134.1 tag');
+  });
+
+  test('CSS rules in index.css enforce responsive max-width and box-sizing constraints for popup and editor panel', () => {
+    const css = fs.readFileSync(path.join(__dirname, 'index.css'), 'utf8');
+    assert.ok(css.includes('width: min(310px, calc(100vw - 32px)) !important;'), 'index.css must include responsive popup wrapper width');
+    assert.ok(css.includes('max-width: calc(100vw - 32px) !important;'), 'index.css must include responsive popup wrapper max-width');
+    assert.ok(css.includes('max-width: calc(100vw - 24px) !important;'), 'index.css media query must include mobile max-width constraint');
+  });
+
+  test('createWaypointEditorDOM creates responsive container and flex-wrapped action buttons', () => {
+    const wp = { lat: 41.3215, lon: -88.9950, alt: 50, pitch: -60, speed: 5, hoverTime: 0, turnMode: 'inherit', cameraAction: 'inherit' };
+    const el = createWaypointEditorDOM(wp, 0, null, null);
+
+    assert.strictEqual(el.style.width, '100%');
+    assert.strictEqual(el.style.maxWidth, '100%');
+    assert.strictEqual(el.style.boxSizing, 'border-box');
+
+    assert.ok(el.innerHTML.includes('id="save-wp-btn"'), 'Save button must exist in HTML string');
+    assert.ok(el.innerHTML.includes('id="reset-wp-btn"'), 'Revert button must exist in HTML string');
+    assert.ok(el.innerHTML.includes('id="delete-wp-btn"'), 'Delete button must exist in HTML string');
+    assert.ok(el.innerHTML.includes('id="insert-wp-btn"'), 'Insert button must exist in HTML string');
+
+    assert.ok(el.innerHTML.includes('display: flex'), 'Action button container must use flexbox');
+    assert.ok(el.innerHTML.includes('flex-wrap: wrap'), 'Action button container must use flex-wrap');
   });
 });
