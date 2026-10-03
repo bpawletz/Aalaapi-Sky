@@ -3630,28 +3630,41 @@ html, body {
 }
 #wp-heading-help-popover .wp-help-close:hover { color: #f8fafc; }
 
-/* Waypoint Editor Popup Custom Leaflet Styling (v1.88.1) */
+/* Waypoint Editor Popup Custom Leaflet Styling (v1.134.1) */
 .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content-wrapper {
   background: rgba(15, 23, 42, 0.96) !important;
   border: 1px solid rgba(6, 182, 212, 0.3) !important;
   border-radius: 12px !important;
   box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.85), 0 0 20px rgba(6, 182, 212, 0.18) !important;
   box-sizing: border-box !important;
-  width: 310px !important;
-  min-width: 310px !important;
+  width: min(310px, calc(100vw - 32px)) !important;
+  max-width: calc(100vw - 32px) !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
 }
 
 .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content {
   margin: 12px 14px !important;
-  width: 280px !important;
-  min-width: 280px !important;
+  width: calc(100% - 28px) !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
   box-sizing: border-box !important;
 }
 
 .leaflet-popup.wp-editor-leaflet-popup .wp-editor-popup {
-  width: 280px !important;
+  width: 100% !important;
   max-width: 100% !important;
+  min-width: 0 !important;
   box-sizing: border-box !important;
+}
+
+.wp-editor-popup * {
+  box-sizing: border-box;
+}
+
+.wp-editor-popup input[type="range"] {
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* Pattern Card Corner Badges */
@@ -4171,6 +4184,25 @@ html, body {
    Mobile Responsive Diagnostics (Screens <= 768px)
    ========================================================================== */
 @media (max-width: 768px) {
+  .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content-wrapper {
+    width: min(310px, calc(100vw - 24px)) !important;
+    max-width: calc(100vw - 24px) !important;
+    box-sizing: border-box !important;
+  }
+
+  .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content {
+    margin: 10px 12px !important;
+    width: calc(100% - 24px) !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  #fpv-editor-panel {
+    right: 12px !important;
+    width: min(310px, calc(100vw - 24px)) !important;
+    max-width: calc(100vw - 24px) !important;
+    box-sizing: border-box !important;
+  }
   #flight-diagnostics-modal {
     padding: 0 !important;
   }

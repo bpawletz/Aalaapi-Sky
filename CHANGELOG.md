@@ -1,3 +1,11 @@
+## [1.134.1] - 2026-09-27
+
+### Fixed
+- **Edit Waypoint Popup & Mobile Overflow Fix (Issue #107)**:
+  - Fixed an issue where the 2D Leaflet map "Edit Waypoint" popup (`.wp-editor-leaflet-popup`) and FPV editor panel (`#fpv-editor-panel`) overflowed and overhung the right edge of cards and mobile screens.
+  - Constrained popup wrapper and content elements with responsive max-width rules (`width: min(310px, calc(100vw - 32px)) !important; min-width: 0 !important; max-width: calc(100vw - 32px) !important; box-sizing: border-box !important;`).
+  - Added responsive flex wrapping (`flex-wrap: wrap; min-width: 0`) for popup action buttons (`Save`, `Revert`, `Delete`, `Insert`), ensuring clean layout alignment and preventing right-side overhang on mobile viewports ($\le 768\text{px}$).
+
 ## [1.134.0] - 2026-09-27
 
 ### Added

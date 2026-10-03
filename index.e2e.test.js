@@ -6644,7 +6644,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(result.success, true);
     assert.strictEqual(result.isOpen, true, 'About modal should be visible upon clicking about button');
     assert.strictEqual(result.isClosed, true, 'About modal should close upon clicking close button');
-    assert.ok(['Version 1.131.2', 'Version 1.132.0', 'Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0'].includes(result.versionTag), 'About modal version tag should be Version 1.131.2 or newer');
+    assert.ok(['Version 1.131.2', 'Version 1.132.0', 'Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1'].includes(result.versionTag), 'About modal version tag should be Version 1.131.2 or newer');
     assert.strictEqual(result.listItemsCount, 6, 'Key capabilities should be summarized into 6 structured pillars');
     assert.strictEqual(result.hasPatternGen, true);
     assert.strictEqual(result.hasTrajectory, true);
@@ -6656,10 +6656,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
   test('E2E: v1.132.1 header badge and About modal reflect Version 1.132.1', async () => {
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.132.1', 'v1.133.0', 'v1.134.0'].includes(badgeText.trim()), 'Header version badge should be v1.132.1 or newer');
+    assert.ok(['v1.132.1', 'v1.133.0', 'v1.134.0', 'v1.134.1'].includes(badgeText.trim()), 'Header version badge should be v1.132.1 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(['Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.132.1 or newer');
+    assert.ok(['Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.132.1 or newer');
   });
 
   test('E2E: Standalone inspection report template features offline satellite default and road providers (v1.132.1)', async () => {
@@ -6673,9 +6673,9 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   });
 
   test('E2E: Multi-POI Association & Three-Tier Cascading Hierarchy (v1.134.0, Issue #77)', async () => {
-    // 1. Header version badge and About modal reflect v1.134.0
+    // 1. Header version badge and About modal reflect v1.134.0 or newer
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.strictEqual(badgeText.trim(), 'v1.134.0', 'Header version badge should be v1.134.0');
+    assert.ok(['v1.134.0', 'v1.134.1'].includes(badgeText.trim()), 'Header version badge should be v1.134.0 or newer');
 
     // 2. Section 2 Layer Card contains #layer-poi-select & responds to towardPOI mode
     const poiTestResult = await page.evaluate(() => {
@@ -6712,6 +6712,94 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(poiTestResult.unhidden, true, 'POI container should unhide when towardPOI is selected');
     assert.strictEqual(poiTestResult.hasFpvSelect, true, '#fpv-edit-poi-select must exist in DOM');
     assert.strictEqual(poiTestResult.hasIntroFeature, true, 'Intro features pane must highlight Multi-POI Association v1.134.0');
+  });
+
+  test('E2E: Edit Waypoint Popup & Mobile Overflow Zero Overhang (v1.134.1, Issue #107)', async () => {
+    // 1. Header version badge and About modal reflect v1.134.1
+    const badgeText = await page.locator('.header-version-badge').first().innerText();
+    assert.strictEqual(badgeText.trim(), 'v1.134.1', 'Header version badge should be v1.134.1');
+
+    const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
+    assert.strictEqual(modalVersion.trim(), 'Version 1.134.1', 'About modal version tag should be Version 1.134.1');
+
+    // 2. Emulate mobile viewport (360x640)
+    await page.setViewportSize({ width: 360, height: 640 });
+
+    const layoutResult = await page.evaluate(() => {
+      const wp = {
+        lat: 41.3215,
+        lon: -88.9950,
+        alt: 50,
+        speed: 5.0,
+        pitch: -60,
+        heading: 90,
+        headingMode: 'inherit',
+        turnMode: 'inherit',
+        cameraAction: 'inherit',
+        hoverTime: 0
+      };
+
+      const dummyMarker = {
+        setLatLng: () => {},
+        setIcon: () => {},
+        getTooltip: () => ({ setContent: () => {} }),
+        setTooltipContent: () => {},
+        on: () => {},
+        off: () => {},
+        closePopup: () => {}
+      };
+
+      // Create editor inside a container replicating .wp-editor-leaflet-popup
+      const popupWrapper = document.createElement('div');
+      popupWrapper.className = 'leaflet-popup wp-editor-leaflet-popup';
+      popupWrapper.style.position = 'fixed';
+      popupWrapper.style.top = '10px';
+      popupWrapper.style.left = '10px';
+      popupWrapper.style.zIndex = '99999';
+
+      const contentWrapper = document.createElement('div');
+      contentWrapper.className = 'leaflet-popup-content-wrapper';
+
+      const content = document.createElement('div');
+      content.className = 'leaflet-popup-content';
+
+      const editorDom = createWaypointEditorDOM(wp, 0, dummyMarker);
+      content.appendChild(editorDom);
+      contentWrapper.appendChild(content);
+      popupWrapper.appendChild(contentWrapper);
+      document.body.appendChild(popupWrapper);
+
+      const wrapperRect = contentWrapper.getBoundingClientRect();
+      const editorRect = editorDom.getBoundingClientRect();
+      const pitchSlider = editorDom.querySelector('#edit-wp-pitch');
+      const pitchAutoBtn = editorDom.querySelector('#edit-wp-pitch-auto-btn');
+      const actionContainer = editorDom.querySelector('#save-wp-btn') ? editorDom.querySelector('#save-wp-btn').parentElement : null;
+
+      const pitchRect = pitchSlider ? pitchSlider.getBoundingClientRect() : null;
+      const btnRect = pitchAutoBtn ? pitchAutoBtn.getBoundingClientRect() : null;
+
+      const result = {
+        wrapperWidth: wrapperRect.width,
+        viewportWidth: window.innerWidth,
+        wrapperFitsViewport: wrapperRect.width <= window.innerWidth,
+        editorFitsWrapper: editorRect.width <= wrapperRect.width + 1,
+        pitchContained: pitchRect ? pitchRect.right <= editorRect.right + 1 : false,
+        btnContained: btnRect ? btnRect.right <= editorRect.right + 1 : false,
+        hasWrap: actionContainer ? window.getComputedStyle(actionContainer).flexWrap === 'wrap' : false
+      };
+
+      document.body.removeChild(popupWrapper);
+      return result;
+    });
+
+    assert.strictEqual(layoutResult.wrapperFitsViewport, true, 'Popup wrapper must not exceed viewport width');
+    assert.strictEqual(layoutResult.editorFitsWrapper, true, 'Editor DOM must fit within content wrapper');
+    assert.strictEqual(layoutResult.pitchContained, true, 'Pitch slider must not overflow editor container');
+    assert.strictEqual(layoutResult.btnContained, true, 'Pitch auto button must not overflow editor container');
+    assert.strictEqual(layoutResult.hasWrap, true, 'Action buttons container must have flex-wrap: wrap');
+
+    // Reset viewport size to standard desktop
+    await page.setViewportSize({ width: 1280, height: 720 });
   });
 });
 
