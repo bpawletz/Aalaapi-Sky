@@ -599,6 +599,63 @@ const scenarios = [
       await centerMapOnPoint(page);
       await page.waitForTimeout(600);
     }
+  },
+  {
+    id: 'feature_exclusion_freeform_custom_heading',
+    name: 'Exclusion-Freeform & Custom Heading Execution on DJI Mini 4 Pro',
+    description: 'Autonomous exclusion-freeform flight layer with custom waypoint headings, smoothTransition WPML export, and detour hover suppression.',
+    issueRef: 'Issue #110',
+    run: async (page) => {
+      // 1. Select drone model: DJI Mini 4 Pro (value: 68)
+      await page.evaluate(() => {
+        const droneSelect = document.getElementById('drone-model');
+        if (droneSelect) {
+          droneSelect.value = '68';
+          droneSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+      await page.waitForTimeout(400);
+
+      // 2. Select pattern: Freeform Polygon Exclusion
+      await selectPattern(page, 'exclusion-freeform');
+      await centerMapOnPoint(page);
+      await page.waitForTimeout(800);
+
+      // 3. Add custom polygon exclusion vertices around center
+      await page.evaluate(() => {
+        if (typeof addFlightLayer === 'function') {
+          const active = getActiveLayer();
+          if (active) {
+            active.boundaryPoints = [
+              { lat: 41.3225, lon: -88.9960 },
+              { lat: 41.3225, lon: -88.9940 },
+              { lat: 41.3205, lon: -88.9940 },
+              { lat: 41.3205, lon: -88.9960 }
+            ];
+          }
+        }
+        if (typeof updateMapGrid === 'function') {
+          updateMapGrid();
+        }
+      });
+      await centerMapOnPoint(page);
+      await page.waitForTimeout(1000);
+
+      // 4. Open pre-flight audit modal to demonstrate clean validation passing
+      await page.evaluate(() => {
+        const auditBtn = document.getElementById('preflight-audit-btn');
+        if (auditBtn) auditBtn.click();
+      });
+      await page.waitForTimeout(1200);
+
+      // 5. Close audit modal
+      await page.evaluate(() => {
+        const closeBtn = document.getElementById('preflight-audit-close-btn');
+        if (closeBtn) closeBtn.click();
+      });
+      await page.waitForTimeout(500);
+      await centerMapOnPoint(page);
+    }
   }
 ];
 
