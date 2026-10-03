@@ -24653,6 +24653,15 @@ describe('v1.132.0 Automated Feature Video Recording Suite & Agent Guidelines', 
     assert.ok(agentsDoc.includes('41.3215, -88.9950') || agentsDoc.includes('dummy coordinates'), 'AGENTS.md must mandate default location');
   });
 
+  test('AGENTS.md defines Section 10 for issue tracking and auto-closure policy', () => {
+    const agentsDoc = fs.readFileSync('AGENTS.md', 'utf8');
+    assert.ok(agentsDoc.includes('## 10. Issue Tracking & Auto-Closure Policy'), 'AGENTS.md must contain Section 10');
+    assert.ok(agentsDoc.includes('Auto-Closing Commit Syntax'), 'AGENTS.md must mandate auto-closing commit syntax');
+    assert.ok(agentsDoc.includes('Direct Issue Status Updates & Resolution Summary'), 'AGENTS.md must mandate issue status updates');
+    assert.ok(agentsDoc.includes('update_issue'), 'AGENTS.md must reference update_issue tool');
+    assert.ok(agentsDoc.includes('Changelog & Documentation Cross-Referencing'), 'AGENTS.md must mandate changelog cross-referencing');
+  });
+
   test('tools/record_features.js scenario catalog and privacy configuration', () => {
     const recorder = require('./tools/record_features.js');
     assert.ok(Array.isArray(recorder.scenarios), 'scenarios must be an array');

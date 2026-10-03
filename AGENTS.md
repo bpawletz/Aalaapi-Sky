@@ -113,5 +113,15 @@ Whenever implementing a new feature or fixing an issue/bug in Aalaapi Sky, the A
 4. **Walkthrough & Verification Reporting**:
    - Reference the generated visual artifacts or screenshots in your implementation walkthrough and verification reports to prove correct UI behavior.
 
-
-
+## 10. Issue Tracking & Auto-Closure Policy
+Whenever an AI agent works on an issue, bug report, or feature request that corresponds to an existing GitHub issue:
+1. **Auto-Closing Commit Syntax:**
+   - Commit messages MUST reference and close the targeted issue using standard GitHub auto-closing keywords (e.g. `fix(scope): brief description (closes #123)` or `feat(scope): brief description (fixes #123)`).
+2. **Direct Issue Status Updates & Resolution Summary:**
+   - Upon completing and verifying the changes (all unit and E2E tests passing), the agent MUST post a concise resolution comment to the GitHub issue summarizing:
+     - The version number containing the fix/feature.
+     - Key architectural or logic changes implemented.
+     - Verification proof (passing unit/E2E test suites and video recordings).
+   - The agent MUST update the issue state to `closed` (e.g. using the GitHub MCP `update_issue` tool with `state: "closed"`).
+3. **Changelog & Documentation Cross-Referencing:**
+   - The issue reference MUST be documented in `CHANGELOG.md` under the new version header (e.g. `- **Scope:** description (Closes #123)`).
