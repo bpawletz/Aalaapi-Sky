@@ -1,5 +1,38 @@
 [
   {
+    "notam_id": "6/7038",
+    "facility": "ZOA",
+    "state": "CA",
+    "type": "HAZARDS",
+    "description": "32NM SE SOUTH LAKE TAHOE, CA, Saturday, October 3, 2026 through Saturday, October 10, 2026 UTC",
+    "mod_date": "10/03/2026 21:50:00",
+    "mod_abs_time": "202610032150",
+    "is_new": "Y",
+    "gid": "6/7038"
+  },
+  {
+    "notam_id": "6/7037",
+    "facility": "ZOA",
+    "state": "NV",
+    "type": "HAZARDS",
+    "description": "12NM W RENO, NV, Saturday, October 3, 2026 through Sunday, October 4, 2026 UTC",
+    "mod_date": "10/03/2026 21:05:00",
+    "mod_abs_time": "202610032105",
+    "is_new": "Y",
+    "gid": "6/7037"
+  },
+  {
+    "notam_id": "6/7029",
+    "facility": "ZLC",
+    "state": "MT",
+    "type": "HAZARDS",
+    "description": "4NM SW HELENA, MT, Sunday, October 4, 2026 through Tuesday, October 6, 2026 UTC",
+    "mod_date": "10/03/2026 17:22:00",
+    "mod_abs_time": "202610031722",
+    "is_new": "Y",
+    "gid": "6/7029"
+  },
+  {
     "notam_id": "6/7020",
     "facility": "ZMP",
     "state": "NE",
@@ -29,19 +62,8 @@
     "description": "ST PAUL, MN, Sunday, October 4, 2026 Local",
     "mod_date": "10/02/2026 20:55:00",
     "mod_abs_time": "202610022055",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/6935"
-  },
-  {
-    "notam_id": "6/6933",
-    "facility": "ZOA",
-    "state": "NV",
-    "type": "HAZARDS",
-    "description": "12NM W RENO, NV, Friday, October 2, 2026 through Saturday, October 3, 2026 UTC",
-    "mod_date": "10/02/2026 20:36:00",
-    "mod_abs_time": "202610022036",
-    "is_new": "Y",
-    "gid": "6/6933"
   },
   {
     "notam_id": "6/6932",
@@ -51,7 +73,7 @@
     "description": "Madisonville, KY, Friday, October 9, 2026 through Saturday, October 10, 2026 UTC",
     "mod_date": "10/02/2026 20:03:00",
     "mod_abs_time": "202610022003",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/6932"
   },
   {
@@ -62,7 +84,7 @@
     "description": "Tyler, TX, Friday, October 9, 2026 through Sunday, October 11, 2026 UTC",
     "mod_date": "10/02/2026 17:34:00",
     "mod_abs_time": "202610021734",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/6904"
   },
   {
@@ -231,17 +253,6 @@
     "gid": "6/6654"
   },
   {
-    "notam_id": "6/6618",
-    "facility": "ZDC",
-    "state": "VA",
-    "type": "VIP",
-    "description": "Sterling, VA, Saturday, October 3, 2026 Local",
-    "mod_date": "10/01/2026 15:41:00",
-    "mod_abs_time": "202610011541",
-    "is_new": "N",
-    "gid": "6/6618"
-  },
-  {
     "notam_id": "6/6590",
     "facility": "ZID",
     "state": "OH",
@@ -363,17 +374,6 @@
     "gid": "6/5995"
   },
   {
-    "notam_id": "6/5976",
-    "facility": "ZOA",
-    "state": "CA",
-    "type": "AIR SHOWS/SPORTS",
-    "description": "Coalinga, CA, Friday, October 2, 2026 through Saturday, October 3, 2026 UTC",
-    "mod_date": "09/28/2026 20:21:00",
-    "mod_abs_time": "202609282021",
-    "is_new": "N",
-    "gid": "6/5976"
-  },
-  {
     "notam_id": "6/5945",
     "facility": "ZMA",
     "state": "FL",
@@ -418,17 +418,6 @@
     "gid": "6/5849"
   },
   {
-    "notam_id": "6/5847",
-    "facility": "ZDC",
-    "state": "NC",
-    "type": "UAS PUBLIC GATHERING",
-    "description": "Raleigh, NC, Saturday, October 3, 2026 UTC",
-    "mod_date": "09/28/2026 13:44:00",
-    "mod_abs_time": "202609281344",
-    "is_new": "N",
-    "gid": "6/5847"
-  },
-  {
     "notam_id": "6/5822",
     "facility": "ZDC",
     "state": "MD",
@@ -449,17 +438,6 @@
     "mod_abs_time": "202609281058",
     "is_new": "N",
     "gid": "6/5821"
-  },
-  {
-    "notam_id": "6/5762",
-    "facility": "ZTL",
-    "state": "GA",
-    "type": "AIR SHOWS/SPORTS",
-    "description": "Braselton, GA, Saturday, October 3, 2026 UTC",
-    "mod_date": "09/27/2026 19:39:00",
-    "mod_abs_time": "202609271939",
-    "is_new": "N",
-    "gid": "6/5762"
   },
   {
     "notam_id": "6/5761",

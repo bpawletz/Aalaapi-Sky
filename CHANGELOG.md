@@ -1,3 +1,14 @@
+## [1.136.0] - 2026-10-03
+
+### Added
+- **Multi-Layer Flight Diag AI Export & Privacy Coordinate Masking (Closes #108)**:
+  - **Comprehensive Multi-Layer Mission Stack Export**: Upgraded the Flight Diag and Pre-Flight KMZ Audit AI diagnostic exporter (`KMZInspector.generateAntigravityPrompt` / `FlightDiagnostics.copyAntigravityPrompt`) to iterate across and serialize every layer in the active mission stack (`flightLayers`), including layer-specific patterns (3D Tower Audit, Exclusion Polygons, Boundaries, Freeform, Double Grid, etc.), flight dynamics (altitude, speed, gimbal pitch, heading mode, turn/path mode, capture mode, hover dwell times, camera zoom), and waypoints.
+  - **Mission Points of Interest (POIs) Serialization**: Added full inclusion of all defined POIs (`pois` array) with IDs, labels, altitudes, roles, and relative positions, ensuring AI assistants have complete situational context.
+  - **Default Location Privacy & Relative Coordinate Normalization**: Enforced coordinate masking by default (`hideLocation = true`), replacing raw operational and site GPS coordinates with the app's default rural countryside reference (`[41.3215, -88.9950]`, Grand Village of the Illinois / Utica, IL) while calculating and emitting precise relative local Cartesian offsets `(x, y)` in meters (`offsetMeters`). This preserves exact spatial distances, headings, angles, and geometry for AI debugging without exposing sensitive flight locations.
+  - **Sanitized WPML XML Snippets**: Sanitized placemark `<coordinates>` and `<wpml:waypointPoiPoint>` tags in generated WPML XML extracts when `hideLocation` is active.
+  - **Sidebar Export Toggle UI**: Added a user-facing toggle (`#diag-include-coords-checkbox`) in the Flight Diag sidebar export drawer, allowing pilots to explicitly include real GPS coordinates when needed while keeping privacy protection enabled by default.
+  - **Enhanced JSON Diagnostic Payloads**: Extended `buildMissionPlanJSON` and `buildFlightDiagnosticsJSON` to serialize all `layers` and `pointsOfInterest` objects into exported `_diag.json` and `_plan.json` files.
+
 ## [1.135.2] - 2026-10-03
 
 ### Fixed

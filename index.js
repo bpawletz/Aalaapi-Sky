@@ -17968,6 +17968,13 @@ function buildMissionPlanJSON(customWps = null) {
     ? extractSpatialMissionLayers()
     : { groundControl: [], inclusionZones: [], exclusionZones: [], parcels: [] };
 
+  const allPois = (typeof global !== 'undefined' && Array.isArray(global.pois) && global.pois.length > 0)
+    ? global.pois
+    : ((typeof pois !== 'undefined' && Array.isArray(pois)) ? pois : ((typeof pointsOfInterest !== 'undefined' && Array.isArray(pointsOfInterest)) ? pointsOfInterest : []));
+  const allLayers = (typeof global !== 'undefined' && Array.isArray(global.flightLayers) && global.flightLayers.length > 0)
+    ? global.flightLayers
+    : ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : []);
+
   return {
     schemaVersion: "1.1.0",
     generator: "Aalaapi Sky",
@@ -18009,7 +18016,28 @@ function buildMissionPlanJSON(customWps = null) {
         globalHoverTimeSeconds: globalHoverTime
       }
     },
-    pointsOfInterest: (typeof pointsOfInterest !== 'undefined' && Array.isArray(pointsOfInterest)) ? pointsOfInterest : [],
+
+    pointsOfInterest: allPois.map(p => ({
+      id: p.id,
+      name: p.name,
+      lat: p.lat,
+      lon: p.lon !== undefined ? p.lon : p.lng,
+      alt: p.alt || 0,
+      marker: p.marker
+    })),
+    layers: allLayers.map(l => ({
+      id: l.id,
+      name: l.name,
+      pattern: l.pattern,
+      enabled: l.enabled !== false,
+      altitude: l.altitude,
+      speed: l.speed,
+      gimbalPitch: l.gimbalPitch,
+      headingMode: l.headingMode,
+      captureMode: l.captureMode,
+      pathMode: l.pathMode,
+      waypointCount: (l.waypoints && l.waypoints.length) || (l.freeformWaypoints && l.freeformWaypoints.length) || 0
+    })),
     groundControl: spatialData.groundControl,
     inclusionZones: spatialData.inclusionZones,
     exclusionZones: spatialData.exclusionZones,
@@ -18136,6 +18164,27 @@ function buildFlightDiagnosticsJSON(customWps = null, options = {}) {
     userAgent,
     plan,
     diagnostics: telemetry,
+    layers: (plan && plan.layers) ? plan.layers : ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers.map(l => ({
+      id: l.id,
+      name: l.name,
+      pattern: l.pattern,
+      enabled: l.enabled !== false,
+      altitude: l.altitude,
+      speed: l.speed,
+      gimbalPitch: l.gimbalPitch,
+      headingMode: l.headingMode,
+      captureMode: l.captureMode,
+      pathMode: l.pathMode,
+      waypointCount: (l.waypoints && l.waypoints.length) || (l.freeformWaypoints && l.freeformWaypoints.length) || 0
+    })) : []),
+    pointsOfInterest: (plan && plan.pointsOfInterest) ? plan.pointsOfInterest : ((typeof pois !== 'undefined' && Array.isArray(pois)) ? pois.map(p => ({
+      id: p.id,
+      name: p.name,
+      lat: p.lat,
+      lon: p.lon !== undefined ? p.lon : p.lng,
+      alt: p.alt || 0,
+      marker: p.marker
+    })) : []),
     groundControl: spatialData.groundControl,
     inclusionZones: spatialData.inclusionZones,
     exclusionZones: spatialData.exclusionZones,
@@ -22702,16 +22751,18 @@ const FlightDiagnostics = {
   },
 
   copyAntigravityPrompt() {
+    const includeCoords = (typeof document !== 'undefined' && document.getElementById('diag-include-coords-checkbox')?.checked) || false;
     let promptText = '';
     if (this.currentLoadedMission) {
       const m = this.currentLoadedMission;
       promptText = KMZInspector.generateAntigravityPrompt(
         m.validationReport || { rulesPassed: m.validation_rules_passed || 0, errors: m.validationErrors || [], warnings: m.validationWarnings || [] },
         m.wpml_xml,
-        m.plan?.waypoints
+        m.plan?.waypoints,
+        { hideLocation: !includeCoords, mission: m }
       );
     } else {
-      promptText = KMZInspector.generateAntigravityPrompt();
+      promptText = KMZInspector.generateAntigravityPrompt(null, '', null, { hideLocation: !includeCoords });
     }
 
     if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
@@ -22726,12 +22777,16 @@ const FlightDiagnostics = {
             btn.style.color = '#a5b4fc';
           }, 2500);
         }
+        if (typeof showToast === 'function') {
+          showToast(includeCoords ? '📋 Copied AI Export (Real GPS Coordinates)' : '📋 Copied AI Export (Masked to Default Reference)', 'info');
+        }
       }).catch(() => {
         if (typeof prompt === 'function') prompt('Copy Antigravity Fix Prompt:', promptText);
       });
     } else {
       if (typeof prompt === 'function') prompt('Copy Antigravity Fix Prompt:', promptText);
     }
+    return promptText;
   },
 
   centerMapOnFlight() {
@@ -25282,15 +25337,21 @@ const KMZInspector = {
     if (tmplEl) tmplEl.textContent = this.activeTemplateXml;
   },
 
-  generateAntigravityPrompt(report = null, wpml = '', wps = null) {
+  generateAntigravityPrompt(report = null, wpml = '', wps = null, options = {}) {
     const r = report || this.activeReport;
     const xml = wpml || this.activeWpmlXml || '';
-    const activeWps = wps || (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
+    const hideLocation = (options && options.hideLocation !== undefined) ? !!options.hideLocation : true;
+
+    // Global / Mission defaults
     let drone = 'DJI Mini 4 Pro (68)';
     let pattern = 'single';
     let alt = '50';
     let speed = '4';
     let pitch = '-90';
+    let headingMode = 'followWayline';
+    let captureMode = 'hover';
+    let pathMode = 'normal';
+
     if (typeof document !== 'undefined') {
       try {
         const droneEl = document.getElementById('drone-model');
@@ -25301,14 +25362,141 @@ const KMZInspector = {
         alt = document.getElementById('altitude')?.value || alt;
         speed = document.getElementById('speed')?.value || speed;
         pitch = document.getElementById('gimbal-pitch')?.value || pitch;
+        headingMode = document.getElementById('heading-mode')?.value || headingMode;
+        captureMode = document.getElementById('capture-mode')?.value || captureMode;
+        pathMode = document.getElementById('path-mode')?.value || pathMode;
       } catch (e) {}
+    }
+
+    // 1. Resolve layers
+    let allLayers = [];
+    if (options && Array.isArray(options.layers) && options.layers.length > 0) {
+      allLayers = options.layers;
+    } else if (options && options.mission && Array.isArray(options.mission.layers) && options.mission.layers.length > 0) {
+      allLayers = options.mission.layers;
+    } else if (options && options.mission && options.mission.plan && Array.isArray(options.mission.plan.layers) && options.mission.plan.layers.length > 0) {
+      allLayers = options.mission.plan.layers;
+    } else if (options && options.mission && options.mission.plan && Array.isArray(options.mission.plan.waypoints) && options.mission.plan.waypoints.length > 0) {
+      allLayers = [{
+        id: options.mission.uuid || 'loaded-mission',
+        name: options.mission.name || 'Mission Route',
+        pattern: options.mission.pattern || pattern,
+        enabled: true,
+        altitude: alt,
+        speed: speed,
+        waypoints: options.mission.plan.waypoints
+      }];
+    } else if (typeof global !== 'undefined' && Array.isArray(global.flightLayers) && global.flightLayers.length > 0) {
+      allLayers = global.flightLayers;
+    } else if (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers) && flightLayers.length > 0) {
+      allLayers = flightLayers;
+    }
+
+    // 2. Resolve POIs
+    let allPois = [];
+    if (options && Array.isArray(options.pois)) {
+      allPois = options.pois;
+    } else if (options && options.mission && Array.isArray(options.mission.pointsOfInterest)) {
+      allPois = options.mission.pointsOfInterest;
+    } else if (options && options.mission && Array.isArray(options.mission.pois)) {
+      allPois = options.mission.pois;
+    } else if (options && options.mission && options.mission.plan && Array.isArray(options.mission.plan.pointsOfInterest)) {
+      allPois = options.mission.plan.pointsOfInterest;
+    } else if (typeof global !== 'undefined' && Array.isArray(global.pois) && global.pois.length > 0) {
+      allPois = global.pois;
+    } else if (typeof pois !== 'undefined' && Array.isArray(pois)) {
+      allPois = pois;
+    }
+
+    // 3. Fallback / Active waypoints
+    const activeWps = wps || (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || (typeof generatedWaypoints !== 'undefined' ? generatedWaypoints : null) || [];
+
+    // App Default Rural Reference Location: Grand Village of the Illinois / Utica, IL rural countryside
+    const DEFAULT_APP_LAT = 41.3215;
+    const DEFAULT_APP_LON = -88.9950;
+
+    // Determine reference center for coordinate shifting / normalization
+    let refLat = null;
+    let refLon = null;
+    if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+      const c = centerMarker.getLatLng();
+      if (c && typeof c.lat === 'number' && typeof c.lng === 'number' && !isNaN(c.lat) && !isNaN(c.lng)) {
+        refLat = c.lat;
+        refLon = c.lng;
+      }
+    }
+    if (refLat === null && allLayers.length > 0) {
+      for (const l of allLayers) {
+        if (typeof l.centerLat === 'number' && typeof l.centerLon === 'number' && !isNaN(l.centerLat) && !isNaN(l.centerLon)) {
+          refLat = l.centerLat;
+          refLon = l.centerLon;
+          break;
+        }
+      }
+    }
+    if (refLat === null && Array.isArray(activeWps) && activeWps.length > 0 && typeof activeWps[0].lat === 'number') {
+      refLat = activeWps[0].lat;
+      refLon = activeWps[0].lon ?? activeWps[0].lng;
+    }
+    if (refLat === null && allPois.length > 0 && typeof allPois[0].lat === 'number') {
+      refLat = allPois[0].lat;
+      refLon = allPois[0].lon ?? allPois[0].lng;
+    }
+    if (refLat === null || isNaN(refLat) || refLon === null || isNaN(refLon)) {
+      refLat = DEFAULT_APP_LAT;
+      refLon = DEFAULT_APP_LON;
+    }
+
+    const dLat = DEFAULT_APP_LAT - refLat;
+    const dLon = DEFAULT_APP_LON - refLon;
+
+    function formatCoord(lat, lon) {
+      if (typeof lat !== 'number' || typeof lon !== 'number' || isNaN(lat) || isNaN(lon)) {
+        return { lat: DEFAULT_APP_LAT, lon: DEFAULT_APP_LON, offsetMeters: { x: 0, y: 0 } };
+      }
+      if (!hideLocation) {
+        return {
+          lat: Number(lat.toFixed(7)),
+          lon: Number(lon.toFixed(7))
+        };
+      }
+      const normLat = Number((lat + dLat).toFixed(7));
+      const normLon = Number((lon + dLon).toFixed(7));
+      const latDist = (lat - refLat) * 111320;
+      const lonDist = (lon - refLon) * (111320 * Math.cos(refLat * Math.PI / 180));
+      return {
+        lat: normLat,
+        lon: normLon,
+        offsetMeters: {
+          x: Number(lonDist.toFixed(1)),
+          y: Number(latDist.toFixed(1))
+        }
+      };
+    }
+
+    // Calculate total waypoints across all layers
+    let totalWaypointsCount = 0;
+    if (allLayers.length > 0) {
+      allLayers.forEach(l => {
+        if (l.enabled !== false) {
+          const count = (l.waypoints && l.waypoints.length) || (l.freeformWaypoints && l.freeformWaypoints.length) || 0;
+          totalWaypointsCount += count;
+        }
+      });
+    }
+    if (totalWaypointsCount === 0 && Array.isArray(activeWps)) {
+      totalWaypointsCount = activeWps.length;
     }
 
     let prompt = `### 🤖 ANTIGRAVITY BUG REPORT: Bad KMZ Mission Execution Issue\n\n`;
     prompt += `**Mission Context:**\n`;
     prompt += `- **Target Drone Model:** ${drone}\n`;
     prompt += `- **Pattern:** ${pattern} (Altitude: ${alt}m, Speed: ${speed}m/s, Pitch: ${pitch}°)\n`;
-    prompt += `- **Waypoints Total:** ${activeWps.length}\n`;
+    prompt += `- **Total Flight Layers:** ${allLayers.length > 0 ? allLayers.length : 1}\n`;
+    prompt += `- **Waypoints Total:** ${totalWaypointsCount}\n`;
+    prompt += `- **Points of Interest (POIs):** ${allPois.length}\n`;
+    prompt += `- **Location Privacy:** ${hideLocation ? '🔒 Masked / Normalized to App Default Rural Reference [41.3215, -88.9950] (Real GPS Redacted)' : '🔓 Real GPS Coordinates Included'}\n`;
+
     if (r) {
       prompt += `- **Validation Health Score:** ${r.rulesPassed ?? r.validation_rules_passed ?? 0}/10 Passed (${r.valid || r.is_valid ? 'Valid' : 'Invalid'})\n`;
       const errList = r.errors || r.validationErrors || [];
@@ -25323,21 +25511,131 @@ const KMZInspector = {
       }
     }
 
-    if (activeWps.length > 0) {
-      const sample = activeWps.slice(0, 5).map((wp, i) => ({
-        index: i,
-        lat: wp.lat,
-        lon: wp.lon,
-        alt: wp.altitude || alt,
-        heading: wp.heading,
-        turnMode: wp.turnMode
-      }));
+    // Points of Interest (POIs) Section
+    if (allPois.length > 0) {
+      prompt += `\n**Points of Interest (POIs):**\n`;
+      allPois.forEach((p, idx) => {
+        const c = formatCoord(p.lat, p.lon ?? p.lng);
+        prompt += `- **POI ${idx + 1} (${p.name || 'Target ' + (idx + 1)}):** id=\`${p.id || 'poi-' + idx}\`, coords=${JSON.stringify(c)}, alt=${p.alt || 0}m, role=${p.role || p.marker || 'standard'}\n`;
+      });
+    }
+
+    // Multi-Layer Mission Stack Section
+    if (allLayers.length > 0) {
+      prompt += `\n**Multi-Layer Mission Stack (${allLayers.length} Layers):**\n`;
+      allLayers.forEach((layer, idx) => {
+        const isEnabled = layer.enabled !== false;
+        const lAlt = layer.altitude ?? alt;
+        const lSpeed = layer.speed ?? speed;
+        const lPitch = layer.gimbalPitch ?? pitch;
+        const lHeading = layer.headingMode || headingMode;
+        const lCapture = layer.captureMode || captureMode;
+        const lPath = layer.pathMode || pathMode;
+        const lZoom = layer.cameraZoom || 1.0;
+        const lHover = layer.hoverTime || 0;
+
+        let layerWps = [];
+        if (Array.isArray(layer.waypoints) && layer.waypoints.length > 0) {
+          layerWps = layer.waypoints;
+        } else if (Array.isArray(layer.freeformWaypoints) && layer.freeformWaypoints.length > 0) {
+          layerWps = layer.freeformWaypoints;
+        } else if ((allLayers.length === 1 || layer.id === (typeof activeLayerId !== 'undefined' ? activeLayerId : null)) && activeWps.length > 0) {
+          layerWps = activeWps;
+        } else if (typeof generateLayerWaypoints === 'function' && !layer.isExclusionZone && !layer.isDrawingLayer && layer.pattern !== 'exclusion-box' && layer.pattern !== 'exclusion-freeform' && layer.pattern !== 'boundary-polygon' && layer.pattern !== 'fiducial-markers') {
+          try {
+            const res = generateLayerWaypoints(layer, layer.centerLat ?? refLat, layer.centerLon ?? refLon);
+            layerWps = res.waypoints || [];
+          } catch (_) {
+            layerWps = [];
+          }
+        }
+
+        prompt += `\n#### Layer ${idx + 1}: ${layer.name || 'Layer ' + (idx + 1)} (\`${layer.pattern || 'default'}\`)\n`;
+        prompt += `- **Status:** ${isEnabled ? '✅ Enabled' : '⏸️ Disabled'} | **ID:** \`${layer.id || 'layer-' + idx}\`\n`;
+        prompt += `- **Dynamics:** Alt: ${lAlt}m | Speed: ${lSpeed}m/s | Pitch: ${lPitch}° | Heading: ${lHeading} | Turn: ${lPath} | Capture: ${lCapture} | Zoom: ${lZoom}x | Dwell: ${lHover}s\n`;
+
+        // Pattern specific attributes
+        if (layer.pattern === 'double' || layer.pattern === 'single' || layer.pattern === 'smart-oblique') {
+          prompt += `- **Grid Properties:** Width: ${layer.gridWidth || 100}m | Height: ${layer.gridHeight || 100}m | Rotation: ${layer.gridRotation || 0}° | Overlap: ${layer.frontOverlap || 80}% front, ${layer.sideOverlap || 75}% side\n`;
+        } else if (layer.pattern === 'exclusion-box' || layer.pattern === 'exclusion-freeform' || layer.isExclusionZone) {
+          prompt += `- **Exclusion Envelope:** Clearance: ${layer.clearanceBuffer || 5}m | Detour: ${layer.detourMode || 'inherit'} | Alt Bounds: [${layer.minAltitude || 0}m, ${layer.maxAltitude || 60}m] | Vertices: ${layer.polygonVertices?.length || 0}\n`;
+        } else if (layer.pattern === 'boundary-polygon' || layer.isDrawingLayer) {
+          prompt += `- **Boundary Polygon:** Vertices: ${layer.boundaryPolygon?.length || layer.polygonVertices?.length || 0}\n`;
+        } else if (layer.pattern === 'tower' || layer.pattern === 'spiral-cylinder') {
+          prompt += `- **Tower Target (Target Splat):** Mode: ${layer.targetMode || 'radius'} | Radius: ${layer.targetRadius || 25}m | Height: ${layer.targetHeight || 8}m | Framing: ${layer.targetFramingMode || 'balanced'} | Culling: ${layer.targetCullingMode || 'smartTrim'}\n`;
+        } else if (layer.pattern === 'fiducial-markers' || layer.isFiducialLayer) {
+          prompt += `- **Fiducials:** Markers: ${layer.fiducialMarkers?.length || 0}\n`;
+        } else if (layer.pattern === 'corridor' || layer.roadSnap) {
+          prompt += `- **Corridor Properties:** Offset: ${layer.roadOffset || 15}m | Snap: ${layer.roadSnap ? 'Yes' : 'No'} | Focus: ${layer.roadFocusMode || 'focusRoad'}\n`;
+        }
+
+        prompt += `- **Waypoints Count:** ${layerWps.length}\n`;
+        if (layerWps.length > 0) {
+          const sample = layerWps.slice(0, 5).map((wp, wIdx) => {
+            const c = formatCoord(wp.lat, wp.lon ?? wp.lng);
+            return {
+              index: wIdx,
+              lat: c.lat,
+              lon: c.lon,
+              offsetMeters: c.offsetMeters,
+              alt: wp.altitude || wp.alt || lAlt,
+              heading: wp.heading,
+              turnMode: wp.turnMode || wp.pathMode,
+              gimbalPitch: wp.gimbalPitch ?? wp.pitch ?? lPitch
+            };
+          });
+          prompt += `  \`\`\`json\n${JSON.stringify(sample, null, 2)}\n  \`\`\`\n`;
+        }
+      });
+    }
+
+    // Include sample waypoints block if no individual layer printed waypoints
+    let anyLayerHadWps = false;
+    allLayers.forEach(l => {
+      if ((l.waypoints && l.waypoints.length > 0) || (l.freeformWaypoints && l.freeformWaypoints.length > 0)) anyLayerHadWps = true;
+    });
+    if ((!anyLayerHadWps || allLayers.length === 0) && activeWps.length > 0) {
+      const sample = activeWps.slice(0, 5).map((wp, i) => {
+        const c = formatCoord(wp.lat, wp.lon ?? wp.lng);
+        return {
+          index: i,
+          lat: c.lat,
+          lon: c.lon,
+          offsetMeters: c.offsetMeters,
+          alt: wp.altitude || wp.alt || alt,
+          heading: wp.heading,
+          turnMode: wp.turnMode
+        };
+      });
       prompt += `\n**Sample Waypoints Input:**\n\`\`\`json\n${JSON.stringify(sample, null, 2)}\n\`\`\`\n`;
     }
 
     if (xml) {
-      const placemarks = xml.split('<Placemark>');
-      const xmlExtract = placemarks.length > 1 ? '<Placemark>' + placemarks[1].substring(0, 450) + '...\n</Placemark>' : xml.substring(0, 600);
+      let sanitizedXml = xml;
+      if (hideLocation) {
+        sanitizedXml = sanitizedXml.replace(/<coordinates>\s*([-0-9.]+)\s*,\s*([-0-9.]+)(?:,\s*([-0-9.]+))?\s*<\/coordinates>/g, (m, lonStr, latStr, altStr) => {
+          const rawLon = parseFloat(lonStr);
+          const rawLat = parseFloat(latStr);
+          if (!isNaN(rawLon) && !isNaN(rawLat)) {
+            const sLon = (rawLon + dLon).toFixed(7);
+            const sLat = (rawLat + dLat).toFixed(7);
+            return `<coordinates>${sLon},${sLat}${altStr !== undefined ? ',' + altStr : ''}</coordinates>`;
+          }
+          return m;
+        });
+        sanitizedXml = sanitizedXml.replace(/<wpml:waypointPoiPoint>\s*([-0-9.]+)\s*,\s*([-0-9.]+)(?:,\s*([-0-9.]+))?\s*<\/wpml:waypointPoiPoint>/g, (m, latStr, lonStr, altStr) => {
+          const rawLat = parseFloat(latStr);
+          const rawLon = parseFloat(lonStr);
+          if (!isNaN(rawLat) && !isNaN(rawLon)) {
+            const sLat = (rawLat + dLat).toFixed(7);
+            const sLon = (rawLon + dLon).toFixed(7);
+            return `<wpml:waypointPoiPoint>${sLat},${sLon}${altStr !== undefined ? ',' + altStr : ''}</wpml:waypointPoiPoint>`;
+          }
+          return m;
+        });
+      }
+      const placemarks = sanitizedXml.split('<Placemark>');
+      const xmlExtract = placemarks.length > 1 ? '<Placemark>' + placemarks[1].substring(0, 450) + '...\n</Placemark>' : sanitizedXml.substring(0, 600);
       prompt += `\n**Offending / Generated WPML Snippet:**\n\`\`\`xml\n${xmlExtract}\n\`\`\`\n`;
     }
 
@@ -25351,7 +25649,7 @@ const KMZInspector = {
   },
 
   copyAntigravityPrompt() {
-    const promptText = this.generateAntigravityPrompt();
+    const promptText = this.generateAntigravityPrompt(null, '', null, { hideLocation: true });
     if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(promptText).then(() => {
         const btn = document.getElementById('inspector-copy-antigravity-btn');
