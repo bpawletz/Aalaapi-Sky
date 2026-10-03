@@ -567,6 +567,38 @@ const scenarios = [
       await centerMapOnPoint(page);
       await page.waitForTimeout(400);
     }
+  },
+  {
+    id: 'feature_waypoint_editor_mobile',
+    name: 'Waypoint Editor & Mobile Overflow Containment',
+    description: 'Responsive 2D waypoint editor popup and 3D FPV HUD panel with zero horizontal overhang.',
+    issueRef: 'Issue #107',
+    run: async (page) => {
+      // 1. Generate Single Grid pattern
+      await selectPattern(page, 'single');
+      await centerMapOnPoint(page);
+      await page.waitForTimeout(600);
+
+      // 2. Open first waypoint editor popup on the map
+      await page.evaluate(() => {
+        if (typeof waypointMarkersGroup !== 'undefined' && waypointMarkersGroup) {
+          const layers = waypointMarkersGroup.getLayers();
+          if (layers && layers.length > 0 && typeof layers[0].openPopup === 'function') {
+            layers[0].openPopup();
+          }
+        }
+      });
+      await page.waitForTimeout(800);
+
+      // 3. Emulate mobile viewport to demonstrate fluid containment
+      await page.setViewportSize({ width: 375, height: 667 });
+      await page.waitForTimeout(1000);
+
+      // 4. Restore desktop viewport
+      await page.setViewportSize({ width: 1280, height: 720 });
+      await centerMapOnPoint(page);
+      await page.waitForTimeout(600);
+    }
   }
 ];
 
