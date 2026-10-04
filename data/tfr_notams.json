@@ -1,5 +1,38 @@
 [
   {
+    "notam_id": "6/7062",
+    "facility": "ZAN",
+    "state": "AK",
+    "type": "VIP",
+    "description": "Anchorage, AK, Monday, October 5, 2026 through Tuesday, October 6, 2026 Local",
+    "mod_date": "10/04/2026 00:35:00",
+    "mod_abs_time": "202610040035",
+    "is_new": "Y",
+    "gid": "6/7062"
+  },
+  {
+    "notam_id": "6/7061",
+    "facility": "ZAN",
+    "state": "AK",
+    "type": "VIP",
+    "description": "Fairbanks, AK, Monday, October 5, 2026 Local",
+    "mod_date": "10/04/2026 00:19:00",
+    "mod_abs_time": "202610040019",
+    "is_new": "Y",
+    "gid": "6/7061"
+  },
+  {
+    "notam_id": "6/7060",
+    "facility": "ZAN",
+    "state": "AK",
+    "type": "VIP",
+    "description": "Anchorage, AK, Monday, October 5, 2026 through Monday, October 5, 2026 Local",
+    "mod_date": "10/04/2026 00:11:00",
+    "mod_abs_time": "202610040011",
+    "is_new": "Y",
+    "gid": "6/7060"
+  },
+  {
     "notam_id": "6/7038",
     "facility": "ZOA",
     "state": "CA",
@@ -339,17 +372,6 @@
     "mod_abs_time": "202609291746",
     "is_new": "N",
     "gid": "6/6136"
-  },
-  {
-    "notam_id": "6/6135",
-    "facility": "ZLC",
-    "state": "NV",
-    "type": "SPACE OPERATIONS",
-    "description": "35 ZLC AIRSPACE BLACK ROCK, NV, Saturday, October 3, 2026 through Sunday, October 4, 2026 UTC",
-    "mod_date": "09/29/2026 17:44:00",
-    "mod_abs_time": "202609291744",
-    "is_new": "N",
-    "gid": "6/6135"
   },
   {
     "notam_id": "6/6087",

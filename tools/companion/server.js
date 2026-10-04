@@ -359,11 +359,89 @@ const adsbTracker = new AdsbAirspaceTracker({
   autoConnect: process.env.NODE_ENV !== 'test' && !process.env.npm_lifecycle_event?.includes('test') && !process.argv.includes('--test')
 });
 
-// Server-Sent Events (SSE) active streaming client pool
+// Server-Sent Events (SSE) active streaming client pools
 const sseAirspaceClients = new Set();
+const sseRemoteIdClients = new Set();
+const sseStatusClients = new Set();
+const sseMediaProgressClients = new Set();
+const sseUnifiedClients = new Set();
+
+function broadcastRemoteIdAirspace(drones) {
+  if (sseRemoteIdClients.size === 0 && sseUnifiedClients.size === 0) return;
+  const droneList = drones || (typeof airspaceTracker !== 'undefined' && airspaceTracker.getActiveDrones ? airspaceTracker.getActiveDrones() : []);
+  const payloadStr = JSON.stringify({
+    success: true,
+    count: droneList.length,
+    totalPackets: (typeof airspaceTracker !== 'undefined' ? airspaceTracker.totalPackets : 0),
+    drones: droneList
+  });
+  for (const client of sseRemoteIdClients) {
+    try {
+      client.res.write(`data: ${payloadStr}\n\n`);
+    } catch (_) {
+      try { client.res.end(); } catch (e) {}
+      sseRemoteIdClients.delete(client);
+    }
+  }
+  for (const client of sseUnifiedClients) {
+    try {
+      client.res.write(`event: remote-id\ndata: ${payloadStr}\n\n`);
+    } catch (_) {
+      try { client.res.end(); } catch (e) {}
+      sseUnifiedClients.delete(client);
+    }
+  }
+}
+
+function broadcastCompanionStatus(status) {
+  if (sseStatusClients.size === 0 && sseUnifiedClients.size === 0) return;
+  const droneCount = (typeof airspaceTracker !== 'undefined' && airspaceTracker.getActiveDrones)
+    ? airspaceTracker.getActiveDrones().length
+    : 0;
+  const st = status || (typeof cachedRc2Status !== 'undefined' ? cachedRc2Status : { connected: false });
+  const payloadStr = JSON.stringify({ ...st, droneCount });
+  for (const client of sseStatusClients) {
+    try {
+      client.res.write(`data: ${payloadStr}\n\n`);
+    } catch (_) {
+      try { client.res.end(); } catch (e) {}
+      sseStatusClients.delete(client);
+    }
+  }
+  for (const client of sseUnifiedClients) {
+    try {
+      client.res.write(`event: status\ndata: ${payloadStr}\n\n`);
+    } catch (_) {
+      try { client.res.end(); } catch (e) {}
+      sseUnifiedClients.delete(client);
+    }
+  }
+}
+
+function broadcastMediaProgress(prog) {
+  if (sseMediaProgressClients.size === 0 && sseUnifiedClients.size === 0) return;
+  const p = prog || (typeof mediaPullProgress !== 'undefined' ? mediaPullProgress : { active: false, percent: 0 });
+  const payloadStr = JSON.stringify({ success: true, ...p });
+  for (const client of sseMediaProgressClients) {
+    try {
+      client.res.write(`data: ${payloadStr}\n\n`);
+    } catch (_) {
+      try { client.res.end(); } catch (e) {}
+      sseMediaProgressClients.delete(client);
+    }
+  }
+  for (const client of sseUnifiedClients) {
+    try {
+      client.res.write(`event: progress\ndata: ${payloadStr}\n\n`);
+    } catch (_) {
+      try { client.res.end(); } catch (e) {}
+      sseUnifiedClients.delete(client);
+    }
+  }
+}
 
 adsbTracker.on('broadcast', () => {
-  if (sseAirspaceClients.size === 0) return;
+  if (sseAirspaceClients.size === 0 && sseUnifiedClients.size === 0) return;
   for (const client of sseAirspaceClients) {
     try {
       const payload = adsbTracker.getAirspaceBounds(client.criteria);
@@ -373,24 +451,65 @@ adsbTracker.on('broadcast', () => {
       sseAirspaceClients.delete(client);
     }
   }
+  for (const client of sseUnifiedClients) {
+    try {
+      const payload = adsbTracker.getAirspaceBounds(client.criteria || {});
+      client.res.write(`event: airspace\ndata: ${JSON.stringify(payload)}\n\n`);
+    } catch (e) {
+      try { client.res.end(); } catch (_) {}
+      sseUnifiedClients.delete(client);
+    }
+  }
+});
+
+airspaceTracker.on('broadcast', () => {
+  broadcastRemoteIdAirspace();
+});
+airspaceTracker.on('update', (drones) => {
+  broadcastRemoteIdAirspace(drones);
 });
 
 // SSE Keepalive heartbeat every 15s to keep connections alive through proxies
 const sseKeepaliveTimer = setInterval(() => {
-  if (sseAirspaceClients.size === 0) return;
-  for (const client of sseAirspaceClients) {
-    try {
-      client.res.write(': keepalive\n\n');
-    } catch (e) {
-      try { client.res.end(); } catch (_) {}
-      sseAirspaceClients.delete(client);
+  const pools = [sseAirspaceClients, sseRemoteIdClients, sseStatusClients, sseMediaProgressClients, sseUnifiedClients];
+  for (const pool of pools) {
+    if (pool.size === 0) continue;
+    for (const client of pool) {
+      try {
+        client.res.write(': keepalive\n\n');
+      } catch (e) {
+        try { client.res.end(); } catch (_) {}
+        pool.delete(client);
+      }
     }
   }
 }, 15000);
 if (sseKeepaliveTimer.unref) sseKeepaliveTimer.unref();
 
+// Periodic 1-second refresh for Remote ID ages & uptime when streaming
+const sseRemoteIdTicker = setInterval(() => {
+  if (sseRemoteIdClients.size > 0 || sseUnifiedClients.size > 0) {
+    const active = airspaceTracker.getActiveDrones();
+    if (active.length > 0) {
+      broadcastRemoteIdAirspace(active);
+    }
+  }
+}, 1000);
+if (sseRemoteIdTicker.unref) sseRemoteIdTicker.unref();
+
 function getSseAirspaceClientsCount() {
   return sseAirspaceClients.size;
+}
+
+function getSseClientsCount() {
+  return {
+    airspace: sseAirspaceClients.size,
+    remoteId: sseRemoteIdClients.size,
+    status: sseStatusClients.size,
+    mediaProgress: sseMediaProgressClients.size,
+    unified: sseUnifiedClients.size,
+    total: sseAirspaceClients.size + sseRemoteIdClients.size + sseStatusClients.size + sseMediaProgressClients.size + sseUnifiedClients.size
+  };
 }
 
 let bleScannerProc = null;
@@ -867,6 +986,7 @@ async function updateRc2Status() {
   try {
     const status = await checkRc2Status();
     cachedRc2Status = { ...status, lastCheck: Date.now() };
+    broadcastCompanionStatus(cachedRc2Status);
 
     // Detect state changes
     const curConnected = !!status.connected;
@@ -886,6 +1006,7 @@ async function updateRc2Status() {
     }
   } catch (err) {
     cachedRc2Status = { connected: false, error: err.message, lastCheck: Date.now() };
+    broadcastCompanionStatus(cachedRc2Status);
     if (lastConnectionState !== false) {
       lastConnectionState = false;
       logError('[RC 2 ERROR]', err.message);
@@ -1531,6 +1652,14 @@ function getMediaPullProgress() {
   return mediaPullProgress;
 }
 
+function updateMediaPullProgress(prog) {
+  mediaPullProgress = { ...mediaPullProgress, ...prog };
+  if (typeof broadcastMediaProgress === 'function') {
+    broadcastMediaProgress(mediaPullProgress);
+  }
+  return mediaPullProgress;
+}
+
 // 5. Media & Photo Ingestion Engine for Mini 4 Pro, SD Cards, & RC 2
 async function detectMediaDevices() {
   if (!IS_WINDOWS) {
@@ -1958,6 +2087,7 @@ async function pullMediaPhotos(options = {}) {
     total: 0,
     status: 'Scanning for connected DJI aircraft & SD cards...'
   };
+  broadcastMediaProgress(mediaPullProgress);
 
   // 1. Direct Node filesystem copy for detected drive letters (e.g. E:\DCIM)
   let directCopiedCount = 0;
@@ -2017,6 +2147,7 @@ async function pullMediaPhotos(options = {}) {
           total: candidateFiles.length,
           status: `Found ${candidateFiles.length} photos on ${dev.name}. Ingesting...`
         };
+        broadcastMediaProgress(mediaPullProgress);
 
         for (let idx = 0; idx < candidateFiles.length; idx++) {
           const fileObj = candidateFiles[idx];
@@ -2049,6 +2180,7 @@ async function pullMediaPhotos(options = {}) {
             total: candidateFiles.length,
             status: `Ingesting photo ${idx + 1} of ${candidateFiles.length} (${cPct}%)...`
           };
+          broadcastMediaProgress(mediaPullProgress);
 
           // Triple-Barrier Verification for Safe Deletion:
             // Barrier 1: Non-zero size equality
@@ -2208,6 +2340,7 @@ if ($copied.Count -eq 0 -and $thisPC) {
       total: 0,
       status: 'Transferring raw media from DJI aircraft/controller over USB MTP...'
     };
+    broadcastMediaProgress(mediaPullProgress);
 
     const mtpRaw = await runMtpScript(psScript, 600000);
     try {
@@ -2238,6 +2371,7 @@ if ($copied.Count -eq 0 -and $thisPC) {
       total: rawFiles.length,
       status: `Generating preview & thumbnail ${idx + 1} of ${rawFiles.length} (${pPct}%)...`
     };
+    broadcastMediaProgress(mediaPullProgress);
 
     const src = path.join(rawDir, f);
     const prevDst = path.join(previewDir, f);
@@ -2285,6 +2419,7 @@ if ($copied.Count -eq 0 -and $thisPC) {
     total: rawFiles.length,
     status: 'Correlating photos with flight telemetry & GPS coordinates...'
   };
+  broadcastMediaProgress(mediaPullProgress);
 
   const { correlatePhotosWithTelemetry, parseCsvTelemetry } = require('./log_decoder.js');
   const photosMetadata = rawFiles.map((fn, idx) => {
@@ -2395,6 +2530,7 @@ if ($copied.Count -eq 0 -and $thisPC) {
       total: correlated.length,
       status: 'Scanning photos for fiducial tags & GCPs (AprilTag / ArUco)...'
     };
+    broadcastMediaProgress(mediaPullProgress);
 
     correlated.forEach((photo) => {
       try {
@@ -2513,6 +2649,7 @@ if ($copied.Count -eq 0 -and $thisPC) {
     total: rawFiles.length,
     status: `Ingestion complete! ${rawFiles.length} photos ready.`
   };
+  broadcastMediaProgress(mediaPullProgress);
 
   return {
     success: true,
@@ -2754,28 +2891,32 @@ function printStartupBanner() {
   }
 
   console.log(`\n${colors.bold}🌐 Active Web & REST API Endpoints:${colors.reset}`);
-  console.log(`  ${colors.green}${colors.bold}GET  /${colors.reset}                  ${colors.gray}Aalaapi Sky full web application interface${colors.reset}`);
-  console.log(`  ${colors.green}${colors.bold}GET  /api/status${colors.reset}           ${colors.gray}Real-time DJI RC 2 connection status & mission inventory${colors.reset}`);
-  console.log(`  ${colors.green}${colors.bold}GET  /api/proxy/tile${colors.reset}       ${colors.gray}Map tile & spatial asset caching proxy (2GB LRU ceiling)${colors.reset}`);
-  console.log(`  ${colors.green}${colors.bold}GET  /api/cache/tiles/stats${colors.reset} ${colors.gray}Map tile cache capacity, hit rates & statistics${colors.reset}`);
-  console.log(`  ${colors.green}${colors.bold}POST /api/cache/tiles/clear${colors.reset} ${colors.gray}Purge local tile cache pool${colors.reset}`);
-  console.log(`  ${colors.green}${colors.bold}POST /api/sync${colors.reset}             ${colors.gray}Direct 1-click in-memory KMZ & preview sync to RC 2${colors.reset}`);
-  console.log(`  ${colors.green}${colors.bold}GET  /api/flights${colors.reset}          ${colors.gray}List extracted telemetry flight records & metadata${colors.reset}`);
-  console.log(`  ${colors.green}${colors.bold}POST /api/flight-telemetry${colors.reset} ${colors.gray}3D flight trajectory solver, photo markers & variances${colors.reset}`);
-  console.log(`  ${colors.green}${colors.bold}GET  /api/latest-flight${colors.reset}    ${colors.gray}Auto-extract latest flight log & KMZ over USB MTP${colors.reset}`);
-  console.log(`  ${colors.green}${colors.bold}GET  /api/remote-id/drones${colors.reset} ${colors.gray}Live ASTM F3411 Remote ID detected drones in airspace${colors.reset}`);
-  console.log(`  ${colors.green}${colors.bold}GET  /api/airspace/stream${colors.reset}   ${colors.gray}Real-time Server-Sent Events (SSE) sub-second aircraft stream${colors.reset}`);
-  console.log(`  ${colors.green}${colors.bold}GET  /api/airspace/bounds${colors.reset}   ${colors.gray}Proximity-filtered manned aircraft & deconfliction state${colors.reset}`);
-  console.log(`  ${colors.green}${colors.bold}GET  /api/airspace/status${colors.reset}   ${colors.gray}Live ADS-B hardware & dump1090 daemon connection health${colors.reset}`);
-  console.log(`  ${colors.green}${colors.bold}GET  /api/tfr/notams${colors.reset}       ${colors.gray}Live FAA Temporary Flight Restrictions (TFR) NOTAM list${colors.reset}`);
-  console.log(`  ${colors.green}${colors.bold}GET  /api/tfr/geojson${colors.reset}      ${colors.gray}GeoJSON geometry boundaries for active FAA TFR polygons${colors.reset}`);
-  console.log(`  ${colors.green}${colors.bold}GET  /api/media/detect${colors.reset}       ${colors.gray}Scan for Mini 4 Pro, SD Card readers, and RC 2 albums${colors.reset}`);
-  console.log(`  ${colors.green}${colors.bold}POST /api/media/pull${colors.reset}         ${colors.gray}Ingest flight photos, correlate telemetry, and build archive${colors.reset}`);
-  console.log(`  ${colors.green}${colors.bold}POST /api/process/wireframe${colors.reset}   ${colors.gray}Real-time OpenCV edge extraction & 3D wireframe projection${colors.reset}`);
-  console.log(`  ${colors.green}${colors.bold}POST /api/drone/locate${colors.reset}    ${colors.gray}Rest API locate drone & inject live geo coordinates${colors.reset}`);
-  console.log(`  ${colors.green}${colors.bold}GET  /api/weather/current${colors.reset}  ${colors.gray}Synchronized METAR weather & 24h solar ephemeris${colors.reset}`);
-  console.log(`  ${colors.green}${colors.bold}POST /api/shutdown${colors.reset}         ${colors.gray}Cleanly terminate running companion bridge process${colors.reset}`);
-  console.log(`  ${colors.green}${colors.bold}GET  /health${colors.reset}               ${colors.gray}Service heartbeat and status ping${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /${colors.reset}                       ${colors.gray}Aalaapi Sky full web application interface${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/status${colors.reset}                ${colors.gray}Real-time DJI RC 2 connection status & mission inventory${colors.reset}`);
+  console.log(`  ${colors.cyan}${colors.bold}GET  /api/status/stream${colors.reset}         ${colors.gray}Real-time SSE companion status & RC 2 connection push stream${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/proxy/tile${colors.reset}            ${colors.gray}Map tile & spatial asset caching proxy (2GB LRU ceiling)${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/cache/tiles/stats${colors.reset}      ${colors.gray}Map tile cache capacity, hit rates & statistics${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}POST /api/cache/tiles/clear${colors.reset}      ${colors.gray}Purge local tile cache pool${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}POST /api/sync${colors.reset}                  ${colors.gray}Direct 1-click in-memory KMZ & preview sync to RC 2${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/flights${colors.reset}               ${colors.gray}List extracted telemetry flight records & metadata${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}POST /api/flight-telemetry${colors.reset}      ${colors.gray}3D flight trajectory solver, photo markers & variances${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/latest-flight${colors.reset}         ${colors.gray}Auto-extract latest flight log & KMZ over USB MTP${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/remote-id/drones${colors.reset}      ${colors.gray}Live ASTM F3411 Remote ID detected drones in airspace${colors.reset}`);
+  console.log(`  ${colors.cyan}${colors.bold}GET  /api/remote-id/stream${colors.reset}      ${colors.gray}Real-time SSE ASTM F3411 drone telemetry push stream${colors.reset}`);
+  console.log(`  ${colors.cyan}${colors.bold}GET  /api/airspace/stream${colors.reset}       ${colors.gray}Real-time SSE sub-second manned aircraft ADS-B stream${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/airspace/bounds${colors.reset}        ${colors.gray}Proximity-filtered manned aircraft & deconfliction state${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/airspace/status${colors.reset}        ${colors.gray}Live ADS-B hardware & dump1090 daemon connection health${colors.reset}`);
+  console.log(`  ${colors.cyan}${colors.bold}GET  /api/media/progress/stream${colors.reset} ${colors.gray}Real-time SSE media pull & log extraction progress stream${colors.reset}`);
+  console.log(`  ${colors.cyan}${colors.bold}GET  /api/stream${colors.reset}                ${colors.gray}Unified multiplexed SSE live stream (all subsystem events)${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/tfr/notams${colors.reset}            ${colors.gray}Live FAA Temporary Flight Restrictions (TFR) NOTAM list${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/tfr/geojson${colors.reset}           ${colors.gray}GeoJSON geometry boundaries for active FAA TFR polygons${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/media/detect${colors.reset}            ${colors.gray}Scan for Mini 4 Pro, SD Card readers, and RC 2 albums${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}POST /api/media/pull${colors.reset}              ${colors.gray}Ingest flight photos, correlate telemetry, and build archive${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}POST /api/process/wireframe${colors.reset}        ${colors.gray}Real-time OpenCV edge extraction & 3D wireframe projection${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}POST /api/drone/locate${colors.reset}         ${colors.gray}Rest API locate drone & inject live geo coordinates${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/weather/current${colors.reset}       ${colors.gray}Synchronized METAR weather & 24h solar ephemeris${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}POST /api/shutdown${colors.reset}              ${colors.gray}Cleanly terminate running companion bridge process${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /health${colors.reset}                    ${colors.gray}Service heartbeat and status ping${colors.reset}`);
 
   if (process.stdin.isTTY) {
     console.log(`\n${colors.bold}⌨️  Interactive CLI Commands:${colors.reset}`);
@@ -2809,9 +2950,33 @@ const server = http.createServer(async (req, res) => {
       const droneCount = (typeof airspaceTracker !== 'undefined' && airspaceTracker.getActiveDrones)
         ? airspaceTracker.getActiveDrones().length
         : 0;
-      const statusPayload = { ...cachedRc2Status, droneCount };
+      const statusPayload = { ...cachedRc2Status, droneCount, sseClients: getSseClientsCount() };
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(statusPayload));
+      return;
+    }
+
+    // 1a. Real-time Server-Sent Events (SSE) Companion Status & USB Link Stream
+    if (pathname === '/api/status/stream' && req.method === 'GET') {
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*'
+      });
+      if (res.flushHeaders) res.flushHeaders();
+
+      const client = { res, req };
+      sseStatusClients.add(client);
+      req.on('close', () => {
+        sseStatusClients.delete(client);
+      });
+
+      res.write(': connected\n\n');
+      const droneCount = (typeof airspaceTracker !== 'undefined' && airspaceTracker.getActiveDrones)
+        ? airspaceTracker.getActiveDrones().length
+        : 0;
+      res.write(`data: ${JSON.stringify({ ...cachedRc2Status, droneCount })}\n\n`);
       return;
     }
 
@@ -3365,6 +3530,27 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/media/progress' && req.method === 'GET') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ success: true, ...mediaPullProgress }));
+      return;
+    }
+
+    // 5.5a. Real-time Server-Sent Events (SSE) Media Pull Progress Stream
+    if (pathname === '/api/media/progress/stream' && req.method === 'GET') {
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*'
+      });
+      if (res.flushHeaders) res.flushHeaders();
+
+      const client = { res, req };
+      sseMediaProgressClients.add(client);
+      req.on('close', () => {
+        sseMediaProgressClients.delete(client);
+      });
+
+      res.write(': connected\n\n');
+      res.write(`data: ${JSON.stringify({ success: true, ...mediaPullProgress })}\n\n`);
       return;
     }
 
@@ -3958,6 +4144,65 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(404, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: false, error: pkgRes.error || 'Archive zip not found' }));
       }
+      return;
+    }
+
+    // 6a-0. Real-time Server-Sent Events (SSE) Remote ID Airspace Stream
+    if ((pathname === '/api/remote-id/stream' || pathname === '/api/drones/stream') && req.method === 'GET') {
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*'
+      });
+      if (res.flushHeaders) res.flushHeaders();
+
+      const client = { res, req };
+      sseRemoteIdClients.add(client);
+      req.on('close', () => {
+        sseRemoteIdClients.delete(client);
+      });
+
+      res.write(': connected\n\n');
+      const activeDrones = airspaceTracker.getActiveDrones();
+      res.write(`data: ${JSON.stringify({
+        success: true,
+        count: activeDrones.length,
+        totalPackets: airspaceTracker.totalPackets,
+        drones: activeDrones
+      })}\n\n`);
+      return;
+    }
+
+    // 6a-1. Unified Multiplexed Server-Sent Events (SSE) Live Stream
+    if ((pathname === '/api/stream' || pathname === '/api/events') && req.method === 'GET') {
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*'
+      });
+      if (res.flushHeaders) res.flushHeaders();
+
+      const client = { res, req, criteria: {} };
+      sseUnifiedClients.add(client);
+      req.on('close', () => {
+        sseUnifiedClients.delete(client);
+      });
+
+      res.write(': connected\n\n');
+      const droneCount = (typeof airspaceTracker !== 'undefined' && airspaceTracker.getActiveDrones)
+        ? airspaceTracker.getActiveDrones().length
+        : 0;
+      res.write(`event: status\ndata: ${JSON.stringify({ ...cachedRc2Status, droneCount })}\n\n`);
+      const activeDrones = airspaceTracker.getActiveDrones();
+      res.write(`event: remote-id\ndata: ${JSON.stringify({
+        success: true,
+        count: activeDrones.length,
+        totalPackets: airspaceTracker.totalPackets,
+        drones: activeDrones
+      })}\n\n`);
+      res.write(`event: progress\ndata: ${JSON.stringify({ success: true, ...mediaPullProgress })}\n\n`);
       return;
     }
 
@@ -4868,7 +5113,16 @@ module.exports = {
   packageInspectionArchive,
   adsbTracker,
   getSseAirspaceClientsCount,
+  getSseClientsCount,
   sseAirspaceClients,
+  sseRemoteIdClients,
+  sseStatusClients,
+  sseMediaProgressClients,
+  sseUnifiedClients,
+  broadcastRemoteIdAirspace,
+  broadcastCompanionStatus,
+  broadcastMediaProgress,
+  updateMediaPullProgress,
   tileCache,
   TileCacheManager,
   fetchUpstreamBinary,

@@ -5593,7 +5593,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.137.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.138.0</span></h1>
 
 
 
@@ -7540,6 +7540,7 @@ html, body {
                 <span id="companion-service-text">Aalaapi Bridge: Offline</span>
               </span>
               <span style="display: inline-flex; align-items: center; gap: 6px;">
+                <span id="companion-transport-badge" style="font-size: 0.65rem; color: #38bdf8; font-weight: 600;"></span>
                 <span id="companion-service-label" style="color: var(--text-muted); font-size: 0.68rem;">start-bridge.bat</span>
                 <button id="companion-config-host-btn" class="companion-help-circle-btn" type="button" title="Configure Remote Aalaapi Bridge IP / Host" style="font-size: 0.65rem;">⚙️</button>
                 <button id="companion-service-help-btn" class="companion-help-circle-btn" type="button" title="How to start Aalaapi Bridge">?</button>
@@ -7752,6 +7753,7 @@ html, body {
               </svg>
               <span>Map &amp; Remote ID Alignment</span>
             </div>
+            <span id="remote-id-transport-badge" style="font-size: 0.65rem; color: #38bdf8; font-weight: 600;"></span>
             <button id="remote-id-cal-close-btn" class="remote-id-cal-close-btn" type="button" aria-label="Close Calibration Panel" title="Close Alignment Panel">✕</button>
           </div>
 
@@ -8351,6 +8353,14 @@ html, body {
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              ⚡ Real-Time SSE Streams for Remote ID &amp; RC 2 Companion (v1.138.0) (Closes #114)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Replaced high-frequency REST HTTP polling with persistent, low-latency Server-Sent Events (SSE) event streams across the entire companion bridge stack! Remote ID drone radar telemetry, RC 2 USB/ADB link status, and photo/log pull progress stream sub-second updates directly from <code>tools/companion/server.js</code> with zero extra npm dependencies. Replaces thousands of repetitive HTTP requests per flight with clean event-driven updates, real-time transport badges, and automatic graceful fallback to backoff REST polling if the stream drops.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🛰️ Map Tile &amp; Asset Caching Proxy on Bridge (v1.137.0) (Closes #91)
@@ -9342,7 +9352,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.137.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.138.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -9403,6 +9413,12 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.138.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>⚡ Real-Time SSE Streams for Remote ID &amp; RC 2 Companion (Closes #114):</strong> Replaced high-frequency REST HTTP polling with persistent, low-latency Server-Sent Events (SSE) event streams across the entire companion bridge stack (<code>tools/companion/server.js</code>). Remote ID drone radar telemetry (<code>/api/remote-id/stream</code>), RC 2 USB/ADB link status (<code>/api/status/stream</code>), and photo/flight log pull progress (<code>/api/media/progress/stream</code>) stream sub-second updates natively using Node standard libraries with zero extra npm dependencies. Drastically eliminates repetitive polling HTTP traffic, introduces real-time transport badges in the bridge drawer and calibration header, and provides automatic graceful fallback to backoff REST polling if streams drop.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.137.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -32566,6 +32582,186 @@ async function purgeBridgeTileCache() {
   }
 }
 
+let companionStatusEventSource = null;
+let isCompanionStatusStreaming = false;
+
+function updateCompanionTransportUI(mode) {
+  if (typeof document === 'undefined') return;
+  const badge = document.getElementById('companion-transport-badge');
+  if (!badge) return;
+  if (mode === 'sse') {
+    badge.textContent = 'SSE Stream';
+    badge.style.color = '#38bdf8';
+  } else if (mode === 'polling') {
+    badge.textContent = 'REST Polling';
+    badge.style.color = '#f59e0b';
+  } else {
+    badge.textContent = '';
+  }
+}
+
+function applyCompanionStatusUI(data) {
+  if (typeof document === 'undefined' || !data) return;
+  const sDot = document.getElementById('companion-service-dot');
+  const sText = document.getElementById('companion-service-text');
+  const sLabel = document.getElementById('companion-service-label');
+  const uDot = document.getElementById('companion-usb-dot');
+  const uText = document.getElementById('companion-usb-text');
+  const uLabel = document.getElementById('companion-usb-label');
+
+  // Legacy alias elements for backward compatibility
+  const dot = document.getElementById('companion-indicator-dot');
+  const text = document.getElementById('companion-status-text');
+  const label = document.getElementById('companion-device-label');
+
+  const directActions = document.getElementById('rc2-direct-actions');
+  const directBtn = document.getElementById('direct-rc2-sync-btn');
+  const pullBtn = document.getElementById('direct-rc2-pull-btn');
+  const container = document.getElementById('companion-sync-container');
+  const hint = document.getElementById('companion-offline-hint');
+  const diagPullBtn = document.getElementById('diag-pull-rc2-btn');
+  const diagBrowseBtn = document.getElementById('diag-browse-rc2-logs-btn');
+
+  // 1. Update Bridge Service status (Online)
+  if (sDot) sDot.style.background = '#22c55e';
+  if (sText) {
+    sText.textContent = 'Aalaapi Bridge: Online';
+    sText.style.color = '#22c55e';
+  }
+  if (sLabel) sLabel.textContent = 'port 8765';
+  if (typeof fetchBridgeCacheStats === 'function') fetchBridgeCacheStats();
+
+  // 2. Update RC 2 USB Link status
+  if (data.connected) {
+    isRc2MtpConnected = true;
+    if (data.activeMissions && data.activeMissions.length > 0) {
+      rc2MtpActiveUUID = data.activeMissions[0];
+      if (typeof setRC2UUID === 'function' && !getRC2UUID()) {
+        setRC2UUID(rc2MtpActiveUUID);
+      }
+    }
+    if (container && container.classList) container.classList.remove('is-offline');
+    if (hint && hint.style) hint.style.display = 'none';
+
+    if (uDot) uDot.style.background = '#22c55e';
+    if (uText) {
+      uText.textContent = 'RC 2 USB Link: Connected';
+      uText.style.color = '#22c55e';
+    }
+    if (uLabel) uLabel.textContent = data.deviceName || 'MTP Ready';
+
+    // Legacy compatibility
+    if (dot) dot.style.background = '#22c55e';
+    if (text) {
+      text.textContent = 'DJI RC 2 Connected';
+      text.style.color = '#22c55e';
+    }
+    if (label) label.textContent = data.deviceName || 'MTP Ready';
+
+    if (directActions) directActions.style.display = 'flex';
+    if (directBtn) directBtn.style.display = 'inline-flex';
+    if (pullBtn) pullBtn.style.display = 'inline-flex';
+    if (diagPullBtn) diagPullBtn.style.display = 'inline-flex';
+    if (diagBrowseBtn) diagBrowseBtn.style.display = 'inline-flex';
+  } else {
+    isRc2MtpConnected = false;
+    if (container && container.classList) container.classList.add('is-offline');
+    if (hint) {
+      hint.style.display = 'flex';
+      const labelSpan = (typeof hint.querySelector === 'function') ? hint.querySelector('span:first-child') : null;
+      if (labelSpan) {
+        labelSpan.innerHTML = `
+          <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          RC 2 Unplugged &bull; USB Setup Guide`;
+      }
+    }
+
+    if (uDot) uDot.style.background = '#eab308'; // Amber
+    if (uText) {
+      uText.textContent = 'RC 2 USB Link: Unplugged';
+      uText.style.color = '#eab308';
+    }
+    if (uLabel) uLabel.textContent = 'Plug in USB-C';
+
+    // Legacy compatibility
+    if (dot) dot.style.background = '#eab308';
+    if (text) {
+      text.textContent = 'RC 2 Disconnected';
+      text.style.color = '#eab308';
+    }
+    if (label) label.textContent = 'Plug in USB-C';
+
+    if (directActions) directActions.style.display = 'none';
+    if (directBtn) directBtn.style.display = 'none';
+    if (pullBtn) pullBtn.style.display = 'none';
+    if (diagPullBtn) diagPullBtn.style.display = 'none';
+    if (diagBrowseBtn) diagBrowseBtn.style.display = 'none';
+  }
+}
+
+function connectCompanionStatusStream() {
+  if (!isCompanionOnline) return;
+  const EventSourceCtor = (typeof window !== 'undefined' && window.EventSource) || (typeof EventSource !== 'undefined' && EventSource) || null;
+  if (!EventSourceCtor) {
+    isCompanionStatusStreaming = false;
+    updateCompanionTransportUI('polling');
+    return;
+  }
+
+  const apiBase = typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765';
+  const url = `${apiBase}/api/status/stream`;
+
+  if (companionStatusEventSource) {
+    try { companionStatusEventSource.close(); } catch (_) {}
+    companionStatusEventSource = null;
+  }
+
+  try {
+    companionStatusEventSource = new EventSourceCtor(url);
+
+    companionStatusEventSource.onopen = () => {
+      isCompanionStatusStreaming = true;
+      consecutiveStatusFailures = 0;
+      updateCompanionTransportUI('sse');
+    };
+
+    companionStatusEventSource.onmessage = (event) => {
+      if (!event || !event.data) return;
+      try {
+        const data = JSON.parse(event.data);
+        isCompanionStatusStreaming = true;
+        isCompanionOnline = true;
+        consecutiveStatusFailures = 0;
+        lastStatusCheckTime = Date.now();
+        if (typeof data.droneCount === 'number') {
+          remoteIdDroneCount = data.droneCount;
+        }
+        applyCompanionStatusUI(data);
+        updateCompanionTransportUI('sse');
+      } catch (e) {}
+    };
+
+    companionStatusEventSource.onerror = () => {
+      isCompanionStatusStreaming = false;
+      updateCompanionTransportUI('polling');
+      scheduleNextStatusCheck();
+    };
+  } catch (e) {
+    isCompanionStatusStreaming = false;
+    updateCompanionTransportUI('polling');
+    scheduleNextStatusCheck();
+  }
+}
+
+function disconnectCompanionStatusStream() {
+  if (companionStatusEventSource) {
+    try { companionStatusEventSource.close(); } catch (_) {}
+    companionStatusEventSource = null;
+  }
+  isCompanionStatusStreaming = false;
+  updateCompanionTransportUI('disconnected');
+}
+
 async function pollCompanionStatus() {
   if (typeof document === 'undefined') return;
   const sDot = document.getElementById('companion-service-dot');
@@ -32603,9 +32799,18 @@ async function pollCompanionStatus() {
       if (typeof data.droneCount === 'number') {
         remoteIdDroneCount = data.droneCount;
       }
+      applyCompanionStatusUI(data);
+
+      if (!isCompanionStatusStreaming && typeof connectCompanionStatusStream === 'function') {
+        connectCompanionStatusStream();
+      }
+      if (typeof RemoteIdRadar !== 'undefined' && !RemoteIdRadar.streamConnected && typeof RemoteIdRadar.connectStream === 'function') {
+        RemoteIdRadar.connectStream();
+      }
+
       if (wasOffline) {
         consecutiveRadarFailures = 0;
-        if (typeof RemoteIdRadar !== 'undefined' && RemoteIdRadar.pollAirspace) {
+        if (typeof RemoteIdRadar !== 'undefined' && !RemoteIdRadar.streamConnected && RemoteIdRadar.pollAirspace) {
           RemoteIdRadar.pollAirspace();
         }
         if (typeof scheduleNextRadarCheck === 'function') {
@@ -32613,82 +32818,6 @@ async function pollCompanionStatus() {
         }
       } else if (!companionRadarTimer && typeof scheduleNextRadarCheck === 'function' && getRadarPollDelay() !== null) {
         scheduleNextRadarCheck();
-      }
-
-      // 1. Update Bridge Service status (Online)
-      if (sDot) sDot.style.background = '#22c55e';
-      if (sText) {
-        sText.textContent = 'Aalaapi Bridge: Online';
-        sText.style.color = '#22c55e';
-      }
-      if (sLabel) sLabel.textContent = 'port 8765';
-      if (typeof fetchBridgeCacheStats === 'function') fetchBridgeCacheStats();
-
-      // 2. Update RC 2 USB Link status
-      if (data.connected) {
-        isRc2MtpConnected = true;
-        if (data.activeMissions && data.activeMissions.length > 0) {
-          rc2MtpActiveUUID = data.activeMissions[0];
-          if (typeof setRC2UUID === 'function' && !getRC2UUID()) {
-            setRC2UUID(rc2MtpActiveUUID);
-          }
-        }
-        if (container && container.classList) container.classList.remove('is-offline');
-        if (hint && hint.style) hint.style.display = 'none';
-
-        if (uDot) uDot.style.background = '#22c55e';
-        if (uText) {
-          uText.textContent = 'RC 2 USB Link: Connected';
-          uText.style.color = '#22c55e';
-        }
-        if (uLabel) uLabel.textContent = data.deviceName || 'MTP Ready';
-
-        // Legacy compatibility
-        if (dot) dot.style.background = '#22c55e';
-        if (text) {
-          text.textContent = 'DJI RC 2 Connected';
-          text.style.color = '#22c55e';
-        }
-        if (label) label.textContent = data.deviceName || 'MTP Ready';
-
-        if (directActions) directActions.style.display = 'flex';
-        if (directBtn) directBtn.style.display = 'inline-flex';
-        if (pullBtn) pullBtn.style.display = 'inline-flex';
-        if (diagPullBtn) diagPullBtn.style.display = 'inline-flex';
-        if (diagBrowseBtn) diagBrowseBtn.style.display = 'inline-flex';
-      } else {
-        isRc2MtpConnected = false;
-        if (container && container.classList) container.classList.add('is-offline');
-        if (hint) {
-          hint.style.display = 'flex';
-          const labelSpan = (typeof hint.querySelector === 'function') ? hint.querySelector('span:first-child') : null;
-          if (labelSpan) {
-            labelSpan.innerHTML = `
-              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-              RC 2 Unplugged &bull; USB Setup Guide`;
-          }
-        }
-
-        if (uDot) uDot.style.background = '#eab308'; // Amber
-        if (uText) {
-          uText.textContent = 'RC 2 USB Link: Unplugged';
-          uText.style.color = '#eab308';
-        }
-        if (uLabel) uLabel.textContent = 'Plug in USB-C';
-
-        // Legacy compatibility
-        if (dot) dot.style.background = '#eab308';
-        if (text) {
-          text.textContent = 'RC 2 Disconnected';
-          text.style.color = '#eab308';
-        }
-        if (label) label.textContent = 'Plug in USB-C';
-
-        if (directActions) directActions.style.display = 'none';
-        if (directBtn) directBtn.style.display = 'none';
-        if (pullBtn) pullBtn.style.display = 'none';
-        if (diagPullBtn) diagPullBtn.style.display = 'none';
-        if (diagBrowseBtn) diagBrowseBtn.style.display = 'none';
       }
     } else {
       throw new Error('Non-200 status');
@@ -32698,6 +32827,15 @@ async function pollCompanionStatus() {
     lastStatusCheckTime = Date.now();
     isCompanionOnline = false;
     isRc2MtpConnected = false;
+    if (companionStatusEventSource) {
+      try { companionStatusEventSource.close(); } catch (_) {}
+      companionStatusEventSource = null;
+    }
+    isCompanionStatusStreaming = false;
+    updateCompanionTransportUI('offline');
+    if (typeof RemoteIdRadar !== 'undefined' && RemoteIdRadar.disconnectStream) {
+      RemoteIdRadar.disconnectStream();
+    }
     if (companionRadarTimer) {
       clearTimeout(companionRadarTimer);
       companionRadarTimer = null;
@@ -33161,6 +33299,10 @@ function getRadarPollDelay() {
 function scheduleNextStatusCheck() {
   if (typeof window === 'undefined' || !window.setTimeout) return;
   if (companionStatusTimer) clearTimeout(companionStatusTimer);
+  if (isCompanionStatusStreaming) {
+    companionStatusTimer = null;
+    return;
+  }
   const statusDelay = getStatusPollDelay();
   companionStatusTimer = setTimeout(async () => {
     await pollCompanionStatus();
@@ -33171,6 +33313,10 @@ function scheduleNextStatusCheck() {
 function scheduleNextRadarCheck() {
   if (typeof window === 'undefined' || !window.setTimeout) return;
   if (companionRadarTimer) clearTimeout(companionRadarTimer);
+  if (typeof RemoteIdRadar !== 'undefined' && RemoteIdRadar && RemoteIdRadar.streamConnected) {
+    companionRadarTimer = null;
+    return;
+  }
   const radarDelay = getRadarPollDelay();
   if (radarDelay === null) {
     companionRadarTimer = null;
@@ -33196,6 +33342,13 @@ function wakeCompanionPolling(resetBackoff = true) {
   }
   if (companionStatusTimer) clearTimeout(companionStatusTimer);
   if (companionRadarTimer) clearTimeout(companionRadarTimer);
+
+  if (!isCompanionStatusStreaming && typeof connectCompanionStatusStream === 'function') {
+    connectCompanionStatusStream();
+  }
+  if (typeof RemoteIdRadar !== 'undefined' && !RemoteIdRadar.streamConnected && typeof RemoteIdRadar.connectStream === 'function') {
+    RemoteIdRadar.connectStream();
+  }
 
   return pollCompanionStatus().then(() => {
     scheduleNextCompanionChecks();
@@ -33263,6 +33416,10 @@ if (typeof window !== 'undefined') {
   window.scheduleNextCompanionChecks = scheduleNextCompanionChecks;
   window.scheduleNextStatusCheck = scheduleNextStatusCheck;
   window.scheduleNextRadarCheck = scheduleNextRadarCheck;
+  window.connectCompanionStatusStream = connectCompanionStatusStream;
+  window.disconnectCompanionStatusStream = disconnectCompanionStatusStream;
+  window.getIsCompanionStatusStreaming = () => isCompanionStatusStreaming;
+  window.getCompanionStatusEventSource = () => companionStatusEventSource;
   window.getConsecutiveStatusFailures = () => consecutiveStatusFailures;
   window.setConsecutiveStatusFailures = (n) => { consecutiveStatusFailures = n; };
   window.getConsecutiveRadarFailures = () => consecutiveRadarFailures;
@@ -33278,6 +33435,10 @@ if (typeof global !== 'undefined') {
   global.scheduleNextCompanionChecks = scheduleNextCompanionChecks;
   global.scheduleNextStatusCheck = scheduleNextStatusCheck;
   global.scheduleNextRadarCheck = scheduleNextRadarCheck;
+  global.connectCompanionStatusStream = connectCompanionStatusStream;
+  global.disconnectCompanionStatusStream = disconnectCompanionStatusStream;
+  global.getIsCompanionStatusStreaming = () => isCompanionStatusStreaming;
+  global.getCompanionStatusEventSource = () => companionStatusEventSource;
   global.getConsecutiveStatusFailures = () => consecutiveStatusFailures;
   global.setConsecutiveStatusFailures = (n) => { consecutiveStatusFailures = n; };
   global.getConsecutiveRadarFailures = () => consecutiveRadarFailures;
@@ -33297,6 +33458,9 @@ const RemoteIdRadar = {
   offsetMeters: { north: 0, east: 0 },
   calibrationStep: 1.0,
   isPanelOpen: false,
+  eventSource: null,
+  streamConnected: false,
+  streamMode: 'disconnected', // 'sse' | 'polling' | 'disconnected'
 
   init() {
     const leaflet = (typeof L !== 'undefined' && L) || (typeof window !== 'undefined' && window.L) || (typeof global !== 'undefined' && global.L);
@@ -33305,6 +33469,9 @@ const RemoteIdRadar = {
       this.layerGroup = remoteIdAirspaceLayer;
     } else if (leaflet && m && !this.layerGroup && m.addLayer && leaflet.layerGroup) {
       this.layerGroup = leaflet.layerGroup().addTo(m);
+    }
+    if (isCompanionOnline && typeof this.connectStream === 'function') {
+      this.connectStream();
     }
     if (m && m.on) {
       m.on('dragstart', () => {
@@ -33605,6 +33772,94 @@ const RemoteIdRadar = {
         </div>
       </div>
     `;
+  },
+
+  updateStreamTransportUI() {
+    if (typeof document === 'undefined') return;
+    const badge = document.getElementById('remote-id-transport-badge');
+    if (!badge) return;
+    if (this.streamMode === 'sse') {
+      badge.textContent = 'SSE Stream (Sub-second)';
+      badge.style.color = '#38bdf8';
+    } else if (this.streamMode === 'polling') {
+      badge.textContent = 'REST Polling (Fallback)';
+      badge.style.color = '#f59e0b';
+    } else {
+      badge.textContent = 'Standby';
+      badge.style.color = '#94a3b8';
+    }
+  },
+
+  connectStream() {
+    if (!isCompanionOnline) return;
+    const EventSourceCtor = (typeof window !== 'undefined' && window.EventSource) || (typeof EventSource !== 'undefined' && EventSource) || null;
+    if (!EventSourceCtor) {
+      this.streamConnected = false;
+      this.streamMode = 'polling';
+      this.updateStreamTransportUI();
+      return;
+    }
+
+    const apiBase = typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765';
+    const url = `${apiBase}/api/remote-id/stream`;
+
+    if (this.eventSource) {
+      try { this.eventSource.close(); } catch (_) {}
+      this.eventSource = null;
+    }
+
+    try {
+      this.eventSource = new EventSourceCtor(url);
+
+      this.eventSource.onopen = () => {
+        this.streamConnected = true;
+        this.streamMode = 'sse';
+        consecutiveRadarFailures = 0;
+        this.updateStreamTransportUI();
+      };
+
+      this.eventSource.onmessage = (event) => {
+        if (!event || !event.data) return;
+        try {
+          const data = JSON.parse(event.data);
+          this.streamConnected = true;
+          this.streamMode = 'sse';
+          consecutiveRadarFailures = 0;
+          if (data.success && Array.isArray(data.drones)) {
+            this.activeDrones = data.drones;
+            this.updateMapMarkers();
+            this.updateRadarUI();
+          }
+          this.updateStreamTransportUI();
+        } catch (e) {}
+      };
+
+      this.eventSource.onerror = () => {
+        this.streamConnected = false;
+        this.streamMode = 'polling';
+        this.updateStreamTransportUI();
+        if (typeof scheduleNextRadarCheck === 'function') {
+          scheduleNextRadarCheck();
+        }
+      };
+    } catch (e) {
+      this.streamConnected = false;
+      this.streamMode = 'polling';
+      this.updateStreamTransportUI();
+      if (typeof scheduleNextRadarCheck === 'function') {
+        scheduleNextRadarCheck();
+      }
+    }
+  },
+
+  disconnectStream() {
+    if (this.eventSource) {
+      try { this.eventSource.close(); } catch (_) {}
+      this.eventSource = null;
+    }
+    this.streamConnected = false;
+    this.streamMode = 'disconnected';
+    this.updateStreamTransportUI();
   },
 
   async pollAirspace() {
@@ -53223,40 +53478,70 @@ async function executeMediaPull() {
 
   const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
 
-  // Poll companion server for real-time media pull progress
+  // Stream companion server real-time media pull progress via SSE (with polling fallback)
   let isPulling = true;
-  const pollInterval = setInterval(async () => {
-    if (!isPulling) {
-      clearInterval(pollInterval);
-      return;
+  let progressEs = null;
+  const EventSourceCtor = (typeof window !== 'undefined' && window.EventSource) || (typeof EventSource !== 'undefined' && EventSource) || null;
+
+  const handleProgressData = (pData) => {
+    if (pData && typeof pData.percent === 'number' && pData.percent > 0) {
+      const isDone = !pData.active || pData.percent >= 100;
+      const sPct = isDone ? 100 : Math.max(currentPct, Math.min(98, pData.percent));
+      currentPct = sPct;
+      if (progBar) progBar.style.width = `${sPct}%`;
+      if (progPct) progPct.textContent = `${sPct}%`;
+      if (pData.status && progText && !isDone) progText.textContent = pData.status;
+      if (isDone) {
+        isPulling = false;
+        if (progressEs) { try { progressEs.close(); } catch (_) {} progressEs = null; }
+        if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+      }
     }
-    try {
-      const pRes = await fetch(`${apiBase}/api/media/progress`);
-      if (pRes.ok) {
-        const pData = await pRes.json();
-        if (pData && typeof pData.percent === 'number' && pData.percent > 0) {
-          // Allow the poller to reach 100% if server reports complete
-          const isDone = !pData.active || pData.percent >= 100;
-          const sPct = isDone ? 100 : Math.max(currentPct, Math.min(98, pData.percent));
-          currentPct = sPct;
-          if (progBar) progBar.style.width = `${sPct}%`;
-          if (progPct) progPct.textContent = `${sPct}%`;
-          // Only update status text while still in-progress (don't overwrite final completion message)
-          if (pData.status && progText && !isDone) progText.textContent = pData.status;
-          if (isDone) {
-            isPulling = false;
-            clearInterval(pollInterval);
-          }
+  };
+
+  let pollInterval = null;
+  const startFallbackPolling = () => {
+    if (pollInterval) return;
+    pollInterval = setInterval(async () => {
+      if (!isPulling) {
+        if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+        return;
+      }
+      try {
+        const pRes = await fetch(`${apiBase}/api/media/progress`);
+        if (pRes.ok) {
+          const pData = await pRes.json();
+          handleProgressData(pData);
+        }
+      } catch (_) {
+        if (currentPct < 90) {
+          currentPct = Math.min(90, currentPct + 2);
+          if (progBar) progBar.style.width = `${currentPct}%`;
+          if (progPct) progPct.textContent = `${currentPct}%`;
         }
       }
+    }, 350);
+  };
+
+  if (EventSourceCtor) {
+    try {
+      progressEs = new EventSourceCtor(`${apiBase}/api/media/progress/stream`);
+      progressEs.onmessage = (e) => {
+        if (!e || !e.data) return;
+        try {
+          const pData = JSON.parse(e.data);
+          handleProgressData(pData);
+        } catch (_) {}
+      };
+      progressEs.onerror = () => {
+        if (isPulling) startFallbackPolling();
+      };
     } catch (_) {
-      if (currentPct < 90) {
-        currentPct = Math.min(90, currentPct + 2);
-        if (progBar) progBar.style.width = `${currentPct}%`;
-        if (progPct) progPct.textContent = `${currentPct}%`;
-      }
+      startFallbackPolling();
     }
-  }, 250);
+  } else {
+    startFallbackPolling();
+  }
 
 
   try {
@@ -53367,7 +53652,8 @@ async function executeMediaPull() {
     });
     const data = await res.json();
     isPulling = false;
-    clearInterval(pollInterval);
+    if (progressEs) { try { progressEs.close(); } catch (_) {} progressEs = null; }
+    if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
     if (progBar) progBar.style.width = '100%';
     if (progPct) progPct.textContent = '100%';
 
@@ -53424,7 +53710,8 @@ async function executeMediaPull() {
     return data;
   } catch (err) {
     isPulling = false;
-    clearInterval(pollInterval);
+    if (progressEs) { try { progressEs.close(); } catch (_) {} progressEs = null; }
+    if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
     if (progText) progText.textContent = 'Ingest error: ' + err.message;
     throw err;
   } finally {

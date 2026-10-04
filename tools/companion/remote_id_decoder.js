@@ -3,6 +3,8 @@
  * Pure JavaScript decoder for Bluetooth LE (UUID 0xFFFA) and Wi-Fi Remote ID payloads.
  */
 
+const { EventEmitter } = require('node:events');
+
 const UA_TYPES = [
   'None',
   'Aeroplane',
@@ -332,8 +334,9 @@ function formatDuration(ms) {
 /**
  * State manager aggregating decoded Remote ID messages for active drones in airspace.
  */
-class RemoteIdAirspaceTracker {
+class RemoteIdAirspaceTracker extends EventEmitter {
   constructor(activeTimeoutSec = 15, retentionSec = 900) {
+    super();
     this.activeTimeoutMs = activeTimeoutSec * 1000;
     this.retentionMs = retentionSec * 1000;
     // Backward-compatibility: timeoutMs alias for activeTimeoutMs
@@ -472,6 +475,9 @@ class RemoteIdAirspaceTracker {
       }
     }
 
+    this.emit('broadcast', drone);
+    this.emit('update', this.getActiveDrones(timestamp));
+
     return drone;
   }
 
@@ -599,6 +605,9 @@ class RemoteIdAirspaceTracker {
       }
     }
 
+    this.emit('broadcast', drone);
+    this.emit('update', this.getActiveDrones(timestamp));
+
     return drone;
   }
 
@@ -617,10 +626,15 @@ class RemoteIdAirspaceTracker {
    * Manually clear inactive/lost-signal drones from tracker.
    */
   clearInactive(now = Date.now()) {
+    let changed = false;
     for (const [key, drone] of this.drones.entries()) {
       if (now - drone.lastSeen > this.activeTimeoutMs) {
         this.drones.delete(key);
+        changed = true;
       }
+    }
+    if (changed) {
+      this.emit('update', this.getActiveDrones(now));
     }
   }
 
@@ -661,6 +675,7 @@ class RemoteIdAirspaceTracker {
   reset() {
     this.drones.clear();
     this.totalPackets = 0;
+    this.emit('update', []);
   }
 }
 
