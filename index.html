@@ -5702,7 +5702,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.142.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.143.0</span></h1>
 
 
 
@@ -9716,7 +9716,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.142.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.143.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -9777,6 +9777,18 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.143.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>📡 SSE Airspace Status Stream:</strong> Added live push stream broadcasting for ADS-B hardware status and receiver diagnostics over existing <code>/api/airspace/stream</code> SSE connection (<code>event: status</code>), eliminating static drawer UI status while streaming.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.142.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>✈️ ADS-B Reset Prevention &amp; HTTP 409 Lock Guard (Closes #120):</strong> Enforced connected target lock guard (HTTP 409 Conflict) and <code>force: true</code> requirement to prevent second clients from overwriting active bridge config. Added permanent lock support via <code>ADSB_LOCKED</code>.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.142.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -35181,6 +35193,16 @@ const AdsbAirspaceManager = {
         } catch (e) {}
       };
 
+      if (typeof this.eventSource.addEventListener === 'function') {
+        this.eventSource.addEventListener('status', (event) => {
+          if (!event || !event.data) return;
+          try {
+            const st = JSON.parse(event.data);
+            this.updateDiagnosticsUI(st);
+          } catch (e) {}
+        });
+      }
+
       this.eventSource.onerror = () => {
         this.streamConnected = false;
         this.streamMode = 'polling';
@@ -35313,6 +35335,9 @@ const AdsbAirspaceManager = {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       this.processAirspaceData(data);
+      if (this.isDrawerOpen) {
+        this.fetchAirspaceStatus();
+      }
     } catch (e) {
       // Endpoint error or companion offline
     }
@@ -36188,25 +36213,53 @@ const AdsbAirspaceManager = {
       serverSaveBtn.addEventListener('click', async () => {
         const hostVal = hostInput ? hostInput.value.trim() : '127.0.0.1';
         const portVal = portInput ? portInput.value.trim() : '30003';
+        const parsedPortVal = parseInt(portVal, 10) || 30003;
         this.serverHost = hostVal;
-        this.serverPort = parseInt(portVal, 10) || 30003;
+        this.serverPort = parsedPortVal;
         this.saveSettings();
         serverSaveBtn.textContent = 'Connecting...';
         serverSaveBtn.disabled = true;
 
         try {
           const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://localhost:8765';
-          const res = await fetch(`${apiBase}/api/config/adsb`, {
+          let res = await fetch(`${apiBase}/api/config/adsb`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adsbHost: hostVal, adsbPort: portVal })
+            body: JSON.stringify({ adsbHost: hostVal, adsbPort: parsedPortVal })
           });
+
+          if (res.status === 409) {
+            const bodyData = await res.json().catch(() => ({}));
+            const activeHost = bodyData.tcpHost || bodyData.adsbHost || 'active server';
+            const activePort = bodyData.tcpPort || bodyData.adsbPort || '';
+            const confirmOverride = confirm(
+              `ADS-B bridge target is locked or currently connected to ${activeHost}${activePort ? ':' + activePort : ''}.\n\nForce change target to ${hostVal}:${parsedPortVal}?`
+            );
+            if (confirmOverride) {
+              res = await fetch(`${apiBase}/api/config/adsb`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ adsbHost: hostVal, adsbPort: parsedPortVal, force: true })
+              });
+            } else {
+              serverSaveBtn.textContent = 'Connect';
+              serverSaveBtn.disabled = false;
+              return;
+            }
+          }
+
           if (res.ok) {
+            this.serverHost = hostVal;
+            this.serverPort = parsedPortVal;
+            this.saveSettings();
             serverSaveBtn.textContent = 'Saved!';
           } else {
             serverSaveBtn.textContent = 'Error';
           }
         } catch (e) {
+          this.serverHost = hostVal;
+          this.serverPort = parsedPortVal;
+          this.saveSettings();
           serverSaveBtn.textContent = 'Saved Local';
         }
 

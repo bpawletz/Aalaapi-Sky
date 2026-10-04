@@ -1,3 +1,19 @@
+## [1.143.0] - 2026-10-04
+
+### Added
+- **Server-Sent Events (SSE) Push Stream for ADS-B Airspace Status & Hardware Diagnostics**:
+  - **Named `event: status` Push Stream (`tools/companion/server.js`)**: Added live push broadcasting of ADS-B hardware status, connection state, receiver metrics, and external feed age over the existing `/api/airspace/stream` SSE connection (`event: status`). Pushes status on initial client connection, on tracker state broadcasts, and on a periodic 3-second ticker.
+  - **Real-Time Client Diagnostics Receiver (`src/bridge/ApiClient.js`)**: Updated `AdsbAirspaceManager` EventSource listener to handle `event: status` events, keeping the diagnostics panel UI updated live without REST polling while the drawer remains open.
+
+## [1.142.2] - 2026-10-04
+
+### Fixed
+- **ADS-B Bridge Host/Port Reset Prevention & HTTP 409 Lock Guard (Closes #120)**:
+  - **Connected HTTP 409 Conflict Guard (`tools/companion/server.js`)**: `POST /api/config/adsb` checks if the ADS-B bridge is actively connected. Changing host/port while connected or locked returns HTTP 409 Conflict and requires explicit `force: true` to prevent second clients from overwriting active targets.
+  - **Permanent Config Lock Support (`ADSB_LOCKED`)**: Supported `ADSB_LOCKED=1` environment variable and `adsbLocked` config flag to lock bridge settings against unauthorized remote modification.
+  - **Input Validation & Strict Fallback**: `saveAdsbConfig()` now validates `adsbHost` and `adsbPort`, throwing errors on invalid inputs rather than silently falling back to defaults.
+  - **Frontend Overwrite Prompt (`src/bridge/ApiClient.js`)**: Updated `ApiClient` to handle HTTP 409 response codes with an interactive confirm dialog, sending `force: true` when the user explicitly approves overriding a connected target.
+
 ## [1.142.1] - 2026-10-04
 
 ### Changed

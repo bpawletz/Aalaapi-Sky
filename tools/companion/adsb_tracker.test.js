@@ -604,4 +604,42 @@ describe('AdsbAirspaceTracker Tests', () => {
 
     tracker.destroy();
   });
+
+  test('Companion Server /api/airspace/stream emits event: status updates over SSE', async () => {
+    const { server, adsbTracker } = require('./server.js');
+    adsbTracker.clear();
+
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const port = server.address().port;
+    const streamUrl = `http://127.0.0.1:${port}/api/airspace/stream?lat=40.0130&lon=-83.1765&radius=3&ceiling=2500`;
+
+    const http = require('node:http');
+    let reqClient = null;
+
+    try {
+      const chunks = [];
+      await new Promise((resolve, reject) => {
+        reqClient = http.get(streamUrl, (res) => {
+          assert.strictEqual(res.statusCode, 200);
+          assert.strictEqual(res.headers['content-type'], 'text/event-stream');
+          res.setEncoding('utf8');
+          res.on('data', (chunk) => {
+            chunks.push(chunk);
+            if (chunks.some(c => c.includes('event: status'))) {
+              resolve();
+            }
+          });
+          res.on('error', reject);
+        });
+        reqClient.on('error', reject);
+      });
+
+      const fullOutput = chunks.join('');
+      assert.ok(fullOutput.includes('event: status'), 'SSE stream must emit event: status');
+      assert.ok(fullOutput.includes('"success":true'), 'Status payload must include success: true');
+    } finally {
+      if (reqClient) reqClient.destroy();
+      await new Promise((resolve) => server.close(resolve));
+    }
+  });
 });
