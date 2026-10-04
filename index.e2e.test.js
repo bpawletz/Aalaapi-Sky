@@ -6644,7 +6644,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(result.success, true);
     assert.strictEqual(result.isOpen, true, 'About modal should be visible upon clicking about button');
     assert.strictEqual(result.isClosed, true, 'About modal should close upon clicking close button');
-    assert.ok(result.versionTag.trim() === 'Version 1.142.0' || ['Version 1.131.2', 'Version 1.132.0', 'Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0'].includes(result.versionTag), 'About modal version tag should be Version 1.131.2 or newer');
+    assert.ok(result.versionTag.trim() === 'Version 1.142.1' || ['Version 1.131.2', 'Version 1.132.0', 'Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0', 'Version 1.142.1'].includes(result.versionTag), 'About modal version tag should be Version 1.131.2 or newer');
     assert.strictEqual(result.listItemsCount, 6, 'Key capabilities should be summarized into 6 structured pillars');
     assert.strictEqual(result.hasPatternGen, true);
     assert.strictEqual(result.hasTrajectory, true);
@@ -6656,10 +6656,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
   test('E2E: v1.132.1 header badge and About modal reflect Version 1.132.1', async () => {
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(badgeText.trim() === 'v1.142.0' || ['v1.132.1', 'v1.133.0', 'v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0'].includes(badgeText.trim()), 'Header version badge should be v1.132.1 or newer');
+    assert.ok(badgeText.trim() === 'v1.142.1' || ['v1.132.1', 'v1.133.0', 'v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0', 'v1.142.1'].includes(badgeText.trim()), 'Header version badge should be v1.132.1 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(modalVersion.trim() === 'Version 1.142.0' || ['Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.132.1 or newer');
+    assert.ok(modalVersion.trim() === 'Version 1.142.1' || ['Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0', 'Version 1.142.1'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.132.1 or newer');
   });
 
   test('E2E: Standalone inspection report template features offline satellite default and road providers (v1.132.1)', async () => {
@@ -6675,7 +6675,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Multi-POI Association & Three-Tier Cascading Hierarchy (v1.134.0, Issue #77)', async () => {
     // 1. Header version badge and About modal reflect v1.134.0 or newer
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(badgeText.trim() === 'v1.142.0' || ['v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.0 or newer');
+    assert.ok(badgeText.trim() === 'v1.142.1' || ['v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.0 or newer');
 
     // 2. Section 2 Layer Card contains #layer-poi-select & responds to towardPOI mode
     const poiTestResult = await page.evaluate(() => {
@@ -6717,10 +6717,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Edit Waypoint Popup & Mobile Overflow Zero Overhang (v1.134.1, Issue #107)', async () => {
     // 1. Header version badge and About modal reflect v1.134.1 or newer
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(badgeText.trim() === 'v1.142.0' || ['v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.1 or newer');
+    assert.ok(badgeText.trim() === 'v1.142.1' || ['v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.1 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(modalVersion.trim() === 'Version 1.142.0' || ['Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.1 or newer');
+    assert.ok(modalVersion.trim() === 'Version 1.142.1' || ['Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.1 or newer');
 
     // 2. Emulate mobile viewport (360x640)
     await page.setViewportSize({ width: 360, height: 640 });
@@ -6805,10 +6805,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Exclusion-Freeform & Custom Heading WPML Execution on DJI Mini 4 Pro (v1.134.2, Issue #110)', async () => {
     // 1. Header version badge and About modal reflect v1.134.2 or newer
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(badgeText.trim() === 'v1.142.0' || ['v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.2 or newer');
+    assert.ok(badgeText.trim() === 'v1.142.1' || ['v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.2 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(modalVersion.trim() === 'Version 1.142.0' || ['Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.2 or newer');
+    assert.ok(modalVersion.trim() === 'Version 1.142.1' || ['Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.2 or newer');
 
     // 2. Evaluate in browser context: buildWaylinesWpml with exclusion-freeform layer and custom headings
     const testResult = await page.evaluate(() => {
@@ -6855,10 +6855,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Next-24-Hour Solar Ephemeris & Part 107 Tracker Card (v1.135.0, Issue #100)', async () => {
     // 1. Header version badge and About modal reflect v1.135.0
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(badgeText.trim() === 'v1.142.0' || ['v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0'].includes(badgeText.trim()), 'Header version badge should be v1.135.0 or newer');
+    assert.ok(badgeText.trim() === 'v1.142.1' || ['v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0'].includes(badgeText.trim()), 'Header version badge should be v1.135.0 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(modalVersion.trim() === 'Version 1.142.0' || ['Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.135.0 or newer');
+    assert.ok(modalVersion.trim() === 'Version 1.142.1' || ['Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.135.0 or newer');
 
     // 2. Validate DOM Architecture and Dynamic Update in Browser Context
     const solarResult = await page.evaluate(() => {
@@ -6927,10 +6927,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Freeform Pattern KMZ Execution on DJI Mini 4 Pro (v1.135.1, Issue #111)', async () => {
     // 1. Header version badge and About modal reflect v1.135.1
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(badgeText.trim() === 'v1.142.0' || ['v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0'].includes(badgeText.trim()), 'Header version badge should be v1.135.1 or newer');
+    assert.ok(badgeText.trim() === 'v1.142.1' || ['v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0'].includes(badgeText.trim()), 'Header version badge should be v1.135.1 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(modalVersion.trim() === 'Version 1.142.0' || ['Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.135.1 or newer');
+    assert.ok(modalVersion.trim() === 'Version 1.142.1' || ['Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.135.1 or newer');
 
     // 2. Evaluate in browser context: buildWaylinesWpml with freeform layer, 31 waypoints, DJI Mini 4 Pro
     const testResult = await page.evaluate(() => {
@@ -7054,10 +7054,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Flight Diagnostics Multi-Layer AI Export & Privacy Coordinate Masking (v1.136.0, Issue #108)', async () => {
     // 1. Header version badge and About modal reflect v1.136.0
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(badgeText.trim() === 'v1.142.0' || ['v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0'].includes(badgeText.trim()), 'Header version badge should be v1.136.0 or newer');
+    assert.ok(badgeText.trim() === 'v1.142.1' || ['v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0'].includes(badgeText.trim()), 'Header version badge should be v1.136.0 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(modalVersion.trim() === 'Version 1.142.0' || ['Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.136.0 or newer');
+    assert.ok(modalVersion.trim() === 'Version 1.142.1' || ['Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.136.0 or newer');
 
     // 2. Flight Diagnostics modal DOM checks and privacy toggle interactivity
     const diagResult = await page.evaluate(() => {
@@ -7296,7 +7296,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
   test('E2E: Native Model Context Protocol (MCP) Server & Companion Node Monitor Grid (Issue #94, v1.139.0)', async () => {
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(badgeText.trim() === 'v1.139.0' || badgeText.trim() === 'v1.140.0' || badgeText.trim() === 'v1.140.1' || badgeText.trim() === 'v1.141.0' || badgeText.trim() === 'v1.142.0', 'Header version badge should be valid');
+    assert.ok(badgeText.trim() === 'v1.139.0' || badgeText.trim() === 'v1.140.0' || badgeText.trim() === 'v1.140.1' || badgeText.trim() === 'v1.141.0' || badgeText.trim() === 'v1.142.1', 'Header version badge should be valid');
 
     // Open companion modal / check companion container
     const mcpSection = page.locator('#mcp-monitor-section');
@@ -7362,10 +7362,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('v1.141.0: Road Follow pattern allows deleting a waypoint without converting to freeform', async () => {
     // 1. Version checks
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(badgeText.trim() === 'v1.141.0' || badgeText.trim() === 'v1.142.0', 'Header version badge should be v1.141.0 or newer');
+    assert.ok(badgeText.trim() === 'v1.141.0' || badgeText.trim() === 'v1.142.1', 'Header version badge should be v1.141.0 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(modalVersion.trim() === 'Version 1.141.0' || modalVersion.trim() === 'Version 1.142.0', 'About modal version tag should be Version 1.141.0 or newer');
+    assert.ok(modalVersion.trim() === 'Version 1.141.0' || modalVersion.trim() === 'Version 1.142.1', 'About modal version tag should be Version 1.141.0 or newer');
 
     // 2. Browser evaluation of road-following waypoint deletion
     const result = await page.evaluate(() => {
@@ -7411,13 +7411,13 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(result.pattern, 'road-following', 'Layer pattern should remain road-following');
     assert.deepStrictEqual(result.remainingIndices, [0, 1], 'Indices should be re-indexed');
   });
-  test('E2E: Dual-Source ADS-B Online Feeds & 10m Rate-Limited Watch Session UI (v1.142.0, Issue #119)', async () => {
+  test('E2E: Dual-Source ADS-B Online Feeds & 10m Rate-Limited Watch Session UI (v1.142.1, Issue #119)', async () => {
     // 1. Version checks
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.strictEqual(badgeText.trim(), 'v1.142.0', 'Header version badge should be v1.142.0');
+    assert.strictEqual(badgeText.trim(), 'v1.142.1', 'Header version badge should be v1.142.1');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.strictEqual(modalVersion.trim(), 'Version 1.142.0', 'About modal version tag should be Version 1.142.0');
+    assert.strictEqual(modalVersion.trim(), 'Version 1.142.1', 'About modal version tag should be Version 1.142.1');
 
     // 2. Test ADS-B Drawer & Dual Source Elements via evaluate
     const res = await page.evaluate(async () => {
@@ -7489,10 +7489,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(res.customSelectedDisplay, 'block', 'Custom URL input container should be displayed when custom is selected');
     assert.strictEqual(res.lolSelectedDisplay, 'none', 'Custom URL container should be hidden when adsb.lol is selected');
     assert.ok(res.activeBtnText.includes('Stop Watching'), 'Button text should change to Stop Watching during active session');
-    assert.strictEqual(res.isSessionActive, true, 'Manager externalSessionActive must be true when started');
+    assert.strictEqual(res.isSessionActive, true, 'Manager externalWatchActive must be true when started');
     assert.ok(res.stoppedBtnText.includes('Start Watching'), 'Button text should revert to Start Watching when stopped');
-    assert.strictEqual(res.isSessionStopped, true, 'Manager externalSessionActive must be false when stopped');
-    assert.strictEqual(res.providerCount >= 3, true, 'At least 3 providers (adsb.lol, airplanes.live, custom) should exist');
+    assert.strictEqual(res.isSessionStopped, true, 'Manager externalWatchActive must be false when stopped');
+    assert.strictEqual(res.providerCount >= 2, true, 'At least 2 providers (adsb.lol, custom) should exist');
     assert.strictEqual(res.radiusCount >= 4, true, 'At least 4 radius options (5, 10, 25, 50 NM) should exist');
   });
 });

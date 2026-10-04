@@ -1,7 +1,14 @@
+## [1.142.1] - 2026-10-04
+
+### Changed
+- **ADS-B External Cloud Providers Streamlining**:
+  - Removed `airplanes.live` from default external provider options in accordance with provider terms of service.
+  - Retained `adsb.lol` (open community feed) as default cloud ADS-B provider, alongside flexible custom endpoint support for self-hosted and registered endpoints.
+
 ## [1.142.0] - 2026-10-04
 
 ### Added
-- **Dual-Source ADS-B Feeds: Local SDR + Public Online APIs (`adsb.lol` & `airplanes.live`) (Closes #119)**:
+- **Dual-Source ADS-B Feeds: Local SDR + Public Online APIs (`adsb.lol` & Custom Endpoints) (Closes #119)**:
   - **Concurrent Multi-Source Ingestion (`tools/companion/adsb_tracker.js`, `src/bridge/ApiClient.js`)**:
     - Added multi-source cloud ADS-B telemetry ingestion supporting `adsb.lol` (open community feed) and `airplanes.live` (global coverage), operating concurrently with local hardware RTL-SDR / dump1090 / readsb feeds.
     - Updated `parseDump1090Json` in `AdsbAirspaceTracker` to support standard readsb `ac` JSON arrays, extract aircraft type codes `t` (e.g. `C172`, `B38M`), registration `r`, ground speed `gs`, and ground state.
