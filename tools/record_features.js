@@ -1046,6 +1046,83 @@ const scenarios = [
       await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
       await page.waitForTimeout(800);
     }
+  },
+  {
+    id: 'mcp_server_monitor',
+    name: 'Native Model Context Protocol (MCP) Server & Companion Node Monitor Grid',
+    issueRef: 'Issue #94, v1.139.0',
+    description: 'Demonstrates MCP Node Monitor Grid, live tool discovery pills, metrics tracking, and 1-click Gemini CLI setup in the Companion Bridge container.',
+    run: async (page) => {
+      // 1. Center map squarely on Utica, IL
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(800);
+
+      // 2. Scroll sidebar down to Companion Sync Container & MCP Node Monitor Grid
+      await page.evaluate(() => {
+        const companionSection = document.getElementById('companion-sync-container');
+        if (companionSection) {
+          companionSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+      await page.waitForTimeout(1000);
+
+      // 3. Update MCP Monitor UI with live active metrics
+      await page.evaluate(() => {
+        if (typeof updateMcpMonitorUI === 'function') {
+          updateMcpMonitorUI({
+            status: 'online',
+            protocolVersion: '2024-11-05',
+            activeSessions: 2,
+            readFrames: 14,
+            writeFrames: 6,
+            lastTool: 'generate_flight_plan',
+            tools: [
+              'get_airspace_telemetry',
+              'generate_flight_plan',
+              'trigger_bridge_action',
+              'get_latest_bad_mission',
+              'list_bad_missions',
+              'set_multivendor_mode',
+              'convert_mission_format'
+            ]
+          }, true);
+        }
+        const sDot = document.getElementById('companion-service-dot');
+        const sText = document.getElementById('companion-service-text');
+        if (sDot) sDot.style.background = '#22c55e';
+        if (sText) {
+          sText.textContent = 'Aalaapi Bridge: Connected (SSE)';
+          sText.style.color = '#22c55e';
+        }
+      });
+      await page.waitForTimeout(1800);
+
+      // 4. Click the Copy Gemini CLI Command button
+      await page.evaluate(() => {
+        const copyBtn = document.getElementById('mcp-copy-cli-btn');
+        if (copyBtn) copyBtn.click();
+      });
+      await page.waitForTimeout(1500);
+
+      // 5. Open Intro Guide Hub to show v1.139.0 Feature Highlights
+      await page.evaluate(() => {
+        const qsBtn = document.getElementById('quickstart-help-btn');
+        if (qsBtn) qsBtn.click();
+        const featuresTab = document.getElementById('intro-tab-features');
+        if (featuresTab) featuresTab.click();
+        const qsModal = document.getElementById('quickstart-modal');
+        if (qsModal) qsModal.classList.remove('hidden');
+      });
+      await page.waitForTimeout(2000);
+
+      // 6. Close Intro Guide Hub and re-center map
+      await page.evaluate(() => {
+        const qsModal = document.getElementById('quickstart-modal');
+        if (qsModal) qsModal.classList.add('hidden');
+      });
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(800);
+    }
   }
 ];
 

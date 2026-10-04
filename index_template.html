@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.138.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.139.0</span></h1>
 
 
 
@@ -2056,6 +2056,48 @@
                 <button id="companion-usb-help-btn" class="companion-help-circle-btn" type="button" title="How to connect DJI RC 2 via USB-C">?</button>
               </span>
             </div>
+            <!-- MCP Node Monitor Grid (Issue #94: Native Model Context Protocol Support & Gemini AI Integration) -->
+            <div id="mcp-monitor-section" class="mcp-monitor-section" style="margin-top: 4px; padding: 6px 8px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 6px; display: flex; flex-direction: column; gap: 5px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 600; font-size: 0.72rem; color: #38bdf8; display: inline-flex; align-items: center; gap: 5px;">
+                  <span id="mcp-server-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #64748b; display: inline-block;"></span>
+                  <span>Gemini / MCP Protocol Bridge</span>
+                </span>
+                <span id="mcp-transport-status-badge" style="font-size: 0.64rem; color: #94a3b8; font-family: monospace;">Stdio / SSE</span>
+              </div>
+              <div id="mcp-node-monitor-grid" class="mcp-node-monitor-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; font-size: 0.65rem;">
+                <div class="mcp-stat-box" style="padding: 4px; background: rgba(255, 255, 255, 0.03); border-radius: 4px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.05);">
+                  <div style="color: var(--text-muted); font-size: 0.6rem;">Active Hooks</div>
+                  <div id="mcp-active-sessions-text" style="font-weight: 700; color: #38bdf8; font-size: 0.72rem;">0 Clients</div>
+                </div>
+                <div class="mcp-stat-box" style="padding: 4px; background: rgba(255, 255, 255, 0.03); border-radius: 4px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.05);">
+                  <div style="color: var(--text-muted); font-size: 0.6rem;">API Frames</div>
+                  <div id="mcp-frame-counts-text" style="font-weight: 700; color: #a855f7; font-size: 0.72rem;">0 R / 0 W</div>
+                </div>
+                <div class="mcp-stat-box" style="padding: 4px; background: rgba(255, 255, 255, 0.03); border-radius: 4px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.05);">
+                  <div style="color: var(--text-muted); font-size: 0.6rem;">Tools Active</div>
+                  <div id="mcp-tools-count-text" style="font-weight: 700; color: #22c55e; font-size: 0.72rem;">6 Active</div>
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.62rem; color: var(--text-muted);">
+                  <span>Discovered Tools:</span>
+                  <span id="mcp-last-action-text" style="color: #64748b; font-family: monospace;">idle</span>
+                </div>
+                <div id="mcp-tools-pill-container" class="mcp-tools-pill-container" style="display: flex; flex-wrap: wrap; gap: 3px; max-height: 48px; overflow-y: auto;">
+                  <span class="mcp-tool-pill" title="get_airspace_telemetry: ADS-B, NEXRAD &amp; Hardware Telemetry">telemetry</span>
+                  <span class="mcp-tool-pill" title="generate_flight_plan: Calculate WPML V2 Waypoint Payloads">flight_plan</span>
+                  <span class="mcp-tool-pill" title="trigger_bridge_action: RC2 sync, cache validate, device scan">bridge_action</span>
+                  <span class="mcp-tool-pill" title="get_latest_bad_mission: SQLite failure triage">bad_mission</span>
+                  <span class="mcp-tool-pill" title="convert_mission_format: QGC .plan &amp; Autel .kml">conversion</span>
+                </div>
+              </div>
+              <div style="display: flex; gap: 4px; margin-top: 2px;">
+                <button id="mcp-copy-cli-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.65rem; line-height: 1.2; display: inline-flex; align-items: center; justify-content: center; gap: 4px; border-radius: 4px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; cursor: pointer;" title="Copy Gemini CLI MCP configuration command">
+                  <span>📋 Copy Gemini CLI Command</span>
+                </button>
+              </div>
+            </div>
             <!-- Contextual Help / Status Hint -->
             <div id="companion-offline-hint" style="font-size: 0.68rem; color: #38bdf8; display: flex; align-items: center; justify-content: space-between; padding-top: 4px; border-top: 1px solid rgba(255, 255, 255, 0.06); cursor: pointer;" title="Open RC 2 Sync &amp; Setup Guide">
               <span style="display: flex; align-items: center; gap: 4px;">
@@ -2826,6 +2868,14 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🤖 Native Model Context Protocol (MCP) Server &amp; Gemini AI Integration (v1.139.0) (Closes #94)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Exposed Aalaapi Sky's flight planning engine, local hardware telemetry, and airspace pipelines to LLM orchestration layers via native <strong>Model Context Protocol (MCP)</strong> server support! Conforming to the MCP 2024-11-05 protocol specification, the bridge daemon operates across both standard input/output (<code>stdio</code>) for local LLM tools (<code>gemini mcp add aalaapi-sky node tools/companion/mcp_server.js</code>, Claude Desktop, Cursor) and Server-Sent Events (SSE) endpoints (<code>/api/mcp/sse</code> &amp; <code>/api/mcp/message</code>). Registered tools include <code>get_airspace_telemetry</code> (live ADS-B deconfliction, localized NEXRAD radar, and hardware status), <code>generate_flight_plan</code> (producing calculated DJI WPML V2 waypoint payloads), and <code>trigger_bridge_action</code> (commanding hardware sync, cache validation, and simulated intruders). Includes an interactive <strong>MCP Node Monitor Grid</strong> in the bridge panel tracking active hooks, tool discovery lists, and read/write API frame payloads.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               ⚡ Real-Time SSE Streams for Remote ID &amp; RC 2 Companion (v1.138.0) (Closes #114)
@@ -3825,7 +3875,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.138.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.139.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -3886,6 +3936,12 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.139.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🤖 Native Model Context Protocol (MCP) Server &amp; Gemini AI Integration (Closes #94):</strong> Exposed Aalaapi Sky's flight planning and local telemetry pipelines to LLM orchestration layers via native Model Context Protocol (MCP 2024-11-05) support across both <code>stdio</code> (<code>tools/companion/mcp_server.js</code> for <code>gemini mcp add</code>, Claude Desktop, Cursor) and Server-Sent Events (SSE) endpoints (<code>/api/mcp/sse</code> &amp; <code>/api/mcp/message</code>). Registered tools include <code>get_airspace_telemetry</code>, <code>generate_flight_plan</code> (DJI WPML V2 payloads), <code>trigger_bridge_action</code> (RC2 sync, cache validate, intruder simulation), and multi-vendor conversions. Features an interactive <strong>MCP Node Monitor Grid</strong> in the bridge drawer with a 1-click Gemini CLI command copy button.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.138.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
