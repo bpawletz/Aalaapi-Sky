@@ -27,8 +27,8 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
    ```
 
 3. **Make Edits & Build Bundle:**
-   `index.html` is a single-file application bundle compiled from `index_template.html`, `index.css`, and `index.js`.
-   After making edits to source files (`index.js`, `index.css`, `index_template.html`), compile `index.html`:
+   `index.html` is a single-file application bundle compiled from `index_template.html`, `index.css`, and modular JavaScript files in `src/`.
+   After making edits to source files (`src/`, `index.css`, `index_template.html`), compile `index.html`:
    ```bash
    python scratch/build.py
    ```

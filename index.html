@@ -5667,7 +5667,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.140.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.140.1</span></h1>
 
 
 
@@ -9620,7 +9620,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.140.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.140.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -9681,6 +9681,12 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.140.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🧩 Modularized Architecture &amp; ES Modules Split (Closes #116):</strong> Split the 40.6k-line <code>index.js</code> monolith into domain-specific ES modules organized under <code>src/</code>. Built-in scope-hoisting bundler in <code>scratch/build.py</code> compiles the modular codebase into <code>dist/index.bundle.js</code> and the standalone, self-contained <code>index.html</code> distribution with automated AST validation.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.140.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -14195,6 +14201,7 @@ html, body {
 
   <!-- Custom Javascript -->
   <script>
+// -------------------- src/core/Logger.js --------------------
 // Centralized Logging Utility
 const Logger = {
   info: (msg, ...args) => console.info(`[INFO] ${msg}`, ...args),
@@ -14203,6 +14210,7 @@ const Logger = {
 };
 
 // Centralized Extensible Flight Tool Registry Schema
+// -------------------- src/core/ToolRegistry.js --------------------
 const FLIGHT_TOOLS = {
   'single': {
     id: 'single',
@@ -14342,6 +14350,7 @@ const FLIGHT_TOOLS = {
 };
 
 // Global state variables
+// -------------------- src/state/MissionStore.js --------------------
 let map;
 let centerMarker = null;
 let pois = []; // Array of POI objects: { lat, lon, marker, name }
@@ -14715,6 +14724,7 @@ function drawBoundaryLayers(globalCenterLat, globalCenterLon) {
  * Predefined dictionary data for ArUco 4x4 (first 50 markers from OpenCV DICT_4X4_1000_BYTES)
  * Each pair represents 2 bytes (16 bits, 4x4 grid in row-major order).
  */
+// -------------------- src/vision/GcpEngine.js --------------------
 const ARUCO_4X4_50_DATA = [
   [181, 50], [15, 154], [51, 45], [153, 70], [84, 158], [121, 205], [158, 46], [196, 242],
   [254, 218], [207, 86], [249, 145], [17, 167], [14, 183], [42, 15], [36, 177], [38, 62],
@@ -16663,6 +16673,7 @@ function printTargetSheet() {
 let userLocation = null;
 
 // Utility functions
+// -------------------- src/core/Utils.js --------------------
 function throttle(func, limit) {
   let lastFunc;
   let lastRan;
@@ -16753,6 +16764,7 @@ function formatDistance(meters, decimalPlaces = 1) {
 }
 
 // Theme Manager (Light & Dark Field Mode)
+// -------------------- src/ui/ThemeManager.js --------------------
 const THEME_STORAGE_KEY = 'aalaapi_sky_theme';
 
 function getAppTheme() {
@@ -17148,6 +17160,7 @@ let globalExclusionClearanceBuffer = 5; // meters above ceiling
 // Flight Pattern Layers & Multi-Layer Mission Manager (v1.62.0)
 // ==========================================================================
 
+// -------------------- src/layers/LayerManager.js --------------------
 const LAYER_COLORS = [
   { name: 'Cyan', hex: '#06b6d4', bg: 'rgba(6, 182, 212, 0.15)', border: 'rgba(6, 182, 212, 0.4)' },
   { name: 'Purple', hex: '#a855f7', bg: 'rgba(168, 85, 247, 0.15)', border: 'rgba(168, 85, 247, 0.4)' },
@@ -19829,6 +19842,7 @@ function initLayerManager() {
 }
 
 // Helpers to get currently active mission data
+// -------------------- src/map/MapEngine.js --------------------
 function getCurrentWaypoints() {
   return importedWaypoints || generatedWaypoints;
 }
@@ -20676,6 +20690,7 @@ function restoreSettingsFromLocalStorage() {
 }
 
 // Computes current state of modified settings across all 5 domains
+// -------------------- src/ui/ResetManager.js --------------------
 function getModifiedSettingsState() {
   const state = {
     flight: { count: 0, items: [] },
@@ -21406,6 +21421,7 @@ function exitInteractiveUITour() {
 }
 
 // Setup Event Listeners for UI controls
+// -------------------- src/ui/EventBindings.js --------------------
 function initUIEventListeners() {
   initLayerManager();
 
@@ -23616,6 +23632,7 @@ function initUIEventListeners() {
  * Transforms sidebar value display numbers into interactive click-to-type inputs
  * allowing pilots to click any number and type exact values in active units.
  */
+// -------------------- src/ui/SidebarManager.js --------------------
 function initClickToTypeInputs() {
   if (typeof document === 'undefined') return;
 
@@ -25210,6 +25227,7 @@ function syncDisplayValues() {
 }
 
 // Search Address via OpenStreetMap Nominatim API
+// -------------------- src/map/MapInteraction.js --------------------
 function searchAddress() {
   const query = document.getElementById('location-input').value.trim();
   if (!query) return;
@@ -26258,6 +26276,7 @@ function redrawCurrentMission() {
 }
 
 // Generate relative meter-offset grid points
+// -------------------- src/patterns/PatternGenerators.js --------------------
 function generateGridCoordinates(width, height, rotation, gridType, captureMode, sLine, sPhoto, turnaroundOvershoot = 0) {
   const waypoints = [];
   const photos = [];
@@ -26796,6 +26815,7 @@ function generatePhotoSphereCoordinates(baseAltitude, layer) {
 // Target Splat 3D Frustum Culling & Geometry Engine (v1.77.0)
 // ============================================================================
 
+// -------------------- src/3d/GeometryBuilder.js --------------------
 function calculateCameraGroundFrustum(droneX, droneY, alt, headingDeg, pitchDeg, hfov, vfov, zPlane = 0, framingRatio = 0.55) {
   const deltaH = Math.max(1.0, (alt || 50) - (zPlane || 0));
   const headingRad = ((headingDeg || 0) * Math.PI) / 180.0;
@@ -27836,6 +27856,7 @@ function generateTargetPerimeterOrbit(layer, standoffMeters, orbitAlt, orbitPitc
 
 // Convert relative coordinates (meters) to geodesic coordinates (Lat/Lon)
 // Handles rotation (heading in degrees) relative to North
+// -------------------- src/geo/MathUtils.js --------------------
 function localToGeodetic(x, y, centerLat, centerLon, rotationDeg) {
   rotationDeg = rotationDeg || 0;
   const alpha = (rotationDeg * Math.PI) / 180.0;
@@ -29979,6 +30000,7 @@ function addRoadWaypoint(lat, lng) {
 }
 
 // Calculate flight stats
+// -------------------- src/ui/TelemetryHud.js --------------------
 function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, captureMode) {
   if (waypoints.length < 2) return null;
 
@@ -30302,6 +30324,7 @@ function updateStatsPanel(stats) {
 }
 
 // Generate the WPML template.kml content
+// -------------------- src/export/WpmlCompiler.js --------------------
 function buildTemplateKml(finishAction, speed) {
   const timestamp = Date.now();
   const droneModelEl = document.getElementById('drone-model');
@@ -31600,6 +31623,7 @@ function formatISO8601ForFilename(date = new Date()) {
 }
 
 // Generate the KMZ file and trigger browser download
+// -------------------- src/export/Packager.js --------------------
 function exportKMZ() {
   if (!centerMarker) {
     alert("Please select a flight mission center on the map first.");
@@ -32690,6 +32714,7 @@ function generateMissionPreviewBlob(waypoints, width = 400, height = 300) {
 
 // ─── DJI RC 2 Companion Bridge & Direct Sync ────────────────────────────────
 
+// -------------------- src/bridge/ApiClient.js --------------------
 function getCompanionApiBase() {
   // 1. Check URL query parameter (?companion=http://...)
   if (typeof window !== 'undefined' && window.location && window.location.search) {
@@ -35825,6 +35850,7 @@ if (typeof window !== 'undefined') {
 
 // ─── Flight Diagnostics & 3D Telemetry Replay Engine ──────────────────────────
 
+// -------------------- src/3d/DigitalTwin.js --------------------
 function getActiveMissionWaypoints() {
   if (typeof importedWaypoints !== 'undefined' && importedWaypoints && importedWaypoints.length > 0) {
     return importedWaypoints;
@@ -40342,6 +40368,7 @@ const KMZInspector = {
   }
 };
 
+// -------------------- src/import/TelemetryParsers.js --------------------
 function formatTime(totalSec) {
   const m = Math.floor(totalSec / 60);
   const s = Math.floor(totalSec % 60);
@@ -41403,6 +41430,7 @@ function computeFlightComparison(plannedMission, actualTelemetry) {
 }
 
 // KMZ Import Handlers & Parsers
+// -------------------- src/import/KmzImporter.js --------------------
 function handleKMZImport(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -43806,6 +43834,7 @@ let groundPlaneSize = 0;
 let showFootprints = true;
 
 // FPV Walkthrough & Editor State Variables
+// -------------------- src/3d/FlightSimulation.js --------------------
 let fpvActive = false;
 let fpvPlaying = false;
 let fpvProgressIndex = 0;
@@ -44497,6 +44526,7 @@ function redrawGroundPlane(heading, pitch) {
 }
 
 // Initialize 3D Preview Scene
+// -------------------- src/3d/SceneManager.js --------------------
 function init3DPreview() {
   cleanup3DPreview();
   recalculateSplitStarts();
@@ -44827,6 +44857,7 @@ function reset3DCamera() {
 // 3D FPV WALKTHROUGH & EDITOR MODE
 // ==========================================
 
+// -------------------- src/3d/FpvHud.js --------------------
 function updateFPVCamera(dt) {
   const activeCamera = threeCamera || (typeof global !== 'undefined' && global.threeCamera) || (typeof window !== 'undefined' && window.threeCamera);
   const activeScene = threeScene || (typeof global !== 'undefined' && global.threeScene) || (typeof window !== 'undefined' && window.threeScene);
@@ -46591,6 +46622,7 @@ function cleanup3DPreview() {
 }
 
 // Auto-Plan State
+// -------------------- src/patterns/AutoPlan.js --------------------
 let autoPlanActive = false;
 let autoPlanRect = null;
 let autoPlanStartLatLng = null;
@@ -48727,6 +48759,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // FAA Temporary Flight Restrictions (TFR) & Location-Based NOTAM Engine
 // ============================================================================
 
+// -------------------- src/airspace/TfrNotam.js --------------------
 function isPointInGeoJsonPolygon(lat, lon, geometry) {
   if (!geometry || !geometry.coordinates || lat == null || lon == null || isNaN(lat) || isNaN(lon)) return false;
   
@@ -49762,6 +49795,7 @@ function initHeadingHelpDrawer() {
  * Projects a real-world geodetic point (lat, lon, alt) onto normalized photo coordinates (u, v)
  * using a forward pinhole camera projective model based on drone camera pose.
  */
+// -------------------- src/geo/Photogrammetry.js --------------------
 function projectGeoPointToPixel(geoPoint, cameraPose, options = {}) {
   if (!geoPoint || !cameraPose || typeof geoPoint.lat !== 'number' || typeof geoPoint.lon !== 'number') {
     return { u: 0.5, v: 0.5, opticalDepthMeters: 0, isInFront: false, isInsideFrame: false };
@@ -50049,6 +50083,7 @@ function extractDjiXmpMetadata(data) {
  * Compatible with both Browser (HTML5 Canvas ImageData) and Node.js.
  */
 
+// -------------------- src/vision/TagDetector.js --------------------
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
     module.exports = factory();
@@ -50753,6 +50788,7 @@ if (typeof global !== 'undefined') global.TagDetector = TagDetector;
 // Photo Inspector, Interactive Annotation Marker & Boundary Tools (v1.96.0)
 // =============================================================================
 
+// -------------------- src/ui/Modals/PhotoInspector.js --------------------
 const PhotoInspector = {
   activePhoto: null,
   activeManifest: null,
@@ -53466,6 +53502,7 @@ async function scanMediaDevices() {
 }
 
 // RC 2 Controller Flight Log Explorer & Manager
+// -------------------- src/bridge/Rc2LogExplorer.js --------------------
 let rc2LogsCache = [];
 
 function openRc2LogManagerModal() {

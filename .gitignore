@@ -29,3 +29,6 @@ dummy.kml
 tools/companion/bin/
 *.exe
 
+# Generated JS bundle (index.html is the committed artifact)
+dist/
+
