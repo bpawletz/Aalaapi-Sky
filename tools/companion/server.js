@@ -21,8 +21,12 @@ const readline = require('node:readline');
 const { execFile, spawn, execFileSync } = require('node:child_process');
 const crypto = require('node:crypto');
 
-const VERSION = '1.54.0';
+const VERSION = '1.144.0';
 const PORT = process.env.AALAAPI_PORT ? parseInt(process.env.AALAAPI_PORT, 10) : 8765;
+const { BridgeMetrics, Dashboard } = require('./top_dashboard.js');
+const bridgeMetrics = new BridgeMetrics();
+const bridgeStartTime = Date.now();
+let dashboardInstance = null;
 const STAGING_DIR = path.resolve(__dirname, '../../scratch/companion_staging');
 const LATEST_DIR = path.resolve(__dirname, '../../scratch/latest_flight');
 const ARCHIVE_DIR = path.resolve(__dirname, '../../scratch/mission_archives');
@@ -882,27 +886,63 @@ function getTimestamp() {
 }
 
 function logInfo(tag, msg) {
-  console.log(`${colors.gray}[${getTimestamp()}]${colors.reset} ${colors.cyan}${colors.bold}${tag}${colors.reset} ${msg}`);
+  const line = `${colors.gray}[${getTimestamp()}]${colors.reset} ${colors.cyan}${colors.bold}${tag}${colors.reset} ${msg}`;
+  if (dashboardInstance) {
+    dashboardInstance.pushLog(line);
+    if (dashboardInstance.mode === 'logs') dashboardInstance.draw();
+  } else {
+    console.log(line);
+  }
 }
 
 function logSuccess(tag, msg) {
-  console.log(`${colors.gray}[${getTimestamp()}]${colors.reset} ${colors.green}${colors.bold}${tag}${colors.reset} ${msg}`);
+  const line = `${colors.gray}[${getTimestamp()}]${colors.reset} ${colors.green}${colors.bold}${tag}${colors.reset} ${msg}`;
+  if (dashboardInstance) {
+    dashboardInstance.pushLog(line);
+    if (dashboardInstance.mode === 'logs') dashboardInstance.draw();
+  } else {
+    console.log(line);
+  }
 }
 
 function logWarn(tag, msg) {
-  console.log(`${colors.gray}[${getTimestamp()}]${colors.reset} ${colors.yellow}${colors.bold}${tag}${colors.reset} ${msg}`);
+  const line = `${colors.gray}[${getTimestamp()}]${colors.reset} ${colors.yellow}${colors.bold}${tag}${colors.reset} ${msg}`;
+  if (dashboardInstance) {
+    dashboardInstance.pushLog(line);
+    if (dashboardInstance.mode === 'logs') dashboardInstance.draw();
+  } else {
+    console.log(line);
+  }
 }
 
 function logError(tag, msg) {
-  console.log(`${colors.gray}[${getTimestamp()}]${colors.reset} ${colors.red}${colors.bold}${tag}${colors.reset} ${msg}`);
+  const line = `${colors.gray}[${getTimestamp()}]${colors.reset} ${colors.red}${colors.bold}${tag}${colors.reset} ${msg}`;
+  if (dashboardInstance) {
+    dashboardInstance.pushLog(line);
+    if (dashboardInstance.mode === 'logs') dashboardInstance.draw();
+  } else {
+    console.log(line);
+  }
 }
 
 function logDetail(label, val) {
-  console.log(`  ${colors.gray}├─${colors.reset} ${colors.white}${label}:${colors.reset} ${colors.dim}${val}${colors.reset}`);
+  const line = `  ${colors.gray}├─${colors.reset} ${colors.white}${label}:${colors.reset} ${colors.dim}${val}${colors.reset}`;
+  if (dashboardInstance) {
+    dashboardInstance.pushLog(line);
+    if (dashboardInstance.mode === 'logs') dashboardInstance.draw();
+  } else {
+    console.log(line);
+  }
 }
 
 function logDetailLast(label, val) {
-  console.log(`  ${colors.gray}└─${colors.reset} ${colors.white}${label}:${colors.reset} ${colors.dim}${val}${colors.reset}`);
+  const line = `  ${colors.gray}└─${colors.reset} ${colors.white}${label}:${colors.reset} ${colors.dim}${val}${colors.reset}`;
+  if (dashboardInstance) {
+    dashboardInstance.pushLog(line);
+    if (dashboardInstance.mode === 'logs') dashboardInstance.draw();
+  } else {
+    console.log(line);
+  }
 }
 
 // Common CORS Headers
@@ -3011,14 +3051,24 @@ function printStartupBanner() {
 const server = http.createServer(async (req, res) => {
   setCorsHeaders(res);
 
+  const reqStartTime = Date.now();
+  const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  const pathname = url.pathname;
+
+  res.on('finish', () => {
+    bridgeMetrics.recordRequest({
+      method: req.method || 'GET',
+      pathname: pathname || '/',
+      status: res.statusCode || 200,
+      ms: Date.now() - reqStartTime
+    });
+  });
+
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
     res.end();
     return;
   }
-
-  const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-  const pathname = url.pathname;
 
   try {
     // 1. Controller Status Endpoint (returns cached status instantly; supports ?refresh=true on-demand)
@@ -5285,13 +5335,43 @@ if (process.stdin.isTTY) {
   try {
     process.stdin.setRawMode(true);
     process.stdin.on('keypress', async (str, key) => {
-      if (key && ((key.ctrl && key.name === 'c') || key.name === 'q')) {
+      if (!key) return;
+
+      if ((key.ctrl && key.name === 'c') || key.name === 'q') {
+        if (dashboardInstance) dashboardInstance.stop();
         console.log(`\n${colors.yellow}[*] Stopping Aalaapi Sky Companion Bridge...${colors.reset}`);
         process.exit(0);
       }
-      if (key && key.name === 'c') {
-        console.clear();
-        printStartupBanner();
+      if (key.name === 'l') {
+        if (dashboardInstance) {
+          dashboardInstance.setMode(dashboardInstance.mode === 'logs' ? 'top' : 'logs');
+        }
+        return;
+      }
+      if (key.name === 'h') {
+        if (dashboardInstance) {
+          dashboardInstance.setMode(dashboardInstance.mode === 'help' ? 'top' : 'help');
+        }
+        return;
+      }
+      if (key.name === 'escape' || key.name === 'esc') {
+        if (dashboardInstance && dashboardInstance.mode !== 'top') {
+          dashboardInstance.setMode('top');
+        }
+        return;
+      }
+      if (key.name === 'c') {
+        if (dashboardInstance) {
+          dashboardInstance.clearAndRealign();
+        } else {
+          bridgeMetrics.reset();
+          console.clear();
+          printStartupBanner();
+        }
+        return;
+      }
+      if (['s', 'a', 'm', 'f', 'r'].includes(key.name) && dashboardInstance) {
+        dashboardInstance.setMode('logs');
       }
       if (key && key.name === 's') {
         console.log(`\n${colors.cyan}[*] Probing DJI RC 2 controller status...${colors.reset}`);
@@ -5427,6 +5507,65 @@ async function killExistingCompanion(port) {
   });
 }
 
+function startDashboard() {
+  dashboardInstance = new Dashboard({
+    version: VERSION,
+    port: PORT,
+    startTime: bridgeStartTime,
+    metrics: bridgeMetrics,
+    getRc2Status: () => cachedRc2Status || { connected: false },
+    getAdsbStatus: () => (typeof adsbTracker !== 'undefined' && adsbTracker.getStatus) ? adsbTracker.getStatus() : { connected: false, tcpPort: 30003, activeAircraftCount: 0 },
+    getRemoteIdStatus: () => ({ activeCount: (typeof airspaceTracker !== 'undefined' && airspaceTracker.getActiveDrones) ? airspaceTracker.getActiveDrones().length : 0 }),
+    getTileCacheStats: () => (typeof tileCache !== 'undefined' && tileCache.getStats) ? tileCache.getStats() : { totalFiles: 0, sizeMb: 0, maxSizeMb: 2048, hitRatePercent: 0, lruPruneCount: 0, bypassCount: 0 },
+    getClientCounts: () => {
+      const sseObj = typeof getSseClientsCount === 'function' ? getSseClientsCount() : {};
+      return {
+        sseTotal: typeof sseObj.total === 'number' ? sseObj.total : 0,
+        sseStatus: typeof sseStatusClients !== 'undefined' ? sseStatusClients.size : 0,
+        sseUnified: typeof sseUnifiedClients !== 'undefined' ? sseUnifiedClients.size : 0,
+        sseAirspace: typeof sseAirspaceClients !== 'undefined' ? sseAirspaceClients.size : 0,
+        mcpCount: typeof mcpSseClients !== 'undefined' ? mcpSseClients.size : 0
+      };
+    }
+  });
+
+  const origLog = console.log;
+  const origWarn = console.warn;
+  const origError = console.error;
+
+  console.log = (...args) => {
+    const line = args.map(a => (typeof a === 'string' ? a : (a instanceof Error ? a.stack : JSON.stringify(a)))).join(' ');
+    if (dashboardInstance) {
+      dashboardInstance.pushLog(line);
+      if (dashboardInstance.mode === 'logs') dashboardInstance.draw();
+    } else {
+      origLog(...args);
+    }
+  };
+
+  console.warn = (...args) => {
+    const line = args.map(a => (typeof a === 'string' ? a : (a instanceof Error ? a.stack : JSON.stringify(a)))).join(' ');
+    if (dashboardInstance) {
+      dashboardInstance.pushLog(line);
+      if (dashboardInstance.mode === 'logs') dashboardInstance.draw();
+    } else {
+      origWarn(...args);
+    }
+  };
+
+  console.error = (...args) => {
+    const line = args.map(a => (typeof a === 'string' ? a : (a instanceof Error ? a.stack : JSON.stringify(a)))).join(' ');
+    if (dashboardInstance) {
+      dashboardInstance.pushLog(line);
+      if (dashboardInstance.mode === 'logs') dashboardInstance.draw();
+    } else {
+      origError(...args);
+    }
+  };
+
+  dashboardInstance.start();
+}
+
 if (require.main === module) {
   (async () => {
     // Check and kill any previously running companion instance on the target port
@@ -5451,7 +5590,19 @@ if (require.main === module) {
 
     // Start Server on all network interfaces (0.0.0.0) so LAN tablets/phones can connect
     server.listen(PORT, '0.0.0.0', () => {
-      printStartupBanner();
+      const isPlain = process.argv.includes('--plain') ||
+                      process.env.AALAAPI_PLAIN === '1' ||
+                      process.argv.includes('--stdio') ||
+                      process.argv.includes('--mcp') ||
+                      !process.stdout.isTTY ||
+                      !process.stdin.isTTY;
+
+      if (!isPlain) {
+        startDashboard();
+      } else {
+        printStartupBanner();
+      }
+
       if (process.argv.includes('--stdio') || process.argv.includes('--mcp')) {
         mcpServer.startStdio();
       }
@@ -5509,6 +5660,9 @@ module.exports = {
   tileCache,
   TileCacheManager,
   fetchUpstreamBinary,
+  bridgeMetrics,
+  Dashboard,
+  startDashboard,
   VERSION,
   PORT
 };

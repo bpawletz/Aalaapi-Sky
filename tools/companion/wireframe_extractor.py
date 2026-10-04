@@ -117,6 +117,179 @@ def intersect_ray_with_plane(cam_pos, ray_dir, plane_y=0.0, max_dist=1200.0):
     t_fallback = min(max_dist, max(15.0, py * 1.5))
     return np.array([px + rx * t_fallback, max(plane_y, py + ry * t_fallback), pz + rz * t_fallback], dtype=np.float64)
 
+def intersect_ray_with_general_plane(cam_pos, ray_dir, normal, d, max_dist=1200.0):
+    """
+    Finds the intersection point of a 3D ray with a general plane defined by:
+    normal . P + d = 0
+    Returns (hit_point, t) or (None, None).
+    """
+    denom = float(np.dot(normal, ray_dir))
+    if abs(denom) > 1e-4:
+        t = -(float(np.dot(normal, cam_pos)) + float(d)) / denom
+        if 0 < t <= max_dist:
+            hit = cam_pos + ray_dir * t
+            return hit, t
+    return None, None
+
+def closest_points_between_rays(p1, r1, p2, r2):
+    """
+    Calculates the 3D point of closest approach between two 3D camera rays.
+    Returns (midpoint, distance, max_t) or (None, float('inf'), float('inf')).
+    """
+    w0 = p1 - p2
+    a = float(np.dot(r1, r1))
+    b = float(np.dot(r1, r2))
+    c = float(np.dot(r2, r2))
+    d = float(np.dot(r1, w0))
+    e = float(np.dot(r2, w0))
+    denom = a * c - b * b
+    if abs(denom) < 1e-4:
+        return None, float('inf'), float('inf')
+    s = (b * e - c * d) / denom
+    t = (a * e - b * d) / denom
+    if s <= 0 or t <= 0 or s > 500 or t > 500:
+        return None, float('inf'), float('inf')
+    pt1 = p1 + s * r1
+    pt2 = p2 + t * r2
+    dist = float(np.linalg.norm(pt1 - pt2))
+    mid = (pt1 + pt2) / 2.0
+    return mid, dist, max(s, t)
+
+def convex_hull_2d(points):
+    """
+    Pure Python/NumPy Andrew's monotone chain 2D convex hull algorithm.
+    """
+    pts = sorted(set((float(p[0]), float(p[1])) for p in points))
+    if len(pts) <= 1:
+        return pts
+    def cross(o, a, b):
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+    lower = []
+    for p in pts:
+        while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
+            lower.pop()
+        lower.append(p)
+    upper = []
+    for p in reversed(pts):
+        while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
+            upper.pop()
+        upper.append(p)
+    return lower[:-1] + upper[:-1]
+
+def fit_planes_ransac(points_3d, dist_threshold=0.35, min_inliers=8, max_planes=6):
+    """
+    Extracts dominant 3D planar surfaces from triangulated points using iterative RANSAC.
+    """
+    if len(points_3d) < min_inliers:
+        return []
+    remaining = np.array(points_3d, dtype=np.float64)
+    planes = []
+    for _ in range(max_planes):
+        if len(remaining) < min_inliers:
+            break
+        best_inliers_mask = None
+        best_plane = None
+        best_count = 0
+        N = len(remaining)
+        iters = min(150, max(40, N * 3))
+        for _ in range(iters):
+            sample_idx = np.random.choice(N, 3, replace=False)
+            p1, p2, p3 = remaining[sample_idx]
+            v1 = p2 - p1
+            v2 = p3 - p1
+            norm = np.cross(v1, v2)
+            n_len = np.linalg.norm(norm)
+            if n_len < 1e-5:
+                continue
+            norm /= n_len
+            if norm[1] < 0:
+                norm = -norm
+            d = -float(np.dot(norm, p1))
+            dists = np.abs(np.dot(remaining, norm) + d)
+            inlier_mask = dists < dist_threshold
+            c = np.count_nonzero(inlier_mask)
+            if c > best_count:
+                best_count = c
+                best_inliers_mask = inlier_mask
+                best_plane = (norm, d)
+        if best_count < min_inliers or best_plane is None:
+            break
+        inlier_pts = remaining[best_inliers_mask]
+        centroid = np.mean(inlier_pts, axis=0)
+        shifted = inlier_pts - centroid
+        try:
+            _, _, vh = np.linalg.svd(shifted)
+            refined_norm = vh[2]
+            if refined_norm[1] < 0:
+                refined_norm = -refined_norm
+            refined_d = -float(np.dot(refined_norm, centroid))
+        except Exception:
+            refined_norm, refined_d = best_plane
+
+        ny = refined_norm[1]
+        if ny > 0.85:
+            ptype = 'ground' if centroid[1] < 3.0 else 'roof_flat'
+        elif ny < 0.25:
+            ptype = 'wall'
+        else:
+            ptype = 'roof'
+
+        ref = np.array([1, 0, 0], dtype=float) if abs(refined_norm[0]) < 0.8 else np.array([0, 1, 0], dtype=float)
+        u_axis = np.cross(refined_norm, ref)
+        u_axis /= np.linalg.norm(u_axis)
+        v_axis = np.cross(refined_norm, u_axis)
+        coords_2d = [(float(np.dot(p - centroid, u_axis)), float(np.dot(p - centroid, v_axis))) for p in inlier_pts]
+        hull_2d = convex_hull_2d(coords_2d)
+        poly_3d = []
+        for hu, hv in hull_2d:
+            p3 = centroid + hu * u_axis + hv * v_axis
+            poly_3d.append([round(float(p3[0]), 3), round(float(p3[1]), 3), round(float(p3[2]), 3)])
+
+        planes.append({
+            'id': f'P{len(planes)}',
+            'type': ptype,
+            'normal': [round(float(refined_norm[0]), 4), round(float(refined_norm[1]), 4), round(float(refined_norm[2]), 4)],
+            'd': round(float(refined_d), 4),
+            'inlierCount': int(best_count),
+            'centroid': [round(float(centroid[0]), 3), round(float(centroid[1]), 3), round(float(centroid[2]), 3)],
+            'polygon': poly_3d
+        })
+        remaining = remaining[~best_inliers_mask]
+    return planes
+
+def intersect_two_planes(pA, pB, span_limit=40.0):
+    """
+    Computes 3D intersection line between two adjacent planar surfaces.
+    Returns [x1, y1, z1, x2, y2, z2] or None.
+    """
+    nA = np.array(pA['normal'], dtype=float)
+    dA = float(pA['d'])
+    nB = np.array(pB['normal'], dtype=float)
+    dB = float(pB['d'])
+    line_dir = np.cross(nA, nB)
+    dir_len = np.linalg.norm(line_dir)
+    if dir_len < 0.15:
+        return None
+    line_dir /= dir_len
+    A = np.vstack([nA, nB, line_dir])
+    b = np.array([-dA, -dB, 0.0])
+    try:
+        p0 = np.linalg.solve(A, b)
+    except Exception:
+        return None
+    cA = np.array(pA.get('centroid', p0), dtype=float)
+    cB = np.array(pB.get('centroid', p0), dtype=float)
+    c_mid = (cA + cB) / 2.0
+    t_mid = float(np.dot(c_mid - p0, line_dir))
+    center = p0 + t_mid * line_dir
+    half_len = min(span_limit / 2.0, max(3.0, float(np.linalg.norm(cA - cB)) * 1.1))
+    p1 = center - half_len * line_dir
+    p2 = center + half_len * line_dir
+    return [
+        round(float(p1[0]), 3), round(float(p1[1]), 3), round(float(p1[2]), 3),
+        round(float(p2[0]), 3), round(float(p2[1]), 3), round(float(p2[2]), 3)
+    ]
+
 def extract_wireframe_from_image(image_path, telemetry=None, options=None, origin=None, image_data=None):
     """
     Core OpenCV edge extraction and telemetry extrusion.
@@ -667,10 +840,12 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
     ridge_y = eaves_y + roof_h
 
     raw_3d = []
+    line_planes_raw = []
     eave_corners = []
+    all_extracted_planes = []
 
     # -----------------------------------------------------------------------
-    # Phase 4: Per-cluster photo selection and line unprojection.
+    # Phase 4: Per-cluster photo selection, multi-view plane fitting, and line unprojection.
     # -----------------------------------------------------------------------
     for cluster in clusters:
         cluster_sorted = sorted(cluster, key=lambda i: photo_meta[i]["line_count"], reverse=True)
@@ -691,6 +866,38 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
         cx = float(np.mean([photo_meta[i]["gx"] for i in cluster]))
         cz = float(np.mean([photo_meta[i]["gz"] for i in cluster]))
 
+        # Multi-View Stage: if >= 2 photos available, triangulate candidate 3D points
+        cluster_planes = []
+        if len(selected_indices) >= 2:
+            triangulated_pts = []
+            pmA = photo_meta[selected_indices[0]]
+            pmB = photo_meta[selected_indices[1]]
+            linesA = per_photo_lines.get(pmA["pid"], [])
+            linesB = per_photo_lines.get(pmB["pid"], [])
+
+            for la in linesA:
+                u1a, v1a, u2a, v2a = la
+                r1a = project_pixel_to_ray(u1a * 1920.0, v1a * 1080.0, 1920.0, 1080.0, pmA["hfov"], pmA["vfov"], pmA["cam_pos"], pmA["yaw"], pmA["pitch"], pmA["roll"])
+                r2a = project_pixel_to_ray(u2a * 1920.0, v2a * 1080.0, 1920.0, 1080.0, pmA["hfov"], pmA["vfov"], pmA["cam_pos"], pmA["yaw"], pmA["pitch"], pmA["roll"])
+                for lb in linesB:
+                    u1b, v1b, u2b, v2b = lb
+                    r1b = project_pixel_to_ray(u1b * 1920.0, v1b * 1080.0, 1920.0, 1080.0, pmB["hfov"], pmB["vfov"], pmB["cam_pos"], pmB["yaw"], pmB["pitch"], pmB["roll"])
+                    r2b = project_pixel_to_ray(u2b * 1920.0, v2b * 1080.0, 1920.0, 1080.0, pmB["hfov"], pmB["vfov"], pmB["cam_pos"], pmB["yaw"], pmB["pitch"], pmB["roll"])
+
+                    m1, d1, _ = closest_points_between_rays(pmA["cam_pos"], r1a, pmB["cam_pos"], r1b)
+                    m2, d2, _ = closest_points_between_rays(pmA["cam_pos"], r2a, pmB["cam_pos"], r2b)
+                    if m1 is not None and m2 is not None and d1 < 1.2 and d2 < 1.2:
+                        if math.hypot(m1[0] - cx, m1[2] - cz) <= 35.0 and m1[1] >= (ground_y - 1.0):
+                            triangulated_pts.append(m1)
+                            triangulated_pts.append(m2)
+                            triangulated_pts.append((m1 + m2) / 2.0)
+
+            if len(triangulated_pts) >= 8:
+                cluster_planes = fit_planes_ransac(triangulated_pts, dist_threshold=0.45, min_inliers=8, max_planes=6)
+                for cp in cluster_planes:
+                    cp['id'] = f'P{len(all_extracted_planes)}'
+                    all_extracted_planes.append(cp)
+
         for idx in selected_indices:
             pm = photo_meta[idx]
             cam_pos = pm["cam_pos"]
@@ -700,13 +907,9 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
                 continue
 
             alt_agl = pm["alt_agl"]
-            # Spatial filter radius: ground projection must land near cluster center
             filter_r = min(32.0, max(12.0, alt_agl * 0.90))
-
-            # Height assignment thresholds (Fix 3): distance from camera nadir
-            # on the ground plane determines which horizontal height plane to use.
-            ridge_thresh = alt_agl * 0.42   # ~12.6 m at 30 m AGL -> roof ridge
-            eave_thresh  = alt_agl * 0.78   # ~23.4 m at 30 m AGL -> eave line
+            ridge_thresh = alt_agl * 0.42
+            eave_thresh  = alt_agl * 0.78
             nadir_x = pm["wx"]
             nadir_z = pm["wz"]
 
@@ -739,54 +942,108 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
                 if math.hypot(mid_gx - cx, mid_gz - cz) > filter_r:
                     continue
 
-                # Fix 3: height assignment based on nadir distance
-                d1 = math.hypot(g1[0] - nadir_x, g1[2] - nadir_z)
-                d2 = math.hypot(g2[0] - nadir_x, g2[2] - nadir_z)
-                d_avg = (d1 + d2) / 2.0
+                assigned_plane_id = None
+                p1_use = None
+                p2_use = None
+                h1_use = ground_y
+                h2_use = ground_y
 
-                if d_avg <= ridge_thresh:
-                    h1 = h2 = ridge_y
-                elif d_avg <= eave_thresh:
-                    h1 = h2 = eaves_y
-                else:
-                    h1 = h2 = ground_y
+                # Attempt snap to best fitted plane in this cluster
+                if cluster_planes:
+                    best_pl = None
+                    best_cost = float('inf')
+                    for pl in cluster_planes:
+                        norm = np.array(pl['normal'], dtype=float)
+                        d_val = float(pl['d'])
+                        hp1, t_p1 = intersect_ray_with_general_plane(cam_pos, r1, norm, d_val, max_dist=350.0)
+                        hp2, t_p2 = intersect_ray_with_general_plane(cam_pos, r2, norm, d_val, max_dist=350.0)
+                        if hp1 is not None and hp2 is not None and t_p1 > 0 and t_p2 > 0:
+                            s_len = float(np.linalg.norm(hp2 - hp1))
+                            if 0.5 <= s_len <= 35.0:
+                                mid_pt = (hp1 + hp2) / 2.0
+                                cost = float(np.linalg.norm(mid_pt - np.array(pl.get('centroid', mid_pt), dtype=float)))
+                                if cost < best_cost and cost < 25.0:
+                                    best_cost = cost
+                                    best_pl = pl
+                                    p1_use = hp1
+                                    p2_use = hp2
+                                    h1_use = float(hp1[1])
+                                    h2_use = float(hp2[1])
 
-                t1 = (h1 - pm["wy"]) / r1[1]
-                t2 = (h2 - pm["wy"]) / r2[1]
-                if t1 <= 0 or t2 <= 0 or t1 > 350 or t2 > 350:
-                    continue
+                    if best_pl is not None:
+                        assigned_plane_id = best_pl['id']
 
-                p1 = cam_pos + r1 * t1
-                p2 = cam_pos + r2 * t2
+                # Fallback to nadir-distance height heuristic
+                if p1_use is None or p2_use is None:
+                    d1 = math.hypot(g1[0] - nadir_x, g1[2] - nadir_z)
+                    d2 = math.hypot(g2[0] - nadir_x, g2[2] - nadir_z)
+                    d_avg = (d1 + d2) / 2.0
 
-                seg_len = np.linalg.norm(p2 - p1)
+                    if d_avg <= ridge_thresh:
+                        h1_use = h2_use = ridge_y
+                    elif d_avg <= eave_thresh:
+                        h1_use = h2_use = eaves_y
+                    else:
+                        h1_use = h2_use = ground_y
+
+                    t1 = (h1_use - pm["wy"]) / r1[1]
+                    t2 = (h2_use - pm["wy"]) / r2[1]
+                    if t1 <= 0 or t2 <= 0 or t1 > 350 or t2 > 350:
+                        continue
+                    p1_use = cam_pos + r1 * t1
+                    p2_use = cam_pos + r2 * t2
+
+                seg_len = np.linalg.norm(p2_use - p1_use)
                 if 0.50 <= seg_len <= 35.0:
-                    p1_rnd = [round(float(p1[0]), 3), round(float(p1[1]), 3), round(float(p1[2]), 3)]
-                    p2_rnd = [round(float(p2[0]), 3), round(float(p2[1]), 3), round(float(p2[2]), 3)]
+                    p1_rnd = [round(float(p1_use[0]), 3), round(float(p1_use[1]), 3), round(float(p1_use[2]), 3)]
+                    p2_rnd = [round(float(p2_use[0]), 3), round(float(p2_use[1]), 3), round(float(p2_use[2]), 3)]
                     raw_3d.append(p1_rnd + p2_rnd)
-                    if abs(h1 - eaves_y) < 0.2:
+                    line_planes_raw.append([assigned_plane_id] if assigned_plane_id else [])
+                    if abs(h1_use - eaves_y) < 0.2:
                         eave_corners.append(p1_rnd)
-                    if abs(h2 - eaves_y) < 0.2:
+                    if abs(h2_use - eaves_y) < 0.2:
                         eave_corners.append(p2_rnd)
 
-    # Deduplicate overlapping line segments
+        # Generate intersection edges between adjacent planes in this cluster
+        if len(cluster_planes) >= 2:
+            for p_i in range(len(cluster_planes)):
+                for p_j in range(p_i + 1, len(cluster_planes)):
+                    plA = cluster_planes[p_i]
+                    plB = cluster_planes[p_j]
+                    inter_line = intersect_two_planes(plA, plB, span_limit=30.0)
+                    if inter_line:
+                        raw_3d.append(inter_line)
+                        line_planes_raw.append([plA['id'], plB['id']])
+
+    # Deduplicate overlapping line segments while preserving plane associations
     deduped = []
+    deduped_planes = []
     tol_sq = 0.4 * 0.4
-    for l in raw_3d:
+    for idx_l, l in enumerate(raw_3d):
         x1, y1, z1, x2, y2, z2 = l
+        assigned_pids = line_planes_raw[idx_l] if idx_l < len(line_planes_raw) else []
         is_dup = False
-        for ex in deduped:
+        for ex_idx, ex in enumerate(deduped):
             ex1, ey1, ez1, ex2, ey2, ez2 = ex
             d11 = (x1-ex1)**2 + (y1-ey1)**2 + (z1-ez1)**2
             d22 = (x2-ex2)**2 + (y2-ey2)**2 + (z2-ez2)**2
             if d11 < tol_sq and d22 < tol_sq:
-                is_dup = True; break
+                is_dup = True
+                for pid in assigned_pids:
+                    if pid not in deduped_planes[ex_idx]:
+                        deduped_planes[ex_idx].append(pid)
+                break
             d12 = (x1-ex2)**2 + (y1-ey2)**2 + (z1-ez2)**2
             d21 = (x2-ex1)**2 + (y2-ey1)**2 + (z2-ez1)**2
             if d12 < tol_sq and d21 < tol_sq:
-                is_dup = True; break
+                is_dup = True
+                for pid in assigned_pids:
+                    if pid not in deduped_planes[ex_idx]:
+                        deduped_planes[ex_idx].append(pid)
+                break
         if not is_dup:
             deduped.append(l)
+            deduped_planes.append(list(assigned_pids))
 
     # Add structural corner columns (eave corners down to ground)
     if eave_corners:
@@ -808,8 +1065,13 @@ def unproject_authentic_architectural_lines(photos, per_photo_lines, origin=None
                     col = [round(float(pt[0]), 3), ground_y, round(float(pt[2]), 3),
                            round(float(pt[0]), 3), round(float(pt[1]), 3), round(float(pt[2]), 3)]
                     deduped.append(col)
+                    deduped_planes.append([])
 
-    return deduped
+    return {
+        "lines": deduped,
+        "planes": all_extracted_planes,
+        "linePlanes": deduped_planes
+    }
 
 
 def main():
@@ -890,7 +1152,18 @@ def main():
                     per_photo_lines[photo["photoId"]] = res.get("lines2D", [])
 
         # Priority 1: Unproject authentic detected architectural lines from photos
-        authentic_lines = unproject_authentic_architectural_lines(photos, per_photo_lines, origin=origin, options=options)
+        authentic_res = unproject_authentic_architectural_lines(photos, per_photo_lines, origin=origin, options=options)
+        planes_out = []
+        line_planes_out = []
+        if isinstance(authentic_res, dict):
+            authentic_lines = authentic_res.get("lines", [])
+            planes_out = authentic_res.get("planes", [])
+            line_planes_out = authentic_res.get("linePlanes", [])
+        elif isinstance(authentic_res, list):
+            authentic_lines = authentic_res
+        else:
+            authentic_lines = []
+
         if authentic_lines and len(authentic_lines) >= 15:
             final_3d_lines = authentic_lines
         else:
@@ -898,12 +1171,18 @@ def main():
             cad_lines = synthesize_architectural_wireframe(photos, origin=origin, options=options)
             if cad_lines:
                 final_3d_lines = cad_lines
+                planes_out = []
+                line_planes_out = []
             else:
                 final_3d_lines = all_lines
+                planes_out = []
+                line_planes_out = []
 
         out_data = {
             "success": True,
             "lines": final_3d_lines,
+            "planes": planes_out,
+            "linePlanes": line_planes_out,
             "perPhotoLines": per_photo_lines,
             "count": len(final_3d_lines),
             "totalRawLines": total_raw,

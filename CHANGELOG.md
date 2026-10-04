@@ -1,3 +1,23 @@
+## [1.145.0] - 2026-10-04
+
+### Added
+- **Plane-Aware 3D Edge Finder & Multi-View Surface Extraction (Closes #122)**:
+  - **Multi-View Ray Association & Triangulation (`tools/companion/wireframe_extractor.py`)**: Extracted and triangulated candidate 3D feature points across overlapping camera views in photo clusters using epipolar ray-to-ray proximity (`closest_points_between_rays()`).
+  - **Iterative RANSAC Surface Fitting & Plane Classification**: Implemented iterative RANSAC plane fitting (`fit_planes_ransac()`) extracting dominant planar surfaces (`roof`, `wall`, `ground`, `roof_flat`) with 2D convex hull boundary polygon computation (`convex_hull_2d()`).
+  - **Ray-to-Plane Edge Snapping & Intersection Synthesis**: Snapped 2D Hough lines directly onto their supporting fitted planes via general ray-plane intersections (`intersect_ray_with_general_plane()`), and synthesized exact 3D ridge/hip/eave intersection segments between adjacent planes (`intersect_two_planes()`).
+  - **Additive Wireframe Schema & JavaScript Fallback (`tools/companion/wireframe_engine.js`)**: Extended wireframe JSON response with `planes` polygon structures and index-aligned `linePlanes` tag associations across both Python OpenCV and JS fallback engines while maintaining backward compatibility with legacy consumers.
+  - **3D Digital Twin Viewer Planes Visualizer & Selection Readout (`src/3d/DigitalTwin.js`)**: Added a dedicated `📐 Planes` toggle (`#diag-btn-toggle-planes`), rendering translucent 3D plane facets (`wireframePlanesMesh`), updated the wireframe badge with plane counts, and enriched the line inspection HUD with adjacent plane ID affiliations (`Planes: P0, P1`).
+  - **Three.js Digital Twin Scene Export**: Updated `wireframeToThreeJson` to export fitted plane geometries as `Building_3D_Planes` meshes directly compatible with threejs.org/editor.
+
+## [1.144.0] - 2026-10-04
+
+### Added
+- **Interactive Companion Bridge `top`-Style ASCII Resource & Activity Dashboard (Closes #121)**:
+  - **Live ASCII Dashboard (`tools/companion/top_dashboard.js`, `tools/companion/server.js`)**: Real-time terminal resource monitor showing process CPU %, Memory RSS/Heap, event loop lag, HTTP request counts, rolling req/sec, error counts, client connections, subsystem status (RC 2, ADS-B, Remote ID), tile cache stats, and top 8 endpoint latencies.
+  - **On-Demand Log & Endpoint View (`[l]`, `[h]`)**: Suppressed continuous terminal log streaming by default into a 1000-line ring buffer. Pressing `[l]` toggles live log view; pressing `[h]` displays active API endpoints and interactive command help.
+  - **Subsystem Probe Routing (`[s]`, `[a]`, `[m]`, `[r]`, `[f]`)**: Executing interactive CLI probe shortcuts automatically switches to log view for instant visual feedback.
+  - **Plain Output Opt-Out (`--plain`, `AALAAPI_PLAIN=1`)**: Automatically falls back to standard log output for non-TTY environments, MCP stdio mode, tests, or explicit `--plain` flag usage.
+
 ## [1.143.0] - 2026-10-04
 
 ### Added

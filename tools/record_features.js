@@ -1235,6 +1235,100 @@ const scenarios = [
       await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
       await page.waitForTimeout(1000);
     }
+  },
+  {
+    id: 'feature_3d_plane_wireframe',
+    name: 'Plane-Aware 3D Edge Finder & Multi-View Surface Extraction',
+    description: 'RANSAC 3D architectural plane fitting, ray-to-plane snapping, adjacent plane-plane intersection synthesis, and translucent surface mesh toggle.',
+    issueRef: 'Issue #122',
+    run: async (page) => {
+      // 1. Open Flight Diagnostics
+      await page.evaluate(() => {
+        if (window.FlightDiagnostics && typeof FlightDiagnostics.open === 'function') {
+          FlightDiagnostics.open('overview');
+        } else {
+          const el = document.getElementById('flight-diagnostics-drawer') || document.getElementById('flight-diagnostics-modal');
+          if (el) el.classList.remove('hidden', 'drawer-closed');
+        }
+      });
+      await page.waitForTimeout(800);
+
+      // 2. Switch to 3D View Tab
+      await page.evaluate(() => {
+        const tab = Array.from(document.querySelectorAll('.diag-tab-btn, button')).find(b => b.textContent && b.textContent.includes('3D'));
+        if (tab) tab.click();
+      });
+      await page.waitForTimeout(1000);
+
+      // 3. Load synthetic architectural wireframe package with fitted planes
+      await page.evaluate(() => {
+        if (typeof DigitalTwin !== 'undefined' && DigitalTwin.loadWireframeGeometry) {
+          const pkg = {
+            lines: [
+              [[0, 0, 0], [10, 0, 0]],
+              [[10, 0, 0], [10, 8, 0]],
+              [[10, 8, 0], [0, 8, 0]],
+              [[0, 8, 0], [0, 0, 0]],
+              [[0, 0, 5], [10, 0, 5]],
+              [[10, 0, 5], [10, 8, 5]],
+              [[10, 8, 5], [0, 8, 5]],
+              [[0, 8, 5], [0, 0, 5]],
+              [[0, 0, 0], [0, 0, 5]],
+              [[10, 0, 0], [10, 0, 5]],
+              [[10, 8, 0], [10, 8, 5]],
+              [[0, 8, 0], [0, 8, 5]],
+              [[5, 4, 8], [0, 0, 5]],
+              [[5, 4, 8], [10, 0, 5]],
+              [[5, 4, 8], [10, 8, 5]],
+              [[5, 4, 8], [0, 8, 5]]
+            ],
+            planes: [
+              { id: 'P0', classification: 'ground', normal: [0, 0, 1], d: 0, polygon: [[0, 0, 0], [10, 0, 0], [10, 8, 0], [0, 8, 0]] },
+              { id: 'P1', classification: 'wall', normal: [0, -1, 0], d: 0, polygon: [[0, 0, 0], [10, 0, 0], [10, 0, 5], [0, 0, 5]] },
+              { id: 'P2', classification: 'wall', normal: [0, 1, 0], d: -8, polygon: [[0, 8, 0], [10, 8, 0], [10, 8, 5], [0, 8, 5]] },
+              { id: 'P3', classification: 'roof', normal: [0, -0.6, 0.8], d: -2.4, polygon: [[0, 0, 5], [10, 0, 5], [5, 4, 8]] },
+              { id: 'P4', classification: 'roof', normal: [0, 0.6, 0.8], d: -7.2, polygon: [[0, 8, 5], [10, 8, 5], [5, 4, 8]] }
+            ],
+            linePlanes: [
+              ['P0', 'P1'], ['P0'], ['P0', 'P2'], ['P0'],
+              ['P1', 'P3'], ['P3'], ['P2', 'P4'], ['P4'],
+              ['P1'], ['P1'], ['P2'], ['P2'],
+              ['P3'], ['P3'], ['P4'], ['P4']
+            ]
+          };
+          DigitalTwin.loadWireframeGeometry(pkg);
+        }
+      });
+      await page.waitForTimeout(1500);
+
+      // 4. Select a line to display the adjacent plane badge readout in HUD
+      await page.evaluate(() => {
+        if (typeof DigitalTwin !== 'undefined' && DigitalTwin.selectWireframeLine) {
+          DigitalTwin.selectWireframeLine(0);
+        }
+      });
+      await page.waitForTimeout(1500);
+
+      // 5. Toggle plane surfaces off and back on
+      await page.evaluate(() => {
+        const toggleBtn = document.getElementById('diag-btn-toggle-planes');
+        if (toggleBtn) toggleBtn.click();
+      });
+      await page.waitForTimeout(1200);
+      await page.evaluate(() => {
+        const toggleBtn = document.getElementById('diag-btn-toggle-planes');
+        if (toggleBtn) toggleBtn.click();
+      });
+      await page.waitForTimeout(1500);
+
+      // 6. Close Flight Diagnostics
+      await page.evaluate(() => {
+        const close = document.getElementById('close-flight-diagnostics-btn') || document.querySelector('#flight-diagnostics-drawer .close-btn') || document.querySelector('#flight-diagnostics-modal .modal-close');
+        if (close) close.click();
+      });
+      await centerMapOnPoint(page);
+      await page.waitForTimeout(500);
+    }
   }
 ];
 

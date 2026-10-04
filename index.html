@@ -5702,7 +5702,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.143.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.145.0</span></h1>
 
 
 
@@ -8555,6 +8555,14 @@ html, body {
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🏗️ Plane-Aware 3D Edge Finder &amp; Surface Extraction (v1.145.0) (Closes #122)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Advanced photogrammetry edge detection with <strong>Multi-View Surface Plane Fitting (RANSAC)</strong>! Triangulates candidate 3D points across overlapping drone views to extract dominant structure planes (roof facets, vertical facades, ground). 2D detected edges snap directly onto fitted surfaces with accurate 3D intersections (ridges, hips, eaves). In the <strong>3D Digital Twin Viewer</strong>, toggle the new <strong>&quot;📐 Planes&quot;</strong> button to visualize translucent 3D plane polygon facets, inspect plane counts, and view adjacent plane affiliations on selected lines.
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               ✈️ Dual-Source ADS-B Feeds (Local SDR + adsb.lol) (v1.142.1) (Closes #119)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
@@ -9716,7 +9724,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.143.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.145.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -9777,6 +9785,18 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.145.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🏗️ Plane-Aware 3D Edge Finder &amp; Surface Extraction (Closes #122):</strong> Integrated multi-view RANSAC plane fitting into the photogrammetry pipeline. Detects planar building facets (roofs, walls, ground), snaps 2D Hough lines directly onto physical surfaces, synthesizes clean 3D ridge/hip/eave intersection lines, and provides a <strong>&quot;📐 Planes&quot;</strong> toggle and plane inspection tags in the 3D Digital Twin Viewer.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.144.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>📊 Interactive Companion Bridge <code>top</code>-Style ASCII Dashboard:</strong> Added real-time terminal resource monitor showing process CPU %, Memory RSS/Heap, event loop lag, HTTP request rates/latencies, device connectivity, tile cache stats, and top 8 endpoint statistics. Logs are buffered behind <code>[l]</code> key, endpoints/help behind <code>[h]</code>, and probes auto-route to log view.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.143.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -13341,6 +13361,7 @@ html, body {
                   <button id="diag-wireframe-export-btn" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.68rem;" title="Export Wireframe OBJ, Three.js JSON, or JSON">💾 Export</button>
                 </div>
                 <div style="display: flex; gap: 6px; margin-top: 2px;">
+                  <button id="diag-btn-toggle-planes" class="btn-secondary" style="flex: 1.1; padding: 4px 6px; font-size: 0.68rem; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);" title="Toggle visualization of fitted 3D plane facets">📐 Planes</button>
                   <button id="diag-wireframe-save-btn" class="btn-secondary" style="flex: 1.3; padding: 4px 6px; font-size: 0.68rem; color: #38bdf8; border-color: rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.08);" title="Make wireframe part of the inspection deliverable package">📦 Save to Package</button>
                   <button id="diag-wireframe-threejs-btn" class="btn-secondary" style="flex: 1.1; padding: 4px 6px; font-size: 0.68rem; color: #a78bfa; border-color: rgba(167, 139, 250, 0.4); background: rgba(167, 139, 250, 0.08);" title="Export for Three.js Editor (threejs.org/editor)">🎨 Three.js</button>
                 </div>
@@ -36850,9 +36871,11 @@ const FlightDiagnostics = {
   diagShowFootprints: true,
   diagShowDrones: true,
   diagShowWireframe: true,
+  diagShowPlanes: false,
   diagFpvMode: false,
   wireframeData: null,
   wireframeLinesMesh: null,
+  wireframePlanesMesh: null,
   wireframeHighlightMesh: null,
   wireframeSelectedLineIndex: null,
   wireframeElevationOffset: 0.0,
@@ -37545,6 +37568,13 @@ const FlightDiagnostics = {
     if (diagBtnWireframe && typeof diagBtnWireframe.addEventListener === 'function') {
       diagBtnWireframe.addEventListener('click', () => {
         this.toggleWireframe();
+      });
+    }
+
+    const diagBtnPlanes = document.getElementById('diag-btn-toggle-planes');
+    if (diagBtnPlanes && typeof diagBtnPlanes.addEventListener === 'function') {
+      diagBtnPlanes.addEventListener('click', () => {
+        this.togglePlanes();
       });
     }
 
@@ -39915,6 +39945,11 @@ const FlightDiagnostics = {
       if (this.wireframeLinesMesh.geometry) this.wireframeLinesMesh.geometry.dispose();
       this.wireframeLinesMesh = null;
     }
+    if (this.wireframePlanesMesh && this.threeScene) {
+      this.threeScene.remove(this.wireframePlanesMesh);
+      if (this.wireframePlanesMesh.geometry) this.wireframePlanesMesh.geometry.dispose();
+      this.wireframePlanesMesh = null;
+    }
     if (this.wireframeHighlightMesh && this.threeScene) {
       this.threeScene.remove(this.wireframeHighlightMesh);
       if (this.wireframeHighlightMesh.geometry) this.wireframeHighlightMesh.geometry.dispose();
@@ -39942,7 +39977,10 @@ const FlightDiagnostics = {
     });
 
     const badge = (typeof document !== 'undefined') ? document.getElementById('diag-wireframe-count-badge') : null;
-    if (badge) badge.textContent = `${validLines.length} lines`;
+    const planesCount = Array.isArray(this.wireframeData.planes) ? this.wireframeData.planes.length : 0;
+    if (badge) {
+      badge.textContent = planesCount > 0 ? `${validLines.length} lines • ${planesCount} planes` : `${validLines.length} lines`;
+    }
 
     if (validLines.length === 0 || typeof THREE === 'undefined' || typeof THREE.BufferGeometry !== 'function' || typeof THREE.BufferAttribute !== 'function' || typeof THREE.LineSegments !== 'function') return;
 
@@ -39974,6 +40012,43 @@ const FlightDiagnostics = {
     if (this.threeScene) {
       this.threeScene.add(this.wireframeLinesMesh);
     }
+
+    // Build translucent planes mesh if planes exist
+    if (Array.isArray(this.wireframeData.planes) && this.wireframeData.planes.length > 0 && typeof THREE.Mesh === 'function' && typeof THREE.MeshBasicMaterial === 'function') {
+      const triVerts = [];
+      this.wireframeData.planes.forEach(pl => {
+        const poly = pl.polygon || [];
+        if (poly.length >= 3) {
+          const p0 = poly[0];
+          for (let i = 1; i < poly.length - 1; i++) {
+            const p1 = poly[i];
+            const p2 = poly[i + 1];
+            triVerts.push(
+              p0[0], p0[1] + elevOffset, p0[2],
+              p1[0], p1[1] + elevOffset, p1[2],
+              p2[0], p2[1] + elevOffset, p2[2]
+            );
+          }
+        }
+      });
+
+      if (triVerts.length > 0) {
+        const plGeom = new THREE.BufferGeometry();
+        plGeom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(triVerts), 3));
+        const plMat = new THREE.MeshBasicMaterial({
+          color: 0x38bdf8,
+          side: (THREE.DoubleSide !== undefined) ? THREE.DoubleSide : 2,
+          transparent: true,
+          opacity: 0.28,
+          depthWrite: false
+        });
+        this.wireframePlanesMesh = new THREE.Mesh(plGeom, plMat);
+        this.wireframePlanesMesh.visible = Boolean(this.diagShowPlanes);
+        if (this.threeScene) {
+          this.threeScene.add(this.wireframePlanesMesh);
+        }
+      }
+    }
   },
 
   toggleWireframe(visible) {
@@ -40003,6 +40078,27 @@ const FlightDiagnostics = {
     }
   },
 
+  togglePlanes(visible) {
+    if (visible === undefined) {
+      this.diagShowPlanes = !this.diagShowPlanes;
+    } else {
+      this.diagShowPlanes = Boolean(visible);
+    }
+    if (this.wireframePlanesMesh) {
+      this.wireframePlanesMesh.visible = this.diagShowPlanes;
+    }
+    const btn = (typeof document !== 'undefined') ? document.getElementById('diag-btn-toggle-planes') : null;
+    if (btn && btn.classList) {
+      if (typeof btn.classList.toggle === 'function') {
+        btn.classList.toggle('active', this.diagShowPlanes);
+      } else if (this.diagShowPlanes) {
+        if (typeof btn.classList.add === 'function') btn.classList.add('active');
+      } else {
+        if (typeof btn.classList.remove === 'function') btn.classList.remove('active');
+      }
+    }
+  },
+
   selectWireframeLine(index) {
     if (!this.wireframeData || !Array.isArray(this.wireframeData.lines) || index < 0 || index >= this.wireframeData.lines.length) return;
     this.wireframeSelectedLineIndex = index;
@@ -40011,9 +40107,18 @@ const FlightDiagnostics = {
     const elevOffset = typeof this.wireframeElevationOffset === 'number' ? this.wireframeElevationOffset : 0.0;
     const len = Math.hypot(x2 - x1, y2 - y1, z2 - z1);
 
+    // Plane affiliation readout
+    let planeTag = '';
+    if (Array.isArray(this.wireframeData.linePlanes) && this.wireframeData.linePlanes[index]) {
+      const pids = this.wireframeData.linePlanes[index];
+      if (pids.length > 0) {
+        planeTag = `<br><span style="color:#a78bfa; font-weight:600;">Planes: ${pids.join(', ')}</span>`;
+      }
+    }
+
     const info = (typeof document !== 'undefined') ? document.getElementById('diag-wireframe-selected-info') : null;
     if (info) {
-      info.innerHTML = `<strong>Selected #${index + 1}:</strong> Len: <strong>${len.toFixed(2)}m</strong> • Elev: ${y1.toFixed(1)}m→${y2.toFixed(1)}m<br><span style="color:#38bdf8;">(${x1.toFixed(1)}, ${z1.toFixed(1)}) → (${x2.toFixed(1)}, ${z2.toFixed(1)})</span>`;
+      info.innerHTML = `<strong>Selected #${index + 1}:</strong> Len: <strong>${len.toFixed(2)}m</strong> • Elev: ${y1.toFixed(1)}m→${y2.toFixed(1)}m${planeTag}<br><span style="color:#38bdf8;">(${x1.toFixed(1)}, ${z1.toFixed(1)}) → (${x2.toFixed(1)}, ${z2.toFixed(1)})</span>`;
     }
 
     if (this.wireframeHighlightMesh && this.threeScene) {
@@ -40177,7 +40282,7 @@ const FlightDiagnostics = {
       });
     }
 
-    return { flightPath, photos, boundary, elevationOffset: elevOffset };
+    return { flightPath, photos, boundary, planes: (this.wireframeData && this.wireframeData.planes) || [], elevationOffset: elevOffset };
   },
 
   exportWireframe(format = 'json') {
@@ -40203,13 +40308,14 @@ const FlightDiagnostics = {
     } else if (format === 'threejs' || format === 'three') {
       mimeType = 'application/json';
       fileExt = 'threejs.json';
-      const dtData = (typeof this.gatherDigitalTwinData === 'function') ? this.gatherDigitalTwinData() : { elevationOffset: elevOffset };
+      const dtData = (typeof this.gatherDigitalTwinData === 'function') ? this.gatherDigitalTwinData() : { elevationOffset: elevOffset, planes: (this.wireframeData && this.wireframeData.planes) || [] };
       const threeObj = (typeof buildThreeDigitalTwinJson === 'function')
         ? buildThreeDigitalTwinJson(this.wireframeData.lines, {
             elevationOffset: dtData.elevationOffset,
             flightPath: dtData.flightPath,
             photos: dtData.photos,
             boundary: dtData.boundary,
+            planes: dtData.planes || (this.wireframeData && this.wireframeData.planes) || [],
             asGroup: true
           })
         : {
