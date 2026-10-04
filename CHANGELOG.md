@@ -1,3 +1,12 @@
+## [1.141.0] - 2026-10-04
+
+### Added
+- **Direct Waypoint Deletion in Road Follow Mode without Converting to Freeform (Closes #118)**:
+  - **Drone Waypoint Editor Deletion Action (`src/import/KmzImporter.js`)**: Added a dedicated `🗑️ Delete Waypoint ${idx}` button (`#delete-road-drone-wp-btn`) inside the cyan Drone Waypoint popup in Road Follow mode, allowing pilots to remove waypoints directly without converting their mission to Freeform mode.
+  - **Automatic Road Centerline Cascading & Recalculation**: Deleting a drone waypoint removes its corresponding road centerline node, re-indexes remaining road nodes, and smoothly recalculates the continuous offset flight path while preserving the layer's Road Follow pattern.
+  - **Minimum Waypoint Safeguard**: Added a strict 2-waypoint safety guard to both road nodes (`#delete-road-node-btn`) and drone waypoints (`#delete-road-drone-wp-btn`), alerting pilots and preventing accidental deletion if only 2 points remain.
+  - **3D FPV HUD Synchronous Road Deletion (`src/3d/FpvHud.js`, `src/import/KmzImporter.js`)**: Updated `deleteFlightWaypoint` to properly synchronize `targetLayer.roadWaypoints` and trigger `updateGrid()`.
+
 ## [1.140.1] - 2026-10-04
 
 ### Refactored
