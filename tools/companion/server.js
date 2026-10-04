@@ -352,7 +352,8 @@ const {
 
 const {
   AdsbAirspaceTracker,
-  METERS_PER_STATUTE_MILE
+  METERS_PER_STATUTE_MILE,
+  METERS_PER_NAUTICAL_MILE
 } = require('./adsb_tracker.js');
 
 const initialAdsbCfg = getAdsbConfig();
@@ -362,6 +363,9 @@ const adsbTracker = new AdsbAirspaceTracker({
   tcpPort: initialAdsbCfg.adsbPort,
   autoConnect: process.env.NODE_ENV !== 'test' && !process.env.npm_lifecycle_event?.includes('test') && !process.argv.includes('--test')
 });
+
+// Cache for external online ADS-B feeds (adsb.lol / airplanes.live)
+let lastExternalFeedCache = null;
 
 // Server-Sent Events (SSE) active streaming client pools
 const sseAirspaceClients = new Set();
@@ -4632,6 +4636,119 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // 9a-1. External ADS-B Multi-Source Online Feed Proxy (adsb.lol / airplanes.live)
+    if ((pathname === '/api/airspace/external' || pathname === '/api/adsb/external') && req.method === 'GET') {
+      const providerParam = (url.searchParams.get('provider') || 'adsb.lol').toLowerCase().trim();
+      const latParam = url.searchParams.get('lat') || url.searchParams.get('latitude') || '0';
+      const lonParam = url.searchParams.get('lon') || url.searchParams.get('lng') || url.searchParams.get('longitude') || '0';
+      const radiusParam = url.searchParams.get('radius') || url.searchParams.get('range') || '15';
+      const customUrl = url.searchParams.get('url');
+
+      const lat = parseFloat(latParam);
+      const lon = parseFloat(lonParam);
+      let radius = parseFloat(radiusParam);
+      if (isNaN(radius) || radius <= 0) radius = 15;
+      if (radius > 250) radius = 250;
+
+      const now = Date.now();
+      const rateLimitWindowMs = 28000; // 30s rate limit with 2s grace
+      const cacheKey = `${providerParam}:${lat.toFixed(4)}:${lon.toFixed(4)}:${radius}`;
+
+      if (lastExternalFeedCache && lastExternalFeedCache.key === cacheKey && (now - lastExternalFeedCache.timestamp < rateLimitWindowMs)) {
+        const retryAfter = Math.max(1, Math.ceil((rateLimitWindowMs - (now - lastExternalFeedCache.timestamp)) / 1000));
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(Object.assign({
+          success: true,
+          cached: true,
+          rateLimited: true,
+          retryAfterSeconds: retryAfter
+        }, lastExternalFeedCache.data)));
+        return;
+      }
+
+      let fetchUrl = '';
+      if (providerParam === 'adsb.lol') {
+        fetchUrl = `https://api.adsb.lol/v2/point/${lat}/${lon}/${radius}`;
+      } else if (providerParam === 'airplanes.live') {
+        fetchUrl = `https://api.airplanes.live/v2/point/${lat}/${lon}/${radius}`;
+      } else if (customUrl && /^https?:\/\//i.test(customUrl)) {
+        fetchUrl = customUrl.replace('{lat}', lat).replace('{lon}', lon).replace('{radius}', radius);
+      } else {
+        fetchUrl = `https://api.adsb.lol/v2/point/${lat}/${lon}/${radius}`;
+      }
+
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+
+        const apiRes = await fetch(fetchUrl, {
+          signal: controller.signal,
+          headers: {
+            'User-Agent': `Aalaapi-Sky-Bridge/${VERSION} (+https://github.com/bpawletz/Aalaapi-Sky)`,
+            'Accept': 'application/json'
+          }
+        });
+        clearTimeout(timeout);
+
+        if (!apiRes.ok) {
+          const statusText = apiRes.statusText || `HTTP ${apiRes.status}`;
+          let errorDetail = '';
+          try {
+            const errJson = await apiRes.json();
+            errorDetail = errJson.error || errJson.message || '';
+          } catch (_) {}
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            success: false,
+            provider: providerParam,
+            status: apiRes.status,
+            error: errorDetail || `Remote provider returned ${statusText}`,
+            aircraft: []
+          }));
+          return;
+        }
+
+        const data = await apiRes.json();
+        const updatedCount = adsbTracker.parseDump1090Json(data, providerParam);
+
+        const boundsResult = adsbTracker.getAirspaceBounds({
+          homeLat: lat,
+          homeLon: lon,
+          radiusMeters: radius * METERS_PER_NAUTICAL_MILE,
+          maxCeilingFeet: 60000,
+          includeSafe: true
+        });
+
+        const responsePayload = {
+          success: true,
+          provider: providerParam,
+          count: boundsResult.totalTracked || updatedCount,
+          aircraft: boundsResult.aircraft || [],
+          breachedCount: boundsResult.breachedCount || 0,
+          now: Date.now()
+        };
+
+        lastExternalFeedCache = {
+          key: cacheKey,
+          timestamp: now,
+          data: responsePayload
+        };
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(responsePayload));
+      } catch (fetchErr) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: false,
+          provider: providerParam,
+          error: fetchErr.name === 'AbortError' ? 'Remote feed request timed out (>8s)' : fetchErr.message,
+          aircraft: []
+        }));
+      }
+      return;
+    }
+
     // 9a-2. ADS-B Receiver Status & Config
     if ((pathname === '/api/airspace/status' || pathname === '/api/adsb/status') && req.method === 'GET') {
       const status = adsbTracker.getStatus();
@@ -4641,7 +4758,12 @@ const server = http.createServer(async (req, res) => {
         success: true,
         adsbHost: cfg.adsbHost,
         adsbPort: cfg.adsbPort,
-        sseClients: sseAirspaceClients.size
+        sseClients: sseAirspaceClients.size,
+        externalFeed: lastExternalFeedCache ? {
+          key: lastExternalFeedCache.key,
+          ageSeconds: Math.round((Date.now() - lastExternalFeedCache.timestamp) / 1000),
+          lastCount: lastExternalFeedCache.data?.count || 0
+        } : null
       }, status)));
       return;
     }

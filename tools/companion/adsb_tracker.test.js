@@ -501,4 +501,107 @@ describe('AdsbAirspaceTracker Tests', () => {
       await new Promise((resolve) => mockTcp.close(resolve));
     }
   });
+
+  test('parseDump1090Json correctly ingests readsb ac array schema and extracts aircraft type', () => {
+    const tracker = new AdsbAirspaceTracker();
+
+    const sampleReadsb = {
+      now: 1790430545500,
+      total: 2,
+      ac: [
+        {
+          hex: 'A91E01',
+          type: 'adsb_icao',
+          flight: 'N687JA  ',
+          r: 'N687JA',
+          t: 'P28A',
+          alt_baro: 1000,
+          alt_geom: 1150,
+          gs: 66.3,
+          track: 33.93,
+          baro_rate: 1024,
+          squawk: '1200',
+          category: 'A1',
+          lat: 39.9039,
+          lon: -83.1345
+        },
+        {
+          hex: 'A20248',
+          type: 'adsr_icao',
+          flight: 'N22886  ',
+          r: 'N22886',
+          t: 'C150',
+          alt_baro: 'ground',
+          gs: 0,
+          track: 284.0,
+          lat: 40.0104,
+          lon: -83.0183
+        }
+      ]
+    };
+
+    const count = tracker.parseDump1090Json(sampleReadsb, 'adsb.lol');
+    assert.strictEqual(count, 2);
+
+    const bounds = tracker.getAirspaceBounds({
+      homeLat: 40.0130,
+      homeLon: -83.1765,
+      includeSafe: true
+    });
+
+    const ac1 = bounds.aircraft.find(a => a.hex === 'A91E01');
+    assert.ok(ac1, 'Aircraft A91E01 should be present');
+    assert.strictEqual(ac1.callsign, 'N687JA');
+    assert.strictEqual(ac1.aircraftType, 'P28A');
+    assert.strictEqual(ac1.registration, 'N687JA');
+    assert.strictEqual(ac1.altitude, 1000);
+    assert.strictEqual(ac1.source, 'adsb.lol');
+
+    const ac2 = bounds.aircraft.find(a => a.hex === 'A20248');
+    assert.ok(ac2, 'Aircraft A20248 should be present');
+    assert.strictEqual(ac2.aircraftType, 'C150');
+    assert.strictEqual(ac2.altitude, 0);
+    assert.strictEqual(ac2.isOnGround, true);
+    assert.strictEqual(ac2.source, 'adsb.lol');
+
+    tracker.destroy();
+  });
+
+  test('parseDump1090Json preserves fresh local SDR coordinates over external cloud feeds', () => {
+    const tracker = new AdsbAirspaceTracker();
+
+    // 1. Ingest local high-frequency SDR frame via SBS
+    tracker.parseSbsMessage('MSG,3,1,1,A11111,1,2026/09/24,20:00:00.000,2026/09/24,20:00:00.000,,2200,,,40.0200,-83.1700,,,0,0,0,0');
+    
+    // Check initial local state
+    let ac = tracker.aircraft.get('A11111');
+    assert.ok(ac);
+    assert.strictEqual(ac.latitude, 40.0200);
+    assert.strictEqual(ac.altitude, 2200);
+
+    // 2. Ingest external cloud feed (e.g. 30s-delayed or lower resolution position) for same hex
+    const externalPayload = {
+      ac: [{
+        hex: 'A11111',
+        flight: 'CESSNA172',
+        r: 'N11111',
+        t: 'C172',
+        lat: 39.9900, // External delayed position
+        lon: -83.2000,
+        alt_baro: 1800
+      }]
+    };
+
+    tracker.parseDump1090Json(externalPayload, 'airplanes.live');
+
+    // Verify local SDR coordinates were NOT overwritten, but metadata (t, r, callsign) was enriched!
+    ac = tracker.aircraft.get('A11111');
+    assert.strictEqual(ac.latitude, 40.0200, 'Local SDR latitude should take precedence');
+    assert.strictEqual(ac.altitude, 2200, 'Local SDR altitude should take precedence');
+    assert.strictEqual(ac.aircraftType, 'C172', 'Aircraft type should be enriched from external feed');
+    assert.strictEqual(ac.callsign, 'CESSNA172', 'Callsign should be enriched from external feed');
+    assert.strictEqual(ac.registration, 'N11111', 'Registration should be enriched from external feed');
+
+    tracker.destroy();
+  });
 });
