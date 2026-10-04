@@ -1,3 +1,20 @@
+## [1.140.1] - 2026-10-04
+
+### Refactored
+- **Modularized Architecture: Split `index.js` Monolith into Domain-Specific ES Modules under `src/` (Closes #116)**:
+  - **Modular Source Architecture (`src/`)**:
+    - Extracted the 40.6k-line `index.js` monolith into clean, domain-specific modules organized under `src/` (`src/core/`, `src/state/`, `src/layers/`, `src/map/`, `src/patterns/`, `src/export/`, `src/import/`, `src/3d/`, `src/vision/`, `src/airspace/`, `src/ui/`, `src/bridge/`).
+    - Configured central entry point `src/main.js` establishing an explicit, deterministic module loading order.
+    - Added `jsconfig.json` configuring ES2020 module resolution for full IDE navigation, code-completion, and cross-module symbol jump support.
+  - **Scope-Hoisting Single-File Bundler (`scratch/build.py`)**:
+    - Enhanced `scratch/build.py` with zero-dependency, pure Python scope-hoisting bundler.
+    - Strips module import/export declarations while maintaining leading comments, prepends clean module boundary banners, and bundles modules into `dist/index.bundle.js`.
+    - Automatically inlines `dist/index.bundle.js` into the self-contained `index.html` distribution bundle, preserving offline single-file execution and `file://` protocol compatibility without external bundler overhead.
+    - Supports byte-level verification via `--verify-identical` flag.
+  - **Module Graph Integrity & AST Validation Suite (`tools/build/check_modules.js`, `tools/build/module_graph.test.js`)**:
+    - Created Acorn-based static analyzer validating module syntax, import/export integrity, top-level symbol registrations, and circular dependency checks.
+    - Added dedicated automated tests verifying module declarations, banner structures, and flight planning function exports.
+
 ## [1.140.0] - 2026-10-04
 
 ### Added

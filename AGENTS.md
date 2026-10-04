@@ -33,10 +33,16 @@ When changing the project version, you must update the version tag in the follow
    - Example: `<span class="header-version-badge" ...>v1.26.14</span>`
 
 ## 3. Build & Compilation Step
-`index.html` is a single-file application bundle compiled from `index_template.html`, `index.css`, and `index.js`.
-After making edits to `index.js`, `index.css`, or `index_template.html`, you **MUST** run the build script to compile the `index.html` bundle:
+`index.html` is a single-file application bundle compiled from `index_template.html`, `index.css`, and modular JavaScript files organized in `src/`.
+The source JavaScript is split into domain-specific ES modules under `src/` (e.g. `src/core/`, `src/state/`, `src/export/`, `src/map/`, `src/patterns/`, `src/3d/`, `src/bridge/`, `src/ui/`), with module load sequencing defined in `src/main.js`.
+**Never edit `dist/index.bundle.js` directly**; always make modifications in `src/`.
+After making edits to `src/`, `index.css`, or `index_template.html`, you **MUST** run the build script to compile the bundle and `index.html`:
 ```bash
 python scratch/build.py
+```
+You can also run static AST module graph verification at any time:
+```bash
+npm run check:modules
 ```
 
 ## 4. Standard Verification & Mandatory Regression Testing (Unit & E2E Tests)

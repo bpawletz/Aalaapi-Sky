@@ -4,18 +4,20 @@
     "playwright": "^1.61.1"
   },
   "name": "aalaapi-sky",
-  "version": "1.140.0",
+  "version": "1.140.1",
   "description": "Aalaapi-Sky Drone Flight Planner & Editor for DJI Fly",
-  "main": "index.js",
+  "main": "src/main.js",
   "scripts": {
+    "build": "python scratch/build.py",
     "bridge": "node tools/companion/server.js",
     "bridge:stop": "node -e \"require('http').request({hostname:'127.0.0.1',port:process.env.AALAAPI_PORT||8765,path:'/api/shutdown',method:'POST'},res=>{console.log('Aalaapi Sky Bridge stopped.');process.exit(0);}).on('error',()=>console.log('Aalaapi Sky Bridge is not running.')).end()\"",
+    "check:modules": "node tools/build/check_modules.js",
     "companion": "node tools/companion/server.js",
     "companion:stop": "node -e \"require('http').request({hostname:'127.0.0.1',port:process.env.AALAAPI_PORT||8765,path:'/api/shutdown',method:'POST'},res=>{console.log('Aalaapi Sky Companion stopped.');process.exit(0);}).on('error',()=>console.log('Aalaapi Sky Companion is not running.')).end()\"",
     "record:features": "node tools/record_features.js",
     "record:features:all": "node tools/record_features.js --all",
-    "test": "node --test tools/companion/tile_cache.test.js tools/companion/checklist_db.test.js index.test.js index.e2e.test.js",
-    "test:unit": "node --test tools/companion/tile_cache.test.js tools/companion/checklist_db.test.js index.test.js",
+    "test": "node --test tools/build/module_graph.test.js tools/companion/tile_cache.test.js tools/companion/checklist_db.test.js index.test.js index.e2e.test.js",
+    "test:unit": "node --test tools/build/module_graph.test.js tools/companion/tile_cache.test.js tools/companion/checklist_db.test.js index.test.js",
     "test:e2e": "node --test index.e2e.test.js",
     "tfr:fetch": "node tools/fetch_tfr_data.js"
   },
@@ -30,5 +32,9 @@
   "bugs": {
     "url": "https://github.com/bpawletz/Aalaapi-Sky/issues"
   },
-  "homepage": "https://github.com/bpawletz/Aalaapi-Sky#readme"
+  "homepage": "https://github.com/bpawletz/Aalaapi-Sky#readme",
+  "devDependencies": {
+    "acorn": "^8.18.0",
+    "acorn-walk": "^8.3.5"
+  }
 }

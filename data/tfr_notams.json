@@ -407,17 +407,6 @@
     "gid": "6/5849"
   },
   {
-    "notam_id": "6/5822",
-    "facility": "ZDC",
-    "state": "MD",
-    "type": "UAS PUBLIC GATHERING",
-    "description": "Ocean City, MD, Friday, October 2, 2026 through Sunday, October 4, 2026 UTC",
-    "mod_date": "09/28/2026 10:59:00",
-    "mod_abs_time": "202609281059",
-    "is_new": "N",
-    "gid": "6/5822"
-  },
-  {
     "notam_id": "6/5761",
     "facility": "ZME",
     "state": "AR",
