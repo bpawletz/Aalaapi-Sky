@@ -1,3 +1,21 @@
+## [1.142.0] - 2026-10-04
+
+### Added
+- **Dual-Source ADS-B Feeds: Local SDR + Public Online APIs (`adsb.lol` & `airplanes.live`) (Closes #119)**:
+  - **Concurrent Multi-Source Ingestion (`tools/companion/adsb_tracker.js`, `src/bridge/ApiClient.js`)**:
+    - Added multi-source cloud ADS-B telemetry ingestion supporting `adsb.lol` (open community feed) and `airplanes.live` (global coverage), operating concurrently with local hardware RTL-SDR / dump1090 / readsb feeds.
+    - Updated `parseDump1090Json` in `AdsbAirspaceTracker` to support standard readsb `ac` JSON arrays, extract aircraft type codes `t` (e.g. `C172`, `B38M`), registration `r`, ground speed `gs`, and ground state.
+    - Implemented conflict resolution that preserves real-time (<500ms) local SDR coordinates while enriching target metadata with remote aircraft types and callsigns.
+  - **Strict 30-Second Rate Limiting & 10-Minute Auto-Stop Watch Engine (`src/bridge/ApiClient.js`, `tools/companion/server.js`)**:
+    - Enforced a client-side and server-side rate-limiting guard restricting public API queries to at most once every 30 seconds to safeguard community API quotas.
+    - Added an interactive **Start Watching (10m)** timed session button with a real-time countdown (`10:00 → 00:00`), live next-poll indicator (`Next query in 22s`), and automatic cessation when 10 minutes expire.
+  - **Proxy Endpoint with Custom User-Agent (`tools/companion/server.js`)**:
+    - Added `GET /api/airspace/external` proxying requests with descriptive `User-Agent: Aalaapi-Sky-Bridge/1.142.0` headers to bypass browser CORS and Cloudflare restrictions.
+    - Updated `/api/airspace/status` to report `externalFeed` telemetry age and packet counts.
+  - **Visual Source Badges & UI Controls (`index_template.html`, `index.css`)**:
+    - Added an **Online Cloud Feed (Concurrent)** card in `#adsb-control-drawer` with provider selector, search radius presets (5 to 50 NM), custom URL endpoint inputs, and watch session controls.
+    - Rendered distinct color-coded source badges on drawer aircraft cards and map tooltips (`[LOCAL SDR]`, `[adsb.lol]`, `[airplanes.live]`, `[SIM]`).
+
 ## [1.141.0] - 2026-10-04
 
 ### Added

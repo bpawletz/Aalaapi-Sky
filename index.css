@@ -5516,6 +5516,41 @@ html, body {
   background: rgba(239, 68, 68, 0.08);
 }
 
+.adsb-source-badge {
+  font-size: 0.58rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  display: inline-block;
+  line-height: 1.2;
+}
+
+.adsb-source-badge.local {
+  background: rgba(56, 189, 248, 0.18);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  color: #38bdf8;
+}
+
+.adsb-source-badge.lol {
+  background: rgba(168, 85, 247, 0.18);
+  border: 1px solid rgba(168, 85, 247, 0.45);
+  color: #c084fc;
+}
+
+.adsb-source-badge.live {
+  background: rgba(99, 102, 241, 0.18);
+  border: 1px solid rgba(99, 102, 241, 0.45);
+  color: #a5b4fc;
+}
+
+.adsb-source-badge.sim {
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  color: #fbbf24;
+}
+
 /* Leaflet Map Aircraft Markers */
 .adsb-map-aircraft-marker {
   display: flex;

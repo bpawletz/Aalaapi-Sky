@@ -639,7 +639,10 @@ function focusTfrOnMap(target) {
   }
 }
 
+let activeTfrBriefingSeq = 0;
+
 async function openTfrBriefingModal(notamId) {
+  const thisReqSeq = ++activeTfrBriefingSeq;
   const modal = document.getElementById('tfr-briefing-modal');
   const titleEl = document.getElementById('tfr-modal-title');
   const contentEl = document.getElementById('tfr-modal-content');
@@ -721,6 +724,8 @@ async function openTfrBriefingModal(notamId) {
       }
     }
   } catch (e) {}
+
+  if (thisReqSeq !== activeTfrBriefingSeq) return;
 
   if (typeof contentEl.replaceChildren === 'function') contentEl.replaceChildren(); else contentEl.innerHTML = '';
 
