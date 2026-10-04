@@ -1889,6 +1889,13 @@ const AdsbAirspaceManager = {
   customEndpoint: '',
   serverHost: '127.0.0.1',
   serverPort: 30003,
+  externalProvider: 'adsb.lol', // 'adsb.lol' | 'airplanes.live' | 'custom'
+  externalRadiusNM: 15,
+  externalCustomUrl: '',
+  externalWatchActive: false,
+  externalWatchExpiresAt: 0,
+  externalWatchTimer: null,
+  lastExternalQueryTime: 0,
   isDrawerOpen: false,
   isSnoozed: false,
   snoozeUntil: 0,
@@ -1951,6 +1958,15 @@ const AdsbAirspaceManager = {
 
         const savedPort = localStorage.getItem('aalaapi_adsb_port');
         if (savedPort) this.serverPort = parseInt(savedPort, 10) || 30003;
+
+        const savedExtProvider = localStorage.getItem('aalaapi_adsb_ext_provider');
+        if (savedExtProvider) this.externalProvider = savedExtProvider;
+
+        const savedExtRadius = localStorage.getItem('aalaapi_adsb_ext_radius');
+        if (savedExtRadius) this.externalRadiusNM = parseInt(savedExtRadius, 10) || 15;
+
+        const savedExtUrl = localStorage.getItem('aalaapi_adsb_ext_custom_url');
+        if (savedExtUrl) this.externalCustomUrl = savedExtUrl;
       }
     } catch (e) {}
   },
@@ -1967,6 +1983,9 @@ const AdsbAirspaceManager = {
         localStorage.setItem('aalaapi_adsb_custom_endpoint', this.customEndpoint || '');
         localStorage.setItem('aalaapi_adsb_host', this.serverHost || '127.0.0.1');
         localStorage.setItem('aalaapi_adsb_port', String(this.serverPort || 30003));
+        localStorage.setItem('aalaapi_adsb_ext_provider', this.externalProvider || 'adsb.lol');
+        localStorage.setItem('aalaapi_adsb_ext_radius', String(this.externalRadiusNM || 15));
+        localStorage.setItem('aalaapi_adsb_ext_custom_url', this.externalCustomUrl || '');
       }
     } catch (e) {}
   },
@@ -2637,7 +2656,9 @@ const AdsbAirspaceManager = {
       const track = ac.track || 0;
       const altStr = ac.altitude ? `${ac.altitude} ft` : 'Alt N/A';
       const speedStr = ac.speed ? `${ac.speed} kt` : '';
-      const tooltipContent = `<strong>${ac.callsign || ac.hex}</strong><br>Alt: ${altStr} • ${speedStr}<br>Dist: ${ac.distanceMiles || '--'} mi ${ac.bearingCardinal || ''}`;
+      const typeStr = ac.aircraftType ? ` [${ac.aircraftType}]` : '';
+      const srcStr = ac.source || ac.dataSource || 'Local SDR';
+      const tooltipContent = `<strong>${ac.callsign || ac.hex}</strong>${typeStr}<br>Alt: ${altStr} • ${speedStr}<br>Dist: ${ac.distanceMiles || '--'} mi ${ac.bearingCardinal || ''}<br><span style="font-size: 0.64rem; color: #94a3b8;">Source: ${srcStr}</span>`;
 
       let marker = this.mapMarkers.get(ac.hex);
       if (!marker) {
@@ -2766,13 +2787,27 @@ const AdsbAirspaceManager = {
     if (portInput && document.activeElement !== portInput) {
       portInput.value = this.serverPort || 30003;
     }
+
+    const extProviderSelect = document.getElementById('adsb-external-provider-select');
+    if (extProviderSelect) extProviderSelect.value = this.externalProvider || 'adsb.lol';
+
+    const extRadiusSelect = document.getElementById('adsb-external-radius-select');
+    if (extRadiusSelect) extRadiusSelect.value = String(this.externalRadiusNM || 15);
+
+    const extCustomUrlInput = document.getElementById('adsb-external-custom-url');
+    const extCustomContainer = document.getElementById('adsb-external-custom-url-container');
+    if (extCustomUrlInput) extCustomUrlInput.value = this.externalCustomUrl || '';
+    if (extCustomContainer) {
+      extCustomContainer.style.display = (this.externalProvider === 'custom') ? 'block' : 'none';
+    }
+
+    this.updateExternalWatchUI();
   },
 
   updateDrawerAircraftList() {
     if (typeof document === 'undefined') return;
     const listEl = document.getElementById('adsb-aircraft-list');
     const badgeEl = document.getElementById('adsb-tracked-count-badge');
-    const hwPacketsEl = document.getElementById('adsb-hw-packets');
     const hwCountEl = document.getElementById('adsb-hw-count');
 
     if (hwCountEl) hwCountEl.textContent = this.aircraft.length;
@@ -2809,6 +2844,22 @@ const AdsbAirspaceManager = {
       const altStr = ac.altitude !== null ? (isMetric ? `${Math.round(ac.altitude * 0.3048)}m` : `${ac.altitude}ft`) : 'Alt N/A';
       const distStr = ac.distanceMiles !== null ? (isMetric ? `${(ac.distanceMeters / 1000).toFixed(1)}km` : `${ac.distanceMiles}mi`) : '--';
       
+      let sourceBadge = '';
+      const src = ac.source || ac.dataSource || 'local';
+      if (src === 'sbs-tcp' || src === 'dump1090-tcp' || src === 'avr-tcp' || src === 'local' || src === 'dump1090-json') {
+        sourceBadge = '<span class="adsb-source-badge local">LOCAL SDR</span>';
+      } else if (src === 'adsb.lol') {
+        sourceBadge = '<span class="adsb-source-badge lol">adsb.lol</span>';
+      } else if (src === 'airplanes.live') {
+        sourceBadge = '<span class="adsb-source-badge live">airplanes.live</span>';
+      } else if (src === 'simulated') {
+        sourceBadge = '<span class="adsb-source-badge sim">SIM</span>';
+      } else {
+        sourceBadge = `<span class="adsb-source-badge">${src}</span>`;
+      }
+
+      const typeBadge = ac.aircraftType ? `<span style="font-size: 0.62rem; font-weight: 600; color: #a5f3fc; background: rgba(56, 189, 248, 0.12); padding: 1px 4px; border-radius: 3px;">${ac.aircraftType}</span>` : '';
+
       let statusChip = '';
       let distDisplay = '';
       if (!hasPos) {
@@ -2831,6 +2882,7 @@ const AdsbAirspaceManager = {
           <div style="display: flex; flex-direction: column; gap: 2px;">
             <div style="display: flex; align-items: center; gap: 6px;">
               <span style="font-weight: 700; font-size: 0.78rem; color: #fff;">${ac.callsign || ac.hex}</span>
+              ${typeBadge}
               <span style="font-size: 0.64rem; color: var(--text-muted); font-family: monospace;">[${ac.hex}]</span>
             </div>
             <div style="font-size: 0.68rem; color: var(--text-muted);">
@@ -2838,13 +2890,289 @@ const AdsbAirspaceManager = {
             </div>
           </div>
           <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 3px;">
-            ${statusChip}
+            <div style="display: flex; align-items: center; gap: 4px;">
+              ${sourceBadge}
+              ${statusChip}
+            </div>
             ${distDisplay}
           </div>
         </div>
       `;
     }
     listEl.innerHTML = html;
+  },
+
+  startExternalWatch() {
+    if (this.externalWatchActive) {
+      this.stopExternalWatch('manual');
+      return;
+    }
+    this.externalWatchActive = true;
+    this.externalWatchExpiresAt = Date.now() + 600000; // 10 minutes
+    this.updateExternalWatchUI();
+    this.queryExternalFeed();
+
+    if (this.externalWatchTimer) clearInterval(this.externalWatchTimer);
+    this.externalWatchTimer = setInterval(() => {
+      const now = Date.now();
+      const remainingSec = Math.max(0, Math.ceil((this.externalWatchExpiresAt - now) / 1000));
+      if (remainingSec <= 0) {
+        this.stopExternalWatch('auto-stop');
+        return;
+      }
+
+      if (this.externalWatchActive && (now - this.lastExternalQueryTime >= 30000)) {
+        this.queryExternalFeed();
+      }
+
+      this.updateExternalWatchUI();
+    }, 1000);
+  },
+
+  stopExternalWatch(reason = 'manual') {
+    this.externalWatchActive = false;
+    if (this.externalWatchTimer) {
+      clearInterval(this.externalWatchTimer);
+      this.externalWatchTimer = null;
+    }
+    this.updateExternalWatchUI(reason);
+  },
+
+  updateExternalWatchUI(reason) {
+    if (typeof document === 'undefined') return;
+    const btn = document.getElementById('adsb-external-watch-btn') || document.getElementById('adsb-ext-watch-btn');
+    const btnText = document.getElementById('adsb-external-watch-btn-text') || btn;
+    const badge = document.getElementById('adsb-external-badge') || document.getElementById('adsb-ext-badge');
+    const statusEl = document.getElementById('adsb-external-watch-status') || document.getElementById('adsb-ext-countdown');
+
+    const now = Date.now();
+    const remainingSec = Math.max(0, Math.ceil((this.externalWatchExpiresAt - now) / 1000));
+    const elapsedSinceLast = Math.round((now - this.lastExternalQueryTime) / 1000);
+    const nextPollSec = Math.max(0, 30 - elapsedSinceLast);
+
+    if (this.externalWatchActive && remainingSec <= 0) {
+      this.stopExternalWatch('auto-stop');
+      return;
+    }
+
+    if (this.externalWatchActive) {
+      const min = Math.floor(remainingSec / 60);
+      const sec = remainingSec % 60;
+      const timeStr = `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+      if (btnText) btnText.textContent = `Stop Watching (${timeStr})`;
+      if (btn && btnText !== btn) btn.textContent = 'Stop Watching';
+      if (btn) {
+        btn.style.background = 'rgba(239, 68, 68, 0.2)';
+        btn.style.borderColor = '#ef4444';
+        btn.style.color = '#fca5a5';
+      }
+      if (badge) {
+        badge.textContent = 'ACTIVE';
+        badge.style.background = 'rgba(16, 185, 129, 0.2)';
+        badge.style.color = '#34d399';
+      }
+      if (statusEl) {
+        statusEl.innerHTML = `<span style="color: #34d399;">🟢 Watching (${timeStr} remaining)</span> • Next query in <strong>${nextPollSec}s</strong>`;
+      }
+    } else {
+      if (btnText) btnText.textContent = 'Start Watching (10m)';
+      if (btn && btnText !== btn) btn.textContent = 'Start Watching (10m)';
+      if (btn) {
+        btn.style.background = 'rgba(56, 189, 248, 0.2)';
+        btn.style.borderColor = '#38bdf8';
+        btn.style.color = '#38bdf8';
+      }
+      if (badge) {
+        badge.textContent = 'IDLE';
+        badge.style.background = 'rgba(148, 163, 184, 0.15)';
+        badge.style.color = '#94a3b8';
+      }
+      if (statusEl) {
+        if (reason === 'auto-stop') {
+          statusEl.textContent = 'Idle (Auto-stopped after 10m)';
+          statusEl.innerHTML = '<span style="color: #fbbf24;">⏱️ Session auto-stopped after 10m. Rate limit: 30s</span>';
+        } else {
+          statusEl.textContent = 'Rate limit: 30s interval • Auto-stops after 10m';
+        }
+      }
+    }
+  },
+
+  async queryExternalFeed() {
+    const now = Date.now();
+    if (now - this.lastExternalQueryTime < 28000) return;
+    this.lastExternalQueryTime = now;
+
+    let homeLat = 40.0130;
+    let homeLon = -83.1765;
+    if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) {
+      const ll = centerMarker.getLatLng();
+      homeLat = ll.lat;
+      homeLon = ll.lng;
+    } else if (typeof map !== 'undefined' && map && map.getCenter) {
+      const ll = map.getCenter();
+      homeLat = ll.lat;
+      homeLon = ll.lng;
+    }
+
+    const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+    const customParam = this.externalCustomUrl ? `&url=${encodeURIComponent(this.externalCustomUrl)}` : '';
+    const url = `${apiBase}/api/airspace/external?provider=${encodeURIComponent(this.externalProvider)}&lat=${homeLat.toFixed(5)}&lon=${homeLon.toFixed(5)}&radius=${this.externalRadiusNM}${customParam}`;
+
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.aircraft)) {
+        this.processExternalAircraftData(data.aircraft, data.provider || this.externalProvider);
+      } else if (data && data.error) {
+        const statusEl = document.getElementById('adsb-external-watch-status') || document.getElementById('adsb-ext-countdown');
+        if (statusEl && this.externalWatchActive) {
+          statusEl.innerHTML = `<span style="color: #f59e0b;">⚠️ ${data.error.slice(0, 60)}</span>`;
+        }
+      }
+    } catch (err) {
+      // If Companion bridge is offline, attempt direct fetch as fallback
+      this.fetchExternalDirectFallback(homeLat, homeLon);
+    }
+  },
+
+  async fetchExternalDirectFallback(homeLat, homeLon) {
+    let directUrl = '';
+    if (this.externalProvider === 'adsb.lol') {
+      directUrl = `https://api.adsb.lol/v2/point/${homeLat.toFixed(4)}/${homeLon.toFixed(4)}/${this.externalRadiusNM}`;
+    } else if (this.externalProvider === 'airplanes.live') {
+      directUrl = `https://api.airplanes.live/v2/point/${homeLat.toFixed(4)}/${homeLon.toFixed(4)}/${this.externalRadiusNM}`;
+    } else if (this.externalCustomUrl && /^https?:\/\//i.test(this.externalCustomUrl)) {
+      directUrl = this.externalCustomUrl.replace('{lat}', homeLat.toFixed(4)).replace('{lon}', homeLon.toFixed(4)).replace('{radius}', this.externalRadiusNM);
+    }
+
+    if (!directUrl) return;
+
+    try {
+      const res = await fetch(directUrl);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const list = Array.isArray(data.ac) ? data.ac : (Array.isArray(data.aircraft) ? data.aircraft : []);
+      this.processExternalRawAircraftList(list, this.externalProvider, homeLat, homeLon);
+    } catch (e) {
+      const statusEl = document.getElementById('adsb-external-watch-status') || document.getElementById('adsb-ext-countdown');
+      if (statusEl && this.externalWatchActive) {
+        statusEl.innerHTML = '<span style="color: #f59e0b;">⚠️ Companion bridge offline. (Direct API blocked by CORS/Cloudflare)</span>';
+      }
+    }
+  },
+
+  processExternalAircraftData(externalList, provider) {
+    if (!Array.isArray(externalList)) return;
+    const now = Date.now();
+    const effectiveProvider = provider || this.externalProvider || 'adsb.lol';
+    const existingMap = new Map();
+    for (const a of this.aircraft) {
+      existingMap.set(a.hex, a);
+    }
+
+    for (const extAc of externalList) {
+      if (!extAc.hex) continue;
+      const hex = extAc.hex.toUpperCase();
+      const existing = existingMap.get(hex);
+      const isLocal = existing && (existing.source === 'local' || existing.source === 'sbs-tcp' || existing.source === 'dump1090-tcp' || existing.source === 'avr-tcp' || existing.dataSource === 'local' || existing.dataSource === 'sbs-tcp' || existing.dataSource === 'sbs-1' || existing.dataSource === 'avr-tcp' || existing.dataSource === 'mode-s-avr' || existing.dataSource === 'dump1090-tcp' || existing.dataSource === 'dump1090-json');
+      const lastSeenTime = existing ? (existing.lastSeenMs || existing.lastSeen || 0) : 0;
+      const isLocalRecent = isLocal && (now - lastSeenTime < 45000);
+
+      if (isLocalRecent) {
+        // Keep local high-frequency coordinates; enrich metadata from external feed
+        if (extAc.aircraftType) existing.aircraftType = extAc.aircraftType;
+        if (extAc.registration) existing.registration = extAc.registration;
+        if (extAc.category && !existing.category) existing.category = extAc.category;
+        if (extAc.callsign && (!existing.callsign || existing.callsign.startsWith('HEX:'))) {
+          existing.callsign = extAc.callsign;
+        }
+      } else {
+        extAc.source = extAc.source || effectiveProvider;
+        existingMap.set(hex, extAc);
+      }
+    }
+
+    this.aircraft = Array.from(existingMap.values());
+    this.breachedAircraft = this.aircraft.filter(a => a.isBreached);
+
+    this.updateVisualBanner();
+    this.updateTopbarAndHud();
+    this.updateMapMarkers();
+    if (this.isDrawerOpen) {
+      this.updateDrawerAircraftList();
+    }
+  },
+
+  processExternalRawAircraftList(rawList, provider, homeLat, homeLon) {
+    const list = Array.isArray(rawList) ? rawList : (rawList && Array.isArray(rawList.ac) ? rawList.ac : (rawList && Array.isArray(rawList.aircraft) ? rawList.aircraft : []));
+    if (!Array.isArray(list)) return [];
+    const effectiveProvider = provider || this.externalProvider || 'adsb.lol';
+    const converted = [];
+    const radiusMeters = (this.radiusMiles || 15) * 1609.344;
+    const maxCeilingFeet = this.ceilingFeet || 5000;
+
+    for (const ac of list) {
+      if (!ac.hex) continue;
+      const hex = ac.hex.toUpperCase();
+      const lat = typeof ac.lat === 'number' ? ac.lat : null;
+      const lon = typeof ac.lon === 'number' ? ac.lon : null;
+      const isGround = ac.alt_baro === 'ground';
+      const alt = isGround ? 0 : (typeof ac.alt_baro === 'number' ? ac.alt_baro : (typeof ac.alt_geom === 'number' ? ac.alt_geom : null));
+      const speed = typeof ac.gs === 'number' ? Math.round(ac.gs) : (typeof ac.speed === 'number' ? Math.round(ac.speed) : null);
+      const track = typeof ac.track === 'number' ? Math.round(ac.track) : 0;
+      const callsign = (ac.flight || ac.r || `HEX:${hex}`).trim();
+
+      let distanceMeters = null;
+      let distanceMiles = null;
+      let isBreached = false;
+      let bearingDeg = null;
+      let bearingCardinal = '';
+
+      if (lat !== null && lon !== null && homeLat && homeLon) {
+        const toRad = Math.PI / 180;
+        const dLat = (lat - homeLat) * toRad;
+        const dLon = (lon - homeLon) * toRad;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(homeLat * toRad) * Math.cos(lat * toRad) * Math.sin(dLon/2) * Math.sin(dLon/2);
+        distanceMeters = Math.round(6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+        distanceMiles = parseFloat((distanceMeters / 1609.344).toFixed(2));
+
+        const y = Math.sin(dLon) * Math.cos(lat * toRad);
+        const x = Math.cos(homeLat * toRad) * Math.sin(lat * toRad) - Math.sin(homeLat * toRad) * Math.cos(lat * toRad) * Math.cos(dLon);
+        bearingDeg = Math.round((Math.atan2(y, x) * 180 / Math.PI + 360) % 360);
+        const CARDINALS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+        bearingCardinal = CARDINALS[Math.round(bearingDeg / 22.5) % 16];
+
+        if (distanceMeters <= radiusMeters && (alt === null || alt <= maxCeilingFeet)) {
+          isBreached = true;
+        }
+      }
+
+      converted.push({
+        hex,
+        callsign,
+        aircraftType: ac.t ? String(ac.t).trim() : null,
+        registration: ac.r ? String(ac.r).trim() : null,
+        latitude: lat,
+        longitude: lon,
+        altitude: alt,
+        isGround,
+        speed,
+        track,
+        distanceMeters,
+        distanceMiles,
+        bearingDeg,
+        bearingCardinal,
+        isBreached,
+        source: effectiveProvider,
+        dataSource: effectiveProvider,
+        lastSeen: Date.now()
+      });
+    }
+
+    this.processExternalAircraftData(converted, effectiveProvider);
+    return converted;
   },
 
   bindEvents() {
@@ -2889,6 +3217,52 @@ const AdsbAirspaceManager = {
       soundSelect.addEventListener('change', (e) => {
         this.soundType = e.target.value;
         this.saveSettings();
+      });
+    }
+
+    // External ADS-B Online Feed Controls
+    const extProviderSelect = document.getElementById('adsb-external-provider-select');
+    const extCustomContainer = document.getElementById('adsb-external-custom-url-container');
+    const extCustomUrlInput = document.getElementById('adsb-external-custom-url');
+    if (extProviderSelect) {
+      extProviderSelect.addEventListener('change', (e) => {
+        this.externalProvider = e.target.value;
+        if (extCustomContainer) {
+          extCustomContainer.style.display = (this.externalProvider === 'custom') ? 'block' : 'none';
+        }
+        this.saveSettings();
+        if (this.externalWatchActive) {
+          this.queryExternalFeed();
+        }
+      });
+    }
+
+    if (extCustomUrlInput) {
+      extCustomUrlInput.addEventListener('change', (e) => {
+        this.externalCustomUrl = e.target.value.trim();
+        this.saveSettings();
+        if (this.externalWatchActive) {
+          this.queryExternalFeed();
+        }
+      });
+    }
+
+    const extRadiusSelect = document.getElementById('adsb-external-radius-select');
+    if (extRadiusSelect) {
+      extRadiusSelect.addEventListener('change', (e) => {
+        this.externalRadiusNM = parseInt(e.target.value, 10) || 15;
+        this.saveSettings();
+        if (this.externalWatchActive) {
+          this.queryExternalFeed();
+        }
+      });
+    }
+
+    const extWatchBtn = document.getElementById('adsb-external-watch-btn');
+    if (extWatchBtn) {
+      extWatchBtn.addEventListener('click', () => {
+        this.initAudioContext();
+        this.startExternalWatch();
       });
     }
 
@@ -2946,6 +3320,7 @@ const AdsbAirspaceManager = {
           simAircraft.bearingCardinal = 'NE';
           simAircraft.isBreached = true;
           simAircraft.status = 'breached';
+          simAircraft.source = 'simulated';
           this.aircraft = [simAircraft];
           this.breachedAircraft = [simAircraft];
           this.triggerAudioAlert(simAircraft);

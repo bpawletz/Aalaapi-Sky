@@ -409,16 +409,19 @@ class AdsbAirspaceTracker extends EventEmitter {
   }
 
   /**
-   * Ingest dump1090 JSON format (as produced in aircraft.json).
+   * Ingest dump1090 or readsb JSON format (as produced in aircraft.json or external v2 point APIs).
    * @param {object} json 
+   * @param {string} [source='dump1090-json'] Telemetry data source ('local', 'adsb.lol', 'airplanes.live', etc.)
    * @returns {number} Number of aircraft updated
    */
-  parseDump1090Json(json) {
-    if (!json || !Array.isArray(json.aircraft)) return 0;
+  parseDump1090Json(json, source = 'dump1090-json') {
+    if (!json) return 0;
+    const aircraftList = Array.isArray(json.aircraft) ? json.aircraft : (Array.isArray(json.ac) ? json.ac : null);
+    if (!aircraftList || aircraftList.length === 0) return 0;
     let count = 0;
     const now = Date.now();
 
-    for (const ac of json.aircraft) {
+    for (const ac of aircraftList) {
       if (!ac.hex || !/^[0-9A-F]{6}$/i.test(ac.hex)) continue;
       const hex = ac.hex.toUpperCase();
 
@@ -426,10 +429,16 @@ class AdsbAirspaceTracker extends EventEmitter {
       this.lastPacketTimestamp = now;
 
       let record = this.aircraft.get(hex);
+      const isLocal = record && (record.dataSource === 'sbs-tcp' || record.dataSource === 'sbs-1' || record.dataSource === 'avr-tcp' || record.dataSource === 'mode-s-avr' || record.dataSource === 'dump1090-tcp' || record.dataSource === 'dump1090-json' || record.dataSource === 'local');
+      const isLocalRecent = isLocal && (now - record.lastSeen < 45000);
+
       if (!record) {
         record = {
           hex,
           callsign: null,
+          aircraftType: null,
+          registration: null,
+          category: null,
           latitude: null,
           longitude: null,
           altitude: null,
@@ -442,18 +451,32 @@ class AdsbAirspaceTracker extends EventEmitter {
           firstSeen: now,
           lastSeen: now,
           packetCount: 0,
-          dataSource: 'dump1090-json',
+          dataSource: source,
           history: []
         };
         this.aircraft.set(hex, record);
       }
 
+      // Enrich aircraft metadata
+      if (ac.t) record.aircraftType = String(ac.t).trim();
+      if (ac.r) record.registration = String(ac.r).trim();
+      if (ac.category) record.category = String(ac.category).trim();
+
+      const callsignRaw = ac.flight || ac.r;
+      if (callsignRaw && typeof callsignRaw === 'string' && callsignRaw.trim()) {
+        record.callsign = callsignRaw.trim();
+      }
+
+      // If record is locally driven and recently active, keep local high-frequency coordinates
+      if (isLocalRecent && source !== 'sbs-tcp' && source !== 'sbs-1' && source !== 'avr-tcp' && source !== 'mode-s-avr' && source !== 'dump1090-tcp' && source !== 'dump1090-json' && source !== 'local') {
+        count++;
+        continue;
+      }
+
       record.lastSeen = now;
       record.packetCount++;
+      record.dataSource = source;
 
-      if (ac.flight && typeof ac.flight === 'string' && ac.flight.trim()) {
-        record.callsign = ac.flight.trim();
-      }
       if (typeof ac.lat === 'number' && typeof ac.lon === 'number') {
         record.latitude = ac.lat;
         record.longitude = ac.lon;
@@ -465,7 +488,10 @@ class AdsbAirspaceTracker extends EventEmitter {
           if (record.history.length > 60) record.history.shift();
         }
       }
-      if (typeof ac.alt_baro === 'number') {
+      if (ac.alt_baro === 'ground') {
+        record.altitude = 0;
+        record.isOnGround = true;
+      } else if (typeof ac.alt_baro === 'number') {
         record.altitude = ac.alt_baro;
       } else if (typeof ac.alt_geom === 'number') {
         record.altitude = ac.alt_geom;
@@ -570,6 +596,9 @@ class AdsbAirspaceTracker extends EventEmitter {
         activeList.push({
           hex: ac.hex,
           callsign: ac.callsign || `HEX:${ac.hex}`,
+          aircraftType: ac.aircraftType || null,
+          registration: ac.registration || null,
+          category: ac.category || null,
           latitude: ac.latitude,
           longitude: ac.longitude,
           altitude: ac.altitude,
@@ -584,6 +613,7 @@ class AdsbAirspaceTracker extends EventEmitter {
           ageSeconds: Math.round((now - ac.lastSeen) / 1000),
           packetCount: ac.packetCount,
           dataSource: ac.dataSource,
+          source: ac.dataSource || 'local',
           hasPosition: (ac.latitude !== null && ac.longitude !== null),
           distanceMeters,
           distanceMiles,
