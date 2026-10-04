@@ -457,9 +457,11 @@ const FlightDiagnostics = {
   diagShowFootprints: true,
   diagShowDrones: true,
   diagShowWireframe: true,
+  diagShowPlanes: false,
   diagFpvMode: false,
   wireframeData: null,
   wireframeLinesMesh: null,
+  wireframePlanesMesh: null,
   wireframeHighlightMesh: null,
   wireframeSelectedLineIndex: null,
   wireframeElevationOffset: 0.0,
@@ -1152,6 +1154,13 @@ const FlightDiagnostics = {
     if (diagBtnWireframe && typeof diagBtnWireframe.addEventListener === 'function') {
       diagBtnWireframe.addEventListener('click', () => {
         this.toggleWireframe();
+      });
+    }
+
+    const diagBtnPlanes = document.getElementById('diag-btn-toggle-planes');
+    if (diagBtnPlanes && typeof diagBtnPlanes.addEventListener === 'function') {
+      diagBtnPlanes.addEventListener('click', () => {
+        this.togglePlanes();
       });
     }
 
@@ -3522,6 +3531,11 @@ const FlightDiagnostics = {
       if (this.wireframeLinesMesh.geometry) this.wireframeLinesMesh.geometry.dispose();
       this.wireframeLinesMesh = null;
     }
+    if (this.wireframePlanesMesh && this.threeScene) {
+      this.threeScene.remove(this.wireframePlanesMesh);
+      if (this.wireframePlanesMesh.geometry) this.wireframePlanesMesh.geometry.dispose();
+      this.wireframePlanesMesh = null;
+    }
     if (this.wireframeHighlightMesh && this.threeScene) {
       this.threeScene.remove(this.wireframeHighlightMesh);
       if (this.wireframeHighlightMesh.geometry) this.wireframeHighlightMesh.geometry.dispose();
@@ -3549,7 +3563,10 @@ const FlightDiagnostics = {
     });
 
     const badge = (typeof document !== 'undefined') ? document.getElementById('diag-wireframe-count-badge') : null;
-    if (badge) badge.textContent = `${validLines.length} lines`;
+    const planesCount = Array.isArray(this.wireframeData.planes) ? this.wireframeData.planes.length : 0;
+    if (badge) {
+      badge.textContent = planesCount > 0 ? `${validLines.length} lines • ${planesCount} planes` : `${validLines.length} lines`;
+    }
 
     if (validLines.length === 0 || typeof THREE === 'undefined' || typeof THREE.BufferGeometry !== 'function' || typeof THREE.BufferAttribute !== 'function' || typeof THREE.LineSegments !== 'function') return;
 
@@ -3581,6 +3598,43 @@ const FlightDiagnostics = {
     if (this.threeScene) {
       this.threeScene.add(this.wireframeLinesMesh);
     }
+
+    // Build translucent planes mesh if planes exist
+    if (Array.isArray(this.wireframeData.planes) && this.wireframeData.planes.length > 0 && typeof THREE.Mesh === 'function' && typeof THREE.MeshBasicMaterial === 'function') {
+      const triVerts = [];
+      this.wireframeData.planes.forEach(pl => {
+        const poly = pl.polygon || [];
+        if (poly.length >= 3) {
+          const p0 = poly[0];
+          for (let i = 1; i < poly.length - 1; i++) {
+            const p1 = poly[i];
+            const p2 = poly[i + 1];
+            triVerts.push(
+              p0[0], p0[1] + elevOffset, p0[2],
+              p1[0], p1[1] + elevOffset, p1[2],
+              p2[0], p2[1] + elevOffset, p2[2]
+            );
+          }
+        }
+      });
+
+      if (triVerts.length > 0) {
+        const plGeom = new THREE.BufferGeometry();
+        plGeom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(triVerts), 3));
+        const plMat = new THREE.MeshBasicMaterial({
+          color: 0x38bdf8,
+          side: (THREE.DoubleSide !== undefined) ? THREE.DoubleSide : 2,
+          transparent: true,
+          opacity: 0.28,
+          depthWrite: false
+        });
+        this.wireframePlanesMesh = new THREE.Mesh(plGeom, plMat);
+        this.wireframePlanesMesh.visible = Boolean(this.diagShowPlanes);
+        if (this.threeScene) {
+          this.threeScene.add(this.wireframePlanesMesh);
+        }
+      }
+    }
   },
 
   toggleWireframe(visible) {
@@ -3610,6 +3664,27 @@ const FlightDiagnostics = {
     }
   },
 
+  togglePlanes(visible) {
+    if (visible === undefined) {
+      this.diagShowPlanes = !this.diagShowPlanes;
+    } else {
+      this.diagShowPlanes = Boolean(visible);
+    }
+    if (this.wireframePlanesMesh) {
+      this.wireframePlanesMesh.visible = this.diagShowPlanes;
+    }
+    const btn = (typeof document !== 'undefined') ? document.getElementById('diag-btn-toggle-planes') : null;
+    if (btn && btn.classList) {
+      if (typeof btn.classList.toggle === 'function') {
+        btn.classList.toggle('active', this.diagShowPlanes);
+      } else if (this.diagShowPlanes) {
+        if (typeof btn.classList.add === 'function') btn.classList.add('active');
+      } else {
+        if (typeof btn.classList.remove === 'function') btn.classList.remove('active');
+      }
+    }
+  },
+
   selectWireframeLine(index) {
     if (!this.wireframeData || !Array.isArray(this.wireframeData.lines) || index < 0 || index >= this.wireframeData.lines.length) return;
     this.wireframeSelectedLineIndex = index;
@@ -3618,9 +3693,18 @@ const FlightDiagnostics = {
     const elevOffset = typeof this.wireframeElevationOffset === 'number' ? this.wireframeElevationOffset : 0.0;
     const len = Math.hypot(x2 - x1, y2 - y1, z2 - z1);
 
+    // Plane affiliation readout
+    let planeTag = '';
+    if (Array.isArray(this.wireframeData.linePlanes) && this.wireframeData.linePlanes[index]) {
+      const pids = this.wireframeData.linePlanes[index];
+      if (pids.length > 0) {
+        planeTag = `<br><span style="color:#a78bfa; font-weight:600;">Planes: ${pids.join(', ')}</span>`;
+      }
+    }
+
     const info = (typeof document !== 'undefined') ? document.getElementById('diag-wireframe-selected-info') : null;
     if (info) {
-      info.innerHTML = `<strong>Selected #${index + 1}:</strong> Len: <strong>${len.toFixed(2)}m</strong> • Elev: ${y1.toFixed(1)}m→${y2.toFixed(1)}m<br><span style="color:#38bdf8;">(${x1.toFixed(1)}, ${z1.toFixed(1)}) → (${x2.toFixed(1)}, ${z2.toFixed(1)})</span>`;
+      info.innerHTML = `<strong>Selected #${index + 1}:</strong> Len: <strong>${len.toFixed(2)}m</strong> • Elev: ${y1.toFixed(1)}m→${y2.toFixed(1)}m${planeTag}<br><span style="color:#38bdf8;">(${x1.toFixed(1)}, ${z1.toFixed(1)}) → (${x2.toFixed(1)}, ${z2.toFixed(1)})</span>`;
     }
 
     if (this.wireframeHighlightMesh && this.threeScene) {
@@ -3784,7 +3868,7 @@ const FlightDiagnostics = {
       });
     }
 
-    return { flightPath, photos, boundary, elevationOffset: elevOffset };
+    return { flightPath, photos, boundary, planes: (this.wireframeData && this.wireframeData.planes) || [], elevationOffset: elevOffset };
   },
 
   exportWireframe(format = 'json') {
@@ -3810,13 +3894,14 @@ const FlightDiagnostics = {
     } else if (format === 'threejs' || format === 'three') {
       mimeType = 'application/json';
       fileExt = 'threejs.json';
-      const dtData = (typeof this.gatherDigitalTwinData === 'function') ? this.gatherDigitalTwinData() : { elevationOffset: elevOffset };
+      const dtData = (typeof this.gatherDigitalTwinData === 'function') ? this.gatherDigitalTwinData() : { elevationOffset: elevOffset, planes: (this.wireframeData && this.wireframeData.planes) || [] };
       const threeObj = (typeof buildThreeDigitalTwinJson === 'function')
         ? buildThreeDigitalTwinJson(this.wireframeData.lines, {
             elevationOffset: dtData.elevationOffset,
             flightPath: dtData.flightPath,
             photos: dtData.photos,
             boundary: dtData.boundary,
+            planes: dtData.planes || (this.wireframeData && this.wireframeData.planes) || [],
             asGroup: true
           })
         : {
