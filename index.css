@@ -186,6 +186,11 @@ html, body {
   -webkit-backdrop-filter: blur(16px);
   z-index: 1100;
   min-width: 200px;
+  max-height: calc(100vh - 60px);
+  max-height: calc(100dvh - 60px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
   flex-direction: column;
   gap: 3px;
 }
@@ -562,6 +567,42 @@ html, body {
 
 .telemetry-weather-popover {
   animation: fadeInPopover 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.telemetry-weather-popover::-webkit-scrollbar,
+.header-more-menu::-webkit-scrollbar,
+.leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content-wrapper::-webkit-scrollbar,
+.leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.telemetry-weather-popover::-webkit-scrollbar-track,
+.header-more-menu::-webkit-scrollbar-track,
+.leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content-wrapper::-webkit-scrollbar-track,
+.leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+}
+
+.telemetry-weather-popover::-webkit-scrollbar-thumb,
+.header-more-menu::-webkit-scrollbar-thumb,
+.leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content-wrapper::-webkit-scrollbar-thumb,
+.leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.25);
+  border-radius: 4px;
+}
+
+.telemetry-weather-popover::-webkit-scrollbar-thumb:hover,
+.header-more-menu::-webkit-scrollbar-thumb:hover,
+.leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content-wrapper::-webkit-scrollbar-thumb:hover,
+.leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.5);
 }
 
 /* Solar Ephemeris & Daylight Tracker */
@@ -3696,7 +3737,7 @@ html, body {
 }
 #wp-heading-help-popover .wp-help-close:hover { color: #f8fafc; }
 
-/* Waypoint Editor Popup Custom Leaflet Styling (v1.134.1) */
+/* Waypoint Editor Popup Custom Leaflet Styling (v1.134.1, v1.138.1) */
 .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content-wrapper {
   background: rgba(15, 23, 42, 0.96) !important;
   border: 1px solid rgba(6, 182, 212, 0.3) !important;
@@ -3706,7 +3747,12 @@ html, body {
   width: min(310px, calc(100vw - 32px)) !important;
   max-width: calc(100vw - 32px) !important;
   min-width: 0 !important;
-  overflow: hidden !important;
+  max-height: calc(100vh - 40px) !important;
+  max-height: calc(100dvh - 40px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 
 .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content {
@@ -3714,6 +3760,12 @@ html, body {
   width: calc(100% - 28px) !important;
   max-width: 100% !important;
   min-width: 0 !important;
+  max-height: calc(100vh - 64px) !important;
+  max-height: calc(100dvh - 64px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
   box-sizing: border-box !important;
 }
 
@@ -4253,6 +4305,8 @@ html, body {
   .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content-wrapper {
     width: min(310px, calc(100vw - 24px)) !important;
     max-width: calc(100vw - 24px) !important;
+    max-height: calc(100vh - 32px) !important;
+    max-height: calc(100dvh - 32px) !important;
     box-sizing: border-box !important;
   }
 
@@ -4260,6 +4314,8 @@ html, body {
     margin: 10px 12px !important;
     width: calc(100% - 24px) !important;
     max-width: 100% !important;
+    max-height: calc(100vh - 52px) !important;
+    max-height: calc(100dvh - 52px) !important;
     box-sizing: border-box !important;
   }
 
