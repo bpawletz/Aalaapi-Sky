@@ -1889,7 +1889,7 @@ const AdsbAirspaceManager = {
   customEndpoint: '',
   serverHost: '127.0.0.1',
   serverPort: 30003,
-  externalProvider: 'adsb.lol', // 'adsb.lol' | 'airplanes.live' | 'custom'
+  externalProvider: 'adsb.lol', // 'adsb.lol' | 'custom'
   externalRadiusNM: 15,
   externalCustomUrl: '',
   externalWatchActive: false,
@@ -3041,8 +3041,6 @@ const AdsbAirspaceManager = {
     let directUrl = '';
     if (this.externalProvider === 'adsb.lol') {
       directUrl = `https://api.adsb.lol/v2/point/${homeLat.toFixed(4)}/${homeLon.toFixed(4)}/${this.externalRadiusNM}`;
-    } else if (this.externalProvider === 'airplanes.live') {
-      directUrl = `https://api.airplanes.live/v2/point/${homeLat.toFixed(4)}/${homeLon.toFixed(4)}/${this.externalRadiusNM}`;
     } else if (this.externalCustomUrl && /^https?:\/\//i.test(this.externalCustomUrl)) {
       directUrl = this.externalCustomUrl.replace('{lat}', homeLat.toFixed(4)).replace('{lon}', homeLon.toFixed(4)).replace('{radius}', this.externalRadiusNM);
     }

@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.142.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.142.1</span></h1>
 
 
 
@@ -2542,7 +2542,6 @@
               <span class="adsb-control-label" style="font-size: 0.72rem;">Feed Provider:</span>
               <select id="adsb-external-provider-select" style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.72rem; border-radius: 5px; padding: 2px 6px; max-width: 170px;">
                 <option value="adsb.lol" selected>adsb.lol (Open Community)</option>
-                <option value="airplanes.live">airplanes.live (Global)</option>
                 <option value="custom">Custom Endpoint</option>
               </select>
             </div>
@@ -2920,10 +2919,10 @@
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
-              ✈️ Dual-Source ADS-B Feeds (Local SDR + adsb.lol &amp; airplanes.live) (v1.142.0) (Closes #119)
+              ✈️ Dual-Source ADS-B Feeds (Local SDR + adsb.lol) (v1.142.1) (Closes #119)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
-              Integrated public cloud ADS-B telemetry feeds (<strong>adsb.lol</strong> and <strong>airplanes.live</strong>) into Aalaapi Sky's Manned Aircraft Airspace Awareness system, operating concurrently alongside local hardware RTL-SDR / dump1090 / readsb feeds! Features a 30-second rate-limiting guard and an interactive 10-minute <strong>&quot;Start Watching (10m)&quot;</strong> timed session with real-time countdown (<code>10:00 &rarr; 00:00</code>) and auto-stopping protection. High-rate local SDR packets retain sub-second positioning while enriching aircraft with remote aircraft type codes (e.g. <code>C172</code>, <code>B38M</code>) and distinct visual source badges (<code>[LOCAL SDR]</code>, <code>[adsb.lol]</code>, <code>[airplanes.live]</code>).
+              Integrated public cloud ADS-B telemetry feeds (<strong>adsb.lol</strong> open community feed and custom endpoints) into Aalaapi Sky's Manned Aircraft Airspace Awareness system, operating concurrently alongside local hardware RTL-SDR / dump1090 / readsb feeds! Features a 30-second rate-limiting guard and an interactive 10-minute <strong>&quot;Start Watching (10m)&quot;</strong> timed session with real-time countdown (<code>10:00 &rarr; 00:00</code>) and auto-stopping protection. High-rate local SDR packets retain sub-second positioning while enriching aircraft with remote aircraft type codes (e.g. <code>C172</code>, <code>B38M</code>) and distinct visual source badges (<code>[LOCAL SDR]</code>, <code>[adsb.lol]</code>).
             </p>
           </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
@@ -4081,7 +4080,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.142.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.142.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -4143,9 +4142,15 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.142.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>✈️ External ADS-B Providers Streamlining:</strong> Removed <code>airplanes.live</code> from default external feed options. Retained <code>adsb.lol</code> open community feed and flexible custom endpoint support.</li>
+            </ul>
+          </div>
+          <div>
             <strong style="color: var(--text-main);">Changelog (v1.142.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
-              <li><strong>✈️ Dual-Source ADS-B Feeds (Local SDR + adsb.lol &amp; airplanes.live) (Closes #119):</strong> Added multi-source cloud ADS-B telemetry ingestion (<code>adsb.lol</code> and <code>airplanes.live</code>) operating concurrently alongside local hardware SDR feeds on port 30003. Enforces a 30-second rate-limiting guard, a 10-minute <strong>Start Watching (10m)</strong> countdown session with automatic timeout, conflict resolution preserving local SDR real-time priority, aircraft type extraction (<code>C172</code>, <code>B38M</code>), and clear source badges (<code>[LOCAL SDR]</code>, <code>[adsb.lol]</code>, <code>[airplanes.live]</code>).</li>
+              <li><strong>✈️ Dual-Source ADS-B Feeds (Local SDR + adsb.lol) (Closes #119):</strong> Added multi-source cloud ADS-B telemetry ingestion (<code>adsb.lol</code> and custom endpoints) operating concurrently alongside local hardware SDR feeds on port 30003. Enforces a 30-second rate-limiting guard, a 10-minute <strong>Start Watching (10m)</strong> countdown session with automatic timeout, conflict resolution preserving local SDR real-time priority, aircraft type extraction (<code>C172</code>, <code>B38M</code>), and clear source badges (<code>[LOCAL SDR]</code>, <code>[adsb.lol]</code>).</li>
             </ul>
           </div>
           <div>

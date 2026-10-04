@@ -4669,8 +4669,6 @@ const server = http.createServer(async (req, res) => {
       let fetchUrl = '';
       if (providerParam === 'adsb.lol') {
         fetchUrl = `https://api.adsb.lol/v2/point/${lat}/${lon}/${radius}`;
-      } else if (providerParam === 'airplanes.live') {
-        fetchUrl = `https://api.airplanes.live/v2/point/${lat}/${lon}/${radius}`;
       } else if (customUrl && /^https?:\/\//i.test(customUrl)) {
         fetchUrl = customUrl.replace('{lat}', lat).replace('{lon}', lon).replace('{radius}', radius);
       } else {
