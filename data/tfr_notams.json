@@ -1,5 +1,16 @@
 [
   {
+    "notam_id": "6/7063",
+    "facility": "ZLA",
+    "state": "CA",
+    "type": "HAZARDS",
+    "description": "11NM NE SANTA CLARITA, CA, Sunday, October 4, 2026 through Saturday, October 10, 2026 UTC",
+    "mod_date": "10/04/2026 01:50:00",
+    "mod_abs_time": "202610040150",
+    "is_new": "Y",
+    "gid": "6/7063"
+  },
+  {
     "notam_id": "6/7062",
     "facility": "ZAN",
     "state": "AK",
@@ -84,7 +95,7 @@
     "description": "24NM SE MONTEREY, CA, Saturday, October 3, 2026 through Monday, October 12, 2026 UTC",
     "mod_date": "10/03/2026 03:23:00",
     "mod_abs_time": "202610030323",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/6947"
   },
   {
@@ -286,17 +297,6 @@
     "gid": "6/6654"
   },
   {
-    "notam_id": "6/6590",
-    "facility": "ZID",
-    "state": "OH",
-    "type": "VIP",
-    "description": "Dayton, OH, Saturday, October 3, 2026 through Saturday, October 3, 2026 Local",
-    "mod_date": "10/01/2026 14:37:00",
-    "mod_abs_time": "202610011437",
-    "is_new": "N",
-    "gid": "6/6590"
-  },
-  {
     "notam_id": "6/6576",
     "facility": "ZMP",
     "state": "NE",
@@ -306,17 +306,6 @@
     "mod_abs_time": "202610011317",
     "is_new": "N",
     "gid": "6/6576"
-  },
-  {
-    "notam_id": "6/6513",
-    "facility": "ZID",
-    "state": "OH",
-    "type": "SECURITY",
-    "description": "Dayton, OH, Saturday, October 3, 2026 through Saturday, October 3, 2026 Local",
-    "mod_date": "10/01/2026 00:23:00",
-    "mod_abs_time": "202610010023",
-    "is_new": "N",
-    "gid": "6/6513"
   },
   {
     "notam_id": "6/6433",

@@ -8741,6 +8741,26 @@ function initUIEventListeners() {
     }
   }
 
+  const mcpCopyBtn = document.getElementById('mcp-copy-cli-btn');
+  if (mcpCopyBtn) {
+    mcpCopyBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const cmd = 'gemini mcp add aalaapi-sky node tools/companion/mcp_server.js';
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(cmd).then(() => {
+          const origText = mcpCopyBtn.innerHTML;
+          mcpCopyBtn.innerHTML = '<span>✅ Copied Gemini Command!</span>';
+          setTimeout(() => { mcpCopyBtn.innerHTML = origText; }, 2500);
+          if (typeof showToast === 'function') showToast('Copied Gemini CLI MCP command to clipboard!', 2500);
+        }).catch(() => {
+          if (typeof prompt === 'function') prompt('Copy Gemini CLI Command:', cmd);
+        });
+      } else if (typeof prompt === 'function') {
+        prompt('Copy Gemini CLI Command:', cmd);
+      }
+    });
+  }
+
   const companionSyncContainer = document.getElementById('companion-sync-container');
   if (companionSyncContainer) {
     companionSyncContainer.addEventListener('click', (e) => {
@@ -18689,6 +18709,39 @@ function updateCompanionTransportUI(mode) {
   }
 }
 
+function updateMcpMonitorUI(mcpData, isOnline) {
+  if (typeof document === 'undefined') return;
+  const mcpDot = document.getElementById('mcp-server-dot');
+  const mcpSessions = document.getElementById('mcp-active-sessions-text');
+  const mcpFrames = document.getElementById('mcp-frame-counts-text');
+  const mcpToolsCount = document.getElementById('mcp-tools-count-text');
+  const mcpLastAction = document.getElementById('mcp-last-action-text');
+  const mcpBadge = document.getElementById('mcp-transport-status-badge');
+
+  if (!isOnline) {
+    if (mcpDot) mcpDot.style.background = '#64748b';
+    if (mcpSessions) mcpSessions.textContent = '0 Clients';
+    if (mcpLastAction) mcpLastAction.textContent = 'offline';
+    if (mcpBadge) mcpBadge.textContent = 'Bridge Offline';
+    return;
+  }
+
+  if (mcpDot) mcpDot.style.background = '#22c55e';
+  if (mcpBadge) mcpBadge.textContent = 'Stdio / SSE Active';
+  if (mcpData) {
+    if (mcpSessions) mcpSessions.textContent = `${mcpData.activeSessions || 0} Clients`;
+    if (mcpFrames) mcpFrames.textContent = `${mcpData.readFrames || 0} R / ${mcpData.writeFrames || 0} W`;
+    if (mcpToolsCount) {
+      const count = mcpData.toolsCount || (mcpData.tools ? mcpData.tools.length : 6);
+      mcpToolsCount.textContent = `${count} Active`;
+    }
+    if (mcpLastAction) mcpLastAction.textContent = mcpData.lastTool || 'ready';
+  } else {
+    if (mcpSessions) mcpSessions.textContent = '0 Clients';
+    if (mcpLastAction) mcpLastAction.textContent = 'ready';
+  }
+}
+
 function applyCompanionStatusUI(data) {
   if (typeof document === 'undefined' || !data) return;
   const sDot = document.getElementById('companion-service-dot');
@@ -18719,6 +18772,7 @@ function applyCompanionStatusUI(data) {
   }
   if (sLabel) sLabel.textContent = 'port 8765';
   if (typeof fetchBridgeCacheStats === 'function') fetchBridgeCacheStats();
+  if (typeof updateMcpMonitorUI === 'function') updateMcpMonitorUI(data?.mcp, true);
 
   // 2. Update RC 2 USB Link status
   if (data.connected) {
@@ -18949,6 +19003,7 @@ async function pollCompanionStatus() {
     if (sLabel) sLabel.textContent = 'start-bridge.bat';
     const bStats = document.getElementById('bridge-cache-stats-text');
     if (bStats) bStats.textContent = 'Bridge offline';
+    if (typeof updateMcpMonitorUI === 'function') updateMcpMonitorUI(null, false);
 
     // 2. USB Link Waiting
     if (uDot) uDot.style.background = '#64748b'; // Gray
@@ -39844,6 +39899,7 @@ if (typeof global !== 'undefined') {
   global.SolarEphemeris = typeof SolarEphemeris !== 'undefined' ? SolarEphemeris : null;
   global.updateSolarEphemeris = typeof updateSolarEphemeris !== 'undefined' ? updateSolarEphemeris : null;
   global.deleteFlightWaypoint = typeof deleteFlightWaypoint !== 'undefined' ? deleteFlightWaypoint : null;
+  global.updateMcpMonitorUI = typeof updateMcpMonitorUI !== 'undefined' ? updateMcpMonitorUI : null;
 }
 
 if (typeof document !== 'undefined') {
