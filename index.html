@@ -203,6 +203,11 @@ html, body {
   -webkit-backdrop-filter: blur(16px);
   z-index: 1100;
   min-width: 200px;
+  max-height: calc(100vh - 60px);
+  max-height: calc(100dvh - 60px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
   flex-direction: column;
   gap: 3px;
 }
@@ -579,6 +584,42 @@ html, body {
 
 .telemetry-weather-popover {
   animation: fadeInPopover 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.telemetry-weather-popover::-webkit-scrollbar,
+.header-more-menu::-webkit-scrollbar,
+.leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content-wrapper::-webkit-scrollbar,
+.leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.telemetry-weather-popover::-webkit-scrollbar-track,
+.header-more-menu::-webkit-scrollbar-track,
+.leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content-wrapper::-webkit-scrollbar-track,
+.leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+}
+
+.telemetry-weather-popover::-webkit-scrollbar-thumb,
+.header-more-menu::-webkit-scrollbar-thumb,
+.leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content-wrapper::-webkit-scrollbar-thumb,
+.leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.25);
+  border-radius: 4px;
+}
+
+.telemetry-weather-popover::-webkit-scrollbar-thumb:hover,
+.header-more-menu::-webkit-scrollbar-thumb:hover,
+.leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content-wrapper::-webkit-scrollbar-thumb:hover,
+.leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.5);
 }
 
 /* Solar Ephemeris & Daylight Tracker */
@@ -3713,7 +3754,7 @@ html, body {
 }
 #wp-heading-help-popover .wp-help-close:hover { color: #f8fafc; }
 
-/* Waypoint Editor Popup Custom Leaflet Styling (v1.134.1) */
+/* Waypoint Editor Popup Custom Leaflet Styling (v1.134.1, v1.138.1) */
 .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content-wrapper {
   background: rgba(15, 23, 42, 0.96) !important;
   border: 1px solid rgba(6, 182, 212, 0.3) !important;
@@ -3723,7 +3764,12 @@ html, body {
   width: min(310px, calc(100vw - 32px)) !important;
   max-width: calc(100vw - 32px) !important;
   min-width: 0 !important;
-  overflow: hidden !important;
+  max-height: calc(100vh - 40px) !important;
+  max-height: calc(100dvh - 40px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 
 .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content {
@@ -3731,6 +3777,12 @@ html, body {
   width: calc(100% - 28px) !important;
   max-width: 100% !important;
   min-width: 0 !important;
+  max-height: calc(100vh - 64px) !important;
+  max-height: calc(100dvh - 64px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
   box-sizing: border-box !important;
 }
 
@@ -4270,6 +4322,8 @@ html, body {
   .leaflet-popup.wp-editor-leaflet-popup .leaflet-popup-content-wrapper {
     width: min(310px, calc(100vw - 24px)) !important;
     max-width: calc(100vw - 24px) !important;
+    max-height: calc(100vh - 32px) !important;
+    max-height: calc(100dvh - 32px) !important;
     box-sizing: border-box !important;
   }
 
@@ -4277,6 +4331,8 @@ html, body {
     margin: 10px 12px !important;
     width: calc(100% - 24px) !important;
     max-width: 100% !important;
+    max-height: calc(100vh - 52px) !important;
+    max-height: calc(100dvh - 52px) !important;
     box-sizing: border-box !important;
   }
 
@@ -5593,7 +5649,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.138.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.138.1</span></h1>
 
 
 
@@ -7804,7 +7860,7 @@ html, body {
       </div>
 
       <!-- Floating Topbar Telemetry & Weather Popover -->
-      <div id="telemetry-weather-popover" class="telemetry-weather-popover hidden" style="position: absolute; top: 12px; right: 12px; z-index: 1050; width: 340px; max-width: calc(100vw - 24px); background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6); padding: 14px; display: flex; flex-direction: column; gap: 12px; color: var(--text-main); transition: opacity 0.2s, transform 0.2s;">
+      <div id="telemetry-weather-popover" class="telemetry-weather-popover hidden" style="position: absolute; top: 12px; right: 12px; z-index: 1050; width: 340px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6); padding: 14px; display: flex; flex-direction: column; gap: 12px; color: var(--text-main); transition: opacity 0.2s, transform 0.2s;">
         <div class="popover-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
           <div class="popover-title" style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 700; color: var(--text-main);">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#38bdf8" stroke-width="2.2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
@@ -9352,7 +9408,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.138.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.138.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -9413,6 +9469,12 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.138.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>📱 Viewport-Bounded Scrolling on Popovers &amp; Popups (Closes #113):</strong> Enforced viewport-constrained maximum heights (<code>100dvh - 24px</code> / <code>100dvh - 40px</code> / <code>100dvh - 60px</code>) with vertical scrolling (<code>overflow-y: auto</code>), overscroll containment (<code>overscroll-behavior: contain</code>), and slim custom scrollbars across the Topbar Telemetry &amp; Live Weather Popover (<code>#telemetry-weather-popover</code>), the 2D Waypoint Editor Leaflet Popup (<code>.wp-editor-leaflet-popup</code>), and the Mobile More Menu (<code>.header-more-menu</code>). Ensures all weather cards, solar ephemeris timelines, NOTAM tables, and waypoint editor action buttons (Split, Delete, Prev/Next) remain fully accessible without vertical clipping on short viewports, mobile screens, or when browser DevTools are docked.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.138.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">

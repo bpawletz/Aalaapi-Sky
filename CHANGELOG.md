@@ -1,3 +1,12 @@
+## [1.138.1] - 2026-10-03
+
+### Fixed
+- **Viewport-Bounded Scrolling on Popovers & Popups (Closes #113)**:
+  - **Floating Telemetry & Weather Popover Scrolling (`#telemetry-weather-popover`, `.telemetry-weather-popover`)**: Added `max-height: calc(100vh - 24px)`, `max-height: calc(100dvh - 24px)`, `overflow-y: auto`, and `overscroll-behavior: contain`. Enables full scrolling to view flight stats, METAR weather, solar ephemeris calculator, and TFR/NOTAM cards on short viewports, mobile screens, or opened browser DevTools.
+  - **Leaflet 2D Waypoint Editor Popup (`.leaflet-popup.wp-editor-leaflet-popup`)**: Replaced `overflow: hidden !important` with responsive `max-height: calc(100vh - 40px) !important` / `max-height: calc(100dvh - 40px) !important` on `.leaflet-popup-content-wrapper` and `max-height: calc(100vh - 64px) !important` / `max-height: calc(100dvh - 64px) !important` on `.leaflet-popup-content`. Added `overflow-y: auto !important`, `overflow-x: hidden !important`, and `overscroll-behavior: contain`, preventing bottom action buttons (Split, Delete, Prev/Next) from being clipped on screens < 700px.
+  - **Header More Menu Viewport Bounding (`.header-more-menu`)**: Added `max-height: calc(100vh - 60px)`, `max-height: calc(100dvh - 60px)`, `overflow-y: auto`, and `overscroll-behavior: contain` to prevent menu items from spilling below the viewport edge on small displays.
+  - **Custom Dark Glassmorphic Scrollbars**: Applied consistent 5px slim dark scrollbar styling (`::-webkit-scrollbar` and `scrollbar-width: thin`) across the telemetry popover, waypoint popup, and header more menu.
+
 ## [1.138.0] - 2026-10-03
 
 ### Added

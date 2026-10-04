@@ -6644,7 +6644,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(result.success, true);
     assert.strictEqual(result.isOpen, true, 'About modal should be visible upon clicking about button');
     assert.strictEqual(result.isClosed, true, 'About modal should close upon clicking close button');
-    assert.ok(['Version 1.131.2', 'Version 1.132.0', 'Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0'].includes(result.versionTag), 'About modal version tag should be Version 1.131.2 or newer');
+    assert.ok(['Version 1.131.2', 'Version 1.132.0', 'Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1'].includes(result.versionTag), 'About modal version tag should be Version 1.131.2 or newer');
     assert.strictEqual(result.listItemsCount, 6, 'Key capabilities should be summarized into 6 structured pillars');
     assert.strictEqual(result.hasPatternGen, true);
     assert.strictEqual(result.hasTrajectory, true);
@@ -6656,10 +6656,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
   test('E2E: v1.132.1 header badge and About modal reflect Version 1.132.1', async () => {
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.132.1', 'v1.133.0', 'v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0'].includes(badgeText.trim()), 'Header version badge should be v1.132.1 or newer');
+    assert.ok(['v1.132.1', 'v1.133.0', 'v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1'].includes(badgeText.trim()), 'Header version badge should be v1.132.1 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(['Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.132.1 or newer');
+    assert.ok(['Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.132.1 or newer');
   });
 
   test('E2E: Standalone inspection report template features offline satellite default and road providers (v1.132.1)', async () => {
@@ -6675,7 +6675,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Multi-POI Association & Three-Tier Cascading Hierarchy (v1.134.0, Issue #77)', async () => {
     // 1. Header version badge and About modal reflect v1.134.0 or newer
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.0 or newer');
+    assert.ok(['v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1'].includes(badgeText.trim()), 'Header version badge should be v1.134.0 or newer');
 
     // 2. Section 2 Layer Card contains #layer-poi-select & responds to towardPOI mode
     const poiTestResult = await page.evaluate(() => {
@@ -6717,10 +6717,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Edit Waypoint Popup & Mobile Overflow Zero Overhang (v1.134.1, Issue #107)', async () => {
     // 1. Header version badge and About modal reflect v1.134.1 or newer
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.1 or newer');
+    assert.ok(['v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1'].includes(badgeText.trim()), 'Header version badge should be v1.134.1 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(['Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.1 or newer');
+    assert.ok(['Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.1 or newer');
 
     // 2. Emulate mobile viewport (360x640)
     await page.setViewportSize({ width: 360, height: 640 });
@@ -6805,10 +6805,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Exclusion-Freeform & Custom Heading WPML Execution on DJI Mini 4 Pro (v1.134.2, Issue #110)', async () => {
     // 1. Header version badge and About modal reflect v1.134.2 or newer
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.2 or newer');
+    assert.ok(['v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1'].includes(badgeText.trim()), 'Header version badge should be v1.134.2 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(['Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.2 or newer');
+    assert.ok(['Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.2 or newer');
 
     // 2. Evaluate in browser context: buildWaylinesWpml with exclusion-freeform layer and custom headings
     const testResult = await page.evaluate(() => {
@@ -6855,10 +6855,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Next-24-Hour Solar Ephemeris & Part 107 Tracker Card (v1.135.0, Issue #100)', async () => {
     // 1. Header version badge and About modal reflect v1.135.0
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0'].includes(badgeText.trim()), 'Header version badge should be v1.135.0 or newer');
+    assert.ok(['v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1'].includes(badgeText.trim()), 'Header version badge should be v1.135.0 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(['Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.135.0 or newer');
+    assert.ok(['Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.135.0 or newer');
 
     // 2. Validate DOM Architecture and Dynamic Update in Browser Context
     const solarResult = await page.evaluate(() => {
@@ -6927,10 +6927,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Freeform Pattern KMZ Execution on DJI Mini 4 Pro (v1.135.1, Issue #111)', async () => {
     // 1. Header version badge and About modal reflect v1.135.1
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0'].includes(badgeText.trim()), 'Header version badge should be v1.135.1 or newer');
+    assert.ok(['v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1'].includes(badgeText.trim()), 'Header version badge should be v1.135.1 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(['Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.135.1 or newer');
+    assert.ok(['Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.135.1 or newer');
 
     // 2. Evaluate in browser context: buildWaylinesWpml with freeform layer, 31 waypoints, DJI Mini 4 Pro
     const testResult = await page.evaluate(() => {
@@ -7054,10 +7054,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Flight Diagnostics Multi-Layer AI Export & Privacy Coordinate Masking (v1.136.0, Issue #108)', async () => {
     // 1. Header version badge and About modal reflect v1.136.0
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(['v1.136.0', 'v1.137.0', 'v1.138.0'].includes(badgeText.trim()), 'Header version badge should be v1.136.0 or newer');
+    assert.ok(['v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1'].includes(badgeText.trim()), 'Header version badge should be v1.136.0 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(['Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.136.0 or newer');
+    assert.ok(['Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.136.0 or newer');
 
     // 2. Flight Diagnostics modal DOM checks and privacy toggle interactivity
     const diagResult = await page.evaluate(() => {
@@ -7179,6 +7179,119 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(tileResult.reEnabledState, true, 'Re-checking toggle must re-enable caching');
     assert.ok(tileResult.proxiedUrl.includes('http://127.0.0.1:8765/api/proxy/tile?url='), 'Online proxy URL must route via bridge');
     assert.strictEqual(tileResult.unproxiedUrl, 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/14/4000/6000', 'Offline URL must return direct upstream');
+  });
+
+  test('Issue #113: Telemetry popover and 2D waypoint editor popup scroll vertically without clipping on short viewports', async () => {
+    // 1. Emulate a short screen viewport (e.g., 500px height - representative of small screens / open DevTools)
+    await page.setViewportSize({ width: 1280, height: 500 });
+
+    // 2. Open Telemetry & Weather Popover and verify viewport-constrained height and scrollability
+    const popoverMetrics = await page.evaluate(() => {
+      const popover = document.getElementById('telemetry-weather-popover');
+      if (!popover) return { found: false };
+
+      popover.classList.remove('hidden');
+      const cs = window.getComputedStyle(popover);
+      const rect = popover.getBoundingClientRect();
+      const scrollHeight = popover.scrollHeight;
+      const clientHeight = popover.clientHeight;
+
+      // Scroll popover to bottom
+      popover.scrollTop = scrollHeight;
+      const scrolledTop = popover.scrollTop;
+
+      return {
+        found: true,
+        rectHeight: rect.height,
+        viewportHeight: window.innerHeight,
+        overflowY: cs.overflowY,
+        overscrollBehavior: cs.overscrollBehavior,
+        scrollHeight,
+        clientHeight,
+        scrolledTop,
+        canScroll: scrollHeight > clientHeight && scrolledTop > 0
+      };
+    });
+
+    assert.strictEqual(popoverMetrics.found, true, '#telemetry-weather-popover must exist');
+    assert.ok(popoverMetrics.rectHeight <= popoverMetrics.viewportHeight, 'Popover height must not exceed viewport height');
+    assert.ok(['auto', 'scroll'].includes(popoverMetrics.overflowY), 'Popover overflow-y must be auto or scroll');
+    assert.strictEqual(popoverMetrics.canScroll, true, 'Popover must be vertically scrollable on short viewports');
+
+    // Hide popover after test
+    await page.evaluate(() => {
+      const p = document.getElementById('telemetry-weather-popover');
+      if (p) p.classList.add('hidden');
+    });
+
+    // 3. Test 2D Waypoint Editor Leaflet Popup scrolling on short viewport
+    const popupMetrics = await page.evaluate(() => {
+      // Create a dummy waypoint and trigger waypoint editor popup DOM
+      const dummyWp = {
+        lat: 41.3215,
+        lon: -88.9950,
+        alt: 50,
+        pitch: -60,
+        speed: 5,
+        hoverTime: 0,
+        turnMode: 'inherit',
+        cameraAction: 'inherit',
+        layerPattern: 'grid'
+      };
+
+      // Wrap in simulated Leaflet popup elements to verify CSS rules
+      const popupWrapper = document.createElement('div');
+      popupWrapper.className = 'leaflet-popup wp-editor-leaflet-popup';
+      popupWrapper.style.position = 'fixed';
+      popupWrapper.style.top = '10px';
+      popupWrapper.style.left = '10px';
+      popupWrapper.style.zIndex = '9999';
+
+      const contentWrapper = document.createElement('div');
+      contentWrapper.className = 'leaflet-popup-content-wrapper';
+
+      const content = document.createElement('div');
+      content.className = 'leaflet-popup-content';
+
+      const editorDOM = typeof createWaypointEditorDOM === 'function'
+        ? createWaypointEditorDOM(dummyWp, 0, null, null)
+        : document.createElement('div');
+
+      content.appendChild(editorDOM);
+      contentWrapper.appendChild(content);
+      popupWrapper.appendChild(contentWrapper);
+      document.body.appendChild(popupWrapper);
+
+      const wrapperCs = window.getComputedStyle(contentWrapper);
+      const contentCs = window.getComputedStyle(content);
+      const wrapperRect = contentWrapper.getBoundingClientRect();
+      const scrollHeight = contentWrapper.scrollHeight;
+      const clientHeight = contentWrapper.clientHeight;
+
+      contentWrapper.scrollTop = scrollHeight;
+      const scrolledTop = contentWrapper.scrollTop;
+
+      const result = {
+        wrapperHeight: wrapperRect.height,
+        viewportHeight: window.innerHeight,
+        wrapperOverflowY: wrapperCs.overflowY,
+        contentOverflowY: contentCs.overflowY,
+        wrapperMaxHeight: wrapperCs.maxHeight,
+        canScroll: scrollHeight > clientHeight || scrolledTop > 0
+      };
+
+      // Clean up after evaluation
+      document.body.removeChild(popupWrapper);
+
+      return result;
+    });
+
+    assert.ok(popupMetrics.wrapperHeight <= popupMetrics.viewportHeight, 'Popup wrapper height must not exceed viewport height');
+    assert.ok(['auto', 'scroll'].includes(popupMetrics.wrapperOverflowY), 'Popup content wrapper overflow-y must be auto or scroll');
+    assert.ok(['auto', 'scroll'].includes(popupMetrics.contentOverflowY), 'Popup content overflow-y must be auto or scroll');
+
+    // 4. Restore standard desktop viewport
+    await page.setViewportSize({ width: 1440, height: 900 });
   });
 });
 

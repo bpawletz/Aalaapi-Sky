@@ -940,6 +940,112 @@ const scenarios = [
       await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
       await page.waitForTimeout(800);
     }
+  },
+  {
+    id: 'feature_short_viewport_scrolling',
+    name: 'Viewport-Bounded Scrolling on Popovers and Waypoint Editor Popups',
+    issueRef: '#113',
+    run: async (page) => {
+      // Rule 8 & 9: Default rural location
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(600);
+
+      // 1. Emulate a short screen viewport (height: 520px)
+      await page.setViewportSize({ width: 1200, height: 520 });
+      await page.waitForTimeout(600);
+
+      // 2. Open Floating Telemetry & Weather Popover
+      await page.evaluate(() => {
+        const popover = document.getElementById('telemetry-weather-popover');
+        if (popover) {
+          popover.classList.remove('hidden');
+          popover.scrollTop = 0;
+        }
+      });
+      await page.waitForTimeout(1000);
+
+      // 3. Smooth scroll down through flight stats, weather station, solar card, and NOTAMs
+      await page.evaluate(async () => {
+        const popover = document.getElementById('telemetry-weather-popover');
+        if (popover) {
+          for (let i = 0; i < popover.scrollHeight; i += 25) {
+            popover.scrollTop = i;
+            await new Promise(r => setTimeout(r, 20));
+          }
+        }
+      });
+      await page.waitForTimeout(1200);
+
+      // Scroll popover back to top and close
+      await page.evaluate(() => {
+        const popover = document.getElementById('telemetry-weather-popover');
+        if (popover) {
+          popover.scrollTop = 0;
+          popover.classList.add('hidden');
+        }
+      });
+      await page.waitForTimeout(600);
+
+      // 4. Open 2D Waypoint Editor Leaflet Popup on the map
+      await page.evaluate(() => {
+        const dummyWp = {
+          lat: 41.3215,
+          lon: -88.9950,
+          alt: 50,
+          pitch: -60,
+          speed: 5,
+          hoverTime: 0,
+          turnMode: 'inherit',
+          cameraAction: 'inherit',
+          layerPattern: 'grid'
+        };
+
+        const popupWrapper = document.createElement('div');
+        popupWrapper.id = 'demo-wp-popup';
+        popupWrapper.className = 'leaflet-popup wp-editor-leaflet-popup';
+        popupWrapper.style.position = 'fixed';
+        popupWrapper.style.top = '20px';
+        popupWrapper.style.right = '40px';
+        popupWrapper.style.zIndex = '9999';
+
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'leaflet-popup-content-wrapper';
+
+        const content = document.createElement('div');
+        content.className = 'leaflet-popup-content';
+
+        const editorDOM = typeof createWaypointEditorDOM === 'function'
+          ? createWaypointEditorDOM(dummyWp, 0, null, null)
+          : document.createElement('div');
+
+        content.appendChild(editorDOM);
+        contentWrapper.appendChild(content);
+        popupWrapper.appendChild(contentWrapper);
+        document.body.appendChild(popupWrapper);
+      });
+      await page.waitForTimeout(1000);
+
+      // 5. Smooth scroll down inside the Waypoint Editor popup to reveal lower action buttons
+      await page.evaluate(async () => {
+        const popup = document.querySelector('#demo-wp-popup .leaflet-popup-content-wrapper');
+        if (popup) {
+          for (let i = 0; i < popup.scrollHeight; i += 20) {
+            popup.scrollTop = i;
+            await new Promise(r => setTimeout(r, 25));
+          }
+        }
+      });
+      await page.waitForTimeout(1400);
+
+      // Clean up demo popup and restore standard viewport
+      await page.evaluate(() => {
+        const p = document.getElementById('demo-wp-popup');
+        if (p) document.body.removeChild(p);
+      });
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(800);
+    }
   }
 ];
 
