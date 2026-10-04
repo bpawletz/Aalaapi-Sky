@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'index.js'
+      - 'src/**'
       - 'index.css'
       - 'index_template.html'
       - 'scratch/build.py'
