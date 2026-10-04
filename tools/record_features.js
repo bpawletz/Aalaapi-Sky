@@ -877,6 +877,69 @@ const scenarios = [
       await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
       await page.waitForTimeout(800);
     }
+  },
+  {
+    id: 'feature_sse_streaming',
+    name: 'Real-Time SSE Streams for Companion Bridge & Remote ID (Issue #114)',
+    description: 'Real-time Server-Sent Events (SSE) sub-second streaming for Remote ID drone radar, RC 2 link status, and media progress with live transport badging and zero-polling architecture.',
+    issueRef: 'Issue #114',
+    run: async (page) => {
+      // 1. Center squarely on default rural location (Utica, IL)
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(800);
+
+      // 2. Open Companion Bridge Drawer / Status Section to demonstrate live transport badge
+      await page.evaluate(() => {
+        if (typeof updateCompanionTransportUI === 'function') {
+          updateCompanionTransportUI('sse');
+        }
+        const sDot = document.getElementById('companion-service-dot');
+        const sText = document.getElementById('companion-service-text');
+        if (sDot) sDot.style.background = '#22c55e';
+        if (sText) {
+          sText.textContent = 'Aalaapi Bridge: Connected (SSE)';
+          sText.style.color = '#22c55e';
+        }
+      });
+      await page.waitForTimeout(1200);
+
+      // 3. Open Remote ID calibration panel to display remote-id transport badge
+      await page.evaluate(() => {
+        if (typeof RemoteIdRadar !== 'undefined' && RemoteIdRadar.updateStreamTransportUI) {
+          RemoteIdRadar.streamMode = 'sse';
+          RemoteIdRadar.updateStreamTransportUI();
+        }
+        const calPanel = document.getElementById('remote-id-calibration-panel');
+        if (calPanel) calPanel.classList.remove('hidden');
+      });
+      await page.waitForTimeout(1400);
+
+      // 4. Close calibration panel
+      await page.evaluate(() => {
+        const calPanel = document.getElementById('remote-id-calibration-panel');
+        if (calPanel) calPanel.classList.add('hidden');
+      });
+      await page.waitForTimeout(600);
+
+      // 5. Open Intro Guide Hub to show v1.138.0 What's New bullet
+      await page.evaluate(() => {
+        const qsBtn = document.getElementById('quickstart-help-btn');
+        if (qsBtn) qsBtn.click();
+        const featuresTab = document.getElementById('intro-tab-features');
+        if (featuresTab) featuresTab.click();
+        const qsModal = document.getElementById('quickstart-modal');
+        if (qsModal) qsModal.classList.remove('hidden');
+      });
+      await page.waitForTimeout(1800);
+
+      // 6. Close Intro Guide Hub
+      await page.evaluate(() => {
+        const qsModal = document.getElementById('quickstart-modal');
+        if (qsModal) qsModal.classList.add('hidden');
+      });
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(800);
+    }
   }
 ];
 

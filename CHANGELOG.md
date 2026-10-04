@@ -1,3 +1,19 @@
+## [1.138.0] - 2026-10-03
+
+### Added
+- **Real-Time Server-Sent Events (SSE) Streaming for Companion Bridge & Remote ID (Closes #114)**:
+  - **Companion Server Real-Time SSE Streaming Endpoints (`tools/companion/server.js`)**: Implemented persistent, sub-second Server-Sent Events (SSE) streaming routes (`GET /api/remote-id/stream`, `GET /api/status/stream`, `GET /api/media/progress/stream`, and unified multiplexed `GET /api/stream` / `/api/events`) using Node.js built-in `node:http` with zero third-party npm dependencies.
+  - **Event-Driven Remote ID Airspace Radar (`tools/companion/remote_id_decoder.js`)**: Transformed `RemoteIdAirspaceTracker` into a native Node.js `EventEmitter`. Broadcasts instantaneous telemetry snapshots on packet ingestion, beacon decoding, stale drone purge, and tracker resets via `broadcastRemoteIdAirspace()`.
+  - **Active Client Connection Pools & Keepalive Heartbeat**: Created dedicated streaming client sets (`sseRemoteIdClients`, `sseStatusClients`, `sseMediaProgressClients`, `sseUnifiedClients`) with automatic disconnect cleanup, 15-second heartbeat comments (`: keepalive\n\n`), and 1-second interval broadcasts to provide live drone freshness/age updates without redundant network polling.
+  - **Status & Link Telemetry Streaming**: Hooked `broadcastCompanionStatus()` directly into ADB state transitions (`updateRc2Status()`), immediately streaming USB device connection, wireless IP detection, battery level, storage availability, and client counts whenever link states change.
+  - **Media & Flight Log Pull Progress Streaming**: Hooked `broadcastMediaProgress()` into media photo downloading and flight log extraction pipelines in `server.js`, streaming real-time stage transitions (`scanning`, `downloading`, `complete`, `error`), file-by-file counts, and byte progress directly to connected clients.
+  - **Front-End SSE Stream Consumption & Transport Badging (`index.js`, `index_template.html`)**:
+    - Connected `RemoteIdRadar` to `/api/remote-id/stream` and RC 2 link monitor to `/api/status/stream` using browser-native `EventSource`.
+    - Added live visual transport mode indicators (`#companion-transport-badge`, `#remote-id-transport-badge`) showing `SSE Stream (Sub-second)` when streaming, `REST Polling (Fallback)` during polling, or `Offline` / `Disconnected`.
+    - Upgraded `pullSelectedMedia()` in `index.js` to stream real-time progress events over `/api/media/progress/stream`.
+  - **Adaptive Zero-Polling with Graceful Fallback**: Polling timers in `scheduleNextStatusCheck()` and `scheduleNextRadarCheck()` cleanly suppress HTTP polling queries while SSE streams are active, reducing repetitive HTTP polling requests to zero during normal operations while automatically resuming backoff REST polling if the SSE stream disconnects.
+  - **CLI & REST Diagnostics Telemetry**: Updated `GET /api/status` and CLI status command `[s]` to report active SSE stream client counts (`remoteIdClients`, `statusClients`, `mediaClients`, `unifiedClients`).
+
 ## [1.137.0] - 2026-10-03
 
 ### Added
