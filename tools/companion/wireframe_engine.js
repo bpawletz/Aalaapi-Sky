@@ -424,22 +424,85 @@ function extractWireframeJsFallback(payload = {}) {
           const p2 = [camPos.x + r2[0] * t2, h, camPos.z + r2[2] * t2];
           const segLen = Math.hypot(p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]);
           if (segLen >= 0.5 && segLen <= 35.0) {
-            unprojectedRaw.push([
-              Math.round(p1[0] * 1000) / 1000, Math.round(p1[1] * 1000) / 1000, Math.round(p1[2] * 1000) / 1000,
-              Math.round(p2[0] * 1000) / 1000, Math.round(p2[1] * 1000) / 1000, Math.round(p2[2] * 1000) / 1000
-            ]);
+            const pidTag = (h === ridgeY) ? 'P0' : ((h === eavesY) ? 'P1' : 'P2');
+            unprojectedRaw.push({
+              coords: [
+                Math.round(p1[0] * 1000) / 1000, Math.round(p1[1] * 1000) / 1000, Math.round(p1[2] * 1000) / 1000,
+                Math.round(p2[0] * 1000) / 1000, Math.round(p2[1] * 1000) / 1000, Math.round(p2[2] * 1000) / 1000
+              ],
+              planeId: pidTag
+            });
           }
         });
       });
     });
 
     if (unprojectedRaw.length >= 15) {
-      const deduped = deduplicateLines(unprojectedRaw);
+      const rawCoords = unprojectedRaw.map(item => item.coords);
+      const deduped = deduplicateLines(rawCoords);
       const cxAll = photoMeta.reduce((s, pm) => s + pm.gx, 0) / photoMeta.length;
       const czAll = photoMeta.reduce((s, pm) => s + pm.gz, 0) / photoMeta.length;
+
+      // Build synthesized planes for ridge, eaves, and ground
+      const planes = [
+        {
+          id: 'P0',
+          type: 'roof',
+          normal: [0, 1, 0],
+          d: -Math.round(ridgeY * 1000) / 1000,
+          inlierCount: unprojectedRaw.filter(i => i.planeId === 'P0').length,
+          centroid: [Math.round(cxAll * 100) / 100, Math.round(ridgeY * 100) / 100, Math.round(czAll * 100) / 100],
+          polygon: [
+            [Math.round((cxAll - 12) * 100) / 100, Math.round(ridgeY * 100) / 100, Math.round((czAll - 8) * 100) / 100],
+            [Math.round((cxAll + 12) * 100) / 100, Math.round(ridgeY * 100) / 100, Math.round((czAll - 8) * 100) / 100],
+            [Math.round((cxAll + 12) * 100) / 100, Math.round(ridgeY * 100) / 100, Math.round((czAll + 8) * 100) / 100],
+            [Math.round((cxAll - 12) * 100) / 100, Math.round(ridgeY * 100) / 100, Math.round((czAll + 8) * 100) / 100]
+          ]
+        },
+        {
+          id: 'P1',
+          type: 'roof_flat',
+          normal: [0, 1, 0],
+          d: -Math.round(eavesY * 1000) / 1000,
+          inlierCount: unprojectedRaw.filter(i => i.planeId === 'P1').length,
+          centroid: [Math.round(cxAll * 100) / 100, Math.round(eavesY * 100) / 100, Math.round(czAll * 100) / 100],
+          polygon: [
+            [Math.round((cxAll - 14) * 100) / 100, Math.round(eavesY * 100) / 100, Math.round((czAll - 10) * 100) / 100],
+            [Math.round((cxAll + 14) * 100) / 100, Math.round(eavesY * 100) / 100, Math.round((czAll - 10) * 100) / 100],
+            [Math.round((cxAll + 14) * 100) / 100, Math.round(eavesY * 100) / 100, Math.round((czAll + 10) * 100) / 100],
+            [Math.round((cxAll - 14) * 100) / 100, Math.round(eavesY * 100) / 100, Math.round((czAll + 10) * 100) / 100]
+          ]
+        },
+        {
+          id: 'P2',
+          type: 'ground',
+          normal: [0, 1, 0],
+          d: -Math.round(groundY * 1000) / 1000,
+          inlierCount: unprojectedRaw.filter(i => i.planeId === 'P2').length,
+          centroid: [Math.round(cxAll * 100) / 100, Math.round(groundY * 100) / 100, Math.round(czAll * 100) / 100],
+          polygon: [
+            [Math.round((cxAll - 18) * 100) / 100, Math.round(groundY * 100) / 100, Math.round((czAll - 14) * 100) / 100],
+            [Math.round((cxAll + 18) * 100) / 100, Math.round(groundY * 100) / 100, Math.round((czAll - 14) * 100) / 100],
+            [Math.round((cxAll + 18) * 100) / 100, Math.round(groundY * 100) / 100, Math.round((czAll + 14) * 100) / 100],
+            [Math.round((cxAll - 18) * 100) / 100, Math.round(groundY * 100) / 100, Math.round((czAll + 14) * 100) / 100]
+          ]
+        }
+      ];
+
+      // Assign linePlanes based on endpoint height proximity
+      const linePlanes = deduped.map(l => {
+        const avgY = (l[1] + l[4]) / 2;
+        if (Math.abs(avgY - ridgeY) < 0.6) return ['P0'];
+        if (Math.abs(avgY - eavesY) < 0.6) return ['P1'];
+        if (Math.abs(avgY - groundY) < 0.6) return ['P2'];
+        return [];
+      });
+
       return {
         success: true,
         lines: deduped,
+        planes,
+        linePlanes,
         count: deduped.length,
         engine: 'javascript_authentic_unprojection',
         assetCenter: [Math.round(cxAll * 100) / 100, Math.round(groundY * 100) / 100, Math.round(czAll * 100) / 100],
@@ -585,9 +648,67 @@ function extractWireframeJsFallback(payload = {}) {
   // Deduplicate lines
   const lines = deduplicateLines(rawLines);
 
+  const eavesY = groundY + wallH;
+  const ridgeY = eavesY + roofH;
+
+  const planes = [
+    {
+      id: 'P0',
+      type: 'roof',
+      normal: [0, 1, 0],
+      d: -Math.round(ridgeY * 1000) / 1000,
+      inlierCount: lines.filter(l => Math.abs((l[1] + l[4]) / 2 - ridgeY) < 0.6).length,
+      centroid: [primaryCenter[0], Math.round(ridgeY * 100) / 100, primaryCenter[2]],
+      polygon: [
+        [Math.round((primaryCenter[0] - 12) * 100) / 100, Math.round(ridgeY * 100) / 100, Math.round((primaryCenter[2] - 8) * 100) / 100],
+        [Math.round((primaryCenter[0] + 12) * 100) / 100, Math.round(ridgeY * 100) / 100, Math.round((primaryCenter[2] - 8) * 100) / 100],
+        [Math.round((primaryCenter[0] + 12) * 100) / 100, Math.round(ridgeY * 100) / 100, Math.round((primaryCenter[2] + 8) * 100) / 100],
+        [Math.round((primaryCenter[0] - 12) * 100) / 100, Math.round(ridgeY * 100) / 100, Math.round((primaryCenter[2] + 8) * 100) / 100]
+      ]
+    },
+    {
+      id: 'P1',
+      type: 'roof_flat',
+      normal: [0, 1, 0],
+      d: -Math.round(eavesY * 1000) / 1000,
+      inlierCount: lines.filter(l => Math.abs((l[1] + l[4]) / 2 - eavesY) < 0.6).length,
+      centroid: [primaryCenter[0], Math.round(eavesY * 100) / 100, primaryCenter[2]],
+      polygon: [
+        [Math.round((primaryCenter[0] - 14) * 100) / 100, Math.round(eavesY * 100) / 100, Math.round((primaryCenter[2] - 10) * 100) / 100],
+        [Math.round((primaryCenter[0] + 14) * 100) / 100, Math.round(eavesY * 100) / 100, Math.round((primaryCenter[2] - 10) * 100) / 100],
+        [Math.round((primaryCenter[0] + 14) * 100) / 100, Math.round(eavesY * 100) / 100, Math.round((primaryCenter[2] + 10) * 100) / 100],
+        [Math.round((primaryCenter[0] - 14) * 100) / 100, Math.round(eavesY * 100) / 100, Math.round((primaryCenter[2] + 10) * 100) / 100]
+      ]
+    },
+    {
+      id: 'P2',
+      type: 'ground',
+      normal: [0, 1, 0],
+      d: -Math.round(groundY * 1000) / 1000,
+      inlierCount: lines.filter(l => Math.abs((l[1] + l[4]) / 2 - groundY) < 0.6).length,
+      centroid: [primaryCenter[0], Math.round(groundY * 100) / 100, primaryCenter[2]],
+      polygon: [
+        [Math.round((primaryCenter[0] - 18) * 100) / 100, Math.round(groundY * 100) / 100, Math.round((primaryCenter[2] - 14) * 100) / 100],
+        [Math.round((primaryCenter[0] + 18) * 100) / 100, Math.round(groundY * 100) / 100, Math.round((primaryCenter[2] - 14) * 100) / 100],
+        [Math.round((primaryCenter[0] + 18) * 100) / 100, Math.round(groundY * 100) / 100, Math.round((primaryCenter[2] + 14) * 100) / 100],
+        [Math.round((primaryCenter[0] - 18) * 100) / 100, Math.round(groundY * 100) / 100, Math.round((primaryCenter[2] + 14) * 100) / 100]
+      ]
+    }
+  ];
+
+  const linePlanes = lines.map(l => {
+    const avgY = (l[1] + l[4]) / 2;
+    if (Math.abs(avgY - ridgeY) < 0.6) return ['P0'];
+    if (Math.abs(avgY - eavesY) < 0.6) return ['P1'];
+    if (Math.abs(avgY - groundY) < 0.6) return ['P2'];
+    return [];
+  });
+
   return {
     success: true,
     lines,
+    planes,
+    linePlanes,
     count: lines.length,
     engine: 'javascript_fallback',
     assetCenter: primaryCenter,
@@ -915,6 +1036,67 @@ function wireframeToThreeJson(lines = [], options = {}) {
       geometry: geomBndUuid,
       material: matBndUuid
     });
+  }
+
+  // 4. Building 3D Planes (translucent polygon facets)
+  if (Array.isArray(options.planes) && options.planes.length > 0) {
+    const planeTriVertices = [];
+    options.planes.forEach(pl => {
+      const poly = pl.polygon || [];
+      if (poly.length >= 3) {
+        const p0 = poly[0];
+        for (let i = 1; i < poly.length - 1; i++) {
+          const p1 = poly[i];
+          const p2 = poly[i + 1];
+          planeTriVertices.push(
+            p0[0], p0[1] + elevOffset, p0[2],
+            p1[0], p1[1] + elevOffset, p1[2],
+            p2[0], p2[1] + elevOffset, p2[2]
+          );
+        }
+      }
+    });
+
+    if (planeTriVertices.length > 0) {
+      const geomPlUuid = 'geom-planes-' + Math.random().toString(36).slice(2, 10);
+      const matPlUuid = 'mat-planes-' + Math.random().toString(36).slice(2, 10);
+      const objPlUuid = 'obj-planes-' + Math.random().toString(36).slice(2, 10);
+
+      geometries.push({
+        uuid: geomPlUuid,
+        type: "BufferGeometry",
+        data: {
+          attributes: {
+            position: {
+              itemSize: 3,
+              type: "Float32Array",
+              array: planeTriVertices,
+              normalized: false
+            }
+          }
+        }
+      });
+
+      materials.push({
+        uuid: matPlUuid,
+        type: "MeshBasicMaterial",
+        color: 3718648, // 0x38bdf8
+        side: 2, // DoubleSide
+        transparent: true,
+        opacity: 0.35,
+        depthWrite: false
+      });
+
+      children.push({
+        uuid: objPlUuid,
+        type: "Mesh",
+        name: "Building_3D_Planes",
+        layers: 1,
+        matrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        geometry: geomPlUuid,
+        material: matPlUuid
+      });
+    }
   }
 
   const groupUuid = 'group-digital-twin-' + Math.random().toString(36).slice(2, 10);
