@@ -1192,6 +1192,49 @@ const scenarios = [
       await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
       await page.waitForTimeout(1000);
     }
+  },
+  {
+    id: 'road_follow_delete_waypoint',
+    name: 'Road Follow Direct Waypoint Deletion Without Freeform Conversion',
+    issueRef: 'v1.141.0',
+    run: async (page) => {
+      // 1. Center squarely on Utica default rural location
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1000);
+
+      // 2. Select Road Following Pattern
+      await selectPattern(page, 'road-following');
+      await page.waitForTimeout(1000);
+
+      // 3. Add road centerline nodes
+      await page.evaluate(({ lat, lon }) => {
+        const layer = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+        if (layer) {
+          layer.pattern = 'road-following';
+          layer.roadWaypoints = [
+            { lat: lat, lon: lon, idx: 0 },
+            { lat: lat + 0.001, lon: lon + 0.001, idx: 1 },
+            { lat: lat + 0.002, lon: lon + 0.002, idx: 2 }
+          ];
+          roadWaypoints = layer.roadWaypoints;
+        }
+        if (typeof updateGrid === 'function') updateGrid();
+      }, { lat: DEFAULT_LAT, lon: DEFAULT_LON });
+      await page.waitForTimeout(1500);
+
+      // 4. Delete middle drone waypoint directly while maintaining road-following
+      await page.evaluate(() => {
+        if (typeof generatedWaypoints !== 'undefined' && generatedWaypoints.length > 1) {
+          const targetWp = generatedWaypoints[1];
+          if (typeof deleteFlightWaypoint === 'function') {
+            deleteFlightWaypoint(targetWp, 1);
+          }
+        }
+      });
+      await page.waitForTimeout(2000);
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1000);
+    }
   }
 ];
 

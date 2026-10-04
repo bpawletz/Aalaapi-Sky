@@ -5667,7 +5667,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.140.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.141.0</span></h1>
 
 
 
@@ -8473,6 +8473,14 @@ html, body {
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🛣️ Direct Waypoint Deletion in Road Follow (v1.141.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin-4px 0 0 0; line-height: 1.4;">
+              Delete flight waypoints directly from cyan Drone Waypoint markers in <strong>Road Follow</strong> mode without converting to Freeform! Deleting a drone waypoint automatically cascades to remove its underlying road centerline node, re-indexes remaining nodes, and recalculates the continuous offset flight path while preserving the layer's Road Follow pattern. Includes minimum 2-waypoint safety guards on both road nodes and drone waypoints.
+            </p>
+          </div>
           <div style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #4ade80; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               📋 Database-Backed Preflight Safety Checklist Engine &amp; Gate (v1.140.0) (Closes #99)
@@ -9620,7 +9628,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.140.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.141.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -9681,6 +9689,12 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.141.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🛣️ Road Follow Direct Waypoint Deletion (Closes #118):</strong> Allowed deleting waypoints directly from cyan Drone Waypoint markers in Road Follow mode without converting to Freeform. Automatically removes corresponding road centerline nodes, re-indexes remaining nodes, and recalculates continuous offset flight paths with minimum 2-waypoint safety guards.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.140.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -42237,32 +42251,38 @@ function deleteFlightWaypoint(wp, idx) {
   const gridType = (typeof document !== 'undefined' && document && document.getElementById && document.getElementById('grid-type'))
     ? document.getElementById('grid-type').value
     : '';
-  const isRoadFollow = (gridType === 'road-following');
-
   // Determine target layer from wp.layerId or active layer
   const targetLayer = (wp && wp.layerId && typeof flightLayers !== 'undefined' && Array.isArray(flightLayers))
     ? flightLayers.find(l => l.id === wp.layerId)
     : (typeof getActiveLayer === 'function' ? getActiveLayer() : null);
 
+  const isRoadFollow = (gridType === 'road-following') || (targetLayer && targetLayer.pattern === 'road-following');
+
   if (isRoadFollow) {
-    if (typeof roadWaypoints !== 'undefined' && Array.isArray(roadWaypoints) && roadWaypoints.length > idx) {
-      roadWaypoints.splice(idx, 1);
-      roadWaypoints.forEach((w, newIdx) => { w.idx = newIdx; });
-    }
     if (typeof generatedWaypoints !== 'undefined' && Array.isArray(generatedWaypoints) && generatedWaypoints.length > idx) {
       generatedWaypoints.splice(idx, 1);
       generatedWaypoints.forEach((w, newIdx) => { w.idx = newIdx; });
     }
     if (targetLayer && Array.isArray(targetLayer.roadWaypoints)) {
-      let rIdx = wp ? targetLayer.roadWaypoints.indexOf(wp) : idx;
+      let rIdx = targetLayer.roadWaypoints.indexOf(wp);
       if (rIdx === -1 && wp && wp.idx !== undefined && wp.idx < targetLayer.roadWaypoints.length) {
         rIdx = wp.idx;
+      }
+      if (rIdx === -1 && idx !== undefined && idx !== null && idx < targetLayer.roadWaypoints.length) {
+        rIdx = idx;
       }
       if (rIdx !== -1 && rIdx < targetLayer.roadWaypoints.length) {
         targetLayer.roadWaypoints.splice(rIdx, 1);
         targetLayer.roadWaypoints.forEach((w, newIdx) => { w.idx = newIdx; });
+        if (typeof roadWaypoints !== 'undefined') {
+          roadWaypoints = targetLayer.roadWaypoints;
+        }
       }
+    } else if (typeof roadWaypoints !== 'undefined' && Array.isArray(roadWaypoints) && roadWaypoints.length > idx) {
+      roadWaypoints.splice(idx, 1);
+      roadWaypoints.forEach((w, newIdx) => { w.idx = newIdx; });
     }
+    if (typeof updateGrid === 'function') updateGrid();
   } else {
     // 1. If targetLayer is freeform (or current gridType is freeform), clean up targetLayer's internal arrays
     if (targetLayer && (targetLayer.pattern === 'freeform' || gridType === 'freeform')) {
@@ -42387,8 +42407,13 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
       const deleteBtn = popupContent.querySelector('#delete-road-node-btn');
       if (deleteBtn) {
         deleteBtn.addEventListener('click', () => {
+          const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+          const roadList = (activeLayer && activeLayer.roadWaypoints) ? activeLayer.roadWaypoints : (typeof roadWaypoints !== 'undefined' ? roadWaypoints : []);
+          if (roadList && roadList.length <= 2) {
+            alert("Cannot delete road node: a road follow path must contain at least 2 points.");
+            return;
+          }
           if (confirm(`Are you sure you want to delete Road Node ${idx}?`)) {
-            const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
             if (activeLayer && activeLayer.roadWaypoints && activeLayer.roadWaypoints.length > idx) {
               activeLayer.roadWaypoints.splice(idx, 1);
               activeLayer.roadWaypoints.forEach((w, newIdx) => { w.idx = newIdx; });
@@ -42413,6 +42438,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
         <div style="font-weight: 600; margin-bottom: 8px; color: var(--text-main); font-size: 0.9rem; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
           <span>Drone Waypoint ${idx}</span>
         </div>
+        ${overlappingHTML}
         <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px; display: flex; flex-direction: column; gap: 4px;">
           <div><strong>Height:</strong> ${formatDistance(wp.alt, 0)}</div>
           <div><strong>Yaw:</strong> ${headingDisplay}°</div>
@@ -42422,10 +42448,39 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
           ℹ️ Road Follow waypoints are automatically calculated relative to the road offset.<br><br>
           To edit, move, or nudge individual waypoints, please convert to <strong>Freeform</strong> mode.
         </div>
-        <button id="convert-to-freeform-btn" class="btn btn-primary" style="width: 100%; font-size: 0.8rem; padding: 6px 10px; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--accent-cyan); color: #0f172a; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
-          <span>✏️ Convert to Freeform Mode</span>
-        </button>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <button id="delete-road-drone-wp-btn" class="btn btn-danger" style="width: 100%; font-size: 0.8rem; padding: 6px 10px; display: flex; align-items: center; justify-content: center; gap: 6px; background: #ef4444; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+            <span>🗑️ Delete Waypoint ${idx}</span>
+          </button>
+          <button id="convert-to-freeform-btn" class="btn btn-primary" style="width: 100%; font-size: 0.8rem; padding: 6px 10px; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--accent-cyan); color: #0f172a; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+            <span>✏️ Convert to Freeform Mode</span>
+          </button>
+        </div>
       `;
+
+      const deleteWpBtn = popupContent.querySelector('#delete-road-drone-wp-btn');
+      if (deleteWpBtn) {
+        deleteWpBtn.addEventListener('click', () => {
+          const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+          const roadList = (activeLayer && activeLayer.roadWaypoints) ? activeLayer.roadWaypoints : (typeof roadWaypoints !== 'undefined' ? roadWaypoints : []);
+          if (roadList && roadList.length <= 2) {
+            alert("Cannot delete waypoint: a flight plan must contain at least 2 waypoints.");
+            return;
+          }
+          if (confirm(`Are you sure you want to delete Waypoint ${idx}?`)) {
+            if (activeLayer && activeLayer.roadWaypoints && activeLayer.roadWaypoints.length > idx) {
+              activeLayer.roadWaypoints.splice(idx, 1);
+              activeLayer.roadWaypoints.forEach((w, newIdx) => { w.idx = newIdx; });
+              roadWaypoints = activeLayer.roadWaypoints;
+            } else if (roadWaypoints && roadWaypoints.length > idx) {
+              roadWaypoints.splice(idx, 1);
+              roadWaypoints.forEach((w, newIdx) => { w.idx = newIdx; });
+            }
+            if (marker && marker.closePopup) marker.closePopup();
+            updateGrid();
+          }
+        });
+      }
 
       const convertBtn = popupContent.querySelector('#convert-to-freeform-btn');
       if (convertBtn) {
@@ -42807,7 +42862,7 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
   // Drag-to-move for the popup (v1.88.1)
   const dragHandle = popupContent.querySelector('#wp-popup-drag-handle');
   if (dragHandle) {
-    if (typeof L !== 'undefined' && L.DomEvent) {
+    if (typeof L !== 'undefined' && L && L.DomEvent) {
       if (L.DomEvent.disableClickPropagation) L.DomEvent.disableClickPropagation(dragHandle);
       if (L.DomEvent.disableScrollPropagation) L.DomEvent.disableScrollPropagation(dragHandle);
     }
