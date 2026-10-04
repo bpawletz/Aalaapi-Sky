@@ -37,6 +37,7 @@ const wireframeEngine = require('./wireframe_engine.js');
 const SolarEphemeris = require('./solar_ephemeris.js');
 const { TileCacheManager } = require('./tile_cache.js');
 const tileCache = new TileCacheManager();
+const mcpServer = require('./mcp_server.js');
 let cachedWeatherTelemetry = null;
 const CONFIG_FILE = path.resolve(__dirname, '../../scratch/companion_config.json');
 const DJI_LOG_EXE = path.resolve(__dirname, 'bin/dji-log.exe');
@@ -365,6 +366,7 @@ const sseRemoteIdClients = new Set();
 const sseStatusClients = new Set();
 const sseMediaProgressClients = new Set();
 const sseUnifiedClients = new Set();
+const mcpSseClients = new Map(); // sessionId -> { res, req, sessionId, createdAt }
 
 function broadcastRemoteIdAirspace(drones) {
   if (sseRemoteIdClients.size === 0 && sseUnifiedClients.size === 0) return;
@@ -399,7 +401,8 @@ function broadcastCompanionStatus(status) {
     ? airspaceTracker.getActiveDrones().length
     : 0;
   const st = status || (typeof cachedRc2Status !== 'undefined' ? cachedRc2Status : { connected: false });
-  const payloadStr = JSON.stringify({ ...st, droneCount });
+  const mcpMetrics = (typeof mcpServer !== 'undefined' && mcpServer.getMetrics) ? mcpServer.getMetrics() : null;
+  const payloadStr = JSON.stringify({ ...st, droneCount, mcp: mcpMetrics });
   for (const client of sseStatusClients) {
     try {
       client.res.write(`data: ${payloadStr}\n\n`);
@@ -483,6 +486,18 @@ const sseKeepaliveTimer = setInterval(() => {
       }
     }
   }
+
+  // MCP SSE Keepalive
+  if (mcpSseClients.size > 0) {
+    for (const [sessionId, client] of mcpSseClients) {
+      try {
+        client.res.write(': keepalive\n\n');
+      } catch (e) {
+        try { client.res.end(); } catch (_) {}
+        mcpSseClients.delete(sessionId);
+      }
+    }
+  }
 }, 15000);
 if (sseKeepaliveTimer.unref) sseKeepaliveTimer.unref();
 
@@ -508,7 +523,8 @@ function getSseClientsCount() {
     status: sseStatusClients.size,
     mediaProgress: sseMediaProgressClients.size,
     unified: sseUnifiedClients.size,
-    total: sseAirspaceClients.size + sseRemoteIdClients.size + sseStatusClients.size + sseMediaProgressClients.size + sseUnifiedClients.size
+    mcp: mcpSseClients.size,
+    total: sseAirspaceClients.size + sseRemoteIdClients.size + sseStatusClients.size + sseMediaProgressClients.size + sseUnifiedClients.size + mcpSseClients.size
   };
 }
 
@@ -2950,7 +2966,8 @@ const server = http.createServer(async (req, res) => {
       const droneCount = (typeof airspaceTracker !== 'undefined' && airspaceTracker.getActiveDrones)
         ? airspaceTracker.getActiveDrones().length
         : 0;
-      const statusPayload = { ...cachedRc2Status, droneCount, sseClients: getSseClientsCount() };
+      const mcpMetrics = (typeof mcpServer !== 'undefined' && mcpServer.getMetrics) ? mcpServer.getMetrics() : null;
+      const statusPayload = { ...cachedRc2Status, droneCount, sseClients: getSseClientsCount(), mcp: mcpMetrics };
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(statusPayload));
       return;
@@ -2976,7 +2993,89 @@ const server = http.createServer(async (req, res) => {
       const droneCount = (typeof airspaceTracker !== 'undefined' && airspaceTracker.getActiveDrones)
         ? airspaceTracker.getActiveDrones().length
         : 0;
-      res.write(`data: ${JSON.stringify({ ...cachedRc2Status, droneCount })}\n\n`);
+      const mcpMetrics = (typeof mcpServer !== 'undefined' && mcpServer.getMetrics) ? mcpServer.getMetrics() : null;
+      res.write(`data: ${JSON.stringify({ ...cachedRc2Status, droneCount, mcp: mcpMetrics })}\n\n`);
+      return;
+    }
+
+    // 1b. Native Model Context Protocol (MCP) Server-Sent Events (SSE) Stream
+    if (pathname === '/api/mcp/sse' && req.method === 'GET') {
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*'
+      });
+      if (res.flushHeaders) res.flushHeaders();
+
+      const sessionId = crypto.randomUUID();
+      const client = { res, req, sessionId, createdAt: Date.now() };
+      mcpSseClients.set(sessionId, client);
+
+      req.on('close', () => {
+        mcpSseClients.delete(sessionId);
+      });
+
+      // Standard MCP SSE Transport: advertise post endpoint for this session
+      res.write(`event: endpoint\ndata: /api/mcp/message?sessionId=${encodeURIComponent(sessionId)}\n\n`);
+      return;
+    }
+
+    // 1c. Native Model Context Protocol (MCP) JSON-RPC Message Receiver
+    if (pathname === '/api/mcp/message' && req.method === 'POST') {
+      const sessionId = url.searchParams.get('sessionId') || req.headers['x-mcp-session-id'];
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', async () => {
+        try {
+          const rpcReq = JSON.parse(body);
+          const rpcRes = await mcpServer.processRpcMessage(rpcReq);
+
+          // If client has active SSE connection for this session, push response over SSE stream
+          if (sessionId && mcpSseClients.has(sessionId)) {
+            const client = mcpSseClients.get(sessionId);
+            try {
+              if (rpcRes) {
+                client.res.write(`event: message\ndata: ${JSON.stringify(rpcRes)}\n\n`);
+              }
+            } catch (_) {}
+          }
+
+          // Always return JSON-RPC response to HTTP POST caller
+          res.writeHead(200, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          });
+          res.end(JSON.stringify(rpcRes || { jsonrpc: '2.0', id: rpcReq?.id || null, result: { success: true } }));
+        } catch (e) {
+          res.writeHead(400, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          });
+          res.end(JSON.stringify({
+            jsonrpc: '2.0',
+            id: null,
+            error: { code: -32700, message: 'Parse error: ' + e.message }
+          }));
+        }
+      });
+      return;
+    }
+
+    // 1d. Native Model Context Protocol (MCP) Status & Tool Discovery Endpoint
+    if (pathname === '/api/mcp/status' && req.method === 'GET') {
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      });
+      res.end(JSON.stringify({
+        success: true,
+        mcp: mcpServer.getMetrics(),
+        activeSseClients: mcpSseClients.size,
+        tools: mcpServer.getToolDefinitions(),
+        prompts: mcpServer.getPromptDefinitions(),
+        resources: mcpServer.getResourceDefinitions()
+      }));
       return;
     }
 
@@ -5074,6 +5173,9 @@ if (require.main === module) {
     // Start Server on all network interfaces (0.0.0.0) so LAN tablets/phones can connect
     server.listen(PORT, '0.0.0.0', () => {
       printStartupBanner();
+      if (process.argv.includes('--stdio') || process.argv.includes('--mcp')) {
+        mcpServer.startStdio();
+      }
     });
   })();
 }
@@ -5119,6 +5221,8 @@ module.exports = {
   sseStatusClients,
   sseMediaProgressClients,
   sseUnifiedClients,
+  mcpSseClients,
+  mcpServer,
   broadcastRemoteIdAirspace,
   broadcastCompanionStatus,
   broadcastMediaProgress,

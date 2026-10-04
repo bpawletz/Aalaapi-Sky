@@ -1,3 +1,24 @@
+## [1.139.0] - 2026-10-04
+
+### Added
+- **Native Model Context Protocol (MCP) Server Support & Gemini AI Integration (Closes #94)**:
+  - **Bridge App Protocol Layer (MCP Server Core) (`tools/companion/mcp_server.js`, `tools/companion/server.js`)**:
+    - Implemented native Model Context Protocol (MCP) server support conforming to specification version `2024-11-05` directly within the companion bridge application.
+    - Added dual-transport architecture supporting standard input/output (`stdio`) for local invocation via `node tools/companion/mcp_server.js` (e.g. `gemini mcp add aalaapi-sky node tools/companion/mcp_server.js` in the Gemini CLI, Claude Desktop, and Cursor) as well as persistent Server-Sent Events (SSE) endpoints (`GET /api/mcp/sse` and `POST /api/mcp/message`) on HTTP port 8765.
+    - Integrated MCP server status into `GET /api/status`, `GET /api/status/stream`, and dedicated `GET /api/mcp/status`.
+    - Added CLI flags `--stdio` and `--mcp` to `tools/companion/server.js`.
+  - **Registered MCP Tools Framework**:
+    - **`get_airspace_telemetry`**: Exposes live local flight metadata, hardware status (RC 2 MTP link, RTL-SDR dongle), active ADS-B transponder frames within safety buffers with deconfliction distances and relative bearings, and localized NEXRAD radar precipitation statuses.
+    - **`generate_flight_plan`**: Accepts structured geometry constraints (`centerLat`, `centerLon`, `pattern`, `radius`, `altitude`, `speed`, `gimbalPitch`, `headingMode`, `photoCount`, `cameraZoom`) from LLM orchestrators and computes a fully valid DJI WPML V2 XML payload (`<wpml:missionConfig>`, `<Folder><Placemark>...`) ready for DJI Pilot 2 and RC 2 flight controllers.
+    - **`trigger_bridge_action`**: Enables LLMs to execute local bridge commands, including `rc2_sync`, `validate_cache` (tile cache integrity checks), `purge_cache`, `scan_devices`, and `simulate_aircraft` (intruder injection).
+    - **Diagnostics & Multi-Vendor Tools**: Retained and integrated `get_latest_bad_mission`, `list_bad_missions`, `set_multivendor_mode`, and `convert_mission_format` (QGroundControl `.plan` and Autel `.kml`).
+  - **Context Injection Engine (Prompts & Resources)**:
+    - Added MCP Prompts (`prompts/list` & `prompts/get`): `airspace_deconfliction` for immediate hazard analysis and tactical avoidance advice in Gemini 2.5 Pro; `mission_planning_prompt` for automated pattern generation.
+    - Added MCP Resources (`resources/list` & `resources/read`): `aalaapi://airspace/telemetry` for live JSON telemetry streaming, `aalaapi://missions/latest-bad` for failure triage, and `aalaapi://system/status` for bridge health.
+  - **UI/UX: MCP Node Monitor Grid (`index_template.html`, `index.css`, `index.js`)**:
+    - Integrated an operational status section inside the bridge connection container (`#companion-sync-container`) displaying active client hooks (`#mcp-active-sessions-text`), read/write API frame payloads (`#mcp-frame-counts-text`), tool discovery badges (`#mcp-tools-pill-container`), and last called tool status.
+    - Added a 1-click **Copy Gemini CLI Command** button (`#mcp-copy-cli-btn`) to easily register Aalaapi Sky with `gemini mcp add`.
+
 ## [1.138.1] - 2026-10-03
 
 ### Fixed

@@ -5576,6 +5576,24 @@ html, body {
   filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.8));
 }
 
+/* MCP Node Monitor Grid (Issue #94) */
+.mcp-monitor-section {
+  transition: border-color 0.2s, background 0.2s;
+}
 
+.mcp-tool-pill {
+  font-size: 0.58rem;
+  font-family: monospace;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: #7dd3fc;
+  white-space: nowrap;
+  user-select: none;
+}
 
-
+.mcp-tool-pill:hover {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: rgba(56, 189, 248, 0.45);
+}
