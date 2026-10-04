@@ -2350,6 +2350,16 @@ const AdsbAirspaceManager = {
         } catch (e) {}
       };
 
+      if (typeof this.eventSource.addEventListener === 'function') {
+        this.eventSource.addEventListener('status', (event) => {
+          if (!event || !event.data) return;
+          try {
+            const st = JSON.parse(event.data);
+            this.updateDiagnosticsUI(st);
+          } catch (e) {}
+        });
+      }
+
       this.eventSource.onerror = () => {
         this.streamConnected = false;
         this.streamMode = 'polling';
@@ -2482,6 +2492,9 @@ const AdsbAirspaceManager = {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       this.processAirspaceData(data);
+      if (this.isDrawerOpen) {
+        this.fetchAirspaceStatus();
+      }
     } catch (e) {
       // Endpoint error or companion offline
     }
@@ -3357,25 +3370,53 @@ const AdsbAirspaceManager = {
       serverSaveBtn.addEventListener('click', async () => {
         const hostVal = hostInput ? hostInput.value.trim() : '127.0.0.1';
         const portVal = portInput ? portInput.value.trim() : '30003';
+        const parsedPortVal = parseInt(portVal, 10) || 30003;
         this.serverHost = hostVal;
-        this.serverPort = parseInt(portVal, 10) || 30003;
+        this.serverPort = parsedPortVal;
         this.saveSettings();
         serverSaveBtn.textContent = 'Connecting...';
         serverSaveBtn.disabled = true;
 
         try {
           const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://localhost:8765';
-          const res = await fetch(`${apiBase}/api/config/adsb`, {
+          let res = await fetch(`${apiBase}/api/config/adsb`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adsbHost: hostVal, adsbPort: portVal })
+            body: JSON.stringify({ adsbHost: hostVal, adsbPort: parsedPortVal })
           });
+
+          if (res.status === 409) {
+            const bodyData = await res.json().catch(() => ({}));
+            const activeHost = bodyData.tcpHost || bodyData.adsbHost || 'active server';
+            const activePort = bodyData.tcpPort || bodyData.adsbPort || '';
+            const confirmOverride = confirm(
+              `ADS-B bridge target is locked or currently connected to ${activeHost}${activePort ? ':' + activePort : ''}.\n\nForce change target to ${hostVal}:${parsedPortVal}?`
+            );
+            if (confirmOverride) {
+              res = await fetch(`${apiBase}/api/config/adsb`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ adsbHost: hostVal, adsbPort: parsedPortVal, force: true })
+              });
+            } else {
+              serverSaveBtn.textContent = 'Connect';
+              serverSaveBtn.disabled = false;
+              return;
+            }
+          }
+
           if (res.ok) {
+            this.serverHost = hostVal;
+            this.serverPort = parsedPortVal;
+            this.saveSettings();
             serverSaveBtn.textContent = 'Saved!';
           } else {
             serverSaveBtn.textContent = 'Error';
           }
         } catch (e) {
+          this.serverHost = hostVal;
+          this.serverPort = parsedPortVal;
+          this.saveSettings();
           serverSaveBtn.textContent = 'Saved Local';
         }
 

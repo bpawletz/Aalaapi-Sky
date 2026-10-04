@@ -149,16 +149,24 @@ function getAdsbConfig() {
   const cfg = loadCompanionConfig();
   const host = process.env.ADSB_HOST || process.env.DUMP1090_HOST || cfg.adsbHost || '127.0.0.1';
   const port = parseInt(process.env.ADSB_PORT || process.env.DUMP1090_PORT || cfg.adsbPort || 30003, 10);
+  const locked = process.env.ADSB_LOCKED === '1' || process.env.ADSB_LOCKED === 'true' || cfg.adsbLocked === true;
   return {
     adsbHost: host,
-    adsbPort: isNaN(port) ? 30003 : port
+    adsbPort: isNaN(port) ? 30003 : port,
+    adsbLocked: locked
   };
 }
 
 function saveAdsbConfig(host, port) {
-  const cleanHost = (typeof host === 'string' && host.trim()) ? host.trim() : '127.0.0.1';
+  if (typeof host !== 'string' || !host.trim()) {
+    throw new Error('Valid adsbHost string is required');
+  }
+  const cleanHost = host.trim();
   const parsedPort = parseInt(port, 10);
-  const cleanPort = (!isNaN(parsedPort) && parsedPort > 0 && parsedPort <= 65535) ? parsedPort : 30003;
+  if (isNaN(parsedPort) || parsedPort <= 0 || parsedPort > 65535) {
+    throw new Error('Valid adsbPort (1-65535) is required');
+  }
+  const cleanPort = parsedPort;
 
   saveCompanionConfig({ adsbHost: cleanHost, adsbPort: cleanPort });
   if (adsbTracker && typeof adsbTracker.updateServerConfig === 'function') {
@@ -450,7 +458,45 @@ function broadcastMediaProgress(prog) {
   }
 }
 
+function getAirspaceStatusPayload() {
+  const status = adsbTracker ? adsbTracker.getStatus() : {};
+  const cfg = getAdsbConfig();
+  return Object.assign({
+    success: true,
+    adsbHost: cfg.adsbHost,
+    adsbPort: cfg.adsbPort,
+    sseClients: sseAirspaceClients.size,
+    externalFeed: lastExternalFeedCache ? {
+      key: lastExternalFeedCache.key,
+      ageSeconds: Math.round((Date.now() - lastExternalFeedCache.timestamp) / 1000),
+      lastCount: lastExternalFeedCache.data?.count || 0
+    } : null
+  }, status);
+}
+
+function broadcastAirspaceStatus() {
+  if (sseAirspaceClients.size === 0 && sseUnifiedClients.size === 0) return;
+  const statusPayload = JSON.stringify(getAirspaceStatusPayload());
+  for (const client of sseAirspaceClients) {
+    try {
+      client.res.write(`event: status\ndata: ${statusPayload}\n\n`);
+    } catch (_) {
+      try { client.res.end(); } catch (e) {}
+      sseAirspaceClients.delete(client);
+    }
+  }
+  for (const client of sseUnifiedClients) {
+    try {
+      client.res.write(`event: status\ndata: ${statusPayload}\n\n`);
+    } catch (_) {
+      try { client.res.end(); } catch (e) {}
+      sseUnifiedClients.delete(client);
+    }
+  }
+}
+
 adsbTracker.on('broadcast', () => {
+  broadcastAirspaceStatus();
   if (sseAirspaceClients.size === 0 && sseUnifiedClients.size === 0) return;
   for (const client of sseAirspaceClients) {
     try {
@@ -518,6 +564,14 @@ const sseRemoteIdTicker = setInterval(() => {
   }
 }, 1000);
 if (sseRemoteIdTicker.unref) sseRemoteIdTicker.unref();
+
+// Periodic 3-second refresh for Airspace / ADS-B status & hardware diagnostics when streaming
+const sseAirspaceStatusTicker = setInterval(() => {
+  if (sseAirspaceClients.size > 0 || sseUnifiedClients.size > 0) {
+    broadcastAirspaceStatus();
+  }
+}, 3000);
+if (sseAirspaceStatusTicker.unref) sseAirspaceStatusTicker.unref();
 
 function getSseAirspaceClientsCount() {
   return sseAirspaceClients.size;
@@ -4591,6 +4645,8 @@ const server = http.createServer(async (req, res) => {
       res.write(': connected\n\n');
       const initialPayload = adsbTracker.getAirspaceBounds(client.criteria);
       res.write(`data: ${JSON.stringify(initialPayload)}\n\n`);
+      const statusPayload = getAirspaceStatusPayload();
+      res.write(`event: status\ndata: ${JSON.stringify(statusPayload)}\n\n`);
       return;
     }
 
@@ -4749,20 +4805,8 @@ const server = http.createServer(async (req, res) => {
 
     // 9a-2. ADS-B Receiver Status & Config
     if ((pathname === '/api/airspace/status' || pathname === '/api/adsb/status') && req.method === 'GET') {
-      const status = adsbTracker.getStatus();
-      const cfg = getAdsbConfig();
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(Object.assign({
-        success: true,
-        adsbHost: cfg.adsbHost,
-        adsbPort: cfg.adsbPort,
-        sseClients: sseAirspaceClients.size,
-        externalFeed: lastExternalFeedCache ? {
-          key: lastExternalFeedCache.key,
-          ageSeconds: Math.round((Date.now() - lastExternalFeedCache.timestamp) / 1000),
-          lastCount: lastExternalFeedCache.data?.count || 0
-        } : null
-      }, status)));
+      res.end(JSON.stringify(getAirspaceStatusPayload()));
       return;
     }
 
@@ -4778,12 +4822,13 @@ const server = http.createServer(async (req, res) => {
 
     if ((pathname === '/api/config/adsb' || pathname === '/api/airspace/config' || pathname === '/api/adsb/config') && req.method === 'GET') {
       const config = getAdsbConfig();
-      const status = adsbTracker.getStatus();
+      const status = adsbTracker ? adsbTracker.getStatus() : {};
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         success: true,
         adsbHost: config.adsbHost,
         adsbPort: config.adsbPort,
+        adsbLocked: config.adsbLocked,
         tcpHost: status.tcpHost,
         tcpPort: status.tcpPort,
         connected: status.connected,
@@ -4800,16 +4845,55 @@ const server = http.createServer(async (req, res) => {
           const data = body ? JSON.parse(body) : {};
           const targetHost = data.adsbHost || data.tcpHost || data.host;
           const targetPort = data.adsbPort !== undefined ? data.adsbPort : (data.tcpPort !== undefined ? data.tcpPort : data.port);
+          const force = data.force === true;
 
-          const saved = saveAdsbConfig(targetHost, targetPort);
-          logSuccess('[ADS-B CONFIG]', `Server host/port set to ${saved.adsbHost}:${saved.adsbPort}`);
+          const curConfig = getAdsbConfig();
+          const curStatus = adsbTracker ? adsbTracker.getStatus() : {};
 
-          const status = adsbTracker.getStatus();
+          if (!targetHost || typeof targetHost !== 'string' || !targetHost.trim()) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ success: false, error: 'Valid adsbHost string is required' }));
+          }
+          const parsedPort = parseInt(targetPort, 10);
+          if (isNaN(parsedPort) || parsedPort <= 0 || parsedPort > 65535) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ success: false, error: 'Valid adsbPort (1-65535) is required' }));
+          }
+
+          const cleanHost = targetHost.trim();
+          const isHostOrPortChanging = (cleanHost !== curConfig.adsbHost || parsedPort !== curConfig.adsbPort);
+
+          const isConnected = !!curStatus.connected;
+          const isPermanentlyLocked = !!curConfig.adsbLocked;
+          const isLocked = isConnected || isPermanentlyLocked;
+
+          if (isHostOrPortChanging && isLocked && !force) {
+            res.writeHead(409, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({
+              success: false,
+              locked: true,
+              reason: isConnected ? 'connected' : 'locked',
+              error: isConnected
+                ? `ADS-B bridge is currently connected to ${curConfig.adsbHost}:${curConfig.adsbPort}. Changing target requires force: true.`
+                : `ADS-B configuration is locked (ADSB_LOCKED). Changing target requires force: true.`,
+              adsbHost: curConfig.adsbHost,
+              adsbPort: curConfig.adsbPort,
+              tcpHost: curStatus.tcpHost || curConfig.adsbHost,
+              tcpPort: curStatus.tcpPort || curConfig.adsbPort,
+              connected: isConnected
+            }));
+          }
+
+          const saved = saveAdsbConfig(cleanHost, parsedPort);
+          logSuccess('[ADS-B CONFIG]', `Server host/port set to ${saved.adsbHost}:${saved.adsbPort}${force ? ' (forced)' : ''}`);
+
+          const status = adsbTracker ? adsbTracker.getStatus() : {};
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({
             success: true,
             adsbHost: saved.adsbHost,
             adsbPort: saved.adsbPort,
+            adsbLocked: curConfig.adsbLocked,
             tcpHost: status.tcpHost,
             tcpPort: status.tcpPort,
             connected: status.connected,
