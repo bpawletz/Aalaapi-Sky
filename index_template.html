@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.139.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.140.0</span></h1>
 
 
 
@@ -2185,6 +2185,10 @@
               <span>📸</span>
               Photos
             </button>
+            <button id="preflight-gate-btn" class="btn-secondary" type="button" style="flex: 1.1; padding: 7px 4px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.74rem; margin: 0; background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.35); color: #4ade80;" title="Preflight Safety Checklist Gate &amp; Compliance Audit">
+              <span>📋</span>
+              Preflight
+            </button>
           </div>
           <button id="download-btn" class="btn-primary" type="button" style="width: 100%; padding: 8px 6px; border-radius: 8px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.78rem; margin: 0;" title="Export WPML Mission KMZ">
             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -2868,6 +2872,14 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #4ade80; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              📋 Database-Backed Preflight Safety Checklist Engine &amp; Gate (v1.140.0) (Closes #99)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Integrated a dynamic, SQLite-backed preflight safety checklist system into the bridge backend and Aalaapi Sky frontend! Features an interactive 5-phase safety gate modal (<code>#preflight-modal</code>) covering Pre-arrival, Unpacking, Hardware Inspection, Airspace &amp; Weather, and Power-On Calibration. Programmatically asserts safety criteria including live NEXRAD weather alerts and LAANC facility authorization codes. Blocks <strong>Export KMZ</strong> and <strong>Direct-to-Controller Sync</strong> until all mandatory safety items are verified and the Pilot-in-Command signs off with a digital signature canvas block. Offline standalone fallback stores signed records in local storage and flushes them to SQLite when connected to the bridge.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🤖 Native Model Context Protocol (MCP) Server &amp; Gemini AI Integration (v1.139.0) (Closes #94)
@@ -3456,6 +3468,138 @@
     </div>
   </div>
 
+  <!-- Preflight Safety Checklist Gate Modal (Issue #99) -->
+  <div id="preflight-modal" class="modal-overlay hidden" style="z-index: 10050;">
+    <div class="modal glass" style="max-width: 680px; width: 94vw; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; padding: 0; border: 1px solid rgba(34, 197, 94, 0.4); box-shadow: 0 20px 50px rgba(0,0,0,0.8);">
+      
+      <!-- Header -->
+      <div style="padding: 14px 18px; background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.4); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #4ade80;">📋</div>
+          <div>
+            <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+              Preflight Safety Checklist Gate
+              <span id="preflight-status-badge" style="font-size: 0.65rem; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); padding: 1px 6px; border-radius: 999px; font-weight: 600;">PENDING SIGN-OFF</span>
+            </h3>
+            <span style="font-size: 0.7rem; color: var(--text-muted);">FAA Part 107 Compliance &amp; Operational Safety Verification</span>
+          </div>
+        </div>
+        <button id="preflight-close-btn" type="button" class="close-btn" style="font-size: 1.2rem;">&times;</button>
+      </div>
+
+      <!-- Stepper Navigation Header -->
+      <div id="preflight-stepper-container" style="display: flex; border-bottom: 1px solid var(--border-color); background: rgba(0, 0, 0, 0.25); overflow-x: auto; padding: 4px 8px; gap: 4px;">
+        <!-- Step buttons generated dynamically in index.js -->
+      </div>
+
+      <!-- Main Scrollable Body -->
+      <div id="preflight-modal-body" style="padding: 16px 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px; background: rgba(10, 15, 26, 0.6);">
+        <!-- Active Phase Items Container -->
+        <div id="preflight-phase-container" style="display: flex; flex-direction: column; gap: 10px;">
+          <!-- Items generated dynamically -->
+        </div>
+
+        <!-- Automated System Checks Box (Airspace & Weather) -->
+        <div id="preflight-autochecks-card" style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 6px;">
+            <strong style="font-size: 0.82rem; color: var(--accent-cyan); display: flex; align-items: center; gap: 6px;">
+              ⚡ Automated Preflight System Checks (Airspace &amp; METAR Weather)
+            </strong>
+            <button id="preflight-refresh-autochecks-btn" type="button" class="btn-secondary" style="font-size: 0.65rem; padding: 2px 7px;" title="Re-run weather & airspace checks">Refresh</button>
+          </div>
+
+          <!-- Airspace Status -->
+          <div id="preflight-airspace-box" style="font-size: 0.76rem; display: flex; flex-direction: column; gap: 6px; background: rgba(0, 0, 0, 0.2); padding: 8px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 600; color: var(--text-main);">🛡️ Airspace Clearance &amp; LAANC Record:</span>
+              <span id="preflight-airspace-badge" style="font-weight: 700; color: #4ade80;">Clear / Class G</span>
+            </div>
+            <div id="preflight-airspace-desc" style="color: var(--text-muted); font-size: 0.72rem; line-height: 1.35;">
+              Viewport clear of restricted zones or LAANC facility map ceilings.
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+              <label for="preflight-laanc-input" style="font-size: 0.7rem; color: var(--text-main); font-weight: 600; white-space: nowrap;">LAANC Auth Reference Code:</label>
+              <input id="preflight-laanc-input" type="text" placeholder="e.g. LAANC-2026-9817" style="flex: 1; font-size: 0.72rem; padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.06); color: var(--text-main);" />
+            </div>
+          </div>
+
+          <!-- Weather Status -->
+          <div id="preflight-weather-box" style="font-size: 0.76rem; display: flex; flex-direction: column; gap: 6px; background: rgba(0, 0, 0, 0.2); padding: 8px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 600; color: var(--text-main);">🌤️ Environmental Weather &amp; NEXRAD Telemetry:</span>
+              <span id="preflight-weather-badge" style="font-weight: 700; color: #4ade80;">Favorable (VFR)</span>
+            </div>
+            <div id="preflight-weather-desc" style="color: var(--text-muted); font-size: 0.72rem; line-height: 1.35;">
+              Wind speeds within tolerance, no active NEXRAD precipitation or NWS hazard alerts.
+            </div>
+            <div id="preflight-weather-ack-container" class="hidden" style="margin-top: 4px; padding: 6px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 6px;">
+              <label style="font-size: 0.72rem; color: #fbbf24; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                <input id="preflight-weather-ack-checkbox" type="checkbox" style="accent-color: #f59e0b;" />
+                <span>Pilot Acknowledgement: I have reviewed weather alerts and accept operational responsibility.</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pilot Digital Signature Block (Final Step) -->
+        <div id="preflight-signature-card" style="background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+          <strong style="font-size: 0.85rem; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+            ✍️ Pilot-in-Command (PIC) Digital Signature
+          </strong>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <label for="preflight-operator-input" style="font-size: 0.72rem; font-weight: 600; color: var(--text-muted);">Pilot in Command / Operator Name <span style="color: #ef4444;">*</span></label>
+              <input id="preflight-operator-input" type="text" placeholder="Full Legal Name or Part 107 License #" style="font-size: 0.78rem; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.06); color: var(--text-main);" />
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <label style="font-size: 0.72rem; font-weight: 600; color: var(--text-muted);">Digital Signature <span style="color: #ef4444;">*</span></label>
+              <div style="position: relative; border: 1px dashed var(--border-color); border-radius: 6px; background: rgba(0, 0, 0, 0.4); height: 75px; overflow: hidden;">
+                <canvas id="preflight-signature-canvas" width="280" height="75" style="width: 100%; height: 100%; cursor: crosshair; touch-action: none;"></canvas>
+                <button id="preflight-signature-clear-btn" type="button" style="position: absolute; top: 4px; right: 4px; font-size: 0.6rem; padding: 1px 5px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; color: var(--text-muted); cursor: pointer;">Clear</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Control Bar -->
+      <div style="padding: 12px 18px; background: rgba(15, 23, 42, 0.98); border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <label style="font-size: 0.72rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input id="preflight-gate-toggle" type="checkbox" checked style="accent-color: #06b6d4;" />
+            <span>Enforce Preflight Gate</span>
+          </label>
+          <button id="preflight-view-history-btn" type="button" class="btn-secondary" style="font-size: 0.68rem; padding: 4px 8px;" title="View past signed checklist logs">📜 Audit History</button>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button id="preflight-prev-btn" type="button" class="btn-secondary" style="font-size: 0.75rem; padding: 6px 12px;">Previous</button>
+          <button id="preflight-next-btn" type="button" class="btn-primary" style="font-size: 0.75rem; padding: 6px 14px;">Next Phase</button>
+          <button id="preflight-submit-btn" type="button" class="btn-primary" style="font-size: 0.75rem; padding: 6px 16px; background: #22c55e; border-color: #16a34a; color: #fff; font-weight: 700; display: none;">Sign &amp; Proceed to Export</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Preflight History & Audit Log Viewer Modal -->
+  <div id="preflight-history-modal" class="modal-overlay hidden" style="z-index: 10060;">
+    <div class="modal glass" style="max-width: 720px; width: 94vw; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; padding: 0;">
+      <div style="padding: 14px 18px; background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.1rem;">📜</span>
+          <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-main);">Preflight Checklist Audit History</h3>
+        </div>
+        <button id="preflight-history-close-btn" type="button" class="close-btn" style="font-size: 1.2rem;">&times;</button>
+      </div>
+      <div style="padding: 12px 18px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border-color); display: flex; gap: 10px; align-items: center;">
+        <input id="preflight-history-search-input" type="text" placeholder="Search by Pilot Name, LAANC Code, or KMZ Filename..." style="flex: 1; font-size: 0.75rem; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.06); color: var(--text-main);" />
+        <button id="preflight-history-refresh-btn" type="button" class="btn-secondary" style="font-size: 0.72rem; padding: 6px 10px;">Refresh</button>
+      </div>
+      <div id="preflight-history-list" style="padding: 16px 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 10px;">
+        <!-- Log entries populated dynamically -->
+      </div>
+    </div>
+  </div>
+
   <!-- Interactive UI Spotlight Tour Overlay & Tooltip Card -->
   <div id="tour-overlay-container" class="tour-overlay-container hidden" style="position: fixed; inset: 0; z-index: 10050; pointer-events: none;">
     <!-- Backdrop Cutout Overlay Canvas/Box -->
@@ -3875,7 +4019,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.139.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.140.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -3936,6 +4080,12 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.140.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>📋 Database-Backed Preflight Safety Checklist Engine &amp; Export Gate (Closes #99):</strong> Integrated a multi-step interactive preflight safety checklist gate and SQLite compliance audit log engine. Verifies 5-phase mission safety (Pre-arrival, Unpacking, Hardware Inspection, Airspace &amp; Weather, Power-On Calibration), performs automated NEXRAD weather alert &amp; LAANC authorization checks, requires a digital signature from the Pilot-in-Command, and gates mission exports (Export KMZ, Direct-to-Controller Sync). Includes offline standalone operation with local storage queue sync.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.139.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">

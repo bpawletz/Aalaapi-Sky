@@ -1,3 +1,17 @@
+## [1.140.0] - 2026-10-04
+
+### Added
+- **Database-Backed Preflight Safety Checklist Engine & Export Gate (Closes #99)**:
+  - **SQLite Preflight Checklist Engine (`tools/companion/checklist_db.js`, `tools/companion/checklist_db.test.js`, `tools/companion/server.js`)**:
+    - Created a persistent SQLite database (`scratch/checklist.db`) powering master safety checklist templates and compliance execution audit logs.
+    - REST API Endpoints: `GET /api/checklist/template` (returns master phase/item matrix), `POST /api/checklist/submit` (validates and records signed audit logs with operator identity, airspace authorization tokens, auto-check statuses, and digital signatures), `GET /api/checklist/history` (archival reporting), and `GET /api/checklist/autochecks` (weather & airspace status).
+    - Features offline fallback with built-in item matrix and local queue synchronization when Aalaapi Bridge daemon is offline.
+  - **Interactive Multi-Step Preflight Gate Modal & Audit UI (`index_template.html`, `index.css`, `index.js`)**:
+    - Interactive 5-phase safety gate modal (`#preflight-modal`) enforcing FAA Part 107 rules, airframe/battery hardware seating checks, weather/NEXRAD risk acknowledgements, and LAANC authorization matching prior to locking/exporting flight missions.
+    - Enforces gate validation on **Export KMZ** (`#download-btn`) and **Direct Sync to RC 2** (`#direct-rc2-sync-btn`).
+    - Digital Signature block for Pilot in Command with canvas drawing pad and typed operator verification.
+    - Preflight Gate toggle in settings (`#preflight-gate-toggle`) and preflight history viewer.
+
 ## [1.139.0] - 2026-10-04
 
 ### Added
