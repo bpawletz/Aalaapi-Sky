@@ -231,17 +231,6 @@
     "gid": "6/6732"
   },
   {
-    "notam_id": "6/6672",
-    "facility": "ZLC",
-    "state": "MT",
-    "type": "HAZARDS",
-    "description": "4NM SW HELENA, MT, Friday, October 2, 2026 through Sunday, October 4, 2026 UTC",
-    "mod_date": "10/01/2026 18:41:00",
-    "mod_abs_time": "202610011841",
-    "is_new": "N",
-    "gid": "6/6672"
-  },
-  {
     "notam_id": "6/6665",
     "facility": "ZSE",
     "state": "CA",
@@ -306,17 +295,6 @@
     "mod_abs_time": "202610011317",
     "is_new": "N",
     "gid": "6/6576"
-  },
-  {
-    "notam_id": "6/6433",
-    "facility": "ZFW",
-    "state": "TX",
-    "type": "UAS PUBLIC GATHERING",
-    "description": "Arlington, TX, Saturday, October 3, 2026 through Sunday, October 4, 2026 UTC",
-    "mod_date": "09/30/2026 17:23:00",
-    "mod_abs_time": "202609301723",
-    "is_new": "N",
-    "gid": "6/6433"
   },
   {
     "notam_id": "6/6391",
@@ -438,17 +416,6 @@
     "mod_abs_time": "202609281059",
     "is_new": "N",
     "gid": "6/5822"
-  },
-  {
-    "notam_id": "6/5821",
-    "facility": "ZBW",
-    "state": "MA",
-    "type": "UAS PUBLIC GATHERING",
-    "description": "Foxborough, MA, Friday, October 2, 2026 through Sunday, October 4, 2026 UTC",
-    "mod_date": "09/28/2026 10:58:00",
-    "mod_abs_time": "202609281058",
-    "is_new": "N",
-    "gid": "6/5821"
   },
   {
     "notam_id": "6/5761",

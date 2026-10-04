@@ -1123,6 +1123,75 @@ const scenarios = [
       await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
       await page.waitForTimeout(800);
     }
+  },
+  {
+    id: 'feature_preflight_gate',
+    name: 'Database-Backed Preflight Safety Checklist Engine & Export Gate',
+    issueRef: 'Issue #99',
+    run: async (page) => {
+      // 1. Center map
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1000);
+
+      // 2. Click Preflight Gate badge to open Preflight Safety Checklist wizard modal
+      await page.evaluate(() => {
+        const btn = document.getElementById('preflight-gate-btn');
+        if (btn) btn.click();
+      });
+      await page.waitForTimeout(1500);
+
+      // 3. Step 1: Automated Checks -> Click Next Step button
+      await page.evaluate(() => {
+        const nextBtn = document.getElementById('preflight-next-btn');
+        if (nextBtn) nextBtn.click();
+      });
+      await page.waitForTimeout(1500);
+
+      // 4. Step 2: Physical Hardware Checks -> Check hardware items & Click Next Step
+      await page.evaluate(() => {
+        const cb = document.querySelector('#preflight-modal input[type="checkbox"]');
+        if (cb) cb.checked = true;
+        const nextBtn = document.getElementById('preflight-next-btn');
+        if (nextBtn) nextBtn.click();
+      });
+      await page.waitForTimeout(1500);
+
+      // 5. Step 3: Airspace & LAANC -> Fill LAANC & Click Next Step
+      await page.evaluate(() => {
+        const laanc = document.getElementById('preflight-laanc-input');
+        if (laanc) laanc.value = 'LAANC-998822';
+        const nextBtn = document.getElementById('preflight-next-btn');
+        if (nextBtn) nextBtn.click();
+      });
+      await page.waitForTimeout(1500);
+
+      // 6. Step 4: PIC Signature -> Fill operator name & sign
+      await page.evaluate(() => {
+        const op = document.getElementById('preflight-operator-input');
+        if (op) op.value = 'Pilot Jane Doe';
+        if (typeof signPreflightChecklist === 'function') {
+          signPreflightChecklist();
+        }
+      });
+      await page.waitForTimeout(2000);
+
+      // 7. Open Preflight History drawer
+      await page.evaluate(() => {
+        const histBtn = document.getElementById('preflight-history-btn');
+        if (histBtn) histBtn.click();
+      });
+      await page.waitForTimeout(2000);
+
+      // 8. Close modals and re-center map
+      await page.evaluate(() => {
+        const hist = document.getElementById('preflight-history-modal');
+        if (hist) hist.classList.add('hidden');
+        const modal = document.getElementById('preflight-modal');
+        if (modal) modal.classList.add('hidden');
+      });
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1000);
+    }
   }
 ];
 

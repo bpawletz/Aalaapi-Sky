@@ -31,6 +31,9 @@ if (!fs.existsSync(ARCHIVE_DIR)) fs.mkdirSync(ARCHIVE_DIR, { recursive: true });
 const { DiagnosticsDatabase } = require('./diagnostics_db.js');
 const diagDb = new DiagnosticsDatabase();
 
+const { ChecklistDatabase } = require('./checklist_db.js');
+const checklistDb = new ChecklistDatabase();
+
 const SCRATCH_DIR = path.resolve(__dirname, '../../scratch');
 const TagDetector = require('../wasm/tag_detector.js');
 const wireframeEngine = require('./wireframe_engine.js');
@@ -2931,6 +2934,9 @@ function printStartupBanner() {
   console.log(`  ${colors.green}${colors.bold}POST /api/process/wireframe${colors.reset}        ${colors.gray}Real-time OpenCV edge extraction & 3D wireframe projection${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}POST /api/drone/locate${colors.reset}         ${colors.gray}Rest API locate drone & inject live geo coordinates${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /api/weather/current${colors.reset}       ${colors.gray}Synchronized METAR weather & 24h solar ephemeris${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/checklist/template${colors.reset}    ${colors.gray}Master safety checklist item matrix and template categories${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}POST /api/checklist/submit${colors.reset}      ${colors.gray}Submit & record signed preflight checklist audit log${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}GET  /api/checklist/history${colors.reset}     ${colors.gray}Historical audit logs for preflight compliance reporting${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}POST /api/shutdown${colors.reset}              ${colors.gray}Cleanly terminate running companion bridge process${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /health${colors.reset}                    ${colors.gray}Service heartbeat and status ping${colors.reset}`);
 
@@ -3248,6 +3254,75 @@ const server = http.createServer(async (req, res) => {
           res.writeHead(404, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ success: false, error: 'Mission not found' }));
         }
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+      return;
+    }
+
+    // 2.6 Preflight Checklist Service (SQLite Persisted)
+    if (pathname === '/api/checklist/template' && req.method === 'GET') {
+      try {
+        const template = checklistDb.getTemplate();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, version: 1, template }));
+      } catch (err) {
+        logError('[CHECKLIST TEMPLATE ERROR]', err.message);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+      return;
+    }
+
+    if (pathname === '/api/checklist/submit' && req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const payload = body ? JSON.parse(body) : {};
+          const result = checklistDb.saveLog(payload);
+          logSuccess('[CHECKLIST SUBMIT]', `Saved preflight checklist log ${result.log_id} for ${payload.operator_name || 'operator'}`);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(result));
+        } catch (err) {
+          logError('[CHECKLIST SUBMIT ERROR]', err.message);
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    if (pathname === '/api/checklist/history' && req.method === 'GET') {
+      try {
+        const limit = parseInt(url.searchParams.get('limit') || '50', 10);
+        const offset = parseInt(url.searchParams.get('offset') || '0', 10);
+        const history = checklistDb.getHistory(limit, offset);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, count: history.length, logs: history }));
+      } catch (err) {
+        logError('[CHECKLIST HISTORY ERROR]', err.message);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+      return;
+    }
+
+    if (pathname === '/api/checklist/autochecks' && req.method === 'GET') {
+      try {
+        const laancCode = url.searchParams.get('laanc') || '';
+        const authFound = laancCode ? checklistDb.hasLaancAuth(laancCode) : false;
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: true,
+          weather: cachedWeatherTelemetry || null,
+          airspace: {
+            laanc_code: laancCode || null,
+            auth_found: authFound
+          }
+        }));
       } catch (err) {
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: false, error: err.message }));
