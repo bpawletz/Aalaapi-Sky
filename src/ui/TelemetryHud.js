@@ -209,9 +209,18 @@ function updateStatsPanel(stats) {
   const unit = (typeof getUnitSystem === 'function') ? getUnitSystem() : 'metric';
 
   if (statWps) statWps.textContent = stats.waypointsCount;
-  const captureMode = document.getElementById('capture-mode')?.value || 'stopAndShoot';
-  const photoText = (captureMode === 'video') ? "Video (Record)" : stats.photoCount;
+  const activeWps = (typeof waypoints !== 'undefined' && Array.isArray(waypoints)) ? waypoints : ((typeof generatedWaypoints !== 'undefined' && Array.isArray(generatedWaypoints)) ? generatedWaypoints : []);
+  const isHyperlapseActive = (typeof getActiveLayer === 'function' && getActiveLayer()?.pattern === 'hyperlapse') || activeWps.some(w => w && (w.isHyperlapse || w.gridType === 'hyperlapse'));
+  const captureModeVal = (typeof document !== 'undefined' && document.getElementById('capture-mode')) ? document.getElementById('capture-mode').value : 'stopAndShoot';
+  const photoText = (captureModeVal === 'video') ? "Video (Record)" : (isHyperlapseActive ? `${stats.photoCount} frames` : stats.photoCount);
   if (statPhotos) statPhotos.textContent = photoText;
+
+  // Update Section 2 Hyperlapse Frame Badge if active
+  const hlBadge = document.getElementById('hyperlapse-frame-badge');
+  if (hlBadge && isHyperlapseActive) {
+    const clipDurationSec = (stats.photoCount / 30).toFixed(1);
+    hlBadge.textContent = `${stats.photoCount} Frames (${clipDurationSec}s Clip @ 30fps)`;
+  }
 
   // Format spacing
   const lineSpacingStr = (stats.lineSpacing !== null && stats.lineSpacing !== undefined) ? formatDistance(stats.lineSpacing) : "N/A";
@@ -239,7 +248,8 @@ function updateStatsPanel(stats) {
   if (statFlightTime) statFlightTime.textContent = stats.timeStr;
 
   // Sync Header & Popover Telemetry
-  const summaryStr = `${stats.waypointsCount} WPs • ${distStr} • ${stats.timeStr}`;
+  const clipInfoStr = isHyperlapseActive ? ` (${(stats.photoCount / 30).toFixed(1)}s clip)` : '';
+  const summaryStr = `${stats.waypointsCount} WPs • ${distStr} • ${stats.timeStr}${clipInfoStr}`;
   if (headerSummaryEl) headerSummaryEl.textContent = summaryStr;
   if (sidebarSummaryText) {
     const weatherSnippet = document.getElementById('header-weather-summary')?.textContent || '☀️ Weather';

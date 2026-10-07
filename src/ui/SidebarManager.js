@@ -468,12 +468,14 @@ function togglePatternParameters() {
     'exclusion-freeform': 'Exclusion (Polygon)',
     'boundary-polygon': 'Boundary / Parcel',
     'fiducial-markers': '🎯 Fiducial / GCPs',
-    'photo-sphere': '360° Photo Sphere'
+    'photo-sphere': '360° Photo Sphere',
+    'hyperlapse': 'Hyperlapse Time-Lapse'
   };
 
   const targetSplatContainer = document.getElementById('target-splat-container');
   const towerGeometryContainer = document.getElementById('tower-geometry-container');
   const photoSphereContainer = document.getElementById('photo-sphere-container');
+  const hyperlapseContainer = document.getElementById('hyperlapse-container');
 
   const activePatternBadge = document.getElementById('active-layer-pattern-badge');
   if (activePatternBadge) {
@@ -517,6 +519,14 @@ function togglePatternParameters() {
       }
     } else {
       photoSphereContainer.classList.add('hidden');
+    }
+  }
+
+  if (hyperlapseContainer) {
+    if (gridType === 'hyperlapse') {
+      hyperlapseContainer.classList.remove('hidden');
+    } else {
+      hyperlapseContainer.classList.add('hidden');
     }
   }
 
@@ -874,6 +884,54 @@ function togglePatternParameters() {
       captureModeSelect.value = 'stopAndShoot';
     }
 
+  } else if (gridType === 'hyperlapse') {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
+    if (gridGeometrySection) {
+      gridGeometrySection.style.display = 'block';
+      gridGeometrySection.classList.remove('collapsed');
+    }
+    if (layerCardGeometry) layerCardGeometry.style.display = 'block';
+    if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "🎞️ Hyperlapse Transit Path";
+    if (layerCardFlight) layerCardFlight.style.display = 'block';
+    if (layerCardOptics) layerCardOptics.style.display = 'block';
+    if (layerCardModes) layerCardModes.style.display = 'block';
+    if (layerCardBoundary) {
+      layerCardBoundary.classList.add('hidden');
+      layerCardBoundary.style.display = 'none';
+    }
+    if (layerCardFiducial) {
+      layerCardFiducial.classList.add('hidden');
+      layerCardFiducial.style.display = 'none';
+    }
+    if (altitudeControlGroup) altitudeControlGroup.style.display = 'block';
+    if (hyperlapseContainer) hyperlapseContainer.classList.remove('hidden');
+    if (photoSphereContainer) photoSphereContainer.classList.add('hidden');
+    if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
+    if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
+    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
+    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
+    if (exclusionAltContainer) exclusionAltContainer.classList.add('hidden');
+    if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
+    if (freeformInstructions) freeformInstructions.classList.add('hidden');
+    if (widthContainer) widthContainer.style.display = 'none';
+    if (heightContainer) heightContainer.style.display = 'none';
+    if (rotationContainer) rotationContainer.style.display = 'none';
+    if (frontOverlapContainer) frontOverlapContainer.style.display = 'none';
+    if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
+
+    if (activeLayer) {
+      activeLayer.captureMode = 'continuous';
+      activeLayer.pathMode = 'curved';
+      activeLayer.headingMode = 'smoothTransition';
+    }
+    const layerCapSelect = document.getElementById('layer-capture-mode');
+    if (layerCapSelect) layerCapSelect.value = 'continuous';
+    const layerPathSelect = document.getElementById('layer-path-mode');
+    if (layerPathSelect) layerPathSelect.value = 'curved';
+    const layerHeadingSelect = document.getElementById('layer-heading-mode');
+    if (layerHeadingSelect) layerHeadingSelect.value = 'smoothTransition';
+
   } else {
     if (gridGeometrySection) gridGeometrySection.style.display = 'block';
     if (layerCardGeometry) layerCardGeometry.style.display = 'block';
@@ -945,7 +1003,7 @@ function togglePatternParameters() {
     }
   }
 
-  const isProcedural = (gridType !== 'freeform' && gridType !== 'road-following');
+  const isProcedural = (gridType !== 'freeform' && gridType !== 'road-following' && gridType !== 'hyperlapse');
   if (isProcedural) {
     updateGrid();
   } else {

@@ -1,3 +1,13 @@
+## [1.146.0] - 2026-10-06
+
+### Added
+- **Hyperlapse Moving Time-Lapse Flight Pattern (Closes #102)**:
+  - **First-Class Pattern Registration (`src/core/ToolRegistry.js`, `index_template.html`)**: Added `HYPERLAPSE` pattern badge (`shortcut: H`) to Section 1 pattern grid with click-to-place route drawing reusing freeform waypoint mechanics.
+  - **Section 2 Interval Optics & Dynamic Camera Sweep Controls**: Integrated **Interval Capture (Seconds)** slider (2s–10s, default 3s), dynamic pitch/yaw camera keyframes (`hyperlapseStartPitch`, `hyperlapseEndPitch`, `hyperlapseStartHeading`, `hyperlapseEndHeading`), and seamless Target POI focus tracking override.
+  - **Pure Waypoint & Frame Sample Generator (`src/patterns/PatternGenerators.js`)**: Pure function `generateHyperlapseWaypoints()` generating per-waypoint headings (POI tracking or shortest-path angle lerp) and pitch angles with sub-meter frame dot sampling every `speed × interval` meters along path.
+  - **WPML Export Parity (`src/export/WpmlCompiler.js`)**: Compiles DJI WPML V2 `<wpml:actionTriggerType>multipleTiming</wpml:actionTriggerType>` interval photo action groups, `<wpml:actionActuatorFunc>gimbalEvenlyRotate</wpml:actionActuatorFunc>` pitch transition groups between adjacent waypoints, curved connection paths (`useStraightLine: 0`, `toPointAndPassWithContinuityCurvature`), and `smoothTransition` locked headings.
+  - **Telemetry HUD Pill & 3D Telemetry Preview Integration (`src/ui/TelemetryHud.js`, `src/3d/FlightSimulation.js`)**: Calculates total time-lapse frames, total capture duration, and 30fps clip playback duration in Topbar HUD pill, and renders amber frame marker spheres along 3D telemetry flight lines.
+
 ## [1.145.0] - 2026-10-04
 
 ### Added

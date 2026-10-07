@@ -533,6 +533,168 @@ function generatePhotoSphereCoordinates(baseAltitude, layer) {
 }
 
 // ============================================================================
+// Hyperlapse Moving Time-Lapse Pattern Generator (v1.146.0 - Closes #102)
+// ============================================================================
+function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
+  if (!rawWps || !Array.isArray(rawWps) || rawWps.length === 0) {
+    return { waypoints: [], framePoints: [], interval: 3, frameSpacing: 0 };
+  }
+
+  const rawInterval = layer ? layer.hyperlapseInterval : 3;
+  let interval = parseInt(rawInterval, 10);
+  if (isNaN(interval) || interval < 2) interval = 2;
+  if (interval > 10) interval = 10;
+
+  const startPitch = (layer && layer.hyperlapseStartPitch !== undefined && !isNaN(layer.hyperlapseStartPitch)) ? parseInt(layer.hyperlapseStartPitch, 10) : -15;
+  const endPitch = (layer && layer.hyperlapseEndPitch !== undefined && !isNaN(layer.hyperlapseEndPitch)) ? parseInt(layer.hyperlapseEndPitch, 10) : -15;
+
+  const headingMode = (layer && layer.hyperlapseHeadingMode) ? layer.hyperlapseHeadingMode : 'path';
+  const startHeading = (layer && layer.hyperlapseStartHeading !== undefined && !isNaN(layer.hyperlapseStartHeading)) ? parseFloat(layer.hyperlapseStartHeading) % 360 : 0;
+  const endHeading = (layer && layer.hyperlapseEndHeading !== undefined && !isNaN(layer.hyperlapseEndHeading)) ? parseFloat(layer.hyperlapseEndHeading) % 360 : 90;
+
+  const targetPoi = (layer && (layer.hyperlapseFocusPoi || layer.headingMode === 'towardPOI') && typeof getTargetPoiCoordinates === 'function')
+    ? getTargetPoiCoordinates(null, layer)
+    : null;
+
+  // Calculate cumulative distances along waypoints
+  const cumDists = [0];
+  let totalDist = 0;
+  for (let i = 1; i < rawWps.length; i++) {
+    const p1 = rawWps[i - 1];
+    const p2 = rawWps[i];
+    let d = 0;
+    if (p1.x !== undefined && p2.x !== undefined) {
+      d = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+    } else if (p1.lat !== undefined && p2.lat !== undefined && typeof haversineDistance === 'function') {
+      d = haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon);
+    }
+    totalDist += d;
+    cumDists.push(totalDist);
+  }
+
+  function lerpAngleShortest(a, b, t) {
+    let diff = (b - a) % 360;
+    if (diff > 180) diff -= 360;
+    if (diff < -180) diff += 360;
+    let val = (a + diff * t) % 360;
+    if (val < 0) val += 360;
+    return val;
+  }
+
+  function getBearingBetween(p1, p2) {
+    if (!p1 || !p2) return 0;
+    if (p1.lat !== undefined && p2.lat !== undefined) {
+      const lat1 = (p1.lat * Math.PI) / 180;
+      const lat2 = (p2.lat * Math.PI) / 180;
+      const dLon = ((p2.lon !== undefined ? p2.lon : p2.lng) - (p1.lon !== undefined ? p1.lon : p1.lng)) * Math.PI / 180;
+      const y = Math.sin(dLon) * Math.cos(lat2);
+      const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+      let brg = Math.atan2(y, x) * 180 / Math.PI;
+      return ((brg % 360) + 360) % 360;
+    }
+    return 0;
+  }
+
+  // Generate per-waypoint parameters
+  const waypoints = rawWps.map((wp, idx) => {
+    const t = totalDist > 0 ? cumDists[idx] / totalDist : (rawWps.length > 1 ? idx / (rawWps.length - 1) : 0);
+    let pitch, heading;
+
+    if (targetPoi) {
+      heading = getBearingBetween(wp, targetPoi);
+      pitch = (typeof calculate3DPoiPitch === 'function') ? calculate3DPoiPitch(wp, targetPoi, wp.alt || altitude) : -45;
+    } else {
+      pitch = Math.round(startPitch + (endPitch - startPitch) * t);
+      if (headingMode === 'keyframes') {
+        heading = lerpAngleShortest(startHeading, endHeading, t);
+      } else {
+        // Follow flight path tangent
+        let inBrg = null;
+        let outBrg = null;
+        if (idx > 0) inBrg = getBearingBetween(rawWps[idx - 1], wp);
+        if (idx < rawWps.length - 1) outBrg = getBearingBetween(wp, rawWps[idx + 1]);
+
+        if (inBrg !== null && outBrg !== null) {
+          heading = lerpAngleShortest(inBrg, outBrg, 0.5);
+        } else if (outBrg !== null) {
+          heading = outBrg;
+        } else if (inBrg !== null) {
+          heading = inBrg;
+        } else {
+          heading = 0;
+        }
+      }
+    }
+
+    return {
+      ...wp,
+      alt: wp.alt !== undefined ? wp.alt : altitude,
+      pitch: pitch,
+      heading: Math.round(heading * 10) / 10,
+      headingMode: 'smoothTransition',
+      turnMode: 'inherit',
+      gridType: 'hyperlapse',
+      layerPattern: 'hyperlapse',
+      isHyperlapse: true,
+      skipPhoto: true,
+      hyperlapseInterval: interval
+    };
+  });
+
+  // Sample frame photo points along path every (speed * interval) meters
+  const framePoints = [];
+  const effectiveSpeed = Math.max(0.2, speed || 4);
+  const frameSpacing = Math.max(0.2, effectiveSpeed * interval);
+
+  if (waypoints.length >= 2 && totalDist > 0) {
+    let currentDist = 0;
+    while (currentDist <= totalDist + 0.01) {
+      let segIdx = 0;
+      while (segIdx < cumDists.length - 2 && cumDists[segIdx + 1] < currentDist) {
+        segIdx++;
+      }
+      const pA = waypoints[segIdx];
+      const pB = waypoints[segIdx + 1] || pA;
+      const segLen = cumDists[segIdx + 1] - cumDists[segIdx];
+      const segT = segLen > 0 ? Math.min(1, Math.max(0, (currentDist - cumDists[segIdx]) / segLen)) : 0;
+      const globalT = currentDist / totalDist;
+
+      const fLat = pA.lat + (pB.lat - pA.lat) * segT;
+      const fLon = pA.lon + (pB.lon - pA.lon) * segT;
+      const fAlt = pA.alt + (pB.alt - pA.alt) * segT;
+      const fX = pA.x !== undefined && pB.x !== undefined ? pA.x + (pB.x - pA.x) * segT : 0;
+      const fY = pA.y !== undefined && pB.y !== undefined ? pA.y + (pB.y - pA.y) * segT : 0;
+
+      let fPitch, fHeading;
+      if (targetPoi) {
+        const samplePt = { lat: fLat, lon: fLon, x: fX, y: fY, alt: fAlt };
+        fHeading = getBearingBetween(samplePt, targetPoi);
+        fPitch = (typeof calculate3DPoiPitch === 'function') ? calculate3DPoiPitch(samplePt, targetPoi, fAlt) : -45;
+      } else {
+        fPitch = Math.round(startPitch + (endPitch - startPitch) * globalT);
+        fHeading = lerpAngleShortest(pA.heading || 0, pB.heading || 0, segT);
+      }
+
+      framePoints.push({
+        lat: fLat,
+        lon: fLon,
+        x: fX,
+        y: fY,
+        alt: fAlt,
+        pitch: fPitch,
+        heading: Math.round(fHeading * 10) / 10,
+        distMeters: currentDist,
+        isHyperlapseFrame: true
+      });
+
+      currentDist += frameSpacing;
+    }
+  }
+
+  return { waypoints, framePoints, interval, frameSpacing };
+}
+
+// ============================================================================
 // Target Splat 3D Frustum Culling & Geometry Engine (v1.77.0)
 // ============================================================================
 
