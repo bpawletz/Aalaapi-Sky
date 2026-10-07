@@ -650,7 +650,7 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
         fillOpacity: 0.10
       }).addTo(map);
     }
-  } else if (waypoints.length === 0 || gridType === 'road-following' || gridType === 'freeform' || gridType === 'exclusion-box' || gridType === 'exclusion-freeform') {
+  } else if (waypoints.length === 0 || gridType === 'road-following' || gridType === 'freeform' || gridType === 'hyperlapse' || gridType === 'exclusion-box' || gridType === 'exclusion-freeform') {
     // No boundary overlay when no waypoints are active or for road-following/freeform/exclusion
   } else if (gridType === 'photo-sphere') {
     const sphereRadius = Math.max(8, (waypoints[0]?.alt || 30) * 0.4);
@@ -1226,6 +1226,12 @@ function updateMapLegend() {
       title = "Mission Layers";
       itemsHtml = `
         <div class="legend-item"><span class="legend-color" style="background-color: #06b6d4;"></span> Manual Waypoint</div>
+      `;
+    } else if (gridType === 'hyperlapse') {
+      title = "Hyperlapse";
+      itemsHtml = `
+        <div class="legend-item"><span class="legend-color" style="background-color: #f59e0b;"></span> Route Waypoint</div>
+        <div class="legend-item"><span class="legend-color" style="background-color: #f59e0b; border: 1px dashed rgba(255,255,255,0.6);"></span> Interval Photo Frame</div>
       `;
     } else if (gridType === 'road-following') {
       title = "Mission Layers";
@@ -1824,7 +1830,7 @@ function addFreeformWaypoint(lat, lng) {
     idx: idx,
     layerId: activeLayer ? activeLayer.id : null,
     layerName: activeLayer ? activeLayer.name : null,
-    layerPattern: 'freeform',
+    layerPattern: activeLayer ? activeLayer.pattern : 'freeform',
     layerHeadingMode: activeLayer ? (activeLayer.headingMode || 'inherit') : 'inherit',
     targetPoiId: (activeLayer && activeLayer.targetPoiId) ? activeLayer.targetPoiId : null,
     origLat: lat,

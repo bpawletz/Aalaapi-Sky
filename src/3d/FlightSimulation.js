@@ -589,6 +589,22 @@ function recreate3DWaypointsAndPaths() {
     });
   }
 
+  // Plot Hyperlapse Frame Marker Spheres (v1.146.0)
+  const activeLayerFor3D = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  if (activeLayerFor3D && activeLayerFor3D.pattern === 'hyperlapse' && Array.isArray(activeLayerFor3D.photos) && activeLayerFor3D.photos.length > 0) {
+    const frameMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b, wireframe: false });
+    const frameGeom = new THREE.SphereGeometry(0.8, 8, 8);
+    const maxFrames = 2000;
+    const step = Math.max(1, Math.ceil(activeLayerFor3D.photos.length / maxFrames));
+    for (let fIdx = 0; fIdx < activeLayerFor3D.photos.length; fIdx += step) {
+      const fPt = activeLayerFor3D.photos[fIdx];
+      if (!fPt) continue;
+      const fMesh = new THREE.Mesh(frameGeom, frameMat);
+      fMesh.position.set(fPt.x, fPt.alt || 50, -fPt.y);
+      waypointsGroup.add(fMesh);
+    }
+  }
+
   threeScene.add(waypointsGroup);
   threeScene.add(pathsGroup);
   threeScene.add(groundLinesGroup);

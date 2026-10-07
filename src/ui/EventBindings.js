@@ -865,6 +865,80 @@ function initUIEventListeners() {
   };
   setupPhotoSphereRingListeners();
 
+  // Hyperlapse Moving Time-Lapse Control Listeners (v1.146.0 - Closes #102)
+  const setupHyperlapseListeners = () => {
+    const hlInterval = document.getElementById('hyperlapse-interval');
+    const hlIntervalVal = document.getElementById('hyperlapse-interval-val');
+    const hlStartPitch = document.getElementById('hyperlapse-start-pitch');
+    const hlEndPitch = document.getElementById('hyperlapse-end-pitch');
+    const hlHeadingMode = document.getElementById('hyperlapse-heading-mode');
+    const hlStartHeading = document.getElementById('hyperlapse-start-heading');
+    const hlEndHeading = document.getElementById('hyperlapse-end-heading');
+    const hlKeyframesBox = document.getElementById('hyperlapse-heading-keyframes-box');
+    const hlUndoBtn = document.getElementById('hyperlapse-undo-btn');
+    const hlClearBtn = document.getElementById('hyperlapse-clear-btn');
+
+    const updateHyperlapse = () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (!activeLayer) return;
+      if (hlInterval) {
+        const val = parseInt(hlInterval.value, 10) || 3;
+        activeLayer.hyperlapseInterval = val;
+        if (hlIntervalVal) hlIntervalVal.textContent = `${val} s`;
+      }
+      if (hlStartPitch) activeLayer.hyperlapseStartPitch = parseInt(hlStartPitch.value, 10) || -15;
+      if (hlEndPitch) activeLayer.hyperlapseEndPitch = parseInt(hlEndPitch.value, 10) || -15;
+      if (hlHeadingMode) {
+        activeLayer.hyperlapseHeadingMode = hlHeadingMode.value;
+        if (hlKeyframesBox) {
+          if (hlHeadingMode.value === 'keyframes') {
+            hlKeyframesBox.classList.remove('hidden');
+          } else {
+            hlKeyframesBox.classList.add('hidden');
+          }
+        }
+      }
+      if (hlStartHeading) activeLayer.hyperlapseStartHeading = parseFloat(hlStartHeading.value) || 0;
+      if (hlEndHeading) activeLayer.hyperlapseEndHeading = parseFloat(hlEndHeading.value) || 90;
+
+      updateGrid();
+      updateMapLegend();
+      saveAllSettingsToLocalStorage();
+    };
+
+    [hlInterval, hlStartPitch, hlEndPitch, hlHeadingMode, hlStartHeading, hlEndHeading].forEach(el => {
+      if (el) {
+        el.addEventListener('input', updateHyperlapse);
+        el.addEventListener('change', updateHyperlapse);
+      }
+    });
+
+    if (hlUndoBtn) {
+      hlUndoBtn.addEventListener('click', () => {
+        const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+        if (activeLayer && Array.isArray(activeLayer.freeformWaypoints) && activeLayer.freeformWaypoints.length > 0) {
+          activeLayer.freeformWaypoints.pop();
+          updateGrid();
+          updateMapLegend();
+          saveAllSettingsToLocalStorage();
+        }
+      });
+    }
+
+    if (hlClearBtn) {
+      hlClearBtn.addEventListener('click', () => {
+        const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+        if (activeLayer) {
+          activeLayer.freeformWaypoints = [];
+          updateGrid();
+          updateMapLegend();
+          saveAllSettingsToLocalStorage();
+        }
+      });
+    }
+  };
+  setupHyperlapseListeners();
+
   // Handle Camera Model preset change
   const cameraModelEl = document.getElementById('camera-model');
   const droneModelEl = document.getElementById('drone-model');

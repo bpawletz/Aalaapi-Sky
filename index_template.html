@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.145.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.146.0</span></h1>
 
 
 
@@ -228,6 +228,7 @@
               <option value="multi-orbit">3D Object (Multi-Tiered Orbit)</option>
               <option value="tower">3D Structure (Tower Audit)</option>
               <option value="photo-sphere">360° Pano (Photo Sphere)</option>
+              <option value="hyperlapse">🎞️ Hyperlapse (Interval Time-Lapse)</option>
               <option value="grid-orbit-combo">2D + 3D Hybrid (Grid + Orbit Combo)</option>
               <option value="grid-multi-orbit-combo">2D + 3D Hybrid (Grid + Multi-Orbit)</option>
               <option value="freeform">Freeform Flight Plan (Manual Waypoints)</option>
@@ -297,6 +298,16 @@
                   <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
                 </svg>
                 <span>360 Pano</span>
+              </div>
+              <div class="pattern-card" data-value="hyperlapse" title="Hyperlapse (Interval Moving Time-Lapse)">
+                <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 17l6-6 4 4 6-8" stroke-dasharray="2,2"/>
+                  <circle cx="4" cy="17" r="2" fill="currentColor"/>
+                  <circle cx="10" cy="11" r="2" fill="currentColor"/>
+                  <circle cx="14" cy="15" r="2" fill="currentColor"/>
+                  <circle cx="20" cy="7" r="2" fill="currentColor"/>
+                </svg>
+                <span>Hyperlapse</span>
               </div>
               <div class="pattern-card" data-value="grid-orbit-combo" title="2D + 3D Hybrid (Grid + Orbit Combo)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -856,6 +867,85 @@
             <div style="display: flex; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 6px; padding: 6px 8px; font-size: 0.72rem; color: #34d399;">
               <span style="font-size: 0.9rem;">🛡️</span>
               <span><strong>Stop &amp; Shoot Enforced:</strong> Mandatory &ge; 2.0s hover settling per shot prevents rotational motion blur during capture.</span>
+            </div>
+          </div>
+
+          <!-- Hyperlapse Moving Time-Lapse Controls & Info Card (v1.146.0) -->
+          <div id="hyperlapse-container" class="control-group hidden" style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 12px; margin-top: 10px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <strong style="color: #f59e0b; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 17l6-6 4 4 6-8" stroke-dasharray="2,2"/>
+                  <circle cx="4" cy="17" r="2" fill="currentColor"/>
+                  <circle cx="10" cy="11" r="2" fill="currentColor"/>
+                  <circle cx="14" cy="15" r="2" fill="currentColor"/>
+                  <circle cx="20" cy="7" r="2" fill="currentColor"/>
+                </svg>
+                🎞️ Hyperlapse Moving Time-Lapse
+              </strong>
+              <span id="hyperlapse-frame-badge" class="badge" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; font-size: 0.68rem; padding: 2px 7px; border-radius: 4px; font-weight: 700;">0 Frames Total</span>
+            </div>
+            <div style="font-size: 0.74rem; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4;">
+              Click on the map to place waypoints forming your hyperlapse transit route. The aircraft shoots interval photos continuously while flying smoothly between points.
+            </div>
+
+            <!-- Interval Capture Slider -->
+            <div class="control-group" style="margin-bottom: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <label for="hyperlapse-interval" style="font-size: 0.75rem; color: var(--text-main); font-weight: 600; margin: 0;">Interval Capture (Seconds)</label>
+                <span id="hyperlapse-interval-val" style="font-size: 0.75rem; color: #f59e0b; font-weight: 700;">3 s</span>
+              </div>
+              <input type="range" id="hyperlapse-interval" class="form-range" min="2" max="10" step="1" value="3" style="accent-color: #f59e0b;">
+            </div>
+
+            <!-- Dynamic Camera Sweep Keyframes -->
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 10px; margin-bottom: 10px;">
+              <div style="font-size: 0.72rem; font-weight: 700; color: #f59e0b; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
+                <span>📷 Dynamic Camera Sweep Keyframes</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.72rem; margin-bottom: 6px;">
+                <div>
+                  <label for="hyperlapse-start-pitch" style="display: block; color: var(--text-muted); font-size: 0.68rem; margin-bottom: 2px;">Start Pitch (°)</label>
+                  <input type="number" id="hyperlapse-start-pitch" class="form-control form-control-sm" min="-90" max="0" value="-15" style="font-size: 0.72rem; padding: 2px 6px;">
+                </div>
+                <div>
+                  <label for="hyperlapse-end-pitch" style="display: block; color: var(--text-muted); font-size: 0.68rem; margin-bottom: 2px;">End Pitch (°)</label>
+                  <input type="number" id="hyperlapse-end-pitch" class="form-control form-control-sm" min="-90" max="0" value="-15" style="font-size: 0.72rem; padding: 2px 6px;">
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.72rem;">
+                <div>
+                  <label for="hyperlapse-heading-mode" style="display: block; color: var(--text-muted); font-size: 0.68rem; margin-bottom: 2px;">Heading Mode</label>
+                  <select id="hyperlapse-heading-mode" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 2px 6px;">
+                    <option value="path" selected>Follow Flight Path</option>
+                    <option value="keyframes">Keyframe Interpolation</option>
+                  </select>
+                </div>
+                <div id="hyperlapse-heading-keyframes-box" class="hidden">
+                  <div style="display: flex; gap: 4px;">
+                    <div>
+                      <label for="hyperlapse-start-heading" style="display: block; color: var(--text-muted); font-size: 0.65rem; margin-bottom: 2px;">Start Yaw</label>
+                      <input type="number" id="hyperlapse-start-heading" class="form-control form-control-sm" min="0" max="360" value="0" style="font-size: 0.70rem; padding: 2px 4px;">
+                    </div>
+                    <div>
+                      <label for="hyperlapse-end-heading" style="display: block; color: var(--text-muted); font-size: 0.65rem; margin-bottom: 2px;">End Yaw</label>
+                      <input type="number" id="hyperlapse-end-heading" class="form-control form-control-sm" min="0" max="360" value="90" style="font-size: 0.70rem; padding: 2px 4px;">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Target POI Notice -->
+            <div style="display: flex; align-items: center; gap: 6px; background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 6px; padding: 6px 8px; font-size: 0.72rem; color: var(--accent-cyan); margin-bottom: 10px;">
+              <span style="font-size: 0.9rem;">🎯</span>
+              <span><strong>Focus Target POI:</strong> Select a Target POI above to automatically override camera pitch &amp; yaw keyframes and lock focus on a subject.</span>
+            </div>
+
+            <!-- Action buttons -->
+            <div style="display: flex; gap: 6px;">
+              <button type="button" id="hyperlapse-undo-btn" class="btn btn-secondary btn-sm" style="flex: 1; padding: 4px 6px; font-size: 0.72rem;">↩️ Undo Point</button>
+              <button type="button" id="hyperlapse-clear-btn" class="btn btn-danger btn-sm" style="flex: 1; padding: 4px 6px; font-size: 0.72rem;">🗑️ Clear Path</button>
             </div>
           </div>
 
@@ -2917,6 +3007,14 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #f59e0b; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🎞️ Hyperlapse Moving Time-Lapse Pattern (v1.146.0) (Closes #102)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Introduced a dedicated <strong>Hyperlapse</strong> flight pattern for automated moving time-lapse captures! Click waypoints on the map to define a transit route, adjust interval photo capture (2s–10s slider), and configure dynamic camera sweep keyframes or target POI tracking. Exports continuous DJI WPML V2 <code>multipleTiming</code> action groups and smooth <code>gimbalEvenlyRotate</code> pitch transitions with curved flight paths (<code>useStraightLine: 0</code>). Real-time telemetry calculations display total frames, capture duration, and estimated 30fps clip playback length in the Topbar HUD pill, paired with amber frame marker spheres in the 3D Telemetry Preview.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🏗️ Plane-Aware 3D Edge Finder &amp; Surface Extraction (v1.145.0) (Closes #122)
@@ -4088,7 +4186,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.145.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.146.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -4149,6 +4247,12 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.146.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🎞️ Hyperlapse Moving Time-Lapse Pattern (Closes #102):</strong> Added dedicated <code>HYPERLAPSE</code> flight pattern with click-to-place route drawing, configurable 2s–10s photo interval capture slider, dynamic pitch/yaw camera keyframes and Target POI focus tracking. Compiles continuous WPML <code>multipleTiming</code> action groups, <code>gimbalEvenlyRotate</code> pitch sweep transitions, curved <code>useStraightLine: 0</code> flight lines, 30fps clip duration estimations in Telemetry HUD, and amber frame marker spheres in 3D preview.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.145.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">

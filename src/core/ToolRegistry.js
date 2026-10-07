@@ -62,6 +62,15 @@ const FLIGHT_TOOLS = {
     description: '360° Equirectangular Photo Sphere panorama sequence (static position with yaw & gimbal pitch sequence)',
     propertyGroups: ['photo-sphere-geometry', 'altitude', 'speed']
   },
+  'hyperlapse': {
+    id: 'hyperlapse',
+    label: 'Hyperlapse',
+    category: 'cinematic',
+    icon: 'hyperlapse',
+    shortcut: 'H',
+    description: 'Moving time-lapse flight pattern with continuous interval photo capture and dynamic gimbal/heading sweep',
+    propertyGroups: ['hyperlapse-geometry', 'altitude', 'speed', 'camera']
+  },
   'grid-orbit-combo': {
     id: 'grid-orbit-combo',
     label: 'Hybrid Combo',

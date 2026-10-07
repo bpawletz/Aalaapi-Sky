@@ -189,8 +189,29 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     ci = cj;
   }
 
+  const gridTypeEl = typeof document !== 'undefined' ? document.getElementById('grid-type') : null;
+  const gridType = (gridTypeEl && gridTypeEl.value) ? gridTypeEl.value : (waypoints.find(w => w && w.gridType)?.gridType || '');
+
+  // Identify hyperlapse segments in sanitizedWps
+  const hyperlapseSegments = [];
+  let currentHlSegment = null;
+  sanitizedWps.forEach((w, i) => {
+    const isH = (gridType === 'hyperlapse') || (w.isHyperlapse) || (w.gridType === 'hyperlapse') || (w.layerPattern === 'hyperlapse');
+    if (isH) {
+      if (!currentHlSegment) {
+        currentHlSegment = { startIdx: i, endIdx: i, layerId: w.layerId, interval: w.hyperlapseInterval || 3 };
+        hyperlapseSegments.push(currentHlSegment);
+      } else {
+        currentHlSegment.endIdx = i;
+      }
+    } else {
+      currentHlSegment = null;
+    }
+  });
+
   sanitizedWps.forEach((wp, idx) => {
     const waypointActions = [];
+    const isHyperlapse = (gridType === 'hyperlapse') || (wp.isHyperlapse) || (wp.gridType === 'hyperlapse') || (wp.layerPattern === 'hyperlapse');
     
     // Resolve Effective Layer & Waypoint Properties (Three-Tier Cascade: Waypoint -> Layer -> Global)
     const effectiveCaptureMode = (wp.captureMode && wp.captureMode !== 'inherit')
@@ -208,9 +229,6 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
 
     // Determine if repositioning (gimbal pitch or heading yaw) is required
     const reposInfo = checkNeedsReposition(idx, sanitizedWps);
-    
-    const gridTypeEl = typeof document !== 'undefined' ? document.getElementById('grid-type') : null;
-    const gridType = (gridTypeEl && gridTypeEl.value) ? gridTypeEl.value : (waypoints.find(w => w && w.gridType)?.gridType || '');
     const isRoadFollowing = gridType === 'road-following';
 
     // Three-Tier Hover Time Resolution:
@@ -418,8 +436,10 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     }
 
     let actionsForThisPlacemark = '';
+    const placemarkActionGroupBlocks = [];
+
     if (waypointActions.length > 0) {
-      actionsForThisPlacemark = `        <wpml:actionGroup>
+      placemarkActionGroupBlocks.push(`        <wpml:actionGroup>
           <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
           <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
           <wpml:actionGroupEndIndex>${idx}</wpml:actionGroupEndIndex>
@@ -428,7 +448,68 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
             <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
           </wpml:actionTrigger>
 ${waypointActions.join('\n')}
-        </wpml:actionGroup>\n`;
+        </wpml:actionGroup>`);
+    }
+
+    if (isHyperlapse) {
+      const seg = hyperlapseSegments.find(s => s.startIdx === idx && s.endIdx > s.startIdx);
+      if (seg) {
+        const segInterval = (seg.interval !== undefined && !isNaN(seg.interval)) ? seg.interval : 3;
+        placemarkActionGroupBlocks.push(`        <wpml:actionGroup>
+          <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>${seg.startIdx}</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>${seg.endIdx}</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>multipleTiming</wpml:actionTriggerType>
+            <wpml:actionTriggerParam>${segInterval}</wpml:actionTriggerParam>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>`);
+      }
+
+      const inSeg = hyperlapseSegments.find(s => idx >= s.startIdx && idx < s.endIdx);
+      if (inSeg && sanitizedWps[idx + 1]) {
+        const nextWp = sanitizedWps[idx + 1];
+        let nextPitch;
+        const rawNextPitch = nextWp.pitch !== undefined ? nextWp.pitch : (wpLayer && wpLayer.gimbalPitch !== undefined ? wpLayer.gimbalPitch : gimbalPitch);
+        if (rawNextPitch === 'auto' || (typeof rawNextPitch === 'string' && rawNextPitch.toLowerCase() === 'auto')) {
+          const targetPoi = (typeof getTargetPoiCoordinates === 'function') ? getTargetPoiCoordinates(nextWp, wpLayer) : null;
+          nextPitch = (typeof calculate3DPoiPitch === 'function') ? calculate3DPoiPitch(nextWp, targetPoi, nextWp.alt !== undefined ? nextWp.alt : altitude) : -45;
+        } else {
+          nextPitch = parseGimbalPitch(rawNextPitch, -60);
+        }
+
+        placemarkActionGroupBlocks.push(`        <wpml:actionGroup>
+          <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>${idx + 1}</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>betweenAdjacentPoints</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>gimbalEvenlyRotate</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:gimbalPitchRotateAngle>${nextPitch}</wpml:gimbalPitchRotateAngle>
+              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
+              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>`);
+      }
+    }
+
+    if (placemarkActionGroupBlocks.length > 0) {
+      actionsForThisPlacemark = placemarkActionGroupBlocks.join('\n') + '\n';
     }
 
     // Determine heading mode and angle for this waypoint (Tier 3: wp -> Tier 2: layer -> Tier 1: global)
@@ -463,7 +544,7 @@ ${waypointActions.join('\n')}
     }
 
     if (wpMode !== 'inherit') {
-      if (wpMode === 'custom' || wpMode === 'smoothTransition' || ((gridType === 'target-splat' || gridType === 'exclusion-freeform' || gridType === 'freeform' || (wpLayer && (wpLayer.pattern === 'exclusion-freeform' || wpLayer.pattern === 'freeform')) || wp.layerPattern === 'freeform' || wp.layerPattern === 'exclusion-freeform' || (wp.gridType && (wp.gridType === 'freeform' || wp.gridType === 'exclusion-freeform'))) && wpMode === 'followWayline')) {
+      if (wpMode === 'custom' || wpMode === 'smoothTransition' || ((gridType === 'hyperlapse' || gridType === 'target-splat' || gridType === 'exclusion-freeform' || gridType === 'freeform' || (wpLayer && (wpLayer.pattern === 'hyperlapse' || wpLayer.pattern === 'exclusion-freeform' || wpLayer.pattern === 'freeform')) || wp.layerPattern === 'hyperlapse' || wp.layerPattern === 'freeform' || wp.layerPattern === 'exclusion-freeform' || (wp.gridType && (wp.gridType === 'hyperlapse' || wp.gridType === 'freeform' || wp.gridType === 'exclusion-freeform'))) && wpMode === 'followWayline')) {
         actualHeadingMode = 'smoothTransition';
         actualHeadingAngle = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
       } else {
@@ -481,7 +562,7 @@ ${waypointActions.join('\n')}
         }
       }
     } else {
-      if ((gridType === 'freeform' || gridType === 'exclusion-freeform' || gridType === 'target-splat' || gridType === 'road-following' || gridType === 'photo-sphere' || wp.isPhotoSphere || wp.isRoadDroneWaypoint || wp.layerPattern === 'freeform' || wp.layerPattern === 'exclusion-freeform' || (wp.gridType && (wp.gridType === 'freeform' || wp.gridType === 'exclusion-freeform')) || (wpLayer && (wpLayer.pattern === 'freeform' || wpLayer.pattern === 'exclusion-freeform')))) {
+      if ((gridType === 'hyperlapse' || gridType === 'freeform' || gridType === 'exclusion-freeform' || gridType === 'target-splat' || gridType === 'road-following' || gridType === 'photo-sphere' || wp.isHyperlapse || wp.isPhotoSphere || wp.isRoadDroneWaypoint || wp.layerPattern === 'hyperlapse' || wp.layerPattern === 'freeform' || wp.layerPattern === 'exclusion-freeform' || (wp.gridType && (wp.gridType === 'hyperlapse' || wp.gridType === 'freeform' || wp.gridType === 'exclusion-freeform')) || (wpLayer && (wpLayer.pattern === 'hyperlapse' || wpLayer.pattern === 'freeform' || wpLayer.pattern === 'exclusion-freeform')))) {
         actualHeadingMode = 'smoothTransition';
         actualHeadingAngle = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
       } else if (effectiveHeadingMode === 'towardPOI') {
@@ -597,6 +678,11 @@ ${waypointActions.join('\n')}
       actualTurnMode = isConsumer 
         ? 'toPointAndStopWithContinuityCurvature'
         : 'toPointAndStopWithDiscontinuityCurvature';
+      actualUseStraightLine = 0;
+    } else if (isHyperlapse) {
+      actualTurnMode = (idx === 0 || idx === sanitizedWps.length - 1)
+        ? 'toPointAndStopWithContinuityCurvature'
+        : 'toPointAndPassWithContinuityCurvature';
       actualUseStraightLine = 0;
     } else if (isConsumer) {
       actualTurnMode = isStopAndShoot 

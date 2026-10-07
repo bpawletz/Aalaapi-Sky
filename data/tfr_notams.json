@@ -1,5 +1,291 @@
 [
   {
+    "notam_id": "6/7861",
+    "facility": "ZNY",
+    "state": "NY",
+    "type": "HAZARDS",
+    "description": "1NM SE NICHOLS, NY, Wednesday, October 7, 2026 UTC",
+    "mod_date": "10/07/2026 03:14:00",
+    "mod_abs_time": "202610070314",
+    "is_new": "Y",
+    "gid": "6/7861"
+  },
+  {
+    "notam_id": "6/7848",
+    "facility": "ZLC",
+    "state": "ID",
+    "type": "HAZARDS",
+    "description": "4NM NW OF MCCALL, ID, Wednesday, October 7, 2026 through Saturday, October 10, 2026 UTC",
+    "mod_date": "10/07/2026 01:38:00",
+    "mod_abs_time": "202610070138",
+    "is_new": "Y",
+    "gid": "6/7848"
+  },
+  {
+    "notam_id": "6/7847",
+    "facility": "ZDV",
+    "state": "CO",
+    "type": "HAZARDS",
+    "description": "40NM NW DENVER, CO, Wednesday, October 7, 2026 through Wednesday, October 21, 2026 UTC",
+    "mod_date": "10/07/2026 01:08:00",
+    "mod_abs_time": "202610070108",
+    "is_new": "Y",
+    "gid": "6/7847"
+  },
+  {
+    "notam_id": "6/7813",
+    "facility": "ZLC",
+    "state": "MT",
+    "type": "HAZARDS",
+    "description": "20NM E MISSOULA, MT, Wednesday, October 7, 2026 through Friday, October 9, 2026 UTC",
+    "mod_date": "10/06/2026 23:05:00",
+    "mod_abs_time": "202610062305",
+    "is_new": "Y",
+    "gid": "6/7813"
+  },
+  {
+    "notam_id": "6/7634",
+    "facility": "ZKC",
+    "state": "MO",
+    "type": "HAZARDS",
+    "description": "CENTRALIA, MO, Monday, October 12, 2026 UTC",
+    "mod_date": "10/06/2026 15:41:00",
+    "mod_abs_time": "202610061541",
+    "is_new": "Y",
+    "gid": "6/7634"
+  },
+  {
+    "notam_id": "6/7532",
+    "facility": "ZMP",
+    "state": "MN",
+    "type": "HAZARDS",
+    "description": "BABBITT, MN, Thursday, October 8, 2026 UTC",
+    "mod_date": "10/06/2026 12:23:00",
+    "mod_abs_time": "202610061223",
+    "is_new": "Y",
+    "gid": "6/7532"
+  },
+  {
+    "notam_id": "6/7530",
+    "facility": "ZDC",
+    "state": "NC",
+    "type": "UAS PUBLIC GATHERING",
+    "description": "Raleigh, NC, Saturday, October 10, 2026 UTC",
+    "mod_date": "10/06/2026 10:30:00",
+    "mod_abs_time": "202610061030",
+    "is_new": "Y",
+    "gid": "6/7530"
+  },
+  {
+    "notam_id": "6/7494",
+    "facility": "ZLC",
+    "state": "ID",
+    "type": "HAZARDS",
+    "description": "9NM W OF MCCALL, ID, Tuesday, October 6, 2026 through Friday, October 9, 2026 UTC",
+    "mod_date": "10/05/2026 22:24:00",
+    "mod_abs_time": "202610052224",
+    "is_new": "N",
+    "gid": "6/7494"
+  },
+  {
+    "notam_id": "6/7457",
+    "facility": "ZME",
+    "state": "LA",
+    "type": "HAZARDS",
+    "description": "PIONEER, LA, Sunday, October 11, 2026 UTC",
+    "mod_date": "10/05/2026 19:55:00",
+    "mod_abs_time": "202610051955",
+    "is_new": "N",
+    "gid": "6/7457"
+  },
+  {
+    "notam_id": "6/7456",
+    "facility": "ZAU",
+    "state": "IL",
+    "type": "SECURITY",
+    "description": "CHICAGO, IL, Sunday, October 11, 2026 Local",
+    "mod_date": "10/05/2026 19:54:00",
+    "mod_abs_time": "202610051954",
+    "is_new": "N",
+    "gid": "6/7456"
+  },
+  {
+    "notam_id": "6/7455",
+    "facility": "ZOA",
+    "state": "CA",
+    "type": "SECURITY",
+    "description": "SAN FRANCISCO, CA, Thursday, October 8, 2026 through Sunday, October 11, 2026 Local",
+    "mod_date": "10/05/2026 19:29:00",
+    "mod_abs_time": "202610051929",
+    "is_new": "N",
+    "gid": "6/7455"
+  },
+  {
+    "notam_id": "6/7427",
+    "facility": "ZHU",
+    "state": "TX",
+    "type": "VIP",
+    "description": "San Antonio, TX, Wednesday, October 7, 2026 through Wednesday, October 7, 2026 Local",
+    "mod_date": "10/05/2026 18:12:00",
+    "mod_abs_time": "202610051812",
+    "is_new": "N",
+    "gid": "6/7427"
+  },
+  {
+    "notam_id": "6/7414",
+    "facility": "ZSE",
+    "state": "OR",
+    "type": "HAZARDS",
+    "description": "25NM N MEDFORD, OR, Tuesday, October 6, 2026 through Thursday, October 8, 2026 UTC",
+    "mod_date": "10/05/2026 17:43:00",
+    "mod_abs_time": "202610051743",
+    "is_new": "N",
+    "gid": "6/7414"
+  },
+  {
+    "notam_id": "6/7372",
+    "facility": "ZOB",
+    "state": "PA",
+    "type": "UAS PUBLIC GATHERING",
+    "description": "Pittsburgh, PA, Saturday, October 10, 2026 through Sunday, October 11, 2026 UTC",
+    "mod_date": "10/05/2026 16:40:00",
+    "mod_abs_time": "202610051640",
+    "is_new": "N",
+    "gid": "6/7372"
+  },
+  {
+    "notam_id": "6/7358",
+    "facility": "ZID",
+    "state": "OH",
+    "type": "UAS PUBLIC GATHERING",
+    "description": "Cincinnati, OH, Thursday, October 8, 2026 through Sunday, October 11, 2026 UTC",
+    "mod_date": "10/05/2026 16:36:00",
+    "mod_abs_time": "202610051636",
+    "is_new": "N",
+    "gid": "6/7358"
+  },
+  {
+    "notam_id": "6/7231",
+    "facility": "ZOA",
+    "state": "CA",
+    "type": "UAS PUBLIC GATHERING",
+    "description": "Santa Clara, CA, Sunday, October 11, 2026 through Monday, October 12, 2026 UTC",
+    "mod_date": "10/05/2026 15:17:00",
+    "mod_abs_time": "202610051517",
+    "is_new": "N",
+    "gid": "6/7231"
+  },
+  {
+    "notam_id": "6/7230",
+    "facility": "ZLA",
+    "state": "CA",
+    "type": "AIR SHOWS/SPORTS",
+    "description": "Apple Valley, CA, Friday, October 9, 2026 through Saturday, October 10, 2026 UTC",
+    "mod_date": "10/05/2026 15:16:00",
+    "mod_abs_time": "202610051516",
+    "is_new": "N",
+    "gid": "6/7230"
+  },
+  {
+    "notam_id": "6/7170",
+    "facility": "ZMA",
+    "state": "FL",
+    "type": "UAS PUBLIC GATHERING",
+    "description": "Tampa, FL, Friday, October 9, 2026 through Saturday, October 10, 2026 UTC",
+    "mod_date": "10/05/2026 13:05:00",
+    "mod_abs_time": "202610051305",
+    "is_new": "N",
+    "gid": "6/7170"
+  },
+  {
+    "notam_id": "6/7168",
+    "facility": "ZFW",
+    "state": "OK",
+    "type": "AIR SHOWS/SPORTS",
+    "description": "El Reno, OK, Friday, October 9, 2026 through Saturday, October 10, 2026 UTC",
+    "mod_date": "10/05/2026 12:38:00",
+    "mod_abs_time": "202610051238",
+    "is_new": "N",
+    "gid": "6/7168"
+  },
+  {
+    "notam_id": "6/7155",
+    "facility": "ZTL",
+    "state": "AL",
+    "type": "UAS PUBLIC GATHERING",
+    "description": "Auburn, AL, Saturday, October 10, 2026 through Sunday, October 11, 2026 UTC",
+    "mod_date": "10/05/2026 11:34:00",
+    "mod_abs_time": "202610051134",
+    "is_new": "N",
+    "gid": "6/7155"
+  },
+  {
+    "notam_id": "6/7153",
+    "facility": "ZBW",
+    "state": "RI",
+    "type": "UAS PUBLIC GATHERING",
+    "description": "North Sicuate, RI, Saturday, October 10, 2026 through Monday, October 12, 2026 UTC",
+    "mod_date": "10/05/2026 11:11:00",
+    "mod_abs_time": "202610051111",
+    "is_new": "N",
+    "gid": "6/7153"
+  },
+  {
+    "notam_id": "6/7150",
+    "facility": "ZTL",
+    "state": "GA",
+    "type": "UAS PUBLIC GATHERING",
+    "description": "Atlanta, GA, Saturday, October 10, 2026 through Sunday, October 11, 2026 UTC",
+    "mod_date": "10/05/2026 10:37:00",
+    "mod_abs_time": "202610051037",
+    "is_new": "N",
+    "gid": "6/7150"
+  },
+  {
+    "notam_id": "6/7134",
+    "facility": "ZJX",
+    "state": "FL",
+    "type": "SECURITY",
+    "description": "MAYPORT, FL, Monday, October 5, 2026 through Saturday, October 10, 2026 Local",
+    "mod_date": "10/05/2026 00:23:00",
+    "mod_abs_time": "202610050023",
+    "is_new": "N",
+    "gid": "6/7134"
+  },
+  {
+    "notam_id": "6/7126",
+    "facility": "ZDC",
+    "state": "NC",
+    "type": "AIR SHOWS/SPORTS",
+    "description": "Currituck, NC, Saturday, October 10, 2026 UTC",
+    "mod_date": "10/04/2026 22:18:00",
+    "mod_abs_time": "202610042218",
+    "is_new": "N",
+    "gid": "6/7126"
+  },
+  {
+    "notam_id": "6/7125",
+    "facility": "ZDC",
+    "state": "VA",
+    "type": "AIR SHOWS/SPORTS",
+    "description": "Culpeper, VA, Saturday, October 10, 2026 UTC",
+    "mod_date": "10/04/2026 22:16:00",
+    "mod_abs_time": "202610042216",
+    "is_new": "N",
+    "gid": "6/7125"
+  },
+  {
+    "notam_id": "6/7124",
+    "facility": "ZDC",
+    "state": "VA",
+    "type": "AIR SHOWS/SPORTS",
+    "description": "Culpeper, VA, Friday, October 9, 2026 through Saturday, October 10, 2026 UTC",
+    "mod_date": "10/04/2026 22:15:00",
+    "mod_abs_time": "202610042215",
+    "is_new": "N",
+    "gid": "6/7124"
+  },
+  {
     "notam_id": "6/7106",
     "facility": "ZOA",
     "state": "NV",
@@ -7,7 +293,7 @@
     "description": "12NM W RENO, NV, Sunday, October 4, 2026 through Friday, October 9, 2026 UTC",
     "mod_date": "10/04/2026 17:29:00",
     "mod_abs_time": "202610041729",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/7106"
   },
   {
@@ -18,30 +304,8 @@
     "description": "San Antonio, TX, Wednesday, October 7, 2026 through Wednesday, October 7, 2026 Local",
     "mod_date": "10/04/2026 16:32:00",
     "mod_abs_time": "202610041632",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/7105"
-  },
-  {
-    "notam_id": "6/7096",
-    "facility": "ZNY",
-    "state": "MD",
-    "type": "VIP",
-    "description": "BALTIMORE, MD, Tuesday, October 6, 2026 Local",
-    "mod_date": "10/04/2026 15:26:00",
-    "mod_abs_time": "202610041526",
-    "is_new": "Y",
-    "gid": "6/7096"
-  },
-  {
-    "notam_id": "6/7095",
-    "facility": "ZDC",
-    "state": "MD",
-    "type": "VIP",
-    "description": "BALTIMORE, MD, Tuesday, October 6, 2026 Local",
-    "mod_date": "10/04/2026 15:25:00",
-    "mod_abs_time": "202610041525",
-    "is_new": "Y",
-    "gid": "6/7095"
   },
   {
     "notam_id": "6/7094",
@@ -51,7 +315,7 @@
     "description": "45NM NE MERCED, CA, Sunday, October 4, 2026 through Tuesday, October 20, 2026 UTC",
     "mod_date": "10/04/2026 14:00:00",
     "mod_abs_time": "202610041400",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/7094"
   },
   {
@@ -62,7 +326,7 @@
     "description": "11NM NE SANTA CLARITA, CA, Sunday, October 4, 2026 through Saturday, October 10, 2026 UTC",
     "mod_date": "10/04/2026 13:20:00",
     "mod_abs_time": "202610041320",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/7093"
   },
   {
@@ -73,63 +337,8 @@
     "description": "Anchorage, AK, Monday, October 5, 2026 through Tuesday, October 6, 2026 Local",
     "mod_date": "10/04/2026 00:35:00",
     "mod_abs_time": "202610040035",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/7062"
-  },
-  {
-    "notam_id": "6/7061",
-    "facility": "ZAN",
-    "state": "AK",
-    "type": "VIP",
-    "description": "Fairbanks, AK, Monday, October 5, 2026 Local",
-    "mod_date": "10/04/2026 00:19:00",
-    "mod_abs_time": "202610040019",
-    "is_new": "Y",
-    "gid": "6/7061"
-  },
-  {
-    "notam_id": "6/7060",
-    "facility": "ZAN",
-    "state": "AK",
-    "type": "VIP",
-    "description": "Anchorage, AK, Monday, October 5, 2026 through Monday, October 5, 2026 Local",
-    "mod_date": "10/04/2026 00:11:00",
-    "mod_abs_time": "202610040011",
-    "is_new": "Y",
-    "gid": "6/7060"
-  },
-  {
-    "notam_id": "6/7038",
-    "facility": "ZOA",
-    "state": "CA",
-    "type": "HAZARDS",
-    "description": "32NM SE SOUTH LAKE TAHOE, CA, Saturday, October 3, 2026 through Saturday, October 10, 2026 UTC",
-    "mod_date": "10/03/2026 21:50:00",
-    "mod_abs_time": "202610032150",
-    "is_new": "Y",
-    "gid": "6/7038"
-  },
-  {
-    "notam_id": "6/7029",
-    "facility": "ZLC",
-    "state": "MT",
-    "type": "HAZARDS",
-    "description": "4NM SW HELENA, MT, Sunday, October 4, 2026 through Tuesday, October 6, 2026 UTC",
-    "mod_date": "10/03/2026 17:22:00",
-    "mod_abs_time": "202610031722",
-    "is_new": "N",
-    "gid": "6/7029"
-  },
-  {
-    "notam_id": "6/7020",
-    "facility": "ZMP",
-    "state": "NE",
-    "type": "SECURITY",
-    "description": "Grand Island, NE, Monday, October 5, 2026 through Monday, October 5, 2026 Local",
-    "mod_date": "10/03/2026 14:03:00",
-    "mod_abs_time": "202610031403",
-    "is_new": "N",
-    "gid": "6/7020"
   },
   {
     "notam_id": "6/6947",
@@ -141,17 +350,6 @@
     "mod_abs_time": "202610030323",
     "is_new": "N",
     "gid": "6/6947"
-  },
-  {
-    "notam_id": "6/6935",
-    "facility": "ZMP",
-    "state": "MN",
-    "type": "SECURITY",
-    "description": "ST PAUL, MN, Sunday, October 4, 2026 Local",
-    "mod_date": "10/02/2026 20:55:00",
-    "mod_abs_time": "202610022055",
-    "is_new": "N",
-    "gid": "6/6935"
   },
   {
     "notam_id": "6/6932",
@@ -176,17 +374,6 @@
     "gid": "6/6904"
   },
   {
-    "notam_id": "6/6848",
-    "facility": "ZMP",
-    "state": "MN",
-    "type": "HAZARDS",
-    "description": "NASHWAUK, MN, Tuesday, October 6, 2026 UTC",
-    "mod_date": "10/02/2026 14:39:00",
-    "mod_abs_time": "202610021439",
-    "is_new": "N",
-    "gid": "6/6848"
-  },
-  {
     "notam_id": "6/6843",
     "facility": "ZID",
     "state": "IN",
@@ -207,28 +394,6 @@
     "mod_abs_time": "202610021209",
     "is_new": "N",
     "gid": "6/6783"
-  },
-  {
-    "notam_id": "6/6748",
-    "facility": "ZLC",
-    "state": "OR",
-    "type": "HAZARDS",
-    "description": "20 NM S PRAIRIE CITY, OR, Monday, October 5, 2026 through Thursday, October 8, 2026 UTC",
-    "mod_date": "10/02/2026 00:52:00",
-    "mod_abs_time": "202610020052",
-    "is_new": "N",
-    "gid": "6/6748"
-  },
-  {
-    "notam_id": "6/6744",
-    "facility": "ZLC",
-    "state": "MT",
-    "type": "HAZARDS",
-    "description": "8NM SW HELENA, MT, Friday, October 2, 2026 through Tuesday, October 6, 2026 UTC",
-    "mod_date": "10/01/2026 23:29:00",
-    "mod_abs_time": "202610012329",
-    "is_new": "N",
-    "gid": "6/6744"
   },
   {
     "notam_id": "6/6741",
@@ -253,39 +418,6 @@
     "gid": "6/6740"
   },
   {
-    "notam_id": "6/6732",
-    "facility": "ZTL",
-    "state": "AL",
-    "type": "HAZARDS",
-    "description": "4NM NE PELHAM, AL, Thursday, October 1, 2026 through Tuesday, October 6, 2026 UTC",
-    "mod_date": "10/01/2026 21:12:00",
-    "mod_abs_time": "202610012112",
-    "is_new": "N",
-    "gid": "6/6732"
-  },
-  {
-    "notam_id": "6/6665",
-    "facility": "ZSE",
-    "state": "CA",
-    "type": "HAZARDS",
-    "description": "8NM SE MONTAGUE, CA, Saturday, October 3, 2026 through Monday, October 5, 2026 UTC",
-    "mod_date": "10/01/2026 18:05:00",
-    "mod_abs_time": "202610011805",
-    "is_new": "N",
-    "gid": "6/6665"
-  },
-  {
-    "notam_id": "6/6664",
-    "facility": "ZMP",
-    "state": "MN",
-    "type": "SECURITY",
-    "description": "ST PAUL, MN, Tuesday, October 6, 2026 through Tuesday, October 6, 2026 Local",
-    "mod_date": "10/01/2026 17:55:00",
-    "mod_abs_time": "202610011755",
-    "is_new": "N",
-    "gid": "6/6664"
-  },
-  {
     "notam_id": "6/6656",
     "facility": "ZMP",
     "state": "MN",
@@ -295,17 +427,6 @@
     "mod_abs_time": "202610011559",
     "is_new": "N",
     "gid": "6/6656"
-  },
-  {
-    "notam_id": "6/6655",
-    "facility": "ZDC",
-    "state": "VA",
-    "type": "VIP",
-    "description": "Sterling, VA, Sunday, October 4, 2026 Local",
-    "mod_date": "10/01/2026 15:58:00",
-    "mod_abs_time": "202610011558",
-    "is_new": "N",
-    "gid": "6/6655"
   },
   {
     "notam_id": "6/6654",
@@ -319,28 +440,6 @@
     "gid": "6/6654"
   },
   {
-    "notam_id": "6/6576",
-    "facility": "ZMP",
-    "state": "NE",
-    "type": "VIP",
-    "description": "Grand Island, NE, Monday, October 5, 2026 through Monday, October 5, 2026 Local",
-    "mod_date": "10/01/2026 13:17:00",
-    "mod_abs_time": "202610011317",
-    "is_new": "N",
-    "gid": "6/6576"
-  },
-  {
-    "notam_id": "6/6391",
-    "facility": "ZKC",
-    "state": "OK",
-    "type": "HAZARDS",
-    "description": "HENNESSEY, OK, Tuesday, October 6, 2026 UTC",
-    "mod_date": "09/30/2026 16:05:00",
-    "mod_abs_time": "202609301605",
-    "is_new": "N",
-    "gid": "6/6391"
-  },
-  {
     "notam_id": "6/6191",
     "facility": "ZAB",
     "state": "NM",
@@ -352,17 +451,6 @@
     "gid": "6/6191"
   },
   {
-    "notam_id": "6/6136",
-    "facility": "ZLC",
-    "state": "NV",
-    "type": "SPACE OPERATIONS",
-    "description": "36 ZLC AIRSPACE BLACK ROCK, NV, Sunday, October 4, 2026 through Monday, October 5, 2026 UTC",
-    "mod_date": "09/29/2026 17:46:00",
-    "mod_abs_time": "202609291746",
-    "is_new": "N",
-    "gid": "6/6136"
-  },
-  {
     "notam_id": "6/6087",
     "facility": "ZAB",
     "state": "NM",
@@ -372,17 +460,6 @@
     "mod_abs_time": "202609291512",
     "is_new": "N",
     "gid": "6/6087"
-  },
-  {
-    "notam_id": "6/5995",
-    "facility": "ZLA",
-    "state": "CA",
-    "type": "SECURITY",
-    "description": "Huntington Beach, CA, Thursday, October 1, 2026 through Sunday, October 4, 2026 Local",
-    "mod_date": "09/28/2026 21:25:00",
-    "mod_abs_time": "202609282125",
-    "is_new": "N",
-    "gid": "6/5995"
   },
   {
     "notam_id": "6/5945",
@@ -418,39 +495,6 @@
     "gid": "6/5849"
   },
   {
-    "notam_id": "6/5761",
-    "facility": "ZME",
-    "state": "AR",
-    "type": "AIR SHOWS/SPORTS",
-    "description": "North Little Rock, AR, Friday, October 2, 2026 through Sunday, October 4, 2026 UTC",
-    "mod_date": "09/27/2026 19:29:00",
-    "mod_abs_time": "202609271929",
-    "is_new": "N",
-    "gid": "6/5761"
-  },
-  {
-    "notam_id": "6/5558",
-    "facility": "ZDV",
-    "state": "CO",
-    "type": "AIR SHOWS/SPORTS",
-    "description": "Grand Junction, CO, Thursday, October 1, 2026 through Sunday, October 4, 2026 UTC",
-    "mod_date": "09/25/2026 20:55:00",
-    "mod_abs_time": "202609252055",
-    "is_new": "N",
-    "gid": "6/5558"
-  },
-  {
-    "notam_id": "6/5114",
-    "facility": "ZLA",
-    "state": "CA",
-    "type": "AIR SHOWS/SPORTS",
-    "description": "HUNTINGTON BEACH, CA, Tuesday, September 29, 2026 through Sunday, October 4, 2026 Local",
-    "mod_date": "09/23/2026 18:58:00",
-    "mod_abs_time": "202609231858",
-    "is_new": "N",
-    "gid": "6/5114"
-  },
-  {
     "notam_id": "6/5082",
     "facility": "ZHU",
     "state": "TX",
@@ -471,17 +515,6 @@
     "mod_abs_time": "202609141512",
     "is_new": "N",
     "gid": "6/2853"
-  },
-  {
-    "notam_id": "6/2727",
-    "facility": "ZBW",
-    "state": "MA",
-    "type": "UAS PUBLIC GATHERING",
-    "description": "West Springfield, MA, Friday, September 18, 2026 through Monday, October 5, 2026 UTC",
-    "mod_date": "09/14/2026 10:43:00",
-    "mod_abs_time": "202609141043",
-    "is_new": "N",
-    "gid": "6/2727"
   },
   {
     "notam_id": "6/0708",
