@@ -1329,6 +1329,40 @@ const scenarios = [
       await centerMapOnPoint(page);
       await page.waitForTimeout(500);
     }
+  },
+  {
+    id: 'feature_hyperlapse',
+    name: 'Hyperlapse Flight Pattern & Gimbal Sweep (Issue #102)',
+    description: 'Generates automated hyperlapse moving time-lapse path with interval photo capture and pitch/yaw gimbal keyframe sweep.',
+    issueRef: 'Issue #102',
+    run: async (page) => {
+      // 1. Select Hyperlapse pattern
+      await selectPattern(page, 'hyperlapse');
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(600);
+
+      // 2. Add sample waypoints to hyperlapse route
+      await page.evaluate(({ baseLat, baseLon }) => {
+        if (typeof addFreeformWaypoint === 'function') {
+          addFreeformWaypoint(baseLat - 0.001, baseLon - 0.001, 50, 0, -30);
+          addFreeformWaypoint(baseLat + 0.001, baseLon + 0.001, 60, 90, -10);
+        }
+      }, { baseLat: DEFAULT_LAT, baseLon: DEFAULT_LON });
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(800);
+
+      // 3. Adjust interval slider in Section 2
+      await fillInput(page, '#hyperlapse-interval', '2');
+      await page.waitForTimeout(600);
+
+      // 4. Scroll telemetry HUD into view
+      await page.evaluate(() => {
+        const hud = document.getElementById('hyperlapse-telemetry-hud');
+        if (hud) hud.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+      await page.waitForTimeout(800);
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+    }
   }
 ];
 

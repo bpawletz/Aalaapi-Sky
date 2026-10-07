@@ -5702,7 +5702,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.145.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.146.0</span></h1>
 
 
 
@@ -5864,6 +5864,7 @@ html, body {
               <option value="multi-orbit">3D Object (Multi-Tiered Orbit)</option>
               <option value="tower">3D Structure (Tower Audit)</option>
               <option value="photo-sphere">360° Pano (Photo Sphere)</option>
+              <option value="hyperlapse">🎞️ Hyperlapse (Interval Time-Lapse)</option>
               <option value="grid-orbit-combo">2D + 3D Hybrid (Grid + Orbit Combo)</option>
               <option value="grid-multi-orbit-combo">2D + 3D Hybrid (Grid + Multi-Orbit)</option>
               <option value="freeform">Freeform Flight Plan (Manual Waypoints)</option>
@@ -5933,6 +5934,16 @@ html, body {
                   <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
                 </svg>
                 <span>360 Pano</span>
+              </div>
+              <div class="pattern-card" data-value="hyperlapse" title="Hyperlapse (Interval Moving Time-Lapse)">
+                <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 17l6-6 4 4 6-8" stroke-dasharray="2,2"/>
+                  <circle cx="4" cy="17" r="2" fill="currentColor"/>
+                  <circle cx="10" cy="11" r="2" fill="currentColor"/>
+                  <circle cx="14" cy="15" r="2" fill="currentColor"/>
+                  <circle cx="20" cy="7" r="2" fill="currentColor"/>
+                </svg>
+                <span>Hyperlapse</span>
               </div>
               <div class="pattern-card" data-value="grid-orbit-combo" title="2D + 3D Hybrid (Grid + Orbit Combo)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -6492,6 +6503,85 @@ html, body {
             <div style="display: flex; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 6px; padding: 6px 8px; font-size: 0.72rem; color: #34d399;">
               <span style="font-size: 0.9rem;">🛡️</span>
               <span><strong>Stop &amp; Shoot Enforced:</strong> Mandatory &ge; 2.0s hover settling per shot prevents rotational motion blur during capture.</span>
+            </div>
+          </div>
+
+          <!-- Hyperlapse Moving Time-Lapse Controls & Info Card (v1.146.0) -->
+          <div id="hyperlapse-container" class="control-group hidden" style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 12px; margin-top: 10px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <strong style="color: #f59e0b; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 17l6-6 4 4 6-8" stroke-dasharray="2,2"/>
+                  <circle cx="4" cy="17" r="2" fill="currentColor"/>
+                  <circle cx="10" cy="11" r="2" fill="currentColor"/>
+                  <circle cx="14" cy="15" r="2" fill="currentColor"/>
+                  <circle cx="20" cy="7" r="2" fill="currentColor"/>
+                </svg>
+                🎞️ Hyperlapse Moving Time-Lapse
+              </strong>
+              <span id="hyperlapse-frame-badge" class="badge" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; font-size: 0.68rem; padding: 2px 7px; border-radius: 4px; font-weight: 700;">0 Frames Total</span>
+            </div>
+            <div style="font-size: 0.74rem; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4;">
+              Click on the map to place waypoints forming your hyperlapse transit route. The aircraft shoots interval photos continuously while flying smoothly between points.
+            </div>
+
+            <!-- Interval Capture Slider -->
+            <div class="control-group" style="margin-bottom: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <label for="hyperlapse-interval" style="font-size: 0.75rem; color: var(--text-main); font-weight: 600; margin: 0;">Interval Capture (Seconds)</label>
+                <span id="hyperlapse-interval-val" style="font-size: 0.75rem; color: #f59e0b; font-weight: 700;">3 s</span>
+              </div>
+              <input type="range" id="hyperlapse-interval" class="form-range" min="2" max="10" step="1" value="3" style="accent-color: #f59e0b;">
+            </div>
+
+            <!-- Dynamic Camera Sweep Keyframes -->
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 10px; margin-bottom: 10px;">
+              <div style="font-size: 0.72rem; font-weight: 700; color: #f59e0b; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
+                <span>📷 Dynamic Camera Sweep Keyframes</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.72rem; margin-bottom: 6px;">
+                <div>
+                  <label for="hyperlapse-start-pitch" style="display: block; color: var(--text-muted); font-size: 0.68rem; margin-bottom: 2px;">Start Pitch (°)</label>
+                  <input type="number" id="hyperlapse-start-pitch" class="form-control form-control-sm" min="-90" max="0" value="-15" style="font-size: 0.72rem; padding: 2px 6px;">
+                </div>
+                <div>
+                  <label for="hyperlapse-end-pitch" style="display: block; color: var(--text-muted); font-size: 0.68rem; margin-bottom: 2px;">End Pitch (°)</label>
+                  <input type="number" id="hyperlapse-end-pitch" class="form-control form-control-sm" min="-90" max="0" value="-15" style="font-size: 0.72rem; padding: 2px 6px;">
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.72rem;">
+                <div>
+                  <label for="hyperlapse-heading-mode" style="display: block; color: var(--text-muted); font-size: 0.68rem; margin-bottom: 2px;">Heading Mode</label>
+                  <select id="hyperlapse-heading-mode" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 2px 6px;">
+                    <option value="path" selected>Follow Flight Path</option>
+                    <option value="keyframes">Keyframe Interpolation</option>
+                  </select>
+                </div>
+                <div id="hyperlapse-heading-keyframes-box" class="hidden">
+                  <div style="display: flex; gap: 4px;">
+                    <div>
+                      <label for="hyperlapse-start-heading" style="display: block; color: var(--text-muted); font-size: 0.65rem; margin-bottom: 2px;">Start Yaw</label>
+                      <input type="number" id="hyperlapse-start-heading" class="form-control form-control-sm" min="0" max="360" value="0" style="font-size: 0.70rem; padding: 2px 4px;">
+                    </div>
+                    <div>
+                      <label for="hyperlapse-end-heading" style="display: block; color: var(--text-muted); font-size: 0.65rem; margin-bottom: 2px;">End Yaw</label>
+                      <input type="number" id="hyperlapse-end-heading" class="form-control form-control-sm" min="0" max="360" value="90" style="font-size: 0.70rem; padding: 2px 4px;">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Target POI Notice -->
+            <div style="display: flex; align-items: center; gap: 6px; background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 6px; padding: 6px 8px; font-size: 0.72rem; color: var(--accent-cyan); margin-bottom: 10px;">
+              <span style="font-size: 0.9rem;">🎯</span>
+              <span><strong>Focus Target POI:</strong> Select a Target POI above to automatically override camera pitch &amp; yaw keyframes and lock focus on a subject.</span>
+            </div>
+
+            <!-- Action buttons -->
+            <div style="display: flex; gap: 6px;">
+              <button type="button" id="hyperlapse-undo-btn" class="btn btn-secondary btn-sm" style="flex: 1; padding: 4px 6px; font-size: 0.72rem;">↩️ Undo Point</button>
+              <button type="button" id="hyperlapse-clear-btn" class="btn btn-danger btn-sm" style="flex: 1; padding: 4px 6px; font-size: 0.72rem;">🗑️ Clear Path</button>
             </div>
           </div>
 
@@ -8553,6 +8643,14 @@ html, body {
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #f59e0b; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🎞️ Hyperlapse Moving Time-Lapse Pattern (v1.146.0) (Closes #102)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Introduced a dedicated <strong>Hyperlapse</strong> flight pattern for automated moving time-lapse captures! Click waypoints on the map to define a transit route, adjust interval photo capture (2s–10s slider), and configure dynamic camera sweep keyframes or target POI tracking. Exports continuous DJI WPML V2 <code>multipleTiming</code> action groups and smooth <code>gimbalEvenlyRotate</code> pitch transitions with curved flight paths (<code>useStraightLine: 0</code>). Real-time telemetry calculations display total frames, capture duration, and estimated 30fps clip playback length in the Topbar HUD pill, paired with amber frame marker spheres in the 3D Telemetry Preview.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🏗️ Plane-Aware 3D Edge Finder &amp; Surface Extraction (v1.145.0) (Closes #122)
@@ -9724,7 +9822,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.145.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.146.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -9785,6 +9883,12 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.146.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>🎞️ Hyperlapse Moving Time-Lapse Pattern (Closes #102):</strong> Added dedicated <code>HYPERLAPSE</code> flight pattern with click-to-place route drawing, configurable 2s–10s photo interval capture slider, dynamic pitch/yaw camera keyframes and Target POI focus tracking. Compiles continuous WPML <code>multipleTiming</code> action groups, <code>gimbalEvenlyRotate</code> pitch sweep transitions, curved <code>useStraightLine: 0</code> flight lines, 30fps clip duration estimations in Telemetry HUD, and amber frame marker spheres in 3D preview.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.145.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -14422,6 +14526,15 @@ const FLIGHT_TOOLS = {
     description: '360° Equirectangular Photo Sphere panorama sequence (static position with yaw & gimbal pitch sequence)',
     propertyGroups: ['photo-sphere-geometry', 'altitude', 'speed']
   },
+  'hyperlapse': {
+    id: 'hyperlapse',
+    label: 'Hyperlapse',
+    category: 'cinematic',
+    icon: 'hyperlapse',
+    shortcut: 'H',
+    description: 'Moving time-lapse flight pattern with continuous interval photo capture and dynamic gimbal/heading sweep',
+    propertyGroups: ['hyperlapse-geometry', 'altitude', 'speed', 'camera']
+  },
   'grid-orbit-combo': {
     id: 'grid-orbit-combo',
     label: 'Hybrid Combo',
@@ -17447,6 +17560,12 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     towerMovementMode: 'horizontal', // 'horizontal' or 'vertical'
     towerAltitudeOrder: 'max-to-min', // 'max-to-min' or 'min-to-max'
     photoSphereRings: { ring1: true, ring2: true, ring3: true, nadir: true },
+    hyperlapseInterval: 3,
+    hyperlapseStartPitch: -15,
+    hyperlapseEndPitch: -15,
+    hyperlapseHeadingMode: 'path', // 'path' or 'keyframes'
+    hyperlapseStartHeading: 0,
+    hyperlapseEndHeading: 90,
     freeformWaypoints: [],
     freeformPhotos: [],
     roadWaypoints: [],
@@ -18049,6 +18168,22 @@ function saveActiveLayerFromUi() {
     }
   }
 
+  const hlInterval = document.getElementById('hyperlapse-interval');
+  const hlStartPitch = document.getElementById('hyperlapse-start-pitch');
+  const hlEndPitch = document.getElementById('hyperlapse-end-pitch');
+  const hlHeadingMode = document.getElementById('hyperlapse-heading-mode');
+  const hlStartHeading = document.getElementById('hyperlapse-start-heading');
+  const hlEndHeading = document.getElementById('hyperlapse-end-heading');
+  if (hlInterval) {
+    const val = parseInt(hlInterval.value, 10);
+    layer.hyperlapseInterval = (!isNaN(val) && val >= 2 && val <= 10) ? val : 3;
+  }
+  if (hlStartPitch) layer.hyperlapseStartPitch = parseInt(hlStartPitch.value, 10) || -15;
+  if (hlEndPitch) layer.hyperlapseEndPitch = parseInt(hlEndPitch.value, 10) || -15;
+  if (hlHeadingMode && hlHeadingMode.value) layer.hyperlapseHeadingMode = hlHeadingMode.value;
+  if (hlStartHeading) layer.hyperlapseStartHeading = parseFloat(hlStartHeading.value) || 0;
+  if (hlEndHeading) layer.hyperlapseEndHeading = parseFloat(hlEndHeading.value) || 90;
+
   if (globalDetourModeEl && globalDetourModeEl.value) {
     globalExclusionDetourMode = globalDetourModeEl.value;
   }
@@ -18263,6 +18398,30 @@ function syncUiWithActiveLayer() {
   if (psNadir) psNadir.checked = (psRings.nadir !== false);
   if (typeof updatePhotoSphereBadge === 'function') {
     updatePhotoSphereBadge();
+  }
+
+  // Sync Hyperlapse Controls
+  const hlInterval = document.getElementById('hyperlapse-interval');
+  const hlIntervalVal = document.getElementById('hyperlapse-interval-val');
+  const hlStartPitch = document.getElementById('hyperlapse-start-pitch');
+  const hlEndPitch = document.getElementById('hyperlapse-end-pitch');
+  const hlHeadingMode = document.getElementById('hyperlapse-heading-mode');
+  const hlStartHeading = document.getElementById('hyperlapse-start-heading');
+  const hlEndHeading = document.getElementById('hyperlapse-end-heading');
+  const hlKeyframesBox = document.getElementById('hyperlapse-heading-keyframes-box');
+  if (hlInterval) hlInterval.value = layer.hyperlapseInterval || 3;
+  if (hlIntervalVal) hlIntervalVal.textContent = `${layer.hyperlapseInterval || 3} s`;
+  if (hlStartPitch) hlStartPitch.value = layer.hyperlapseStartPitch !== undefined ? layer.hyperlapseStartPitch : -15;
+  if (hlEndPitch) hlEndPitch.value = layer.hyperlapseEndPitch !== undefined ? layer.hyperlapseEndPitch : -15;
+  if (hlHeadingMode) hlHeadingMode.value = layer.hyperlapseHeadingMode || 'path';
+  if (hlStartHeading) hlStartHeading.value = layer.hyperlapseStartHeading !== undefined ? layer.hyperlapseStartHeading : 0;
+  if (hlEndHeading) hlEndHeading.value = layer.hyperlapseEndHeading !== undefined ? layer.hyperlapseEndHeading : 90;
+  if (hlKeyframesBox) {
+    if (layer.hyperlapseHeadingMode === 'keyframes') {
+      hlKeyframesBox.classList.remove('hidden');
+    } else {
+      hlKeyframesBox.classList.add('hidden');
+    }
   }
 
   if (typeof syncDisplayValues === 'function') {
@@ -19313,6 +19472,23 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
       const generated = generateRoadFlightWaypoints(rawRoad, offsetDist, altitude, defaultGimbalPitch, speed, captureMode, centerLat, centerLon, headingMode, roadFocusMode);
       waypoints = generated.waypoints;
       photos = generated.photos;
+    }
+  } else if (gridType === 'hyperlapse') {
+    const rawWps = (layer.freeformWaypoints && Array.isArray(layer.freeformWaypoints)) ? layer.freeformWaypoints : [];
+    layer.freeformWaypoints = rawWps;
+    rawWps.forEach((wp, idx) => {
+      const offsets = geodeticToLocal(wp.lat, wp.lon, centerLat, centerLon);
+      wp.x = offsets.x;
+      wp.y = offsets.y;
+      wp.idx = idx;
+    });
+    if (typeof generateHyperlapseWaypoints === 'function') {
+      const gen = generateHyperlapseWaypoints(rawWps, layer, speed, altitude);
+      waypoints = gen.waypoints;
+      photos = gen.framePoints;
+    } else {
+      waypoints = rawWps;
+      photos = [];
     }
   } else {
     const hfov = (typeof CAMERA_HFOV === 'number' && !isNaN(CAMERA_HFOV) && CAMERA_HFOV > 0) ? CAMERA_HFOV : 69.7;
@@ -20693,7 +20869,7 @@ function initMap() {
       isTargetPolyEditActive || (activeLayer && activeLayer.targetMode === 'polygon' && (!activeLayer.targetPoly || activeLayer.targetPoly.length < 3))
     );
 
-    if (currentPattern === 'freeform' || currentPattern === 'exclusion-freeform') {
+    if (currentPattern === 'freeform' || currentPattern === 'exclusion-freeform' || currentPattern === 'hyperlapse') {
       addFreeformWaypoint(e.latlng.lat, e.latlng.lng);
     } else if (currentPattern === 'boundary-polygon') {
       addBoundaryPolygonPoint(e.latlng.lat, e.latlng.lng);
@@ -22435,6 +22611,80 @@ function initUIEventListeners() {
     if (btnOblique) btnOblique.addEventListener('click', () => setRings(true, true, false, false));
   };
   setupPhotoSphereRingListeners();
+
+  // Hyperlapse Moving Time-Lapse Control Listeners (v1.146.0 - Closes #102)
+  const setupHyperlapseListeners = () => {
+    const hlInterval = document.getElementById('hyperlapse-interval');
+    const hlIntervalVal = document.getElementById('hyperlapse-interval-val');
+    const hlStartPitch = document.getElementById('hyperlapse-start-pitch');
+    const hlEndPitch = document.getElementById('hyperlapse-end-pitch');
+    const hlHeadingMode = document.getElementById('hyperlapse-heading-mode');
+    const hlStartHeading = document.getElementById('hyperlapse-start-heading');
+    const hlEndHeading = document.getElementById('hyperlapse-end-heading');
+    const hlKeyframesBox = document.getElementById('hyperlapse-heading-keyframes-box');
+    const hlUndoBtn = document.getElementById('hyperlapse-undo-btn');
+    const hlClearBtn = document.getElementById('hyperlapse-clear-btn');
+
+    const updateHyperlapse = () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (!activeLayer) return;
+      if (hlInterval) {
+        const val = parseInt(hlInterval.value, 10) || 3;
+        activeLayer.hyperlapseInterval = val;
+        if (hlIntervalVal) hlIntervalVal.textContent = `${val} s`;
+      }
+      if (hlStartPitch) activeLayer.hyperlapseStartPitch = parseInt(hlStartPitch.value, 10) || -15;
+      if (hlEndPitch) activeLayer.hyperlapseEndPitch = parseInt(hlEndPitch.value, 10) || -15;
+      if (hlHeadingMode) {
+        activeLayer.hyperlapseHeadingMode = hlHeadingMode.value;
+        if (hlKeyframesBox) {
+          if (hlHeadingMode.value === 'keyframes') {
+            hlKeyframesBox.classList.remove('hidden');
+          } else {
+            hlKeyframesBox.classList.add('hidden');
+          }
+        }
+      }
+      if (hlStartHeading) activeLayer.hyperlapseStartHeading = parseFloat(hlStartHeading.value) || 0;
+      if (hlEndHeading) activeLayer.hyperlapseEndHeading = parseFloat(hlEndHeading.value) || 90;
+
+      updateGrid();
+      updateMapLegend();
+      saveAllSettingsToLocalStorage();
+    };
+
+    [hlInterval, hlStartPitch, hlEndPitch, hlHeadingMode, hlStartHeading, hlEndHeading].forEach(el => {
+      if (el) {
+        el.addEventListener('input', updateHyperlapse);
+        el.addEventListener('change', updateHyperlapse);
+      }
+    });
+
+    if (hlUndoBtn) {
+      hlUndoBtn.addEventListener('click', () => {
+        const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+        if (activeLayer && Array.isArray(activeLayer.freeformWaypoints) && activeLayer.freeformWaypoints.length > 0) {
+          activeLayer.freeformWaypoints.pop();
+          updateGrid();
+          updateMapLegend();
+          saveAllSettingsToLocalStorage();
+        }
+      });
+    }
+
+    if (hlClearBtn) {
+      hlClearBtn.addEventListener('click', () => {
+        const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+        if (activeLayer) {
+          activeLayer.freeformWaypoints = [];
+          updateGrid();
+          updateMapLegend();
+          saveAllSettingsToLocalStorage();
+        }
+      });
+    }
+  };
+  setupHyperlapseListeners();
 
   // Handle Camera Model preset change
   const cameraModelEl = document.getElementById('camera-model');
@@ -24250,12 +24500,14 @@ function togglePatternParameters() {
     'exclusion-freeform': 'Exclusion (Polygon)',
     'boundary-polygon': 'Boundary / Parcel',
     'fiducial-markers': '🎯 Fiducial / GCPs',
-    'photo-sphere': '360° Photo Sphere'
+    'photo-sphere': '360° Photo Sphere',
+    'hyperlapse': 'Hyperlapse Time-Lapse'
   };
 
   const targetSplatContainer = document.getElementById('target-splat-container');
   const towerGeometryContainer = document.getElementById('tower-geometry-container');
   const photoSphereContainer = document.getElementById('photo-sphere-container');
+  const hyperlapseContainer = document.getElementById('hyperlapse-container');
 
   const activePatternBadge = document.getElementById('active-layer-pattern-badge');
   if (activePatternBadge) {
@@ -24299,6 +24551,14 @@ function togglePatternParameters() {
       }
     } else {
       photoSphereContainer.classList.add('hidden');
+    }
+  }
+
+  if (hyperlapseContainer) {
+    if (gridType === 'hyperlapse') {
+      hyperlapseContainer.classList.remove('hidden');
+    } else {
+      hyperlapseContainer.classList.add('hidden');
     }
   }
 
@@ -24656,6 +24916,54 @@ function togglePatternParameters() {
       captureModeSelect.value = 'stopAndShoot';
     }
 
+  } else if (gridType === 'hyperlapse') {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
+    if (gridGeometrySection) {
+      gridGeometrySection.style.display = 'block';
+      gridGeometrySection.classList.remove('collapsed');
+    }
+    if (layerCardGeometry) layerCardGeometry.style.display = 'block';
+    if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "🎞️ Hyperlapse Transit Path";
+    if (layerCardFlight) layerCardFlight.style.display = 'block';
+    if (layerCardOptics) layerCardOptics.style.display = 'block';
+    if (layerCardModes) layerCardModes.style.display = 'block';
+    if (layerCardBoundary) {
+      layerCardBoundary.classList.add('hidden');
+      layerCardBoundary.style.display = 'none';
+    }
+    if (layerCardFiducial) {
+      layerCardFiducial.classList.add('hidden');
+      layerCardFiducial.style.display = 'none';
+    }
+    if (altitudeControlGroup) altitudeControlGroup.style.display = 'block';
+    if (hyperlapseContainer) hyperlapseContainer.classList.remove('hidden');
+    if (photoSphereContainer) photoSphereContainer.classList.add('hidden');
+    if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
+    if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
+    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
+    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
+    if (exclusionAltContainer) exclusionAltContainer.classList.add('hidden');
+    if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
+    if (freeformInstructions) freeformInstructions.classList.add('hidden');
+    if (widthContainer) widthContainer.style.display = 'none';
+    if (heightContainer) heightContainer.style.display = 'none';
+    if (rotationContainer) rotationContainer.style.display = 'none';
+    if (frontOverlapContainer) frontOverlapContainer.style.display = 'none';
+    if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
+
+    if (activeLayer) {
+      activeLayer.captureMode = 'continuous';
+      activeLayer.pathMode = 'curved';
+      activeLayer.headingMode = 'smoothTransition';
+    }
+    const layerCapSelect = document.getElementById('layer-capture-mode');
+    if (layerCapSelect) layerCapSelect.value = 'continuous';
+    const layerPathSelect = document.getElementById('layer-path-mode');
+    if (layerPathSelect) layerPathSelect.value = 'curved';
+    const layerHeadingSelect = document.getElementById('layer-heading-mode');
+    if (layerHeadingSelect) layerHeadingSelect.value = 'smoothTransition';
+
   } else {
     if (gridGeometrySection) gridGeometrySection.style.display = 'block';
     if (layerCardGeometry) layerCardGeometry.style.display = 'block';
@@ -24727,7 +25035,7 @@ function togglePatternParameters() {
     }
   }
 
-  const isProcedural = (gridType !== 'freeform' && gridType !== 'road-following');
+  const isProcedural = (gridType !== 'freeform' && gridType !== 'road-following' && gridType !== 'hyperlapse');
   if (isProcedural) {
     updateGrid();
   } else {
@@ -26959,6 +27267,168 @@ function generatePhotoSphereCoordinates(baseAltitude, layer) {
 }
 
 // ============================================================================
+// Hyperlapse Moving Time-Lapse Pattern Generator (v1.146.0 - Closes #102)
+// ============================================================================
+function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
+  if (!rawWps || !Array.isArray(rawWps) || rawWps.length === 0) {
+    return { waypoints: [], framePoints: [], interval: 3, frameSpacing: 0 };
+  }
+
+  const rawInterval = layer ? layer.hyperlapseInterval : 3;
+  let interval = parseInt(rawInterval, 10);
+  if (isNaN(interval) || interval < 2) interval = 2;
+  if (interval > 10) interval = 10;
+
+  const startPitch = (layer && layer.hyperlapseStartPitch !== undefined && !isNaN(layer.hyperlapseStartPitch)) ? parseInt(layer.hyperlapseStartPitch, 10) : -15;
+  const endPitch = (layer && layer.hyperlapseEndPitch !== undefined && !isNaN(layer.hyperlapseEndPitch)) ? parseInt(layer.hyperlapseEndPitch, 10) : -15;
+
+  const headingMode = (layer && layer.hyperlapseHeadingMode) ? layer.hyperlapseHeadingMode : 'path';
+  const startHeading = (layer && layer.hyperlapseStartHeading !== undefined && !isNaN(layer.hyperlapseStartHeading)) ? parseFloat(layer.hyperlapseStartHeading) % 360 : 0;
+  const endHeading = (layer && layer.hyperlapseEndHeading !== undefined && !isNaN(layer.hyperlapseEndHeading)) ? parseFloat(layer.hyperlapseEndHeading) % 360 : 90;
+
+  const targetPoi = (layer && (layer.hyperlapseFocusPoi || layer.headingMode === 'towardPOI') && typeof getTargetPoiCoordinates === 'function')
+    ? getTargetPoiCoordinates(null, layer)
+    : null;
+
+  // Calculate cumulative distances along waypoints
+  const cumDists = [0];
+  let totalDist = 0;
+  for (let i = 1; i < rawWps.length; i++) {
+    const p1 = rawWps[i - 1];
+    const p2 = rawWps[i];
+    let d = 0;
+    if (p1.x !== undefined && p2.x !== undefined) {
+      d = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+    } else if (p1.lat !== undefined && p2.lat !== undefined && typeof haversineDistance === 'function') {
+      d = haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon);
+    }
+    totalDist += d;
+    cumDists.push(totalDist);
+  }
+
+  function lerpAngleShortest(a, b, t) {
+    let diff = (b - a) % 360;
+    if (diff > 180) diff -= 360;
+    if (diff < -180) diff += 360;
+    let val = (a + diff * t) % 360;
+    if (val < 0) val += 360;
+    return val;
+  }
+
+  function getBearingBetween(p1, p2) {
+    if (!p1 || !p2) return 0;
+    if (p1.lat !== undefined && p2.lat !== undefined) {
+      const lat1 = (p1.lat * Math.PI) / 180;
+      const lat2 = (p2.lat * Math.PI) / 180;
+      const dLon = ((p2.lon !== undefined ? p2.lon : p2.lng) - (p1.lon !== undefined ? p1.lon : p1.lng)) * Math.PI / 180;
+      const y = Math.sin(dLon) * Math.cos(lat2);
+      const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+      let brg = Math.atan2(y, x) * 180 / Math.PI;
+      return ((brg % 360) + 360) % 360;
+    }
+    return 0;
+  }
+
+  // Generate per-waypoint parameters
+  const waypoints = rawWps.map((wp, idx) => {
+    const t = totalDist > 0 ? cumDists[idx] / totalDist : (rawWps.length > 1 ? idx / (rawWps.length - 1) : 0);
+    let pitch, heading;
+
+    if (targetPoi) {
+      heading = getBearingBetween(wp, targetPoi);
+      pitch = (typeof calculate3DPoiPitch === 'function') ? calculate3DPoiPitch(wp, targetPoi, wp.alt || altitude) : -45;
+    } else {
+      pitch = Math.round(startPitch + (endPitch - startPitch) * t);
+      if (headingMode === 'keyframes') {
+        heading = lerpAngleShortest(startHeading, endHeading, t);
+      } else {
+        // Follow flight path tangent
+        let inBrg = null;
+        let outBrg = null;
+        if (idx > 0) inBrg = getBearingBetween(rawWps[idx - 1], wp);
+        if (idx < rawWps.length - 1) outBrg = getBearingBetween(wp, rawWps[idx + 1]);
+
+        if (inBrg !== null && outBrg !== null) {
+          heading = lerpAngleShortest(inBrg, outBrg, 0.5);
+        } else if (outBrg !== null) {
+          heading = outBrg;
+        } else if (inBrg !== null) {
+          heading = inBrg;
+        } else {
+          heading = 0;
+        }
+      }
+    }
+
+    return {
+      ...wp,
+      alt: wp.alt !== undefined ? wp.alt : altitude,
+      pitch: pitch,
+      heading: Math.round(heading * 10) / 10,
+      headingMode: 'smoothTransition',
+      turnMode: 'inherit',
+      gridType: 'hyperlapse',
+      layerPattern: 'hyperlapse',
+      isHyperlapse: true,
+      skipPhoto: true,
+      hyperlapseInterval: interval
+    };
+  });
+
+  // Sample frame photo points along path every (speed * interval) meters
+  const framePoints = [];
+  const effectiveSpeed = Math.max(0.2, speed || 4);
+  const frameSpacing = Math.max(0.2, effectiveSpeed * interval);
+
+  if (waypoints.length >= 2 && totalDist > 0) {
+    let currentDist = 0;
+    while (currentDist <= totalDist + 0.01) {
+      let segIdx = 0;
+      while (segIdx < cumDists.length - 2 && cumDists[segIdx + 1] < currentDist) {
+        segIdx++;
+      }
+      const pA = waypoints[segIdx];
+      const pB = waypoints[segIdx + 1] || pA;
+      const segLen = cumDists[segIdx + 1] - cumDists[segIdx];
+      const segT = segLen > 0 ? Math.min(1, Math.max(0, (currentDist - cumDists[segIdx]) / segLen)) : 0;
+      const globalT = currentDist / totalDist;
+
+      const fLat = pA.lat + (pB.lat - pA.lat) * segT;
+      const fLon = pA.lon + (pB.lon - pA.lon) * segT;
+      const fAlt = pA.alt + (pB.alt - pA.alt) * segT;
+      const fX = pA.x !== undefined && pB.x !== undefined ? pA.x + (pB.x - pA.x) * segT : 0;
+      const fY = pA.y !== undefined && pB.y !== undefined ? pA.y + (pB.y - pA.y) * segT : 0;
+
+      let fPitch, fHeading;
+      if (targetPoi) {
+        const samplePt = { lat: fLat, lon: fLon, x: fX, y: fY, alt: fAlt };
+        fHeading = getBearingBetween(samplePt, targetPoi);
+        fPitch = (typeof calculate3DPoiPitch === 'function') ? calculate3DPoiPitch(samplePt, targetPoi, fAlt) : -45;
+      } else {
+        fPitch = Math.round(startPitch + (endPitch - startPitch) * globalT);
+        fHeading = lerpAngleShortest(pA.heading || 0, pB.heading || 0, segT);
+      }
+
+      framePoints.push({
+        lat: fLat,
+        lon: fLon,
+        x: fX,
+        y: fY,
+        alt: fAlt,
+        pitch: fPitch,
+        heading: Math.round(fHeading * 10) / 10,
+        distMeters: currentDist,
+        isHyperlapseFrame: true
+      });
+
+      currentDist += frameSpacing;
+    }
+  }
+
+  return { waypoints, framePoints, interval, frameSpacing };
+}
+
+// ============================================================================
 // Target Splat 3D Frustum Culling & Geometry Engine (v1.77.0)
 // ============================================================================
 
@@ -28656,7 +29126,7 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
         fillOpacity: 0.10
       }).addTo(map);
     }
-  } else if (waypoints.length === 0 || gridType === 'road-following' || gridType === 'freeform' || gridType === 'exclusion-box' || gridType === 'exclusion-freeform') {
+  } else if (waypoints.length === 0 || gridType === 'road-following' || gridType === 'freeform' || gridType === 'hyperlapse' || gridType === 'exclusion-box' || gridType === 'exclusion-freeform') {
     // No boundary overlay when no waypoints are active or for road-following/freeform/exclusion
   } else if (gridType === 'photo-sphere') {
     const sphereRadius = Math.max(8, (waypoints[0]?.alt || 30) * 0.4);
@@ -29232,6 +29702,12 @@ function updateMapLegend() {
       title = "Mission Layers";
       itemsHtml = `
         <div class="legend-item"><span class="legend-color" style="background-color: #06b6d4;"></span> Manual Waypoint</div>
+      `;
+    } else if (gridType === 'hyperlapse') {
+      title = "Hyperlapse";
+      itemsHtml = `
+        <div class="legend-item"><span class="legend-color" style="background-color: #f59e0b;"></span> Route Waypoint</div>
+        <div class="legend-item"><span class="legend-color" style="background-color: #f59e0b; border: 1px dashed rgba(255,255,255,0.6);"></span> Interval Photo Frame</div>
       `;
     } else if (gridType === 'road-following') {
       title = "Mission Layers";
@@ -29830,7 +30306,7 @@ function addFreeformWaypoint(lat, lng) {
     idx: idx,
     layerId: activeLayer ? activeLayer.id : null,
     layerName: activeLayer ? activeLayer.name : null,
-    layerPattern: 'freeform',
+    layerPattern: activeLayer ? activeLayer.pattern : 'freeform',
     layerHeadingMode: activeLayer ? (activeLayer.headingMode || 'inherit') : 'inherit',
     targetPoiId: (activeLayer && activeLayer.targetPoiId) ? activeLayer.targetPoiId : null,
     origLat: lat,
@@ -30359,9 +30835,18 @@ function updateStatsPanel(stats) {
   const unit = (typeof getUnitSystem === 'function') ? getUnitSystem() : 'metric';
 
   if (statWps) statWps.textContent = stats.waypointsCount;
-  const captureMode = document.getElementById('capture-mode')?.value || 'stopAndShoot';
-  const photoText = (captureMode === 'video') ? "Video (Record)" : stats.photoCount;
+  const activeWps = (typeof waypoints !== 'undefined' && Array.isArray(waypoints)) ? waypoints : ((typeof generatedWaypoints !== 'undefined' && Array.isArray(generatedWaypoints)) ? generatedWaypoints : []);
+  const isHyperlapseActive = (typeof getActiveLayer === 'function' && getActiveLayer()?.pattern === 'hyperlapse') || activeWps.some(w => w && (w.isHyperlapse || w.gridType === 'hyperlapse'));
+  const captureModeVal = (typeof document !== 'undefined' && document.getElementById('capture-mode')) ? document.getElementById('capture-mode').value : 'stopAndShoot';
+  const photoText = (captureModeVal === 'video') ? "Video (Record)" : (isHyperlapseActive ? `${stats.photoCount} frames` : stats.photoCount);
   if (statPhotos) statPhotos.textContent = photoText;
+
+  // Update Section 2 Hyperlapse Frame Badge if active
+  const hlBadge = document.getElementById('hyperlapse-frame-badge');
+  if (hlBadge && isHyperlapseActive) {
+    const clipDurationSec = (stats.photoCount / 30).toFixed(1);
+    hlBadge.textContent = `${stats.photoCount} Frames (${clipDurationSec}s Clip @ 30fps)`;
+  }
 
   // Format spacing
   const lineSpacingStr = (stats.lineSpacing !== null && stats.lineSpacing !== undefined) ? formatDistance(stats.lineSpacing) : "N/A";
@@ -30389,7 +30874,8 @@ function updateStatsPanel(stats) {
   if (statFlightTime) statFlightTime.textContent = stats.timeStr;
 
   // Sync Header & Popover Telemetry
-  const summaryStr = `${stats.waypointsCount} WPs • ${distStr} • ${stats.timeStr}`;
+  const clipInfoStr = isHyperlapseActive ? ` (${(stats.photoCount / 30).toFixed(1)}s clip)` : '';
+  const summaryStr = `${stats.waypointsCount} WPs • ${distStr} • ${stats.timeStr}${clipInfoStr}`;
   if (headerSummaryEl) headerSummaryEl.textContent = summaryStr;
   if (sidebarSummaryText) {
     const weatherSnippet = document.getElementById('header-weather-summary')?.textContent || '☀️ Weather';
@@ -30663,8 +31149,29 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     ci = cj;
   }
 
+  const gridTypeEl = typeof document !== 'undefined' ? document.getElementById('grid-type') : null;
+  const gridType = (gridTypeEl && gridTypeEl.value) ? gridTypeEl.value : (waypoints.find(w => w && w.gridType)?.gridType || '');
+
+  // Identify hyperlapse segments in sanitizedWps
+  const hyperlapseSegments = [];
+  let currentHlSegment = null;
+  sanitizedWps.forEach((w, i) => {
+    const isH = (gridType === 'hyperlapse') || (w.isHyperlapse) || (w.gridType === 'hyperlapse') || (w.layerPattern === 'hyperlapse');
+    if (isH) {
+      if (!currentHlSegment) {
+        currentHlSegment = { startIdx: i, endIdx: i, layerId: w.layerId, interval: w.hyperlapseInterval || 3 };
+        hyperlapseSegments.push(currentHlSegment);
+      } else {
+        currentHlSegment.endIdx = i;
+      }
+    } else {
+      currentHlSegment = null;
+    }
+  });
+
   sanitizedWps.forEach((wp, idx) => {
     const waypointActions = [];
+    const isHyperlapse = (gridType === 'hyperlapse') || (wp.isHyperlapse) || (wp.gridType === 'hyperlapse') || (wp.layerPattern === 'hyperlapse');
     
     // Resolve Effective Layer & Waypoint Properties (Three-Tier Cascade: Waypoint -> Layer -> Global)
     const effectiveCaptureMode = (wp.captureMode && wp.captureMode !== 'inherit')
@@ -30682,9 +31189,6 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
 
     // Determine if repositioning (gimbal pitch or heading yaw) is required
     const reposInfo = checkNeedsReposition(idx, sanitizedWps);
-    
-    const gridTypeEl = typeof document !== 'undefined' ? document.getElementById('grid-type') : null;
-    const gridType = (gridTypeEl && gridTypeEl.value) ? gridTypeEl.value : (waypoints.find(w => w && w.gridType)?.gridType || '');
     const isRoadFollowing = gridType === 'road-following';
 
     // Three-Tier Hover Time Resolution:
@@ -30892,8 +31396,10 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     }
 
     let actionsForThisPlacemark = '';
+    const placemarkActionGroupBlocks = [];
+
     if (waypointActions.length > 0) {
-      actionsForThisPlacemark = `        <wpml:actionGroup>
+      placemarkActionGroupBlocks.push(`        <wpml:actionGroup>
           <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
           <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
           <wpml:actionGroupEndIndex>${idx}</wpml:actionGroupEndIndex>
@@ -30902,7 +31408,68 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
             <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
           </wpml:actionTrigger>
 ${waypointActions.join('\n')}
-        </wpml:actionGroup>\n`;
+        </wpml:actionGroup>`);
+    }
+
+    if (isHyperlapse) {
+      const seg = hyperlapseSegments.find(s => s.startIdx === idx && s.endIdx > s.startIdx);
+      if (seg) {
+        const segInterval = (seg.interval !== undefined && !isNaN(seg.interval)) ? seg.interval : 3;
+        placemarkActionGroupBlocks.push(`        <wpml:actionGroup>
+          <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>${seg.startIdx}</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>${seg.endIdx}</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>multipleTiming</wpml:actionTriggerType>
+            <wpml:actionTriggerParam>${segInterval}</wpml:actionTriggerParam>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>`);
+      }
+
+      const inSeg = hyperlapseSegments.find(s => idx >= s.startIdx && idx < s.endIdx);
+      if (inSeg && sanitizedWps[idx + 1]) {
+        const nextWp = sanitizedWps[idx + 1];
+        let nextPitch;
+        const rawNextPitch = nextWp.pitch !== undefined ? nextWp.pitch : (wpLayer && wpLayer.gimbalPitch !== undefined ? wpLayer.gimbalPitch : gimbalPitch);
+        if (rawNextPitch === 'auto' || (typeof rawNextPitch === 'string' && rawNextPitch.toLowerCase() === 'auto')) {
+          const targetPoi = (typeof getTargetPoiCoordinates === 'function') ? getTargetPoiCoordinates(nextWp, wpLayer) : null;
+          nextPitch = (typeof calculate3DPoiPitch === 'function') ? calculate3DPoiPitch(nextWp, targetPoi, nextWp.alt !== undefined ? nextWp.alt : altitude) : -45;
+        } else {
+          nextPitch = parseGimbalPitch(rawNextPitch, -60);
+        }
+
+        placemarkActionGroupBlocks.push(`        <wpml:actionGroup>
+          <wpml:actionGroupId>${actionGroupId++}</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>${idx}</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>${idx + 1}</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>betweenAdjacentPoints</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>gimbalEvenlyRotate</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:gimbalPitchRotateAngle>${nextPitch}</wpml:gimbalPitchRotateAngle>
+              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
+              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>`);
+      }
+    }
+
+    if (placemarkActionGroupBlocks.length > 0) {
+      actionsForThisPlacemark = placemarkActionGroupBlocks.join('\n') + '\n';
     }
 
     // Determine heading mode and angle for this waypoint (Tier 3: wp -> Tier 2: layer -> Tier 1: global)
@@ -30937,7 +31504,7 @@ ${waypointActions.join('\n')}
     }
 
     if (wpMode !== 'inherit') {
-      if (wpMode === 'custom' || wpMode === 'smoothTransition' || ((gridType === 'target-splat' || gridType === 'exclusion-freeform' || gridType === 'freeform' || (wpLayer && (wpLayer.pattern === 'exclusion-freeform' || wpLayer.pattern === 'freeform')) || wp.layerPattern === 'freeform' || wp.layerPattern === 'exclusion-freeform' || (wp.gridType && (wp.gridType === 'freeform' || wp.gridType === 'exclusion-freeform'))) && wpMode === 'followWayline')) {
+      if (wpMode === 'custom' || wpMode === 'smoothTransition' || ((gridType === 'hyperlapse' || gridType === 'target-splat' || gridType === 'exclusion-freeform' || gridType === 'freeform' || (wpLayer && (wpLayer.pattern === 'hyperlapse' || wpLayer.pattern === 'exclusion-freeform' || wpLayer.pattern === 'freeform')) || wp.layerPattern === 'hyperlapse' || wp.layerPattern === 'freeform' || wp.layerPattern === 'exclusion-freeform' || (wp.gridType && (wp.gridType === 'hyperlapse' || wp.gridType === 'freeform' || wp.gridType === 'exclusion-freeform'))) && wpMode === 'followWayline')) {
         actualHeadingMode = 'smoothTransition';
         actualHeadingAngle = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
       } else {
@@ -30955,7 +31522,7 @@ ${waypointActions.join('\n')}
         }
       }
     } else {
-      if ((gridType === 'freeform' || gridType === 'exclusion-freeform' || gridType === 'target-splat' || gridType === 'road-following' || gridType === 'photo-sphere' || wp.isPhotoSphere || wp.isRoadDroneWaypoint || wp.layerPattern === 'freeform' || wp.layerPattern === 'exclusion-freeform' || (wp.gridType && (wp.gridType === 'freeform' || wp.gridType === 'exclusion-freeform')) || (wpLayer && (wpLayer.pattern === 'freeform' || wpLayer.pattern === 'exclusion-freeform')))) {
+      if ((gridType === 'hyperlapse' || gridType === 'freeform' || gridType === 'exclusion-freeform' || gridType === 'target-splat' || gridType === 'road-following' || gridType === 'photo-sphere' || wp.isHyperlapse || wp.isPhotoSphere || wp.isRoadDroneWaypoint || wp.layerPattern === 'hyperlapse' || wp.layerPattern === 'freeform' || wp.layerPattern === 'exclusion-freeform' || (wp.gridType && (wp.gridType === 'hyperlapse' || wp.gridType === 'freeform' || wp.gridType === 'exclusion-freeform')) || (wpLayer && (wpLayer.pattern === 'hyperlapse' || wpLayer.pattern === 'freeform' || wpLayer.pattern === 'exclusion-freeform')))) {
         actualHeadingMode = 'smoothTransition';
         actualHeadingAngle = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
       } else if (effectiveHeadingMode === 'towardPOI') {
@@ -31071,6 +31638,11 @@ ${waypointActions.join('\n')}
       actualTurnMode = isConsumer 
         ? 'toPointAndStopWithContinuityCurvature'
         : 'toPointAndStopWithDiscontinuityCurvature';
+      actualUseStraightLine = 0;
+    } else if (isHyperlapse) {
+      actualTurnMode = (idx === 0 || idx === sanitizedWps.length - 1)
+        ? 'toPointAndStopWithContinuityCurvature'
+        : 'toPointAndPassWithContinuityCurvature';
       actualUseStraightLine = 0;
     } else if (isConsumer) {
       actualTurnMode = isStopAndShoot 
@@ -45111,6 +45683,22 @@ function recreate3DWaypointsAndPaths() {
         waypointsGroup.add(beaconMesh);
       }
     });
+  }
+
+  // Plot Hyperlapse Frame Marker Spheres (v1.146.0)
+  const activeLayerFor3D = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  if (activeLayerFor3D && activeLayerFor3D.pattern === 'hyperlapse' && Array.isArray(activeLayerFor3D.photos) && activeLayerFor3D.photos.length > 0) {
+    const frameMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b, wireframe: false });
+    const frameGeom = new THREE.SphereGeometry(0.8, 8, 8);
+    const maxFrames = 2000;
+    const step = Math.max(1, Math.ceil(activeLayerFor3D.photos.length / maxFrames));
+    for (let fIdx = 0; fIdx < activeLayerFor3D.photos.length; fIdx += step) {
+      const fPt = activeLayerFor3D.photos[fIdx];
+      if (!fPt) continue;
+      const fMesh = new THREE.Mesh(frameGeom, frameMat);
+      fMesh.position.set(fPt.x, fPt.alt || 50, -fPt.y);
+      waypointsGroup.add(fMesh);
+    }
   }
 
   threeScene.add(waypointsGroup);

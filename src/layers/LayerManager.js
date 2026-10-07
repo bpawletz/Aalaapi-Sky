@@ -137,6 +137,12 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     towerMovementMode: 'horizontal', // 'horizontal' or 'vertical'
     towerAltitudeOrder: 'max-to-min', // 'max-to-min' or 'min-to-max'
     photoSphereRings: { ring1: true, ring2: true, ring3: true, nadir: true },
+    hyperlapseInterval: 3,
+    hyperlapseStartPitch: -15,
+    hyperlapseEndPitch: -15,
+    hyperlapseHeadingMode: 'path', // 'path' or 'keyframes'
+    hyperlapseStartHeading: 0,
+    hyperlapseEndHeading: 90,
     freeformWaypoints: [],
     freeformPhotos: [],
     roadWaypoints: [],
@@ -739,6 +745,22 @@ function saveActiveLayerFromUi() {
     }
   }
 
+  const hlInterval = document.getElementById('hyperlapse-interval');
+  const hlStartPitch = document.getElementById('hyperlapse-start-pitch');
+  const hlEndPitch = document.getElementById('hyperlapse-end-pitch');
+  const hlHeadingMode = document.getElementById('hyperlapse-heading-mode');
+  const hlStartHeading = document.getElementById('hyperlapse-start-heading');
+  const hlEndHeading = document.getElementById('hyperlapse-end-heading');
+  if (hlInterval) {
+    const val = parseInt(hlInterval.value, 10);
+    layer.hyperlapseInterval = (!isNaN(val) && val >= 2 && val <= 10) ? val : 3;
+  }
+  if (hlStartPitch) layer.hyperlapseStartPitch = parseInt(hlStartPitch.value, 10) || -15;
+  if (hlEndPitch) layer.hyperlapseEndPitch = parseInt(hlEndPitch.value, 10) || -15;
+  if (hlHeadingMode && hlHeadingMode.value) layer.hyperlapseHeadingMode = hlHeadingMode.value;
+  if (hlStartHeading) layer.hyperlapseStartHeading = parseFloat(hlStartHeading.value) || 0;
+  if (hlEndHeading) layer.hyperlapseEndHeading = parseFloat(hlEndHeading.value) || 90;
+
   if (globalDetourModeEl && globalDetourModeEl.value) {
     globalExclusionDetourMode = globalDetourModeEl.value;
   }
@@ -953,6 +975,30 @@ function syncUiWithActiveLayer() {
   if (psNadir) psNadir.checked = (psRings.nadir !== false);
   if (typeof updatePhotoSphereBadge === 'function') {
     updatePhotoSphereBadge();
+  }
+
+  // Sync Hyperlapse Controls
+  const hlInterval = document.getElementById('hyperlapse-interval');
+  const hlIntervalVal = document.getElementById('hyperlapse-interval-val');
+  const hlStartPitch = document.getElementById('hyperlapse-start-pitch');
+  const hlEndPitch = document.getElementById('hyperlapse-end-pitch');
+  const hlHeadingMode = document.getElementById('hyperlapse-heading-mode');
+  const hlStartHeading = document.getElementById('hyperlapse-start-heading');
+  const hlEndHeading = document.getElementById('hyperlapse-end-heading');
+  const hlKeyframesBox = document.getElementById('hyperlapse-heading-keyframes-box');
+  if (hlInterval) hlInterval.value = layer.hyperlapseInterval || 3;
+  if (hlIntervalVal) hlIntervalVal.textContent = `${layer.hyperlapseInterval || 3} s`;
+  if (hlStartPitch) hlStartPitch.value = layer.hyperlapseStartPitch !== undefined ? layer.hyperlapseStartPitch : -15;
+  if (hlEndPitch) hlEndPitch.value = layer.hyperlapseEndPitch !== undefined ? layer.hyperlapseEndPitch : -15;
+  if (hlHeadingMode) hlHeadingMode.value = layer.hyperlapseHeadingMode || 'path';
+  if (hlStartHeading) hlStartHeading.value = layer.hyperlapseStartHeading !== undefined ? layer.hyperlapseStartHeading : 0;
+  if (hlEndHeading) hlEndHeading.value = layer.hyperlapseEndHeading !== undefined ? layer.hyperlapseEndHeading : 90;
+  if (hlKeyframesBox) {
+    if (layer.hyperlapseHeadingMode === 'keyframes') {
+      hlKeyframesBox.classList.remove('hidden');
+    } else {
+      hlKeyframesBox.classList.add('hidden');
+    }
   }
 
   if (typeof syncDisplayValues === 'function') {
@@ -2003,6 +2049,23 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
       const generated = generateRoadFlightWaypoints(rawRoad, offsetDist, altitude, defaultGimbalPitch, speed, captureMode, centerLat, centerLon, headingMode, roadFocusMode);
       waypoints = generated.waypoints;
       photos = generated.photos;
+    }
+  } else if (gridType === 'hyperlapse') {
+    const rawWps = (layer.freeformWaypoints && Array.isArray(layer.freeformWaypoints)) ? layer.freeformWaypoints : [];
+    layer.freeformWaypoints = rawWps;
+    rawWps.forEach((wp, idx) => {
+      const offsets = geodeticToLocal(wp.lat, wp.lon, centerLat, centerLon);
+      wp.x = offsets.x;
+      wp.y = offsets.y;
+      wp.idx = idx;
+    });
+    if (typeof generateHyperlapseWaypoints === 'function') {
+      const gen = generateHyperlapseWaypoints(rawWps, layer, speed, altitude);
+      waypoints = gen.waypoints;
+      photos = gen.framePoints;
+    } else {
+      waypoints = rawWps;
+      photos = [];
     }
   } else {
     const hfov = (typeof CAMERA_HFOV === 'number' && !isNaN(CAMERA_HFOV) && CAMERA_HFOV > 0) ? CAMERA_HFOV : 69.7;

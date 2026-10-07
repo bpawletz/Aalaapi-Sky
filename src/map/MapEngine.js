@@ -701,7 +701,7 @@ function initMap() {
       isTargetPolyEditActive || (activeLayer && activeLayer.targetMode === 'polygon' && (!activeLayer.targetPoly || activeLayer.targetPoly.length < 3))
     );
 
-    if (currentPattern === 'freeform' || currentPattern === 'exclusion-freeform') {
+    if (currentPattern === 'freeform' || currentPattern === 'exclusion-freeform' || currentPattern === 'hyperlapse') {
       addFreeformWaypoint(e.latlng.lat, e.latlng.lng);
     } else if (currentPattern === 'boundary-polygon') {
       addBoundaryPolygonPoint(e.latlng.lat, e.latlng.lng);
