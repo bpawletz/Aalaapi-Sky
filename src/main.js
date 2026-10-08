@@ -6,6 +6,7 @@ import './core/ToolRegistry.js';
 import './state/MissionStore.js';
 import './vision/GcpEngine.js';
 import './core/Utils.js';
+import './core/PlaybackManager.js';
 import './ui/ThemeManager.js';
 import './layers/LayerManager.js';
 import './map/MapEngine.js';

@@ -166,6 +166,11 @@ class TileCacheManager {
       return true;
     }
 
+    // Historical replay snapshot override: allow caching environmental/radar tiles during flight replays
+    if (lower.includes('historical=1') || lower.includes('historical=true') || lower.includes('snapshot=true')) {
+      return false;
+    }
+
     // NOAA / NWS NEXRAD Radar composites & Active Hazards (WMS layers)
     if (lower.includes('opengeo.ncep.noaa.gov') ||
         lower.includes('conus_bref_qcd') ||

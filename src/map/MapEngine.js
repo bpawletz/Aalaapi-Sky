@@ -669,6 +669,11 @@ function initMap() {
   targetPolygonGroup = L.layerGroup().addTo(map);
   photoInspectionGroup = L.layerGroup().addTo(map);
 
+  // Issue #123: Initialize 2D Flight Replay Engine
+  if (typeof init2dReplayEngine === 'function') {
+    init2dReplayEngine();
+  }
+
   // No default center marker — map starts clean; user clicks to place grid center
 
   // Track popup open/close state globally
@@ -843,5 +848,315 @@ function restoreSettingsFromLocalStorage() {
     Logger.error("Failed to restore settings from localStorage:", err);
   }
 }
+
+// ============================================================================
+// Issue #123: 2D Flight Replay Engine, Drone Marker & Layer Cache Management
+// ============================================================================
+
+let historicalReplayGroup = null;
+let historicalDroneMarker = null;
+let historicalPlannedLine = null;
+let historicalActualLine = null;
+
+function createDroneSvgHtml(headingDeg = 0) {
+  const normDeg = Math.round(headingDeg || 0);
+  return `
+    <div style="transform: rotate(${normDeg}deg); width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.65)); pointer-events: none;">
+      <svg viewBox="0 0 36 36" width="34" height="34" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Drone Propeller Arms -->
+        <line x1="6" y1="6" x2="30" y2="30" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="6" y1="30" x2="30" y2="6" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- Propeller Rotors -->
+        <circle cx="6" cy="6" r="4.5" fill="rgba(56, 189, 248, 0.4)" stroke="#38bdf8" stroke-width="1.5"/>
+        <circle cx="30" cy="6" r="4.5" fill="rgba(56, 189, 248, 0.4)" stroke="#38bdf8" stroke-width="1.5"/>
+        <circle cx="6" cy="30" r="4.5" fill="rgba(56, 189, 248, 0.4)" stroke="#38bdf8" stroke-width="1.5"/>
+        <circle cx="30" cy="30" r="4.5" fill="rgba(56, 189, 248, 0.4)" stroke="#38bdf8" stroke-width="1.5"/>
+        <!-- Fuselage / Cockpit -->
+        <rect x="13" y="10" width="10" height="16" rx="4" fill="#0f172a" stroke="#06b6d4" stroke-width="2"/>
+        <!-- Heading Nose Indicator -->
+        <polygon points="18,5 14,10 22,10" fill="#f59e0b" stroke="#fbbf24" stroke-width="1"/>
+        <circle cx="18" cy="17" r="3" fill="#38bdf8"/>
+      </svg>
+    </div>
+  `;
+}
+
+function init2dReplayEngine() {
+  if (typeof L === 'undefined' || !map) return;
+  if (typeof PlaybackManager === 'undefined') return;
+
+  if (!historicalReplayGroup) {
+    historicalReplayGroup = L.layerGroup().addTo(map);
+  }
+
+  // Handle replay mode transitions
+  PlaybackManager.on('replaymode', ({ active, radarCacheMode }) => {
+    const replayBar = document.getElementById('replay-2d-bar');
+    if (active) {
+      if (replayBar) replayBar.classList.remove('hidden');
+      render2dHistoricalTracks();
+      update2dRadarCacheMode(radarCacheMode);
+    } else {
+      if (replayBar) replayBar.classList.add('hidden');
+      clear2dHistoricalTracks();
+      restoreLiveRadarMode();
+    }
+  });
+
+  // Handle active flight change
+  PlaybackManager.on('flightchange', ({ flightId, name }) => {
+    const titleEl = document.getElementById('replay-2d-flight-title');
+    if (titleEl) {
+      titleEl.textContent = name || flightId || 'Active Flight';
+    }
+    if (PlaybackManager.is2dReplayActive) {
+      render2dHistoricalTracks();
+    }
+  });
+
+  // Real-time telemetry tick update
+  PlaybackManager.on('timeupdate', ({ point, elapsedSeconds, progress }) => {
+    update2dDronePosition(point);
+    update2dReplayHud(point, elapsedSeconds, progress);
+  });
+
+  PlaybackManager.on('seek', ({ point, elapsedSeconds, progress }) => {
+    update2dDronePosition(point);
+    update2dReplayHud(point, elapsedSeconds, progress);
+  });
+
+  PlaybackManager.on('play', () => {
+    const playIcon = document.getElementById('replay-2d-play-icon');
+    if (playIcon) playIcon.textContent = '⏸ Pause';
+  });
+
+  PlaybackManager.on('pause', () => {
+    const playIcon = document.getElementById('replay-2d-play-icon');
+    if (playIcon) playIcon.textContent = '▶ Play';
+  });
+
+  initReplay2dBarListeners();
+}
+
+function render2dHistoricalTracks() {
+  if (!map || !historicalReplayGroup || typeof PlaybackManager === 'undefined') return;
+
+  clear2dHistoricalTracks();
+
+  const telem = PlaybackManager.telemetryData;
+  const plannedWps = PlaybackManager.plannedWaypoints;
+  const boundsPoints = [];
+
+  // 1. Render planned flight path (dashed cyan line)
+  if (Array.isArray(plannedWps) && plannedWps.length > 0) {
+    const plannedCoords = plannedWps.map(w => [
+      typeof w.lat === 'function' ? w.lat() : Number(w.lat || 0),
+      typeof w.lon === 'function' ? w.lon() : (w.lng !== undefined ? Number(w.lng) : Number(w.lon || 0))
+    ]).filter(c => !isNaN(c[0]) && !isNaN(c[1]) && (c[0] !== 0 || c[1] !== 0));
+
+    if (plannedCoords.length > 1) {
+      historicalPlannedLine = L.polyline(plannedCoords, {
+        color: '#06b6d4',
+        weight: 3,
+        dashArray: '6, 6',
+        opacity: 0.85
+      }).addTo(historicalReplayGroup);
+      plannedCoords.forEach(c => boundsPoints.push(c));
+    }
+  }
+
+  // 2. Render actual flown trajectory (solid emerald line)
+  const pts = PlaybackManager.points || [];
+  if (pts.length > 1) {
+    const flownCoords = pts.map(p => [Number(p.lat || 0), Number(p.lon || 0)])
+      .filter(c => !isNaN(c[0]) && !isNaN(c[1]) && (c[0] !== 0 || c[1] !== 0));
+
+    if (flownCoords.length > 1) {
+      historicalActualLine = L.polyline(flownCoords, {
+        color: '#10b981',
+        weight: 3.5,
+        opacity: 0.95
+      }).addTo(historicalReplayGroup);
+      flownCoords.forEach(c => boundsPoints.push(c));
+    }
+  }
+
+  // 3. Render dynamic drone marker
+  const initialPt = PlaybackManager.getInterpolatedPoint() || pts[0] || (plannedWps && plannedWps[0]);
+  if (initialPt && initialPt.lat && initialPt.lon) {
+    const droneIcon = L.divIcon({
+      className: 'replay-drone-div-icon',
+      html: createDroneSvgHtml(initialPt.yaw || 0),
+      iconSize: [34, 34],
+      iconAnchor: [17, 17]
+    });
+
+    historicalDroneMarker = L.marker([initialPt.lat, initialPt.lon], {
+      icon: droneIcon,
+      zIndexOffset: 1000
+    }).addTo(historicalReplayGroup);
+  }
+
+  // 4. Center map view to fit historical bounds
+  if (boundsPoints.length > 0) {
+    try {
+      const bounds = L.latLngBounds(boundsPoints);
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
+    } catch (_) {}
+  }
+}
+
+function clear2dHistoricalTracks() {
+  if (historicalReplayGroup) {
+    historicalReplayGroup.clearLayers();
+  }
+  historicalDroneMarker = null;
+  historicalPlannedLine = null;
+  historicalActualLine = null;
+}
+
+function update2dDronePosition(point) {
+  if (!point || !historicalDroneMarker) return;
+  if (typeof point.lat !== 'number' || typeof point.lon !== 'number') return;
+
+  historicalDroneMarker.setLatLng([point.lat, point.lon]);
+
+  const el = historicalDroneMarker.getElement();
+  if (el) {
+    const rotContainer = el.querySelector('div');
+    if (rotContainer) {
+      rotContainer.style.transform = `rotate(${Math.round(point.yaw || 0)}deg)`;
+    }
+  }
+}
+
+function update2dReplayHud(point, elapsedSeconds, progress) {
+  if (typeof document === 'undefined') return;
+
+  const altEl = document.getElementById('replay-2d-hud-alt');
+  const spdEl = document.getElementById('replay-2d-hud-spd');
+  const yawEl = document.getElementById('replay-2d-hud-yaw');
+  const posEl = document.getElementById('replay-2d-hud-pos');
+  const curTimeEl = document.getElementById('replay-2d-current-time');
+  const totTimeEl = document.getElementById('replay-2d-total-time');
+  const scrubber = document.getElementById('replay-2d-scrubber');
+
+  const formatTime = (secs) => {
+    const s = Math.max(0, Math.floor(secs || 0));
+    const m = Math.floor(s / 60);
+    const rem = s % 60;
+    return `${String(m).padStart(2, '0')}:${String(rem).padStart(2, '0')}`;
+  };
+
+  if (altEl && point) altEl.textContent = `${(point.alt || 0).toFixed(1)}m`;
+  if (spdEl && point) spdEl.textContent = `${(point.speed || 0).toFixed(1)}m/s`;
+  if (yawEl && point) yawEl.textContent = `${Math.round(point.yaw || 0)}°`;
+  if (posEl && point) posEl.textContent = `${point.lat.toFixed(5)}, ${point.lon.toFixed(5)}`;
+
+  if (curTimeEl) curTimeEl.textContent = formatTime(elapsedSeconds);
+  if (totTimeEl && typeof PlaybackManager !== 'undefined') {
+    totTimeEl.textContent = formatTime(PlaybackManager.durationSeconds);
+  }
+
+  if (scrubber && !scrubber._isDragging) {
+    scrubber.value = Math.round((progress || 0) * 1000);
+  }
+}
+
+function update2dRadarCacheMode(mode) {
+  const badgeText = document.getElementById('replay-2d-cache-mode-text');
+  if (badgeText) {
+    badgeText.textContent = (mode === 'cached') ? '🛰️ Radar: Cached Snapshot' : '📡 Radar: Live Stream';
+  }
+
+  // If weatherRadarLayer exists, set query parameter to allow caching
+  if (typeof weatherRadarLayer !== 'undefined' && weatherRadarLayer && typeof weatherRadarLayer.setParams === 'function') {
+    if (mode === 'cached') {
+      weatherRadarLayer.setParams({ historical: 1, snapshot: 'true' });
+    } else {
+      weatherRadarLayer.setParams({ historical: undefined, snapshot: undefined });
+    }
+  }
+}
+
+function restoreLiveRadarMode() {
+  if (typeof weatherRadarLayer !== 'undefined' && weatherRadarLayer && typeof weatherRadarLayer.setParams === 'function') {
+    weatherRadarLayer.setParams({ historical: undefined, snapshot: undefined });
+  }
+}
+
+function initReplay2dBarListeners() {
+  const scrubber = document.getElementById('replay-2d-scrubber');
+  const playBtn = document.getElementById('replay-2d-play-btn');
+  const closeBtn = document.getElementById('replay-2d-close-btn');
+  const open3dBtn = document.getElementById('replay-2d-open-3d-btn');
+  const cacheBadge = document.getElementById('replay-2d-cache-badge');
+
+  if (scrubber) {
+    scrubber.addEventListener('mousedown', () => { scrubber._isDragging = true; });
+    scrubber.addEventListener('touchstart', () => { scrubber._isDragging = true; });
+    scrubber.addEventListener('mouseup', () => { scrubber._isDragging = false; });
+    scrubber.addEventListener('touchend', () => { scrubber._isDragging = false; });
+
+    scrubber.addEventListener('input', (e) => {
+      const frac = parseFloat(e.target.value) / 1000;
+      if (typeof PlaybackManager !== 'undefined') {
+        PlaybackManager.seekTo(frac, { isFraction: true });
+      }
+    });
+  }
+
+  if (playBtn) {
+    playBtn.addEventListener('click', () => {
+      if (typeof PlaybackManager !== 'undefined') {
+        PlaybackManager.togglePlay();
+      }
+    });
+  }
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      if (typeof restoreActiveWorkspacePlanning === 'function') {
+        restoreActiveWorkspacePlanning();
+      }
+    });
+  }
+
+  if (open3dBtn) {
+    open3dBtn.addEventListener('click', () => {
+      if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.open) {
+        const fid = (typeof PlaybackManager !== 'undefined') ? PlaybackManager.activeFlightId : null;
+        FlightDiagnostics.open('3d', fid || 'active-mission');
+      }
+    });
+  }
+
+  if (cacheBadge) {
+    cacheBadge.addEventListener('click', () => {
+      if (typeof PlaybackManager !== 'undefined') {
+        const nextMode = (PlaybackManager.radarCacheMode === 'cached') ? 'live' : 'cached';
+        PlaybackManager.setRadarCacheMode(nextMode);
+        update2dRadarCacheMode(nextMode);
+        if (typeof showToast === 'function') {
+          showToast(`Radar Layer Mode: ${nextMode === 'cached' ? 'Cached Historical Snapshot' : 'Live Environmental Stream'}`, 'info');
+        }
+      }
+    });
+  }
+
+  // Speed buttons
+  const speedBtns = document.querySelectorAll('.replay-2d-speed-btn');
+  speedBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const spd = parseFloat(btn.getAttribute('data-speed') || '1');
+      if (typeof PlaybackManager !== 'undefined') {
+        PlaybackManager.setSpeed(spd);
+      }
+      speedBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+}
+
 
 // Computes current state of modified settings across all 5 domains

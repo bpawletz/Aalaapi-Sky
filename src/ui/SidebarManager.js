@@ -1649,4 +1649,319 @@ function syncDisplayValues() {
   updateInheritOptionLabels();
 }
 
+// ============================================================================
+// Issue #123: Mission Explorer & Historical Flight Database Management
+// ============================================================================
+
+let cachedMissionDbItems = [];
+
+async function initMissionDbUI() {
+  if (typeof document === 'undefined') return;
+
+  const refreshBtn = document.getElementById('mission-db-refresh-btn');
+  const searchInput = document.getElementById('mission-db-search');
+  const activeRestoreBtn = document.getElementById('mission-active-restore-btn');
+  const activeCard = document.getElementById('mission-active-workspace-card');
+
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', () => {
+      refreshMissionDbList();
+    });
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      filterAndRenderMissionDbList();
+    });
+  }
+
+  if (activeRestoreBtn) {
+    activeRestoreBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      restoreActiveWorkspacePlanning();
+    });
+  }
+
+  if (activeCard) {
+    activeCard.addEventListener('click', () => {
+      restoreActiveWorkspacePlanning();
+    });
+  }
+
+  // Initial fetch of historical missions
+  setTimeout(() => {
+    refreshMissionDbList();
+  }, 120);
+}
+
+async function refreshMissionDbList() {
+  if (typeof document === 'undefined') return;
+  const listContainer = document.getElementById('mission-db-list');
+  const badgeEl = document.getElementById('mission-db-count-badge');
+  const refreshBtn = document.getElementById('mission-db-refresh-btn');
+
+  if (refreshBtn) {
+    refreshBtn.textContent = '⏳';
+    refreshBtn.disabled = true;
+  }
+
+  const items = [];
+
+  try {
+    const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+
+    // 1. Fetch RC 2 recorded flights from companion bridge
+    try {
+      const fetchOpts = {};
+      if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+        fetchOpts.signal = AbortSignal.timeout(2000);
+      }
+      const res = await fetch(`${apiBase}/api/flights`, fetchOpts);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.flights)) {
+          data.flights.forEach(f => {
+            items.push({
+              id: f.filename,
+              type: 'rc2-recorded',
+              title: f.label || f.filename,
+              filename: f.filename,
+              date: f.flightDate || f.mtimeFormatted || 'Controller Log',
+              size: f.sizeFormatted || '',
+              statusText: f.isDecrypted ? 'Decrypted ✓' : 'Recorded Flown',
+              badgeColor: '#34d399',
+              badgeBg: 'rgba(16, 185, 129, 0.15)',
+              wpsText: f.isDecrypted ? 'Telemetry Ready' : 'Raw Record'
+            });
+          });
+        }
+      }
+    } catch (_) {}
+
+    // 2. Fetch SQLite diagnostics history from companion bridge
+    try {
+      const fetchOpts = {};
+      if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+        fetchOpts.signal = AbortSignal.timeout(2000);
+      }
+      const resDiag = await fetch(`${apiBase}/api/diagnostics/history`, fetchOpts);
+      if (resDiag.ok) {
+        const dataDiag = await resDiag.json();
+        if (dataDiag.success && Array.isArray(dataDiag.missions)) {
+          dataDiag.missions.forEach(m => {
+            const ident = m.archive_id || m.id || m.uuid;
+            const isBad = (m.is_valid === 0 || m.execution_status === 'suspended' || m.execution_status === 'failed');
+            items.push({
+              id: `diag:${ident}`,
+              type: 'sqlite-diagnostic',
+              title: m.filename || m.uuid,
+              filename: m.filename || m.uuid,
+              date: (m.created_at || '').replace('T', ' ').replace(/\..+/, ''),
+              statusText: isBad ? 'Audit Alert ⚠️' : 'Diagnostic Archive',
+              badgeColor: isBad ? '#f87171' : '#38bdf8',
+              badgeBg: isBad ? 'rgba(239, 68, 68, 0.15)' : 'rgba(56, 189, 248, 0.15)',
+              wpsText: `${m.waypoint_count || 0} Waypoints`
+            });
+          });
+        }
+      }
+    } catch (_) {}
+
+    // 3. Fallback / Sample Demo Flights for offline verification
+    const demoFlights = [
+      { id: 'FlightRecord_2026-08-20_[19-42-28].txt', title: 'Flight 3 — Field Survey Alpha', date: 'Aug 20, 19:42', wpsText: '48 Photos • 4m 12s', statusText: 'Recorded Flown', badgeColor: '#34d399', badgeBg: 'rgba(16, 185, 129, 0.15)' },
+      { id: 'FlightRecord_2026-08-20_[19-47-15].txt', title: 'Flight 4 — Structure Inspection', date: 'Aug 20, 19:47', wpsText: '1m 15s Replay', statusText: 'Recorded Flown', badgeColor: '#34d399', badgeBg: 'rgba(16, 185, 129, 0.15)' },
+      { id: 'FlightRecord_2026-08-20_[19-41-15].txt', title: 'Flight 2 — Perimeter Calibration', date: 'Aug 20, 19:41', wpsText: '0m 52s Replay', statusText: 'Recorded Flown', badgeColor: '#34d399', badgeBg: 'rgba(16, 185, 129, 0.15)' }
+    ];
+
+    demoFlights.forEach(df => {
+      if (!items.some(it => it.id === df.id)) {
+        items.push({
+          ...df,
+          type: 'demo-sample',
+          filename: df.id
+        });
+      }
+    });
+
+    cachedMissionDbItems = items;
+    if (badgeEl) {
+      badgeEl.textContent = `${items.length} Flights`;
+    }
+
+    filterAndRenderMissionDbList();
+  } finally {
+    if (refreshBtn) {
+      refreshBtn.textContent = '🔄';
+      refreshBtn.disabled = false;
+    }
+  }
+}
+
+function filterAndRenderMissionDbList() {
+  if (typeof document === 'undefined') return;
+  const listContainer = document.getElementById('mission-db-list');
+  const searchInput = document.getElementById('mission-db-search');
+  if (!listContainer) return;
+
+  const query = (searchInput && searchInput.value) ? searchInput.value.trim().toLowerCase() : '';
+
+  const filtered = cachedMissionDbItems.filter(item => {
+    if (!query) return true;
+    const customName = (typeof PlaybackManager !== 'undefined') ? (PlaybackManager.getCustomFlightName(item.id) || '') : '';
+    const matchCustom = customName.toLowerCase().includes(query);
+    const matchTitle = (item.title || '').toLowerCase().includes(query);
+    const matchDate = (item.date || '').toLowerCase().includes(query);
+    const matchId = (item.id || '').toLowerCase().includes(query);
+    return matchCustom || matchTitle || matchDate || matchId;
+  });
+
+  if (filtered.length === 0) {
+    listContainer.innerHTML = `
+      <div style="padding: 16px 8px; text-align: center; color: var(--text-muted); font-size: 0.72rem;">
+        No flight records match your search query.
+      </div>
+    `;
+    return;
+  }
+
+  const activeId = (typeof PlaybackManager !== 'undefined') ? PlaybackManager.activeFlightId : null;
+  const safeEscape = (str) => (typeof escapeHtml === 'function' ? escapeHtml(str) : String(str || ''));
+
+  let html = '';
+  filtered.forEach(f => {
+    const customName = (typeof PlaybackManager !== 'undefined') ? PlaybackManager.getCustomFlightName(f.id) : '';
+    const displayName = customName || f.title || f.id;
+    const isActive = (activeId === f.id && typeof PlaybackManager !== 'undefined' && PlaybackManager.is2dReplayActive);
+
+    html += `
+      <div class="mission-db-card ${isActive ? 'active-flight' : ''}" data-flight-id="${safeEscape(f.id)}">
+        <div class="mission-db-card-header" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+          <div style="flex: 1; overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <span class="mission-db-name" data-flight-id="${safeEscape(f.id)}" style="font-weight: 700; font-size: 0.74rem; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;" title="Click to rename flight">${safeEscape(displayName)}</span>
+              <button class="mission-db-rename-btn" data-flight-id="${safeEscape(f.id)}" type="button" title="Rename this flight entry">✏️</button>
+            </div>
+            <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 2px;">
+              ${safeEscape(f.date)} • ${safeEscape(f.wpsText || '')}
+            </div>
+          </div>
+          <span class="badge" style="font-size: 0.64rem; background: ${f.badgeBg || 'rgba(56,189,248,0.15)'}; color: ${f.badgeColor || '#38bdf8'}; border: 1px solid rgba(255,255,255,0.1); padding: 1px 5px; border-radius: 4px; white-space: nowrap;">
+            ${safeEscape(f.statusText || 'Saved')}
+          </span>
+        </div>
+        <div class="mission-db-card-actions" style="display: flex; gap: 6px; margin-top: 6px;">
+          <button class="btn-primary mission-db-2d-btn" data-flight-id="${safeEscape(f.id)}" type="button" style="flex: 1.1; padding: 3px 6px; font-size: 0.7rem; height: 24px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; border-radius: 6px;">
+            <span>▶ 2D Replay</span>
+          </button>
+          <button class="btn-secondary mission-db-3d-btn" data-flight-id="${safeEscape(f.id)}" type="button" style="flex: 0.9; padding: 3px 6px; font-size: 0.7rem; height: 24px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; border-radius: 6px;">
+            <span>🧊 3D View</span>
+          </button>
+        </div>
+      </div>
+    `;
+  });
+
+  listContainer.innerHTML = html;
+
+  // Bind 2D Replay buttons
+  listContainer.querySelectorAll('.mission-db-2d-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const fid = btn.getAttribute('data-flight-id');
+      if (fid) loadFlightFor2dReplay(fid);
+    });
+  });
+
+  // Bind 3D View buttons
+  listContainer.querySelectorAll('.mission-db-3d-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const fid = btn.getAttribute('data-flight-id');
+      if (fid) loadFlightFor3dView(fid);
+    });
+  });
+
+  // Bind Rename buttons
+  listContainer.querySelectorAll('.mission-db-rename-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const fid = btn.getAttribute('data-flight-id');
+      if (fid) promptRenameFlight(fid);
+    });
+  });
+
+  // Bind click on name directly for quick inline rename
+  listContainer.querySelectorAll('.mission-db-name').forEach(nameSpan => {
+    nameSpan.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const fid = nameSpan.getAttribute('data-flight-id');
+      if (fid) promptRenameFlight(fid);
+    });
+  });
+}
+
+function promptRenameFlight(flightId) {
+  if (typeof PlaybackManager === 'undefined') return;
+  const currentName = PlaybackManager.getCustomFlightName(flightId) || flightId;
+  const newName = (typeof prompt === 'function') ? prompt('Rename flight record:', currentName) : null;
+  if (newName !== null) {
+    PlaybackManager.setCustomFlightName(flightId, newName.trim());
+    filterAndRenderMissionDbList();
+    if (typeof showToast === 'function') {
+      showToast(`Renamed flight to "${newName.trim() || flightId}"`, 'info');
+    }
+  }
+}
+
+async function loadFlightFor2dReplay(flightId) {
+  const activeCard = document.getElementById('mission-active-workspace-card');
+  if (activeCard) activeCard.classList.remove('active');
+
+  // Load telemetry via FlightDiagnostics
+  if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.loadSelectedFlight === 'function') {
+    await FlightDiagnostics.loadSelectedFlight(flightId);
+    const telem = FlightDiagnostics.telemetryData;
+    const planned = FlightDiagnostics.plannedWaypoints;
+
+    if (typeof PlaybackManager !== 'undefined') {
+      PlaybackManager.loadFlight(flightId, telem, {
+        plannedWaypoints: planned,
+        isHistorical: (flightId !== 'active-mission')
+      });
+      PlaybackManager.set2dReplayActive(true);
+    }
+  }
+
+  filterAndRenderMissionDbList();
+}
+
+async function loadFlightFor3dView(flightId) {
+  if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.open === 'function') {
+    FlightDiagnostics.open('3d', flightId);
+  }
+}
+
+function restoreActiveWorkspacePlanning() {
+  if (typeof PlaybackManager !== 'undefined') {
+    PlaybackManager.pause();
+    PlaybackManager.set2dReplayActive(false);
+    PlaybackManager.activeFlightId = 'active-mission';
+  }
+
+  if (typeof clear2dHistoricalTracks === 'function') {
+    clear2dHistoricalTracks();
+  }
+
+  const activeCard = document.getElementById('mission-active-workspace-card');
+  if (activeCard) activeCard.classList.add('active');
+
+  filterAndRenderMissionDbList();
+
+  if (typeof showToast === 'function') {
+    showToast('Restored Active Planning Workspace', 'info');
+  }
+}
+
+
 // Search Address via OpenStreetMap Nominatim API
