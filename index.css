@@ -5576,12 +5576,73 @@ html, body {
   transition: all 0.2s ease;
 }
 
+.adsb-marker-inner.helicopter {
+  border-color: #eab308;
+  color: #fde047;
+}
+
+.adsb-marker-inner.jet {
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+
+.adsb-marker-inner.prop {
+  border-color: #10b981;
+  color: #6ee7b7;
+}
+
+.adsb-marker-inner.glider,
+.adsb-marker-inner.drone,
+.adsb-marker-inner.aircraft {
+  border-color: #94a3b8;
+  color: #cbd5e1;
+}
+
 .adsb-marker-inner.breached {
-  border-color: #ef4444;
-  color: #f87171;
+  border-color: #ef4444 !important;
+  color: #f87171 !important;
   background: rgba(30, 10, 15, 0.95);
   box-shadow: 0 4px 16px rgba(239, 68, 68, 0.5), 0 0 8px rgba(239, 68, 68, 0.6);
   animation: adsbPulseRing 1.5s infinite ease-out;
+}
+
+/* ADS-B Aircraft Type Badges & Chips */
+.adsb-type-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.adsb-type-chip.helicopter {
+  background: rgba(234, 179, 8, 0.15);
+  border: 1px solid rgba(234, 179, 8, 0.4);
+  color: #fde047;
+}
+
+.adsb-type-chip.jet {
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+}
+
+.adsb-type-chip.prop {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #6ee7b7;
+}
+
+.adsb-type-chip.glider,
+.adsb-type-chip.drone,
+.adsb-type-chip.aircraft {
+  background: rgba(148, 163, 184, 0.15);
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  color: #cbd5e1;
 }
 
 .leaflet-tooltip.adsb-plane-tooltip {

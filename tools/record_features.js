@@ -1422,6 +1422,61 @@ const scenarios = [
       await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
       await page.waitForTimeout(800);
     }
+  },
+  {
+    id: 'adsb_aircraft_icons',
+    name: 'Distinct ADS-B Aircraft Type Icons (Helicopter, Jet, Prop)',
+    description: 'Demonstrates aerospace-accurate distinct SVG icons on 2D Leaflet map and drawer chips for Helicopter (rotorcraft), Jet, and Propeller traffic.',
+    issueRef: 'Issue #124',
+    run: async (page) => {
+      // 1. Center map squarely on default coordinates
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(600);
+
+      // 2. Open ADS-B drawer and enable tracking
+      await page.evaluate(() => {
+        if (window.AdsbAirspaceManager) {
+          window.AdsbAirspaceManager.enabled = true;
+          window.AdsbAirspaceManager.toggleDrawer(true);
+        }
+      });
+      await page.waitForTimeout(800);
+
+      // 3. Simulate Propeller (Cessna 172) traffic
+      await page.evaluate(() => {
+        if (window.AdsbAirspaceManager) {
+          window.AdsbAirspaceManager.simulateAircraft('prop');
+        }
+      });
+      await page.waitForTimeout(1200);
+
+      // 4. Simulate Helicopter (Rescue / Bell 407) traffic
+      await page.evaluate(() => {
+        if (window.AdsbAirspaceManager) {
+          window.AdsbAirspaceManager.simulateAircraft('helicopter');
+        }
+      });
+      await page.waitForTimeout(1200);
+
+      // 5. Simulate Jet (Commercial Airliner / B738) traffic
+      await page.evaluate(() => {
+        if (window.AdsbAirspaceManager) {
+          window.AdsbAirspaceManager.simulateAircraft('jet');
+        }
+      });
+      await page.waitForTimeout(1500);
+
+      // 6. Hover over the drawer cards to show chips
+      const drawerList = await page.$('#adsb-aircraft-list');
+      if (drawerList) {
+        await drawerList.hover();
+      }
+      await page.waitForTimeout(1000);
+
+      // 7. Re-center map squarely on default location
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1000);
+    }
   }
 ];
 

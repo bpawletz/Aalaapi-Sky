@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.147.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.148.0</span></h1>
 
 
 
@@ -2675,13 +2675,26 @@
               </select>
             </div>
 
-            <div style="margin-top: 8px; display: flex; gap: 6px;">
-              <button id="adsb-test-audio-btn" type="button" class="btn-secondary" style="flex: 1; padding: 5px 8px; font-size: 0.72rem; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer;" title="Test Audio Synth &amp; Speech">
-                <span>🔊</span> Test Audio
-              </button>
-              <button id="adsb-sim-trigger-btn" type="button" class="btn-secondary" style="flex: 1; padding: 5px 8px; font-size: 0.72rem; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: rgba(245, 158, 11, 0.12); color: #fbbf24; border-color: rgba(245, 158, 11, 0.35); cursor: pointer;" title="Simulate Approaching Aircraft Breach">
-                <span>⚠️</span> Simulate Traffic
-              </button>
+            <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; gap: 6px;">
+                <button id="adsb-test-audio-btn" type="button" class="btn-secondary" style="flex: 1; padding: 5px 8px; font-size: 0.72rem; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer;" title="Test Audio Synth &amp; Speech">
+                  <span>🔊</span> Test Audio
+                </button>
+                <button id="adsb-sim-trigger-btn" type="button" class="btn-secondary" style="flex: 1; padding: 5px 8px; font-size: 0.72rem; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: rgba(245, 158, 11, 0.12); color: #fbbf24; border-color: rgba(245, 158, 11, 0.35); cursor: pointer;" title="Simulate Approaching Aircraft Breach">
+                  <span>⚠️</span> Simulate Traffic
+                </button>
+              </div>
+              <div style="display: flex; gap: 4px;">
+                <button id="adsb-sim-prop-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.68rem; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; background: rgba(16, 185, 129, 0.12); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.35); cursor: pointer;" title="Simulate GA Propeller Traffic (C172)">
+                  <span>🛩️</span> Prop
+                </button>
+                <button id="adsb-sim-heli-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.68rem; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; background: rgba(234, 179, 8, 0.12); color: #fde047; border-color: rgba(234, 179, 8, 0.35); cursor: pointer;" title="Simulate Helicopter Traffic (Bell 407 / R44)">
+                  <span>🚁</span> Heli
+                </button>
+                <button id="adsb-sim-jet-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.68rem; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; background: rgba(56, 189, 248, 0.12); color: #38bdf8; border-color: rgba(56, 189, 248, 0.35); cursor: pointer;" title="Simulate Commercial / Jet Traffic (B738)">
+                  <span>✈️</span> Jet
+                </button>
+              </div>
             </div>
           </div>
 
@@ -3108,6 +3121,14 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🚁 Distinct ADS-B Aircraft Type Icons &amp; Multi-Type Radar Awareness (v1.148.0) (Closes #124)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Manned aircraft airspace awareness now visually distinguishes aircraft types with aerospace-accurate SVG icons! High-performance multi-tier classification accurately identifies <strong>Helicopters (🚁 rotorcraft)</strong>, <strong>Commercial &amp; Business Jets (✈️ swept-wing jets)</strong>, and <strong>GA Propellers (🛩️ single/twin piston &amp; turboprops)</strong> from ADS-B emitter categories (<code>A7</code>, <code>A3–A6</code>, <code>A1</code>), ICAO Doc 8643 type codes, and callsign telemetry. Leaflet 2D map markers rotate dynamically along flight headings with distinct silhouette profiles, the ADS-B Control Drawer displays type chips and mini icons, and the Traffic Alert Banner features category-aware breach strobes and a 1-click 3-type test simulator.
+            </p>
+          </div>
           <div style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #22c55e; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🔄 Companion Bridge Version Synchronization &amp; 1-Click Auto-Restart (v1.147.2)
@@ -4303,7 +4324,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.147.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.148.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -4365,6 +4386,12 @@
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
           <div>
+            <strong style="color: var(--text-main);">Changelog (v1.148.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Distinct ADS-B Aircraft Type Icons &amp; Radar Awareness (Closes #124):</strong> Multi-tier classification engine categorizes manned air traffic into Helicopters (🚁 rotorcraft), Jets (✈️ swept-wing airliners/business jets), and GA Propellers (🛩️ single/twin piston &amp; turboprops) based on ADS-B emitter categories, ICAO Doc 8643 type codes, and callsign telemetry. Renders heading-aligned distinct SVG icons on 2D Leaflet map, type badges in ADS-B Control Drawer, category-aware breach strobes in Traffic Alert Banner, and a 1-click 3-type test simulator.</li>
+            </ul>
+          </div>
+          <div>
             <strong style="color: var(--text-main);">Changelog (v1.147.2):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
               <li><strong>Companion Bridge Version Synchronization &amp; 1-Click Auto-Restart:</strong> Node.js companion service dynamically discovers its version from <code>package.json</code> and broadcasts it via status APIs and SSE push streams. Browser proactively detects mismatches, shows an amber indicator with mismatch details, and provides a 1-click Auto-Restart button leveraging an exit code 42 loop in <code>start-bridge.bat</code>.</li>
@@ -4373,7 +4400,7 @@
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.147.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
-              <li><strong>Historical Flight DB Sidebar Collapse Visibility:</strong> Fixed an issue where minimizing Section 0 (<code>#mission-db-section</code>) caused the entire header to vanish. Positioned <code>&lt;h3&gt;</code> as a direct child of <code>.control-section</code> so that collapsed sections retain their header title, count badge, refresh button, and rotated chevron. Added click event guards to prevent child button clicks from toggling accordion state.</li>
+              <li><strong>Historical Flight DB Sidebar Collapse Visibility (Closes #126):</strong> Fixed an issue where minimizing Section 0 (<code>#mission-db-section</code>) caused the entire header to vanish. Positioned <code>&lt;h3&gt;</code> as a direct child of <code>.control-section</code> so that collapsed sections retain their header title, count badge, refresh button, and rotated chevron. Added click event guards to prevent child button clicks from toggling accordion state.</li>
             </ul>
           </div>
           <div>
