@@ -6655,7 +6655,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(result.success, true);
     assert.strictEqual(result.isOpen, true, 'About modal should be visible upon clicking about button');
     assert.strictEqual(result.isClosed, true, 'About modal should close upon clicking close button');
-    assert.ok(result.versionTag.trim() === 'Version 1.147.2' || result.versionTag.trim() === 'Version 1.147.1' || result.versionTag.trim() === 'Version 1.147.0' || result.versionTag.trim() === 'Version 1.146.0' || result.versionTag.trim() === 'Version 1.145.0' || result.versionTag.trim() === 'Version 1.144.0' || result.versionTag.trim() === 'Version 1.143.0' || ['Version 1.131.2', 'Version 1.132.0', 'Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0', 'Version 1.143.0'].includes(result.versionTag), 'About modal version tag should be Version 1.131.2 or newer');
+    assert.ok(result.versionTag.trim() === 'Version 1.148.0' || result.versionTag.trim() === 'Version 1.147.2' || result.versionTag.trim() === 'Version 1.147.1' || result.versionTag.trim() === 'Version 1.147.0' || result.versionTag.trim() === 'Version 1.146.0' || result.versionTag.trim() === 'Version 1.145.0' || result.versionTag.trim() === 'Version 1.144.0' || result.versionTag.trim() === 'Version 1.143.0' || ['Version 1.131.2', 'Version 1.132.0', 'Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0', 'Version 1.143.0'].includes(result.versionTag), 'About modal version tag should be Version 1.131.2 or newer');
     assert.strictEqual(result.listItemsCount, 6, 'Key capabilities should be summarized into 6 structured pillars');
     assert.strictEqual(result.hasPatternGen, true);
     assert.strictEqual(result.hasTrajectory, true);
@@ -6667,10 +6667,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
   test('E2E: v1.132.1 header badge and About modal reflect Version 1.132.1', async () => {
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.0' || badgeText.trim() === 'v1.146.0' || badgeText.trim() === 'v1.145.0' || badgeText.trim() === 'v1.144.0' || badgeText.trim() === 'v1.143.0' || ['v1.132.1', 'v1.133.0', 'v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0', 'v1.143.0'].includes(badgeText.trim()), 'Header version badge should be v1.132.1 or newer');
+    assert.ok(badgeText.trim() === 'v1.148.0' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.148.0' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.0' || badgeText.trim() === 'v1.146.0' || badgeText.trim() === 'v1.145.0' || badgeText.trim() === 'v1.144.0' || badgeText.trim() === 'v1.143.0' || ['v1.132.1', 'v1.133.0', 'v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0', 'v1.143.0'].includes(badgeText.trim()), 'Header version badge should be v1.132.1 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.147.0' || modalVersion.trim() === 'Version 1.146.0' || modalVersion.trim() === 'Version 1.145.0' || modalVersion.trim() === 'Version 1.144.0' || modalVersion.trim() === 'Version 1.143.0' || ['Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0', 'Version 1.143.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.132.1 or newer');
+    assert.ok(modalVersion.trim() === 'Version 1.148.0' || modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.148.0' || modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.147.0' || modalVersion.trim() === 'Version 1.146.0' || modalVersion.trim() === 'Version 1.145.0' || modalVersion.trim() === 'Version 1.144.0' || modalVersion.trim() === 'Version 1.143.0' || ['Version 1.132.1', 'Version 1.133.0', 'Version 1.134.0', 'Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0', 'Version 1.143.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.132.1 or newer');
   });
 
   test('E2E: Standalone inspection report template features offline satellite default and road providers (v1.132.1)', async () => {
@@ -6686,7 +6686,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Multi-POI Association & Three-Tier Cascading Hierarchy (v1.134.0, Issue #77)', async () => {
     // 1. Header version badge and About modal reflect v1.134.0 or newer
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.0' || badgeText.trim() === 'v1.146.0' || badgeText.trim() === 'v1.145.0' || badgeText.trim() === 'v1.144.0' || badgeText.trim() === 'v1.143.0' || ['v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.0 or newer');
+    assert.ok(badgeText.trim() === 'v1.148.0' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.148.0' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.0' || badgeText.trim() === 'v1.146.0' || badgeText.trim() === 'v1.145.0' || badgeText.trim() === 'v1.144.0' || badgeText.trim() === 'v1.143.0' || ['v1.134.0', 'v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.0 or newer');
 
     // 2. Section 2 Layer Card contains #layer-poi-select & responds to towardPOI mode
     const poiTestResult = await page.evaluate(() => {
@@ -6728,10 +6728,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Edit Waypoint Popup & Mobile Overflow Zero Overhang (v1.134.1, Issue #107)', async () => {
     // 1. Header version badge and About modal reflect v1.134.1 or newer
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.0' || badgeText.trim() === 'v1.146.0' || badgeText.trim() === 'v1.144.0' || badgeText.trim() === 'v1.143.0' || ['v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.1 or newer');
+    assert.ok(badgeText.trim() === 'v1.148.0' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.148.0' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.0' || badgeText.trim() === 'v1.146.0' || badgeText.trim() === 'v1.144.0' || badgeText.trim() === 'v1.143.0' || ['v1.134.1', 'v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.1 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.147.0' || modalVersion.trim() === 'Version 1.146.0' || modalVersion.trim() === 'Version 1.144.0' || modalVersion.trim() === 'Version 1.143.0' || ['Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.1 or newer');
+    assert.ok(modalVersion.trim() === 'Version 1.148.0' || modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.148.0' || modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.147.0' || modalVersion.trim() === 'Version 1.146.0' || modalVersion.trim() === 'Version 1.144.0' || modalVersion.trim() === 'Version 1.143.0' || ['Version 1.134.1', 'Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.1 or newer');
 
     // 2. Emulate mobile viewport (360x640)
     await page.setViewportSize({ width: 360, height: 640 });
@@ -6816,10 +6816,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Exclusion-Freeform & Custom Heading WPML Execution on DJI Mini 4 Pro (v1.134.2, Issue #110)', async () => {
     // 1. Header version badge and About modal reflect v1.134.2 or newer
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.0' || badgeText.trim() === 'v1.146.0' || badgeText.trim() === 'v1.144.0' || badgeText.trim() === 'v1.143.0' || ['v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.2 or newer');
+    assert.ok(badgeText.trim() === 'v1.148.0' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.148.0' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.0' || badgeText.trim() === 'v1.146.0' || badgeText.trim() === 'v1.144.0' || badgeText.trim() === 'v1.143.0' || ['v1.134.2', 'v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0'].includes(badgeText.trim()), 'Header version badge should be v1.134.2 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.147.0' || modalVersion.trim() === 'Version 1.146.0' || modalVersion.trim() === 'Version 1.144.0' || modalVersion.trim() === 'Version 1.143.0' || ['Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.2 or newer');
+    assert.ok(modalVersion.trim() === 'Version 1.148.0' || modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.148.0' || modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.147.0' || modalVersion.trim() === 'Version 1.146.0' || modalVersion.trim() === 'Version 1.144.0' || modalVersion.trim() === 'Version 1.143.0' || ['Version 1.134.2', 'Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.134.2 or newer');
 
     // 2. Evaluate in browser context: buildWaylinesWpml with exclusion-freeform layer and custom headings
     const testResult = await page.evaluate(() => {
@@ -6866,10 +6866,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Next-24-Hour Solar Ephemeris & Part 107 Tracker Card (v1.135.0, Issue #100)', async () => {
     // 1. Header version badge and About modal reflect v1.135.0
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.0' || badgeText.trim() === 'v1.146.0' || badgeText.trim() === 'v1.144.0' || badgeText.trim() === 'v1.143.0' || ['v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0'].includes(badgeText.trim()), 'Header version badge should be v1.135.0 or newer');
+    assert.ok(badgeText.trim() === 'v1.148.0' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.148.0' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.0' || badgeText.trim() === 'v1.146.0' || badgeText.trim() === 'v1.144.0' || badgeText.trim() === 'v1.143.0' || ['v1.135.0', 'v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0'].includes(badgeText.trim()), 'Header version badge should be v1.135.0 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.147.0' || modalVersion.trim() === 'Version 1.146.0' || modalVersion.trim() === 'Version 1.144.0' || modalVersion.trim() === 'Version 1.143.0' || ['Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.135.0 or newer');
+    assert.ok(modalVersion.trim() === 'Version 1.148.0' || modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.148.0' || modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.147.0' || modalVersion.trim() === 'Version 1.146.0' || modalVersion.trim() === 'Version 1.144.0' || modalVersion.trim() === 'Version 1.143.0' || ['Version 1.135.0', 'Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.135.0 or newer');
 
     // 2. Validate DOM Architecture and Dynamic Update in Browser Context
     const solarResult = await page.evaluate(() => {
@@ -6938,10 +6938,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Freeform Pattern KMZ Execution on DJI Mini 4 Pro (v1.135.1, Issue #111)', async () => {
     // 1. Header version badge and About modal reflect v1.135.1
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.0' || badgeText.trim() === 'v1.146.0' || badgeText.trim() === 'v1.144.0' || badgeText.trim() === 'v1.143.0' || ['v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0'].includes(badgeText.trim()), 'Header version badge should be v1.135.1 or newer');
+    assert.ok(badgeText.trim() === 'v1.148.0' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.148.0' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.0' || badgeText.trim() === 'v1.146.0' || badgeText.trim() === 'v1.144.0' || badgeText.trim() === 'v1.143.0' || ['v1.135.1', 'v1.135.2', 'v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0'].includes(badgeText.trim()), 'Header version badge should be v1.135.1 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.147.0' || modalVersion.trim() === 'Version 1.146.0' || modalVersion.trim() === 'Version 1.144.0' || modalVersion.trim() === 'Version 1.143.0' || ['Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.135.1 or newer');
+    assert.ok(modalVersion.trim() === 'Version 1.148.0' || modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.148.0' || modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.147.0' || modalVersion.trim() === 'Version 1.146.0' || modalVersion.trim() === 'Version 1.144.0' || modalVersion.trim() === 'Version 1.143.0' || ['Version 1.135.1', 'Version 1.135.2', 'Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.135.1 or newer');
 
     // 2. Evaluate in browser context: buildWaylinesWpml with freeform layer, 31 waypoints, DJI Mini 4 Pro
     const testResult = await page.evaluate(() => {
@@ -7065,10 +7065,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Flight Diagnostics Multi-Layer AI Export & Privacy Coordinate Masking (v1.136.0, Issue #108)', async () => {
     // 1. Header version badge and About modal reflect v1.136.0
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.0' || badgeText.trim() === 'v1.146.0' || badgeText.trim() === 'v1.144.0' || badgeText.trim() === 'v1.143.0' || ['v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0'].includes(badgeText.trim()), 'Header version badge should be v1.136.0 or newer');
+    assert.ok(badgeText.trim() === 'v1.148.0' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.148.0' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.0' || badgeText.trim() === 'v1.146.0' || badgeText.trim() === 'v1.144.0' || badgeText.trim() === 'v1.143.0' || ['v1.136.0', 'v1.137.0', 'v1.138.0', 'v1.138.1', 'v1.139.0', 'v1.140.0', 'v1.140.1', 'v1.141.0'].includes(badgeText.trim()), 'Header version badge should be v1.136.0 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.147.0' || modalVersion.trim() === 'Version 1.146.0' || modalVersion.trim() === 'Version 1.144.0' || modalVersion.trim() === 'Version 1.143.0' || ['Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.136.0 or newer');
+    assert.ok(modalVersion.trim() === 'Version 1.148.0' || modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.148.0' || modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.147.0' || modalVersion.trim() === 'Version 1.146.0' || modalVersion.trim() === 'Version 1.144.0' || modalVersion.trim() === 'Version 1.143.0' || ['Version 1.136.0', 'Version 1.137.0', 'Version 1.138.0', 'Version 1.138.1', 'Version 1.139.0', 'Version 1.140.0', 'Version 1.140.1', 'Version 1.141.0'].includes(modalVersion.trim()), 'About modal version tag should be Version 1.136.0 or newer');
 
     // 2. Flight Diagnostics modal DOM checks and privacy toggle interactivity
     const diagResult = await page.evaluate(() => {
@@ -7307,7 +7307,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
   test('E2E: Native Model Context Protocol (MCP) Server & Companion Node Monitor Grid (Issue #94, v1.139.0)', async () => {
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.0' || badgeText.trim() === 'v1.146.0' || badgeText.trim() === 'v1.144.0' || badgeText.trim() === 'v1.139.0' || badgeText.trim() === 'v1.140.0' || badgeText.trim() === 'v1.140.1' || badgeText.trim() === 'v1.141.0' || badgeText.trim() === 'v1.143.0', 'Header version badge should be valid');
+    assert.ok(badgeText.trim() === 'v1.148.0' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.148.0' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.0' || badgeText.trim() === 'v1.146.0' || badgeText.trim() === 'v1.144.0' || badgeText.trim() === 'v1.139.0' || badgeText.trim() === 'v1.140.0' || badgeText.trim() === 'v1.140.1' || badgeText.trim() === 'v1.141.0' || badgeText.trim() === 'v1.143.0', 'Header version badge should be valid');
 
     // Open companion modal / check companion container
     const mcpSection = page.locator('#mcp-monitor-section');
@@ -7373,10 +7373,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('v1.141.0: Road Follow pattern allows deleting a waypoint without converting to freeform', async () => {
     // 1. Version checks
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.0' || badgeText.trim() === 'v1.146.0' || badgeText.trim() === 'v1.144.0' || badgeText.trim() === 'v1.141.0' || badgeText.trim() === 'v1.143.0', 'Header version badge should be v1.141.0 or newer');
+    assert.ok(badgeText.trim() === 'v1.148.0' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.148.0' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.0' || badgeText.trim() === 'v1.146.0' || badgeText.trim() === 'v1.144.0' || badgeText.trim() === 'v1.141.0' || badgeText.trim() === 'v1.143.0', 'Header version badge should be v1.141.0 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.147.0' || modalVersion.trim() === 'Version 1.146.0' || modalVersion.trim() === 'Version 1.144.0' || modalVersion.trim() === 'Version 1.141.0' || modalVersion.trim() === 'Version 1.143.0', 'About modal version tag should be Version 1.141.0 or newer');
+    assert.ok(modalVersion.trim() === 'Version 1.148.0' || modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.148.0' || modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.147.0' || modalVersion.trim() === 'Version 1.146.0' || modalVersion.trim() === 'Version 1.144.0' || modalVersion.trim() === 'Version 1.141.0' || modalVersion.trim() === 'Version 1.143.0', 'About modal version tag should be Version 1.141.0 or newer');
 
     // 2. Browser evaluation of road-following waypoint deletion
     const result = await page.evaluate(() => {
@@ -7425,10 +7425,10 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
   test('E2E: Dual-Source ADS-B Online Feeds & 10m Rate-Limited Watch Session UI (v1.143.0, Issue #119)', async () => {
     // 1. Version checks
     const badgeText = await page.locator('.header-version-badge').first().innerText();
-    assert.ok(badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.0' || badgeText.trim() === 'v1.146.0' || badgeText.trim() === 'v1.144.0' || badgeText.trim() === 'v1.143.0', 'Header version badge should be v1.144.0 or newer');
+    assert.ok(badgeText.trim() === 'v1.148.0' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.148.0' || badgeText.trim() === 'v1.147.2' || badgeText.trim() === 'v1.147.1' || badgeText.trim() === 'v1.147.0' || badgeText.trim() === 'v1.146.0' || badgeText.trim() === 'v1.144.0' || badgeText.trim() === 'v1.143.0', 'Header version badge should be v1.144.0 or newer');
 
     const modalVersion = await page.locator('#about-modal .version-tag').first().innerText();
-    assert.ok(modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.147.0' || modalVersion.trim() === 'Version 1.146.0' || modalVersion.trim() === 'Version 1.144.0' || modalVersion.trim() === 'Version 1.143.0', 'About modal version tag should be Version 1.144.0 or newer');
+    assert.ok(modalVersion.trim() === 'Version 1.148.0' || modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.148.0' || modalVersion.trim() === 'Version 1.147.2' || modalVersion.trim() === 'Version 1.147.1' || modalVersion.trim() === 'Version 1.147.0' || modalVersion.trim() === 'Version 1.146.0' || modalVersion.trim() === 'Version 1.144.0' || modalVersion.trim() === 'Version 1.143.0', 'About modal version tag should be Version 1.144.0 or newer');
 
     // 2. Test ADS-B Drawer & Dual Source Elements via evaluate
     const res = await page.evaluate(async () => {
@@ -7652,7 +7652,156 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     assert.strictEqual(result.isExpandedAfterSecondClick, true, 'Clicking header again should expand section');
     assert.notStrictEqual(result.listDisplayExpanded, 'none', 'List container must become visible when section is expanded');
   });
+  describe('Issue #124 & v1.148.0: ADS-B Distinct Aircraft Type Icons E2E Suite', () => {
+    test('E2E: Simulating Helicopter, Jet, and Propeller traffic renders distinct SVG map markers and drawer badges', async () => {
+      const result = await page.evaluate(async () => {
+        if (!window.AdsbAirspaceManager) {
+          return { error: 'window.AdsbAirspaceManager not available' };
+        }
+        window.AdsbAirspaceManager.enabled = true;
+
+        // 1. Inject simulated Helicopter, Jet, and Propeller into manager aircraft array
+        const heliSim = {
+          hex: 'SIM_HELI',
+          flight: 'LIFEFLIGHT_1',
+          callsign: 'LIFEFLIGHT_1',
+          aircraftType: 'helicopter',
+          category: 'A7',
+          type: 'EC35',
+          latitude: 41.3215 + 0.005,
+          longitude: -88.9950 + 0.005,
+          altitude: 1200,
+          speed: 95,
+          track: 45,
+          lastSeen: Date.now()
+        };
+
+        const jetSim = {
+          hex: 'SIM_JET',
+          flight: 'UAL123',
+          callsign: 'UAL123',
+          aircraftType: 'jet',
+          category: 'A3',
+          type: 'B738',
+          latitude: 41.3215 - 0.008,
+          longitude: -88.9950 - 0.008,
+          altitude: 28000,
+          speed: 460,
+          track: 180,
+          lastSeen: Date.now()
+        };
+
+        const propSim = {
+          hex: 'SIM_PROP',
+          flight: 'N172SP',
+          callsign: 'N172SP',
+          aircraftType: 'prop',
+          category: 'A1',
+          type: 'C172',
+          latitude: 41.3215 + 0.004,
+          longitude: -88.9950 - 0.004,
+          altitude: 3500,
+          speed: 115,
+          track: 270,
+          lastSeen: Date.now()
+        };
+
+        window.AdsbAirspaceManager.aircraft = [heliSim, jetSim, propSim];
+        window.AdsbAirspaceManager.updateMapMarkers();
+        window.AdsbAirspaceManager.updateDrawerAircraftList();
+
+        const heliMarker = window.AdsbAirspaceManager.mapMarkers.get('SIM_HELI');
+        const jetMarker = window.AdsbAirspaceManager.mapMarkers.get('SIM_JET');
+        const propMarker = window.AdsbAirspaceManager.mapMarkers.get('SIM_PROP');
+
+        const heliIcon = heliMarker ? heliMarker.getElement() : null;
+        const jetIcon = jetMarker ? jetMarker.getElement() : null;
+        const propIcon = propMarker ? propMarker.getElement() : null;
+
+        const heliInner = heliIcon ? heliIcon.querySelector('.adsb-marker-inner') : null;
+        const jetInner = jetIcon ? jetIcon.querySelector('.adsb-marker-inner') : null;
+        const propInner = propIcon ? propIcon.querySelector('.adsb-marker-inner') : null;
+
+        const heliSvg = heliInner ? heliInner.querySelector('svg') : null;
+        const jetSvg = jetInner ? jetInner.querySelector('svg') : null;
+        const propSvg = propInner ? propInner.querySelector('svg') : null;
+
+        const listEl = document.getElementById('adsb-aircraft-list');
+        const cards = listEl ? Array.from(listEl.querySelectorAll('.adsb-aircraft-card')).map(card => {
+          const chip = card.querySelector('.adsb-type-chip');
+          return {
+            cardType: card.getAttribute('data-aircraft-type'),
+            chipClass: chip ? chip.className : '',
+            chipText: chip ? chip.textContent.trim() : ''
+          };
+        }) : [];
+
+        return {
+          success: true,
+          heli: {
+            hasMarker: !!heliMarker,
+            innerClasses: heliInner ? Array.from(heliInner.classList) : [],
+            hasSvg: !!heliSvg,
+            markerType: heliMarker ? heliMarker._aircraftTypeClass : null
+          },
+          jet: {
+            hasMarker: !!jetMarker,
+            innerClasses: jetInner ? Array.from(jetInner.classList) : [],
+            hasSvg: !!jetSvg,
+            markerType: jetMarker ? jetMarker._aircraftTypeClass : null
+          },
+          prop: {
+            hasMarker: !!propMarker,
+            innerClasses: propInner ? Array.from(propInner.classList) : [],
+            hasSvg: !!propSvg,
+            markerType: propMarker ? propMarker._aircraftTypeClass : null
+          },
+          cards
+        };
+      });
+
+      assert.strictEqual(result.success, true);
+      assert.strictEqual(result.heli.hasMarker, true, 'Helicopter map marker must exist');
+      assert.ok(result.heli.innerClasses.includes('helicopter'), 'Helicopter marker inner must have class "helicopter"');
+      assert.strictEqual(result.heli.markerType, 'helicopter', 'Helicopter marker type must be helicopter');
+      assert.strictEqual(result.heli.hasSvg, true, 'Helicopter marker must contain SVG');
+
+      assert.strictEqual(result.jet.hasMarker, true, 'Jet map marker must exist');
+      assert.ok(result.jet.innerClasses.includes('jet'), 'Jet marker inner must have class "jet"');
+      assert.strictEqual(result.jet.markerType, 'jet', 'Jet marker type must be jet');
+      assert.strictEqual(result.jet.hasSvg, true, 'Jet marker must contain SVG');
+
+      assert.strictEqual(result.prop.hasMarker, true, 'Propeller map marker must exist');
+      assert.ok(result.prop.innerClasses.includes('prop'), 'Propeller marker inner must have class "prop"');
+      assert.strictEqual(result.prop.markerType, 'prop', 'Propeller marker type must be prop');
+      assert.strictEqual(result.prop.hasSvg, true, 'Propeller marker must contain SVG');
+
+      const cardTypes = result.cards.map(c => c.cardType);
+      assert.ok(cardTypes.includes('helicopter'), 'Drawer cards must include helicopter');
+      assert.ok(cardTypes.includes('jet'), 'Drawer cards must include jet');
+      assert.ok(cardTypes.includes('prop'), 'Drawer cards must include prop');
+    });
+
+    test('E2E: Drawer simulation buttons exist and trigger simulated aircraft generation', async () => {
+      const simBtnsExist = await page.evaluate(() => {
+        const propBtn = document.getElementById('adsb-sim-prop-btn');
+        const heliBtn = document.getElementById('adsb-sim-heli-btn');
+        const jetBtn = document.getElementById('adsb-sim-jet-btn');
+        return {
+          prop: !!propBtn,
+          heli: !!heliBtn,
+          jet: !!jetBtn
+        };
+      });
+
+      assert.strictEqual(simBtnsExist.prop, true, '#adsb-sim-prop-btn must exist');
+      assert.strictEqual(simBtnsExist.heli, true, '#adsb-sim-heli-btn must exist');
+      assert.strictEqual(simBtnsExist.jet, true, '#adsb-sim-jet-btn must exist');
+    });
+  });
 });
+
+
 
 
 
