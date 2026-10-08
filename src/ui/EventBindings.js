@@ -2130,15 +2130,18 @@ function initUIEventListeners() {
   const close3dFooterBtn = document.getElementById('close-3d-footer-btn');
   const preview3dModal = document.getElementById('preview-3d-modal');
 
-  if (preview3dBtn && preview3dModal) {
+  if (preview3dBtn) {
     preview3dBtn.addEventListener('click', () => {
-      preview3dModal.classList.remove('hidden');
       if (window.innerWidth <= 768) {
-        document.querySelector('.sidebar').classList.remove('open');
+        const sb = document.querySelector('.sidebar');
+        if (sb) sb.classList.remove('open');
       }
-      init3DPreview();
-      setTimeout(handle3DResize, 50);
-      setTimeout(handle3DResize, 250);
+      if (preview3dModal) {
+        preview3dModal.classList.remove('hidden');
+        init3DPreview();
+        setTimeout(handle3DResize, 50);
+        setTimeout(handle3DResize, 250);
+      }
     });
   }
 
@@ -2276,6 +2279,11 @@ function initUIEventListeners() {
 
   // Setup universal floating tooltips for waypoint leg phase badges (v1.86.5)
   initLegPhaseBadgeTooltips();
+
+  // Setup Mission Explorer & Historical Flight Database (Issue #123)
+  if (typeof initMissionDbUI === 'function') {
+    initMissionDbUI();
+  }
 }
 
 /**

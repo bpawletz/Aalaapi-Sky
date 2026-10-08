@@ -1,3 +1,15 @@
+## [1.147.0] - 2026-10-08
+
+### Added
+- **Unified 2D/3D Replay Architecture & Historical DB Sidebar Integration (Closes #123)**:
+  - **Missions & Historical Flight DB Sidebar Section (`#mission-db-section`, `src/ui/SidebarManager.js`, `index_template.html`)**: Placed at the very top of the sidebar above pattern layers, providing instant visibility of historical flights, controller logs, SQLite diagnostic archives, and bad KMZ audits. Features a search/filter input, count badges, and an Active Workspace card for 1-click toggling between historical replay and live planning.
+  - **Renamable Flight Records**: Implemented inline renaming for flight records in the sidebar list with persistent storage in `localStorage` (`aalaapi_custom_flight_names`), enabling pilots to assign human-readable mission names.
+  - **Global Playback Manager (`src/core/PlaybackManager.js`)**: Created a unified playback state engine managing playback speed (1x–10x), time scrubbers, progress interpolation (lat, lon, alt, speed, yaw, gimbal pitch), and event streaming across 2D and 3D viewports.
+  - **2D Flight Replay with Directional Drone Marker (`src/map/MapEngine.js`)**: Implemented 2D map replay rendering dual trajectories (dashed cyan planned line, solid emerald flown path), an animated rotating drone SVG marker tracking heading/yaw, and automated map bounds framing.
+  - **Floating 2D Replay HUD & Scrubber Bar (`#replay-2d-bar`)**: Added a floating bottom control bar with live telemetry HUD (ALT, SPD, HDG, POS), time counter, responsive scrubber, speed presets, and a direct `🧊 3D Cockpit` jump button preserving the current playback frame.
+  - **Historical Layer Tile Caching Override (`tools/companion/tile_cache.js`)**: Enhanced companion proxy tile cache to recognize historical replay queries (`historical=1` / `snapshot=true`) to cache and serve historical environmental radar snapshots rather than showing misleading live feeds.
+  - **Unified 3D View Integration (`src/3d/DigitalTwin.js`, `src/ui/EventBindings.js`)**: Consolidated 3D preview and diagnostics into a unified Digital Twin viewer, syncing timeline seek and play states between 2D and 3D environments.
+
 ## [1.146.0] - 2026-10-06
 
 ### Added
