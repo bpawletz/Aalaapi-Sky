@@ -1,3 +1,13 @@
+## [1.148.0] - 2026-10-08
+
+### Added
+- **Distinct ADS-B Aircraft Type Icons & Airspace Radar Classification (Closes #124)**:
+  - **Aerospace-Accurate SVG Aircraft Markers (`src/bridge/ApiClient.js`, `index.css`)**: Enhanced ADS-B 2D Leaflet map markers to dynamically render distinct, heading-aligned SVG silhouettes for **Helicopters** (🚁 top main rotor disc/blades, cabin, and tail boom fin), **Commercial & Business Jets** (✈️ swept-back wings with twin engine nacelles and swept tail), and **GA Propellers** (🛩️ straight/tapered wings, nose spinner with propeller disc, and straight tail), alongside clean fallbacks for gliders, drones, and generic traffic.
+  - **Multi-Tier Classification Engine (`classifyAircraft`)**: Dynamically resolves aircraft type with cascading priority across ADS-B Emitter Categories (`A7` -> Helicopter, `A3..A6` -> Jet, `A1` -> Propeller, `B1` -> Glider, `B6` -> Drone), ICAO Doc 8643 Type Designators (e.g. `R44`, `B06`, `EC35`, `H125`, `UH60`, `B738`, `A320`, `C172`, `PA28`, `SR22`, `PC12`), callsign heuristics (e.g. `LIFEFLIGHT`, `MEDEVAC`, `AIRCARE`, `HELI`), and flight telemetry fallbacks (`speed > 260 kts` or `altitude > 20000 ft` -> Jet; `speed < 150 kts` and `altitude < 9000 ft` -> Propeller).
+  - **ADS-B Control Drawer Type Indicators (`src/bridge/ApiClient.js`, `index.css`)**: Live aircraft cards now feature distinct category badges (`.adsb-type-chip`) with emoji glyphs and color-coding (amber for helicopter, sky blue for jet, emerald for propeller).
+  - **Dynamic Traffic Alert Banner (`src/bridge/ApiClient.js`)**: Updated breach banner emergency strobes to dynamically show the threatening aircraft category emoji (🚁 / ✈️ / 🛩️) and formatted classification labels (e.g. `HELICOPTER BREACH`).
+  - **Multi-Type Test Simulation Injector (`src/bridge/ApiClient.js`, `tools/companion/adsb_tracker.js`, `index_template.html`)**: Added dedicated 1-click test simulation buttons in the ADS-B Control Drawer for Prop (`C172`), Heli (`Bell 407 / MEDEVAC1`), and Jet (`B738 / UAL452`) with complete synthetic flight telemetry and vector calculation support.
+
 ## [1.147.2] - 2026-10-08
 
 ### Added
@@ -10,7 +20,7 @@
 ## [1.147.1] - 2026-10-08
 
 ### Fixed
-- **Historical Flight DB Sidebar Collapse Visibility**:
+- **Historical Flight DB Sidebar Collapse Visibility (Closes #126)**:
   - Fixed an issue where minimizing (collapsing) Section 0 (`#mission-db-section`) caused the entire section header to disappear from the sidebar. Restructured the DOM so that `<h3>` is a direct child of `.control-section`, allowing `.control-section.collapsed > *:not(h3)` to properly hide section contents while preserving the section header, title, badge, refresh button, and rotated chevron.
   - Aligned Section 0 header naming and styling with the standard sidebar pattern (`0. HISTORICAL FLIGHT DB & MISSIONS`).
   - Added click guards (`if (e.target.closest('button')) return`) and `e.stopPropagation()` on the refresh button to prevent accidental collapsing when refreshing flight logs.

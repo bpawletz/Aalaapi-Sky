@@ -1,10 +1,18 @@
 (function (root, factory) {
+  const instance = factory();
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory();
-  } else {
-    root.TagDetector = factory();
+    module.exports = instance;
   }
-})(typeof self !== 'undefined' ? self : this, function () {
+  if (typeof root !== 'undefined') {
+    root.TagDetector = instance;
+  }
+  if (typeof window !== 'undefined') {
+    window.TagDetector = instance;
+  }
+  if (typeof global !== 'undefined') {
+    global.TagDetector = instance;
+  }
+})(typeof self !== 'undefined' ? self : (typeof globalThis !== 'undefined' ? globalThis : this), function () {
   'use strict';
 
   // --- Dictionaries & Code Definitions ---
@@ -693,12 +701,3 @@
 
   return TagDetector;
 });
-
-
-if (typeof window !== 'undefined') window.TagDetector = TagDetector;
-if (typeof global !== 'undefined') global.TagDetector = TagDetector;
-
-// =============================================================================
-// Photo Inspector, Interactive Annotation Marker & Boundary Tools (v1.96.0)
-// =============================================================================
-

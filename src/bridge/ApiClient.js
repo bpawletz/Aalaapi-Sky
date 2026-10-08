@@ -2058,6 +2058,235 @@ const AdsbAirspaceManager = {
     }
   },
 
+  classifyAircraft(ac) {
+    let type = 'aircraft';
+    if (!ac) {
+      type = 'aircraft';
+    } else if (typeof ac === 'string') {
+      const s = ac.toLowerCase();
+      if (s === 'helicopter' || s === 'heli') type = 'helicopter';
+      else if (s === 'jet') type = 'jet';
+      else if (s === 'prop' || s === 'propeller') type = 'prop';
+      else if (s === 'glider') type = 'glider';
+      else if (s === 'balloon') type = 'balloon';
+      else if (s === 'drone') type = 'drone';
+      else type = 'aircraft';
+    } else {
+      const explicitType = (ac.aircraftType || ac.type || '').toString().trim().toLowerCase();
+      if (['helicopter', 'jet', 'prop', 'glider', 'balloon', 'drone'].includes(explicitType)) {
+        type = explicitType;
+      } else {
+        const cat = (ac.category || '').toString().trim().toUpperCase();
+        if (cat === 'A7') {
+          type = 'helicopter';
+        } else if (cat === 'B1') {
+          type = 'glider';
+        } else if (cat === 'B2') {
+          type = 'balloon';
+        } else if (cat === 'B6') {
+          type = 'drone';
+        } else if (['A3', 'A4', 'A5', 'A6'].includes(cat)) {
+          type = 'jet';
+        } else if (cat === 'A1' || cat === 'A2') {
+          type = 'prop';
+        } else {
+          const rawType = (ac.aircraftType || ac.t || ac.type || '').toString().trim().toUpperCase();
+          const HELI_TYPES = new Set([
+            'R22', 'R44', 'R66', 'B06', 'B206', 'B212', 'B214', 'B222', 'B230', 'B407', 'B412', 'B427', 'B429', 'B430',
+            'UH1', 'AH1', 'OH58', 'H500', 'EC20', 'EC30', 'EC35', 'EC45', 'EC55', 'EC75', 'EC25',
+            'H120', 'H125', 'H130', 'H135', 'H145', 'H155', 'H160', 'H175', 'H215', 'H225',
+            'AS50', 'AS55', 'AS65', 'SA33', 'SA34', 'BO10', 'BK117',
+            'S76', 'S92', 'S70', 'UH60', 'H60', 'H53', 'CH53', 'S61', 'S64', 'S300', 'S330', 'S333',
+            'A109', 'A119', 'A139', 'A169', 'A189', 'AW09', 'AW10', 'EH10',
+            'MD50', 'MD52', 'MD60', 'MD90', 'EXPL', 'CH47', 'H47', 'AH64', 'V22',
+            'EN28', 'EN48', 'G2CA', 'MI8', 'MI17', 'MI24', 'MI26', 'KA27', 'KA32', 'KA52',
+            'AL03', 'HUCO', 'LYNX', 'R216', 'R280'
+          ]);
+          const JET_TYPES = new Set([
+            'B703', 'B712', 'B720', 'B721', 'B722', 'B731', 'B732', 'B733', 'B734', 'B735', 'B736', 'B737', 'B738', 'B739',
+            'B37M', 'B38M', 'B39M', 'B741', 'B742', 'B743', 'B744', 'B748', 'B752', 'B753', 'B762', 'B763', 'B764',
+            'B772', 'B773', 'B77L', 'B77W', 'B788', 'B789', 'B78X', 'C17', 'KC135', 'E3TF',
+            'A306', 'A30B', 'A310', 'A318', 'A319', 'A320', 'A321', 'A20N', 'A21N', 'A332', 'A333', 'A338', 'A339',
+            'A342', 'A343', 'A345', 'A346', 'A359', 'A35K', 'A388', 'A220', 'BCS1', 'BCS3',
+            'E135', 'E145', 'E170', 'E175', 'E190', 'E195', 'E290', 'E295', 'E50P', 'E55P', 'E545', 'E550', 'PRM1',
+            'CRJ1', 'CRJ2', 'CRJ7', 'CRJ9', 'CRJX', 'CL30', 'CL35', 'CL60', 'CL65',
+            'GLEX', 'GL5T', 'GL6T', 'GL7T', 'GL8T', 'GLF4', 'GLF5', 'GLF6', 'G150', 'G200', 'G280', 'GA5C', 'GA6C', 'G650', 'G700', 'G800',
+            'FA10', 'FA20', 'FA50', 'F900', 'F2TH', 'FA7X', 'FA8X', 'FA6X',
+            'C500', 'C501', 'C510', 'C525', 'C25A', 'C25B', 'C25C', 'C25D', 'C550', 'C560', 'C56X', 'C650', 'C680', 'C68A', 'C700', 'C750',
+            'LJ24', 'LJ25', 'LJ31', 'LJ35', 'LJ36', 'LJ40', 'LJ45', 'LJ55', 'LJ60', 'LJ70', 'LJ75',
+            'BE40', 'H25B', 'HA420', 'SF50', 'PC24',
+            'F15', 'F16', 'F18', 'F22', 'F35', 'T38', 'A10', 'B1', 'B2', 'B52', 'EUFI', 'RFL', 'TOR', 'HAWK', 'L39'
+          ]);
+          const PROP_TYPES = new Set([
+            'C150', 'C152', 'C170', 'C172', 'C175', 'C177', 'C180', 'C182', 'C185', 'C206', 'C207', 'C208', 'C210', 'C310', 'C320', 'C337', 'C340', 'C402', 'C404', 'C414', 'C421',
+            'PA18', 'PA22', 'PA24', 'PA28', 'PA30', 'PA31', 'PA32', 'PA34', 'PA38', 'PA44', 'PA46',
+            'BE33', 'BE35', 'BE36', 'BE55', 'BE58', 'BE76', 'BE95', 'BE9L', 'BE20', 'BE30', 'B350', 'B190',
+            'SR20', 'SR22', 'PC6', 'PC12', 'TBM7', 'TBM8', 'TBM9', 'TB10', 'TB20', 'TB21',
+            'M20J', 'M20P', 'M20R', 'M20T', 'M20U', 'M20V', 'M20',
+            'DA20', 'DA40', 'DA42', 'DA50', 'DA62',
+            'RV3', 'RV4', 'RV6', 'RV7', 'RV8', 'RV9', 'RV10', 'RV12', 'RV14',
+            'DHC2', 'DHC3', 'DHC6', 'DH8A', 'DH8B', 'DH8C', 'DH8D',
+            'AT43', 'AT45', 'AT72', 'AT75', 'AT76', 'SF34', 'SB20', 'AA1', 'AA5'
+          ]);
+
+          if (HELI_TYPES.has(rawType)) {
+            type = 'helicopter';
+          } else if (JET_TYPES.has(rawType)) {
+            type = 'jet';
+          } else if (PROP_TYPES.has(rawType)) {
+            type = 'prop';
+          } else if (/^B7[0-9]|A3[0-9]|CRJ|E[12][0-9]{2}|GLF|CL[36]|LJ[0-9]|FA[0-9]/i.test(rawType)) {
+            type = 'jet';
+          } else if (/^C1[578][0-9]|C20[0-9]|PA[0-9]|BE[0-9]|SR2[02]|DA[246][0-9]|RV[0-9]/i.test(rawType)) {
+            type = 'prop';
+          } else if (/^R[246][246]|EC[0-9]|AS[0-9]|UH[0-9]|AW[0-9]|H[12][0-9]{2}/i.test(rawType)) {
+            type = 'helicopter';
+          } else {
+            const callsign = (ac.callsign || ac.flight || '').toUpperCase();
+            if (/(?:HELI|COPTER|LIFEFLIGHT|MEDEVAC|AIRAMB|AIRCARE|STAT|RESCUE|STAR\d|SKY\d|POLICE|CHP)/i.test(callsign)) {
+              type = 'helicopter';
+            } else if (/^(?:AAL|DAL|UAL|SWA|BAW|AFR|DLH|JBU|ASA|FFT|FDX|UPS)\d+/i.test(callsign)) {
+              type = 'jet';
+            } else {
+              const spd = typeof ac.speed === 'number' ? ac.speed : 0;
+              const alt = typeof ac.altitude === 'number' ? ac.altitude : (typeof ac.altBaro === 'number' ? ac.altBaro : 0);
+              if (spd >= 260 || alt >= 20000) {
+                type = 'jet';
+              } else if (spd > 0 && spd <= 90 && alt > 0 && alt <= 2000) {
+                type = 'helicopter';
+              } else if (spd > 0 && spd <= 180 && alt > 0 && alt <= 14000) {
+                type = 'prop';
+              } else {
+                type = 'aircraft';
+              }
+            }
+          }
+        }
+      }
+    }
+
+    const META = {
+      helicopter: { type: 'helicopter', label: 'Helicopter', emoji: '🚁' },
+      jet: { type: 'jet', label: 'Jet', emoji: '✈️' },
+      prop: { type: 'prop', label: 'GA Propeller', emoji: '🛩️' },
+      glider: { type: 'glider', label: 'Glider', emoji: '🪁' },
+      balloon: { type: 'balloon', label: 'Balloon', emoji: '🎈' },
+      drone: { type: 'drone', label: 'Drone', emoji: '🛸' },
+      aircraft: { type: 'aircraft', label: 'Aircraft', emoji: '✈️' }
+    };
+    return META[type] || META.aircraft;
+  },
+
+  getAircraftMeta(typeOrAc) {
+    return this.classifyAircraft(typeOrAc);
+  },
+
+  getAircraftMarkerSvg(typeClass) {
+    switch (typeClass) {
+      case 'helicopter':
+        return `<svg viewBox="0 0 32 32" width="20" height="20" fill="currentColor"><path d="M4 8h24v1.5H4z" opacity="0.9" stroke-linecap="round"/><path d="M15 8h2v3h-2z"/><path d="M13 11 C11 13 11 18 12.5 20.5 L15 20.5 L15 28 L17 28 L17 20.5 L19.5 20.5 C21 18 21 13 19 11 Z"/><path d="M17 26 L21 25 L21 30 L17 29 Z"/><path d="M9 15 h2 v5 H9 z M21 15 h2 v5 H21 z M11 18 h10 v1.2 H11 z" stroke-linecap="round"/></svg>`;
+      case 'jet':
+        return `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2 C11.3 2 10.7 3.5 10.7 6 L10.7 9.8 L1.5 15.2 L1.5 17.5 L10.7 14.5 L10.7 19.2 L7.8 21.2 L7.8 23 L12 21.8 L16.2 23 L16.2 21.2 L13.3 19.2 L13.3 14.5 L22.5 17.5 L22.5 15.2 L13.3 9.8 L13.3 6 C13.3 3.5 12.7 2 12 2 Z"/><path d="M7 12.5 h1.8 v3.5 H7 z M15.2 12.5 h1.8 v3.5 H15.2 z"/></svg>`;
+      case 'prop':
+        return `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M7 3.2 h10 v1.2 H7 z" opacity="0.9"/><path d="M12 3.8 C11.2 3.8 10.8 5 10.8 7 L10.8 9 L1 9.5 L1 12.2 L10.8 11.8 L10.8 18.5 L6.8 19.2 L6.8 21.2 L12 20.6 L17.2 21.2 L17.2 19.2 L13.2 18.5 L13.2 11.8 L23 12.2 L23 9.5 L13.2 9 L13.2 7 C13.2 5 12.8 3.8 12 3.8 Z"/></svg>`;
+      case 'glider':
+        return `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2.5 C11.4 2.5 11 3.5 11 5.5 L11 9.5 L0.5 10 L0.5 11.2 L11 11 L11 20.5 L8.5 21 L8.5 22.2 L12 21.8 L15.5 22.2 L15.5 21 L13 20.5 L13 11 L23.5 11.2 L23.5 10 L13 9.5 L13 5.5 C13 3.5 12.6 2.5 12 2.5 Z"/></svg>`;
+      case 'drone':
+        return `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="5" r="3.5" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="19" cy="5" r="3.5" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="5" cy="19" r="3.5" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="19" cy="19" r="3.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M7.5 7.5 L16.5 16.5 M16.5 7.5 L7.5 16.5" stroke="currentColor" stroke-width="1.5"/></svg>`;
+      default:
+        return `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>`;
+    }
+  },
+
+  async simulateAircraft(targetType = 'prop') {
+    this.initAudioContext();
+    let homeLat = 40.0130;
+    let homeLon = -83.1765;
+    if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) {
+      const ll = centerMarker.getLatLng();
+      homeLat = ll.lat;
+      homeLon = ll.lng;
+    } else if (typeof map !== 'undefined' && map && map.getCenter) {
+      const ll = map.getCenter();
+      homeLat = ll.lat;
+      homeLon = ll.lng;
+    }
+
+    let simAircraft;
+    if (targetType === 'helicopter') {
+      simAircraft = {
+        hex: 'A88888',
+        callsign: 'MEDEVAC1',
+        aircraftType: 'B407',
+        category: 'A7',
+        lat: homeLat + 0.009,
+        lon: homeLon - 0.008,
+        alt: 1200,
+        speed: 95,
+        track: 135
+      };
+    } else if (targetType === 'jet') {
+      simAircraft = {
+        hex: 'A77777',
+        callsign: 'UAL452',
+        aircraftType: 'B738',
+        category: 'A3',
+        lat: homeLat - 0.015,
+        lon: homeLon + 0.015,
+        alt: 2300,
+        speed: 280,
+        track: 315
+      };
+    } else {
+      // Propeller (C172)
+      simAircraft = {
+        hex: 'A99999',
+        callsign: 'CESSNA172',
+        aircraftType: 'C172',
+        category: 'A1',
+        lat: homeLat + 0.012,
+        lon: homeLon + 0.012,
+        alt: 1600,
+        speed: 120,
+        track: 225
+      };
+    }
+
+    try {
+      const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+      await fetch(`${apiBase}/api/airspace/simulate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(simAircraft)
+      });
+    } catch (e) {
+      // If offline, inject directly into manager
+      simAircraft.distanceMeters = 1500;
+      simAircraft.distanceMiles = 0.93;
+      simAircraft.bearingDeg = 45;
+      simAircraft.bearingCardinal = 'NE';
+      simAircraft.isBreached = true;
+      simAircraft.status = 'breached';
+      simAircraft.source = 'simulated';
+      simAircraft.latitude = simAircraft.lat;
+      simAircraft.longitude = simAircraft.lon;
+      simAircraft.altitude = simAircraft.alt;
+      const existingIdx = this.aircraft.findIndex(a => a.hex === simAircraft.hex);
+      if (existingIdx >= 0) {
+        this.aircraft[existingIdx] = simAircraft;
+      } else {
+        this.aircraft.push(simAircraft);
+      }
+      this.breachedAircraft = this.aircraft.filter(a => a.isBreached);
+      this.triggerAudioAlert(simAircraft);
+      this.updateVisualBanner();
+      this.updateTopbarAndHud();
+      this.updateMapMarkers();
+      this.updateDrawerAircraftList();
+    }
+    await this.pollAirspace();
+  },
+
   loadSettings() {
     try {
       if (typeof localStorage !== 'undefined') {
@@ -2635,6 +2864,10 @@ const AdsbAirspaceManager = {
 
     if (this.breachedAircraft.length > 0 && this.enabled) {
       const primary = this.breachedAircraft[0];
+      const classified = this.getAircraftMeta(primary);
+      const emojiEl = banner.querySelector('.adsb-alert-emoji');
+      if (emojiEl) emojiEl.textContent = classified.emoji;
+
       const callsignEl = document.getElementById('adsb-alert-callsign');
       const altEl = document.getElementById('adsb-alert-altitude');
       const distEl = document.getElementById('adsb-alert-distance');
@@ -2669,8 +2902,8 @@ const AdsbAirspaceManager = {
       }
       if (badgeEl) {
         badgeEl.textContent = this.breachedAircraft.length > 1 
-          ? `BREACH (${this.breachedAircraft.length})` 
-          : 'BREACH';
+          ? `${classified.label.toUpperCase()} BREACH (${this.breachedAircraft.length})` 
+          : `${classified.label.toUpperCase()} BREACH`;
       }
 
       banner.classList.remove('hidden');
@@ -2735,7 +2968,9 @@ const AdsbAirspaceManager = {
     const currentHexes = new Set();
 
     for (const ac of this.aircraft) {
-      if (ac.latitude === null || ac.longitude === null) continue;
+      if (ac.latitude == null && typeof ac.lat === 'number') ac.latitude = ac.lat;
+      if (ac.longitude == null && typeof ac.lon === 'number') ac.longitude = ac.lon;
+      if (ac.latitude === null || ac.longitude === null || ac.latitude === undefined || ac.longitude === undefined) continue;
       currentHexes.add(ac.hex);
 
       // Accumulate position history
@@ -2800,18 +3035,19 @@ const AdsbAirspaceManager = {
       const speedStr = ac.speed ? `${ac.speed} kt` : '';
       const typeStr = ac.aircraftType ? ` [${ac.aircraftType}]` : '';
       const srcStr = ac.source || ac.dataSource || 'Local SDR';
-      const tooltipContent = `<strong>${ac.callsign || ac.hex}</strong>${typeStr}<br>Alt: ${altStr} • ${speedStr}<br>Dist: ${ac.distanceMiles || '--'} mi ${ac.bearingCardinal || ''}<br><span style="font-size: 0.64rem; color: #94a3b8;">Source: ${srcStr}</span>`;
+      const classified = this.getAircraftMeta(ac);
+      const tooltipContent = `<strong>${ac.callsign || ac.hex}</strong>${typeStr}<br><span style="font-weight: 600; color: #38bdf8;">${classified.emoji} ${classified.label}</span><br>Alt: ${altStr} • ${speedStr}<br>Dist: ${ac.distanceMiles || '--'} mi ${ac.bearingCardinal || ''}<br><span style="font-size: 0.64rem; color: #94a3b8;">Source: ${srcStr}</span>`;
 
       let marker = this.mapMarkers.get(ac.hex);
       if (!marker) {
-        const svgColor = isBreached ? '#ef4444' : '#38bdf8';
-        const innerClass = isBreached ? 'adsb-marker-inner breached' : 'adsb-marker-inner';
+        const innerClass = isBreached 
+          ? `adsb-marker-inner breached ${classified.type}` 
+          : `adsb-marker-inner ${classified.type}`;
+        const markerSvg = this.getAircraftMarkerSvg(classified.type);
         const iconHtml = `
-          <div class="adsb-map-aircraft-marker" style="transform: rotate(${track}deg);">
+          <div class="adsb-map-aircraft-marker" data-type="${classified.type}" style="transform: rotate(${track}deg);">
             <div class="${innerClass}">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
-              </svg>
+              ${markerSvg}
             </div>
           </div>
         `;
@@ -2823,6 +3059,8 @@ const AdsbAirspaceManager = {
         });
 
         marker = leaflet.marker([ac.latitude, ac.longitude], { icon: divIcon });
+        marker._aircraftTypeClass = classified.type;
+        marker._isBreached = isBreached;
         if (marker.bindTooltip) {
           marker.bindTooltip(tooltipContent, {
             className: `adsb-plane-tooltip ${isBreached ? 'breached' : ''}`,
@@ -2837,11 +3075,19 @@ const AdsbAirspaceManager = {
         const inner = marker.getElement()?.querySelector('.adsb-map-aircraft-marker');
         if (inner) {
           inner.style.transform = `rotate(${track}deg)`;
+          inner.setAttribute('data-type', classified.type);
           const innerRing = inner.querySelector('.adsb-marker-inner');
           if (innerRing) {
-            innerRing.className = isBreached ? 'adsb-marker-inner breached' : 'adsb-marker-inner';
+            innerRing.className = isBreached 
+              ? `adsb-marker-inner breached ${classified.type}` 
+              : `adsb-marker-inner ${classified.type}`;
+            if (marker._aircraftTypeClass !== classified.type) {
+              innerRing.innerHTML = this.getAircraftMarkerSvg(classified.type);
+              marker._aircraftTypeClass = classified.type;
+            }
           }
         }
+        marker._isBreached = isBreached;
         if (marker.setTooltipContent) {
           marker.setTooltipContent(tooltipContent);
         }
@@ -3000,6 +3246,8 @@ const AdsbAirspaceManager = {
         sourceBadge = `<span class="adsb-source-badge">${src}</span>`;
       }
 
+      const classified = this.getAircraftMeta(ac);
+      const classChip = `<span class="adsb-type-chip ${classified.type}" data-aircraft-type="${classified.type}">${classified.emoji} ${classified.label}</span>`;
       const typeBadge = ac.aircraftType ? `<span style="font-size: 0.62rem; font-weight: 600; color: #a5f3fc; background: rgba(56, 189, 248, 0.12); padding: 1px 4px; border-radius: 3px;">${ac.aircraftType}</span>` : '';
 
       let statusChip = '';
@@ -3020,10 +3268,11 @@ const AdsbAirspaceManager = {
       const groundSubtitle = ac.isOnGround ? ' • <span style="color: #6ee7b7;">Ground</span>' : '';
 
       html += `
-        <div class="adsb-aircraft-card ${isBreached ? 'breached' : ''} ${!hasPos ? 'mode-s-pending' : ''}">
+        <div class="adsb-aircraft-card ${isBreached ? 'breached' : ''} ${!hasPos ? 'mode-s-pending' : ''}" data-aircraft-type="${classified.type}">
           <div style="display: flex; flex-direction: column; gap: 2px;">
             <div style="display: flex; align-items: center; gap: 6px;">
               <span style="font-weight: 700; font-size: 0.78rem; color: #fff;">${ac.callsign || ac.hex}</span>
+              ${classChip}
               ${typeBadge}
               <span style="font-size: 0.64rem; color: var(--text-muted); font-family: monospace;">[${ac.hex}]</span>
             </div>
@@ -3425,51 +3674,22 @@ const AdsbAirspaceManager = {
 
     const simTriggerBtn = document.getElementById('adsb-sim-trigger-btn');
     if (simTriggerBtn) {
-      simTriggerBtn.addEventListener('click', async () => {
-        this.initAudioContext();
-        let homeLat = 40.0130;
-        let homeLon = -83.1765;
-        if (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) {
-          const ll = centerMarker.getLatLng();
-          homeLat = ll.lat;
-          homeLon = ll.lng;
-        }
+      simTriggerBtn.addEventListener('click', () => this.simulateAircraft('prop'));
+    }
 
-        const simAircraft = {
-          hex: 'A99999',
-          callsign: 'CESSNA172',
-          lat: homeLat + 0.012, // ~0.9 mi away
-          lon: homeLon + 0.012,
-          alt: 1600, // below 2,500 ft ceiling!
-          speed: 120,
-          track: 225
-        };
+    const simPropBtn = document.getElementById('adsb-sim-prop-btn');
+    if (simPropBtn) {
+      simPropBtn.addEventListener('click', () => this.simulateAircraft('prop'));
+    }
 
-        try {
-          const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
-          await fetch(`${apiBase}/api/airspace/simulate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(simAircraft)
-          });
-        } catch (e) {
-          // If offline, inject directly into manager
-          simAircraft.distanceMeters = 1500;
-          simAircraft.distanceMiles = 0.93;
-          simAircraft.bearingDeg = 45;
-          simAircraft.bearingCardinal = 'NE';
-          simAircraft.isBreached = true;
-          simAircraft.status = 'breached';
-          simAircraft.source = 'simulated';
-          this.aircraft = [simAircraft];
-          this.breachedAircraft = [simAircraft];
-          this.triggerAudioAlert(simAircraft);
-          this.updateVisualBanner();
-          this.updateTopbarAndHud();
-          this.updateDrawerAircraftList();
-        }
-        await this.pollAirspace();
-      });
+    const simHeliBtn = document.getElementById('adsb-sim-heli-btn');
+    if (simHeliBtn) {
+      simHeliBtn.addEventListener('click', () => this.simulateAircraft('helicopter'));
+    }
+
+    const simJetBtn = document.getElementById('adsb-sim-jet-btn');
+    if (simJetBtn) {
+      simJetBtn.addEventListener('click', () => this.simulateAircraft('jet'));
     }
 
     const radiusSlider = document.getElementById('adsb-radius-slider');
@@ -3672,6 +3892,16 @@ const AdsbAirspaceManager = {
 
 if (typeof window !== 'undefined') {
   window.AdsbAirspaceManager = AdsbAirspaceManager;
+}
+if (typeof global !== 'undefined') {
+  global.AdsbAirspaceManager = AdsbAirspaceManager;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    AdsbAirspaceManager,
+    getAppVersion,
+    restartCompanionBridge
+  };
 }
 
 // ─── Flight Diagnostics & 3D Telemetry Replay Engine ──────────────────────────

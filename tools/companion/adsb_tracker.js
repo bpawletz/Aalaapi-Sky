@@ -674,6 +674,9 @@ class AdsbAirspaceTracker extends EventEmitter {
     const record = {
       hex,
       callsign: ac.callsign || 'SIM101',
+      aircraftType: ac.aircraftType || ac.t || (ac.type === 'helicopter' ? 'B407' : ac.type === 'jet' ? 'B738' : (ac.type || 'C172')),
+      type: ac.type || ac.t || ac.aircraftType || (ac.type === 'helicopter' ? 'B407' : ac.type === 'jet' ? 'B738' : 'C172'),
+      category: ac.category || (ac.type === 'helicopter' ? 'A7' : ac.type === 'jet' ? 'A3' : 'A1'),
       latitude: ac.latitude !== undefined ? ac.latitude : (ac.lat !== undefined ? ac.lat : 40.0150),
       longitude: ac.longitude !== undefined ? ac.longitude : (ac.lon !== undefined ? ac.lon : -83.1700),
       altitude: ac.altitude !== undefined ? ac.altitude : (ac.alt !== undefined ? ac.alt : 1800),
@@ -847,6 +850,13 @@ class AdsbAirspaceTracker extends EventEmitter {
     };
   }
 
+  getSnapshot() {
+    return {
+      ...this.getStatus(),
+      aircraft: Array.from(this.aircraft.values())
+    };
+  }
+
   /**
    * Connects to dump1090 TCP stream on port 30003.
    */
@@ -964,8 +974,22 @@ class AdsbAirspaceTracker extends EventEmitter {
   }
 }
 
+let defaultSimTracker = null;
+
+function injectSimulatedAircraft(ac) {
+  if (!defaultSimTracker) defaultSimTracker = new AdsbAirspaceTracker();
+  return defaultSimTracker.injectSimulatedAircraft(ac);
+}
+
+function getTrackedAircraft() {
+  if (!defaultSimTracker) defaultSimTracker = new AdsbAirspaceTracker();
+  return defaultSimTracker.getSnapshot().aircraft;
+}
+
 module.exports = {
   AdsbAirspaceTracker,
+  injectSimulatedAircraft,
+  getTrackedAircraft,
   calculateHaversineDistance,
   calculateBearing,
   degreesToCardinal,
