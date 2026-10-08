@@ -1,7 +1,7 @@
 ## [1.147.2] - 2026-10-08
 
 ### Added
-- **Companion Bridge Version Synchronization & Auto-Restart**:
+- **Companion Bridge Version Synchronization & Auto-Restart (Closes #125)**:
   - **Dynamic Bridge Version Discovery (`tools/companion/server.js`)**: Updated Node.js Companion Bridge to dynamically load and report its release version directly from `package.json` rather than relying on a static hardcoded version constant.
   - **Version Payload Broadcast (`tools/companion/server.js`)**: Included `version` field in `/api/status`, `/api/status/stream` SSE stream, and MCP status broadcasts.
   - **Bridge Auto-Restart REST Endpoint (`tools/companion/server.js`, `start-bridge.bat`)**: Added `/api/restart` endpoint exiting with code `42`. Enhanced `start-bridge.bat` with an automatic loop to cleanly restart the companion service process upon receiving exit code `42`.
