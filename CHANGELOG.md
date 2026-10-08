@@ -1,3 +1,20 @@
+## [1.147.2] - 2026-10-08
+
+### Added
+- **Companion Bridge Version Synchronization & Auto-Restart**:
+  - **Dynamic Bridge Version Discovery (`tools/companion/server.js`)**: Updated Node.js Companion Bridge to dynamically load and report its release version directly from `package.json` rather than relying on a static hardcoded version constant.
+  - **Version Payload Broadcast (`tools/companion/server.js`)**: Included `version` field in `/api/status`, `/api/status/stream` SSE stream, and MCP status broadcasts.
+  - **Bridge Auto-Restart REST Endpoint (`tools/companion/server.js`, `start-bridge.bat`)**: Added `/api/restart` endpoint exiting with code `42`. Enhanced `start-bridge.bat` with an automatic loop to cleanly restart the companion service process upon receiving exit code `42`.
+  - **Version Mismatch Detection & 1-Click Auto-Restart UI (`src/bridge/ApiClient.js`, `index_template.html`)**: Added proactive client-side comparison of web app version against running bridge service version. If a mismatch is detected, an amber warning dot and a dedicated `#companion-version-mismatch-alert` banner appear in the Companion sync panel with an **Auto-Restart Bridge** button to trigger a clean 1-click remote restart.
+
+## [1.147.1] - 2026-10-08
+
+### Fixed
+- **Historical Flight DB Sidebar Collapse Visibility**:
+  - Fixed an issue where minimizing (collapsing) Section 0 (`#mission-db-section`) caused the entire section header to disappear from the sidebar. Restructured the DOM so that `<h3>` is a direct child of `.control-section`, allowing `.control-section.collapsed > *:not(h3)` to properly hide section contents while preserving the section header, title, badge, refresh button, and rotated chevron.
+  - Aligned Section 0 header naming and styling with the standard sidebar pattern (`0. HISTORICAL FLIGHT DB & MISSIONS`).
+  - Added click guards (`if (e.target.closest('button')) return`) and `e.stopPropagation()` on the refresh button to prevent accidental collapsing when refreshing flight logs.
+
 ## [1.147.0] - 2026-10-08
 
 ### Added

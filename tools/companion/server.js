@@ -21,7 +21,14 @@ const readline = require('node:readline');
 const { execFile, spawn, execFileSync } = require('node:child_process');
 const crypto = require('node:crypto');
 
-const VERSION = '1.144.0';
+let VERSION = '0.0.0';
+try {
+  const pkg = require('../../package.json');
+  if (pkg && pkg.version) VERSION = pkg.version;
+} catch (e) {
+  console.warn('Could not read package.json version');
+}
+
 const PORT = process.env.AALAAPI_PORT ? parseInt(process.env.AALAAPI_PORT, 10) : 8765;
 const { BridgeMetrics, Dashboard } = require('./top_dashboard.js');
 const bridgeMetrics = new BridgeMetrics();
@@ -421,7 +428,7 @@ function broadcastCompanionStatus(status) {
     : 0;
   const st = status || (typeof cachedRc2Status !== 'undefined' ? cachedRc2Status : { connected: false });
   const mcpMetrics = (typeof mcpServer !== 'undefined' && mcpServer.getMetrics) ? mcpServer.getMetrics() : null;
-  const payloadStr = JSON.stringify({ ...st, droneCount, mcp: mcpMetrics });
+  const payloadStr = JSON.stringify({ ...st, droneCount, mcp: mcpMetrics, version: VERSION });
   for (const client of sseStatusClients) {
     try {
       client.res.write(`data: ${payloadStr}\n\n`);
@@ -3036,6 +3043,7 @@ function printStartupBanner() {
   console.log(`  ${colors.green}${colors.bold}POST /api/checklist/submit${colors.reset}      ${colors.gray}Submit & record signed preflight checklist audit log${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /api/checklist/history${colors.reset}     ${colors.gray}Historical audit logs for preflight compliance reporting${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}POST /api/shutdown${colors.reset}              ${colors.gray}Cleanly terminate running companion bridge process${colors.reset}`);
+  console.log(`  ${colors.green}${colors.bold}POST /api/restart${colors.reset}               ${colors.gray}Cleanly trigger bridge process auto-restart${colors.reset}`);
   console.log(`  ${colors.green}${colors.bold}GET  /health${colors.reset}                    ${colors.gray}Service heartbeat and status ping${colors.reset}`);
 
   if (process.stdin.isTTY) {
@@ -3081,7 +3089,7 @@ const server = http.createServer(async (req, res) => {
         ? airspaceTracker.getActiveDrones().length
         : 0;
       const mcpMetrics = (typeof mcpServer !== 'undefined' && mcpServer.getMetrics) ? mcpServer.getMetrics() : null;
-      const statusPayload = { ...cachedRc2Status, droneCount, sseClients: getSseClientsCount(), mcp: mcpMetrics };
+      const statusPayload = { ...cachedRc2Status, droneCount, sseClients: getSseClientsCount(), mcp: mcpMetrics, version: VERSION };
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(statusPayload));
       return;
@@ -3108,7 +3116,7 @@ const server = http.createServer(async (req, res) => {
         ? airspaceTracker.getActiveDrones().length
         : 0;
       const mcpMetrics = (typeof mcpServer !== 'undefined' && mcpServer.getMetrics) ? mcpServer.getMetrics() : null;
-      res.write(`data: ${JSON.stringify({ ...cachedRc2Status, droneCount, mcp: mcpMetrics })}\n\n`);
+      res.write(`data: ${JSON.stringify({ ...cachedRc2Status, droneCount, mcp: mcpMetrics, version: VERSION })}\n\n`);
       return;
     }
 
@@ -4476,7 +4484,7 @@ const server = http.createServer(async (req, res) => {
       const droneCount = (typeof airspaceTracker !== 'undefined' && airspaceTracker.getActiveDrones)
         ? airspaceTracker.getActiveDrones().length
         : 0;
-      res.write(`event: status\ndata: ${JSON.stringify({ ...cachedRc2Status, droneCount })}\n\n`);
+      res.write(`event: status\ndata: ${JSON.stringify({ ...cachedRc2Status, droneCount, version: VERSION })}\n\n`);
       const activeDrones = airspaceTracker.getActiveDrones();
       res.write(`event: remote-id\ndata: ${JSON.stringify({
         success: true,
@@ -5153,6 +5161,19 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // 11b. Remote Restart Endpoint (Auto-Restart for Version Sync)
+    if ((pathname === '/api/restart') && (req.method === 'POST' || req.method === 'GET')) {
+      logWarn('[RESTART]', 'Received remote restart request via REST API (exit code 42)');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, message: 'Aalaapi Sky Companion Bridge restarting...' }));
+      stopScanners();
+      setTimeout(() => {
+        try { server.close(); } catch (e) {}
+        process.exit(42);
+      }, 250);
+      return;
+    }
+
     // 10b. Map Tile & Spatial Asset Caching Proxy (Issue #91)
     if ((pathname === '/api/proxy/tile' || pathname === '/proxy' || pathname === '/api/proxy' || pathname === '/proxy/tile') && req.method === 'GET') {
       const targetUrl = url.searchParams.get('url');
@@ -5666,3 +5687,4 @@ module.exports = {
   VERSION,
   PORT
 };
+
