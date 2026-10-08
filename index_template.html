@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.146.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.147.0</span></h1>
 
 
 
@@ -174,6 +174,44 @@
       <!-- Sidebar / Panel for Controls -->
       <aside class="sidebar glass">
         <div class="scroll-container">
+          <!-- Section 0: Missions & Historical Flight Database (Issue #123) -->
+          <section class="control-section mission-db-section" id="mission-db-section" style="border-bottom: 2px solid rgba(6, 182, 212, 0.2); padding-bottom: 14px; margin-bottom: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h3 style="display: flex; align-items: center; gap: 6px; margin: 0; font-size: 0.88rem; font-weight: 700;">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-cyan);">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <span>Missions &amp; Flight DB</span>
+              </h3>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span id="mission-db-count-badge" class="badge" style="font-size: 0.72rem; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 6px; border-radius: 999px; font-weight: 600;">1 Active</span>
+                <button id="mission-db-refresh-btn" class="btn-secondary" type="button" title="Refresh flights from Controller &amp; Archive" style="padding: 2px 6px; height: 22px; font-size: 0.72rem; margin: 0; line-height: 1;">🔄</button>
+              </div>
+            </div>
+
+            <!-- Active / Planning Workspace Quick Select -->
+            <div id="mission-active-workspace-card" class="mission-item-card active" style="margin-bottom: 8px; background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 8px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-cyan);">🎯 Active Workspace</span>
+                  <span class="badge" style="font-size: 0.65rem; background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 1px 4px; border-radius: 4px;">Live Editing</span>
+                </div>
+                <div id="mission-active-meta" style="font-size: 0.68rem; color: var(--text-muted); margin-top: 2px;">Editing active flight pattern &amp; waypoints</div>
+              </div>
+              <button id="mission-active-restore-btn" class="btn-secondary" type="button" style="padding: 2px 8px; font-size: 0.7rem; height: 22px; margin: 0;">Plan Mode</button>
+            </div>
+
+            <!-- Search & Filter bar for historical missions -->
+            <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+              <input id="mission-db-search" type="search" placeholder="Search flights by name, date..." class="form-input" style="flex: 1; padding: 4px 8px; font-size: 0.72rem; height: 26px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); color: var(--text-main);" />
+            </div>
+
+            <!-- Historical Missions & Flights List (Renamable items) -->
+            <div id="mission-db-list" class="mission-db-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; padding-right: 2px;">
+              <div style="text-align: center; padding: 12px; color: var(--text-muted); font-size: 0.72rem;">Scanning flight database...</div>
+            </div>
+          </section>
+
           <!-- Section 1: Pattern Layers & Tool Palette -->
         <section class="control-section" id="layers-and-location-section">
           <h3 style="display: flex; justify-content: space-between; align-items: center;">
@@ -2295,6 +2333,59 @@
     <main class="main-map-container">
       <div id="map"></div>
 
+      <!-- Floating 2D Flight Replay HUD & Scrubber Bar (Issue #123) -->
+      <div id="replay-2d-bar" class="replay-2d-bar hidden" role="region" aria-label="2D Flight Replay Controls">
+        <!-- Row 1: Header, Flight Name, Layer Cache Snapshot Badge, and Exit -->
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.76rem;">
+          <div style="display: flex; align-items: center; gap: 8px; overflow: hidden;">
+            <span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: var(--accent-cyan);">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              2D Replay
+            </span>
+            <span id="replay-2d-flight-title" style="font-weight: 600; color: var(--text-main); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 240px;">Active Flight</span>
+            <span id="replay-2d-cache-badge" class="badge" title="Historical layer tile cache mode • Click to toggle cached snapshot or live stream" style="font-size: 0.68rem; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 1px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+              <span id="replay-2d-cache-mode-text">🛰️ Radar: Cached Snapshot</span>
+            </span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button id="replay-2d-open-3d-btn" type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 0.72rem; height: 24px; display: inline-flex; align-items: center; gap: 4px; border-radius: 6px; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.4); color: var(--accent-cyan); font-weight: 600;" title="Jump into unified 3D Digital Twin at current timestamp">
+              <span>🧊 3D Cockpit</span>
+            </button>
+            <button id="replay-2d-close-btn" type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 0.72rem; height: 24px; border-radius: 6px;" title="Exit 2D Replay Mode">&times; Exit</button>
+          </div>
+        </div>
+
+        <!-- Row 2: Timeline Scrubber Slider -->
+        <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
+          <span id="replay-2d-current-time" style="font-family: monospace; font-size: 0.75rem; color: var(--accent-cyan); min-width: 44px;">00:00</span>
+          <input id="replay-2d-scrubber" type="range" min="0" max="1000" value="0" aria-label="Playback Scrubber" style="flex: 1; accent-color: #06b6d4; cursor: pointer; height: 6px; border-radius: 3px;" />
+          <span id="replay-2d-total-time" style="font-family: monospace; font-size: 0.75rem; color: var(--text-muted); min-width: 44px; text-align: right;">00:00</span>
+        </div>
+
+        <!-- Row 3: Play/Pause, Speed Selector, and Live HUD Telemetry readouts -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <button id="replay-2d-play-btn" type="button" class="btn-primary" style="padding: 4px 12px; font-size: 0.74rem; height: 26px; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+              <span id="replay-2d-play-icon">▶ Play</span>
+            </button>
+            <div style="display: flex; gap: 2px; background: rgba(0,0,0,0.3); padding: 2px; border-radius: 6px; border: 1px solid var(--border-color);">
+              <button class="replay-2d-speed-btn active" data-speed="1" type="button" style="padding: 2px 6px; font-size: 0.68rem; border-radius: 4px; border: none; background: rgba(6, 182, 212, 0.25); color: var(--accent-cyan); cursor: pointer;">1x</button>
+              <button class="replay-2d-speed-btn" data-speed="2" type="button" style="padding: 2px 6px; font-size: 0.68rem; border-radius: 4px; border: none; background: transparent; color: var(--text-muted); cursor: pointer;">2x</button>
+              <button class="replay-2d-speed-btn" data-speed="5" type="button" style="padding: 2px 6px; font-size: 0.68rem; border-radius: 4px; border: none; background: transparent; color: var(--text-muted); cursor: pointer;">5x</button>
+              <button class="replay-2d-speed-btn" data-speed="10" type="button" style="padding: 2px 6px; font-size: 0.68rem; border-radius: 4px; border: none; background: transparent; color: var(--text-muted); cursor: pointer;">10x</button>
+            </div>
+          </div>
+
+          <!-- Telemetry HUD Gauges -->
+          <div style="display: flex; align-items: center; gap: 12px; font-size: 0.72rem; font-family: monospace;">
+            <div><span style="color: var(--text-muted);">ALT:</span> <span id="replay-2d-hud-alt" style="color: #38bdf8; font-weight: 600;">0.0m</span></div>
+            <div><span style="color: var(--text-muted);">SPD:</span> <span id="replay-2d-hud-spd" style="color: #38bdf8; font-weight: 600;">0.0m/s</span></div>
+            <div><span style="color: var(--text-muted);">HDG:</span> <span id="replay-2d-hud-yaw" style="color: #38bdf8; font-weight: 600;">0°</span></div>
+            <div><span style="color: var(--text-muted);">POS:</span> <span id="replay-2d-hud-pos" style="color: var(--text-main);">--</span></div>
+          </div>
+        </div>
+      </div>
+
       <!-- Floating Flashing Visual ADS-B Traffic Alert Banner (Issue #92) -->
       <div id="adsb-alert-banner" class="adsb-alert-banner hidden" role="alert" aria-live="assertive">
         <div class="adsb-alert-banner-content">
@@ -3007,6 +3098,14 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: var(--accent-cyan); font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🛰️ Unified 2D/3D Replay &amp; Historical DB Sidebar Integration (v1.147.0) (Closes #123)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Access your entire flight history directly from the top of the sidebar with the new <strong>Missions &amp; Flight DB</strong>! Browse recorded controller logs, SQLite diagnostics, and bad KMZ audits with live search, status badges, and inline renaming persisted to localStorage. Replay missions directly on the 2D Leaflet map with a directional drone marker and floating HUD scrubber, toggle cached historical weather radar snapshots, or jump seamlessly into the unified 3D Digital Twin cockpit at the exact playback frame.
+            </p>
+          </div>
           <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #f59e0b; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🎞️ Hyperlapse Moving Time-Lapse Pattern (v1.146.0) (Closes #102)
@@ -4186,7 +4285,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.146.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.147.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -4247,6 +4346,12 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.147.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Unified 2D/3D Replay &amp; Historical DB Sidebar Integration (Closes #123):</strong> Integrated Missions &amp; Flight DB directly into the top of the sidebar above pattern layers with instant search, status badges, and inline renaming persisted to localStorage. Added global PlaybackManager orchestrating synchronized 2D Leaflet flight replay (with rotating drone marker and live HUD telemetry) and seamless 3D Digital Twin viewer switching, alongside companion tile cache support for historical weather radar snapshots.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.146.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">

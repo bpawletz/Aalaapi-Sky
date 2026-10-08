@@ -5650,6 +5650,95 @@ html, body {
   border-color: rgba(56, 189, 248, 0.45);
 }
 
+/* Issue #123: Unified 2D/3D Replay & Historical DB Sidebar Layout */
+.mission-db-section {
+  position: relative;
+}
+
+.mission-item-card {
+  transition: all 0.2s ease;
+}
+
+.mission-item-card:hover {
+  background: rgba(6, 182, 212, 0.12) !important;
+  border-color: rgba(6, 182, 212, 0.45) !important;
+}
+
+.mission-db-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 10px;
+  transition: all 0.2s ease;
+}
+
+.mission-db-card:hover {
+  border-color: rgba(6, 182, 212, 0.4);
+  background: rgba(15, 23, 42, 0.85);
+}
+
+.mission-db-card.active-flight {
+  border-color: rgba(6, 182, 212, 0.6);
+  background: rgba(6, 182, 212, 0.08);
+}
+
+.mission-db-rename-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  opacity: 0.65;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.mission-db-rename-btn:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.replay-2d-bar {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  width: 92%;
+  max-width: 780px;
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(6, 182, 212, 0.45);
+  border-radius: 12px;
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.5);
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #f8fafc;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.replay-2d-bar.hidden {
+  display: none !important;
+}
+
+.replay-2d-speed-btn.active {
+  background: rgba(6, 182, 212, 0.25) !important;
+  color: var(--accent-cyan) !important;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .replay-2d-bar {
+    width: 96%;
+    bottom: 12px;
+    padding: 8px 10px;
+  }
+}
+
+
 </style>
   
   <!-- App Icon & Favicon -->
@@ -5702,7 +5791,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.146.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.147.0</span></h1>
 
 
 
@@ -5810,6 +5899,44 @@ html, body {
       <!-- Sidebar / Panel for Controls -->
       <aside class="sidebar glass">
         <div class="scroll-container">
+          <!-- Section 0: Missions & Historical Flight Database (Issue #123) -->
+          <section class="control-section mission-db-section" id="mission-db-section" style="border-bottom: 2px solid rgba(6, 182, 212, 0.2); padding-bottom: 14px; margin-bottom: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h3 style="display: flex; align-items: center; gap: 6px; margin: 0; font-size: 0.88rem; font-weight: 700;">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-cyan);">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <span>Missions &amp; Flight DB</span>
+              </h3>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span id="mission-db-count-badge" class="badge" style="font-size: 0.72rem; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 6px; border-radius: 999px; font-weight: 600;">1 Active</span>
+                <button id="mission-db-refresh-btn" class="btn-secondary" type="button" title="Refresh flights from Controller &amp; Archive" style="padding: 2px 6px; height: 22px; font-size: 0.72rem; margin: 0; line-height: 1;">🔄</button>
+              </div>
+            </div>
+
+            <!-- Active / Planning Workspace Quick Select -->
+            <div id="mission-active-workspace-card" class="mission-item-card active" style="margin-bottom: 8px; background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 8px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: 0.75rem; font-weight: 700; color: var(--accent-cyan);">🎯 Active Workspace</span>
+                  <span class="badge" style="font-size: 0.65rem; background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 1px 4px; border-radius: 4px;">Live Editing</span>
+                </div>
+                <div id="mission-active-meta" style="font-size: 0.68rem; color: var(--text-muted); margin-top: 2px;">Editing active flight pattern &amp; waypoints</div>
+              </div>
+              <button id="mission-active-restore-btn" class="btn-secondary" type="button" style="padding: 2px 8px; font-size: 0.7rem; height: 22px; margin: 0;">Plan Mode</button>
+            </div>
+
+            <!-- Search & Filter bar for historical missions -->
+            <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+              <input id="mission-db-search" type="search" placeholder="Search flights by name, date..." class="form-input" style="flex: 1; padding: 4px 8px; font-size: 0.72rem; height: 26px; border-radius: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); color: var(--text-main);" />
+            </div>
+
+            <!-- Historical Missions & Flights List (Renamable items) -->
+            <div id="mission-db-list" class="mission-db-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; padding-right: 2px;">
+              <div style="text-align: center; padding: 12px; color: var(--text-muted); font-size: 0.72rem;">Scanning flight database...</div>
+            </div>
+          </section>
+
           <!-- Section 1: Pattern Layers & Tool Palette -->
         <section class="control-section" id="layers-and-location-section">
           <h3 style="display: flex; justify-content: space-between; align-items: center;">
@@ -7931,6 +8058,59 @@ html, body {
     <main class="main-map-container">
       <div id="map"></div>
 
+      <!-- Floating 2D Flight Replay HUD & Scrubber Bar (Issue #123) -->
+      <div id="replay-2d-bar" class="replay-2d-bar hidden" role="region" aria-label="2D Flight Replay Controls">
+        <!-- Row 1: Header, Flight Name, Layer Cache Snapshot Badge, and Exit -->
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.76rem;">
+          <div style="display: flex; align-items: center; gap: 8px; overflow: hidden;">
+            <span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: var(--accent-cyan);">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              2D Replay
+            </span>
+            <span id="replay-2d-flight-title" style="font-weight: 600; color: var(--text-main); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 240px;">Active Flight</span>
+            <span id="replay-2d-cache-badge" class="badge" title="Historical layer tile cache mode • Click to toggle cached snapshot or live stream" style="font-size: 0.68rem; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 1px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+              <span id="replay-2d-cache-mode-text">🛰️ Radar: Cached Snapshot</span>
+            </span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button id="replay-2d-open-3d-btn" type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 0.72rem; height: 24px; display: inline-flex; align-items: center; gap: 4px; border-radius: 6px; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.4); color: var(--accent-cyan); font-weight: 600;" title="Jump into unified 3D Digital Twin at current timestamp">
+              <span>🧊 3D Cockpit</span>
+            </button>
+            <button id="replay-2d-close-btn" type="button" class="btn-secondary" style="padding: 2px 8px; font-size: 0.72rem; height: 24px; border-radius: 6px;" title="Exit 2D Replay Mode">&times; Exit</button>
+          </div>
+        </div>
+
+        <!-- Row 2: Timeline Scrubber Slider -->
+        <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
+          <span id="replay-2d-current-time" style="font-family: monospace; font-size: 0.75rem; color: var(--accent-cyan); min-width: 44px;">00:00</span>
+          <input id="replay-2d-scrubber" type="range" min="0" max="1000" value="0" aria-label="Playback Scrubber" style="flex: 1; accent-color: #06b6d4; cursor: pointer; height: 6px; border-radius: 3px;" />
+          <span id="replay-2d-total-time" style="font-family: monospace; font-size: 0.75rem; color: var(--text-muted); min-width: 44px; text-align: right;">00:00</span>
+        </div>
+
+        <!-- Row 3: Play/Pause, Speed Selector, and Live HUD Telemetry readouts -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <button id="replay-2d-play-btn" type="button" class="btn-primary" style="padding: 4px 12px; font-size: 0.74rem; height: 26px; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+              <span id="replay-2d-play-icon">▶ Play</span>
+            </button>
+            <div style="display: flex; gap: 2px; background: rgba(0,0,0,0.3); padding: 2px; border-radius: 6px; border: 1px solid var(--border-color);">
+              <button class="replay-2d-speed-btn active" data-speed="1" type="button" style="padding: 2px 6px; font-size: 0.68rem; border-radius: 4px; border: none; background: rgba(6, 182, 212, 0.25); color: var(--accent-cyan); cursor: pointer;">1x</button>
+              <button class="replay-2d-speed-btn" data-speed="2" type="button" style="padding: 2px 6px; font-size: 0.68rem; border-radius: 4px; border: none; background: transparent; color: var(--text-muted); cursor: pointer;">2x</button>
+              <button class="replay-2d-speed-btn" data-speed="5" type="button" style="padding: 2px 6px; font-size: 0.68rem; border-radius: 4px; border: none; background: transparent; color: var(--text-muted); cursor: pointer;">5x</button>
+              <button class="replay-2d-speed-btn" data-speed="10" type="button" style="padding: 2px 6px; font-size: 0.68rem; border-radius: 4px; border: none; background: transparent; color: var(--text-muted); cursor: pointer;">10x</button>
+            </div>
+          </div>
+
+          <!-- Telemetry HUD Gauges -->
+          <div style="display: flex; align-items: center; gap: 12px; font-size: 0.72rem; font-family: monospace;">
+            <div><span style="color: var(--text-muted);">ALT:</span> <span id="replay-2d-hud-alt" style="color: #38bdf8; font-weight: 600;">0.0m</span></div>
+            <div><span style="color: var(--text-muted);">SPD:</span> <span id="replay-2d-hud-spd" style="color: #38bdf8; font-weight: 600;">0.0m/s</span></div>
+            <div><span style="color: var(--text-muted);">HDG:</span> <span id="replay-2d-hud-yaw" style="color: #38bdf8; font-weight: 600;">0°</span></div>
+            <div><span style="color: var(--text-muted);">POS:</span> <span id="replay-2d-hud-pos" style="color: var(--text-main);">--</span></div>
+          </div>
+        </div>
+      </div>
+
       <!-- Floating Flashing Visual ADS-B Traffic Alert Banner (Issue #92) -->
       <div id="adsb-alert-banner" class="adsb-alert-banner hidden" role="alert" aria-live="assertive">
         <div class="adsb-alert-banner-content">
@@ -8643,6 +8823,14 @@ html, body {
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: var(--accent-cyan); font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🛰️ Unified 2D/3D Replay &amp; Historical DB Sidebar Integration (v1.147.0) (Closes #123)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Access your entire flight history directly from the top of the sidebar with the new <strong>Missions &amp; Flight DB</strong>! Browse recorded controller logs, SQLite diagnostics, and bad KMZ audits with live search, status badges, and inline renaming persisted to localStorage. Replay missions directly on the 2D Leaflet map with a directional drone marker and floating HUD scrubber, toggle cached historical weather radar snapshots, or jump seamlessly into the unified 3D Digital Twin cockpit at the exact playback frame.
+            </p>
+          </div>
           <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #f59e0b; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🎞️ Hyperlapse Moving Time-Lapse Pattern (v1.146.0) (Closes #102)
@@ -9822,7 +10010,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.146.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.147.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -9883,6 +10071,12 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.147.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Unified 2D/3D Replay &amp; Historical DB Sidebar Integration (Closes #123):</strong> Integrated Missions &amp; Flight DB directly into the top of the sidebar above pattern layers with instant search, status badges, and inline renaming persisted to localStorage. Added global PlaybackManager orchestrating synchronized 2D Leaflet flight replay (with rotating drone marker and live HUD telemetry) and seamless 3D Digital Twin viewer switching, alongside companion tile cache support for historical weather radar snapshots.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.146.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -17024,6 +17218,399 @@ function formatDistance(meters, decimalPlaces = 1) {
 }
 
 // Theme Manager (Light & Dark Field Mode)
+// -------------------- src/core/PlaybackManager.js --------------------
+/**
+ * src/core/PlaybackManager.js
+ *
+ * Unified Mission Replay & Playback State Manager for Aalaapi Sky.
+ * Orchestrates real-time telemetry playback, timeline scrubbing, speed control,
+ * and temporal synchronization across the 2D Leaflet map, HUD overlays,
+ * and 3D Digital Twin viewer.
+ */
+
+const PlaybackManager = {
+  activeFlightId: null,
+  activeFlightName: null,
+  telemetryData: null,
+  points: [],
+  plannedWaypoints: null,
+  isPlaying: false,
+  playbackSpeed: 1.0,
+  currentIndex: 0,
+  fractionalIndex: 0.0,
+  durationSeconds: 0,
+  elapsedSeconds: 0,
+  is2dReplayActive: false,
+  isHistorical: false,
+  radarCacheMode: 'cached', // 'cached' | 'live'
+  
+  _listeners: {
+    timeupdate: [],
+    play: [],
+    pause: [],
+    seek: [],
+    flightchange: [],
+    replaymode: []
+  },
+
+  _animFrameId: null,
+  _lastTickTime: null,
+
+  /**
+   * Register event listener
+   * @param {'timeupdate'|'play'|'pause'|'seek'|'flightchange'|'replaymode'} event
+   * @param {Function} callback
+   */
+  on(event, callback) {
+    if (this._listeners[event] && typeof callback === 'function') {
+      this._listeners[event].push(callback);
+    }
+  },
+
+  /**
+   * Unregister event listener
+   */
+  off(event, callback) {
+    if (this._listeners[event]) {
+      this._listeners[event] = this._listeners[event].filter(cb => cb !== callback);
+    }
+  },
+
+  /**
+   * Emit event to all registered listeners
+   */
+  emit(event, ...args) {
+    if (this._listeners[event]) {
+      this._listeners[event].forEach(cb => {
+        try {
+          cb(...args);
+        } catch (err) {
+          console.error(`Error in PlaybackManager listener for ${event}:`, err);
+        }
+      });
+    }
+  },
+
+  /**
+   * Retrieve custom name for a flight from localStorage
+   */
+  getCustomFlightName(flightId) {
+    if (!flightId) return '';
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const raw = localStorage.getItem('aalaapi_custom_flight_names');
+        if (raw) {
+          const map = JSON.parse(raw);
+          if (map && map[flightId]) return map[flightId];
+        }
+      }
+    } catch (_) {}
+    return '';
+  },
+
+  /**
+   * Save a user-defined custom name for a flight in localStorage
+   */
+  setCustomFlightName(flightId, customName) {
+    if (!flightId) return;
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const raw = localStorage.getItem('aalaapi_custom_flight_names');
+        const map = raw ? JSON.parse(raw) : {};
+        if (customName && customName.trim()) {
+          map[flightId] = customName.trim();
+        } else {
+          delete map[flightId];
+        }
+        localStorage.setItem('aalaapi_custom_flight_names', JSON.stringify(map));
+        this.emit('flightchange', { flightId, customName: map[flightId] || null });
+      }
+    } catch (_) {}
+  },
+
+  /**
+   * Load a flight into the unified playback manager
+   */
+  loadFlight(flightId, telemetryData, options = {}) {
+    this.pause();
+    this.activeFlightId = flightId;
+    this.telemetryData = telemetryData;
+    this.points = (telemetryData && Array.isArray(telemetryData.points)) ? telemetryData.points : [];
+    this.plannedWaypoints = options.plannedWaypoints || null;
+    this.isHistorical = options.isHistorical !== undefined ? !!options.isHistorical : (flightId !== 'active-mission');
+
+    const storedName = this.getCustomFlightName(flightId);
+    this.activeFlightName = storedName || options.name || flightId;
+
+    this.currentIndex = 0;
+    this.fractionalIndex = 0.0;
+    this.elapsedSeconds = 0;
+
+    // Calculate total duration
+    if (this.points.length > 1) {
+      const firstPt = this.points[0];
+      const lastPt = this.points[this.points.length - 1];
+      if (firstPt.timestamp && lastPt.timestamp) {
+        this.durationSeconds = Math.max(1, (new Date(lastPt.timestamp) - new Date(firstPt.timestamp)) / 1000);
+      } else if (telemetryData && telemetryData.totalDuration) {
+        this.durationSeconds = telemetryData.totalDuration;
+      } else {
+        // Fallback estimate: 1 second per telemetry point or calculated from speed & distance
+        this.durationSeconds = Math.max(1, this.points.length);
+      }
+    } else {
+      this.durationSeconds = 0;
+    }
+
+    this.emit('flightchange', {
+      flightId: this.activeFlightId,
+      name: this.activeFlightName,
+      pointCount: this.points.length,
+      duration: this.durationSeconds,
+      isHistorical: this.isHistorical
+    });
+
+    this.seekTo(0, { updateSlider: true });
+  },
+
+  /**
+   * Play the telemetry track
+   */
+  play() {
+    if (this.isPlaying) return;
+    if (!this.points || this.points.length < 2) return;
+
+    if (this.currentIndex >= this.points.length - 1) {
+      this.currentIndex = 0;
+      this.fractionalIndex = 0.0;
+    }
+
+    this.isPlaying = true;
+    this._lastTickTime = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+    this.emit('play');
+
+    this._startLoop();
+  },
+
+  /**
+   * Pause playback
+   */
+  pause() {
+    if (!this.isPlaying) return;
+    this.isPlaying = false;
+    if (this._animFrameId) {
+      if (typeof cancelAnimationFrame !== 'undefined') cancelAnimationFrame(this._animFrameId);
+      this._animFrameId = null;
+    }
+    this.emit('pause');
+  },
+
+  /**
+   * Toggle between play and pause
+   */
+  togglePlay() {
+    if (this.isPlaying) {
+      this.pause();
+    } else {
+      this.play();
+    }
+  },
+
+  /**
+   * Set playback speed multiplier (e.g. 0.5, 1, 2, 5, 10)
+   */
+  setSpeed(speed) {
+    const s = parseFloat(speed);
+    if (!isNaN(s) && s > 0) {
+      this.playbackSpeed = s;
+    }
+  },
+
+  /**
+   * Set radar cache mode for historical replay
+   * @param {'cached'|'live'} mode
+   */
+  setRadarCacheMode(mode) {
+    if (mode === 'cached' || mode === 'live') {
+      this.radarCacheMode = mode;
+      this.emit('replaymode', {
+        active: this.is2dReplayActive,
+        radarCacheMode: this.radarCacheMode
+      });
+    }
+  },
+
+  /**
+   * Seek to a specific index or fractional progress (0.0 to 1.0)
+   */
+  seekTo(target, options = {}) {
+    if (!this.points || this.points.length === 0) return;
+    const maxIdx = this.points.length - 1;
+
+    let targetIdx;
+    if (typeof target === 'number') {
+      if (options.isFraction) {
+        targetIdx = Math.max(0, Math.min(target * maxIdx, maxIdx));
+      } else {
+        targetIdx = Math.max(0, Math.min(target, maxIdx));
+      }
+    } else {
+      targetIdx = 0;
+    }
+
+    this.fractionalIndex = targetIdx;
+    this.currentIndex = Math.min(Math.floor(targetIdx), maxIdx);
+
+    const pt = this.getInterpolatedPoint();
+    if (this.durationSeconds > 0 && maxIdx > 0) {
+      this.elapsedSeconds = (targetIdx / maxIdx) * this.durationSeconds;
+    }
+
+    this.emit('seek', {
+      index: this.currentIndex,
+      fractionalIndex: this.fractionalIndex,
+      progress: maxIdx > 0 ? (targetIdx / maxIdx) : 0,
+      point: pt,
+      elapsedSeconds: this.elapsedSeconds
+    });
+
+    this.emit('timeupdate', {
+      index: this.currentIndex,
+      fractionalIndex: this.fractionalIndex,
+      progress: maxIdx > 0 ? (targetIdx / maxIdx) : 0,
+      point: pt,
+      elapsedSeconds: this.elapsedSeconds
+    });
+  },
+
+  /**
+   * Get current interpolated point with smooth lat, lon, alt, speed, and heading
+   */
+  getInterpolatedPoint() {
+    if (!this.points || this.points.length === 0) return null;
+    const maxIdx = this.points.length - 1;
+    if (maxIdx === 0) return this.points[0];
+
+    const idxFloor = Math.max(0, Math.min(Math.floor(this.fractionalIndex), maxIdx));
+    const idxCeil = Math.min(idxFloor + 1, maxIdx);
+    const alpha = this.fractionalIndex - idxFloor;
+
+    const p0 = this.points[idxFloor];
+    const p1 = this.points[idxCeil];
+
+    if (!p1 || idxFloor === idxCeil || alpha <= 0.0001) {
+      return { ...p0 };
+    }
+
+    // Helper for angles (degrees) shortest-path interpolation
+    const lerpAngle = (a, b, t) => {
+      if (a === undefined || a === null || isNaN(a)) return b || 0;
+      if (b === undefined || b === null || isNaN(b)) return a || 0;
+      let diff = (b - a) % 360;
+      if (diff > 180) diff -= 360;
+      if (diff < -180) diff += 360;
+      return (a + diff * t + 360) % 360;
+    };
+
+    const lat = p0.lat + (p1.lat - p0.lat) * alpha;
+    const lon = p0.lon + (p1.lon - p0.lon) * alpha;
+    const alt = (p0.alt || 0) + ((p1.alt || 0) - (p0.alt || 0)) * alpha;
+    const speed = (p0.speed || 0) + ((p1.speed || 0) - (p0.speed || 0)) * alpha;
+    const yaw = lerpAngle(p0.yaw, p1.yaw, alpha);
+    const heading = lerpAngle(p0.heading || p0.yaw, p1.heading || p1.yaw, alpha);
+    const gimbalPitch = (p0.gimbalPitch !== undefined ? p0.gimbalPitch : -60) +
+      (((p1.gimbalPitch !== undefined ? p1.gimbalPitch : -60) - (p0.gimbalPitch !== undefined ? p0.gimbalPitch : -60)) * alpha);
+
+    return {
+      lat,
+      lon,
+      alt,
+      speed,
+      yaw,
+      heading,
+      gimbalPitch,
+      isPhoto: p0.isPhoto || false,
+      timestamp: p0.timestamp || null
+    };
+  },
+
+  /**
+   * Activate or deactivate 2D Replay mode on the map
+   */
+  set2dReplayActive(active) {
+    this.is2dReplayActive = !!active;
+    this.emit('replaymode', {
+      active: this.is2dReplayActive,
+      radarCacheMode: this.radarCacheMode
+    });
+  },
+
+  /**
+   * Internal playback tick loop
+   */
+  _startLoop() {
+    const tick = () => {
+      if (!this.isPlaying) return;
+
+      const now = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+      const dt = Math.min((now - (this._lastTickTime || now)) / 1000, 0.25);
+      this._lastTickTime = now;
+
+      const maxIdx = this.points.length - 1;
+      if (maxIdx > 0) {
+        // Advance fractionalIndex
+        // Base rate: points per second = maxIdx / durationSeconds
+        const pointsPerSec = (this.durationSeconds > 0) ? (maxIdx / this.durationSeconds) : 10;
+        const step = dt * pointsPerSec * this.playbackSpeed;
+
+        this.fractionalIndex += step;
+
+        if (this.fractionalIndex >= maxIdx) {
+          this.fractionalIndex = maxIdx;
+          this.currentIndex = maxIdx;
+          this.pause();
+        } else {
+          this.currentIndex = Math.floor(this.fractionalIndex);
+        }
+
+        const pt = this.getInterpolatedPoint();
+        if (this.durationSeconds > 0) {
+          this.elapsedSeconds = (this.fractionalIndex / maxIdx) * this.durationSeconds;
+        }
+
+        this.emit('timeupdate', {
+          index: this.currentIndex,
+          fractionalIndex: this.fractionalIndex,
+          progress: this.fractionalIndex / maxIdx,
+          point: pt,
+          elapsedSeconds: this.elapsedSeconds
+        });
+      }
+
+      if (this.isPlaying) {
+        if (typeof requestAnimationFrame !== 'undefined') {
+          this._animFrameId = requestAnimationFrame(tick);
+        } else {
+          this._animFrameId = setTimeout(tick, 30);
+        }
+      }
+    };
+
+    if (typeof requestAnimationFrame !== 'undefined') {
+      this._animFrameId = requestAnimationFrame(tick);
+    } else {
+      this._animFrameId = setTimeout(tick, 30);
+    }
+  }
+};
+
+// Global export for vanilla scripts & tests
+if (typeof window !== 'undefined') {
+  window.PlaybackManager = PlaybackManager;
+}
+if (typeof globalThis !== 'undefined') {
+  globalThis.PlaybackManager = PlaybackManager;
+}
 // -------------------- src/ui/ThemeManager.js --------------------
 const THEME_STORAGE_KEY = 'aalaapi_sky_theme';
 
@@ -20837,6 +21424,11 @@ function initMap() {
   targetPolygonGroup = L.layerGroup().addTo(map);
   photoInspectionGroup = L.layerGroup().addTo(map);
 
+  // Issue #123: Initialize 2D Flight Replay Engine
+  if (typeof init2dReplayEngine === 'function') {
+    init2dReplayEngine();
+  }
+
   // No default center marker — map starts clean; user clicks to place grid center
 
   // Track popup open/close state globally
@@ -21011,6 +21603,316 @@ function restoreSettingsFromLocalStorage() {
     Logger.error("Failed to restore settings from localStorage:", err);
   }
 }
+
+// ============================================================================
+// Issue #123: 2D Flight Replay Engine, Drone Marker & Layer Cache Management
+// ============================================================================
+
+let historicalReplayGroup = null;
+let historicalDroneMarker = null;
+let historicalPlannedLine = null;
+let historicalActualLine = null;
+
+function createDroneSvgHtml(headingDeg = 0) {
+  const normDeg = Math.round(headingDeg || 0);
+  return `
+    <div style="transform: rotate(${normDeg}deg); width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.65)); pointer-events: none;">
+      <svg viewBox="0 0 36 36" width="34" height="34" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Drone Propeller Arms -->
+        <line x1="6" y1="6" x2="30" y2="30" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="6" y1="30" x2="30" y2="6" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- Propeller Rotors -->
+        <circle cx="6" cy="6" r="4.5" fill="rgba(56, 189, 248, 0.4)" stroke="#38bdf8" stroke-width="1.5"/>
+        <circle cx="30" cy="6" r="4.5" fill="rgba(56, 189, 248, 0.4)" stroke="#38bdf8" stroke-width="1.5"/>
+        <circle cx="6" cy="30" r="4.5" fill="rgba(56, 189, 248, 0.4)" stroke="#38bdf8" stroke-width="1.5"/>
+        <circle cx="30" cy="30" r="4.5" fill="rgba(56, 189, 248, 0.4)" stroke="#38bdf8" stroke-width="1.5"/>
+        <!-- Fuselage / Cockpit -->
+        <rect x="13" y="10" width="10" height="16" rx="4" fill="#0f172a" stroke="#06b6d4" stroke-width="2"/>
+        <!-- Heading Nose Indicator -->
+        <polygon points="18,5 14,10 22,10" fill="#f59e0b" stroke="#fbbf24" stroke-width="1"/>
+        <circle cx="18" cy="17" r="3" fill="#38bdf8"/>
+      </svg>
+    </div>
+  `;
+}
+
+function init2dReplayEngine() {
+  if (typeof L === 'undefined' || !map) return;
+  if (typeof PlaybackManager === 'undefined') return;
+
+  if (!historicalReplayGroup) {
+    historicalReplayGroup = L.layerGroup().addTo(map);
+  }
+
+  // Handle replay mode transitions
+  PlaybackManager.on('replaymode', ({ active, radarCacheMode }) => {
+    const replayBar = document.getElementById('replay-2d-bar');
+    if (active) {
+      if (replayBar) replayBar.classList.remove('hidden');
+      render2dHistoricalTracks();
+      update2dRadarCacheMode(radarCacheMode);
+    } else {
+      if (replayBar) replayBar.classList.add('hidden');
+      clear2dHistoricalTracks();
+      restoreLiveRadarMode();
+    }
+  });
+
+  // Handle active flight change
+  PlaybackManager.on('flightchange', ({ flightId, name }) => {
+    const titleEl = document.getElementById('replay-2d-flight-title');
+    if (titleEl) {
+      titleEl.textContent = name || flightId || 'Active Flight';
+    }
+    if (PlaybackManager.is2dReplayActive) {
+      render2dHistoricalTracks();
+    }
+  });
+
+  // Real-time telemetry tick update
+  PlaybackManager.on('timeupdate', ({ point, elapsedSeconds, progress }) => {
+    update2dDronePosition(point);
+    update2dReplayHud(point, elapsedSeconds, progress);
+  });
+
+  PlaybackManager.on('seek', ({ point, elapsedSeconds, progress }) => {
+    update2dDronePosition(point);
+    update2dReplayHud(point, elapsedSeconds, progress);
+  });
+
+  PlaybackManager.on('play', () => {
+    const playIcon = document.getElementById('replay-2d-play-icon');
+    if (playIcon) playIcon.textContent = '⏸ Pause';
+  });
+
+  PlaybackManager.on('pause', () => {
+    const playIcon = document.getElementById('replay-2d-play-icon');
+    if (playIcon) playIcon.textContent = '▶ Play';
+  });
+
+  initReplay2dBarListeners();
+}
+
+function render2dHistoricalTracks() {
+  if (!map || !historicalReplayGroup || typeof PlaybackManager === 'undefined') return;
+
+  clear2dHistoricalTracks();
+
+  const telem = PlaybackManager.telemetryData;
+  const plannedWps = PlaybackManager.plannedWaypoints;
+  const boundsPoints = [];
+
+  // 1. Render planned flight path (dashed cyan line)
+  if (Array.isArray(plannedWps) && plannedWps.length > 0) {
+    const plannedCoords = plannedWps.map(w => [
+      typeof w.lat === 'function' ? w.lat() : Number(w.lat || 0),
+      typeof w.lon === 'function' ? w.lon() : (w.lng !== undefined ? Number(w.lng) : Number(w.lon || 0))
+    ]).filter(c => !isNaN(c[0]) && !isNaN(c[1]) && (c[0] !== 0 || c[1] !== 0));
+
+    if (plannedCoords.length > 1) {
+      historicalPlannedLine = L.polyline(plannedCoords, {
+        color: '#06b6d4',
+        weight: 3,
+        dashArray: '6, 6',
+        opacity: 0.85
+      }).addTo(historicalReplayGroup);
+      plannedCoords.forEach(c => boundsPoints.push(c));
+    }
+  }
+
+  // 2. Render actual flown trajectory (solid emerald line)
+  const pts = PlaybackManager.points || [];
+  if (pts.length > 1) {
+    const flownCoords = pts.map(p => [Number(p.lat || 0), Number(p.lon || 0)])
+      .filter(c => !isNaN(c[0]) && !isNaN(c[1]) && (c[0] !== 0 || c[1] !== 0));
+
+    if (flownCoords.length > 1) {
+      historicalActualLine = L.polyline(flownCoords, {
+        color: '#10b981',
+        weight: 3.5,
+        opacity: 0.95
+      }).addTo(historicalReplayGroup);
+      flownCoords.forEach(c => boundsPoints.push(c));
+    }
+  }
+
+  // 3. Render dynamic drone marker
+  const initialPt = PlaybackManager.getInterpolatedPoint() || pts[0] || (plannedWps && plannedWps[0]);
+  if (initialPt && initialPt.lat && initialPt.lon) {
+    const droneIcon = L.divIcon({
+      className: 'replay-drone-div-icon',
+      html: createDroneSvgHtml(initialPt.yaw || 0),
+      iconSize: [34, 34],
+      iconAnchor: [17, 17]
+    });
+
+    historicalDroneMarker = L.marker([initialPt.lat, initialPt.lon], {
+      icon: droneIcon,
+      zIndexOffset: 1000
+    }).addTo(historicalReplayGroup);
+  }
+
+  // 4. Center map view to fit historical bounds
+  if (boundsPoints.length > 0) {
+    try {
+      const bounds = L.latLngBounds(boundsPoints);
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
+    } catch (_) {}
+  }
+}
+
+function clear2dHistoricalTracks() {
+  if (historicalReplayGroup) {
+    historicalReplayGroup.clearLayers();
+  }
+  historicalDroneMarker = null;
+  historicalPlannedLine = null;
+  historicalActualLine = null;
+}
+
+function update2dDronePosition(point) {
+  if (!point || !historicalDroneMarker) return;
+  if (typeof point.lat !== 'number' || typeof point.lon !== 'number') return;
+
+  historicalDroneMarker.setLatLng([point.lat, point.lon]);
+
+  const el = historicalDroneMarker.getElement();
+  if (el) {
+    const rotContainer = el.querySelector('div');
+    if (rotContainer) {
+      rotContainer.style.transform = `rotate(${Math.round(point.yaw || 0)}deg)`;
+    }
+  }
+}
+
+function update2dReplayHud(point, elapsedSeconds, progress) {
+  if (typeof document === 'undefined') return;
+
+  const altEl = document.getElementById('replay-2d-hud-alt');
+  const spdEl = document.getElementById('replay-2d-hud-spd');
+  const yawEl = document.getElementById('replay-2d-hud-yaw');
+  const posEl = document.getElementById('replay-2d-hud-pos');
+  const curTimeEl = document.getElementById('replay-2d-current-time');
+  const totTimeEl = document.getElementById('replay-2d-total-time');
+  const scrubber = document.getElementById('replay-2d-scrubber');
+
+  const formatTime = (secs) => {
+    const s = Math.max(0, Math.floor(secs || 0));
+    const m = Math.floor(s / 60);
+    const rem = s % 60;
+    return `${String(m).padStart(2, '0')}:${String(rem).padStart(2, '0')}`;
+  };
+
+  if (altEl && point) altEl.textContent = `${(point.alt || 0).toFixed(1)}m`;
+  if (spdEl && point) spdEl.textContent = `${(point.speed || 0).toFixed(1)}m/s`;
+  if (yawEl && point) yawEl.textContent = `${Math.round(point.yaw || 0)}°`;
+  if (posEl && point) posEl.textContent = `${point.lat.toFixed(5)}, ${point.lon.toFixed(5)}`;
+
+  if (curTimeEl) curTimeEl.textContent = formatTime(elapsedSeconds);
+  if (totTimeEl && typeof PlaybackManager !== 'undefined') {
+    totTimeEl.textContent = formatTime(PlaybackManager.durationSeconds);
+  }
+
+  if (scrubber && !scrubber._isDragging) {
+    scrubber.value = Math.round((progress || 0) * 1000);
+  }
+}
+
+function update2dRadarCacheMode(mode) {
+  const badgeText = document.getElementById('replay-2d-cache-mode-text');
+  if (badgeText) {
+    badgeText.textContent = (mode === 'cached') ? '🛰️ Radar: Cached Snapshot' : '📡 Radar: Live Stream';
+  }
+
+  // If weatherRadarLayer exists, set query parameter to allow caching
+  if (typeof weatherRadarLayer !== 'undefined' && weatherRadarLayer && typeof weatherRadarLayer.setParams === 'function') {
+    if (mode === 'cached') {
+      weatherRadarLayer.setParams({ historical: 1, snapshot: 'true' });
+    } else {
+      weatherRadarLayer.setParams({ historical: undefined, snapshot: undefined });
+    }
+  }
+}
+
+function restoreLiveRadarMode() {
+  if (typeof weatherRadarLayer !== 'undefined' && weatherRadarLayer && typeof weatherRadarLayer.setParams === 'function') {
+    weatherRadarLayer.setParams({ historical: undefined, snapshot: undefined });
+  }
+}
+
+function initReplay2dBarListeners() {
+  const scrubber = document.getElementById('replay-2d-scrubber');
+  const playBtn = document.getElementById('replay-2d-play-btn');
+  const closeBtn = document.getElementById('replay-2d-close-btn');
+  const open3dBtn = document.getElementById('replay-2d-open-3d-btn');
+  const cacheBadge = document.getElementById('replay-2d-cache-badge');
+
+  if (scrubber) {
+    scrubber.addEventListener('mousedown', () => { scrubber._isDragging = true; });
+    scrubber.addEventListener('touchstart', () => { scrubber._isDragging = true; });
+    scrubber.addEventListener('mouseup', () => { scrubber._isDragging = false; });
+    scrubber.addEventListener('touchend', () => { scrubber._isDragging = false; });
+
+    scrubber.addEventListener('input', (e) => {
+      const frac = parseFloat(e.target.value) / 1000;
+      if (typeof PlaybackManager !== 'undefined') {
+        PlaybackManager.seekTo(frac, { isFraction: true });
+      }
+    });
+  }
+
+  if (playBtn) {
+    playBtn.addEventListener('click', () => {
+      if (typeof PlaybackManager !== 'undefined') {
+        PlaybackManager.togglePlay();
+      }
+    });
+  }
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      if (typeof restoreActiveWorkspacePlanning === 'function') {
+        restoreActiveWorkspacePlanning();
+      }
+    });
+  }
+
+  if (open3dBtn) {
+    open3dBtn.addEventListener('click', () => {
+      if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.open) {
+        const fid = (typeof PlaybackManager !== 'undefined') ? PlaybackManager.activeFlightId : null;
+        FlightDiagnostics.open('3d', fid || 'active-mission');
+      }
+    });
+  }
+
+  if (cacheBadge) {
+    cacheBadge.addEventListener('click', () => {
+      if (typeof PlaybackManager !== 'undefined') {
+        const nextMode = (PlaybackManager.radarCacheMode === 'cached') ? 'live' : 'cached';
+        PlaybackManager.setRadarCacheMode(nextMode);
+        update2dRadarCacheMode(nextMode);
+        if (typeof showToast === 'function') {
+          showToast(`Radar Layer Mode: ${nextMode === 'cached' ? 'Cached Historical Snapshot' : 'Live Environmental Stream'}`, 'info');
+        }
+      }
+    });
+  }
+
+  // Speed buttons
+  const speedBtns = document.querySelectorAll('.replay-2d-speed-btn');
+  speedBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const spd = parseFloat(btn.getAttribute('data-speed') || '1');
+      if (typeof PlaybackManager !== 'undefined') {
+        PlaybackManager.setSpeed(spd);
+      }
+      speedBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+}
+
 
 // Computes current state of modified settings across all 5 domains
 // -------------------- src/ui/ResetManager.js --------------------
@@ -23877,15 +24779,18 @@ function initUIEventListeners() {
   const close3dFooterBtn = document.getElementById('close-3d-footer-btn');
   const preview3dModal = document.getElementById('preview-3d-modal');
 
-  if (preview3dBtn && preview3dModal) {
+  if (preview3dBtn) {
     preview3dBtn.addEventListener('click', () => {
-      preview3dModal.classList.remove('hidden');
       if (window.innerWidth <= 768) {
-        document.querySelector('.sidebar').classList.remove('open');
+        const sb = document.querySelector('.sidebar');
+        if (sb) sb.classList.remove('open');
       }
-      init3DPreview();
-      setTimeout(handle3DResize, 50);
-      setTimeout(handle3DResize, 250);
+      if (preview3dModal) {
+        preview3dModal.classList.remove('hidden');
+        init3DPreview();
+        setTimeout(handle3DResize, 50);
+        setTimeout(handle3DResize, 250);
+      }
     });
   }
 
@@ -24023,6 +24928,11 @@ function initUIEventListeners() {
 
   // Setup universal floating tooltips for waypoint leg phase badges (v1.86.5)
   initLegPhaseBadgeTooltips();
+
+  // Setup Mission Explorer & Historical Flight Database (Issue #123)
+  if (typeof initMissionDbUI === 'function') {
+    initMissionDbUI();
+  }
 }
 
 /**
@@ -25680,6 +26590,321 @@ function syncDisplayValues() {
 
   updateInheritOptionLabels();
 }
+
+// ============================================================================
+// Issue #123: Mission Explorer & Historical Flight Database Management
+// ============================================================================
+
+let cachedMissionDbItems = [];
+
+async function initMissionDbUI() {
+  if (typeof document === 'undefined') return;
+
+  const refreshBtn = document.getElementById('mission-db-refresh-btn');
+  const searchInput = document.getElementById('mission-db-search');
+  const activeRestoreBtn = document.getElementById('mission-active-restore-btn');
+  const activeCard = document.getElementById('mission-active-workspace-card');
+
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', () => {
+      refreshMissionDbList();
+    });
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      filterAndRenderMissionDbList();
+    });
+  }
+
+  if (activeRestoreBtn) {
+    activeRestoreBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      restoreActiveWorkspacePlanning();
+    });
+  }
+
+  if (activeCard) {
+    activeCard.addEventListener('click', () => {
+      restoreActiveWorkspacePlanning();
+    });
+  }
+
+  // Initial fetch of historical missions
+  setTimeout(() => {
+    refreshMissionDbList();
+  }, 120);
+}
+
+async function refreshMissionDbList() {
+  if (typeof document === 'undefined') return;
+  const listContainer = document.getElementById('mission-db-list');
+  const badgeEl = document.getElementById('mission-db-count-badge');
+  const refreshBtn = document.getElementById('mission-db-refresh-btn');
+
+  if (refreshBtn) {
+    refreshBtn.textContent = '⏳';
+    refreshBtn.disabled = true;
+  }
+
+  const items = [];
+
+  try {
+    const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+
+    // 1. Fetch RC 2 recorded flights from companion bridge
+    try {
+      const fetchOpts = {};
+      if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+        fetchOpts.signal = AbortSignal.timeout(2000);
+      }
+      const res = await fetch(`${apiBase}/api/flights`, fetchOpts);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.flights)) {
+          data.flights.forEach(f => {
+            items.push({
+              id: f.filename,
+              type: 'rc2-recorded',
+              title: f.label || f.filename,
+              filename: f.filename,
+              date: f.flightDate || f.mtimeFormatted || 'Controller Log',
+              size: f.sizeFormatted || '',
+              statusText: f.isDecrypted ? 'Decrypted ✓' : 'Recorded Flown',
+              badgeColor: '#34d399',
+              badgeBg: 'rgba(16, 185, 129, 0.15)',
+              wpsText: f.isDecrypted ? 'Telemetry Ready' : 'Raw Record'
+            });
+          });
+        }
+      }
+    } catch (_) {}
+
+    // 2. Fetch SQLite diagnostics history from companion bridge
+    try {
+      const fetchOpts = {};
+      if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+        fetchOpts.signal = AbortSignal.timeout(2000);
+      }
+      const resDiag = await fetch(`${apiBase}/api/diagnostics/history`, fetchOpts);
+      if (resDiag.ok) {
+        const dataDiag = await resDiag.json();
+        if (dataDiag.success && Array.isArray(dataDiag.missions)) {
+          dataDiag.missions.forEach(m => {
+            const ident = m.archive_id || m.id || m.uuid;
+            const isBad = (m.is_valid === 0 || m.execution_status === 'suspended' || m.execution_status === 'failed');
+            items.push({
+              id: `diag:${ident}`,
+              type: 'sqlite-diagnostic',
+              title: m.filename || m.uuid,
+              filename: m.filename || m.uuid,
+              date: (m.created_at || '').replace('T', ' ').replace(/\..+/, ''),
+              statusText: isBad ? 'Audit Alert ⚠️' : 'Diagnostic Archive',
+              badgeColor: isBad ? '#f87171' : '#38bdf8',
+              badgeBg: isBad ? 'rgba(239, 68, 68, 0.15)' : 'rgba(56, 189, 248, 0.15)',
+              wpsText: `${m.waypoint_count || 0} Waypoints`
+            });
+          });
+        }
+      }
+    } catch (_) {}
+
+    // 3. Fallback / Sample Demo Flights for offline verification
+    const demoFlights = [
+      { id: 'FlightRecord_2026-08-20_[19-42-28].txt', title: 'Flight 3 — Field Survey Alpha', date: 'Aug 20, 19:42', wpsText: '48 Photos • 4m 12s', statusText: 'Recorded Flown', badgeColor: '#34d399', badgeBg: 'rgba(16, 185, 129, 0.15)' },
+      { id: 'FlightRecord_2026-08-20_[19-47-15].txt', title: 'Flight 4 — Structure Inspection', date: 'Aug 20, 19:47', wpsText: '1m 15s Replay', statusText: 'Recorded Flown', badgeColor: '#34d399', badgeBg: 'rgba(16, 185, 129, 0.15)' },
+      { id: 'FlightRecord_2026-08-20_[19-41-15].txt', title: 'Flight 2 — Perimeter Calibration', date: 'Aug 20, 19:41', wpsText: '0m 52s Replay', statusText: 'Recorded Flown', badgeColor: '#34d399', badgeBg: 'rgba(16, 185, 129, 0.15)' }
+    ];
+
+    demoFlights.forEach(df => {
+      if (!items.some(it => it.id === df.id)) {
+        items.push({
+          ...df,
+          type: 'demo-sample',
+          filename: df.id
+        });
+      }
+    });
+
+    cachedMissionDbItems = items;
+    if (badgeEl) {
+      badgeEl.textContent = `${items.length} Flights`;
+    }
+
+    filterAndRenderMissionDbList();
+  } finally {
+    if (refreshBtn) {
+      refreshBtn.textContent = '🔄';
+      refreshBtn.disabled = false;
+    }
+  }
+}
+
+function filterAndRenderMissionDbList() {
+  if (typeof document === 'undefined') return;
+  const listContainer = document.getElementById('mission-db-list');
+  const searchInput = document.getElementById('mission-db-search');
+  if (!listContainer) return;
+
+  const query = (searchInput && searchInput.value) ? searchInput.value.trim().toLowerCase() : '';
+
+  const filtered = cachedMissionDbItems.filter(item => {
+    if (!query) return true;
+    const customName = (typeof PlaybackManager !== 'undefined') ? (PlaybackManager.getCustomFlightName(item.id) || '') : '';
+    const matchCustom = customName.toLowerCase().includes(query);
+    const matchTitle = (item.title || '').toLowerCase().includes(query);
+    const matchDate = (item.date || '').toLowerCase().includes(query);
+    const matchId = (item.id || '').toLowerCase().includes(query);
+    return matchCustom || matchTitle || matchDate || matchId;
+  });
+
+  if (filtered.length === 0) {
+    listContainer.innerHTML = `
+      <div style="padding: 16px 8px; text-align: center; color: var(--text-muted); font-size: 0.72rem;">
+        No flight records match your search query.
+      </div>
+    `;
+    return;
+  }
+
+  const activeId = (typeof PlaybackManager !== 'undefined') ? PlaybackManager.activeFlightId : null;
+  const safeEscape = (str) => (typeof escapeHtml === 'function' ? escapeHtml(str) : String(str || ''));
+
+  let html = '';
+  filtered.forEach(f => {
+    const customName = (typeof PlaybackManager !== 'undefined') ? PlaybackManager.getCustomFlightName(f.id) : '';
+    const displayName = customName || f.title || f.id;
+    const isActive = (activeId === f.id && typeof PlaybackManager !== 'undefined' && PlaybackManager.is2dReplayActive);
+
+    html += `
+      <div class="mission-db-card ${isActive ? 'active-flight' : ''}" data-flight-id="${safeEscape(f.id)}">
+        <div class="mission-db-card-header" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+          <div style="flex: 1; overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <span class="mission-db-name" data-flight-id="${safeEscape(f.id)}" style="font-weight: 700; font-size: 0.74rem; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;" title="Click to rename flight">${safeEscape(displayName)}</span>
+              <button class="mission-db-rename-btn" data-flight-id="${safeEscape(f.id)}" type="button" title="Rename this flight entry">✏️</button>
+            </div>
+            <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 2px;">
+              ${safeEscape(f.date)} • ${safeEscape(f.wpsText || '')}
+            </div>
+          </div>
+          <span class="badge" style="font-size: 0.64rem; background: ${f.badgeBg || 'rgba(56,189,248,0.15)'}; color: ${f.badgeColor || '#38bdf8'}; border: 1px solid rgba(255,255,255,0.1); padding: 1px 5px; border-radius: 4px; white-space: nowrap;">
+            ${safeEscape(f.statusText || 'Saved')}
+          </span>
+        </div>
+        <div class="mission-db-card-actions" style="display: flex; gap: 6px; margin-top: 6px;">
+          <button class="btn-primary mission-db-2d-btn" data-flight-id="${safeEscape(f.id)}" type="button" style="flex: 1.1; padding: 3px 6px; font-size: 0.7rem; height: 24px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; border-radius: 6px;">
+            <span>▶ 2D Replay</span>
+          </button>
+          <button class="btn-secondary mission-db-3d-btn" data-flight-id="${safeEscape(f.id)}" type="button" style="flex: 0.9; padding: 3px 6px; font-size: 0.7rem; height: 24px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; border-radius: 6px;">
+            <span>🧊 3D View</span>
+          </button>
+        </div>
+      </div>
+    `;
+  });
+
+  listContainer.innerHTML = html;
+
+  // Bind 2D Replay buttons
+  listContainer.querySelectorAll('.mission-db-2d-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const fid = btn.getAttribute('data-flight-id');
+      if (fid) loadFlightFor2dReplay(fid);
+    });
+  });
+
+  // Bind 3D View buttons
+  listContainer.querySelectorAll('.mission-db-3d-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const fid = btn.getAttribute('data-flight-id');
+      if (fid) loadFlightFor3dView(fid);
+    });
+  });
+
+  // Bind Rename buttons
+  listContainer.querySelectorAll('.mission-db-rename-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const fid = btn.getAttribute('data-flight-id');
+      if (fid) promptRenameFlight(fid);
+    });
+  });
+
+  // Bind click on name directly for quick inline rename
+  listContainer.querySelectorAll('.mission-db-name').forEach(nameSpan => {
+    nameSpan.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const fid = nameSpan.getAttribute('data-flight-id');
+      if (fid) promptRenameFlight(fid);
+    });
+  });
+}
+
+function promptRenameFlight(flightId) {
+  if (typeof PlaybackManager === 'undefined') return;
+  const currentName = PlaybackManager.getCustomFlightName(flightId) || flightId;
+  const newName = (typeof prompt === 'function') ? prompt('Rename flight record:', currentName) : null;
+  if (newName !== null) {
+    PlaybackManager.setCustomFlightName(flightId, newName.trim());
+    filterAndRenderMissionDbList();
+    if (typeof showToast === 'function') {
+      showToast(`Renamed flight to "${newName.trim() || flightId}"`, 'info');
+    }
+  }
+}
+
+async function loadFlightFor2dReplay(flightId) {
+  const activeCard = document.getElementById('mission-active-workspace-card');
+  if (activeCard) activeCard.classList.remove('active');
+
+  // Load telemetry via FlightDiagnostics
+  if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.loadSelectedFlight === 'function') {
+    await FlightDiagnostics.loadSelectedFlight(flightId);
+    const telem = FlightDiagnostics.telemetryData;
+    const planned = FlightDiagnostics.plannedWaypoints;
+
+    if (typeof PlaybackManager !== 'undefined') {
+      PlaybackManager.loadFlight(flightId, telem, {
+        plannedWaypoints: planned,
+        isHistorical: (flightId !== 'active-mission')
+      });
+      PlaybackManager.set2dReplayActive(true);
+    }
+  }
+
+  filterAndRenderMissionDbList();
+}
+
+async function loadFlightFor3dView(flightId) {
+  if (typeof FlightDiagnostics !== 'undefined' && typeof FlightDiagnostics.open === 'function') {
+    FlightDiagnostics.open('3d', flightId);
+  }
+}
+
+function restoreActiveWorkspacePlanning() {
+  if (typeof PlaybackManager !== 'undefined') {
+    PlaybackManager.pause();
+    PlaybackManager.set2dReplayActive(false);
+    PlaybackManager.activeFlightId = 'active-mission';
+  }
+
+  if (typeof clear2dHistoricalTracks === 'function') {
+    clear2dHistoricalTracks();
+  }
+
+  const activeCard = document.getElementById('mission-active-workspace-card');
+  if (activeCard) activeCard.classList.add('active');
+
+  filterAndRenderMissionDbList();
+
+  if (typeof showToast === 'function') {
+    showToast('Restored Active Planning Workspace', 'info');
+  }
+}
+
 
 // Search Address via OpenStreetMap Nominatim API
 // -------------------- src/map/MapInteraction.js --------------------
@@ -39012,8 +40237,10 @@ const FlightDiagnostics = {
     this.updateStatsUI();
     this.renderInspectionPhotosUI();
     this.init3DScene();
-    this.playbackFractionalIndex = 0.0;
-    this.seekTo(0, true, true);
+    const resumeIdx = (typeof PlaybackManager !== 'undefined' && PlaybackManager.activeFlightId === this.selectedFlightId && PlaybackManager.currentIndex > 0)
+      ? PlaybackManager.currentIndex : 0;
+    this.playbackFractionalIndex = resumeIdx;
+    this.seekTo(resumeIdx, true, true);
     this.pause();
   },
 
@@ -40247,6 +41474,12 @@ const FlightDiagnostics = {
     this.currentPointIndex = safeIdx;
     if (syncFraction) {
       this.playbackFractionalIndex = safeIdx;
+    }
+
+    if (typeof PlaybackManager !== 'undefined' && PlaybackManager.activeFlightId === this.selectedFlightId && !PlaybackManager._syncFrom3d) {
+      PlaybackManager._syncFrom3d = true;
+      PlaybackManager.seekTo(safeIdx);
+      PlaybackManager._syncFrom3d = false;
     }
 
     const pt = pts[safeIdx];

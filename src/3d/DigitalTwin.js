@@ -2026,8 +2026,10 @@ const FlightDiagnostics = {
     this.updateStatsUI();
     this.renderInspectionPhotosUI();
     this.init3DScene();
-    this.playbackFractionalIndex = 0.0;
-    this.seekTo(0, true, true);
+    const resumeIdx = (typeof PlaybackManager !== 'undefined' && PlaybackManager.activeFlightId === this.selectedFlightId && PlaybackManager.currentIndex > 0)
+      ? PlaybackManager.currentIndex : 0;
+    this.playbackFractionalIndex = resumeIdx;
+    this.seekTo(resumeIdx, true, true);
     this.pause();
   },
 
@@ -3261,6 +3263,12 @@ const FlightDiagnostics = {
     this.currentPointIndex = safeIdx;
     if (syncFraction) {
       this.playbackFractionalIndex = safeIdx;
+    }
+
+    if (typeof PlaybackManager !== 'undefined' && PlaybackManager.activeFlightId === this.selectedFlightId && !PlaybackManager._syncFrom3d) {
+      PlaybackManager._syncFrom3d = true;
+      PlaybackManager.seekTo(safeIdx);
+      PlaybackManager._syncFrom3d = false;
     }
 
     const pt = pts[safeIdx];
