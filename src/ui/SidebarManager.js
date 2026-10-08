@@ -1664,7 +1664,8 @@ async function initMissionDbUI() {
   const activeCard = document.getElementById('mission-active-workspace-card');
 
   if (refreshBtn) {
-    refreshBtn.addEventListener('click', () => {
+    refreshBtn.addEventListener('click', (e) => {
+      if (e) e.stopPropagation();
       refreshMissionDbList();
     });
   }

@@ -247,6 +247,99 @@ function updateMcpMonitorUI(mcpData, isOnline) {
   }
 }
 
+function getAppVersion() {
+  if (typeof window !== 'undefined' && window.APP_VERSION) {
+    return window.APP_VERSION;
+  }
+  if (typeof document !== 'undefined' && typeof document.querySelector === 'function') {
+    const badge = document.querySelector('.header-version-badge');
+    if (badge && badge.textContent) {
+      return badge.textContent.replace(/^v/i, '').trim();
+    }
+    const tag = document.querySelector('.version-tag');
+    if (tag && tag.textContent) {
+      const match = tag.textContent.match(/[\d\.]+/);
+      if (match) return match[0];
+    }
+  }
+  return '1.147.1';
+}
+
+let isRestartingBridge = false;
+
+async function restartCompanionBridge() {
+  if (isRestartingBridge) return;
+  isRestartingBridge = true;
+
+  const restartBtn = document.getElementById('companion-restart-btn');
+  const mismatchText = document.getElementById('companion-version-mismatch-text');
+  const sText = document.getElementById('companion-service-text');
+  const sDot = document.getElementById('companion-service-dot');
+
+  if (restartBtn) {
+    restartBtn.disabled = true;
+    restartBtn.textContent = 'Restarting...';
+  }
+  if (mismatchText) {
+    mismatchText.textContent = '⏳ Restarting Bridge Service...';
+  }
+  if (sDot) sDot.style.background = '#eab308';
+  if (sText) {
+    sText.textContent = 'Aalaapi Bridge: Restarting...';
+    sText.style.color = '#eab308';
+  }
+
+  const apiBase = typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765';
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
+    await fetch(`${apiBase}/api/restart`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+  } catch (err) {
+    // Normal connection drop upon process exit
+  }
+
+  // Poll until bridge is back online with new version
+  let attempts = 0;
+  const pollInterval = setInterval(async () => {
+    attempts++;
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1500);
+      const res = await fetch(`${apiBase}/api/status?refresh=1`, {
+        cache: 'no-store',
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        clearInterval(pollInterval);
+        isRestartingBridge = false;
+        const data = await res.json();
+        applyCompanionStatusUI(data);
+        if (typeof wakeCompanionPolling === 'function') {
+          wakeCompanionPolling(true);
+        }
+      }
+    } catch (_) {
+      if (attempts >= 25) {
+        clearInterval(pollInterval);
+        isRestartingBridge = false;
+        if (restartBtn) {
+          restartBtn.disabled = false;
+          restartBtn.textContent = 'Retry Restart';
+        }
+        if (mismatchText) {
+          mismatchText.textContent = '⚠️ Restart timed out. Check start-bridge.bat';
+        }
+      }
+    }
+  }, 1000);
+}
+
 function applyCompanionStatusUI(data) {
   if (typeof document === 'undefined' || !data) return;
   const sDot = document.getElementById('companion-service-dot');
@@ -270,11 +363,39 @@ function applyCompanionStatusUI(data) {
   const diagBrowseBtn = document.getElementById('diag-browse-rc2-logs-btn');
 
   // 1. Update Bridge Service status (Online)
-  if (sDot) sDot.style.background = '#22c55e';
+  const appVer = getAppVersion();
+  const bridgeVer = (data && data.version) ? data.version : null;
+  const mismatchAlert = document.getElementById('companion-version-mismatch-alert');
+  const runVerSpan = document.getElementById('companion-running-version');
+  const targetVerSpan = document.getElementById('companion-target-version');
+  const restartBtn = document.getElementById('companion-restart-btn');
+
+  const isVersionMismatch = !!(bridgeVer && appVer && bridgeVer !== appVer);
+
+  if (sDot) sDot.style.background = isVersionMismatch ? '#f59e0b' : '#22c55e';
   if (sText) {
-    sText.textContent = 'Aalaapi Bridge: Online';
-    sText.style.color = '#22c55e';
+    if (isVersionMismatch) {
+      sText.innerHTML = `Aalaapi Bridge: Online <span style="color: #f59e0b; font-size: 0.68rem; font-weight: 700;">(v${bridgeVer} ≠ v${appVer})</span>`;
+    } else {
+      sText.textContent = 'Aalaapi Bridge: Online';
+      sText.style.color = '#22c55e';
+    }
   }
+
+  if (mismatchAlert) {
+    if (isVersionMismatch && !isRestartingBridge) {
+      mismatchAlert.style.display = 'flex';
+      if (runVerSpan) runVerSpan.textContent = `v${bridgeVer}`;
+      if (targetVerSpan) targetVerSpan.textContent = `v${appVer}`;
+      if (restartBtn) {
+        restartBtn.disabled = false;
+        restartBtn.textContent = 'Auto-Restart Bridge';
+      }
+    } else if (!isVersionMismatch) {
+      mismatchAlert.style.display = 'none';
+    }
+  }
+
   if (sLabel) sLabel.textContent = 'port 8765';
   if (typeof fetchBridgeCacheStats === 'function') fetchBridgeCacheStats();
   if (typeof updateMcpMonitorUI === 'function') updateMcpMonitorUI(data?.mcp, true);
@@ -500,6 +621,8 @@ async function pollCompanionStatus() {
     }
 
     // 1. Service Offline
+    const mismatchAlert = document.getElementById('companion-version-mismatch-alert');
+    if (mismatchAlert) mismatchAlert.style.display = 'none';
     if (sDot) sDot.style.background = '#64748b'; // Gray
     if (sText) {
       sText.textContent = 'Aalaapi Bridge: Offline';
@@ -896,6 +1019,12 @@ function initRC2Controls() {
   const directBrowseLogsBtn = document.getElementById('direct-rc2-browse-logs-btn');
   if (directBrowseLogsBtn) {
     directBrowseLogsBtn.addEventListener('click', openRc2LogManagerModal);
+  }
+
+  // Companion auto-restart button (for version mismatch sync)
+  const companionRestartBtn = document.getElementById('companion-restart-btn');
+  if (companionRestartBtn) {
+    companionRestartBtn.addEventListener('click', restartCompanionBridge);
   }
 
   // Initialize Flight Diagnostics Engine

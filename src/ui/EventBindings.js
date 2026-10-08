@@ -2077,7 +2077,8 @@ function initUIEventListeners() {
         }
       }
 
-      header.addEventListener('click', () => {
+      header.addEventListener('click', (e) => {
+        if (e && e.target && e.target.closest('button, input, select, a')) return;
         const wasCollapsed = section.classList.contains('collapsed');
         section.classList.toggle('collapsed');
         localStorage.setItem(`aalaapi_sky_section_${sectionIndex}_collapsed`, !wasCollapsed);
