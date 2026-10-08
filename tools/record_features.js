@@ -1363,6 +1363,65 @@ const scenarios = [
       await page.waitForTimeout(800);
       await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
     }
+  },
+  {
+    id: 'bridge_version_sync',
+    name: 'Companion Bridge Version Synchronization & Auto-Restart (v1.147.2)',
+    description: 'Demonstrates automated version mismatch detection between the web app and Companion Bridge, displaying amber warning alert with 1-click Auto-Restart capability.',
+    issueRef: 'Bridge Version Sync',
+    run: async (page) => {
+      // 1. Center map squarely on default coordinates
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(600);
+
+      // 2. Expand Section 4 (Export / Sync) and scroll companion container into view
+      await page.evaluate(() => {
+        const syncCont = document.getElementById('companion-sync-container');
+        if (syncCont) {
+          syncCont.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+      await page.waitForTimeout(800);
+
+      // 3. Simulate companion bridge status with mismatched version (v1.144.0 vs app v1.147.2)
+      await page.evaluate(() => {
+        if (typeof applyCompanionStatusUI === 'function') {
+          applyCompanionStatusUI({
+            status: 'online',
+            connected: true,
+            droneConnected: false,
+            version: '1.144.0',
+            activePort: 'COM3'
+          });
+        }
+      });
+      await page.waitForTimeout(1500);
+
+      // 4. Hover over the Auto-Restart Bridge button to highlight interaction
+      const restartBtn = await page.$('#companion-restart-btn');
+      if (restartBtn) {
+        await restartBtn.hover();
+      }
+      await page.waitForTimeout(1000);
+
+      // 5. Simulate resolution to synchronized version 1.147.2
+      await page.evaluate(() => {
+        if (typeof applyCompanionStatusUI === 'function') {
+          applyCompanionStatusUI({
+            status: 'online',
+            connected: true,
+            droneConnected: false,
+            version: '1.147.2',
+            activePort: 'COM3'
+          });
+        }
+      });
+      await page.waitForTimeout(1500);
+
+      // 6. Return map view to center
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(800);
+    }
   }
 ];
 

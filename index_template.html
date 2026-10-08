@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.147.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.147.2</span></h1>
 
 
 
@@ -175,19 +175,19 @@
       <aside class="sidebar glass">
         <div class="scroll-container">
           <!-- Section 0: Missions & Historical Flight Database (Issue #123) -->
-          <section class="control-section mission-db-section" id="mission-db-section" style="border-bottom: 2px solid rgba(6, 182, 212, 0.2); padding-bottom: 14px; margin-bottom: 14px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <h3 style="display: flex; align-items: center; gap: 6px; margin: 0; font-size: 0.88rem; font-weight: 700;">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-cyan);">
+          <section class="control-section mission-db-section" id="mission-db-section">
+            <h3 id="mission-db-title" style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="display: inline-flex; align-items: center; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-cyan); flex-shrink: 0;">
                   <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
                 </svg>
-                <span>Missions &amp; Flight DB</span>
-              </h3>
-              <div style="display: flex; align-items: center; gap: 6px;">
+                <span>0. Historical Flight DB &amp; Missions</span>
+              </span>
+              <div style="display: flex; align-items: center; gap: 6px; margin-left: auto; margin-right: 6px;">
                 <span id="mission-db-count-badge" class="badge" style="font-size: 0.72rem; background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); padding: 1px 6px; border-radius: 999px; font-weight: 600;">1 Active</span>
                 <button id="mission-db-refresh-btn" class="btn-secondary" type="button" title="Refresh flights from Controller &amp; Archive" style="padding: 2px 6px; height: 22px; font-size: 0.72rem; margin: 0; line-height: 1;">🔄</button>
               </div>
-            </div>
+            </h3>
 
             <!-- Active / Planning Workspace Quick Select -->
             <div id="mission-active-workspace-card" class="mission-item-card active" style="margin-bottom: 8px; background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 8px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
@@ -2147,6 +2147,16 @@
                 <button id="companion-service-help-btn" class="companion-help-circle-btn" type="button" title="How to start Aalaapi Bridge">?</button>
               </span>
             </div>
+            <!-- Bridge Version Mismatch Alert Banner & Auto-Restart -->
+            <div id="companion-version-mismatch-alert" style="display: none; padding: 6px 8px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 6px; font-size: 0.72rem; flex-direction: column; gap: 4px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span id="companion-version-mismatch-text" style="font-weight: 600; color: #f87171;">⚠️ Bridge Version Mismatch</span>
+                <button id="companion-restart-btn" type="button" class="btn-primary" style="padding: 2px 8px; font-size: 0.68rem; height: 22px; background: #ef4444; border-color: #dc2626; line-height: 1; cursor: pointer;">Auto-Restart Bridge</button>
+              </div>
+              <div id="companion-version-mismatch-detail" style="color: var(--text-muted); font-size: 0.65rem; line-height: 1.2;">
+                Bridge service is running <span id="companion-running-version" style="font-weight: 600; color: #f87171;">v?</span>, but Web app is <span id="companion-target-version" style="font-weight: 600; color: #38bdf8;">v?</span>. Click to cleanly restart.
+              </div>
+            </div>
             <!-- Host Config Panel (Expandable) -->
             <div id="companion-host-panel" style="display: none; padding: 6px 8px; background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; font-size: 0.72rem; flex-direction: column; gap: 4px;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -3098,6 +3108,14 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #22c55e; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🔄 Companion Bridge Version Synchronization &amp; 1-Click Auto-Restart (v1.147.2)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Eliminated version drift between the browser and local companion service! The Node.js Companion Bridge now dynamically discovers and broadcasts its version directly from <code>package.json</code>. The web client proactively compares versions and alerts operators with a dedicated mismatch banner and a 1-click <strong>Auto-Restart Bridge</strong> button to remotely restart the background companion service via <code>start-bridge.bat</code> loop without opening a terminal.
+            </p>
+          </div>
           <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: var(--accent-cyan); font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🛰️ Unified 2D/3D Replay &amp; Historical DB Sidebar Integration (v1.147.0) (Closes #123)
@@ -4285,7 +4303,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.147.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.147.2</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -4346,6 +4364,18 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.147.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Companion Bridge Version Synchronization &amp; 1-Click Auto-Restart:</strong> Node.js companion service dynamically discovers its version from <code>package.json</code> and broadcasts it via status APIs and SSE push streams. Browser proactively detects mismatches, shows an amber indicator with mismatch details, and provides a 1-click Auto-Restart button leveraging an exit code 42 loop in <code>start-bridge.bat</code>.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.147.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Historical Flight DB Sidebar Collapse Visibility:</strong> Fixed an issue where minimizing Section 0 (<code>#mission-db-section</code>) caused the entire header to vanish. Positioned <code>&lt;h3&gt;</code> as a direct child of <code>.control-section</code> so that collapsed sections retain their header title, count badge, refresh button, and rotated chevron. Added click event guards to prevent child button clicks from toggling accordion state.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.147.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -8923,3 +8953,4 @@
   <script src="dist/index.bundle.js?v=1.140.1"></script>
 </body>
 </html>
+
