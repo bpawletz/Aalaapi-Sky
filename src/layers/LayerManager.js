@@ -1894,7 +1894,9 @@ function generateRoadFlightWaypoints(rawRoad, offsetDist, altitude, defaultGimba
     const droneY = roadNode.y - D * tx;
     const geo = localToGeodetic(droneX, droneY, centerLat, centerLon, 0);
 
-    const altVal = roadNode.alt !== undefined && roadNode.alt !== null ? roadNode.alt : altitude;
+    const altVal = (roadNode.isModified && roadNode.alt !== undefined && roadNode.alt !== null)
+      ? roadNode.alt
+      : altitude;
 
     // Calculate road surface focus pitch
     let calculatedRoadPitch;
@@ -1914,7 +1916,7 @@ function generateRoadFlightWaypoints(rawRoad, offsetDist, altitude, defaultGimba
       lookAheadHeading = (Math.atan2(nextNode.x - droneX, nextNode.y - droneY) * (180.0 / Math.PI) + 360) % 360;
     }
 
-    let pitchVal = roadNode.pitch;
+    let pitchVal = (roadNode.isModified && roadNode.pitch !== null && roadNode.pitch !== undefined) ? roadNode.pitch : null;
     if (pitchVal === null || pitchVal === undefined) {
       if (roadFocusMode === 'lookAhead') {
         pitchVal = lookAheadPitch;
@@ -1936,7 +1938,7 @@ function generateRoadFlightWaypoints(rawRoad, offsetDist, altitude, defaultGimba
     let forwardRoadHeading = (Math.atan2(tx, ty) * (180.0 / Math.PI) + 360) % 360;
 
     let headingVal = standardRoadFacing;
-    if (roadNode.heading !== null && roadNode.heading !== undefined) {
+    if (roadNode.isModified && roadNode.heading !== null && roadNode.heading !== undefined) {
       headingVal = roadNode.heading;
     } else if (headingMode === 'fixed') {
       headingVal = 0;
@@ -1962,9 +1964,21 @@ function generateRoadFlightWaypoints(rawRoad, offsetDist, altitude, defaultGimba
       pitch: pitchVal,
       heading: headingVal,
       headingMode: (roadFocusMode === 'focusRoad' || roadFocusMode === 'lookAhead') ? 'smoothTransition' : (headingMode || 'followWayline'),
-      speed: speed,
+      speed: (roadNode.isModified && roadNode.speed !== undefined && roadNode.speed !== null) ? roadNode.speed : speed,
+      hoverTime: (roadNode.isModified && roadNode.hoverTime !== undefined && roadNode.hoverTime !== null) ? roadNode.hoverTime : (roadNode.hoverTime || 0),
+      turnMode: (roadNode.isModified && roadNode.turnMode !== undefined) ? roadNode.turnMode : (roadNode.turnMode || 'inherit'),
+      cameraAction: (roadNode.isModified && roadNode.cameraAction !== undefined) ? roadNode.cameraAction : (roadNode.cameraAction || 'inherit'),
+      zoom: (roadNode.isModified && roadNode.zoom !== undefined && roadNode.zoom !== null) ? roadNode.zoom : (roadNode.zoom || 1.0),
       idx: idx,
       isRoadDroneWaypoint: true,
+      isModified: Boolean(roadNode.isModified),
+      origLat: geo.lat,
+      origLon: geo.lon,
+      origX: droneX,
+      origY: droneY,
+      origAlt: altitude,
+      origPitch: calculatedRoadPitch,
+      origHeading: headingVal,
       roadNodeLat: roadNode.lat,
       roadNodeLon: roadNode.lon,
       roadFocusMode: roadFocusMode
@@ -2206,6 +2220,9 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     wp.layerCaptureMode = layer.captureMode || 'inherit';
     wp.layerPathMode = layer.pathMode || 'inherit';
     wp.layerHeadingMode = layer.headingMode || 'inherit';
+    wp.layerAltitude = (layer.altitude !== undefined && layer.altitude !== null) ? layer.altitude : 'inherit';
+    wp.layerGimbalPitch = (layer.gimbalPitch !== undefined && layer.gimbalPitch !== null) ? layer.gimbalPitch : 'inherit';
+    wp.layerSpeed = (layer.speed !== undefined && layer.speed !== null) ? layer.speed : 'inherit';
     if (!wp.isModified || !wp.targetPoiId) {
       wp.targetPoiId = layer.targetPoiId || null;
     }

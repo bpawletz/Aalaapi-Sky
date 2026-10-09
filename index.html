@@ -5992,7 +5992,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.149.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.149.2</span></h1>
 
 
 
@@ -10298,7 +10298,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.149.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.149.2</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -10359,6 +10359,18 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.149.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>DJI RC 2 MTP Staging &amp; Direct Sync Reliability:</strong> Fixed an issue where the Windows Shell COM staging directory path was formatted with double backslashes, causing <code>shell.Namespace($trashDir)</code> to fail and return null. Resolved the resulting failure to clear previous mission KMZ files from the RC 2 slot, which previously led to accumulating dozens of stale <code>_old_*</code> files on the controller. Streamlined MTP transfer sequence to safely move existing KMZ files to staging trash before writing, bounded legacy temporary cleanups, increased PowerShell MTP script timeout to 45s, and upgraded frontend sync buttons with dual synchronization, network timeout protection, explicit error messages, and toast feedback notifications.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.149.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Multi-Layer Non-Override Waypoint Altitude Cascading:</strong> Fixed non-override waypoints in Road Following and multi-layer missions erroneously retaining stale default 50m (164ft) altitude instead of active layer altitude (e.g. 31m / 102ft). Unmodified road nodes dynamically inherit layer altitude and calculate accurate camera gimbal pitch. Enforced strict 3-tier cascade resolution across flight generators, WPML compiler, and pre-export sanitization.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.149.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -20222,7 +20234,9 @@ function generateRoadFlightWaypoints(rawRoad, offsetDist, altitude, defaultGimba
     const droneY = roadNode.y - D * tx;
     const geo = localToGeodetic(droneX, droneY, centerLat, centerLon, 0);
 
-    const altVal = roadNode.alt !== undefined && roadNode.alt !== null ? roadNode.alt : altitude;
+    const altVal = (roadNode.isModified && roadNode.alt !== undefined && roadNode.alt !== null)
+      ? roadNode.alt
+      : altitude;
 
     // Calculate road surface focus pitch
     let calculatedRoadPitch;
@@ -20242,7 +20256,7 @@ function generateRoadFlightWaypoints(rawRoad, offsetDist, altitude, defaultGimba
       lookAheadHeading = (Math.atan2(nextNode.x - droneX, nextNode.y - droneY) * (180.0 / Math.PI) + 360) % 360;
     }
 
-    let pitchVal = roadNode.pitch;
+    let pitchVal = (roadNode.isModified && roadNode.pitch !== null && roadNode.pitch !== undefined) ? roadNode.pitch : null;
     if (pitchVal === null || pitchVal === undefined) {
       if (roadFocusMode === 'lookAhead') {
         pitchVal = lookAheadPitch;
@@ -20264,7 +20278,7 @@ function generateRoadFlightWaypoints(rawRoad, offsetDist, altitude, defaultGimba
     let forwardRoadHeading = (Math.atan2(tx, ty) * (180.0 / Math.PI) + 360) % 360;
 
     let headingVal = standardRoadFacing;
-    if (roadNode.heading !== null && roadNode.heading !== undefined) {
+    if (roadNode.isModified && roadNode.heading !== null && roadNode.heading !== undefined) {
       headingVal = roadNode.heading;
     } else if (headingMode === 'fixed') {
       headingVal = 0;
@@ -20290,9 +20304,21 @@ function generateRoadFlightWaypoints(rawRoad, offsetDist, altitude, defaultGimba
       pitch: pitchVal,
       heading: headingVal,
       headingMode: (roadFocusMode === 'focusRoad' || roadFocusMode === 'lookAhead') ? 'smoothTransition' : (headingMode || 'followWayline'),
-      speed: speed,
+      speed: (roadNode.isModified && roadNode.speed !== undefined && roadNode.speed !== null) ? roadNode.speed : speed,
+      hoverTime: (roadNode.isModified && roadNode.hoverTime !== undefined && roadNode.hoverTime !== null) ? roadNode.hoverTime : (roadNode.hoverTime || 0),
+      turnMode: (roadNode.isModified && roadNode.turnMode !== undefined) ? roadNode.turnMode : (roadNode.turnMode || 'inherit'),
+      cameraAction: (roadNode.isModified && roadNode.cameraAction !== undefined) ? roadNode.cameraAction : (roadNode.cameraAction || 'inherit'),
+      zoom: (roadNode.isModified && roadNode.zoom !== undefined && roadNode.zoom !== null) ? roadNode.zoom : (roadNode.zoom || 1.0),
       idx: idx,
       isRoadDroneWaypoint: true,
+      isModified: Boolean(roadNode.isModified),
+      origLat: geo.lat,
+      origLon: geo.lon,
+      origX: droneX,
+      origY: droneY,
+      origAlt: altitude,
+      origPitch: calculatedRoadPitch,
+      origHeading: headingVal,
       roadNodeLat: roadNode.lat,
       roadNodeLon: roadNode.lon,
       roadFocusMode: roadFocusMode
@@ -20534,6 +20560,9 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     wp.layerCaptureMode = layer.captureMode || 'inherit';
     wp.layerPathMode = layer.pathMode || 'inherit';
     wp.layerHeadingMode = layer.headingMode || 'inherit';
+    wp.layerAltitude = (layer.altitude !== undefined && layer.altitude !== null) ? layer.altitude : 'inherit';
+    wp.layerGimbalPitch = (layer.gimbalPitch !== undefined && layer.gimbalPitch !== null) ? layer.gimbalPitch : 'inherit';
+    wp.layerSpeed = (layer.speed !== undefined && layer.speed !== null) ? layer.speed : 'inherit';
     if (!wp.isModified || !wp.targetPoiId) {
       wp.targetPoiId = layer.targetPoiId || null;
     }
@@ -28000,7 +28029,11 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
 
   const roadOffsetSlider = document.getElementById('road-offset');
   const D = roadOffsetSlider ? parseFloat(roadOffsetSlider.value) : 15;
-  const altitude = parseFloat(document.getElementById('altitude').value);
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const isRoadLayer = activeLayer && activeLayer.pattern === 'road-following';
+  const altitude = (isRoadLayer && activeLayer.altitude !== undefined && activeLayer.altitude !== null && activeLayer.altitude !== 'inherit')
+    ? activeLayer.altitude
+    : (parseFloat(document.getElementById('altitude')?.value) || 50);
 
   const targetList = (generatedWaypoints && generatedWaypoints.length >= roadWaypoints.length) ? generatedWaypoints : roadWaypoints;
 
@@ -28080,7 +28113,11 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
     const roadFocusMode = (activeLayer && activeLayer.roadFocusMode) ? activeLayer.roadFocusMode : (document.getElementById('road-focus-mode')?.value || 'focusRoad');
 
     // 4. Calculate gimbal pitch and heading pointing to the road
-    const altVal = wp.alt !== undefined && wp.alt !== null ? wp.alt : altitude;
+    const altVal = (roadNode && roadNode.alt !== undefined && roadNode.alt !== null)
+      ? roadNode.alt
+      : ((wp && wp.alt !== undefined && wp.alt !== null)
+        ? wp.alt
+        : altitude);
     let calculatedRoadPitch;
     if (Math.abs(D) < 0.01) {
       calculatedRoadPitch = -90;
@@ -32157,6 +32194,7 @@ function addRoadWaypoint(lat, lng) {
       origAlt: altitude,
       origPitch: null,
       origHeading: null,
+      isModified: false,
       origIsRingStart: false,
       origIsModified: false
     };
@@ -32222,6 +32260,7 @@ function addRoadWaypoint(lat, lng) {
               origAlt: altitude,
               origPitch: null,
               origHeading: null,
+              isModified: false,
               origIsRingStart: false,
               origIsModified: false
             };
@@ -32272,6 +32311,7 @@ function addRoadWaypoint(lat, lng) {
       origAlt: altitude,
       origPitch: null,
       origHeading: null,
+      isModified: false,
       origIsRingStart: false,
       origIsModified: false
     };
@@ -32898,18 +32938,25 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     }
 
     // Compute effective pitch for use in both gimbalRotate action and waypointGimbalHeadingParam
-    const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : null;
+    const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers.find(l => l.id === wp.layerId) : null;
     let effectivePitch;
     const rawWpPitch = wp.pitch !== undefined ? wp.pitch : (wpLayer && wpLayer.gimbalPitch !== undefined ? wpLayer.gimbalPitch : gimbalPitch);
     if (rawWpPitch === 'auto' || (typeof rawWpPitch === 'string' && rawWpPitch.toLowerCase() === 'auto')) {
+      const effectiveAltForPitch = (wp.isModified && wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit')
+        ? wp.alt
+        : ((wp.layerAltitude !== undefined && wp.layerAltitude !== null && wp.layerAltitude !== 'inherit')
+          ? wp.layerAltitude
+          : ((wpLayer && wpLayer.altitude !== undefined && wpLayer.altitude !== null && wpLayer.altitude !== 'inherit')
+            ? wpLayer.altitude
+            : (wp.alt !== undefined && !wpLayer ? wp.alt : altitude)));
+
       if (wp.isRoadDroneWaypoint || isRoadFollowing) {
         const offset = (wpLayer && wpLayer.roadOffset !== undefined) ? wpLayer.roadOffset : 15;
-        const wAlt = wp.alt !== undefined ? wp.alt : altitude;
-        effectivePitch = (Math.abs(offset) < 0.01) ? -90 : -Math.round(Math.atan2(wAlt, Math.max(Math.abs(offset), 1)) * (180.0 / Math.PI));
+        effectivePitch = (Math.abs(offset) < 0.01) ? -90 : -Math.round(Math.atan2(effectiveAltForPitch, Math.max(Math.abs(offset), 1)) * (180.0 / Math.PI));
       } else {
         const targetPoi = (typeof getTargetPoiCoordinates === 'function') ? getTargetPoiCoordinates(wp, wpLayer) : null;
         effectivePitch = (typeof calculate3DPoiPitch === 'function')
-          ? calculate3DPoiPitch(wp, targetPoi, wp.alt !== undefined ? wp.alt : altitude)
+          ? calculate3DPoiPitch(wp, targetPoi, effectiveAltForPitch)
           : -45;
       }
     } else {
@@ -33100,8 +33147,15 @@ ${waypointActions.join('\n')}
         let nextPitch;
         const rawNextPitch = nextWp.pitch !== undefined ? nextWp.pitch : (wpLayer && wpLayer.gimbalPitch !== undefined ? wpLayer.gimbalPitch : gimbalPitch);
         if (rawNextPitch === 'auto' || (typeof rawNextPitch === 'string' && rawNextPitch.toLowerCase() === 'auto')) {
+          const nextAltForPitch = (nextWp.isModified && nextWp.alt !== undefined && nextWp.alt !== null && nextWp.alt !== 'inherit')
+            ? nextWp.alt
+            : ((nextWp.layerAltitude !== undefined && nextWp.layerAltitude !== null && nextWp.layerAltitude !== 'inherit')
+              ? nextWp.layerAltitude
+              : ((wpLayer && wpLayer.altitude !== undefined && wpLayer.altitude !== null && wpLayer.altitude !== 'inherit')
+                ? wpLayer.altitude
+                : (nextWp.alt !== undefined && !wpLayer ? nextWp.alt : altitude)));
           const targetPoi = (typeof getTargetPoiCoordinates === 'function') ? getTargetPoiCoordinates(nextWp, wpLayer) : null;
-          nextPitch = (typeof calculate3DPoiPitch === 'function') ? calculate3DPoiPitch(nextWp, targetPoi, nextWp.alt !== undefined ? nextWp.alt : altitude) : -45;
+          nextPitch = (typeof calculate3DPoiPitch === 'function') ? calculate3DPoiPitch(nextWp, targetPoi, nextAltForPitch) : -45;
         } else {
           nextPitch = parseGimbalPitch(rawNextPitch, -60);
         }
@@ -33275,7 +33329,19 @@ ${waypointActions.join('\n')}
       }
     }
 
-    const currentAltitude = wp.alt !== undefined ? wp.alt : altitude;
+    // Resolve Altitude via Three-Tier Cascading Hierarchy (Tier 3 Override -> Tier 2 Layer -> Tier 1 Global)
+    let currentAltitude;
+    if (wp.isModified && wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit') {
+      currentAltitude = wp.alt;
+    } else if (wp.layerAltitude !== undefined && wp.layerAltitude !== null && wp.layerAltitude !== 'inherit') {
+      currentAltitude = wp.layerAltitude;
+    } else if (wpLayer && wpLayer.altitude !== undefined && wpLayer.altitude !== null && wpLayer.altitude !== 'inherit') {
+      currentAltitude = wpLayer.altitude;
+    } else if (wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit' && !wpLayer) {
+      currentAltitude = wp.alt;
+    } else {
+      currentAltitude = altitude;
+    }
     
     // Resolve Speed: If turnaround point and turnaroundSpeed specified, use it; else wp.speed or global speed
     let actualSpeed = (wp.speed !== undefined && wp.speed !== null && !isNaN(wp.speed)) ? wp.speed : speed;
@@ -33722,6 +33788,19 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
       const modeMatch = pms[i].match(/<wpml:waypointHeadingMode>([^<]+)<\/wpml:waypointHeadingMode>/);
       const mode = modeMatch ? modeMatch[1].trim() : '';
       const wpObj = (options && options.waypoints && options.waypoints[wpIdx]) ? options.waypoints[wpIdx] : null;
+      if (wpObj && !wpObj.isModified) {
+        const layersList = (options && options.flightLayers) || (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers) ? flightLayers : null);
+        const wpLayer = (wpObj.layerId && layersList) ? layersList.find(l => l.id === wpObj.layerId) : null;
+        const targetAlt = (wpObj.layerAltitude !== undefined && wpObj.layerAltitude !== null && wpObj.layerAltitude !== 'inherit')
+          ? wpObj.layerAltitude
+          : (wpLayer && wpLayer.altitude !== undefined && wpLayer.altitude !== null && wpLayer.altitude !== 'inherit' ? wpLayer.altitude : null);
+        if (targetAlt !== null && !isNaN(targetAlt)) {
+          pms[i] = pms[i].replace(
+            /(<wpml:executeHeight>)[^<]+(<\/wpml:executeHeight>)/,
+            `$1${targetAlt}$2`
+          );
+        }
+      }
       const isCustomHeadingWp = isTargetSplat || isExclusionFreeform || isFreeform ||
         (wpObj && (wpObj.gridType === 'target-splat' || wpObj.gridType === 'exclusion-freeform' || wpObj.gridType === 'freeform' || wpObj.layerPattern === 'exclusion-freeform' || wpObj.layerPattern === 'freeform' || (wpObj.heading !== null && wpObj.heading !== undefined && !isNaN(wpObj.heading))));
 
@@ -34931,7 +35010,11 @@ function generateKMZBlob(wps = null) {
 
   const currentGridType = document.getElementById('grid-type')?.value || 'single';
   // Auto-audit and fix subtle firmware incompatibilities
-  const fixed = validateAndFixWpml(waylinesWpml, templateKml, { waypoints: effectiveWps, gridType: currentGridType });
+  const fixed = validateAndFixWpml(waylinesWpml, templateKml, {
+    waypoints: effectiveWps,
+    gridType: currentGridType,
+    flightLayers: (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : null
+  });
   const finalWpml = fixed.wpmlXml;
   const finalTemplate = fixed.templateXml;
   const validation = fixed.validation;
@@ -35963,18 +36046,25 @@ async function pullFlightLogFromRC2(targetBtn = null) {
 
 async function sendDirectlyToRC2() {
   const directBtn = document.getElementById('direct-rc2-sync-btn');
-  if (!directBtn || !isRc2MtpConnected) return;
+  const sidebarDirectBtn = document.getElementById('sidebar-direct-rc2-sync-btn');
+  const buttonsToUpdate = [directBtn, sidebarDirectBtn].filter(Boolean);
+  if (buttonsToUpdate.length === 0 || !isRc2MtpConnected) return;
 
-  const originalContent = directBtn.innerHTML;
-  directBtn.disabled = true;
-  directBtn.innerHTML = `<span>⏳ Syncing to RC 2...</span>`;
+  const originalContents = new Map();
+  buttonsToUpdate.forEach(b => {
+    originalContents.set(b, b.innerHTML);
+    b.disabled = true;
+    b.innerHTML = `<span>⏳ Syncing to RC 2...</span>`;
+  });
 
   try {
     const rawWps = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
     if (!rawWps || rawWps.length === 0) {
       alert("No waypoints generated to sync. Please place a mission or center point first.");
-      directBtn.disabled = false;
-      directBtn.innerHTML = originalContent;
+      buttonsToUpdate.forEach(b => {
+        b.disabled = false;
+        b.innerHTML = originalContents.get(b) || '';
+      });
       return;
     }
 
@@ -36013,18 +36103,34 @@ async function sendDirectlyToRC2() {
       templateXml: result.templateKml
     });
 
-    const res = await fetch(`${COMPANION_API_BASE}/api/sync`, {
+    const fetchOptions = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ uuid, kmzBase64, diagData })
-    });
+    };
+    if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+      fetchOptions.signal = AbortSignal.timeout(50000);
+    }
 
-    const data = await res.json();
+    const res = await fetch(`${COMPANION_API_BASE}/api/sync`, fetchOptions);
+    let data;
+    try {
+      data = await res.json();
+    } catch (_) {
+      throw new Error(res.ok ? 'Malformed server response' : `Bridge HTTP ${res.status}: ${res.statusText}`);
+    }
+
     if (data.success) {
-      directBtn.innerHTML = `<span>✅ Synced to DJI RC 2! Re-open in DJI Fly</span>`;
-      directBtn.style.background = 'rgba(34, 197, 94, 0.2)';
-      directBtn.style.borderColor = 'rgba(34, 197, 94, 0.5)';
-      directBtn.style.color = '#4ade80';
+      buttonsToUpdate.forEach(b => {
+        b.innerHTML = `<span>✅ Synced to DJI RC 2! Re-open in DJI Fly</span>`;
+        b.style.background = 'rgba(34, 197, 94, 0.2)';
+        b.style.borderColor = 'rgba(34, 197, 94, 0.5)';
+        b.style.color = '#4ade80';
+      });
+
+      if (typeof showToast === 'function') {
+        showToast(`✅ Synced to DJI RC 2 slot ${uuid}! Re-open in DJI Fly.`, 'success');
+      }
 
       // Also archive the mission diagnostics in SQLite
       try {
@@ -36059,12 +36165,15 @@ async function sendDirectlyToRC2() {
           FlightDiagnostics.refreshFlightList();
         }
       } catch (e) {}
+
       setTimeout(() => {
-        directBtn.disabled = false;
-        directBtn.innerHTML = originalContent;
-        directBtn.style.background = '';
-        directBtn.style.borderColor = '';
-        directBtn.style.color = '';
+        buttonsToUpdate.forEach(b => {
+          b.disabled = false;
+          b.innerHTML = originalContents.get(b) || '';
+          b.style.background = '';
+          b.style.borderColor = '';
+          b.style.color = '';
+        });
       }, 4000);
     } else {
       throw new Error(data.error || 'Transfer failed');
@@ -36074,13 +36183,24 @@ async function sendDirectlyToRC2() {
     if (typeof window !== 'undefined' && window.location && window.location.protocol === 'file:') {
       console.warn('[RC 2 Direct Sync] Browser security policy may restrict network calls from file:/// origins. Open http://127.0.0.1:8765 in your browser to run Aalaapi Sky with direct same-origin companion access.');
     }
-    directBtn.innerHTML = `<span>❌ Sync Failed</span>`;
-    directBtn.style.color = '#f87171';
+    const errText = err.message || 'Sync Failed';
+    const displayErr = errText.length > 25 ? (errText.substring(0, 22) + '...') : errText;
+    buttonsToUpdate.forEach(b => {
+      b.innerHTML = `<span>❌ ${displayErr}</span>`;
+      b.title = `Sync Error: ${errText}`;
+      b.style.color = '#f87171';
+    });
+    if (typeof showToast === 'function') {
+      showToast(`RC 2 Sync Error: ${errText}`, 'error');
+    }
     setTimeout(() => {
-      directBtn.disabled = false;
-      directBtn.innerHTML = originalContent;
-      directBtn.style.color = '';
-    }, 3000);
+      buttonsToUpdate.forEach(b => {
+        b.disabled = false;
+        b.innerHTML = originalContents.get(b) || '';
+        b.title = '';
+        b.style.color = '';
+      });
+    }, 4500);
   }
 }
 
