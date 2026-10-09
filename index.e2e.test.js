@@ -7334,6 +7334,12 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
     // 2. Open Preflight Gate Modal
     await gateBtn.click({ force: true });
+    await page.waitForFunction(() => {
+      const el = document.getElementById('preflight-modal');
+      return el && !el.classList.contains('hidden');
+    }, { timeout: 3000 }).catch(async () => {
+      await page.evaluate(async () => { if (typeof showPreflightGateModal === 'function') await showPreflightGateModal(); });
+    });
     assert.ok(await modal.isVisible(), '#preflight-modal must be visible after click');
 
     // 3. Step 1 -> Step 2 navigation

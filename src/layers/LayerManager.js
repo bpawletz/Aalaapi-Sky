@@ -2072,6 +2072,9 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
       wp.x = offsets.x;
       wp.y = offsets.y;
       wp.idx = idx;
+      if (!wp.isModified && altitude !== undefined && altitude !== null) {
+        wp.alt = altitude;
+      }
     });
     if (typeof generateHyperlapseWaypoints === 'function') {
       const gen = generateHyperlapseWaypoints(rawWps, layer, speed, altitude);

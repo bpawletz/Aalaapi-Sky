@@ -1,5 +1,38 @@
 [
   {
+    "notam_id": "6/8722",
+    "facility": "ZAB",
+    "state": "NM",
+    "type": "SECURITY",
+    "description": "ALAMOGORDO, NM, Tuesday, October 13, 2026 Local",
+    "mod_date": "10/09/2026 21:47:00",
+    "mod_abs_time": "202610092147",
+    "is_new": "Y",
+    "gid": "6/8722"
+  },
+  {
+    "notam_id": "6/8719",
+    "facility": "ZDC",
+    "state": "DE",
+    "type": "AIR SHOWS/SPORTS",
+    "description": "Greenwood, DE, Friday, October 16, 2026 through Saturday, October 17, 2026 UTC",
+    "mod_date": "10/09/2026 19:40:00",
+    "mod_abs_time": "202610091940",
+    "is_new": "Y",
+    "gid": "6/8719"
+  },
+  {
+    "notam_id": "6/8713",
+    "facility": "ZDC",
+    "state": "NC",
+    "type": "AIR SHOWS/SPORTS",
+    "description": "Maxton, NC, Friday, October 16, 2026 through Sunday, October 18, 2026 UTC",
+    "mod_date": "10/09/2026 19:12:00",
+    "mod_abs_time": "202610091912",
+    "is_new": "Y",
+    "gid": "6/8713"
+  },
+  {
     "notam_id": "6/8693",
     "facility": "ZTL",
     "state": "GA",
@@ -20,17 +53,6 @@
     "mod_abs_time": "202610091710",
     "is_new": "Y",
     "gid": "6/8665"
-  },
-  {
-    "notam_id": "6/8652",
-    "facility": "ZID",
-    "state": "OH",
-    "type": "VIP",
-    "description": "Lima, OH, Friday, October 9, 2026 Local",
-    "mod_date": "10/09/2026 15:48:00",
-    "mod_abs_time": "202610091548",
-    "is_new": "Y",
-    "gid": "6/8652"
   },
   {
     "notam_id": "6/8646",
@@ -88,17 +110,6 @@
     "gid": "6/8599"
   },
   {
-    "notam_id": "6/8591",
-    "facility": "ZJX",
-    "state": "FL",
-    "type": "HAZARDS",
-    "description": "Palm Coast, FL, Friday, October 9, 2026 Local",
-    "mod_date": "10/09/2026 12:31:00",
-    "mod_abs_time": "202610091231",
-    "is_new": "Y",
-    "gid": "6/8591"
-  },
-  {
     "notam_id": "6/8590",
     "facility": "ZDV",
     "state": "CO",
@@ -139,7 +150,7 @@
     "description": "SYRACUSE, NY, Friday, October 9, 2026 through Friday, October 9, 2026 Local",
     "mod_date": "10/08/2026 22:00:00",
     "mod_abs_time": "202610082200",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8509"
   },
   {
@@ -150,7 +161,7 @@
     "description": "Johnsontown, NC",
     "mod_date": "10/08/2026 21:49:00",
     "mod_abs_time": "202610082149",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8508"
   },
   {
@@ -161,7 +172,7 @@
     "description": "20NM E MISSOULA, MT, Friday, October 9, 2026 through Saturday, October 10, 2026 UTC",
     "mod_date": "10/08/2026 21:37:00",
     "mod_abs_time": "202610082137",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8507"
   },
   {
@@ -172,7 +183,7 @@
     "description": "Libby AAF, AZ, Friday, October 9, 2026 through Sunday, October 11, 2026 Local",
     "mod_date": "10/08/2026 21:19:00",
     "mod_abs_time": "202610082119",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8504"
   },
   {
@@ -183,7 +194,7 @@
     "description": "INDIO, CA, Saturday, October 10, 2026 through Sunday, October 11, 2026 Local",
     "mod_date": "10/08/2026 20:57:00",
     "mod_abs_time": "202610082057",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8493"
   },
   {
@@ -262,17 +273,6 @@
     "mod_abs_time": "202610071711",
     "is_new": "N",
     "gid": "6/8029"
-  },
-  {
-    "notam_id": "6/7946",
-    "facility": "ZJX",
-    "state": "SC",
-    "type": "HAZARDS",
-    "description": "2NM NW OF HONEY HILL, SC, Thursday, October 8, 2026 through Saturday, October 10, 2026 UTC",
-    "mod_date": "10/07/2026 15:14:00",
-    "mod_abs_time": "202610071514",
-    "is_new": "N",
-    "gid": "6/7946"
   },
   {
     "notam_id": "6/7911",
@@ -658,17 +658,6 @@
     "mod_abs_time": "202609281434",
     "is_new": "N",
     "gid": "6/5849"
-  },
-  {
-    "notam_id": "6/2853",
-    "facility": "ZDC",
-    "state": "NC",
-    "type": "HAZARDS",
-    "description": "15NM SSW, NC, Monday, September 21, 2026 through Friday, October 9, 2026 UTC",
-    "mod_date": "09/14/2026 15:12:00",
-    "mod_abs_time": "202609141512",
-    "is_new": "N",
-    "gid": "6/2853"
   },
   {
     "notam_id": "6/0708",

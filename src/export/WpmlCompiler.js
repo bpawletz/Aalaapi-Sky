@@ -288,7 +288,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
           ? wp.layerAltitude
           : ((wpLayer && wpLayer.altitude !== undefined && wpLayer.altitude !== null && wpLayer.altitude !== 'inherit')
             ? wpLayer.altitude
-            : (wp.alt !== undefined && !wpLayer ? wp.alt : altitude)));
+            : (wp.alt !== undefined && !wpLayer && (wp.alt !== 50 || altitude === 50) ? wp.alt : altitude)));
 
       if (wp.isRoadDroneWaypoint || isRoadFollowing) {
         const offset = (wpLayer && wpLayer.roadOffset !== undefined) ? wpLayer.roadOffset : 15;
@@ -493,7 +493,7 @@ ${waypointActions.join('\n')}
               ? nextWp.layerAltitude
               : ((wpLayer && wpLayer.altitude !== undefined && wpLayer.altitude !== null && wpLayer.altitude !== 'inherit')
                 ? wpLayer.altitude
-                : (nextWp.alt !== undefined && !wpLayer ? nextWp.alt : altitude)));
+                : (nextWp.alt !== undefined && !wpLayer && (nextWp.alt !== 50 || altitude === 50) ? nextWp.alt : altitude)));
           const targetPoi = (typeof getTargetPoiCoordinates === 'function') ? getTargetPoiCoordinates(nextWp, wpLayer) : null;
           nextPitch = (typeof calculate3DPoiPitch === 'function') ? calculate3DPoiPitch(nextWp, targetPoi, nextAltForPitch) : -45;
         } else {
@@ -677,7 +677,7 @@ ${waypointActions.join('\n')}
       currentAltitude = wp.layerAltitude;
     } else if (wpLayer && wpLayer.altitude !== undefined && wpLayer.altitude !== null && wpLayer.altitude !== 'inherit') {
       currentAltitude = wpLayer.altitude;
-    } else if (wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit' && !wpLayer) {
+    } else if (wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit' && !wpLayer && (wp.alt !== 50 || altitude === 50)) {
       currentAltitude = wp.alt;
     } else {
       currentAltitude = altitude;
@@ -1130,10 +1130,15 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
       const wpObj = (options && options.waypoints && options.waypoints[wpIdx]) ? options.waypoints[wpIdx] : null;
       if (wpObj && !wpObj.isModified) {
         const layersList = (options && options.flightLayers) || (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers) ? flightLayers : null);
-        const wpLayer = (wpObj.layerId && layersList) ? layersList.find(l => l.id === wpObj.layerId) : null;
+        let wpLayer = (wpObj.layerId && layersList) ? layersList.find(l => l.id === wpObj.layerId) : null;
+        if (!wpLayer && layersList && typeof wpObj.layerIndex === 'number' && layersList[wpObj.layerIndex]) {
+          wpLayer = layersList[wpObj.layerIndex];
+        }
         const targetAlt = (wpObj.layerAltitude !== undefined && wpObj.layerAltitude !== null && wpObj.layerAltitude !== 'inherit')
           ? wpObj.layerAltitude
-          : (wpLayer && wpLayer.altitude !== undefined && wpLayer.altitude !== null && wpLayer.altitude !== 'inherit' ? wpLayer.altitude : null);
+          : (wpLayer && wpLayer.altitude !== undefined && wpLayer.altitude !== null && wpLayer.altitude !== 'inherit'
+            ? wpLayer.altitude
+            : (options && options.altitude !== undefined && options.altitude !== null ? options.altitude : null));
         if (targetAlt !== null && !isNaN(targetAlt)) {
           pms[i] = pms[i].replace(
             /(<wpml:executeHeight>)[^<]+(<\/wpml:executeHeight>)/,

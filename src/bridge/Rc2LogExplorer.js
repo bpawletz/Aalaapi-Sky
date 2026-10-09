@@ -731,9 +731,10 @@ function withPreflightGate(actionFn) {
 }
 
 async function loadPreflightTemplate() {
-  if (typeof isCompanionOnline !== 'undefined' && isCompanionOnline && typeof getBridgeProxyUrl === 'function') {
+  if (typeof isCompanionOnline !== 'undefined' && isCompanionOnline) {
     try {
-      const resp = await fetch(getBridgeProxyUrl('/api/checklist/template'));
+      const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
+      const resp = await fetch(`${apiBase}/api/checklist/template`);
       if (resp.ok) {
         const data = await resp.json();
         if (data && data.success && Array.isArray(data.template) && data.template.length > 0) {
@@ -757,10 +758,11 @@ async function runPreflightAutoChecks() {
   let weatherStatus = { ok: true, text: 'Favorable (VFR)', desc: 'Wind speeds within tolerance, zero NEXRAD precipitation.', warn: false };
   let airspaceStatus = { ok: true, text: 'Clear / Class G', desc: 'Viewport clear of restricted zones or LAANC facility map ceilings.' };
 
-  if (typeof isCompanionOnline !== 'undefined' && isCompanionOnline && typeof getBridgeProxyUrl === 'function') {
+  if (typeof isCompanionOnline !== 'undefined' && isCompanionOnline) {
     try {
+      const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
       const laancVal = (document.getElementById('preflight-laanc-input')?.value || currentPreflightState.laancCode || '').trim();
-      const resp = await fetch(getBridgeProxyUrl(`/api/checklist/autochecks?laanc=${encodeURIComponent(laancVal)}`));
+      const resp = await fetch(`${apiBase}/api/checklist/autochecks?laanc=${encodeURIComponent(laancVal)}`);
       if (resp.ok) {
         const data = await resp.json();
         currentPreflightState.autoChecks = data;
@@ -1012,14 +1014,14 @@ async function showPreflightGateModal(onPassCallback = null) {
     gateToggle.onchange = () => setPreflightGateEnabled(gateToggle.checked);
   }
 
-  await loadPreflightTemplate();
-  await runPreflightAutoChecks();
-
   renderPreflightStepper();
   renderPreflightPhase(0);
   initSignatureCanvas();
-
   modal.classList.remove('hidden');
+
+  await loadPreflightTemplate();
+  await runPreflightAutoChecks();
+  renderPreflightPhase(currentPreflightState.currentPhaseIndex);
 
   // Wire prev/next buttons
   const prevBtn = document.getElementById('preflight-prev-btn');
@@ -1109,9 +1111,10 @@ async function submitPreflightChecklist() {
   };
 
   // Submit to bridge if online, else queue locally
-  if (typeof isCompanionOnline !== 'undefined' && isCompanionOnline && typeof getBridgeProxyUrl === 'function') {
+  if (typeof isCompanionOnline !== 'undefined' && isCompanionOnline) {
     try {
-      await fetch(getBridgeProxyUrl('/api/checklist/submit'), {
+      const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
+      await fetch(`${apiBase}/api/checklist/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -1160,15 +1163,16 @@ function queuePreflightLogLocally(payload) {
 }
 
 async function flushOfflinePreflightQueue() {
-  if (typeof isCompanionOnline === 'undefined' || !isCompanionOnline || typeof getBridgeProxyUrl !== 'function') return;
+  if (typeof isCompanionOnline === 'undefined' || !isCompanionOnline) return;
   try {
     if (typeof localStorage === 'undefined') return;
     const queue = JSON.parse(localStorage.getItem(PREFLIGHT_OFFLINE_QUEUE_KEY) || '[]');
     if (!Array.isArray(queue) || queue.length === 0) return;
 
+    const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
     for (const log of queue) {
       try {
-        await fetch(getBridgeProxyUrl('/api/checklist/submit'), {
+        await fetch(`${apiBase}/api/checklist/submit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(log)
@@ -1189,9 +1193,10 @@ async function openPreflightHistoryModal() {
 
   let logs = [];
 
-  if (typeof isCompanionOnline !== 'undefined' && isCompanionOnline && typeof getBridgeProxyUrl === 'function') {
+  if (typeof isCompanionOnline !== 'undefined' && isCompanionOnline) {
     try {
-      const resp = await fetch(getBridgeProxyUrl('/api/checklist/history?limit=50'));
+      const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
+      const resp = await fetch(`${apiBase}/api/checklist/history?limit=50`);
       if (resp.ok) {
         const data = await resp.json();
         if (data && Array.isArray(data.logs)) logs = data.logs;
@@ -1261,6 +1266,14 @@ function initPreflightEventListeners() {
   }
 }
 
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPreflightEventListeners);
+  } else {
+    initPreflightEventListeners();
+  }
+}
+
 if (typeof window !== 'undefined') {
   window.TagDetector = typeof TagDetector !== 'undefined' ? TagDetector : null;
   window.PhotoInspector = typeof PhotoInspector !== 'undefined' ? PhotoInspector : null;
@@ -1285,6 +1298,7 @@ if (typeof window !== 'undefined') {
   window.isPreflightGateEnabled = typeof isPreflightGateEnabled !== 'undefined' ? isPreflightGateEnabled : null;
   window.computeMissionSignature = typeof computeMissionSignature !== 'undefined' ? computeMissionSignature : null;
   window.invalidatePreflight = typeof invalidatePreflight !== 'undefined' ? invalidatePreflight : null;
+  window.safeJsonStringify = typeof safeJsonStringify !== 'undefined' ? safeJsonStringify : null;
 }
 
 if (typeof global !== 'undefined') {
