@@ -985,7 +985,7 @@ function setCorsHeaders(res) {
 }
 
 // Execute PowerShell COM helper for MTP operations
-function runMtpScript(scriptContent, timeoutMs = 25000) {
+function runMtpScript(scriptContent, timeoutMs = 45000) {
   if (!IS_WINDOWS) {
     return Promise.resolve({
       success: false,
@@ -1238,34 +1238,49 @@ $targetKmzName = "$($targetUUID).kmz"
 
 # Safe MTP copy for KMZ:
 # Windows MTP silently blocks CopyHere if an identical file name exists.
-# Rename existing items first so the fresh write is guaranteed to succeed.
-$existingKmz = @($destMissionFolder.Items() | Where-Object { $_.Name -eq $targetKmzName -or ($_.Name -like "*.kmz" -and $_.Name -notlike "_old_*") })
+# We move existing items to local staging trash or use a temporary name to avoid blocking.
+$trashDir = '${path.join(STAGING_DIR, 'trash').replace(/\\/g, '\\')}'
+if (-not (Test-Path $trashDir)) { New-Item -ItemType Directory -Path $trashDir -Force | Out-Null }
+$trashFolder = $shell.Namespace($trashDir)
+
+# Move existing KMZ files to staging trash first so CopyHere never collides
+$existingKmz = @($destMissionFolder.Items() | Where-Object { $_.Name -eq $targetKmzName -or $_.Name -like "_old_*" -or $_.Name -like "_staging_old*" })
 foreach ($oldKmz in $existingKmz) {
-    try { $oldKmz.Name = "_old_$((Get-Date).Ticks)_$($oldKmz.Name)" } catch {}
+    try {
+        if ($trashFolder) {
+            $trashFolder.MoveHere($oldKmz, 16)
+        } else {
+            $oldKmz.Name = "_staging_old.kmz"
+        }
+        Start-Sleep -Milliseconds 150
+    } catch {
+        try { $oldKmz.Name = "_staging_old.kmz" } catch {}
+    }
 }
 Start-Sleep -Milliseconds 250
 
-$kmzFile = "${kmzPath}"
+$kmzFile = '${kmzPath.replace(/\\/g, '\\')}'
 if (Test-Path $kmzFile) {
     $destMissionFolder.CopyHere($kmzFile, 16)
     
-    # Wait for file to arrive on MTP device
+    # Wait for file to arrive on MTP device (up to 15s)
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
-    while ($sw.Elapsed.TotalSeconds -lt 10) {
+    while ($sw.Elapsed.TotalSeconds -lt 15) {
         Start-Sleep -Milliseconds 300
         $check = @($destMissionFolder.Items() | Where-Object { $_.Name -eq $targetKmzName })
         if ($check.Count -gt 0) { break }
     }
 }
 
-# Clean up any leftover _old_ files in mission folder via MoveHere to local temp
-$trashDir = "${STAGING_DIR.replace(/\\/g, '\\\\')}\\trash"
-if (-not (Test-Path $trashDir)) { New-Item -ItemType Directory -Path $trashDir -Force | Out-Null }
-$trashFolder = $shell.Namespace($trashDir)
-
-$leftoverOld = @($destMissionFolder.Items() | Where-Object { $_.Name -like "_old_*" })
-foreach ($oldItem in $leftoverOld) {
-    try { $trashFolder.MoveHere($oldItem, 16) } catch {}
+# Clean any leftover temporary files (bounded to prevent slow loops)
+if ($trashFolder) {
+    $leftoverOld = @($destMissionFolder.Items() | Where-Object { $_.Name -like "_old_*" -or $_.Name -like "_staging_old*" })
+    foreach ($oldItem in ($leftoverOld | Select-Object -First 10)) {
+        try {
+            $trashFolder.MoveHere($oldItem, 16)
+            Start-Sleep -Milliseconds 150
+        } catch {}
+    }
 }
 
 # Clean local trash folder

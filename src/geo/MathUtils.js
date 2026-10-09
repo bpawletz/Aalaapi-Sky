@@ -2021,6 +2021,7 @@ function addRoadWaypoint(lat, lng) {
       origAlt: altitude,
       origPitch: null,
       origHeading: null,
+      isModified: false,
       origIsRingStart: false,
       origIsModified: false
     };
@@ -2086,6 +2087,7 @@ function addRoadWaypoint(lat, lng) {
               origAlt: altitude,
               origPitch: null,
               origHeading: null,
+              isModified: false,
               origIsRingStart: false,
               origIsModified: false
             };
@@ -2136,6 +2138,7 @@ function addRoadWaypoint(lat, lng) {
       origAlt: altitude,
       origPitch: null,
       origHeading: null,
+      isModified: false,
       origIsRingStart: false,
       origIsModified: false
     };
