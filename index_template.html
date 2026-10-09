@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.148.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.149.0</span></h1>
 
 
 
@@ -110,6 +110,17 @@
             </span>
           </button>
         </div>
+
+        <div class="header-bridge-container">
+          <button id="header-bridge-pill" class="header-bridge-pill is-offline" type="button" title="Aalaapi Bridge &amp; Hardware Status (Click to view details)" aria-label="Bridge and Hardware Status">
+            <span class="pill-bridge-group">
+              <span id="header-bridge-dot" class="header-bridge-dot"></span>
+              <span id="header-bridge-summary" style="font-weight: 600; font-size: 0.72rem;">Bridge: Offline</span>
+              <span id="header-rc2-summary-badge" class="header-rc2-badge" title="RC 2 USB Link Status">RC 2</span>
+              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </span>
+          </button>
+        </div>
       </div>
 
       <!-- Right: Action Buttons (Unit Toggle, Theme, Intro, Config, About, Links, More) -->
@@ -142,6 +153,10 @@
 
       <!-- Mobile More Actions Dropdown Menu Popover -->
       <div id="header-more-menu" class="header-more-menu glass hidden">
+        <button id="more-menu-bridge-btn" class="more-menu-item" type="button">
+          <span class="more-menu-icon">🌉</span>
+          <span class="more-menu-label">Aalaapi Bridge &amp; Hardware</span>
+        </button>
         <button id="more-menu-adsb-btn" class="more-menu-item" type="button">
           <span class="more-menu-icon">✈️</span>
           <span class="more-menu-label">ADS-B Airspace Awareness</span>
@@ -2132,164 +2147,26 @@
             </div>
           </div>
           
-          <!-- RC 2 Companion Live Sync Container -->
-          <div id="companion-sync-container" class="is-offline" style="margin-top: 10px; padding: 8px 10px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column; gap: 6px; transition: border-color 0.2s, background 0.2s;">
-            <!-- Service Status Row -->
-            <div class="companion-status-row" id="companion-service-row">
-              <span style="font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
-                <span id="companion-service-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #64748b; display: inline-block;"></span>
-                <span id="companion-service-text">Aalaapi Bridge: Offline</span>
-              </span>
-              <span style="display: inline-flex; align-items: center; gap: 6px;">
-                <span id="companion-transport-badge" style="font-size: 0.65rem; color: #38bdf8; font-weight: 600;"></span>
-                <span id="companion-service-label" style="color: var(--text-muted); font-size: 0.68rem;">start-bridge.bat</span>
-                <button id="companion-config-host-btn" class="companion-help-circle-btn" type="button" title="Configure Remote Aalaapi Bridge IP / Host" style="font-size: 0.65rem;">⚙️</button>
-                <button id="companion-service-help-btn" class="companion-help-circle-btn" type="button" title="How to start Aalaapi Bridge">?</button>
-              </span>
+          <!-- Streamlined Bridge & Hardware Status Bar (Option A) -->
+          <div id="sidebar-bridge-summary-bar" class="sidebar-bridge-summary-bar is-offline" title="Click to view full Aalaapi Bridge &amp; Hardware Monitor" style="margin-top: 10px; padding: 8px 10px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer;">
+            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span id="sidebar-bridge-mini-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #64748b; display: inline-block;"></span>
+                <span id="sidebar-bridge-mini-label" style="font-size: 0.75rem; font-weight: 600; color: var(--text-main);">Aalaapi Bridge: Offline</span>
+                <span id="sidebar-rc2-mini-badge" class="badge" style="font-size: 0.65rem; background: rgba(100, 116, 139, 0.2); color: #94a3b8; padding: 1px 5px; border-radius: 4px; font-weight: 600;">RC 2</span>
+              </div>
+              <button id="sidebar-open-bridge-popover-btn" class="btn-secondary" type="button" style="padding: 2px 8px; font-size: 0.7rem; height: 22px; margin: 0; line-height: 1;" title="Open Bridge &amp; MCP monitor">Monitor ↗</button>
             </div>
-            <!-- Bridge Version Mismatch Alert Banner & Auto-Restart -->
-            <div id="companion-version-mismatch-alert" style="display: none; padding: 6px 8px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 6px; font-size: 0.72rem; flex-direction: column; gap: 4px;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span id="companion-version-mismatch-text" style="font-weight: 600; color: #f87171;">⚠️ Bridge Version Mismatch</span>
-                <button id="companion-restart-btn" type="button" class="btn-primary" style="padding: 2px 8px; font-size: 0.68rem; height: 22px; background: #ef4444; border-color: #dc2626; line-height: 1; cursor: pointer;">Auto-Restart Bridge</button>
-              </div>
-              <div id="companion-version-mismatch-detail" style="color: var(--text-muted); font-size: 0.65rem; line-height: 1.2;">
-                Bridge service is running <span id="companion-running-version" style="font-weight: 600; color: #f87171;">v?</span>, but Web app is <span id="companion-target-version" style="font-weight: 600; color: #38bdf8;">v?</span>. Click to cleanly restart.
-              </div>
-            </div>
-            <!-- Host Config Panel (Expandable) -->
-            <div id="companion-host-panel" style="display: none; padding: 6px 8px; background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; font-size: 0.72rem; flex-direction: column; gap: 4px;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-weight: 600; color: var(--text-main); font-size: 0.72rem;">Remote Aalaapi Bridge Host / IP:</span>
-                <button id="companion-host-reset-btn" type="button" style="background: none; border: none; color: #38bdf8; cursor: pointer; font-size: 0.68rem; text-decoration: underline; padding: 0;">Reset</button>
-              </div>
-              <div style="display: flex; gap: 4px; align-items: center;">
-                <input id="companion-host-input" type="text" placeholder="http://127.0.0.1:8765" style="flex: 1; font-size: 0.72rem; padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.06); color: var(--text-main);" />
-                <button id="companion-host-save-btn" type="button" class="btn-primary" style="padding: 4px 8px; font-size: 0.7rem; line-height: 1; white-space: nowrap;">Save</button>
-              </div>
-              <div id="companion-host-hint" style="color: var(--text-muted); font-size: 0.65rem; line-height: 1.2;">Enter remote PC IP (e.g. <code>http://192.168.1.50:8765</code>) or use URL param <code>?companion=...</code></div>
-              <!-- Map Tile & Asset Cache Config (Issue #91) -->
-              <div id="bridge-tile-cache-section" style="margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; flex-direction: column; gap: 4px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <label for="bridge-tile-cache-toggle" style="font-weight: 600; color: var(--text-main); font-size: 0.72rem; display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
-                    <input id="bridge-tile-cache-toggle" type="checkbox" checked style="accent-color: #06b6d4; cursor: pointer;" />
-                    <span>Map Tile &amp; Asset Cache</span>
-                  </label>
-                  <button id="bridge-cache-clear-btn" type="button" class="btn-secondary" style="font-size: 0.65rem; padding: 2px 6px; line-height: 1.2;" title="Purge local bridge tile cache">Purge</button>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.65rem; color: var(--text-muted);">
-                  <span id="bridge-cache-stats-text">Cached: 0 tiles (0.00 MB / 2.0 GB)</span>
-                  <span id="bridge-cache-hitrate-text" style="color: #22c55e;">Hit Rate: 0%</span>
-                </div>
-              </div>
-            </div>
-            <!-- USB Link Status Row -->
-            <div class="companion-status-row" id="companion-usb-row">
-              <span style="font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
-                <span id="companion-usb-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #64748b; display: inline-block;"></span>
-                <span id="companion-usb-text">RC 2 USB Link: Waiting</span>
-              </span>
-              <span style="display: inline-flex; align-items: center; gap: 6px;">
-                <span id="companion-usb-label" style="color: var(--text-muted); font-size: 0.68rem;">Plug in USB-C</span>
-                <button id="companion-usb-help-btn" class="companion-help-circle-btn" type="button" title="How to connect DJI RC 2 via USB-C">?</button>
-              </span>
-            </div>
-            <!-- MCP Node Monitor Grid (Issue #94: Native Model Context Protocol Support & Gemini AI Integration) -->
-            <div id="mcp-monitor-section" class="mcp-monitor-section" style="margin-top: 4px; padding: 6px 8px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 6px; display: flex; flex-direction: column; gap: 5px;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-weight: 600; font-size: 0.72rem; color: #38bdf8; display: inline-flex; align-items: center; gap: 5px;">
-                  <span id="mcp-server-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #64748b; display: inline-block;"></span>
-                  <span>Gemini / MCP Protocol Bridge</span>
-                </span>
-                <span id="mcp-transport-status-badge" style="font-size: 0.64rem; color: #94a3b8; font-family: monospace;">Stdio / SSE</span>
-              </div>
-              <div id="mcp-node-monitor-grid" class="mcp-node-monitor-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; font-size: 0.65rem;">
-                <div class="mcp-stat-box" style="padding: 4px; background: rgba(255, 255, 255, 0.03); border-radius: 4px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.05);">
-                  <div style="color: var(--text-muted); font-size: 0.6rem;">Active Hooks</div>
-                  <div id="mcp-active-sessions-text" style="font-weight: 700; color: #38bdf8; font-size: 0.72rem;">0 Clients</div>
-                </div>
-                <div class="mcp-stat-box" style="padding: 4px; background: rgba(255, 255, 255, 0.03); border-radius: 4px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.05);">
-                  <div style="color: var(--text-muted); font-size: 0.6rem;">API Frames</div>
-                  <div id="mcp-frame-counts-text" style="font-weight: 700; color: #a855f7; font-size: 0.72rem;">0 R / 0 W</div>
-                </div>
-                <div class="mcp-stat-box" style="padding: 4px; background: rgba(255, 255, 255, 0.03); border-radius: 4px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.05);">
-                  <div style="color: var(--text-muted); font-size: 0.6rem;">Tools Active</div>
-                  <div id="mcp-tools-count-text" style="font-weight: 700; color: #22c55e; font-size: 0.72rem;">6 Active</div>
-                </div>
-              </div>
-              <div style="display: flex; flex-direction: column; gap: 2px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.62rem; color: var(--text-muted);">
-                  <span>Discovered Tools:</span>
-                  <span id="mcp-last-action-text" style="color: #64748b; font-family: monospace;">idle</span>
-                </div>
-                <div id="mcp-tools-pill-container" class="mcp-tools-pill-container" style="display: flex; flex-wrap: wrap; gap: 3px; max-height: 48px; overflow-y: auto;">
-                  <span class="mcp-tool-pill" title="get_airspace_telemetry: ADS-B, NEXRAD &amp; Hardware Telemetry">telemetry</span>
-                  <span class="mcp-tool-pill" title="generate_flight_plan: Calculate WPML V2 Waypoint Payloads">flight_plan</span>
-                  <span class="mcp-tool-pill" title="trigger_bridge_action: RC2 sync, cache validate, device scan">bridge_action</span>
-                  <span class="mcp-tool-pill" title="get_latest_bad_mission: SQLite failure triage">bad_mission</span>
-                  <span class="mcp-tool-pill" title="convert_mission_format: QGC .plan &amp; Autel .kml">conversion</span>
-                </div>
-              </div>
-              <div style="display: flex; gap: 4px; margin-top: 2px;">
-                <button id="mcp-copy-cli-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.65rem; line-height: 1.2; display: inline-flex; align-items: center; justify-content: center; gap: 4px; border-radius: 4px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; cursor: pointer;" title="Copy Gemini CLI MCP configuration command">
-                  <span>📋 Copy Gemini CLI Command</span>
-                </button>
-              </div>
-            </div>
-            <!-- Contextual Help / Status Hint -->
-            <div id="companion-offline-hint" style="font-size: 0.68rem; color: #38bdf8; display: flex; align-items: center; justify-content: space-between; padding-top: 4px; border-top: 1px solid rgba(255, 255, 255, 0.06); cursor: pointer;" title="Open RC 2 Sync &amp; Setup Guide">
-              <span style="display: flex; align-items: center; gap: 4px;">
-                <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                Sync Offline &bull; Setup Guide
-              </span>
-              <span style="font-weight: 600; text-decoration: underline;">How to use &rsaquo;</span>
-            </div>
-            <!-- Hidden backward-compatible aliases for legacy selector compatibility -->
-            <span id="companion-indicator-dot" style="display:none;"></span>
-            <span id="companion-status-text" style="display:none;">Aalaapi Bridge Offline</span>
-            <span id="companion-device-label" style="display:none;">start-bridge.bat</span>
-            <button id="companion-help-btn" style="display:none;" type="button">?</button>
-            <div id="rc2-direct-actions" style="display: none; width: 100%; flex-direction: column; gap: 6px;">
-              <div style="display: flex; gap: 6px; width: 100%;">
-                <button id="direct-rc2-sync-btn" type="button" class="btn-secondary" style="flex: 1; padding: 6px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.4); color: #22d3ee; cursor: pointer;" title="Send active mission directly to connected DJI RC 2">
-                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-                  </svg>
-                  Send to RC 2
-                </button>
-                <button id="direct-rc2-pull-btn" type="button" class="btn-secondary" style="flex: 1; padding: 6px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.4); color: #c084fc; cursor: pointer;" title="Pull and import active mission KMZ from connected DJI RC 2">
-                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="7 10 12 15 17 10"/>
-                    <line x1="12" y1="15" x2="12" y2="3"/>
-                  </svg>
-                  Pull KMZ
-                </button>
-              </div>
-              <button id="direct-rc2-pull-log-btn" type="button" class="btn-secondary" style="width: 100%; padding: 6px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.4); color: #60a5fa; cursor: pointer;" title="Extract latest flight telemetry log from connected DJI RC 2 over USB">
-                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="7 10 12 15 17 10"/>
-                  <line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
-                📥 Pull Flight Log from RC 2
+            <!-- Sidebar Quick Hardware Sync Buttons (Visible only when RC 2 is connected) -->
+            <div id="sidebar-rc2-quick-actions" style="display: none; gap: 6px; width: 100%; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255, 255, 255, 0.06);">
+              <button id="sidebar-direct-rc2-sync-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.4); color: #22d3ee; cursor: pointer;" title="Send active mission directly to connected DJI RC 2">
+                Send to RC 2
               </button>
-              <button id="direct-rc2-browse-logs-btn" type="button" class="btn-secondary" style="width: 100%; padding: 6px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: rgba(14, 165, 233, 0.15); border: 1px solid rgba(14, 165, 233, 0.4); color: #38bdf8; cursor: pointer;" title="Browse and pull any flight log from connected DJI RC 2 over USB MTP">
-                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                  <polyline points="14 2 14 8 20 8"></polyline>
-                  <line x1="16" y1="13" x2="8" y2="13"></line>
-                  <line x1="16" y1="17" x2="8" y2="17"></line>
-                </svg>
-                📋 Browse All Controller Logs
+              <button id="sidebar-direct-rc2-pull-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.4); color: #c084fc; cursor: pointer;" title="Pull active mission KMZ from connected DJI RC 2">
+                Pull KMZ
               </button>
             </div>
-            <!-- Photo Ingestion Button (Always accessible for Mini 4 Pro, SD Cards & RC 2) -->
-            <button id="direct-rc2-photos-btn" type="button" class="btn-secondary" style="width: 100%; padding: 6px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; cursor: pointer; margin-top: 4px;" title="Ingest photos from Mini 4 Pro, SD Card, or RC 2 and open Inspection Layer">
-              <span>📸</span>
-              Ingest &amp; Inspect Photos
-            </button>
-          </div> <!-- /#companion-sync-container -->
+          </div>
         </section> <!-- /#actions-and-sync-section -->
       </div> <!-- /.scroll-container -->
 
@@ -2509,6 +2386,177 @@
                 <button id="remote-id-cal-reset-btn" class="btn-cal-reset" type="button" title="Reset offset to raw broadcast GPS coordinates">Reset to GPS (0m)</button>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Floating Topbar Bridge & Hardware Status Popover (Issue #128) -->
+      <div id="bridge-status-popover" class="bridge-status-popover hidden" style="position: absolute; top: 12px; right: 12px; z-index: 1050; width: 360px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6); padding: 14px; display: flex; flex-direction: column; gap: 10px; color: var(--text-main); transition: opacity 0.2s, transform 0.2s;">
+        <div class="popover-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+          <div class="popover-title" style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 700; color: var(--text-main);">
+            <span style="font-size: 1.05rem;">🌉</span>
+            <span>Aalaapi Bridge &amp; Hardware Sync</span>
+          </div>
+          <button id="bridge-popover-close-btn" class="popover-close-btn" type="button" aria-label="Close Popover" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; padding: 2px 6px;">✕</button>
+        </div>
+        <div class="popover-body" style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- RC 2 Companion Live Sync Container -->
+          <div id="companion-sync-container" class="is-offline" style="margin-top: 0; padding: 0; background: transparent; border: none; display: flex; flex-direction: column; gap: 6px; transition: border-color 0.2s, background 0.2s;">
+            <!-- Service Status Row -->
+            <div class="companion-status-row" id="companion-service-row">
+              <span style="font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
+                <span id="companion-service-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #64748b; display: inline-block;"></span>
+                <span id="companion-service-text">Aalaapi Bridge: Offline</span>
+              </span>
+              <span style="display: inline-flex; align-items: center; gap: 6px;">
+                <span id="companion-transport-badge" style="font-size: 0.65rem; color: #38bdf8; font-weight: 600;"></span>
+                <span id="companion-service-label" style="color: var(--text-muted); font-size: 0.68rem;">start-bridge.bat</span>
+                <button id="companion-config-host-btn" class="companion-help-circle-btn" type="button" title="Configure Remote Aalaapi Bridge IP / Host" style="font-size: 0.65rem;">⚙️</button>
+                <button id="companion-service-help-btn" class="companion-help-circle-btn" type="button" title="How to start Aalaapi Bridge">?</button>
+              </span>
+            </div>
+            <!-- Bridge Version Mismatch Alert Banner & Auto-Restart -->
+            <div id="companion-version-mismatch-alert" style="display: none; padding: 6px 8px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 6px; font-size: 0.72rem; flex-direction: column; gap: 4px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span id="companion-version-mismatch-text" style="font-weight: 600; color: #f87171;">⚠️ Bridge Version Mismatch</span>
+                <button id="companion-restart-btn" type="button" class="btn-primary" style="padding: 2px 8px; font-size: 0.68rem; height: 22px; background: #ef4444; border-color: #dc2626; line-height: 1; cursor: pointer;">Auto-Restart Bridge</button>
+              </div>
+              <div id="companion-version-mismatch-detail" style="color: var(--text-muted); font-size: 0.65rem; line-height: 1.2;">
+                Bridge service is running <span id="companion-running-version" style="font-weight: 600; color: #f87171;">v?</span>, but Web app is <span id="companion-target-version" style="font-weight: 600; color: #38bdf8;">v?</span>. Click to cleanly restart.
+              </div>
+            </div>
+            <!-- Host Config Panel (Expandable) -->
+            <div id="companion-host-panel" style="display: none; padding: 6px 8px; background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; font-size: 0.72rem; flex-direction: column; gap: 4px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 600; color: var(--text-main); font-size: 0.72rem;">Remote Aalaapi Bridge Host / IP:</span>
+                <button id="companion-host-reset-btn" type="button" style="background: none; border: none; color: #38bdf8; cursor: pointer; font-size: 0.68rem; text-decoration: underline; padding: 0;">Reset</button>
+              </div>
+              <div style="display: flex; gap: 4px; align-items: center;">
+                <input id="companion-host-input" type="text" placeholder="http://127.0.0.1:8765" style="flex: 1; font-size: 0.72rem; padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.06); color: var(--text-main);" />
+                <button id="companion-host-save-btn" type="button" class="btn-primary" style="padding: 4px 8px; font-size: 0.7rem; line-height: 1; white-space: nowrap;">Save</button>
+              </div>
+              <div id="companion-host-hint" style="color: var(--text-muted); font-size: 0.65rem; line-height: 1.2;">Enter remote PC IP (e.g. <code>http://192.168.1.50:8765</code>) or use URL param <code>?companion=...</code></div>
+              <!-- Map Tile & Asset Cache Config (Issue #91) -->
+              <div id="bridge-tile-cache-section" style="margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; flex-direction: column; gap: 4px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <label for="bridge-tile-cache-toggle" style="font-weight: 600; color: var(--text-main); font-size: 0.72rem; display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
+                    <input id="bridge-tile-cache-toggle" type="checkbox" checked style="accent-color: #06b6d4; cursor: pointer;" />
+                    <span>Map Tile &amp; Asset Cache</span>
+                  </label>
+                  <button id="bridge-cache-clear-btn" type="button" class="btn-secondary" style="font-size: 0.65rem; padding: 2px 6px; line-height: 1.2;" title="Purge local bridge tile cache">Purge</button>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.65rem; color: var(--text-muted);">
+                  <span id="bridge-cache-stats-text">Cached: 0 tiles (0.00 MB / 2.0 GB)</span>
+                  <span id="bridge-cache-hitrate-text" style="color: #22c55e;">Hit Rate: 0%</span>
+                </div>
+              </div>
+            </div>
+            <!-- USB Link Status Row -->
+            <div class="companion-status-row" id="companion-usb-row">
+              <span style="font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
+                <span id="companion-usb-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #64748b; display: inline-block;"></span>
+                <span id="companion-usb-text">RC 2 USB Link: Waiting</span>
+              </span>
+              <span style="display: inline-flex; align-items: center; gap: 6px;">
+                <span id="companion-usb-label" style="color: var(--text-muted); font-size: 0.68rem;">Plug in USB-C</span>
+                <button id="companion-usb-help-btn" class="companion-help-circle-btn" type="button" title="How to connect DJI RC 2 via USB-C">?</button>
+              </span>
+            </div>
+            <!-- MCP Node Monitor Grid (Issue #94: Native Model Context Protocol Support & Gemini AI Integration) -->
+            <div id="mcp-monitor-section" class="mcp-monitor-section" style="margin-top: 4px; padding: 6px 8px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 6px; display: flex; flex-direction: column; gap: 5px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: 600; font-size: 0.72rem; color: #38bdf8; display: inline-flex; align-items: center; gap: 5px;">
+                  <span id="mcp-server-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #64748b; display: inline-block;"></span>
+                  <span>Gemini / MCP Protocol Bridge</span>
+                </span>
+                <span id="mcp-transport-status-badge" style="font-size: 0.64rem; color: #94a3b8; font-family: monospace;">Stdio / SSE</span>
+              </div>
+              <div id="mcp-node-monitor-grid" class="mcp-node-monitor-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; font-size: 0.65rem;">
+                <div class="mcp-stat-box" style="padding: 4px; background: rgba(255, 255, 255, 0.03); border-radius: 4px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.05);">
+                  <div style="color: var(--text-muted); font-size: 0.6rem;">Active Hooks</div>
+                  <div id="mcp-active-sessions-text" style="font-weight: 700; color: #38bdf8; font-size: 0.72rem;">0 Clients</div>
+                </div>
+                <div class="mcp-stat-box" style="padding: 4px; background: rgba(255, 255, 255, 0.03); border-radius: 4px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.05);">
+                  <div style="color: var(--text-muted); font-size: 0.6rem;">API Frames</div>
+                  <div id="mcp-frame-counts-text" style="font-weight: 700; color: #a855f7; font-size: 0.72rem;">0 R / 0 W</div>
+                </div>
+                <div class="mcp-stat-box" style="padding: 4px; background: rgba(255, 255, 255, 0.03); border-radius: 4px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.05);">
+                  <div style="color: var(--text-muted); font-size: 0.6rem;">Tools Active</div>
+                  <div id="mcp-tools-count-text" style="font-weight: 700; color: #22c55e; font-size: 0.72rem;">6 Active</div>
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.62rem; color: var(--text-muted);">
+                  <span>Discovered Tools:</span>
+                  <span id="mcp-last-action-text" style="color: #64748b; font-family: monospace;">idle</span>
+                </div>
+                <div id="mcp-tools-pill-container" class="mcp-tools-pill-container" style="display: flex; flex-wrap: wrap; gap: 3px; max-height: 48px; overflow-y: auto;">
+                  <span class="mcp-tool-pill" title="get_airspace_telemetry: ADS-B, NEXRAD &amp; Hardware Telemetry">telemetry</span>
+                  <span class="mcp-tool-pill" title="generate_flight_plan: Calculate WPML V2 Waypoint Payloads">flight_plan</span>
+                  <span class="mcp-tool-pill" title="trigger_bridge_action: RC2 sync, cache validate, device scan">bridge_action</span>
+                  <span class="mcp-tool-pill" title="get_latest_bad_mission: SQLite failure triage">bad_mission</span>
+                  <span class="mcp-tool-pill" title="convert_mission_format: QGC .plan &amp; Autel .kml">conversion</span>
+                </div>
+              </div>
+              <div style="display: flex; gap: 4px; margin-top: 2px;">
+                <button id="mcp-copy-cli-btn" type="button" class="btn-secondary" style="flex: 1; padding: 4px 6px; font-size: 0.65rem; line-height: 1.2; display: inline-flex; align-items: center; justify-content: center; gap: 4px; border-radius: 4px; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; cursor: pointer;" title="Copy Gemini CLI MCP configuration command">
+                  <span>📋 Copy Gemini CLI Command</span>
+                </button>
+              </div>
+            </div>
+            <!-- Contextual Help / Status Hint -->
+            <div id="companion-offline-hint" style="font-size: 0.68rem; color: #38bdf8; display: flex; align-items: center; justify-content: space-between; padding-top: 4px; border-top: 1px solid rgba(255, 255, 255, 0.06); cursor: pointer;" title="Open RC 2 Sync &amp; Setup Guide">
+              <span style="display: flex; align-items: center; gap: 4px;">
+                <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                Sync Offline &bull; Setup Guide
+              </span>
+              <span style="font-weight: 600; text-decoration: underline;">How to use &rsaquo;</span>
+            </div>
+            <!-- Hidden backward-compatible aliases for legacy selector compatibility -->
+            <span id="companion-indicator-dot" style="display:none;"></span>
+            <span id="companion-status-text" style="display:none;">Aalaapi Bridge Offline</span>
+            <span id="companion-device-label" style="display:none;">start-bridge.bat</span>
+            <button id="companion-help-btn" style="display:none;" type="button">?</button>
+            <div id="rc2-direct-actions" style="display: none; width: 100%; flex-direction: column; gap: 6px;">
+              <div style="display: flex; gap: 6px; width: 100%;">
+                <button id="direct-rc2-sync-btn" type="button" class="btn-secondary" style="flex: 1; padding: 6px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.4); color: #22d3ee; cursor: pointer;" title="Send active mission directly to connected DJI RC 2">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                  </svg>
+                  Send to RC 2
+                </button>
+                <button id="direct-rc2-pull-btn" type="button" class="btn-secondary" style="flex: 1; padding: 6px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.4); color: #c084fc; cursor: pointer;" title="Pull and import active mission KMZ from connected DJI RC 2">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  Pull KMZ
+                </button>
+              </div>
+              <button id="direct-rc2-pull-log-btn" type="button" class="btn-secondary" style="width: 100%; padding: 6px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.4); color: #60a5fa; cursor: pointer;" title="Extract latest flight telemetry log from connected DJI RC 2 over USB">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                📥 Pull Flight Log from RC 2
+              </button>
+              <button id="direct-rc2-browse-logs-btn" type="button" class="btn-secondary" style="width: 100%; padding: 6px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: rgba(14, 165, 233, 0.15); border: 1px solid rgba(14, 165, 233, 0.4); color: #38bdf8; cursor: pointer;" title="Browse and pull any flight log from connected DJI RC 2 over USB MTP">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+                📋 Browse All Controller Logs
+              </button>
+            </div>
+            <!-- Photo Ingestion Button (Always accessible for Mini 4 Pro, SD Cards & RC 2) -->
+            <button id="direct-rc2-photos-btn" type="button" class="btn-secondary" style="width: 100%; padding: 6px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; cursor: pointer; margin-top: 4px;" title="Ingest photos from Mini 4 Pro, SD Card, or RC 2 and open Inspection Layer">
+              <span>📸</span>
+              Ingest &amp; Inspect Photos
+            </button>
           </div>
         </div>
       </div>
@@ -4324,7 +4372,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.148.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.149.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -4385,6 +4433,12 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.149.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Top Navigation Bridge Status Info Node &amp; Popout Drawer (Closes #128):</strong> Integrated an interactive, persistent hardware status pill into the top navigation bar (<code>#header-bridge-pill</code>) alongside the Weather HUD pill with real-time status dots for the local Aalaapi Bridge daemon (🟢 Online / ⚪ Offline) and DJI RC 2 USB-C link (🟢 Connected / 🟡 Unplugged / ⚪ Waiting). Re-anchored the comprehensive companion hardware and MCP monitor into a viewport-constrained floating glassmorphism popout drawer (<code>#bridge-status-popover</code>). Replaced the bulky in-sidebar status box with a compact 1-line Bridge status bar (<code>#sidebar-bridge-summary-bar</code>) with a 1-click <code>Monitor ↗</code> launcher, freeing up 300+ vertical pixels in Section 4.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.148.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">

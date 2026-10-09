@@ -1477,6 +1477,59 @@ const scenarios = [
       await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
       await page.waitForTimeout(1000);
     }
+  },
+  {
+    id: 'bridge_top_nav',
+    name: 'Top Navigation Bridge Status Info Node & Popout Drawer',
+    description: 'Demonstrates persistent top navigation bridge pill, real-time hardware status dot, popout monitor drawer, and streamlined Section 4 bar.',
+    issueRef: 'Issue #128',
+    run: async (page) => {
+      // 1. Center map squarely on default coordinates
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(600);
+
+      // 2. Click the Topbar Bridge Status Pill to open popout drawer
+      const bridgePill = await page.$('#header-bridge-pill');
+      if (bridgePill) {
+        await bridgePill.click();
+      }
+      await page.waitForTimeout(1200);
+
+      // 3. Simulate companion bridge status update (Online + RC 2 connected)
+      await page.evaluate(() => {
+        if (typeof applyCompanionStatusUI === 'function') {
+          applyCompanionStatusUI({
+            connected: true,
+            deviceName: 'DJI RC 2 (MTP)',
+            version: '1.149.0',
+            activeMissions: ['test-mission-uuid']
+          });
+        }
+      });
+      await page.waitForTimeout(1500);
+
+      // 4. Close the popout drawer via close button
+      const closeBtn = await page.$('#bridge-popover-close-btn');
+      if (closeBtn) {
+        await closeBtn.click();
+      }
+      await page.waitForTimeout(800);
+
+      // 5. Scroll Section 4 into view and open drawer via sidebar "Monitor" button
+      const sidebarOpenBtn = await page.$('#sidebar-open-bridge-popover-btn');
+      if (sidebarOpenBtn) {
+        await sidebarOpenBtn.click();
+      }
+      await page.waitForTimeout(1500);
+
+      // 6. Dismiss via Escape key
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(800);
+
+      // 7. Re-center map squarely on default rural coordinates
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1000);
+    }
   }
 ];
 

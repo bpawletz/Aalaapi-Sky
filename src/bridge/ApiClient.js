@@ -262,7 +262,7 @@ function getAppVersion() {
       if (match) return match[0];
     }
   }
-  return '1.147.1';
+  return '1.149.0';
 }
 
 let isRestartingBridge = false;
@@ -466,6 +466,54 @@ function applyCompanionStatusUI(data) {
     if (diagPullBtn) diagPullBtn.style.display = 'none';
     if (diagBrowseBtn) diagBrowseBtn.style.display = 'none';
   }
+
+  // 3. Update Top Nav Info Node & Sidebar Summary Bar (Issue #128)
+  const headerPill = document.getElementById('header-bridge-pill');
+  const headerDot = document.getElementById('header-bridge-dot');
+  const headerSummary = document.getElementById('header-bridge-summary');
+  const headerRc2Badge = document.getElementById('header-rc2-summary-badge');
+  const sidebarBar = document.getElementById('sidebar-bridge-summary-bar');
+  const sidebarDot = document.getElementById('sidebar-bridge-mini-dot');
+  const sidebarLabel = document.getElementById('sidebar-bridge-mini-label');
+  const sidebarRc2Badge = document.getElementById('sidebar-rc2-mini-badge');
+  const sidebarQuickActions = document.getElementById('sidebar-rc2-quick-actions');
+
+  if (headerPill) {
+    headerPill.classList.remove('is-offline');
+    headerPill.classList.add('is-online');
+  }
+  if (headerDot) headerDot.style.background = isVersionMismatch ? '#f59e0b' : '#22c55e';
+  if (headerSummary) headerSummary.textContent = isVersionMismatch ? 'Bridge (vMismatch)' : 'Bridge: Online';
+  if (sidebarBar) {
+    sidebarBar.classList.remove('is-offline');
+    sidebarBar.classList.add('is-online');
+  }
+  if (sidebarDot) sidebarDot.style.background = isVersionMismatch ? '#f59e0b' : '#22c55e';
+  if (sidebarLabel) sidebarLabel.textContent = isVersionMismatch ? 'Aalaapi Bridge: vMismatch' : 'Aalaapi Bridge: Online';
+
+  if (data.connected) {
+    if (headerRc2Badge) {
+      headerRc2Badge.textContent = 'RC 2: OK';
+      headerRc2Badge.className = 'header-rc2-badge is-connected';
+    }
+    if (sidebarRc2Badge) {
+      sidebarRc2Badge.textContent = 'RC 2: OK';
+      sidebarRc2Badge.style.background = 'rgba(34, 197, 94, 0.2)';
+      sidebarRc2Badge.style.color = '#4ade80';
+    }
+    if (sidebarQuickActions) sidebarQuickActions.style.display = 'flex';
+  } else {
+    if (headerRc2Badge) {
+      headerRc2Badge.textContent = 'RC 2';
+      headerRc2Badge.className = 'header-rc2-badge is-unplugged';
+    }
+    if (sidebarRc2Badge) {
+      sidebarRc2Badge.textContent = 'RC 2: Unplugged';
+      sidebarRc2Badge.style.background = 'rgba(234, 179, 8, 0.15)';
+      sidebarRc2Badge.style.color = '#fde047';
+    }
+    if (sidebarQuickActions) sidebarQuickActions.style.display = 'none';
+  }
 }
 
 function connectCompanionStatusStream() {
@@ -654,6 +702,40 @@ async function pollCompanionStatus() {
     if (pullBtn) pullBtn.style.display = 'none';
     if (diagPullBtn) diagPullBtn.style.display = 'none';
     if (diagBrowseBtn) diagBrowseBtn.style.display = 'none';
+
+    // 3. Update Top Nav Info Node & Sidebar Summary Bar (Issue #128)
+    const headerPill = document.getElementById('header-bridge-pill');
+    const headerDot = document.getElementById('header-bridge-dot');
+    const headerSummary = document.getElementById('header-bridge-summary');
+    const headerRc2Badge = document.getElementById('header-rc2-summary-badge');
+    const sidebarBar = document.getElementById('sidebar-bridge-summary-bar');
+    const sidebarDot = document.getElementById('sidebar-bridge-mini-dot');
+    const sidebarLabel = document.getElementById('sidebar-bridge-mini-label');
+    const sidebarRc2Badge = document.getElementById('sidebar-rc2-mini-badge');
+    const sidebarQuickActions = document.getElementById('sidebar-rc2-quick-actions');
+
+    if (headerPill) {
+      headerPill.classList.remove('is-online');
+      headerPill.classList.add('is-offline');
+    }
+    if (headerDot) headerDot.style.background = '#64748b';
+    if (headerSummary) headerSummary.textContent = 'Bridge: Offline';
+    if (headerRc2Badge) {
+      headerRc2Badge.textContent = 'RC 2';
+      headerRc2Badge.className = 'header-rc2-badge';
+    }
+    if (sidebarBar) {
+      sidebarBar.classList.remove('is-online');
+      sidebarBar.classList.add('is-offline');
+    }
+    if (sidebarDot) sidebarDot.style.background = '#64748b';
+    if (sidebarLabel) sidebarLabel.textContent = 'Aalaapi Bridge: Offline';
+    if (sidebarRc2Badge) {
+      sidebarRc2Badge.textContent = 'RC 2';
+      sidebarRc2Badge.style.background = 'rgba(100, 116, 139, 0.2)';
+      sidebarRc2Badge.style.color = '#94a3b8';
+    }
+    if (sidebarQuickActions) sidebarQuickActions.style.display = 'none';
   }
 }
 

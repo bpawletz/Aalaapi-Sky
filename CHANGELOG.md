@@ -1,3 +1,12 @@
+## [1.149.0] - 2026-10-08
+
+### Added
+- **Top Navigation Bridge Status Info Node & Popout Drawer (Closes #128)**:
+  - **Top Navigation Info Node (`#header-bridge-pill`, `index_template.html`, `index.css`)**: Integrated an interactive, persistent hardware status pill into the top navigation bar alongside the Weather HUD pill. Features real-time status dots for the local Aalaapi Bridge daemon (`#header-bridge-dot`, 🟢 Online / ⚪ Offline) and DJI RC 2 USB-C link (`#header-rc2-summary-badge`, 🟢 Connected / 🟡 Unplugged / ⚪ Waiting) with an animated dropdown chevron.
+  - **Floating Bridge & Hardware Popout Drawer (`#bridge-status-popover`)**: Re-anchored the comprehensive companion hardware and MCP monitor into a viewport-constrained floating glassmorphism popout drawer. Houses SSE connection status, remote host configuration, tile cache management & purge, RC 2 USB MTP status, Gemini MCP Protocol monitor with live client hooks and tool pills, copy CLI button, and photo inspection triggers.
+  - **Sidebar Section 4 Streamlining (Option A)**: Replaced the bulky in-sidebar status box with a compact 1-line Bridge status bar (`#sidebar-bridge-summary-bar`) featuring a 1-click `Monitor ↗` launcher and hardware sync shortcuts, freeing up 300+ vertical pixels for mission export and import actions.
+  - **Mutual Exclusivity & Responsive Ergonomics**: Coordinated topbar HUD popovers so opening the Bridge Popout automatically closes the Weather/Details popover (and vice-versa). Added mobile menu integration (`#more-menu-bridge-btn`) in `#header-more-menu`.
+
 ## [1.148.1] - 2026-10-08
 
 ### Fixed

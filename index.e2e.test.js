@@ -4005,7 +4005,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       };
     });
     assert.strictEqual(moreMenuOpenState.menuVisible, true, 'More menu should be visible after clicking more button');
-    assert.strictEqual(moreMenuOpenState.itemsCount, 6, 'More menu should contain 6 action items (Diagnostics, Photos, ADS-B, Intro, About, Links)');
+    assert.strictEqual(moreMenuOpenState.itemsCount, 7, 'More menu should contain 7 action items (Bridge, ADS-B, Diagnostics, Photos, Intro, About, Links)');
 
     // Click About from More Menu
     await page.locator('#more-menu-about-btn').click();
@@ -7799,7 +7799,65 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.strictEqual(simBtnsExist.jet, true, '#adsb-sim-jet-btn must exist');
     });
   });
+
+  describe('Issue #128: Top Navigation Bridge Status Info Node & Popout Drawer', () => {
+    test('E2E: Clicking #header-bridge-pill toggles #bridge-status-popover and maintains mutual exclusivity with weather popover', async () => {
+      const result = await page.evaluate(() => {
+        const bridgePill = document.getElementById('header-bridge-pill');
+        const bridgePopover = document.getElementById('bridge-status-popover');
+        const bridgeCloseBtn = document.getElementById('bridge-popover-close-btn');
+        const telemetryPill = document.getElementById('header-telemetry-pill');
+        const telemetryPopover = document.getElementById('telemetry-weather-popover');
+        const sidebarOpenBtn = document.getElementById('sidebar-open-bridge-popover-btn');
+
+        if (!bridgePill || !bridgePopover || !bridgeCloseBtn || !telemetryPill || !telemetryPopover || !sidebarOpenBtn) {
+          return { error: 'Required elements missing' };
+        }
+
+        // Initially hidden
+        const initHidden = bridgePopover.classList.contains('hidden');
+
+        // 1. Click bridge pill -> opens popover
+        bridgePill.click();
+        const opened = !bridgePopover.classList.contains('hidden');
+
+        // 2. Click telemetry pill -> opens telemetry popover and closes bridge popover (mutual exclusivity)
+        telemetryPill.click();
+        const telOpen = !telemetryPopover.classList.contains('hidden');
+        const bridgeClosedByTel = bridgePopover.classList.contains('hidden');
+
+        // 3. Click sidebar open button -> opens bridge popover and closes telemetry popover
+        sidebarOpenBtn.click();
+        const bridgeReopened = !bridgePopover.classList.contains('hidden');
+        const telClosedByBridge = telemetryPopover.classList.contains('hidden');
+
+        // 4. Click bridge close button -> closes popover
+        bridgeCloseBtn.click();
+        const bridgeClosed = bridgePopover.classList.contains('hidden');
+
+        return {
+          initHidden,
+          opened,
+          telOpen,
+          bridgeClosedByTel,
+          bridgeReopened,
+          telClosedByBridge,
+          bridgeClosed
+        };
+      });
+
+      assert.strictEqual(result.error, undefined, result.error);
+      assert.strictEqual(result.initHidden, true, 'Bridge popover must be initially hidden');
+      assert.strictEqual(result.opened, true, 'Clicking bridge pill must open popover');
+      assert.strictEqual(result.telOpen, true, 'Clicking telemetry pill must open telemetry popover');
+      assert.strictEqual(result.bridgeClosedByTel, true, 'Opening telemetry popover must close bridge popover');
+      assert.strictEqual(result.bridgeReopened, true, 'Clicking sidebar open button must reopen bridge popover');
+      assert.strictEqual(result.telClosedByBridge, true, 'Reopening bridge popover must close telemetry popover');
+      assert.strictEqual(result.bridgeClosed, true, 'Clicking close button must close bridge popover');
+    });
+  });
 });
+
 
 
 
