@@ -5992,7 +5992,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.149.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.149.3</span></h1>
 
 
 
@@ -10298,7 +10298,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.149.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.149.3</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -10359,6 +10359,13 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.149.3):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>DJI RC 2 Direct Sync Circular Reference Elimination &amp; Robust MTP Staging:</strong> Fixed <code>TypeError: Converting circular structure to JSON</code> in direct sync caused by serializing live Leaflet DOM marker objects inside POIs. Isolated MTP trash moves into unique GUID directories (<code>trash_&lt;uuid&gt;</code>) per sync to prevent background collision dialogs and COM hangs, added single-threaded MTP concurrency mutex protection on <code>/api/sync</code>, normalized same-origin port binding to 8765, and ensured preflight checklist endpoints resolve dynamically under <code>file:///</code> origins.</li>
+              <li><strong>Hyperlapse Altitude Cascading &amp; WPML Sanitization:</strong> Fixed an issue where hyperlapse flight layers with customized altitudes (e.g. 32m / 105ft) retained stale 50m (164ft) altitudes on non-override waypoints in 2D map tooltips, 3D HUD visualizations, and exported WPML executeHeight tags. Non-override waypoints now dynamically inherit the layer's configured altitude while strictly preserving explicit waypoint overrides.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.149.2):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -20412,6 +20419,9 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
       wp.x = offsets.x;
       wp.y = offsets.y;
       wp.idx = idx;
+      if (!wp.isModified && altitude !== undefined && altitude !== null) {
+        wp.alt = altitude;
+      }
     });
     if (typeof generateHyperlapseWaypoints === 'function') {
       const gen = generateHyperlapseWaypoints(rawWps, layer, speed, altitude);
@@ -29031,9 +29041,11 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
     const t = totalDist > 0 ? cumDists[idx] / totalDist : (rawWps.length > 1 ? idx / (rawWps.length - 1) : 0);
     let pitch, heading;
 
+    const effectiveAlt = (wp.isModified && wp.alt !== undefined && wp.alt !== null) ? wp.alt : altitude;
+
     if (targetPoi) {
       heading = getBearingBetween(wp, targetPoi);
-      pitch = (typeof calculate3DPoiPitch === 'function') ? calculate3DPoiPitch(wp, targetPoi, wp.alt || altitude) : -45;
+      pitch = (typeof calculate3DPoiPitch === 'function') ? calculate3DPoiPitch(wp, targetPoi, effectiveAlt) : -45;
     } else {
       pitch = Math.round(startPitch + (endPitch - startPitch) * t);
       if (headingMode === 'keyframes') {
@@ -29059,7 +29071,10 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
 
     return {
       ...wp,
-      alt: wp.alt !== undefined ? wp.alt : altitude,
+      alt: effectiveAlt,
+      isModified: Boolean(wp.isModified),
+      layerAltitude: (layer && layer.altitude !== undefined && layer.altitude !== null) ? layer.altitude : altitude,
+      layerId: wp.layerId || (layer ? layer.id : null),
       pitch: pitch,
       heading: Math.round(heading * 10) / 10,
       headingMode: 'smoothTransition',
@@ -31983,10 +31998,14 @@ function addFreeformWaypoint(lat, lng) {
 
   const centerLatLng = centerMarker ? centerMarker.getLatLng() : { lat, lng };
   const offsets = geodeticToLocal(lat, lng, centerLatLng.lat, centerLatLng.lng);
-  const altitude = parseFloat(document.getElementById('altitude')?.value) || 50;
-  const defaultGimbalPitch = parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60);
-
   const activeLayer = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+  const altitude = (activeLayer && activeLayer.altitude !== undefined && !isNaN(activeLayer.altitude))
+    ? activeLayer.altitude
+    : (parseFloat(document.getElementById('altitude')?.value) || 50);
+  const defaultGimbalPitch = (activeLayer && activeLayer.gimbalPitch !== undefined && !isNaN(activeLayer.gimbalPitch))
+    ? activeLayer.gimbalPitch
+    : parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60);
+
   const currentFreeformList = activeLayer ? (activeLayer.freeformWaypoints || []) : [];
   const idx = currentFreeformList.length;
 
@@ -32948,7 +32967,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
           ? wp.layerAltitude
           : ((wpLayer && wpLayer.altitude !== undefined && wpLayer.altitude !== null && wpLayer.altitude !== 'inherit')
             ? wpLayer.altitude
-            : (wp.alt !== undefined && !wpLayer ? wp.alt : altitude)));
+            : (wp.alt !== undefined && !wpLayer && (wp.alt !== 50 || altitude === 50) ? wp.alt : altitude)));
 
       if (wp.isRoadDroneWaypoint || isRoadFollowing) {
         const offset = (wpLayer && wpLayer.roadOffset !== undefined) ? wpLayer.roadOffset : 15;
@@ -33153,7 +33172,7 @@ ${waypointActions.join('\n')}
               ? nextWp.layerAltitude
               : ((wpLayer && wpLayer.altitude !== undefined && wpLayer.altitude !== null && wpLayer.altitude !== 'inherit')
                 ? wpLayer.altitude
-                : (nextWp.alt !== undefined && !wpLayer ? nextWp.alt : altitude)));
+                : (nextWp.alt !== undefined && !wpLayer && (nextWp.alt !== 50 || altitude === 50) ? nextWp.alt : altitude)));
           const targetPoi = (typeof getTargetPoiCoordinates === 'function') ? getTargetPoiCoordinates(nextWp, wpLayer) : null;
           nextPitch = (typeof calculate3DPoiPitch === 'function') ? calculate3DPoiPitch(nextWp, targetPoi, nextAltForPitch) : -45;
         } else {
@@ -33337,7 +33356,7 @@ ${waypointActions.join('\n')}
       currentAltitude = wp.layerAltitude;
     } else if (wpLayer && wpLayer.altitude !== undefined && wpLayer.altitude !== null && wpLayer.altitude !== 'inherit') {
       currentAltitude = wpLayer.altitude;
-    } else if (wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit' && !wpLayer) {
+    } else if (wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit' && !wpLayer && (wp.alt !== 50 || altitude === 50)) {
       currentAltitude = wp.alt;
     } else {
       currentAltitude = altitude;
@@ -33790,10 +33809,15 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
       const wpObj = (options && options.waypoints && options.waypoints[wpIdx]) ? options.waypoints[wpIdx] : null;
       if (wpObj && !wpObj.isModified) {
         const layersList = (options && options.flightLayers) || (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers) ? flightLayers : null);
-        const wpLayer = (wpObj.layerId && layersList) ? layersList.find(l => l.id === wpObj.layerId) : null;
+        let wpLayer = (wpObj.layerId && layersList) ? layersList.find(l => l.id === wpObj.layerId) : null;
+        if (!wpLayer && layersList && typeof wpObj.layerIndex === 'number' && layersList[wpObj.layerIndex]) {
+          wpLayer = layersList[wpObj.layerIndex];
+        }
         const targetAlt = (wpObj.layerAltitude !== undefined && wpObj.layerAltitude !== null && wpObj.layerAltitude !== 'inherit')
           ? wpObj.layerAltitude
-          : (wpLayer && wpLayer.altitude !== undefined && wpLayer.altitude !== null && wpLayer.altitude !== 'inherit' ? wpLayer.altitude : null);
+          : (wpLayer && wpLayer.altitude !== undefined && wpLayer.altitude !== null && wpLayer.altitude !== 'inherit'
+            ? wpLayer.altitude
+            : (options && options.altitude !== undefined && options.altitude !== null ? options.altitude : null));
         if (targetAlt !== null && !isNaN(targetAlt)) {
           pms[i] = pms[i].replace(
             /(<wpml:executeHeight>)[^<]+(<\/wpml:executeHeight>)/,
@@ -34758,8 +34782,7 @@ function buildMissionPlanJSON(customWps = null) {
       name: p.name,
       lat: p.lat,
       lon: p.lon !== undefined ? p.lon : p.lng,
-      alt: p.alt || 0,
-      marker: p.marker
+      alt: p.alt || 0
     })),
     layers: allLayers.map(l => ({
       id: l.id,
@@ -34918,8 +34941,7 @@ function buildFlightDiagnosticsJSON(customWps = null, options = {}) {
       name: p.name,
       lat: p.lat,
       lon: p.lon !== undefined ? p.lon : p.lng,
-      alt: p.alt || 0,
-      marker: p.marker
+      alt: p.alt || 0
     })) : []),
     groundControl: spatialData.groundControl,
     inclusionZones: spatialData.inclusionZones,
@@ -35205,10 +35227,8 @@ function getCompanionApiBase() {
 
   // 3. Same-origin check: if loaded on port 8765, use current origin (works on any LAN IP!)
   if (typeof window !== 'undefined' && window.location) {
-    if (window.location.port === '8765' || window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') {
-      return window.location.port
-        ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}`
-        : window.location.origin;
+    if (window.location.port === '8765') {
+      return `${window.location.protocol}//${window.location.hostname}:8765`;
     }
   }
 
@@ -36103,16 +36123,31 @@ async function sendDirectlyToRC2() {
       templateXml: result.templateKml
     });
 
+    const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
+
+    let requestBodyJson;
+    try {
+      requestBodyJson = (typeof safeJsonStringify === 'function')
+        ? safeJsonStringify({ uuid, kmzBase64, diagData })
+        : JSON.stringify({ uuid, kmzBase64, diagData }, (k, v) => {
+            if (typeof k === 'string' && (k.startsWith('_') || k === 'marker' || k === 'mapMarker' || k === 'element')) return undefined;
+            if (typeof v === 'object' && v !== null && typeof HTMLElement !== 'undefined' && v instanceof HTMLElement) return undefined;
+            return v;
+          });
+    } catch (_) {
+      requestBodyJson = JSON.stringify({ uuid, kmzBase64 });
+    }
+
     const fetchOptions = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uuid, kmzBase64, diagData })
+      body: requestBodyJson
     };
     if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
       fetchOptions.signal = AbortSignal.timeout(50000);
     }
 
-    const res = await fetch(`${COMPANION_API_BASE}/api/sync`, fetchOptions);
+    const res = await fetch(`${apiBase}/api/sync`, fetchOptions);
     let data;
     try {
       data = await res.json();
@@ -36155,11 +36190,20 @@ async function sendDirectlyToRC2() {
           } catch (storageErr) {}
         }
 
-        await fetch(`${COMPANION_API_BASE}/api/diagnostics/archive`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(diagData)
-        }).catch(() => {});
+        let diagArchiveBody;
+        try {
+          diagArchiveBody = (typeof safeJsonStringify === 'function')
+            ? safeJsonStringify(diagData)
+            : JSON.stringify(diagData);
+        } catch (_) {}
+
+        if (diagArchiveBody) {
+          await fetch(`${apiBase}/api/diagnostics/archive`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: diagArchiveBody
+          }).catch(() => {});
+        }
 
         if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.refreshFlightList) {
           FlightDiagnostics.refreshFlightList();
@@ -57804,9 +57848,10 @@ function withPreflightGate(actionFn) {
 }
 
 async function loadPreflightTemplate() {
-  if (typeof isCompanionOnline !== 'undefined' && isCompanionOnline && typeof getBridgeProxyUrl === 'function') {
+  if (typeof isCompanionOnline !== 'undefined' && isCompanionOnline) {
     try {
-      const resp = await fetch(getBridgeProxyUrl('/api/checklist/template'));
+      const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
+      const resp = await fetch(`${apiBase}/api/checklist/template`);
       if (resp.ok) {
         const data = await resp.json();
         if (data && data.success && Array.isArray(data.template) && data.template.length > 0) {
@@ -57830,10 +57875,11 @@ async function runPreflightAutoChecks() {
   let weatherStatus = { ok: true, text: 'Favorable (VFR)', desc: 'Wind speeds within tolerance, zero NEXRAD precipitation.', warn: false };
   let airspaceStatus = { ok: true, text: 'Clear / Class G', desc: 'Viewport clear of restricted zones or LAANC facility map ceilings.' };
 
-  if (typeof isCompanionOnline !== 'undefined' && isCompanionOnline && typeof getBridgeProxyUrl === 'function') {
+  if (typeof isCompanionOnline !== 'undefined' && isCompanionOnline) {
     try {
+      const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
       const laancVal = (document.getElementById('preflight-laanc-input')?.value || currentPreflightState.laancCode || '').trim();
-      const resp = await fetch(getBridgeProxyUrl(`/api/checklist/autochecks?laanc=${encodeURIComponent(laancVal)}`));
+      const resp = await fetch(`${apiBase}/api/checklist/autochecks?laanc=${encodeURIComponent(laancVal)}`);
       if (resp.ok) {
         const data = await resp.json();
         currentPreflightState.autoChecks = data;
@@ -58085,14 +58131,14 @@ async function showPreflightGateModal(onPassCallback = null) {
     gateToggle.onchange = () => setPreflightGateEnabled(gateToggle.checked);
   }
 
-  await loadPreflightTemplate();
-  await runPreflightAutoChecks();
-
   renderPreflightStepper();
   renderPreflightPhase(0);
   initSignatureCanvas();
-
   modal.classList.remove('hidden');
+
+  await loadPreflightTemplate();
+  await runPreflightAutoChecks();
+  renderPreflightPhase(currentPreflightState.currentPhaseIndex);
 
   // Wire prev/next buttons
   const prevBtn = document.getElementById('preflight-prev-btn');
@@ -58182,9 +58228,10 @@ async function submitPreflightChecklist() {
   };
 
   // Submit to bridge if online, else queue locally
-  if (typeof isCompanionOnline !== 'undefined' && isCompanionOnline && typeof getBridgeProxyUrl === 'function') {
+  if (typeof isCompanionOnline !== 'undefined' && isCompanionOnline) {
     try {
-      await fetch(getBridgeProxyUrl('/api/checklist/submit'), {
+      const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
+      await fetch(`${apiBase}/api/checklist/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -58233,15 +58280,16 @@ function queuePreflightLogLocally(payload) {
 }
 
 async function flushOfflinePreflightQueue() {
-  if (typeof isCompanionOnline === 'undefined' || !isCompanionOnline || typeof getBridgeProxyUrl !== 'function') return;
+  if (typeof isCompanionOnline === 'undefined' || !isCompanionOnline) return;
   try {
     if (typeof localStorage === 'undefined') return;
     const queue = JSON.parse(localStorage.getItem(PREFLIGHT_OFFLINE_QUEUE_KEY) || '[]');
     if (!Array.isArray(queue) || queue.length === 0) return;
 
+    const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
     for (const log of queue) {
       try {
-        await fetch(getBridgeProxyUrl('/api/checklist/submit'), {
+        await fetch(`${apiBase}/api/checklist/submit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(log)
@@ -58262,9 +58310,10 @@ async function openPreflightHistoryModal() {
 
   let logs = [];
 
-  if (typeof isCompanionOnline !== 'undefined' && isCompanionOnline && typeof getBridgeProxyUrl === 'function') {
+  if (typeof isCompanionOnline !== 'undefined' && isCompanionOnline) {
     try {
-      const resp = await fetch(getBridgeProxyUrl('/api/checklist/history?limit=50'));
+      const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
+      const resp = await fetch(`${apiBase}/api/checklist/history?limit=50`);
       if (resp.ok) {
         const data = await resp.json();
         if (data && Array.isArray(data.logs)) logs = data.logs;
@@ -58334,6 +58383,14 @@ function initPreflightEventListeners() {
   }
 }
 
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPreflightEventListeners);
+  } else {
+    initPreflightEventListeners();
+  }
+}
+
 if (typeof window !== 'undefined') {
   window.TagDetector = typeof TagDetector !== 'undefined' ? TagDetector : null;
   window.PhotoInspector = typeof PhotoInspector !== 'undefined' ? PhotoInspector : null;
@@ -58358,6 +58415,7 @@ if (typeof window !== 'undefined') {
   window.isPreflightGateEnabled = typeof isPreflightGateEnabled !== 'undefined' ? isPreflightGateEnabled : null;
   window.computeMissionSignature = typeof computeMissionSignature !== 'undefined' ? computeMissionSignature : null;
   window.invalidatePreflight = typeof invalidatePreflight !== 'undefined' ? invalidatePreflight : null;
+  window.safeJsonStringify = typeof safeJsonStringify !== 'undefined' ? safeJsonStringify : null;
 }
 
 if (typeof global !== 'undefined') {

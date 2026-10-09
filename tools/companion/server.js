@@ -1125,6 +1125,7 @@ if ($storage) {
 // Background status caching & State Transition Watcher
 let cachedRc2Status = { connected: false, checking: true, lastCheck: 0 };
 let isCheckingStatus = false;
+let isSyncingToRc2 = false;
 let lastConnectionState = null;
 let lastMissionCount = -1;
 
@@ -1236,11 +1237,9 @@ if (-not $targetMissionFolder) {
 $destMissionFolder = $targetMissionFolder.GetFolder
 $targetKmzName = "$($targetUUID).kmz"
 
-# Safe MTP copy for KMZ:
-# Windows MTP silently blocks CopyHere if an identical file name exists.
-# We move existing items to local staging trash or use a temporary name to avoid blocking.
-$trashDir = '${path.join(STAGING_DIR, 'trash').replace(/\\/g, '\\')}'
-if (-not (Test-Path $trashDir)) { New-Item -ItemType Directory -Path $trashDir -Force | Out-Null }
+# Safe unique temporary trash directory for MTP staging to prevent collision with pre-existing files:
+$trashDir = Join-Path '${STAGING_DIR.replace(/\\/g, '\\')}' ("trash_" + [Guid]::NewGuid().ToString("N"))
+New-Item -ItemType Directory -Path $trashDir -Force | Out-Null
 $trashFolder = $shell.Namespace($trashDir)
 
 # Move existing KMZ files to staging trash first so CopyHere never collides
@@ -1260,8 +1259,15 @@ foreach ($oldKmz in $existingKmz) {
 Start-Sleep -Milliseconds 250
 
 $kmzFile = '${kmzPath.replace(/\\/g, '\\')}'
-if (Test-Path $kmzFile) {
-    $destMissionFolder.CopyHere($kmzFile, 16)
+$stagedKmzPath = $kmzFile
+if ($targetUUID -ne "${uuid}" -and (Test-Path $kmzFile)) {
+    $matchedLocalPath = Join-Path (Split-Path $kmzFile -Parent) "$($targetUUID).kmz"
+    Copy-Item -Path $kmzFile -Destination $matchedLocalPath -Force -ErrorAction SilentlyContinue
+    if (Test-Path $matchedLocalPath) { $stagedKmzPath = $matchedLocalPath }
+}
+
+if (Test-Path $stagedKmzPath) {
+    $destMissionFolder.CopyHere($stagedKmzPath, 16)
     
     # Wait for file to arrive on MTP device (up to 15s)
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
@@ -1283,8 +1289,9 @@ if ($trashFolder) {
     }
 }
 
-# Clean local trash folder
-Get-ChildItem -Path $trashDir -File -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+# Clean local temporary trash folder and any leftover trash directories
+Remove-Item -Path $trashDir -Recurse -Force -ErrorAction SilentlyContinue
+Get-ChildItem -Path '${STAGING_DIR.replace(/\\/g, '\\')}' -Filter "trash_*" -Directory -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 
 # Verify final KMZ presence
 $finalCheck = @($destMissionFolder.Items() | Where-Object { $_.Name -eq $targetKmzName })
@@ -3242,6 +3249,12 @@ const server = http.createServer(async (req, res) => {
 
     // 2. Direct Sync Mission & Thumbnail to RC 2
     if (pathname === '/api/sync' && req.method === 'POST') {
+      if (isSyncingToRc2) {
+        res.writeHead(409, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'A sync to DJI RC 2 is already in progress. Please wait a moment.' }));
+        return;
+      }
+      isSyncingToRc2 = true;
       const startTime = Date.now();
       let body = '';
       req.on('data', chunk => { body += chunk; });
@@ -3295,6 +3308,8 @@ const server = http.createServer(async (req, res) => {
           logError('[SYNC ERROR]', err.message);
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ success: false, error: err.message }));
+        } finally {
+          isSyncingToRc2 = false;
         }
       });
       return;

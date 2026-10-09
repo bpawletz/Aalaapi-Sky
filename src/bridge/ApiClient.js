@@ -26,10 +26,8 @@ function getCompanionApiBase() {
 
   // 3. Same-origin check: if loaded on port 8765, use current origin (works on any LAN IP!)
   if (typeof window !== 'undefined' && window.location) {
-    if (window.location.port === '8765' || window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') {
-      return window.location.port
-        ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}`
-        : window.location.origin;
+    if (window.location.port === '8765') {
+      return `${window.location.protocol}//${window.location.hostname}:8765`;
     }
   }
 
@@ -924,16 +922,31 @@ async function sendDirectlyToRC2() {
       templateXml: result.templateKml
     });
 
+    const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
+
+    let requestBodyJson;
+    try {
+      requestBodyJson = (typeof safeJsonStringify === 'function')
+        ? safeJsonStringify({ uuid, kmzBase64, diagData })
+        : JSON.stringify({ uuid, kmzBase64, diagData }, (k, v) => {
+            if (typeof k === 'string' && (k.startsWith('_') || k === 'marker' || k === 'mapMarker' || k === 'element')) return undefined;
+            if (typeof v === 'object' && v !== null && typeof HTMLElement !== 'undefined' && v instanceof HTMLElement) return undefined;
+            return v;
+          });
+    } catch (_) {
+      requestBodyJson = JSON.stringify({ uuid, kmzBase64 });
+    }
+
     const fetchOptions = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uuid, kmzBase64, diagData })
+      body: requestBodyJson
     };
     if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
       fetchOptions.signal = AbortSignal.timeout(50000);
     }
 
-    const res = await fetch(`${COMPANION_API_BASE}/api/sync`, fetchOptions);
+    const res = await fetch(`${apiBase}/api/sync`, fetchOptions);
     let data;
     try {
       data = await res.json();
@@ -976,11 +989,20 @@ async function sendDirectlyToRC2() {
           } catch (storageErr) {}
         }
 
-        await fetch(`${COMPANION_API_BASE}/api/diagnostics/archive`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(diagData)
-        }).catch(() => {});
+        let diagArchiveBody;
+        try {
+          diagArchiveBody = (typeof safeJsonStringify === 'function')
+            ? safeJsonStringify(diagData)
+            : JSON.stringify(diagData);
+        } catch (_) {}
+
+        if (diagArchiveBody) {
+          await fetch(`${apiBase}/api/diagnostics/archive`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: diagArchiveBody
+          }).catch(() => {});
+        }
 
         if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.refreshFlightList) {
           FlightDiagnostics.refreshFlightList();

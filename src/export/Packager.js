@@ -674,8 +674,7 @@ function buildMissionPlanJSON(customWps = null) {
       name: p.name,
       lat: p.lat,
       lon: p.lon !== undefined ? p.lon : p.lng,
-      alt: p.alt || 0,
-      marker: p.marker
+      alt: p.alt || 0
     })),
     layers: allLayers.map(l => ({
       id: l.id,
@@ -834,8 +833,7 @@ function buildFlightDiagnosticsJSON(customWps = null, options = {}) {
       name: p.name,
       lat: p.lat,
       lon: p.lon !== undefined ? p.lon : p.lng,
-      alt: p.alt || 0,
-      marker: p.marker
+      alt: p.alt || 0
     })) : []),
     groundControl: spatialData.groundControl,
     inclusionZones: spatialData.inclusionZones,

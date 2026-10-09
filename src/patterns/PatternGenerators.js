@@ -600,9 +600,11 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
     const t = totalDist > 0 ? cumDists[idx] / totalDist : (rawWps.length > 1 ? idx / (rawWps.length - 1) : 0);
     let pitch, heading;
 
+    const effectiveAlt = (wp.isModified && wp.alt !== undefined && wp.alt !== null) ? wp.alt : altitude;
+
     if (targetPoi) {
       heading = getBearingBetween(wp, targetPoi);
-      pitch = (typeof calculate3DPoiPitch === 'function') ? calculate3DPoiPitch(wp, targetPoi, wp.alt || altitude) : -45;
+      pitch = (typeof calculate3DPoiPitch === 'function') ? calculate3DPoiPitch(wp, targetPoi, effectiveAlt) : -45;
     } else {
       pitch = Math.round(startPitch + (endPitch - startPitch) * t);
       if (headingMode === 'keyframes') {
@@ -628,7 +630,10 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
 
     return {
       ...wp,
-      alt: wp.alt !== undefined ? wp.alt : altitude,
+      alt: effectiveAlt,
+      isModified: Boolean(wp.isModified),
+      layerAltitude: (layer && layer.altitude !== undefined && layer.altitude !== null) ? layer.altitude : altitude,
+      layerId: wp.layerId || (layer ? layer.id : null),
       pitch: pitch,
       heading: Math.round(heading * 10) / 10,
       headingMode: 'smoothTransition',
