@@ -418,17 +418,6 @@
     "gid": "6/7124"
   },
   {
-    "notam_id": "6/7106",
-    "facility": "ZOA",
-    "state": "NV",
-    "type": "HAZARDS",
-    "description": "12NM W RENO, NV, Sunday, October 4, 2026 through Friday, October 9, 2026 UTC",
-    "mod_date": "10/04/2026 17:29:00",
-    "mod_abs_time": "202610041729",
-    "is_new": "N",
-    "gid": "6/7106"
-  },
-  {
     "notam_id": "6/7094",
     "facility": "ZOA",
     "state": "CA",
