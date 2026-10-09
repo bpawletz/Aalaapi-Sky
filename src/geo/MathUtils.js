@@ -1810,10 +1810,14 @@ function addFreeformWaypoint(lat, lng) {
 
   const centerLatLng = centerMarker ? centerMarker.getLatLng() : { lat, lng };
   const offsets = geodeticToLocal(lat, lng, centerLatLng.lat, centerLatLng.lng);
-  const altitude = parseFloat(document.getElementById('altitude')?.value) || 50;
-  const defaultGimbalPitch = parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60);
-
   const activeLayer = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+  const altitude = (activeLayer && activeLayer.altitude !== undefined && !isNaN(activeLayer.altitude))
+    ? activeLayer.altitude
+    : (parseFloat(document.getElementById('altitude')?.value) || 50);
+  const defaultGimbalPitch = (activeLayer && activeLayer.gimbalPitch !== undefined && !isNaN(activeLayer.gimbalPitch))
+    ? activeLayer.gimbalPitch
+    : parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60);
+
   const currentFreeformList = activeLayer ? (activeLayer.freeformWaypoints || []) : [];
   const idx = currentFreeformList.length;
 

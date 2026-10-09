@@ -1,3 +1,16 @@
+## [1.149.3] - 2026-10-09
+
+### Fixed
+- **DJI RC 2 Direct Sync Circular Reference Elimination & Robust MTP Staging**:
+  - **Circular Reference Elimination in Mission Diagnostics (`src/export/Packager.js`, `src/bridge/ApiClient.js`)**: Fixed `TypeError: Converting circular structure to JSON` in `sendDirectlyToRC2()` caused by serializing live Leaflet DOM marker instances (`p.marker`) inside POI payloads in `buildMissionPlanJSON()` and `buildFlightDiagnosticsJSON()`. Stripped `marker` DOM references from POI models and added safe JSON serialization with circular reference dropping and fallback protection.
+  - **Unique GUID Trash Staging & Pre-Existing Collision Guard (`tools/companion/server.js`)**: Isolated MTP trash moves into unique GUID directories (`trash_<uuid>`) per sync operation, preventing background file collision dialogs and COM hangs when moving existing controller KMZ files to disk. Added post-transfer cleanup of temporary staging folders.
+  - **Single-Threaded MTP Concurrency Mutex Lock (`tools/companion/server.js`)**: Added an `isSyncingToRc2` execution mutex on `/api/sync` to prevent simultaneous PowerShell COM scripts from colliding on the USB MTP driver when multiple sync requests are initiated.
+  - **Local Host & File Protocol API Base Normalization (`src/bridge/ApiClient.js`, `src/bridge/Rc2LogExplorer.js`)**: Fixed `getCompanionApiBase()` to strictly bind same-origin to port 8765 rather than matching all localhost dev servers, and updated preflight checklist endpoints to dynamically resolve the Companion API base instead of failing with unhandled relative paths under `file:///` origins.
+- **Hyperlapse Altitude Cascading & WPML Sanitization**:
+  - **Hyperlapse Waypoint Altitude Inheritance (`src/patterns/PatternGenerators.js`)**: Fixed an issue where `generateHyperlapseWaypoints` ignored the layer altitude (e.g. 32m / 105ft) and retained stale default 50m (164ft) altitudes on non-override waypoints. Unmodified waypoints now dynamically inherit the layer's configured altitude, accurately compute camera gimbal pitch angles, and tag waypoints with active `layerAltitude` and `layerId`.
+  - **Layer Waypoint Altitude Synchronization (`src/layers/LayerManager.js`, `src/geo/MathUtils.js`)**: Updated `generateLayerWaypoints` so that non-override waypoints in hyperlapse and freeform flight layers dynamically resolve their `alt` parameter to the layer's configured altitude (`layer.altitude`) across 2D map tooltips, 3D Digital Twin HUD, and mission compilation. Updated `addFreeformWaypoint` to initialize altitude directly from `activeLayer.altitude`.
+  - **WPML Compiler & Mission Sanitization (`src/export/WpmlCompiler.js`)**: Enforced the Three-Tier Architectural Hierarchy in `buildWaylinesWpml` and `validateAndFixWpml` so non-override placemarks in hyperlapse layers export `<wpml:executeHeight>` strictly adhering to Tier 2 layer altitude instead of stale 50m defaults, while preserving explicit individual waypoint overrides (`isModified: true`).
+
 ## [1.149.2] - 2026-10-09
 
 ### Fixed
