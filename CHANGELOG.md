@@ -1,7 +1,7 @@
 ## [1.148.1] - 2026-10-08
 
 ### Fixed
-- **ADS-B Server Localhost Reversion & Persistent Reconnection Sync**:
+- **ADS-B Server Localhost Reversion & Persistent Reconnection Sync (Closes #127)**:
   - **Multi-Tier Persistent Configuration Storage (`tools/companion/server.js`)**: Added secondary persistent user-profile configuration fallback in `~/.aalaapi/companion_config.json` alongside `scratch/companion_config.json`. Ensures user ADS-B host/port settings survive scratchpad directory clearing, git cleanups, or test execution runs.
   - **Automatic Reconnection & Handshake Synchronization (`src/bridge/ApiClient.js`)**: Implemented `syncAdsbConfigWithBridge` in `RemoteIdRadar`. When the companion bridge starts up or reconnects, if the browser has a saved custom remote server in `localStorage` and the bridge is running in default localhost mode (`127.0.0.1`), the frontend automatically re-provisions the bridge with the user's saved remote host using `force: true`. Conversely, if the bridge has a custom remote host configured on disk, the frontend harmonizes its state.
   - **Diagnostic UI State Protection (`src/bridge/ApiClient.js`)**: Updated `updateDiagnosticsUI` so that a temporary default localhost status from the bridge does not overwrite the `#adsb-host-input` UI field when the pilot has a custom remote host configured.
