@@ -565,6 +565,142 @@ html, body {
   color: var(--accent-cyan) !important;
 }
 
+/* Header Bridge HUD Pill (Theme-adaptive Dark/Light) (Issue #128) */
+.header-bridge-container {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.header-bridge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0 10px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  color: var(--text-main);
+  font-size: 0.72rem;
+  font-family: var(--font-primary);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="light"] .header-bridge-pill {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(15, 23, 42, 0.15);
+  color: #0f172a;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.header-bridge-pill:hover {
+  background: rgba(6, 182, 212, 0.15) !important;
+  border-color: rgba(6, 182, 212, 0.45) !important;
+}
+
+.header-bridge-pill.is-online {
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.header-bridge-pill.is-online:hover {
+  border-color: rgba(34, 197, 94, 0.7) !important;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.25);
+}
+
+.pill-bridge-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-main);
+}
+
+[data-theme="light"] .pill-bridge-group {
+  color: #0f172a;
+}
+
+.header-bridge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #64748b;
+  display: inline-block;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.header-bridge-pill.is-online .header-bridge-dot {
+  background: #22c55e;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+}
+
+.header-rc2-badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(100, 116, 139, 0.2);
+  color: #94a3b8;
+  letter-spacing: 0.02em;
+  transition: all 0.2s ease;
+}
+
+.header-rc2-badge.is-connected {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.header-rc2-badge.is-unplugged {
+  background: rgba(234, 179, 8, 0.15);
+  color: #fde047;
+  border: 1px solid rgba(234, 179, 8, 0.3);
+}
+
+.bridge-status-popover {
+  animation: fadeInPopover 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.bridge-status-popover::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.bridge-status-popover::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+}
+
+.bridge-status-popover::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.25);
+  border-radius: 4px;
+}
+
+.bridge-status-popover::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.5);
+}
+
+.sidebar-bridge-summary-bar {
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.sidebar-bridge-summary-bar:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(6, 182, 212, 0.4) !important;
+}
+
+.sidebar-bridge-summary-bar.is-online {
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
 .telemetry-weather-popover {
   animation: fadeInPopover 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   max-height: calc(100vh - 24px);
@@ -1702,6 +1838,8 @@ html, body {
   #intro-tour-btn,
   #about-btn,
   #useful-links-btn,
+  #adsb-topbar-btn,
+  .header-bridge-container,
   #header-unit-toggle-btn,
   #theme-toggle-btn {
     display: none !important;
@@ -1806,6 +1944,8 @@ html, body {
 
   .topbar-center.search-open #header-telemetry-pill,
   .topbar-center.search-open .header-telemetry-container,
+  .topbar-center.search-open #header-bridge-pill,
+  .topbar-center.search-open .header-bridge-container,
   .topbar-center.search-open .mobile-search-toggle-btn {
     display: none !important;
   }

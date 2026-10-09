@@ -1363,16 +1363,103 @@ function initUIEventListeners() {
   const sidebarSummaryStrip = document.getElementById('sidebar-summary-strip');
   const popRefreshWeather = document.getElementById('pop-btn-refresh-weather');
 
+  // Header Bridge & Hardware Popover toggle (Issue #128)
+  const bridgePill = document.getElementById('header-bridge-pill');
+  const bridgePopover = document.getElementById('bridge-status-popover');
+  const bridgeCloseBtn = document.getElementById('bridge-popover-close-btn');
+  const sidebarBridgeBar = document.getElementById('sidebar-bridge-summary-bar');
+  const sidebarOpenBridgeBtn = document.getElementById('sidebar-open-bridge-popover-btn');
+  const moreMenuBridgeBtn = document.getElementById('more-menu-bridge-btn');
+  const sidebarDirectRc2SyncBtn = document.getElementById('sidebar-direct-rc2-sync-btn');
+  const sidebarDirectRc2PullBtn = document.getElementById('sidebar-direct-rc2-pull-btn');
+
+  function toggleBridgePopover(forceState) {
+    if (!bridgePopover) return;
+    const shouldOpen = typeof forceState === 'boolean' ? forceState : bridgePopover.classList.contains('hidden');
+    if (shouldOpen) {
+      bridgePopover.classList.remove('hidden');
+      if (telemetryPopover) telemetryPopover.classList.add('hidden');
+    } else {
+      bridgePopover.classList.add('hidden');
+    }
+  }
+
+  function toggleTelemetryPopover(forceState) {
+    if (!telemetryPopover) return;
+    const shouldOpen = typeof forceState === 'boolean' ? forceState : telemetryPopover.classList.contains('hidden');
+    if (shouldOpen) {
+      telemetryPopover.classList.remove('hidden');
+      if (bridgePopover) bridgePopover.classList.add('hidden');
+    } else {
+      telemetryPopover.classList.add('hidden');
+    }
+  }
+
+  if (bridgePill) {
+    bridgePill.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleBridgePopover();
+    });
+  }
+  if (sidebarBridgeBar) {
+    sidebarBridgeBar.addEventListener('click', (e) => {
+      if (e.target && (e.target.closest('#sidebar-direct-rc2-sync-btn') || e.target.closest('#sidebar-direct-rc2-pull-btn'))) {
+        return;
+      }
+      e.stopPropagation();
+      toggleBridgePopover();
+    });
+  }
+  if (sidebarOpenBridgeBtn) {
+    sidebarOpenBridgeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleBridgePopover(true);
+    });
+  }
+  if (moreMenuBridgeBtn) {
+    moreMenuBridgeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const moreMenu = document.getElementById('header-more-menu');
+      if (moreMenu) moreMenu.classList.add('hidden');
+      toggleBridgePopover(true);
+    });
+  }
+  if (sidebarDirectRc2SyncBtn) {
+    sidebarDirectRc2SyncBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const directSyncBtn = document.getElementById('direct-rc2-sync-btn');
+      if (directSyncBtn) directSyncBtn.click();
+    });
+  }
+  if (sidebarDirectRc2PullBtn) {
+    sidebarDirectRc2PullBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const directPullBtn = document.getElementById('direct-rc2-pull-btn');
+      if (directPullBtn) directPullBtn.click();
+    });
+  }
+  if (bridgeCloseBtn && bridgePopover) {
+    bridgeCloseBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      bridgePopover.classList.add('hidden');
+    });
+  }
+  if (bridgePopover) {
+    bridgePopover.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+  }
+
   if (telemetryPill && telemetryPopover) {
     telemetryPill.addEventListener('click', (e) => {
       e.stopPropagation();
-      telemetryPopover.classList.toggle('hidden');
+      toggleTelemetryPopover();
     });
   }
   if (sidebarSummaryStrip && telemetryPopover) {
     sidebarSummaryStrip.addEventListener('click', (e) => {
       e.stopPropagation();
-      telemetryPopover.classList.toggle('hidden');
+      toggleTelemetryPopover();
     });
   }
   if (telemetryCloseBtn && telemetryPopover) {
@@ -1431,9 +1518,37 @@ function initUIEventListeners() {
         telemetryPill?.contains(e.target) ||
         sidebarSummaryStrip?.contains(e.target)
       ) {
-        return;
+        // Inside telemetry popover
+      } else {
+        telemetryPopover.classList.add('hidden');
       }
-      telemetryPopover.classList.add('hidden');
+    }
+
+    if (bridgePopover && !bridgePopover.classList.contains('hidden')) {
+      const path = typeof e.composedPath === 'function' ? e.composedPath() : [];
+      if (
+        path.includes(bridgePopover) ||
+        bridgePopover.contains(e.target) ||
+        bridgePill?.contains(e.target) ||
+        sidebarBridgeBar?.contains(e.target) ||
+        sidebarOpenBridgeBtn?.contains(e.target) ||
+        moreMenuBridgeBtn?.contains(e.target)
+      ) {
+        // Inside bridge popover
+      } else {
+        bridgePopover.classList.add('hidden');
+      }
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (bridgePopover && !bridgePopover.classList.contains('hidden')) {
+        bridgePopover.classList.add('hidden');
+      }
+      if (telemetryPopover && !telemetryPopover.classList.contains('hidden')) {
+        telemetryPopover.classList.add('hidden');
+      }
     }
   });
 

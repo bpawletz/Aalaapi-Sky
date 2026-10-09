@@ -9388,47 +9388,6 @@
     },
     {
       "type": "Feature",
-      "id": "V_TFR_LOC.6/7106",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              -120.01666667,
-              39.5
-            ],
-            [
-              -119.95833333,
-              39.50833333
-            ],
-            [
-              -119.95,
-              39.59166667
-            ],
-            [
-              -119.99166667,
-              39.59166667
-            ],
-            [
-              -120.01666667,
-              39.5
-            ]
-          ]
-        ]
-      },
-      "geometry_name": "SHAPE",
-      "properties": {
-        "GID": 234513,
-        "CNS_LOCATION_ID": "ZOA",
-        "NOTAM_KEY": "6/7106-1-FDC-F",
-        "TITLE": "12NM W RENO, NV, Sunday, October 4, 2026 through Friday, October 9, 2026 UTC",
-        "LAST_MODIFICATION_DATETIME": "202610041729",
-        "STATE": "NV",
-        "LEGAL": "HAZARDS"
-      }
-    },
-    {
-      "type": "Feature",
       "id": "V_TFR_LOC.6/7124",
       "geometry": {
         "type": "Polygon",
@@ -16167,10 +16126,10 @@
       }
     }
   ],
-  "totalFeatures": 96,
-  "numberMatched": 96,
-  "numberReturned": 96,
-  "timeStamp": "2026-10-09T02:43:31.307Z",
+  "totalFeatures": 95,
+  "numberMatched": 95,
+  "numberReturned": 95,
+  "timeStamp": "2026-10-09T03:12:17.030Z",
   "crs": {
     "type": "name",
     "properties": {
