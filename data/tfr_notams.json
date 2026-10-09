@@ -1,5 +1,126 @@
 [
   {
+    "notam_id": "6/8693",
+    "facility": "ZTL",
+    "state": "GA",
+    "type": "UAS PUBLIC GATHERING",
+    "description": "Atlanta, GA, Sunday, October 11, 2026 through Monday, October 12, 2026 UTC",
+    "mod_date": "10/09/2026 18:05:00",
+    "mod_abs_time": "202610091805",
+    "is_new": "Y",
+    "gid": "6/8693"
+  },
+  {
+    "notam_id": "6/8665",
+    "facility": "ZMP",
+    "state": "MI",
+    "type": "HAZARDS",
+    "description": "9NM E HERMAN, MI, Friday, October 9, 2026 through Tuesday, October 13, 2026 UTC",
+    "mod_date": "10/09/2026 17:10:00",
+    "mod_abs_time": "202610091710",
+    "is_new": "Y",
+    "gid": "6/8665"
+  },
+  {
+    "notam_id": "6/8652",
+    "facility": "ZID",
+    "state": "OH",
+    "type": "VIP",
+    "description": "Lima, OH, Friday, October 9, 2026 Local",
+    "mod_date": "10/09/2026 15:48:00",
+    "mod_abs_time": "202610091548",
+    "is_new": "Y",
+    "gid": "6/8652"
+  },
+  {
+    "notam_id": "6/8646",
+    "facility": "ZFW",
+    "state": "TX",
+    "type": "UAS PUBLIC GATHERING",
+    "description": "Arlington, TX, Thursday, October 15, 2026 through Friday, October 16, 2026 UTC",
+    "mod_date": "10/09/2026 15:40:00",
+    "mod_abs_time": "202610091540",
+    "is_new": "Y",
+    "gid": "6/8646"
+  },
+  {
+    "notam_id": "6/8618",
+    "facility": "ZDC",
+    "state": "NC",
+    "type": "SECURITY",
+    "description": "New Bern, NC, Saturday, October 10, 2026 through Sunday, October 11, 2026 Local",
+    "mod_date": "10/09/2026 15:11:00",
+    "mod_abs_time": "202610091511",
+    "is_new": "Y",
+    "gid": "6/8618"
+  },
+  {
+    "notam_id": "6/8607",
+    "facility": "ZHN",
+    "state": "HI",
+    "type": "SECURITY",
+    "description": "Kona, HI, Saturday, October 10, 2026 through Saturday, October 10, 2026 Local",
+    "mod_date": "10/09/2026 14:54:00",
+    "mod_abs_time": "202610091454",
+    "is_new": "Y",
+    "gid": "6/8607"
+  },
+  {
+    "notam_id": "6/8600",
+    "facility": "ZDC",
+    "state": "VA",
+    "type": "VIP",
+    "description": "Sterling, VA, Monday, October 12, 2026 through Monday, October 12, 2026 Local",
+    "mod_date": "10/09/2026 13:13:00",
+    "mod_abs_time": "202610091313",
+    "is_new": "Y",
+    "gid": "6/8600"
+  },
+  {
+    "notam_id": "6/8599",
+    "facility": "ZDC",
+    "state": "VA",
+    "type": "VIP",
+    "description": "Sterling, VA, Sunday, October 11, 2026 through Sunday, October 11, 2026 Local",
+    "mod_date": "10/09/2026 13:13:00",
+    "mod_abs_time": "202610091313",
+    "is_new": "Y",
+    "gid": "6/8599"
+  },
+  {
+    "notam_id": "6/8591",
+    "facility": "ZJX",
+    "state": "FL",
+    "type": "HAZARDS",
+    "description": "Palm Coast, FL, Friday, October 9, 2026 Local",
+    "mod_date": "10/09/2026 12:31:00",
+    "mod_abs_time": "202610091231",
+    "is_new": "Y",
+    "gid": "6/8591"
+  },
+  {
+    "notam_id": "6/8590",
+    "facility": "ZDV",
+    "state": "CO",
+    "type": "HAZARDS",
+    "description": "35NM SW PUEBLO, CO, Friday, October 9, 2026 through Sunday, October 11, 2026 UTC",
+    "mod_date": "10/09/2026 12:13:00",
+    "mod_abs_time": "202610091213",
+    "is_new": "Y",
+    "gid": "6/8590"
+  },
+  {
+    "notam_id": "6/8587",
+    "facility": "ZOB",
+    "state": "OH",
+    "type": "VIP",
+    "description": "Youngstown, OH, Monday, October 12, 2026 through Monday, October 12, 2026 Local",
+    "mod_date": "10/09/2026 10:34:00",
+    "mod_abs_time": "202610091034",
+    "is_new": "Y",
+    "gid": "6/8587"
+  },
+  {
     "notam_id": "6/8528",
     "facility": "ZOA",
     "state": "NV",
@@ -73,7 +194,7 @@
     "description": "COLORADO SPRINGS, CO, Thursday, October 8, 2026 through Saturday, October 10, 2026 UTC",
     "mod_date": "10/08/2026 17:19:00",
     "mod_abs_time": "202610081719",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8400"
   },
   {
@@ -84,7 +205,7 @@
     "description": "Jacksonville, FL, Thursday, October 15, 2026 through Sunday, October 18, 2026 UTC",
     "mod_date": "10/08/2026 16:21:00",
     "mod_abs_time": "202610081621",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8389"
   },
   {
@@ -95,7 +216,7 @@
     "description": "Clarksville, TN, Saturday, October 10, 2026 Local",
     "mod_date": "10/08/2026 13:47:00",
     "mod_abs_time": "202610081347",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8372"
   },
   {
@@ -106,7 +227,7 @@
     "description": "Daytona Beach, FL, Wednesday, October 14, 2026 through Sunday, October 18, 2026 UTC",
     "mod_date": "10/08/2026 11:43:00",
     "mod_abs_time": "202610081143",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8298"
   },
   {
@@ -141,28 +262,6 @@
     "mod_abs_time": "202610071711",
     "is_new": "N",
     "gid": "6/8029"
-  },
-  {
-    "notam_id": "6/8024",
-    "facility": "ZID",
-    "state": "OH",
-    "type": "VIP",
-    "description": "Lima, OH, Friday, October 9, 2026 Local",
-    "mod_date": "10/07/2026 16:46:00",
-    "mod_abs_time": "202610071646",
-    "is_new": "N",
-    "gid": "6/8024"
-  },
-  {
-    "notam_id": "6/8022",
-    "facility": "ZID",
-    "state": "OH",
-    "type": "VIP",
-    "description": "Cincinnati, OH, Friday, October 9, 2026 Local",
-    "mod_date": "10/07/2026 16:35:00",
-    "mod_abs_time": "202610071635",
-    "is_new": "N",
-    "gid": "6/8022"
   },
   {
     "notam_id": "6/7946",
@@ -361,17 +460,6 @@
     "mod_abs_time": "202610051111",
     "is_new": "N",
     "gid": "6/7153"
-  },
-  {
-    "notam_id": "6/7150",
-    "facility": "ZTL",
-    "state": "GA",
-    "type": "UAS PUBLIC GATHERING",
-    "description": "Atlanta, GA, Saturday, October 10, 2026 through Sunday, October 11, 2026 UTC",
-    "mod_date": "10/05/2026 10:37:00",
-    "mod_abs_time": "202610051037",
-    "is_new": "N",
-    "gid": "6/7150"
   },
   {
     "notam_id": "6/7134",

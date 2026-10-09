@@ -655,7 +655,11 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
 
   const roadOffsetSlider = document.getElementById('road-offset');
   const D = roadOffsetSlider ? parseFloat(roadOffsetSlider.value) : 15;
-  const altitude = parseFloat(document.getElementById('altitude').value);
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const isRoadLayer = activeLayer && activeLayer.pattern === 'road-following';
+  const altitude = (isRoadLayer && activeLayer.altitude !== undefined && activeLayer.altitude !== null && activeLayer.altitude !== 'inherit')
+    ? activeLayer.altitude
+    : (parseFloat(document.getElementById('altitude')?.value) || 50);
 
   const targetList = (generatedWaypoints && generatedWaypoints.length >= roadWaypoints.length) ? generatedWaypoints : roadWaypoints;
 
@@ -735,7 +739,11 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
     const roadFocusMode = (activeLayer && activeLayer.roadFocusMode) ? activeLayer.roadFocusMode : (document.getElementById('road-focus-mode')?.value || 'focusRoad');
 
     // 4. Calculate gimbal pitch and heading pointing to the road
-    const altVal = wp.alt !== undefined && wp.alt !== null ? wp.alt : altitude;
+    const altVal = (roadNode && roadNode.alt !== undefined && roadNode.alt !== null)
+      ? roadNode.alt
+      : ((wp && wp.alt !== undefined && wp.alt !== null)
+        ? wp.alt
+        : altitude);
     let calculatedRoadPitch;
     if (Math.abs(D) < 0.01) {
       calculatedRoadPitch = -90;

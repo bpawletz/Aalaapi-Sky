@@ -867,18 +867,25 @@ async function pullFlightLogFromRC2(targetBtn = null) {
 
 async function sendDirectlyToRC2() {
   const directBtn = document.getElementById('direct-rc2-sync-btn');
-  if (!directBtn || !isRc2MtpConnected) return;
+  const sidebarDirectBtn = document.getElementById('sidebar-direct-rc2-sync-btn');
+  const buttonsToUpdate = [directBtn, sidebarDirectBtn].filter(Boolean);
+  if (buttonsToUpdate.length === 0 || !isRc2MtpConnected) return;
 
-  const originalContent = directBtn.innerHTML;
-  directBtn.disabled = true;
-  directBtn.innerHTML = `<span>⏳ Syncing to RC 2...</span>`;
+  const originalContents = new Map();
+  buttonsToUpdate.forEach(b => {
+    originalContents.set(b, b.innerHTML);
+    b.disabled = true;
+    b.innerHTML = `<span>⏳ Syncing to RC 2...</span>`;
+  });
 
   try {
     const rawWps = (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
     if (!rawWps || rawWps.length === 0) {
       alert("No waypoints generated to sync. Please place a mission or center point first.");
-      directBtn.disabled = false;
-      directBtn.innerHTML = originalContent;
+      buttonsToUpdate.forEach(b => {
+        b.disabled = false;
+        b.innerHTML = originalContents.get(b) || '';
+      });
       return;
     }
 
@@ -917,18 +924,34 @@ async function sendDirectlyToRC2() {
       templateXml: result.templateKml
     });
 
-    const res = await fetch(`${COMPANION_API_BASE}/api/sync`, {
+    const fetchOptions = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ uuid, kmzBase64, diagData })
-    });
+    };
+    if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+      fetchOptions.signal = AbortSignal.timeout(50000);
+    }
 
-    const data = await res.json();
+    const res = await fetch(`${COMPANION_API_BASE}/api/sync`, fetchOptions);
+    let data;
+    try {
+      data = await res.json();
+    } catch (_) {
+      throw new Error(res.ok ? 'Malformed server response' : `Bridge HTTP ${res.status}: ${res.statusText}`);
+    }
+
     if (data.success) {
-      directBtn.innerHTML = `<span>✅ Synced to DJI RC 2! Re-open in DJI Fly</span>`;
-      directBtn.style.background = 'rgba(34, 197, 94, 0.2)';
-      directBtn.style.borderColor = 'rgba(34, 197, 94, 0.5)';
-      directBtn.style.color = '#4ade80';
+      buttonsToUpdate.forEach(b => {
+        b.innerHTML = `<span>✅ Synced to DJI RC 2! Re-open in DJI Fly</span>`;
+        b.style.background = 'rgba(34, 197, 94, 0.2)';
+        b.style.borderColor = 'rgba(34, 197, 94, 0.5)';
+        b.style.color = '#4ade80';
+      });
+
+      if (typeof showToast === 'function') {
+        showToast(`✅ Synced to DJI RC 2 slot ${uuid}! Re-open in DJI Fly.`, 'success');
+      }
 
       // Also archive the mission diagnostics in SQLite
       try {
@@ -963,12 +986,15 @@ async function sendDirectlyToRC2() {
           FlightDiagnostics.refreshFlightList();
         }
       } catch (e) {}
+
       setTimeout(() => {
-        directBtn.disabled = false;
-        directBtn.innerHTML = originalContent;
-        directBtn.style.background = '';
-        directBtn.style.borderColor = '';
-        directBtn.style.color = '';
+        buttonsToUpdate.forEach(b => {
+          b.disabled = false;
+          b.innerHTML = originalContents.get(b) || '';
+          b.style.background = '';
+          b.style.borderColor = '';
+          b.style.color = '';
+        });
       }, 4000);
     } else {
       throw new Error(data.error || 'Transfer failed');
@@ -978,13 +1004,24 @@ async function sendDirectlyToRC2() {
     if (typeof window !== 'undefined' && window.location && window.location.protocol === 'file:') {
       console.warn('[RC 2 Direct Sync] Browser security policy may restrict network calls from file:/// origins. Open http://127.0.0.1:8765 in your browser to run Aalaapi Sky with direct same-origin companion access.');
     }
-    directBtn.innerHTML = `<span>❌ Sync Failed</span>`;
-    directBtn.style.color = '#f87171';
+    const errText = err.message || 'Sync Failed';
+    const displayErr = errText.length > 25 ? (errText.substring(0, 22) + '...') : errText;
+    buttonsToUpdate.forEach(b => {
+      b.innerHTML = `<span>❌ ${displayErr}</span>`;
+      b.title = `Sync Error: ${errText}`;
+      b.style.color = '#f87171';
+    });
+    if (typeof showToast === 'function') {
+      showToast(`RC 2 Sync Error: ${errText}`, 'error');
+    }
     setTimeout(() => {
-      directBtn.disabled = false;
-      directBtn.innerHTML = originalContent;
-      directBtn.style.color = '';
-    }, 3000);
+      buttonsToUpdate.forEach(b => {
+        b.disabled = false;
+        b.innerHTML = originalContents.get(b) || '';
+        b.title = '';
+        b.style.color = '';
+      });
+    }, 4500);
   }
 }
 

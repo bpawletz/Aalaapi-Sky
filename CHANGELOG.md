@@ -1,3 +1,19 @@
+## [1.149.2] - 2026-10-09
+
+### Fixed
+- **DJI RC 2 MTP Staging & Direct Sync Reliability**:
+  - **Win32 MTP Path Formatting & Trash Cleanliness (`tools/companion/server.js`)**: Fixed an issue where the Windows Shell COM staging directory path was formatted with double backslashes, causing `shell.Namespace($trashDir)` to fail and return null. Resolved the resulting failure to clear previous mission KMZ files from the RC 2 slot, which previously led to accumulating dozens of stale `_old_*` files on the controller.
+  - **Unbounded Accumulation Prevention & Bounded Cleanup**: Streamlined the MTP transfer sequence to safely move existing KMZ files to staging trash before writing, eliminate timestamped accumulation, boundedly clean legacy temporary files, and increased the PowerShell MTP script timeout to 45 seconds to prevent COM timeouts during USB operations.
+  - **Informative Frontend Error & Status Feedback (`src/bridge/ApiClient.js`)**: Updated `sendDirectlyToRC2` to synchronize status across both the Bridge popover (`#direct-rc2-sync-btn`) and sidebar (`#sidebar-direct-rc2-sync-btn`) quick-action buttons, added network timeout protection (`AbortSignal.timeout(50000)`), surfaced explicit error explanations on button labels and tooltips instead of generic failure messages, and triggered toast feedback notifications on sync completion or error.
+
+## [1.149.1] - 2026-10-09
+
+### Fixed
+- **Multi-Layer Non-Override Waypoint Altitude Cascading & Road Follow Resolution**:
+  - **Three-Tier Cascading Hierarchy Enforcement**: Fixed an issue where non-override waypoints in Road Following and multi-layer missions retained a stale default 50m (164ft) altitude instead of dynamically resolving the active layer altitude (e.g. 31m / 102ft).
+  - **Road Node Altitude Decoupling (`src/layers/LayerManager.js`, `src/map/MapInteraction.js`)**: Updated `generateRoadFlightWaypoints` and `recalculateRoadOffsetPath` so that road nodes only apply an altitude override when explicitly modified (`roadNode.isModified === true`). Unmodified road nodes dynamically inherit the layer's altitude and calculate accurate camera gimbal pitch (`-atan2(alt, offset)`).
+  - **WPML Compiler & Export Sanitization (`src/export/WpmlCompiler.js`)**: Updated `buildWaylinesWpml` and `validateAndFixWpml` to strictly resolve waypoint altitude through the 3-tier cascade (`Tier 3: wp.alt [isModified] -> Tier 2: layer.altitude -> Tier 1: global altitude`). Non-override placemarks in multi-layer missions now compile and export with the true layer altitude `<wpml:executeHeight>` and gimbal angles.
+
 ## [1.149.0] - 2026-10-08
 
 ### Added

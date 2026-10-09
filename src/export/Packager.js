@@ -926,7 +926,11 @@ function generateKMZBlob(wps = null) {
 
   const currentGridType = document.getElementById('grid-type')?.value || 'single';
   // Auto-audit and fix subtle firmware incompatibilities
-  const fixed = validateAndFixWpml(waylinesWpml, templateKml, { waypoints: effectiveWps, gridType: currentGridType });
+  const fixed = validateAndFixWpml(waylinesWpml, templateKml, {
+    waypoints: effectiveWps,
+    gridType: currentGridType,
+    flightLayers: (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : null
+  });
   const finalWpml = fixed.wpmlXml;
   const finalTemplate = fixed.templateXml;
   const validation = fixed.validation;

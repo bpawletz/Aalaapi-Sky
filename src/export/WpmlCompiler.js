@@ -278,18 +278,25 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     }
 
     // Compute effective pitch for use in both gimbalRotate action and waypointGimbalHeadingParam
-    const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : null;
+    const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers.find(l => l.id === wp.layerId) : null;
     let effectivePitch;
     const rawWpPitch = wp.pitch !== undefined ? wp.pitch : (wpLayer && wpLayer.gimbalPitch !== undefined ? wpLayer.gimbalPitch : gimbalPitch);
     if (rawWpPitch === 'auto' || (typeof rawWpPitch === 'string' && rawWpPitch.toLowerCase() === 'auto')) {
+      const effectiveAltForPitch = (wp.isModified && wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit')
+        ? wp.alt
+        : ((wp.layerAltitude !== undefined && wp.layerAltitude !== null && wp.layerAltitude !== 'inherit')
+          ? wp.layerAltitude
+          : ((wpLayer && wpLayer.altitude !== undefined && wpLayer.altitude !== null && wpLayer.altitude !== 'inherit')
+            ? wpLayer.altitude
+            : (wp.alt !== undefined && !wpLayer ? wp.alt : altitude)));
+
       if (wp.isRoadDroneWaypoint || isRoadFollowing) {
         const offset = (wpLayer && wpLayer.roadOffset !== undefined) ? wpLayer.roadOffset : 15;
-        const wAlt = wp.alt !== undefined ? wp.alt : altitude;
-        effectivePitch = (Math.abs(offset) < 0.01) ? -90 : -Math.round(Math.atan2(wAlt, Math.max(Math.abs(offset), 1)) * (180.0 / Math.PI));
+        effectivePitch = (Math.abs(offset) < 0.01) ? -90 : -Math.round(Math.atan2(effectiveAltForPitch, Math.max(Math.abs(offset), 1)) * (180.0 / Math.PI));
       } else {
         const targetPoi = (typeof getTargetPoiCoordinates === 'function') ? getTargetPoiCoordinates(wp, wpLayer) : null;
         effectivePitch = (typeof calculate3DPoiPitch === 'function')
-          ? calculate3DPoiPitch(wp, targetPoi, wp.alt !== undefined ? wp.alt : altitude)
+          ? calculate3DPoiPitch(wp, targetPoi, effectiveAltForPitch)
           : -45;
       }
     } else {
@@ -480,8 +487,15 @@ ${waypointActions.join('\n')}
         let nextPitch;
         const rawNextPitch = nextWp.pitch !== undefined ? nextWp.pitch : (wpLayer && wpLayer.gimbalPitch !== undefined ? wpLayer.gimbalPitch : gimbalPitch);
         if (rawNextPitch === 'auto' || (typeof rawNextPitch === 'string' && rawNextPitch.toLowerCase() === 'auto')) {
+          const nextAltForPitch = (nextWp.isModified && nextWp.alt !== undefined && nextWp.alt !== null && nextWp.alt !== 'inherit')
+            ? nextWp.alt
+            : ((nextWp.layerAltitude !== undefined && nextWp.layerAltitude !== null && nextWp.layerAltitude !== 'inherit')
+              ? nextWp.layerAltitude
+              : ((wpLayer && wpLayer.altitude !== undefined && wpLayer.altitude !== null && wpLayer.altitude !== 'inherit')
+                ? wpLayer.altitude
+                : (nextWp.alt !== undefined && !wpLayer ? nextWp.alt : altitude)));
           const targetPoi = (typeof getTargetPoiCoordinates === 'function') ? getTargetPoiCoordinates(nextWp, wpLayer) : null;
-          nextPitch = (typeof calculate3DPoiPitch === 'function') ? calculate3DPoiPitch(nextWp, targetPoi, nextWp.alt !== undefined ? nextWp.alt : altitude) : -45;
+          nextPitch = (typeof calculate3DPoiPitch === 'function') ? calculate3DPoiPitch(nextWp, targetPoi, nextAltForPitch) : -45;
         } else {
           nextPitch = parseGimbalPitch(rawNextPitch, -60);
         }
@@ -655,7 +669,19 @@ ${waypointActions.join('\n')}
       }
     }
 
-    const currentAltitude = wp.alt !== undefined ? wp.alt : altitude;
+    // Resolve Altitude via Three-Tier Cascading Hierarchy (Tier 3 Override -> Tier 2 Layer -> Tier 1 Global)
+    let currentAltitude;
+    if (wp.isModified && wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit') {
+      currentAltitude = wp.alt;
+    } else if (wp.layerAltitude !== undefined && wp.layerAltitude !== null && wp.layerAltitude !== 'inherit') {
+      currentAltitude = wp.layerAltitude;
+    } else if (wpLayer && wpLayer.altitude !== undefined && wpLayer.altitude !== null && wpLayer.altitude !== 'inherit') {
+      currentAltitude = wpLayer.altitude;
+    } else if (wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit' && !wpLayer) {
+      currentAltitude = wp.alt;
+    } else {
+      currentAltitude = altitude;
+    }
     
     // Resolve Speed: If turnaround point and turnaroundSpeed specified, use it; else wp.speed or global speed
     let actualSpeed = (wp.speed !== undefined && wp.speed !== null && !isNaN(wp.speed)) ? wp.speed : speed;
@@ -1102,6 +1128,19 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
       const modeMatch = pms[i].match(/<wpml:waypointHeadingMode>([^<]+)<\/wpml:waypointHeadingMode>/);
       const mode = modeMatch ? modeMatch[1].trim() : '';
       const wpObj = (options && options.waypoints && options.waypoints[wpIdx]) ? options.waypoints[wpIdx] : null;
+      if (wpObj && !wpObj.isModified) {
+        const layersList = (options && options.flightLayers) || (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers) ? flightLayers : null);
+        const wpLayer = (wpObj.layerId && layersList) ? layersList.find(l => l.id === wpObj.layerId) : null;
+        const targetAlt = (wpObj.layerAltitude !== undefined && wpObj.layerAltitude !== null && wpObj.layerAltitude !== 'inherit')
+          ? wpObj.layerAltitude
+          : (wpLayer && wpLayer.altitude !== undefined && wpLayer.altitude !== null && wpLayer.altitude !== 'inherit' ? wpLayer.altitude : null);
+        if (targetAlt !== null && !isNaN(targetAlt)) {
+          pms[i] = pms[i].replace(
+            /(<wpml:executeHeight>)[^<]+(<\/wpml:executeHeight>)/,
+            `$1${targetAlt}$2`
+          );
+        }
+      }
       const isCustomHeadingWp = isTargetSplat || isExclusionFreeform || isFreeform ||
         (wpObj && (wpObj.gridType === 'target-splat' || wpObj.gridType === 'exclusion-freeform' || wpObj.gridType === 'freeform' || wpObj.layerPattern === 'exclusion-freeform' || wpObj.layerPattern === 'freeform' || (wpObj.heading !== null && wpObj.heading !== undefined && !isNaN(wpObj.heading))));
 
