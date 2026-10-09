@@ -1,5 +1,71 @@
 [
   {
+    "notam_id": "6/8528",
+    "facility": "ZOA",
+    "state": "NV",
+    "type": "HAZARDS",
+    "description": "12NM W RENO, NV, Friday, October 9, 2026 through Sunday, October 11, 2026 UTC",
+    "mod_date": "10/08/2026 23:15:00",
+    "mod_abs_time": "202610082315",
+    "is_new": "Y",
+    "gid": "6/8528"
+  },
+  {
+    "notam_id": "6/8509",
+    "facility": "ZBW",
+    "state": "NY",
+    "type": "SECURITY",
+    "description": "SYRACUSE, NY, Friday, October 9, 2026 through Friday, October 9, 2026 Local",
+    "mod_date": "10/08/2026 22:00:00",
+    "mod_abs_time": "202610082200",
+    "is_new": "Y",
+    "gid": "6/8509"
+  },
+  {
+    "notam_id": "6/8508",
+    "facility": "ZDC",
+    "state": "NC",
+    "type": "SECURITY",
+    "description": "Johnsontown, NC",
+    "mod_date": "10/08/2026 21:49:00",
+    "mod_abs_time": "202610082149",
+    "is_new": "Y",
+    "gid": "6/8508"
+  },
+  {
+    "notam_id": "6/8507",
+    "facility": "ZLC",
+    "state": "MT",
+    "type": "HAZARDS",
+    "description": "20NM E MISSOULA, MT, Friday, October 9, 2026 through Saturday, October 10, 2026 UTC",
+    "mod_date": "10/08/2026 21:37:00",
+    "mod_abs_time": "202610082137",
+    "is_new": "Y",
+    "gid": "6/8507"
+  },
+  {
+    "notam_id": "6/8504",
+    "facility": "ZAB",
+    "state": "AZ",
+    "type": "SECURITY",
+    "description": "Libby AAF, AZ, Friday, October 9, 2026 through Sunday, October 11, 2026 Local",
+    "mod_date": "10/08/2026 21:19:00",
+    "mod_abs_time": "202610082119",
+    "is_new": "Y",
+    "gid": "6/8504"
+  },
+  {
+    "notam_id": "6/8493",
+    "facility": "ZLA",
+    "state": "CA",
+    "type": "SECURITY",
+    "description": "INDIO, CA, Saturday, October 10, 2026 through Sunday, October 11, 2026 Local",
+    "mod_date": "10/08/2026 20:57:00",
+    "mod_abs_time": "202610082057",
+    "is_new": "Y",
+    "gid": "6/8493"
+  },
+  {
     "notam_id": "6/8400",
     "facility": "ZDV",
     "state": "CO",
@@ -9,17 +75,6 @@
     "mod_abs_time": "202610081719",
     "is_new": "Y",
     "gid": "6/8400"
-  },
-  {
-    "notam_id": "6/8398",
-    "facility": "ZJX",
-    "state": "FL",
-    "type": "HAZARDS",
-    "description": "Palm Coast, FL",
-    "mod_date": "10/08/2026 17:02:00",
-    "mod_abs_time": "202610081702",
-    "is_new": "Y",
-    "gid": "6/8398"
   },
   {
     "notam_id": "6/8389",
@@ -55,17 +110,6 @@
     "gid": "6/8298"
   },
   {
-    "notam_id": "6/8269",
-    "facility": "ZBW",
-    "state": "NY",
-    "type": "SECURITY",
-    "description": "SYRACUSE, NY, Friday, October 9, 2026 through Friday, October 9, 2026 Local",
-    "mod_date": "10/08/2026 01:31:00",
-    "mod_abs_time": "202610080131",
-    "is_new": "Y",
-    "gid": "6/8269"
-  },
-  {
     "notam_id": "6/8243",
     "facility": "ZDV",
     "state": "CO",
@@ -73,19 +117,8 @@
     "description": "LAKE GEORGE, CO, Friday, October 9, 2026 through Sunday, October 11, 2026 UTC",
     "mod_date": "10/07/2026 22:34:00",
     "mod_abs_time": "202610072234",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8243"
-  },
-  {
-    "notam_id": "6/8240",
-    "facility": "ZOA",
-    "state": "CA",
-    "type": "HAZARDS",
-    "description": "24NM SE MONTEREY, CA, Wednesday, October 7, 2026 through Wednesday, October 14, 2026 UTC",
-    "mod_date": "10/07/2026 21:44:00",
-    "mod_abs_time": "202610072144",
-    "is_new": "Y",
-    "gid": "6/8240"
   },
   {
     "notam_id": "6/8154",
@@ -97,28 +130,6 @@
     "mod_abs_time": "202610071949",
     "is_new": "N",
     "gid": "6/8154"
-  },
-  {
-    "notam_id": "6/8119",
-    "facility": "ZOB",
-    "state": "PA",
-    "type": "SECURITY",
-    "description": "Stoystown, PA, Thursday, October 8, 2026 Local",
-    "mod_date": "10/07/2026 18:38:00",
-    "mod_abs_time": "202610071838",
-    "is_new": "N",
-    "gid": "6/8119"
-  },
-  {
-    "notam_id": "6/8035",
-    "facility": "ZLC",
-    "state": "ID",
-    "type": "HAZARDS",
-    "description": "12NM SW OF MCCALL, ID, Thursday, October 8, 2026 through Saturday, October 10, 2026 UTC",
-    "mod_date": "10/07/2026 17:50:00",
-    "mod_abs_time": "202610071750",
-    "is_new": "N",
-    "gid": "6/8035"
   },
   {
     "notam_id": "6/8029",
@@ -218,17 +229,6 @@
     "mod_abs_time": "202610071046",
     "is_new": "N",
     "gid": "6/7869"
-  },
-  {
-    "notam_id": "6/7813",
-    "facility": "ZLC",
-    "state": "MT",
-    "type": "HAZARDS",
-    "description": "20NM E MISSOULA, MT, Wednesday, October 7, 2026 through Friday, October 9, 2026 UTC",
-    "mod_date": "10/06/2026 23:05:00",
-    "mod_abs_time": "202610062305",
-    "is_new": "N",
-    "gid": "6/7813"
   },
   {
     "notam_id": "6/7634",

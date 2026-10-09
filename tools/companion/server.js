@@ -54,24 +54,48 @@ const tileCache = new TileCacheManager();
 const mcpServer = require('./mcp_server.js');
 let cachedWeatherTelemetry = null;
 const CONFIG_FILE = path.resolve(__dirname, '../../scratch/companion_config.json');
+const PERSISTENT_CONFIG_DIR = path.join(os.homedir(), '.aalaapi');
+const PERSISTENT_CONFIG_FILE = path.join(PERSISTENT_CONFIG_DIR, 'companion_config.json');
 const DJI_LOG_EXE = path.resolve(__dirname, 'bin/dji-log.exe');
 
 function loadCompanionConfig() {
+  let scratchCfg = {};
   try {
     if (fs.existsSync(CONFIG_FILE)) {
-      return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+      scratchCfg = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8')) || {};
     }
   } catch (e) {}
-  return {};
+
+  let userCfg = {};
+  try {
+    if (fs.existsSync(PERSISTENT_CONFIG_FILE)) {
+      userCfg = JSON.parse(fs.readFileSync(PERSISTENT_CONFIG_FILE, 'utf8')) || {};
+    }
+  } catch (e) {}
+
+  const merged = Object.assign({}, userCfg, scratchCfg);
+  if ((!scratchCfg.adsbHost || scratchCfg.adsbHost === '127.0.0.1') && userCfg.adsbHost && userCfg.adsbHost !== '127.0.0.1') {
+    merged.adsbHost = userCfg.adsbHost;
+    if (userCfg.adsbPort) merged.adsbPort = userCfg.adsbPort;
+  }
+  return merged;
 }
 
 function saveCompanionConfig(updates) {
   try {
     const current = loadCompanionConfig();
     const merged = Object.assign({}, current, updates);
-    const dir = path.dirname(CONFIG_FILE);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(merged, null, 2), 'utf8');
+    try {
+      const dir = path.dirname(CONFIG_FILE);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(CONFIG_FILE, JSON.stringify(merged, null, 2), 'utf8');
+    } catch (_) {}
+
+    try {
+      if (!fs.existsSync(PERSISTENT_CONFIG_DIR)) fs.mkdirSync(PERSISTENT_CONFIG_DIR, { recursive: true });
+      fs.writeFileSync(PERSISTENT_CONFIG_FILE, JSON.stringify(merged, null, 2), 'utf8');
+    } catch (_) {}
+
     return merged;
   } catch (e) {
     logError('[CONFIG ERROR]', `Failed to save config: ${e.message}`);
@@ -4921,7 +4945,7 @@ const server = http.createServer(async (req, res) => {
           const cleanHost = targetHost.trim();
           const isHostOrPortChanging = (cleanHost !== curConfig.adsbHost || parsedPort !== curConfig.adsbPort);
 
-          const isConnected = !!curStatus.connected;
+          const isConnected = !!curStatus.connected && curConfig.adsbHost !== '127.0.0.1' && curConfig.adsbHost !== 'localhost';
           const isPermanentlyLocked = !!curConfig.adsbLocked;
           const isLocked = isConnected || isPermanentlyLocked;
 

@@ -1138,6 +1138,9 @@ function wakeCompanionPolling(resetBackoff = true) {
 
   return pollCompanionStatus().then(() => {
     scheduleNextCompanionChecks();
+    if (typeof RemoteIdRadar !== 'undefined' && RemoteIdRadar.fetchAirspaceStatus) {
+      RemoteIdRadar.fetchAirspaceStatus();
+    }
   });
 }
 
@@ -2018,6 +2021,7 @@ const AdsbAirspaceManager = {
   customEndpoint: '',
   serverHost: '127.0.0.1',
   serverPort: 30003,
+  isSyncingAdsbConfig: false,
   externalProvider: 'adsb.lol', // 'adsb.lol' | 'custom'
   externalRadiusNM: 15,
   externalCustomUrl: '',
@@ -2543,6 +2547,46 @@ const AdsbAirspaceManager = {
     }
   },
 
+  async syncAdsbConfigWithBridge(st) {
+    if (!st || this.isSyncingAdsbConfig) return;
+    const bridgeHost = (st.tcpHost || st.adsbHost || '').trim();
+    const bridgePort = st.tcpPort || st.adsbPort || 30003;
+    const localHost = (this.serverHost || '').trim();
+    const localPort = this.serverPort || 30003;
+
+    const isLocalCustom = localHost && localHost !== '127.0.0.1' && localHost !== 'localhost';
+    const isBridgeDefault = !bridgeHost || bridgeHost === '127.0.0.1' || bridgeHost === 'localhost';
+
+    // Case 1: Browser has a custom remote host saved, but bridge is defaulted to localhost
+    if (isLocalCustom && isBridgeDefault) {
+      this.isSyncingAdsbConfig = true;
+      try {
+        const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
+        await fetch(`${apiBase}/api/config/adsb`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ adsbHost: localHost, adsbPort: localPort, force: true })
+        });
+      } catch (_) {}
+      finally {
+        this.isSyncingAdsbConfig = false;
+      }
+      return;
+    }
+
+    // Case 2: Bridge has a custom remote host, but browser local state differs
+    const isBridgeCustom = bridgeHost && bridgeHost !== '127.0.0.1' && bridgeHost !== 'localhost';
+    if (isBridgeCustom && (this.serverHost !== bridgeHost || this.serverPort !== bridgePort)) {
+      this.serverHost = bridgeHost;
+      this.serverPort = bridgePort;
+      this.saveSettings();
+      const hostInput = typeof document !== 'undefined' ? document.getElementById('adsb-host-input') : null;
+      const portInput = typeof document !== 'undefined' ? document.getElementById('adsb-port-input') : null;
+      if (hostInput && document.activeElement !== hostInput) hostInput.value = bridgeHost;
+      if (portInput && document.activeElement !== portInput) portInput.value = bridgePort;
+    }
+  },
+
   updateDiagnosticsUI(st) {
     if (typeof document === 'undefined') return;
     const hwEl = document.getElementById('adsb-hw-status');
@@ -2566,9 +2610,25 @@ const AdsbAirspaceManager = {
       return;
     }
 
-    const targetHost = (st && (st.tcpHost || st.adsbHost)) ? (st.tcpHost || st.adsbHost) : (this.serverHost || '127.0.0.1');
-    const targetPort = (st && (st.tcpPort || st.adsbPort)) ? (st.tcpPort || st.adsbPort) : (this.serverPort || 30003);
-    const hostPortStr = `${targetHost}:${targetPort}`;
+    if (st) {
+      this.syncAdsbConfigWithBridge(st);
+    }
+
+    const bridgeHost = (st && (st.tcpHost || st.adsbHost));
+    const bridgePort = (st && (st.tcpPort || st.adsbPort));
+    const hasCustomLocal = this.serverHost && this.serverHost !== '127.0.0.1' && this.serverHost !== 'localhost';
+
+    // If local preference is a custom remote host and bridge is temporarily reporting localhost,
+    // preserve the custom host in the UI input rather than clobbering it back to 127.0.0.1
+    const targetHost = (hasCustomLocal && (!bridgeHost || bridgeHost === '127.0.0.1' || bridgeHost === 'localhost'))
+      ? this.serverHost
+      : (bridgeHost || this.serverHost || '127.0.0.1');
+
+    const targetPort = (hasCustomLocal && (!bridgeHost || bridgeHost === '127.0.0.1' || bridgeHost === 'localhost'))
+      ? this.serverPort
+      : (bridgePort || this.serverPort || 30003);
+
+    const hostPortStr = `${bridgeHost || targetHost}:${bridgePort || targetPort}`;
 
     const hostInput = document.getElementById('adsb-host-input');
     const portInput = document.getElementById('adsb-port-input');
@@ -2592,7 +2652,7 @@ const AdsbAirspaceManager = {
         hwEl.textContent = 'Ready (WinUSB Active)';
         hwEl.style.color = '#10b981';
       }
-    } else if (st.isRemoteServer || targetHost !== '127.0.0.1') {
+    } else if (st.isRemoteServer || (st.tcpHost && st.tcpHost !== '127.0.0.1' && st.tcpHost !== 'localhost')) {
       hwEl.textContent = 'Remote Feed (No USB Dongle Needed)';
       hwEl.style.color = '#38bdf8';
     } else {

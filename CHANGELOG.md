@@ -1,3 +1,13 @@
+## [1.148.1] - 2026-10-08
+
+### Fixed
+- **ADS-B Server Localhost Reversion & Persistent Reconnection Sync**:
+  - **Multi-Tier Persistent Configuration Storage (`tools/companion/server.js`)**: Added secondary persistent user-profile configuration fallback in `~/.aalaapi/companion_config.json` alongside `scratch/companion_config.json`. Ensures user ADS-B host/port settings survive scratchpad directory clearing, git cleanups, or test execution runs.
+  - **Automatic Reconnection & Handshake Synchronization (`src/bridge/ApiClient.js`)**: Implemented `syncAdsbConfigWithBridge` in `RemoteIdRadar`. When the companion bridge starts up or reconnects, if the browser has a saved custom remote server in `localStorage` and the bridge is running in default localhost mode (`127.0.0.1`), the frontend automatically re-provisions the bridge with the user's saved remote host using `force: true`. Conversely, if the bridge has a custom remote host configured on disk, the frontend harmonizes its state.
+  - **Diagnostic UI State Protection (`src/bridge/ApiClient.js`)**: Updated `updateDiagnosticsUI` so that a temporary default localhost status from the bridge does not overwrite the `#adsb-host-input` UI field when the pilot has a custom remote host configured.
+  - **Default Localhost 409 Transition Bypass (`tools/companion/server.js`)**: Relaxed the 409 conflict guard when transitioning away from the default fallback host `127.0.0.1`, allowing seamless target updates without modal interruption.
+  - **Test Teardown Hygiene (`index.test.js`, `tools/companion/adsb_tracker.test.js`)**: Updated unit test teardowns to preserve and restore the pre-existing ADS-B configuration rather than hardcoding `saveAdsbConfig('127.0.0.1', 30003)`, eliminating test-induced config clobbering.
+
 ## [1.148.0] - 2026-10-08
 
 ### Added
