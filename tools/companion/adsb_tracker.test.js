@@ -220,7 +220,8 @@ describe('AdsbAirspaceTracker Tests', () => {
   });
 
   test('Companion Server exposes /api/airspace/bounds, /api/airspace/status, and /api/airspace/simulate', async () => {
-    const { server, adsbTracker } = require('./server.js');
+    const { server, adsbTracker, getAdsbConfig } = require('./server.js');
+    const origAdsb = (typeof getAdsbConfig === 'function') ? getAdsbConfig() : { adsbHost: '127.0.0.1', adsbPort: 30003 };
     adsbTracker.clear();
 
     // Start server on ephemeral port for test
@@ -245,7 +246,7 @@ describe('AdsbAirspaceTracker Tests', () => {
       const cfgPostRes = await fetch(`${baseUrl}/api/config/adsb`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ adsbHost: '10.0.0.50', adsbPort: 30003 })
+        body: JSON.stringify({ adsbHost: '10.0.0.50', adsbPort: 30003, force: true })
       });
       assert.strictEqual(cfgPostRes.status, 200);
       const cfgPostData = await cfgPostRes.json();
@@ -292,9 +293,11 @@ describe('AdsbAirspaceTracker Tests', () => {
       assert.strictEqual(adsbTracker.aircraft.size, 0);
     } finally {
       const { saveAdsbConfig } = require('./server.js');
-      saveAdsbConfig('127.0.0.1', 30003);
+      if (origAdsb && origAdsb.adsbHost) {
+        saveAdsbConfig(origAdsb.adsbHost, origAdsb.adsbPort || 30003);
+      }
       if (adsbTracker) {
-        adsbTracker.updateServerConfig({ tcpHost: '127.0.0.1', tcpPort: 30003 });
+        adsbTracker.updateServerConfig({ tcpHost: (origAdsb && origAdsb.adsbHost) || '127.0.0.1', tcpPort: (origAdsb && origAdsb.adsbPort) || 30003 });
         adsbTracker.destroy();
       }
       await new Promise((resolve) => server.close(resolve));
