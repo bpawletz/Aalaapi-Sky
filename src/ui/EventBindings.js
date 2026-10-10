@@ -10,6 +10,12 @@ function initUIEventListeners() {
     
     // Listen to changes to trigger redrawing of the grid
     el.addEventListener('input', () => {
+      if (id === 'speed') {
+        if (typeof handleFlightSpeedChange === 'function') {
+          handleFlightSpeedChange();
+        }
+        return;
+      }
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
       if (activeLayer && activeLayer.pattern === 'target-splat') {
         if (id === 'grid-width' || id === 'grid-height') {
@@ -47,6 +53,13 @@ function initUIEventListeners() {
     });
     
     el.addEventListener('change', () => {
+      if (id === 'speed') {
+        if (typeof handleFlightSpeedChange === 'function') {
+          handleFlightSpeedChange();
+        }
+        saveAllSettingsToLocalStorage();
+        return;
+      }
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
       if (activeLayer && activeLayer.pattern === 'target-splat') {
         if (id === 'grid-width' || id === 'grid-height') {
@@ -1207,7 +1220,12 @@ function initUIEventListeners() {
       if (activeLayer) {
         activeLayer.turnaroundSpeed = (layerTurnSpeedEl.value === 'inherit' || !layerTurnSpeedEl.value) ? null : parseFloat(layerTurnSpeedEl.value);
       }
-      updateGrid();
+      if (typeof handleFlightSpeedChange === 'function') {
+        handleFlightSpeedChange();
+      } else {
+        if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+        if (typeof renderLayersList === 'function') renderLayersList();
+      }
     });
   }
 

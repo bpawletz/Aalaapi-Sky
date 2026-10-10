@@ -2163,6 +2163,7 @@ const AdsbAirspaceManager = {
   serverHost: '127.0.0.1',
   serverPort: 30003,
   isSyncingAdsbConfig: false,
+  isConnectingAdsbServer: false,
   externalProvider: 'adsb.lol', // 'adsb.lol' | 'custom'
   externalRadiusNM: 15,
   externalCustomUrl: '',
@@ -2689,7 +2690,7 @@ const AdsbAirspaceManager = {
   },
 
   async syncAdsbConfigWithBridge(st) {
-    if (!st || this.isSyncingAdsbConfig) return;
+    if (!st || this.isSyncingAdsbConfig || this.isConnectingAdsbServer) return;
     const bridgeHost = (st.tcpHost || st.adsbHost || '').trim();
     const bridgePort = st.tcpPort || st.adsbPort || 30003;
     const localHost = (this.serverHost || '').trim();
@@ -2715,16 +2716,17 @@ const AdsbAirspaceManager = {
       return;
     }
 
-    // Case 2: Bridge has a custom remote host, but browser local state differs
+    // Case 2: Bridge has a custom remote host, but browser local state is default/localhost (e.g. fresh browser session or cleared storage)
     const isBridgeCustom = bridgeHost && bridgeHost !== '127.0.0.1' && bridgeHost !== 'localhost';
-    if (isBridgeCustom && (this.serverHost !== bridgeHost || this.serverPort !== bridgePort)) {
+    if (isBridgeCustom && !isLocalCustom) {
       this.serverHost = bridgeHost;
       this.serverPort = bridgePort;
       this.saveSettings();
       const hostInput = typeof document !== 'undefined' ? document.getElementById('adsb-host-input') : null;
       const portInput = typeof document !== 'undefined' ? document.getElementById('adsb-port-input') : null;
-      if (hostInput && document.activeElement !== hostInput) hostInput.value = bridgeHost;
-      if (portInput && document.activeElement !== portInput) portInput.value = bridgePort;
+      const isEditingInputs = typeof document !== 'undefined' && (document.activeElement === hostInput || document.activeElement === portInput);
+      if (hostInput && !isEditingInputs) hostInput.value = bridgeHost;
+      if (portInput && !isEditingInputs) portInput.value = bridgePort;
     }
   },
 
@@ -2759,13 +2761,12 @@ const AdsbAirspaceManager = {
     const bridgePort = (st && (st.tcpPort || st.adsbPort));
     const hasCustomLocal = this.serverHost && this.serverHost !== '127.0.0.1' && this.serverHost !== 'localhost';
 
-    // If local preference is a custom remote host and bridge is temporarily reporting localhost,
-    // preserve the custom host in the UI input rather than clobbering it back to 127.0.0.1
-    const targetHost = (hasCustomLocal && (!bridgeHost || bridgeHost === '127.0.0.1' || bridgeHost === 'localhost'))
+    // If local preference is a custom remote host, preserve it in the UI input rather than clobbering it back to 127.0.0.1 or bridgeHost
+    const targetHost = hasCustomLocal
       ? this.serverHost
       : (bridgeHost || this.serverHost || '127.0.0.1');
 
-    const targetPort = (hasCustomLocal && (!bridgeHost || bridgeHost === '127.0.0.1' || bridgeHost === 'localhost'))
+    const targetPort = hasCustomLocal
       ? this.serverPort
       : (bridgePort || this.serverPort || 30003);
 
@@ -2773,11 +2774,14 @@ const AdsbAirspaceManager = {
 
     const hostInput = document.getElementById('adsb-host-input');
     const portInput = document.getElementById('adsb-port-input');
-    if (hostInput && document.activeElement !== hostInput) {
-      hostInput.value = targetHost;
-    }
-    if (portInput && document.activeElement !== portInput) {
-      portInput.value = targetPort;
+    const isEditingInputs = (document.activeElement === hostInput || document.activeElement === portInput);
+    if (!this.isConnectingAdsbServer && !isEditingInputs) {
+      if (hostInput && document.activeElement !== hostInput) {
+        hostInput.value = targetHost;
+      }
+      if (portInput && document.activeElement !== portInput) {
+        portInput.value = targetPort;
+      }
     }
 
     // Hardware status
@@ -3924,15 +3928,16 @@ const AdsbAirspaceManager = {
         this.serverHost = hostVal;
         this.serverPort = parsedPortVal;
         this.saveSettings();
+        this.isConnectingAdsbServer = true;
         serverSaveBtn.textContent = 'Connecting...';
         serverSaveBtn.disabled = true;
 
         try {
-          const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://localhost:8765';
+          const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
           let res = await fetch(`${apiBase}/api/config/adsb`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adsbHost: hostVal, adsbPort: parsedPortVal })
+            body: JSON.stringify({ adsbHost: hostVal, adsbPort: parsedPortVal, force: true })
           });
 
           if (res.status === 409) {
@@ -3951,6 +3956,7 @@ const AdsbAirspaceManager = {
             } else {
               serverSaveBtn.textContent = 'Connect';
               serverSaveBtn.disabled = false;
+              this.isConnectingAdsbServer = false;
               return;
             }
           }
@@ -3968,12 +3974,13 @@ const AdsbAirspaceManager = {
           this.serverPort = parsedPortVal;
           this.saveSettings();
           serverSaveBtn.textContent = 'Saved Local';
+        } finally {
+          setTimeout(() => {
+            serverSaveBtn.textContent = 'Connect';
+            serverSaveBtn.disabled = false;
+            this.isConnectingAdsbServer = false;
+          }, 1500);
         }
-
-        setTimeout(() => {
-          serverSaveBtn.textContent = 'Connect';
-          serverSaveBtn.disabled = false;
-        }, 1500);
 
         this.pollAirspace();
       });
@@ -3986,6 +3993,8 @@ const AdsbAirspaceManager = {
         const portVal = chip.getAttribute('data-port');
         if (portVal && portInput) {
           portInput.value = portVal;
+          this.serverPort = parseInt(portVal, 10) || 30003;
+          this.saveSettings();
           if (serverSaveBtn) {
             serverSaveBtn.style.outline = '2px solid #38bdf8';
             setTimeout(() => { if (serverSaveBtn) serverSaveBtn.style.outline = ''; }, 600);
@@ -4006,7 +4015,7 @@ const AdsbAirspaceManager = {
         probeBtn.textContent = 'Probing...';
 
         try {
-          const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://localhost:8765';
+          const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
           const res = await fetch(`${apiBase}/api/config/adsb/probe?host=${encodeURIComponent(targetHost)}`);
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const data = await res.json();
@@ -4038,6 +4047,8 @@ const AdsbAirspaceManager = {
                 const chosenPort = b.getAttribute('data-port');
                 if (chosenPort && portInput) {
                   portInput.value = chosenPort;
+                  this.serverPort = parseInt(chosenPort, 10) || 30003;
+                  this.saveSettings();
                   if (serverSaveBtn) {
                     serverSaveBtn.style.outline = '2px solid #38bdf8';
                     setTimeout(() => { if (serverSaveBtn) serverSaveBtn.style.outline = ''; }, 600);

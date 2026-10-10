@@ -809,7 +809,7 @@ function deleteFlightWaypoint(wp, idx) {
     ? flightLayers.find(l => l.id === wp.layerId)
     : (typeof getActiveLayer === 'function' ? getActiveLayer() : null);
 
-  const isRoadFollow = (gridType === 'road-following') || (targetLayer && targetLayer.pattern === 'road-following');
+  const isRoadFollow = targetLayer ? (targetLayer.pattern === 'road-following') : (gridType === 'road-following');
 
   if (isRoadFollow) {
     if (typeof generatedWaypoints !== 'undefined' && Array.isArray(generatedWaypoints) && generatedWaypoints.length > idx) {
@@ -837,8 +837,9 @@ function deleteFlightWaypoint(wp, idx) {
     }
     if (typeof updateGrid === 'function') updateGrid();
   } else {
-    // 1. If targetLayer is freeform (or current gridType is freeform), clean up targetLayer's internal arrays
-    if (targetLayer && (targetLayer.pattern === 'freeform' || gridType === 'freeform')) {
+    // 1. Clean up targetLayer's internal arrays and mark custom waypoints
+    if (targetLayer) {
+      targetLayer.hasCustomWaypoints = true;
       if (Array.isArray(targetLayer.freeformWaypoints) && targetLayer.freeformWaypoints.length > 0) {
         let fIdx = wp ? targetLayer.freeformWaypoints.indexOf(wp) : -1;
         if (fIdx === -1 && wp && wp.idx !== undefined && wp.idx !== null && targetLayer.freeformWaypoints[wp.idx]) {
@@ -865,19 +866,28 @@ function deleteFlightWaypoint(wp, idx) {
           }
         }
       }
-      if (Array.isArray(targetLayer.waypoints) && targetLayer.waypoints.length > 0) {
+      if (Array.isArray(targetLayer.waypoints) && targetLayer.waypoints !== targetLayer.freeformWaypoints && targetLayer.waypoints.length > 0) {
         let lWpIdx = wp ? targetLayer.waypoints.indexOf(wp) : -1;
+        if (lWpIdx === -1 && wp && wp.idx !== undefined && wp.idx !== null && targetLayer.waypoints[wp.idx]) {
+          lWpIdx = wp.idx;
+        }
+        if (lWpIdx === -1 && wp) {
+          lWpIdx = targetLayer.waypoints.findIndex(w =>
+            Math.abs(w.lat - wp.lat) < 1e-7 && Math.abs(w.lon - wp.lon) < 1e-7
+          );
+        }
+        if (lWpIdx === -1 && idx !== undefined && idx !== null && idx < targetLayer.waypoints.length) {
+          lWpIdx = idx;
+        }
         if (lWpIdx !== -1 && lWpIdx < targetLayer.waypoints.length) {
           targetLayer.waypoints.splice(lWpIdx, 1);
           targetLayer.waypoints.forEach((w, newIdx) => {
+            w.idx = newIdx;
             w.layerWaypointIndex = newIdx;
           });
           if (Array.isArray(targetLayer.photos) && targetLayer.photos.length > lWpIdx) {
             targetLayer.photos.splice(lWpIdx, 1);
           }
-        } else {
-          targetLayer.waypoints = (targetLayer.freeformWaypoints || []).slice();
-          targetLayer.photos = (targetLayer.freeformPhotos || []).slice();
         }
       }
     }
@@ -894,8 +904,15 @@ function deleteFlightWaypoint(wp, idx) {
         Math.abs(w.lat - wp.lat) < 1e-7 && Math.abs(w.lon - wp.lon) < 1e-7
       );
     }
-    if (gIdx !== -1 && activeWps && activeWps[gIdx]) {
-      activeWps.splice(gIdx, 1);
+    if (activeWps && (!targetLayer || (activeWps !== targetLayer.freeformWaypoints && activeWps !== targetLayer.waypoints))) {
+      if (gIdx !== -1 && activeWps[gIdx]) {
+        activeWps.splice(gIdx, 1);
+        activeWps.forEach((w, newIdx) => { w.idx = newIdx; });
+      }
+    } else if (activeWps) {
+      activeWps.forEach((w, newIdx) => { w.idx = newIdx; });
+    }
+    if (false && gIdx !== -1 && activeWps && activeWps[gIdx]) {
       activeWps.forEach((w, newIdx) => { w.idx = newIdx; });
     }
     if (activePts && gIdx !== -1 && activePts[gIdx]) {
@@ -2214,6 +2231,11 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
       if (!isNaN(zoomVal)) wp.zoom = zoomVal;
       wp.isRingStart = true; // Mark as explicit parameter change point
       wp.isModified = true; // Mark as edited
+      if (wpLayer) wpLayer.hasCustomWaypoints = true;
+      else {
+        const activeL = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+        if (activeL) activeL.hasCustomWaypoints = true;
+      }
 
       const gridType = document.getElementById('grid-type')?.value;
       if (gridType === 'road-following' && wp.roadMarker && roadWaypoints && roadWaypoints[idx]) {

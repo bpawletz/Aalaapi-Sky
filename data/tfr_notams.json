@@ -1,36 +1,25 @@
 [
   {
-    "notam_id": "6/8726",
-    "facility": "ZBW",
-    "state": "NY",
-    "type": "VIP",
-    "description": "Syracuse, NY",
-    "mod_date": "10/09/2026 23:58:00",
-    "mod_abs_time": "202610092358",
+    "notam_id": "6/8734",
+    "facility": "ZLA",
+    "state": "CA",
+    "type": "HAZARDS",
+    "description": "38NM NE BAKERSFIELD, CA, Saturday, October 10, 2026 through Friday, October 23, 2026 UTC",
+    "mod_date": "10/10/2026 11:03:00",
+    "mod_abs_time": "202610101103",
     "is_new": "Y",
-    "gid": "6/8726"
+    "gid": "6/8734"
   },
   {
-    "notam_id": "6/8725",
-    "facility": "ZNY",
-    "state": "NY",
-    "type": "VIP",
-    "description": "Syracuse, NY",
-    "mod_date": "10/09/2026 23:51:00",
-    "mod_abs_time": "202610092351",
+    "notam_id": "6/8729",
+    "facility": "ZJX",
+    "state": "FL",
+    "type": "HAZARDS",
+    "description": "Lake City, FL, Saturday, October 10, 2026 Local",
+    "mod_date": "10/10/2026 03:45:00",
+    "mod_abs_time": "202610100345",
     "is_new": "Y",
-    "gid": "6/8725"
-  },
-  {
-    "notam_id": "6/8724",
-    "facility": "ZOB",
-    "state": "NY",
-    "type": "VIP",
-    "description": "Syracuse, NY",
-    "mod_date": "10/09/2026 23:49:00",
-    "mod_abs_time": "202610092349",
-    "is_new": "Y",
-    "gid": "6/8724"
+    "gid": "6/8729"
   },
   {
     "notam_id": "6/8722",
@@ -106,7 +95,7 @@
     "description": "New Bern, NC, Saturday, October 10, 2026 through Sunday, October 11, 2026 Local",
     "mod_date": "10/09/2026 15:11:00",
     "mod_abs_time": "202610091511",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8618"
   },
   {
@@ -117,7 +106,7 @@
     "description": "Kona, HI, Saturday, October 10, 2026 through Saturday, October 10, 2026 Local",
     "mod_date": "10/09/2026 14:54:00",
     "mod_abs_time": "202610091454",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8607"
   },
   {
@@ -128,7 +117,7 @@
     "description": "Sterling, VA, Monday, October 12, 2026 through Monday, October 12, 2026 Local",
     "mod_date": "10/09/2026 13:13:00",
     "mod_abs_time": "202610091313",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8600"
   },
   {
@@ -139,7 +128,7 @@
     "description": "Sterling, VA, Sunday, October 11, 2026 through Sunday, October 11, 2026 Local",
     "mod_date": "10/09/2026 13:13:00",
     "mod_abs_time": "202610091313",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8599"
   },
   {
@@ -150,7 +139,7 @@
     "description": "35NM SW PUEBLO, CO, Friday, October 9, 2026 through Sunday, October 11, 2026 UTC",
     "mod_date": "10/09/2026 12:13:00",
     "mod_abs_time": "202610091213",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8590"
   },
   {
@@ -161,7 +150,7 @@
     "description": "Youngstown, OH, Monday, October 12, 2026 through Monday, October 12, 2026 Local",
     "mod_date": "10/09/2026 10:34:00",
     "mod_abs_time": "202610091034",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8587"
   },
   {
@@ -176,17 +165,6 @@
     "gid": "6/8528"
   },
   {
-    "notam_id": "6/8509",
-    "facility": "ZBW",
-    "state": "NY",
-    "type": "SECURITY",
-    "description": "SYRACUSE, NY, Friday, October 9, 2026 through Friday, October 9, 2026 Local",
-    "mod_date": "10/08/2026 22:00:00",
-    "mod_abs_time": "202610082200",
-    "is_new": "N",
-    "gid": "6/8509"
-  },
-  {
     "notam_id": "6/8508",
     "facility": "ZDC",
     "state": "NC",
@@ -196,17 +174,6 @@
     "mod_abs_time": "202610082149",
     "is_new": "N",
     "gid": "6/8508"
-  },
-  {
-    "notam_id": "6/8507",
-    "facility": "ZLC",
-    "state": "MT",
-    "type": "HAZARDS",
-    "description": "20NM E MISSOULA, MT, Friday, October 9, 2026 through Saturday, October 10, 2026 UTC",
-    "mod_date": "10/08/2026 21:37:00",
-    "mod_abs_time": "202610082137",
-    "is_new": "N",
-    "gid": "6/8507"
   },
   {
     "notam_id": "6/8504",
@@ -229,17 +196,6 @@
     "mod_abs_time": "202610082057",
     "is_new": "N",
     "gid": "6/8493"
-  },
-  {
-    "notam_id": "6/8400",
-    "facility": "ZDV",
-    "state": "CO",
-    "type": "HAZARDS",
-    "description": "COLORADO SPRINGS, CO, Thursday, October 8, 2026 through Saturday, October 10, 2026 UTC",
-    "mod_date": "10/08/2026 17:19:00",
-    "mod_abs_time": "202610081719",
-    "is_new": "N",
-    "gid": "6/8400"
   },
   {
     "notam_id": "6/8389",
@@ -286,17 +242,6 @@
     "gid": "6/8243"
   },
   {
-    "notam_id": "6/8154",
-    "facility": "ZAB",
-    "state": "AZ",
-    "type": "HAZARDS",
-    "description": "15NM S WILLIAMS, AZ, Thursday, October 8, 2026 through Saturday, October 10, 2026 UTC",
-    "mod_date": "10/07/2026 19:49:00",
-    "mod_abs_time": "202610071949",
-    "is_new": "N",
-    "gid": "6/8154"
-  },
-  {
     "notam_id": "6/8029",
     "facility": "ZID",
     "state": "OH",
@@ -308,28 +253,6 @@
     "gid": "6/8029"
   },
   {
-    "notam_id": "6/7911",
-    "facility": "ZME",
-    "state": "AL",
-    "type": "VIP",
-    "description": "Tuscaloosa, AL, Saturday, October 10, 2026 through Saturday, October 10, 2026 Local",
-    "mod_date": "10/07/2026 13:11:00",
-    "mod_abs_time": "202610071311",
-    "is_new": "N",
-    "gid": "6/7911"
-  },
-  {
-    "notam_id": "6/7910",
-    "facility": "ZTL",
-    "state": "AL",
-    "type": "VIP",
-    "description": "Tuscaloosa, AL, Saturday, October 10, 2026 through Saturday, October 10, 2026 Local",
-    "mod_date": "10/07/2026 13:10:00",
-    "mod_abs_time": "202610071310",
-    "is_new": "N",
-    "gid": "6/7910"
-  },
-  {
     "notam_id": "6/7634",
     "facility": "ZKC",
     "state": "MO",
@@ -339,17 +262,6 @@
     "mod_abs_time": "202610061541",
     "is_new": "N",
     "gid": "6/7634"
-  },
-  {
-    "notam_id": "6/7530",
-    "facility": "ZDC",
-    "state": "NC",
-    "type": "UAS PUBLIC GATHERING",
-    "description": "Raleigh, NC, Saturday, October 10, 2026 UTC",
-    "mod_date": "10/06/2026 10:30:00",
-    "mod_abs_time": "202610061030",
-    "is_new": "N",
-    "gid": "6/7530"
   },
   {
     "notam_id": "6/7457",
@@ -418,17 +330,6 @@
     "gid": "6/7230"
   },
   {
-    "notam_id": "6/7170",
-    "facility": "ZMA",
-    "state": "FL",
-    "type": "UAS PUBLIC GATHERING",
-    "description": "Tampa, FL, Friday, October 9, 2026 through Saturday, October 10, 2026 UTC",
-    "mod_date": "10/05/2026 13:05:00",
-    "mod_abs_time": "202610051305",
-    "is_new": "N",
-    "gid": "6/7170"
-  },
-  {
     "notam_id": "6/7168",
     "facility": "ZFW",
     "state": "OK",
@@ -460,17 +361,6 @@
     "mod_abs_time": "202610051111",
     "is_new": "N",
     "gid": "6/7153"
-  },
-  {
-    "notam_id": "6/7134",
-    "facility": "ZJX",
-    "state": "FL",
-    "type": "SECURITY",
-    "description": "MAYPORT, FL, Monday, October 5, 2026 through Saturday, October 10, 2026 Local",
-    "mod_date": "10/05/2026 00:23:00",
-    "mod_abs_time": "202610050023",
-    "is_new": "N",
-    "gid": "6/7134"
   },
   {
     "notam_id": "6/7126",
