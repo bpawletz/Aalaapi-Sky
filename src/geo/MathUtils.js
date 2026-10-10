@@ -184,9 +184,13 @@ function drawFlightPathLines(waypoints, gridType) {
 
   const importedWaypoints = !!importedFileName;
 
+  // Filter valid waypoints with numeric lat/lon
+  const validWaypoints = waypoints.filter(w => w && typeof w.lat === 'number' && !isNaN(w.lat) && typeof w.lon === 'number' && !isNaN(w.lon));
+  if (validWaypoints.length < 2) return;
+
   // If imported, draw the original raw path as a faint gray background line first
   if (importedWaypoints) {
-    const fullPath = waypoints.map(w => [w.lat, w.lon]);
+    const fullPath = validWaypoints.map(w => [w.lat, w.lon]);
     L.polyline(fullPath, {
       color: '#94a3b8',
       weight: 2,
@@ -203,8 +207,9 @@ function drawFlightPathLines(waypoints, gridType) {
   for (let i = 1; i < waypoints.length; i++) {
     const p1 = waypoints[i - 1];
     const p2 = waypoints[i];
+    if (!p1 || !p2 || isNaN(p1.lat) || isNaN(p1.lon) || isNaN(p2.lat) || isNaN(p2.lon)) continue;
     const latlngs = [[p1.lat, p1.lon], [p2.lat, p2.lon]];
-    const dist = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+    const dist = Math.sqrt(Math.pow((p2.x || 0) - (p1.x || 0), 2) + Math.pow((p2.y || 0) - (p1.y || 0), 2));
     if (dist < 0.001) continue;
 
     let color = p2.layerColor || defaultPathColor;
@@ -862,6 +867,8 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
           wp.origY = wp.y;
         }
         wp.isModified = true;
+        const wpL = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : activeLayer;
+        if (wpL) wpL.hasCustomWaypoints = true;
       });
 
       droneMarker.on('drag', (e) => {
@@ -957,6 +964,8 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
             wp.origY = wp.y;
           }
           wp.isModified = true;
+          const wpL = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : activeLayer;
+          if (wpL) wpL.hasCustomWaypoints = true;
         });
 
         marker.on('drag', (e) => {

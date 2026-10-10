@@ -5992,7 +5992,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.149.5</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.149.7</span></h1>
 
 
 
@@ -10298,7 +10298,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.149.5</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.149.7</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -10359,6 +10359,21 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.149.7):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Flight Speed Waypoint Preservation &amp; Custom Geometry Protection:</strong> Fixed an issue where modifying Flight Speed in Layer Properties reset deleted and moved waypoints back to recalculated geometric pattern coordinates. Implemented <code>handleFlightSpeedChange()</code> to propagate layer velocity, update stats, and refresh the UI without regenerating coordinates or disturbing custom waypoint positions.</li>
+              <li><strong>Layer Custom Waypoints State Retention:</strong> Deleting, nudging, or dragging waypoints across any pattern layer now updates <code>targetLayer.waypoints</code> and flags <code>hasCustomWaypoints</code>, ensuring customized routes are retained intact throughout speed, transition, and failsafe updates.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.149.6):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>ADS-B Proxy Host &amp; Port Persistence &amp; Target Reversion Prevention:</strong> Fixed an issue where <code>updateDiagnosticsUI</code> and <code>syncAdsbConfigWithBridge</code> clobbered user-configured host and port inputs in <code>#adsb-host-input</code> and <code>#adsb-port-input</code> back to the active bridge server (e.g. reverting from <code>192.168.1.120:3005</code> to <code>192.168.1.250:30003</code>) right upon clicking Connect. User parameters now strictly take precedence over bridge server status, and input fields remain locked against background overwrite while connecting or editing.</li>
+              <li><strong>Direct Connect Switching &amp; Immediate SSE Broadcast:</strong> Updated Connect button to send <code>force: true</code> directly to <code>/api/config/adsb</code> to prevent HTTP 409 Conflict locks when changing remote targets, and added immediate SSE status broadcasting on server configuration updates.</li>
+              <li><strong>Preset Chip &amp; Diagnostic Probe Port Synchronization:</strong> Port preset chips and probe "Use" button handlers now update and save local server settings immediately, preventing background polls from overwriting selected ports.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.149.5):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -10910,7 +10925,7 @@ html, body {
             <strong style="color: var(--text-main);">Changelog (v1.115.0):</strong>
 
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
-              <li><strong>🎮 Diagnostics 3D HUD Controls:</strong> Added a new glass-morphism HUD overlay panel (top-right of the 3D replay viewport) with six map-item toggles: <strong>Auto-Rotate</strong>, <strong>Reset Camera</strong>, <strong>Camera Cones</strong>, <strong>Footprints</strong>, <strong>3D Drones</strong>, and <strong>FPV Mode</strong> — identical in style to the main 3D preview controls.</li>
+              <li><strong>Diagnostics 3D HUD Controls:</strong> Added a new glass-morphism HUD overlay panel (top-right of the 3D replay viewport) with six scene toggles: <strong>Auto-Rotate</strong>, <strong>Reset Camera</strong>, <strong>Camera Cones</strong>, <strong>Footprints</strong>, <strong>3D Drone Avatar</strong>, and <strong>FPV Mode</strong> — identical in style to the main 3D preview controls.</li>
             </ul>
           </div>
           <div>
@@ -19373,7 +19388,7 @@ function syncUiWithActiveLayer() {
   }
 
   if (typeof syncDisplayValues === 'function') {
-    syncDisplayValues();
+    try { syncDisplayValues(); } catch (e) {}
   }
   if (typeof togglePatternParameters === 'function') {
     togglePatternParameters();
@@ -20411,7 +20426,20 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
   let sPhoto = null;
   let actualRotation = rotation;
 
-  if (gridType === 'freeform') {
+  if (layer.hasCustomWaypoints && Array.isArray(layer.waypoints) && layer.waypoints.length > 0) {
+    layer.waypoints.forEach((wp, idx) => {
+      const offsets = geodeticToLocal(wp.lat, wp.lon, centerLat, centerLon);
+      wp.x = offsets.x;
+      wp.y = offsets.y;
+      wp.idx = idx;
+      if (!wp.isModified && altitude !== undefined && altitude !== null) {
+        wp.alt = altitude;
+      }
+      wp.layerSpeed = (layer.speed !== undefined && layer.speed !== null) ? layer.speed : 'inherit';
+    });
+    waypoints = layer.waypoints;
+    photos = layer.photos || [];
+  } else if (gridType === 'freeform') {
     const rawWps = (layer.freeformWaypoints && Array.isArray(layer.freeformWaypoints)) ? layer.freeformWaypoints : [];
     const rawPhotos = (layer.freeformPhotos && Array.isArray(layer.freeformPhotos)) ? layer.freeformPhotos : [];
     layer.freeformWaypoints = rawWps;
@@ -21136,7 +21164,75 @@ function initLayerManager() {
   renderLayersList();
 }
 
-// Helpers to get currently active mission data
+/**
+ * Handle Flight Speed changes without resetting or regenerating customized/moved/deleted waypoints.
+ * Propagates layer speed across inherited waypoints, updates dynamics inherit options,
+ * recalculates flight statistics, and updates the UI and 2D/3D displays smoothly.
+ * @param {number} [newSpeed] - Optional explicit speed in m/s. If omitted, reads from #speed input.
+ */
+function handleFlightSpeedChange(newSpeed) {
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const speedEl = (typeof document !== 'undefined') ? document.getElementById('speed') : null;
+  const speedVal = (typeof newSpeed === 'number' && !isNaN(newSpeed))
+    ? newSpeed
+    : (speedEl ? (parseFloat(speedEl.value) || 4.0) : 4.0);
+
+  if (activeLayer) {
+    activeLayer.speed = speedVal;
+  }
+
+  // Update speed on waypoints inheriting layer speed
+  const curWps = (typeof getCurrentWaypoints === 'function') ? getCurrentWaypoints() : ((typeof generatedWaypoints !== 'undefined') ? generatedWaypoints : null);
+  if (curWps && Array.isArray(curWps)) {
+    curWps.forEach(wp => {
+      if (!wp.layerId || (activeLayer && wp.layerId === activeLayer.id)) {
+        wp.layerSpeed = speedVal;
+      }
+    });
+  }
+  if (activeLayer && Array.isArray(activeLayer.waypoints)) {
+    activeLayer.waypoints.forEach(wp => {
+      wp.layerSpeed = speedVal;
+    });
+  }
+
+  if (typeof updateLayerDynamicsInheritLabels === 'function') {
+    updateLayerDynamicsInheritLabels();
+  }
+
+  if (typeof syncDisplayValues === 'function') {
+    syncDisplayValues();
+  }
+
+  const curPhotos = (typeof getCurrentPhotos === 'function') ? getCurrentPhotos() : ((typeof generatedPhotos !== 'undefined') ? generatedPhotos : []);
+  const captureMode = (activeLayer && activeLayer.captureMode) || ((typeof document !== 'undefined') ? document.getElementById('capture-mode')?.value : null) || 'stopAndShoot';
+  if (typeof calculateStats === 'function' && typeof updateStatsPanel === 'function') {
+    const stats = calculateStats(curWps, curPhotos, speedVal, null, null, captureMode);
+    updateStatsPanel(stats);
+  }
+
+  if (typeof renderLayersList === 'function') {
+    renderLayersList();
+  }
+
+  if (typeof redrawCurrentMission === 'function') {
+    redrawCurrentMission();
+  }
+
+  if (typeof threeScene !== 'undefined' && threeScene) {
+    if (typeof fpvActive !== 'undefined' && fpvActive && typeof updateFPVEditorUI === 'function') {
+      updateFPVEditorUI();
+    }
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.handleFlightSpeedChange = handleFlightSpeedChange;
+}
+if (typeof global !== 'undefined') {
+  global.handleFlightSpeedChange = handleFlightSpeedChange;
+}
+
 // -------------------- src/map/MapEngine.js --------------------
 function getCurrentWaypoints() {
   return importedWaypoints || generatedWaypoints;
@@ -22488,7 +22584,11 @@ function updateModifiedSettingsIndicators() {
               el.dispatchEvent(new Event('change', { bubbles: true }));
             }
             if (typeof syncDisplayValues === 'function') syncDisplayValues();
-            if (typeof updateGrid === 'function') updateGrid();
+            if (id === 'speed') {
+              if (typeof handleFlightSpeedChange === 'function') handleFlightSpeedChange();
+            } else if (typeof updateGrid === 'function') {
+              updateGrid();
+            }
             updateModifiedSettingsIndicators();
           });
         }
@@ -23044,6 +23144,12 @@ function initUIEventListeners() {
     
     // Listen to changes to trigger redrawing of the grid
     el.addEventListener('input', () => {
+      if (id === 'speed') {
+        if (typeof handleFlightSpeedChange === 'function') {
+          handleFlightSpeedChange();
+        }
+        return;
+      }
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
       if (activeLayer && activeLayer.pattern === 'target-splat') {
         if (id === 'grid-width' || id === 'grid-height') {
@@ -23081,6 +23187,13 @@ function initUIEventListeners() {
     });
     
     el.addEventListener('change', () => {
+      if (id === 'speed') {
+        if (typeof handleFlightSpeedChange === 'function') {
+          handleFlightSpeedChange();
+        }
+        saveAllSettingsToLocalStorage();
+        return;
+      }
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
       if (activeLayer && activeLayer.pattern === 'target-splat') {
         if (id === 'grid-width' || id === 'grid-height') {
@@ -24241,7 +24354,12 @@ function initUIEventListeners() {
       if (activeLayer) {
         activeLayer.turnaroundSpeed = (layerTurnSpeedEl.value === 'inherit' || !layerTurnSpeedEl.value) ? null : parseFloat(layerTurnSpeedEl.value);
       }
-      updateGrid();
+      if (typeof handleFlightSpeedChange === 'function') {
+        handleFlightSpeedChange();
+      } else {
+        if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
+        if (typeof renderLayersList === 'function') renderLayersList();
+      }
     });
   }
 
@@ -26782,23 +26900,17 @@ function syncDisplayValues() {
   if (fpvTelemAltUnitEl) fpvTelemAltUnitEl.textContent = distUnitStr;
 
   // Update Grid Width
-  if (unit === 'imperial') {
-    document.getElementById('width-val').textContent = Math.round(widthVal * M_TO_FT);
-    document.getElementById('width-unit').textContent = "ft";
-  } else {
-    document.getElementById('width-val').textContent = widthVal;
-    document.getElementById('width-unit').textContent = "m";
-  }
+  const widthValEl = document.getElementById('width-val');
+  const widthUnitEl = document.getElementById('width-unit');
+  if (widthValEl) widthValEl.textContent = (unit === 'imperial') ? Math.round(widthVal * M_TO_FT) : widthVal;
+  if (widthUnitEl) widthUnitEl.textContent = (unit === 'imperial') ? "ft" : "m";
 
   // Update Grid Height
   const heightVal = parseFloat(document.getElementById('grid-height')?.value) || 100;
-  if (unit === 'imperial') {
-    document.getElementById('height-val').textContent = Math.round(heightVal * M_TO_FT);
-    document.getElementById('height-unit').textContent = "ft";
-  } else {
-    document.getElementById('height-val').textContent = heightVal;
-    document.getElementById('height-unit').textContent = "m";
-  }
+  const heightValEl = document.getElementById('height-val');
+  const heightUnitEl = document.getElementById('height-unit');
+  if (heightValEl) heightValEl.textContent = (unit === 'imperial') ? Math.round(heightVal * M_TO_FT) : heightVal;
+  if (heightUnitEl) heightUnitEl.textContent = (unit === 'imperial') ? "ft" : "m";
 
   // Update Rotation
   const rotationValEl = document.getElementById('rotation-val');
@@ -26808,20 +26920,23 @@ function syncDisplayValues() {
 
   // Update Overlaps and Gimbal Pitch
   const frontOverlapEl = document.getElementById('front-overlap');
-  if (frontOverlapEl) document.getElementById('front-overlap-val').textContent = frontOverlapEl.value;
+  const frontOverlapValEl = document.getElementById('front-overlap-val');
+  if (frontOverlapEl && frontOverlapValEl) frontOverlapValEl.textContent = frontOverlapEl.value;
   const sideOverlapEl = document.getElementById('side-overlap');
-  if (sideOverlapEl) document.getElementById('side-overlap-val').textContent = sideOverlapEl.value;
+  const sideOverlapValEl = document.getElementById('side-overlap-val');
+  if (sideOverlapEl && sideOverlapValEl) sideOverlapValEl.textContent = sideOverlapEl.value;
   
   const gimbalPitchEl = document.getElementById('gimbal-pitch');
   if (gimbalPitchEl) {
     const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
     const isAuto = activeLayer && (activeLayer.gimbalPitch === 'auto');
+    const gimbalPitchValEl = document.getElementById('gimbal-pitch-val');
     if (isAuto) {
-      document.getElementById('gimbal-pitch-val').textContent = 'Auto 🎯';
+      if (gimbalPitchValEl) gimbalPitchValEl.textContent = 'Auto 🎯';
       updateGimbalPitchVisualizer('auto');
     } else {
       const pitchVal = parseFloat(gimbalPitchEl.value);
-      document.getElementById('gimbal-pitch-val').textContent = gimbalPitchEl.value;
+      if (gimbalPitchValEl) gimbalPitchValEl.textContent = gimbalPitchEl.value;
       updateGimbalPitchVisualizer(pitchVal);
     }
   }
@@ -26859,27 +26974,21 @@ function syncDisplayValues() {
     if (vValEl) vValEl.textContent = vfovSlider.value;
   }
   if (zoomSlider) {
-    document.getElementById('camera-zoom-val').textContent = parseFloat(zoomSlider.value).toFixed(1);
+    const zoomValEl = document.getElementById('camera-zoom-val');
+    if (zoomValEl) zoomValEl.textContent = parseFloat(zoomSlider.value).toFixed(1);
   }
-
 
   // Update Altitude
-  if (unit === 'imperial') {
-    document.getElementById('altitude-val').textContent = Math.round(altitudeVal * M_TO_FT);
-    document.getElementById('altitude-unit').textContent = "ft";
-  } else {
-    document.getElementById('altitude-val').textContent = altitudeVal;
-    document.getElementById('altitude-unit').textContent = "m";
-  }
+  const altValEl = document.getElementById('altitude-val');
+  const altUnitEl = document.getElementById('altitude-unit');
+  if (altValEl) altValEl.textContent = (unit === 'imperial') ? Math.round(altitudeVal * M_TO_FT) : altitudeVal;
+  if (altUnitEl) altUnitEl.textContent = (unit === 'imperial') ? "ft" : "m";
 
   // Update Speed
-  if (unit === 'imperial') {
-    document.getElementById('speed-val').textContent = (speedVal * MPS_TO_MPH).toFixed(1);
-    document.getElementById('speed-unit').textContent = "mph";
-  } else {
-    document.getElementById('speed-val').textContent = (Math.round(speedVal * 10) / 10).toFixed(speedVal % 1 !== 0 ? 1 : 0);
-    document.getElementById('speed-unit').textContent = "m/s";
-  }
+  const speedValEl = document.getElementById('speed-val');
+  const speedUnitEl = document.getElementById('speed-unit');
+  if (speedValEl) speedValEl.textContent = (unit === 'imperial') ? (speedVal * MPS_TO_MPH).toFixed(1) : (Math.round(speedVal * 10) / 10).toFixed(speedVal % 1 !== 0 ? 1 : 0);
+  if (speedUnitEl) speedUnitEl.textContent = (unit === 'imperial') ? "mph" : "m/s";
 
   // Update Global Hover Time
   const globalHoverSlider = document.getElementById('global-hover-time');
@@ -27675,6 +27784,11 @@ function clearWaypointCustomModifications() {
       delete wp.origY;
     }
   });
+  if (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) {
+    flightLayers.forEach(l => {
+      l.hasCustomWaypoints = false;
+    });
+  }
 }
 
 // Position the grid center marker
@@ -30450,9 +30564,13 @@ function drawFlightPathLines(waypoints, gridType) {
 
   const importedWaypoints = !!importedFileName;
 
+  // Filter valid waypoints with numeric lat/lon
+  const validWaypoints = waypoints.filter(w => w && typeof w.lat === 'number' && !isNaN(w.lat) && typeof w.lon === 'number' && !isNaN(w.lon));
+  if (validWaypoints.length < 2) return;
+
   // If imported, draw the original raw path as a faint gray background line first
   if (importedWaypoints) {
-    const fullPath = waypoints.map(w => [w.lat, w.lon]);
+    const fullPath = validWaypoints.map(w => [w.lat, w.lon]);
     L.polyline(fullPath, {
       color: '#94a3b8',
       weight: 2,
@@ -30469,8 +30587,9 @@ function drawFlightPathLines(waypoints, gridType) {
   for (let i = 1; i < waypoints.length; i++) {
     const p1 = waypoints[i - 1];
     const p2 = waypoints[i];
+    if (!p1 || !p2 || isNaN(p1.lat) || isNaN(p1.lon) || isNaN(p2.lat) || isNaN(p2.lon)) continue;
     const latlngs = [[p1.lat, p1.lon], [p2.lat, p2.lon]];
-    const dist = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+    const dist = Math.sqrt(Math.pow((p2.x || 0) - (p1.x || 0), 2) + Math.pow((p2.y || 0) - (p1.y || 0), 2));
     if (dist < 0.001) continue;
 
     let color = p2.layerColor || defaultPathColor;
@@ -31128,6 +31247,8 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
           wp.origY = wp.y;
         }
         wp.isModified = true;
+        const wpL = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : activeLayer;
+        if (wpL) wpL.hasCustomWaypoints = true;
       });
 
       droneMarker.on('drag', (e) => {
@@ -31223,6 +31344,8 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
             wp.origY = wp.y;
           }
           wp.isModified = true;
+          const wpL = (wp.layerId && typeof flightLayers !== 'undefined') ? flightLayers.find(l => l.id === wp.layerId) : activeLayer;
+          if (wpL) wpL.hasCustomWaypoints = true;
         });
 
         marker.on('drag', (e) => {
@@ -33014,7 +33137,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
 
     // Determine if repositioning (gimbal pitch or heading yaw) is required
     const reposInfo = checkNeedsReposition(idx, sanitizedWps);
-    const isRoadFollowing = gridType === 'road-following';
+    const isRoadFollowing = gridType === 'road-following' || (wpLayer && wpLayer.pattern === 'road-following') || wp.layerPattern === 'road-following';
 
     // Three-Tier Hover Time Resolution:
     // Tier 3: wp.hoverTime (if not null/undefined)
@@ -33087,7 +33210,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
             ? wpLayer.altitude
             : (wp.alt !== undefined && !wpLayer && (wp.alt !== 50 || altitude === 50) ? wp.alt : altitude)));
 
-      if (wp.isRoadDroneWaypoint || isRoadFollowing) {
+      if (wp.isRoadDroneWaypoint || isRoadFollowing || wp.layerPattern === 'road-following' || wpLayer?.pattern === 'road-following') {
         const offset = (wpLayer && wpLayer.roadOffset !== undefined) ? wpLayer.roadOffset : 15;
         effectivePitch = (Math.abs(offset) < 0.01) ? -90 : -Math.round(Math.atan2(effectiveAltForPitch, Math.max(Math.abs(offset), 1)) * (180.0 / Math.PI));
       } else {
@@ -37569,6 +37692,7 @@ const AdsbAirspaceManager = {
   serverHost: '127.0.0.1',
   serverPort: 30003,
   isSyncingAdsbConfig: false,
+  isConnectingAdsbServer: false,
   externalProvider: 'adsb.lol', // 'adsb.lol' | 'custom'
   externalRadiusNM: 15,
   externalCustomUrl: '',
@@ -38095,7 +38219,7 @@ const AdsbAirspaceManager = {
   },
 
   async syncAdsbConfigWithBridge(st) {
-    if (!st || this.isSyncingAdsbConfig) return;
+    if (!st || this.isSyncingAdsbConfig || this.isConnectingAdsbServer) return;
     const bridgeHost = (st.tcpHost || st.adsbHost || '').trim();
     const bridgePort = st.tcpPort || st.adsbPort || 30003;
     const localHost = (this.serverHost || '').trim();
@@ -38121,16 +38245,17 @@ const AdsbAirspaceManager = {
       return;
     }
 
-    // Case 2: Bridge has a custom remote host, but browser local state differs
+    // Case 2: Bridge has a custom remote host, but browser local state is default/localhost (e.g. fresh browser session or cleared storage)
     const isBridgeCustom = bridgeHost && bridgeHost !== '127.0.0.1' && bridgeHost !== 'localhost';
-    if (isBridgeCustom && (this.serverHost !== bridgeHost || this.serverPort !== bridgePort)) {
+    if (isBridgeCustom && !isLocalCustom) {
       this.serverHost = bridgeHost;
       this.serverPort = bridgePort;
       this.saveSettings();
       const hostInput = typeof document !== 'undefined' ? document.getElementById('adsb-host-input') : null;
       const portInput = typeof document !== 'undefined' ? document.getElementById('adsb-port-input') : null;
-      if (hostInput && document.activeElement !== hostInput) hostInput.value = bridgeHost;
-      if (portInput && document.activeElement !== portInput) portInput.value = bridgePort;
+      const isEditingInputs = typeof document !== 'undefined' && (document.activeElement === hostInput || document.activeElement === portInput);
+      if (hostInput && !isEditingInputs) hostInput.value = bridgeHost;
+      if (portInput && !isEditingInputs) portInput.value = bridgePort;
     }
   },
 
@@ -38165,13 +38290,12 @@ const AdsbAirspaceManager = {
     const bridgePort = (st && (st.tcpPort || st.adsbPort));
     const hasCustomLocal = this.serverHost && this.serverHost !== '127.0.0.1' && this.serverHost !== 'localhost';
 
-    // If local preference is a custom remote host and bridge is temporarily reporting localhost,
-    // preserve the custom host in the UI input rather than clobbering it back to 127.0.0.1
-    const targetHost = (hasCustomLocal && (!bridgeHost || bridgeHost === '127.0.0.1' || bridgeHost === 'localhost'))
+    // If local preference is a custom remote host, preserve it in the UI input rather than clobbering it back to 127.0.0.1 or bridgeHost
+    const targetHost = hasCustomLocal
       ? this.serverHost
       : (bridgeHost || this.serverHost || '127.0.0.1');
 
-    const targetPort = (hasCustomLocal && (!bridgeHost || bridgeHost === '127.0.0.1' || bridgeHost === 'localhost'))
+    const targetPort = hasCustomLocal
       ? this.serverPort
       : (bridgePort || this.serverPort || 30003);
 
@@ -38179,11 +38303,14 @@ const AdsbAirspaceManager = {
 
     const hostInput = document.getElementById('adsb-host-input');
     const portInput = document.getElementById('adsb-port-input');
-    if (hostInput && document.activeElement !== hostInput) {
-      hostInput.value = targetHost;
-    }
-    if (portInput && document.activeElement !== portInput) {
-      portInput.value = targetPort;
+    const isEditingInputs = (document.activeElement === hostInput || document.activeElement === portInput);
+    if (!this.isConnectingAdsbServer && !isEditingInputs) {
+      if (hostInput && document.activeElement !== hostInput) {
+        hostInput.value = targetHost;
+      }
+      if (portInput && document.activeElement !== portInput) {
+        portInput.value = targetPort;
+      }
     }
 
     // Hardware status
@@ -39330,15 +39457,16 @@ const AdsbAirspaceManager = {
         this.serverHost = hostVal;
         this.serverPort = parsedPortVal;
         this.saveSettings();
+        this.isConnectingAdsbServer = true;
         serverSaveBtn.textContent = 'Connecting...';
         serverSaveBtn.disabled = true;
 
         try {
-          const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://localhost:8765';
+          const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
           let res = await fetch(`${apiBase}/api/config/adsb`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adsbHost: hostVal, adsbPort: parsedPortVal })
+            body: JSON.stringify({ adsbHost: hostVal, adsbPort: parsedPortVal, force: true })
           });
 
           if (res.status === 409) {
@@ -39357,6 +39485,7 @@ const AdsbAirspaceManager = {
             } else {
               serverSaveBtn.textContent = 'Connect';
               serverSaveBtn.disabled = false;
+              this.isConnectingAdsbServer = false;
               return;
             }
           }
@@ -39374,12 +39503,13 @@ const AdsbAirspaceManager = {
           this.serverPort = parsedPortVal;
           this.saveSettings();
           serverSaveBtn.textContent = 'Saved Local';
+        } finally {
+          setTimeout(() => {
+            serverSaveBtn.textContent = 'Connect';
+            serverSaveBtn.disabled = false;
+            this.isConnectingAdsbServer = false;
+          }, 1500);
         }
-
-        setTimeout(() => {
-          serverSaveBtn.textContent = 'Connect';
-          serverSaveBtn.disabled = false;
-        }, 1500);
 
         this.pollAirspace();
       });
@@ -39392,6 +39522,8 @@ const AdsbAirspaceManager = {
         const portVal = chip.getAttribute('data-port');
         if (portVal && portInput) {
           portInput.value = portVal;
+          this.serverPort = parseInt(portVal, 10) || 30003;
+          this.saveSettings();
           if (serverSaveBtn) {
             serverSaveBtn.style.outline = '2px solid #38bdf8';
             setTimeout(() => { if (serverSaveBtn) serverSaveBtn.style.outline = ''; }, 600);
@@ -39412,7 +39544,7 @@ const AdsbAirspaceManager = {
         probeBtn.textContent = 'Probing...';
 
         try {
-          const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://localhost:8765';
+          const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
           const res = await fetch(`${apiBase}/api/config/adsb/probe?host=${encodeURIComponent(targetHost)}`);
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const data = await res.json();
@@ -39444,6 +39576,8 @@ const AdsbAirspaceManager = {
                 const chosenPort = b.getAttribute('data-port');
                 if (chosenPort && portInput) {
                   portInput.value = chosenPort;
+                  this.serverPort = parseInt(chosenPort, 10) || 30003;
+                  this.saveSettings();
                   if (serverSaveBtn) {
                     serverSaveBtn.style.outline = '2px solid #38bdf8';
                     setTimeout(() => { if (serverSaveBtn) serverSaveBtn.style.outline = ''; }, 600);
@@ -45998,7 +46132,7 @@ function deleteFlightWaypoint(wp, idx) {
     ? flightLayers.find(l => l.id === wp.layerId)
     : (typeof getActiveLayer === 'function' ? getActiveLayer() : null);
 
-  const isRoadFollow = (gridType === 'road-following') || (targetLayer && targetLayer.pattern === 'road-following');
+  const isRoadFollow = targetLayer ? (targetLayer.pattern === 'road-following') : (gridType === 'road-following');
 
   if (isRoadFollow) {
     if (typeof generatedWaypoints !== 'undefined' && Array.isArray(generatedWaypoints) && generatedWaypoints.length > idx) {
@@ -46026,8 +46160,9 @@ function deleteFlightWaypoint(wp, idx) {
     }
     if (typeof updateGrid === 'function') updateGrid();
   } else {
-    // 1. If targetLayer is freeform (or current gridType is freeform), clean up targetLayer's internal arrays
-    if (targetLayer && (targetLayer.pattern === 'freeform' || gridType === 'freeform')) {
+    // 1. Clean up targetLayer's internal arrays and mark custom waypoints
+    if (targetLayer) {
+      targetLayer.hasCustomWaypoints = true;
       if (Array.isArray(targetLayer.freeformWaypoints) && targetLayer.freeformWaypoints.length > 0) {
         let fIdx = wp ? targetLayer.freeformWaypoints.indexOf(wp) : -1;
         if (fIdx === -1 && wp && wp.idx !== undefined && wp.idx !== null && targetLayer.freeformWaypoints[wp.idx]) {
@@ -46054,19 +46189,28 @@ function deleteFlightWaypoint(wp, idx) {
           }
         }
       }
-      if (Array.isArray(targetLayer.waypoints) && targetLayer.waypoints.length > 0) {
+      if (Array.isArray(targetLayer.waypoints) && targetLayer.waypoints !== targetLayer.freeformWaypoints && targetLayer.waypoints.length > 0) {
         let lWpIdx = wp ? targetLayer.waypoints.indexOf(wp) : -1;
+        if (lWpIdx === -1 && wp && wp.idx !== undefined && wp.idx !== null && targetLayer.waypoints[wp.idx]) {
+          lWpIdx = wp.idx;
+        }
+        if (lWpIdx === -1 && wp) {
+          lWpIdx = targetLayer.waypoints.findIndex(w =>
+            Math.abs(w.lat - wp.lat) < 1e-7 && Math.abs(w.lon - wp.lon) < 1e-7
+          );
+        }
+        if (lWpIdx === -1 && idx !== undefined && idx !== null && idx < targetLayer.waypoints.length) {
+          lWpIdx = idx;
+        }
         if (lWpIdx !== -1 && lWpIdx < targetLayer.waypoints.length) {
           targetLayer.waypoints.splice(lWpIdx, 1);
           targetLayer.waypoints.forEach((w, newIdx) => {
+            w.idx = newIdx;
             w.layerWaypointIndex = newIdx;
           });
           if (Array.isArray(targetLayer.photos) && targetLayer.photos.length > lWpIdx) {
             targetLayer.photos.splice(lWpIdx, 1);
           }
-        } else {
-          targetLayer.waypoints = (targetLayer.freeformWaypoints || []).slice();
-          targetLayer.photos = (targetLayer.freeformPhotos || []).slice();
         }
       }
     }
@@ -46083,8 +46227,15 @@ function deleteFlightWaypoint(wp, idx) {
         Math.abs(w.lat - wp.lat) < 1e-7 && Math.abs(w.lon - wp.lon) < 1e-7
       );
     }
-    if (gIdx !== -1 && activeWps && activeWps[gIdx]) {
-      activeWps.splice(gIdx, 1);
+    if (activeWps && (!targetLayer || (activeWps !== targetLayer.freeformWaypoints && activeWps !== targetLayer.waypoints))) {
+      if (gIdx !== -1 && activeWps[gIdx]) {
+        activeWps.splice(gIdx, 1);
+        activeWps.forEach((w, newIdx) => { w.idx = newIdx; });
+      }
+    } else if (activeWps) {
+      activeWps.forEach((w, newIdx) => { w.idx = newIdx; });
+    }
+    if (false && gIdx !== -1 && activeWps && activeWps[gIdx]) {
       activeWps.forEach((w, newIdx) => { w.idx = newIdx; });
     }
     if (activePts && gIdx !== -1 && activePts[gIdx]) {
@@ -47403,6 +47554,11 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
       if (!isNaN(zoomVal)) wp.zoom = zoomVal;
       wp.isRingStart = true; // Mark as explicit parameter change point
       wp.isModified = true; // Mark as edited
+      if (wpLayer) wpLayer.hasCustomWaypoints = true;
+      else {
+        const activeL = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+        if (activeL) activeL.hasCustomWaypoints = true;
+      }
 
       const gridType = document.getElementById('grid-type')?.value;
       if (gridType === 'road-following' && wp.roadMarker && roadWaypoints && roadWaypoints[idx]) {

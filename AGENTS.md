@@ -7,7 +7,28 @@ Every time you make a functional change to the codebase (bug fix, new feature, s
 1. **Bump the Version:** Increment the version number using standard Semantic Versioning (SemVer):
    - **Patch Bump (e.g., 1.10.2 -> 1.10.3):** For bug fixes and security patches.
    - **Minor Bump (e.g., 1.10.2 -> 1.11.0):** For backward-compatible new features.
-2. **Update the Changelog:** Add a detailed list of changes under the new version block.
+2. **Update the Changelog with Standardized Grouping & Separation:**
+   - **Adopt "Keep a Changelog" Subheadings:** Categorize changes under standard subheadings: `### Added`, `### Changed`, `### Deprecated`, `### Removed`, `### Fixed`, or `### Security`.
+   - **Separate Pilot Features from Developer Weeds:** Divide updates within categories into two distinct subsections:
+     - `#### Pilot & Operational Features`: Operational changes, flight patterns, hardware support (e.g. AprilTags, RC 2 sync, ADS-B alerts), HUD overlays, and UI workflows.
+     - `#### Under the Hood & Technical Details`: Internal implementation details, refactors, helper methods, API endpoints, CSS classes, DOM selectors, and performance optimizations.
+   - **Provide Executive Release Summaries for Significant Versions:** For major or feature milestone releases (`X.Y.0`), add a 1–2 sentence high-level summary directly beneath the version header providing immediate context on the core theme.
+   - **Streamline Emoji Usage:** Emojis are reserved exclusively for version or category headers (e.g., `### 🚀 Added`, `### 🐛 Fixed`). Do NOT place emojis on individual bullet points to ensure a clean, scannable left margin.
+   - **Standard Changelog Entry Template:**
+     ```markdown
+     ## [X.Y.Z] - YYYY-MM-DD
+
+     [Optional 1-2 sentence executive summary for significant releases]
+
+     ### Added | Changed | Fixed | Removed
+
+     #### Pilot & Operational Features
+     - **[Feature Name]**: User-facing summary explaining what pilots can do.
+       - Sub-bullet details for controls, options, or behavior.
+
+     #### Under the Hood & Technical Details
+     - **[Component Name / File Path]**: Codebase specifics, API endpoints, internal math, DOM IDs, CSS classes.
+     ```
 
 ## 2. Required Version Locations
 When changing the project version, you must update the version tag in the following **four** locations:

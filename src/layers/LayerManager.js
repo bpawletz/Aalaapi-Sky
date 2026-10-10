@@ -1010,7 +1010,7 @@ function syncUiWithActiveLayer() {
   }
 
   if (typeof syncDisplayValues === 'function') {
-    syncDisplayValues();
+    try { syncDisplayValues(); } catch (e) {}
   }
   if (typeof togglePatternParameters === 'function') {
     togglePatternParameters();
@@ -2048,7 +2048,20 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
   let sPhoto = null;
   let actualRotation = rotation;
 
-  if (gridType === 'freeform') {
+  if (layer.hasCustomWaypoints && Array.isArray(layer.waypoints) && layer.waypoints.length > 0) {
+    layer.waypoints.forEach((wp, idx) => {
+      const offsets = geodeticToLocal(wp.lat, wp.lon, centerLat, centerLon);
+      wp.x = offsets.x;
+      wp.y = offsets.y;
+      wp.idx = idx;
+      if (!wp.isModified && altitude !== undefined && altitude !== null) {
+        wp.alt = altitude;
+      }
+      wp.layerSpeed = (layer.speed !== undefined && layer.speed !== null) ? layer.speed : 'inherit';
+    });
+    waypoints = layer.waypoints;
+    photos = layer.photos || [];
+  } else if (gridType === 'freeform') {
     const rawWps = (layer.freeformWaypoints && Array.isArray(layer.freeformWaypoints)) ? layer.freeformWaypoints : [];
     const rawPhotos = (layer.freeformPhotos && Array.isArray(layer.freeformPhotos)) ? layer.freeformPhotos : [];
     layer.freeformWaypoints = rawWps;
@@ -2773,4 +2786,72 @@ function initLayerManager() {
   renderLayersList();
 }
 
-// Helpers to get currently active mission data
+/**
+ * Handle Flight Speed changes without resetting or regenerating customized/moved/deleted waypoints.
+ * Propagates layer speed across inherited waypoints, updates dynamics inherit options,
+ * recalculates flight statistics, and updates the UI and 2D/3D displays smoothly.
+ * @param {number} [newSpeed] - Optional explicit speed in m/s. If omitted, reads from #speed input.
+ */
+function handleFlightSpeedChange(newSpeed) {
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const speedEl = (typeof document !== 'undefined') ? document.getElementById('speed') : null;
+  const speedVal = (typeof newSpeed === 'number' && !isNaN(newSpeed))
+    ? newSpeed
+    : (speedEl ? (parseFloat(speedEl.value) || 4.0) : 4.0);
+
+  if (activeLayer) {
+    activeLayer.speed = speedVal;
+  }
+
+  // Update speed on waypoints inheriting layer speed
+  const curWps = (typeof getCurrentWaypoints === 'function') ? getCurrentWaypoints() : ((typeof generatedWaypoints !== 'undefined') ? generatedWaypoints : null);
+  if (curWps && Array.isArray(curWps)) {
+    curWps.forEach(wp => {
+      if (!wp.layerId || (activeLayer && wp.layerId === activeLayer.id)) {
+        wp.layerSpeed = speedVal;
+      }
+    });
+  }
+  if (activeLayer && Array.isArray(activeLayer.waypoints)) {
+    activeLayer.waypoints.forEach(wp => {
+      wp.layerSpeed = speedVal;
+    });
+  }
+
+  if (typeof updateLayerDynamicsInheritLabels === 'function') {
+    updateLayerDynamicsInheritLabels();
+  }
+
+  if (typeof syncDisplayValues === 'function') {
+    syncDisplayValues();
+  }
+
+  const curPhotos = (typeof getCurrentPhotos === 'function') ? getCurrentPhotos() : ((typeof generatedPhotos !== 'undefined') ? generatedPhotos : []);
+  const captureMode = (activeLayer && activeLayer.captureMode) || ((typeof document !== 'undefined') ? document.getElementById('capture-mode')?.value : null) || 'stopAndShoot';
+  if (typeof calculateStats === 'function' && typeof updateStatsPanel === 'function') {
+    const stats = calculateStats(curWps, curPhotos, speedVal, null, null, captureMode);
+    updateStatsPanel(stats);
+  }
+
+  if (typeof renderLayersList === 'function') {
+    renderLayersList();
+  }
+
+  if (typeof redrawCurrentMission === 'function') {
+    redrawCurrentMission();
+  }
+
+  if (typeof threeScene !== 'undefined' && threeScene) {
+    if (typeof fpvActive !== 'undefined' && fpvActive && typeof updateFPVEditorUI === 'function') {
+      updateFPVEditorUI();
+    }
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.handleFlightSpeedChange = handleFlightSpeedChange;
+}
+if (typeof global !== 'undefined') {
+  global.handleFlightSpeedChange = handleFlightSpeedChange;
+}
+

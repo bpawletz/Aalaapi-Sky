@@ -1,3 +1,20 @@
+## [1.149.7] - 2026-10-10
+
+### Fixed
+- **Flight Speed Waypoint Preservation & Custom Geometry Protection**:
+  - **Isolated Speed Dynamics Handling (`src/ui/EventBindings.js`, `src/layers/LayerManager.js`)**: Fixed an issue where adjusting Flight Speed (`#speed`) or Turnaround Transit Speed (`#layer-turnaround-speed`) triggered `updateGrid()`, which blindly re-executed mathematical grid coordinate generators and wiped out customized, moved, or deleted waypoints (scrambling moved waypoints to wrong indices and resurrecting deleted ones). Implemented `handleFlightSpeedChange()` to update layer velocity, cascade speed across inherited waypoints, update turnaround transit labels, and recalculate flight time statistics smoothly without regenerating or touching waypoint coordinates.
+  - **Custom Waypoints State & Deletion Synchronization (`src/import/KmzImporter.js`, `src/layers/LayerManager.js`, `src/geo/MathUtils.js`)**: Updated `deleteFlightWaypoint` to properly splice `targetLayer.waypoints` for all pattern layers (not only freeform) and flag `targetLayer.hasCustomWaypoints = true`. When waypoints are moved, nudged, or deleted, `generateLayerWaypoints` now strictly preserves the layer's customized waypoint list rather than re-running mathematical grid generator functions.
+
+## [1.149.6] - 2026-10-10
+
+### Fixed
+- **ADS-B Proxy Host & Port Persistence & Target Reversion Prevention**:
+  - **Diagnostic UI State Protection (`src/bridge/ApiClient.js`)**: Fixed an issue where `updateDiagnosticsUI` clobbered the user-entered host and port inputs in `#adsb-host-input` and `#adsb-port-input` back to the companion bridge's active server whenever the bridge was connected to a different remote target (e.g. resetting from `192.168.1.120:3005` to `192.168.1.250:30003`). `targetHost` and `targetPort` now consistently preserve the user's custom configured parameters (`hasCustomLocal ? this.serverHost : ...`), and ignore background updates while the user is actively editing inputs or connecting.
+  - **Reconnection Synchronization Guard (`src/bridge/ApiClient.js`)**: Fixed `syncAdsbConfigWithBridge` Case 2 which previously treated any mismatch between the browser's custom host and the bridge's custom host as a reason to overwrite the browser's settings with the bridge's target. Case 2 now only adopts remote bridge hosts when the browser local state is unconfigured or defaulted to localhost (`isBridgeCustom && !isLocalCustom`), and strictly respects active connections in progress (`this.isConnectingAdsbServer`).
+  - **Direct UI Connect Switching & Lock Bypass (`src/bridge/ApiClient.js`)**: Updated `#adsb-server-save-btn` click handler to send `force: true` directly to `POST /api/config/adsb`, preventing HTTP 409 Conflict rejection and blocking browser `confirm()` popups when pilots intentionally change the remote target from the user interface.
+  - **Immediate SSE Broadcast on Target Reconfiguration (`tools/companion/server.js`)**: Updated `/api/config/adsb` handler to immediately broadcast updated airspace connection diagnostics across active Server-Sent Events (SSE) streams (`broadcastAirspaceStatus()`) upon configuration save without waiting for periodic polling.
+  - **Preset Chip & Probe Auto-Fill State Synchronization (`src/bridge/ApiClient.js`)**: Updated port preset chips and probe "Use" button handlers to synchronize `this.serverPort` and save settings immediately upon selection, preventing background status polls from reverting selected ports.
+
 ## [1.149.5] - 2026-10-09
 
 ### Fixed
@@ -847,20 +864,24 @@
 
 ## [1.115.0] - 2026-09-20
 
+Introduces an interactive glassmorphism HUD overlay panel for the Flight Diagnostics 3D Telemetry Replay viewport, equipping pilots with dedicated scene toggle controls and real-time third-person FPV follow-cam playback.
 
-### New Feature — HUD Overlay Controls for Flight Diagnostics 3D Replay
-- **Added `#diag-hud-controls` Overlay Panel:**
-  - A new glass-morphism control panel is now displayed in the top-right corner of the Flight Diagnostics 3D Telemetry Replay viewport, matching the look and feel of the main 3D preview HUD.
-  - **Auto-Rotate:** Toggles OrbitControls auto-rotation for hands-free scene orbit during playback. Green indicator = active.
-  - **Reset Camera:** Re-frames the camera to fit the entire trajectory bounding sphere (exits FPV mode if active).
-  - **Camera Cones:** Toggles visibility of camera frustum pyramid cones at each photo-trigger waypoint and the drone-body gimbal frustum. Green = visible.
-  - **Footprints:** Toggles visibility of all photo marker groups (sphere + cone at each trigger point). Green = visible.
-  - **3D Drones:** Toggles visibility of the animated drone mesh avatar. Green = visible.
-  - **FPV Mode:** Locks the camera behind the drone in a third-person follow-cam (FPV) perspective. Camera position and look-at update on every `seekTo()` call during playback. Exiting restores the previously saved camera state.
-- **`resetCameraView(mode)`** method added to `FlightDiagnostics` — handles both `'3d'` perspective and `'top'` bird's-eye presets, and now always exits FPV mode when invoked.
-- **`_updateFPVCamera()`** helper method added to `FlightDiagnostics` — positions the camera 8 units behind and 3 units above the drone and looks 10 units ahead along the drone's yaw heading.
-- **CSS:** Added `.diag-hud-controls`, `.diag-hud-controls button`, `.diag-hud-controls button.active`, and `.diag-indicator` rules with glass-morphism styling and responsive media-query overrides for screens ≤1080px.
-- **Version:** Bumped from `1.114.3` → `1.115.0` (minor — new feature).
+### Added
+
+#### Pilot & Operational Features
+- **Flight Diagnostics 3D HUD Overlay Controls**: Added a semi-transparent HUD overlay panel in the top-right corner of the Flight Diagnostics 3D view, harmonizing controls with the main 3D Digital Twin mission preview.
+  - **FPV Follow-Cam Mode**: Locks the perspective into a third-person follow-camera behind the aircraft that dynamically tracks coordinates and yaw rotation during flight playback.
+  - **Auto-Rotate Orbit**: Enables hands-free continuous orbital rotation around the mission bounding box during playback.
+  - **Reset Camera Presets**: Instantly re-centers the camera to fit the full flight trajectory and smoothly disengages active FPV locks.
+  - **Visual Asset Toggles**: Live scene toggles for camera frustum cones, ground photo footprints, and animated 3D aircraft avatars, each featuring real-time status indicators.
+
+#### Under the Hood & Technical Details
+- **Camera State & Viewport Management (`src/3d/FlightDiagnostics.js`)**:
+  - Implemented `resetCameraView(mode)` supporting `'3d'` perspective and `'top'` bird's-eye presets with automated FPV state teardown.
+  - Added `_updateFPVCamera()` helper positioning the viewport 8 units behind and 3 units above the aircraft, targeting 10 units forward along the yaw heading vector.
+- **Responsive HUD Styling (`index.css`)**:
+  - Added `.diag-hud-controls`, interactive state variants (`button.active`), and `.diag-indicator` status beacons with glassmorphism backdrop blur.
+  - Added responsive media query overrides for compact displays (screens ≤1080px).
 
 ## [1.114.3] - 2026-09-20
 

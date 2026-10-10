@@ -257,7 +257,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
 
     // Determine if repositioning (gimbal pitch or heading yaw) is required
     const reposInfo = checkNeedsReposition(idx, sanitizedWps);
-    const isRoadFollowing = gridType === 'road-following';
+    const isRoadFollowing = gridType === 'road-following' || (wpLayer && wpLayer.pattern === 'road-following') || wp.layerPattern === 'road-following';
 
     // Three-Tier Hover Time Resolution:
     // Tier 3: wp.hoverTime (if not null/undefined)
@@ -330,7 +330,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
             ? wpLayer.altitude
             : (wp.alt !== undefined && !wpLayer && (wp.alt !== 50 || altitude === 50) ? wp.alt : altitude)));
 
-      if (wp.isRoadDroneWaypoint || isRoadFollowing) {
+      if (wp.isRoadDroneWaypoint || isRoadFollowing || wp.layerPattern === 'road-following' || wpLayer?.pattern === 'road-following') {
         const offset = (wpLayer && wpLayer.roadOffset !== undefined) ? wpLayer.roadOffset : 15;
         effectivePitch = (Math.abs(offset) < 0.01) ? -90 : -Math.round(Math.atan2(effectiveAltForPitch, Math.max(Math.abs(offset), 1)) * (180.0 / Math.PI));
       } else {
