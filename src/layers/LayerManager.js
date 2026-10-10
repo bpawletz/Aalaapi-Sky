@@ -1969,6 +1969,8 @@ function generateRoadFlightWaypoints(rawRoad, offsetDist, altitude, defaultGimba
       turnMode: (roadNode.isModified && roadNode.turnMode !== undefined) ? roadNode.turnMode : (roadNode.turnMode || 'inherit'),
       cameraAction: (roadNode.isModified && roadNode.cameraAction !== undefined) ? roadNode.cameraAction : (roadNode.cameraAction || 'inherit'),
       zoom: (roadNode.isModified && roadNode.zoom !== undefined && roadNode.zoom !== null) ? roadNode.zoom : (roadNode.zoom || 1.0),
+      captureMode: (roadNode.isModified && roadNode.captureMode !== undefined) ? roadNode.captureMode : 'inherit',
+      layerCaptureMode: captureMode || 'inherit',
       idx: idx,
       isRoadDroneWaypoint: true,
       isModified: Boolean(roadNode.isModified),
