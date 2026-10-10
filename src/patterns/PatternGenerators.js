@@ -545,8 +545,15 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
   if (isNaN(interval) || interval < 2) interval = 2;
   if (interval > 10) interval = 10;
 
-  const startPitch = (layer && layer.hyperlapseStartPitch !== undefined && !isNaN(layer.hyperlapseStartPitch)) ? parseInt(layer.hyperlapseStartPitch, 10) : -15;
-  const endPitch = (layer && layer.hyperlapseEndPitch !== undefined && !isNaN(layer.hyperlapseEndPitch)) ? parseInt(layer.hyperlapseEndPitch, 10) : -15;
+  const layerPitch = (layer && layer.gimbalPitch !== undefined && layer.gimbalPitch !== 'auto' && !isNaN(layer.gimbalPitch))
+    ? parseInt(layer.gimbalPitch, 10)
+    : -60;
+
+  const rawStart = (layer && layer.hyperlapseStartPitch !== undefined && !isNaN(layer.hyperlapseStartPitch)) ? parseInt(layer.hyperlapseStartPitch, 10) : null;
+  const rawEnd = (layer && layer.hyperlapseEndPitch !== undefined && !isNaN(layer.hyperlapseEndPitch)) ? parseInt(layer.hyperlapseEndPitch, 10) : null;
+  const hasCustomSweep = (rawStart !== null && rawEnd !== null && rawStart !== rawEnd);
+  const startPitch = hasCustomSweep ? rawStart : (rawStart !== null && rawStart !== -15 ? rawStart : layerPitch);
+  const endPitch = hasCustomSweep ? rawEnd : (rawEnd !== null && rawEnd !== -15 ? rawEnd : layerPitch);
 
   const headingMode = (layer && layer.hyperlapseHeadingMode) ? layer.hyperlapseHeadingMode : 'path';
   const startHeading = (layer && layer.hyperlapseStartHeading !== undefined && !isNaN(layer.hyperlapseStartHeading)) ? parseFloat(layer.hyperlapseStartHeading) % 360 : 0;
@@ -605,26 +612,33 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
     if (targetPoi) {
       heading = getBearingBetween(wp, targetPoi);
       pitch = (typeof calculate3DPoiPitch === 'function') ? calculate3DPoiPitch(wp, targetPoi, effectiveAlt) : -45;
-    } else {
+    } else if (wp.isModified && wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') {
+      pitch = wp.pitch;
+    } else if (hasCustomSweep) {
       pitch = Math.round(startPitch + (endPitch - startPitch) * t);
-      if (headingMode === 'keyframes') {
-        heading = lerpAngleShortest(startHeading, endHeading, t);
-      } else {
-        // Follow flight path tangent
-        let inBrg = null;
-        let outBrg = null;
-        if (idx > 0) inBrg = getBearingBetween(rawWps[idx - 1], wp);
-        if (idx < rawWps.length - 1) outBrg = getBearingBetween(wp, rawWps[idx + 1]);
+    } else {
+      pitch = (layer && layer.gimbalPitch !== undefined && layer.gimbalPitch !== 'auto' && !isNaN(layer.gimbalPitch))
+        ? parseInt(layer.gimbalPitch, 10)
+        : Math.round(startPitch + (endPitch - startPitch) * t);
+    }
 
-        if (inBrg !== null && outBrg !== null) {
-          heading = lerpAngleShortest(inBrg, outBrg, 0.5);
-        } else if (outBrg !== null) {
-          heading = outBrg;
-        } else if (inBrg !== null) {
-          heading = inBrg;
-        } else {
-          heading = 0;
-        }
+    if (headingMode === 'keyframes') {
+      heading = lerpAngleShortest(startHeading, endHeading, t);
+    } else {
+      // Follow flight path tangent
+      let inBrg = null;
+      let outBrg = null;
+      if (idx > 0) inBrg = getBearingBetween(rawWps[idx - 1], wp);
+      if (idx < rawWps.length - 1) outBrg = getBearingBetween(wp, rawWps[idx + 1]);
+
+      if (inBrg !== null && outBrg !== null) {
+        heading = lerpAngleShortest(inBrg, outBrg, 0.5);
+      } else if (outBrg !== null) {
+        heading = outBrg;
+      } else if (inBrg !== null) {
+        heading = inBrg;
+      } else {
+        heading = 0;
       }
     }
 
@@ -633,6 +647,7 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
       alt: effectiveAlt,
       isModified: Boolean(wp.isModified),
       layerAltitude: (layer && layer.altitude !== undefined && layer.altitude !== null) ? layer.altitude : altitude,
+      layerGimbalPitch: (layer && layer.gimbalPitch !== undefined && layer.gimbalPitch !== null) ? layer.gimbalPitch : 'inherit',
       layerId: wp.layerId || (layer ? layer.id : null),
       pitch: pitch,
       heading: Math.round(heading * 10) / 10,

@@ -1330,6 +1330,16 @@ function initUIEventListeners() {
           gimbalSlider.value = pitch;
           if (activeLayer) {
             activeLayer.gimbalPitch = pitch;
+            if (activeLayer.pattern === 'hyperlapse') {
+              if (activeLayer.hyperlapseStartPitch === undefined || activeLayer.hyperlapseStartPitch === activeLayer.hyperlapseEndPitch || activeLayer.hyperlapseStartPitch === -15) {
+                activeLayer.hyperlapseStartPitch = pitch;
+                activeLayer.hyperlapseEndPitch = pitch;
+                const hlStart = document.getElementById('hyperlapse-start-pitch');
+                const hlEnd = document.getElementById('hyperlapse-end-pitch');
+                if (hlStart) hlStart.value = pitch;
+                if (hlEnd) hlEnd.value = pitch;
+              }
+            }
           }
           syncDisplayValues();
           updateGrid();
