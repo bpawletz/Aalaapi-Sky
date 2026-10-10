@@ -825,6 +825,9 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
 
   // 4. Default / Flight 3 / Active Mission simulation
   const isPureSim = (flightId === 'active-mission' || options.isSimulation);
+  const isHyperlapse = Boolean(options.isHyperlapse || options.flightPattern === 'hyperlapse' ||
+    (waypoints && waypoints.some(w => w && (w.isHyperlapse || w.gridType === 'hyperlapse' || w.layerPattern === 'hyperlapse'))));
+  const hlInterval = options.interval || (waypoints.find(w => w && w.hyperlapseInterval)?.hyperlapseInterval) || 3;
   const points = [];
   let currentTime = 0;
   let totalDistance = 0;
@@ -852,6 +855,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
     });
   }
   currentTime = takeoffDuration;
+  const transitStart = takeoffDuration;
   battery = points[points.length - 1].battery;
 
   for (let i = 0; i < waypoints.length; i++) {
@@ -889,7 +893,8 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
       battery -= 0.08;
 
       const isLastStepOfWaypoint = (step === segmentTime);
-      const hoverTime = (wp.hoverTime !== undefined && wp.hoverTime !== null && !isNaN(wp.hoverTime)) ? wp.hoverTime : 2;
+      const hoverTime = (wp.hoverTime !== undefined && wp.hoverTime !== null && !isNaN(wp.hoverTime)) ? wp.hoverTime : (isHyperlapse ? 0 : 2);
+      const isHlPhoto = isHyperlapse && ((currentTime - transitStart) % hlInterval === 0);
       points.push({
         time: currentTime,
         timeStr: formatTime(currentTime),
@@ -901,12 +906,12 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
         yaw: Math.round(curYaw * 10) / 10,
         battery: Math.max(10, Math.round(battery * 10) / 10),
         satellites: 24,
-        isPhoto: isLastStepOfWaypoint && hoverTime === 0,
+        isPhoto: isHyperlapse ? isHlPhoto : (isLastStepOfWaypoint && hoverTime === 0 && !wp.skipPhoto),
         waypointIndex: isLastStepOfWaypoint ? i : null
       });
     }
 
-    const hoverTime = (wp.hoverTime !== undefined && wp.hoverTime !== null && !isNaN(wp.hoverTime)) ? wp.hoverTime : 2;
+    const hoverTime = (wp.hoverTime !== undefined && wp.hoverTime !== null && !isNaN(wp.hoverTime)) ? wp.hoverTime : (isHyperlapse ? 0 : 2);
     for (let h = 1; h <= hoverTime; h++) {
       currentTime++;
       battery -= 0.05;
@@ -923,7 +928,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
         yaw: Math.round(targetYaw * 10) / 10,
         battery: Math.max(10, Math.round(battery * 10) / 10),
         satellites: 24,
-        isPhoto: (h === 1),
+        isPhoto: (isHyperlapse || wp.skipPhoto) ? false : (h === 1),
         waypointIndex: i
       });
     }
@@ -981,7 +986,12 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
   }
 
   const durationSec = currentTime;
-  const photoCount = waypoints.length;
+  const simulatedPhotos = points.filter(p => p.isPhoto).length;
+  const photoCount = (options.photoCount !== undefined && options.photoCount !== null)
+    ? options.photoCount
+    : (options.photoLocations && options.photoLocations.length > 0
+      ? options.photoLocations.length
+      : (isHyperlapse ? Math.max(simulatedPhotos, 1) : waypoints.filter(w => !w.skipPhoto).length));
   const wpAlts = waypoints.map(wp => (wp.altitude !== undefined ? wp.altitude : (wp.alt !== undefined ? wp.alt : defaultAlt)));
   const maxAltitude = wpAlts.length > 0 ? wpAlts.reduce((max, a) => Math.max(max, a), wpAlts[0]) : defaultAlt;
 

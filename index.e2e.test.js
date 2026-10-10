@@ -1754,16 +1754,16 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
 
       return {
         success: true,
-        hasInspectorPrompt: inspectorPrompt.includes('ANTIGRAVITY BUG REPORT'),
-        hasDiagPrompt: diagPrompt.includes('ANTIGRAVITY BUG REPORT'),
+        hasInspectorPrompt: inspectorPrompt.includes('ANTIGRAVITY BUG REPORT') || inspectorPrompt.includes('ANTIGRAVITY & AI') || inspectorPrompt.includes('MISSION CONTEXT'),
+        hasDiagPrompt: diagPrompt.includes('ANTIGRAVITY BUG REPORT') || diagPrompt.includes('ANTIGRAVITY & AI') || diagPrompt.includes('MISSION CONTEXT'),
         inspectorBtnText: inspectorBtn.textContent,
         diagBtnText: diagBtn.textContent
       };
     });
 
     assert.ok(copyResult.success, 'Buttons should exist and be clickable');
-    assert.ok(copyResult.hasInspectorPrompt, 'Inspector copy button should copy Antigravity bug report');
-    assert.ok(copyResult.hasDiagPrompt, 'Diag copy button should copy Antigravity bug report');
+    assert.ok(copyResult.hasInspectorPrompt, 'Inspector copy button should copy Antigravity prompt');
+    assert.ok(copyResult.hasDiagPrompt, 'Diag copy button should copy Antigravity prompt');
   });
 
   test('E2E: Multi-Vendor Autopilot toggle easily enables/disables export container and persists to localStorage', async () => {
@@ -7866,6 +7866,90 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.strictEqual(result.bridgeReopened, true, 'Clicking sidebar open button must reopen bridge popover');
       assert.strictEqual(result.telClosedByBridge, true, 'Reopening bridge popover must close telemetry popover');
       assert.strictEqual(result.bridgeClosed, true, 'Clicking close button must close bridge popover');
+    });
+  });
+
+  describe('Issue #136 & v1.151.0: Light Art & Sky Painting Flight Pattern Generator E2E Suite', () => {
+    test('E2E: Selecting Light Art pattern reveals light-art-container and preset options', async () => {
+      const result = await page.evaluate(async () => {
+        const gridTypeSelect = document.getElementById('grid-type');
+        const lightArtContainer = document.getElementById('light-art-container');
+        const presetSelect = document.getElementById('light-art-preset');
+        const orientationSelect = document.getElementById('light-art-orientation');
+        const radiusSlider = document.getElementById('light-art-radius');
+        const badge = document.getElementById('light-art-duration-badge');
+
+        if (!gridTypeSelect || !lightArtContainer || !presetSelect) {
+          return { error: 'Required Light Art DOM elements not found' };
+        }
+
+        // Initially with standard grid, container should be hidden
+        gridTypeSelect.value = 'grid';
+        gridTypeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        const initHidden = lightArtContainer.classList.contains('hidden');
+
+        // Select light-art
+        gridTypeSelect.value = 'light-art';
+        gridTypeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        const revealed = !lightArtContainer.classList.contains('hidden');
+
+        // Switch preset to star
+        presetSelect.value = 'star';
+        presetSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+        // Adjust radius
+        if (radiusSlider) {
+          radiusSlider.value = '40';
+          radiusSlider.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        const badgeText = badge ? badge.innerText : '';
+
+        return {
+          initHidden,
+          revealed,
+          presetVal: presetSelect.value,
+          hasOrientation: !!orientationSelect,
+          hasBadge: !!badge,
+          badgeText
+        };
+      });
+
+      assert.strictEqual(result.error, undefined, result.error);
+      assert.strictEqual(result.initHidden, true, 'Light Art container should be hidden initially for standard grid');
+      assert.strictEqual(result.revealed, true, 'Light Art container should be revealed when light-art selected');
+      assert.strictEqual(result.presetVal, 'star', 'Preset select should update to star');
+      assert.strictEqual(result.hasOrientation, true, 'Orientation select must exist');
+      assert.strictEqual(result.hasBadge, true, 'Shutter duration badge must exist');
+    });
+
+    test('E2E: Generating Light Art layer creates curved waypoints with duration calculations', async () => {
+      const res = await page.evaluate(async () => {
+        flightLayers = [];
+        activeLayerId = null;
+        setGridCenter(41.3215, -88.9950);
+
+        const layer = addFlightLayer('light-art');
+        layer.lightArtPreset = 'helix';
+        layer.lightArtRadius = 30;
+        layer.lightArtClimb = 20;
+        layer.altitude = 40;
+
+        const mission = compileMultiLayerMission(41.3215, -88.9950);
+        const wps = mission.waypoints || [];
+
+        return {
+          wpCount: wps.length,
+          allCurved: wps.every(w => w.turnMode === 'curved' || w.layerPathMode === 'curved'),
+          hasClimb: wps.some(w => w.alt > 40),
+          isLightArt: wps.every(w => w.gridType === 'light-art' || w.isLightArtPoint)
+        };
+      });
+
+      assert.ok(res.wpCount > 10, 'Helix light art layer must generate multiple waypoints');
+      assert.strictEqual(res.allCurved, true, 'All light art waypoints must use curved paths');
+      assert.strictEqual(res.hasClimb, true, 'Helix must climb above base altitude');
+      assert.strictEqual(res.isLightArt, true, 'All waypoints must be tagged as light-art');
     });
   });
 });

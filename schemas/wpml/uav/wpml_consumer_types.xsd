@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://www.uav.com/wpmz/1.0.2"
+           xmlns="http://www.uav.com/wpmz/1.0.2"
+           elementFormDefault="qualified">
+
+  <!-- Document Metadata -->
+  <xs:element name="author" type="xs:string"/>
+  <xs:element name="createTime" type="xs:unsignedLong"/>
+  <xs:element name="updateTime" type="xs:unsignedLong"/>
+
+  <!-- Restricted Consumer Drone Enum (68: Mini 4 Pro, 89: Air 3) -->
+  <xs:simpleType name="ConsumerDroneEnumType">
+    <xs:restriction base="xs:integer">
+      <xs:enumeration value="68"/>
+      <xs:enumeration value="89"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Mission Configuration -->
+  <xs:element name="missionConfig">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="flyToWaylineMode" type="xs:string"/>
+        <xs:element name="finishAction" type="xs:string"/>
+        <xs:element name="exitOnRCLost" type="xs:string"/>
+        <xs:element name="executeRCLostAction" type="xs:string"/>
+        <xs:element name="takeOffSecurityHeight" type="xs:decimal"/>
+        <xs:element name="globalTransitionalSpeed" type="xs:decimal"/>
+        <xs:element name="droneInfo">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="droneEnumValue" type="ConsumerDroneEnumType"/>
+              <xs:element name="droneSubEnumValue" type="xs:integer" minOccurs="0"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- Folder elements -->
+  <xs:element name="templateId" type="xs:integer"/>
+  <xs:element name="executeHeightMode" type="xs:string"/>
+  <xs:element name="waylineId" type="xs:integer"/>
+  <xs:element name="distance" type="xs:decimal"/>
+  <xs:element name="duration" type="xs:decimal"/>
+  <xs:element name="autoFlightSpeed" type="xs:decimal"/>
+
+  <!-- Waypoint elements -->
+  <xs:element name="index" type="xs:integer"/>
+  <xs:element name="executeHeight" type="xs:decimal"/>
+  <xs:element name="waypointSpeed" type="xs:decimal"/>
+
+  <xs:element name="waypointHeadingParam">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="waypointHeadingMode" type="xs:string"/>
+        <xs:element name="waypointHeadingAngle" type="xs:decimal"/>
+        <xs:element name="waypointPoiPoint" type="xs:string" minOccurs="0"/>
+        <xs:element name="waypointHeadingAngleEnable" type="xs:integer"/>
+        <xs:element name="waypointHeadingPathMode" type="xs:string" minOccurs="0"/>
+        <xs:element name="waypointHeadingPoiIndex" type="xs:integer" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:simpleType name="ConsumerTurnModeType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="toPointAndStopWithContinuityCurvature"/>
+      <xs:enumeration value="toPointAndPassWithContinuityCurvature"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:element name="waypointTurnParam">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="waypointTurnMode" type="ConsumerTurnModeType"/>
+        <xs:element name="waypointTurnDampingDist" type="xs:decimal" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="useStraightLine">
+    <xs:simpleType>
+      <xs:restriction base="xs:integer">
+        <xs:enumeration value="0"/>
+      </xs:restriction>
+    </xs:simpleType>
+  </xs:element>
+
+  <!-- Action Elements -->
+  <xs:element name="actionGroupId" type="xs:integer"/>
+  <xs:element name="actionGroupStartIndex" type="xs:integer"/>
+  <xs:element name="actionGroupEndIndex" type="xs:integer"/>
+  <xs:element name="actionGroupMode" type="xs:string"/>
+
+  <xs:element name="actionTrigger">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="actionTriggerType" type="xs:string"/>
+        <xs:element name="actionTriggerParam" type="xs:string" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="actionId" type="xs:integer"/>
+
+  <xs:simpleType name="ConsumerActuatorFuncType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="gimbalRotate"/>
+      <xs:enumeration value="hover"/>
+      <xs:enumeration value="zoom"/>
+      <xs:enumeration value="takePhoto"/>
+      <xs:enumeration value="startRecord"/>
+      <xs:enumeration value="stopRecord"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:element name="actionActuatorFunc" type="ConsumerActuatorFuncType"/>
+
+  <xs:element name="payloadPositionIndex" type="xs:integer"/>
+
+  <!-- Consumer parameters: forbids useGlobalPayloadLensIndex and aircraftHeading -->
+  <xs:element name="actionActuatorFuncParam">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="payloadPositionIndex"/>
+        <xs:element name="gimbalHeadingYawBase" type="xs:string"/>
+        <xs:element name="gimbalRotateMode" type="xs:string"/>
+        <xs:element name="gimbalPitchRotateEnable" type="xs:integer"/>
+        <xs:element name="gimbalPitchRotateAngle" type="xs:decimal"/>
+        <xs:element name="gimbalRollRotateEnable" type="xs:integer"/>
+        <xs:element name="gimbalRollRotateAngle" type="xs:decimal"/>
+        <xs:element name="gimbalYawRotateEnable" type="xs:integer"/>
+        <xs:element name="gimbalYawRotateAngle" type="xs:decimal"/>
+        <xs:element name="gimbalRotateTimeEnable" type="xs:integer"/>
+        <xs:element name="gimbalRotateTime" type="xs:decimal"/>
+        <xs:element name="hoverTime" type="xs:decimal"/>
+        <xs:element name="focalLength" type="xs:decimal"/>
+        <xs:element name="isUseFocalFactor" type="xs:integer"/>
+        <xs:element name="focalFactor" type="xs:decimal"/>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="action">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="actionId"/>
+        <xs:element ref="actionActuatorFunc"/>
+        <xs:element ref="actionActuatorFuncParam" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="actionGroup">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="actionGroupId"/>
+        <xs:element ref="actionGroupStartIndex"/>
+        <xs:element ref="actionGroupEndIndex"/>
+        <xs:element ref="actionGroupMode"/>
+        <xs:element ref="actionTrigger"/>
+        <xs:element ref="action" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="waypointGimbalHeadingParam">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="waypointGimbalPitchAngle" type="xs:decimal"/>
+        <xs:element name="waypointGimbalYawAngle" type="xs:decimal" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>
