@@ -952,6 +952,80 @@ function initUIEventListeners() {
   };
   setupHyperlapseListeners();
 
+  // Light Art / Sky Painting Control Listeners (v1.151.0 - Issue #136)
+  const setupLightArtListeners = () => {
+    const laPreset = document.getElementById('light-art-preset');
+    const laOrientation = document.getElementById('light-art-orientation');
+    const laRadius = document.getElementById('light-art-radius');
+    const laRadiusVal = document.getElementById('light-art-radius-val');
+    const laTurns = document.getElementById('light-art-turns');
+    const laTurnsVal = document.getElementById('light-art-turns-val');
+    const laPoints = document.getElementById('light-art-points');
+    const laStarRatio = document.getElementById('light-art-star-ratio');
+    const laStarRatioVal = document.getElementById('light-art-star-ratio-val');
+    const laClimb = document.getElementById('light-art-climb');
+    const laClimbVal = document.getElementById('light-art-climb-val');
+    const laCameraAz = document.getElementById('light-art-camera-azimuth');
+    const laCameraAzVal = document.getElementById('light-art-camera-azimuth-val');
+
+    const updateLightArt = () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (!activeLayer) return;
+
+      if (laPreset) activeLayer.lightArtPreset = laPreset.value;
+      if (laOrientation) activeLayer.lightArtOrientation = laOrientation.value;
+
+      if (laRadius) {
+        const val = parseFloat(laRadius.value) || 25;
+        activeLayer.lightArtRadius = val;
+        if (laRadiusVal) laRadiusVal.textContent = `${val}m`;
+      }
+      if (laTurns) {
+        const val = parseFloat(laTurns.value) || 3;
+        activeLayer.lightArtTurns = val;
+        if (laTurnsVal) laTurnsVal.textContent = `${val}`;
+      }
+      if (laPoints) {
+        activeLayer.lightArtPointsCount = parseInt(laPoints.value, 10) || 5;
+      }
+      if (laStarRatio) {
+        const val = parseFloat(laStarRatio.value) || 0.45;
+        activeLayer.lightArtStarRatio = val;
+        if (laStarRatioVal) laStarRatioVal.textContent = `${val}`;
+      }
+      if (laClimb) {
+        const val = parseFloat(laClimb.value) || 15;
+        activeLayer.lightArtClimb = val;
+        if (laClimbVal) laClimbVal.textContent = `${val}m`;
+      }
+      if (laCameraAz) {
+        const val = parseFloat(laCameraAz.value) || 0;
+        activeLayer.lightArtCameraAzimuth = val;
+        if (laCameraAzVal) {
+          const dirs = ['North', 'NE', 'East', 'SE', 'South', 'SW', 'West', 'NW'];
+          const dirIdx = Math.round(val / 45) % 8;
+          laCameraAzVal.textContent = `${val}° (${dirs[dirIdx]})`;
+        }
+      }
+
+      if (typeof updateLightArtUiFields === 'function') {
+        updateLightArtUiFields(activeLayer);
+      }
+
+      updateGrid();
+      updateMapLegend();
+      saveAllSettingsToLocalStorage();
+    };
+
+    [laPreset, laOrientation, laRadius, laTurns, laPoints, laStarRatio, laClimb, laCameraAz].forEach(el => {
+      if (el) {
+        el.addEventListener('input', updateLightArt);
+        el.addEventListener('change', updateLightArt);
+      }
+    });
+  };
+  setupLightArtListeners();
+
   // Handle Camera Model preset change
   const cameraModelEl = document.getElementById('camera-model');
   const droneModelEl = document.getElementById('drone-model');

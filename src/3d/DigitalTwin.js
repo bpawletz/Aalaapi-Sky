@@ -1615,10 +1615,10 @@ const FlightDiagnostics = {
           showToast(includeCoords ? '📋 Copied AI Export (Real GPS Coordinates)' : '📋 Copied AI Export (Masked to Default Reference)', 'info');
         }
       }).catch(() => {
-        if (typeof prompt === 'function') prompt('Copy Antigravity Fix Prompt:', promptText);
+        if (typeof prompt === 'function') prompt('Copy AI Export Prompt:', promptText);
       });
     } else {
-      if (typeof prompt === 'function') prompt('Copy Antigravity Fix Prompt:', promptText);
+      if (typeof prompt === 'function') prompt('Copy AI Export Prompt:', promptText);
     }
     return promptText;
   },
@@ -4406,8 +4406,16 @@ const KMZInspector = {
       totalWaypointsCount = activeWps.length;
     }
 
-    let prompt = `### 🤖 ANTIGRAVITY BUG REPORT: Bad KMZ Mission Execution Issue\n\n`;
-    prompt += `**Mission Context:**\n`;
+    const hasErrors = !!(
+      (r && (r.valid === false || r.is_valid === 0)) ||
+      (r && Array.isArray(r.errors) && r.errors.length > 0) ||
+      (options.mission && (options.mission.execution_status === 'failed' || options.mission.execution_status === 'suspended' || options.mission.is_valid === 0))
+    );
+
+    let prompt = hasErrors
+      ? `### 🤖 ANTIGRAVITY BUG REPORT & DIAGNOSTICS: Mission Execution Issue\n\n`
+      : `### 🤖 ANTIGRAVITY & AI MISSION CONTEXT: App Settings & Flight Configuration\n\n`;
+    prompt += `**Mission Context & App Settings:**\n`;
     prompt += `- **Target Drone Model:** ${drone}\n`;
     prompt += `- **Pattern:** ${pattern} (Altitude: ${alt}m, Speed: ${speed}m/s, Pitch: ${pitch}°)\n`;
     prompt += `- **Total Flight Layers:** ${allLayers.length > 0 ? allLayers.length : 1}\n`;
@@ -4554,14 +4562,22 @@ const KMZInspector = {
       }
       const placemarks = sanitizedXml.split('<Placemark>');
       const xmlExtract = placemarks.length > 1 ? '<Placemark>' + placemarks[1].substring(0, 450) + '...\n</Placemark>' : sanitizedXml.substring(0, 600);
-      prompt += `\n**Offending / Generated WPML Snippet:**\n\`\`\`xml\n${xmlExtract}\n\`\`\`\n`;
+      prompt += hasErrors
+        ? `\n**Offending / Generated WPML Snippet:**\n\`\`\`xml\n${xmlExtract}\n\`\`\`\n`
+        : `\n**Generated WPML Snippet:**\n\`\`\`xml\n${xmlExtract}\n\`\`\`\n`;
     }
 
-    prompt += `\n**Antigravity Instructions:**\n`;
-    prompt += `1. Inspect the offending XML and rule failures above.\n`;
-    prompt += `2. Formulate a regression unit test in \`index.test.js\` reproducing this exact configuration.\n`;
-    prompt += `3. Fix the generation/sanitization logic in \`index.js\` (\`buildWaylinesWpml\` / \`validateAndFixWpml\`).\n`;
-    prompt += `4. Run \`python scratch/build.py\` and verify all tests pass with \`npm test\`.\n`;
+    if (hasErrors) {
+      prompt += `\n**Antigravity Instructions:**\n`;
+      prompt += `1. Inspect the offending XML and rule failures above.\n`;
+      prompt += `2. Formulate a regression unit test in \`index.test.js\` reproducing this exact configuration.\n`;
+      prompt += `3. Fix the generation/sanitization logic in \`index.js\` (\`buildWaylinesWpml\` / \`validateAndFixWpml\`).\n`;
+      prompt += `4. Run \`python scratch/build.py\` and verify all tests pass with \`npm test\`.\n`;
+    } else {
+      prompt += `\n**AI Assistant Context & Instructions:**\n`;
+      prompt += `1. The above represents the current active mission configuration, app settings, and layer dynamics configured in Aalaapi Sky.\n`;
+      prompt += `2. Use these parameters to understand what was set on the app, provide mission advice, optimize flight routes, or answer pilot questions.\n`;
+    }
 
     return prompt;
   },
@@ -4581,10 +4597,10 @@ const KMZInspector = {
           }, 2500);
         }
       }).catch(() => {
-        if (typeof prompt === 'function') prompt('Copy Antigravity Fix Prompt:', promptText);
+        if (typeof prompt === 'function') prompt('Copy AI Diagnostic Prompt:', promptText);
       });
     } else {
-      if (typeof prompt === 'function') prompt('Copy Antigravity Fix Prompt:', promptText);
+      if (typeof prompt === 'function') prompt('Copy AI Diagnostic Prompt:', promptText);
     }
   },
 

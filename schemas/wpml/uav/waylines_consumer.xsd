@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://www.opengis.net/kml/2.2"
+           xmlns="http://www.opengis.net/kml/2.2"
+           xmlns:wpml="http://www.uav.com/wpmz/1.0.2"
+           elementFormDefault="qualified">
+
+  <xs:import namespace="http://www.uav.com/wpmz/1.0.2" schemaLocation="wpml_consumer_types.xsd"/>
+
+  <xs:complexType name="ConsumerPlacemarkType">
+    <xs:sequence>
+      <xs:element name="Point">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="coordinates" type="xs:string"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element ref="wpml:index"/>
+      <xs:element ref="wpml:executeHeight"/>
+      <xs:element ref="wpml:waypointSpeed"/>
+      <xs:element ref="wpml:waypointHeadingParam"/>
+      <xs:element ref="wpml:waypointTurnParam"/>
+      <xs:element ref="wpml:useStraightLine"/>
+      <xs:element ref="wpml:actionGroup" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element ref="wpml:waypointGimbalHeadingParam" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="kml">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="Document">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element ref="wpml:missionConfig"/>
+              <xs:element name="Folder">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element ref="wpml:templateId"/>
+                    <xs:element ref="wpml:executeHeightMode"/>
+                    <xs:element ref="wpml:waylineId"/>
+                    <xs:element ref="wpml:distance"/>
+                    <xs:element ref="wpml:duration"/>
+                    <xs:element ref="wpml:autoFlightSpeed"/>
+                    <xs:element name="Placemark" type="ConsumerPlacemarkType" maxOccurs="unbounded"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+
+    <!-- Global Uniqueness Constraint on actionGroupId -->
+    <xs:unique name="uniqueConsumerActionGroupId">
+      <xs:selector xpath=".//wpml:actionGroup"/>
+      <xs:field xpath="wpml:actionGroupId"/>
+    </xs:unique>
+  </xs:element>
+
+</xs:schema>

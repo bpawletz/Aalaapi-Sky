@@ -1,10 +1,10 @@
 function buildTemplateKml(finishAction, speed) {
   const timestamp = Date.now();
-  const droneModelEl = document.getElementById('drone-model');
+  const droneModelEl = typeof document !== 'undefined' ? document.getElementById('drone-model') : null;
   const parsedDroneVal = droneModelEl ? parseInt(droneModelEl.value, 10) : NaN;
   const droneEnumValue = !isNaN(parsedDroneVal) ? parsedDroneVal : 68; // Default to DJI Mini 4 Pro (68)
 
-  const signalLostEl = document.getElementById('signal-lost-action');
+  const signalLostEl = typeof document !== 'undefined' ? document.getElementById('signal-lost-action') : null;
   const signalLostValue = signalLostEl ? signalLostEl.value : 'goBack';
   let exitOnRCLost = 'executeLostAction';
   let executeRCLostAction = signalLostValue;
@@ -13,51 +13,26 @@ function buildTemplateKml(finishAction, speed) {
     executeRCLostAction = 'goBack';
   }
 
-  const rthAltEl = document.getElementById('rth-altitude');
+  const rthAltEl = typeof document !== 'undefined' ? document.getElementById('rth-altitude') : null;
   const rthAltitude = rthAltEl ? (parseFloat(rthAltEl.value) || 50) : 50;
-  const altEl = document.getElementById('altitude');
+  const altEl = typeof document !== 'undefined' ? document.getElementById('altitude') : null;
   const defaultAlt = altEl ? (parseFloat(altEl.value) || 50) : 50;
   const safeTakeoffHeight = Math.max(1.5, Math.min(rthAltitude, defaultAlt));
 
-  const isEnterprise = (droneEnumValue !== 68 && droneEnumValue !== 89);
-  let folderXml = '';
-  if (isEnterprise) {
-    folderXml = `
-    <Folder>
-      <wpml:templateType>waypoint</wpml:templateType>
-      <wpml:templateId>0</wpml:templateId>
-      <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
-      <wpml:waylineId>0</wpml:waylineId>
-      <wpml:distance>0</wpml:distance>
-      <wpml:duration>0</wpml:duration>
-      <wpml:autoFlightSpeed>${speed}</wpml:autoFlightSpeed>
-      <wpml:payloadParam>
-        <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-        <wpml:payloadPitchControlMode>usePointSetting</wpml:payloadPitchControlMode>
-      </wpml:payloadParam>
-    </Folder>`;
-  }
+  const options = {
+    timestamp,
+    finishAction,
+    exitOnRCLost,
+    executeRCLostAction,
+    safeTakeoffHeight,
+    speed,
+    droneEnumValue
+  };
 
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">
-  <Document>
-    <wpml:author>Aalaapi Sky Generator</wpml:author>
-    <wpml:createTime>${timestamp}</wpml:createTime>
-    <wpml:updateTime>${timestamp}</wpml:updateTime>
-    <wpml:missionConfig>
-      <wpml:flyToWaylineMode>safely</wpml:flyToWaylineMode>
-      <wpml:finishAction>${finishAction}</wpml:finishAction>
-      <wpml:exitOnRCLost>${exitOnRCLost}</wpml:exitOnRCLost>
-      <wpml:executeRCLostAction>${executeRCLostAction}</wpml:executeRCLostAction>
-      <wpml:takeOffSecurityHeight>${safeTakeoffHeight}</wpml:takeOffSecurityHeight>
-      <wpml:globalTransitionalSpeed>${speed}</wpml:globalTransitionalSpeed>
-      <wpml:droneInfo>
-        <wpml:droneEnumValue>${droneEnumValue}</wpml:droneEnumValue>
-        <wpml:droneSubEnumValue>0</wpml:droneSubEnumValue>
-      </wpml:droneInfo>
-    </wpml:missionConfig>${folderXml}
-  </Document>
-</kml>`;
+  const isConsumer = isConsumerDrone(droneEnumValue);
+  return isConsumer
+    ? ConsumerMissionTemplate.buildTemplateKml(options)
+    : EnterpriseMissionTemplate.buildTemplateKml(options);
 }
 
 // Generate the WPML waylines.wpml content
@@ -71,10 +46,34 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
   const globalHoverEl = document.getElementById('global-hover-time');
   const globalHoverTime = globalHoverEl ? parseInt(globalHoverEl.value) : 0;
 
+  const altEl = typeof document !== 'undefined' ? document.getElementById('altitude') : null;
+  const speedEl = typeof document !== 'undefined' ? document.getElementById('speed') : null;
+  const headingModeEl = typeof document !== 'undefined' ? document.getElementById('heading-mode') : null;
+  const finishActionEl = typeof document !== 'undefined' ? document.getElementById('finish-action') : null;
+  const gimbalPitchEl = typeof document !== 'undefined' ? document.getElementById('gimbal-pitch') : null;
+  const captureModeEl = typeof document !== 'undefined' ? document.getElementById('capture-mode') : null;
+  const pathModeEl = typeof document !== 'undefined' ? document.getElementById('path-mode') : null;
+
+  altitude = (altitude !== undefined && altitude !== null && !isNaN(altitude)) ? altitude : (altEl ? parseFloat(altEl.value) || 50 : 50);
+  speed = (speed !== undefined && speed !== null && !isNaN(speed)) ? speed : (speedEl ? parseFloat(speedEl.value) || 4.0 : 4.0);
+  headingMode = headingMode || (headingModeEl ? headingModeEl.value : 'smoothTransition');
+  finishAction = finishAction || (finishActionEl ? finishActionEl.value : 'goHome');
+  gimbalPitch = (gimbalPitch !== undefined && gimbalPitch !== null && !isNaN(gimbalPitch)) ? gimbalPitch : (gimbalPitchEl ? parseFloat(gimbalPitchEl.value) || -60.0 : -60.0);
+  captureMode = captureMode || (captureModeEl ? captureModeEl.value : 'stopAndShoot');
+  pathMode = pathMode || (pathModeEl ? pathModeEl.value : 'curved');
+
   const droneModelEl = typeof document !== 'undefined' ? document.getElementById('drone-model') : null;
-  const parsedDroneVal = droneModelEl ? parseInt(droneModelEl.value, 10) : NaN;
-  const droneEnumValue = !isNaN(parsedDroneVal) ? parsedDroneVal : 68;
-  const isConsumer = (parsedDroneVal === 68 || parsedDroneVal === 89);
+  const parsedDroneVal = (droneModelEl && droneModelEl.value) ? parseInt(droneModelEl.value, 10) : NaN;
+  const targetDrone = (typeof global !== 'undefined' && global.selectedDroneTarget)
+    ? global.selectedDroneTarget
+    : ((typeof selectedDroneTarget !== 'undefined' && selectedDroneTarget) ? selectedDroneTarget : null);
+  const droneEnumValue = targetDrone
+    ? normalizeDroneEnum(targetDrone)
+    : (!isNaN(parsedDroneVal) ? parsedDroneVal : 68);
+  const isConsumer = targetDrone
+    ? isConsumerDrone(targetDrone)
+    : (parsedDroneVal === 68 || parsedDroneVal === 89);
+  const activeTemplate = isConsumer ? ConsumerMissionTemplate : EnterpriseMissionTemplate;
 
   // Build XML Placemark tags (waypoints)
   let placemarksXml = '';
@@ -83,20 +82,11 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
   if (isConsumer) {
     // Consumer Drone Golden Rule: DJI Fly for Mini 4 Pro / Air 3 strictly requires ContinuityCurvature
     // and useStraightLine: 0. DiscontinuityCurvature and useStraightLine: 1 cause immediate "Waypoint Flight Suspended" aborts.
-    turnMode = captureMode === 'stopAndShoot' 
-      ? 'toPointAndStopWithContinuityCurvature' 
-      : 'toPointAndPassWithContinuityCurvature';
-    useStraightLine = 0;
-  } else if (pathMode === 'straight') {
-    turnMode = captureMode === 'stopAndShoot' 
-      ? 'toPointAndStopWithDiscontinuityCurvature' 
-      : 'toPointAndPassWithDiscontinuityCurvature';
-    useStraightLine = 1;
+    turnMode = ConsumerMissionTemplate.resolveTurnMode(pathMode, captureMode === 'stopAndShoot');
+    useStraightLine = ConsumerMissionTemplate.resolveUseStraightLine();
   } else {
-    turnMode = captureMode === 'stopAndShoot' 
-      ? 'toPointAndStopWithContinuityCurvature' 
-      : 'toPointAndPassWithContinuityCurvature';
-    useStraightLine = 0;
+    turnMode = EnterpriseMissionTemplate.resolveTurnMode(pathMode, captureMode === 'stopAndShoot', pathMode);
+    useStraightLine = EnterpriseMissionTemplate.resolveUseStraightLine(pathMode);
   }
 
   let actionId = 1;
@@ -618,16 +608,39 @@ ${waypointActions.join('\n')}
     const targetPoiId = ((wpMode === 'towardPOI' || wp.isModified) && wpTargetPoiId)
       ? wpTargetPoiId
       : (layerTargetPoiId || wpTargetPoiId);
+    const poisList = (typeof pois !== 'undefined' && Array.isArray(pois))
+      ? pois
+      : ((typeof global !== 'undefined' && Array.isArray(global.pois))
+        ? global.pois
+        : ((typeof window !== 'undefined' && Array.isArray(window.pois)) ? window.pois : []));
+
     // Resolve target POI from layer or wp if set
-    if (targetPoiId && typeof pois !== 'undefined' && pois && pois.length > 0) {
-      const poiFoundIdx = pois.findIndex(p => p.id === targetPoiId);
+    if (targetPoiId && poisList.length > 0) {
+      const poiFoundIdx = poisList.findIndex(p => p.id === targetPoiId);
       if (poiFoundIdx !== -1) {
         targetPoiIndex = poiFoundIdx;
-      } else if (wp.poiIndex !== undefined && wp.poiIndex !== null && pois[wp.poiIndex]) {
+      } else if (wp.poiIndex !== undefined && wp.poiIndex !== null && poisList[wp.poiIndex]) {
         targetPoiIndex = wp.poiIndex;
       }
-    } else if (wp.poiIndex !== undefined && wp.poiIndex !== null && pois && pois[wp.poiIndex]) {
+    } else if (wp.poiIndex !== undefined && wp.poiIndex !== null && poisList[wp.poiIndex]) {
       targetPoiIndex = wp.poiIndex;
+    }
+
+    // Populate actual POI point coordinates if a valid target POI or POI set exists
+    let resolvedTargetPoi = (poisList.length > 0) ? (poisList[targetPoiIndex] || poisList[0]) : null;
+    if (!resolvedTargetPoi && typeof getTargetPoiCoordinates === 'function') {
+      resolvedTargetPoi = getTargetPoiCoordinates(wp, wpLayer);
+    }
+    if (!resolvedTargetPoi && targetPoiIndex === 0 && typeof centerMarker !== 'undefined' && centerMarker) {
+      const latlng = centerMarker.getLatLng();
+      resolvedTargetPoi = { lat: latlng.lat, lon: latlng.lng, alt: 0 };
+    }
+    if (resolvedTargetPoi && resolvedTargetPoi.lat !== undefined && (resolvedTargetPoi.lon !== undefined || resolvedTargetPoi.lng !== undefined) && !isNaN(resolvedTargetPoi.lat)) {
+      const targetLon = resolvedTargetPoi.lon !== undefined ? resolvedTargetPoi.lon : resolvedTargetPoi.lng;
+      if (!isNaN(targetLon)) {
+        const poiAlt = (resolvedTargetPoi.alt !== undefined && !isNaN(resolvedTargetPoi.alt)) ? Number(resolvedTargetPoi.alt) : 0;
+        poiPoint = `${resolvedTargetPoi.lat.toFixed(6)},${targetLon.toFixed(6)},${poiAlt.toFixed(6)}`;
+      }
     }
 
     if (wpMode !== 'inherit') {
@@ -636,16 +649,9 @@ ${waypointActions.join('\n')}
         actualHeadingAngle = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
       } else {
         actualHeadingMode = wpMode;
-        if (wpMode === 'towardPOI') {
-          let targetPoi = pois[targetPoiIndex] || pois[0];
-          if (!targetPoi && targetPoiIndex === 0 && typeof centerMarker !== 'undefined' && centerMarker) {
-            const latlng = centerMarker.getLatLng();
-            targetPoi = { lat: latlng.lat, lon: latlng.lng };
-          }
-          if (targetPoi) {
-            const poiAlt = (targetPoi.alt !== undefined && !isNaN(targetPoi.alt)) ? Number(targetPoi.alt) : 0;
-            poiPoint = `${targetPoi.lat.toFixed(6)},${targetPoi.lon.toFixed(6)},${poiAlt.toFixed(6)}`;
-          }
+        if (wpMode === 'towardPOI' && resolvedTargetPoi) {
+          const poiAlt = (resolvedTargetPoi.alt !== undefined && !isNaN(resolvedTargetPoi.alt)) ? Number(resolvedTargetPoi.alt) : 0;
+          poiPoint = `${resolvedTargetPoi.lat.toFixed(6)},${resolvedTargetPoi.lon.toFixed(6)},${poiAlt.toFixed(6)}`;
         }
       }
     } else {
@@ -756,8 +762,22 @@ ${waypointActions.join('\n')}
       currentAltitude = altitude;
     }
     
-    // Resolve Speed: If turnaround point and turnaroundSpeed specified, use it; else wp.speed or global speed
-    let actualSpeed = (wp.speed !== undefined && wp.speed !== null && !isNaN(wp.speed)) ? wp.speed : speed;
+    // Resolve Speed: Three-Tier Cascading Hierarchy (Tier 3 Override -> Tier 2 Layer -> Tier 1 Global)
+    let actualSpeed;
+    if (wp.isModified && wp.speed !== undefined && wp.speed !== null && wp.speed !== 'inherit' && !isNaN(wp.speed)) {
+      actualSpeed = Number(wp.speed);
+    } else if (wp.speed !== undefined && wp.speed !== null && wp.speed !== 'inherit' && !isNaN(wp.speed)) {
+      actualSpeed = Number(wp.speed);
+    } else if (wp.layerSpeed !== undefined && wp.layerSpeed !== null && wp.layerSpeed !== 'inherit' && !isNaN(wp.layerSpeed)) {
+      actualSpeed = Number(wp.layerSpeed);
+    } else if (wpLayer && wpLayer.speed !== undefined && wpLayer.speed !== null && wpLayer.speed !== 'inherit' && !isNaN(wpLayer.speed)) {
+      actualSpeed = Number(wpLayer.speed);
+    } else {
+      actualSpeed = speed;
+    }
+    if (actualSpeed === undefined || actualSpeed === null || isNaN(actualSpeed)) {
+      actualSpeed = 4.0;
+    }
     if (wp.isTurnaroundPoint && wp.turnaroundSpeed !== null && wp.turnaroundSpeed !== undefined && !isNaN(wp.turnaroundSpeed)) {
       actualSpeed = wp.turnaroundSpeed;
     }
@@ -872,12 +892,7 @@ ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
     : (altitude || 50);
   const safeTakeoffHeight = Math.max(1.5, Math.min(rthAltitude, firstWpAlt));
 
-  const isEnterprise = (droneEnumValue !== 68 && droneEnumValue !== 89);
-  let templateTypeXml = isEnterprise ? '      <wpml:templateType>waypoint</wpml:templateType>\n' : '';
-  let payloadParamXml = isEnterprise ? `      <wpml:payloadParam>
-        <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-        <wpml:payloadPitchControlMode>usePointSetting</wpml:payloadPitchControlMode>
-      </wpml:payloadParam>\n` : '';
+  const folderHeader = activeTemplate.buildFolderHeader(speed);
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">
@@ -888,20 +903,13 @@ ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
       <wpml:exitOnRCLost>${exitOnRCLost}</wpml:exitOnRCLost>
       <wpml:executeRCLostAction>${executeRCLostAction}</wpml:executeRCLostAction>
       <wpml:takeOffSecurityHeight>${safeTakeoffHeight}</wpml:takeOffSecurityHeight>
-      <wpml:globalTransitionalSpeed>${speed}</wpml:globalTransitionalSpeed>
+      <wpml:globalTransitionalSpeed>${(speed !== undefined && speed !== null && !isNaN(speed)) ? speed : 4.0}</wpml:globalTransitionalSpeed>
       <wpml:droneInfo>
         <wpml:droneEnumValue>${droneEnumValue}</wpml:droneEnumValue>
         <wpml:droneSubEnumValue>0</wpml:droneSubEnumValue>
       </wpml:droneInfo>
     </wpml:missionConfig>
-    <Folder>
-${templateTypeXml}      <wpml:templateId>0</wpml:templateId>
-      <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
-      <wpml:waylineId>0</wpml:waylineId>
-      <wpml:distance>0</wpml:distance>
-      <wpml:duration>0</wpml:duration>
-      <wpml:autoFlightSpeed>${speed}</wpml:autoFlightSpeed>
-${payloadParamXml}${placemarksXml}    </Folder>
+${folderHeader}${placemarksXml}    </Folder>
   </Document>
 </kml>`;
 }
@@ -912,6 +920,10 @@ ${payloadParamXml}${placemarksXml}    </Folder>
  * to prevent flight suspensions ("Error performing flight") on pressing Go.
  */
 function validateWpmlMission(wpmlXml, templateXml = '', options = {}) {
+  if (typeof templateXml === 'object' && templateXml !== null) {
+    options = templateXml;
+    templateXml = '';
+  }
   const result = {
     valid: true,
     rulesPassed: 0,
@@ -1532,6 +1544,10 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
     }
     fixedWpml = pmParts.join('<Placemark>');
   }
+
+  const fallbackSpeed = (options && options.speed && !isNaN(options.speed)) ? options.speed : 4.0;
+  fixedWpml = fixedWpml.replace(/<wpml:waypointSpeed>\s*(?:undefined|NaN|null)\s*<\/wpml:waypointSpeed>/g, `<wpml:waypointSpeed>${fallbackSpeed}</wpml:waypointSpeed>`);
+  fixedWpml = fixedWpml.replace(/<wpml:globalTransitionalSpeed>\s*(?:undefined|NaN|null)\s*<\/wpml:globalTransitionalSpeed>/g, `<wpml:globalTransitionalSpeed>${fallbackSpeed}</wpml:globalTransitionalSpeed>`);
 
   const validation = validateWpmlMission(fixedWpml, fixedTemplate, options);
   return { wpmlXml: fixedWpml, templateXml: fixedTemplate, validation };

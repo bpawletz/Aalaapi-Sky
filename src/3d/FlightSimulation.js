@@ -444,6 +444,8 @@ function recreate3DWaypointsAndPaths() {
 
       if (isWarning) {
         segColor = 0xef4444; // Warning Red
+      } else if (wp.gridType === 'light-art' || wp.isLightArtPoint || nextWp.gridType === 'light-art' || nextWp.isLightArtPoint) {
+        segColor = 0xec4899; // Luminous Pink/Magenta Light Ribbon
       } else {
         const nextRing = nextWp.ringIndex;
         if (nextRing === 0) segColor = 0xa855f7;
