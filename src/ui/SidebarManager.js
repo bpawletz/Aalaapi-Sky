@@ -469,13 +469,15 @@ function togglePatternParameters() {
     'boundary-polygon': 'Boundary / Parcel',
     'fiducial-markers': '🎯 Fiducial / GCPs',
     'photo-sphere': '360° Photo Sphere',
-    'hyperlapse': 'Hyperlapse Time-Lapse'
+    'hyperlapse': 'Hyperlapse Time-Lapse',
+    'light-art': '🎨 Light Art (Sky Painting)'
   };
 
   const targetSplatContainer = document.getElementById('target-splat-container');
   const towerGeometryContainer = document.getElementById('tower-geometry-container');
   const photoSphereContainer = document.getElementById('photo-sphere-container');
   const hyperlapseContainer = document.getElementById('hyperlapse-container');
+  const lightArtContainer = document.getElementById('light-art-container');
 
   const activePatternBadge = document.getElementById('active-layer-pattern-badge');
   if (activePatternBadge) {
@@ -527,6 +529,14 @@ function togglePatternParameters() {
       hyperlapseContainer.classList.remove('hidden');
     } else {
       hyperlapseContainer.classList.add('hidden');
+    }
+  }
+
+  if (lightArtContainer) {
+    if (gridType === 'light-art') {
+      lightArtContainer.classList.remove('hidden');
+    } else {
+      lightArtContainer.classList.add('hidden');
     }
   }
 
@@ -940,6 +950,60 @@ function togglePatternParameters() {
     if (layerPathSelect) layerPathSelect.value = 'curved';
     const layerHeadingSelect = document.getElementById('layer-heading-mode');
     if (layerHeadingSelect) layerHeadingSelect.value = 'smoothTransition';
+
+  } else if (gridType === 'light-art') {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
+    if (gridGeometrySection) {
+      gridGeometrySection.style.display = 'block';
+      gridGeometrySection.classList.remove('collapsed');
+    }
+    if (layerCardGeometry) layerCardGeometry.style.display = 'block';
+    if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "🎨 Light Art Sky Canvas";
+    if (layerCardFlight) layerCardFlight.style.display = 'block';
+    if (layerCardOptics) layerCardOptics.style.display = 'none'; // Ground camera shoots the scene; drone camera not primary
+    if (layerCardModes) layerCardModes.style.display = 'block';
+    if (layerCardBoundary) {
+      layerCardBoundary.classList.add('hidden');
+      layerCardBoundary.style.display = 'none';
+    }
+    if (layerCardFiducial) {
+      layerCardFiducial.classList.add('hidden');
+      layerCardFiducial.style.display = 'none';
+    }
+    if (altitudeControlGroup) altitudeControlGroup.style.display = 'block';
+    if (lightArtContainer) lightArtContainer.classList.remove('hidden');
+    if (hyperlapseContainer) hyperlapseContainer.classList.add('hidden');
+    if (photoSphereContainer) photoSphereContainer.classList.add('hidden');
+    if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
+    if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
+    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
+    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
+    if (exclusionAltContainer) exclusionAltContainer.classList.add('hidden');
+    if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
+    if (freeformInstructions) freeformInstructions.classList.add('hidden');
+    if (widthContainer) widthContainer.style.display = 'none';
+    if (heightContainer) heightContainer.style.display = 'none';
+    if (rotationContainer) rotationContainer.style.display = 'none';
+    if (frontOverlapContainer) frontOverlapContainer.style.display = 'none';
+    if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
+
+    if (activeLayer) {
+      activeLayer.captureMode = 'continuous';
+      activeLayer.pathMode = 'curved';
+      activeLayer.headingMode = 'followWayline';
+      if (!activeLayer.speed || activeLayer.speed > 5) {
+        activeLayer.speed = 3.0; // Smooth steady light stroke
+        const spdInput = document.getElementById('speed');
+        if (spdInput) spdInput.value = 3.0;
+      }
+    }
+    const layerCapSelect = document.getElementById('layer-capture-mode');
+    if (layerCapSelect) layerCapSelect.value = 'continuous';
+    const layerPathSelect = document.getElementById('layer-path-mode');
+    if (layerPathSelect) layerPathSelect.value = 'curved';
+    const layerHeadingSelect = document.getElementById('layer-heading-mode');
+    if (layerHeadingSelect) layerHeadingSelect.value = 'followWayline';
 
   } else {
     if (gridGeometrySection) gridGeometrySection.style.display = 'block';
@@ -1964,5 +2028,50 @@ function restoreActiveWorkspacePlanning() {
   }
 }
 
+// ============================================================================
+// Light Art UI Helper Functions (v1.151.0 - Issue #136)
+// ============================================================================
+
+function updateLightArtBadge(gridData) {
+  if (typeof document === 'undefined') return;
+  const badge = document.getElementById('light-art-duration-badge');
+  if (!badge) return;
+  if (!gridData || !gridData.flightDurationSec) {
+    badge.textContent = '0s (Bulb)';
+    return;
+  }
+  const dur = Math.round(gridData.flightDurationSec);
+  const shutter = gridData.recommendedShutterSec || Math.ceil(dur + 2);
+  badge.textContent = `${dur}s Stroke | ${shutter}s Shutter`;
+}
+
+function updateLightArtUiFields(layer) {
+  if (typeof document === 'undefined') return;
+  const preset = layer ? (layer.lightArtPreset || 'spiral') : 'spiral';
+  const orientation = layer ? (layer.lightArtOrientation || 'horizontal') : 'horizontal';
+
+  const spiralOpts = document.getElementById('light-art-spiral-opts');
+  const starOpts = document.getElementById('light-art-star-opts');
+  const helixOpts = document.getElementById('light-art-helix-opts');
+  const azOpts = document.getElementById('light-art-azimuth-opts');
+
+  if (spiralOpts) {
+    spiralOpts.style.display = (preset === 'spiral') ? 'block' : 'none';
+  }
+  if (helixOpts) {
+    helixOpts.style.display = (preset === 'helix') ? 'block' : 'none';
+  }
+  if (starOpts) {
+    starOpts.style.display = (preset === 'star') ? 'block' : 'none';
+  }
+  if (azOpts) {
+    azOpts.style.display = (orientation === 'vertical') ? 'block' : 'none';
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.updateLightArtBadge = updateLightArtBadge;
+  window.updateLightArtUiFields = updateLightArtUiFields;
+}
 
 // Search Address via OpenStreetMap Nominatim API

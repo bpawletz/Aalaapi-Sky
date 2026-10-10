@@ -715,6 +715,181 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
 }
 
 // ============================================================================
-// Target Splat 3D Frustum Culling & Geometry Engine (v1.77.0)
+// Light Art & Sky Painting Long Exposure Generator (v1.151.0 - Issue #136)
 // ============================================================================
 
+/**
+ * Generate 2D/3D Light Art waypoints for long exposure sky calligraphy.
+ * Supports presets (spiral, helix, star, heart, circle) in both horizontal
+ * (overhead flat) and vertical (upright billboard facing camera bearing) planes.
+ */
+function generateLightArtCoordinates(layer, baseAltitude, defaultGimbalPitch, speed) {
+  const waypoints = [];
+  const photos = [];
+
+  const preset = (layer && layer.lightArtPreset) ? layer.lightArtPreset : 'spiral';
+  const orientation = (layer && layer.lightArtOrientation) ? layer.lightArtOrientation : 'horizontal';
+  const radius = (layer && typeof layer.lightArtRadius === 'number' && layer.lightArtRadius > 0) ? layer.lightArtRadius : 25;
+  const turns = (layer && typeof layer.lightArtTurns === 'number' && layer.lightArtTurns > 0) ? layer.lightArtTurns : 3;
+  const pointsCount = (layer && typeof layer.lightArtPointsCount === 'number' && layer.lightArtPointsCount >= 3) ? layer.lightArtPointsCount : 5;
+  const starInnerRatio = (layer && typeof layer.lightArtStarRatio === 'number' && layer.lightArtStarRatio > 0 && layer.lightArtStarRatio < 1) ? layer.lightArtStarRatio : 0.45;
+  const climb = (layer && typeof layer.lightArtClimb === 'number') ? layer.lightArtClimb : 15;
+  const cameraAzimuth = (layer && typeof layer.lightArtCameraAzimuth === 'number') ? layer.lightArtCameraAzimuth : 0;
+  const strokeSpeed = (layer && typeof layer.speed === 'number' && layer.speed > 0) ? layer.speed : (speed || 3.0);
+
+  // Generate parametric 2D normalized points in canvas coordinates (u, v)
+  // where u is horizontal width (-radius to +radius) and v is height/depth (-radius to +radius)
+  const rawPoints = [];
+
+  if (preset === 'spiral') {
+    // Archimedean Spiral in plane: r = (t / maxT) * radius
+    const totalSteps = Math.max(36, Math.round(turns * 24));
+    for (let i = 0; i <= totalSteps; i++) {
+      const frac = i / totalSteps;
+      const angle = frac * turns * 2 * Math.PI;
+      const r = frac * radius;
+      const u = r * Math.cos(angle);
+      const v = r * Math.sin(angle);
+      rawPoints.push({ u, v, zOffset: 0 });
+    }
+  } else if (preset === 'helix') {
+    // 3D Climbing Helix: spirals while climbing in altitude
+    const totalSteps = Math.max(36, Math.round(turns * 24));
+    for (let i = 0; i <= totalSteps; i++) {
+      const frac = i / totalSteps;
+      const angle = frac * turns * 2 * Math.PI;
+      const r = radius;
+      const u = r * Math.cos(angle);
+      const v = r * Math.sin(angle);
+      const zOffset = frac * climb;
+      rawPoints.push({ u, v, zOffset });
+    }
+  } else if (preset === 'star') {
+    // N-Point Star polygon with alternating outer and inner vertices
+    const numPoints = pointsCount;
+    const innerR = radius * starInnerRatio;
+    const totalVerts = numPoints * 2;
+    for (let i = 0; i <= totalVerts; i++) {
+      const isInner = (i % 2 === 1);
+      const r = isInner ? innerR : radius;
+      const angle = (i / totalVerts) * 2 * Math.PI - Math.PI / 2; // Start pointing straight up
+      const u = r * Math.cos(angle);
+      const v = r * Math.sin(angle);
+      rawPoints.push({ u, v, zOffset: 0 });
+    }
+  } else if (preset === 'heart') {
+    // Parametric Cardioid Heart:
+    // x = 16 * sin^3(t)
+    // y = 13*cos(t) - 5*cos(2t) - 2*cos(3t) - cos(4t)
+    const steps = 48;
+    for (let i = 0; i <= steps; i++) {
+      const t = (i / steps) * 2 * Math.PI;
+      const sinT = Math.sin(t);
+      const uNorm = 16 * Math.pow(sinT, 3);
+      const vNorm = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+      // Normalized max bounding box of heart is approx ~16 horizontal and ~17 vertical
+      const scale = radius / 16.0;
+      const u = uNorm * scale;
+      const v = vNorm * scale;
+      rawPoints.push({ u, v, zOffset: 0 });
+    }
+  } else {
+    // Circle / Ring default
+    const steps = 36;
+    for (let i = 0; i <= steps; i++) {
+      const t = (i / steps) * 2 * Math.PI;
+      const u = radius * Math.cos(t);
+      const v = radius * Math.sin(t);
+      rawPoints.push({ u, v, zOffset: 0 });
+    }
+  }
+
+  // Project (u, v, zOffset) into 3D local coordinates (x, y, alt)
+  // Horizontal mode:
+  //   u maps to East (x), v maps to North (y), zOffset adds to baseAltitude
+  // Vertical Billboard mode:
+  //   Canvas stands upright in the sky facing ground camera at cameraAzimuth.
+  //   u maps across the canvas perpendicular to cameraAzimuth,
+  //   v maps up/down along altitude axis (z),
+  //   altitude = baseAltitude + v + zOffset.
+  const radAz = (cameraAzimuth * Math.PI) / 180.0;
+  const perpX = Math.cos(radAz); // Perpendicular cross-track unit vector
+  const perpY = -Math.sin(radAz);
+
+  let totalDistance = 0;
+  let prevPt = null;
+
+  rawPoints.forEach((pt, idx) => {
+    let x, y, alt;
+    if (orientation === 'vertical') {
+      // In vertical plane:
+      // u moves perpendicular to line of sight to ground camera
+      // v moves along altitude axis
+      x = pt.u * perpX;
+      y = pt.u * perpY;
+      alt = Math.max(10, baseAltitude + pt.v + pt.zOffset);
+    } else {
+      // In horizontal plane:
+      x = pt.u;
+      y = pt.v;
+      alt = Math.max(10, baseAltitude + pt.zOffset);
+    }
+
+    if (prevPt) {
+      const d = Math.hypot(x - prevPt.x, y - prevPt.y, alt - prevPt.alt);
+      totalDistance += d;
+    }
+    prevPt = { x, y, alt };
+
+    // Point aircraft tangent to direction of flight for streamlined aerodynamics
+    const wpObj = {
+      x: x,
+      y: y,
+      alt: alt,
+      pitch: defaultGimbalPitch,
+      heading: null,
+      headingMode: 'followWayline',
+      gridType: 'light-art',
+      layerPattern: 'light-art',
+      isLightArtPoint: true,
+      skipPhoto: true, // Aircraft itself is the light source; no camera triggers needed
+      turnMode: 'curved'
+    };
+
+    waypoints.push(wpObj);
+  });
+
+  // Calculate tangent headings between waypoints
+  for (let i = 0; i < waypoints.length; i++) {
+    const cur = waypoints[i];
+    let nxt = (i < waypoints.length - 1) ? waypoints[i + 1] : waypoints[i];
+    let prv = (i > 0) ? waypoints[i - 1] : waypoints[i];
+    let dx = nxt.x - prv.x;
+    let dy = nxt.y - prv.y;
+    if (Math.abs(dx) > 0.001 || Math.abs(dy) > 0.001) {
+      let brg = Math.atan2(dx, dy) * (180.0 / Math.PI);
+      if (brg < 0) brg += 360;
+      cur.heading = Math.round(brg * 10) / 10;
+    } else {
+      cur.heading = 0;
+    }
+  }
+
+  // Compute stroke flight duration and recommended ground camera shutter speed
+  const flightDurationSec = (strokeSpeed > 0) ? (totalDistance / strokeSpeed) : 0;
+  const recommendedShutterSec = Math.ceil(flightDurationSec + 2); // 2s safety buffer for Bulb exposure
+
+  return {
+    waypoints,
+    photos: [],
+    totalDistance: Math.round(totalDistance * 10) / 10,
+    flightDurationSec: Math.round(flightDurationSec * 10) / 10,
+    recommendedShutterSec: recommendedShutterSec,
+    preset,
+    orientation
+  };
+}
+
+if (typeof window !== 'undefined') {
+  window.generateLightArtCoordinates = generateLightArtCoordinates;
+}

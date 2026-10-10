@@ -1,3 +1,111 @@
+## [1.151.0] - 2026-10-10
+
+Introduces the dedicated Light Art & Sky Painting flight pattern generator for aerial long exposure calligraphy, featuring parametric geometry presets, dual canvas orientations, and automatic ground shutter speed synchronization.
+
+### Added
+
+#### Pilot & Operational Features
+- **Light Art & Sky Painting Pattern Generator (Closes #136)**:
+  - Added dedicated `🎨 Light Art (Sky Painting / Long Exposure)` flight pattern selector to Section 1 & Section 2 pattern grids and layers.
+  - Supports 5 parametric calligraphy presets: `Spiral (Vortex)`, `3D Helix (Climbing)`, `Star (Parametric N-Point)`, `Heart (Cardioid)`, and `Circle (Ring)`.
+  - Dual Canvas Spatial Orientation:
+    - `Horizontal (Flat / Overhead)`: Flat sky canvas at constant altitude for zenith or high vantage point views.
+    - `Vertical Billboard (Upright)`: Stands upright on a vertical plane oriented perpendicular to the ground photographer's camera bearing (`0°` to `359°`), rendering artwork upright when viewed from ground level.
+  - Real-Time Long Exposure Shutter Sync HUD:
+    - Automatically calculates flight stroke duration ($t = d/v$) and recommends optimal ground camera shutter duration (`Stroke: 48s | Shutter: 50s Bulb`).
+  - Luminous 3D Digital Twin Trajectory:
+    - Renders animated glowing light trails in the 3D cockpit and movie views with vibrant magenta/pink illumination (`#ec4899`).
+
+#### Under the Hood & Technical Details
+- **Procedural Trajectory Generation (`src/patterns/PatternGenerators.js`)**:
+  - Implemented `generateLightArtCoordinates(layer, altitude, defaultGimbalPitch, speed)` computing parametric curves, tangent flight headings, and 3D coordinate transformations.
+  - Automatically configures continuous curved flight mode (`ContinuityCurvature`, `useStraightLine: 0`) and eliminates individual waypoint stops to prevent overexposed light blobs during long exposures.
+- **Layer Dynamics & UI Synchronization (`src/layers/LayerManager.js`, `src/ui/SidebarManager.js`, `src/ui/EventBindings.js`)**:
+  - Added `lightArtPreset`, `lightArtOrientation`, `lightArtRadius`, `lightArtTurns`, `lightArtPointsCount`, `lightArtStarRatio`, `lightArtClimb`, and `lightArtCameraAzimuth` layer properties.
+  - Added `#light-art-container` with dynamic preset option toggling, live scale updates, and directional azimuth badges.
+
+## [1.150.3] - 2026-10-10
+
+### Changed
+
+#### Pilot & Operational Features
+- **Flight Diagnostics Export to AI Button & Tooltip Clarity**:
+  - Renamed the Flight Diagnostics AI export button to `📋 Export to AI (Settings & Diag)` with an updated tooltip clarifying that it exports active mission configuration, layer parameters, and flight diagnostics for AI assistants.
+  - Eliminated the inaccurate framing that assumed all AI exports represent flight execution errors, empowering pilots and developers to seamlessly share what was set on the app for planning, review, or optimization.
+  - Updated the KMZ Inspector prompt copy button to `📋 Copy AI Diagnostic Prompt` with clean clipboard fallback prompts.
+
+#### Under the Hood & Technical Details
+- **Context-Aware AI Prompt Generation (`src/3d/DigitalTwin.js`)**:
+  - Enhanced `generateAntigravityPrompt` to inspect validation health and execution status: emits `### 🤖 ANTIGRAVITY & AI MISSION CONTEXT: App Settings & Flight Configuration` with supportive guidance when missions are clean, reserving `### 🤖 ANTIGRAVITY BUG REPORT & DIAGNOSTICS: Mission Execution Issue` for actual detected rule failures or execution aborts.
+  - Sanitized section headings and action instructions dynamically (`Generated WPML Snippet` vs `Offending / Generated WPML Snippet`) based on error presence.
+
+## [1.150.2] - 2026-10-10
+
+### Fixed
+
+#### Pilot & Operational Features
+- **Hyperlapse Route Execution & POI Association**:
+  - Clarified that DJI Fly displays navigation waypoints (spline nodes) on the RC 2 route screen (e.g. 2 waypoints defining the start and end of the hyperlapse trajectory), while interval photos are automatically captured along the moving flight path during transit at the configured interval.
+  - Ensured POI target coordinates are correctly associated and populated in exported waypoint parameters when POIs are assigned to hyperlapse routes.
+
+#### Under the Hood & Technical Details
+- **WPML Compiler Target POI Coordinate Export (`src/export/WpmlCompiler.js`)**:
+  - Updated `buildWaylinesWpml` to resolve and populate `<wpml:waypointPoiPoint>` with actual target POI geodetic coordinates (`lat,lon,alt`) whenever a POI is assigned to the layer or waypoint, regardless of whether heading mode is `smoothTransition` or `towardPOI`.
+
+## [1.150.1] - 2026-10-10
+
+### Fixed
+
+#### Pilot & Operational Features
+- **Hyperlapse Moving Time-Lapse Diagnostics & Frame Count Accuracy**:
+  - Fixed an issue where the Flight Diagnostics dashboard, mission plan summary, and SQLite companion logs erroneously reported only 3 photos for hyperlapse routes (matching the raw transit waypoints) instead of the actual calculated interval frame count (e.g. 24 frames for a 37m transit at 0.8 m/s with 2s interval).
+  - 3D flight trajectory simulation now accurately renders periodic interval photo capture spheres along the flight path at the configured `hyperlapseInterval` instead of only flagging hover vertices.
+
+#### Under the Hood & Technical Details
+- **Three-Tier Flight Speed Cascading & XML Tag Sanitization (`src/export/WpmlCompiler.js`)**:
+  - Implemented strict Three-Tier Cascading Hierarchy resolution (`wp.speed` -> `wp.layerSpeed` -> `wpLayer.speed` -> `speed` / global default) inside `buildWaylinesWpml` to prevent `<wpml:waypointSpeed>undefined</wpml:waypointSpeed>` and `<wpml:globalTransitionalSpeed>undefined</wpml:globalTransitionalSpeed>`.
+  - Added automatic repair in `validateAndFixWpml` to replace malformed `undefined` or `NaN` speed tags with valid finite velocity values, preventing Rule 10 XML validation failures.
+- **GPS Coordinates & Hyperlapse Metric Calculations (`src/ui/TelemetryHud.js`, `src/export/Packager.js`, `src/import/TelemetryParsers.js`)**:
+  - Enhanced `calculateStats` to compute path length and nearest neighbor distance directly from GPS `lat`/`lon` coordinates via `haversineDistance` when local `x`/`y` grid offsets are absent.
+  - Ensured `calculateStats` derives hyperlapse frame counts from path distance and frame spacing when `photoLocations` is omitted.
+  - Preserved `isHyperlapse`, `gridType`, and `hyperlapseInterval` attributes in `formattedWaypoints` within `buildMissionPlanJSON` to ensure seamless downstream telemetry calculations.
+
+## [1.150.0] - 2026-10-10
+
+Architectural overhaul introducing isolated XML payload and mission templates for Consumer vs. Enterprise drones, alongside strict XML Schema Definition (XSD) verification in CI and test suites to permanently eliminate firmware execution aborts.
+
+### Added
+
+#### Pilot & Operational Features
+- **Hardware Profile Integrity & Execution Reliability**:
+  - Eliminates "Error performing flight" and "Waypoint Flight Suspended" aborts on DJI RC 2 / DJI Fly controllers caused by enterprise firmware tag bleed.
+  - Native profile isolation ensures consumer drones (DJI Mini 4 Pro, DJI Air 3) always export pure consumer-tailored waylines with continuous curvature and zero unsupported payload tags.
+  - Full support for Enterprise platforms (DJI Mavic 3 Enterprise, Matrice 30/30T, Matrice 300/350 RTK, Inspire 3) with guaranteed template metadata and multi-sensor payload control.
+
+#### Under the Hood & Technical Details
+- **Strict XML Schema Definition (XSD) Schemas (`schemas/wpml/`)**:
+  - Implemented versioned, authoritative XSD schemas for both official DJI namespaces (`http://www.uav.com/wpmz/1.0.2` and `http://www.dji.com/wpmz/1.0.2`):
+    - `schemas/wpml/uav/template.xsd` & `schemas/wpml/dji/template.xsd`: Schema definition for `template.kml`.
+    - `schemas/wpml/uav/waylines_consumer.xsd` & `schemas/wpml/dji/waylines_consumer.xsd`: Enforces strict consumer constraints (only continuity curvature turn modes, `useStraightLine = 0`, forbidden `templateType`, forbidden `payloadParam`, forbidden `rotateYaw`, forbidden `useGlobalPayloadLensIndex`, unique sequential `actionGroupId`s, and mandatory altitude `executeHeight`).
+    - `schemas/wpml/uav/waylines_enterprise.xsd` & `schemas/wpml/dji/waylines_enterprise.xsd`: Enforces enterprise constraints (mandatory `templateType` in Folder, `payloadParam` support, `DiscontinuityCurvature` support, and straight-line execution).
+- **Automated Python XSD Validator Engine (`tools/validation/validate_wpml.py`)**:
+  - Python CLI tool utilizing `xmlschema` to audit generated `.kmz`, `.kml`, and `.wpml` files against respective schemas.
+  - Supports `--run-matrix` flag to procedurally test and validate all flight patterns across consumer and enterprise drone models.
+- **GitHub Actions CI Integration (`.github/workflows/build-and-commit.yml`)**:
+  - Added strict XSD validation step (`python tools/validation/validate_wpml.py --run-matrix`) to GitHub Actions CI pipeline, instantly failing pull requests and push builds if generated XML deviates from DJI's firmware schema.
+- **Isolated XML Payload & Mission Templates (`src/export/DroneProfiles.js`)**:
+  - Created isolated mission template engines (`ConsumerMissionTemplate` and `EnterpriseMissionTemplate`) rather than conditionally stripping tags from an enterprise-heavy master template via regex.
+  - Integrated `DroneProfileRegistry` (`isConsumerDrone()`, `isEnterpriseDrone()`, `getDroneProfile()`) into `src/main.js` and `src/export/WpmlCompiler.js`.
+
+### Fixed
+
+#### Under the Hood & Technical Details
+- **Historical Firmware Bleed Regressions**:
+  - **Missing `templateType` Regression (v1.27.2)**: Guaranteed Enterprise template generation includes `<wpml:templateType>waypoint</wpml:templateType>`.
+  - **Missing Altitude Tag Regression (v1.27.9)**: Strictly enforces mandatory `<wpml:executeHeight>` on every Placemark.
+  - **Duplicate Action Group IDs Regression (v1.28.0)**: Enforces document-wide unique sequential `<wpml:actionGroupId>` tags verified by `<xs:unique>` schema constraints.
+  - **Enterprise Payload Bleed into Consumer Drones (v1.28.1, v1.47.1, v1.58.2)**: Prevents `useGlobalPayloadLensIndex`, `rotateYaw`, `payloadParam`, and `DiscontinuityCurvature` from ever being synthesized for consumer aircraft.
+
 ## [1.149.7] - 2026-10-10
 
 ### Fixed

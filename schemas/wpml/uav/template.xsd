@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://www.opengis.net/kml/2.2"
+           xmlns="http://www.opengis.net/kml/2.2"
+           xmlns:wpml="http://www.uav.com/wpmz/1.0.2"
+           elementFormDefault="qualified">
+
+  <xs:import namespace="http://www.uav.com/wpmz/1.0.2" schemaLocation="wpml_types.xsd"/>
+
+  <xs:element name="kml">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="Document">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element ref="wpml:author" minOccurs="0"/>
+              <xs:element ref="wpml:createTime" minOccurs="0"/>
+              <xs:element ref="wpml:updateTime" minOccurs="0"/>
+              <xs:element ref="wpml:missionConfig"/>
+              <xs:element name="Folder" minOccurs="0">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element ref="wpml:templateType"/>
+                    <xs:element ref="wpml:templateId"/>
+                    <xs:element ref="wpml:executeHeightMode"/>
+                    <xs:element ref="wpml:waylineId"/>
+                    <xs:element ref="wpml:distance"/>
+                    <xs:element ref="wpml:duration"/>
+                    <xs:element ref="wpml:autoFlightSpeed"/>
+                    <xs:element ref="wpml:payloadParam" minOccurs="0"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

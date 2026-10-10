@@ -6,7 +6,14 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
   for (let i = 1; i < waypoints.length; i++) {
     const p1 = waypoints[i - 1];
     const p2 = waypoints[i];
-    const d = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+    let d = 0;
+    if (p1.x !== undefined && p1.x !== null && p2.x !== undefined && p2.x !== null) {
+      d = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+    } else if (p1.lat !== undefined && p2.lat !== undefined && typeof haversineDistance === 'function') {
+      const lon1 = p1.lon !== undefined ? p1.lon : p1.lng;
+      const lon2 = p2.lon !== undefined ? p2.lon : p2.lng;
+      d = haversineDistance(p1.lat, lon1, p2.lat, lon2);
+    }
     totalDistance += d;
   }
 
@@ -18,9 +25,19 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
     for (let j = 0; j < waypoints.length; j++) {
       if (i === j) continue;
       const p2 = waypoints[j];
-      const dx = p2.x - p1.x;
-      const dy = p2.y - p1.y;
-      const dSq = dx * dx + dy * dy;
+      let dSq;
+      if (p1.x !== undefined && p1.x !== null && p2.x !== undefined && p2.x !== null) {
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        dSq = dx * dx + dy * dy;
+      } else if (p1.lat !== undefined && p2.lat !== undefined && typeof haversineDistance === 'function') {
+        const lon1 = p1.lon !== undefined ? p1.lon : p1.lng;
+        const lon2 = p2.lon !== undefined ? p2.lon : p2.lng;
+        const hDist = haversineDistance(p1.lat, lon1, p2.lat, lon2);
+        dSq = hDist * hDist;
+      } else {
+        dSq = 0;
+      }
       if (dSq < minDistSq) {
         minDistSq = dSq;
       }
@@ -43,7 +60,16 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
   }
 
   // 2. Photo count
-  const photoCount = photoLocations ? photoLocations.length : (waypoints ? waypoints.length : 0);
+  const isHyperlapse = waypoints.some(w => w && (w.isHyperlapse || w.gridType === 'hyperlapse' || w.layerPattern === 'hyperlapse'));
+  let photoCount = photoLocations ? photoLocations.length : (waypoints ? waypoints.length : 0);
+  if (isHyperlapse && (!photoLocations || photoLocations.length === 0)) {
+    const interval = (waypoints.find(w => w && w.hyperlapseInterval)?.hyperlapseInterval) || 3;
+    const effSpeed = Math.max(0.2, speed || 4.0);
+    const frameSpacing = Math.max(0.2, effSpeed * interval);
+    if (totalDistance > 0 && frameSpacing > 0) {
+      photoCount = Math.floor(totalDistance / frameSpacing) + 1;
+    }
+  }
   // 3. Est flight time (accounting for stop-and-shoot hover delays)
   let flightTimeSeconds = totalDistance / speed;
   if (captureMode === 'stopAndShoot') {

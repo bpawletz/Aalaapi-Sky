@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.149.7</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.151.0</span></h1>
 
 
 
@@ -282,6 +282,7 @@
               <option value="tower">3D Structure (Tower Audit)</option>
               <option value="photo-sphere">360° Pano (Photo Sphere)</option>
               <option value="hyperlapse">🎞️ Hyperlapse (Interval Time-Lapse)</option>
+              <option value="light-art">🎨 Light Art (Sky Painting / Long Exposure)</option>
               <option value="grid-orbit-combo">2D + 3D Hybrid (Grid + Orbit Combo)</option>
               <option value="grid-multi-orbit-combo">2D + 3D Hybrid (Grid + Multi-Orbit)</option>
               <option value="freeform">Freeform Flight Plan (Manual Waypoints)</option>
@@ -361,6 +362,12 @@
                   <circle cx="20" cy="7" r="2" fill="currentColor"/>
                 </svg>
                 <span>Hyperlapse</span>
+              </div>
+              <div class="pattern-card" data-value="light-art" title="Light Art & Sky Painting (Long Exposure Calligraphy)">
+                <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="#ec4899"/>
+                </svg>
+                <span style="color: #f472b6;">Light Art</span>
               </div>
               <div class="pattern-card" data-value="grid-orbit-combo" title="2D + 3D Hybrid (Grid + Orbit Combo)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -999,6 +1006,97 @@
             <div style="display: flex; gap: 6px;">
               <button type="button" id="hyperlapse-undo-btn" class="btn btn-secondary btn-sm" style="flex: 1; padding: 4px 6px; font-size: 0.72rem;">↩️ Undo Point</button>
               <button type="button" id="hyperlapse-clear-btn" class="btn btn-danger btn-sm" style="flex: 1; padding: 4px 6px; font-size: 0.72rem;">🗑️ Clear Path</button>
+            </div>
+          </div>
+
+          <!-- Light Art / Sky Painting Controls & Info Card (v1.151.0 - Issue #136) -->
+          <div id="light-art-container" class="control-group hidden" style="background: rgba(236, 72, 153, 0.05); border: 1px solid rgba(236, 72, 153, 0.25); border-radius: 8px; padding: 12px; margin-top: 10px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <strong style="color: #ec4899; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+                🎨 Light Art (Sky Painting)
+              </strong>
+              <span id="light-art-duration-badge" class="badge" style="background: rgba(236, 72, 153, 0.2); color: #f472b6; font-size: 0.68rem; padding: 2px 7px; border-radius: 4px; font-weight: 700;">0s (Bulb)</span>
+            </div>
+            <div style="font-size: 0.74rem; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4;">
+              Generates continuous smooth 3D trajectories for long exposure night photography. Set your ground camera on a tripod in Bulb/Manual mode and match the recommended shutter speed.
+            </div>
+
+            <!-- Shape Preset & Canvas Orientation -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+              <div>
+                <label for="light-art-preset" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 3px;">Shape Preset</label>
+                <select id="light-art-preset" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 3px 6px;">
+                  <option value="spiral" selected>Spiral (Vortex)</option>
+                  <option value="helix">3D Helix (Climbing)</option>
+                  <option value="star">Star (Parametric)</option>
+                  <option value="heart">Heart (Cardioid)</option>
+                  <option value="circle">Circle (Ring)</option>
+                </select>
+              </div>
+              <div>
+                <label for="light-art-orientation" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 3px;">Canvas Orientation</label>
+                <select id="light-art-orientation" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 3px 6px;">
+                  <option value="horizontal" selected>Horizontal (Flat / Overhead)</option>
+                  <option value="vertical">Vertical Billboard (Upright)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Radius / Scale Slider -->
+            <div class="control-group" style="margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                <label for="light-art-radius" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; margin: 0;">Canvas Radius / Scale</label>
+                <span id="light-art-radius-val" style="font-size: 0.72rem; color: #ec4899; font-weight: 700;">25m</span>
+              </div>
+              <input type="range" id="light-art-radius" class="form-range" min="5" max="100" step="1" value="25" style="accent-color: #ec4899;">
+            </div>
+
+            <!-- Preset Specific Options -->
+            <div id="light-art-spiral-opts" class="control-group" style="margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                <label for="light-art-turns" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; margin: 0;">Spiral Rotations</label>
+                <span id="light-art-turns-val" style="font-size: 0.72rem; color: #ec4899; font-weight: 700;">3</span>
+              </div>
+              <input type="range" id="light-art-turns" class="form-range" min="1" max="8" step="1" value="3" style="accent-color: #ec4899;">
+            </div>
+
+            <div id="light-art-helix-opts" class="control-group" style="margin-bottom: 8px; display: none;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                <label for="light-art-climb" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; margin: 0;">Altitude Climb</label>
+                <span id="light-art-climb-val" style="font-size: 0.72rem; color: #ec4899; font-weight: 700;">15m</span>
+              </div>
+              <input type="range" id="light-art-climb" class="form-range" min="5" max="60" step="1" value="15" style="accent-color: #ec4899;">
+            </div>
+
+            <div id="light-art-star-opts" style="margin-bottom: 8px; display: none;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div>
+                  <label for="light-art-points" style="display: block; color: var(--text-muted); font-size: 0.68rem; margin-bottom: 2px;">Star Points</label>
+                  <input type="number" id="light-art-points" class="form-control form-control-sm" min="3" max="12" value="5" style="font-size: 0.72rem; padding: 2px 6px;">
+                </div>
+                <div>
+                  <label for="light-art-star-ratio" style="display: block; color: var(--text-muted); font-size: 0.68rem; margin-bottom: 2px;">Inner Ratio (<span id="light-art-star-ratio-val">0.45</span>)</label>
+                  <input type="range" id="light-art-star-ratio" class="form-range" min="0.2" max="0.8" step="0.05" value="0.45" style="accent-color: #ec4899;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Camera Azimuth (for Vertical Billboard Mode) -->
+            <div id="light-art-azimuth-opts" class="control-group" style="margin-bottom: 8px; display: none;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                <label for="light-art-camera-azimuth" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; margin: 0;">Ground Camera Bearing</label>
+                <span id="light-art-camera-azimuth-val" style="font-size: 0.72rem; color: #ec4899; font-weight: 700;">0° (North)</span>
+              </div>
+              <input type="range" id="light-art-camera-azimuth" class="form-range" min="0" max="359" step="1" value="0" style="accent-color: #ec4899;">
+            </div>
+
+            <!-- Shutter Sync Notice -->
+            <div style="display: flex; align-items: center; gap: 6px; background: rgba(236, 72, 153, 0.08); border: 1px solid rgba(236, 72, 153, 0.25); border-radius: 6px; padding: 6px 8px; font-size: 0.72rem; color: #f472b6;">
+              <span style="font-size: 0.9rem;">📸</span>
+              <span><strong>Shutter Sync:</strong> Continuous curved flight mode prevents waypoint pause hotspots. Ground camera shutter opens at drone start and closes at stroke finish.</span>
             </div>
           </div>
 
@@ -3169,6 +3267,22 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(236, 72, 153, 0.08); border: 1px solid rgba(236, 72, 153, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #f472b6; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🎨 Light Art &amp; Sky Painting via Long Exposure (v1.151.0) (Closes #136)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Transform your drone into an aerial light brush for night photography! The new <strong>Light Art</strong> pattern generator creates smooth, continuous 2D/3D flight paths across 5 mathematical presets (<strong>Spiral Vortex</strong>, <strong>3D Helix</strong>, <strong>Star</strong>, <strong>Heart</strong>, and <strong>Circle</strong>). Supports both <strong>Horizontal</strong> (overhead flat) and <strong>Vertical Billboard</strong> (upright facing camera azimuth) canvas orientations. Features a live shutter duration calculator and luminous magenta 3D flight trajectory visualization.
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🛡️ Strict WPML XML Schema Definition (XSD) Validation &amp; Isolated Drone Templates (v1.150.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Exported KMZ flight plans are now validated against rigorous formal <strong>DJI XML Schema Definitions (XSD)</strong> across both <code>uav.com</code> and <code>dji.com</code> namespaces! Completely eliminated hardware profile bleed and execution aborts on Consumer drones (Mini 4 Pro, Air 3) by replacing fragile regex tag-stripping with isolated, architecturally dedicated XML templates (<code>ConsumerMissionTemplate</code> vs. <code>EnterpriseMissionTemplate</code>). Automated CI testing validates a 36-test hardware matrix against XSD rules on every build.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🚁 Distinct ADS-B Aircraft Type Icons &amp; Multi-Type Radar Awareness (v1.148.0) (Closes #124)
@@ -3262,7 +3376,7 @@
               🤖 Multi-Layer AI Export &amp; Privacy Coordinate Masking (v1.136.0)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
-              Export comprehensive diagnostic prompts for AI assistants (Google Antigravity, Claude, ChatGPT) across the entire multi-layer mission stack! Exports all flight layers, patterns, dynamics, and Points of Interest (POIs) in one unified diagnostic text blob. By default, raw GPS coordinates are securely masked and normalized to the app default rural reference location (<code>[41.3215, -88.9950]</code>) with relative meter offsets to protect operational and client privacy, with an optional toggle to export real coordinates when required.
+              Export comprehensive mission settings and diagnostic prompts for AI assistants (Google Antigravity, Claude, ChatGPT) across the entire multi-layer mission stack! Exports all flight layers, patterns, dynamics, and Points of Interest (POIs) in one unified text blob to provide AI assistants with full context on app settings or assist with issue triage. By default, raw GPS coordinates are securely masked and normalized to the app default rural reference location (<code>[41.3215, -88.9950]</code>) with relative meter offsets to protect operational and client privacy, with an optional toggle to export real coordinates when required.
             </p>
           </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
@@ -4372,7 +4486,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.149.7</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.151.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -4433,6 +4547,40 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.151.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Light Art &amp; Sky Painting Pattern Generator (Closes #136):</strong> Added dedicated <code>🎨 Light Art</code> flight pattern with 5 mathematical presets (Spiral, 3D Helix, Star, Heart, Circle) and dual Horizontal vs. Vertical Billboard orientations for aerial long exposure night photography.</li>
+              <li><strong>Long Exposure Shutter Sync HUD &amp; Luminous 3D Ribbon:</strong> Real-time stroke duration and recommended Bulb shutter speed calculator with glowing pink/magenta trajectory simulation in the 3D Digital Twin viewer.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.150.3):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Flight Diagnostics AI Export Context &amp; Button Clarity:</strong> Updated the Flight Diagnostics AI export button to <code>📋 Export to AI (Settings &amp; Diag)</code> with an accurate descriptive tooltip. Differentiated general mission app settings and layer dynamics exports from error triage reports so AI assistants receive appropriate contextual prompts rather than assuming execution failures on clean missions.</li>
+              <li><strong>Contextual AI Prompt Framing &amp; Fallbacks:</strong> Conditioned the exported AI prompt heading and instructions to display <code>### 🤖 ANTIGRAVITY &amp; AI MISSION CONTEXT: App Settings &amp; Flight Configuration</code> with supportive mission guidance when no pre-flight errors exist, reserving bug triage formatting exclusively for detected rule failures and execution aborts.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.150.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Hyperlapse Route Execution &amp; POI Target Association:</strong> Clarified RC 2 trajectory display (spline waypoints vs. interval captures along path) and ensured POI target coordinates populate accurately in WPML placemark parameters across all heading modes.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.150.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Hyperlapse Diagnostics &amp; Frame Count Accuracy:</strong> Resolved an issue where Flight Diagnostics, mission plan statistics, and SQLite logs reported only 3 photos for hyperlapse routes (matching transit waypoints) instead of actual interval frames. Accurately simulates periodic interval captures across 3D flight trajectories.</li>
+              <li><strong>Three-Tier Velocity Cascading &amp; Speed Tag Sanitization:</strong> Resolved <code>undefined</code> waypoint and transitional speed tags via complete three-tier cascading (Waypoint &rarr; Layer &rarr; Global default), paired with automatic malformed token repair in <code>validateAndFixWpml</code>.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.150.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Strict XML Schema Definition (XSD) Validation &amp; CI Gate:</strong> Integrated comprehensive DJI WPML XSD schemas (supporting both <code>http://www.uav.com/wpmz/1.0.2</code> and <code>http://www.dji.com/wpmz/1.0.2</code> namespaces) into the automated build &amp; CI pipeline, permanently preventing XML structure regressions, tag bleed, and DJI Fly flight execution aborts.</li>
+              <li><strong>Isolated Consumer vs. Enterprise Mission Templates:</strong> Replaced post-export regex string stripping with dedicated, clean architectural XML templates (<code>ConsumerMissionTemplate</code> and <code>EnterpriseMissionTemplate</code>) to strictly guarantee hardware boundary enforcement across all drone profiles.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.149.7):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -8251,8 +8399,8 @@
               <input type="checkbox" id="diag-include-coords-checkbox" style="accent-color: #6366f1; cursor: pointer;" />
               <span>Include real GPS coordinates in AI export</span>
             </label>
-            <button id="diag-copy-antigravity-btn" type="button" class="btn-secondary" style="width: 100%; padding: 8px 12px; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.35); color: #a5b4fc; cursor: pointer;" title="Export comprehensive multi-layer diagnostics and bug triage prompt for AI assistants">
-              📋 Export to AI (Copy Text)
+            <button id="diag-copy-antigravity-btn" type="button" class="btn-secondary" style="width: 100%; padding: 8px 12px; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.35); color: #a5b4fc; cursor: pointer;" title="Export comprehensive mission settings, active layer parameters, and flight diagnostics for AI assistants">
+              📋 Export to AI (Settings &amp; Diag)
             </button>
             <button id="diag-export-json-btn" type="button" class="btn-secondary" style="width: 100%; padding: 8px 12px; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24; cursor: pointer;">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -8375,7 +8523,7 @@
             All outgoing exports are auto-repaired and verified against DJI Fly firmware rules.
           </span>
           <div style="display: flex; gap: 8px; align-items: center;">
-            <button id="inspector-copy-antigravity-btn" type="button" class="btn-secondary" style="display: none; padding: 6px 12px; font-size: 0.75rem; background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4); color: #f87171; align-items: center; gap: 4px;" title="Copy complete diagnostic bug report formatted for Antigravity AI assistant">📋 Copy Antigravity Fix Prompt</button>
+            <button id="inspector-copy-antigravity-btn" type="button" class="btn-secondary" style="display: none; padding: 6px 12px; font-size: 0.75rem; background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4); color: #f87171; align-items: center; gap: 4px;" title="Copy complete diagnostic report and mission parameters formatted for AI assistants">📋 Copy AI Diagnostic Prompt</button>
             <button id="close-kmz-inspector-btn" type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;">Close</button>
             <button id="close-inspector-footer-btn" type="button" style="display: none;" aria-hidden="true"></button>
             <button id="inspector-autofix-download-btn" type="button" class="btn-primary" style="padding: 6px 14px; font-size: 0.75rem; font-weight: 600;">Export Verified KMZ</button>

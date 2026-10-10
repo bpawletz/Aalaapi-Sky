@@ -18,6 +18,7 @@ import './patterns/PatternGenerators.js';
 import './3d/GeometryBuilder.js';
 import './geo/MathUtils.js';
 import './ui/TelemetryHud.js';
+import './export/DroneProfiles.js';
 import './export/WpmlCompiler.js';
 import './export/Packager.js';
 import './bridge/ApiClient.js';

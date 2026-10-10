@@ -564,11 +564,11 @@ function extractSpatialMissionLayers(layers = null) {
   };
 }
 
-function buildMissionPlanJSON(customWps = null) {
+function buildMissionPlanJSON(customWps = null, options = {}) {
   const currentWps = customWps || (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
   const centerLatLng = (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) ? centerMarker.getLatLng() : null;
 
-  const gridType = document.getElementById('grid-type')?.value || 'single';
+  const gridType = options.flightPattern || options.pattern || document.getElementById('grid-type')?.value || 'single';
   const gridWidth = parseFloat(document.getElementById('grid-width')?.value) || 100;
   const gridHeight = parseFloat(document.getElementById('grid-height')?.value) || 100;
   const rotation = parseFloat(document.getElementById('grid-rotation')?.value) || 0;
@@ -582,39 +582,61 @@ function buildMissionPlanJSON(customWps = null) {
   const cameraVFOV = parseFloat(document.getElementById('camera-vfov')?.value) || 55.2;
   const overlapFront = parseFloat(document.getElementById('front-overlap')?.value) || 80;
   const overlapSide = parseFloat(document.getElementById('side-overlap')?.value) || 75;
-  const gimbalPitch = parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60);
+  const gimbalPitch = options.gimbalPitch !== undefined ? options.gimbalPitch : parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60);
 
-  const altitude = parseFloat(document.getElementById('altitude')?.value) || 50;
-  const speed = parseFloat(document.getElementById('speed')?.value) || 4;
+  const altitude = options.altitude !== undefined ? options.altitude : (parseFloat(document.getElementById('altitude')?.value) || 50);
+  const globalSpeed = options.speed !== undefined ? options.speed : (parseFloat(document.getElementById('speed')?.value) || 4);
   const headingMode = document.getElementById('heading-mode')?.value || 'followWayline';
   const finishAction = document.getElementById('finish-action')?.value || 'goHome';
   const signalLostAction = document.getElementById('signal-lost-action')?.value || 'goBack';
   const pathMode = document.getElementById('path-mode')?.value || 'curved';
-  const captureMode = document.getElementById('capture-mode')?.value || 'stopAndShoot';
+  const captureMode = options.captureMode || document.getElementById('capture-mode')?.value || 'stopAndShoot';
   const globalHoverTime = parseFloat(document.getElementById('global-hover-time')?.value) || 0;
 
   const unitSystem = typeof getUnitSystem === 'function' ? getUnitSystem() : 'imperial';
   const storedUuid = typeof getRC2UUID === 'function' ? getRC2UUID() : null;
 
-  const formattedWaypoints = currentWps.map((wp, idx) => ({
-    index: idx,
-    lat: wp.lat,
-    lon: wp.lon,
-    alt: wp.alt !== undefined ? wp.alt : altitude,
-    pitch: wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch,
-    heading: wp.heading !== undefined ? wp.heading : null,
-    speed: wp.speed !== undefined ? wp.speed : speed,
-    hoverTime: wp.hoverTime !== undefined ? wp.hoverTime : globalHoverTime,
-    x: wp.x !== undefined ? wp.x : null,
-    y: wp.y !== undefined ? wp.y : null,
-    isRingStart: !!wp.isRingStart,
-    ringIndex: wp.ringIndex !== undefined ? wp.ringIndex : null,
-    poiIndex: wp.poiIndex !== undefined ? wp.poiIndex : null,
-    headingMode: wp.headingMode !== undefined ? wp.headingMode : null
-  }));
+  // Resolve active/first layer speed if available
+  const allLayers = (typeof global !== 'undefined' && Array.isArray(global.flightLayers) && global.flightLayers.length > 0)
+    ? global.flightLayers
+    : ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : []);
+  const activeLayer = (typeof getActiveLayer === 'function' ? getActiveLayer() : null) || allLayers[0] || null;
+  const layerSpeed = activeLayer?.speed !== undefined ? activeLayer.speed : globalSpeed;
 
+  const formattedWaypoints = currentWps.map((wp, idx) => {
+    const wpSpeed = (wp.speed !== undefined && wp.speed !== null && wp.speed !== 'inherit')
+      ? wp.speed
+      : (wp.layerSpeed !== undefined && wp.layerSpeed !== null && wp.layerSpeed !== 'inherit')
+        ? wp.layerSpeed
+        : layerSpeed;
+    return {
+      index: idx,
+      lat: wp.lat,
+      lon: wp.lon,
+      alt: wp.alt !== undefined ? wp.alt : altitude,
+      pitch: wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch,
+      heading: wp.heading !== undefined ? wp.heading : null,
+      speed: wpSpeed,
+      hoverTime: wp.hoverTime !== undefined ? wp.hoverTime : globalHoverTime,
+      x: wp.x !== undefined ? wp.x : null,
+      y: wp.y !== undefined ? wp.y : null,
+      isRingStart: !!wp.isRingStart,
+      ringIndex: wp.ringIndex !== undefined ? wp.ringIndex : null,
+      poiIndex: wp.poiIndex !== undefined ? wp.poiIndex : null,
+      headingMode: wp.headingMode !== undefined ? wp.headingMode : null,
+      isHyperlapse: Boolean(wp.isHyperlapse || gridType === 'hyperlapse'),
+      gridType: wp.gridType || (gridType === 'hyperlapse' ? 'hyperlapse' : null),
+      layerPattern: wp.layerPattern || (activeLayer?.pattern || null),
+      skipPhoto: Boolean(wp.skipPhoto),
+      hyperlapseInterval: wp.hyperlapseInterval !== undefined ? wp.hyperlapseInterval : (activeLayer?.hyperlapseInterval || null)
+    };
+  });
+
+  const effStatsSpeed = (options.speed !== undefined && options.speed !== null)
+    ? options.speed
+    : (formattedWaypoints[0]?.speed || layerSpeed || globalSpeed);
   const totalStats = typeof calculateStats === 'function'
-    ? calculateStats(formattedWaypoints, typeof getCurrentPhotos === 'function' ? getCurrentPhotos() : null, speed, null, null, captureMode)
+    ? calculateStats(formattedWaypoints, typeof getCurrentPhotos === 'function' ? getCurrentPhotos() : null, effStatsSpeed, null, null, captureMode)
     : null;
 
   const spatialData = typeof extractSpatialMissionLayers === 'function'
@@ -624,9 +646,6 @@ function buildMissionPlanJSON(customWps = null) {
   const allPois = (typeof global !== 'undefined' && Array.isArray(global.pois) && global.pois.length > 0)
     ? global.pois
     : ((typeof pois !== 'undefined' && Array.isArray(pois)) ? pois : ((typeof pointsOfInterest !== 'undefined' && Array.isArray(pointsOfInterest)) ? pointsOfInterest : []));
-  const allLayers = (typeof global !== 'undefined' && Array.isArray(global.flightLayers) && global.flightLayers.length > 0)
-    ? global.flightLayers
-    : ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : []);
 
   return {
     schemaVersion: "1.1.0",
@@ -660,7 +679,7 @@ function buildMissionPlanJSON(customWps = null) {
       },
       flight: {
         altitude,
-        speed,
+        speed: globalSpeed,
         headingMode,
         finishAction,
         signalLostAction,
@@ -752,7 +771,7 @@ function exportMissionPlanJSON(customWps = null) {
 
 function buildFlightDiagnosticsJSON(customWps = null, options = {}) {
   const currentWps = customWps || (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
-  const plan = typeof buildMissionPlanJSON === 'function' ? buildMissionPlanJSON(currentWps) : null;
+  const plan = typeof buildMissionPlanJSON === 'function' ? buildMissionPlanJSON(currentWps, options) : null;
   const isoTimestamp = typeof formatISO8601ForFilename === 'function' ? formatISO8601ForFilename() : new Date().toISOString().replace(/:/g, '-');
   const uuid = options.uuid || (typeof getRC2UUID === 'function' && getRC2UUID()) || (plan && plan.metadata && plan.metadata.uuid) || `mission_${Date.now()}`;
 
@@ -760,8 +779,25 @@ function buildFlightDiagnosticsJSON(customWps = null, options = {}) {
   const speed = options.speed ?? (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) ?? 4.0;
   const gimbalPitch = options.gimbalPitch ?? parseGimbalPitch(typeof document !== 'undefined' ? document.getElementById('gimbal-pitch')?.value : null, -60.0);
 
+  const isHyperlapse = Boolean(options.flightPattern === 'hyperlapse' || options.pattern === 'hyperlapse' ||
+    (typeof document !== 'undefined' && document.getElementById('grid-type')?.value === 'hyperlapse') ||
+    plan?.geometry?.pattern === 'hyperlapse' ||
+    (currentWps && currentWps.some(w => w && (w.isHyperlapse || w.gridType === 'hyperlapse' || w.layerPattern === 'hyperlapse'))));
+  const activePhotos = options.photoLocations || options.photos || (typeof getCurrentPhotos === 'function' ? getCurrentPhotos() : null);
+  const hlInterval = options.interval || currentWps.find(w => w && w.hyperlapseInterval)?.hyperlapseInterval || (plan && plan.layers && plan.layers.find(l => l.pattern === 'hyperlapse')?.hyperlapseInterval) || 3;
+
   const telemetry = typeof generateTelemetryFromWaypoints === 'function'
-    ? generateTelemetryFromWaypoints(currentWps, { altitude, speed, gimbalPitch, isSimulation: true, flightId: uuid })
+    ? generateTelemetryFromWaypoints(currentWps, {
+        altitude,
+        speed,
+        gimbalPitch,
+        isSimulation: true,
+        flightId: uuid,
+        isHyperlapse,
+        photoLocations: activePhotos,
+        photoCount: (activePhotos && activePhotos.length > 0) ? activePhotos.length : (plan?.statistics?.photoCount),
+        interval: hlInterval
+      })
     : null;
 
   const userAgent = {
@@ -851,7 +887,7 @@ function buildFlightDiagnosticsJSON(customWps = null, options = {}) {
     executionError: options.executionError || (validationErrors.length > 0 ? validationErrors.join('; ') : ''),
     summary: {
       waypointCount: currentWps.length,
-      photoCount: telemetry?.photoCount ?? currentWps.length,
+      photoCount: telemetry?.photoCount ?? ((activePhotos && activePhotos.length > 0) ? activePhotos.length : (plan?.statistics?.photoCount ?? currentWps.length)),
       totalDistance: telemetry?.totalDistance ?? plan?.statistics?.totalDistanceMeters ?? 0,
       estimatedDuration: telemetry?.durationSeconds ?? plan?.statistics?.totalFlightTimeSeconds ?? 0,
       durationFormatted: telemetry?.durationFormatted ?? plan?.statistics?.flightTimeFormatted ?? '',

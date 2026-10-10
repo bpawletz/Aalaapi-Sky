@@ -33,7 +33,10 @@ function getPatternDisplayName(pattern) {
     'exclusion-box': '🚫 Exclusion (Box)',
     'exclusion-freeform': '🚫 Exclusion (Poly)',
     'boundary-polygon': '🗺️ Boundary / Parcel',
-    'fiducial-markers': '🎯 Fiducial / GCPs'
+    'fiducial-markers': '🎯 Fiducial / GCPs',
+    'photo-sphere': '360° Photo Sphere',
+    'hyperlapse': 'Hyperlapse Time-Lapse',
+    'light-art': '🎨 Light Art (Sky Painting)'
   };
   return map[pattern] || pattern || 'Double Grid';
 }
@@ -143,6 +146,14 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     hyperlapseHeadingMode: 'path', // 'path' or 'keyframes'
     hyperlapseStartHeading: 0,
     hyperlapseEndHeading: 90,
+    lightArtPreset: 'spiral', // 'spiral', 'helix', 'star', 'heart', 'circle'
+    lightArtOrientation: 'horizontal', // 'horizontal' or 'vertical'
+    lightArtRadius: 25,
+    lightArtTurns: 3,
+    lightArtPointsCount: 5,
+    lightArtStarRatio: 0.45,
+    lightArtClimb: 15,
+    lightArtCameraAzimuth: 0,
     freeformWaypoints: [],
     freeformPhotos: [],
     roadWaypoints: [],
@@ -159,6 +170,10 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
 
   if (pattern === 'road-following') {
     layer.gimbalPitch = 'auto';
+  } else if (pattern === 'light-art') {
+    layer.speed = 3.0; // Optimal smooth stroke velocity
+    layer.pathMode = 'curved';
+    layer.captureMode = 'continuous';
   }
 
   return layer;
@@ -768,6 +783,24 @@ function saveActiveLayerFromUi() {
   if (hlStartHeading) layer.hyperlapseStartHeading = parseFloat(hlStartHeading.value) || 0;
   if (hlEndHeading) layer.hyperlapseEndHeading = parseFloat(hlEndHeading.value) || 90;
 
+  const laPreset = document.getElementById('light-art-preset');
+  const laOrientation = document.getElementById('light-art-orientation');
+  const laRadius = document.getElementById('light-art-radius');
+  const laTurns = document.getElementById('light-art-turns');
+  const laPoints = document.getElementById('light-art-points');
+  const laStarRatio = document.getElementById('light-art-star-ratio');
+  const laClimb = document.getElementById('light-art-climb');
+  const laCameraAz = document.getElementById('light-art-camera-azimuth');
+
+  if (laPreset && laPreset.value) layer.lightArtPreset = laPreset.value;
+  if (laOrientation && laOrientation.value) layer.lightArtOrientation = laOrientation.value;
+  if (laRadius) layer.lightArtRadius = parseFloat(laRadius.value) || 25;
+  if (laTurns) layer.lightArtTurns = parseFloat(laTurns.value) || 3;
+  if (laPoints) layer.lightArtPointsCount = parseInt(laPoints.value, 10) || 5;
+  if (laStarRatio) layer.lightArtStarRatio = parseFloat(laStarRatio.value) || 0.45;
+  if (laClimb) layer.lightArtClimb = parseFloat(laClimb.value) || 15;
+  if (laCameraAz) layer.lightArtCameraAzimuth = parseFloat(laCameraAz.value) || 0;
+
   if (globalDetourModeEl && globalDetourModeEl.value) {
     globalExclusionDetourMode = globalDetourModeEl.value;
   }
@@ -1007,6 +1040,39 @@ function syncUiWithActiveLayer() {
     } else {
       hlKeyframesBox.classList.add('hidden');
     }
+  }
+
+  // Sync Light Art Controls
+  const laPreset = document.getElementById('light-art-preset');
+  const laOrientation = document.getElementById('light-art-orientation');
+  const laRadius = document.getElementById('light-art-radius');
+  const laRadiusVal = document.getElementById('light-art-radius-val');
+  const laTurns = document.getElementById('light-art-turns');
+  const laTurnsVal = document.getElementById('light-art-turns-val');
+  const laPoints = document.getElementById('light-art-points');
+  const laStarRatio = document.getElementById('light-art-star-ratio');
+  const laStarRatioVal = document.getElementById('light-art-star-ratio-val');
+  const laClimb = document.getElementById('light-art-climb');
+  const laClimbVal = document.getElementById('light-art-climb-val');
+  const laCameraAz = document.getElementById('light-art-camera-azimuth');
+  const laCameraAzVal = document.getElementById('light-art-camera-azimuth-val');
+
+  if (laPreset) laPreset.value = layer.lightArtPreset || 'spiral';
+  if (laOrientation) laOrientation.value = layer.lightArtOrientation || 'horizontal';
+  if (laRadius) laRadius.value = layer.lightArtRadius !== undefined ? layer.lightArtRadius : 25;
+  if (laRadiusVal) laRadiusVal.textContent = `${layer.lightArtRadius !== undefined ? layer.lightArtRadius : 25}m`;
+  if (laTurns) laTurns.value = layer.lightArtTurns !== undefined ? layer.lightArtTurns : 3;
+  if (laTurnsVal) laTurnsVal.textContent = `${layer.lightArtTurns !== undefined ? layer.lightArtTurns : 3}`;
+  if (laPoints) laPoints.value = layer.lightArtPointsCount !== undefined ? layer.lightArtPointsCount : 5;
+  if (laStarRatio) laStarRatio.value = layer.lightArtStarRatio !== undefined ? layer.lightArtStarRatio : 0.45;
+  if (laStarRatioVal) laStarRatioVal.textContent = `${layer.lightArtStarRatio !== undefined ? layer.lightArtStarRatio : 0.45}`;
+  if (laClimb) laClimb.value = layer.lightArtClimb !== undefined ? layer.lightArtClimb : 15;
+  if (laClimbVal) laClimbVal.textContent = `${layer.lightArtClimb !== undefined ? layer.lightArtClimb : 15}m`;
+  if (laCameraAz) laCameraAz.value = layer.lightArtCameraAzimuth !== undefined ? layer.lightArtCameraAzimuth : 0;
+  if (laCameraAzVal) laCameraAzVal.textContent = `${layer.lightArtCameraAzimuth !== undefined ? layer.lightArtCameraAzimuth : 0}°`;
+
+  if (typeof updateLightArtUiFields === 'function') {
+    updateLightArtUiFields(layer);
   }
 
   if (typeof syncDisplayValues === 'function') {
@@ -2128,7 +2194,12 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     actualRotation = (gridType === 'orbit' || gridType === 'multi-orbit' || gridType === 'tower' || gridType === 'photo-sphere') ? 0 : rotation;
 
     let gridData;
-    if (gridType === 'tower') {
+    if (gridType === 'light-art') {
+      gridData = generateLightArtCoordinates(layer, altitude, defaultGimbalPitch, speed);
+      if (typeof updateLightArtBadge === 'function') {
+        updateLightArtBadge(gridData);
+      }
+    } else if (gridType === 'tower') {
       gridData = generateTowerCoordinates(layer, sLine, sPhoto, altitude, defaultGimbalPitch);
     } else if (gridType === 'orbit') {
       gridData = generateOrbitCoordinates(gridWidth, sPhoto, altitude, defaultGimbalPitch);
@@ -2175,7 +2246,8 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
         isPerimeterOrbit: pt.isPerimeterOrbit || false,
         isPhotoSpherePoint: pt.isPhotoSpherePoint || (gridType === 'photo-sphere'),
         isPhotoSphere: pt.isPhotoSphere || (gridType === 'photo-sphere'),
-        gridType: pt.gridType || (gridType === 'target-splat' ? 'target-splat' : (gridType === 'photo-sphere' ? 'photo-sphere' : undefined)),
+        isLightArtPoint: pt.isLightArtPoint || (gridType === 'light-art'),
+        gridType: pt.gridType || (gridType === 'target-splat' ? 'target-splat' : (gridType === 'photo-sphere' ? 'photo-sphere' : (gridType === 'light-art' ? 'light-art' : undefined))),
         origLat: geo.lat,
         origLon: geo.lon,
         origX: pt.x,

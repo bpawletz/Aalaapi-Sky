@@ -5,6 +5,8 @@ on:
     branches: [ main ]
     paths:
       - 'src/**'
+      - 'schemas/**'
+      - 'tools/**'
       - 'index.css'
       - 'index_template.html'
       - 'scratch/build.py'
@@ -29,6 +31,9 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.x'
+
+    - name: Install Python Dependencies
+      run: pip install xmlschema
 
     - name: Run Build Script
       run: python scratch/build.py
@@ -57,6 +62,9 @@ jobs:
 
     - name: Run Tests
       run: node --no-deprecation --test index.test.js
+
+    - name: Strict DJI WPML XSD Schema Validation
+      run: python tools/validation/validate_wpml.py --run-matrix
 
     - name: Refresh FAA TFR Data Cache
       run: node tools/fetch_tfr_data.js

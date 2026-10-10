@@ -5992,7 +5992,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.149.7</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.151.0</span></h1>
 
 
 
@@ -6208,6 +6208,7 @@ html, body {
               <option value="tower">3D Structure (Tower Audit)</option>
               <option value="photo-sphere">360° Pano (Photo Sphere)</option>
               <option value="hyperlapse">🎞️ Hyperlapse (Interval Time-Lapse)</option>
+              <option value="light-art">🎨 Light Art (Sky Painting / Long Exposure)</option>
               <option value="grid-orbit-combo">2D + 3D Hybrid (Grid + Orbit Combo)</option>
               <option value="grid-multi-orbit-combo">2D + 3D Hybrid (Grid + Multi-Orbit)</option>
               <option value="freeform">Freeform Flight Plan (Manual Waypoints)</option>
@@ -6287,6 +6288,12 @@ html, body {
                   <circle cx="20" cy="7" r="2" fill="currentColor"/>
                 </svg>
                 <span>Hyperlapse</span>
+              </div>
+              <div class="pattern-card" data-value="light-art" title="Light Art & Sky Painting (Long Exposure Calligraphy)">
+                <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="#ec4899"/>
+                </svg>
+                <span style="color: #f472b6;">Light Art</span>
               </div>
               <div class="pattern-card" data-value="grid-orbit-combo" title="2D + 3D Hybrid (Grid + Orbit Combo)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -6925,6 +6932,97 @@ html, body {
             <div style="display: flex; gap: 6px;">
               <button type="button" id="hyperlapse-undo-btn" class="btn btn-secondary btn-sm" style="flex: 1; padding: 4px 6px; font-size: 0.72rem;">↩️ Undo Point</button>
               <button type="button" id="hyperlapse-clear-btn" class="btn btn-danger btn-sm" style="flex: 1; padding: 4px 6px; font-size: 0.72rem;">🗑️ Clear Path</button>
+            </div>
+          </div>
+
+          <!-- Light Art / Sky Painting Controls & Info Card (v1.151.0 - Issue #136) -->
+          <div id="light-art-container" class="control-group hidden" style="background: rgba(236, 72, 153, 0.05); border: 1px solid rgba(236, 72, 153, 0.25); border-radius: 8px; padding: 12px; margin-top: 10px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <strong style="color: #ec4899; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+                🎨 Light Art (Sky Painting)
+              </strong>
+              <span id="light-art-duration-badge" class="badge" style="background: rgba(236, 72, 153, 0.2); color: #f472b6; font-size: 0.68rem; padding: 2px 7px; border-radius: 4px; font-weight: 700;">0s (Bulb)</span>
+            </div>
+            <div style="font-size: 0.74rem; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4;">
+              Generates continuous smooth 3D trajectories for long exposure night photography. Set your ground camera on a tripod in Bulb/Manual mode and match the recommended shutter speed.
+            </div>
+
+            <!-- Shape Preset & Canvas Orientation -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+              <div>
+                <label for="light-art-preset" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 3px;">Shape Preset</label>
+                <select id="light-art-preset" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 3px 6px;">
+                  <option value="spiral" selected>Spiral (Vortex)</option>
+                  <option value="helix">3D Helix (Climbing)</option>
+                  <option value="star">Star (Parametric)</option>
+                  <option value="heart">Heart (Cardioid)</option>
+                  <option value="circle">Circle (Ring)</option>
+                </select>
+              </div>
+              <div>
+                <label for="light-art-orientation" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 3px;">Canvas Orientation</label>
+                <select id="light-art-orientation" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 3px 6px;">
+                  <option value="horizontal" selected>Horizontal (Flat / Overhead)</option>
+                  <option value="vertical">Vertical Billboard (Upright)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Radius / Scale Slider -->
+            <div class="control-group" style="margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                <label for="light-art-radius" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; margin: 0;">Canvas Radius / Scale</label>
+                <span id="light-art-radius-val" style="font-size: 0.72rem; color: #ec4899; font-weight: 700;">25m</span>
+              </div>
+              <input type="range" id="light-art-radius" class="form-range" min="5" max="100" step="1" value="25" style="accent-color: #ec4899;">
+            </div>
+
+            <!-- Preset Specific Options -->
+            <div id="light-art-spiral-opts" class="control-group" style="margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                <label for="light-art-turns" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; margin: 0;">Spiral Rotations</label>
+                <span id="light-art-turns-val" style="font-size: 0.72rem; color: #ec4899; font-weight: 700;">3</span>
+              </div>
+              <input type="range" id="light-art-turns" class="form-range" min="1" max="8" step="1" value="3" style="accent-color: #ec4899;">
+            </div>
+
+            <div id="light-art-helix-opts" class="control-group" style="margin-bottom: 8px; display: none;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                <label for="light-art-climb" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; margin: 0;">Altitude Climb</label>
+                <span id="light-art-climb-val" style="font-size: 0.72rem; color: #ec4899; font-weight: 700;">15m</span>
+              </div>
+              <input type="range" id="light-art-climb" class="form-range" min="5" max="60" step="1" value="15" style="accent-color: #ec4899;">
+            </div>
+
+            <div id="light-art-star-opts" style="margin-bottom: 8px; display: none;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div>
+                  <label for="light-art-points" style="display: block; color: var(--text-muted); font-size: 0.68rem; margin-bottom: 2px;">Star Points</label>
+                  <input type="number" id="light-art-points" class="form-control form-control-sm" min="3" max="12" value="5" style="font-size: 0.72rem; padding: 2px 6px;">
+                </div>
+                <div>
+                  <label for="light-art-star-ratio" style="display: block; color: var(--text-muted); font-size: 0.68rem; margin-bottom: 2px;">Inner Ratio (<span id="light-art-star-ratio-val">0.45</span>)</label>
+                  <input type="range" id="light-art-star-ratio" class="form-range" min="0.2" max="0.8" step="0.05" value="0.45" style="accent-color: #ec4899;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Camera Azimuth (for Vertical Billboard Mode) -->
+            <div id="light-art-azimuth-opts" class="control-group" style="margin-bottom: 8px; display: none;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                <label for="light-art-camera-azimuth" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; margin: 0;">Ground Camera Bearing</label>
+                <span id="light-art-camera-azimuth-val" style="font-size: 0.72rem; color: #ec4899; font-weight: 700;">0° (North)</span>
+              </div>
+              <input type="range" id="light-art-camera-azimuth" class="form-range" min="0" max="359" step="1" value="0" style="accent-color: #ec4899;">
+            </div>
+
+            <!-- Shutter Sync Notice -->
+            <div style="display: flex; align-items: center; gap: 6px; background: rgba(236, 72, 153, 0.08); border: 1px solid rgba(236, 72, 153, 0.25); border-radius: 6px; padding: 6px 8px; font-size: 0.72rem; color: #f472b6;">
+              <span style="font-size: 0.9rem;">📸</span>
+              <span><strong>Shutter Sync:</strong> Continuous curved flight mode prevents waypoint pause hotspots. Ground camera shutter opens at drone start and closes at stroke finish.</span>
             </div>
           </div>
 
@@ -9095,6 +9193,22 @@ html, body {
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(236, 72, 153, 0.08); border: 1px solid rgba(236, 72, 153, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #f472b6; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🎨 Light Art &amp; Sky Painting via Long Exposure (v1.151.0) (Closes #136)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Transform your drone into an aerial light brush for night photography! The new <strong>Light Art</strong> pattern generator creates smooth, continuous 2D/3D flight paths across 5 mathematical presets (<strong>Spiral Vortex</strong>, <strong>3D Helix</strong>, <strong>Star</strong>, <strong>Heart</strong>, and <strong>Circle</strong>). Supports both <strong>Horizontal</strong> (overhead flat) and <strong>Vertical Billboard</strong> (upright facing camera azimuth) canvas orientations. Features a live shutter duration calculator and luminous magenta 3D flight trajectory visualization.
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🛡️ Strict WPML XML Schema Definition (XSD) Validation &amp; Isolated Drone Templates (v1.150.0)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Exported KMZ flight plans are now validated against rigorous formal <strong>DJI XML Schema Definitions (XSD)</strong> across both <code>uav.com</code> and <code>dji.com</code> namespaces! Completely eliminated hardware profile bleed and execution aborts on Consumer drones (Mini 4 Pro, Air 3) by replacing fragile regex tag-stripping with isolated, architecturally dedicated XML templates (<code>ConsumerMissionTemplate</code> vs. <code>EnterpriseMissionTemplate</code>). Automated CI testing validates a 36-test hardware matrix against XSD rules on every build.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🚁 Distinct ADS-B Aircraft Type Icons &amp; Multi-Type Radar Awareness (v1.148.0) (Closes #124)
@@ -9188,7 +9302,7 @@ html, body {
               🤖 Multi-Layer AI Export &amp; Privacy Coordinate Masking (v1.136.0)
             </strong>
             <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
-              Export comprehensive diagnostic prompts for AI assistants (Google Antigravity, Claude, ChatGPT) across the entire multi-layer mission stack! Exports all flight layers, patterns, dynamics, and Points of Interest (POIs) in one unified diagnostic text blob. By default, raw GPS coordinates are securely masked and normalized to the app default rural reference location (<code>[41.3215, -88.9950]</code>) with relative meter offsets to protect operational and client privacy, with an optional toggle to export real coordinates when required.
+              Export comprehensive mission settings and diagnostic prompts for AI assistants (Google Antigravity, Claude, ChatGPT) across the entire multi-layer mission stack! Exports all flight layers, patterns, dynamics, and Points of Interest (POIs) in one unified text blob to provide AI assistants with full context on app settings or assist with issue triage. By default, raw GPS coordinates are securely masked and normalized to the app default rural reference location (<code>[41.3215, -88.9950]</code>) with relative meter offsets to protect operational and client privacy, with an optional toggle to export real coordinates when required.
             </p>
           </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
@@ -10298,7 +10412,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.149.7</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.151.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -10359,6 +10473,40 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.151.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Light Art &amp; Sky Painting Pattern Generator (Closes #136):</strong> Added dedicated <code>🎨 Light Art</code> flight pattern with 5 mathematical presets (Spiral, 3D Helix, Star, Heart, Circle) and dual Horizontal vs. Vertical Billboard orientations for aerial long exposure night photography.</li>
+              <li><strong>Long Exposure Shutter Sync HUD &amp; Luminous 3D Ribbon:</strong> Real-time stroke duration and recommended Bulb shutter speed calculator with glowing pink/magenta trajectory simulation in the 3D Digital Twin viewer.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.150.3):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Flight Diagnostics AI Export Context &amp; Button Clarity:</strong> Updated the Flight Diagnostics AI export button to <code>📋 Export to AI (Settings &amp; Diag)</code> with an accurate descriptive tooltip. Differentiated general mission app settings and layer dynamics exports from error triage reports so AI assistants receive appropriate contextual prompts rather than assuming execution failures on clean missions.</li>
+              <li><strong>Contextual AI Prompt Framing &amp; Fallbacks:</strong> Conditioned the exported AI prompt heading and instructions to display <code>### 🤖 ANTIGRAVITY &amp; AI MISSION CONTEXT: App Settings &amp; Flight Configuration</code> with supportive mission guidance when no pre-flight errors exist, reserving bug triage formatting exclusively for detected rule failures and execution aborts.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.150.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Hyperlapse Route Execution &amp; POI Target Association:</strong> Clarified RC 2 trajectory display (spline waypoints vs. interval captures along path) and ensured POI target coordinates populate accurately in WPML placemark parameters across all heading modes.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.150.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Hyperlapse Diagnostics &amp; Frame Count Accuracy:</strong> Resolved an issue where Flight Diagnostics, mission plan statistics, and SQLite logs reported only 3 photos for hyperlapse routes (matching transit waypoints) instead of actual interval frames. Accurately simulates periodic interval captures across 3D flight trajectories.</li>
+              <li><strong>Three-Tier Velocity Cascading &amp; Speed Tag Sanitization:</strong> Resolved <code>undefined</code> waypoint and transitional speed tags via complete three-tier cascading (Waypoint &rarr; Layer &rarr; Global default), paired with automatic malformed token repair in <code>validateAndFixWpml</code>.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.150.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Strict XML Schema Definition (XSD) Validation &amp; CI Gate:</strong> Integrated comprehensive DJI WPML XSD schemas (supporting both <code>http://www.uav.com/wpmz/1.0.2</code> and <code>http://www.dji.com/wpmz/1.0.2</code> namespaces) into the automated build &amp; CI pipeline, permanently preventing XML structure regressions, tag bleed, and DJI Fly flight execution aborts.</li>
+              <li><strong>Isolated Consumer vs. Enterprise Mission Templates:</strong> Replaced post-export regex string stripping with dedicated, clean architectural XML templates (<code>ConsumerMissionTemplate</code> and <code>EnterpriseMissionTemplate</code>) to strictly guarantee hardware boundary enforcement across all drone profiles.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.149.7):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -14177,8 +14325,8 @@ html, body {
               <input type="checkbox" id="diag-include-coords-checkbox" style="accent-color: #6366f1; cursor: pointer;" />
               <span>Include real GPS coordinates in AI export</span>
             </label>
-            <button id="diag-copy-antigravity-btn" type="button" class="btn-secondary" style="width: 100%; padding: 8px 12px; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.35); color: #a5b4fc; cursor: pointer;" title="Export comprehensive multi-layer diagnostics and bug triage prompt for AI assistants">
-              📋 Export to AI (Copy Text)
+            <button id="diag-copy-antigravity-btn" type="button" class="btn-secondary" style="width: 100%; padding: 8px 12px; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.35); color: #a5b4fc; cursor: pointer;" title="Export comprehensive mission settings, active layer parameters, and flight diagnostics for AI assistants">
+              📋 Export to AI (Settings &amp; Diag)
             </button>
             <button id="diag-export-json-btn" type="button" class="btn-secondary" style="width: 100%; padding: 8px 12px; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24; cursor: pointer;">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -14301,7 +14449,7 @@ html, body {
             All outgoing exports are auto-repaired and verified against DJI Fly firmware rules.
           </span>
           <div style="display: flex; gap: 8px; align-items: center;">
-            <button id="inspector-copy-antigravity-btn" type="button" class="btn-secondary" style="display: none; padding: 6px 12px; font-size: 0.75rem; background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4); color: #f87171; align-items: center; gap: 4px;" title="Copy complete diagnostic bug report formatted for Antigravity AI assistant">📋 Copy Antigravity Fix Prompt</button>
+            <button id="inspector-copy-antigravity-btn" type="button" class="btn-secondary" style="display: none; padding: 6px 12px; font-size: 0.75rem; background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.4); color: #f87171; align-items: center; gap: 4px;" title="Copy complete diagnostic report and mission parameters formatted for AI assistants">📋 Copy AI Diagnostic Prompt</button>
             <button id="close-kmz-inspector-btn" type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;">Close</button>
             <button id="close-inspector-footer-btn" type="button" style="display: none;" aria-hidden="true"></button>
             <button id="inspector-autofix-download-btn" type="button" class="btn-primary" style="padding: 6px 14px; font-size: 0.75rem; font-weight: 600;">Export Verified KMZ</button>
@@ -18411,7 +18559,10 @@ function getPatternDisplayName(pattern) {
     'exclusion-box': '🚫 Exclusion (Box)',
     'exclusion-freeform': '🚫 Exclusion (Poly)',
     'boundary-polygon': '🗺️ Boundary / Parcel',
-    'fiducial-markers': '🎯 Fiducial / GCPs'
+    'fiducial-markers': '🎯 Fiducial / GCPs',
+    'photo-sphere': '360° Photo Sphere',
+    'hyperlapse': 'Hyperlapse Time-Lapse',
+    'light-art': '🎨 Light Art (Sky Painting)'
   };
   return map[pattern] || pattern || 'Double Grid';
 }
@@ -18521,6 +18672,14 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     hyperlapseHeadingMode: 'path', // 'path' or 'keyframes'
     hyperlapseStartHeading: 0,
     hyperlapseEndHeading: 90,
+    lightArtPreset: 'spiral', // 'spiral', 'helix', 'star', 'heart', 'circle'
+    lightArtOrientation: 'horizontal', // 'horizontal' or 'vertical'
+    lightArtRadius: 25,
+    lightArtTurns: 3,
+    lightArtPointsCount: 5,
+    lightArtStarRatio: 0.45,
+    lightArtClimb: 15,
+    lightArtCameraAzimuth: 0,
     freeformWaypoints: [],
     freeformPhotos: [],
     roadWaypoints: [],
@@ -18537,6 +18696,10 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
 
   if (pattern === 'road-following') {
     layer.gimbalPitch = 'auto';
+  } else if (pattern === 'light-art') {
+    layer.speed = 3.0; // Optimal smooth stroke velocity
+    layer.pathMode = 'curved';
+    layer.captureMode = 'continuous';
   }
 
   return layer;
@@ -19146,6 +19309,24 @@ function saveActiveLayerFromUi() {
   if (hlStartHeading) layer.hyperlapseStartHeading = parseFloat(hlStartHeading.value) || 0;
   if (hlEndHeading) layer.hyperlapseEndHeading = parseFloat(hlEndHeading.value) || 90;
 
+  const laPreset = document.getElementById('light-art-preset');
+  const laOrientation = document.getElementById('light-art-orientation');
+  const laRadius = document.getElementById('light-art-radius');
+  const laTurns = document.getElementById('light-art-turns');
+  const laPoints = document.getElementById('light-art-points');
+  const laStarRatio = document.getElementById('light-art-star-ratio');
+  const laClimb = document.getElementById('light-art-climb');
+  const laCameraAz = document.getElementById('light-art-camera-azimuth');
+
+  if (laPreset && laPreset.value) layer.lightArtPreset = laPreset.value;
+  if (laOrientation && laOrientation.value) layer.lightArtOrientation = laOrientation.value;
+  if (laRadius) layer.lightArtRadius = parseFloat(laRadius.value) || 25;
+  if (laTurns) layer.lightArtTurns = parseFloat(laTurns.value) || 3;
+  if (laPoints) layer.lightArtPointsCount = parseInt(laPoints.value, 10) || 5;
+  if (laStarRatio) layer.lightArtStarRatio = parseFloat(laStarRatio.value) || 0.45;
+  if (laClimb) layer.lightArtClimb = parseFloat(laClimb.value) || 15;
+  if (laCameraAz) layer.lightArtCameraAzimuth = parseFloat(laCameraAz.value) || 0;
+
   if (globalDetourModeEl && globalDetourModeEl.value) {
     globalExclusionDetourMode = globalDetourModeEl.value;
   }
@@ -19385,6 +19566,39 @@ function syncUiWithActiveLayer() {
     } else {
       hlKeyframesBox.classList.add('hidden');
     }
+  }
+
+  // Sync Light Art Controls
+  const laPreset = document.getElementById('light-art-preset');
+  const laOrientation = document.getElementById('light-art-orientation');
+  const laRadius = document.getElementById('light-art-radius');
+  const laRadiusVal = document.getElementById('light-art-radius-val');
+  const laTurns = document.getElementById('light-art-turns');
+  const laTurnsVal = document.getElementById('light-art-turns-val');
+  const laPoints = document.getElementById('light-art-points');
+  const laStarRatio = document.getElementById('light-art-star-ratio');
+  const laStarRatioVal = document.getElementById('light-art-star-ratio-val');
+  const laClimb = document.getElementById('light-art-climb');
+  const laClimbVal = document.getElementById('light-art-climb-val');
+  const laCameraAz = document.getElementById('light-art-camera-azimuth');
+  const laCameraAzVal = document.getElementById('light-art-camera-azimuth-val');
+
+  if (laPreset) laPreset.value = layer.lightArtPreset || 'spiral';
+  if (laOrientation) laOrientation.value = layer.lightArtOrientation || 'horizontal';
+  if (laRadius) laRadius.value = layer.lightArtRadius !== undefined ? layer.lightArtRadius : 25;
+  if (laRadiusVal) laRadiusVal.textContent = `${layer.lightArtRadius !== undefined ? layer.lightArtRadius : 25}m`;
+  if (laTurns) laTurns.value = layer.lightArtTurns !== undefined ? layer.lightArtTurns : 3;
+  if (laTurnsVal) laTurnsVal.textContent = `${layer.lightArtTurns !== undefined ? layer.lightArtTurns : 3}`;
+  if (laPoints) laPoints.value = layer.lightArtPointsCount !== undefined ? layer.lightArtPointsCount : 5;
+  if (laStarRatio) laStarRatio.value = layer.lightArtStarRatio !== undefined ? layer.lightArtStarRatio : 0.45;
+  if (laStarRatioVal) laStarRatioVal.textContent = `${layer.lightArtStarRatio !== undefined ? layer.lightArtStarRatio : 0.45}`;
+  if (laClimb) laClimb.value = layer.lightArtClimb !== undefined ? layer.lightArtClimb : 15;
+  if (laClimbVal) laClimbVal.textContent = `${layer.lightArtClimb !== undefined ? layer.lightArtClimb : 15}m`;
+  if (laCameraAz) laCameraAz.value = layer.lightArtCameraAzimuth !== undefined ? layer.lightArtCameraAzimuth : 0;
+  if (laCameraAzVal) laCameraAzVal.textContent = `${layer.lightArtCameraAzimuth !== undefined ? layer.lightArtCameraAzimuth : 0}°`;
+
+  if (typeof updateLightArtUiFields === 'function') {
+    updateLightArtUiFields(layer);
   }
 
   if (typeof syncDisplayValues === 'function') {
@@ -20506,7 +20720,12 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     actualRotation = (gridType === 'orbit' || gridType === 'multi-orbit' || gridType === 'tower' || gridType === 'photo-sphere') ? 0 : rotation;
 
     let gridData;
-    if (gridType === 'tower') {
+    if (gridType === 'light-art') {
+      gridData = generateLightArtCoordinates(layer, altitude, defaultGimbalPitch, speed);
+      if (typeof updateLightArtBadge === 'function') {
+        updateLightArtBadge(gridData);
+      }
+    } else if (gridType === 'tower') {
       gridData = generateTowerCoordinates(layer, sLine, sPhoto, altitude, defaultGimbalPitch);
     } else if (gridType === 'orbit') {
       gridData = generateOrbitCoordinates(gridWidth, sPhoto, altitude, defaultGimbalPitch);
@@ -20553,7 +20772,8 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
         isPerimeterOrbit: pt.isPerimeterOrbit || false,
         isPhotoSpherePoint: pt.isPhotoSpherePoint || (gridType === 'photo-sphere'),
         isPhotoSphere: pt.isPhotoSphere || (gridType === 'photo-sphere'),
-        gridType: pt.gridType || (gridType === 'target-splat' ? 'target-splat' : (gridType === 'photo-sphere' ? 'photo-sphere' : undefined)),
+        isLightArtPoint: pt.isLightArtPoint || (gridType === 'light-art'),
+        gridType: pt.gridType || (gridType === 'target-splat' ? 'target-splat' : (gridType === 'photo-sphere' ? 'photo-sphere' : (gridType === 'light-art' ? 'light-art' : undefined))),
         origLat: geo.lat,
         origLon: geo.lon,
         origX: pt.x,
@@ -24086,6 +24306,80 @@ function initUIEventListeners() {
   };
   setupHyperlapseListeners();
 
+  // Light Art / Sky Painting Control Listeners (v1.151.0 - Issue #136)
+  const setupLightArtListeners = () => {
+    const laPreset = document.getElementById('light-art-preset');
+    const laOrientation = document.getElementById('light-art-orientation');
+    const laRadius = document.getElementById('light-art-radius');
+    const laRadiusVal = document.getElementById('light-art-radius-val');
+    const laTurns = document.getElementById('light-art-turns');
+    const laTurnsVal = document.getElementById('light-art-turns-val');
+    const laPoints = document.getElementById('light-art-points');
+    const laStarRatio = document.getElementById('light-art-star-ratio');
+    const laStarRatioVal = document.getElementById('light-art-star-ratio-val');
+    const laClimb = document.getElementById('light-art-climb');
+    const laClimbVal = document.getElementById('light-art-climb-val');
+    const laCameraAz = document.getElementById('light-art-camera-azimuth');
+    const laCameraAzVal = document.getElementById('light-art-camera-azimuth-val');
+
+    const updateLightArt = () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (!activeLayer) return;
+
+      if (laPreset) activeLayer.lightArtPreset = laPreset.value;
+      if (laOrientation) activeLayer.lightArtOrientation = laOrientation.value;
+
+      if (laRadius) {
+        const val = parseFloat(laRadius.value) || 25;
+        activeLayer.lightArtRadius = val;
+        if (laRadiusVal) laRadiusVal.textContent = `${val}m`;
+      }
+      if (laTurns) {
+        const val = parseFloat(laTurns.value) || 3;
+        activeLayer.lightArtTurns = val;
+        if (laTurnsVal) laTurnsVal.textContent = `${val}`;
+      }
+      if (laPoints) {
+        activeLayer.lightArtPointsCount = parseInt(laPoints.value, 10) || 5;
+      }
+      if (laStarRatio) {
+        const val = parseFloat(laStarRatio.value) || 0.45;
+        activeLayer.lightArtStarRatio = val;
+        if (laStarRatioVal) laStarRatioVal.textContent = `${val}`;
+      }
+      if (laClimb) {
+        const val = parseFloat(laClimb.value) || 15;
+        activeLayer.lightArtClimb = val;
+        if (laClimbVal) laClimbVal.textContent = `${val}m`;
+      }
+      if (laCameraAz) {
+        const val = parseFloat(laCameraAz.value) || 0;
+        activeLayer.lightArtCameraAzimuth = val;
+        if (laCameraAzVal) {
+          const dirs = ['North', 'NE', 'East', 'SE', 'South', 'SW', 'West', 'NW'];
+          const dirIdx = Math.round(val / 45) % 8;
+          laCameraAzVal.textContent = `${val}° (${dirs[dirIdx]})`;
+        }
+      }
+
+      if (typeof updateLightArtUiFields === 'function') {
+        updateLightArtUiFields(activeLayer);
+      }
+
+      updateGrid();
+      updateMapLegend();
+      saveAllSettingsToLocalStorage();
+    };
+
+    [laPreset, laOrientation, laRadius, laTurns, laPoints, laStarRatio, laClimb, laCameraAz].forEach(el => {
+      if (el) {
+        el.addEventListener('input', updateLightArt);
+        el.addEventListener('change', updateLightArt);
+      }
+    });
+  };
+  setupLightArtListeners();
+
   // Handle Camera Model preset change
   const cameraModelEl = document.getElementById('camera-model');
   const droneModelEl = document.getElementById('drone-model');
@@ -26040,13 +26334,15 @@ function togglePatternParameters() {
     'boundary-polygon': 'Boundary / Parcel',
     'fiducial-markers': '🎯 Fiducial / GCPs',
     'photo-sphere': '360° Photo Sphere',
-    'hyperlapse': 'Hyperlapse Time-Lapse'
+    'hyperlapse': 'Hyperlapse Time-Lapse',
+    'light-art': '🎨 Light Art (Sky Painting)'
   };
 
   const targetSplatContainer = document.getElementById('target-splat-container');
   const towerGeometryContainer = document.getElementById('tower-geometry-container');
   const photoSphereContainer = document.getElementById('photo-sphere-container');
   const hyperlapseContainer = document.getElementById('hyperlapse-container');
+  const lightArtContainer = document.getElementById('light-art-container');
 
   const activePatternBadge = document.getElementById('active-layer-pattern-badge');
   if (activePatternBadge) {
@@ -26098,6 +26394,14 @@ function togglePatternParameters() {
       hyperlapseContainer.classList.remove('hidden');
     } else {
       hyperlapseContainer.classList.add('hidden');
+    }
+  }
+
+  if (lightArtContainer) {
+    if (gridType === 'light-art') {
+      lightArtContainer.classList.remove('hidden');
+    } else {
+      lightArtContainer.classList.add('hidden');
     }
   }
 
@@ -26511,6 +26815,60 @@ function togglePatternParameters() {
     if (layerPathSelect) layerPathSelect.value = 'curved';
     const layerHeadingSelect = document.getElementById('layer-heading-mode');
     if (layerHeadingSelect) layerHeadingSelect.value = 'smoothTransition';
+
+  } else if (gridType === 'light-art') {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
+    if (gridGeometrySection) {
+      gridGeometrySection.style.display = 'block';
+      gridGeometrySection.classList.remove('collapsed');
+    }
+    if (layerCardGeometry) layerCardGeometry.style.display = 'block';
+    if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "🎨 Light Art Sky Canvas";
+    if (layerCardFlight) layerCardFlight.style.display = 'block';
+    if (layerCardOptics) layerCardOptics.style.display = 'none'; // Ground camera shoots the scene; drone camera not primary
+    if (layerCardModes) layerCardModes.style.display = 'block';
+    if (layerCardBoundary) {
+      layerCardBoundary.classList.add('hidden');
+      layerCardBoundary.style.display = 'none';
+    }
+    if (layerCardFiducial) {
+      layerCardFiducial.classList.add('hidden');
+      layerCardFiducial.style.display = 'none';
+    }
+    if (altitudeControlGroup) altitudeControlGroup.style.display = 'block';
+    if (lightArtContainer) lightArtContainer.classList.remove('hidden');
+    if (hyperlapseContainer) hyperlapseContainer.classList.add('hidden');
+    if (photoSphereContainer) photoSphereContainer.classList.add('hidden');
+    if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
+    if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
+    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
+    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
+    if (exclusionAltContainer) exclusionAltContainer.classList.add('hidden');
+    if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
+    if (freeformInstructions) freeformInstructions.classList.add('hidden');
+    if (widthContainer) widthContainer.style.display = 'none';
+    if (heightContainer) heightContainer.style.display = 'none';
+    if (rotationContainer) rotationContainer.style.display = 'none';
+    if (frontOverlapContainer) frontOverlapContainer.style.display = 'none';
+    if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
+
+    if (activeLayer) {
+      activeLayer.captureMode = 'continuous';
+      activeLayer.pathMode = 'curved';
+      activeLayer.headingMode = 'followWayline';
+      if (!activeLayer.speed || activeLayer.speed > 5) {
+        activeLayer.speed = 3.0; // Smooth steady light stroke
+        const spdInput = document.getElementById('speed');
+        if (spdInput) spdInput.value = 3.0;
+      }
+    }
+    const layerCapSelect = document.getElementById('layer-capture-mode');
+    if (layerCapSelect) layerCapSelect.value = 'continuous';
+    const layerPathSelect = document.getElementById('layer-path-mode');
+    if (layerPathSelect) layerPathSelect.value = 'curved';
+    const layerHeadingSelect = document.getElementById('layer-heading-mode');
+    if (layerHeadingSelect) layerHeadingSelect.value = 'followWayline';
 
   } else {
     if (gridGeometrySection) gridGeometrySection.style.display = 'block';
@@ -27535,6 +27893,51 @@ function restoreActiveWorkspacePlanning() {
   }
 }
 
+// ============================================================================
+// Light Art UI Helper Functions (v1.151.0 - Issue #136)
+// ============================================================================
+
+function updateLightArtBadge(gridData) {
+  if (typeof document === 'undefined') return;
+  const badge = document.getElementById('light-art-duration-badge');
+  if (!badge) return;
+  if (!gridData || !gridData.flightDurationSec) {
+    badge.textContent = '0s (Bulb)';
+    return;
+  }
+  const dur = Math.round(gridData.flightDurationSec);
+  const shutter = gridData.recommendedShutterSec || Math.ceil(dur + 2);
+  badge.textContent = `${dur}s Stroke | ${shutter}s Shutter`;
+}
+
+function updateLightArtUiFields(layer) {
+  if (typeof document === 'undefined') return;
+  const preset = layer ? (layer.lightArtPreset || 'spiral') : 'spiral';
+  const orientation = layer ? (layer.lightArtOrientation || 'horizontal') : 'horizontal';
+
+  const spiralOpts = document.getElementById('light-art-spiral-opts');
+  const starOpts = document.getElementById('light-art-star-opts');
+  const helixOpts = document.getElementById('light-art-helix-opts');
+  const azOpts = document.getElementById('light-art-azimuth-opts');
+
+  if (spiralOpts) {
+    spiralOpts.style.display = (preset === 'spiral') ? 'block' : 'none';
+  }
+  if (helixOpts) {
+    helixOpts.style.display = (preset === 'helix') ? 'block' : 'none';
+  }
+  if (starOpts) {
+    starOpts.style.display = (preset === 'star') ? 'block' : 'none';
+  }
+  if (azOpts) {
+    azOpts.style.display = (orientation === 'vertical') ? 'block' : 'none';
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.updateLightArtBadge = updateLightArtBadge;
+  window.updateLightArtUiFields = updateLightArtUiFields;
+}
 
 // Search Address via OpenStreetMap Nominatim API
 // -------------------- src/map/MapInteraction.js --------------------
@@ -29333,9 +29736,184 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
 }
 
 // ============================================================================
-// Target Splat 3D Frustum Culling & Geometry Engine (v1.77.0)
+// Light Art & Sky Painting Long Exposure Generator (v1.151.0 - Issue #136)
 // ============================================================================
 
+/**
+ * Generate 2D/3D Light Art waypoints for long exposure sky calligraphy.
+ * Supports presets (spiral, helix, star, heart, circle) in both horizontal
+ * (overhead flat) and vertical (upright billboard facing camera bearing) planes.
+ */
+function generateLightArtCoordinates(layer, baseAltitude, defaultGimbalPitch, speed) {
+  const waypoints = [];
+  const photos = [];
+
+  const preset = (layer && layer.lightArtPreset) ? layer.lightArtPreset : 'spiral';
+  const orientation = (layer && layer.lightArtOrientation) ? layer.lightArtOrientation : 'horizontal';
+  const radius = (layer && typeof layer.lightArtRadius === 'number' && layer.lightArtRadius > 0) ? layer.lightArtRadius : 25;
+  const turns = (layer && typeof layer.lightArtTurns === 'number' && layer.lightArtTurns > 0) ? layer.lightArtTurns : 3;
+  const pointsCount = (layer && typeof layer.lightArtPointsCount === 'number' && layer.lightArtPointsCount >= 3) ? layer.lightArtPointsCount : 5;
+  const starInnerRatio = (layer && typeof layer.lightArtStarRatio === 'number' && layer.lightArtStarRatio > 0 && layer.lightArtStarRatio < 1) ? layer.lightArtStarRatio : 0.45;
+  const climb = (layer && typeof layer.lightArtClimb === 'number') ? layer.lightArtClimb : 15;
+  const cameraAzimuth = (layer && typeof layer.lightArtCameraAzimuth === 'number') ? layer.lightArtCameraAzimuth : 0;
+  const strokeSpeed = (layer && typeof layer.speed === 'number' && layer.speed > 0) ? layer.speed : (speed || 3.0);
+
+  // Generate parametric 2D normalized points in canvas coordinates (u, v)
+  // where u is horizontal width (-radius to +radius) and v is height/depth (-radius to +radius)
+  const rawPoints = [];
+
+  if (preset === 'spiral') {
+    // Archimedean Spiral in plane: r = (t / maxT) * radius
+    const totalSteps = Math.max(36, Math.round(turns * 24));
+    for (let i = 0; i <= totalSteps; i++) {
+      const frac = i / totalSteps;
+      const angle = frac * turns * 2 * Math.PI;
+      const r = frac * radius;
+      const u = r * Math.cos(angle);
+      const v = r * Math.sin(angle);
+      rawPoints.push({ u, v, zOffset: 0 });
+    }
+  } else if (preset === 'helix') {
+    // 3D Climbing Helix: spirals while climbing in altitude
+    const totalSteps = Math.max(36, Math.round(turns * 24));
+    for (let i = 0; i <= totalSteps; i++) {
+      const frac = i / totalSteps;
+      const angle = frac * turns * 2 * Math.PI;
+      const r = radius;
+      const u = r * Math.cos(angle);
+      const v = r * Math.sin(angle);
+      const zOffset = frac * climb;
+      rawPoints.push({ u, v, zOffset });
+    }
+  } else if (preset === 'star') {
+    // N-Point Star polygon with alternating outer and inner vertices
+    const numPoints = pointsCount;
+    const innerR = radius * starInnerRatio;
+    const totalVerts = numPoints * 2;
+    for (let i = 0; i <= totalVerts; i++) {
+      const isInner = (i % 2 === 1);
+      const r = isInner ? innerR : radius;
+      const angle = (i / totalVerts) * 2 * Math.PI - Math.PI / 2; // Start pointing straight up
+      const u = r * Math.cos(angle);
+      const v = r * Math.sin(angle);
+      rawPoints.push({ u, v, zOffset: 0 });
+    }
+  } else if (preset === 'heart') {
+    // Parametric Cardioid Heart:
+    // x = 16 * sin^3(t)
+    // y = 13*cos(t) - 5*cos(2t) - 2*cos(3t) - cos(4t)
+    const steps = 48;
+    for (let i = 0; i <= steps; i++) {
+      const t = (i / steps) * 2 * Math.PI;
+      const sinT = Math.sin(t);
+      const uNorm = 16 * Math.pow(sinT, 3);
+      const vNorm = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+      // Normalized max bounding box of heart is approx ~16 horizontal and ~17 vertical
+      const scale = radius / 16.0;
+      const u = uNorm * scale;
+      const v = vNorm * scale;
+      rawPoints.push({ u, v, zOffset: 0 });
+    }
+  } else {
+    // Circle / Ring default
+    const steps = 36;
+    for (let i = 0; i <= steps; i++) {
+      const t = (i / steps) * 2 * Math.PI;
+      const u = radius * Math.cos(t);
+      const v = radius * Math.sin(t);
+      rawPoints.push({ u, v, zOffset: 0 });
+    }
+  }
+
+  // Project (u, v, zOffset) into 3D local coordinates (x, y, alt)
+  // Horizontal mode:
+  //   u maps to East (x), v maps to North (y), zOffset adds to baseAltitude
+  // Vertical Billboard mode:
+  //   Canvas stands upright in the sky facing ground camera at cameraAzimuth.
+  //   u maps across the canvas perpendicular to cameraAzimuth,
+  //   v maps up/down along altitude axis (z),
+  //   altitude = baseAltitude + v + zOffset.
+  const radAz = (cameraAzimuth * Math.PI) / 180.0;
+  const perpX = Math.cos(radAz); // Perpendicular cross-track unit vector
+  const perpY = -Math.sin(radAz);
+
+  let totalDistance = 0;
+  let prevPt = null;
+
+  rawPoints.forEach((pt, idx) => {
+    let x, y, alt;
+    if (orientation === 'vertical') {
+      // In vertical plane:
+      // u moves perpendicular to line of sight to ground camera
+      // v moves along altitude axis
+      x = pt.u * perpX;
+      y = pt.u * perpY;
+      alt = Math.max(10, baseAltitude + pt.v + pt.zOffset);
+    } else {
+      // In horizontal plane:
+      x = pt.u;
+      y = pt.v;
+      alt = Math.max(10, baseAltitude + pt.zOffset);
+    }
+
+    if (prevPt) {
+      const d = Math.hypot(x - prevPt.x, y - prevPt.y, alt - prevPt.alt);
+      totalDistance += d;
+    }
+    prevPt = { x, y, alt };
+
+    // Point aircraft tangent to direction of flight for streamlined aerodynamics
+    const wpObj = {
+      x: x,
+      y: y,
+      alt: alt,
+      pitch: defaultGimbalPitch,
+      heading: null,
+      headingMode: 'followWayline',
+      gridType: 'light-art',
+      layerPattern: 'light-art',
+      isLightArtPoint: true,
+      skipPhoto: true, // Aircraft itself is the light source; no camera triggers needed
+      turnMode: 'curved'
+    };
+
+    waypoints.push(wpObj);
+  });
+
+  // Calculate tangent headings between waypoints
+  for (let i = 0; i < waypoints.length; i++) {
+    const cur = waypoints[i];
+    let nxt = (i < waypoints.length - 1) ? waypoints[i + 1] : waypoints[i];
+    let prv = (i > 0) ? waypoints[i - 1] : waypoints[i];
+    let dx = nxt.x - prv.x;
+    let dy = nxt.y - prv.y;
+    if (Math.abs(dx) > 0.001 || Math.abs(dy) > 0.001) {
+      let brg = Math.atan2(dx, dy) * (180.0 / Math.PI);
+      if (brg < 0) brg += 360;
+      cur.heading = Math.round(brg * 10) / 10;
+    } else {
+      cur.heading = 0;
+    }
+  }
+
+  // Compute stroke flight duration and recommended ground camera shutter speed
+  const flightDurationSec = (strokeSpeed > 0) ? (totalDistance / strokeSpeed) : 0;
+  const recommendedShutterSec = Math.ceil(flightDurationSec + 2); // 2s safety buffer for Bulb exposure
+
+  return {
+    waypoints,
+    photos: [],
+    totalDistance: Math.round(totalDistance * 10) / 10,
+    flightDurationSec: Math.round(flightDurationSec * 10) / 10,
+    recommendedShutterSec: recommendedShutterSec,
+    preset,
+    orientation
+  };
+}
+
+if (typeof window !== 'undefined') {
+  window.generateLightArtCoordinates = generateLightArtCoordinates;
+}
 // -------------------- src/3d/GeometryBuilder.js --------------------
 function calculateCameraGroundFrustum(droneX, droneY, alt, headingDeg, pitchDeg, hfov, vfov, zPlane = 0, framingRatio = 0.55) {
   const deltaH = Math.max(1.0, (alt || 50) - (zPlane || 0));
@@ -32552,7 +33130,14 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
   for (let i = 1; i < waypoints.length; i++) {
     const p1 = waypoints[i - 1];
     const p2 = waypoints[i];
-    const d = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+    let d = 0;
+    if (p1.x !== undefined && p1.x !== null && p2.x !== undefined && p2.x !== null) {
+      d = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+    } else if (p1.lat !== undefined && p2.lat !== undefined && typeof haversineDistance === 'function') {
+      const lon1 = p1.lon !== undefined ? p1.lon : p1.lng;
+      const lon2 = p2.lon !== undefined ? p2.lon : p2.lng;
+      d = haversineDistance(p1.lat, lon1, p2.lat, lon2);
+    }
     totalDistance += d;
   }
 
@@ -32564,9 +33149,19 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
     for (let j = 0; j < waypoints.length; j++) {
       if (i === j) continue;
       const p2 = waypoints[j];
-      const dx = p2.x - p1.x;
-      const dy = p2.y - p1.y;
-      const dSq = dx * dx + dy * dy;
+      let dSq;
+      if (p1.x !== undefined && p1.x !== null && p2.x !== undefined && p2.x !== null) {
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        dSq = dx * dx + dy * dy;
+      } else if (p1.lat !== undefined && p2.lat !== undefined && typeof haversineDistance === 'function') {
+        const lon1 = p1.lon !== undefined ? p1.lon : p1.lng;
+        const lon2 = p2.lon !== undefined ? p2.lon : p2.lng;
+        const hDist = haversineDistance(p1.lat, lon1, p2.lat, lon2);
+        dSq = hDist * hDist;
+      } else {
+        dSq = 0;
+      }
       if (dSq < minDistSq) {
         minDistSq = dSq;
       }
@@ -32589,7 +33184,16 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
   }
 
   // 2. Photo count
-  const photoCount = photoLocations ? photoLocations.length : (waypoints ? waypoints.length : 0);
+  const isHyperlapse = waypoints.some(w => w && (w.isHyperlapse || w.gridType === 'hyperlapse' || w.layerPattern === 'hyperlapse'));
+  let photoCount = photoLocations ? photoLocations.length : (waypoints ? waypoints.length : 0);
+  if (isHyperlapse && (!photoLocations || photoLocations.length === 0)) {
+    const interval = (waypoints.find(w => w && w.hyperlapseInterval)?.hyperlapseInterval) || 3;
+    const effSpeed = Math.max(0.2, speed || 4.0);
+    const frameSpacing = Math.max(0.2, effSpeed * interval);
+    if (totalDistance > 0 && frameSpacing > 0) {
+      photoCount = Math.floor(totalDistance / frameSpacing) + 1;
+    }
+  }
   // 3. Est flight time (accounting for stop-and-shoot hover delays)
   let flightTimeSeconds = totalDistance / speed;
   if (captureMode === 'stopAndShoot') {
@@ -32877,48 +33481,81 @@ function updateStatsPanel(stats) {
 }
 
 // Generate the WPML template.kml content
-// -------------------- src/export/WpmlCompiler.js --------------------
-function buildTemplateKml(finishAction, speed) {
-  const timestamp = Date.now();
-  const droneModelEl = document.getElementById('drone-model');
-  const parsedDroneVal = droneModelEl ? parseInt(droneModelEl.value, 10) : NaN;
-  const droneEnumValue = !isNaN(parsedDroneVal) ? parsedDroneVal : 68; // Default to DJI Mini 4 Pro (68)
+// -------------------- src/export/DroneProfiles.js --------------------
+// Aalaapi Sky - Hardware Profile Specifications & Isolated XML Mission Templates
 
-  const signalLostEl = document.getElementById('signal-lost-action');
-  const signalLostValue = signalLostEl ? signalLostEl.value : 'goBack';
-  let exitOnRCLost = 'executeLostAction';
-  let executeRCLostAction = signalLostValue;
-  if (signalLostValue === 'goContinue') {
-    exitOnRCLost = 'goContinue';
-    executeRCLostAction = 'goBack';
+const CONSUMER_DRONE_ENUMS = [68, 89]; // 68: DJI Mini 4 Pro, 89: DJI Air 3
+const ENTERPRISE_DRONE_ENUMS = [77, 67, 60, 71, 61, 66, 90]; // 77: Mavic 3E, 67: M30/30T, 60: M300/350, 71: Inspire 3
+
+function normalizeDroneEnum(droneEnumValue) {
+  if (typeof droneEnumValue === 'string') {
+    const lower = droneEnumValue.toLowerCase();
+    if (lower.includes('mini4pro') || lower.includes('mini') || lower === '68') return 68;
+    if (lower.includes('air3') || lower === '89') return 89;
+    if (lower.includes('mavic3e') || lower.includes('enterprise') || lower === '77') return 77;
+    if (lower.includes('m350') || lower.includes('m300') || lower === '60') return 60;
+    if (lower.includes('m30') || lower === '67') return 67;
+    if (lower.includes('inspire') || lower === '71') return 71;
   }
+  const val = parseInt(droneEnumValue, 10);
+  return isNaN(val) ? 68 : val;
+}
 
-  const rthAltEl = document.getElementById('rth-altitude');
-  const rthAltitude = rthAltEl ? (parseFloat(rthAltEl.value) || 50) : 50;
-  const altEl = document.getElementById('altitude');
-  const defaultAlt = altEl ? (parseFloat(altEl.value) || 50) : 50;
-  const safeTakeoffHeight = Math.max(1.5, Math.min(rthAltitude, defaultAlt));
+function isConsumerDrone(droneEnumValue) {
+  const enumVal = normalizeDroneEnum(droneEnumValue);
+  return CONSUMER_DRONE_ENUMS.includes(enumVal);
+}
 
-  const isEnterprise = (droneEnumValue !== 68 && droneEnumValue !== 89);
-  let folderXml = '';
-  if (isEnterprise) {
-    folderXml = `
-    <Folder>
-      <wpml:templateType>waypoint</wpml:templateType>
-      <wpml:templateId>0</wpml:templateId>
-      <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
-      <wpml:waylineId>0</wpml:waylineId>
-      <wpml:distance>0</wpml:distance>
-      <wpml:duration>0</wpml:duration>
-      <wpml:autoFlightSpeed>${speed}</wpml:autoFlightSpeed>
-      <wpml:payloadParam>
-        <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-        <wpml:payloadPitchControlMode>usePointSetting</wpml:payloadPitchControlMode>
-      </wpml:payloadParam>
-    </Folder>`;
-  }
+function isEnterpriseDrone(droneEnumValue) {
+  return !isConsumerDrone(droneEnumValue);
+}
 
-  return `<?xml version="1.0" encoding="UTF-8"?>
+function getDroneProfile(droneEnumValue) {
+  const effectiveEnum = normalizeDroneEnum(droneEnumValue);
+  const isConsumer = isConsumerDrone(effectiveEnum);
+  return {
+    isConsumer,
+    isEnterprise: !isConsumer,
+    droneEnumValue: effectiveEnum,
+    name: effectiveEnum === 68 ? 'DJI Mini 4 Pro' : (effectiveEnum === 89 ? 'DJI Air 3' : (effectiveEnum === 77 ? 'DJI Mavic 3 Enterprise' : 'DJI Enterprise Drone')),
+    requiresTemplateType: !isConsumer,
+    requiresPayloadParam: !isConsumer,
+    supportsPayloadParam: !isConsumer,
+    supportsTemplateType: !isConsumer,
+    supportsGlobalLensIndex: !isConsumer,
+    allowRotateYaw: !isConsumer,
+    allowDiscontinuityCurvature: !isConsumer,
+    allowStraightLine: !isConsumer,
+    allowLensIndex: !isConsumer,
+    allowedTurnModes: isConsumer
+      ? ['toPointAndStopWithContinuityCurvature', 'toPointAndPassWithContinuityCurvature']
+      : ['toPointAndStopWithContinuityCurvature', 'toPointAndPassWithContinuityCurvature', 'toPointAndStopWithDiscontinuityCurvature', 'toPointAndPassWithDiscontinuityCurvature']
+  };
+}
+
+/**
+ * Isolated XML Mission Template for Consumer Drones (Mini 4 Pro [68], Air 3 [89])
+ * Enforces zero Enterprise tag bleed natively:
+ * - Never emits <wpml:templateType>
+ * - Never emits <wpml:payloadParam>
+ * - Never emits <wpml:useGlobalPayloadLensIndex>
+ * - Never emits <wpml:actionActuatorFunc>rotateYaw</wpml:actionActuatorFunc>
+ * - Strictly enforces ContinuityCurvature turn modes
+ * - Strictly sets useStraightLine to 0
+ */
+const ConsumerMissionTemplate = {
+  buildTemplateKml(options) {
+    const {
+      timestamp = Date.now(),
+      finishAction = 'goHome',
+      exitOnRCLost = 'executeLostAction',
+      executeRCLostAction = 'goBack',
+      safeTakeoffHeight = 50,
+      speed = 4,
+      droneEnumValue = 68
+    } = options;
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">
   <Document>
     <wpml:author>Aalaapi Sky Generator</wpml:author>
@@ -32935,9 +33572,167 @@ function buildTemplateKml(finishAction, speed) {
         <wpml:droneEnumValue>${droneEnumValue}</wpml:droneEnumValue>
         <wpml:droneSubEnumValue>0</wpml:droneSubEnumValue>
       </wpml:droneInfo>
-    </wpml:missionConfig>${folderXml}
+    </wpml:missionConfig>
   </Document>
 </kml>`;
+  },
+
+  buildFolderHeader(speed = 4) {
+    return `    <Folder>
+      <wpml:templateId>0</wpml:templateId>
+      <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
+      <wpml:waylineId>0</wpml:waylineId>
+      <wpml:distance>0</wpml:distance>
+      <wpml:duration>0</wpml:duration>
+      <wpml:autoFlightSpeed>${speed}</wpml:autoFlightSpeed>\n`;
+  },
+
+  renderFolderHeader(options = {}) {
+    const speed = options.autoFlightSpeed !== undefined ? options.autoFlightSpeed : (options.speed !== undefined ? options.speed : 4);
+    return this.buildFolderHeader(speed);
+  },
+
+  resolveTurnMode(desiredMode, isStop = false) {
+    return isStop
+      ? 'toPointAndStopWithContinuityCurvature'
+      : 'toPointAndPassWithContinuityCurvature';
+  },
+
+  resolveUseStraightLine() {
+    return 0;
+  }
+};
+
+/**
+ * Isolated XML Mission Template for Enterprise Drones (Mavic 3E [77], Matrice 30/300/350, Inspire 3)
+ * Enforces complete Enterprise metadata requirements:
+ * - Generates mandatory <wpml:templateType>waypoint</wpml:templateType>
+ * - Generates mandatory <wpml:payloadParam> in Folder
+ * - Supports DiscontinuityCurvature and useStraightLine: 1
+ * - Supports rotateYaw for multi-sensor payloads
+ */
+const EnterpriseMissionTemplate = {
+  buildTemplateKml(options) {
+    const {
+      timestamp = Date.now(),
+      finishAction = 'goHome',
+      exitOnRCLost = 'executeLostAction',
+      executeRCLostAction = 'goBack',
+      safeTakeoffHeight = 50,
+      speed = 4,
+      droneEnumValue = 77
+    } = options;
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">
+  <Document>
+    <wpml:author>Aalaapi Sky Generator</wpml:author>
+    <wpml:createTime>${timestamp}</wpml:createTime>
+    <wpml:updateTime>${timestamp}</wpml:updateTime>
+    <wpml:missionConfig>
+      <wpml:flyToWaylineMode>safely</wpml:flyToWaylineMode>
+      <wpml:finishAction>${finishAction}</wpml:finishAction>
+      <wpml:exitOnRCLost>${exitOnRCLost}</wpml:exitOnRCLost>
+      <wpml:executeRCLostAction>${executeRCLostAction}</wpml:executeRCLostAction>
+      <wpml:takeOffSecurityHeight>${safeTakeoffHeight}</wpml:takeOffSecurityHeight>
+      <wpml:globalTransitionalSpeed>${speed}</wpml:globalTransitionalSpeed>
+      <wpml:droneInfo>
+        <wpml:droneEnumValue>${droneEnumValue}</wpml:droneEnumValue>
+        <wpml:droneSubEnumValue>0</wpml:droneSubEnumValue>
+      </wpml:droneInfo>
+    </wpml:missionConfig>
+    <Folder>
+      <wpml:templateType>waypoint</wpml:templateType>
+      <wpml:templateId>0</wpml:templateId>
+      <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
+      <wpml:waylineId>0</wpml:waylineId>
+      <wpml:distance>0</wpml:distance>
+      <wpml:duration>0</wpml:duration>
+      <wpml:autoFlightSpeed>${speed}</wpml:autoFlightSpeed>
+      <wpml:payloadParam>
+        <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+        <wpml:payloadPitchControlMode>usePointSetting</wpml:payloadPitchControlMode>
+      </wpml:payloadParam>
+    </Folder>
+  </Document>
+</kml>`;
+  },
+
+  buildFolderHeader(speed = 4, extraPayload = '') {
+    return `    <Folder>
+      <wpml:templateType>waypoint</wpml:templateType>
+      <wpml:templateId>0</wpml:templateId>
+      <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
+      <wpml:waylineId>0</wpml:waylineId>
+      <wpml:distance>0</wpml:distance>
+      <wpml:duration>0</wpml:duration>
+      <wpml:autoFlightSpeed>${speed}</wpml:autoFlightSpeed>
+      <wpml:payloadParam>
+        <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+        <wpml:payloadPitchControlMode>usePointSetting</wpml:payloadPitchControlMode>${extraPayload ? '\n        ' + extraPayload : ''}
+      </wpml:payloadParam>\n`;
+  },
+
+  renderFolderHeader(options = {}) {
+    const speed = options.autoFlightSpeed !== undefined ? options.autoFlightSpeed : (options.speed !== undefined ? options.speed : 4);
+    let extra = '';
+    if (options.lensIndex) {
+      extra = '<wpml:useGlobalPayloadLensIndex>1</wpml:useGlobalPayloadLensIndex>';
+    }
+    return this.buildFolderHeader(speed, extra);
+  },
+
+  resolveTurnMode(desiredMode, isStop = false, pathMode = 'normal') {
+    if (pathMode === 'straight') {
+      return isStop
+        ? 'toPointAndStopWithDiscontinuityCurvature'
+        : 'toPointAndPassWithDiscontinuityCurvature';
+    }
+    return isStop
+      ? 'toPointAndStopWithContinuityCurvature'
+      : 'toPointAndPassWithContinuityCurvature';
+  },
+
+  resolveUseStraightLine(pathMode = 'normal') {
+    return pathMode === 'straight' ? 1 : 0;
+  }
+};
+// -------------------- src/export/WpmlCompiler.js --------------------
+function buildTemplateKml(finishAction, speed) {
+  const timestamp = Date.now();
+  const droneModelEl = typeof document !== 'undefined' ? document.getElementById('drone-model') : null;
+  const parsedDroneVal = droneModelEl ? parseInt(droneModelEl.value, 10) : NaN;
+  const droneEnumValue = !isNaN(parsedDroneVal) ? parsedDroneVal : 68; // Default to DJI Mini 4 Pro (68)
+
+  const signalLostEl = typeof document !== 'undefined' ? document.getElementById('signal-lost-action') : null;
+  const signalLostValue = signalLostEl ? signalLostEl.value : 'goBack';
+  let exitOnRCLost = 'executeLostAction';
+  let executeRCLostAction = signalLostValue;
+  if (signalLostValue === 'goContinue') {
+    exitOnRCLost = 'goContinue';
+    executeRCLostAction = 'goBack';
+  }
+
+  const rthAltEl = typeof document !== 'undefined' ? document.getElementById('rth-altitude') : null;
+  const rthAltitude = rthAltEl ? (parseFloat(rthAltEl.value) || 50) : 50;
+  const altEl = typeof document !== 'undefined' ? document.getElementById('altitude') : null;
+  const defaultAlt = altEl ? (parseFloat(altEl.value) || 50) : 50;
+  const safeTakeoffHeight = Math.max(1.5, Math.min(rthAltitude, defaultAlt));
+
+  const options = {
+    timestamp,
+    finishAction,
+    exitOnRCLost,
+    executeRCLostAction,
+    safeTakeoffHeight,
+    speed,
+    droneEnumValue
+  };
+
+  const isConsumer = isConsumerDrone(droneEnumValue);
+  return isConsumer
+    ? ConsumerMissionTemplate.buildTemplateKml(options)
+    : EnterpriseMissionTemplate.buildTemplateKml(options);
 }
 
 // Generate the WPML waylines.wpml content
@@ -32951,10 +33746,34 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
   const globalHoverEl = document.getElementById('global-hover-time');
   const globalHoverTime = globalHoverEl ? parseInt(globalHoverEl.value) : 0;
 
+  const altEl = typeof document !== 'undefined' ? document.getElementById('altitude') : null;
+  const speedEl = typeof document !== 'undefined' ? document.getElementById('speed') : null;
+  const headingModeEl = typeof document !== 'undefined' ? document.getElementById('heading-mode') : null;
+  const finishActionEl = typeof document !== 'undefined' ? document.getElementById('finish-action') : null;
+  const gimbalPitchEl = typeof document !== 'undefined' ? document.getElementById('gimbal-pitch') : null;
+  const captureModeEl = typeof document !== 'undefined' ? document.getElementById('capture-mode') : null;
+  const pathModeEl = typeof document !== 'undefined' ? document.getElementById('path-mode') : null;
+
+  altitude = (altitude !== undefined && altitude !== null && !isNaN(altitude)) ? altitude : (altEl ? parseFloat(altEl.value) || 50 : 50);
+  speed = (speed !== undefined && speed !== null && !isNaN(speed)) ? speed : (speedEl ? parseFloat(speedEl.value) || 4.0 : 4.0);
+  headingMode = headingMode || (headingModeEl ? headingModeEl.value : 'smoothTransition');
+  finishAction = finishAction || (finishActionEl ? finishActionEl.value : 'goHome');
+  gimbalPitch = (gimbalPitch !== undefined && gimbalPitch !== null && !isNaN(gimbalPitch)) ? gimbalPitch : (gimbalPitchEl ? parseFloat(gimbalPitchEl.value) || -60.0 : -60.0);
+  captureMode = captureMode || (captureModeEl ? captureModeEl.value : 'stopAndShoot');
+  pathMode = pathMode || (pathModeEl ? pathModeEl.value : 'curved');
+
   const droneModelEl = typeof document !== 'undefined' ? document.getElementById('drone-model') : null;
-  const parsedDroneVal = droneModelEl ? parseInt(droneModelEl.value, 10) : NaN;
-  const droneEnumValue = !isNaN(parsedDroneVal) ? parsedDroneVal : 68;
-  const isConsumer = (parsedDroneVal === 68 || parsedDroneVal === 89);
+  const parsedDroneVal = (droneModelEl && droneModelEl.value) ? parseInt(droneModelEl.value, 10) : NaN;
+  const targetDrone = (typeof global !== 'undefined' && global.selectedDroneTarget)
+    ? global.selectedDroneTarget
+    : ((typeof selectedDroneTarget !== 'undefined' && selectedDroneTarget) ? selectedDroneTarget : null);
+  const droneEnumValue = targetDrone
+    ? normalizeDroneEnum(targetDrone)
+    : (!isNaN(parsedDroneVal) ? parsedDroneVal : 68);
+  const isConsumer = targetDrone
+    ? isConsumerDrone(targetDrone)
+    : (parsedDroneVal === 68 || parsedDroneVal === 89);
+  const activeTemplate = isConsumer ? ConsumerMissionTemplate : EnterpriseMissionTemplate;
 
   // Build XML Placemark tags (waypoints)
   let placemarksXml = '';
@@ -32963,20 +33782,11 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
   if (isConsumer) {
     // Consumer Drone Golden Rule: DJI Fly for Mini 4 Pro / Air 3 strictly requires ContinuityCurvature
     // and useStraightLine: 0. DiscontinuityCurvature and useStraightLine: 1 cause immediate "Waypoint Flight Suspended" aborts.
-    turnMode = captureMode === 'stopAndShoot' 
-      ? 'toPointAndStopWithContinuityCurvature' 
-      : 'toPointAndPassWithContinuityCurvature';
-    useStraightLine = 0;
-  } else if (pathMode === 'straight') {
-    turnMode = captureMode === 'stopAndShoot' 
-      ? 'toPointAndStopWithDiscontinuityCurvature' 
-      : 'toPointAndPassWithDiscontinuityCurvature';
-    useStraightLine = 1;
+    turnMode = ConsumerMissionTemplate.resolveTurnMode(pathMode, captureMode === 'stopAndShoot');
+    useStraightLine = ConsumerMissionTemplate.resolveUseStraightLine();
   } else {
-    turnMode = captureMode === 'stopAndShoot' 
-      ? 'toPointAndStopWithContinuityCurvature' 
-      : 'toPointAndPassWithContinuityCurvature';
-    useStraightLine = 0;
+    turnMode = EnterpriseMissionTemplate.resolveTurnMode(pathMode, captureMode === 'stopAndShoot', pathMode);
+    useStraightLine = EnterpriseMissionTemplate.resolveUseStraightLine(pathMode);
   }
 
   let actionId = 1;
@@ -33498,16 +34308,39 @@ ${waypointActions.join('\n')}
     const targetPoiId = ((wpMode === 'towardPOI' || wp.isModified) && wpTargetPoiId)
       ? wpTargetPoiId
       : (layerTargetPoiId || wpTargetPoiId);
+    const poisList = (typeof pois !== 'undefined' && Array.isArray(pois))
+      ? pois
+      : ((typeof global !== 'undefined' && Array.isArray(global.pois))
+        ? global.pois
+        : ((typeof window !== 'undefined' && Array.isArray(window.pois)) ? window.pois : []));
+
     // Resolve target POI from layer or wp if set
-    if (targetPoiId && typeof pois !== 'undefined' && pois && pois.length > 0) {
-      const poiFoundIdx = pois.findIndex(p => p.id === targetPoiId);
+    if (targetPoiId && poisList.length > 0) {
+      const poiFoundIdx = poisList.findIndex(p => p.id === targetPoiId);
       if (poiFoundIdx !== -1) {
         targetPoiIndex = poiFoundIdx;
-      } else if (wp.poiIndex !== undefined && wp.poiIndex !== null && pois[wp.poiIndex]) {
+      } else if (wp.poiIndex !== undefined && wp.poiIndex !== null && poisList[wp.poiIndex]) {
         targetPoiIndex = wp.poiIndex;
       }
-    } else if (wp.poiIndex !== undefined && wp.poiIndex !== null && pois && pois[wp.poiIndex]) {
+    } else if (wp.poiIndex !== undefined && wp.poiIndex !== null && poisList[wp.poiIndex]) {
       targetPoiIndex = wp.poiIndex;
+    }
+
+    // Populate actual POI point coordinates if a valid target POI or POI set exists
+    let resolvedTargetPoi = (poisList.length > 0) ? (poisList[targetPoiIndex] || poisList[0]) : null;
+    if (!resolvedTargetPoi && typeof getTargetPoiCoordinates === 'function') {
+      resolvedTargetPoi = getTargetPoiCoordinates(wp, wpLayer);
+    }
+    if (!resolvedTargetPoi && targetPoiIndex === 0 && typeof centerMarker !== 'undefined' && centerMarker) {
+      const latlng = centerMarker.getLatLng();
+      resolvedTargetPoi = { lat: latlng.lat, lon: latlng.lng, alt: 0 };
+    }
+    if (resolvedTargetPoi && resolvedTargetPoi.lat !== undefined && (resolvedTargetPoi.lon !== undefined || resolvedTargetPoi.lng !== undefined) && !isNaN(resolvedTargetPoi.lat)) {
+      const targetLon = resolvedTargetPoi.lon !== undefined ? resolvedTargetPoi.lon : resolvedTargetPoi.lng;
+      if (!isNaN(targetLon)) {
+        const poiAlt = (resolvedTargetPoi.alt !== undefined && !isNaN(resolvedTargetPoi.alt)) ? Number(resolvedTargetPoi.alt) : 0;
+        poiPoint = `${resolvedTargetPoi.lat.toFixed(6)},${targetLon.toFixed(6)},${poiAlt.toFixed(6)}`;
+      }
     }
 
     if (wpMode !== 'inherit') {
@@ -33516,16 +34349,9 @@ ${waypointActions.join('\n')}
         actualHeadingAngle = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
       } else {
         actualHeadingMode = wpMode;
-        if (wpMode === 'towardPOI') {
-          let targetPoi = pois[targetPoiIndex] || pois[0];
-          if (!targetPoi && targetPoiIndex === 0 && typeof centerMarker !== 'undefined' && centerMarker) {
-            const latlng = centerMarker.getLatLng();
-            targetPoi = { lat: latlng.lat, lon: latlng.lng };
-          }
-          if (targetPoi) {
-            const poiAlt = (targetPoi.alt !== undefined && !isNaN(targetPoi.alt)) ? Number(targetPoi.alt) : 0;
-            poiPoint = `${targetPoi.lat.toFixed(6)},${targetPoi.lon.toFixed(6)},${poiAlt.toFixed(6)}`;
-          }
+        if (wpMode === 'towardPOI' && resolvedTargetPoi) {
+          const poiAlt = (resolvedTargetPoi.alt !== undefined && !isNaN(resolvedTargetPoi.alt)) ? Number(resolvedTargetPoi.alt) : 0;
+          poiPoint = `${resolvedTargetPoi.lat.toFixed(6)},${resolvedTargetPoi.lon.toFixed(6)},${poiAlt.toFixed(6)}`;
         }
       }
     } else {
@@ -33636,8 +34462,22 @@ ${waypointActions.join('\n')}
       currentAltitude = altitude;
     }
     
-    // Resolve Speed: If turnaround point and turnaroundSpeed specified, use it; else wp.speed or global speed
-    let actualSpeed = (wp.speed !== undefined && wp.speed !== null && !isNaN(wp.speed)) ? wp.speed : speed;
+    // Resolve Speed: Three-Tier Cascading Hierarchy (Tier 3 Override -> Tier 2 Layer -> Tier 1 Global)
+    let actualSpeed;
+    if (wp.isModified && wp.speed !== undefined && wp.speed !== null && wp.speed !== 'inherit' && !isNaN(wp.speed)) {
+      actualSpeed = Number(wp.speed);
+    } else if (wp.speed !== undefined && wp.speed !== null && wp.speed !== 'inherit' && !isNaN(wp.speed)) {
+      actualSpeed = Number(wp.speed);
+    } else if (wp.layerSpeed !== undefined && wp.layerSpeed !== null && wp.layerSpeed !== 'inherit' && !isNaN(wp.layerSpeed)) {
+      actualSpeed = Number(wp.layerSpeed);
+    } else if (wpLayer && wpLayer.speed !== undefined && wpLayer.speed !== null && wpLayer.speed !== 'inherit' && !isNaN(wpLayer.speed)) {
+      actualSpeed = Number(wpLayer.speed);
+    } else {
+      actualSpeed = speed;
+    }
+    if (actualSpeed === undefined || actualSpeed === null || isNaN(actualSpeed)) {
+      actualSpeed = 4.0;
+    }
     if (wp.isTurnaroundPoint && wp.turnaroundSpeed !== null && wp.turnaroundSpeed !== undefined && !isNaN(wp.turnaroundSpeed)) {
       actualSpeed = wp.turnaroundSpeed;
     }
@@ -33752,12 +34592,7 @@ ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
     : (altitude || 50);
   const safeTakeoffHeight = Math.max(1.5, Math.min(rthAltitude, firstWpAlt));
 
-  const isEnterprise = (droneEnumValue !== 68 && droneEnumValue !== 89);
-  let templateTypeXml = isEnterprise ? '      <wpml:templateType>waypoint</wpml:templateType>\n' : '';
-  let payloadParamXml = isEnterprise ? `      <wpml:payloadParam>
-        <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-        <wpml:payloadPitchControlMode>usePointSetting</wpml:payloadPitchControlMode>
-      </wpml:payloadParam>\n` : '';
+  const folderHeader = activeTemplate.buildFolderHeader(speed);
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.uav.com/wpmz/1.0.2">
@@ -33768,20 +34603,13 @@ ${actionsForThisPlacemark}        <wpml:waypointGimbalHeadingParam>
       <wpml:exitOnRCLost>${exitOnRCLost}</wpml:exitOnRCLost>
       <wpml:executeRCLostAction>${executeRCLostAction}</wpml:executeRCLostAction>
       <wpml:takeOffSecurityHeight>${safeTakeoffHeight}</wpml:takeOffSecurityHeight>
-      <wpml:globalTransitionalSpeed>${speed}</wpml:globalTransitionalSpeed>
+      <wpml:globalTransitionalSpeed>${(speed !== undefined && speed !== null && !isNaN(speed)) ? speed : 4.0}</wpml:globalTransitionalSpeed>
       <wpml:droneInfo>
         <wpml:droneEnumValue>${droneEnumValue}</wpml:droneEnumValue>
         <wpml:droneSubEnumValue>0</wpml:droneSubEnumValue>
       </wpml:droneInfo>
     </wpml:missionConfig>
-    <Folder>
-${templateTypeXml}      <wpml:templateId>0</wpml:templateId>
-      <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
-      <wpml:waylineId>0</wpml:waylineId>
-      <wpml:distance>0</wpml:distance>
-      <wpml:duration>0</wpml:duration>
-      <wpml:autoFlightSpeed>${speed}</wpml:autoFlightSpeed>
-${payloadParamXml}${placemarksXml}    </Folder>
+${folderHeader}${placemarksXml}    </Folder>
   </Document>
 </kml>`;
 }
@@ -33792,6 +34620,10 @@ ${payloadParamXml}${placemarksXml}    </Folder>
  * to prevent flight suspensions ("Error performing flight") on pressing Go.
  */
 function validateWpmlMission(wpmlXml, templateXml = '', options = {}) {
+  if (typeof templateXml === 'object' && templateXml !== null) {
+    options = templateXml;
+    templateXml = '';
+  }
   const result = {
     valid: true,
     rulesPassed: 0,
@@ -34413,6 +35245,10 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
     fixedWpml = pmParts.join('<Placemark>');
   }
 
+  const fallbackSpeed = (options && options.speed && !isNaN(options.speed)) ? options.speed : 4.0;
+  fixedWpml = fixedWpml.replace(/<wpml:waypointSpeed>\s*(?:undefined|NaN|null)\s*<\/wpml:waypointSpeed>/g, `<wpml:waypointSpeed>${fallbackSpeed}</wpml:waypointSpeed>`);
+  fixedWpml = fixedWpml.replace(/<wpml:globalTransitionalSpeed>\s*(?:undefined|NaN|null)\s*<\/wpml:globalTransitionalSpeed>/g, `<wpml:globalTransitionalSpeed>${fallbackSpeed}</wpml:globalTransitionalSpeed>`);
+
   const validation = validateWpmlMission(fixedWpml, fixedTemplate, options);
   return { wpmlXml: fixedWpml, templateXml: fixedTemplate, validation };
 }
@@ -34999,11 +35835,11 @@ function extractSpatialMissionLayers(layers = null) {
   };
 }
 
-function buildMissionPlanJSON(customWps = null) {
+function buildMissionPlanJSON(customWps = null, options = {}) {
   const currentWps = customWps || (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
   const centerLatLng = (typeof centerMarker !== 'undefined' && centerMarker && centerMarker.getLatLng) ? centerMarker.getLatLng() : null;
 
-  const gridType = document.getElementById('grid-type')?.value || 'single';
+  const gridType = options.flightPattern || options.pattern || document.getElementById('grid-type')?.value || 'single';
   const gridWidth = parseFloat(document.getElementById('grid-width')?.value) || 100;
   const gridHeight = parseFloat(document.getElementById('grid-height')?.value) || 100;
   const rotation = parseFloat(document.getElementById('grid-rotation')?.value) || 0;
@@ -35017,39 +35853,61 @@ function buildMissionPlanJSON(customWps = null) {
   const cameraVFOV = parseFloat(document.getElementById('camera-vfov')?.value) || 55.2;
   const overlapFront = parseFloat(document.getElementById('front-overlap')?.value) || 80;
   const overlapSide = parseFloat(document.getElementById('side-overlap')?.value) || 75;
-  const gimbalPitch = parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60);
+  const gimbalPitch = options.gimbalPitch !== undefined ? options.gimbalPitch : parseGimbalPitch(document.getElementById('gimbal-pitch')?.value, -60);
 
-  const altitude = parseFloat(document.getElementById('altitude')?.value) || 50;
-  const speed = parseFloat(document.getElementById('speed')?.value) || 4;
+  const altitude = options.altitude !== undefined ? options.altitude : (parseFloat(document.getElementById('altitude')?.value) || 50);
+  const globalSpeed = options.speed !== undefined ? options.speed : (parseFloat(document.getElementById('speed')?.value) || 4);
   const headingMode = document.getElementById('heading-mode')?.value || 'followWayline';
   const finishAction = document.getElementById('finish-action')?.value || 'goHome';
   const signalLostAction = document.getElementById('signal-lost-action')?.value || 'goBack';
   const pathMode = document.getElementById('path-mode')?.value || 'curved';
-  const captureMode = document.getElementById('capture-mode')?.value || 'stopAndShoot';
+  const captureMode = options.captureMode || document.getElementById('capture-mode')?.value || 'stopAndShoot';
   const globalHoverTime = parseFloat(document.getElementById('global-hover-time')?.value) || 0;
 
   const unitSystem = typeof getUnitSystem === 'function' ? getUnitSystem() : 'imperial';
   const storedUuid = typeof getRC2UUID === 'function' ? getRC2UUID() : null;
 
-  const formattedWaypoints = currentWps.map((wp, idx) => ({
-    index: idx,
-    lat: wp.lat,
-    lon: wp.lon,
-    alt: wp.alt !== undefined ? wp.alt : altitude,
-    pitch: wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch,
-    heading: wp.heading !== undefined ? wp.heading : null,
-    speed: wp.speed !== undefined ? wp.speed : speed,
-    hoverTime: wp.hoverTime !== undefined ? wp.hoverTime : globalHoverTime,
-    x: wp.x !== undefined ? wp.x : null,
-    y: wp.y !== undefined ? wp.y : null,
-    isRingStart: !!wp.isRingStart,
-    ringIndex: wp.ringIndex !== undefined ? wp.ringIndex : null,
-    poiIndex: wp.poiIndex !== undefined ? wp.poiIndex : null,
-    headingMode: wp.headingMode !== undefined ? wp.headingMode : null
-  }));
+  // Resolve active/first layer speed if available
+  const allLayers = (typeof global !== 'undefined' && Array.isArray(global.flightLayers) && global.flightLayers.length > 0)
+    ? global.flightLayers
+    : ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : []);
+  const activeLayer = (typeof getActiveLayer === 'function' ? getActiveLayer() : null) || allLayers[0] || null;
+  const layerSpeed = activeLayer?.speed !== undefined ? activeLayer.speed : globalSpeed;
 
+  const formattedWaypoints = currentWps.map((wp, idx) => {
+    const wpSpeed = (wp.speed !== undefined && wp.speed !== null && wp.speed !== 'inherit')
+      ? wp.speed
+      : (wp.layerSpeed !== undefined && wp.layerSpeed !== null && wp.layerSpeed !== 'inherit')
+        ? wp.layerSpeed
+        : layerSpeed;
+    return {
+      index: idx,
+      lat: wp.lat,
+      lon: wp.lon,
+      alt: wp.alt !== undefined ? wp.alt : altitude,
+      pitch: wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch,
+      heading: wp.heading !== undefined ? wp.heading : null,
+      speed: wpSpeed,
+      hoverTime: wp.hoverTime !== undefined ? wp.hoverTime : globalHoverTime,
+      x: wp.x !== undefined ? wp.x : null,
+      y: wp.y !== undefined ? wp.y : null,
+      isRingStart: !!wp.isRingStart,
+      ringIndex: wp.ringIndex !== undefined ? wp.ringIndex : null,
+      poiIndex: wp.poiIndex !== undefined ? wp.poiIndex : null,
+      headingMode: wp.headingMode !== undefined ? wp.headingMode : null,
+      isHyperlapse: Boolean(wp.isHyperlapse || gridType === 'hyperlapse'),
+      gridType: wp.gridType || (gridType === 'hyperlapse' ? 'hyperlapse' : null),
+      layerPattern: wp.layerPattern || (activeLayer?.pattern || null),
+      skipPhoto: Boolean(wp.skipPhoto),
+      hyperlapseInterval: wp.hyperlapseInterval !== undefined ? wp.hyperlapseInterval : (activeLayer?.hyperlapseInterval || null)
+    };
+  });
+
+  const effStatsSpeed = (options.speed !== undefined && options.speed !== null)
+    ? options.speed
+    : (formattedWaypoints[0]?.speed || layerSpeed || globalSpeed);
   const totalStats = typeof calculateStats === 'function'
-    ? calculateStats(formattedWaypoints, typeof getCurrentPhotos === 'function' ? getCurrentPhotos() : null, speed, null, null, captureMode)
+    ? calculateStats(formattedWaypoints, typeof getCurrentPhotos === 'function' ? getCurrentPhotos() : null, effStatsSpeed, null, null, captureMode)
     : null;
 
   const spatialData = typeof extractSpatialMissionLayers === 'function'
@@ -35059,9 +35917,6 @@ function buildMissionPlanJSON(customWps = null) {
   const allPois = (typeof global !== 'undefined' && Array.isArray(global.pois) && global.pois.length > 0)
     ? global.pois
     : ((typeof pois !== 'undefined' && Array.isArray(pois)) ? pois : ((typeof pointsOfInterest !== 'undefined' && Array.isArray(pointsOfInterest)) ? pointsOfInterest : []));
-  const allLayers = (typeof global !== 'undefined' && Array.isArray(global.flightLayers) && global.flightLayers.length > 0)
-    ? global.flightLayers
-    : ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : []);
 
   return {
     schemaVersion: "1.1.0",
@@ -35095,7 +35950,7 @@ function buildMissionPlanJSON(customWps = null) {
       },
       flight: {
         altitude,
-        speed,
+        speed: globalSpeed,
         headingMode,
         finishAction,
         signalLostAction,
@@ -35187,7 +36042,7 @@ function exportMissionPlanJSON(customWps = null) {
 
 function buildFlightDiagnosticsJSON(customWps = null, options = {}) {
   const currentWps = customWps || (typeof getCurrentWaypoints === 'function' ? getCurrentWaypoints() : null) || [];
-  const plan = typeof buildMissionPlanJSON === 'function' ? buildMissionPlanJSON(currentWps) : null;
+  const plan = typeof buildMissionPlanJSON === 'function' ? buildMissionPlanJSON(currentWps, options) : null;
   const isoTimestamp = typeof formatISO8601ForFilename === 'function' ? formatISO8601ForFilename() : new Date().toISOString().replace(/:/g, '-');
   const uuid = options.uuid || (typeof getRC2UUID === 'function' && getRC2UUID()) || (plan && plan.metadata && plan.metadata.uuid) || `mission_${Date.now()}`;
 
@@ -35195,8 +36050,25 @@ function buildFlightDiagnosticsJSON(customWps = null, options = {}) {
   const speed = options.speed ?? (typeof document !== 'undefined' && parseFloat(document.getElementById('speed')?.value)) ?? 4.0;
   const gimbalPitch = options.gimbalPitch ?? parseGimbalPitch(typeof document !== 'undefined' ? document.getElementById('gimbal-pitch')?.value : null, -60.0);
 
+  const isHyperlapse = Boolean(options.flightPattern === 'hyperlapse' || options.pattern === 'hyperlapse' ||
+    (typeof document !== 'undefined' && document.getElementById('grid-type')?.value === 'hyperlapse') ||
+    plan?.geometry?.pattern === 'hyperlapse' ||
+    (currentWps && currentWps.some(w => w && (w.isHyperlapse || w.gridType === 'hyperlapse' || w.layerPattern === 'hyperlapse'))));
+  const activePhotos = options.photoLocations || options.photos || (typeof getCurrentPhotos === 'function' ? getCurrentPhotos() : null);
+  const hlInterval = options.interval || currentWps.find(w => w && w.hyperlapseInterval)?.hyperlapseInterval || (plan && plan.layers && plan.layers.find(l => l.pattern === 'hyperlapse')?.hyperlapseInterval) || 3;
+
   const telemetry = typeof generateTelemetryFromWaypoints === 'function'
-    ? generateTelemetryFromWaypoints(currentWps, { altitude, speed, gimbalPitch, isSimulation: true, flightId: uuid })
+    ? generateTelemetryFromWaypoints(currentWps, {
+        altitude,
+        speed,
+        gimbalPitch,
+        isSimulation: true,
+        flightId: uuid,
+        isHyperlapse,
+        photoLocations: activePhotos,
+        photoCount: (activePhotos && activePhotos.length > 0) ? activePhotos.length : (plan?.statistics?.photoCount),
+        interval: hlInterval
+      })
     : null;
 
   const userAgent = {
@@ -35286,7 +36158,7 @@ function buildFlightDiagnosticsJSON(customWps = null, options = {}) {
     executionError: options.executionError || (validationErrors.length > 0 ? validationErrors.join('; ') : ''),
     summary: {
       waypointCount: currentWps.length,
-      photoCount: telemetry?.photoCount ?? currentWps.length,
+      photoCount: telemetry?.photoCount ?? ((activePhotos && activePhotos.length > 0) ? activePhotos.length : (plan?.statistics?.photoCount ?? currentWps.length)),
       totalDistance: telemetry?.totalDistance ?? plan?.statistics?.totalDistanceMeters ?? 0,
       estimatedDuration: telemetry?.durationSeconds ?? plan?.statistics?.totalFlightTimeSeconds ?? 0,
       durationFormatted: telemetry?.durationFormatted ?? plan?.statistics?.flightTimeFormatted ?? '',
@@ -41265,10 +42137,10 @@ const FlightDiagnostics = {
           showToast(includeCoords ? '📋 Copied AI Export (Real GPS Coordinates)' : '📋 Copied AI Export (Masked to Default Reference)', 'info');
         }
       }).catch(() => {
-        if (typeof prompt === 'function') prompt('Copy Antigravity Fix Prompt:', promptText);
+        if (typeof prompt === 'function') prompt('Copy AI Export Prompt:', promptText);
       });
     } else {
-      if (typeof prompt === 'function') prompt('Copy Antigravity Fix Prompt:', promptText);
+      if (typeof prompt === 'function') prompt('Copy AI Export Prompt:', promptText);
     }
     return promptText;
   },
@@ -44056,8 +44928,16 @@ const KMZInspector = {
       totalWaypointsCount = activeWps.length;
     }
 
-    let prompt = `### 🤖 ANTIGRAVITY BUG REPORT: Bad KMZ Mission Execution Issue\n\n`;
-    prompt += `**Mission Context:**\n`;
+    const hasErrors = !!(
+      (r && (r.valid === false || r.is_valid === 0)) ||
+      (r && Array.isArray(r.errors) && r.errors.length > 0) ||
+      (options.mission && (options.mission.execution_status === 'failed' || options.mission.execution_status === 'suspended' || options.mission.is_valid === 0))
+    );
+
+    let prompt = hasErrors
+      ? `### 🤖 ANTIGRAVITY BUG REPORT & DIAGNOSTICS: Mission Execution Issue\n\n`
+      : `### 🤖 ANTIGRAVITY & AI MISSION CONTEXT: App Settings & Flight Configuration\n\n`;
+    prompt += `**Mission Context & App Settings:**\n`;
     prompt += `- **Target Drone Model:** ${drone}\n`;
     prompt += `- **Pattern:** ${pattern} (Altitude: ${alt}m, Speed: ${speed}m/s, Pitch: ${pitch}°)\n`;
     prompt += `- **Total Flight Layers:** ${allLayers.length > 0 ? allLayers.length : 1}\n`;
@@ -44204,14 +45084,22 @@ const KMZInspector = {
       }
       const placemarks = sanitizedXml.split('<Placemark>');
       const xmlExtract = placemarks.length > 1 ? '<Placemark>' + placemarks[1].substring(0, 450) + '...\n</Placemark>' : sanitizedXml.substring(0, 600);
-      prompt += `\n**Offending / Generated WPML Snippet:**\n\`\`\`xml\n${xmlExtract}\n\`\`\`\n`;
+      prompt += hasErrors
+        ? `\n**Offending / Generated WPML Snippet:**\n\`\`\`xml\n${xmlExtract}\n\`\`\`\n`
+        : `\n**Generated WPML Snippet:**\n\`\`\`xml\n${xmlExtract}\n\`\`\`\n`;
     }
 
-    prompt += `\n**Antigravity Instructions:**\n`;
-    prompt += `1. Inspect the offending XML and rule failures above.\n`;
-    prompt += `2. Formulate a regression unit test in \`index.test.js\` reproducing this exact configuration.\n`;
-    prompt += `3. Fix the generation/sanitization logic in \`index.js\` (\`buildWaylinesWpml\` / \`validateAndFixWpml\`).\n`;
-    prompt += `4. Run \`python scratch/build.py\` and verify all tests pass with \`npm test\`.\n`;
+    if (hasErrors) {
+      prompt += `\n**Antigravity Instructions:**\n`;
+      prompt += `1. Inspect the offending XML and rule failures above.\n`;
+      prompt += `2. Formulate a regression unit test in \`index.test.js\` reproducing this exact configuration.\n`;
+      prompt += `3. Fix the generation/sanitization logic in \`index.js\` (\`buildWaylinesWpml\` / \`validateAndFixWpml\`).\n`;
+      prompt += `4. Run \`python scratch/build.py\` and verify all tests pass with \`npm test\`.\n`;
+    } else {
+      prompt += `\n**AI Assistant Context & Instructions:**\n`;
+      prompt += `1. The above represents the current active mission configuration, app settings, and layer dynamics configured in Aalaapi Sky.\n`;
+      prompt += `2. Use these parameters to understand what was set on the app, provide mission advice, optimize flight routes, or answer pilot questions.\n`;
+    }
 
     return prompt;
   },
@@ -44231,10 +45119,10 @@ const KMZInspector = {
           }, 2500);
         }
       }).catch(() => {
-        if (typeof prompt === 'function') prompt('Copy Antigravity Fix Prompt:', promptText);
+        if (typeof prompt === 'function') prompt('Copy AI Diagnostic Prompt:', promptText);
       });
     } else {
-      if (typeof prompt === 'function') prompt('Copy Antigravity Fix Prompt:', promptText);
+      if (typeof prompt === 'function') prompt('Copy AI Diagnostic Prompt:', promptText);
     }
   },
 
@@ -45086,6 +45974,9 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
 
   // 4. Default / Flight 3 / Active Mission simulation
   const isPureSim = (flightId === 'active-mission' || options.isSimulation);
+  const isHyperlapse = Boolean(options.isHyperlapse || options.flightPattern === 'hyperlapse' ||
+    (waypoints && waypoints.some(w => w && (w.isHyperlapse || w.gridType === 'hyperlapse' || w.layerPattern === 'hyperlapse'))));
+  const hlInterval = options.interval || (waypoints.find(w => w && w.hyperlapseInterval)?.hyperlapseInterval) || 3;
   const points = [];
   let currentTime = 0;
   let totalDistance = 0;
@@ -45113,6 +46004,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
     });
   }
   currentTime = takeoffDuration;
+  const transitStart = takeoffDuration;
   battery = points[points.length - 1].battery;
 
   for (let i = 0; i < waypoints.length; i++) {
@@ -45150,7 +46042,8 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
       battery -= 0.08;
 
       const isLastStepOfWaypoint = (step === segmentTime);
-      const hoverTime = (wp.hoverTime !== undefined && wp.hoverTime !== null && !isNaN(wp.hoverTime)) ? wp.hoverTime : 2;
+      const hoverTime = (wp.hoverTime !== undefined && wp.hoverTime !== null && !isNaN(wp.hoverTime)) ? wp.hoverTime : (isHyperlapse ? 0 : 2);
+      const isHlPhoto = isHyperlapse && ((currentTime - transitStart) % hlInterval === 0);
       points.push({
         time: currentTime,
         timeStr: formatTime(currentTime),
@@ -45162,12 +46055,12 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
         yaw: Math.round(curYaw * 10) / 10,
         battery: Math.max(10, Math.round(battery * 10) / 10),
         satellites: 24,
-        isPhoto: isLastStepOfWaypoint && hoverTime === 0,
+        isPhoto: isHyperlapse ? isHlPhoto : (isLastStepOfWaypoint && hoverTime === 0 && !wp.skipPhoto),
         waypointIndex: isLastStepOfWaypoint ? i : null
       });
     }
 
-    const hoverTime = (wp.hoverTime !== undefined && wp.hoverTime !== null && !isNaN(wp.hoverTime)) ? wp.hoverTime : 2;
+    const hoverTime = (wp.hoverTime !== undefined && wp.hoverTime !== null && !isNaN(wp.hoverTime)) ? wp.hoverTime : (isHyperlapse ? 0 : 2);
     for (let h = 1; h <= hoverTime; h++) {
       currentTime++;
       battery -= 0.05;
@@ -45184,7 +46077,7 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
         yaw: Math.round(targetYaw * 10) / 10,
         battery: Math.max(10, Math.round(battery * 10) / 10),
         satellites: 24,
-        isPhoto: (h === 1),
+        isPhoto: (isHyperlapse || wp.skipPhoto) ? false : (h === 1),
         waypointIndex: i
       });
     }
@@ -45242,7 +46135,12 @@ function generateTelemetryFromWaypoints(waypoints, options = {}) {
   }
 
   const durationSec = currentTime;
-  const photoCount = waypoints.length;
+  const simulatedPhotos = points.filter(p => p.isPhoto).length;
+  const photoCount = (options.photoCount !== undefined && options.photoCount !== null)
+    ? options.photoCount
+    : (options.photoLocations && options.photoLocations.length > 0
+      ? options.photoLocations.length
+      : (isHyperlapse ? Math.max(simulatedPhotos, 1) : waypoints.filter(w => !w.skipPhoto).length));
   const wpAlts = waypoints.map(wp => (wp.altitude !== undefined ? wp.altitude : (wp.alt !== undefined ? wp.alt : defaultAlt)));
   const maxAltitude = wpAlts.length > 0 ? wpAlts.reduce((max, a) => Math.max(max, a), wpAlts[0]) : defaultAlt;
 
@@ -48234,6 +49132,8 @@ function recreate3DWaypointsAndPaths() {
 
       if (isWarning) {
         segColor = 0xef4444; // Warning Red
+      } else if (wp.gridType === 'light-art' || wp.isLightArtPoint || nextWp.gridType === 'light-art' || nextWp.isLightArtPoint) {
+        segColor = 0xec4899; // Luminous Pink/Magenta Light Ribbon
       } else {
         const nextRing = nextWp.ringIndex;
         if (nextRing === 0) segColor = 0xa855f7;
