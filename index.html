@@ -5992,7 +5992,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.149.4</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.149.5</span></h1>
 
 
 
@@ -10298,7 +10298,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.149.4</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.149.5</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -10359,6 +10359,14 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.149.5):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Multi-Layer Layer Menu Gimbal Pitch Matching &amp; Cascading:</strong> Fixed an issue where <code>generateHyperlapseWaypoints</code> hardcoded fallback pitches to -15&deg;, causing hyperlapse flight layers configured with -60&deg; to generate waypoints with -15&deg; unless a custom sweep was explicitly active. Unmodified hyperlapse waypoints now dynamically inherit the layer's configured <code>gimbalPitch</code>.</li>
+              <li><strong>Road-Following Default Initialization:</strong> Updated <code>createDefaultLayer</code> so that road-following layers initialize <code>layer.gimbalPitch</code> to <code>auto</code>, ensuring road surface tracking tilt angles and layer dynamics readouts remain fully synchronized.</li>
+              <li><strong>WPML Compiler &amp; Mission Sanitization:</strong> Reinforced <code>buildWaylinesWpml</code> and <code>validateAndFixWpml</code> to cascade layer gimbal pitches down to waypoints in multi-layer missions, ensuring exported placemarks accurately reflect the layer menu's configuration.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.149.4):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -18414,7 +18422,7 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     cLon = cur.lng;
   }
 
-  return {
+  const layer = {
     id: id || `layer-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
     name: name || `Layer ${colorIndex + 1}: ${getPatternDisplayName(pattern)}`,
     enabled: true,
@@ -18493,8 +18501,8 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     towerAltitudeOrder: 'max-to-min', // 'max-to-min' or 'min-to-max'
     photoSphereRings: { ring1: true, ring2: true, ring3: true, nadir: true },
     hyperlapseInterval: 3,
-    hyperlapseStartPitch: -15,
-    hyperlapseEndPitch: -15,
+    hyperlapseStartPitch: -60,
+    hyperlapseEndPitch: -60,
     hyperlapseHeadingMode: 'path', // 'path' or 'keyframes'
     hyperlapseStartHeading: 0,
     hyperlapseEndHeading: 90,
@@ -18511,6 +18519,12 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
       cameraAction: 'none'
     }
   };
+
+  if (pattern === 'road-following') {
+    layer.gimbalPitch = 'auto';
+  }
+
+  return layer;
 }
 
 let flightLayers = [createDefaultLayer('layer-1', 'Layer 1: 3D Double Grid', 0, 'double')];
@@ -19110,8 +19124,9 @@ function saveActiveLayerFromUi() {
     const val = parseInt(hlInterval.value, 10);
     layer.hyperlapseInterval = (!isNaN(val) && val >= 2 && val <= 10) ? val : 3;
   }
-  if (hlStartPitch) layer.hyperlapseStartPitch = parseInt(hlStartPitch.value, 10) || -15;
-  if (hlEndPitch) layer.hyperlapseEndPitch = parseInt(hlEndPitch.value, 10) || -15;
+  const fallbackHlPitch = (layer.gimbalPitch !== undefined && !isNaN(layer.gimbalPitch) && layer.gimbalPitch !== 'auto') ? layer.gimbalPitch : -60;
+  if (hlStartPitch) layer.hyperlapseStartPitch = !isNaN(parseInt(hlStartPitch.value, 10)) ? parseInt(hlStartPitch.value, 10) : fallbackHlPitch;
+  if (hlEndPitch) layer.hyperlapseEndPitch = !isNaN(parseInt(hlEndPitch.value, 10)) ? parseInt(hlEndPitch.value, 10) : fallbackHlPitch;
   if (hlHeadingMode && hlHeadingMode.value) layer.hyperlapseHeadingMode = hlHeadingMode.value;
   if (hlStartHeading) layer.hyperlapseStartHeading = parseFloat(hlStartHeading.value) || 0;
   if (hlEndHeading) layer.hyperlapseEndHeading = parseFloat(hlEndHeading.value) || 90;
@@ -19343,8 +19358,9 @@ function syncUiWithActiveLayer() {
   const hlKeyframesBox = document.getElementById('hyperlapse-heading-keyframes-box');
   if (hlInterval) hlInterval.value = layer.hyperlapseInterval || 3;
   if (hlIntervalVal) hlIntervalVal.textContent = `${layer.hyperlapseInterval || 3} s`;
-  if (hlStartPitch) hlStartPitch.value = layer.hyperlapseStartPitch !== undefined ? layer.hyperlapseStartPitch : -15;
-  if (hlEndPitch) hlEndPitch.value = layer.hyperlapseEndPitch !== undefined ? layer.hyperlapseEndPitch : -15;
+  const fallbackHlPitchUi = (layer.gimbalPitch !== undefined && !isNaN(layer.gimbalPitch) && layer.gimbalPitch !== 'auto') ? layer.gimbalPitch : -60;
+  if (hlStartPitch) hlStartPitch.value = layer.hyperlapseStartPitch !== undefined ? layer.hyperlapseStartPitch : fallbackHlPitchUi;
+  if (hlEndPitch) hlEndPitch.value = layer.hyperlapseEndPitch !== undefined ? layer.hyperlapseEndPitch : fallbackHlPitchUi;
   if (hlHeadingMode) hlHeadingMode.value = layer.hyperlapseHeadingMode || 'path';
   if (hlStartHeading) hlStartHeading.value = layer.hyperlapseStartHeading !== undefined ? layer.hyperlapseStartHeading : 0;
   if (hlEndHeading) hlEndHeading.value = layer.hyperlapseEndHeading !== undefined ? layer.hyperlapseEndHeading : 90;
@@ -20277,8 +20293,10 @@ function generateRoadFlightWaypoints(rawRoad, offsetDist, altitude, defaultGimba
         pitchVal = lookAheadPitch;
       } else if (roadFocusMode === 'focusRoad' || defaultGimbalPitch === 'auto' || defaultGimbalPitch === null || defaultGimbalPitch === undefined) {
         pitchVal = calculatedRoadPitch;
+      } else if (defaultGimbalPitch !== 'auto' && defaultGimbalPitch !== null && defaultGimbalPitch !== undefined && !isNaN(defaultGimbalPitch)) {
+        pitchVal = typeof defaultGimbalPitch === 'number' ? defaultGimbalPitch : parseFloat(defaultGimbalPitch);
       } else {
-        pitchVal = (typeof defaultGimbalPitch === 'number' && !isNaN(defaultGimbalPitch)) ? defaultGimbalPitch : calculatedRoadPitch;
+        pitchVal = calculatedRoadPitch;
       }
     }
 
@@ -24346,6 +24364,16 @@ function initUIEventListeners() {
           gimbalSlider.value = pitch;
           if (activeLayer) {
             activeLayer.gimbalPitch = pitch;
+            if (activeLayer.pattern === 'hyperlapse') {
+              if (activeLayer.hyperlapseStartPitch === undefined || activeLayer.hyperlapseStartPitch === activeLayer.hyperlapseEndPitch || activeLayer.hyperlapseStartPitch === -15) {
+                activeLayer.hyperlapseStartPitch = pitch;
+                activeLayer.hyperlapseEndPitch = pitch;
+                const hlStart = document.getElementById('hyperlapse-start-pitch');
+                const hlEnd = document.getElementById('hyperlapse-end-pitch');
+                if (hlStart) hlStart.value = pitch;
+                if (hlEnd) hlEnd.value = pitch;
+              }
+            }
           }
           syncDisplayValues();
           updateGrid();
@@ -26349,6 +26377,15 @@ function togglePatternParameters() {
       activeLayer.captureMode = 'continuous';
       activeLayer.pathMode = 'curved';
       activeLayer.headingMode = 'smoothTransition';
+      const curPitch = (activeLayer.gimbalPitch !== undefined && !isNaN(activeLayer.gimbalPitch) && activeLayer.gimbalPitch !== 'auto') ? activeLayer.gimbalPitch : -60;
+      if (activeLayer.hyperlapseStartPitch === undefined || activeLayer.hyperlapseStartPitch === activeLayer.hyperlapseEndPitch || activeLayer.hyperlapseStartPitch === -15) {
+        activeLayer.hyperlapseStartPitch = curPitch;
+        activeLayer.hyperlapseEndPitch = curPitch;
+        const hlStart = document.getElementById('hyperlapse-start-pitch');
+        const hlEnd = document.getElementById('hyperlapse-end-pitch');
+        if (hlStart) hlStart.value = curPitch;
+        if (hlEnd) hlEnd.value = curPitch;
+      }
     }
     const layerCapSelect = document.getElementById('layer-capture-mode');
     if (layerCapSelect) layerCapSelect.value = 'continuous';
@@ -26537,7 +26574,7 @@ function updateGimbalPitchVisualizer(pitch) {
   }
 
   let pVal;
-  if (isAuto || (isRoad && activeLayer.roadFocusMode === 'focusRoad')) {
+  if (isAuto) {
     if (isRoad && roadAutoPitch !== null) {
       pVal = roadAutoPitch;
     } else {
@@ -26578,7 +26615,7 @@ function updateGimbalPitchVisualizer(pitch) {
       }
 
       let isMatch = false;
-      if (isAuto || (isRoad && activeLayer.roadFocusMode === 'focusRoad')) {
+      if (isAuto) {
         isMatch = (rawTarget === 'auto');
       } else {
         const targetPitch = parseFloat(rawTarget);
@@ -29012,8 +29049,15 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
   if (isNaN(interval) || interval < 2) interval = 2;
   if (interval > 10) interval = 10;
 
-  const startPitch = (layer && layer.hyperlapseStartPitch !== undefined && !isNaN(layer.hyperlapseStartPitch)) ? parseInt(layer.hyperlapseStartPitch, 10) : -15;
-  const endPitch = (layer && layer.hyperlapseEndPitch !== undefined && !isNaN(layer.hyperlapseEndPitch)) ? parseInt(layer.hyperlapseEndPitch, 10) : -15;
+  const layerPitch = (layer && layer.gimbalPitch !== undefined && layer.gimbalPitch !== 'auto' && !isNaN(layer.gimbalPitch))
+    ? parseInt(layer.gimbalPitch, 10)
+    : -60;
+
+  const rawStart = (layer && layer.hyperlapseStartPitch !== undefined && !isNaN(layer.hyperlapseStartPitch)) ? parseInt(layer.hyperlapseStartPitch, 10) : null;
+  const rawEnd = (layer && layer.hyperlapseEndPitch !== undefined && !isNaN(layer.hyperlapseEndPitch)) ? parseInt(layer.hyperlapseEndPitch, 10) : null;
+  const hasCustomSweep = (rawStart !== null && rawEnd !== null && rawStart !== rawEnd);
+  const startPitch = hasCustomSweep ? rawStart : (rawStart !== null && rawStart !== -15 ? rawStart : layerPitch);
+  const endPitch = hasCustomSweep ? rawEnd : (rawEnd !== null && rawEnd !== -15 ? rawEnd : layerPitch);
 
   const headingMode = (layer && layer.hyperlapseHeadingMode) ? layer.hyperlapseHeadingMode : 'path';
   const startHeading = (layer && layer.hyperlapseStartHeading !== undefined && !isNaN(layer.hyperlapseStartHeading)) ? parseFloat(layer.hyperlapseStartHeading) % 360 : 0;
@@ -29072,26 +29116,33 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
     if (targetPoi) {
       heading = getBearingBetween(wp, targetPoi);
       pitch = (typeof calculate3DPoiPitch === 'function') ? calculate3DPoiPitch(wp, targetPoi, effectiveAlt) : -45;
-    } else {
+    } else if (wp.isModified && wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit') {
+      pitch = wp.pitch;
+    } else if (hasCustomSweep) {
       pitch = Math.round(startPitch + (endPitch - startPitch) * t);
-      if (headingMode === 'keyframes') {
-        heading = lerpAngleShortest(startHeading, endHeading, t);
-      } else {
-        // Follow flight path tangent
-        let inBrg = null;
-        let outBrg = null;
-        if (idx > 0) inBrg = getBearingBetween(rawWps[idx - 1], wp);
-        if (idx < rawWps.length - 1) outBrg = getBearingBetween(wp, rawWps[idx + 1]);
+    } else {
+      pitch = (layer && layer.gimbalPitch !== undefined && layer.gimbalPitch !== 'auto' && !isNaN(layer.gimbalPitch))
+        ? parseInt(layer.gimbalPitch, 10)
+        : Math.round(startPitch + (endPitch - startPitch) * t);
+    }
 
-        if (inBrg !== null && outBrg !== null) {
-          heading = lerpAngleShortest(inBrg, outBrg, 0.5);
-        } else if (outBrg !== null) {
-          heading = outBrg;
-        } else if (inBrg !== null) {
-          heading = inBrg;
-        } else {
-          heading = 0;
-        }
+    if (headingMode === 'keyframes') {
+      heading = lerpAngleShortest(startHeading, endHeading, t);
+    } else {
+      // Follow flight path tangent
+      let inBrg = null;
+      let outBrg = null;
+      if (idx > 0) inBrg = getBearingBetween(rawWps[idx - 1], wp);
+      if (idx < rawWps.length - 1) outBrg = getBearingBetween(wp, rawWps[idx + 1]);
+
+      if (inBrg !== null && outBrg !== null) {
+        heading = lerpAngleShortest(inBrg, outBrg, 0.5);
+      } else if (outBrg !== null) {
+        heading = outBrg;
+      } else if (inBrg !== null) {
+        heading = inBrg;
+      } else {
+        heading = 0;
       }
     }
 
@@ -29100,6 +29151,7 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
       alt: effectiveAlt,
       isModified: Boolean(wp.isModified),
       layerAltitude: (layer && layer.altitude !== undefined && layer.altitude !== null) ? layer.altitude : altitude,
+      layerGimbalPitch: (layer && layer.gimbalPitch !== undefined && layer.gimbalPitch !== null) ? layer.gimbalPitch : 'inherit',
       layerId: wp.layerId || (layer ? layer.id : null),
       pitch: pitch,
       heading: Math.round(heading * 10) / 10,
@@ -33012,7 +33064,20 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
 
     // Compute effective pitch for use in both gimbalRotate action and waypointGimbalHeadingParam
     let effectivePitch;
-    const rawWpPitch = wp.pitch !== undefined ? wp.pitch : (wpLayer && wpLayer.gimbalPitch !== undefined ? wpLayer.gimbalPitch : gimbalPitch);
+    const isWpPitchOverridden = wp.isModified && wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit';
+    const isHyperlapseSweep = (wp.layerPattern === 'hyperlapse' || wpLayer?.pattern === 'hyperlapse') &&
+      wpLayer && wpLayer.hyperlapseStartPitch !== undefined && wpLayer.hyperlapseEndPitch !== undefined &&
+      wpLayer.hyperlapseStartPitch !== wpLayer.hyperlapseEndPitch;
+
+    const rawWpPitch = isWpPitchOverridden
+      ? wp.pitch
+      : (isHyperlapseSweep && wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit'
+        ? wp.pitch
+        : (wp.layerGimbalPitch !== undefined && wp.layerGimbalPitch !== null && wp.layerGimbalPitch !== 'inherit'
+          ? wp.layerGimbalPitch
+          : (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit'
+            ? wpLayer.gimbalPitch
+            : (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : gimbalPitch))));
     if (rawWpPitch === 'auto' || (typeof rawWpPitch === 'string' && rawWpPitch.toLowerCase() === 'auto')) {
       const effectiveAltForPitch = (wp.isModified && wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit')
         ? wp.alt
@@ -33241,8 +33306,16 @@ ${waypointActions.join('\n')}
       const inSeg = hyperlapseSegments.find(s => idx >= s.startIdx && idx < s.endIdx);
       if (inSeg && sanitizedWps[idx + 1]) {
         const nextWp = sanitizedWps[idx + 1];
-        let nextPitch;
-        const rawNextPitch = nextWp.pitch !== undefined ? nextWp.pitch : (wpLayer && wpLayer.gimbalPitch !== undefined ? wpLayer.gimbalPitch : gimbalPitch);
+        const isNextPitchOverridden = nextWp.isModified && nextWp.pitch !== undefined && nextWp.pitch !== null && nextWp.pitch !== 'inherit';
+        const rawNextPitch = isNextPitchOverridden
+          ? nextWp.pitch
+          : (inSeg && nextWp.pitch !== undefined && nextWp.pitch !== null && nextWp.pitch !== 'inherit'
+            ? nextWp.pitch
+            : (nextWp.layerGimbalPitch !== undefined && nextWp.layerGimbalPitch !== null && nextWp.layerGimbalPitch !== 'inherit'
+              ? nextWp.layerGimbalPitch
+              : (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit'
+                ? wpLayer.gimbalPitch
+                : (nextWp.pitch !== undefined && nextWp.pitch !== null && nextWp.pitch !== 'inherit' ? nextWp.pitch : gimbalPitch))));
         if (rawNextPitch === 'auto' || (typeof rawNextPitch === 'string' && rawNextPitch.toLowerCase() === 'auto')) {
           const nextAltForPitch = (nextWp.isModified && nextWp.alt !== undefined && nextWp.alt !== null && nextWp.alt !== 'inherit')
             ? nextWp.alt
@@ -33900,6 +33973,24 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
           pms[i] = pms[i].replace(
             /(<wpml:executeHeight>)[^<]+(<\/wpml:executeHeight>)/,
             `$1${targetAlt}$2`
+          );
+        }
+
+        const isMultiRing = (wpLayer && (wpLayer.pattern === 'multi-orbit' || wpLayer.pattern === 'photo-sphere')) ||
+          (wpObj.isMultiOrbit || wpObj.isPhotoSphere || wpObj.gridType === 'photo-sphere' || (wpObj.ringIndex !== undefined && wpObj.ringIndex !== null));
+        const hasHlSweep = (wpLayer && wpLayer.pattern === 'hyperlapse' && wpLayer.hyperlapseStartPitch !== undefined && wpLayer.hyperlapseEndPitch !== undefined && wpLayer.hyperlapseStartPitch !== wpLayer.hyperlapseEndPitch);
+
+        const targetPitch = (wpObj.layerGimbalPitch !== undefined && wpObj.layerGimbalPitch !== null && wpObj.layerGimbalPitch !== 'inherit' && wpObj.layerGimbalPitch !== 'auto')
+          ? wpObj.layerGimbalPitch
+          : (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit' && wpLayer.gimbalPitch !== 'auto'
+            ? wpLayer.gimbalPitch
+            : (options && options.gimbalPitch !== undefined && options.gimbalPitch !== null && options.gimbalPitch !== 'auto' ? options.gimbalPitch : null));
+
+        if (targetPitch !== null && !isNaN(targetPitch) && !isMultiRing && !hasHlSweep) {
+          const parsedPitch = Math.round(parseGimbalPitch(targetPitch, -60));
+          pms[i] = pms[i].replace(
+            /(<wpml:gimbalPitchRotateAngle>)[^<]+(<\/wpml:gimbalPitchRotateAngle>)/g,
+            `$1${parsedPitch}$2`
           );
         }
       }

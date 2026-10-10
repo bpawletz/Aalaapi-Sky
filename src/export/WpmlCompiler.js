@@ -307,7 +307,20 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
 
     // Compute effective pitch for use in both gimbalRotate action and waypointGimbalHeadingParam
     let effectivePitch;
-    const rawWpPitch = wp.pitch !== undefined ? wp.pitch : (wpLayer && wpLayer.gimbalPitch !== undefined ? wpLayer.gimbalPitch : gimbalPitch);
+    const isWpPitchOverridden = wp.isModified && wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit';
+    const isHyperlapseSweep = (wp.layerPattern === 'hyperlapse' || wpLayer?.pattern === 'hyperlapse') &&
+      wpLayer && wpLayer.hyperlapseStartPitch !== undefined && wpLayer.hyperlapseEndPitch !== undefined &&
+      wpLayer.hyperlapseStartPitch !== wpLayer.hyperlapseEndPitch;
+
+    const rawWpPitch = isWpPitchOverridden
+      ? wp.pitch
+      : (isHyperlapseSweep && wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit'
+        ? wp.pitch
+        : (wp.layerGimbalPitch !== undefined && wp.layerGimbalPitch !== null && wp.layerGimbalPitch !== 'inherit'
+          ? wp.layerGimbalPitch
+          : (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit'
+            ? wpLayer.gimbalPitch
+            : (wp.pitch !== undefined && wp.pitch !== null && wp.pitch !== 'inherit' ? wp.pitch : gimbalPitch))));
     if (rawWpPitch === 'auto' || (typeof rawWpPitch === 'string' && rawWpPitch.toLowerCase() === 'auto')) {
       const effectiveAltForPitch = (wp.isModified && wp.alt !== undefined && wp.alt !== null && wp.alt !== 'inherit')
         ? wp.alt
@@ -536,8 +549,16 @@ ${waypointActions.join('\n')}
       const inSeg = hyperlapseSegments.find(s => idx >= s.startIdx && idx < s.endIdx);
       if (inSeg && sanitizedWps[idx + 1]) {
         const nextWp = sanitizedWps[idx + 1];
-        let nextPitch;
-        const rawNextPitch = nextWp.pitch !== undefined ? nextWp.pitch : (wpLayer && wpLayer.gimbalPitch !== undefined ? wpLayer.gimbalPitch : gimbalPitch);
+        const isNextPitchOverridden = nextWp.isModified && nextWp.pitch !== undefined && nextWp.pitch !== null && nextWp.pitch !== 'inherit';
+        const rawNextPitch = isNextPitchOverridden
+          ? nextWp.pitch
+          : (inSeg && nextWp.pitch !== undefined && nextWp.pitch !== null && nextWp.pitch !== 'inherit'
+            ? nextWp.pitch
+            : (nextWp.layerGimbalPitch !== undefined && nextWp.layerGimbalPitch !== null && nextWp.layerGimbalPitch !== 'inherit'
+              ? nextWp.layerGimbalPitch
+              : (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit'
+                ? wpLayer.gimbalPitch
+                : (nextWp.pitch !== undefined && nextWp.pitch !== null && nextWp.pitch !== 'inherit' ? nextWp.pitch : gimbalPitch))));
         if (rawNextPitch === 'auto' || (typeof rawNextPitch === 'string' && rawNextPitch.toLowerCase() === 'auto')) {
           const nextAltForPitch = (nextWp.isModified && nextWp.alt !== undefined && nextWp.alt !== null && nextWp.alt !== 'inherit')
             ? nextWp.alt
@@ -1195,6 +1216,24 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
           pms[i] = pms[i].replace(
             /(<wpml:executeHeight>)[^<]+(<\/wpml:executeHeight>)/,
             `$1${targetAlt}$2`
+          );
+        }
+
+        const isMultiRing = (wpLayer && (wpLayer.pattern === 'multi-orbit' || wpLayer.pattern === 'photo-sphere')) ||
+          (wpObj.isMultiOrbit || wpObj.isPhotoSphere || wpObj.gridType === 'photo-sphere' || (wpObj.ringIndex !== undefined && wpObj.ringIndex !== null));
+        const hasHlSweep = (wpLayer && wpLayer.pattern === 'hyperlapse' && wpLayer.hyperlapseStartPitch !== undefined && wpLayer.hyperlapseEndPitch !== undefined && wpLayer.hyperlapseStartPitch !== wpLayer.hyperlapseEndPitch);
+
+        const targetPitch = (wpObj.layerGimbalPitch !== undefined && wpObj.layerGimbalPitch !== null && wpObj.layerGimbalPitch !== 'inherit' && wpObj.layerGimbalPitch !== 'auto')
+          ? wpObj.layerGimbalPitch
+          : (wpLayer && wpLayer.gimbalPitch !== undefined && wpLayer.gimbalPitch !== null && wpLayer.gimbalPitch !== 'inherit' && wpLayer.gimbalPitch !== 'auto'
+            ? wpLayer.gimbalPitch
+            : (options && options.gimbalPitch !== undefined && options.gimbalPitch !== null && options.gimbalPitch !== 'auto' ? options.gimbalPitch : null));
+
+        if (targetPitch !== null && !isNaN(targetPitch) && !isMultiRing && !hasHlSweep) {
+          const parsedPitch = Math.round(parseGimbalPitch(targetPitch, -60));
+          pms[i] = pms[i].replace(
+            /(<wpml:gimbalPitchRotateAngle>)[^<]+(<\/wpml:gimbalPitchRotateAngle>)/g,
+            `$1${parsedPitch}$2`
           );
         }
       }

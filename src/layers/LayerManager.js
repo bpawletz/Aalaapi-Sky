@@ -59,7 +59,7 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     cLon = cur.lng;
   }
 
-  return {
+  const layer = {
     id: id || `layer-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
     name: name || `Layer ${colorIndex + 1}: ${getPatternDisplayName(pattern)}`,
     enabled: true,
@@ -138,8 +138,8 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     towerAltitudeOrder: 'max-to-min', // 'max-to-min' or 'min-to-max'
     photoSphereRings: { ring1: true, ring2: true, ring3: true, nadir: true },
     hyperlapseInterval: 3,
-    hyperlapseStartPitch: -15,
-    hyperlapseEndPitch: -15,
+    hyperlapseStartPitch: -60,
+    hyperlapseEndPitch: -60,
     hyperlapseHeadingMode: 'path', // 'path' or 'keyframes'
     hyperlapseStartHeading: 0,
     hyperlapseEndHeading: 90,
@@ -156,6 +156,12 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
       cameraAction: 'none'
     }
   };
+
+  if (pattern === 'road-following') {
+    layer.gimbalPitch = 'auto';
+  }
+
+  return layer;
 }
 
 let flightLayers = [createDefaultLayer('layer-1', 'Layer 1: 3D Double Grid', 0, 'double')];
@@ -755,8 +761,9 @@ function saveActiveLayerFromUi() {
     const val = parseInt(hlInterval.value, 10);
     layer.hyperlapseInterval = (!isNaN(val) && val >= 2 && val <= 10) ? val : 3;
   }
-  if (hlStartPitch) layer.hyperlapseStartPitch = parseInt(hlStartPitch.value, 10) || -15;
-  if (hlEndPitch) layer.hyperlapseEndPitch = parseInt(hlEndPitch.value, 10) || -15;
+  const fallbackHlPitch = (layer.gimbalPitch !== undefined && !isNaN(layer.gimbalPitch) && layer.gimbalPitch !== 'auto') ? layer.gimbalPitch : -60;
+  if (hlStartPitch) layer.hyperlapseStartPitch = !isNaN(parseInt(hlStartPitch.value, 10)) ? parseInt(hlStartPitch.value, 10) : fallbackHlPitch;
+  if (hlEndPitch) layer.hyperlapseEndPitch = !isNaN(parseInt(hlEndPitch.value, 10)) ? parseInt(hlEndPitch.value, 10) : fallbackHlPitch;
   if (hlHeadingMode && hlHeadingMode.value) layer.hyperlapseHeadingMode = hlHeadingMode.value;
   if (hlStartHeading) layer.hyperlapseStartHeading = parseFloat(hlStartHeading.value) || 0;
   if (hlEndHeading) layer.hyperlapseEndHeading = parseFloat(hlEndHeading.value) || 90;
@@ -988,8 +995,9 @@ function syncUiWithActiveLayer() {
   const hlKeyframesBox = document.getElementById('hyperlapse-heading-keyframes-box');
   if (hlInterval) hlInterval.value = layer.hyperlapseInterval || 3;
   if (hlIntervalVal) hlIntervalVal.textContent = `${layer.hyperlapseInterval || 3} s`;
-  if (hlStartPitch) hlStartPitch.value = layer.hyperlapseStartPitch !== undefined ? layer.hyperlapseStartPitch : -15;
-  if (hlEndPitch) hlEndPitch.value = layer.hyperlapseEndPitch !== undefined ? layer.hyperlapseEndPitch : -15;
+  const fallbackHlPitchUi = (layer.gimbalPitch !== undefined && !isNaN(layer.gimbalPitch) && layer.gimbalPitch !== 'auto') ? layer.gimbalPitch : -60;
+  if (hlStartPitch) hlStartPitch.value = layer.hyperlapseStartPitch !== undefined ? layer.hyperlapseStartPitch : fallbackHlPitchUi;
+  if (hlEndPitch) hlEndPitch.value = layer.hyperlapseEndPitch !== undefined ? layer.hyperlapseEndPitch : fallbackHlPitchUi;
   if (hlHeadingMode) hlHeadingMode.value = layer.hyperlapseHeadingMode || 'path';
   if (hlStartHeading) hlStartHeading.value = layer.hyperlapseStartHeading !== undefined ? layer.hyperlapseStartHeading : 0;
   if (hlEndHeading) hlEndHeading.value = layer.hyperlapseEndHeading !== undefined ? layer.hyperlapseEndHeading : 90;
@@ -1922,8 +1930,10 @@ function generateRoadFlightWaypoints(rawRoad, offsetDist, altitude, defaultGimba
         pitchVal = lookAheadPitch;
       } else if (roadFocusMode === 'focusRoad' || defaultGimbalPitch === 'auto' || defaultGimbalPitch === null || defaultGimbalPitch === undefined) {
         pitchVal = calculatedRoadPitch;
+      } else if (defaultGimbalPitch !== 'auto' && defaultGimbalPitch !== null && defaultGimbalPitch !== undefined && !isNaN(defaultGimbalPitch)) {
+        pitchVal = typeof defaultGimbalPitch === 'number' ? defaultGimbalPitch : parseFloat(defaultGimbalPitch);
       } else {
-        pitchVal = (typeof defaultGimbalPitch === 'number' && !isNaN(defaultGimbalPitch)) ? defaultGimbalPitch : calculatedRoadPitch;
+        pitchVal = calculatedRoadPitch;
       }
     }
 
