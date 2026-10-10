@@ -244,6 +244,11 @@ function clearWaypointCustomModifications() {
       delete wp.origY;
     }
   });
+  if (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) {
+    flightLayers.forEach(l => {
+      l.hasCustomWaypoints = false;
+    });
+  }
 }
 
 // Position the grid center marker

@@ -185,7 +185,11 @@ function updateModifiedSettingsIndicators() {
               el.dispatchEvent(new Event('change', { bubbles: true }));
             }
             if (typeof syncDisplayValues === 'function') syncDisplayValues();
-            if (typeof updateGrid === 'function') updateGrid();
+            if (id === 'speed') {
+              if (typeof handleFlightSpeedChange === 'function') handleFlightSpeedChange();
+            } else if (typeof updateGrid === 'function') {
+              updateGrid();
+            }
             updateModifiedSettingsIndicators();
           });
         }

@@ -1329,23 +1329,17 @@ function syncDisplayValues() {
   if (fpvTelemAltUnitEl) fpvTelemAltUnitEl.textContent = distUnitStr;
 
   // Update Grid Width
-  if (unit === 'imperial') {
-    document.getElementById('width-val').textContent = Math.round(widthVal * M_TO_FT);
-    document.getElementById('width-unit').textContent = "ft";
-  } else {
-    document.getElementById('width-val').textContent = widthVal;
-    document.getElementById('width-unit').textContent = "m";
-  }
+  const widthValEl = document.getElementById('width-val');
+  const widthUnitEl = document.getElementById('width-unit');
+  if (widthValEl) widthValEl.textContent = (unit === 'imperial') ? Math.round(widthVal * M_TO_FT) : widthVal;
+  if (widthUnitEl) widthUnitEl.textContent = (unit === 'imperial') ? "ft" : "m";
 
   // Update Grid Height
   const heightVal = parseFloat(document.getElementById('grid-height')?.value) || 100;
-  if (unit === 'imperial') {
-    document.getElementById('height-val').textContent = Math.round(heightVal * M_TO_FT);
-    document.getElementById('height-unit').textContent = "ft";
-  } else {
-    document.getElementById('height-val').textContent = heightVal;
-    document.getElementById('height-unit').textContent = "m";
-  }
+  const heightValEl = document.getElementById('height-val');
+  const heightUnitEl = document.getElementById('height-unit');
+  if (heightValEl) heightValEl.textContent = (unit === 'imperial') ? Math.round(heightVal * M_TO_FT) : heightVal;
+  if (heightUnitEl) heightUnitEl.textContent = (unit === 'imperial') ? "ft" : "m";
 
   // Update Rotation
   const rotationValEl = document.getElementById('rotation-val');
@@ -1355,20 +1349,23 @@ function syncDisplayValues() {
 
   // Update Overlaps and Gimbal Pitch
   const frontOverlapEl = document.getElementById('front-overlap');
-  if (frontOverlapEl) document.getElementById('front-overlap-val').textContent = frontOverlapEl.value;
+  const frontOverlapValEl = document.getElementById('front-overlap-val');
+  if (frontOverlapEl && frontOverlapValEl) frontOverlapValEl.textContent = frontOverlapEl.value;
   const sideOverlapEl = document.getElementById('side-overlap');
-  if (sideOverlapEl) document.getElementById('side-overlap-val').textContent = sideOverlapEl.value;
+  const sideOverlapValEl = document.getElementById('side-overlap-val');
+  if (sideOverlapEl && sideOverlapValEl) sideOverlapValEl.textContent = sideOverlapEl.value;
   
   const gimbalPitchEl = document.getElementById('gimbal-pitch');
   if (gimbalPitchEl) {
     const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
     const isAuto = activeLayer && (activeLayer.gimbalPitch === 'auto');
+    const gimbalPitchValEl = document.getElementById('gimbal-pitch-val');
     if (isAuto) {
-      document.getElementById('gimbal-pitch-val').textContent = 'Auto 🎯';
+      if (gimbalPitchValEl) gimbalPitchValEl.textContent = 'Auto 🎯';
       updateGimbalPitchVisualizer('auto');
     } else {
       const pitchVal = parseFloat(gimbalPitchEl.value);
-      document.getElementById('gimbal-pitch-val').textContent = gimbalPitchEl.value;
+      if (gimbalPitchValEl) gimbalPitchValEl.textContent = gimbalPitchEl.value;
       updateGimbalPitchVisualizer(pitchVal);
     }
   }
@@ -1406,27 +1403,21 @@ function syncDisplayValues() {
     if (vValEl) vValEl.textContent = vfovSlider.value;
   }
   if (zoomSlider) {
-    document.getElementById('camera-zoom-val').textContent = parseFloat(zoomSlider.value).toFixed(1);
+    const zoomValEl = document.getElementById('camera-zoom-val');
+    if (zoomValEl) zoomValEl.textContent = parseFloat(zoomSlider.value).toFixed(1);
   }
-
 
   // Update Altitude
-  if (unit === 'imperial') {
-    document.getElementById('altitude-val').textContent = Math.round(altitudeVal * M_TO_FT);
-    document.getElementById('altitude-unit').textContent = "ft";
-  } else {
-    document.getElementById('altitude-val').textContent = altitudeVal;
-    document.getElementById('altitude-unit').textContent = "m";
-  }
+  const altValEl = document.getElementById('altitude-val');
+  const altUnitEl = document.getElementById('altitude-unit');
+  if (altValEl) altValEl.textContent = (unit === 'imperial') ? Math.round(altitudeVal * M_TO_FT) : altitudeVal;
+  if (altUnitEl) altUnitEl.textContent = (unit === 'imperial') ? "ft" : "m";
 
   // Update Speed
-  if (unit === 'imperial') {
-    document.getElementById('speed-val').textContent = (speedVal * MPS_TO_MPH).toFixed(1);
-    document.getElementById('speed-unit').textContent = "mph";
-  } else {
-    document.getElementById('speed-val').textContent = (Math.round(speedVal * 10) / 10).toFixed(speedVal % 1 !== 0 ? 1 : 0);
-    document.getElementById('speed-unit').textContent = "m/s";
-  }
+  const speedValEl = document.getElementById('speed-val');
+  const speedUnitEl = document.getElementById('speed-unit');
+  if (speedValEl) speedValEl.textContent = (unit === 'imperial') ? (speedVal * MPS_TO_MPH).toFixed(1) : (Math.round(speedVal * 10) / 10).toFixed(speedVal % 1 !== 0 ? 1 : 0);
+  if (speedUnitEl) speedUnitEl.textContent = (unit === 'imperial') ? "mph" : "m/s";
 
   // Update Global Hover Time
   const globalHoverSlider = document.getElementById('global-hover-time');

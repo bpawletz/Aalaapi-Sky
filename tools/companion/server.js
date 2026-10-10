@@ -4998,6 +4998,7 @@ const server = http.createServer(async (req, res) => {
 
           const saved = saveAdsbConfig(cleanHost, parsedPort);
           logSuccess('[ADS-B CONFIG]', `Server host/port set to ${saved.adsbHost}:${saved.adsbPort}${force ? ' (forced)' : ''}`);
+          broadcastAirspaceStatus();
 
           const status = adsbTracker ? adsbTracker.getStatus() : {};
           res.writeHead(200, { 'Content-Type': 'application/json' });

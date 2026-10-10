@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.149.5</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.149.7</span></h1>
 
 
 
@@ -4372,7 +4372,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.149.5</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.149.7</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -4433,6 +4433,21 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.149.7):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Flight Speed Waypoint Preservation &amp; Custom Geometry Protection:</strong> Fixed an issue where modifying Flight Speed in Layer Properties reset deleted and moved waypoints back to recalculated geometric pattern coordinates. Implemented <code>handleFlightSpeedChange()</code> to propagate layer velocity, update stats, and refresh the UI without regenerating coordinates or disturbing custom waypoint positions.</li>
+              <li><strong>Layer Custom Waypoints State Retention:</strong> Deleting, nudging, or dragging waypoints across any pattern layer now updates <code>targetLayer.waypoints</code> and flags <code>hasCustomWaypoints</code>, ensuring customized routes are retained intact throughout speed, transition, and failsafe updates.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.149.6):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>ADS-B Proxy Host &amp; Port Persistence &amp; Target Reversion Prevention:</strong> Fixed an issue where <code>updateDiagnosticsUI</code> and <code>syncAdsbConfigWithBridge</code> clobbered user-configured host and port inputs in <code>#adsb-host-input</code> and <code>#adsb-port-input</code> back to the active bridge server (e.g. reverting from <code>192.168.1.120:3005</code> to <code>192.168.1.250:30003</code>) right upon clicking Connect. User parameters now strictly take precedence over bridge server status, and input fields remain locked against background overwrite while connecting or editing.</li>
+              <li><strong>Direct Connect Switching &amp; Immediate SSE Broadcast:</strong> Updated Connect button to send <code>force: true</code> directly to <code>/api/config/adsb</code> to prevent HTTP 409 Conflict locks when changing remote targets, and added immediate SSE status broadcasting on server configuration updates.</li>
+              <li><strong>Preset Chip &amp; Diagnostic Probe Port Synchronization:</strong> Port preset chips and probe "Use" button handlers now update and save local server settings immediately, preventing background polls from overwriting selected ports.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.149.5):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -4984,7 +4999,7 @@
             <strong style="color: var(--text-main);">Changelog (v1.115.0):</strong>
 
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
-              <li><strong>🎮 Diagnostics 3D HUD Controls:</strong> Added a new glass-morphism HUD overlay panel (top-right of the 3D replay viewport) with six map-item toggles: <strong>Auto-Rotate</strong>, <strong>Reset Camera</strong>, <strong>Camera Cones</strong>, <strong>Footprints</strong>, <strong>3D Drones</strong>, and <strong>FPV Mode</strong> — identical in style to the main 3D preview controls.</li>
+              <li><strong>Diagnostics 3D HUD Controls:</strong> Added a new glass-morphism HUD overlay panel (top-right of the 3D replay viewport) with six scene toggles: <strong>Auto-Rotate</strong>, <strong>Reset Camera</strong>, <strong>Camera Cones</strong>, <strong>Footprints</strong>, <strong>3D Drone Avatar</strong>, and <strong>FPV Mode</strong> — identical in style to the main 3D preview controls.</li>
             </ul>
           </div>
           <div>

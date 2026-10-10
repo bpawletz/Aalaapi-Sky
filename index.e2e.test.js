@@ -666,6 +666,12 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       if (!waypoints || waypoints.length === 0) return { success: false, reason: 'No waypoints in 2D grid' };
 
       const wp = waypoints[0];
+      if (wp.origLat === undefined || wp.origLat === null) {
+        wp.origLat = wp.lat;
+        wp.origLon = wp.lon;
+        wp.origX = wp.x;
+        wp.origY = wp.y;
+      }
       const originLat = wp.origLat;
       const originLon = wp.origLon;
       const originX = wp.origX;
