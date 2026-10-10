@@ -865,6 +865,15 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
       if (existingGwp.origCameraAction === undefined) existingGwp.origCameraAction = wp.origCameraAction || 'inherit';
       if (existingGwp.origZoom === undefined) existingGwp.origZoom = wp.origZoom !== undefined ? wp.origZoom : 1.0;
       if (existingGwp.origPoiIndex === undefined) existingGwp.origPoiIndex = wp.origPoiIndex || 0;
+      if (activeLayer) {
+        existingGwp.layerId = activeLayer.id;
+        existingGwp.layerName = activeLayer.name;
+        existingGwp.layerColor = activeLayer.color;
+        existingGwp.layerPattern = activeLayer.pattern;
+        existingGwp.layerCaptureMode = activeLayer.captureMode || 'inherit';
+        existingGwp.layerPathMode = activeLayer.pathMode || 'inherit';
+      }
+      existingGwp.captureMode = (wp && wp.captureMode !== undefined) ? wp.captureMode : 'inherit';
       existingGwp.isRingStart = wp.isRingStart || false;
       existingGwp.idx = idx;
       return existingGwp;
@@ -883,6 +892,13 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
       roadNodeLat: roadNode.lat,
       roadNodeLon: roadNode.lon,
       isRoadDroneWaypoint: true,
+      layerId: activeLayer ? activeLayer.id : (wp && wp.layerId ? wp.layerId : undefined),
+      layerName: activeLayer ? activeLayer.name : (wp && wp.layerName ? wp.layerName : undefined),
+      layerColor: activeLayer ? activeLayer.color : (wp && wp.layerColor ? wp.layerColor : undefined),
+      layerPattern: activeLayer ? activeLayer.pattern : (wp && wp.layerPattern ? wp.layerPattern : undefined),
+      layerCaptureMode: activeLayer ? (activeLayer.captureMode || 'inherit') : (wp && wp.layerCaptureMode ? wp.layerCaptureMode : 'inherit'),
+      layerPathMode: activeLayer ? (activeLayer.pathMode || 'inherit') : (wp && wp.layerPathMode ? wp.layerPathMode : 'inherit'),
+      captureMode: (wp && wp.captureMode !== undefined) ? wp.captureMode : 'inherit',
       speed: finalSpeed,
       hoverTime: finalHover,
       turnMode: finalTurn,

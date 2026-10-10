@@ -1,3 +1,11 @@
+## [1.149.4] - 2026-10-09
+
+### Fixed
+- **Multi-Layer Video Mode Capture & WPML Action Generation**:
+  - **Three-Tier Cascade in WPML Generation (`src/export/WpmlCompiler.js`)**: Fixed an issue where flight layers configured with Video Mode (`captureMode: 'video'`) defaulted to Global `stopAndShoot` during WPML compilation, causing the DJI Fly app to show "take photo" actions instead of video recording. `buildWaylinesWpml` now resolves `effectiveCaptureMode` across the complete 3-Tier cascade (`Waypoint -> Layer -> Global`), preventing rogue `takePhoto` actions in video mode and automatically generating `<wpml:actionActuatorFunc>startRecord</wpml:actionActuatorFunc>` at video layer entry and `<wpml:actionActuatorFunc>stopRecord</wpml:actionActuatorFunc>` at video layer exit.
+  - **Video & Continuous Capture Sanitization (`src/export/WpmlCompiler.js`)**: Added automated capture mode sanitization in `validateAndFixWpml` to strip any extraneous `takePhoto` actions from waypoints belonging to video mode layers or continuous flight segments.
+  - **Layer Waypoint Property Stamping & Mapping (`src/layers/LayerManager.js`, `src/map/MapInteraction.js`, `src/export/Packager.js`)**: Updated `generateRoadFlightWaypoints`, `recalculateRoadOffsetPath`, and `exportKMZ` to stamp and preserve `layerCaptureMode`, `captureMode`, `layerPathMode`, and layer IDs across waypoint transformations and KMZ packaging.
+
 ## [1.149.3] - 2026-10-09
 
 ### Fixed
