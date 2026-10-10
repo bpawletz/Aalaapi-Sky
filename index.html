@@ -5992,7 +5992,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.149.3</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.149.4</span></h1>
 
 
 
@@ -10298,7 +10298,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.149.3</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.149.4</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -10359,6 +10359,14 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.149.4):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Multi-Layer Video Mode Capture &amp; WPML Action Generation:</strong> Fixed an issue where flight layers configured with Video Mode (<code>captureMode: &#39;video&#39;</code>) defaulted to Global <code>stopAndShoot</code> during WPML compilation, causing the DJI Fly app to show &quot;take photo&quot; actions instead of video recording. <code>buildWaylinesWpml</code> now resolves <code>effectiveCaptureMode</code> across the complete 3-Tier cascade (<code>Waypoint -&gt; Layer -&gt; Global</code>), preventing rogue <code>takePhoto</code> actions in video mode and automatically generating <code>startRecord</code> at video layer entry and <code>stopRecord</code> at video layer exit.</li>
+              <li><strong>Video &amp; Continuous Capture Sanitization:</strong> Added automated capture mode sanitization in <code>validateAndFixWpml</code> to strip any extraneous <code>takePhoto</code> actions from waypoints belonging to video mode layers or continuous flight segments.</li>
+              <li><strong>Layer Waypoint Property Stamping &amp; Mapping:</strong> Updated <code>generateRoadFlightWaypoints</code>, <code>recalculateRoadOffsetPath</code>, and <code>exportKMZ</code> to stamp and preserve <code>layerCaptureMode</code>, <code>captureMode</code>, <code>layerPathMode</code>, and layer IDs across waypoint transformations and KMZ packaging.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.149.3):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -20316,6 +20324,8 @@ function generateRoadFlightWaypoints(rawRoad, offsetDist, altitude, defaultGimba
       turnMode: (roadNode.isModified && roadNode.turnMode !== undefined) ? roadNode.turnMode : (roadNode.turnMode || 'inherit'),
       cameraAction: (roadNode.isModified && roadNode.cameraAction !== undefined) ? roadNode.cameraAction : (roadNode.cameraAction || 'inherit'),
       zoom: (roadNode.isModified && roadNode.zoom !== undefined && roadNode.zoom !== null) ? roadNode.zoom : (roadNode.zoom || 1.0),
+      captureMode: (roadNode.isModified && roadNode.captureMode !== undefined) ? roadNode.captureMode : 'inherit',
+      layerCaptureMode: captureMode || 'inherit',
       idx: idx,
       isRoadDroneWaypoint: true,
       isModified: Boolean(roadNode.isModified),
@@ -28249,6 +28259,15 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
       if (existingGwp.origCameraAction === undefined) existingGwp.origCameraAction = wp.origCameraAction || 'inherit';
       if (existingGwp.origZoom === undefined) existingGwp.origZoom = wp.origZoom !== undefined ? wp.origZoom : 1.0;
       if (existingGwp.origPoiIndex === undefined) existingGwp.origPoiIndex = wp.origPoiIndex || 0;
+      if (activeLayer) {
+        existingGwp.layerId = activeLayer.id;
+        existingGwp.layerName = activeLayer.name;
+        existingGwp.layerColor = activeLayer.color;
+        existingGwp.layerPattern = activeLayer.pattern;
+        existingGwp.layerCaptureMode = activeLayer.captureMode || 'inherit';
+        existingGwp.layerPathMode = activeLayer.pathMode || 'inherit';
+      }
+      existingGwp.captureMode = (wp && wp.captureMode !== undefined) ? wp.captureMode : 'inherit';
       existingGwp.isRingStart = wp.isRingStart || false;
       existingGwp.idx = idx;
       return existingGwp;
@@ -28267,6 +28286,13 @@ function recalculateRoadOffsetPath(centerLat, centerLon) {
       roadNodeLat: roadNode.lat,
       roadNodeLon: roadNode.lon,
       isRoadDroneWaypoint: true,
+      layerId: activeLayer ? activeLayer.id : (wp && wp.layerId ? wp.layerId : undefined),
+      layerName: activeLayer ? activeLayer.name : (wp && wp.layerName ? wp.layerName : undefined),
+      layerColor: activeLayer ? activeLayer.color : (wp && wp.layerColor ? wp.layerColor : undefined),
+      layerPattern: activeLayer ? activeLayer.pattern : (wp && wp.layerPattern ? wp.layerPattern : undefined),
+      layerCaptureMode: activeLayer ? (activeLayer.captureMode || 'inherit') : (wp && wp.layerCaptureMode ? wp.layerCaptureMode : 'inherit'),
+      layerPathMode: activeLayer ? (activeLayer.pathMode || 'inherit') : (wp && wp.layerPathMode ? wp.layerPathMode : 'inherit'),
+      captureMode: (wp && wp.captureMode !== undefined) ? wp.captureMode : 'inherit',
       speed: finalSpeed,
       hoverTime: finalHover,
       turnMode: finalTurn,
@@ -32892,16 +32918,44 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     const waypointActions = [];
     const isHyperlapse = (gridType === 'hyperlapse') || (wp.isHyperlapse) || (wp.gridType === 'hyperlapse') || (wp.layerPattern === 'hyperlapse');
     
+    // Resolve layer reference if available (Three-Tier Cascading Hierarchy)
+    const layersList = (typeof global !== 'undefined' && Array.isArray(global.flightLayers) && global.flightLayers.length > 0)
+      ? global.flightLayers
+      : ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : null);
+    let wpLayer = (wp.layerId && layersList) ? layersList.find(l => l.id === wp.layerId) : null;
+    if (!wpLayer && layersList && typeof wp.layerIndex === 'number' && layersList[wp.layerIndex]) {
+      wpLayer = layersList[wp.layerIndex];
+    }
+    // Only infer layer by accumulation in multi-layer missions where waypoints have layer metadata or stack has > 1 layer
+    if (!wpLayer && layersList && layersList.length > 1 && (wp.layerId || wp.layerCaptureMode || wp.layerAltitude || wp.layerPattern)) {
+      let accum = 0;
+      for (const l of layersList) {
+        if (!l.enabled || l.isExclusionZone || l.pattern === 'exclusion-box' || l.pattern === 'exclusion-freeform' || l.isDrawingLayer || l.pattern === 'boundary-polygon' || l.pattern === 'fiducial-markers' || l.isFiducialLayer) continue;
+        const lCount = (Array.isArray(l.waypoints) && l.waypoints.length > 0) ? l.waypoints.length : ((Array.isArray(l.roadWaypoints) && l.roadWaypoints.length > 0) ? l.roadWaypoints.length : ((Array.isArray(l.freeformWaypoints) && l.freeformWaypoints.length > 0) ? l.freeformWaypoints.length : 0));
+        if (lCount > 0 && idx >= accum && idx < accum + lCount) {
+          wpLayer = l;
+          break;
+        }
+        accum += lCount;
+      }
+    }
+
     // Resolve Effective Layer & Waypoint Properties (Three-Tier Cascade: Waypoint -> Layer -> Global)
     const effectiveCaptureMode = (wp.captureMode && wp.captureMode !== 'inherit')
       ? wp.captureMode
       : (wp.layerCaptureMode && wp.layerCaptureMode !== 'inherit')
         ? wp.layerCaptureMode
-        : (captureMode || 'stopAndShoot');
+        : (wpLayer && wpLayer.captureMode && wpLayer.captureMode !== 'inherit')
+          ? wpLayer.captureMode
+          : (captureMode || 'stopAndShoot');
 
-    const effectivePathMode = (wp.layerPathMode && wp.layerPathMode !== 'inherit')
-      ? wp.layerPathMode
-      : (pathMode || 'curved');
+    const effectivePathMode = (wp.pathMode && wp.pathMode !== 'inherit')
+      ? wp.pathMode
+      : (wp.layerPathMode && wp.layerPathMode !== 'inherit')
+        ? wp.layerPathMode
+        : (wpLayer && wpLayer.pathMode && wpLayer.pathMode !== 'inherit')
+          ? wpLayer.pathMode
+          : (pathMode || 'curved');
 
     const isStopAndShoot = effectiveCaptureMode === 'stopAndShoot';
     const isVideo = effectiveCaptureMode === 'video';
@@ -32957,7 +33011,6 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     }
 
     // Compute effective pitch for use in both gimbalRotate action and waypointGimbalHeadingParam
-    const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers.find(l => l.id === wp.layerId) : null;
     let effectivePitch;
     const rawWpPitch = wp.pitch !== undefined ? wp.pitch : (wpLayer && wpLayer.gimbalPitch !== undefined ? wpLayer.gimbalPitch : gimbalPitch);
     if (rawWpPitch === 'auto' || (typeof rawWpPitch === 'string' && rawWpPitch.toLowerCase() === 'auto')) {
@@ -33043,11 +33096,36 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
           </wpml:action>`);
     }
 
+    // Helper to resolve effective capture mode for neighbor waypoints in the 3-Tier cascade
+    const resolveNeighborCaptureMode = (neighborWp, neighborIdx) => {
+      if (!neighborWp) return null;
+      if (neighborWp.captureMode && neighborWp.captureMode !== 'inherit') return neighborWp.captureMode;
+      if (neighborWp.layerCaptureMode && neighborWp.layerCaptureMode !== 'inherit') return neighborWp.layerCaptureMode;
+      let nLayer = (neighborWp.layerId && layersList) ? layersList.find(l => l.id === neighborWp.layerId) : null;
+      if (!nLayer && layersList && typeof neighborWp.layerIndex === 'number' && layersList[neighborWp.layerIndex]) {
+        nLayer = layersList[neighborWp.layerIndex];
+      }
+      if (!nLayer && layersList && layersList.length > 1 && (neighborWp.layerId || neighborWp.layerCaptureMode || neighborWp.layerAltitude || neighborWp.layerPattern)) {
+        let acc = 0;
+        for (const l of layersList) {
+          if (!l.enabled || l.isExclusionZone || l.pattern === 'exclusion-box' || l.pattern === 'exclusion-freeform' || l.isDrawingLayer || l.pattern === 'boundary-polygon' || l.pattern === 'fiducial-markers' || l.isFiducialLayer) continue;
+          const lc = (Array.isArray(l.waypoints) && l.waypoints.length > 0) ? l.waypoints.length : ((Array.isArray(l.roadWaypoints) && l.roadWaypoints.length > 0) ? l.roadWaypoints.length : ((Array.isArray(l.freeformWaypoints) && l.freeformWaypoints.length > 0) ? l.freeformWaypoints.length : 0));
+          if (lc > 0 && neighborIdx >= acc && neighborIdx < acc + lc) {
+            nLayer = l;
+            break;
+          }
+          acc += lc;
+        }
+      }
+      if (nLayer && nLayer.captureMode && nLayer.captureMode !== 'inherit') return nLayer.captureMode;
+      return captureMode || 'stopAndShoot';
+    };
+
     // 4. Video record actions: Start at entry of video layer/mission, Stop at exit of video layer/mission
     const prevWp = idx > 0 ? waypoints[idx - 1] : null;
     const nextWp = idx < waypoints.length - 1 ? waypoints[idx + 1] : null;
-    const prevWpIsVideo = prevWp ? (((prevWp.captureMode && prevWp.captureMode !== 'inherit') ? prevWp.captureMode : (prevWp.layerCaptureMode && prevWp.layerCaptureMode !== 'inherit') ? prevWp.layerCaptureMode : captureMode) === 'video') : false;
-    const nextWpIsVideo = nextWp ? (((nextWp.captureMode && nextWp.captureMode !== 'inherit') ? nextWp.captureMode : (nextWp.layerCaptureMode && nextWp.layerCaptureMode !== 'inherit') ? nextWp.layerCaptureMode : captureMode) === 'video') : false;
+    const prevWpIsVideo = prevWp ? (resolveNeighborCaptureMode(prevWp, idx - 1) === 'video') : false;
+    const nextWpIsVideo = nextWp ? (resolveNeighborCaptureMode(nextWp, idx + 1) === 'video') : false;
 
     if (isVideo && (!prevWp || !prevWpIsVideo || wp.isLayerStart)) {
       waypointActions.push(`          <wpml:action>
@@ -33068,8 +33146,8 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
           </wpml:action>`);
     }
 
-    // 5. If Stop & Shoot is active, also add photo trigger at this waypoint (skipping transit turnaround overshoot waypoints)
-    if ((isStopAndShoot || isPhotoSphere) && wp.skipPhoto !== true) {
+    // 5. If Stop & Shoot is active, also add photo trigger at this waypoint (skipping transit turnaround overshoot waypoints and never in video mode)
+    if ((isStopAndShoot || isPhotoSphere) && wp.skipPhoto !== true && !isVideo) {
       waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
@@ -33889,6 +33967,41 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
           }
         }
       }
+      // Capture Mode Action Sanitization (Three-Tier Cascade: Waypoint -> Layer -> Global)
+      const layersListForCap = (options && options.flightLayers) || (typeof global !== 'undefined' && Array.isArray(global.flightLayers) && global.flightLayers.length > 0 ? global.flightLayers : (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers) ? flightLayers : null));
+      let capLayer = (wpObj && wpObj.layerId && layersListForCap) ? layersListForCap.find(l => l.id === wpObj.layerId) : null;
+      if (!capLayer && layersListForCap && wpObj && typeof wpObj.layerIndex === 'number' && layersListForCap[wpObj.layerIndex]) {
+        capLayer = layersListForCap[wpObj.layerIndex];
+      }
+      if (!capLayer && layersListForCap && layersListForCap.length > 1 && wpObj && (wpObj.layerId || wpObj.layerCaptureMode || wpObj.layerAltitude || wpObj.layerPattern)) {
+        let acc = 0;
+        for (const l of layersListForCap) {
+          if (!l.enabled || l.isExclusionZone || l.pattern === 'exclusion-box' || l.pattern === 'exclusion-freeform' || l.isDrawingLayer || l.pattern === 'boundary-polygon' || l.pattern === 'fiducial-markers' || l.isFiducialLayer) continue;
+          const lc = (Array.isArray(l.waypoints) && l.waypoints.length > 0) ? l.waypoints.length : ((Array.isArray(l.roadWaypoints) && l.roadWaypoints.length > 0) ? l.roadWaypoints.length : ((Array.isArray(l.freeformWaypoints) && l.freeformWaypoints.length > 0) ? l.freeformWaypoints.length : 0));
+          if (lc > 0 && wpIdx >= acc && wpIdx < acc + lc) {
+            capLayer = l;
+            break;
+          }
+          acc += lc;
+        }
+      }
+      const effCap = (wpObj && wpObj.captureMode && wpObj.captureMode !== 'inherit')
+        ? wpObj.captureMode
+        : (wpObj && wpObj.layerCaptureMode && wpObj.layerCaptureMode !== 'inherit')
+          ? wpObj.layerCaptureMode
+          : (capLayer && capLayer.captureMode && capLayer.captureMode !== 'inherit')
+            ? capLayer.captureMode
+            : (options && options.captureMode ? options.captureMode : null);
+
+      if (effCap === 'video') {
+        // In video mode, waypoints must never contain takePhoto actions
+        pms[i] = pms[i].replace(/\s*<wpml:action>\s*<wpml:actionId>\d+<\/wpml:actionId>\s*<wpml:actionActuatorFunc>takePhoto<\/wpml:actionActuatorFunc>[\s\S]*?<\/wpml:action>/g, '');
+      } else if (effCap === 'continuous') {
+        // Continuous capture mode captures via aircraft motion: strip takePhoto unless explicitly requested by per-waypoint override
+        if (!wpObj || wpObj.cameraAction !== 'takePhoto') {
+          pms[i] = pms[i].replace(/\s*<wpml:action>\s*<wpml:actionId>\d+<\/wpml:actionId>\s*<wpml:actionActuatorFunc>takePhoto<\/wpml:actionActuatorFunc>[\s\S]*?<\/wpml:action>/g, '');
+        }
+      }
     }
     fixedWpml = pms.join('<Placemark>');
   }
@@ -34138,11 +34251,12 @@ function exportKMZ() {
     waypoints = currentWps.map(wp => {
       const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch;
       return {
+        ...wp,
         lat: wp.lat,
         lon: wp.lon,
         alt: wp.alt,
         pitch: pitch,
-        speed: speed, // Use UI speed slider value
+        speed: wp.speed !== undefined && wp.speed !== null ? wp.speed : speed,
         heading: wp.heading,
         isRingStart: wp.isRingStart || false,
         ringIndex: wp.ringIndex !== undefined ? wp.ringIndex : null,

@@ -30,11 +30,12 @@ function exportKMZ() {
     waypoints = currentWps.map(wp => {
       const pitch = wp.pitch !== undefined && wp.pitch !== null ? wp.pitch : gimbalPitch;
       return {
+        ...wp,
         lat: wp.lat,
         lon: wp.lon,
         alt: wp.alt,
         pitch: pitch,
-        speed: speed, // Use UI speed slider value
+        speed: wp.speed !== undefined && wp.speed !== null ? wp.speed : speed,
         heading: wp.heading,
         isRingStart: wp.isRingStart || false,
         ringIndex: wp.ringIndex !== undefined ? wp.ringIndex : null,

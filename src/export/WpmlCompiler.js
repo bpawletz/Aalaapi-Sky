@@ -213,16 +213,44 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     const waypointActions = [];
     const isHyperlapse = (gridType === 'hyperlapse') || (wp.isHyperlapse) || (wp.gridType === 'hyperlapse') || (wp.layerPattern === 'hyperlapse');
     
+    // Resolve layer reference if available (Three-Tier Cascading Hierarchy)
+    const layersList = (typeof global !== 'undefined' && Array.isArray(global.flightLayers) && global.flightLayers.length > 0)
+      ? global.flightLayers
+      : ((typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers : null);
+    let wpLayer = (wp.layerId && layersList) ? layersList.find(l => l.id === wp.layerId) : null;
+    if (!wpLayer && layersList && typeof wp.layerIndex === 'number' && layersList[wp.layerIndex]) {
+      wpLayer = layersList[wp.layerIndex];
+    }
+    // Only infer layer by accumulation in multi-layer missions where waypoints have layer metadata or stack has > 1 layer
+    if (!wpLayer && layersList && layersList.length > 1 && (wp.layerId || wp.layerCaptureMode || wp.layerAltitude || wp.layerPattern)) {
+      let accum = 0;
+      for (const l of layersList) {
+        if (!l.enabled || l.isExclusionZone || l.pattern === 'exclusion-box' || l.pattern === 'exclusion-freeform' || l.isDrawingLayer || l.pattern === 'boundary-polygon' || l.pattern === 'fiducial-markers' || l.isFiducialLayer) continue;
+        const lCount = (Array.isArray(l.waypoints) && l.waypoints.length > 0) ? l.waypoints.length : ((Array.isArray(l.roadWaypoints) && l.roadWaypoints.length > 0) ? l.roadWaypoints.length : ((Array.isArray(l.freeformWaypoints) && l.freeformWaypoints.length > 0) ? l.freeformWaypoints.length : 0));
+        if (lCount > 0 && idx >= accum && idx < accum + lCount) {
+          wpLayer = l;
+          break;
+        }
+        accum += lCount;
+      }
+    }
+
     // Resolve Effective Layer & Waypoint Properties (Three-Tier Cascade: Waypoint -> Layer -> Global)
     const effectiveCaptureMode = (wp.captureMode && wp.captureMode !== 'inherit')
       ? wp.captureMode
       : (wp.layerCaptureMode && wp.layerCaptureMode !== 'inherit')
         ? wp.layerCaptureMode
-        : (captureMode || 'stopAndShoot');
+        : (wpLayer && wpLayer.captureMode && wpLayer.captureMode !== 'inherit')
+          ? wpLayer.captureMode
+          : (captureMode || 'stopAndShoot');
 
-    const effectivePathMode = (wp.layerPathMode && wp.layerPathMode !== 'inherit')
-      ? wp.layerPathMode
-      : (pathMode || 'curved');
+    const effectivePathMode = (wp.pathMode && wp.pathMode !== 'inherit')
+      ? wp.pathMode
+      : (wp.layerPathMode && wp.layerPathMode !== 'inherit')
+        ? wp.layerPathMode
+        : (wpLayer && wpLayer.pathMode && wpLayer.pathMode !== 'inherit')
+          ? wpLayer.pathMode
+          : (pathMode || 'curved');
 
     const isStopAndShoot = effectiveCaptureMode === 'stopAndShoot';
     const isVideo = effectiveCaptureMode === 'video';
@@ -278,7 +306,6 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     }
 
     // Compute effective pitch for use in both gimbalRotate action and waypointGimbalHeadingParam
-    const wpLayer = (wp.layerId && typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) ? flightLayers.find(l => l.id === wp.layerId) : null;
     let effectivePitch;
     const rawWpPitch = wp.pitch !== undefined ? wp.pitch : (wpLayer && wpLayer.gimbalPitch !== undefined ? wpLayer.gimbalPitch : gimbalPitch);
     if (rawWpPitch === 'auto' || (typeof rawWpPitch === 'string' && rawWpPitch.toLowerCase() === 'auto')) {
@@ -364,11 +391,36 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
           </wpml:action>`);
     }
 
+    // Helper to resolve effective capture mode for neighbor waypoints in the 3-Tier cascade
+    const resolveNeighborCaptureMode = (neighborWp, neighborIdx) => {
+      if (!neighborWp) return null;
+      if (neighborWp.captureMode && neighborWp.captureMode !== 'inherit') return neighborWp.captureMode;
+      if (neighborWp.layerCaptureMode && neighborWp.layerCaptureMode !== 'inherit') return neighborWp.layerCaptureMode;
+      let nLayer = (neighborWp.layerId && layersList) ? layersList.find(l => l.id === neighborWp.layerId) : null;
+      if (!nLayer && layersList && typeof neighborWp.layerIndex === 'number' && layersList[neighborWp.layerIndex]) {
+        nLayer = layersList[neighborWp.layerIndex];
+      }
+      if (!nLayer && layersList && layersList.length > 1 && (neighborWp.layerId || neighborWp.layerCaptureMode || neighborWp.layerAltitude || neighborWp.layerPattern)) {
+        let acc = 0;
+        for (const l of layersList) {
+          if (!l.enabled || l.isExclusionZone || l.pattern === 'exclusion-box' || l.pattern === 'exclusion-freeform' || l.isDrawingLayer || l.pattern === 'boundary-polygon' || l.pattern === 'fiducial-markers' || l.isFiducialLayer) continue;
+          const lc = (Array.isArray(l.waypoints) && l.waypoints.length > 0) ? l.waypoints.length : ((Array.isArray(l.roadWaypoints) && l.roadWaypoints.length > 0) ? l.roadWaypoints.length : ((Array.isArray(l.freeformWaypoints) && l.freeformWaypoints.length > 0) ? l.freeformWaypoints.length : 0));
+          if (lc > 0 && neighborIdx >= acc && neighborIdx < acc + lc) {
+            nLayer = l;
+            break;
+          }
+          acc += lc;
+        }
+      }
+      if (nLayer && nLayer.captureMode && nLayer.captureMode !== 'inherit') return nLayer.captureMode;
+      return captureMode || 'stopAndShoot';
+    };
+
     // 4. Video record actions: Start at entry of video layer/mission, Stop at exit of video layer/mission
     const prevWp = idx > 0 ? waypoints[idx - 1] : null;
     const nextWp = idx < waypoints.length - 1 ? waypoints[idx + 1] : null;
-    const prevWpIsVideo = prevWp ? (((prevWp.captureMode && prevWp.captureMode !== 'inherit') ? prevWp.captureMode : (prevWp.layerCaptureMode && prevWp.layerCaptureMode !== 'inherit') ? prevWp.layerCaptureMode : captureMode) === 'video') : false;
-    const nextWpIsVideo = nextWp ? (((nextWp.captureMode && nextWp.captureMode !== 'inherit') ? nextWp.captureMode : (nextWp.layerCaptureMode && nextWp.layerCaptureMode !== 'inherit') ? nextWp.layerCaptureMode : captureMode) === 'video') : false;
+    const prevWpIsVideo = prevWp ? (resolveNeighborCaptureMode(prevWp, idx - 1) === 'video') : false;
+    const nextWpIsVideo = nextWp ? (resolveNeighborCaptureMode(nextWp, idx + 1) === 'video') : false;
 
     if (isVideo && (!prevWp || !prevWpIsVideo || wp.isLayerStart)) {
       waypointActions.push(`          <wpml:action>
@@ -389,8 +441,8 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
           </wpml:action>`);
     }
 
-    // 5. If Stop & Shoot is active, also add photo trigger at this waypoint (skipping transit turnaround overshoot waypoints)
-    if ((isStopAndShoot || isPhotoSphere) && wp.skipPhoto !== true) {
+    // 5. If Stop & Shoot is active, also add photo trigger at this waypoint (skipping transit turnaround overshoot waypoints and never in video mode)
+    if ((isStopAndShoot || isPhotoSphere) && wp.skipPhoto !== true && !isVideo) {
       waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
@@ -1208,6 +1260,41 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
               '$10.1$2'
             );
           }
+        }
+      }
+      // Capture Mode Action Sanitization (Three-Tier Cascade: Waypoint -> Layer -> Global)
+      const layersListForCap = (options && options.flightLayers) || (typeof global !== 'undefined' && Array.isArray(global.flightLayers) && global.flightLayers.length > 0 ? global.flightLayers : (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers) ? flightLayers : null));
+      let capLayer = (wpObj && wpObj.layerId && layersListForCap) ? layersListForCap.find(l => l.id === wpObj.layerId) : null;
+      if (!capLayer && layersListForCap && wpObj && typeof wpObj.layerIndex === 'number' && layersListForCap[wpObj.layerIndex]) {
+        capLayer = layersListForCap[wpObj.layerIndex];
+      }
+      if (!capLayer && layersListForCap && layersListForCap.length > 1 && wpObj && (wpObj.layerId || wpObj.layerCaptureMode || wpObj.layerAltitude || wpObj.layerPattern)) {
+        let acc = 0;
+        for (const l of layersListForCap) {
+          if (!l.enabled || l.isExclusionZone || l.pattern === 'exclusion-box' || l.pattern === 'exclusion-freeform' || l.isDrawingLayer || l.pattern === 'boundary-polygon' || l.pattern === 'fiducial-markers' || l.isFiducialLayer) continue;
+          const lc = (Array.isArray(l.waypoints) && l.waypoints.length > 0) ? l.waypoints.length : ((Array.isArray(l.roadWaypoints) && l.roadWaypoints.length > 0) ? l.roadWaypoints.length : ((Array.isArray(l.freeformWaypoints) && l.freeformWaypoints.length > 0) ? l.freeformWaypoints.length : 0));
+          if (lc > 0 && wpIdx >= acc && wpIdx < acc + lc) {
+            capLayer = l;
+            break;
+          }
+          acc += lc;
+        }
+      }
+      const effCap = (wpObj && wpObj.captureMode && wpObj.captureMode !== 'inherit')
+        ? wpObj.captureMode
+        : (wpObj && wpObj.layerCaptureMode && wpObj.layerCaptureMode !== 'inherit')
+          ? wpObj.layerCaptureMode
+          : (capLayer && capLayer.captureMode && capLayer.captureMode !== 'inherit')
+            ? capLayer.captureMode
+            : (options && options.captureMode ? options.captureMode : null);
+
+      if (effCap === 'video') {
+        // In video mode, waypoints must never contain takePhoto actions
+        pms[i] = pms[i].replace(/\s*<wpml:action>\s*<wpml:actionId>\d+<\/wpml:actionId>\s*<wpml:actionActuatorFunc>takePhoto<\/wpml:actionActuatorFunc>[\s\S]*?<\/wpml:action>/g, '');
+      } else if (effCap === 'continuous') {
+        // Continuous capture mode captures via aircraft motion: strip takePhoto unless explicitly requested by per-waypoint override
+        if (!wpObj || wpObj.cameraAction !== 'takePhoto') {
+          pms[i] = pms[i].replace(/\s*<wpml:action>\s*<wpml:actionId>\d+<\/wpml:actionId>\s*<wpml:actionActuatorFunc>takePhoto<\/wpml:actionActuatorFunc>[\s\S]*?<\/wpml:action>/g, '');
         }
       }
     }
