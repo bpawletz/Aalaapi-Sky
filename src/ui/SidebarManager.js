@@ -924,6 +924,15 @@ function togglePatternParameters() {
       activeLayer.captureMode = 'continuous';
       activeLayer.pathMode = 'curved';
       activeLayer.headingMode = 'smoothTransition';
+      const curPitch = (activeLayer.gimbalPitch !== undefined && !isNaN(activeLayer.gimbalPitch) && activeLayer.gimbalPitch !== 'auto') ? activeLayer.gimbalPitch : -60;
+      if (activeLayer.hyperlapseStartPitch === undefined || activeLayer.hyperlapseStartPitch === activeLayer.hyperlapseEndPitch || activeLayer.hyperlapseStartPitch === -15) {
+        activeLayer.hyperlapseStartPitch = curPitch;
+        activeLayer.hyperlapseEndPitch = curPitch;
+        const hlStart = document.getElementById('hyperlapse-start-pitch');
+        const hlEnd = document.getElementById('hyperlapse-end-pitch');
+        if (hlStart) hlStart.value = curPitch;
+        if (hlEnd) hlEnd.value = curPitch;
+      }
     }
     const layerCapSelect = document.getElementById('layer-capture-mode');
     if (layerCapSelect) layerCapSelect.value = 'continuous';
@@ -1112,7 +1121,7 @@ function updateGimbalPitchVisualizer(pitch) {
   }
 
   let pVal;
-  if (isAuto || (isRoad && activeLayer.roadFocusMode === 'focusRoad')) {
+  if (isAuto) {
     if (isRoad && roadAutoPitch !== null) {
       pVal = roadAutoPitch;
     } else {
@@ -1153,7 +1162,7 @@ function updateGimbalPitchVisualizer(pitch) {
       }
 
       let isMatch = false;
-      if (isAuto || (isRoad && activeLayer.roadFocusMode === 'focusRoad')) {
+      if (isAuto) {
         isMatch = (rawTarget === 'auto');
       } else {
         const targetPitch = parseFloat(rawTarget);

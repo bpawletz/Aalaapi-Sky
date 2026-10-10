@@ -1,3 +1,12 @@
+## [1.149.5] - 2026-10-09
+
+### Fixed
+- **Multi-Layer Layer Menu Gimbal Pitch Matching & Cascading**:
+  - **Hyperlapse Gimbal Pitch Inheritance (`src/patterns/PatternGenerators.js`)**: Fixed an issue where `generateHyperlapseWaypoints` hardcoded fallback pitches to `-15°`, causing hyperlapse flight layers configured with `-60°` (or other angles) to generate waypoints at `-15°` unless a sweep was explicitly specified. Unmodified hyperlapse waypoints now dynamically resolve the layer's configured `gimbalPitch` while preserving custom pitch sweeps (`hyperlapseStartPitch !== hyperlapseEndPitch`) and individual waypoint overrides (`isModified: true`).
+  - **Road-Following Default Initialization (`src/layers/LayerManager.js`)**: Updated `createDefaultLayer` so that for `pattern === 'road-following'`, `layer.gimbalPitch` defaults to `'auto'` instead of a conflicting `-60°` fallback, ensuring road cross-track tilt calculations (`-atan2(alt, offset)`) harmonize seamlessly with the layer card dynamics readout and WPML compilation.
+  - **Three-Tier Cascade in WPML Generation (`src/export/WpmlCompiler.js`)**: Reinforced `buildWaylinesWpml` and `validateAndFixWpml` to cascade `layer.gimbalPitch` down to waypoints in multi-layer missions, ensuring `<wpml:waypointGimbalPitchAngle>` and `<wpml:gimbalPitchRotateAngle>` faithfully reflect the layer menu's gimbal pitch configuration.
+  - **Gimbal Pitch UI & Preset Chip Synchronization (`src/ui/SidebarManager.js`, `src/ui/EventBindings.js`)**: Updated `togglePatternParameters` and `updateGimbalPitchVisualizer` to synchronize hyperlapse start and end pitch inputs with layer gimbal pitch, and ensured preset chips accurately reflect active numeric angles vs automatic road tracking.
+
 ## [1.149.4] - 2026-10-09
 
 ### Fixed
