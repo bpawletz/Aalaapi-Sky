@@ -172,7 +172,7 @@
     "description": "Anchorage, AK, Tuesday, October 13, 2026 through Tuesday, October 13, 2026 Local",
     "mod_date": "10/11/2026 21:57:00",
     "mod_abs_time": "202610112157",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8889"
   },
   {
@@ -183,7 +183,7 @@
     "description": "Youngstown, OH, Monday, October 12, 2026 through Monday, October 12, 2026 Local",
     "mod_date": "10/11/2026 21:46:00",
     "mod_abs_time": "202610112146",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8888"
   },
   {
@@ -330,17 +330,6 @@
     "gid": "6/8587"
   },
   {
-    "notam_id": "6/8508",
-    "facility": "ZDC",
-    "state": "NC",
-    "type": "SECURITY",
-    "description": "Johnsontown, NC",
-    "mod_date": "10/08/2026 21:49:00",
-    "mod_abs_time": "202610082149",
-    "is_new": "N",
-    "gid": "6/8508"
-  },
-  {
     "notam_id": "6/8389",
     "facility": "ZJX",
     "state": "FL",
@@ -361,17 +350,6 @@
     "mod_abs_time": "202610081143",
     "is_new": "N",
     "gid": "6/8298"
-  },
-  {
-    "notam_id": "6/8029",
-    "facility": "ZID",
-    "state": "OH",
-    "type": "VIP",
-    "description": "Cincinnati, OH, Friday, October 9, 2026 through Monday, October 12, 2026 Local",
-    "mod_date": "10/07/2026 17:11:00",
-    "mod_abs_time": "202610071711",
-    "is_new": "N",
-    "gid": "6/8029"
   },
   {
     "notam_id": "6/7094",
