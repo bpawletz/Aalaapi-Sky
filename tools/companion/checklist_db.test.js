@@ -109,4 +109,28 @@ describe('ChecklistDatabase Tests', () => {
     const res = db.saveLog(payload);
     assert.ok(res.success);
   });
+
+  test('successfully records and retrieves bypassed preflight checklist logs', () => {
+    const payload = {
+      operator_name: 'bypassed',
+      bypassed: true,
+      signature: 'BYPASSED',
+      mission_id: 'mission_bypass_99',
+      kmz_filename: 'test_bypass.kmz',
+      airspace_auth_code: 'BYPASS',
+      completed_items: [],
+      auto_checks: { bypassed: true }
+    };
+
+    const res = db.saveLog(payload);
+    assert.ok(res.success);
+    assert.ok(res.log_id);
+
+    const history = db.getHistory(5, 0);
+    assert.ok(history.length >= 1);
+    const bypassedEntry = history.find(h => h.operator_name === 'bypassed');
+    assert.ok(bypassedEntry);
+    assert.strictEqual(bypassedEntry.airspace_auth_code, 'BYPASS');
+  });
 });
+
