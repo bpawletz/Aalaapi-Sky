@@ -7369,6 +7369,7 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
     const closeBtn = page.locator('#preflight-close-btn');
     if (await closeBtn.isVisible()) {
       await closeBtn.click({ force: true });
+      await modal.waitFor({ state: 'hidden', timeout: 3000 }).catch(() => {});
       assert.ok(await modal.isHidden(), '#preflight-modal must close on click');
     }
   });
