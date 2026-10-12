@@ -1530,6 +1530,38 @@ const scenarios = [
       await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
       await page.waitForTimeout(1000);
     }
+  },
+  {
+    id: 'feature_light_art',
+    name: 'Light Art & Sky Painting Continuous Long Exposure Flight Pattern',
+    issueRef: 'Issue #136',
+    description: 'Demonstrates continuous non-hovering, non-stopping Light Art flight pattern with long exposure shutter sync and zero internal photo triggers.',
+    run: async (page) => {
+      // 1. Initial setup squarely on default rural coordinates
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1000);
+
+      // 2. Select Light Art pattern
+      await selectPattern(page, 'light-art');
+      await page.waitForTimeout(1500);
+
+      // 3. Switch through presets: Helix, Star, Heart, Spiral
+      const presetSelect = await page.$('#light-art-preset');
+      if (presetSelect) {
+        await presetSelect.selectOption('helix');
+        await page.waitForTimeout(1200);
+        await presetSelect.selectOption('star');
+        await page.waitForTimeout(1200);
+        await presetSelect.selectOption('heart');
+        await page.waitForTimeout(1200);
+        await presetSelect.selectOption('spiral');
+        await page.waitForTimeout(1500);
+      }
+
+      // 4. Verify center marker and trajectory squarely centered
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(2000);
+    }
   }
 ];
 

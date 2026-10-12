@@ -853,6 +853,9 @@ function generateLightArtCoordinates(layer, baseAltitude, defaultGimbalPitch, sp
       layerPattern: 'light-art',
       isLightArtPoint: true,
       skipPhoto: true, // Aircraft itself is the light source; no camera triggers needed
+      cameraAction: 'none',
+      hoverTime: 0,
+      autoSettlingEnabled: false,
       turnMode: 'curved'
     };
 

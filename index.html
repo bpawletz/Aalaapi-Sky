@@ -5992,7 +5992,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.151.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.151.2</span></h1>
 
 
 
@@ -9958,9 +9958,9 @@ html, body {
       <!-- Footer Control Bar -->
       <div style="padding: 12px 18px; background: rgba(15, 23, 42, 0.98); border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 10px;">
         <div style="display: flex; align-items: center; gap: 12px;">
-          <label style="font-size: 0.72rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+          <label style="font-size: 0.72rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 6px; cursor: pointer;" title="Require safety checklist completion and PIC digital sign-off before exporting KMZ or syncing to RC 2. Uncheck to bypass for testing or unrestricted flight export.">
             <input id="preflight-gate-toggle" type="checkbox" checked style="accent-color: #06b6d4;" />
-            <span>Enforce Preflight Gate</span>
+            <span>Require Preflight Checklist</span>
           </label>
           <button id="preflight-view-history-btn" type="button" class="btn-secondary" style="font-size: 0.68rem; padding: 4px 8px;" title="View past signed checklist logs">📜 Audit History</button>
         </div>
@@ -10412,7 +10412,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.151.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.151.2</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -10473,6 +10473,18 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.151.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Continuous Light Art Flight &amp; Shutter Suppression:</strong> Eliminated hovering, auto-settling pauses, and drone camera triggers during Light Art flights, enforcing non-stopping continuous curvature trajectories for clean aerial long exposures.</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.151.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Preflight Checklist Requirement Clarity &amp; Bypass Status (Closes #99):</strong> Clarified the preflight modal toggle to &quot;Require Preflight Checklist&quot; with explicit tooltip, updated badge to &quot;BYPASSED&quot; when skipped, and automatically logged bypass events in flight audit history.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.151.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -18700,6 +18712,8 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     layer.speed = 3.0; // Optimal smooth stroke velocity
     layer.pathMode = 'curved';
     layer.captureMode = 'continuous';
+    layer.hoverTime = 0;
+    layer.autoSettlingEnabled = false;
   }
 
   return layer;
@@ -20858,12 +20872,22 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     wp.pitchSettlingTime = layer.pitchSettlingTime !== undefined ? layer.pitchSettlingTime : 3.0;
     wp.turnDampingDist = layer.turnDampingDist !== undefined ? layer.turnDampingDist : 0;
     wp.turnaroundSpeed = layer.turnaroundSpeed !== undefined ? layer.turnaroundSpeed : null;
-    wp.autoSettlingEnabled = layer.autoSettlingEnabled !== false;
+    wp.autoSettlingEnabled = (wp.gridType === 'light-art' || wp.isLightArtPoint || layer.pattern === 'light-art') ? false : (layer.autoSettlingEnabled !== false);
+    if (wp.gridType === 'light-art' || wp.isLightArtPoint || layer.pattern === 'light-art') {
+      wp.hoverTime = 0;
+      wp.skipPhoto = true;
+      wp.cameraAction = 'none';
+      wp.turnMode = 'curved';
+    }
     if (wIdx === 0) {
       wp.isLayerStart = true;
       wp.isRingStart = true;
     }
   });
+
+  if (layer.pattern === 'light-art' || gridType === 'light-art') {
+    photos = [];
+  }
 
   photos.forEach((pt) => {
     pt.layerId = layer.id;
@@ -26857,6 +26881,8 @@ function togglePatternParameters() {
       activeLayer.captureMode = 'continuous';
       activeLayer.pathMode = 'curved';
       activeLayer.headingMode = 'followWayline';
+      activeLayer.hoverTime = 0;
+      activeLayer.autoSettlingEnabled = false;
       if (!activeLayer.speed || activeLayer.speed > 5) {
         activeLayer.speed = 3.0; // Smooth steady light stroke
         const spdInput = document.getElementById('speed');
@@ -29874,6 +29900,9 @@ function generateLightArtCoordinates(layer, baseAltitude, defaultGimbalPitch, sp
       layerPattern: 'light-art',
       isLightArtPoint: true,
       skipPhoto: true, // Aircraft itself is the light source; no camera triggers needed
+      cameraAction: 'none',
+      hoverTime: 0,
+      autoSettlingEnabled: false,
       turnMode: 'curved'
     };
 
@@ -33925,25 +33954,31 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
       }
     }
 
+    const isLightArt = (gridType === 'light-art') || (wp.isLightArtPoint) || (wp.gridType === 'light-art') || (wp.layerPattern === 'light-art') || (wpLayer && wpLayer.pattern === 'light-art');
+
     // Resolve Effective Layer & Waypoint Properties (Three-Tier Cascade: Waypoint -> Layer -> Global)
-    const effectiveCaptureMode = (wp.captureMode && wp.captureMode !== 'inherit')
-      ? wp.captureMode
-      : (wp.layerCaptureMode && wp.layerCaptureMode !== 'inherit')
-        ? wp.layerCaptureMode
-        : (wpLayer && wpLayer.captureMode && wpLayer.captureMode !== 'inherit')
-          ? wpLayer.captureMode
-          : (captureMode || 'stopAndShoot');
+    const effectiveCaptureMode = isLightArt
+      ? 'continuous'
+      : ((wp.captureMode && wp.captureMode !== 'inherit')
+        ? wp.captureMode
+        : (wp.layerCaptureMode && wp.layerCaptureMode !== 'inherit')
+          ? wp.layerCaptureMode
+          : (wpLayer && wpLayer.captureMode && wpLayer.captureMode !== 'inherit')
+            ? wpLayer.captureMode
+            : (captureMode || 'stopAndShoot'));
 
-    const effectivePathMode = (wp.pathMode && wp.pathMode !== 'inherit')
-      ? wp.pathMode
-      : (wp.layerPathMode && wp.layerPathMode !== 'inherit')
-        ? wp.layerPathMode
-        : (wpLayer && wpLayer.pathMode && wpLayer.pathMode !== 'inherit')
-          ? wpLayer.pathMode
-          : (pathMode || 'curved');
+    const effectivePathMode = isLightArt
+      ? 'curved'
+      : ((wp.pathMode && wp.pathMode !== 'inherit')
+        ? wp.pathMode
+        : (wp.layerPathMode && wp.layerPathMode !== 'inherit')
+          ? wp.layerPathMode
+          : (wpLayer && wpLayer.pathMode && wpLayer.pathMode !== 'inherit')
+            ? wpLayer.pathMode
+            : (pathMode || 'curved'));
 
-    const isStopAndShoot = effectiveCaptureMode === 'stopAndShoot';
-    const isVideo = effectiveCaptureMode === 'video';
+    const isStopAndShoot = isLightArt ? false : (effectiveCaptureMode === 'stopAndShoot');
+    const isVideo = isLightArt ? false : (effectiveCaptureMode === 'video');
 
     // Determine if repositioning (gimbal pitch or heading yaw) is required
     const reposInfo = checkNeedsReposition(idx, sanitizedWps);
@@ -33953,14 +33988,14 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     // Tier 3: wp.hoverTime (if not null/undefined)
     // Tier 2: wp.layerHoverTime (if not null/undefined/inherit)
     // Tier 1: globalHoverTime
-    let baseHover = globalHoverTime;
-    if (wp.layerHoverTime !== undefined && wp.layerHoverTime !== null && wp.layerHoverTime !== 'inherit') {
+    let baseHover = isLightArt ? 0 : globalHoverTime;
+    if (!isLightArt && wp.layerHoverTime !== undefined && wp.layerHoverTime !== null && wp.layerHoverTime !== 'inherit') {
       baseHover = parseInt(wp.layerHoverTime, 10) || 0;
     }
-    if (wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit') {
+    if (!isLightArt && wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit') {
       baseHover = parseInt(wp.hoverTime, 10) || 0;
     }
-    let effectiveHover = baseHover;
+    let effectiveHover = isLightArt ? 0 : baseHover;
 
     // Universal Auto-Settling Delays across ALL flight patterns in stopAndShoot mode
     const autoSettlingEnabled = wp.autoSettlingEnabled !== false;
@@ -34145,7 +34180,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     }
 
     // 5. If Stop & Shoot is active, also add photo trigger at this waypoint (skipping transit turnaround overshoot waypoints and never in video mode)
-    if ((isStopAndShoot || isPhotoSphere) && wp.skipPhoto !== true && !isVideo) {
+    if (!isLightArt && (isStopAndShoot || isPhotoSphere) && wp.skipPhoto !== true && !isVideo) {
       waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
@@ -34157,7 +34192,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
 
     // 6. Per-waypoint camera action (RC 2 feature parity)
     const perWpAction = wp.cameraAction || 'inherit';
-    if (perWpAction !== 'inherit' && perWpAction !== 'none') {
+    if (!isLightArt && perWpAction !== 'inherit' && perWpAction !== 'none') {
       if (perWpAction === 'takePhoto') {
         waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
@@ -34493,7 +34528,12 @@ ${waypointActions.join('\n')}
     let actualTurnMode;
     let actualUseStraightLine = 0;
 
-    if (isPhotoSphere) {
+    if (isLightArt) {
+      actualTurnMode = (idx === 0 || idx === sanitizedWps.length - 1)
+        ? 'toPointAndStopWithContinuityCurvature'
+        : 'toPointAndPassWithContinuityCurvature';
+      actualUseStraightLine = 0;
+    } else if (isPhotoSphere) {
       actualTurnMode = isConsumer 
         ? 'toPointAndStopWithContinuityCurvature'
         : 'toPointAndStopWithDiscontinuityCurvature';
@@ -59074,6 +59114,19 @@ function setPreflightGateEnabled(enabled) {
   } catch (e) {}
   const toggle = document.getElementById('preflight-gate-toggle');
   if (toggle) toggle.checked = enabled;
+
+  const badge = document.getElementById('preflight-status-badge');
+  if (badge && !enabled) {
+    badge.textContent = 'BYPASSED';
+    badge.style.background = 'rgba(148, 163, 184, 0.15)';
+    badge.style.color = '#cbd5e1';
+    badge.style.borderColor = 'rgba(148, 163, 184, 0.3)';
+  } else if (badge && enabled && !currentPreflightState.signed) {
+    badge.textContent = 'PENDING SIGN-OFF';
+    badge.style.background = 'rgba(245, 158, 11, 0.15)';
+    badge.style.color = '#fbbf24';
+    badge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+  }
 }
 
 function isPreflightSigned() {
@@ -59092,16 +59145,53 @@ function invalidatePreflight() {
   currentPreflightState.signedMissionHash = '';
   const badge = document.getElementById('preflight-status-badge');
   if (badge) {
-    badge.textContent = 'PENDING SIGN-OFF';
-    badge.style.background = 'rgba(245, 158, 11, 0.15)';
-    badge.style.color = '#fbbf24';
-    badge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+    if (!isPreflightGateEnabled()) {
+      badge.textContent = 'BYPASSED';
+      badge.style.background = 'rgba(148, 163, 184, 0.15)';
+      badge.style.color = '#cbd5e1';
+      badge.style.borderColor = 'rgba(148, 163, 184, 0.3)';
+    } else {
+      badge.textContent = 'PENDING SIGN-OFF';
+      badge.style.background = 'rgba(245, 158, 11, 0.15)';
+      badge.style.color = '#fbbf24';
+      badge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+    }
   }
+}
+
+async function recordBypassedPreflightLog() {
+  const payload = {
+    log_id: `chk_bypassed_${Date.now()}`,
+    timestamp: new Date().toISOString(),
+    operator_name: 'bypassed',
+    signature: 'BYPASSED',
+    mission_id: `mission_${Date.now()}`,
+    kmz_filename: 'AalaapiSky_Mission.kmz',
+    airspace_auth_code: 'BYPASS',
+    completed_items: [],
+    auto_checks: { bypassed: true }
+  };
+
+  if (typeof isCompanionOnline !== 'undefined' && isCompanionOnline) {
+    try {
+      const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
+      await fetch(`${apiBase}/api/checklist/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      return;
+    } catch (_) {}
+  }
+  queuePreflightLogLocally(payload);
 }
 
 function withPreflightGate(actionFn) {
   if (typeof actionFn !== 'function') return;
   if (isPreflightSigned()) {
+    if (!isPreflightGateEnabled()) {
+      recordBypassedPreflightLog();
+    }
     actionFn();
   } else {
     showPreflightGateModal(actionFn);
@@ -59625,6 +59715,23 @@ function initPreflightEventListeners() {
     preflightGateBtn.onclick = () => showPreflightGateModal();
   }
 
+  const gateToggle = document.getElementById('preflight-gate-toggle');
+  if (gateToggle) {
+    gateToggle.checked = isPreflightGateEnabled();
+    gateToggle.onchange = () => setPreflightGateEnabled(gateToggle.checked);
+  }
+
+  // Update initial badge appearance if bypassed
+  if (!isPreflightGateEnabled()) {
+    const badge = document.getElementById('preflight-status-badge');
+    if (badge) {
+      badge.textContent = 'BYPASSED';
+      badge.style.background = 'rgba(148, 163, 184, 0.15)';
+      badge.style.color = '#cbd5e1';
+      badge.style.borderColor = 'rgba(148, 163, 184, 0.3)';
+    }
+  }
+
   const viewHistoryBtn = document.getElementById('preflight-view-history-btn');
   if (viewHistoryBtn) {
     viewHistoryBtn.onclick = openPreflightHistoryModal;
@@ -59676,6 +59783,7 @@ if (typeof window !== 'undefined') {
   window.isPreflightGateEnabled = typeof isPreflightGateEnabled !== 'undefined' ? isPreflightGateEnabled : null;
   window.computeMissionSignature = typeof computeMissionSignature !== 'undefined' ? computeMissionSignature : null;
   window.invalidatePreflight = typeof invalidatePreflight !== 'undefined' ? invalidatePreflight : null;
+  window.recordBypassedPreflightLog = typeof recordBypassedPreflightLog !== 'undefined' ? recordBypassedPreflightLog : null;
   window.safeJsonStringify = typeof safeJsonStringify !== 'undefined' ? safeJsonStringify : null;
 }
 
@@ -59704,6 +59812,7 @@ if (typeof global !== 'undefined') {
   global.isPreflightGateEnabled = typeof isPreflightGateEnabled !== 'undefined' ? isPreflightGateEnabled : null;
   global.computeMissionSignature = typeof computeMissionSignature !== 'undefined' ? computeMissionSignature : null;
   global.invalidatePreflight = typeof invalidatePreflight !== 'undefined' ? invalidatePreflight : null;
+  global.recordBypassedPreflightLog = typeof recordBypassedPreflightLog !== 'undefined' ? recordBypassedPreflightLog : null;
 }
 
 if (typeof document !== 'undefined') {

@@ -696,6 +696,19 @@ function setPreflightGateEnabled(enabled) {
   } catch (e) {}
   const toggle = document.getElementById('preflight-gate-toggle');
   if (toggle) toggle.checked = enabled;
+
+  const badge = document.getElementById('preflight-status-badge');
+  if (badge && !enabled) {
+    badge.textContent = 'BYPASSED';
+    badge.style.background = 'rgba(148, 163, 184, 0.15)';
+    badge.style.color = '#cbd5e1';
+    badge.style.borderColor = 'rgba(148, 163, 184, 0.3)';
+  } else if (badge && enabled && !currentPreflightState.signed) {
+    badge.textContent = 'PENDING SIGN-OFF';
+    badge.style.background = 'rgba(245, 158, 11, 0.15)';
+    badge.style.color = '#fbbf24';
+    badge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+  }
 }
 
 function isPreflightSigned() {
@@ -714,16 +727,53 @@ function invalidatePreflight() {
   currentPreflightState.signedMissionHash = '';
   const badge = document.getElementById('preflight-status-badge');
   if (badge) {
-    badge.textContent = 'PENDING SIGN-OFF';
-    badge.style.background = 'rgba(245, 158, 11, 0.15)';
-    badge.style.color = '#fbbf24';
-    badge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+    if (!isPreflightGateEnabled()) {
+      badge.textContent = 'BYPASSED';
+      badge.style.background = 'rgba(148, 163, 184, 0.15)';
+      badge.style.color = '#cbd5e1';
+      badge.style.borderColor = 'rgba(148, 163, 184, 0.3)';
+    } else {
+      badge.textContent = 'PENDING SIGN-OFF';
+      badge.style.background = 'rgba(245, 158, 11, 0.15)';
+      badge.style.color = '#fbbf24';
+      badge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+    }
   }
+}
+
+async function recordBypassedPreflightLog() {
+  const payload = {
+    log_id: `chk_bypassed_${Date.now()}`,
+    timestamp: new Date().toISOString(),
+    operator_name: 'bypassed',
+    signature: 'BYPASSED',
+    mission_id: `mission_${Date.now()}`,
+    kmz_filename: 'AalaapiSky_Mission.kmz',
+    airspace_auth_code: 'BYPASS',
+    completed_items: [],
+    auto_checks: { bypassed: true }
+  };
+
+  if (typeof isCompanionOnline !== 'undefined' && isCompanionOnline) {
+    try {
+      const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : (typeof COMPANION_API_BASE !== 'undefined' ? COMPANION_API_BASE : 'http://127.0.0.1:8765');
+      await fetch(`${apiBase}/api/checklist/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      return;
+    } catch (_) {}
+  }
+  queuePreflightLogLocally(payload);
 }
 
 function withPreflightGate(actionFn) {
   if (typeof actionFn !== 'function') return;
   if (isPreflightSigned()) {
+    if (!isPreflightGateEnabled()) {
+      recordBypassedPreflightLog();
+    }
     actionFn();
   } else {
     showPreflightGateModal(actionFn);
@@ -1247,6 +1297,23 @@ function initPreflightEventListeners() {
     preflightGateBtn.onclick = () => showPreflightGateModal();
   }
 
+  const gateToggle = document.getElementById('preflight-gate-toggle');
+  if (gateToggle) {
+    gateToggle.checked = isPreflightGateEnabled();
+    gateToggle.onchange = () => setPreflightGateEnabled(gateToggle.checked);
+  }
+
+  // Update initial badge appearance if bypassed
+  if (!isPreflightGateEnabled()) {
+    const badge = document.getElementById('preflight-status-badge');
+    if (badge) {
+      badge.textContent = 'BYPASSED';
+      badge.style.background = 'rgba(148, 163, 184, 0.15)';
+      badge.style.color = '#cbd5e1';
+      badge.style.borderColor = 'rgba(148, 163, 184, 0.3)';
+    }
+  }
+
   const viewHistoryBtn = document.getElementById('preflight-view-history-btn');
   if (viewHistoryBtn) {
     viewHistoryBtn.onclick = openPreflightHistoryModal;
@@ -1298,6 +1365,7 @@ if (typeof window !== 'undefined') {
   window.isPreflightGateEnabled = typeof isPreflightGateEnabled !== 'undefined' ? isPreflightGateEnabled : null;
   window.computeMissionSignature = typeof computeMissionSignature !== 'undefined' ? computeMissionSignature : null;
   window.invalidatePreflight = typeof invalidatePreflight !== 'undefined' ? invalidatePreflight : null;
+  window.recordBypassedPreflightLog = typeof recordBypassedPreflightLog !== 'undefined' ? recordBypassedPreflightLog : null;
   window.safeJsonStringify = typeof safeJsonStringify !== 'undefined' ? safeJsonStringify : null;
 }
 
@@ -1326,6 +1394,7 @@ if (typeof global !== 'undefined') {
   global.isPreflightGateEnabled = typeof isPreflightGateEnabled !== 'undefined' ? isPreflightGateEnabled : null;
   global.computeMissionSignature = typeof computeMissionSignature !== 'undefined' ? computeMissionSignature : null;
   global.invalidatePreflight = typeof invalidatePreflight !== 'undefined' ? invalidatePreflight : null;
+  global.recordBypassedPreflightLog = typeof recordBypassedPreflightLog !== 'undefined' ? recordBypassedPreflightLog : null;
 }
 
 if (typeof document !== 'undefined') {

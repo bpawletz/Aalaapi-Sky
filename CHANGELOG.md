@@ -1,3 +1,39 @@
+## [1.151.2] - 2026-10-12
+
+Eliminates hovering and camera triggering during Light Art and Sky Painting missions, guaranteeing continuous, non-stopping flight trajectories for clean aerial long exposures without overexposed light blobs.
+
+### Fixed
+
+#### Pilot & Operational Features
+- **Continuous Light Art Flight Progression & Shutter Suppression**:
+  - Eliminated drone hovering and auto-settling delays during Light Art flights, ensuring continuous flight without pauses along the calligraphy trajectory.
+  - Suppressed internal camera photo triggers during Light Art missions since the drone itself functions as the light source and long exposure photos are captured by ground-based cameras.
+  - Enforced smooth curved flight paths (`toPointAndPassWithContinuityCurvature`) across intermediate waypoints so the drone never stops or decelerates at pattern nodes.
+
+#### Under the Hood & Technical Details
+- **WpmlCompiler & LayerManager Light Art Optimization (`src/export/WpmlCompiler.js`, `src/layers/LayerManager.js`, `src/patterns/PatternGenerators.js`)**:
+  - Forced `effectiveHover = 0`, `autoSettlingEnabled: false`, and `effectiveCaptureMode = 'continuous'` whenever `isLightArt` is detected.
+  - Suppressed `<wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>` and `<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>` WPML action tags for all light art waypoints.
+  - Configured generated light art coordinates and layer templates with `hoverTime: 0`, `autoSettlingEnabled: false`, `skipPhoto: true`, and `cameraAction: 'none'`.
+
+## [1.151.1] - 2026-10-11
+
+Streamlines preflight checklist bypassing by clarifying toggle wording, updating status badge presentation to BYPASSED, and recording audit entries when preflight is skipped.
+
+### Changed
+
+#### Pilot & Operational Features
+- **Preflight Checklist Requirement Clarity & Bypass Status (Closes #99)**:
+  - Renamed the modal bypass toggle label from `Enforce Preflight Gate` to `Require Preflight Checklist` with an explicit tooltip explaining that unchecking bypasses the gate for testing or unrestricted flight export.
+  - Updated the preflight status badge (`#preflight-status-badge`) to clearly display `BYPASSED` when preflight enforcement is unchecked or skipped.
+  - Automatically records an audit log entry tagged with operator `bypassed` and signature `BYPASSED` when exporting with preflight disabled, preserving audit history without blocking testing.
+
+#### Under the Hood & Technical Details
+- **Checklist Engine & Database Validation (`src/bridge/Rc2LogExplorer.js`, `tools/companion/checklist_db.js`)**:
+  - Enhanced `setPreflightGateEnabled` and `invalidatePreflight` to update the DOM status badge style and text to `BYPASSED`.
+  - Updated `saveLog` in `checklist_db.js` to accept bypassed audit submissions without rejecting skipped checklist items.
+  - Implemented `recordBypassedPreflightLog` to post or queue bypass audit records seamlessly upon mission export or RC 2 sync.
+
 ## [1.151.0] - 2026-10-10
 
 Introduces the dedicated Light Art & Sky Painting flight pattern generator for aerial long exposure calligraphy, featuring parametric geometry presets, dual canvas orientations, and automatic ground shutter speed synchronization.
