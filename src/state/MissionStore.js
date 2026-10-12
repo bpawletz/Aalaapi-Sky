@@ -7,6 +7,7 @@ let waypointMarkersGroup = null;
 let pitchLabelsGroup = null; // Separate layer for pitch labels — avoids ghost-dot artifacts in marker pane during zoom
 let photoMarkersGroup = null;
 let photoInspectionGroup = null;
+let photoFootprintsGroup = null;
 let activeInspectionManifest = null;
 let exclusionZonesGroup = null;
 let boundaryLayersGroup = null;

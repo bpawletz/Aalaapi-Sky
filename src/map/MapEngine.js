@@ -558,6 +558,23 @@ function initMap() {
     AdsbAirspaceManager.layerGroup = adsbAirspaceLayer;
   }
 
+  // Photo Inspection & Ground Coverage Footprint Overlays (2D)
+  if (!photoFootprintsGroup) {
+    photoFootprintsGroup = L.layerGroup();
+  }
+  if (!photoInspectionGroup) {
+    photoInspectionGroup = L.layerGroup().addTo(map);
+  }
+
+  // By default, 2D Photo Coverage Footprints start OFF unless user explicitly enabled them in localStorage
+  const savedShow2dFootprints = (typeof localStorage !== 'undefined') ? localStorage.getItem('aalaapi_show_2d_photo_footprints') : null;
+  if (savedShow2dFootprints === 'true') {
+    photoFootprintsGroup.addTo(map);
+  }
+
+  overlays["Photo Coverage Footprints (2D)"] = photoFootprintsGroup;
+  overlays["Photo Inspection Pins (2D)"] = photoInspectionGroup;
+
   const layerControl = L.control.layers(baseMaps, overlays, { position: 'topleft' }).addTo(map);
 
   // If running on localhost or file://, disable the OpenStreetMap radio button with styled indicator & tooltip
@@ -646,6 +663,14 @@ function initMap() {
       }
       if (powerLinesEnabled) applyZoomGates();
     }
+
+    // Track 2D Photo Coverage Footprints checkbox state
+    if (e.name === 'Photo Coverage Footprints (2D)') {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('aalaapi_show_2d_photo_footprints', e.type === 'overlayadd' ? 'true' : 'false');
+      }
+    }
+
     updateAirspaceLegend(e);
   });
 
@@ -667,7 +692,8 @@ function initMap() {
   photoMarkersGroup = L.layerGroup().addTo(map);
   roadPathGroup = L.layerGroup().addTo(map);
   targetPolygonGroup = L.layerGroup().addTo(map);
-  photoInspectionGroup = L.layerGroup().addTo(map);
+  if (!photoInspectionGroup) photoInspectionGroup = L.layerGroup().addTo(map);
+  if (!photoFootprintsGroup) photoFootprintsGroup = L.layerGroup();
 
   // Issue #123: Initialize 2D Flight Replay Engine
   if (typeof init2dReplayEngine === 'function') {
