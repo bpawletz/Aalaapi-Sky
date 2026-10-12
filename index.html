@@ -20872,12 +20872,17 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     wp.pitchSettlingTime = layer.pitchSettlingTime !== undefined ? layer.pitchSettlingTime : 3.0;
     wp.turnDampingDist = layer.turnDampingDist !== undefined ? layer.turnDampingDist : 0;
     wp.turnaroundSpeed = layer.turnaroundSpeed !== undefined ? layer.turnaroundSpeed : null;
-    wp.autoSettlingEnabled = (wp.gridType === 'light-art' || wp.isLightArtPoint || layer.pattern === 'light-art') ? false : (layer.autoSettlingEnabled !== false);
-    if (wp.gridType === 'light-art' || wp.isLightArtPoint || layer.pattern === 'light-art') {
-      wp.hoverTime = 0;
-      wp.skipPhoto = true;
-      wp.cameraAction = 'none';
-      wp.turnMode = 'curved';
+    const isLightArtLayer = (wp.gridType === 'light-art' || wp.isLightArtPoint || layer.pattern === 'light-art');
+    if (isLightArtLayer) {
+      if (!wp.isModified) {
+        wp.autoSettlingEnabled = false;
+        wp.hoverTime = (layer.hoverTime !== undefined && layer.hoverTime !== null && layer.hoverTime !== 'inherit') ? Number(layer.hoverTime) : 0;
+        wp.skipPhoto = true;
+        wp.cameraAction = (layer.cameraAction && layer.cameraAction !== 'inherit') ? layer.cameraAction : 'none';
+        wp.turnMode = (layer.pathMode === 'straight') ? 'straight' : 'curved';
+      }
+    } else {
+      wp.autoSettlingEnabled = layer.autoSettlingEnabled !== false;
     }
     if (wIdx === 0) {
       wp.isLayerStart = true;
@@ -26878,11 +26883,11 @@ function togglePatternParameters() {
     if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
 
     if (activeLayer) {
-      activeLayer.captureMode = 'continuous';
-      activeLayer.pathMode = 'curved';
-      activeLayer.headingMode = 'followWayline';
-      activeLayer.hoverTime = 0;
-      activeLayer.autoSettlingEnabled = false;
+      if (activeLayer.captureMode === undefined || activeLayer.captureMode === 'inherit') activeLayer.captureMode = 'continuous';
+      if (activeLayer.pathMode === undefined || activeLayer.pathMode === 'inherit') activeLayer.pathMode = 'curved';
+      if (activeLayer.headingMode === undefined || activeLayer.headingMode === 'inherit') activeLayer.headingMode = 'followWayline';
+      if (activeLayer.hoverTime === undefined || activeLayer.hoverTime === 'inherit') activeLayer.hoverTime = 0;
+      if (activeLayer.autoSettlingEnabled === undefined) activeLayer.autoSettlingEnabled = false;
       if (!activeLayer.speed || activeLayer.speed > 5) {
         activeLayer.speed = 3.0; // Smooth steady light stroke
         const spdInput = document.getElementById('speed');
@@ -26890,11 +26895,11 @@ function togglePatternParameters() {
       }
     }
     const layerCapSelect = document.getElementById('layer-capture-mode');
-    if (layerCapSelect) layerCapSelect.value = 'continuous';
+    if (layerCapSelect) layerCapSelect.value = (activeLayer && activeLayer.captureMode) ? activeLayer.captureMode : 'continuous';
     const layerPathSelect = document.getElementById('layer-path-mode');
-    if (layerPathSelect) layerPathSelect.value = 'curved';
+    if (layerPathSelect) layerPathSelect.value = (activeLayer && activeLayer.pathMode) ? activeLayer.pathMode : 'curved';
     const layerHeadingSelect = document.getElementById('layer-heading-mode');
-    if (layerHeadingSelect) layerHeadingSelect.value = 'followWayline';
+    if (layerHeadingSelect) layerHeadingSelect.value = (activeLayer && activeLayer.headingMode) ? activeLayer.headingMode : 'followWayline';
 
   } else {
     if (gridGeometrySection) gridGeometrySection.style.display = 'block';
@@ -33957,45 +33962,42 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     const isLightArt = (gridType === 'light-art') || (wp.isLightArtPoint) || (wp.gridType === 'light-art') || (wp.layerPattern === 'light-art') || (wpLayer && wpLayer.pattern === 'light-art');
 
     // Resolve Effective Layer & Waypoint Properties (Three-Tier Cascade: Waypoint -> Layer -> Global)
-    const effectiveCaptureMode = isLightArt
-      ? 'continuous'
-      : ((wp.captureMode && wp.captureMode !== 'inherit')
-        ? wp.captureMode
-        : (wp.layerCaptureMode && wp.layerCaptureMode !== 'inherit')
-          ? wp.layerCaptureMode
-          : (wpLayer && wpLayer.captureMode && wpLayer.captureMode !== 'inherit')
-            ? wpLayer.captureMode
-            : (captureMode || 'stopAndShoot'));
+    const effectiveCaptureMode = (wp.captureMode && wp.captureMode !== 'inherit')
+      ? wp.captureMode
+      : (wp.layerCaptureMode && wp.layerCaptureMode !== 'inherit')
+        ? wp.layerCaptureMode
+        : (wpLayer && wpLayer.captureMode && wpLayer.captureMode !== 'inherit')
+          ? wpLayer.captureMode
+          : (isLightArt ? 'continuous' : (captureMode || 'stopAndShoot'));
 
-    const effectivePathMode = isLightArt
-      ? 'curved'
-      : ((wp.pathMode && wp.pathMode !== 'inherit')
-        ? wp.pathMode
-        : (wp.layerPathMode && wp.layerPathMode !== 'inherit')
-          ? wp.layerPathMode
-          : (wpLayer && wpLayer.pathMode && wpLayer.pathMode !== 'inherit')
-            ? wpLayer.pathMode
-            : (pathMode || 'curved'));
+    const effectivePathMode = (wp.pathMode && wp.pathMode !== 'inherit')
+      ? wp.pathMode
+      : (wp.layerPathMode && wp.layerPathMode !== 'inherit')
+        ? wp.layerPathMode
+        : (wpLayer && wpLayer.pathMode && wpLayer.pathMode !== 'inherit')
+          ? wpLayer.pathMode
+          : (isLightArt ? 'curved' : (pathMode || 'curved'));
 
-    const isStopAndShoot = isLightArt ? false : (effectiveCaptureMode === 'stopAndShoot');
-    const isVideo = isLightArt ? false : (effectiveCaptureMode === 'video');
+    const isStopAndShoot = effectiveCaptureMode === 'stopAndShoot';
+    const isVideo = effectiveCaptureMode === 'video';
 
     // Determine if repositioning (gimbal pitch or heading yaw) is required
     const reposInfo = checkNeedsReposition(idx, sanitizedWps);
     const isRoadFollowing = gridType === 'road-following' || (wpLayer && wpLayer.pattern === 'road-following') || wp.layerPattern === 'road-following';
 
     // Three-Tier Hover Time Resolution:
-    // Tier 3: wp.hoverTime (if not null/undefined)
-    // Tier 2: wp.layerHoverTime (if not null/undefined/inherit)
-    // Tier 1: globalHoverTime
+    // Tier 3: wp.hoverTime (if not null/undefined/inherit)
+    // Tier 2: wp.layerHoverTime or wpLayer.hoverTime (if not null/undefined/inherit)
+    // Tier 1: globalHoverTime (or 0 for light-art default)
     let baseHover = isLightArt ? 0 : globalHoverTime;
-    if (!isLightArt && wp.layerHoverTime !== undefined && wp.layerHoverTime !== null && wp.layerHoverTime !== 'inherit') {
-      baseHover = parseInt(wp.layerHoverTime, 10) || 0;
+    const layerHover = wp.layerHoverTime !== undefined ? wp.layerHoverTime : (wpLayer && wpLayer.hoverTime);
+    if (layerHover !== undefined && layerHover !== null && layerHover !== 'inherit') {
+      baseHover = parseInt(layerHover, 10) || 0;
     }
-    if (!isLightArt && wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit') {
+    if (wp.hoverTime !== null && wp.hoverTime !== undefined && wp.hoverTime !== 'inherit') {
       baseHover = parseInt(wp.hoverTime, 10) || 0;
     }
-    let effectiveHover = isLightArt ? 0 : baseHover;
+    let effectiveHover = baseHover;
 
     // Universal Auto-Settling Delays across ALL flight patterns in stopAndShoot mode
     const autoSettlingEnabled = wp.autoSettlingEnabled !== false;
@@ -34180,7 +34182,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     }
 
     // 5. If Stop & Shoot is active, also add photo trigger at this waypoint (skipping transit turnaround overshoot waypoints and never in video mode)
-    if (!isLightArt && (isStopAndShoot || isPhotoSphere) && wp.skipPhoto !== true && !isVideo) {
+    if ((isStopAndShoot || isPhotoSphere) && wp.skipPhoto !== true && !isVideo) {
       waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
@@ -34192,7 +34194,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
 
     // 6. Per-waypoint camera action (RC 2 feature parity)
     const perWpAction = wp.cameraAction || 'inherit';
-    if (!isLightArt && perWpAction !== 'inherit' && perWpAction !== 'none') {
+    if (perWpAction !== 'inherit' && perWpAction !== 'none') {
       if (perWpAction === 'takePhoto') {
         waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>

@@ -1,3 +1,22 @@
+## [1.152.0] - 2026-10-12
+
+Introduces dedicated 2D Map overlay controls for Photo Coverage Footprints and Photo Inspection Pins with default-off footprint persistence, keeping the 2D map clutter-free after photo ingest while preserving on-demand footprint inspection and 3D architectural wireframes.
+
+### Added
+
+#### Pilot & Operational Features
+- **Photo Coverage Footprints 2D Map Overlay Control**:
+  - Added dedicated `Photo Coverage Footprints (2D)` and `Photo Inspection Pins (2D)` layer entries to the Leaflet map overlay switcher in the top-left corner.
+  - Set 2D photo coverage footprints to default to OFF, completely eliminating unwanted blue rectangular footprint lines and building clutter from the 2D map after photo uploads.
+  - Persisted operator layer visibility preferences across sessions via local storage (`aalaapi_show_2d_photo_footprints`).
+  - Preserved interactive 📸 camera pins on the 2D map for 1-click photo inspection, GSD review, and defect annotation, while enabling pilots to turn footprint polygons back on whenever coverage verification is needed.
+
+#### Under the Hood & Technical Details
+- **Photo Footprints Layer Group Separation (`src/state/MissionStore.js`, `src/map/MapEngine.js`, `src/ui/Modals/PhotoInspector.js`)**:
+  - Split photo inspection rendering into two distinct Leaflet layer groups: `photoFootprintsGroup` (ground coverage polygons) and `photoInspectionGroup` (interactive camera markers).
+  - Configured `photoFootprintsGroup` to remain detached from the active map on initial ingest unless explicitly enabled in `localStorage`.
+  - Added `setPhotoFootprints2dVisible(visible)` helper and updated `clearPhotoInspectionMapLayer()` to cleanly wipe both pins and ground footprints.
+
 ## [1.151.2] - 2026-10-12
 
 Eliminates hovering and camera triggering during Light Art and Sky Painting missions, guaranteeing continuous, non-stopping flight trajectories for clean aerial long exposures without overexposed light blobs.

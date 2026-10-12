@@ -29781,6 +29781,40 @@ describe('Issue #136 & v1.151.2: Light Art & Long Exposure Sky Painting Suite', 
     assert.ok(wpml.includes('toPointAndPassWithContinuityCurvature'), 'Intermediate waypoints must use passing curvature for smooth flight');
     assert.ok(wpml.includes('<wpml:useStraightLine>0</wpml:useStraightLine>'), 'Must use curved lines');
   });
+
+  test('v1.151.2: explicit pilot waypoint overrides (hover & camera action) are respected in Light Art missions', () => {
+    const layer = createDefaultLayer('la-override', 'Light Art Layer', 0, 'light-art', 41.3215, -88.9950);
+    layer.lightArtPreset = 'spiral';
+    const res = generateLayerWaypoints(layer, 41.3215, -88.9950);
+
+    // Explicitly override waypoint #5 with 4s hover dwell and a photo action
+    res.waypoints[5].isModified = true;
+    res.waypoints[5].hoverTime = 4;
+    res.waypoints[5].cameraAction = 'takePhoto';
+
+    const wpml = buildWaylinesWpml(
+      res.waypoints,
+      45,
+      -60,
+      'continuous',
+      'curved',
+      'followWayline',
+      10,
+      'Mini 4 Pro',
+      0,
+      0,
+      'wide',
+      1.0,
+      0,
+      [],
+      0,
+      'light-art'
+    );
+
+    // Overridden waypoint must generate hover and takePhoto actions
+    assert.ok(wpml.includes('<wpml:hoverTime>4</wpml:hoverTime>'), 'Explicit hover override must be generated');
+    assert.ok(wpml.includes('<wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>'), 'Explicit takePhoto override must be generated');
+  });
 });
 
 

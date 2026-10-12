@@ -1,16 +1,5 @@
 [
   {
-    "notam_id": "6/9023",
-    "facility": "ZHU",
-    "state": "LA",
-    "type": "HAZARDS",
-    "description": "FRANKLINTON, LA, Monday, October 12, 2026 UTC",
-    "mod_date": "10/12/2026 17:25:00",
-    "mod_abs_time": "202610121725",
-    "is_new": "Y",
-    "gid": "6/9023"
-  },
-  {
     "notam_id": "6/9020",
     "facility": "ZLC",
     "state": "MT",
@@ -383,17 +372,6 @@
     "mod_abs_time": "202610071711",
     "is_new": "N",
     "gid": "6/8029"
-  },
-  {
-    "notam_id": "6/7153",
-    "facility": "ZBW",
-    "state": "RI",
-    "type": "UAS PUBLIC GATHERING",
-    "description": "North Sicuate, RI, Saturday, October 10, 2026 through Monday, October 12, 2026 UTC",
-    "mod_date": "10/05/2026 11:11:00",
-    "mod_abs_time": "202610051111",
-    "is_new": "N",
-    "gid": "6/7153"
   },
   {
     "notam_id": "6/7094",

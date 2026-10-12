@@ -2334,12 +2334,17 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     wp.pitchSettlingTime = layer.pitchSettlingTime !== undefined ? layer.pitchSettlingTime : 3.0;
     wp.turnDampingDist = layer.turnDampingDist !== undefined ? layer.turnDampingDist : 0;
     wp.turnaroundSpeed = layer.turnaroundSpeed !== undefined ? layer.turnaroundSpeed : null;
-    wp.autoSettlingEnabled = (wp.gridType === 'light-art' || wp.isLightArtPoint || layer.pattern === 'light-art') ? false : (layer.autoSettlingEnabled !== false);
-    if (wp.gridType === 'light-art' || wp.isLightArtPoint || layer.pattern === 'light-art') {
-      wp.hoverTime = 0;
-      wp.skipPhoto = true;
-      wp.cameraAction = 'none';
-      wp.turnMode = 'curved';
+    const isLightArtLayer = (wp.gridType === 'light-art' || wp.isLightArtPoint || layer.pattern === 'light-art');
+    if (isLightArtLayer) {
+      if (!wp.isModified) {
+        wp.autoSettlingEnabled = false;
+        wp.hoverTime = (layer.hoverTime !== undefined && layer.hoverTime !== null && layer.hoverTime !== 'inherit') ? Number(layer.hoverTime) : 0;
+        wp.skipPhoto = true;
+        wp.cameraAction = (layer.cameraAction && layer.cameraAction !== 'inherit') ? layer.cameraAction : 'none';
+        wp.turnMode = (layer.pathMode === 'straight') ? 'straight' : 'curved';
+      }
+    } else {
+      wp.autoSettlingEnabled = layer.autoSettlingEnabled !== false;
     }
     if (wIdx === 0) {
       wp.isLayerStart = true;

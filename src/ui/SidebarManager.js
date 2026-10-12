@@ -989,11 +989,11 @@ function togglePatternParameters() {
     if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
 
     if (activeLayer) {
-      activeLayer.captureMode = 'continuous';
-      activeLayer.pathMode = 'curved';
-      activeLayer.headingMode = 'followWayline';
-      activeLayer.hoverTime = 0;
-      activeLayer.autoSettlingEnabled = false;
+      if (activeLayer.captureMode === undefined || activeLayer.captureMode === 'inherit') activeLayer.captureMode = 'continuous';
+      if (activeLayer.pathMode === undefined || activeLayer.pathMode === 'inherit') activeLayer.pathMode = 'curved';
+      if (activeLayer.headingMode === undefined || activeLayer.headingMode === 'inherit') activeLayer.headingMode = 'followWayline';
+      if (activeLayer.hoverTime === undefined || activeLayer.hoverTime === 'inherit') activeLayer.hoverTime = 0;
+      if (activeLayer.autoSettlingEnabled === undefined) activeLayer.autoSettlingEnabled = false;
       if (!activeLayer.speed || activeLayer.speed > 5) {
         activeLayer.speed = 3.0; // Smooth steady light stroke
         const spdInput = document.getElementById('speed');
@@ -1001,11 +1001,11 @@ function togglePatternParameters() {
       }
     }
     const layerCapSelect = document.getElementById('layer-capture-mode');
-    if (layerCapSelect) layerCapSelect.value = 'continuous';
+    if (layerCapSelect) layerCapSelect.value = (activeLayer && activeLayer.captureMode) ? activeLayer.captureMode : 'continuous';
     const layerPathSelect = document.getElementById('layer-path-mode');
-    if (layerPathSelect) layerPathSelect.value = 'curved';
+    if (layerPathSelect) layerPathSelect.value = (activeLayer && activeLayer.pathMode) ? activeLayer.pathMode : 'curved';
     const layerHeadingSelect = document.getElementById('layer-heading-mode');
-    if (layerHeadingSelect) layerHeadingSelect.value = 'followWayline';
+    if (layerHeadingSelect) layerHeadingSelect.value = (activeLayer && activeLayer.headingMode) ? activeLayer.headingMode : 'followWayline';
 
   } else {
     if (gridGeometrySection) gridGeometrySection.style.display = 'block';

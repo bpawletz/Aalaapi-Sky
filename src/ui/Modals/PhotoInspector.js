@@ -2580,6 +2580,9 @@ const PhotoInspector = {
 function renderPhotoInspectionMapLayer(manifest) {
   if (!map || typeof L === 'undefined' || !photoInspectionGroup) return;
   photoInspectionGroup.clearLayers();
+  if (typeof photoFootprintsGroup !== 'undefined' && photoFootprintsGroup && typeof photoFootprintsGroup.clearLayers === 'function') {
+    photoFootprintsGroup.clearLayers();
+  }
   if (!manifest || !Array.isArray(manifest.photos)) return;
 
   activeInspectionManifest = manifest;
@@ -2591,13 +2594,16 @@ function renderPhotoInspectionMapLayer(manifest) {
     const sev = photo.severity || 'clean';
 
     if (photo.footprint && Array.isArray(photo.footprint.coordinates)) {
+      const footprintTarget = (typeof photoFootprintsGroup !== 'undefined' && photoFootprintsGroup)
+        ? photoFootprintsGroup
+        : photoInspectionGroup;
       L.polygon(photo.footprint.coordinates, {
         color: sev === 'critical' ? '#ef4444' : (sev === 'warning' ? '#f59e0b' : '#38bdf8'),
         weight: 1.5,
         dashArray: '3, 3',
         fillColor: sev === 'critical' ? '#ef4444' : (sev === 'warning' ? '#f59e0b' : '#38bdf8'),
         fillOpacity: 0.15
-      }).addTo(photoInspectionGroup);
+      }).addTo(footprintTarget);
     }
 
     const iconHtml = `<div class="photo-marker-icon severity-${sev}" title="${photo.filename}">📸</div>`;
@@ -2630,8 +2636,29 @@ function renderPhotoInspectionMapLayer(manifest) {
 }
 
 function clearPhotoInspectionMapLayer() {
-  if (photoInspectionGroup) photoInspectionGroup.clearLayers();
+  if (photoInspectionGroup && typeof photoInspectionGroup.clearLayers === 'function') {
+    photoInspectionGroup.clearLayers();
+  }
+  if (typeof photoFootprintsGroup !== 'undefined' && photoFootprintsGroup && typeof photoFootprintsGroup.clearLayers === 'function') {
+    photoFootprintsGroup.clearLayers();
+  }
   activeInspectionManifest = null;
+}
+
+function setPhotoFootprints2dVisible(visible) {
+  if (typeof map === 'undefined' || !map || typeof photoFootprintsGroup === 'undefined' || !photoFootprintsGroup) return;
+  if (visible) {
+    if (!map.hasLayer(photoFootprintsGroup)) {
+      photoFootprintsGroup.addTo(map);
+    }
+  } else {
+    if (map.hasLayer(photoFootprintsGroup)) {
+      map.removeLayer(photoFootprintsGroup);
+    }
+  }
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('aalaapi_show_2d_photo_footprints', visible ? 'true' : 'false');
+  }
 }
 
 function openMediaIngestModal() {
