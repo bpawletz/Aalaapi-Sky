@@ -5992,7 +5992,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.152.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.152.1</span></h1>
 
 
 
@@ -10420,7 +10420,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.152.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.152.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -10481,6 +10481,12 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.152.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Elimination of Fake Wireframe House Generation:</strong> Permanently eliminated synthetic 3D CAD box fallbacks across the Python and JavaScript wireframe pipelines. Flights without authentic downward-looking survey imagery (such as light art, horizontal orbits, or flights with zero photos) will never render arbitrary fake wireframe houses in the 3D scene.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.152.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -42379,6 +42385,8 @@ const FlightDiagnostics = {
     this.currentLoadedMission = null;
     this.plannedWaypoints = null;
     this.isActualFlown = false;
+    this.wireframeData = null;
+    this.wireframeSelectedLineIndex = null;
     const flightSel = document.getElementById('diag-flight-selector');
     if (flightSel && flightSel.value !== flightId) {
       flightSel.value = flightId;
@@ -42610,7 +42618,7 @@ const FlightDiagnostics = {
           this.flightPhotosFlightId = flightId;
           this.flightManifest = { ...mData, photos: filtered, totalPhotos: filtered.length };
           activeInspectionManifest = this.flightManifest;
-          if (mData.wireframe && mData.wireframe.success) {
+          if (mData.wireframe && mData.wireframe.success && Array.isArray(mData.wireframe.lines) && mData.wireframe.lines.length > 0 && mData.wireframe.engine !== 'javascript_fallback') {
             this.wireframeData = mData.wireframe;
           }
         }
@@ -42621,7 +42629,7 @@ const FlightDiagnostics = {
         });
         if (wfRes.ok) {
           const wfData = await wfRes.json();
-          if (wfData && wfData.success && Array.isArray(wfData.lines) && wfData.lines.length > 0) {
+          if (wfData && wfData.success && Array.isArray(wfData.lines) && wfData.lines.length > 0 && wfData.engine !== 'javascript_fallback') {
             this.wireframeData = wfData;
           }
         }
@@ -44158,6 +44166,13 @@ const FlightDiagnostics = {
     if (!this.wireframeData || !Array.isArray(this.wireframeData.lines) || this.wireframeData.lines.length === 0) {
       const badge = (typeof document !== 'undefined') ? document.getElementById('diag-wireframe-count-badge') : null;
       if (badge) badge.textContent = '0 lines';
+      const panel = (typeof document !== 'undefined') ? document.getElementById('diag-wireframe-panel') : null;
+      if (panel) panel.style.display = 'none';
+      const legendWf = (typeof document !== 'undefined') ? document.getElementById('diag-legend-wireframe') : null;
+      if (legendWf) legendWf.style.display = 'none';
+      const btn = (typeof document !== 'undefined') ? document.getElementById('diag-btn-toggle-wireframe') : null;
+      if (btn && btn.classList) btn.classList.remove('active');
+      if (typeof _setDiagIndicator === 'function') _setDiagIndicator('diag-indicator-wireframe', false);
       return;
     }
 
@@ -44181,7 +44196,18 @@ const FlightDiagnostics = {
       badge.textContent = planesCount > 0 ? `${validLines.length} lines • ${planesCount} planes` : `${validLines.length} lines`;
     }
 
-    if (validLines.length === 0 || typeof THREE === 'undefined' || typeof THREE.BufferGeometry !== 'function' || typeof THREE.BufferAttribute !== 'function' || typeof THREE.LineSegments !== 'function') return;
+    if (validLines.length === 0) {
+      const panel = (typeof document !== 'undefined') ? document.getElementById('diag-wireframe-panel') : null;
+      if (panel) panel.style.display = 'none';
+      const legendWf = (typeof document !== 'undefined') ? document.getElementById('diag-legend-wireframe') : null;
+      if (legendWf) legendWf.style.display = 'none';
+      const btn = (typeof document !== 'undefined') ? document.getElementById('diag-btn-toggle-wireframe') : null;
+      if (btn && btn.classList) btn.classList.remove('active');
+      if (typeof _setDiagIndicator === 'function') _setDiagIndicator('diag-indicator-wireframe', false);
+      return;
+    }
+
+    if (typeof THREE === 'undefined' || typeof THREE.BufferGeometry !== 'function' || typeof THREE.BufferAttribute !== 'function' || typeof THREE.LineSegments !== 'function') return;
 
     const positions = new Float32Array(validLines.length * 6);
     validLines.forEach((line, idx) => {

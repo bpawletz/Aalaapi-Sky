@@ -1136,13 +1136,20 @@ def main():
                 origin = {"lat": float(flat), "lon": float(flon)}
 
         all_lines = []
-        per_photo_lines = {}
+        per_photo_lines = dict(input_payload.get("perPhotoLines") or {})
         total_raw = 0
         for photo in photos:
             p_path = photo.get("filePath") or photo.get("rawPath") or photo.get("path")
             p_data = photo.get("imageData")
             p_telem = photo.get("telemetry", photo)
-            p_key = photo.get("filename") or photo.get("photoId") or os.path.basename(p_path) if p_path else "unknown"
+            p_key = photo.get("filename") or photo.get("photoId") or (os.path.basename(p_path) if p_path else "unknown")
+            if p_key in per_photo_lines and per_photo_lines[p_key]:
+                continue
+            if photo.get("lines2D"):
+                per_photo_lines[p_key] = photo["lines2D"]
+                if photo.get("photoId"):
+                    per_photo_lines[photo["photoId"]] = photo["lines2D"]
+                continue
             res = extract_wireframe_from_image(p_path, telemetry=p_telem, options=options, origin=origin, image_data=p_data)
             if res.get("success"):
                 all_lines.extend(res.get("lines", []))
@@ -1166,20 +1173,15 @@ def main():
 
         if authentic_lines and len(authentic_lines) >= 15:
             final_3d_lines = authentic_lines
+            is_success = True
         else:
-            # Priority 2: Multi-structure CAD synthesis fallback
-            cad_lines = synthesize_architectural_wireframe(photos, origin=origin, options=options)
-            if cad_lines:
-                final_3d_lines = cad_lines
-                planes_out = []
-                line_planes_out = []
-            else:
-                final_3d_lines = all_lines
-                planes_out = []
-                line_planes_out = []
+            final_3d_lines = []
+            planes_out = []
+            line_planes_out = []
+            is_success = False
 
         out_data = {
-            "success": True,
+            "success": is_success,
             "lines": final_3d_lines,
             "planes": planes_out,
             "linePlanes": line_planes_out,

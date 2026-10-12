@@ -2783,15 +2783,13 @@ if ($copied.Count -eq 0 -and $thisPC) {
       };
       if (wireframePayload.photos.length > 0) {
         wireframeData = wireframeEngine.extractWireframe(wireframePayload);
-        if (wireframeData && wireframeData.success) {
+        if (wireframeData && wireframeData.success && Array.isArray(wireframeData.lines) && wireframeData.lines.length > 0) {
           manifest.wireframe = wireframeData;
           fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
           fs.writeFileSync(path.join(targetDir, 'wireframe.json'), JSON.stringify(wireframeData, null, 2), 'utf8');
-          if (Array.isArray(wireframeData.lines) && wireframeData.lines.length > 0) {
-            fs.writeFileSync(path.join(targetDir, 'wireframe.obj'), wireframeEngine.wireframeToObj(wireframeData.lines), 'utf8');
-            fs.writeFileSync(path.join(targetDir, 'wireframe_threejs.json'), JSON.stringify(wireframeEngine.wireframeToThreeJson(wireframeData.lines), null, 2), 'utf8');
-          }
-          logSuccess('[WIREFRAME]', `Extracted ${wireframeData.count} 3D architectural wireframe line segments (JSON, OBJ & Three.js format)`);
+          fs.writeFileSync(path.join(targetDir, 'wireframe.obj'), wireframeEngine.wireframeToObj(wireframeData.lines), 'utf8');
+          fs.writeFileSync(path.join(targetDir, 'wireframe_threejs.json'), JSON.stringify(wireframeEngine.wireframeToThreeJson(wireframeData.lines), null, 2), 'utf8');
+          logSuccess('[WIREFRAME]', `Extracted ${wireframeData.count || wireframeData.lines.length} 3D architectural wireframe line segments (JSON, OBJ & Three.js format)`);
         }
       }
     } catch (wErr) {
