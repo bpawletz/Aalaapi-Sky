@@ -992,6 +992,8 @@ function togglePatternParameters() {
       activeLayer.captureMode = 'continuous';
       activeLayer.pathMode = 'curved';
       activeLayer.headingMode = 'followWayline';
+      activeLayer.hoverTime = 0;
+      activeLayer.autoSettlingEnabled = false;
       if (!activeLayer.speed || activeLayer.speed > 5) {
         activeLayer.speed = 3.0; // Smooth steady light stroke
         const spdInput = document.getElementById('speed');

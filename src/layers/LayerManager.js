@@ -174,6 +174,8 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     layer.speed = 3.0; // Optimal smooth stroke velocity
     layer.pathMode = 'curved';
     layer.captureMode = 'continuous';
+    layer.hoverTime = 0;
+    layer.autoSettlingEnabled = false;
   }
 
   return layer;
@@ -2332,12 +2334,22 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     wp.pitchSettlingTime = layer.pitchSettlingTime !== undefined ? layer.pitchSettlingTime : 3.0;
     wp.turnDampingDist = layer.turnDampingDist !== undefined ? layer.turnDampingDist : 0;
     wp.turnaroundSpeed = layer.turnaroundSpeed !== undefined ? layer.turnaroundSpeed : null;
-    wp.autoSettlingEnabled = layer.autoSettlingEnabled !== false;
+    wp.autoSettlingEnabled = (wp.gridType === 'light-art' || wp.isLightArtPoint || layer.pattern === 'light-art') ? false : (layer.autoSettlingEnabled !== false);
+    if (wp.gridType === 'light-art' || wp.isLightArtPoint || layer.pattern === 'light-art') {
+      wp.hoverTime = 0;
+      wp.skipPhoto = true;
+      wp.cameraAction = 'none';
+      wp.turnMode = 'curved';
+    }
     if (wIdx === 0) {
       wp.isLayerStart = true;
       wp.isRingStart = true;
     }
   });
+
+  if (layer.pattern === 'light-art' || gridType === 'light-art') {
+    photos = [];
+  }
 
   photos.forEach((pt) => {
     pt.layerId = layer.id;
