@@ -1774,6 +1774,8 @@ const FlightDiagnostics = {
     this.currentLoadedMission = null;
     this.plannedWaypoints = null;
     this.isActualFlown = false;
+    this.wireframeData = null;
+    this.wireframeSelectedLineIndex = null;
     const flightSel = document.getElementById('diag-flight-selector');
     if (flightSel && flightSel.value !== flightId) {
       flightSel.value = flightId;
@@ -2005,7 +2007,7 @@ const FlightDiagnostics = {
           this.flightPhotosFlightId = flightId;
           this.flightManifest = { ...mData, photos: filtered, totalPhotos: filtered.length };
           activeInspectionManifest = this.flightManifest;
-          if (mData.wireframe && mData.wireframe.success) {
+          if (mData.wireframe && mData.wireframe.success && Array.isArray(mData.wireframe.lines) && mData.wireframe.lines.length > 0 && mData.wireframe.engine !== 'javascript_fallback') {
             this.wireframeData = mData.wireframe;
           }
         }
@@ -2016,7 +2018,7 @@ const FlightDiagnostics = {
         });
         if (wfRes.ok) {
           const wfData = await wfRes.json();
-          if (wfData && wfData.success && Array.isArray(wfData.lines) && wfData.lines.length > 0) {
+          if (wfData && wfData.success && Array.isArray(wfData.lines) && wfData.lines.length > 0 && wfData.engine !== 'javascript_fallback') {
             this.wireframeData = wfData;
           }
         }
@@ -3553,6 +3555,13 @@ const FlightDiagnostics = {
     if (!this.wireframeData || !Array.isArray(this.wireframeData.lines) || this.wireframeData.lines.length === 0) {
       const badge = (typeof document !== 'undefined') ? document.getElementById('diag-wireframe-count-badge') : null;
       if (badge) badge.textContent = '0 lines';
+      const panel = (typeof document !== 'undefined') ? document.getElementById('diag-wireframe-panel') : null;
+      if (panel) panel.style.display = 'none';
+      const legendWf = (typeof document !== 'undefined') ? document.getElementById('diag-legend-wireframe') : null;
+      if (legendWf) legendWf.style.display = 'none';
+      const btn = (typeof document !== 'undefined') ? document.getElementById('diag-btn-toggle-wireframe') : null;
+      if (btn && btn.classList) btn.classList.remove('active');
+      if (typeof _setDiagIndicator === 'function') _setDiagIndicator('diag-indicator-wireframe', false);
       return;
     }
 
@@ -3576,7 +3585,18 @@ const FlightDiagnostics = {
       badge.textContent = planesCount > 0 ? `${validLines.length} lines • ${planesCount} planes` : `${validLines.length} lines`;
     }
 
-    if (validLines.length === 0 || typeof THREE === 'undefined' || typeof THREE.BufferGeometry !== 'function' || typeof THREE.BufferAttribute !== 'function' || typeof THREE.LineSegments !== 'function') return;
+    if (validLines.length === 0) {
+      const panel = (typeof document !== 'undefined') ? document.getElementById('diag-wireframe-panel') : null;
+      if (panel) panel.style.display = 'none';
+      const legendWf = (typeof document !== 'undefined') ? document.getElementById('diag-legend-wireframe') : null;
+      if (legendWf) legendWf.style.display = 'none';
+      const btn = (typeof document !== 'undefined') ? document.getElementById('diag-btn-toggle-wireframe') : null;
+      if (btn && btn.classList) btn.classList.remove('active');
+      if (typeof _setDiagIndicator === 'function') _setDiagIndicator('diag-indicator-wireframe', false);
+      return;
+    }
+
+    if (typeof THREE === 'undefined' || typeof THREE.BufferGeometry !== 'function' || typeof THREE.BufferAttribute !== 'function' || typeof THREE.LineSegments !== 'function') return;
 
     const positions = new Float32Array(validLines.length * 6);
     validLines.forEach((line, idx) => {

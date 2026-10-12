@@ -1,3 +1,24 @@
+## [1.152.1] - 2026-10-12
+
+Permanently eliminates synthetic box house wireframe fallbacks, ensuring the 3D Telemetry Replay and Digital Twin scenes only display authentic unprojected survey geometry from real downward survey imagery.
+
+### Fixed
+
+#### Pilot & Operational Features
+- **Elimination of Fake Wireframe House Generation**:
+  - Permanently removed synthetic 3D CAD house generation fallbacks when flights lack authentic downward-looking survey imagery or real detected edges.
+  - Resolved issue where horizontal light-art, scenic orbits, or flights with zero photos captured produced an arbitrary, unprompted cyan house wireframe on the 3D replay map.
+  - The 3D Wireframe Toolkit panel and legend entry now cleanly hide when a mission contains no authentic surveyed 3D lines.
+
+#### Under the Hood & Technical Details
+- **Wireframe Engine Cleanup (`tools/companion/wireframe_engine.js`, `tools/companion/wireframe_extractor.py`)**:
+  - Removed `Priority 2: Group ground hits into spatial clusters` synthetic CAD fallback from both JavaScript and Python wireframe pipelines.
+  - Enforced strict requirement for authentic unprojected 3D architectural lines; returns `success: false` with 0 lines when real edge geometry is absent.
+- **Digital Twin Legacy Filtering & Replay State Reset (`src/3d/DigitalTwin.js`)**:
+  - Added filter to ignore legacy `javascript_fallback` synthetic wireframes cached in existing flight manifests or archive directories.
+  - Explicitly reset `wireframeData` and `wireframeSelectedLineIndex` whenever switching active flights in `loadSelectedFlight`.
+  - Automatically hidden the `diag-wireframe-panel` and `diag-legend-wireframe` when valid 3D line count is 0.
+
 ## [1.152.0] - 2026-10-12
 
 Introduces dedicated 2D Map overlay controls for Photo Coverage Footprints and Photo Inspection Pins with default-off footprint persistence, keeping the 2D map clutter-free after photo ingest while preserving on-demand footprint inspection and 3D architectural wireframes.
