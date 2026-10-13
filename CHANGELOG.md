@@ -1,3 +1,21 @@
+## [1.152.2] - 2026-10-12
+
+Eliminates the start-point coordinate giggle / micro-orbital distortion at the center of Archimedean spirals and continuous curves in Light Art missions, ensuring mathematically pure trajectories from origin without sub-meter node crowding.
+
+### Fixed
+
+#### Pilot & Operational Features
+- **Elimination of Spiral Start-Point Distortion ("Giggle")**:
+  - Eliminated the starburst/zigzag perturbation at the center of spirals and light-art curves.
+  - Ensured smooth, continuous flight curvature starting cleanly from the origin without waypoint clustering or unnatural deviations.
+
+#### Under the Hood & Technical Details
+- **Safe Step Pacing in Spiral Generation (`src/patterns/PatternGenerators.js`)**:
+  - Added safe progressive node spacing ($\ge 0.65\text{m}$) near the spiral core to prevent sub-meter waypoint crowding while maintaining strict geometric and heading precision.
+- **WPML Compiler Micro-Orbital Exemption (`src/export/WpmlCompiler.js`)**:
+  - Exempted Light Art waypoints from the 1.25m micro-orbital circle scattering algorithm used exclusively for stationary 360 photo spheres.
+  - Preserved authentic coordinate placement and smooth tangents for continuous curves in both `buildWaylinesWpml` and `validateAndFixWpml`.
+
 ## [1.152.1] - 2026-10-12
 
 Permanently eliminates synthetic box house wireframe fallbacks, ensuring the 3D Telemetry Replay and Digital Twin scenes only display authentic unprojected survey geometry from real downward survey imagery.

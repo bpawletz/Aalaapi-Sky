@@ -743,14 +743,27 @@ function generateLightArtCoordinates(layer, baseAltitude, defaultGimbalPitch, sp
 
   if (preset === 'spiral') {
     // Archimedean Spiral in plane: r = (t / maxT) * radius
+    // Enforce >= 0.65m safe flight node spacing so center turns start cleanly without clustering or distortion
     const totalSteps = Math.max(36, Math.round(turns * 24));
-    for (let i = 0; i <= totalSteps; i++) {
+    let curU = 0;
+    let curV = 0;
+    rawPoints.push({ u: 0, v: 0, zOffset: 0 });
+    for (let i = 1; i <= totalSteps; i++) {
       const frac = i / totalSteps;
       const angle = frac * turns * 2 * Math.PI;
       const r = frac * radius;
       const u = r * Math.cos(angle);
       const v = r * Math.sin(angle);
-      rawPoints.push({ u, v, zOffset: 0 });
+      const d = Math.hypot(u - curU, v - curV);
+      if (d >= 0.65 || i === totalSteps) {
+        if (i === totalSteps && d < 0.65 && rawPoints.length > 1) {
+          rawPoints[rawPoints.length - 1] = { u, v, zOffset: 0 };
+        } else {
+          rawPoints.push({ u, v, zOffset: 0 });
+        }
+        curU = u;
+        curV = v;
+      }
     }
   } else if (preset === 'helix') {
     // 3D Climbing Helix: spirals while climbing in altitude

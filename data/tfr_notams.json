@@ -1,5 +1,16 @@
 [
   {
+    "notam_id": "6/9048",
+    "facility": "ZAB",
+    "state": "TX",
+    "type": "HAZARDS",
+    "description": "EL PASO, TX, Tuesday, October 13, 2026 UTC",
+    "mod_date": "10/13/2026 00:45:00",
+    "mod_abs_time": "202610130045",
+    "is_new": "Y",
+    "gid": "6/9048"
+  },
+  {
     "notam_id": "6/9020",
     "facility": "ZLC",
     "state": "MT",
@@ -84,7 +95,7 @@
     "description": "Cape Canaveral, FL, Thursday, October 15, 2026 Local",
     "mod_date": "10/12/2026 02:14:00",
     "mod_abs_time": "202610120214",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8901"
   },
   {
@@ -95,7 +106,7 @@
     "description": "Cape Canaveral, FL, Wednesday, October 14, 2026 Local",
     "mod_date": "10/12/2026 01:57:00",
     "mod_abs_time": "202610120157",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8900"
   },
   {
@@ -106,7 +117,7 @@
     "description": "Cape Canaveral, FL, Tuesday, October 13, 2026 Local",
     "mod_date": "10/12/2026 01:56:00",
     "mod_abs_time": "202610120156",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8899"
   },
   {
@@ -117,7 +128,7 @@
     "description": "Cape Canaveral, FL, Thursday, October 15, 2026 Local",
     "mod_date": "10/12/2026 01:55:00",
     "mod_abs_time": "202610120155",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8898"
   },
   {
@@ -128,7 +139,7 @@
     "description": "Cape Canaveral, FL, Wednesday, October 14, 2026 Local",
     "mod_date": "10/12/2026 01:54:00",
     "mod_abs_time": "202610120154",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8897"
   },
   {
@@ -139,7 +150,7 @@
     "description": "Cape Canaveral, FL, Tuesday, October 13, 2026 Local",
     "mod_date": "10/12/2026 01:53:00",
     "mod_abs_time": "202610120153",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8896"
   },
   {
@@ -150,7 +161,7 @@
     "description": "Bullhead City, AZ, Wednesday, October 14, 2026 Local",
     "mod_date": "10/11/2026 23:53:00",
     "mod_abs_time": "202610112353",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8891"
   },
   {
@@ -161,7 +172,7 @@
     "description": "LAS VEGAS, NV, Tuesday, October 13, 2026 Local",
     "mod_date": "10/11/2026 23:44:00",
     "mod_abs_time": "202610112344",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8890"
   },
   {
@@ -196,17 +207,6 @@
     "mod_abs_time": "202610112027",
     "is_new": "N",
     "gid": "6/8886"
-  },
-  {
-    "notam_id": "6/8829",
-    "facility": "ZOB",
-    "state": "OH",
-    "type": "VIP",
-    "description": "Youngstown, OH, Monday, October 12, 2026 through Monday, October 12, 2026 Local",
-    "mod_date": "10/11/2026 19:25:00",
-    "mod_abs_time": "202610111925",
-    "is_new": "N",
-    "gid": "6/8829"
   },
   {
     "notam_id": "6/8808",
@@ -317,17 +317,6 @@
     "mod_abs_time": "202610091540",
     "is_new": "N",
     "gid": "6/8646"
-  },
-  {
-    "notam_id": "6/8587",
-    "facility": "ZOB",
-    "state": "OH",
-    "type": "VIP",
-    "description": "Youngstown, OH, Monday, October 12, 2026 through Monday, October 12, 2026 Local",
-    "mod_date": "10/09/2026 10:34:00",
-    "mod_abs_time": "202610091034",
-    "is_new": "N",
-    "gid": "6/8587"
   },
   {
     "notam_id": "6/8389",

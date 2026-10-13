@@ -5992,7 +5992,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.152.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.152.2</span></h1>
 
 
 
@@ -10420,7 +10420,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.152.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.152.2</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -10481,6 +10481,12 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.152.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Elimination of Spiral Start-Point Distortion ("Giggle"):</strong> Eliminated the starburst/zigzag perturbation at the center of Archimedean spirals and continuous light-art curves. Prevented micro-orbital coordinate clustering in WPML export and enforced safe progressive node pacing (&ge; 0.65m) starting directly from the origin.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.152.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -29842,14 +29848,27 @@ function generateLightArtCoordinates(layer, baseAltitude, defaultGimbalPitch, sp
 
   if (preset === 'spiral') {
     // Archimedean Spiral in plane: r = (t / maxT) * radius
+    // Enforce >= 0.65m safe flight node spacing so center turns start cleanly without clustering or distortion
     const totalSteps = Math.max(36, Math.round(turns * 24));
-    for (let i = 0; i <= totalSteps; i++) {
+    let curU = 0;
+    let curV = 0;
+    rawPoints.push({ u: 0, v: 0, zOffset: 0 });
+    for (let i = 1; i <= totalSteps; i++) {
       const frac = i / totalSteps;
       const angle = frac * turns * 2 * Math.PI;
       const r = frac * radius;
       const u = r * Math.cos(angle);
       const v = r * Math.sin(angle);
-      rawPoints.push({ u, v, zOffset: 0 });
+      const d = Math.hypot(u - curU, v - curV);
+      if (d >= 0.65 || i === totalSteps) {
+        if (i === totalSteps && d < 0.65 && rawPoints.length > 1) {
+          rawPoints[rawPoints.length - 1] = { u, v, zOffset: 0 };
+        } else {
+          rawPoints.push({ u, v, zOffset: 0 });
+        }
+        curU = u;
+        curV = v;
+      }
     }
   } else if (preset === 'helix') {
     // 3D Climbing Helix: spirals while climbing in altitude
@@ -33876,6 +33895,9 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
   // DJI Fly to reject the mission at "Go" press (observed on double-grid with 81 action groups).
   let actionGroupId = 1;
 
+  const gridTypeEl = typeof document !== 'undefined' ? document.getElementById('grid-type') : null;
+  const gridType = (gridTypeEl && gridTypeEl.value) ? gridTypeEl.value : (waypoints.find(w => w && w.gridType)?.gridType || '');
+
   // Sanitize consecutive duplicate coordinates (DJI APAS collision & zero-distance trajectory solver rule)
   // When consecutive waypoints share identical coordinates (distance < 0.6m, e.g., in-place 360 photo spheres or stacked points),
   // apply a micro-orbital radius (1.25m - 1.45m) keyed to waypoint heading to ensure distinct flight nodes >= 0.64m apart.
@@ -33890,7 +33912,9 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
       cj++;
     }
     const clusterSize = cj - ci;
-    if (clusterSize > 1) {
+    const isLightArtCluster = (gridType === 'light-art') ||
+      (waypoints[ci] && (waypoints[ci].isLightArtPoint || waypoints[ci].gridType === 'light-art' || waypoints[ci].layerPattern === 'light-art'));
+    if (clusterSize > 1 && !isLightArtCluster) {
       const clusterLat = waypoints[ci].lat;
       const clusterLon = waypoints[ci].lon;
       const latRad = (clusterLat * Math.PI) / 180.0;
@@ -33959,9 +33983,6 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     }
     ci = cj;
   }
-
-  const gridTypeEl = typeof document !== 'undefined' ? document.getElementById('grid-type') : null;
-  const gridType = (gridTypeEl && gridTypeEl.value) ? gridTypeEl.value : (waypoints.find(w => w && w.gridType)?.gridType || '');
 
   // Identify hyperlapse segments in sanitizedWps
   const hyperlapseSegments = [];
@@ -35211,13 +35232,16 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
     }
 
     let ci = 0;
+    const isLightArtMission = (options && (options.gridType === 'light-art' || options.pattern === 'light-art' || options.isLightArt)) ||
+      (options && Array.isArray(options.waypoints) && options.waypoints.some(w => w && (w.isLightArtPoint || w.gridType === 'light-art' || w.layerPattern === 'light-art')));
     while (ci < parsedCoords.length) {
       let cj = ci + 1;
       while (cj < parsedCoords.length && haversineDistance(parsedCoords[ci].lat, parsedCoords[ci].lon, parsedCoords[cj].lat, parsedCoords[cj].lon) < 0.6) {
         cj++;
       }
       const cSize = cj - ci;
-      if (cSize > 1) {
+      const isLightArtWp = isLightArtMission || (options && Array.isArray(options.waypoints) && options.waypoints[ci] && (options.waypoints[ci].isLightArtPoint || options.waypoints[ci].gridType === 'light-art' || options.waypoints[ci].layerPattern === 'light-art'));
+      if (cSize > 1 && !isLightArtWp) {
         const baseLat = parsedCoords[ci].lat;
         const baseLon = parsedCoords[ci].lon;
         const latRad = (baseLat * Math.PI) / 180.0;
