@@ -95,6 +95,9 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
   // DJI Fly to reject the mission at "Go" press (observed on double-grid with 81 action groups).
   let actionGroupId = 1;
 
+  const gridTypeEl = typeof document !== 'undefined' ? document.getElementById('grid-type') : null;
+  const gridType = (gridTypeEl && gridTypeEl.value) ? gridTypeEl.value : (waypoints.find(w => w && w.gridType)?.gridType || '');
+
   // Sanitize consecutive duplicate coordinates (DJI APAS collision & zero-distance trajectory solver rule)
   // When consecutive waypoints share identical coordinates (distance < 0.6m, e.g., in-place 360 photo spheres or stacked points),
   // apply a micro-orbital radius (1.25m - 1.45m) keyed to waypoint heading to ensure distinct flight nodes >= 0.64m apart.
@@ -109,7 +112,9 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
       cj++;
     }
     const clusterSize = cj - ci;
-    if (clusterSize > 1) {
+    const isLightArtCluster = (gridType === 'light-art') ||
+      (waypoints[ci] && (waypoints[ci].isLightArtPoint || waypoints[ci].gridType === 'light-art' || waypoints[ci].layerPattern === 'light-art'));
+    if (clusterSize > 1 && !isLightArtCluster) {
       const clusterLat = waypoints[ci].lat;
       const clusterLon = waypoints[ci].lon;
       const latRad = (clusterLat * Math.PI) / 180.0;
@@ -178,9 +183,6 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     }
     ci = cj;
   }
-
-  const gridTypeEl = typeof document !== 'undefined' ? document.getElementById('grid-type') : null;
-  const gridType = (gridTypeEl && gridTypeEl.value) ? gridTypeEl.value : (waypoints.find(w => w && w.gridType)?.gridType || '');
 
   // Identify hyperlapse segments in sanitizedWps
   const hyperlapseSegments = [];
@@ -1430,13 +1432,16 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
     }
 
     let ci = 0;
+    const isLightArtMission = (options && (options.gridType === 'light-art' || options.pattern === 'light-art' || options.isLightArt)) ||
+      (options && Array.isArray(options.waypoints) && options.waypoints.some(w => w && (w.isLightArtPoint || w.gridType === 'light-art' || w.layerPattern === 'light-art')));
     while (ci < parsedCoords.length) {
       let cj = ci + 1;
       while (cj < parsedCoords.length && haversineDistance(parsedCoords[ci].lat, parsedCoords[ci].lon, parsedCoords[cj].lat, parsedCoords[cj].lon) < 0.6) {
         cj++;
       }
       const cSize = cj - ci;
-      if (cSize > 1) {
+      const isLightArtWp = isLightArtMission || (options && Array.isArray(options.waypoints) && options.waypoints[ci] && (options.waypoints[ci].isLightArtPoint || options.waypoints[ci].gridType === 'light-art' || options.waypoints[ci].layerPattern === 'light-art'));
+      if (cSize > 1 && !isLightArtWp) {
         const baseLat = parsedCoords[ci].lat;
         const baseLon = parsedCoords[ci].lon;
         const latRad = (baseLat * Math.PI) / 180.0;
