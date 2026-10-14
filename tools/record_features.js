@@ -1777,9 +1777,29 @@ const scenarios = [
           addCorridorPoint(41.3245, -88.9900);
         }
       });
-      await page.waitForTimeout(1500);
+      await page.waitForTimeout(1000);
 
-      // 6. Ensure squarely centered
+      // 6. Enter Centerline Edit Mode and demonstrate sidebar node coordinate table
+      const editToggleBtn = await page.$('#corridor-edit-toggle-btn');
+      if (editToggleBtn) {
+        await editToggleBtn.click();
+        await page.waitForTimeout(1000);
+      }
+
+      // 7. Click Add Node button in sidebar
+      const addNodeBtn = await page.$('#corridor-add-vertex-btn');
+      if (addNodeBtn) {
+        await addNodeBtn.click();
+        await page.waitForTimeout(1000);
+      }
+
+      // 8. Exit Centerline Edit Mode
+      if (editToggleBtn) {
+        await editToggleBtn.click();
+        await page.waitForTimeout(1000);
+      }
+
+      // 9. Ensure squarely centered on default rural coordinates
       await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
       await page.waitForTimeout(1500);
     }

@@ -1024,6 +1024,26 @@ function initUIEventListeners() {
           activeLayer.corridorCenterline = [];
           if (typeof corridorCenterline !== 'undefined') corridorCenterline = [];
           updateGrid();
+          if (typeof renderCorridorNodeTable === 'function') renderCorridorNodeTable();
+        }
+      });
+    }
+
+    const corrEditToggleBtn = document.getElementById('corridor-edit-toggle-btn');
+    if (corrEditToggleBtn) {
+      corrEditToggleBtn.addEventListener('click', () => {
+        if (typeof setCorridorEditMode === 'function') {
+          setCorridorEditMode(!isCorridorEditActive);
+          if (typeof updateGrid === 'function') updateGrid();
+        }
+      });
+    }
+
+    const corrAddVertexBtn = document.getElementById('corridor-add-vertex-btn');
+    if (corrAddVertexBtn) {
+      corrAddVertexBtn.addEventListener('click', () => {
+        if (typeof addCorridorNodeAction === 'function') {
+          addCorridorNodeAction();
         }
       });
     }

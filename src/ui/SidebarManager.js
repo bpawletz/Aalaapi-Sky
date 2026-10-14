@@ -561,8 +561,16 @@ function togglePatternParameters() {
   if (corridorContainer) {
     if (gridType === 'corridor') {
       corridorContainer.classList.remove('hidden');
+      if (typeof renderCorridorNodeTable === 'function') {
+        renderCorridorNodeTable();
+      }
     } else {
       corridorContainer.classList.add('hidden');
+      if (typeof isCorridorEditActive !== 'undefined' && isCorridorEditActive) {
+        if (typeof setCorridorEditMode === 'function') {
+          setCorridorEditMode(false);
+        }
+      }
     }
   }
 
@@ -1214,7 +1222,10 @@ function togglePatternParameters() {
       layerCardFiducial.classList.add('hidden');
       layerCardFiducial.style.display = 'none';
     }
-    if (corridorContainer) corridorContainer.classList.remove('hidden');
+    if (corridorContainer) {
+      corridorContainer.classList.remove('hidden');
+      if (typeof renderCorridorNodeTable === 'function') renderCorridorNodeTable();
+    }
     if (starPassContainer) starPassContainer.classList.add('hidden');
     if (continuousHelixContainer) continuousHelixContainer.classList.add('hidden');
     if (verticalFacadeContainer) verticalFacadeContainer.classList.add('hidden');
@@ -2421,6 +2432,144 @@ function updateLightArtUiFields(layer) {
 if (typeof window !== 'undefined') {
   window.updateLightArtBadge = updateLightArtBadge;
   window.updateLightArtUiFields = updateLightArtUiFields;
+  window.renderCorridorNodeTable = renderCorridorNodeTable;
+  window.addCorridorNodeAction = addCorridorNodeAction;
+}
+
+function renderCorridorNodeTable() {
+  if (typeof document === 'undefined') return;
+  const container = document.getElementById('corridor-node-list');
+  const badge = document.getElementById('corridor-vertex-badge');
+  if (!container) return;
+
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const nodes = (activeLayer && Array.isArray(activeLayer.corridorCenterline))
+    ? activeLayer.corridorCenterline
+    : (typeof corridorCenterline !== 'undefined' && Array.isArray(corridorCenterline) ? corridorCenterline : []);
+
+  if (badge) {
+    badge.textContent = `${nodes.length} Node${nodes.length === 1 ? '' : 's'}`;
+  }
+
+  if (nodes.length === 0) {
+    container.innerHTML = `
+      <div style="font-size: 0.72rem; color: var(--text-muted); text-align: center; padding: 10px 4px; background: rgba(0,0,0,0.1); border-radius: 6px;">
+        No centerline nodes. Click <strong>Edit Centerline</strong> or <strong>Add Node</strong> to begin.
+      </div>
+    `;
+    return;
+  }
+
+  const corrColor = (activeLayer && activeLayer.color) ? activeLayer.color : '#6366f1';
+  let html = '';
+  nodes.forEach((wp, idx) => {
+    const latVal = typeof wp.lat === 'number' ? wp.lat.toFixed(6) : (wp.lat || '');
+    const lonVal = typeof wp.lon === 'number' ? wp.lon.toFixed(6) : (wp.lon || '');
+    const isDeletable = nodes.length > 2;
+
+    html += `
+      <div class="corridor-node-row" data-node-idx="${idx}" style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 4px 6px;">
+        <span style="background: ${corrColor}; color: #ffffff; font-weight: 700; font-size: 0.68rem; border-radius: 4px; min-width: 24px; height: 22px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 4px rgba(0,0,0,0.3); flex-shrink: 0;">
+          C${idx + 1}
+        </span>
+        <div style="display: flex; flex: 1; gap: 4px; align-items: center;">
+          <input type="number" step="0.000001" class="form-control form-control-xs corridor-node-input" data-idx="${idx}" data-field="lat" value="${latVal}" title="Latitude" placeholder="Lat" style="font-family: monospace; font-size: 0.7rem; padding: 2px 4px; height: 24px; min-width: 0; flex: 1;">
+          <input type="number" step="0.000001" class="form-control form-control-xs corridor-node-input" data-idx="${idx}" data-field="lon" value="${lonVal}" title="Longitude" placeholder="Lon" style="font-family: monospace; font-size: 0.7rem; padding: 2px 4px; height: 24px; min-width: 0; flex: 1;">
+        </div>
+        <button type="button" class="btn btn-xs btn-outline-danger corridor-node-del-btn" data-idx="${idx}" title="Delete Node C${idx + 1}" ${!isDeletable ? 'disabled style="opacity: 0.3; cursor: not-allowed; padding: 1px 6px; font-size: 0.65rem;"' : 'style="padding: 1px 6px; font-size: 0.65rem;"'}>
+          ✕
+        </button>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+
+  const inputs = container.querySelectorAll('.corridor-node-input');
+  inputs.forEach(input => {
+    input.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.getAttribute('data-idx'), 10);
+      const field = e.target.getAttribute('data-field');
+      const val = parseFloat(e.target.value);
+      if (isNaN(val) || !nodes[idx]) return;
+
+      nodes[idx][field] = val;
+      nodes[idx].isModified = true;
+
+      const layerCenterLat = (activeLayer && activeLayer.centerLat !== null && activeLayer.centerLat !== undefined) ? activeLayer.centerLat : (typeof centerLat !== 'undefined' ? centerLat : 41.3215);
+      const layerCenterLon = (activeLayer && activeLayer.centerLon !== null && activeLayer.centerLon !== undefined) ? activeLayer.centerLon : (typeof centerLon !== 'undefined' ? centerLon : -88.9950);
+      if (typeof geodeticToLocal === 'function') {
+        const offsets = geodeticToLocal(nodes[idx].lat, nodes[idx].lon, layerCenterLat, layerCenterLon);
+        nodes[idx].x = offsets.x;
+        nodes[idx].y = offsets.y;
+      }
+
+      if (activeLayer) activeLayer.corridorCenterline = nodes;
+      if (typeof corridorCenterline !== 'undefined') corridorCenterline = nodes;
+      if (typeof updateGrid === 'function') updateGrid();
+    });
+  });
+
+  const delBtns = container.querySelectorAll('.corridor-node-del-btn');
+  delBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const idx = parseInt(e.currentTarget.getAttribute('data-idx'), 10);
+      if (isNaN(idx) || nodes.length <= 2) return;
+      nodes.splice(idx, 1);
+      nodes.forEach((n, i) => { n.idx = i; });
+      if (activeLayer) activeLayer.corridorCenterline = nodes;
+      if (typeof corridorCenterline !== 'undefined') corridorCenterline = nodes;
+      if (typeof updateGrid === 'function') updateGrid();
+      renderCorridorNodeTable();
+    });
+  });
+}
+
+function addCorridorNodeAction() {
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const nodes = (activeLayer && Array.isArray(activeLayer.corridorCenterline))
+    ? activeLayer.corridorCenterline
+    : (typeof corridorCenterline !== 'undefined' && Array.isArray(corridorCenterline) ? corridorCenterline : []);
+
+  const layerCenterLat = (activeLayer && activeLayer.centerLat !== null && activeLayer.centerLat !== undefined) ? activeLayer.centerLat : (typeof centerLat !== 'undefined' ? centerLat : 41.3215);
+  const layerCenterLon = (activeLayer && activeLayer.centerLon !== null && activeLayer.centerLon !== undefined) ? activeLayer.centerLon : (typeof centerLon !== 'undefined' ? centerLon : -88.9950);
+
+  let newLat = layerCenterLat;
+  let newLon = layerCenterLon;
+
+  if (nodes.length >= 2) {
+    const last = nodes[nodes.length - 1];
+    const prev = nodes[nodes.length - 2];
+    const dLat = last.lat - prev.lat;
+    const dLon = last.lon - prev.lon;
+    const len = Math.hypot(dLat, dLon) || 0.0001;
+    const stepDeg = 0.00036;
+    newLat = last.lat + (dLat / len) * stepDeg;
+    newLon = last.lon + (dLon / len) * stepDeg;
+  } else if (nodes.length === 1) {
+    newLat = nodes[0].lat + 0.00036;
+    newLon = nodes[0].lon + 0.00036;
+  }
+
+  const offsets = (typeof geodeticToLocal === 'function')
+    ? geodeticToLocal(newLat, newLon, layerCenterLat, layerCenterLon)
+    : { x: 0, y: 0 };
+
+  const newNode = {
+    lat: newLat,
+    lon: newLon,
+    x: offsets.x,
+    y: offsets.y,
+    idx: nodes.length,
+    isModified: true
+  };
+
+  nodes.push(newNode);
+  if (activeLayer) activeLayer.corridorCenterline = nodes;
+  if (typeof corridorCenterline !== 'undefined') corridorCenterline = nodes;
+
+  if (typeof updateGrid === 'function') updateGrid();
+  if (typeof renderCorridorNodeTable === 'function') renderCorridorNodeTable();
 }
 
 // Search Address via OpenStreetMap Nominatim API

@@ -741,7 +741,12 @@ function initMap() {
     } else if (currentPattern === 'road-following') {
       addRoadWaypoint(e.latlng.lat, e.latlng.lng);
     } else if (currentPattern === 'corridor') {
-      addCorridorPoint(e.latlng.lat, e.latlng.lng);
+      const isCorridorActive = (typeof isCorridorEditActive !== 'undefined' && isCorridorEditActive) || (!activeLayer || !activeLayer.corridorCenterline || activeLayer.corridorCenterline.length < 2);
+      if (isCorridorActive) {
+        addCorridorPoint(e.latlng.lat, e.latlng.lng);
+      } else {
+        setGridCenter(e.latlng.lat, e.latlng.lng);
+      }
     } else if (isTargetSplatPoly) {
       addTargetPolygonPoint(e.latlng.lat, e.latlng.lng);
     } else {

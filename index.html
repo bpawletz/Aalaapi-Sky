@@ -5992,7 +5992,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.155.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.156.0</span></h1>
 
 
 
@@ -7301,9 +7301,30 @@ html, body {
                 </select>
               </div>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(99, 102, 241, 0.2);">
-              <span style="font-size: 0.7rem; color: var(--text-muted);">Click map to add nodes. Drag to reshape.</span>
-              <button id="corridor-clear-btn" type="button" class="btn btn-xs btn-outline-danger" style="font-size: 0.68rem; padding: 2px 8px;">Reset Centerline</button>
+            <div style="display: flex; gap: 6px; margin-top: 8px; margin-bottom: 6px;">
+              <button id="corridor-edit-toggle-btn" type="button" class="btn btn-xs" style="flex: 1; font-size: 0.72rem; padding: 5px 8px; font-weight: 600; background: rgba(99, 102, 241, 0.18); border: 1px solid #6366f1; color: #818cf8; border-radius: 5px; transition: all 0.15s ease;">
+                ✏️ Edit Centerline
+              </button>
+              <button id="corridor-add-vertex-btn" type="button" class="btn btn-xs btn-outline-primary" style="font-size: 0.72rem; padding: 5px 8px; font-weight: 600; border-radius: 5px;">
+                ➕ Add Node
+              </button>
+              <button id="corridor-clear-btn" type="button" class="btn btn-xs btn-outline-danger" style="font-size: 0.72rem; padding: 5px 8px; border-radius: 5px;" title="Reset Centerline">
+                Reset
+              </button>
+            </div>
+            <div id="corridor-edit-status" style="font-size: 0.68rem; color: var(--text-muted); margin-bottom: 8px; line-height: 1.3;">
+              ℹ️ Click <strong>Edit Centerline</strong> to isolate handles, or edit coordinates below.
+            </div>
+
+            <!-- Centerline Vertices Coordinate Table -->
+            <div id="corridor-node-table-container" style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 6px; padding: 8px; margin-top: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 0.72rem; font-weight: 700; color: #818cf8;">Centerline Nodes</span>
+                <span id="corridor-vertex-badge" class="badge" style="background: rgba(99, 102, 241, 0.25); color: #c7d2fe; font-size: 0.65rem; padding: 1px 6px;">3 Nodes</span>
+              </div>
+              <div id="corridor-node-list" style="max-height: 160px; overflow-y: auto; padding-right: 2px;">
+                <!-- Dynamically populated by renderCorridorNodeTable() -->
+              </div>
             </div>
           </div>
 
@@ -10749,7 +10770,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.155.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.156.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -10810,6 +10831,12 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.156.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Dedicated Corridor Centerline Edit Mode &amp; Node Coordinate Table:</strong> Added interactive "✏️ Edit Centerline" toggle isolating centerline handles from flight passes and popups, plus real-time sidebar coordinate table with 60fps bidirectional drag sync, one-click node addition, and single-node deletion.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.155.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -15773,6 +15800,7 @@ let boundaryLayersGroup = null;
 let fiducialMarkersGroup = null;
 let targetPolygonGroup = null;
 let isTargetPolyEditActive = false;
+let isCorridorEditActive = false;
 let isAnyPopupOpen = false;
 let isLegendCollapsed = false;
 let originalMissionSettings = null;
@@ -15834,6 +15862,66 @@ function setTargetPolyEditMode(active) {
       }
     }
   }
+}
+
+function setCorridorEditMode(active) {
+  isCorridorEditActive = !!active;
+  if (typeof window !== 'undefined') {
+    window.isCorridorEditActive = isCorridorEditActive;
+  }
+  if (typeof document === 'undefined') return;
+
+  const btn = document.getElementById('corridor-edit-toggle-btn');
+  const statusEl = document.getElementById('corridor-edit-status');
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const nodes = (activeLayer && Array.isArray(activeLayer.corridorCenterline))
+    ? activeLayer.corridorCenterline
+    : (typeof corridorCenterline !== 'undefined' && Array.isArray(corridorCenterline) ? corridorCenterline : []);
+  const nodeCount = nodes.length;
+
+  if (typeof map !== 'undefined' && map && map.getContainer) {
+    try {
+      const container = map.getContainer();
+      if (container) {
+        container.style.cursor = isCorridorEditActive ? 'crosshair' : '';
+      }
+    } catch (e) {}
+  }
+
+  if (btn) {
+    if (isCorridorEditActive) {
+      btn.innerHTML = '✓ Done Editing';
+      btn.style.background = 'rgba(16, 185, 129, 0.25)';
+      btn.style.borderColor = '#10b981';
+      btn.style.color = '#34d399';
+    } else {
+      btn.innerHTML = '✏️ Edit Centerline';
+      btn.style.background = 'rgba(99, 102, 241, 0.18)';
+      btn.style.borderColor = '#6366f1';
+      btn.style.color = '#818cf8';
+    }
+  }
+
+  if (statusEl) {
+    if (isCorridorEditActive) {
+      statusEl.textContent = `🎯 Edit Mode Active (${nodeCount} nodes): Drag C handles or click map to append vertices. Flight passes isolated.`;
+      statusEl.style.color = '#34d399';
+      statusEl.style.fontWeight = '600';
+    } else {
+      statusEl.textContent = 'ℹ️ Click Edit Centerline to isolate handles, or edit coordinates below.';
+      statusEl.style.color = 'var(--text-muted)';
+      statusEl.style.fontWeight = 'normal';
+    }
+  }
+
+  if (typeof renderCorridorNodeTable === 'function') {
+    renderCorridorNodeTable();
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.isCorridorEditActive = isCorridorEditActive;
+  window.setCorridorEditMode = setCorridorEditMode;
 }
 
 let isLayerBoundaryEditActive = false;
@@ -22952,7 +23040,12 @@ function initMap() {
     } else if (currentPattern === 'road-following') {
       addRoadWaypoint(e.latlng.lat, e.latlng.lng);
     } else if (currentPattern === 'corridor') {
-      addCorridorPoint(e.latlng.lat, e.latlng.lng);
+      const isCorridorActive = (typeof isCorridorEditActive !== 'undefined' && isCorridorEditActive) || (!activeLayer || !activeLayer.corridorCenterline || activeLayer.corridorCenterline.length < 2);
+      if (isCorridorActive) {
+        addCorridorPoint(e.latlng.lat, e.latlng.lng);
+      } else {
+        setGridCenter(e.latlng.lat, e.latlng.lng);
+      }
     } else if (isTargetSplatPoly) {
       addTargetPolygonPoint(e.latlng.lat, e.latlng.lng);
     } else {
@@ -25161,6 +25254,26 @@ function initUIEventListeners() {
           activeLayer.corridorCenterline = [];
           if (typeof corridorCenterline !== 'undefined') corridorCenterline = [];
           updateGrid();
+          if (typeof renderCorridorNodeTable === 'function') renderCorridorNodeTable();
+        }
+      });
+    }
+
+    const corrEditToggleBtn = document.getElementById('corridor-edit-toggle-btn');
+    if (corrEditToggleBtn) {
+      corrEditToggleBtn.addEventListener('click', () => {
+        if (typeof setCorridorEditMode === 'function') {
+          setCorridorEditMode(!isCorridorEditActive);
+          if (typeof updateGrid === 'function') updateGrid();
+        }
+      });
+    }
+
+    const corrAddVertexBtn = document.getElementById('corridor-add-vertex-btn');
+    if (corrAddVertexBtn) {
+      corrAddVertexBtn.addEventListener('click', () => {
+        if (typeof addCorridorNodeAction === 'function') {
+          addCorridorNodeAction();
         }
       });
     }
@@ -27492,8 +27605,16 @@ function togglePatternParameters() {
   if (corridorContainer) {
     if (gridType === 'corridor') {
       corridorContainer.classList.remove('hidden');
+      if (typeof renderCorridorNodeTable === 'function') {
+        renderCorridorNodeTable();
+      }
     } else {
       corridorContainer.classList.add('hidden');
+      if (typeof isCorridorEditActive !== 'undefined' && isCorridorEditActive) {
+        if (typeof setCorridorEditMode === 'function') {
+          setCorridorEditMode(false);
+        }
+      }
     }
   }
 
@@ -28145,7 +28266,10 @@ function togglePatternParameters() {
       layerCardFiducial.classList.add('hidden');
       layerCardFiducial.style.display = 'none';
     }
-    if (corridorContainer) corridorContainer.classList.remove('hidden');
+    if (corridorContainer) {
+      corridorContainer.classList.remove('hidden');
+      if (typeof renderCorridorNodeTable === 'function') renderCorridorNodeTable();
+    }
     if (starPassContainer) starPassContainer.classList.add('hidden');
     if (continuousHelixContainer) continuousHelixContainer.classList.add('hidden');
     if (verticalFacadeContainer) verticalFacadeContainer.classList.add('hidden');
@@ -29352,6 +29476,144 @@ function updateLightArtUiFields(layer) {
 if (typeof window !== 'undefined') {
   window.updateLightArtBadge = updateLightArtBadge;
   window.updateLightArtUiFields = updateLightArtUiFields;
+  window.renderCorridorNodeTable = renderCorridorNodeTable;
+  window.addCorridorNodeAction = addCorridorNodeAction;
+}
+
+function renderCorridorNodeTable() {
+  if (typeof document === 'undefined') return;
+  const container = document.getElementById('corridor-node-list');
+  const badge = document.getElementById('corridor-vertex-badge');
+  if (!container) return;
+
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const nodes = (activeLayer && Array.isArray(activeLayer.corridorCenterline))
+    ? activeLayer.corridorCenterline
+    : (typeof corridorCenterline !== 'undefined' && Array.isArray(corridorCenterline) ? corridorCenterline : []);
+
+  if (badge) {
+    badge.textContent = `${nodes.length} Node${nodes.length === 1 ? '' : 's'}`;
+  }
+
+  if (nodes.length === 0) {
+    container.innerHTML = `
+      <div style="font-size: 0.72rem; color: var(--text-muted); text-align: center; padding: 10px 4px; background: rgba(0,0,0,0.1); border-radius: 6px;">
+        No centerline nodes. Click <strong>Edit Centerline</strong> or <strong>Add Node</strong> to begin.
+      </div>
+    `;
+    return;
+  }
+
+  const corrColor = (activeLayer && activeLayer.color) ? activeLayer.color : '#6366f1';
+  let html = '';
+  nodes.forEach((wp, idx) => {
+    const latVal = typeof wp.lat === 'number' ? wp.lat.toFixed(6) : (wp.lat || '');
+    const lonVal = typeof wp.lon === 'number' ? wp.lon.toFixed(6) : (wp.lon || '');
+    const isDeletable = nodes.length > 2;
+
+    html += `
+      <div class="corridor-node-row" data-node-idx="${idx}" style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 4px 6px;">
+        <span style="background: ${corrColor}; color: #ffffff; font-weight: 700; font-size: 0.68rem; border-radius: 4px; min-width: 24px; height: 22px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 4px rgba(0,0,0,0.3); flex-shrink: 0;">
+          C${idx + 1}
+        </span>
+        <div style="display: flex; flex: 1; gap: 4px; align-items: center;">
+          <input type="number" step="0.000001" class="form-control form-control-xs corridor-node-input" data-idx="${idx}" data-field="lat" value="${latVal}" title="Latitude" placeholder="Lat" style="font-family: monospace; font-size: 0.7rem; padding: 2px 4px; height: 24px; min-width: 0; flex: 1;">
+          <input type="number" step="0.000001" class="form-control form-control-xs corridor-node-input" data-idx="${idx}" data-field="lon" value="${lonVal}" title="Longitude" placeholder="Lon" style="font-family: monospace; font-size: 0.7rem; padding: 2px 4px; height: 24px; min-width: 0; flex: 1;">
+        </div>
+        <button type="button" class="btn btn-xs btn-outline-danger corridor-node-del-btn" data-idx="${idx}" title="Delete Node C${idx + 1}" ${!isDeletable ? 'disabled style="opacity: 0.3; cursor: not-allowed; padding: 1px 6px; font-size: 0.65rem;"' : 'style="padding: 1px 6px; font-size: 0.65rem;"'}>
+          ✕
+        </button>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+
+  const inputs = container.querySelectorAll('.corridor-node-input');
+  inputs.forEach(input => {
+    input.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.getAttribute('data-idx'), 10);
+      const field = e.target.getAttribute('data-field');
+      const val = parseFloat(e.target.value);
+      if (isNaN(val) || !nodes[idx]) return;
+
+      nodes[idx][field] = val;
+      nodes[idx].isModified = true;
+
+      const layerCenterLat = (activeLayer && activeLayer.centerLat !== null && activeLayer.centerLat !== undefined) ? activeLayer.centerLat : (typeof centerLat !== 'undefined' ? centerLat : 41.3215);
+      const layerCenterLon = (activeLayer && activeLayer.centerLon !== null && activeLayer.centerLon !== undefined) ? activeLayer.centerLon : (typeof centerLon !== 'undefined' ? centerLon : -88.9950);
+      if (typeof geodeticToLocal === 'function') {
+        const offsets = geodeticToLocal(nodes[idx].lat, nodes[idx].lon, layerCenterLat, layerCenterLon);
+        nodes[idx].x = offsets.x;
+        nodes[idx].y = offsets.y;
+      }
+
+      if (activeLayer) activeLayer.corridorCenterline = nodes;
+      if (typeof corridorCenterline !== 'undefined') corridorCenterline = nodes;
+      if (typeof updateGrid === 'function') updateGrid();
+    });
+  });
+
+  const delBtns = container.querySelectorAll('.corridor-node-del-btn');
+  delBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const idx = parseInt(e.currentTarget.getAttribute('data-idx'), 10);
+      if (isNaN(idx) || nodes.length <= 2) return;
+      nodes.splice(idx, 1);
+      nodes.forEach((n, i) => { n.idx = i; });
+      if (activeLayer) activeLayer.corridorCenterline = nodes;
+      if (typeof corridorCenterline !== 'undefined') corridorCenterline = nodes;
+      if (typeof updateGrid === 'function') updateGrid();
+      renderCorridorNodeTable();
+    });
+  });
+}
+
+function addCorridorNodeAction() {
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const nodes = (activeLayer && Array.isArray(activeLayer.corridorCenterline))
+    ? activeLayer.corridorCenterline
+    : (typeof corridorCenterline !== 'undefined' && Array.isArray(corridorCenterline) ? corridorCenterline : []);
+
+  const layerCenterLat = (activeLayer && activeLayer.centerLat !== null && activeLayer.centerLat !== undefined) ? activeLayer.centerLat : (typeof centerLat !== 'undefined' ? centerLat : 41.3215);
+  const layerCenterLon = (activeLayer && activeLayer.centerLon !== null && activeLayer.centerLon !== undefined) ? activeLayer.centerLon : (typeof centerLon !== 'undefined' ? centerLon : -88.9950);
+
+  let newLat = layerCenterLat;
+  let newLon = layerCenterLon;
+
+  if (nodes.length >= 2) {
+    const last = nodes[nodes.length - 1];
+    const prev = nodes[nodes.length - 2];
+    const dLat = last.lat - prev.lat;
+    const dLon = last.lon - prev.lon;
+    const len = Math.hypot(dLat, dLon) || 0.0001;
+    const stepDeg = 0.00036;
+    newLat = last.lat + (dLat / len) * stepDeg;
+    newLon = last.lon + (dLon / len) * stepDeg;
+  } else if (nodes.length === 1) {
+    newLat = nodes[0].lat + 0.00036;
+    newLon = nodes[0].lon + 0.00036;
+  }
+
+  const offsets = (typeof geodeticToLocal === 'function')
+    ? geodeticToLocal(newLat, newLon, layerCenterLat, layerCenterLon)
+    : { x: 0, y: 0 };
+
+  const newNode = {
+    lat: newLat,
+    lon: newLon,
+    x: offsets.x,
+    y: offsets.y,
+    idx: nodes.length,
+    isModified: true
+  };
+
+  nodes.push(newNode);
+  if (activeLayer) activeLayer.corridorCenterline = nodes;
+  if (typeof corridorCenterline !== 'undefined') corridorCenterline = nodes;
+
+  if (typeof updateGrid === 'function') updateGrid();
+  if (typeof renderCorridorNodeTable === 'function') renderCorridorNodeTable();
 }
 
 // Search Address via OpenStreetMap Nominatim API
@@ -33493,6 +33755,14 @@ function drawFlightPathLines(waypoints, gridType) {
     let weight = 3.5;
     let opacity = 0.85;
 
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    const isCorridorEditing = (activeLayer && activeLayer.pattern === 'corridor' && typeof isCorridorEditActive !== 'undefined' && isCorridorEditActive);
+    if (isCorridorEditing && (p2.isCorridor || p2.layerId === activeLayer.id || (!p2.layerId && gridType === 'corridor'))) {
+      opacity = 0.25;
+      dashArray = '3, 6';
+      weight = 2;
+    }
+
     if (p2.isTransition || p1.isTransition || (p1.layerId && p2.layerId && p1.layerId !== p2.layerId)) {
       color = '#a855f7'; // Purple transition vector
       dashArray = '6, 6';
@@ -34116,21 +34386,31 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
           corrNodes.forEach((wp, idx) => {
             const corrIcon = L.divIcon({
               className: 'corridor-centerline-icon',
-              html: `<div style="background-color: ${corrColor}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid #ffffff; box-shadow: 0 0 8px rgba(99, 102, 241, 0.7); display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; font-weight: bold; cursor: ${isActive ? 'pointer' : 'default'};">C${idx + 1}</div>`,
-              iconSize: [24, 24],
-              iconAnchor: [12, 12]
+              html: `<div style="background-color: ${corrColor}; width: 26px; height: 26px; border-radius: 50%; border: 2.5px solid #ffffff; box-shadow: 0 0 10px rgba(99, 102, 241, 0.9), 0 0 0 3px rgba(99, 102, 241, 0.4); display: flex; align-items: center; justify-content: center; font-size: 11px; color: white; font-weight: 800; cursor: ${isActive ? 'grab' : 'default'}; user-select: none;">C${idx + 1}</div>`,
+              iconSize: [28, 28],
+              iconAnchor: [14, 14]
             });
 
             const marker = L.marker([wp.lat, wp.lon], {
               icon: corrIcon,
-              draggable: isActive
+              draggable: isActive,
+              zIndexOffset: 20000
             });
 
             wp.corridorMarker = marker;
-            marker.bindTooltip(`${l.name} Centerline Node ${idx + 1}`, { direction: 'top', offset: [0, -10] });
+            marker.bindTooltip(`${l.name} Centerline Node ${idx + 1}`, { direction: 'top', offset: [0, -12] });
 
             if (isActive) {
-              marker.on('dragstart', () => {
+              marker.on('click', (e) => {
+                if (e && e.originalEvent && e.originalEvent.stopPropagation) {
+                  e.originalEvent.stopPropagation();
+                }
+              });
+
+              marker.on('dragstart', (e) => {
+                if (e && e.originalEvent && e.originalEvent.stopPropagation) {
+                  e.originalEvent.stopPropagation();
+                }
                 if (typeof map !== 'undefined' && map && map.closePopup) map.closePopup();
                 if (wp.origLat === undefined || wp.origLat === null) {
                   wp.origLat = wp.lat;
@@ -34161,10 +34441,23 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
                     }
                   });
                 }
+                // Live sync coordinates in sidebar table
+                if (typeof document !== 'undefined') {
+                  const row = document.querySelector(`.corridor-node-row[data-node-idx="${idx}"]`);
+                  if (row) {
+                    const latInput = row.querySelector('[data-field="lat"]');
+                    const lonInput = row.querySelector('[data-field="lon"]');
+                    if (latInput && document.activeElement !== latInput) latInput.value = newLatLng.lat.toFixed(6);
+                    if (lonInput && document.activeElement !== lonInput) lonInput.value = newLatLng.lng.toFixed(6);
+                  }
+                }
               });
 
               marker.on('dragend', () => {
                 updateGrid();
+                if (typeof renderCorridorNodeTable === 'function') {
+                  renderCorridorNodeTable();
+                }
               });
             }
 
@@ -34180,7 +34473,12 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
     ? parseGimbalPitch(document.getElementById('gimbal-pitch').value, (activeLayer && activeLayer.gimbalPitch !== undefined ? activeLayer.gimbalPitch : -60))
     : (activeLayer && activeLayer.gimbalPitch !== undefined ? activeLayer.gimbalPitch : -60);
 
+  const isCorridorEditing = (activeLayer && activeLayer.pattern === 'corridor' && typeof isCorridorEditActive !== 'undefined' && isCorridorEditActive);
+
   waypoints.forEach((wp, idx) => {
+    if (isCorridorEditing && (wp.isCorridor || wp.layerId === activeLayer.id || (!wp.layerId && gridType === 'corridor'))) {
+      return;
+    }
     const isPhotoSphere = wp.isPhotoSphere || wp.layerPattern === 'photo-sphere' || gridType === 'photo-sphere';
     if (isPhotoSphere && idx > 0) {
       wp.droneMarker = waypoints[0] ? waypoints[0].droneMarker : null;
@@ -35547,12 +35845,14 @@ function addCorridorPoint(lat, lng) {
     lon: lng,
     x: offsets.x,
     y: offsets.y,
-    idx: corrList.length
+    idx: corrList.length,
+    isModified: true
   };
   corrList.push(pt);
   if (typeof corridorCenterline !== 'undefined') corridorCenterline = corrList;
   if (activeLayer) activeLayer.corridorCenterline = corrList;
   if (typeof updateGrid === 'function') updateGrid();
+  if (typeof renderCorridorNodeTable === 'function') renderCorridorNodeTable();
 }
 
 if (typeof window !== 'undefined') {

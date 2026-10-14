@@ -14,6 +14,7 @@ let boundaryLayersGroup = null;
 let fiducialMarkersGroup = null;
 let targetPolygonGroup = null;
 let isTargetPolyEditActive = false;
+let isCorridorEditActive = false;
 let isAnyPopupOpen = false;
 let isLegendCollapsed = false;
 let originalMissionSettings = null;
@@ -75,6 +76,66 @@ function setTargetPolyEditMode(active) {
       }
     }
   }
+}
+
+function setCorridorEditMode(active) {
+  isCorridorEditActive = !!active;
+  if (typeof window !== 'undefined') {
+    window.isCorridorEditActive = isCorridorEditActive;
+  }
+  if (typeof document === 'undefined') return;
+
+  const btn = document.getElementById('corridor-edit-toggle-btn');
+  const statusEl = document.getElementById('corridor-edit-status');
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const nodes = (activeLayer && Array.isArray(activeLayer.corridorCenterline))
+    ? activeLayer.corridorCenterline
+    : (typeof corridorCenterline !== 'undefined' && Array.isArray(corridorCenterline) ? corridorCenterline : []);
+  const nodeCount = nodes.length;
+
+  if (typeof map !== 'undefined' && map && map.getContainer) {
+    try {
+      const container = map.getContainer();
+      if (container) {
+        container.style.cursor = isCorridorEditActive ? 'crosshair' : '';
+      }
+    } catch (e) {}
+  }
+
+  if (btn) {
+    if (isCorridorEditActive) {
+      btn.innerHTML = '✓ Done Editing';
+      btn.style.background = 'rgba(16, 185, 129, 0.25)';
+      btn.style.borderColor = '#10b981';
+      btn.style.color = '#34d399';
+    } else {
+      btn.innerHTML = '✏️ Edit Centerline';
+      btn.style.background = 'rgba(99, 102, 241, 0.18)';
+      btn.style.borderColor = '#6366f1';
+      btn.style.color = '#818cf8';
+    }
+  }
+
+  if (statusEl) {
+    if (isCorridorEditActive) {
+      statusEl.textContent = `🎯 Edit Mode Active (${nodeCount} nodes): Drag C handles or click map to append vertices. Flight passes isolated.`;
+      statusEl.style.color = '#34d399';
+      statusEl.style.fontWeight = '600';
+    } else {
+      statusEl.textContent = 'ℹ️ Click Edit Centerline to isolate handles, or edit coordinates below.';
+      statusEl.style.color = 'var(--text-muted)';
+      statusEl.style.fontWeight = 'normal';
+    }
+  }
+
+  if (typeof renderCorridorNodeTable === 'function') {
+    renderCorridorNodeTable();
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.isCorridorEditActive = isCorridorEditActive;
+  window.setCorridorEditMode = setCorridorEditMode;
 }
 
 let isLayerBoundaryEditActive = false;

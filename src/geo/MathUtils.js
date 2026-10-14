@@ -217,6 +217,14 @@ function drawFlightPathLines(waypoints, gridType) {
     let weight = 3.5;
     let opacity = 0.85;
 
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    const isCorridorEditing = (activeLayer && activeLayer.pattern === 'corridor' && typeof isCorridorEditActive !== 'undefined' && isCorridorEditActive);
+    if (isCorridorEditing && (p2.isCorridor || p2.layerId === activeLayer.id || (!p2.layerId && gridType === 'corridor'))) {
+      opacity = 0.25;
+      dashArray = '3, 6';
+      weight = 2;
+    }
+
     if (p2.isTransition || p1.isTransition || (p1.layerId && p2.layerId && p1.layerId !== p2.layerId)) {
       color = '#a855f7'; // Purple transition vector
       dashArray = '6, 6';
@@ -840,21 +848,31 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
           corrNodes.forEach((wp, idx) => {
             const corrIcon = L.divIcon({
               className: 'corridor-centerline-icon',
-              html: `<div style="background-color: ${corrColor}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid #ffffff; box-shadow: 0 0 8px rgba(99, 102, 241, 0.7); display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; font-weight: bold; cursor: ${isActive ? 'pointer' : 'default'};">C${idx + 1}</div>`,
-              iconSize: [24, 24],
-              iconAnchor: [12, 12]
+              html: `<div style="background-color: ${corrColor}; width: 26px; height: 26px; border-radius: 50%; border: 2.5px solid #ffffff; box-shadow: 0 0 10px rgba(99, 102, 241, 0.9), 0 0 0 3px rgba(99, 102, 241, 0.4); display: flex; align-items: center; justify-content: center; font-size: 11px; color: white; font-weight: 800; cursor: ${isActive ? 'grab' : 'default'}; user-select: none;">C${idx + 1}</div>`,
+              iconSize: [28, 28],
+              iconAnchor: [14, 14]
             });
 
             const marker = L.marker([wp.lat, wp.lon], {
               icon: corrIcon,
-              draggable: isActive
+              draggable: isActive,
+              zIndexOffset: 20000
             });
 
             wp.corridorMarker = marker;
-            marker.bindTooltip(`${l.name} Centerline Node ${idx + 1}`, { direction: 'top', offset: [0, -10] });
+            marker.bindTooltip(`${l.name} Centerline Node ${idx + 1}`, { direction: 'top', offset: [0, -12] });
 
             if (isActive) {
-              marker.on('dragstart', () => {
+              marker.on('click', (e) => {
+                if (e && e.originalEvent && e.originalEvent.stopPropagation) {
+                  e.originalEvent.stopPropagation();
+                }
+              });
+
+              marker.on('dragstart', (e) => {
+                if (e && e.originalEvent && e.originalEvent.stopPropagation) {
+                  e.originalEvent.stopPropagation();
+                }
                 if (typeof map !== 'undefined' && map && map.closePopup) map.closePopup();
                 if (wp.origLat === undefined || wp.origLat === null) {
                   wp.origLat = wp.lat;
@@ -885,10 +903,23 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
                     }
                   });
                 }
+                // Live sync coordinates in sidebar table
+                if (typeof document !== 'undefined') {
+                  const row = document.querySelector(`.corridor-node-row[data-node-idx="${idx}"]`);
+                  if (row) {
+                    const latInput = row.querySelector('[data-field="lat"]');
+                    const lonInput = row.querySelector('[data-field="lon"]');
+                    if (latInput && document.activeElement !== latInput) latInput.value = newLatLng.lat.toFixed(6);
+                    if (lonInput && document.activeElement !== lonInput) lonInput.value = newLatLng.lng.toFixed(6);
+                  }
+                }
               });
 
               marker.on('dragend', () => {
                 updateGrid();
+                if (typeof renderCorridorNodeTable === 'function') {
+                  renderCorridorNodeTable();
+                }
               });
             }
 
@@ -904,7 +935,12 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
     ? parseGimbalPitch(document.getElementById('gimbal-pitch').value, (activeLayer && activeLayer.gimbalPitch !== undefined ? activeLayer.gimbalPitch : -60))
     : (activeLayer && activeLayer.gimbalPitch !== undefined ? activeLayer.gimbalPitch : -60);
 
+  const isCorridorEditing = (activeLayer && activeLayer.pattern === 'corridor' && typeof isCorridorEditActive !== 'undefined' && isCorridorEditActive);
+
   waypoints.forEach((wp, idx) => {
+    if (isCorridorEditing && (wp.isCorridor || wp.layerId === activeLayer.id || (!wp.layerId && gridType === 'corridor'))) {
+      return;
+    }
     const isPhotoSphere = wp.isPhotoSphere || wp.layerPattern === 'photo-sphere' || gridType === 'photo-sphere';
     if (isPhotoSphere && idx > 0) {
       wp.droneMarker = waypoints[0] ? waypoints[0].droneMarker : null;
@@ -2271,12 +2307,14 @@ function addCorridorPoint(lat, lng) {
     lon: lng,
     x: offsets.x,
     y: offsets.y,
-    idx: corrList.length
+    idx: corrList.length,
+    isModified: true
   };
   corrList.push(pt);
   if (typeof corridorCenterline !== 'undefined') corridorCenterline = corrList;
   if (activeLayer) activeLayer.corridorCenterline = corrList;
   if (typeof updateGrid === 'function') updateGrid();
+  if (typeof renderCorridorNodeTable === 'function') renderCorridorNodeTable();
 }
 
 if (typeof window !== 'undefined') {
