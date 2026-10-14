@@ -470,7 +470,9 @@ function togglePatternParameters() {
     'fiducial-markers': '🎯 Fiducial / GCPs',
     'photo-sphere': '360° Photo Sphere',
     'hyperlapse': 'Hyperlapse Time-Lapse',
-    'light-art': '🎨 Light Art (Sky Painting)'
+    'light-art': '🎨 Light Art (Sky Painting)',
+    'vertical-facade': '🏢 Vertical Facade Grid',
+    'continuous-helix': '🌀 Continuous Helix / Spiral'
   };
 
   const targetSplatContainer = document.getElementById('target-splat-container');
@@ -478,6 +480,8 @@ function togglePatternParameters() {
   const photoSphereContainer = document.getElementById('photo-sphere-container');
   const hyperlapseContainer = document.getElementById('hyperlapse-container');
   const lightArtContainer = document.getElementById('light-art-container');
+  const verticalFacadeContainer = document.getElementById('vertical-facade-container');
+  const continuousHelixContainer = document.getElementById('continuous-helix-container');
 
   const activePatternBadge = document.getElementById('active-layer-pattern-badge');
   if (activePatternBadge) {
@@ -510,6 +514,22 @@ function togglePatternParameters() {
       towerGeometryContainer.classList.remove('hidden');
     } else {
       towerGeometryContainer.classList.add('hidden');
+    }
+  }
+
+  if (verticalFacadeContainer) {
+    if (gridType === 'vertical-facade') {
+      verticalFacadeContainer.classList.remove('hidden');
+    } else {
+      verticalFacadeContainer.classList.add('hidden');
+    }
+  }
+
+  if (continuousHelixContainer) {
+    if (gridType === 'continuous-helix') {
+      continuousHelixContainer.classList.remove('hidden');
+    } else {
+      continuousHelixContainer.classList.add('hidden');
     }
   }
 
@@ -1007,6 +1027,99 @@ function togglePatternParameters() {
     const layerHeadingSelect = document.getElementById('layer-heading-mode');
     if (layerHeadingSelect) layerHeadingSelect.value = (activeLayer && activeLayer.headingMode) ? activeLayer.headingMode : 'followWayline';
 
+  } else if (gridType === 'vertical-facade') {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
+    if (gridGeometrySection) {
+      gridGeometrySection.style.display = 'block';
+      gridGeometrySection.classList.remove('collapsed');
+    }
+    if (layerCardGeometry) layerCardGeometry.style.display = 'block';
+    if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "📐 Vertical Facade Geometry";
+    if (layerCardFlight) layerCardFlight.style.display = 'block';
+    if (layerCardOptics) layerCardOptics.style.display = 'block';
+    if (layerCardModes) layerCardModes.style.display = 'block';
+    if (layerCardBoundary) {
+      layerCardBoundary.classList.add('hidden');
+      layerCardBoundary.style.display = 'none';
+    }
+    if (layerCardFiducial) {
+      layerCardFiducial.classList.add('hidden');
+      layerCardFiducial.style.display = 'none';
+    }
+    if (verticalFacadeContainer) verticalFacadeContainer.classList.remove('hidden');
+    if (continuousHelixContainer) continuousHelixContainer.classList.add('hidden');
+    if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
+    if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
+    if (photoSphereContainer) photoSphereContainer.classList.add('hidden');
+    if (hyperlapseContainer) hyperlapseContainer.classList.add('hidden');
+    if (lightArtContainer) lightArtContainer.classList.add('hidden');
+    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
+    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
+    if (exclusionAltContainer) exclusionAltContainer.classList.add('hidden');
+    if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
+    if (freeformInstructions) freeformInstructions.classList.add('hidden');
+    if (altitudeControlGroup) altitudeControlGroup.style.display = 'none';
+    if (widthContainer) widthContainer.style.display = 'none';
+    if (heightContainer) heightContainer.style.display = 'none';
+    if (rotationContainer) rotationContainer.style.display = 'block';
+    if (frontOverlapContainer) frontOverlapContainer.style.display = 'block';
+    if (sideOverlapContainer) sideOverlapContainer.style.display = 'block';
+
+    if (gimbalPitchSlider && (!gimbalPitchSlider.value || parseFloat(gimbalPitchSlider.value) === -90)) {
+      gimbalPitchSlider.value = 0;
+      if (typeof updateGimbalPitchVisualizer === 'function') {
+        updateGimbalPitchVisualizer(0);
+      }
+    }
+
+  } else if (gridType === 'continuous-helix') {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
+    if (gridGeometrySection) {
+      gridGeometrySection.style.display = 'block';
+      gridGeometrySection.classList.remove('collapsed');
+    }
+    if (layerCardGeometry) layerCardGeometry.style.display = 'block';
+    if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "🌀 Continuous Helix Dynamics";
+    if (layerCardFlight) layerCardFlight.style.display = 'block';
+    if (layerCardOptics) layerCardOptics.style.display = 'block';
+    if (layerCardModes) layerCardModes.style.display = 'block';
+    if (layerCardBoundary) {
+      layerCardBoundary.classList.add('hidden');
+      layerCardBoundary.style.display = 'none';
+    }
+    if (layerCardFiducial) {
+      layerCardFiducial.classList.add('hidden');
+      layerCardFiducial.style.display = 'none';
+    }
+    if (continuousHelixContainer) continuousHelixContainer.classList.remove('hidden');
+    if (verticalFacadeContainer) verticalFacadeContainer.classList.add('hidden');
+    if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
+    if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
+    if (photoSphereContainer) photoSphereContainer.classList.add('hidden');
+    if (hyperlapseContainer) hyperlapseContainer.classList.add('hidden');
+    if (lightArtContainer) lightArtContainer.classList.add('hidden');
+    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
+    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
+    if (exclusionAltContainer) exclusionAltContainer.classList.add('hidden');
+    if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
+    if (freeformInstructions) freeformInstructions.classList.add('hidden');
+    if (altitudeControlGroup) altitudeControlGroup.style.display = 'none';
+    if (widthContainer) widthContainer.style.display = 'none';
+    if (heightContainer) heightContainer.style.display = 'none';
+    if (rotationContainer) rotationContainer.style.display = 'none';
+    if (frontOverlapContainer) frontOverlapContainer.style.display = 'none';
+    if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
+
+    if (activeLayer) {
+      activeLayer.pathMode = 'curved';
+      activeLayer.turnMode = 'curved';
+      activeLayer.captureMode = 'continuous';
+    }
+    const layerPathSelect = document.getElementById('layer-path-mode');
+    if (layerPathSelect) layerPathSelect.value = 'curved';
+
   } else {
     if (gridGeometrySection) gridGeometrySection.style.display = 'block';
     if (layerCardGeometry) layerCardGeometry.style.display = 'block';
@@ -1024,6 +1137,8 @@ function togglePatternParameters() {
     }
     if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
     if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
+    if (verticalFacadeContainer) verticalFacadeContainer.classList.add('hidden');
+    if (continuousHelixContainer) continuousHelixContainer.classList.add('hidden');
     if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
     if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
     if (exclusionAltContainer) exclusionAltContainer.classList.add('hidden');

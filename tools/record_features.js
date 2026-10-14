@@ -1562,6 +1562,75 @@ const scenarios = [
       await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
       await page.waitForTimeout(2000);
     }
+  },
+  {
+    id: 'feature_vertical_facade',
+    name: 'Vertical Facade Grid for Planar Infrastructure Inspection',
+    issueRef: 'Issue #132',
+    description: 'Demonstrates planar vertical boustrophedon lawnmower inspection pattern with standoff distance, horizontal/vertical scan modes, and perpendicular heading lock.',
+    run: async (page) => {
+      // 1. Initial setup squarely on default rural coordinates
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1000);
+
+      // 2. Select Vertical Facade pattern
+      await selectPattern(page, 'vertical-facade');
+      await page.waitForTimeout(1500);
+
+      // 3. Adjust Standoff, Width, and Height
+      await fillInput(page, '#facade-standoff', '18');
+      await page.waitForTimeout(600);
+      await fillInput(page, '#facade-width', '45');
+      await page.waitForTimeout(600);
+      await fillInput(page, '#facade-height', '25');
+      await page.waitForTimeout(1000);
+
+      // 4. Toggle scan mode to Vertical Columns
+      const scanModeSelect = await page.$('#facade-scan-mode');
+      if (scanModeSelect) {
+        await scanModeSelect.selectOption('vertical');
+        await page.waitForTimeout(1200);
+        await scanModeSelect.selectOption('horizontal');
+        await page.waitForTimeout(1000);
+      }
+
+      // 5. Ensure squarely centered
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1500);
+    }
+  },
+  {
+    id: 'feature_continuous_helix',
+    name: 'Continuous Helix / Spiral Corkscrew Orbit Inspection',
+    issueRef: 'Issue #133',
+    description: 'Demonstrates continuous fluid corkscrew ascent/descent with cylindrical and conical tapering, dynamic pitch sweep, and curved turn path.',
+    run: async (page) => {
+      // 1. Initial setup squarely on default rural coordinates
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1000);
+
+      // 2. Select Continuous Helix pattern
+      await selectPattern(page, 'continuous-helix');
+      await page.waitForTimeout(1500);
+
+      // 3. Adjust start and end radius (conical tapering)
+      await fillInput(page, '#helix-radius-start', '30');
+      await page.waitForTimeout(600);
+      await fillInput(page, '#helix-radius-end', '15');
+      await page.waitForTimeout(600);
+      await fillInput(page, '#helix-turns', '3.5');
+      await page.waitForTimeout(1000);
+
+      // 4. Adjust Pitch Sweep
+      await fillInput(page, '#helix-pitch-start', '-15');
+      await page.waitForTimeout(600);
+      await fillInput(page, '#helix-pitch-end', '-60');
+      await page.waitForTimeout(1200);
+
+      // 5. Ensure squarely centered
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1500);
+    }
   }
 ];
 

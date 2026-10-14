@@ -1,14 +1,234 @@
 [
   {
-    "notam_id": "6/9048",
-    "facility": "ZAB",
+    "notam_id": "6/9387",
+    "facility": "ZLC",
+    "state": "MT",
+    "type": "SPACE OPERATIONS",
+    "description": "87 ZLC AIRSPACE DILLON, MT, Saturday, October 17, 2026 UTC",
+    "mod_date": "10/14/2026 12:08:00",
+    "mod_abs_time": "202610141208",
+    "is_new": "Y",
+    "gid": "6/9387"
+  },
+  {
+    "notam_id": "6/9386",
+    "facility": "ZMA",
+    "state": "FL",
+    "type": "VIP",
+    "description": "West Palm Beach, FL, Saturday, October 17, 2026 through Sunday, October 18, 2026 Local",
+    "mod_date": "10/14/2026 11:57:00",
+    "mod_abs_time": "202610141157",
+    "is_new": "Y",
+    "gid": "6/9386"
+  },
+  {
+    "notam_id": "6/9375",
+    "facility": "ZLC",
+    "state": "OR",
+    "type": "HAZARDS",
+    "description": "11NM SE SENECA, OR, Wednesday, October 14, 2026 through Monday, October 19, 2026 UTC",
+    "mod_date": "10/14/2026 01:12:00",
+    "mod_abs_time": "202610140112",
+    "is_new": "Y",
+    "gid": "6/9375"
+  },
+  {
+    "notam_id": "6/9370",
+    "facility": "ZMA",
+    "state": "FL",
+    "type": "SECURITY",
+    "description": "Palm Beach, FL, Friday, October 16, 2026 through Sunday, October 18, 2026 Local",
+    "mod_date": "10/13/2026 23:07:00",
+    "mod_abs_time": "202610132307",
+    "is_new": "Y",
+    "gid": "6/9370"
+  },
+  {
+    "notam_id": "6/9368",
+    "facility": "ZMA",
+    "state": "FL",
+    "type": "VIP",
+    "description": "West Palm Beach, FL, Friday, October 16, 2026 through Saturday, October 17, 2026 Local",
+    "mod_date": "10/13/2026 22:12:00",
+    "mod_abs_time": "202610132212",
+    "is_new": "Y",
+    "gid": "6/9368"
+  },
+  {
+    "notam_id": "6/9367",
+    "facility": "ZTL",
+    "state": "GA",
+    "type": "VIP",
+    "description": "Marietta, GA, Friday, October 16, 2026 Local",
+    "mod_date": "10/13/2026 22:08:00",
+    "mod_abs_time": "202610132208",
+    "is_new": "Y",
+    "gid": "6/9367"
+  },
+  {
+    "notam_id": "6/9366",
+    "facility": "ZFW",
     "state": "TX",
     "type": "HAZARDS",
-    "description": "EL PASO, TX, Tuesday, October 13, 2026 UTC",
-    "mod_date": "10/13/2026 00:45:00",
-    "mod_abs_time": "202610130045",
+    "description": "MCGREGOR, TX, Wednesday, October 14, 2026 UTC",
+    "mod_date": "10/13/2026 22:07:00",
+    "mod_abs_time": "202610132207",
     "is_new": "Y",
-    "gid": "6/9048"
+    "gid": "6/9366"
+  },
+  {
+    "notam_id": "6/9299",
+    "facility": "ZSE",
+    "state": "OR",
+    "type": "HAZARDS",
+    "description": "12NM NW LA PINE, OR, Wednesday, October 14, 2026 through Saturday, October 17, 2026 UTC",
+    "mod_date": "10/13/2026 20:52:00",
+    "mod_abs_time": "202610132052",
+    "is_new": "Y",
+    "gid": "6/9299"
+  },
+  {
+    "notam_id": "6/9297",
+    "facility": "ZLC",
+    "state": "ID",
+    "type": "HAZARDS",
+    "description": "BOISE, ID, Thursday, October 15, 2026 through Saturday, October 17, 2026 UTC",
+    "mod_date": "10/13/2026 19:29:00",
+    "mod_abs_time": "202610131929",
+    "is_new": "Y",
+    "gid": "6/9297"
+  },
+  {
+    "notam_id": "6/9278",
+    "facility": "ZMP",
+    "state": "MI",
+    "type": "HAZARDS",
+    "description": "2NM N NEGAUNEE, MI, Tuesday, October 13, 2026 through Monday, October 19, 2026 UTC",
+    "mod_date": "10/13/2026 19:21:00",
+    "mod_abs_time": "202610131921",
+    "is_new": "Y",
+    "gid": "6/9278"
+  },
+  {
+    "notam_id": "6/9275",
+    "facility": "ZMP",
+    "state": "MI",
+    "type": "HAZARDS",
+    "description": "2NM E HERMAN, MI, Tuesday, October 13, 2026 through Monday, October 19, 2026 UTC",
+    "mod_date": "10/13/2026 19:16:00",
+    "mod_abs_time": "202610131916",
+    "is_new": "Y",
+    "gid": "6/9275"
+  },
+  {
+    "notam_id": "6/9232",
+    "facility": "ZHU",
+    "state": "TX",
+    "type": "HAZARDS",
+    "description": "PASADENA, TX, Wednesday, October 14, 2026 UTC",
+    "mod_date": "10/13/2026 18:42:00",
+    "mod_abs_time": "202610131842",
+    "is_new": "Y",
+    "gid": "6/9232"
+  },
+  {
+    "notam_id": "6/9172",
+    "facility": "ZMP",
+    "state": "MN",
+    "type": "HAZARDS",
+    "description": "HIBBING, MN, Wednesday, October 14, 2026 UTC",
+    "mod_date": "10/13/2026 15:57:00",
+    "mod_abs_time": "202610131557",
+    "is_new": "Y",
+    "gid": "6/9172"
+  },
+  {
+    "notam_id": "6/9171",
+    "facility": "ZOA",
+    "state": "NV",
+    "type": "AIR SHOWS/SPORTS",
+    "description": "Minden, NV, Friday, October 16, 2026 through Sunday, October 18, 2026 UTC",
+    "mod_date": "10/13/2026 15:54:00",
+    "mod_abs_time": "202610131554",
+    "is_new": "Y",
+    "gid": "6/9171"
+  },
+  {
+    "notam_id": "6/9169",
+    "facility": "ZDC",
+    "state": "NC",
+    "type": "SECURITY",
+    "description": "RALEIGH, NC, Thursday, October 15, 2026 through Sunday, October 25, 2026 Local",
+    "mod_date": "10/13/2026 15:37:00",
+    "mod_abs_time": "202610131537",
+    "is_new": "Y",
+    "gid": "6/9169"
+  },
+  {
+    "notam_id": "6/9095",
+    "facility": "ZID",
+    "state": "OH",
+    "type": "UAS PUBLIC GATHERING",
+    "description": "Circleville, OH, Tuesday, October 20, 2026 through Sunday, October 25, 2026 UTC",
+    "mod_date": "10/13/2026 13:17:00",
+    "mod_abs_time": "202610131317",
+    "is_new": "Y",
+    "gid": "6/9095"
+  },
+  {
+    "notam_id": "6/9085",
+    "facility": "ZOB",
+    "state": "MI",
+    "type": "UAS PUBLIC GATHERING",
+    "description": "Detroit, MI, Sunday, October 18, 2026 UTC",
+    "mod_date": "10/13/2026 13:03:00",
+    "mod_abs_time": "202610131303",
+    "is_new": "Y",
+    "gid": "6/9085"
+  },
+  {
+    "notam_id": "6/9084",
+    "facility": "ZFW",
+    "state": "TX",
+    "type": "AIR SHOWS/SPORTS",
+    "description": "Corsicana, TX, Friday, October 16, 2026 through Saturday, October 17, 2026 UTC",
+    "mod_date": "10/13/2026 13:01:00",
+    "mod_abs_time": "202610131301",
+    "is_new": "Y",
+    "gid": "6/9084"
+  },
+  {
+    "notam_id": "6/9083",
+    "facility": "ZJX",
+    "state": "FL",
+    "type": "HAZARDS",
+    "description": "GREENSBORO, FL, Monday, October 19, 2026 UTC",
+    "mod_date": "10/13/2026 13:01:00",
+    "mod_abs_time": "202610131301",
+    "is_new": "Y",
+    "gid": "6/9083"
+  },
+  {
+    "notam_id": "6/9081",
+    "facility": "ZAB",
+    "state": "NM",
+    "type": "AIR SHOWS/SPORTS",
+    "description": "Las Cruces, NM, Friday, October 16, 2026 through Saturday, October 17, 2026 UTC",
+    "mod_date": "10/13/2026 12:58:00",
+    "mod_abs_time": "202610131258",
+    "is_new": "Y",
+    "gid": "6/9081"
+  },
+  {
+    "notam_id": "6/9058",
+    "facility": "ZDC",
+    "state": "NC",
+    "type": "AIR SHOWS/SPORTS",
+    "description": "Maxton, NC, Sunday, October 18, 2026 UTC",
+    "mod_date": "10/13/2026 11:19:00",
+    "mod_abs_time": "202610131119",
+    "is_new": "N",
+    "gid": "6/9058"
   },
   {
     "notam_id": "6/9020",
@@ -18,7 +238,7 @@
     "description": "Missoula, MT, Wednesday, October 14, 2026 Local",
     "mod_date": "10/12/2026 16:25:00",
     "mod_abs_time": "202610121625",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9020"
   },
   {
@@ -29,7 +249,7 @@
     "description": "Monroe, MI, Thursday, October 15, 2026 Local",
     "mod_date": "10/12/2026 12:41:00",
     "mod_abs_time": "202610121241",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8992"
   },
   {
@@ -40,7 +260,7 @@
     "description": "Atlanta, GA, Wednesday, October 14, 2026 Local",
     "mod_date": "10/12/2026 11:29:00",
     "mod_abs_time": "202610121129",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8928"
   },
   {
@@ -51,19 +271,8 @@
     "description": "Kalispell, MT, Wednesday, October 14, 2026 through Wednesday, October 14, 2026 Local",
     "mod_date": "10/12/2026 10:55:00",
     "mod_abs_time": "202610121055",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8927"
-  },
-  {
-    "notam_id": "6/8926",
-    "facility": "ZFW",
-    "state": "TX",
-    "type": "VIP",
-    "description": "Tyler, TX, Tuesday, October 13, 2026 Local",
-    "mod_date": "10/12/2026 10:51:00",
-    "mod_abs_time": "202610121051",
-    "is_new": "Y",
-    "gid": "6/8926"
   },
   {
     "notam_id": "6/8923",
@@ -73,7 +282,7 @@
     "description": "Kalispell, MT, Wednesday, October 14, 2026 through Wednesday, October 14, 2026 Local",
     "mod_date": "10/12/2026 10:31:00",
     "mod_abs_time": "202610121031",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8923"
   },
   {
@@ -84,74 +293,8 @@
     "description": "MAYPORT, FL, Tuesday, October 13, 2026 through Saturday, October 17, 2026 Local",
     "mod_date": "10/12/2026 02:16:00",
     "mod_abs_time": "202610120216",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/8902"
-  },
-  {
-    "notam_id": "6/8901",
-    "facility": "ZJX",
-    "state": "FL",
-    "type": "SPACE OPERATIONS",
-    "description": "Cape Canaveral, FL, Thursday, October 15, 2026 Local",
-    "mod_date": "10/12/2026 02:14:00",
-    "mod_abs_time": "202610120214",
-    "is_new": "N",
-    "gid": "6/8901"
-  },
-  {
-    "notam_id": "6/8900",
-    "facility": "ZMA",
-    "state": "FL",
-    "type": "SPACE OPERATIONS",
-    "description": "Cape Canaveral, FL, Wednesday, October 14, 2026 Local",
-    "mod_date": "10/12/2026 01:57:00",
-    "mod_abs_time": "202610120157",
-    "is_new": "N",
-    "gid": "6/8900"
-  },
-  {
-    "notam_id": "6/8899",
-    "facility": "ZMA",
-    "state": "FL",
-    "type": "SPACE OPERATIONS",
-    "description": "Cape Canaveral, FL, Tuesday, October 13, 2026 Local",
-    "mod_date": "10/12/2026 01:56:00",
-    "mod_abs_time": "202610120156",
-    "is_new": "N",
-    "gid": "6/8899"
-  },
-  {
-    "notam_id": "6/8898",
-    "facility": "ZMA",
-    "state": "FL",
-    "type": "SPACE OPERATIONS",
-    "description": "Cape Canaveral, FL, Thursday, October 15, 2026 Local",
-    "mod_date": "10/12/2026 01:55:00",
-    "mod_abs_time": "202610120155",
-    "is_new": "N",
-    "gid": "6/8898"
-  },
-  {
-    "notam_id": "6/8897",
-    "facility": "ZJX",
-    "state": "FL",
-    "type": "SPACE OPERATIONS",
-    "description": "Cape Canaveral, FL, Wednesday, October 14, 2026 Local",
-    "mod_date": "10/12/2026 01:54:00",
-    "mod_abs_time": "202610120154",
-    "is_new": "N",
-    "gid": "6/8897"
-  },
-  {
-    "notam_id": "6/8896",
-    "facility": "ZJX",
-    "state": "FL",
-    "type": "SPACE OPERATIONS",
-    "description": "Cape Canaveral, FL, Tuesday, October 13, 2026 Local",
-    "mod_date": "10/12/2026 01:53:00",
-    "mod_abs_time": "202610120153",
-    "is_new": "N",
-    "gid": "6/8896"
   },
   {
     "notam_id": "6/8891",
@@ -176,39 +319,6 @@
     "gid": "6/8890"
   },
   {
-    "notam_id": "6/8889",
-    "facility": "ZAN",
-    "state": "AK",
-    "type": "VIP",
-    "description": "Anchorage, AK, Tuesday, October 13, 2026 through Tuesday, October 13, 2026 Local",
-    "mod_date": "10/11/2026 21:57:00",
-    "mod_abs_time": "202610112157",
-    "is_new": "N",
-    "gid": "6/8889"
-  },
-  {
-    "notam_id": "6/8888",
-    "facility": "ZOB",
-    "state": "OH",
-    "type": "SECURITY",
-    "description": "Youngstown, OH, Monday, October 12, 2026 through Monday, October 12, 2026 Local",
-    "mod_date": "10/11/2026 21:46:00",
-    "mod_abs_time": "202610112146",
-    "is_new": "N",
-    "gid": "6/8888"
-  },
-  {
-    "notam_id": "6/8886",
-    "facility": "ZDC",
-    "state": "DE",
-    "type": "AIR SHOWS/SPORTS",
-    "description": "Greenwood, DE, Sunday, October 18, 2026 UTC",
-    "mod_date": "10/11/2026 20:27:00",
-    "mod_abs_time": "202610112027",
-    "is_new": "N",
-    "gid": "6/8886"
-  },
-  {
     "notam_id": "6/8808",
     "facility": "ZLA",
     "state": "NV",
@@ -231,61 +341,6 @@
     "gid": "6/8802"
   },
   {
-    "notam_id": "6/8784",
-    "facility": "ZDV",
-    "state": "CO",
-    "type": "HAZARDS",
-    "description": "LAKE GEORGE, CO, Sunday, October 11, 2026 through Tuesday, October 13, 2026 UTC",
-    "mod_date": "10/10/2026 22:55:00",
-    "mod_abs_time": "202610102255",
-    "is_new": "N",
-    "gid": "6/8784"
-  },
-  {
-    "notam_id": "6/8772",
-    "facility": "ZAN",
-    "state": "AK",
-    "type": "SECURITY",
-    "description": "Anchorage, AK, Tuesday, October 13, 2026 through Tuesday, October 13, 2026 Local",
-    "mod_date": "10/10/2026 19:01:00",
-    "mod_abs_time": "202610101901",
-    "is_new": "N",
-    "gid": "6/8772"
-  },
-  {
-    "notam_id": "6/8771",
-    "facility": "ZMP",
-    "state": "MI",
-    "type": "HAZARDS",
-    "description": "NW NEGAUNEE, MI, Saturday, October 10, 2026 through Thursday, October 15, 2026 UTC",
-    "mod_date": "10/10/2026 18:31:00",
-    "mod_abs_time": "202610101831",
-    "is_new": "N",
-    "gid": "6/8771"
-  },
-  {
-    "notam_id": "6/8722",
-    "facility": "ZAB",
-    "state": "NM",
-    "type": "SECURITY",
-    "description": "ALAMOGORDO, NM, Tuesday, October 13, 2026 Local",
-    "mod_date": "10/09/2026 21:47:00",
-    "mod_abs_time": "202610092147",
-    "is_new": "N",
-    "gid": "6/8722"
-  },
-  {
-    "notam_id": "6/8719",
-    "facility": "ZDC",
-    "state": "DE",
-    "type": "AIR SHOWS/SPORTS",
-    "description": "Greenwood, DE, Friday, October 16, 2026 through Saturday, October 17, 2026 UTC",
-    "mod_date": "10/09/2026 19:40:00",
-    "mod_abs_time": "202610091940",
-    "is_new": "N",
-    "gid": "6/8719"
-  },
-  {
     "notam_id": "6/8713",
     "facility": "ZDC",
     "state": "NC",
@@ -295,17 +350,6 @@
     "mod_abs_time": "202610091912",
     "is_new": "N",
     "gid": "6/8713"
-  },
-  {
-    "notam_id": "6/8665",
-    "facility": "ZMP",
-    "state": "MI",
-    "type": "HAZARDS",
-    "description": "9NM E HERMAN, MI, Friday, October 9, 2026 through Tuesday, October 13, 2026 UTC",
-    "mod_date": "10/09/2026 17:10:00",
-    "mod_abs_time": "202610091710",
-    "is_new": "N",
-    "gid": "6/8665"
   },
   {
     "notam_id": "6/8646",
