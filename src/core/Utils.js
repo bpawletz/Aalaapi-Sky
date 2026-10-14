@@ -61,6 +61,14 @@ function setUnitSystem(newUnit) {
     syncDisplayValues();
   }
 
+  if (typeof renderLayersList === 'function') {
+    renderLayersList();
+  }
+
+  if (typeof updateFiducialAdvisorUI === 'function') {
+    updateFiducialAdvisorUI();
+  }
+
   if (typeof getCurrentWaypoints === 'function' && getCurrentWaypoints()) {
     if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
   } else if (typeof updateGrid === 'function') {
@@ -85,6 +93,38 @@ function formatDistance(meters, decimalPlaces = 1) {
     return `${feet.toFixed(decimalPlaces)} ft`;
   }
   return `${meters.toFixed(decimalPlaces)} m`;
+}
+
+function formatSpeed(mps, decimalPlaces = 1) {
+  if (mps === null || mps === undefined || isNaN(mps)) {
+    return `0 ${getUnitSystem() === 'imperial' ? 'mph' : 'm/s'}`;
+  }
+  const unit = getUnitSystem();
+  if (unit === 'imperial') {
+    const mph = mps * MPS_TO_MPH;
+    return `${mph.toFixed(decimalPlaces)} mph`;
+  }
+  return `${mps.toFixed(decimalPlaces)} m/s`;
+}
+
+function formatUnitDistance(meters, decimalPlaces = 0) {
+  if (meters === null || meters === undefined || isNaN(meters)) return '0m';
+  const unit = (typeof getUnitSystem === 'function') ? getUnitSystem() : 'imperial';
+  if (unit === 'imperial') {
+    const ft = decimalPlaces > 0 ? (meters * M_TO_FT).toFixed(decimalPlaces) : Math.round(meters * M_TO_FT);
+    return `${ft}ft`;
+  }
+  return `${meters}m`;
+}
+
+// Global exports
+if (typeof window !== 'undefined') {
+  window.formatDistance = formatDistance;
+  window.formatSpeed = formatSpeed;
+  window.formatUnitDistance = formatUnitDistance;
+  window.M_TO_FT = M_TO_FT;
+  window.FT_TO_M = FT_TO_M;
+  window.MPS_TO_MPH = MPS_TO_MPH;
 }
 
 // Theme Manager (Light & Dark Field Mode)

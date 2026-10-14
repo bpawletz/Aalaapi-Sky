@@ -1,3 +1,29 @@
+## [1.154.1] - 2026-10-14
+
+Enforces user-preferred Imperial (feet / mph) vs Metric (meters / m/s) unit formatting across Section 2 Layer Properties and dynamic Layer Stack cards, maintaining strict SI metric integrity for DJI WPML KMZ exports.
+
+### Fixed
+
+#### Pilot & Operational Features
+- **Dual-Unit System (ft/m & mph vs m/s) in Section 2 Layer Properties**:
+  - Resolved an issue where Section 2 Layer 2 pattern parameter controls and badge displays defaulted strictly to meters (`${val}m`), ignoring the user's unit system preference.
+  - Full dynamic Imperial (`ft` / `mph`) vs Metric (`m` / `m/s`) formatting now applies across:
+    - **Star Pass**: Radius slider badge (`#star-pass-radius-val`).
+    - **Vertical Facade Grid**: Width, Min/Max Altitude, and Standoff distance badges (`#facade-width-val`, `#facade-min-alt-val`, `#facade-max-alt-val`, `#facade-standoff-val`).
+    - **Continuous Helix / Spiral**: Start/End Radius and Start/End Altitude badges (`#helix-radius-start-val`, `#helix-radius-end-val`, `#helix-alt-start-val`, `#helix-alt-end-val`).
+    - **Light Art (Sky Painting)**: Radius and Vertical Climb badges (`#light-art-radius-val`, `#light-art-climb-val`).
+    - **Boundary / Parcel**: Target Elevation Offset badge and unit indicator (`#boundary-elevation-val`, `#boundary-elevation-unit`).
+  - Added click-to-type support on Section 2 pattern badges with automatic bidirectional unit conversion (`ft` <-> `m`).
+- **Layer Stack Display Cards (`renderLayersList`)**:
+  - Layer cards in the stack now dynamically format altitude (`Alt`), flight speed (`Spd`), 3D exclusion envelope boundaries (`Envelope`), and parcel elevation (`Elev`) according to the active unit preference (`ft`/`mph` vs `m`/`m/s`).
+  - Toggling unit preferences via the topbar unit toggle button (`#header-unit-toggle-btn`) immediately refreshes all layer stack cards.
+
+#### Under the Hood & Technical Details
+- **Core Utility & Unit Architecture (`src/core/Utils.js`, `src/export/WpmlCompiler.js`)**:
+  - Implemented standard helpers `formatSpeed(mps, decimalPlaces)` and `formatUnitDistance(meters, decimalPlaces)` in `src/core/Utils.js`.
+  - Updated `setUnitSystem(newUnit)` to trigger `renderLayersList()` and `updateFiducialAdvisorUI()` on unit change.
+  - Confirmed export compiler writes native SI meters (`<wpml:executeHeight>`, `<wpml:waypointSpeed>`) for DJI KMZ compatibility, treating Imperial units strictly as a UI presentation layer.
+
 ## [1.154.0] - 2026-10-14
 
 Introduces Star Pass convergent cross-hatch inspections for recessed 3D assets, a dedicated stationary 360° photo sphere capture engine eliminating GPS drift via single-waypoint sequential action groups in WPML, and an ultra-slow waypoint hyperlapse capture suite with live video clip duration calculators.

@@ -290,8 +290,10 @@ function initUIEventListeners() {
   const boundaryElevVal = document.getElementById('boundary-elevation-val');
   if (boundaryElevInput) {
     boundaryElevInput.addEventListener('input', (e) => {
-      const val = parseFloat(e.target.value) || 0;
-      if (boundaryElevVal) boundaryElevVal.textContent = `${val}m`;
+      const unit = (typeof getUnitSystem === 'function') ? getUnitSystem() : 'metric';
+      if (boundaryElevVal) boundaryElevVal.textContent = (unit === 'imperial') ? Math.round(val * M_TO_FT) : val;
+      const bUnitEl = document.getElementById('boundary-elevation-unit');
+      if (bUnitEl) bUnitEl.textContent = (unit === 'imperial') ? 'ft' : 'm';
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
       if (activeLayer) {
         activeLayer.targetHeight = val;
@@ -933,7 +935,7 @@ function initUIEventListeners() {
       if (spRadius) {
         const val = parseFloat(spRadius.value) || 35;
         activeLayer.starPassRadius = val;
-        if (spRadiusVal) spRadiusVal.textContent = `${val}m`;
+        if (spRadiusVal) spRadiusVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
       }
       if (spHeadMode) activeLayer.starPassHeadingMode = spHeadMode.value;
       if (spTransit) activeLayer.starPassTransitMode = spTransit.value;
@@ -1058,7 +1060,7 @@ function initUIEventListeners() {
       if (laRadius) {
         const val = parseFloat(laRadius.value) || 25;
         activeLayer.lightArtRadius = val;
-        if (laRadiusVal) laRadiusVal.textContent = `${val}m`;
+        if (laRadiusVal) laRadiusVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
       }
       if (laTurns) {
         const val = parseFloat(laTurns.value) || 3;
@@ -1076,7 +1078,7 @@ function initUIEventListeners() {
       if (laClimb) {
         const val = parseFloat(laClimb.value) || 15;
         activeLayer.lightArtClimb = val;
-        if (laClimbVal) laClimbVal.textContent = `${val}m`;
+        if (laClimbVal) laClimbVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
       }
       if (laCameraAz) {
         const val = parseFloat(laCameraAz.value) || 0;
@@ -1126,22 +1128,22 @@ function initUIEventListeners() {
       if (fWidth) {
         const val = parseFloat(fWidth.value) || 60;
         activeLayer.facadeWidth = val;
-        if (fWidthVal) fWidthVal.textContent = `${val}m`;
+        if (fWidthVal) fWidthVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
       }
       if (fMinAlt) {
         const val = parseFloat(fMinAlt.value) || 10;
         activeLayer.facadeMinAlt = val;
-        if (fMinAltVal) fMinAltVal.textContent = `${val}m`;
+        if (fMinAltVal) fMinAltVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
       }
       if (fMaxAlt) {
         const val = parseFloat(fMaxAlt.value) || 40;
         activeLayer.facadeMaxAlt = val;
-        if (fMaxAltVal) fMaxAltVal.textContent = `${val}m`;
+        if (fMaxAltVal) fMaxAltVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
       }
       if (fStandoff) {
         const val = parseFloat(fStandoff.value) || 15;
         activeLayer.facadeStandoff = val;
-        if (fStandoffVal) fStandoffVal.textContent = `${val}m`;
+        if (fStandoffVal) fStandoffVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
       }
       if (fScanMode && fScanMode.value) activeLayer.facadeScanMode = fScanMode.value;
       if (fHeadingMode && fHeadingMode.value) activeLayer.facadeHeadingMode = fHeadingMode.value;
@@ -1187,22 +1189,22 @@ function initUIEventListeners() {
       if (hRStart) {
         const val = parseFloat(hRStart.value) || 25;
         activeLayer.helixRadiusStart = val;
-        if (hRStartVal) hRStartVal.textContent = `${val}m`;
+        if (hRStartVal) hRStartVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
       }
       if (hREnd) {
         const val = parseFloat(hREnd.value) || 25;
         activeLayer.helixRadiusEnd = val;
-        if (hREndVal) hREndVal.textContent = `${val}m`;
+        if (hREndVal) hREndVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
       }
       if (hAltStart) {
         const val = parseFloat(hAltStart.value) || 20;
         activeLayer.helixAltStart = val;
-        if (hAltStartVal) hAltStartVal.textContent = `${val}m`;
+        if (hAltStartVal) hAltStartVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
       }
       if (hAltEnd) {
         const val = parseFloat(hAltEnd.value) || 60;
         activeLayer.helixAltEnd = val;
-        if (hAltEndVal) hAltEndVal.textContent = `${val}m`;
+        if (hAltEndVal) hAltEndVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
       }
       if (hRevs) {
         const val = parseFloat(hRevs.value) || 3;
