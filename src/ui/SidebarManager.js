@@ -472,7 +472,8 @@ function togglePatternParameters() {
     'hyperlapse': 'Hyperlapse Time-Lapse',
     'light-art': '🎨 Light Art (Sky Painting)',
     'vertical-facade': '🏢 Vertical Facade Grid',
-    'continuous-helix': '🌀 Continuous Helix / Spiral'
+    'continuous-helix': '🌀 Continuous Helix / Spiral',
+    'star-pass': '⭐ Star Pass (Cross-Hatch)'
   };
 
   const targetSplatContainer = document.getElementById('target-splat-container');
@@ -482,6 +483,7 @@ function togglePatternParameters() {
   const lightArtContainer = document.getElementById('light-art-container');
   const verticalFacadeContainer = document.getElementById('vertical-facade-container');
   const continuousHelixContainer = document.getElementById('continuous-helix-container');
+  const starPassContainer = document.getElementById('star-pass-container');
 
   const activePatternBadge = document.getElementById('active-layer-pattern-badge');
   if (activePatternBadge) {
@@ -530,6 +532,14 @@ function togglePatternParameters() {
       continuousHelixContainer.classList.remove('hidden');
     } else {
       continuousHelixContainer.classList.add('hidden');
+    }
+  }
+
+  if (starPassContainer) {
+    if (gridType === 'star-pass') {
+      starPassContainer.classList.remove('hidden');
+    } else {
+      starPassContainer.classList.add('hidden');
     }
   }
 
@@ -1120,6 +1130,46 @@ function togglePatternParameters() {
     const layerPathSelect = document.getElementById('layer-path-mode');
     if (layerPathSelect) layerPathSelect.value = 'curved';
 
+  } else if (gridType === 'star-pass') {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
+    if (gridGeometrySection) {
+      gridGeometrySection.style.display = 'block';
+      gridGeometrySection.classList.remove('collapsed');
+    }
+    if (layerCardGeometry) layerCardGeometry.style.display = 'block';
+    if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "⭐ Star Pass Geometry";
+    if (layerCardFlight) layerCardFlight.style.display = 'block';
+    if (layerCardOptics) layerCardOptics.style.display = 'block';
+    if (layerCardModes) layerCardModes.style.display = 'block';
+    if (layerCardBoundary) {
+      layerCardBoundary.classList.add('hidden');
+      layerCardBoundary.style.display = 'none';
+    }
+    if (layerCardFiducial) {
+      layerCardFiducial.classList.add('hidden');
+      layerCardFiducial.style.display = 'none';
+    }
+    if (starPassContainer) starPassContainer.classList.remove('hidden');
+    if (continuousHelixContainer) continuousHelixContainer.classList.add('hidden');
+    if (verticalFacadeContainer) verticalFacadeContainer.classList.add('hidden');
+    if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
+    if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
+    if (photoSphereContainer) photoSphereContainer.classList.add('hidden');
+    if (hyperlapseContainer) hyperlapseContainer.classList.add('hidden');
+    if (lightArtContainer) lightArtContainer.classList.add('hidden');
+    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
+    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
+    if (exclusionAltContainer) exclusionAltContainer.classList.add('hidden');
+    if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
+    if (freeformInstructions) freeformInstructions.classList.add('hidden');
+    if (altitudeControlGroup) altitudeControlGroup.style.display = 'block';
+    if (widthContainer) widthContainer.style.display = 'none';
+    if (heightContainer) heightContainer.style.display = 'none';
+    if (rotationContainer) rotationContainer.style.display = 'block';
+    if (frontOverlapContainer) frontOverlapContainer.style.display = 'none';
+    if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
+
   } else {
     if (gridGeometrySection) gridGeometrySection.style.display = 'block';
     if (layerCardGeometry) layerCardGeometry.style.display = 'block';
@@ -1135,6 +1185,7 @@ function togglePatternParameters() {
       layerCardFiducial.classList.add('hidden');
       layerCardFiducial.style.display = 'none';
     }
+    if (starPassContainer) starPassContainer.classList.add('hidden');
     if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
     if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
     if (verticalFacadeContainer) verticalFacadeContainer.classList.add('hidden');

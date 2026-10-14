@@ -5992,7 +5992,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.153.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.154.0</span></h1>
 
 
 
@@ -6208,6 +6208,7 @@ html, body {
               <option value="tower">3D Structure (Tower Audit)</option>
               <option value="vertical-facade">🏢 Vertical Facade (Planar Infrastructure)</option>
               <option value="continuous-helix">🌀 Continuous Helix (Corkscrew Orbit)</option>
+              <option value="star-pass">⭐ Star Pass (Cross-Hatch POI Inspection)</option>
               <option value="photo-sphere">360° Pano (Photo Sphere)</option>
               <option value="hyperlapse">🎞️ Hyperlapse (Interval Time-Lapse)</option>
               <option value="light-art">🎨 Light Art (Sky Painting / Long Exposure)</option>
@@ -6290,6 +6291,13 @@ html, body {
                   <path d="M12 2v20" stroke-dasharray="2,2"/>
                 </svg>
                 <span style="color: #a78bfa;">Continuous Helix</span>
+              </div>
+              <div class="pattern-card" data-value="star-pass" title="Star Pass (Cross-Hatch Convergent POI Inspection)">
+                <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                  <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                </svg>
+                <span style="color: #f59e0b;">Star Pass</span>
               </div>
               <div class="pattern-card" data-value="photo-sphere" title="360° Photo Sphere (Equirectangular Panorama)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -6870,6 +6878,36 @@ html, body {
                 </div>
               </label>
             </div>
+            <!-- Engine & Advanced Capture Controls (v1.154.0 - Issue #134) -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+              <div>
+                <label for="photo-sphere-mode" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">Execution Engine</label>
+                <select id="photo-sphere-mode" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 2px 6px;">
+                  <option value="discreteNodes" selected>Discrete Waypoints (Multi-Node)</option>
+                  <option value="actionGroup">Stationary Action Group (Single Point)</option>
+                </select>
+              </div>
+              <div>
+                <label for="photo-sphere-shots-per-ring" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">Ring Density</label>
+                <select id="photo-sphere-shots-per-ring" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 2px 6px;">
+                  <option value="8">8 Shots / Ring (45° Step)</option>
+                  <option value="10">10 Shots / Ring (36° Step)</option>
+                  <option value="12" selected>12 Shots / Ring (30° Step)</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                <label for="photo-sphere-settling-time" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; margin: 0;">Settling Delay (<span id="photo-sphere-settling-time-val" style="color: #38bdf8;">2.0s</span>)</label>
+              </div>
+              <input type="range" id="photo-sphere-settling-time" class="form-range" min="0.5" max="5.0" step="0.1" value="2.0" style="accent-color: #38bdf8;">
+            </div>
+            <div style="margin-bottom: 8px;">
+              <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--text-main); cursor: pointer; user-select: none;">
+                <input type="checkbox" id="photo-sphere-aeb" style="accent-color: #38bdf8; width: 14px; height: 14px;">
+                <span style="font-weight: 600;">AEB Exposure Bracketing (3-Shot HDR Stack)</span>
+              </label>
+            </div>
             <!-- Shutter Mode Notice -->
             <div style="display: flex; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 6px; padding: 6px 8px; font-size: 0.72rem; color: #34d399;">
               <span style="font-size: 0.9rem;">🛡️</span>
@@ -6892,8 +6930,14 @@ html, body {
               </strong>
               <span id="hyperlapse-frame-badge" class="badge" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; font-size: 0.68rem; padding: 2px 7px; border-radius: 4px; font-weight: 700;">0 Frames Total</span>
             </div>
-            <div style="font-size: 0.74rem; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4;">
+            <div style="font-size: 0.74rem; color: var(--text-muted); margin-bottom: 8px; line-height: 1.4;">
               Click on the map to place waypoints forming your hyperlapse transit route. The aircraft shoots interval photos continuously while flying smoothly between points.
+            </div>
+
+            <!-- Live Video Duration Calculator (Issue #135) -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 6px 8px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 6px;">
+              <span style="font-size: 0.72rem; color: #f59e0b; font-weight: 600;">⏱️ Projected Video Duration</span>
+              <span id="hyperlapse-duration-badge" style="font-size: 0.72rem; color: #f59e0b; font-weight: 700;">Clip: 0.0s (30fps) | 0.0s (24fps)</span>
             </div>
 
             <!-- Interval Capture Slider -->
@@ -7163,6 +7207,47 @@ html, body {
             </div>
           </div>
 
+          <!-- Star Pass (Cross-Hatch) Controls (Issue #131) -->
+          <div id="star-pass-container" class="control-group hidden" style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 12px; margin-top: 10px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 0.76rem; font-weight: 700; color: #f59e0b;">⭐ Star Pass POI Cross-Hatch Controls</span>
+              <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; font-size: 0.68rem; padding: 2px 7px; border-radius: 4px; font-weight: 700;">Convergent Apex</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+              <div>
+                <label for="star-pass-spokes" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">Pass Spokes (<span id="star-pass-spokes-val" style="color: #f59e0b;">3</span>)</label>
+                <input type="range" id="star-pass-spokes" class="form-range" min="2" max="8" step="1" value="3" style="accent-color: #f59e0b;">
+              </div>
+              <div>
+                <label for="star-pass-radius" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">Spoke Radius (<span id="star-pass-radius-val" style="color: #f59e0b;">35m</span>)</label>
+                <input type="range" id="star-pass-radius" class="form-range" min="10" max="150" step="5" value="35" style="accent-color: #f59e0b;">
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+              <div>
+                <label for="star-pass-heading-mode" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 3px;">Camera Lock Mode</label>
+                <select id="star-pass-heading-mode" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 3px 6px;">
+                  <option value="convergent" selected>Convergent (Target &amp; Altitude Tracking)</option>
+                  <option value="towardPOI">Lock Directly to POI</option>
+                  <option value="flightDirection">Along Flight Vector</option>
+                </select>
+              </div>
+              <div>
+                <label for="star-pass-transit-mode" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 3px;">Transit Transition</label>
+                <select id="star-pass-transit-mode" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 3px 6px;">
+                  <option value="perimeterHop" selected>Perimeter Arc Hop</option>
+                  <option value="directAcross">Direct Cut</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-top: 4px;">
+              <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--text-main); cursor: pointer; user-select: none;">
+                <input type="checkbox" id="star-pass-apex-nadir" checked style="accent-color: #f59e0b; width: 14px; height: 14px;">
+                <span style="font-weight: 600;">Apex Nadir Catch (-90° Ground Lock on Center Intersection)</span>
+              </label>
+            </div>
+          </div>
+
           <div id="exclusion-altitude-container" class="control-group hidden" style="background: rgba(239, 68, 68, 0.06); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 10px; margin-top: 10px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <span style="font-size: 0.8rem; font-weight: 700; color: #f87171; display: inline-flex; align-items: center; gap: 6px;">
@@ -7242,7 +7327,7 @@ html, body {
               </span>
               <span class="value-display"><span id="speed-val">4</span> <span id="speed-unit">m/s</span></span>
             </div>
-            <input type="range" id="speed" min="0.2" max="15" step="0.1" value="4" class="slider" aria-label="Flight speed">
+            <input type="range" id="speed" min="0.1" max="15" step="0.1" value="4" class="slider" aria-label="Flight speed">
           </div>
 
           <div class="control-group">
@@ -9330,6 +9415,30 @@ html, body {
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #f59e0b; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              ⭐ Star Pass / Cross-Hatch Convergent POI Inspection (v1.154.0) (Closes #131)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Capture intricate, recessed 3D geometries on monuments, statues, and vertical towers without blind spots! The new <strong>Star Pass</strong> pattern generator flies repeated diametric crossings directly over a central Point of Interest from multiple intersecting angles (2 to 8 spokes). Features <strong>Convergent 3D Pitch/Heading Tracking</strong>, an automatic <strong>Apex Nadir Catch (-90°)</strong> at the center crossing, smooth <strong>Perimeter Arc Hops</strong> between spoke passes, and Amber 3D trajectory ribbons.
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              📸 Dedicated 360° Spherical Panorama Stationary Capture Engine (v1.154.0) (Closes #134)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Eliminate GPS micro-hunting and APAS drift during 360 photo spheres! The capture engine now compiles into a <strong>Single Stationary Waypoint Action Group</strong> in WPML, running all yaw, pitch, and shutter steps sequentially at a locked 3D position. Supports configurable shot density (8, 10, or 12 shots per ring), adjustable 0.5s–5.0s settling delay, optional <strong>AEB 3-Shot Exposure Bracketing</strong>, and Google Photo Sphere (GPano) XMP manifest metadata.
+            </p>
+          </div>
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #f59e0b; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🎞️ Dedicated Waypoint Hyperlapse Ultra-Slow Continuous Interval Capture (v1.154.0) (Closes #135)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Achieve cinematic, ultra-smooth time compression with sub-meter frame accuracy! Supports ultra-slow flight speeds down to <strong>0.1 m/s</strong> (e.g., 0.1, 0.2, 0.5 m/s) with sub-meter frame spacing projection. Features a <strong>Live Video Clip Duration Calculator</strong> displaying projected output times at 24fps and 30fps directly within Section 2 and Topbar Telemetry HUD.
+            </p>
+          </div>
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🏢 Vertical Facade Grid for Planar Infrastructure Inspection (v1.153.0) (Closes #132)
@@ -10573,7 +10682,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.153.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.154.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -10634,6 +10743,14 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.154.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Star Pass Convergent Cross-Hatch Inspection:</strong> Repeated diametric crossings over central POIs with convergent gimbal/heading tracking, apex nadir catch, and perimeter transit hops. (Closes #131)</li>
+              <li><strong>Dedicated 360° Spherical Panorama Stationary Capture Engine:</strong> Eliminates GPS drift via single-waypoint sequential action group execution in WPML, configurable ring density, settling delay, AEB exposure bracketing, and GPano XMP manifest tags. (Closes #134)</li>
+              <li><strong>Dedicated Waypoint Hyperlapse Ultra-Slow Continuous Interval Capture:</strong> Sub-meter frame dot projection, granular flight speeds down to 0.1 m/s, and real-time video clip duration calculator at 24fps and 30fps. (Closes #135)</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.153.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -15443,6 +15560,15 @@ const FLIGHT_TOOLS = {
     description: 'Continuous Helix / Spiral corkscrew ascent/descent for smooth cinematic inspection of vertical structures',
     propertyGroups: ['continuous-helix-geometry', 'altitude', 'speed', 'camera']
   },
+  'star-pass': {
+    id: 'star-pass',
+    label: 'Star Pass',
+    category: 'inspection',
+    icon: 'star-pass',
+    shortcut: 'K',
+    description: 'Cross-Hatch / Star Pass multi-angle diametrical passes over a central POI with convergent look-down tracking',
+    propertyGroups: ['star-pass-geometry', 'altitude', 'speed', 'camera']
+  },
   'photo-sphere': {
     id: 'photo-sphere',
     label: '360 Pano',
@@ -18781,7 +18907,8 @@ function getPatternDisplayName(pattern) {
     'hyperlapse': 'Hyperlapse Time-Lapse',
     'light-art': '🎨 Light Art (Sky Painting)',
     'vertical-facade': '🏢 Vertical Facade Grid',
-    'continuous-helix': '🌀 Continuous Helix / Spiral'
+    'continuous-helix': '🌀 Continuous Helix / Spiral',
+    'star-pass': '⭐ Star Pass (Cross-Hatch)'
   };
   return map[pattern] || pattern || 'Double Grid';
 }
@@ -18915,6 +19042,15 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     helixPitchStart: -25,
     helixPitchEnd: -65,
     helixHeadingMode: 'towardCenter', // 'towardCenter' or 'tangent'
+    starPassSpokes: 3,
+    starPassRadius: 35,
+    starPassHeadingMode: 'convergent', // 'convergent', 'flightDirection', 'towardPOI'
+    starPassTransitMode: 'perimeterHop', // 'perimeterHop', 'directAcross'
+    starPassApexNadir: true,
+    photoSphereMode: 'discreteNodes', // 'actionGroup', 'discreteNodes'
+    photoSphereShotsPerRing: 12,
+    photoSphereSettlingTime: 2.0,
+    photoSphereAebEnabled: false,
     freeformWaypoints: [],
     freeformPhotos: [],
     roadWaypoints: [],
@@ -19529,6 +19665,26 @@ function saveActiveLayerFromUi() {
     }
   }
 
+  const psMode = document.getElementById('photo-sphere-mode');
+  const psShots = document.getElementById('photo-sphere-shots-per-ring');
+  const psSettling = document.getElementById('photo-sphere-settling-time');
+  const psAeb = document.getElementById('photo-sphere-aeb');
+  if (psMode && psMode.value) layer.photoSphereMode = psMode.value;
+  if (psShots && psShots.value) layer.photoSphereShotsPerRing = parseInt(psShots.value, 10) || 12;
+  if (psSettling && psSettling.value) layer.photoSphereSettlingTime = parseFloat(psSettling.value) || 2.0;
+  if (psAeb) layer.photoSphereAebEnabled = psAeb.checked;
+
+  const spSpokes = document.getElementById('star-pass-spokes');
+  const spRadius = document.getElementById('star-pass-radius');
+  const spHeadMode = document.getElementById('star-pass-heading-mode');
+  const spTransit = document.getElementById('star-pass-transit-mode');
+  const spApex = document.getElementById('star-pass-apex-nadir');
+  if (spSpokes) layer.starPassSpokes = parseInt(spSpokes.value, 10) || 3;
+  if (spRadius) layer.starPassRadius = parseFloat(spRadius.value) || 35;
+  if (spHeadMode && spHeadMode.value) layer.starPassHeadingMode = spHeadMode.value;
+  if (spTransit && spTransit.value) layer.starPassTransitMode = spTransit.value;
+  if (spApex) layer.starPassApexNadir = spApex.checked;
+
   const hlInterval = document.getElementById('hyperlapse-interval');
   const hlStartPitch = document.getElementById('hyperlapse-start-pitch');
   const hlEndPitch = document.getElementById('hyperlapse-end-pitch');
@@ -19812,6 +19968,18 @@ function syncUiWithActiveLayer() {
   if (psR2) psR2.checked = (psRings.ring2 !== false);
   if (psR3) psR3.checked = (psRings.ring3 !== false);
   if (psNadir) psNadir.checked = (psRings.nadir !== false);
+
+  const psMode = document.getElementById('photo-sphere-mode');
+  const psShots = document.getElementById('photo-sphere-shots-per-ring');
+  const psSettling = document.getElementById('photo-sphere-settling-time');
+  const psSettlingVal = document.getElementById('photo-sphere-settling-time-val');
+  const psAeb = document.getElementById('photo-sphere-aeb');
+  if (psMode) psMode.value = layer.photoSphereMode || 'actionGroup';
+  if (psShots) psShots.value = layer.photoSphereShotsPerRing !== undefined ? layer.photoSphereShotsPerRing : 12;
+  if (psSettling) psSettling.value = layer.photoSphereSettlingTime !== undefined ? layer.photoSphereSettlingTime : 2.0;
+  if (psSettlingVal) psSettlingVal.textContent = `${layer.photoSphereSettlingTime !== undefined ? layer.photoSphereSettlingTime : 2.0}s`;
+  if (psAeb) psAeb.checked = Boolean(layer.photoSphereAebEnabled);
+
   if (typeof updatePhotoSphereBadge === 'function') {
     updatePhotoSphereBadge();
   }
@@ -19931,6 +20099,22 @@ function syncUiWithActiveLayer() {
   if (hPEnd) hPEnd.value = layer.helixPitchEnd !== undefined ? layer.helixPitchEnd : -65;
   if (hPEndVal) hPEndVal.textContent = `${layer.helixPitchEnd !== undefined ? layer.helixPitchEnd : -65}°`;
   if (hHeadMode) hHeadMode.value = layer.helixHeadingMode || 'towardCenter';
+
+  // Sync Star Pass Controls
+  const spSpokes = document.getElementById('star-pass-spokes');
+  const spSpokesVal = document.getElementById('star-pass-spokes-val');
+  const spRadius = document.getElementById('star-pass-radius');
+  const spRadiusVal = document.getElementById('star-pass-radius-val');
+  const spHeadMode = document.getElementById('star-pass-heading-mode');
+  const spTransit = document.getElementById('star-pass-transit-mode');
+  const spApex = document.getElementById('star-pass-apex-nadir');
+  if (spSpokes) spSpokes.value = layer.starPassSpokes !== undefined ? layer.starPassSpokes : 3;
+  if (spSpokesVal) spSpokesVal.textContent = `${layer.starPassSpokes !== undefined ? layer.starPassSpokes : 3}`;
+  if (spRadius) spRadius.value = layer.starPassRadius !== undefined ? layer.starPassRadius : 35;
+  if (spRadiusVal) spRadiusVal.textContent = `${layer.starPassRadius !== undefined ? layer.starPassRadius : 35}m`;
+  if (spHeadMode) spHeadMode.value = layer.starPassHeadingMode || 'convergent';
+  if (spTransit) spTransit.value = layer.starPassTransitMode || 'perimeterHop';
+  if (spApex) spApex.checked = layer.starPassApexNadir !== false;
 
   if (typeof syncDisplayValues === 'function') {
     try { syncDisplayValues(); } catch (e) {}
@@ -21062,6 +21246,8 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
       gridData = generateVerticalFacadeCoordinates(layer, sLine, sPhoto, altitude, defaultGimbalPitch);
     } else if (gridType === 'continuous-helix') {
       gridData = generateHelixCoordinates(layer, sPhoto, altitude, defaultGimbalPitch);
+    } else if (gridType === 'star-pass') {
+      gridData = generateStarPassCoordinates(layer, sPhoto, altitude, defaultGimbalPitch);
     } else if (gridType === 'tower') {
       gridData = generateTowerCoordinates(layer, sLine, sPhoto, altitude, defaultGimbalPitch);
     } else if (gridType === 'orbit') {
@@ -21109,8 +21295,17 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
         isPerimeterOrbit: pt.isPerimeterOrbit || false,
         isPhotoSpherePoint: pt.isPhotoSpherePoint || (gridType === 'photo-sphere'),
         isPhotoSphere: pt.isPhotoSphere || (gridType === 'photo-sphere'),
+        isPhotoSphereActionGroup: pt.isPhotoSphereActionGroup || false,
+        photoSphereActions: pt.photoSphereActions || null,
+        photoSphereMode: pt.photoSphereMode || undefined,
+        totalShots: pt.totalShots !== undefined ? pt.totalShots : undefined,
+        aebEnabled: pt.aebEnabled || false,
+        isStarPass: pt.isStarPass || (gridType === 'star-pass'),
+        isPerimeterTransit: pt.isPerimeterTransit || false,
+        isApexNadir: pt.isApexNadir || false,
+        spokeIndex: pt.spokeIndex !== undefined ? pt.spokeIndex : null,
         isLightArtPoint: pt.isLightArtPoint || (gridType === 'light-art'),
-        gridType: pt.gridType || (gridType === 'target-splat' ? 'target-splat' : (gridType === 'photo-sphere' ? 'photo-sphere' : (gridType === 'light-art' ? 'light-art' : undefined))),
+        gridType: pt.gridType || (gridType === 'star-pass' ? 'star-pass' : (gridType === 'target-splat' ? 'target-splat' : (gridType === 'photo-sphere' ? 'photo-sphere' : (gridType === 'light-art' ? 'light-art' : undefined)))),
         origLat: geo.lat,
         origLon: geo.lon,
         origX: pt.x,
@@ -24607,8 +24802,88 @@ function initUIEventListeners() {
     if (btnFull) btnFull.addEventListener('click', () => setRings(true, true, true, true));
     if (btnPano) btnPano.addEventListener('click', () => setRings(true, false, false, false));
     if (btnOblique) btnOblique.addEventListener('click', () => setRings(true, true, false, false));
+
+    const psMode = document.getElementById('photo-sphere-mode');
+    const psShots = document.getElementById('photo-sphere-shots-per-ring');
+    const psSettling = document.getElementById('photo-sphere-settling-time');
+    const psSettlingVal = document.getElementById('photo-sphere-settling-time-val');
+    const psAeb = document.getElementById('photo-sphere-aeb');
+
+    const updatePhotoSphereConfig = () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (!activeLayer) return;
+      if (psMode) activeLayer.photoSphereMode = psMode.value;
+      if (psShots) activeLayer.photoSphereShotsPerRing = parseInt(psShots.value, 10) || 12;
+      if (psSettling) {
+        const sVal = parseFloat(psSettling.value) || 2.0;
+        activeLayer.photoSphereSettlingTime = sVal;
+        if (psSettlingVal) psSettlingVal.textContent = `${sVal}s`;
+      }
+      if (psAeb) activeLayer.photoSphereAebEnabled = psAeb.checked;
+      if (typeof updatePhotoSphereBadge === 'function') {
+        updatePhotoSphereBadge();
+      }
+      updateGrid();
+      updateMapLegend();
+      saveAllSettingsToLocalStorage();
+    };
+
+    if (psMode) psMode.addEventListener('change', updatePhotoSphereConfig);
+    if (psShots) psShots.addEventListener('change', updatePhotoSphereConfig);
+    if (psSettling) {
+      psSettling.addEventListener('input', updatePhotoSphereConfig);
+      psSettling.addEventListener('change', updatePhotoSphereConfig);
+    }
+    if (psAeb) psAeb.addEventListener('change', updatePhotoSphereConfig);
   };
   setupPhotoSphereRingListeners();
+
+  // Star Pass Convergent POI Inspection Listeners (v1.154.0 - Issue #131)
+  const setupStarPassListeners = () => {
+    const spSpokes = document.getElementById('star-pass-spokes');
+    const spSpokesVal = document.getElementById('star-pass-spokes-val');
+    const spRadius = document.getElementById('star-pass-radius');
+    const spRadiusVal = document.getElementById('star-pass-radius-val');
+    const spHeadMode = document.getElementById('star-pass-heading-mode');
+    const spTransit = document.getElementById('star-pass-transit-mode');
+    const spApex = document.getElementById('star-pass-apex-nadir');
+
+    const updateStarPass = () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (!activeLayer) return;
+
+      if (spSpokes) {
+        const val = parseInt(spSpokes.value, 10) || 3;
+        activeLayer.starPassSpokes = val;
+        if (spSpokesVal) spSpokesVal.textContent = `${val}`;
+      }
+      if (spRadius) {
+        const val = parseFloat(spRadius.value) || 35;
+        activeLayer.starPassRadius = val;
+        if (spRadiusVal) spRadiusVal.textContent = `${val}m`;
+      }
+      if (spHeadMode) activeLayer.starPassHeadingMode = spHeadMode.value;
+      if (spTransit) activeLayer.starPassTransitMode = spTransit.value;
+      if (spApex) activeLayer.starPassApexNadir = spApex.checked;
+
+      updateGrid();
+      updateMapLegend();
+      saveAllSettingsToLocalStorage();
+    };
+
+    [spSpokes, spRadius].forEach(el => {
+      if (el) {
+        el.addEventListener('input', updateStarPass);
+        el.addEventListener('change', updateStarPass);
+      }
+    });
+    [spHeadMode, spTransit, spApex].forEach(el => {
+      if (el) {
+        el.addEventListener('change', updateStarPass);
+      }
+    });
+  };
+  setupStarPassListeners();
 
   // Hyperlapse Moving Time-Lapse Control Listeners (v1.146.0 - Closes #102)
   const setupHyperlapseListeners = () => {
@@ -26846,7 +27121,8 @@ function togglePatternParameters() {
     'hyperlapse': 'Hyperlapse Time-Lapse',
     'light-art': '🎨 Light Art (Sky Painting)',
     'vertical-facade': '🏢 Vertical Facade Grid',
-    'continuous-helix': '🌀 Continuous Helix / Spiral'
+    'continuous-helix': '🌀 Continuous Helix / Spiral',
+    'star-pass': '⭐ Star Pass (Cross-Hatch)'
   };
 
   const targetSplatContainer = document.getElementById('target-splat-container');
@@ -26856,6 +27132,7 @@ function togglePatternParameters() {
   const lightArtContainer = document.getElementById('light-art-container');
   const verticalFacadeContainer = document.getElementById('vertical-facade-container');
   const continuousHelixContainer = document.getElementById('continuous-helix-container');
+  const starPassContainer = document.getElementById('star-pass-container');
 
   const activePatternBadge = document.getElementById('active-layer-pattern-badge');
   if (activePatternBadge) {
@@ -26904,6 +27181,14 @@ function togglePatternParameters() {
       continuousHelixContainer.classList.remove('hidden');
     } else {
       continuousHelixContainer.classList.add('hidden');
+    }
+  }
+
+  if (starPassContainer) {
+    if (gridType === 'star-pass') {
+      starPassContainer.classList.remove('hidden');
+    } else {
+      starPassContainer.classList.add('hidden');
     }
   }
 
@@ -27494,6 +27779,46 @@ function togglePatternParameters() {
     const layerPathSelect = document.getElementById('layer-path-mode');
     if (layerPathSelect) layerPathSelect.value = 'curved';
 
+  } else if (gridType === 'star-pass') {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
+    if (gridGeometrySection) {
+      gridGeometrySection.style.display = 'block';
+      gridGeometrySection.classList.remove('collapsed');
+    }
+    if (layerCardGeometry) layerCardGeometry.style.display = 'block';
+    if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "⭐ Star Pass Geometry";
+    if (layerCardFlight) layerCardFlight.style.display = 'block';
+    if (layerCardOptics) layerCardOptics.style.display = 'block';
+    if (layerCardModes) layerCardModes.style.display = 'block';
+    if (layerCardBoundary) {
+      layerCardBoundary.classList.add('hidden');
+      layerCardBoundary.style.display = 'none';
+    }
+    if (layerCardFiducial) {
+      layerCardFiducial.classList.add('hidden');
+      layerCardFiducial.style.display = 'none';
+    }
+    if (starPassContainer) starPassContainer.classList.remove('hidden');
+    if (continuousHelixContainer) continuousHelixContainer.classList.add('hidden');
+    if (verticalFacadeContainer) verticalFacadeContainer.classList.add('hidden');
+    if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
+    if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
+    if (photoSphereContainer) photoSphereContainer.classList.add('hidden');
+    if (hyperlapseContainer) hyperlapseContainer.classList.add('hidden');
+    if (lightArtContainer) lightArtContainer.classList.add('hidden');
+    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
+    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
+    if (exclusionAltContainer) exclusionAltContainer.classList.add('hidden');
+    if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
+    if (freeformInstructions) freeformInstructions.classList.add('hidden');
+    if (altitudeControlGroup) altitudeControlGroup.style.display = 'block';
+    if (widthContainer) widthContainer.style.display = 'none';
+    if (heightContainer) heightContainer.style.display = 'none';
+    if (rotationContainer) rotationContainer.style.display = 'block';
+    if (frontOverlapContainer) frontOverlapContainer.style.display = 'none';
+    if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
+
   } else {
     if (gridGeometrySection) gridGeometrySection.style.display = 'block';
     if (layerCardGeometry) layerCardGeometry.style.display = 'block';
@@ -27509,6 +27834,7 @@ function togglePatternParameters() {
       layerCardFiducial.classList.add('hidden');
       layerCardFiducial.style.display = 'none';
     }
+    if (starPassContainer) starPassContainer.classList.add('hidden');
     if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
     if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
     if (verticalFacadeContainer) verticalFacadeContainer.classList.add('hidden');
@@ -30090,16 +30416,18 @@ function updatePhotoSphereBadge() {
   const r2 = document.getElementById('photo-sphere-ring-2');
   const r3 = document.getElementById('photo-sphere-ring-3');
   const rNadir = document.getElementById('photo-sphere-ring-nadir');
+  const shotsSelect = document.getElementById('photo-sphere-shots-per-ring');
+  const shots = shotsSelect ? (parseInt(shotsSelect.value, 10) || 12) : 12;
   let count = 0;
-  if (r1 && r1.checked) count += 12;
-  if (r2 && r2.checked) count += 12;
-  if (r3 && r3.checked) count += 12;
+  if (r1 && r1.checked) count += shots;
+  if (r2 && r2.checked) count += shots;
+  if (r3 && r3.checked) count += shots;
   if (rNadir && rNadir.checked) count += 1;
   badge.textContent = `${count} Shot${count === 1 ? '' : 's'} Total`;
 }
 
-// Generate 360° Photo Sphere coordinates (Issue #89, v1.125.1)
-// Supports selective elevation rings (Row 1: -15°, Row 2: -45°, Row 3: -75°, Nadir: -90°)
+// Generate 360° Photo Sphere coordinates (v1.154.0 - Issue #134)
+// Supports selective elevation rings, configurable shots per ring, stationary action groups, and settling delay
 function generatePhotoSphereCoordinates(baseAltitude, layer) {
   const waypoints = [];
   const photos = [];
@@ -30128,15 +30456,44 @@ function generatePhotoSphereCoordinates(baseAltitude, layer) {
     rings.ring1 = true;
   }
 
+  const rawShots = (layer && layer.photoSphereShotsPerRing !== undefined) ? Number(layer.photoSphereShotsPerRing) : 12;
+  const shotsPerRing = Math.max(6, Math.min(24, isNaN(rawShots) ? 12 : rawShots));
+  const step = 360.0 / shotsPerRing;
+
+  const rawSettling = (layer && layer.photoSphereSettlingTime !== undefined) ? Number(layer.photoSphereSettlingTime) : 2.0;
+  const settlingTime = Math.max(0.5, Math.min(10.0, isNaN(rawSettling) ? 2.0 : rawSettling));
+
+  let mode = (layer && layer.photoSphereMode) ? layer.photoSphereMode : null;
+  if (!mode && typeof document !== 'undefined') {
+    const psMode = document.getElementById('photo-sphere-mode');
+    if (psMode && psMode.value) mode = psMode.value;
+  }
+  if (!mode) {
+    mode = 'discreteNodes';
+  }
+  const aebEnabled = Boolean(layer && layer.photoSphereAebEnabled);
+
   const rows = [];
-  if (rings.ring1) rows.push({ pitch: -15, count: 12, step: 30, ringIndex: 0 });
-  if (rings.ring2) rows.push({ pitch: -45, count: 12, step: 30, ringIndex: 1 });
-  if (rings.ring3) rows.push({ pitch: -75, count: 12, step: 30, ringIndex: 2 });
+  if (rings.ring1) rows.push({ pitch: -15, count: shotsPerRing, step: step, ringIndex: 0 });
+  if (rings.ring2) rows.push({ pitch: -45, count: shotsPerRing, step: step, ringIndex: 1 });
+  if (rings.ring3) rows.push({ pitch: -75, count: shotsPerRing, step: step, ringIndex: 2 });
 
   let shotIndex = 0;
+  const allActions = [];
+
   rows.forEach(row => {
     for (let i = 0; i < row.count; i++) {
-      const heading = (i * row.step) % 360;
+      const heading = Math.round((i * row.step) % 360);
+      const actionItem = {
+        yaw: heading,
+        pitch: row.pitch,
+        ringIndex: row.ringIndex,
+        shotIndex: shotIndex++,
+        hoverTime: settlingTime,
+        aebEnabled: aebEnabled
+      };
+      allActions.push(actionItem);
+
       const pt = {
         x: 0,
         y: 0,
@@ -30145,19 +30502,34 @@ function generatePhotoSphereCoordinates(baseAltitude, layer) {
         heading: heading,
         headingMode: 'smoothTransition',
         gridType: 'photo-sphere',
+        layerPattern: 'photo-sphere',
         isPhotoSpherePoint: true,
         ringIndex: row.ringIndex,
         isRingStart: (i === 0),
-        shotIndex: shotIndex++,
-        hoverTime: 2
+        shotIndex: actionItem.shotIndex,
+        hoverTime: settlingTime,
+        photoSphereMode: mode,
+        aebEnabled: aebEnabled
       };
-      waypoints.push(pt);
       photos.push(pt);
+      if (mode !== 'actionGroup') {
+        waypoints.push(pt);
+      }
     }
   });
 
   // Nadir Catch: 1 final ground-lock shot at -90° pitch
   if (rings.nadir) {
+    const nadirAction = {
+      yaw: 0,
+      pitch: -90,
+      ringIndex: 3,
+      shotIndex: shotIndex++,
+      hoverTime: settlingTime,
+      aebEnabled: aebEnabled
+    };
+    allActions.push(nadirAction);
+
     const nadirPt = {
       x: 0,
       y: 0,
@@ -30166,17 +30538,43 @@ function generatePhotoSphereCoordinates(baseAltitude, layer) {
       heading: 0,
       headingMode: 'smoothTransition',
       gridType: 'photo-sphere',
+      layerPattern: 'photo-sphere',
       isPhotoSpherePoint: true,
       ringIndex: 3,
       isRingStart: true,
-      shotIndex: shotIndex++,
-      hoverTime: 2
+      shotIndex: nadirAction.shotIndex,
+      hoverTime: settlingTime,
+      photoSphereMode: mode,
+      aebEnabled: aebEnabled
     };
-    waypoints.push(nadirPt);
     photos.push(nadirPt);
+    if (mode !== 'actionGroup') {
+      waypoints.push(nadirPt);
+    }
   }
 
-  return { waypoints, photos };
+  // When in stationary actionGroup mode, emit a single waypoint containing the entire action sequence
+  if (mode === 'actionGroup') {
+    waypoints.push({
+      x: 0,
+      y: 0,
+      alt: baseAltitude,
+      pitch: -15,
+      heading: 0,
+      headingMode: 'smoothTransition',
+      gridType: 'photo-sphere',
+      layerPattern: 'photo-sphere',
+      isPhotoSpherePoint: true,
+      isPhotoSphereActionGroup: true,
+      hoverTime: settlingTime,
+      photoSphereActions: allActions,
+      photoSphereMode: 'actionGroup',
+      totalShots: allActions.length,
+      aebEnabled: aebEnabled
+    });
+  }
+
+  return { waypoints, photos, totalShots: allActions.length, mode };
 }
 
 // ============================================================================
@@ -30310,8 +30708,8 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
 
   // Sample frame photo points along path every (speed * interval) meters
   const framePoints = [];
-  const effectiveSpeed = Math.max(0.2, speed || 4);
-  const frameSpacing = Math.max(0.2, effectiveSpeed * interval);
+  const effectiveSpeed = Math.max(0.1, (speed !== undefined && !isNaN(speed) && speed > 0) ? Number(speed) : 2.0);
+  const frameSpacing = Math.max(0.05, effectiveSpeed * interval);
 
   if (waypoints.length >= 2 && totalDist > 0) {
     let currentDist = 0;
@@ -30358,7 +30756,22 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
     }
   }
 
-  return { waypoints, framePoints, interval, frameSpacing };
+  const totalFrames = framePoints.length;
+  const flightDurationSec = (effectiveSpeed > 0 && totalDist > 0) ? (totalDist / effectiveSpeed) : 0;
+  const videoDuration24fps = totalFrames / 24.0;
+  const videoDuration30fps = totalFrames / 30.0;
+
+  return {
+    waypoints,
+    framePoints,
+    interval,
+    frameSpacing,
+    totalDist,
+    totalFrames,
+    flightDurationSec,
+    videoDuration24fps,
+    videoDuration30fps
+  };
 }
 
 // ============================================================================
@@ -30759,10 +31172,162 @@ function generateHelixCoordinates(layer, sPhoto, baseAltitude, defaultGimbalPitc
   return { waypoints, photos };
 }
 
+// ============================================================================
+// Star Pass / Cross-Hatch Convergent POI Inspection Generator (v1.154.0 - Issue #131)
+// ============================================================================
+function generateStarPassCoordinates(layer, sPhoto, baseAltitude, defaultGimbalPitch) {
+  const waypoints = [];
+  const photos = [];
+
+  const rawSpokes = (layer && layer.starPassSpokes !== undefined) ? Number(layer.starPassSpokes) : 3;
+  const spokes = Math.max(2, Math.min(8, isNaN(rawSpokes) ? 3 : rawSpokes));
+
+  const rawRadius = (layer && layer.starPassRadius !== undefined) ? Number(layer.starPassRadius) : 35;
+  const radius = Math.max(10, Math.min(200, isNaN(rawRadius) ? 35 : rawRadius));
+
+  const headingMode = (layer && layer.starPassHeadingMode) ? layer.starPassHeadingMode : 'convergent';
+  const transitMode = (layer && layer.starPassTransitMode) ? layer.starPassTransitMode : 'perimeterHop';
+  const apexNadir = (layer && layer.starPassApexNadir !== undefined) ? Boolean(layer.starPassApexNadir) : true;
+
+  const rawAltitude = (layer && layer.altitude !== undefined && layer.altitude !== 'inherit') ? Number(layer.altitude) : baseAltitude;
+  const altitude = (!isNaN(rawAltitude) && rawAltitude > 0) ? rawAltitude : 50;
+
+  // Spoke angular increment: 180 degrees / spokes
+  const angleStepDeg = 180.0 / spokes;
+  const stepDist = Math.max(2.0, Math.min(15.0, sPhoto || 5.0));
+  const numStepsPerRadius = Math.max(2, Math.round(radius / stepDist));
+
+  // Helper to compute local coords given angle (deg) and signed dist from center
+  const getPoint = (angleDeg, distFromCenter, spokeIdx, isApex) => {
+    const rad = angleDeg * (Math.PI / 180.0);
+    const x = distFromCenter * Math.sin(rad);
+    const y = distFromCenter * Math.cos(rad);
+    const dCenter = Math.abs(distFromCenter);
+
+    let pitch, heading;
+    if (isApex && apexNadir) {
+      pitch = -90;
+      heading = 0;
+    } else if (headingMode === 'convergent') {
+      // Heading looks directly at center (0,0)
+      let brg = Math.atan2(-x, -y) * (180.0 / Math.PI);
+      if (brg < 0) brg += 360;
+      heading = brg;
+      // Pitch points toward ground at center (0,0)
+      pitch = -Math.round(Math.atan2(altitude, Math.max(0.5, dCenter)) * (180.0 / Math.PI));
+      pitch = Math.max(-90, Math.min(0, pitch));
+    } else if (headingMode === 'towardPOI') {
+      let brg = Math.atan2(-x, -y) * (180.0 / Math.PI);
+      if (brg < 0) brg += 360;
+      heading = brg;
+      pitch = (defaultGimbalPitch !== undefined && !isNaN(defaultGimbalPitch)) ? defaultGimbalPitch : -45;
+    } else {
+      // flightDirection
+      heading = angleDeg;
+      pitch = (defaultGimbalPitch !== undefined && !isNaN(defaultGimbalPitch)) ? defaultGimbalPitch : -45;
+    }
+
+    return {
+      x: Math.round(x * 100) / 100,
+      y: Math.round(y * 100) / 100,
+      alt: Math.round(altitude * 10) / 10,
+      pitch: Math.round(pitch),
+      heading: Math.round(heading * 10) / 10,
+      headingMode: 'smoothTransition',
+      turnMode: 'curved',
+      pathMode: 'curved',
+      gridType: 'star-pass',
+      layerPattern: 'star-pass',
+      isStarPass: true,
+      spokeIndex: spokeIdx,
+      isApexNadir: Boolean(isApex && apexNadir)
+    };
+  };
+
+  let lastExitAngle = null;
+
+  for (let k = 0; k < spokes; k++) {
+    const spokeBaseAngle = k * angleStepDeg;
+    // Alternate direction of passes to form a continuous Hamiltonian-like path
+    const isEven = (k % 2 === 0);
+    const entryAngle = isEven ? (spokeBaseAngle + 180) % 360 : spokeBaseAngle;
+    const exitAngle = isEven ? spokeBaseAngle : (spokeBaseAngle + 180) % 360;
+
+    // Perimeter hop from previous exit to this entry
+    if (lastExitAngle !== null && transitMode === 'perimeterHop') {
+      let dAng = entryAngle - lastExitAngle;
+      while (dAng > 180) dAng -= 360;
+      while (dAng < -180) dAng += 360;
+
+      // Insert intermediate curved perimeter transit points
+      const hopSteps = 3;
+      for (let s = 1; s < hopSteps; s++) {
+        const hopFrac = s / hopSteps;
+        let hopAngle = (lastExitAngle + dAng * hopFrac) % 360;
+        if (hopAngle < 0) hopAngle += 360;
+        const rad = hopAngle * (Math.PI / 180.0);
+        const hx = radius * Math.sin(rad);
+        const hy = radius * Math.cos(rad);
+
+        let hHeading = (headingMode === 'convergent' || headingMode === 'towardPOI')
+          ? (Math.atan2(-hx, -hy) * (180.0 / Math.PI) + 360) % 360
+          : hopAngle;
+        let hPitch = (headingMode === 'convergent')
+          ? -Math.round(Math.atan2(altitude, radius) * (180.0 / Math.PI))
+          : ((defaultGimbalPitch !== undefined && !isNaN(defaultGimbalPitch)) ? defaultGimbalPitch : -45);
+
+        const hopPt = {
+          x: Math.round(hx * 100) / 100,
+          y: Math.round(hy * 100) / 100,
+          alt: Math.round(altitude * 10) / 10,
+          pitch: Math.round(hPitch),
+          heading: Math.round(hHeading * 10) / 10,
+          headingMode: 'smoothTransition',
+          turnMode: 'curved',
+          pathMode: 'curved',
+          gridType: 'star-pass',
+          layerPattern: 'star-pass',
+          isStarPass: true,
+          isPerimeterTransit: true,
+          skipPhoto: true
+        };
+        waypoints.push(hopPt);
+      }
+    }
+
+    // Now generate waypoints along the spoke from entry (-radius) to exit (+radius)
+    // Entry side (inward towards center)
+    for (let s = numStepsPerRadius; s >= 1; s--) {
+      const dist = (s / numStepsPerRadius) * radius;
+      const pt = getPoint(entryAngle, dist, k, false);
+      waypoints.push(pt);
+      photos.push(pt);
+    }
+
+    // Center point (Apex / Nadir)
+    const centerPt = getPoint(0, 0, k, true);
+    waypoints.push(centerPt);
+    photos.push(centerPt);
+
+    // Exit side (outward towards perimeter)
+    for (let s = 1; s <= numStepsPerRadius; s++) {
+      const dist = (s / numStepsPerRadius) * radius;
+      const pt = getPoint(exitAngle, dist, k, false);
+      waypoints.push(pt);
+      photos.push(pt);
+    }
+
+    lastExitAngle = exitAngle;
+  }
+
+  return { waypoints, photos, spokes, radius, apexNadir };
+}
+
 if (typeof window !== 'undefined') {
   window.generateLightArtCoordinates = generateLightArtCoordinates;
   window.generateVerticalFacadeCoordinates = generateVerticalFacadeCoordinates;
   window.generateHelixCoordinates = generateHelixCoordinates;
+  window.generateStarPassCoordinates = generateStarPassCoordinates;
 }
 // -------------------- src/3d/GeometryBuilder.js --------------------
 function calculateCameraGroundFrustum(droneX, droneY, alt, headingDeg, pitchDeg, hfov, vfov, zPlane = 0, framingRatio = 0.55) {
@@ -34038,8 +34603,8 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
   let photoCount = photoLocations ? photoLocations.length : (waypoints ? waypoints.length : 0);
   if (isHyperlapse && (!photoLocations || photoLocations.length === 0)) {
     const interval = (waypoints.find(w => w && w.hyperlapseInterval)?.hyperlapseInterval) || 3;
-    const effSpeed = Math.max(0.2, speed || 4.0);
-    const frameSpacing = Math.max(0.2, effSpeed * interval);
+    const effSpeed = Math.max(0.1, (speed !== undefined && !isNaN(speed) && speed > 0) ? Number(speed) : 2.0);
+    const frameSpacing = Math.max(0.05, effSpeed * interval);
     if (totalDistance > 0 && frameSpacing > 0) {
       photoCount = Math.floor(totalDistance / frameSpacing) + 1;
     }
@@ -34215,11 +34780,18 @@ function updateStatsPanel(stats) {
   const photoText = (captureModeVal === 'video') ? "Video (Record)" : (isHyperlapseActive ? `${stats.photoCount} frames` : stats.photoCount);
   if (statPhotos) statPhotos.textContent = photoText;
 
-  // Update Section 2 Hyperlapse Frame Badge if active
+  // Update Section 2 Hyperlapse Frame & Duration Badges if active
   const hlBadge = document.getElementById('hyperlapse-frame-badge');
-  if (hlBadge && isHyperlapseActive) {
-    const clipDurationSec = (stats.photoCount / 30).toFixed(1);
-    hlBadge.textContent = `${stats.photoCount} Frames (${clipDurationSec}s Clip @ 30fps)`;
+  const hlDurationBadge = document.getElementById('hyperlapse-duration-badge');
+  if (isHyperlapseActive) {
+    const clip24 = (stats.photoCount / 24).toFixed(1);
+    const clip30 = (stats.photoCount / 30).toFixed(1);
+    if (hlBadge) {
+      hlBadge.textContent = `${stats.photoCount} Frames (${clip30}s Clip @ 30fps)`;
+    }
+    if (hlDurationBadge) {
+      hlDurationBadge.textContent = `Clip: ${clip30}s (30fps) | ${clip24}s (24fps)`;
+    }
   }
 
   // Format spacing
@@ -34888,9 +35460,78 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
       effectivePitch = parseGimbalPitch(rawWpPitch, -60);
     }
 
-    if (idx === 0 || wp.isRingStart || isRoadFollowing || reposInfo.isGimbalChanged) {
-      const currentPitch = effectivePitch;
-      waypointActions.push(`          <wpml:action>
+    if (wp.isPhotoSphereActionGroup && Array.isArray(wp.photoSphereActions) && wp.photoSphereActions.length > 0) {
+      wp.photoSphereActions.forEach(action => {
+        let actHeading = action.yaw;
+        actHeading = ((actHeading % 360) + 360) % 360;
+        if (actHeading > 180) actHeading -= 360;
+        if (actHeading === 0) actHeading = 0.1;
+
+        waypointActions.push(`          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>rotateYaw</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:aircraftHeading>${actHeading.toFixed(1)}</wpml:aircraftHeading>
+              <wpml:aircraftPathMode>clockwise</wpml:aircraftPathMode>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>`);
+
+        waypointActions.push(`          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:gimbalHeadingYawBase>aircraft</wpml:gimbalHeadingYawBase>
+              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
+              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
+              <wpml:gimbalPitchRotateAngle>${action.pitch}</wpml:gimbalPitchRotateAngle>
+              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
+              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
+              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
+              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
+              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
+              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>`);
+
+        const hTime = (action.hoverTime !== undefined && action.hoverTime > 0) ? action.hoverTime : 2.0;
+        waypointActions.push(`          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:hoverTime>${hTime}</wpml:hoverTime>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>`);
+
+        waypointActions.push(`          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>`);
+
+        if (action.aebEnabled) {
+          waypointActions.push(`          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>`);
+          waypointActions.push(`          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>`);
+        }
+      });
+    } else {
+      if (idx === 0 || wp.isRingStart || isRoadFollowing || reposInfo.isGimbalChanged) {
+        const currentPitch = effectivePitch;
+        waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
@@ -34907,14 +35548,14 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
             </wpml:actionActuatorFuncParam>
           </wpml:action>`);
-    }
+      }
 
-    if (isPhotoSphere && !isConsumer) {
-      let targetHeading = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
-      targetHeading = ((targetHeading % 360) + 360) % 360;
-      if (targetHeading > 180) targetHeading -= 360;
-      if (targetHeading === 0) targetHeading = 0.1;
-      waypointActions.push(`          <wpml:action>
+      if (isPhotoSphere && !isConsumer) {
+        let targetHeading = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
+        targetHeading = ((targetHeading % 360) + 360) % 360;
+        if (targetHeading > 180) targetHeading -= 360;
+        if (targetHeading === 0) targetHeading = 0.1;
+        waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>rotateYaw</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
@@ -34922,17 +35563,18 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
               <wpml:aircraftPathMode>clockwise</wpml:aircraftPathMode>
             </wpml:actionActuatorFuncParam>
           </wpml:action>`);
-    }
+      }
 
-    // 2. Hover duration action (MUST run to stabilize gimbal and yaw)
-    if (effectiveHover > 0) {
-      waypointActions.push(`          <wpml:action>
+      // 2. Hover duration action (MUST run to stabilize gimbal and yaw)
+      if (effectiveHover > 0) {
+        waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:hoverTime>${effectiveHover}</wpml:hoverTime>
             </wpml:actionActuatorFuncParam>
           </wpml:action>`);
+      }
     }
 
     // 3. Zoom action (only set once on the first waypoint to apply for the entire flight)
@@ -35000,7 +35642,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     }
 
     // 5. If Stop & Shoot is active, also add photo trigger at this waypoint (skipping transit turnaround overshoot waypoints and never in video mode)
-    if ((isStopAndShoot || isPhotoSphere) && wp.skipPhoto !== true && !isVideo) {
+    if (!wp.isPhotoSphereActionGroup && (isStopAndShoot || isPhotoSphere) && wp.skipPhoto !== true && !isVideo) {
       waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
@@ -35210,7 +35852,7 @@ ${waypointActions.join('\n')}
         }
       }
     } else {
-      if ((gridType === 'hyperlapse' || gridType === 'freeform' || gridType === 'exclusion-freeform' || gridType === 'target-splat' || gridType === 'road-following' || gridType === 'photo-sphere' || gridType === 'vertical-facade' || gridType === 'continuous-helix' || wp.isHyperlapse || wp.isPhotoSphere || wp.isVerticalFacade || wp.isContinuousHelix || wp.isRoadDroneWaypoint || wp.layerPattern === 'hyperlapse' || wp.layerPattern === 'freeform' || wp.layerPattern === 'exclusion-freeform' || wp.layerPattern === 'vertical-facade' || wp.layerPattern === 'continuous-helix' || (wp.gridType && (wp.gridType === 'hyperlapse' || wp.gridType === 'freeform' || wp.gridType === 'exclusion-freeform' || wp.gridType === 'vertical-facade' || wp.gridType === 'continuous-helix')) || (wpLayer && (wpLayer.pattern === 'hyperlapse' || wpLayer.pattern === 'freeform' || wpLayer.pattern === 'exclusion-freeform' || wpLayer.pattern === 'vertical-facade' || wpLayer.pattern === 'continuous-helix')))) {
+      if ((gridType === 'hyperlapse' || gridType === 'freeform' || gridType === 'exclusion-freeform' || gridType === 'target-splat' || gridType === 'road-following' || gridType === 'photo-sphere' || gridType === 'vertical-facade' || gridType === 'continuous-helix' || gridType === 'star-pass' || wp.isHyperlapse || wp.isPhotoSphere || wp.isVerticalFacade || wp.isContinuousHelix || wp.isStarPass || wp.isRoadDroneWaypoint || wp.layerPattern === 'hyperlapse' || wp.layerPattern === 'freeform' || wp.layerPattern === 'exclusion-freeform' || wp.layerPattern === 'vertical-facade' || wp.layerPattern === 'continuous-helix' || wp.layerPattern === 'star-pass' || (wp.gridType && (wp.gridType === 'hyperlapse' || wp.gridType === 'freeform' || wp.gridType === 'exclusion-freeform' || wp.gridType === 'vertical-facade' || wp.gridType === 'continuous-helix' || wp.gridType === 'star-pass')) || (wpLayer && (wpLayer.pattern === 'hyperlapse' || wpLayer.pattern === 'freeform' || wpLayer.pattern === 'exclusion-freeform' || wpLayer.pattern === 'vertical-facade' || wpLayer.pattern === 'continuous-helix' || wpLayer.pattern === 'star-pass')))) {
         actualHeadingMode = 'smoothTransition';
         actualHeadingAngle = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
       } else if (effectiveHeadingMode === 'towardPOI') {
@@ -35795,8 +36437,8 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
           );
         }
 
-        const isMultiRing = (wpLayer && (wpLayer.pattern === 'multi-orbit' || wpLayer.pattern === 'photo-sphere' || wpLayer.pattern === 'continuous-helix')) ||
-          (wpObj.isMultiOrbit || wpObj.isPhotoSphere || wpObj.isContinuousHelix || wpObj.gridType === 'photo-sphere' || wpObj.gridType === 'continuous-helix' || (wpObj.ringIndex !== undefined && wpObj.ringIndex !== null));
+        const isMultiRing = (wpLayer && (wpLayer.pattern === 'multi-orbit' || wpLayer.pattern === 'photo-sphere' || wpLayer.pattern === 'continuous-helix' || wpLayer.pattern === 'star-pass')) ||
+          (wpObj.isMultiOrbit || wpObj.isPhotoSphere || wpObj.isContinuousHelix || wpObj.isStarPass || wpObj.gridType === 'photo-sphere' || wpObj.gridType === 'continuous-helix' || wpObj.gridType === 'star-pass' || (wpObj.ringIndex !== undefined && wpObj.ringIndex !== null));
         const hasHlSweep = (wpLayer && wpLayer.pattern === 'hyperlapse' && wpLayer.hyperlapseStartPitch !== undefined && wpLayer.hyperlapseEndPitch !== undefined && wpLayer.hyperlapseStartPitch !== wpLayer.hyperlapseEndPitch) ||
           (wpLayer && wpLayer.pattern === 'continuous-helix' && wpLayer.helixPitchStart !== undefined && wpLayer.helixPitchEnd !== undefined && wpLayer.helixPitchStart !== wpLayer.helixPitchEnd);
 
@@ -36135,7 +36777,45 @@ function formatISO8601ForFilename(date = new Date()) {
   }
 }
 
-// Generate the KMZ file and trigger browser download
+// Google Photo Sphere (GPano) XMP Metadata Generator (v1.154.0 - Issue #134)
+function generateGPanoXmpMetadata(options = {}) {
+  const poseHeading = options.poseHeading !== undefined ? options.poseHeading : 0.0;
+  const posePitch = options.posePitch !== undefined ? options.posePitch : 0.0;
+  const poseRoll = options.poseRoll !== undefined ? options.poseRoll : 0.0;
+  const fullPanoWidthPixels = options.width || 8192;
+  const fullPanoHeightPixels = options.height || 4096;
+  const croppedWidthPixels = options.croppedWidth || fullPanoWidthPixels;
+  const croppedHeightPixels = options.croppedHeight || fullPanoHeightPixels;
+
+  return `<?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+    <rdf:Description rdf:about=""
+      xmlns:GPano="http://ns.google.com/photos/1.0/panorama/">
+      <GPano:UsePanoramaViewer>True</GPano:UsePanoramaViewer>
+      <GPano:CaptureSoftware>Aalaapi Sky</GPano:CaptureSoftware>
+      <GPano:StitchingSoftware>Aalaapi Sky GPano Engine</GPano:StitchingSoftware>
+      <GPano:ProjectionType>equirectangular</GPano:ProjectionType>
+      <GPano:PoseHeadingDegrees>${Number(poseHeading).toFixed(1)}</GPano:PoseHeadingDegrees>
+      <GPano:PosePitchDegrees>${Number(posePitch).toFixed(1)}</GPano:PosePitchDegrees>
+      <GPano:PoseRollDegrees>${Number(poseRoll).toFixed(1)}</GPano:PoseRollDegrees>
+      <GPano:InitialViewHeadingDegrees>0.0</GPano:InitialViewHeadingDegrees>
+      <GPano:InitialViewPitchDegrees>0.0</GPano:InitialViewPitchDegrees>
+      <GPano:FullPanoWidthPixels>${fullPanoWidthPixels}</GPano:FullPanoWidthPixels>
+      <GPano:FullPanoHeightPixels>${fullPanoHeightPixels}</GPano:FullPanoHeightPixels>
+      <GPano:CroppedAreaImageWidthPixels>${croppedWidthPixels}</GPano:CroppedAreaImageWidthPixels>
+      <GPano:CroppedAreaImageHeightPixels>${croppedHeightPixels}</GPano:CroppedAreaImageHeightPixels>
+      <GPano:CroppedAreaLeftPixels>0</GPano:CroppedAreaLeftPixels>
+      <GPano:CroppedAreaTopPixels>0</GPano:CroppedAreaTopPixels>
+    </rdf:Description>
+  </rdf:RDF>
+</x:xmpmeta>
+<?xpacket end="w"?>`;
+}
+
+if (typeof window !== 'undefined') {
+  window.generateGPanoXmpMetadata = generateGPanoXmpMetadata;
+}
 // -------------------- src/export/Packager.js --------------------
 function exportKMZ() {
   if (!centerMarker) {
@@ -50026,6 +50706,8 @@ function recreate3DWaypointsAndPaths() {
         segColor = 0x10b981; // Emerald Green for Planar Facade Grid
       } else if (wp.gridType === 'continuous-helix' || wp.isContinuousHelix || nextWp.gridType === 'continuous-helix' || nextWp.isContinuousHelix) {
         segColor = 0x8b5cf6; // Violet/Indigo Ribbon for Continuous Corkscrew Spiral
+      } else if (wp.gridType === 'star-pass' || wp.isStarPass || nextWp.gridType === 'star-pass' || nextWp.isStarPass) {
+        segColor = 0xf59e0b; // Amber/Gold Ribbon for Star Pass Convergent Cross-Hatch
       } else {
         const nextRing = nextWp.ringIndex;
         if (nextRing === 0) segColor = 0xa855f7;

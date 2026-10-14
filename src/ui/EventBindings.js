@@ -875,8 +875,88 @@ function initUIEventListeners() {
     if (btnFull) btnFull.addEventListener('click', () => setRings(true, true, true, true));
     if (btnPano) btnPano.addEventListener('click', () => setRings(true, false, false, false));
     if (btnOblique) btnOblique.addEventListener('click', () => setRings(true, true, false, false));
+
+    const psMode = document.getElementById('photo-sphere-mode');
+    const psShots = document.getElementById('photo-sphere-shots-per-ring');
+    const psSettling = document.getElementById('photo-sphere-settling-time');
+    const psSettlingVal = document.getElementById('photo-sphere-settling-time-val');
+    const psAeb = document.getElementById('photo-sphere-aeb');
+
+    const updatePhotoSphereConfig = () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (!activeLayer) return;
+      if (psMode) activeLayer.photoSphereMode = psMode.value;
+      if (psShots) activeLayer.photoSphereShotsPerRing = parseInt(psShots.value, 10) || 12;
+      if (psSettling) {
+        const sVal = parseFloat(psSettling.value) || 2.0;
+        activeLayer.photoSphereSettlingTime = sVal;
+        if (psSettlingVal) psSettlingVal.textContent = `${sVal}s`;
+      }
+      if (psAeb) activeLayer.photoSphereAebEnabled = psAeb.checked;
+      if (typeof updatePhotoSphereBadge === 'function') {
+        updatePhotoSphereBadge();
+      }
+      updateGrid();
+      updateMapLegend();
+      saveAllSettingsToLocalStorage();
+    };
+
+    if (psMode) psMode.addEventListener('change', updatePhotoSphereConfig);
+    if (psShots) psShots.addEventListener('change', updatePhotoSphereConfig);
+    if (psSettling) {
+      psSettling.addEventListener('input', updatePhotoSphereConfig);
+      psSettling.addEventListener('change', updatePhotoSphereConfig);
+    }
+    if (psAeb) psAeb.addEventListener('change', updatePhotoSphereConfig);
   };
   setupPhotoSphereRingListeners();
+
+  // Star Pass Convergent POI Inspection Listeners (v1.154.0 - Issue #131)
+  const setupStarPassListeners = () => {
+    const spSpokes = document.getElementById('star-pass-spokes');
+    const spSpokesVal = document.getElementById('star-pass-spokes-val');
+    const spRadius = document.getElementById('star-pass-radius');
+    const spRadiusVal = document.getElementById('star-pass-radius-val');
+    const spHeadMode = document.getElementById('star-pass-heading-mode');
+    const spTransit = document.getElementById('star-pass-transit-mode');
+    const spApex = document.getElementById('star-pass-apex-nadir');
+
+    const updateStarPass = () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (!activeLayer) return;
+
+      if (spSpokes) {
+        const val = parseInt(spSpokes.value, 10) || 3;
+        activeLayer.starPassSpokes = val;
+        if (spSpokesVal) spSpokesVal.textContent = `${val}`;
+      }
+      if (spRadius) {
+        const val = parseFloat(spRadius.value) || 35;
+        activeLayer.starPassRadius = val;
+        if (spRadiusVal) spRadiusVal.textContent = `${val}m`;
+      }
+      if (spHeadMode) activeLayer.starPassHeadingMode = spHeadMode.value;
+      if (spTransit) activeLayer.starPassTransitMode = spTransit.value;
+      if (spApex) activeLayer.starPassApexNadir = spApex.checked;
+
+      updateGrid();
+      updateMapLegend();
+      saveAllSettingsToLocalStorage();
+    };
+
+    [spSpokes, spRadius].forEach(el => {
+      if (el) {
+        el.addEventListener('input', updateStarPass);
+        el.addEventListener('change', updateStarPass);
+      }
+    });
+    [spHeadMode, spTransit, spApex].forEach(el => {
+      if (el) {
+        el.addEventListener('change', updateStarPass);
+      }
+    });
+  };
+  setupStarPassListeners();
 
   // Hyperlapse Moving Time-Lapse Control Listeners (v1.146.0 - Closes #102)
   const setupHyperlapseListeners = () => {

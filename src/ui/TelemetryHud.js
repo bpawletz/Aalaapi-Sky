@@ -64,8 +64,8 @@ function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, capture
   let photoCount = photoLocations ? photoLocations.length : (waypoints ? waypoints.length : 0);
   if (isHyperlapse && (!photoLocations || photoLocations.length === 0)) {
     const interval = (waypoints.find(w => w && w.hyperlapseInterval)?.hyperlapseInterval) || 3;
-    const effSpeed = Math.max(0.2, speed || 4.0);
-    const frameSpacing = Math.max(0.2, effSpeed * interval);
+    const effSpeed = Math.max(0.1, (speed !== undefined && !isNaN(speed) && speed > 0) ? Number(speed) : 2.0);
+    const frameSpacing = Math.max(0.05, effSpeed * interval);
     if (totalDistance > 0 && frameSpacing > 0) {
       photoCount = Math.floor(totalDistance / frameSpacing) + 1;
     }
@@ -241,11 +241,18 @@ function updateStatsPanel(stats) {
   const photoText = (captureModeVal === 'video') ? "Video (Record)" : (isHyperlapseActive ? `${stats.photoCount} frames` : stats.photoCount);
   if (statPhotos) statPhotos.textContent = photoText;
 
-  // Update Section 2 Hyperlapse Frame Badge if active
+  // Update Section 2 Hyperlapse Frame & Duration Badges if active
   const hlBadge = document.getElementById('hyperlapse-frame-badge');
-  if (hlBadge && isHyperlapseActive) {
-    const clipDurationSec = (stats.photoCount / 30).toFixed(1);
-    hlBadge.textContent = `${stats.photoCount} Frames (${clipDurationSec}s Clip @ 30fps)`;
+  const hlDurationBadge = document.getElementById('hyperlapse-duration-badge');
+  if (isHyperlapseActive) {
+    const clip24 = (stats.photoCount / 24).toFixed(1);
+    const clip30 = (stats.photoCount / 30).toFixed(1);
+    if (hlBadge) {
+      hlBadge.textContent = `${stats.photoCount} Frames (${clip30}s Clip @ 30fps)`;
+    }
+    if (hlDurationBadge) {
+      hlDurationBadge.textContent = `Clip: ${clip30}s (30fps) | ${clip24}s (24fps)`;
+    }
   }
 
   // Format spacing

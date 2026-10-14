@@ -450,6 +450,8 @@ function recreate3DWaypointsAndPaths() {
         segColor = 0x10b981; // Emerald Green for Planar Facade Grid
       } else if (wp.gridType === 'continuous-helix' || wp.isContinuousHelix || nextWp.gridType === 'continuous-helix' || nextWp.isContinuousHelix) {
         segColor = 0x8b5cf6; // Violet/Indigo Ribbon for Continuous Corkscrew Spiral
+      } else if (wp.gridType === 'star-pass' || wp.isStarPass || nextWp.gridType === 'star-pass' || nextWp.isStarPass) {
+        segColor = 0xf59e0b; // Amber/Gold Ribbon for Star Pass Convergent Cross-Hatch
       } else {
         const nextRing = nextWp.ringIndex;
         if (nextRing === 0) segColor = 0xa855f7;

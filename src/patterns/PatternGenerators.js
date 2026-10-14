@@ -443,16 +443,18 @@ function updatePhotoSphereBadge() {
   const r2 = document.getElementById('photo-sphere-ring-2');
   const r3 = document.getElementById('photo-sphere-ring-3');
   const rNadir = document.getElementById('photo-sphere-ring-nadir');
+  const shotsSelect = document.getElementById('photo-sphere-shots-per-ring');
+  const shots = shotsSelect ? (parseInt(shotsSelect.value, 10) || 12) : 12;
   let count = 0;
-  if (r1 && r1.checked) count += 12;
-  if (r2 && r2.checked) count += 12;
-  if (r3 && r3.checked) count += 12;
+  if (r1 && r1.checked) count += shots;
+  if (r2 && r2.checked) count += shots;
+  if (r3 && r3.checked) count += shots;
   if (rNadir && rNadir.checked) count += 1;
   badge.textContent = `${count} Shot${count === 1 ? '' : 's'} Total`;
 }
 
-// Generate 360° Photo Sphere coordinates (Issue #89, v1.125.1)
-// Supports selective elevation rings (Row 1: -15°, Row 2: -45°, Row 3: -75°, Nadir: -90°)
+// Generate 360° Photo Sphere coordinates (v1.154.0 - Issue #134)
+// Supports selective elevation rings, configurable shots per ring, stationary action groups, and settling delay
 function generatePhotoSphereCoordinates(baseAltitude, layer) {
   const waypoints = [];
   const photos = [];
@@ -481,15 +483,44 @@ function generatePhotoSphereCoordinates(baseAltitude, layer) {
     rings.ring1 = true;
   }
 
+  const rawShots = (layer && layer.photoSphereShotsPerRing !== undefined) ? Number(layer.photoSphereShotsPerRing) : 12;
+  const shotsPerRing = Math.max(6, Math.min(24, isNaN(rawShots) ? 12 : rawShots));
+  const step = 360.0 / shotsPerRing;
+
+  const rawSettling = (layer && layer.photoSphereSettlingTime !== undefined) ? Number(layer.photoSphereSettlingTime) : 2.0;
+  const settlingTime = Math.max(0.5, Math.min(10.0, isNaN(rawSettling) ? 2.0 : rawSettling));
+
+  let mode = (layer && layer.photoSphereMode) ? layer.photoSphereMode : null;
+  if (!mode && typeof document !== 'undefined') {
+    const psMode = document.getElementById('photo-sphere-mode');
+    if (psMode && psMode.value) mode = psMode.value;
+  }
+  if (!mode) {
+    mode = 'discreteNodes';
+  }
+  const aebEnabled = Boolean(layer && layer.photoSphereAebEnabled);
+
   const rows = [];
-  if (rings.ring1) rows.push({ pitch: -15, count: 12, step: 30, ringIndex: 0 });
-  if (rings.ring2) rows.push({ pitch: -45, count: 12, step: 30, ringIndex: 1 });
-  if (rings.ring3) rows.push({ pitch: -75, count: 12, step: 30, ringIndex: 2 });
+  if (rings.ring1) rows.push({ pitch: -15, count: shotsPerRing, step: step, ringIndex: 0 });
+  if (rings.ring2) rows.push({ pitch: -45, count: shotsPerRing, step: step, ringIndex: 1 });
+  if (rings.ring3) rows.push({ pitch: -75, count: shotsPerRing, step: step, ringIndex: 2 });
 
   let shotIndex = 0;
+  const allActions = [];
+
   rows.forEach(row => {
     for (let i = 0; i < row.count; i++) {
-      const heading = (i * row.step) % 360;
+      const heading = Math.round((i * row.step) % 360);
+      const actionItem = {
+        yaw: heading,
+        pitch: row.pitch,
+        ringIndex: row.ringIndex,
+        shotIndex: shotIndex++,
+        hoverTime: settlingTime,
+        aebEnabled: aebEnabled
+      };
+      allActions.push(actionItem);
+
       const pt = {
         x: 0,
         y: 0,
@@ -498,19 +529,34 @@ function generatePhotoSphereCoordinates(baseAltitude, layer) {
         heading: heading,
         headingMode: 'smoothTransition',
         gridType: 'photo-sphere',
+        layerPattern: 'photo-sphere',
         isPhotoSpherePoint: true,
         ringIndex: row.ringIndex,
         isRingStart: (i === 0),
-        shotIndex: shotIndex++,
-        hoverTime: 2
+        shotIndex: actionItem.shotIndex,
+        hoverTime: settlingTime,
+        photoSphereMode: mode,
+        aebEnabled: aebEnabled
       };
-      waypoints.push(pt);
       photos.push(pt);
+      if (mode !== 'actionGroup') {
+        waypoints.push(pt);
+      }
     }
   });
 
   // Nadir Catch: 1 final ground-lock shot at -90° pitch
   if (rings.nadir) {
+    const nadirAction = {
+      yaw: 0,
+      pitch: -90,
+      ringIndex: 3,
+      shotIndex: shotIndex++,
+      hoverTime: settlingTime,
+      aebEnabled: aebEnabled
+    };
+    allActions.push(nadirAction);
+
     const nadirPt = {
       x: 0,
       y: 0,
@@ -519,17 +565,43 @@ function generatePhotoSphereCoordinates(baseAltitude, layer) {
       heading: 0,
       headingMode: 'smoothTransition',
       gridType: 'photo-sphere',
+      layerPattern: 'photo-sphere',
       isPhotoSpherePoint: true,
       ringIndex: 3,
       isRingStart: true,
-      shotIndex: shotIndex++,
-      hoverTime: 2
+      shotIndex: nadirAction.shotIndex,
+      hoverTime: settlingTime,
+      photoSphereMode: mode,
+      aebEnabled: aebEnabled
     };
-    waypoints.push(nadirPt);
     photos.push(nadirPt);
+    if (mode !== 'actionGroup') {
+      waypoints.push(nadirPt);
+    }
   }
 
-  return { waypoints, photos };
+  // When in stationary actionGroup mode, emit a single waypoint containing the entire action sequence
+  if (mode === 'actionGroup') {
+    waypoints.push({
+      x: 0,
+      y: 0,
+      alt: baseAltitude,
+      pitch: -15,
+      heading: 0,
+      headingMode: 'smoothTransition',
+      gridType: 'photo-sphere',
+      layerPattern: 'photo-sphere',
+      isPhotoSpherePoint: true,
+      isPhotoSphereActionGroup: true,
+      hoverTime: settlingTime,
+      photoSphereActions: allActions,
+      photoSphereMode: 'actionGroup',
+      totalShots: allActions.length,
+      aebEnabled: aebEnabled
+    });
+  }
+
+  return { waypoints, photos, totalShots: allActions.length, mode };
 }
 
 // ============================================================================
@@ -663,8 +735,8 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
 
   // Sample frame photo points along path every (speed * interval) meters
   const framePoints = [];
-  const effectiveSpeed = Math.max(0.2, speed || 4);
-  const frameSpacing = Math.max(0.2, effectiveSpeed * interval);
+  const effectiveSpeed = Math.max(0.1, (speed !== undefined && !isNaN(speed) && speed > 0) ? Number(speed) : 2.0);
+  const frameSpacing = Math.max(0.05, effectiveSpeed * interval);
 
   if (waypoints.length >= 2 && totalDist > 0) {
     let currentDist = 0;
@@ -711,7 +783,22 @@ function generateHyperlapseWaypoints(rawWps, layer, speed, altitude) {
     }
   }
 
-  return { waypoints, framePoints, interval, frameSpacing };
+  const totalFrames = framePoints.length;
+  const flightDurationSec = (effectiveSpeed > 0 && totalDist > 0) ? (totalDist / effectiveSpeed) : 0;
+  const videoDuration24fps = totalFrames / 24.0;
+  const videoDuration30fps = totalFrames / 30.0;
+
+  return {
+    waypoints,
+    framePoints,
+    interval,
+    frameSpacing,
+    totalDist,
+    totalFrames,
+    flightDurationSec,
+    videoDuration24fps,
+    videoDuration30fps
+  };
 }
 
 // ============================================================================
@@ -1112,8 +1199,160 @@ function generateHelixCoordinates(layer, sPhoto, baseAltitude, defaultGimbalPitc
   return { waypoints, photos };
 }
 
+// ============================================================================
+// Star Pass / Cross-Hatch Convergent POI Inspection Generator (v1.154.0 - Issue #131)
+// ============================================================================
+function generateStarPassCoordinates(layer, sPhoto, baseAltitude, defaultGimbalPitch) {
+  const waypoints = [];
+  const photos = [];
+
+  const rawSpokes = (layer && layer.starPassSpokes !== undefined) ? Number(layer.starPassSpokes) : 3;
+  const spokes = Math.max(2, Math.min(8, isNaN(rawSpokes) ? 3 : rawSpokes));
+
+  const rawRadius = (layer && layer.starPassRadius !== undefined) ? Number(layer.starPassRadius) : 35;
+  const radius = Math.max(10, Math.min(200, isNaN(rawRadius) ? 35 : rawRadius));
+
+  const headingMode = (layer && layer.starPassHeadingMode) ? layer.starPassHeadingMode : 'convergent';
+  const transitMode = (layer && layer.starPassTransitMode) ? layer.starPassTransitMode : 'perimeterHop';
+  const apexNadir = (layer && layer.starPassApexNadir !== undefined) ? Boolean(layer.starPassApexNadir) : true;
+
+  const rawAltitude = (layer && layer.altitude !== undefined && layer.altitude !== 'inherit') ? Number(layer.altitude) : baseAltitude;
+  const altitude = (!isNaN(rawAltitude) && rawAltitude > 0) ? rawAltitude : 50;
+
+  // Spoke angular increment: 180 degrees / spokes
+  const angleStepDeg = 180.0 / spokes;
+  const stepDist = Math.max(2.0, Math.min(15.0, sPhoto || 5.0));
+  const numStepsPerRadius = Math.max(2, Math.round(radius / stepDist));
+
+  // Helper to compute local coords given angle (deg) and signed dist from center
+  const getPoint = (angleDeg, distFromCenter, spokeIdx, isApex) => {
+    const rad = angleDeg * (Math.PI / 180.0);
+    const x = distFromCenter * Math.sin(rad);
+    const y = distFromCenter * Math.cos(rad);
+    const dCenter = Math.abs(distFromCenter);
+
+    let pitch, heading;
+    if (isApex && apexNadir) {
+      pitch = -90;
+      heading = 0;
+    } else if (headingMode === 'convergent') {
+      // Heading looks directly at center (0,0)
+      let brg = Math.atan2(-x, -y) * (180.0 / Math.PI);
+      if (brg < 0) brg += 360;
+      heading = brg;
+      // Pitch points toward ground at center (0,0)
+      pitch = -Math.round(Math.atan2(altitude, Math.max(0.5, dCenter)) * (180.0 / Math.PI));
+      pitch = Math.max(-90, Math.min(0, pitch));
+    } else if (headingMode === 'towardPOI') {
+      let brg = Math.atan2(-x, -y) * (180.0 / Math.PI);
+      if (brg < 0) brg += 360;
+      heading = brg;
+      pitch = (defaultGimbalPitch !== undefined && !isNaN(defaultGimbalPitch)) ? defaultGimbalPitch : -45;
+    } else {
+      // flightDirection
+      heading = angleDeg;
+      pitch = (defaultGimbalPitch !== undefined && !isNaN(defaultGimbalPitch)) ? defaultGimbalPitch : -45;
+    }
+
+    return {
+      x: Math.round(x * 100) / 100,
+      y: Math.round(y * 100) / 100,
+      alt: Math.round(altitude * 10) / 10,
+      pitch: Math.round(pitch),
+      heading: Math.round(heading * 10) / 10,
+      headingMode: 'smoothTransition',
+      turnMode: 'curved',
+      pathMode: 'curved',
+      gridType: 'star-pass',
+      layerPattern: 'star-pass',
+      isStarPass: true,
+      spokeIndex: spokeIdx,
+      isApexNadir: Boolean(isApex && apexNadir)
+    };
+  };
+
+  let lastExitAngle = null;
+
+  for (let k = 0; k < spokes; k++) {
+    const spokeBaseAngle = k * angleStepDeg;
+    // Alternate direction of passes to form a continuous Hamiltonian-like path
+    const isEven = (k % 2 === 0);
+    const entryAngle = isEven ? (spokeBaseAngle + 180) % 360 : spokeBaseAngle;
+    const exitAngle = isEven ? spokeBaseAngle : (spokeBaseAngle + 180) % 360;
+
+    // Perimeter hop from previous exit to this entry
+    if (lastExitAngle !== null && transitMode === 'perimeterHop') {
+      let dAng = entryAngle - lastExitAngle;
+      while (dAng > 180) dAng -= 360;
+      while (dAng < -180) dAng += 360;
+
+      // Insert intermediate curved perimeter transit points
+      const hopSteps = 3;
+      for (let s = 1; s < hopSteps; s++) {
+        const hopFrac = s / hopSteps;
+        let hopAngle = (lastExitAngle + dAng * hopFrac) % 360;
+        if (hopAngle < 0) hopAngle += 360;
+        const rad = hopAngle * (Math.PI / 180.0);
+        const hx = radius * Math.sin(rad);
+        const hy = radius * Math.cos(rad);
+
+        let hHeading = (headingMode === 'convergent' || headingMode === 'towardPOI')
+          ? (Math.atan2(-hx, -hy) * (180.0 / Math.PI) + 360) % 360
+          : hopAngle;
+        let hPitch = (headingMode === 'convergent')
+          ? -Math.round(Math.atan2(altitude, radius) * (180.0 / Math.PI))
+          : ((defaultGimbalPitch !== undefined && !isNaN(defaultGimbalPitch)) ? defaultGimbalPitch : -45);
+
+        const hopPt = {
+          x: Math.round(hx * 100) / 100,
+          y: Math.round(hy * 100) / 100,
+          alt: Math.round(altitude * 10) / 10,
+          pitch: Math.round(hPitch),
+          heading: Math.round(hHeading * 10) / 10,
+          headingMode: 'smoothTransition',
+          turnMode: 'curved',
+          pathMode: 'curved',
+          gridType: 'star-pass',
+          layerPattern: 'star-pass',
+          isStarPass: true,
+          isPerimeterTransit: true,
+          skipPhoto: true
+        };
+        waypoints.push(hopPt);
+      }
+    }
+
+    // Now generate waypoints along the spoke from entry (-radius) to exit (+radius)
+    // Entry side (inward towards center)
+    for (let s = numStepsPerRadius; s >= 1; s--) {
+      const dist = (s / numStepsPerRadius) * radius;
+      const pt = getPoint(entryAngle, dist, k, false);
+      waypoints.push(pt);
+      photos.push(pt);
+    }
+
+    // Center point (Apex / Nadir)
+    const centerPt = getPoint(0, 0, k, true);
+    waypoints.push(centerPt);
+    photos.push(centerPt);
+
+    // Exit side (outward towards perimeter)
+    for (let s = 1; s <= numStepsPerRadius; s++) {
+      const dist = (s / numStepsPerRadius) * radius;
+      const pt = getPoint(exitAngle, dist, k, false);
+      waypoints.push(pt);
+      photos.push(pt);
+    }
+
+    lastExitAngle = exitAngle;
+  }
+
+  return { waypoints, photos, spokes, radius, apexNadir };
+}
+
 if (typeof window !== 'undefined') {
   window.generateLightArtCoordinates = generateLightArtCoordinates;
   window.generateVerticalFacadeCoordinates = generateVerticalFacadeCoordinates;
   window.generateHelixCoordinates = generateHelixCoordinates;
+  window.generateStarPassCoordinates = generateStarPassCoordinates;
 }
