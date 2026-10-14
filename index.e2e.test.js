@@ -8069,6 +8069,69 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
         if (typeof FlightDiagnostics !== 'undefined') FlightDiagnostics.close();
       });
     });
+
+    test('E2E: Corridor Mapping pattern selects corridor, reveals corridor container, adds centerline points, and generates swaths', async () => {
+      const res = await page.evaluate(() => {
+        const gridTypeSelect = document.getElementById('grid-type');
+        const corridorContainer = document.getElementById('corridor-container');
+        const corridorWidth = document.getElementById('corridor-width');
+        const corridorPasses = document.getElementById('corridor-passes');
+        const corridorOvershoot = document.getElementById('corridor-overshoot');
+        const resetBtn = document.getElementById('corridor-clear-btn');
+
+        if (!gridTypeSelect || !corridorContainer || !corridorWidth || !corridorPasses) {
+          return { error: 'Missing corridor UI elements' };
+        }
+
+        // Switch to corridor pattern
+        gridTypeSelect.value = 'corridor';
+        gridTypeSelect.dispatchEvent(new Event('change'));
+        if (typeof togglePatternParameters === 'function') togglePatternParameters();
+
+        const containerVisible = corridorContainer.style.display !== 'none';
+
+        // Set corridor parameters
+        corridorWidth.value = '50';
+        corridorWidth.dispatchEvent(new Event('input'));
+        corridorPasses.value = '3';
+        corridorPasses.dispatchEvent(new Event('input'));
+        corridorOvershoot.value = '15';
+        corridorOvershoot.dispatchEvent(new Event('input'));
+        if (typeof saveActiveLayerFromUi === 'function') saveActiveLayerFromUi();
+
+        // Add corridor points using addCorridorPoint
+        if (typeof addCorridorPoint === 'function') {
+          addCorridorPoint(41.3215, -88.9950);
+          addCorridorPoint(41.3225, -88.9930);
+          addCorridorPoint(41.3235, -88.9910);
+        }
+
+        if (typeof updateGrid === 'function') updateGrid();
+
+        const layer = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+        const pts = (typeof getCurrentWaypoints === 'function') ? getCurrentWaypoints() : ((typeof generatedWaypoints !== 'undefined' && generatedWaypoints) ? generatedWaypoints : []);
+        const corridorWps = pts.filter(w => w.gridType === 'corridor' || w.isCorridor);
+        const corridorCount = corridorWps.length;
+
+        // Test reset button
+        if (resetBtn) resetBtn.click();
+        const ptsAfterReset = typeof corridorCenterline !== 'undefined' ? corridorCenterline.length : 0;
+
+        return {
+          containerVisible,
+          pattern: layer ? layer.pattern : null,
+          totalWaypoints: pts.length,
+          corridorWaypoints: corridorCount,
+          ptsAfterReset
+        };
+      });
+
+      assert.strictEqual(res.containerVisible, true, 'Corridor container must be visible when pattern is corridor');
+      assert.strictEqual(res.pattern, 'corridor', 'Active layer pattern must be corridor');
+      assert.ok(res.corridorWaypoints > 0, `Must generate corridor waypoints (got ${res.corridorWaypoints})`);
+      assert.strictEqual(res.ptsAfterReset, 3, 'Reset button must restore default 3-node corridor centerline');
+    });
   });
 });
+
 

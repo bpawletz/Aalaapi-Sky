@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.154.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.155.0</span></h1>
 
 
 
@@ -290,6 +290,7 @@
               <option value="grid-multi-orbit-combo">2D + 3D Hybrid (Grid + Multi-Orbit)</option>
               <option value="freeform">Freeform Flight Plan (Manual Waypoints)</option>
               <option value="road-following">Road Following (Offset Path)</option>
+              <option value="corridor">🛣️ Corridor Mapping (Multi-Pass Polyline)</option>
               <option value="exclusion-box">🚫 Exclusion Zone (Box)</option>
               <option value="exclusion-freeform">🚫 Exclusion Zone (Freeform)</option>
               <option value="boundary-polygon">🗺️ Boundary / Parcel (Drawing)</option>
@@ -421,6 +422,14 @@
                   <path d="M8 22V17C8 14 11 13 14 13C17 13 24 11 24 5V2" opacity="0.5"/>
                 </svg>
                 <span>Road Follow</span>
+              </div>
+              <div class="pattern-card" data-value="corridor" title="Multi-Pass Corridor Mapping (Linear Features, Transmission Lines, Roads, Rivers)">
+                <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 22L8 2M20 22L16 2" stroke="#6366f1" stroke-width="2"/>
+                  <line x1="12" y1="2" x2="12" y2="22" stroke="#818cf8" stroke-dasharray="2,2"/>
+                  <path d="M7 16l5-4 5-4" stroke="#c7d2fe" stroke-width="1.5"/>
+                </svg>
+                <span style="color: #818cf8;">Corridor</span>
               </div>
               <div class="pattern-card" data-value="freeform" title="Freeform Flight Plan (Manual Waypoints)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1319,6 +1328,56 @@
                 <input type="checkbox" id="star-pass-apex-nadir" checked style="accent-color: #f59e0b; width: 14px; height: 14px;">
                 <span style="font-weight: 600;">Apex Nadir Catch (-90° Ground Lock on Center Intersection)</span>
               </label>
+            </div>
+          </div>
+
+          <!-- Multi-Pass Corridor Mapping Controls (v1.155.0 - Issue #130) -->
+          <div id="corridor-container" class="control-group hidden" style="background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 8px; padding: 12px; margin-top: 10px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 0.76rem; font-weight: 700; color: #818cf8;">🛣️ Multi-Pass Linear Corridor Controls</span>
+              <span class="badge" style="background: rgba(99, 102, 241, 0.2); color: #818cf8; font-size: 0.68rem; padding: 2px 7px; border-radius: 4px; font-weight: 700;">Linear Polyline</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+              <div>
+                <label for="corridor-width" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">Corridor Width (<span id="corridor-width-val" style="color: #818cf8;">60m</span>)</label>
+                <input type="range" id="corridor-width" class="form-range" min="10" max="500" step="5" value="60" style="accent-color: #6366f1;">
+              </div>
+              <div>
+                <label for="corridor-passes" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">Parallel Passes (<span id="corridor-passes-val" style="color: #818cf8;">3</span>)</label>
+                <input type="range" id="corridor-passes" class="form-range" min="1" max="9" step="1" value="3" style="accent-color: #6366f1;">
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+              <div>
+                <label for="corridor-overshoot" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">Turn Overshoot (<span id="corridor-overshoot-val" style="color: #818cf8;">20m</span>)</label>
+                <input type="range" id="corridor-overshoot" class="form-range" min="0" max="100" step="5" value="20" style="accent-color: #6366f1;">
+              </div>
+              <div>
+                <label for="corridor-side-overlap" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">Swath Side Overlap (<span id="corridor-side-overlap-val" style="color: #818cf8;">65%</span>)</label>
+                <input type="range" id="corridor-side-overlap" class="form-range" min="20" max="90" step="5" value="65" style="accent-color: #6366f1;">
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+              <div>
+                <label for="corridor-turn-type" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 3px;">Turn Style</label>
+                <select id="corridor-turn-type" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 3px 6px;">
+                  <option value="bulb" selected>Teardrop / Bulb Turn</option>
+                  <option value="arc">Smooth Banking Arc</option>
+                  <option value="direct">Direct Stop-and-Hop</option>
+                </select>
+              </div>
+              <div>
+                <label for="corridor-heading-mode" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 3px;">Heading Orientation</label>
+                <select id="corridor-heading-mode" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 3px 6px;">
+                  <option value="path" selected>Follow Flight Path</option>
+                  <option value="centerline">Lock to Centerline</option>
+                  <option value="fixed">Fixed Orientation</option>
+                </select>
+              </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(99, 102, 241, 0.2);">
+              <span style="font-size: 0.7rem; color: var(--text-muted);">Click map to add nodes. Drag to reshape.</span>
+              <button id="corridor-clear-btn" type="button" class="btn btn-xs btn-outline-danger" style="font-size: 0.68rem; padding: 2px 8px;">Reset Centerline</button>
             </div>
           </div>
 
@@ -3489,6 +3548,14 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #818cf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🛣️ Multi-Pass Corridor Mapping along Complex Linear Features (v1.155.0) (Closes #130)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Efficiently map roads, rivers, pipelines, and transmission line corridors with automated multi-swath parallel offset flight lines! Generates symmetric and asymmetric swaths with <strong>miter angle bisectors and clamped corner smoothing (&le; 2.5)</strong> to eliminate flight path spikes on sharp bends. Includes customizable <strong>overshoot extensions</strong> and 3 turnaround styles (<strong>Teardrop Bulb Turn</strong>, <strong>Smooth Banking Arc</strong>, and <strong>Direct Stop-and-Hop</strong>), interactive draggable centerline editing, and Electric Indigo 3D trajectory ribbons.
+            </p>
+          </div>
           <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #f59e0b; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               ⭐ Star Pass / Cross-Hatch Convergent POI Inspection (v1.154.0) (Closes #131)
@@ -4756,7 +4823,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.154.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.155.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -4817,6 +4884,12 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.155.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Multi-Pass Corridor Mapping along Complex Linear Features:</strong> Automated parallel offset swaths along arbitrary multi-vertex polylines with miter angle bisectors, clamped corner smoothing (&le; 2.5), turnaround overshoot extensions, 3 turnaround styles (Teardrop Bulb, Smooth Banking Arc, Direct Stop-and-Hop), interactive draggable centerline editing, and Electric Indigo 3D trajectory visualization. (Closes #130)</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.154.2):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">

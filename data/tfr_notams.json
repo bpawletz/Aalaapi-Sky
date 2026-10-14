@@ -1,5 +1,16 @@
 [
   {
+    "notam_id": "6/9532",
+    "facility": "ZMP",
+    "state": "MN",
+    "type": "HAZARDS",
+    "description": "NASHWAUK, MN, Monday, October 19, 2026 UTC",
+    "mod_date": "10/14/2026 17:34:00",
+    "mod_abs_time": "202610141734",
+    "is_new": "Y",
+    "gid": "6/9532"
+  },
+  {
     "notam_id": "6/9528",
     "facility": "ZMA",
     "state": "FL",
@@ -251,17 +262,6 @@
     "mod_abs_time": "202610121241",
     "is_new": "N",
     "gid": "6/8992"
-  },
-  {
-    "notam_id": "6/8928",
-    "facility": "ZTL",
-    "state": "GA",
-    "type": "VIP",
-    "description": "Atlanta, GA, Wednesday, October 14, 2026 Local",
-    "mod_date": "10/12/2026 11:29:00",
-    "mod_abs_time": "202610121129",
-    "is_new": "N",
-    "gid": "6/8928"
   },
   {
     "notam_id": "6/8927",

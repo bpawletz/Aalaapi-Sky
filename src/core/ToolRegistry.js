@@ -125,6 +125,15 @@ const FLIGHT_TOOLS = {
     description: 'Road following with offset flight paths',
     propertyGroups: ['road-geometry', 'altitude', 'speed', 'camera']
   },
+  'corridor': {
+    id: 'corridor',
+    label: 'Corridor Mapping',
+    category: 'corridor',
+    icon: 'road-following',
+    shortcut: 'C',
+    description: 'Multi-pass corridor mapping along complex linear features with overshoot turns and miter smoothing',
+    propertyGroups: ['corridor-geometry', 'altitude', 'speed', 'camera']
+  },
   'freeform': {
     id: 'freeform',
     label: 'Freeform',
