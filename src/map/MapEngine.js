@@ -740,6 +740,8 @@ function initMap() {
       addFiducialMarkerPoint(e.latlng.lat, e.latlng.lng);
     } else if (currentPattern === 'road-following') {
       addRoadWaypoint(e.latlng.lat, e.latlng.lng);
+    } else if (currentPattern === 'corridor') {
+      addCorridorPoint(e.latlng.lat, e.latlng.lng);
     } else if (isTargetSplatPoly) {
       addTargetPolygonPoint(e.latlng.lat, e.latlng.lng);
     } else {

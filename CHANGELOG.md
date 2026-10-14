@@ -1,3 +1,30 @@
+## [1.155.0] - 2026-10-14
+
+Introduces Multi-Pass Corridor Mapping along arbitrary multi-vertex polylines for infrastructure inspections (roads, pipelines, transmission lines, and rivers) with miter angle bisectors, clamped corner smoothing, turnaround extensions, and 3 distinct turn styles (closes #130).
+
+### Added
+
+#### Pilot & Operational Features
+- **Multi-Pass Corridor Mapping along Complex Linear Features**:
+  - Added the dedicated **Corridor Mapping** flight pattern generator for mapping linear features such as power lines, pipelines, rivers, and roads with parallel offset swaths.
+  - Automatically calculates symmetric and asymmetric parallel flight swaths around any multi-vertex polyline centerline based on corridor width and pass count.
+  - **Miter Angle Bisectors & Clamped Corner Smoothing**: Evaluates vertex bisectors with miter factor clamping (<= 2.5) to prevent flight path overshoot spikes on sharp bends and hairpin corners.
+  - **Turnaround Overshoot Extensions**: Extends flight lines beyond corridor extremities by a configurable distance prior to camera acquisition, ensuring edge-to-edge orthomosaic coverage.
+  - **3 Turnaround Styles**: Supports Teardrop / Bulb Turn, Smooth Banking Arc, and Direct Stop-and-Hop transitions.
+  - **Interactive Centerline Editing**: Click directly on the 2D map to append polyline nodes or drag markers on the canvas to dynamically reshape the corridor with real-time swath recalculation.
+  - **Electric Indigo 3D Trajectory Ribbon**: Color-coded in Electric Indigo (`0x6366f1` / `#6366f1`) in the 3D Flight Simulation viewer.
+  - **Section 2 Dual-Unit Controls**: Complete support for both Metric (`m`) and Imperial (`ft`) units on corridor width and overshoot controls with click-to-type capability.
+
+#### Under the Hood & Technical Details
+- **PatternGenerators.js (`generateCorridorCoordinates`)**:
+  - Implemented multi-pass swath generation algorithm calculating segment tangents, left-hand unit normals, bisector miters, boustrophedon pass sequencing, and turnaround curves.
+  - Turnaround transition points tagged with `isTransition: true`, `skipPhoto: true`, `turnMode: 'curved'`, and `pathMode: 'curved'`.
+- **LayerManager.js & ToolRegistry.js**:
+  - Registered `'corridor'` pattern in `ToolRegistry` and `LayerManager` defaults (`corridorWidth: 60`, `corridorPasses: 3`, `corridorOvershoot: 20`, `corridorTurnType: 'bulb'`, `corridorHeadingMode: 'path'`, `corridorSideOverlap: 65`).
+  - Added corridor handling in `generateLayerWaypoints`, `saveActiveLayerFromUi`, and `syncUiWithActiveLayer`.
+- **WpmlCompiler.js**:
+  - Verified native SI meters for `<wpml:executeHeight>` and `<wpml:waypointSpeed>` with smoothTransition heading angle propagation.
+
 ## [1.154.2] - 2026-10-14
 
 Resolves an issue in the 3D Flight Diagnostics replay dashboard where the drone model was clipped or off-screen at the bottom of the viewport upon opening, ensuring immediate drone visibility at initial entry without requiring timeline slider interaction.

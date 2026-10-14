@@ -39,7 +39,8 @@ function getPatternDisplayName(pattern) {
     'light-art': '🎨 Light Art (Sky Painting)',
     'vertical-facade': '🏢 Vertical Facade Grid',
     'continuous-helix': '🌀 Continuous Helix / Spiral',
-    'star-pass': '⭐ Star Pass (Cross-Hatch)'
+    'star-pass': '⭐ Star Pass (Cross-Hatch)',
+    'corridor': '🛣️ Multi-Pass Corridor'
   };
   return map[pattern] || pattern || 'Double Grid';
 }
@@ -178,6 +179,13 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     starPassHeadingMode: 'convergent', // 'convergent', 'flightDirection', 'towardPOI'
     starPassTransitMode: 'perimeterHop', // 'perimeterHop', 'directAcross'
     starPassApexNadir: true,
+    corridorWidth: 60,
+    corridorPasses: 3,
+    corridorOvershoot: 20,
+    corridorTurnType: 'bulb', // 'bulb', 'arc', 'direct'
+    corridorHeadingMode: 'path', // 'path', 'centerline', 'fixed'
+    corridorSideOverlap: 65,
+    corridorCenterline: [],
     photoSphereMode: 'discreteNodes', // 'actionGroup', 'discreteNodes'
     photoSphereShotsPerRing: 12,
     photoSphereSettlingTime: 2.0,
@@ -198,6 +206,13 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
 
   if (pattern === 'road-following') {
     layer.gimbalPitch = 'auto';
+  } else if (pattern === 'corridor') {
+    layer.corridorWidth = 60;
+    layer.corridorPasses = 3;
+    layer.corridorOvershoot = 20;
+    layer.corridorTurnType = 'bulb';
+    layer.corridorHeadingMode = 'path';
+    layer.corridorSideOverlap = 65;
   } else if (pattern === 'light-art') {
     layer.speed = 3.0; // Optimal smooth stroke velocity
     layer.pathMode = 'curved';
@@ -816,6 +831,19 @@ function saveActiveLayerFromUi() {
   if (spTransit && spTransit.value) layer.starPassTransitMode = spTransit.value;
   if (spApex) layer.starPassApexNadir = spApex.checked;
 
+  const corrWidth = document.getElementById('corridor-width');
+  const corrPasses = document.getElementById('corridor-passes');
+  const corrOvershoot = document.getElementById('corridor-overshoot');
+  const corrTurnType = document.getElementById('corridor-turn-type');
+  const corrHeadingMode = document.getElementById('corridor-heading-mode');
+  const corrSideOverlap = document.getElementById('corridor-side-overlap');
+  if (corrWidth) layer.corridorWidth = parseFloat(corrWidth.value) || 60;
+  if (corrPasses) layer.corridorPasses = parseInt(corrPasses.value, 10) || 3;
+  if (corrOvershoot) layer.corridorOvershoot = parseFloat(corrOvershoot.value) || 0;
+  if (corrTurnType && corrTurnType.value) layer.corridorTurnType = corrTurnType.value;
+  if (corrHeadingMode && corrHeadingMode.value) layer.corridorHeadingMode = corrHeadingMode.value;
+  if (corrSideOverlap) layer.corridorSideOverlap = parseFloat(corrSideOverlap.value) || 65;
+
   const hlInterval = document.getElementById('hyperlapse-interval');
   const hlStartPitch = document.getElementById('hyperlapse-start-pitch');
   const hlEndPitch = document.getElementById('hyperlapse-end-pitch');
@@ -1246,6 +1274,29 @@ function syncUiWithActiveLayer() {
   if (spHeadMode) spHeadMode.value = layer.starPassHeadingMode || 'convergent';
   if (spTransit) spTransit.value = layer.starPassTransitMode || 'perimeterHop';
   if (spApex) spApex.checked = layer.starPassApexNadir !== false;
+
+  // Sync Corridor Mapping Controls (v1.155.0 - Issue #130)
+  const corrWidth = document.getElementById('corridor-width');
+  const corrWidthVal = document.getElementById('corridor-width-val');
+  const corrPasses = document.getElementById('corridor-passes');
+  const corrPassesVal = document.getElementById('corridor-passes-val');
+  const corrOvershoot = document.getElementById('corridor-overshoot');
+  const corrOvershootVal = document.getElementById('corridor-overshoot-val');
+  const corrTurnType = document.getElementById('corridor-turn-type');
+  const corrHeadingMode = document.getElementById('corridor-heading-mode');
+  const corrSideOverlap = document.getElementById('corridor-side-overlap');
+  const corrSideOverlapVal = document.getElementById('corridor-side-overlap-val');
+
+  if (corrWidth) corrWidth.value = layer.corridorWidth !== undefined ? layer.corridorWidth : 60;
+  if (corrWidthVal) corrWidthVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.corridorWidth !== undefined ? layer.corridorWidth : 60) : `${layer.corridorWidth !== undefined ? layer.corridorWidth : 60}m`;
+  if (corrPasses) corrPasses.value = layer.corridorPasses !== undefined ? layer.corridorPasses : 3;
+  if (corrPassesVal) corrPassesVal.textContent = `${layer.corridorPasses !== undefined ? layer.corridorPasses : 3}`;
+  if (corrOvershoot) corrOvershoot.value = layer.corridorOvershoot !== undefined ? layer.corridorOvershoot : 20;
+  if (corrOvershootVal) corrOvershootVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.corridorOvershoot !== undefined ? layer.corridorOvershoot : 20) : `${layer.corridorOvershoot !== undefined ? layer.corridorOvershoot : 20}m`;
+  if (corrTurnType && layer.corridorTurnType) corrTurnType.value = layer.corridorTurnType;
+  if (corrHeadingMode && layer.corridorHeadingMode) corrHeadingMode.value = layer.corridorHeadingMode;
+  if (corrSideOverlap) corrSideOverlap.value = layer.corridorSideOverlap !== undefined ? layer.corridorSideOverlap : 65;
+  if (corrSideOverlapVal) corrSideOverlapVal.textContent = `${layer.corridorSideOverlap !== undefined ? layer.corridorSideOverlap : 65}%`;
 
   if (typeof syncDisplayValues === 'function') {
     try { syncDisplayValues(); } catch (e) {}
@@ -2365,7 +2416,7 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     sLine = (gridType === 'tower' || gridType === 'vertical-facade') ? lFoot * (1.0 - overlapFront) : wFoot * (1.0 - overlapSide);
     sPhoto = (gridType === 'tower' || gridType === 'vertical-facade') ? wFoot * (1.0 - overlapSide) : lFoot * (1.0 - overlapFront);
 
-    actualRotation = (gridType === 'orbit' || gridType === 'multi-orbit' || gridType === 'tower' || gridType === 'photo-sphere' || gridType === 'continuous-helix') ? 0 : rotation;
+    actualRotation = (gridType === 'orbit' || gridType === 'multi-orbit' || gridType === 'tower' || gridType === 'photo-sphere' || gridType === 'continuous-helix' || gridType === 'corridor') ? 0 : rotation;
 
     let gridData;
     if (gridType === 'light-art') {
@@ -2379,6 +2430,25 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
       gridData = generateHelixCoordinates(layer, sPhoto, altitude, defaultGimbalPitch);
     } else if (gridType === 'star-pass') {
       gridData = generateStarPassCoordinates(layer, sPhoto, altitude, defaultGimbalPitch);
+    } else if (gridType === 'corridor') {
+      const rawCenterline = (layer.corridorCenterline && Array.isArray(layer.corridorCenterline) && layer.corridorCenterline.length > 0)
+        ? layer.corridorCenterline
+        : (layer.id === activeLayerId && Array.isArray(corridorCenterline) && corridorCenterline.length > 0 ? corridorCenterline : null);
+
+      let effectiveCenterline = rawCenterline;
+      if (!effectiveCenterline || effectiveCenterline.length < 2) {
+        const p1 = (typeof localToGeodetic === 'function') ? localToGeodetic(-60, -35, centerLat, centerLon, 0) : { lat: centerLat, lon: centerLon };
+        const p2 = (typeof localToGeodetic === 'function') ? localToGeodetic(0, 0, centerLat, centerLon, 0) : { lat: centerLat, lon: centerLon };
+        const p3 = (typeof localToGeodetic === 'function') ? localToGeodetic(60, 45, centerLat, centerLon, 0) : { lat: centerLat, lon: centerLon };
+        effectiveCenterline = [
+          { lat: p1.lat, lon: p1.lon, x: -60, y: -35 },
+          { lat: p2.lat, lon: p2.lon, x: 0, y: 0 },
+          { lat: p3.lat, lon: p3.lon, x: 60, y: 45 }
+        ];
+        layer.corridorCenterline = effectiveCenterline;
+        if (layer.id === activeLayerId) corridorCenterline = effectiveCenterline;
+      }
+      gridData = generateCorridorCoordinates(layer, effectiveCenterline, sPhoto, altitude, defaultGimbalPitch, speed, centerLat, centerLon);
     } else if (gridType === 'tower') {
       gridData = generateTowerCoordinates(layer, sLine, sPhoto, altitude, defaultGimbalPitch);
     } else if (gridType === 'orbit') {
@@ -2436,7 +2506,10 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
         isApexNadir: pt.isApexNadir || false,
         spokeIndex: pt.spokeIndex !== undefined ? pt.spokeIndex : null,
         isLightArtPoint: pt.isLightArtPoint || (gridType === 'light-art'),
-        gridType: pt.gridType || (gridType === 'star-pass' ? 'star-pass' : (gridType === 'target-splat' ? 'target-splat' : (gridType === 'photo-sphere' ? 'photo-sphere' : (gridType === 'light-art' ? 'light-art' : undefined)))),
+        isCorridor: pt.isCorridor || (gridType === 'corridor'),
+        passIndex: pt.passIndex !== undefined ? pt.passIndex : null,
+        isTransition: pt.isTransition || false,
+        gridType: pt.gridType || (gridType === 'corridor' ? 'corridor' : (gridType === 'star-pass' ? 'star-pass' : (gridType === 'target-splat' ? 'target-splat' : (gridType === 'photo-sphere' ? 'photo-sphere' : (gridType === 'light-art' ? 'light-art' : undefined))))),
         origLat: geo.lat,
         origLon: geo.lon,
         origX: pt.x,

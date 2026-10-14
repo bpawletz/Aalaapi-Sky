@@ -1350,9 +1350,449 @@ function generateStarPassCoordinates(layer, sPhoto, baseAltitude, defaultGimbalP
   return { waypoints, photos, spokes, radius, apexNadir };
 }
 
+/**
+ * Multi-Pass Corridor Mapping along Complex Linear Features (Issue #130)
+ * Generates symmetric/asymmetric parallel offset swaths along an arbitrary multi-vertex polyline
+ * with miter angle bisectors, clamped corner smoothing, turnaround extensions, and 3 turnaround styles.
+ *
+ * @param {Object} layer - Layer configuration
+ * @param {Array} centerline - Centerline points [{lat, lon, x, y}, ...]
+ * @param {number} sPhoto - Photo trigger interval spacing (meters)
+ * @param {number} altitude - Flight altitude (meters)
+ * @param {number} defaultGimbalPitch - Default camera pitch (degrees)
+ * @param {number} speed - Flight speed (m/s)
+ * @param {number} centerLat - Geodetic reference center latitude
+ * @param {number} centerLon - Geodetic reference center longitude
+ * @returns {Object} { waypoints, photos, passes, width, overshoot }
+ */
+function generateCorridorCoordinates(layer, centerline, sPhoto = 20, altitude = 50, defaultGimbalPitch = -60, speed = 5.0, centerLat = 0, centerLon = 0) {
+  const waypoints = [];
+  const photos = [];
+
+  const rawWidth = layer ? (layer.corridorWidth !== undefined ? layer.corridorWidth : 60) : 60;
+  const width = Math.max(0, parseFloat(rawWidth) || 60);
+
+  const rawPasses = layer ? (layer.corridorPasses !== undefined ? layer.corridorPasses : 3) : 3;
+  const numPasses = Math.max(1, parseInt(rawPasses, 10) || 3);
+
+  const rawOvershoot = layer ? (layer.corridorOvershoot !== undefined ? layer.corridorOvershoot : 20) : 20;
+  const overshoot = Math.max(0, parseFloat(rawOvershoot) || 0);
+
+  const turnType = (layer && layer.corridorTurnType) ? layer.corridorTurnType : 'bulb'; // 'bulb', 'arc', 'direct'
+  const headingMode = (layer && layer.corridorHeadingMode) ? layer.corridorHeadingMode : 'path'; // 'path', 'centerline', 'fixed'
+
+  const resolvedPitch = (defaultGimbalPitch !== undefined && defaultGimbalPitch !== null && !isNaN(defaultGimbalPitch))
+    ? defaultGimbalPitch
+    : (layer && layer.gimbalPitch !== undefined && layer.gimbalPitch !== null && !isNaN(layer.gimbalPitch))
+      ? layer.gimbalPitch
+      : -60;
+  const pitch = Math.max(-90, Math.min(60, resolvedPitch));
+
+  // Validate or fallback centerline points
+  let poly = [];
+  if (Array.isArray(centerline) && centerline.length >= 2) {
+    poly = centerline.map((pt, idx) => {
+      let x = pt.x;
+      let y = pt.y;
+      if (x === undefined || y === undefined || isNaN(x) || isNaN(y)) {
+        if (typeof geodeticToLocal === 'function' && pt.lat != null && pt.lon != null) {
+          const off = geodeticToLocal(pt.lat, pt.lon, centerLat, centerLon);
+          x = off.x;
+          y = off.y;
+        } else {
+          x = idx * 50;
+          y = 0;
+        }
+      }
+      return { x, y, lat: pt.lat, lon: pt.lon };
+    });
+  } else {
+    // Default 3-node polyline
+    poly = [
+      { x: -60, y: -35 },
+      { x: 0, y: 0 },
+      { x: 60, y: 45 }
+    ];
+  }
+
+  // Deduplicate consecutive identical vertices
+  const cleanPoly = [];
+  for (let i = 0; i < poly.length; i++) {
+    if (i === 0) {
+      cleanPoly.push(poly[i]);
+    } else {
+      const prev = cleanPoly[cleanPoly.length - 1];
+      const d = Math.hypot(poly[i].x - prev.x, poly[i].y - prev.y);
+      if (d > 0.001) {
+        cleanPoly.push(poly[i]);
+      }
+    }
+  }
+  if (cleanPoly.length < 2) {
+    cleanPoly.push({ x: cleanPoly[0].x + 50, y: cleanPoly[0].y + 50 });
+  }
+
+  const M = cleanPoly.length;
+
+  // Compute segment direction vectors segV and segment normals segN
+  const segV = []; // unit direction vectors
+  const segN = []; // unit left normal vectors (-vy, vx)
+  for (let i = 0; i < M - 1; i++) {
+    const dx = cleanPoly[i + 1].x - cleanPoly[i].x;
+    const dy = cleanPoly[i + 1].y - cleanPoly[i].y;
+    const len = Math.hypot(dx, dy);
+    const vx = len > 0 ? dx / len : 1;
+    const vy = len > 0 ? dy / len : 0;
+    segV.push({ vx, vy, len });
+    segN.push({ nx: -vy, ny: vx });
+  }
+
+  // Compute vertex bisector normal vectors and clamped miter factors (max 2.5)
+  const vNormals = [];
+  for (let i = 0; i < M; i++) {
+    if (i === 0) {
+      vNormals.push({ mx: segN[0].nx, my: segN[0].ny, miter: 1.0 });
+    } else if (i === M - 1) {
+      vNormals.push({ mx: segN[M - 2].nx, my: segN[M - 2].ny, miter: 1.0 });
+    } else {
+      const nPrev = segN[i - 1];
+      const nCurr = segN[i];
+      const bx = nPrev.nx + nCurr.nx;
+      const by = nPrev.ny + nCurr.ny;
+      const bLen = Math.hypot(bx, by);
+      if (bLen < 1e-4) {
+        // Nearly 180° hairpin bend fallback
+        vNormals.push({ mx: nPrev.nx, my: nPrev.ny, miter: 1.0 });
+      } else {
+        const mx = bx / bLen;
+        const my = by / bLen;
+        const dot = mx * nCurr.nx + my * nCurr.ny;
+        let miter = (dot > 0.05) ? (1.0 / dot) : 2.5;
+        if (miter > 2.5) miter = 2.5;
+        if (miter < 0.5) miter = 0.5;
+        vNormals.push({ mx, my, miter });
+      }
+    }
+  }
+
+  // Calculate parallel swath offsets
+  // Offset_k = (k - (N - 1) / 2) * S_line
+  const swathSpacing = (numPasses > 1) ? (width / (numPasses - 1)) : 0;
+  const swathOffsets = [];
+  for (let k = 0; k < numPasses; k++) {
+    const off = (k - (numPasses - 1) / 2.0) * swathSpacing;
+    swathOffsets.push(off);
+  }
+
+  // Helper to calculate heading angle from (dx, dy)
+  const calcHeading = (dx, dy) => {
+    return Math.round(((Math.atan2(dx, dy) * 180.0 / Math.PI) + 360.0) % 360.0 * 10) / 10;
+  };
+
+  // Helper to compute overall centerline heading
+  const overallCenterlineHeading = calcHeading(cleanPoly[M - 1].x - cleanPoly[0].x, cleanPoly[M - 1].y - cleanPoly[0].y);
+
+  // Generate each pass
+  const passSwaths = [];
+
+  for (let k = 0; k < numPasses; k++) {
+    const offDist = swathOffsets[k];
+    const isForward = (k % 2 === 0);
+
+    // Build the list of survey points for this swath
+    const swathVerts = [];
+    for (let i = 0; i < M; i++) {
+      const vn = vNormals[i];
+      const px = cleanPoly[i].x + offDist * vn.miter * vn.mx;
+      const py = cleanPoly[i].y + offDist * vn.miter * vn.my;
+      swathVerts.push({ x: px, y: py, vertIdx: i });
+    }
+
+    const vStart = segV[0];
+    const nStart = segN[0];
+    const vEnd = segV[M - 2];
+    const nEnd = segN[M - 2];
+
+    const startOvershootPt = {
+      x: cleanPoly[0].x - overshoot * vStart.vx + offDist * nStart.nx,
+      y: cleanPoly[0].y - overshoot * vStart.vy + offDist * nStart.ny,
+      isTurnaroundPoint: true,
+      skipPhoto: true,
+      isTransition: true,
+      turnMode: 'curved',
+      pathMode: 'curved'
+    };
+
+    const endOvershootPt = {
+      x: cleanPoly[M - 1].x + overshoot * vEnd.vx + offDist * nEnd.nx,
+      y: cleanPoly[M - 1].y + overshoot * vEnd.vy + offDist * nEnd.ny,
+      isTurnaroundPoint: true,
+      skipPhoto: true,
+      isTransition: true,
+      turnMode: 'curved',
+      pathMode: 'curved'
+    };
+
+    const passPoints = [];
+
+    if (isForward) {
+      if (overshoot > 0) {
+        passPoints.push(startOvershootPt);
+      }
+      for (let i = 0; i < M; i++) {
+        const curV = swathVerts[i];
+        passPoints.push({
+          x: curV.x,
+          y: curV.y,
+          isSurvey: true,
+          vertIdx: i
+        });
+
+        if (i < M - 1 && sPhoto > 0) {
+          const nextV = swathVerts[i + 1];
+          const segDist = Math.hypot(nextV.x - curV.x, nextV.y - curV.y);
+          if (segDist > sPhoto * 1.25) {
+            const steps = Math.floor(segDist / sPhoto);
+            for (let s = 1; s <= steps; s++) {
+              const frac = (s * sPhoto) / segDist;
+              if (frac < 0.95) {
+                passPoints.push({
+                  x: curV.x + frac * (nextV.x - curV.x),
+                  y: curV.y + frac * (nextV.y - curV.y),
+                  isSurvey: true,
+                  isIntermediate: true
+                });
+              }
+            }
+          }
+        }
+      }
+      if (overshoot > 0) {
+        passPoints.push(endOvershootPt);
+      }
+    } else {
+      if (overshoot > 0) {
+        passPoints.push(endOvershootPt);
+      }
+      for (let i = M - 1; i >= 0; i--) {
+        const curV = swathVerts[i];
+        passPoints.push({
+          x: curV.x,
+          y: curV.y,
+          isSurvey: true,
+          vertIdx: i
+        });
+
+        if (i > 0 && sPhoto > 0) {
+          const prevV = swathVerts[i - 1];
+          const segDist = Math.hypot(prevV.x - curV.x, prevV.y - curV.y);
+          if (segDist > sPhoto * 1.25) {
+            const steps = Math.floor(segDist / sPhoto);
+            for (let s = 1; s <= steps; s++) {
+              const frac = (s * sPhoto) / segDist;
+              if (frac < 0.95) {
+                passPoints.push({
+                  x: curV.x + frac * (prevV.x - curV.x),
+                  y: curV.y + frac * (prevV.y - curV.y),
+                  isSurvey: true,
+                  isIntermediate: true
+                });
+              }
+            }
+          }
+        }
+      }
+      if (overshoot > 0) {
+        passPoints.push(startOvershootPt);
+      }
+    }
+
+    passSwaths.push({
+      k,
+      isForward,
+      offDist,
+      points: passPoints,
+      startOvershootPt,
+      endOvershootPt
+    });
+  }
+
+  // Connect passes with turnaround transitions
+  for (let k = 0; k < numPasses; k++) {
+    const currentPass = passSwaths[k];
+    const pts = currentPass.points;
+
+    for (let pIdx = 0; pIdx < pts.length; pIdx++) {
+      const cur = pts[pIdx];
+
+      let hAngle = 0;
+      if (headingMode === 'fixed') {
+        hAngle = (layer && layer.customHeading !== undefined) ? parseInt(layer.customHeading, 10) || 0 : 0;
+      } else if (headingMode === 'centerline') {
+        hAngle = currentPass.isForward ? overallCenterlineHeading : (overallCenterlineHeading + 180) % 360;
+      } else {
+        if (pIdx < pts.length - 1) {
+          hAngle = calcHeading(pts[pIdx + 1].x - cur.x, pts[pIdx + 1].y - cur.y);
+        } else if (pIdx > 0) {
+          hAngle = calcHeading(cur.x - pts[pIdx - 1].x, cur.y - pts[pIdx - 1].y);
+        } else {
+          hAngle = currentPass.isForward ? overallCenterlineHeading : (overallCenterlineHeading + 180) % 360;
+        }
+      }
+
+      const wp = {
+        x: Math.round(cur.x * 100) / 100,
+        y: Math.round(cur.y * 100) / 100,
+        alt: Math.round(altitude * 10) / 10,
+        pitch: pitch,
+        heading: hAngle,
+        headingMode: 'smoothTransition',
+        turnMode: cur.turnMode || 'toPointAndStopWithContinuityCurvature',
+        pathMode: cur.pathMode,
+        speed: speed,
+        gridType: 'corridor',
+        layerPattern: 'corridor',
+        isCorridor: true,
+        passIndex: k,
+        skipPhoto: !!cur.skipPhoto,
+        isTurnaroundPoint: !!cur.isTurnaroundPoint,
+        isTransition: !!cur.isTransition,
+        vertIdx: cur.vertIdx
+      };
+
+      waypoints.push(wp);
+
+      if (cur.isSurvey && !cur.skipPhoto) {
+        photos.push({
+          x: wp.x,
+          y: wp.y,
+          alt: wp.alt,
+          pitch: wp.pitch,
+          heading: wp.heading,
+          gridType: 'corridor',
+          passIndex: k
+        });
+      }
+    }
+
+    // Turnaround transition to next pass
+    if (k < numPasses - 1) {
+      const nextPass = passSwaths[k + 1];
+      const exitPt = pts[pts.length - 1];
+      const entryPt = nextPass.points[0];
+
+      const dx = entryPt.x - exitPt.x;
+      const dy = entryPt.y - exitPt.y;
+      const dSep = Math.hypot(dx, dy);
+
+      const exitTangent = currentPass.isForward
+        ? { tx: segV[M - 2].vx, ty: segV[M - 2].vy }
+        : { tx: -segV[0].vx, ty: -segV[0].vy };
+
+      const latVec = dSep > 0.001 ? { lx: dx / dSep, ly: dy / dSep } : { lx: 1, ly: 0 };
+
+      if (turnType === 'direct') {
+        const midPt = {
+          x: Math.round(((exitPt.x + entryPt.x) / 2.0) * 100) / 100,
+          y: Math.round(((exitPt.y + entryPt.y) / 2.0) * 100) / 100,
+          alt: Math.round(altitude * 10) / 10,
+          pitch: pitch,
+          heading: calcHeading(dx, dy),
+          headingMode: 'smoothTransition',
+          turnMode: 'curved',
+          pathMode: 'curved',
+          speed: speed,
+          gridType: 'corridor',
+          layerPattern: 'corridor',
+          isCorridor: true,
+          isTransition: true,
+          skipPhoto: true
+        };
+        waypoints.push(midPt);
+      } else if (turnType === 'arc') {
+        const mx = (exitPt.x + entryPt.x) / 2.0;
+        const my = (exitPt.y + entryPt.y) / 2.0;
+        const radius = Math.max(8, dSep / 2.0);
+        const arcSteps = 3;
+        for (let s = 1; s <= arcSteps; s++) {
+          const angle = (Math.PI / (arcSteps + 1)) * s;
+          const px = mx - (dSep / 2.0) * Math.cos(angle) * latVec.lx + radius * Math.sin(angle) * exitTangent.tx;
+          const py = my - (dSep / 2.0) * Math.cos(angle) * latVec.ly + radius * Math.sin(angle) * exitTangent.ty;
+
+          const arcPt = {
+            x: Math.round(px * 100) / 100,
+            y: Math.round(py * 100) / 100,
+            alt: Math.round(altitude * 10) / 10,
+            pitch: pitch,
+            heading: calcHeading(exitTangent.tx, exitTangent.ty),
+            headingMode: 'smoothTransition',
+            turnMode: 'curved',
+            pathMode: 'curved',
+            speed: speed,
+            gridType: 'corridor',
+            layerPattern: 'corridor',
+            isCorridor: true,
+            isTransition: true,
+            skipPhoto: true
+          };
+          waypoints.push(arcPt);
+        }
+      } else {
+        // 'bulb' teardrop turnaround loop
+        const extDist = Math.max(15, dSep * 0.7);
+        const p1x = exitPt.x + extDist * 0.5 * exitTangent.tx - 0.25 * dSep * latVec.lx;
+        const p1y = exitPt.y + extDist * 0.5 * exitTangent.ty - 0.25 * dSep * latVec.ly;
+
+        const mx = (exitPt.x + entryPt.x) / 2.0;
+        const my = (exitPt.y + entryPt.y) / 2.0;
+        const p2x = mx + extDist * 1.1 * exitTangent.tx;
+        const p2y = my + extDist * 1.1 * exitTangent.ty;
+
+        const p3x = entryPt.x + extDist * 0.5 * exitTangent.tx + 0.25 * dSep * latVec.lx;
+        const p3y = entryPt.y + extDist * 0.5 * exitTangent.ty + 0.25 * dSep * latVec.ly;
+
+        const loopPoints = [
+          { x: p1x, y: p1y },
+          { x: p2x, y: p2y },
+          { x: p3x, y: p3y }
+        ];
+
+        loopPoints.forEach((lp, lIdx) => {
+          let nextLp = (lIdx < loopPoints.length - 1) ? loopPoints[lIdx + 1] : entryPt;
+          waypoints.push({
+            x: Math.round(lp.x * 100) / 100,
+            y: Math.round(lp.y * 100) / 100,
+            alt: Math.round(altitude * 10) / 10,
+            pitch: pitch,
+            heading: calcHeading(nextLp.x - lp.x, nextLp.y - lp.y),
+            headingMode: 'smoothTransition',
+            turnMode: 'curved',
+            pathMode: 'curved',
+            speed: speed,
+            gridType: 'corridor',
+            layerPattern: 'corridor',
+            isCorridor: true,
+            isTransition: true,
+            skipPhoto: true
+          });
+        });
+      }
+    }
+  }
+
+  return {
+    waypoints,
+    photos,
+    passes: numPasses,
+    width,
+    overshoot
+  };
+}
+
 if (typeof window !== 'undefined') {
   window.generateLightArtCoordinates = generateLightArtCoordinates;
   window.generateVerticalFacadeCoordinates = generateVerticalFacadeCoordinates;
   window.generateHelixCoordinates = generateHelixCoordinates;
   window.generateStarPassCoordinates = generateStarPassCoordinates;
+  window.generateCorridorCoordinates = generateCorridorCoordinates;
 }
