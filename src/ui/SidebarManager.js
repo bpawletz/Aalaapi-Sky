@@ -26,7 +26,18 @@ function initClickToTypeInputs() {
     { valId: 'global-exclusion-clearance-val', inputId: 'global-exclusion-clearance-buffer', type: 'distance', min: 1, max: 25, step: 1 },
     { valId: 'max-height-val', inputId: 'max-flight-height', type: 'distance', min: 20, max: 500, step: 5 },
     { valId: 'rth-altitude-val', inputId: 'rth-altitude', type: 'distance', min: 20, max: 150, step: 5 },
-    { valId: 'global-hover-time-val', inputId: 'global-hover-time', type: 'raw', min: 0, max: 60, step: 1 }
+    { valId: 'global-hover-time-val', inputId: 'global-hover-time', type: 'raw', min: 0, max: 60, step: 1 },
+    { valId: 'star-pass-radius-val', inputId: 'star-pass-radius', type: 'distance', min: 5, max: 150, step: 1 },
+    { valId: 'facade-width-val', inputId: 'facade-width', type: 'distance', min: 10, max: 200, step: 1 },
+    { valId: 'facade-min-alt-val', inputId: 'facade-min-alt', type: 'distance', min: 2, max: 100, step: 1 },
+    { valId: 'facade-max-alt-val', inputId: 'facade-max-alt', type: 'distance', min: 5, max: 200, step: 1 },
+    { valId: 'facade-standoff-val', inputId: 'facade-standoff', type: 'distance', min: 3, max: 60, step: 1 },
+    { valId: 'helix-radius-start-val', inputId: 'helix-radius-start', type: 'distance', min: 5, max: 150, step: 1 },
+    { valId: 'helix-radius-end-val', inputId: 'helix-radius-end', type: 'distance', min: 5, max: 150, step: 1 },
+    { valId: 'helix-alt-start-val', inputId: 'helix-alt-start', type: 'distance', min: 2, max: 200, step: 1 },
+    { valId: 'helix-alt-end-val', inputId: 'helix-alt-end', type: 'distance', min: 5, max: 300, step: 1 },
+    { valId: 'light-art-radius-val', inputId: 'light-art-radius', type: 'distance', min: 5, max: 150, step: 1 },
+    { valId: 'light-art-climb-val', inputId: 'light-art-climb', type: 'distance', min: 0, max: 100, step: 1 }
   ];
 
   clickToTypeConfigs.forEach(cfg => {
@@ -1876,6 +1887,90 @@ function syncDisplayValues() {
     updateTargetSplatDimensionWarning(activeLayer);
   } else {
     updateTargetSplatDimensionWarning(null);
+  }
+
+  // Sync Star Pass Radius (v1.154.0 - Issue #131)
+  const spRadiusSlider = document.getElementById('star-pass-radius');
+  const spRadiusValEl = document.getElementById('star-pass-radius-val');
+  if (spRadiusSlider && spRadiusValEl) {
+    const val = parseFloat(spRadiusSlider.value) || 35;
+    spRadiusValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+
+  // Sync Vertical Facade Grid Geometry (v1.153.0 - Issue #132)
+  const fWidthSlider = document.getElementById('facade-width');
+  const fWidthValEl = document.getElementById('facade-width-val');
+  if (fWidthSlider && fWidthValEl) {
+    const val = parseFloat(fWidthSlider.value) || 60;
+    fWidthValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+  const fMinAltSlider = document.getElementById('facade-min-alt');
+  const fMinAltValEl = document.getElementById('facade-min-alt-val');
+  if (fMinAltSlider && fMinAltValEl) {
+    const val = parseFloat(fMinAltSlider.value) || 10;
+    fMinAltValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+  const fMaxAltSlider = document.getElementById('facade-max-alt');
+  const fMaxAltValEl = document.getElementById('facade-max-alt-val');
+  if (fMaxAltSlider && fMaxAltValEl) {
+    const val = parseFloat(fMaxAltSlider.value) || 40;
+    fMaxAltValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+  const fStandoffSlider = document.getElementById('facade-standoff');
+  const fStandoffValEl = document.getElementById('facade-standoff-val');
+  if (fStandoffSlider && fStandoffValEl) {
+    const val = parseFloat(fStandoffSlider.value) || 15;
+    fStandoffValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+
+  // Sync Continuous Helix Geometry (v1.153.0 - Issue #133)
+  const hRStartSlider = document.getElementById('helix-radius-start');
+  const hRStartValEl = document.getElementById('helix-radius-start-val');
+  if (hRStartSlider && hRStartValEl) {
+    const val = parseFloat(hRStartSlider.value) || 25;
+    hRStartValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+  const hREndSlider = document.getElementById('helix-radius-end');
+  const hREndValEl = document.getElementById('helix-radius-end-val');
+  if (hREndSlider && hREndValEl) {
+    const val = parseFloat(hREndSlider.value) || 25;
+    hREndValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+  const hAltStartSlider = document.getElementById('helix-alt-start');
+  const hAltStartValEl = document.getElementById('helix-alt-start-val');
+  if (hAltStartSlider && hAltStartValEl) {
+    const val = parseFloat(hAltStartSlider.value) || 20;
+    hAltStartValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+  const hAltEndSlider = document.getElementById('helix-alt-end');
+  const hAltEndValEl = document.getElementById('helix-alt-end-val');
+  if (hAltEndSlider && hAltEndValEl) {
+    const val = parseFloat(hAltEndSlider.value) || 60;
+    hAltEndValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+
+  // Sync Light Art Geometry (v1.151.0 - Issue #136)
+  const laRadiusSlider = document.getElementById('light-art-radius');
+  const laRadiusValEl = document.getElementById('light-art-radius-val');
+  if (laRadiusSlider && laRadiusValEl) {
+    const val = parseFloat(laRadiusSlider.value) || 25;
+    laRadiusValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+  const laClimbSlider = document.getElementById('light-art-climb');
+  const laClimbValEl = document.getElementById('light-art-climb-val');
+  if (laClimbSlider && laClimbValEl) {
+    const val = parseFloat(laClimbSlider.value) || 15;
+    laClimbValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+
+  // Sync Boundary Elevation
+  const bElevSlider = document.getElementById('boundary-elevation');
+  const bElevValEl = document.getElementById('boundary-elevation-val');
+  const bElevUnitEl = document.getElementById('boundary-elevation-unit');
+  if (bElevSlider && bElevValEl) {
+    const val = parseFloat(bElevSlider.value) || 0;
+    bElevValEl.textContent = (unit === 'imperial') ? Math.round(val * M_TO_FT) : val;
+    if (bElevUnitEl) bElevUnitEl.textContent = distUnitStr;
   }
 
   updateInheritOptionLabels();

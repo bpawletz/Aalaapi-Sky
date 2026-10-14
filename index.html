@@ -5992,7 +5992,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.154.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.154.1</span></h1>
 
 
 
@@ -7713,7 +7713,7 @@ html, body {
               <div class="control-group">
                 <div class="control-label">
                   <span style="font-size: 0.75rem;">Target Elevation Offset</span>
-                  <span class="value-display" style="font-size: 0.75rem;"><span id="boundary-elevation-val">0</span>m</span>
+                  <span class="value-display" style="font-size: 0.75rem;"><span id="boundary-elevation-val">0</span><span id="boundary-elevation-unit">m</span></span>
                 </div>
                 <input type="number" id="boundary-elevation" class="form-control" min="-50" max="500" step="1" value="0" placeholder="Offset from ground ATO (m)" style="font-size: 0.75rem; padding: 4px 8px;">
                 <p class="help-text" style="font-size: 0.68rem; margin-top: 3px;">Elevates boundary projection in Photo Inspector for structures/rooflines above takeoff ground.</p>
@@ -10682,7 +10682,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.154.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.154.1</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -10743,6 +10743,12 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.154.1):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Dual-Unit System (ft/m &amp; mph vs m/s) Fidelity in Section 2 &amp; Layer Stack:</strong> Enforced user-preferred Imperial (feet / mph) vs Metric (meters / m/s) unit formatting across Section 2 Layer Properties (Star Pass, Vertical Facade, Continuous Helix, Light Art, and Boundary elevation) and dynamic Layer Stack cards. Internal state and DJI WPML KMZ exports remain strictly in standard SI meters as required by DJI Fly firmware.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.154.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -18050,6 +18056,14 @@ function setUnitSystem(newUnit) {
     syncDisplayValues();
   }
 
+  if (typeof renderLayersList === 'function') {
+    renderLayersList();
+  }
+
+  if (typeof updateFiducialAdvisorUI === 'function') {
+    updateFiducialAdvisorUI();
+  }
+
   if (typeof getCurrentWaypoints === 'function' && getCurrentWaypoints()) {
     if (typeof redrawCurrentMission === 'function') redrawCurrentMission();
   } else if (typeof updateGrid === 'function') {
@@ -18074,6 +18088,38 @@ function formatDistance(meters, decimalPlaces = 1) {
     return `${feet.toFixed(decimalPlaces)} ft`;
   }
   return `${meters.toFixed(decimalPlaces)} m`;
+}
+
+function formatSpeed(mps, decimalPlaces = 1) {
+  if (mps === null || mps === undefined || isNaN(mps)) {
+    return `0 ${getUnitSystem() === 'imperial' ? 'mph' : 'm/s'}`;
+  }
+  const unit = getUnitSystem();
+  if (unit === 'imperial') {
+    const mph = mps * MPS_TO_MPH;
+    return `${mph.toFixed(decimalPlaces)} mph`;
+  }
+  return `${mps.toFixed(decimalPlaces)} m/s`;
+}
+
+function formatUnitDistance(meters, decimalPlaces = 0) {
+  if (meters === null || meters === undefined || isNaN(meters)) return '0m';
+  const unit = (typeof getUnitSystem === 'function') ? getUnitSystem() : 'imperial';
+  if (unit === 'imperial') {
+    const ft = decimalPlaces > 0 ? (meters * M_TO_FT).toFixed(decimalPlaces) : Math.round(meters * M_TO_FT);
+    return `${ft}ft`;
+  }
+  return `${meters}m`;
+}
+
+// Global exports
+if (typeof window !== 'undefined') {
+  window.formatDistance = formatDistance;
+  window.formatSpeed = formatSpeed;
+  window.formatUnitDistance = formatUnitDistance;
+  window.M_TO_FT = M_TO_FT;
+  window.FT_TO_M = FT_TO_M;
+  window.MPS_TO_MPH = MPS_TO_MPH;
 }
 
 // Theme Manager (Light & Dark Field Mode)
@@ -20027,14 +20073,14 @@ function syncUiWithActiveLayer() {
   if (laPreset) laPreset.value = layer.lightArtPreset || 'spiral';
   if (laOrientation) laOrientation.value = layer.lightArtOrientation || 'horizontal';
   if (laRadius) laRadius.value = layer.lightArtRadius !== undefined ? layer.lightArtRadius : 25;
-  if (laRadiusVal) laRadiusVal.textContent = `${layer.lightArtRadius !== undefined ? layer.lightArtRadius : 25}m`;
+  if (laRadiusVal) laRadiusVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.lightArtRadius !== undefined ? layer.lightArtRadius : 25) : `${layer.lightArtRadius !== undefined ? layer.lightArtRadius : 25}m`;
   if (laTurns) laTurns.value = layer.lightArtTurns !== undefined ? layer.lightArtTurns : 3;
   if (laTurnsVal) laTurnsVal.textContent = `${layer.lightArtTurns !== undefined ? layer.lightArtTurns : 3}`;
   if (laPoints) laPoints.value = layer.lightArtPointsCount !== undefined ? layer.lightArtPointsCount : 5;
   if (laStarRatio) laStarRatio.value = layer.lightArtStarRatio !== undefined ? layer.lightArtStarRatio : 0.45;
   if (laStarRatioVal) laStarRatioVal.textContent = `${layer.lightArtStarRatio !== undefined ? layer.lightArtStarRatio : 0.45}`;
   if (laClimb) laClimb.value = layer.lightArtClimb !== undefined ? layer.lightArtClimb : 15;
-  if (laClimbVal) laClimbVal.textContent = `${layer.lightArtClimb !== undefined ? layer.lightArtClimb : 15}m`;
+  if (laClimbVal) laClimbVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.lightArtClimb !== undefined ? layer.lightArtClimb : 15) : `${layer.lightArtClimb !== undefined ? layer.lightArtClimb : 15}m`;
   if (laCameraAz) laCameraAz.value = layer.lightArtCameraAzimuth !== undefined ? layer.lightArtCameraAzimuth : 0;
   if (laCameraAzVal) laCameraAzVal.textContent = `${layer.lightArtCameraAzimuth !== undefined ? layer.lightArtCameraAzimuth : 0}°`;
 
@@ -20054,13 +20100,13 @@ function syncUiWithActiveLayer() {
   const fScanMode = document.getElementById('facade-scan-mode');
   const fHeadingMode = document.getElementById('facade-heading-mode');
   if (fWidth) fWidth.value = layer.facadeWidth !== undefined ? layer.facadeWidth : 60;
-  if (fWidthVal) fWidthVal.textContent = `${layer.facadeWidth !== undefined ? layer.facadeWidth : 60}m`;
+  if (fWidthVal) fWidthVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.facadeWidth !== undefined ? layer.facadeWidth : 60) : `${layer.facadeWidth !== undefined ? layer.facadeWidth : 60}m`;
   if (fMinAlt) fMinAlt.value = layer.facadeMinAlt !== undefined ? layer.facadeMinAlt : 10;
-  if (fMinAltVal) fMinAltVal.textContent = `${layer.facadeMinAlt !== undefined ? layer.facadeMinAlt : 10}m`;
+  if (fMinAltVal) fMinAltVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.facadeMinAlt !== undefined ? layer.facadeMinAlt : 10) : `${layer.facadeMinAlt !== undefined ? layer.facadeMinAlt : 10}m`;
   if (fMaxAlt) fMaxAlt.value = layer.facadeMaxAlt !== undefined ? layer.facadeMaxAlt : 40;
-  if (fMaxAltVal) fMaxAltVal.textContent = `${layer.facadeMaxAlt !== undefined ? layer.facadeMaxAlt : 40}m`;
+  if (fMaxAltVal) fMaxAltVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.facadeMaxAlt !== undefined ? layer.facadeMaxAlt : 40) : `${layer.facadeMaxAlt !== undefined ? layer.facadeMaxAlt : 40}m`;
   if (fStandoff) fStandoff.value = layer.facadeStandoff !== undefined ? layer.facadeStandoff : 15;
-  if (fStandoffVal) fStandoffVal.textContent = `${layer.facadeStandoff !== undefined ? layer.facadeStandoff : 15}m`;
+  if (fStandoffVal) fStandoffVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.facadeStandoff !== undefined ? layer.facadeStandoff : 15) : `${layer.facadeStandoff !== undefined ? layer.facadeStandoff : 15}m`;
   if (fScanMode) fScanMode.value = layer.facadeScanMode || 'horizontal';
   if (fHeadingMode) fHeadingMode.value = layer.facadeHeadingMode || 'perpendicular';
 
@@ -20083,13 +20129,13 @@ function syncUiWithActiveLayer() {
   const hPEndVal = document.getElementById('helix-pitch-end-val');
   const hHeadMode = document.getElementById('helix-heading-mode');
   if (hRStart) hRStart.value = layer.helixRadiusStart !== undefined ? layer.helixRadiusStart : 25;
-  if (hRStartVal) hRStartVal.textContent = `${layer.helixRadiusStart !== undefined ? layer.helixRadiusStart : 25}m`;
+  if (hRStartVal) hRStartVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.helixRadiusStart !== undefined ? layer.helixRadiusStart : 25) : `${layer.helixRadiusStart !== undefined ? layer.helixRadiusStart : 25}m`;
   if (hREnd) hREnd.value = layer.helixRadiusEnd !== undefined ? layer.helixRadiusEnd : 25;
-  if (hREndVal) hREndVal.textContent = `${layer.helixRadiusEnd !== undefined ? layer.helixRadiusEnd : 25}m`;
+  if (hREndVal) hREndVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.helixRadiusEnd !== undefined ? layer.helixRadiusEnd : 25) : `${layer.helixRadiusEnd !== undefined ? layer.helixRadiusEnd : 25}m`;
   if (hAltStart) hAltStart.value = layer.helixAltStart !== undefined ? layer.helixAltStart : 20;
-  if (hAltStartVal) hAltStartVal.textContent = `${layer.helixAltStart !== undefined ? layer.helixAltStart : 20}m`;
+  if (hAltStartVal) hAltStartVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.helixAltStart !== undefined ? layer.helixAltStart : 20) : `${layer.helixAltStart !== undefined ? layer.helixAltStart : 20}m`;
   if (hAltEnd) hAltEnd.value = layer.helixAltEnd !== undefined ? layer.helixAltEnd : 60;
-  if (hAltEndVal) hAltEndVal.textContent = `${layer.helixAltEnd !== undefined ? layer.helixAltEnd : 60}m`;
+  if (hAltEndVal) hAltEndVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.helixAltEnd !== undefined ? layer.helixAltEnd : 60) : `${layer.helixAltEnd !== undefined ? layer.helixAltEnd : 60}m`;
   if (hRevs) hRevs.value = layer.helixRevolutions !== undefined ? layer.helixRevolutions : 3;
   if (hRevsVal) hRevsVal.textContent = `${layer.helixRevolutions !== undefined ? layer.helixRevolutions : 3}`;
   if (hDir) hDir.value = layer.helixDirection || 'cw';
@@ -20111,7 +20157,7 @@ function syncUiWithActiveLayer() {
   if (spSpokes) spSpokes.value = layer.starPassSpokes !== undefined ? layer.starPassSpokes : 3;
   if (spSpokesVal) spSpokesVal.textContent = `${layer.starPassSpokes !== undefined ? layer.starPassSpokes : 3}`;
   if (spRadius) spRadius.value = layer.starPassRadius !== undefined ? layer.starPassRadius : 35;
-  if (spRadiusVal) spRadiusVal.textContent = `${layer.starPassRadius !== undefined ? layer.starPassRadius : 35}m`;
+  if (spRadiusVal) spRadiusVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.starPassRadius !== undefined ? layer.starPassRadius : 35) : `${layer.starPassRadius !== undefined ? layer.starPassRadius : 35}m`;
   if (spHeadMode) spHeadMode.value = layer.starPassHeadingMode || 'convergent';
   if (spTransit) spTransit.value = layer.starPassTransitMode || 'perimeterHop';
   if (spApex) spApex.checked = layer.starPassApexNadir !== false;
@@ -20315,7 +20361,7 @@ function updateLayerTransition(fromLayerId, transitionSettings) {
 function formatTransitionSummary(t) {
   if (!t || t.type === 'direct') return 'Direct Transit';
   if (t.type === 'climbFirst') return 'Climb / Descend First';
-  if (t.type === 'safeAltitude') return `Safe Alt (${t.safeAltitude || 60}m)`;
+  if (t.type === 'safeAltitude') return `Safe Alt (${(typeof formatUnitDistance === 'function') ? formatUnitDistance(t.safeAltitude || 60) : `${t.safeAltitude || 60}m`})`;
   return 'Direct Transit';
 }
 
@@ -21651,7 +21697,7 @@ function renderLayersList() {
     const gCount = (Array.isArray(layer.fiducialMarkers) && layer.fiducialMarkers.length) ? layer.fiducialMarkers.length : 0;
 
     const detailsHtml = isExcl
-      ? `<span>Envelope: ${layer.allAltitudes !== false ? 'All Altitudes (0m – ∞)' : `${layer.minAltitude || 0}m – ${layer.maxAltitude || 60}m`}</span>
+      ? `<span>Envelope: ${layer.allAltitudes !== false ? `All Altitudes (0${(typeof getUnitSystem === 'function' && getUnitSystem() === 'imperial') ? 'ft' : 'm'} – ∞)` : `${(typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.minAltitude || 0) : `${layer.minAltitude || 0}m`} – ${(typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.maxAltitude || 60) : `${layer.maxAltitude || 60}m`}`}</span>
          <span style="color: ${layer.enabled ? '#f87171' : '#ef4444'}; font-weight: 600;">
            ${layer.enabled ? (layer.filteredCount ? `🚫 ${layer.filteredCount} wps blocked` : '🚫 Active Zone') : 'Disabled'}
          </span>`
@@ -21661,11 +21707,11 @@ function renderLayersList() {
              ${layer.enabled ? `0 wps • Survey (${gCount} GCPs)` : 'Disabled'}
            </span>`
         : (isBoundary
-          ? `<span>Style: ${layer.lineStyle || 'dashed'} &bull; Elev: ${layer.targetHeight || 0}m</span>
+          ? `<span>Style: ${layer.lineStyle || 'dashed'} &bull; Elev: ${(typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.targetHeight || 0) : `${layer.targetHeight || 0}m`}</span>
              <span style="color: ${layer.enabled ? '#06b6d4' : '#ef4444'}; font-weight: 600;">
                ${layer.enabled ? `0 wps • Drawing (${vCount} pts)` : 'Disabled'}
              </span>`
-          : `<span>Alt: ${layer.altitude}m &bull; Spd: ${layer.speed}m/s &bull; Pitch: ${layer.gimbalPitch}&deg;</span>
+          : `<span>Alt: ${(typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.altitude !== undefined ? layer.altitude : 50) : `${layer.altitude}m`} &bull; Spd: ${(typeof formatSpeed === 'function') ? formatSpeed(layer.speed !== undefined ? layer.speed : 4) : `${layer.speed}m/s`} &bull; Pitch: ${layer.gimbalPitch}&deg;</span>
            <span style="color: ${layer.enabled ? 'var(--text-muted)' : '#ef4444'}; font-weight: 500;">
              ${layer.enabled ? `${wCount} wps` : 'Disabled'}
            </span>`));
@@ -24217,8 +24263,10 @@ function initUIEventListeners() {
   const boundaryElevVal = document.getElementById('boundary-elevation-val');
   if (boundaryElevInput) {
     boundaryElevInput.addEventListener('input', (e) => {
-      const val = parseFloat(e.target.value) || 0;
-      if (boundaryElevVal) boundaryElevVal.textContent = `${val}m`;
+      const unit = (typeof getUnitSystem === 'function') ? getUnitSystem() : 'metric';
+      if (boundaryElevVal) boundaryElevVal.textContent = (unit === 'imperial') ? Math.round(val * M_TO_FT) : val;
+      const bUnitEl = document.getElementById('boundary-elevation-unit');
+      if (bUnitEl) bUnitEl.textContent = (unit === 'imperial') ? 'ft' : 'm';
       const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
       if (activeLayer) {
         activeLayer.targetHeight = val;
@@ -24860,7 +24908,7 @@ function initUIEventListeners() {
       if (spRadius) {
         const val = parseFloat(spRadius.value) || 35;
         activeLayer.starPassRadius = val;
-        if (spRadiusVal) spRadiusVal.textContent = `${val}m`;
+        if (spRadiusVal) spRadiusVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
       }
       if (spHeadMode) activeLayer.starPassHeadingMode = spHeadMode.value;
       if (spTransit) activeLayer.starPassTransitMode = spTransit.value;
@@ -24985,7 +25033,7 @@ function initUIEventListeners() {
       if (laRadius) {
         const val = parseFloat(laRadius.value) || 25;
         activeLayer.lightArtRadius = val;
-        if (laRadiusVal) laRadiusVal.textContent = `${val}m`;
+        if (laRadiusVal) laRadiusVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
       }
       if (laTurns) {
         const val = parseFloat(laTurns.value) || 3;
@@ -25003,7 +25051,7 @@ function initUIEventListeners() {
       if (laClimb) {
         const val = parseFloat(laClimb.value) || 15;
         activeLayer.lightArtClimb = val;
-        if (laClimbVal) laClimbVal.textContent = `${val}m`;
+        if (laClimbVal) laClimbVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
       }
       if (laCameraAz) {
         const val = parseFloat(laCameraAz.value) || 0;
@@ -25053,22 +25101,22 @@ function initUIEventListeners() {
       if (fWidth) {
         const val = parseFloat(fWidth.value) || 60;
         activeLayer.facadeWidth = val;
-        if (fWidthVal) fWidthVal.textContent = `${val}m`;
+        if (fWidthVal) fWidthVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
       }
       if (fMinAlt) {
         const val = parseFloat(fMinAlt.value) || 10;
         activeLayer.facadeMinAlt = val;
-        if (fMinAltVal) fMinAltVal.textContent = `${val}m`;
+        if (fMinAltVal) fMinAltVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
       }
       if (fMaxAlt) {
         const val = parseFloat(fMaxAlt.value) || 40;
         activeLayer.facadeMaxAlt = val;
-        if (fMaxAltVal) fMaxAltVal.textContent = `${val}m`;
+        if (fMaxAltVal) fMaxAltVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
       }
       if (fStandoff) {
         const val = parseFloat(fStandoff.value) || 15;
         activeLayer.facadeStandoff = val;
-        if (fStandoffVal) fStandoffVal.textContent = `${val}m`;
+        if (fStandoffVal) fStandoffVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
       }
       if (fScanMode && fScanMode.value) activeLayer.facadeScanMode = fScanMode.value;
       if (fHeadingMode && fHeadingMode.value) activeLayer.facadeHeadingMode = fHeadingMode.value;
@@ -25114,22 +25162,22 @@ function initUIEventListeners() {
       if (hRStart) {
         const val = parseFloat(hRStart.value) || 25;
         activeLayer.helixRadiusStart = val;
-        if (hRStartVal) hRStartVal.textContent = `${val}m`;
+        if (hRStartVal) hRStartVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
       }
       if (hREnd) {
         const val = parseFloat(hREnd.value) || 25;
         activeLayer.helixRadiusEnd = val;
-        if (hREndVal) hREndVal.textContent = `${val}m`;
+        if (hREndVal) hREndVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
       }
       if (hAltStart) {
         const val = parseFloat(hAltStart.value) || 20;
         activeLayer.helixAltStart = val;
-        if (hAltStartVal) hAltStartVal.textContent = `${val}m`;
+        if (hAltStartVal) hAltStartVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
       }
       if (hAltEnd) {
         const val = parseFloat(hAltEnd.value) || 60;
         activeLayer.helixAltEnd = val;
-        if (hAltEndVal) hAltEndVal.textContent = `${val}m`;
+        if (hAltEndVal) hAltEndVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
       }
       if (hRevs) {
         const val = parseFloat(hRevs.value) || 3;
@@ -26675,7 +26723,18 @@ function initClickToTypeInputs() {
     { valId: 'global-exclusion-clearance-val', inputId: 'global-exclusion-clearance-buffer', type: 'distance', min: 1, max: 25, step: 1 },
     { valId: 'max-height-val', inputId: 'max-flight-height', type: 'distance', min: 20, max: 500, step: 5 },
     { valId: 'rth-altitude-val', inputId: 'rth-altitude', type: 'distance', min: 20, max: 150, step: 5 },
-    { valId: 'global-hover-time-val', inputId: 'global-hover-time', type: 'raw', min: 0, max: 60, step: 1 }
+    { valId: 'global-hover-time-val', inputId: 'global-hover-time', type: 'raw', min: 0, max: 60, step: 1 },
+    { valId: 'star-pass-radius-val', inputId: 'star-pass-radius', type: 'distance', min: 5, max: 150, step: 1 },
+    { valId: 'facade-width-val', inputId: 'facade-width', type: 'distance', min: 10, max: 200, step: 1 },
+    { valId: 'facade-min-alt-val', inputId: 'facade-min-alt', type: 'distance', min: 2, max: 100, step: 1 },
+    { valId: 'facade-max-alt-val', inputId: 'facade-max-alt', type: 'distance', min: 5, max: 200, step: 1 },
+    { valId: 'facade-standoff-val', inputId: 'facade-standoff', type: 'distance', min: 3, max: 60, step: 1 },
+    { valId: 'helix-radius-start-val', inputId: 'helix-radius-start', type: 'distance', min: 5, max: 150, step: 1 },
+    { valId: 'helix-radius-end-val', inputId: 'helix-radius-end', type: 'distance', min: 5, max: 150, step: 1 },
+    { valId: 'helix-alt-start-val', inputId: 'helix-alt-start', type: 'distance', min: 2, max: 200, step: 1 },
+    { valId: 'helix-alt-end-val', inputId: 'helix-alt-end', type: 'distance', min: 5, max: 300, step: 1 },
+    { valId: 'light-art-radius-val', inputId: 'light-art-radius', type: 'distance', min: 5, max: 150, step: 1 },
+    { valId: 'light-art-climb-val', inputId: 'light-art-climb', type: 'distance', min: 0, max: 100, step: 1 }
   ];
 
   clickToTypeConfigs.forEach(cfg => {
@@ -28525,6 +28584,90 @@ function syncDisplayValues() {
     updateTargetSplatDimensionWarning(activeLayer);
   } else {
     updateTargetSplatDimensionWarning(null);
+  }
+
+  // Sync Star Pass Radius (v1.154.0 - Issue #131)
+  const spRadiusSlider = document.getElementById('star-pass-radius');
+  const spRadiusValEl = document.getElementById('star-pass-radius-val');
+  if (spRadiusSlider && spRadiusValEl) {
+    const val = parseFloat(spRadiusSlider.value) || 35;
+    spRadiusValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+
+  // Sync Vertical Facade Grid Geometry (v1.153.0 - Issue #132)
+  const fWidthSlider = document.getElementById('facade-width');
+  const fWidthValEl = document.getElementById('facade-width-val');
+  if (fWidthSlider && fWidthValEl) {
+    const val = parseFloat(fWidthSlider.value) || 60;
+    fWidthValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+  const fMinAltSlider = document.getElementById('facade-min-alt');
+  const fMinAltValEl = document.getElementById('facade-min-alt-val');
+  if (fMinAltSlider && fMinAltValEl) {
+    const val = parseFloat(fMinAltSlider.value) || 10;
+    fMinAltValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+  const fMaxAltSlider = document.getElementById('facade-max-alt');
+  const fMaxAltValEl = document.getElementById('facade-max-alt-val');
+  if (fMaxAltSlider && fMaxAltValEl) {
+    const val = parseFloat(fMaxAltSlider.value) || 40;
+    fMaxAltValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+  const fStandoffSlider = document.getElementById('facade-standoff');
+  const fStandoffValEl = document.getElementById('facade-standoff-val');
+  if (fStandoffSlider && fStandoffValEl) {
+    const val = parseFloat(fStandoffSlider.value) || 15;
+    fStandoffValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+
+  // Sync Continuous Helix Geometry (v1.153.0 - Issue #133)
+  const hRStartSlider = document.getElementById('helix-radius-start');
+  const hRStartValEl = document.getElementById('helix-radius-start-val');
+  if (hRStartSlider && hRStartValEl) {
+    const val = parseFloat(hRStartSlider.value) || 25;
+    hRStartValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+  const hREndSlider = document.getElementById('helix-radius-end');
+  const hREndValEl = document.getElementById('helix-radius-end-val');
+  if (hREndSlider && hREndValEl) {
+    const val = parseFloat(hREndSlider.value) || 25;
+    hREndValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+  const hAltStartSlider = document.getElementById('helix-alt-start');
+  const hAltStartValEl = document.getElementById('helix-alt-start-val');
+  if (hAltStartSlider && hAltStartValEl) {
+    const val = parseFloat(hAltStartSlider.value) || 20;
+    hAltStartValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+  const hAltEndSlider = document.getElementById('helix-alt-end');
+  const hAltEndValEl = document.getElementById('helix-alt-end-val');
+  if (hAltEndSlider && hAltEndValEl) {
+    const val = parseFloat(hAltEndSlider.value) || 60;
+    hAltEndValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+
+  // Sync Light Art Geometry (v1.151.0 - Issue #136)
+  const laRadiusSlider = document.getElementById('light-art-radius');
+  const laRadiusValEl = document.getElementById('light-art-radius-val');
+  if (laRadiusSlider && laRadiusValEl) {
+    const val = parseFloat(laRadiusSlider.value) || 25;
+    laRadiusValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+  const laClimbSlider = document.getElementById('light-art-climb');
+  const laClimbValEl = document.getElementById('light-art-climb-val');
+  if (laClimbSlider && laClimbValEl) {
+    const val = parseFloat(laClimbSlider.value) || 15;
+    laClimbValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+
+  // Sync Boundary Elevation
+  const bElevSlider = document.getElementById('boundary-elevation');
+  const bElevValEl = document.getElementById('boundary-elevation-val');
+  const bElevUnitEl = document.getElementById('boundary-elevation-unit');
+  if (bElevSlider && bElevValEl) {
+    const val = parseFloat(bElevSlider.value) || 0;
+    bElevValEl.textContent = (unit === 'imperial') ? Math.round(val * M_TO_FT) : val;
+    if (bElevUnitEl) bElevUnitEl.textContent = distUnitStr;
   }
 
   updateInheritOptionLabels();

@@ -1158,14 +1158,14 @@ function syncUiWithActiveLayer() {
   if (laPreset) laPreset.value = layer.lightArtPreset || 'spiral';
   if (laOrientation) laOrientation.value = layer.lightArtOrientation || 'horizontal';
   if (laRadius) laRadius.value = layer.lightArtRadius !== undefined ? layer.lightArtRadius : 25;
-  if (laRadiusVal) laRadiusVal.textContent = `${layer.lightArtRadius !== undefined ? layer.lightArtRadius : 25}m`;
+  if (laRadiusVal) laRadiusVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.lightArtRadius !== undefined ? layer.lightArtRadius : 25) : `${layer.lightArtRadius !== undefined ? layer.lightArtRadius : 25}m`;
   if (laTurns) laTurns.value = layer.lightArtTurns !== undefined ? layer.lightArtTurns : 3;
   if (laTurnsVal) laTurnsVal.textContent = `${layer.lightArtTurns !== undefined ? layer.lightArtTurns : 3}`;
   if (laPoints) laPoints.value = layer.lightArtPointsCount !== undefined ? layer.lightArtPointsCount : 5;
   if (laStarRatio) laStarRatio.value = layer.lightArtStarRatio !== undefined ? layer.lightArtStarRatio : 0.45;
   if (laStarRatioVal) laStarRatioVal.textContent = `${layer.lightArtStarRatio !== undefined ? layer.lightArtStarRatio : 0.45}`;
   if (laClimb) laClimb.value = layer.lightArtClimb !== undefined ? layer.lightArtClimb : 15;
-  if (laClimbVal) laClimbVal.textContent = `${layer.lightArtClimb !== undefined ? layer.lightArtClimb : 15}m`;
+  if (laClimbVal) laClimbVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.lightArtClimb !== undefined ? layer.lightArtClimb : 15) : `${layer.lightArtClimb !== undefined ? layer.lightArtClimb : 15}m`;
   if (laCameraAz) laCameraAz.value = layer.lightArtCameraAzimuth !== undefined ? layer.lightArtCameraAzimuth : 0;
   if (laCameraAzVal) laCameraAzVal.textContent = `${layer.lightArtCameraAzimuth !== undefined ? layer.lightArtCameraAzimuth : 0}°`;
 
@@ -1185,13 +1185,13 @@ function syncUiWithActiveLayer() {
   const fScanMode = document.getElementById('facade-scan-mode');
   const fHeadingMode = document.getElementById('facade-heading-mode');
   if (fWidth) fWidth.value = layer.facadeWidth !== undefined ? layer.facadeWidth : 60;
-  if (fWidthVal) fWidthVal.textContent = `${layer.facadeWidth !== undefined ? layer.facadeWidth : 60}m`;
+  if (fWidthVal) fWidthVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.facadeWidth !== undefined ? layer.facadeWidth : 60) : `${layer.facadeWidth !== undefined ? layer.facadeWidth : 60}m`;
   if (fMinAlt) fMinAlt.value = layer.facadeMinAlt !== undefined ? layer.facadeMinAlt : 10;
-  if (fMinAltVal) fMinAltVal.textContent = `${layer.facadeMinAlt !== undefined ? layer.facadeMinAlt : 10}m`;
+  if (fMinAltVal) fMinAltVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.facadeMinAlt !== undefined ? layer.facadeMinAlt : 10) : `${layer.facadeMinAlt !== undefined ? layer.facadeMinAlt : 10}m`;
   if (fMaxAlt) fMaxAlt.value = layer.facadeMaxAlt !== undefined ? layer.facadeMaxAlt : 40;
-  if (fMaxAltVal) fMaxAltVal.textContent = `${layer.facadeMaxAlt !== undefined ? layer.facadeMaxAlt : 40}m`;
+  if (fMaxAltVal) fMaxAltVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.facadeMaxAlt !== undefined ? layer.facadeMaxAlt : 40) : `${layer.facadeMaxAlt !== undefined ? layer.facadeMaxAlt : 40}m`;
   if (fStandoff) fStandoff.value = layer.facadeStandoff !== undefined ? layer.facadeStandoff : 15;
-  if (fStandoffVal) fStandoffVal.textContent = `${layer.facadeStandoff !== undefined ? layer.facadeStandoff : 15}m`;
+  if (fStandoffVal) fStandoffVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.facadeStandoff !== undefined ? layer.facadeStandoff : 15) : `${layer.facadeStandoff !== undefined ? layer.facadeStandoff : 15}m`;
   if (fScanMode) fScanMode.value = layer.facadeScanMode || 'horizontal';
   if (fHeadingMode) fHeadingMode.value = layer.facadeHeadingMode || 'perpendicular';
 
@@ -1214,13 +1214,13 @@ function syncUiWithActiveLayer() {
   const hPEndVal = document.getElementById('helix-pitch-end-val');
   const hHeadMode = document.getElementById('helix-heading-mode');
   if (hRStart) hRStart.value = layer.helixRadiusStart !== undefined ? layer.helixRadiusStart : 25;
-  if (hRStartVal) hRStartVal.textContent = `${layer.helixRadiusStart !== undefined ? layer.helixRadiusStart : 25}m`;
+  if (hRStartVal) hRStartVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.helixRadiusStart !== undefined ? layer.helixRadiusStart : 25) : `${layer.helixRadiusStart !== undefined ? layer.helixRadiusStart : 25}m`;
   if (hREnd) hREnd.value = layer.helixRadiusEnd !== undefined ? layer.helixRadiusEnd : 25;
-  if (hREndVal) hREndVal.textContent = `${layer.helixRadiusEnd !== undefined ? layer.helixRadiusEnd : 25}m`;
+  if (hREndVal) hREndVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.helixRadiusEnd !== undefined ? layer.helixRadiusEnd : 25) : `${layer.helixRadiusEnd !== undefined ? layer.helixRadiusEnd : 25}m`;
   if (hAltStart) hAltStart.value = layer.helixAltStart !== undefined ? layer.helixAltStart : 20;
-  if (hAltStartVal) hAltStartVal.textContent = `${layer.helixAltStart !== undefined ? layer.helixAltStart : 20}m`;
+  if (hAltStartVal) hAltStartVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.helixAltStart !== undefined ? layer.helixAltStart : 20) : `${layer.helixAltStart !== undefined ? layer.helixAltStart : 20}m`;
   if (hAltEnd) hAltEnd.value = layer.helixAltEnd !== undefined ? layer.helixAltEnd : 60;
-  if (hAltEndVal) hAltEndVal.textContent = `${layer.helixAltEnd !== undefined ? layer.helixAltEnd : 60}m`;
+  if (hAltEndVal) hAltEndVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.helixAltEnd !== undefined ? layer.helixAltEnd : 60) : `${layer.helixAltEnd !== undefined ? layer.helixAltEnd : 60}m`;
   if (hRevs) hRevs.value = layer.helixRevolutions !== undefined ? layer.helixRevolutions : 3;
   if (hRevsVal) hRevsVal.textContent = `${layer.helixRevolutions !== undefined ? layer.helixRevolutions : 3}`;
   if (hDir) hDir.value = layer.helixDirection || 'cw';
@@ -1242,7 +1242,7 @@ function syncUiWithActiveLayer() {
   if (spSpokes) spSpokes.value = layer.starPassSpokes !== undefined ? layer.starPassSpokes : 3;
   if (spSpokesVal) spSpokesVal.textContent = `${layer.starPassSpokes !== undefined ? layer.starPassSpokes : 3}`;
   if (spRadius) spRadius.value = layer.starPassRadius !== undefined ? layer.starPassRadius : 35;
-  if (spRadiusVal) spRadiusVal.textContent = `${layer.starPassRadius !== undefined ? layer.starPassRadius : 35}m`;
+  if (spRadiusVal) spRadiusVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.starPassRadius !== undefined ? layer.starPassRadius : 35) : `${layer.starPassRadius !== undefined ? layer.starPassRadius : 35}m`;
   if (spHeadMode) spHeadMode.value = layer.starPassHeadingMode || 'convergent';
   if (spTransit) spTransit.value = layer.starPassTransitMode || 'perimeterHop';
   if (spApex) spApex.checked = layer.starPassApexNadir !== false;
@@ -1446,7 +1446,7 @@ function updateLayerTransition(fromLayerId, transitionSettings) {
 function formatTransitionSummary(t) {
   if (!t || t.type === 'direct') return 'Direct Transit';
   if (t.type === 'climbFirst') return 'Climb / Descend First';
-  if (t.type === 'safeAltitude') return `Safe Alt (${t.safeAltitude || 60}m)`;
+  if (t.type === 'safeAltitude') return `Safe Alt (${(typeof formatUnitDistance === 'function') ? formatUnitDistance(t.safeAltitude || 60) : `${t.safeAltitude || 60}m`})`;
   return 'Direct Transit';
 }
 
@@ -2782,7 +2782,7 @@ function renderLayersList() {
     const gCount = (Array.isArray(layer.fiducialMarkers) && layer.fiducialMarkers.length) ? layer.fiducialMarkers.length : 0;
 
     const detailsHtml = isExcl
-      ? `<span>Envelope: ${layer.allAltitudes !== false ? 'All Altitudes (0m – ∞)' : `${layer.minAltitude || 0}m – ${layer.maxAltitude || 60}m`}</span>
+      ? `<span>Envelope: ${layer.allAltitudes !== false ? `All Altitudes (0${(typeof getUnitSystem === 'function' && getUnitSystem() === 'imperial') ? 'ft' : 'm'} – ∞)` : `${(typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.minAltitude || 0) : `${layer.minAltitude || 0}m`} – ${(typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.maxAltitude || 60) : `${layer.maxAltitude || 60}m`}`}</span>
          <span style="color: ${layer.enabled ? '#f87171' : '#ef4444'}; font-weight: 600;">
            ${layer.enabled ? (layer.filteredCount ? `🚫 ${layer.filteredCount} wps blocked` : '🚫 Active Zone') : 'Disabled'}
          </span>`
@@ -2792,11 +2792,11 @@ function renderLayersList() {
              ${layer.enabled ? `0 wps • Survey (${gCount} GCPs)` : 'Disabled'}
            </span>`
         : (isBoundary
-          ? `<span>Style: ${layer.lineStyle || 'dashed'} &bull; Elev: ${layer.targetHeight || 0}m</span>
+          ? `<span>Style: ${layer.lineStyle || 'dashed'} &bull; Elev: ${(typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.targetHeight || 0) : `${layer.targetHeight || 0}m`}</span>
              <span style="color: ${layer.enabled ? '#06b6d4' : '#ef4444'}; font-weight: 600;">
                ${layer.enabled ? `0 wps • Drawing (${vCount} pts)` : 'Disabled'}
              </span>`
-          : `<span>Alt: ${layer.altitude}m &bull; Spd: ${layer.speed}m/s &bull; Pitch: ${layer.gimbalPitch}&deg;</span>
+          : `<span>Alt: ${(typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.altitude !== undefined ? layer.altitude : 50) : `${layer.altitude}m`} &bull; Spd: ${(typeof formatSpeed === 'function') ? formatSpeed(layer.speed !== undefined ? layer.speed : 4) : `${layer.speed}m/s`} &bull; Pitch: ${layer.gimbalPitch}&deg;</span>
            <span style="color: ${layer.enabled ? 'var(--text-muted)' : '#ef4444'}; font-weight: 500;">
              ${layer.enabled ? `${wCount} wps` : 'Disabled'}
            </span>`));
