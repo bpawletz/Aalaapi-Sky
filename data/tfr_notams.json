@@ -1,5 +1,16 @@
 [
   {
+    "notam_id": "6/9548",
+    "facility": "ZOB",
+    "state": "WV",
+    "type": "UAS PUBLIC GATHERING",
+    "description": "Fayetteville, WV, Saturday, October 17, 2026 UTC",
+    "mod_date": "10/14/2026 19:12:00",
+    "mod_abs_time": "202610141912",
+    "is_new": "Y",
+    "gid": "6/9548"
+  },
+  {
     "notam_id": "6/9532",
     "facility": "ZMP",
     "state": "MN",
@@ -121,17 +132,6 @@
     "gid": "6/9299"
   },
   {
-    "notam_id": "6/9297",
-    "facility": "ZLC",
-    "state": "ID",
-    "type": "HAZARDS",
-    "description": "BOISE, ID, Thursday, October 15, 2026 through Saturday, October 17, 2026 UTC",
-    "mod_date": "10/13/2026 19:29:00",
-    "mod_abs_time": "202610131929",
-    "is_new": "Y",
-    "gid": "6/9297"
-  },
-  {
     "notam_id": "6/9278",
     "facility": "ZMP",
     "state": "MI",
@@ -139,7 +139,7 @@
     "description": "2NM N NEGAUNEE, MI, Tuesday, October 13, 2026 through Monday, October 19, 2026 UTC",
     "mod_date": "10/13/2026 19:21:00",
     "mod_abs_time": "202610131921",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9278"
   },
   {
@@ -150,7 +150,7 @@
     "description": "2NM E HERMAN, MI, Tuesday, October 13, 2026 through Monday, October 19, 2026 UTC",
     "mod_date": "10/13/2026 19:16:00",
     "mod_abs_time": "202610131916",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9275"
   },
   {
