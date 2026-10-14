@@ -5992,7 +5992,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.154.1</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.154.2</span></h1>
 
 
 
@@ -10682,7 +10682,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.154.1</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.154.2</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -10743,6 +10743,12 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.154.2):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>3D Flight Diagnostics Initial Drone Model Visibility:</strong> Fixed an issue where the 3D drone avatar was positioned off-screen or cut off at the bottom of the viewport when opening Flight Diagnostics, requiring pilots to scrub the playback slider to make the model appear. Scene camera auto-framing now calculates a unified 3D bounding volume encompassing the planned/actual trajectory, the scene origin / home point, and the drone avatar at all mission altitudes (21m–120m). Drone resting altitude is also elevated flush with the ground pad.</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.154.1):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -43277,22 +43283,8 @@ const FlightDiagnostics = {
         this.seekTo(0, true, true);
         this.resetGroundCanvas();
 
-        // Re-frame camera to trajectory bounding box
-        const targetMesh = this.actualLineMesh || this.plannedLineMesh;
-        if (targetMesh && targetMesh.geometry && this.threeCamera && this.threeControls) {
-          targetMesh.geometry.computeBoundingSphere();
-          const bs = targetMesh.geometry.boundingSphere;
-          if (bs && bs.center && !isNaN(bs.center.x)) {
-            this.threeControls.target.set(bs.center.x, Math.max(0, bs.center.y), bs.center.z);
-            const dist = Math.max(70, bs.radius * 2.2);
-            this.threeCamera.position.set(bs.center.x, bs.center.y + dist * 0.7, bs.center.z + dist * 0.9);
-            this.threeControls.update();
-          }
-        } else if (this.threeCamera && this.threeControls) {
-          this.threeControls.target.set(0, 0, 0);
-          this.threeCamera.position.set(0, 90, 140);
-          this.threeControls.update();
-        }
+        // Re-frame camera to trajectory bounding box and initial drone position
+        this.frameCameraToScene('3d');
       });
     }
 
@@ -44245,6 +44237,7 @@ const FlightDiagnostics = {
       ? PlaybackManager.currentIndex : 0;
     this.playbackFractionalIndex = resumeIdx;
     this.seekTo(resumeIdx, true, true);
+    this.frameCameraToScene('3d');
     this.pause();
   },
 
@@ -44274,8 +44267,11 @@ const FlightDiagnostics = {
 
     const x = (xTile - xTile0) * tileWidthMeters;
     const z = (yTile - yTile0) * tileWidthMeters;
-    const y = Math.max(0.1, alt);
-    return new THREE.Vector3(x, y, z);
+    const y = Math.max(0.4, alt);
+    if (typeof THREE !== 'undefined' && typeof THREE.Vector3 === 'function') {
+      return new THREE.Vector3(x, y, z);
+    }
+    return { x, y, z };
   },
 
   async open(customDataOrTab = null, maybeTabOrCustom = null) {
@@ -44344,6 +44340,7 @@ const FlightDiagnostics = {
         this.init3DScene();
         this.playbackFractionalIndex = 0.0;
         this.seekTo(0, true, true);
+        this.frameCameraToScene('3d');
         this.pause();
       } else {
         await this.refreshFlightList();
@@ -44699,24 +44696,16 @@ const FlightDiagnostics = {
       }
     }
 
+    if (!this.droneMesh || (this.threeScene && !this.threeScene.children.includes(this.droneMesh))) {
+      this.buildDroneAvatar();
+    }
+
     // Dynamic flight visualizers
     this.addSatelliteFloor();
     this.buildTrajectoryMeshes();
 
-    // Auto-frame camera to trajectory bounding box so the flight is always centered in view
-    const targetMesh = this.actualLineMesh || this.plannedLineMesh;
-    if (targetMesh && targetMesh.geometry) {
-      targetMesh.geometry.computeBoundingSphere();
-      const bs = targetMesh.geometry.boundingSphere;
-      if (bs && bs.center && !isNaN(bs.center.x)) {
-        if (this.threeControls) {
-          this.threeControls.target.set(bs.center.x, Math.max(0, bs.center.y), bs.center.z);
-        }
-        const dist = Math.max(70, bs.radius * 2.2);
-        this.threeCamera.position.set(bs.center.x, bs.center.y + dist * 0.7, bs.center.z + dist * 0.9);
-        if (this.threeControls) this.threeControls.update();
-      }
-    }
+    // Auto-frame camera to encompass trajectory meshes, drone avatar, and home point
+    this.frameCameraToScene('3d');
 
     this.animate();
   },
@@ -45330,6 +45319,7 @@ const FlightDiagnostics = {
 
     this.droneMesh.add(this.frustumMesh);
 
+    this.droneMesh.visible = this.diagShowDrones !== false;
     this.threeScene.add(this.droneMesh);
   },
 
@@ -45400,6 +45390,59 @@ const FlightDiagnostics = {
     if (paIcon) paIcon.style.display = 'none';
   },
 
+  frameCameraToScene(mode = '3d') {
+    if (!this.threeCamera || !this.threeControls || typeof THREE === 'undefined' || typeof THREE.Box3 !== 'function') return;
+
+    const box = new THREE.Box3();
+
+    if (this.plannedLineMesh && this.plannedLineMesh.geometry) {
+      if (!this.plannedLineMesh.geometry.boundingBox) {
+        this.plannedLineMesh.geometry.computeBoundingBox();
+      }
+      if (this.plannedLineMesh.geometry.boundingBox) {
+        box.union(this.plannedLineMesh.geometry.boundingBox);
+      }
+    }
+
+    if (this.actualLineMesh && this.actualLineMesh.geometry) {
+      if (!this.actualLineMesh.geometry.boundingBox) {
+        this.actualLineMesh.geometry.computeBoundingBox();
+      }
+      if (this.actualLineMesh.geometry.boundingBox) {
+        box.union(this.actualLineMesh.geometry.boundingBox);
+      }
+    }
+
+    if (this.droneMesh) {
+      box.expandByPoint(this.droneMesh.position);
+    }
+
+    // Always include origin / home point
+    box.expandByPoint(new THREE.Vector3(0, 0, 0));
+
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+    const sphere = new THREE.Sphere();
+    box.getBoundingSphere(sphere);
+
+    if (isNaN(center.x) || isNaN(sphere.radius) || sphere.radius <= 0) {
+      center.set(0, 0, 0);
+      sphere.radius = 40;
+    }
+
+    if (mode === 'top') {
+      const dist = Math.max(100, sphere.radius * 2.5);
+      this.threeControls.target.set(center.x, 0, center.z);
+      this.threeCamera.position.set(center.x, dist, center.z);
+    } else {
+      const dist = Math.max(70, sphere.radius * 2.2);
+      this.threeControls.target.set(center.x, Math.max(0, center.y), center.z);
+      this.threeCamera.position.set(center.x, center.y + dist * 0.7, center.z + dist * 0.9);
+    }
+    this.threeControls.update();
+    this.threeCamera.updateProjectionMatrix();
+  },
+
   resetCameraView(mode) {
     if (!this.threeCamera || !this.threeControls) return;
     // Exit FPV if active
@@ -45411,43 +45454,7 @@ const FlightDiagnostics = {
       const fpvInd = document.getElementById('diag-indicator-fpv');
       if (fpvInd) fpvInd.style.background = '#ef4444';
     }
-    const targetMesh = this.actualLineMesh || this.plannedLineMesh;
-    if (mode === 'top') {
-      // Bird's-eye orthographic-style view
-      if (targetMesh && targetMesh.geometry) {
-        targetMesh.geometry.computeBoundingSphere();
-        const bs = targetMesh.geometry.boundingSphere;
-        if (bs && bs.center && !isNaN(bs.center.x)) {
-          const dist = Math.max(100, bs.radius * 2.5);
-          this.threeControls.target.set(bs.center.x, 0, bs.center.z);
-          this.threeCamera.position.set(bs.center.x, dist, bs.center.z);
-        } else {
-          this.threeControls.target.set(0, 0, 0);
-          this.threeCamera.position.set(0, 200, 0);
-        }
-      } else {
-        this.threeControls.target.set(0, 0, 0);
-        this.threeCamera.position.set(0, 200, 0);
-      }
-    } else {
-      // Standard 3D perspective view
-      if (targetMesh && targetMesh.geometry) {
-        targetMesh.geometry.computeBoundingSphere();
-        const bs = targetMesh.geometry.boundingSphere;
-        if (bs && bs.center && !isNaN(bs.center.x)) {
-          const dist = Math.max(70, bs.radius * 2.2);
-          this.threeControls.target.set(bs.center.x, Math.max(0, bs.center.y), bs.center.z);
-          this.threeCamera.position.set(bs.center.x, bs.center.y + dist * 0.7, bs.center.z + dist * 0.9);
-        } else {
-          this.threeControls.target.set(0, 0, 0);
-          this.threeCamera.position.set(0, 90, 140);
-        }
-      } else {
-        this.threeControls.target.set(0, 0, 0);
-        this.threeCamera.position.set(0, 90, 140);
-      }
-    }
-    this.threeControls.update();
+    this.frameCameraToScene(mode);
   },
 
   _updateFPVCamera() {

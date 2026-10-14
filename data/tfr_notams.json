@@ -1,5 +1,38 @@
 [
   {
+    "notam_id": "6/9528",
+    "facility": "ZMA",
+    "state": "FL",
+    "type": "VIP",
+    "description": "West Palm Beach, FL, Saturday, October 17, 2026 through Sunday, October 18, 2026 Local",
+    "mod_date": "10/14/2026 16:57:00",
+    "mod_abs_time": "202610141657",
+    "is_new": "Y",
+    "gid": "6/9528"
+  },
+  {
+    "notam_id": "6/9522",
+    "facility": "ZHU",
+    "state": "TX",
+    "type": "HAZARDS",
+    "description": "PASADENA, TX, Wednesday, October 14, 2026 UTC",
+    "mod_date": "10/14/2026 16:55:00",
+    "mod_abs_time": "202610141655",
+    "is_new": "Y",
+    "gid": "6/9522"
+  },
+  {
+    "notam_id": "6/9493",
+    "facility": "ZAN",
+    "state": "AK",
+    "type": "SPACE OPERATIONS",
+    "description": "93 ZAN AIRSPACE 20NM NE OF FAIRBANKS, AK, Tuesday, October 20, 2026 through Tuesday, October 27, 2026 UTC",
+    "mod_date": "10/14/2026 16:19:00",
+    "mod_abs_time": "202610141619",
+    "is_new": "Y",
+    "gid": "6/9493"
+  },
+  {
     "notam_id": "6/9387",
     "facility": "ZLC",
     "state": "MT",
@@ -9,17 +42,6 @@
     "mod_abs_time": "202610141208",
     "is_new": "Y",
     "gid": "6/9387"
-  },
-  {
-    "notam_id": "6/9386",
-    "facility": "ZMA",
-    "state": "FL",
-    "type": "VIP",
-    "description": "West Palm Beach, FL, Saturday, October 17, 2026 through Sunday, October 18, 2026 Local",
-    "mod_date": "10/14/2026 11:57:00",
-    "mod_abs_time": "202610141157",
-    "is_new": "Y",
-    "gid": "6/9386"
   },
   {
     "notam_id": "6/9375",
@@ -121,28 +143,6 @@
     "gid": "6/9275"
   },
   {
-    "notam_id": "6/9232",
-    "facility": "ZHU",
-    "state": "TX",
-    "type": "HAZARDS",
-    "description": "PASADENA, TX, Wednesday, October 14, 2026 UTC",
-    "mod_date": "10/13/2026 18:42:00",
-    "mod_abs_time": "202610131842",
-    "is_new": "Y",
-    "gid": "6/9232"
-  },
-  {
-    "notam_id": "6/9172",
-    "facility": "ZMP",
-    "state": "MN",
-    "type": "HAZARDS",
-    "description": "HIBBING, MN, Wednesday, October 14, 2026 UTC",
-    "mod_date": "10/13/2026 15:57:00",
-    "mod_abs_time": "202610131557",
-    "is_new": "Y",
-    "gid": "6/9172"
-  },
-  {
     "notam_id": "6/9171",
     "facility": "ZOA",
     "state": "NV",
@@ -150,7 +150,7 @@
     "description": "Minden, NV, Friday, October 16, 2026 through Sunday, October 18, 2026 UTC",
     "mod_date": "10/13/2026 15:54:00",
     "mod_abs_time": "202610131554",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9171"
   },
   {
@@ -161,7 +161,7 @@
     "description": "RALEIGH, NC, Thursday, October 15, 2026 through Sunday, October 25, 2026 Local",
     "mod_date": "10/13/2026 15:37:00",
     "mod_abs_time": "202610131537",
-    "is_new": "Y",
+    "is_new": "N",
     "gid": "6/9169"
   },
   {

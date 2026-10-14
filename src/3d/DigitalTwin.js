@@ -1064,22 +1064,8 @@ const FlightDiagnostics = {
         this.seekTo(0, true, true);
         this.resetGroundCanvas();
 
-        // Re-frame camera to trajectory bounding box
-        const targetMesh = this.actualLineMesh || this.plannedLineMesh;
-        if (targetMesh && targetMesh.geometry && this.threeCamera && this.threeControls) {
-          targetMesh.geometry.computeBoundingSphere();
-          const bs = targetMesh.geometry.boundingSphere;
-          if (bs && bs.center && !isNaN(bs.center.x)) {
-            this.threeControls.target.set(bs.center.x, Math.max(0, bs.center.y), bs.center.z);
-            const dist = Math.max(70, bs.radius * 2.2);
-            this.threeCamera.position.set(bs.center.x, bs.center.y + dist * 0.7, bs.center.z + dist * 0.9);
-            this.threeControls.update();
-          }
-        } else if (this.threeCamera && this.threeControls) {
-          this.threeControls.target.set(0, 0, 0);
-          this.threeCamera.position.set(0, 90, 140);
-          this.threeControls.update();
-        }
+        // Re-frame camera to trajectory bounding box and initial drone position
+        this.frameCameraToScene('3d');
       });
     }
 
@@ -2032,6 +2018,7 @@ const FlightDiagnostics = {
       ? PlaybackManager.currentIndex : 0;
     this.playbackFractionalIndex = resumeIdx;
     this.seekTo(resumeIdx, true, true);
+    this.frameCameraToScene('3d');
     this.pause();
   },
 
@@ -2061,8 +2048,11 @@ const FlightDiagnostics = {
 
     const x = (xTile - xTile0) * tileWidthMeters;
     const z = (yTile - yTile0) * tileWidthMeters;
-    const y = Math.max(0.1, alt);
-    return new THREE.Vector3(x, y, z);
+    const y = Math.max(0.4, alt);
+    if (typeof THREE !== 'undefined' && typeof THREE.Vector3 === 'function') {
+      return new THREE.Vector3(x, y, z);
+    }
+    return { x, y, z };
   },
 
   async open(customDataOrTab = null, maybeTabOrCustom = null) {
@@ -2131,6 +2121,7 @@ const FlightDiagnostics = {
         this.init3DScene();
         this.playbackFractionalIndex = 0.0;
         this.seekTo(0, true, true);
+        this.frameCameraToScene('3d');
         this.pause();
       } else {
         await this.refreshFlightList();
@@ -2486,24 +2477,16 @@ const FlightDiagnostics = {
       }
     }
 
+    if (!this.droneMesh || (this.threeScene && !this.threeScene.children.includes(this.droneMesh))) {
+      this.buildDroneAvatar();
+    }
+
     // Dynamic flight visualizers
     this.addSatelliteFloor();
     this.buildTrajectoryMeshes();
 
-    // Auto-frame camera to trajectory bounding box so the flight is always centered in view
-    const targetMesh = this.actualLineMesh || this.plannedLineMesh;
-    if (targetMesh && targetMesh.geometry) {
-      targetMesh.geometry.computeBoundingSphere();
-      const bs = targetMesh.geometry.boundingSphere;
-      if (bs && bs.center && !isNaN(bs.center.x)) {
-        if (this.threeControls) {
-          this.threeControls.target.set(bs.center.x, Math.max(0, bs.center.y), bs.center.z);
-        }
-        const dist = Math.max(70, bs.radius * 2.2);
-        this.threeCamera.position.set(bs.center.x, bs.center.y + dist * 0.7, bs.center.z + dist * 0.9);
-        if (this.threeControls) this.threeControls.update();
-      }
-    }
+    // Auto-frame camera to encompass trajectory meshes, drone avatar, and home point
+    this.frameCameraToScene('3d');
 
     this.animate();
   },
@@ -3117,6 +3100,7 @@ const FlightDiagnostics = {
 
     this.droneMesh.add(this.frustumMesh);
 
+    this.droneMesh.visible = this.diagShowDrones !== false;
     this.threeScene.add(this.droneMesh);
   },
 
@@ -3187,6 +3171,59 @@ const FlightDiagnostics = {
     if (paIcon) paIcon.style.display = 'none';
   },
 
+  frameCameraToScene(mode = '3d') {
+    if (!this.threeCamera || !this.threeControls || typeof THREE === 'undefined' || typeof THREE.Box3 !== 'function') return;
+
+    const box = new THREE.Box3();
+
+    if (this.plannedLineMesh && this.plannedLineMesh.geometry) {
+      if (!this.plannedLineMesh.geometry.boundingBox) {
+        this.plannedLineMesh.geometry.computeBoundingBox();
+      }
+      if (this.plannedLineMesh.geometry.boundingBox) {
+        box.union(this.plannedLineMesh.geometry.boundingBox);
+      }
+    }
+
+    if (this.actualLineMesh && this.actualLineMesh.geometry) {
+      if (!this.actualLineMesh.geometry.boundingBox) {
+        this.actualLineMesh.geometry.computeBoundingBox();
+      }
+      if (this.actualLineMesh.geometry.boundingBox) {
+        box.union(this.actualLineMesh.geometry.boundingBox);
+      }
+    }
+
+    if (this.droneMesh) {
+      box.expandByPoint(this.droneMesh.position);
+    }
+
+    // Always include origin / home point
+    box.expandByPoint(new THREE.Vector3(0, 0, 0));
+
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+    const sphere = new THREE.Sphere();
+    box.getBoundingSphere(sphere);
+
+    if (isNaN(center.x) || isNaN(sphere.radius) || sphere.radius <= 0) {
+      center.set(0, 0, 0);
+      sphere.radius = 40;
+    }
+
+    if (mode === 'top') {
+      const dist = Math.max(100, sphere.radius * 2.5);
+      this.threeControls.target.set(center.x, 0, center.z);
+      this.threeCamera.position.set(center.x, dist, center.z);
+    } else {
+      const dist = Math.max(70, sphere.radius * 2.2);
+      this.threeControls.target.set(center.x, Math.max(0, center.y), center.z);
+      this.threeCamera.position.set(center.x, center.y + dist * 0.7, center.z + dist * 0.9);
+    }
+    this.threeControls.update();
+    this.threeCamera.updateProjectionMatrix();
+  },
+
   resetCameraView(mode) {
     if (!this.threeCamera || !this.threeControls) return;
     // Exit FPV if active
@@ -3198,43 +3235,7 @@ const FlightDiagnostics = {
       const fpvInd = document.getElementById('diag-indicator-fpv');
       if (fpvInd) fpvInd.style.background = '#ef4444';
     }
-    const targetMesh = this.actualLineMesh || this.plannedLineMesh;
-    if (mode === 'top') {
-      // Bird's-eye orthographic-style view
-      if (targetMesh && targetMesh.geometry) {
-        targetMesh.geometry.computeBoundingSphere();
-        const bs = targetMesh.geometry.boundingSphere;
-        if (bs && bs.center && !isNaN(bs.center.x)) {
-          const dist = Math.max(100, bs.radius * 2.5);
-          this.threeControls.target.set(bs.center.x, 0, bs.center.z);
-          this.threeCamera.position.set(bs.center.x, dist, bs.center.z);
-        } else {
-          this.threeControls.target.set(0, 0, 0);
-          this.threeCamera.position.set(0, 200, 0);
-        }
-      } else {
-        this.threeControls.target.set(0, 0, 0);
-        this.threeCamera.position.set(0, 200, 0);
-      }
-    } else {
-      // Standard 3D perspective view
-      if (targetMesh && targetMesh.geometry) {
-        targetMesh.geometry.computeBoundingSphere();
-        const bs = targetMesh.geometry.boundingSphere;
-        if (bs && bs.center && !isNaN(bs.center.x)) {
-          const dist = Math.max(70, bs.radius * 2.2);
-          this.threeControls.target.set(bs.center.x, Math.max(0, bs.center.y), bs.center.z);
-          this.threeCamera.position.set(bs.center.x, bs.center.y + dist * 0.7, bs.center.z + dist * 0.9);
-        } else {
-          this.threeControls.target.set(0, 0, 0);
-          this.threeCamera.position.set(0, 90, 140);
-        }
-      } else {
-        this.threeControls.target.set(0, 0, 0);
-        this.threeCamera.position.set(0, 90, 140);
-      }
-    }
-    this.threeControls.update();
+    this.frameCameraToScene(mode);
   },
 
   _updateFPVCamera() {

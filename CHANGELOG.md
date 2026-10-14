@@ -1,3 +1,24 @@
+## [1.154.2] - 2026-10-14
+
+Resolves an issue in the 3D Flight Diagnostics replay dashboard where the drone model was clipped or off-screen at the bottom of the viewport upon opening, ensuring immediate drone visibility at initial entry without requiring timeline slider interaction.
+
+### Fixed
+
+#### Pilot & Operational Features
+- **3D Flight Diagnostics Initial Drone Model Visibility**:
+  - Fixed an issue where the 3D drone avatar was cut off or positioned off-screen at the bottom of the viewport when opening Flight Diagnostics, requiring pilots to scrub the playback timeline slider forward to make the model appear.
+  - The 3D scene camera auto-framing now automatically calculates a unified 3D bounding volume encompassing the planned waypoint route, actual flown GPS line, the scene origin / home point, and the initial drone position simultaneously.
+  - Guarantees the drone model and flight trajectory are immediately framed in the center of the viewport upon entering Flight Diagnostics across all mission altitudes (21m–120m).
+  - Adjusted ground-level drone elevation clamp so the drone model rests cleanly on top of the ground pad and grid rather than partially submerging below the satellite plane.
+  - Refined camera view resets (`diag-btn-reset`, `3D View`, `Top Down`) to maintain unified bounding framing.
+
+#### Under the Hood & Technical Details
+- **DigitalTwin.js (`frameCameraToScene`)**:
+  - Replaced isolated `targetMesh.geometry.boundingSphere` calculation in `init3DScene` and `resetCameraView` with a comprehensive `THREE.Box3` union covering trajectory meshes (`plannedLineMesh`, `actualLineMesh`), `droneMesh.position`, and `(0, 0, 0)` origin.
+  - Updated `projectToWorld` minimum altitude clamp from `Math.max(0.1, alt)` to `Math.max(0.4, alt)`, seating the 0.8m drone body cleanly at `y = 0.0`.
+  - Added `frameCameraToScene('3d')` invocation immediately following `seekTo(resumeIdx)` in `loadSelectedFlight` and `open()`.
+  - Ensured `this.droneMesh` avatar is rebuilt if missing or detached from the scene during modal opening.
+
 ## [1.154.1] - 2026-10-14
 
 Enforces user-preferred Imperial (feet / mph) vs Metric (meters / m/s) unit formatting across Section 2 Layer Properties and dynamic Layer Stack cards, maintaining strict SI metric integrity for DJI WPML KMZ exports.
