@@ -446,6 +446,10 @@ function recreate3DWaypointsAndPaths() {
         segColor = 0xef4444; // Warning Red
       } else if (wp.gridType === 'light-art' || wp.isLightArtPoint || nextWp.gridType === 'light-art' || nextWp.isLightArtPoint) {
         segColor = 0xec4899; // Luminous Pink/Magenta Light Ribbon
+      } else if (wp.gridType === 'vertical-facade' || wp.isVerticalFacade || nextWp.gridType === 'vertical-facade' || nextWp.isVerticalFacade) {
+        segColor = 0x10b981; // Emerald Green for Planar Facade Grid
+      } else if (wp.gridType === 'continuous-helix' || wp.isContinuousHelix || nextWp.gridType === 'continuous-helix' || nextWp.isContinuousHelix) {
+        segColor = 0x8b5cf6; // Violet/Indigo Ribbon for Continuous Corkscrew Spiral
       } else {
         const nextRing = nextWp.ringIndex;
         if (nextRing === 0) segColor = 0xa855f7;

@@ -53,6 +53,24 @@ const FLIGHT_TOOLS = {
     description: '3D Tower Structure Vertical/Horizontal Inspection Pattern',
     propertyGroups: ['tower-geometry', 'overlaps', 'altitude', 'speed', 'camera']
   },
+  'vertical-facade': {
+    id: 'vertical-facade',
+    label: 'Vertical Facade',
+    category: 'inspection',
+    icon: 'vertical-facade',
+    shortcut: 'V',
+    description: 'Vertical Facade Grid for planar infrastructure inspection (dams, bridge pylons, building facades)',
+    propertyGroups: ['vertical-facade-geometry', 'overlaps', 'altitude', 'speed', 'camera']
+  },
+  'continuous-helix': {
+    id: 'continuous-helix',
+    label: 'Continuous Helix',
+    category: 'inspection',
+    icon: 'continuous-helix',
+    shortcut: 'X',
+    description: 'Continuous Helix / Spiral corkscrew ascent/descent for smooth cinematic inspection of vertical structures',
+    propertyGroups: ['continuous-helix-geometry', 'altitude', 'speed', 'camera']
+  },
   'photo-sphere': {
     id: 'photo-sphere',
     label: '360 Pano',

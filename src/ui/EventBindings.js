@@ -1026,6 +1026,137 @@ function initUIEventListeners() {
   };
   setupLightArtListeners();
 
+  // Vertical Facade Control Listeners (v1.153.0 - Issue #132)
+  const setupVerticalFacadeListeners = () => {
+    const fWidth = document.getElementById('facade-width');
+    const fWidthVal = document.getElementById('facade-width-val');
+    const fMinAlt = document.getElementById('facade-min-alt');
+    const fMinAltVal = document.getElementById('facade-min-alt-val');
+    const fMaxAlt = document.getElementById('facade-max-alt');
+    const fMaxAltVal = document.getElementById('facade-max-alt-val');
+    const fStandoff = document.getElementById('facade-standoff');
+    const fStandoffVal = document.getElementById('facade-standoff-val');
+    const fScanMode = document.getElementById('facade-scan-mode');
+    const fHeadingMode = document.getElementById('facade-heading-mode');
+
+    const updateVerticalFacade = () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (!activeLayer) return;
+
+      if (fWidth) {
+        const val = parseFloat(fWidth.value) || 60;
+        activeLayer.facadeWidth = val;
+        if (fWidthVal) fWidthVal.textContent = `${val}m`;
+      }
+      if (fMinAlt) {
+        const val = parseFloat(fMinAlt.value) || 10;
+        activeLayer.facadeMinAlt = val;
+        if (fMinAltVal) fMinAltVal.textContent = `${val}m`;
+      }
+      if (fMaxAlt) {
+        const val = parseFloat(fMaxAlt.value) || 40;
+        activeLayer.facadeMaxAlt = val;
+        if (fMaxAltVal) fMaxAltVal.textContent = `${val}m`;
+      }
+      if (fStandoff) {
+        const val = parseFloat(fStandoff.value) || 15;
+        activeLayer.facadeStandoff = val;
+        if (fStandoffVal) fStandoffVal.textContent = `${val}m`;
+      }
+      if (fScanMode && fScanMode.value) activeLayer.facadeScanMode = fScanMode.value;
+      if (fHeadingMode && fHeadingMode.value) activeLayer.facadeHeadingMode = fHeadingMode.value;
+
+      updateGrid();
+      updateMapLegend();
+      saveAllSettingsToLocalStorage();
+    };
+
+    [fWidth, fMinAlt, fMaxAlt, fStandoff, fScanMode, fHeadingMode].forEach(el => {
+      if (el) {
+        el.addEventListener('input', updateVerticalFacade);
+        el.addEventListener('change', updateVerticalFacade);
+      }
+    });
+  };
+  setupVerticalFacadeListeners();
+
+  // Continuous Helix Control Listeners (v1.153.0 - Issue #133)
+  const setupContinuousHelixListeners = () => {
+    const hRStart = document.getElementById('helix-radius-start');
+    const hRStartVal = document.getElementById('helix-radius-start-val');
+    const hREnd = document.getElementById('helix-radius-end');
+    const hREndVal = document.getElementById('helix-radius-end-val');
+    const hAltStart = document.getElementById('helix-alt-start');
+    const hAltStartVal = document.getElementById('helix-alt-start-val');
+    const hAltEnd = document.getElementById('helix-alt-end');
+    const hAltEndVal = document.getElementById('helix-alt-end-val');
+    const hRevs = document.getElementById('helix-revolutions');
+    const hRevsVal = document.getElementById('helix-revolutions-val');
+    const hDir = document.getElementById('helix-direction');
+    const hClimbDir = document.getElementById('helix-climb-direction');
+    const hPStart = document.getElementById('helix-pitch-start');
+    const hPStartVal = document.getElementById('helix-pitch-start-val');
+    const hPEnd = document.getElementById('helix-pitch-end');
+    const hPEndVal = document.getElementById('helix-pitch-end-val');
+    const hHeadMode = document.getElementById('helix-heading-mode');
+
+    const updateContinuousHelix = () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (!activeLayer) return;
+
+      if (hRStart) {
+        const val = parseFloat(hRStart.value) || 25;
+        activeLayer.helixRadiusStart = val;
+        if (hRStartVal) hRStartVal.textContent = `${val}m`;
+      }
+      if (hREnd) {
+        const val = parseFloat(hREnd.value) || 25;
+        activeLayer.helixRadiusEnd = val;
+        if (hREndVal) hREndVal.textContent = `${val}m`;
+      }
+      if (hAltStart) {
+        const val = parseFloat(hAltStart.value) || 20;
+        activeLayer.helixAltStart = val;
+        if (hAltStartVal) hAltStartVal.textContent = `${val}m`;
+      }
+      if (hAltEnd) {
+        const val = parseFloat(hAltEnd.value) || 60;
+        activeLayer.helixAltEnd = val;
+        if (hAltEndVal) hAltEndVal.textContent = `${val}m`;
+      }
+      if (hRevs) {
+        const val = parseFloat(hRevs.value) || 3;
+        activeLayer.helixRevolutions = val;
+        if (hRevsVal) hRevsVal.textContent = `${val}`;
+      }
+      if (hDir && hDir.value) activeLayer.helixDirection = hDir.value;
+      if (hClimbDir && hClimbDir.value) activeLayer.helixClimbDirection = hClimbDir.value;
+      if (hPStart) {
+        const val = parseFloat(hPStart.value) || -25;
+        activeLayer.helixPitchStart = val;
+        if (hPStartVal) hPStartVal.textContent = `${val}°`;
+      }
+      if (hPEnd) {
+        const val = parseFloat(hPEnd.value) || -65;
+        activeLayer.helixPitchEnd = val;
+        if (hPEndVal) hPEndVal.textContent = `${val}°`;
+      }
+      if (hHeadMode && hHeadMode.value) activeLayer.helixHeadingMode = hHeadMode.value;
+
+      updateGrid();
+      updateMapLegend();
+      saveAllSettingsToLocalStorage();
+    };
+
+    [hRStart, hREnd, hAltStart, hAltEnd, hRevs, hDir, hClimbDir, hPStart, hPEnd, hHeadMode].forEach(el => {
+      if (el) {
+        el.addEventListener('input', updateContinuousHelix);
+        el.addEventListener('change', updateContinuousHelix);
+      }
+    });
+  };
+  setupContinuousHelixListeners();
+
   // Handle Camera Model preset change
   const cameraModelEl = document.getElementById('camera-model');
   const droneModelEl = document.getElementById('drone-model');

@@ -112,9 +112,9 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
       cj++;
     }
     const clusterSize = cj - ci;
-    const isLightArtCluster = (gridType === 'light-art') ||
-      (waypoints[ci] && (waypoints[ci].isLightArtPoint || waypoints[ci].gridType === 'light-art' || waypoints[ci].layerPattern === 'light-art'));
-    if (clusterSize > 1 && !isLightArtCluster) {
+    const isExemptCluster = (gridType === 'light-art' || gridType === 'continuous-helix' || gridType === 'vertical-facade') ||
+      (waypoints[ci] && (waypoints[ci].isLightArtPoint || waypoints[ci].isContinuousHelix || waypoints[ci].isVerticalFacade || waypoints[ci].gridType === 'light-art' || waypoints[ci].gridType === 'continuous-helix' || waypoints[ci].gridType === 'vertical-facade' || waypoints[ci].layerPattern === 'light-art' || waypoints[ci].layerPattern === 'continuous-helix' || waypoints[ci].layerPattern === 'vertical-facade'));
+    if (clusterSize > 1 && !isExemptCluster) {
       const clusterLat = waypoints[ci].lat;
       const clusterLon = waypoints[ci].lon;
       const latRad = (clusterLat * Math.PI) / 180.0;
@@ -660,7 +660,7 @@ ${waypointActions.join('\n')}
         }
       }
     } else {
-      if ((gridType === 'hyperlapse' || gridType === 'freeform' || gridType === 'exclusion-freeform' || gridType === 'target-splat' || gridType === 'road-following' || gridType === 'photo-sphere' || wp.isHyperlapse || wp.isPhotoSphere || wp.isRoadDroneWaypoint || wp.layerPattern === 'hyperlapse' || wp.layerPattern === 'freeform' || wp.layerPattern === 'exclusion-freeform' || (wp.gridType && (wp.gridType === 'hyperlapse' || wp.gridType === 'freeform' || wp.gridType === 'exclusion-freeform')) || (wpLayer && (wpLayer.pattern === 'hyperlapse' || wpLayer.pattern === 'freeform' || wpLayer.pattern === 'exclusion-freeform')))) {
+      if ((gridType === 'hyperlapse' || gridType === 'freeform' || gridType === 'exclusion-freeform' || gridType === 'target-splat' || gridType === 'road-following' || gridType === 'photo-sphere' || gridType === 'vertical-facade' || gridType === 'continuous-helix' || wp.isHyperlapse || wp.isPhotoSphere || wp.isVerticalFacade || wp.isContinuousHelix || wp.isRoadDroneWaypoint || wp.layerPattern === 'hyperlapse' || wp.layerPattern === 'freeform' || wp.layerPattern === 'exclusion-freeform' || wp.layerPattern === 'vertical-facade' || wp.layerPattern === 'continuous-helix' || (wp.gridType && (wp.gridType === 'hyperlapse' || wp.gridType === 'freeform' || wp.gridType === 'exclusion-freeform' || wp.gridType === 'vertical-facade' || wp.gridType === 'continuous-helix')) || (wpLayer && (wpLayer.pattern === 'hyperlapse' || wpLayer.pattern === 'freeform' || wpLayer.pattern === 'exclusion-freeform' || wpLayer.pattern === 'vertical-facade' || wpLayer.pattern === 'continuous-helix')))) {
         actualHeadingMode = 'smoothTransition';
         actualHeadingAngle = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
       } else if (effectiveHeadingMode === 'towardPOI') {
@@ -1234,16 +1234,21 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
           : (wpLayer && wpLayer.altitude !== undefined && wpLayer.altitude !== null && wpLayer.altitude !== 'inherit'
             ? wpLayer.altitude
             : (options && options.altitude !== undefined && options.altitude !== null ? options.altitude : null));
-        if (targetAlt !== null && !isNaN(targetAlt)) {
+
+        const isVariableAltPattern = (wpLayer && (wpLayer.pattern === 'tower' || wpLayer.pattern === 'multi-orbit' || wpLayer.pattern === 'vertical-facade' || wpLayer.pattern === 'continuous-helix' || (wpLayer.pattern === 'light-art' && (wpLayer.lightArtOrientation === 'vertical' || wpLayer.lightArtPreset === 'helix')))) ||
+          (wpObj && (wpObj.isMultiOrbit || wpObj.gridType === 'tower' || wpObj.gridType === 'vertical-facade' || wpObj.gridType === 'continuous-helix' || wpObj.layerPattern === 'vertical-facade' || wpObj.layerPattern === 'continuous-helix' || wpObj.isVerticalFacade || wpObj.isContinuousHelix));
+
+        if (targetAlt !== null && !isNaN(targetAlt) && !isVariableAltPattern) {
           pms[i] = pms[i].replace(
             /(<wpml:executeHeight>)[^<]+(<\/wpml:executeHeight>)/,
             `$1${targetAlt}$2`
           );
         }
 
-        const isMultiRing = (wpLayer && (wpLayer.pattern === 'multi-orbit' || wpLayer.pattern === 'photo-sphere')) ||
-          (wpObj.isMultiOrbit || wpObj.isPhotoSphere || wpObj.gridType === 'photo-sphere' || (wpObj.ringIndex !== undefined && wpObj.ringIndex !== null));
-        const hasHlSweep = (wpLayer && wpLayer.pattern === 'hyperlapse' && wpLayer.hyperlapseStartPitch !== undefined && wpLayer.hyperlapseEndPitch !== undefined && wpLayer.hyperlapseStartPitch !== wpLayer.hyperlapseEndPitch);
+        const isMultiRing = (wpLayer && (wpLayer.pattern === 'multi-orbit' || wpLayer.pattern === 'photo-sphere' || wpLayer.pattern === 'continuous-helix')) ||
+          (wpObj.isMultiOrbit || wpObj.isPhotoSphere || wpObj.isContinuousHelix || wpObj.gridType === 'photo-sphere' || wpObj.gridType === 'continuous-helix' || (wpObj.ringIndex !== undefined && wpObj.ringIndex !== null));
+        const hasHlSweep = (wpLayer && wpLayer.pattern === 'hyperlapse' && wpLayer.hyperlapseStartPitch !== undefined && wpLayer.hyperlapseEndPitch !== undefined && wpLayer.hyperlapseStartPitch !== wpLayer.hyperlapseEndPitch) ||
+          (wpLayer && wpLayer.pattern === 'continuous-helix' && wpLayer.helixPitchStart !== undefined && wpLayer.helixPitchEnd !== undefined && wpLayer.helixPitchStart !== wpLayer.helixPitchEnd);
 
         const targetPitch = (wpObj.layerGimbalPitch !== undefined && wpObj.layerGimbalPitch !== null && wpObj.layerGimbalPitch !== 'inherit' && wpObj.layerGimbalPitch !== 'auto')
           ? wpObj.layerGimbalPitch
@@ -1260,7 +1265,7 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
         }
       }
       const isCustomHeadingWp = isTargetSplat || isExclusionFreeform || isFreeform ||
-        (wpObj && (wpObj.gridType === 'target-splat' || wpObj.gridType === 'exclusion-freeform' || wpObj.gridType === 'freeform' || wpObj.layerPattern === 'exclusion-freeform' || wpObj.layerPattern === 'freeform' || (wpObj.heading !== null && wpObj.heading !== undefined && !isNaN(wpObj.heading))));
+        (wpObj && (wpObj.gridType === 'target-splat' || wpObj.gridType === 'exclusion-freeform' || wpObj.gridType === 'freeform' || wpObj.gridType === 'vertical-facade' || wpObj.gridType === 'continuous-helix' || wpObj.layerPattern === 'exclusion-freeform' || wpObj.layerPattern === 'freeform' || wpObj.layerPattern === 'vertical-facade' || wpObj.layerPattern === 'continuous-helix' || wpObj.isVerticalFacade || wpObj.isContinuousHelix || (wpObj.heading !== null && wpObj.heading !== undefined && !isNaN(wpObj.heading))));
 
       if (isCustomHeadingWp) {
         if (mode === 'followWayline') {

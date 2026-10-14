@@ -36,7 +36,9 @@ function getPatternDisplayName(pattern) {
     'fiducial-markers': '🎯 Fiducial / GCPs',
     'photo-sphere': '360° Photo Sphere',
     'hyperlapse': 'Hyperlapse Time-Lapse',
-    'light-art': '🎨 Light Art (Sky Painting)'
+    'light-art': '🎨 Light Art (Sky Painting)',
+    'vertical-facade': '🏢 Vertical Facade Grid',
+    'continuous-helix': '🌀 Continuous Helix / Spiral'
   };
   return map[pattern] || pattern || 'Double Grid';
 }
@@ -96,7 +98,7 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     gridRotation: 0,
     frontOverlap: 80,
     sideOverlap: 75,
-    gimbalPitch: -60,
+    gimbalPitch: (pattern === 'vertical-facade') ? 0 : -60,
     altitude: 50,
     speed: 4,
     headingMode: 'inherit',
@@ -154,6 +156,22 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     lightArtStarRatio: 0.45,
     lightArtClimb: 15,
     lightArtCameraAzimuth: 0,
+    facadeWidth: 60,
+    facadeMinAlt: 10,
+    facadeMaxAlt: 40,
+    facadeStandoff: 15,
+    facadeScanMode: 'horizontal', // 'horizontal' or 'vertical'
+    facadeHeadingMode: 'perpendicular', // 'perpendicular' or 'flightPath'
+    helixRadiusStart: 25,
+    helixRadiusEnd: 25,
+    helixAltStart: 20,
+    helixAltEnd: 60,
+    helixRevolutions: 3,
+    helixDirection: 'cw', // 'cw' or 'ccw'
+    helixClimbDirection: 'ascent', // 'ascent' or 'descent'
+    helixPitchStart: -25,
+    helixPitchEnd: -65,
+    helixHeadingMode: 'towardCenter', // 'towardCenter' or 'tangent'
     freeformWaypoints: [],
     freeformPhotos: [],
     roadWaypoints: [],
@@ -803,6 +821,42 @@ function saveActiveLayerFromUi() {
   if (laClimb) layer.lightArtClimb = parseFloat(laClimb.value) || 15;
   if (laCameraAz) layer.lightArtCameraAzimuth = parseFloat(laCameraAz.value) || 0;
 
+  // Vertical Facade controls
+  const fWidth = document.getElementById('facade-width');
+  const fMinAlt = document.getElementById('facade-min-alt');
+  const fMaxAlt = document.getElementById('facade-max-alt');
+  const fStandoff = document.getElementById('facade-standoff');
+  const fScanMode = document.getElementById('facade-scan-mode');
+  const fHeadingMode = document.getElementById('facade-heading-mode');
+  if (fWidth) layer.facadeWidth = parseFloat(fWidth.value) || 60;
+  if (fMinAlt) layer.facadeMinAlt = parseFloat(fMinAlt.value) || 10;
+  if (fMaxAlt) layer.facadeMaxAlt = parseFloat(fMaxAlt.value) || 40;
+  if (fStandoff) layer.facadeStandoff = parseFloat(fStandoff.value) || 15;
+  if (fScanMode && fScanMode.value) layer.facadeScanMode = fScanMode.value;
+  if (fHeadingMode && fHeadingMode.value) layer.facadeHeadingMode = fHeadingMode.value;
+
+  // Continuous Helix controls
+  const hRStart = document.getElementById('helix-radius-start');
+  const hREnd = document.getElementById('helix-radius-end');
+  const hAltStart = document.getElementById('helix-alt-start');
+  const hAltEnd = document.getElementById('helix-alt-end');
+  const hRevs = document.getElementById('helix-revolutions');
+  const hDir = document.getElementById('helix-direction');
+  const hClimbDir = document.getElementById('helix-climb-direction');
+  const hPStart = document.getElementById('helix-pitch-start');
+  const hPEnd = document.getElementById('helix-pitch-end');
+  const hHeadMode = document.getElementById('helix-heading-mode');
+  if (hRStart) layer.helixRadiusStart = parseFloat(hRStart.value) || 25;
+  if (hREnd) layer.helixRadiusEnd = parseFloat(hREnd.value) || 25;
+  if (hAltStart) layer.helixAltStart = parseFloat(hAltStart.value) || 20;
+  if (hAltEnd) layer.helixAltEnd = parseFloat(hAltEnd.value) || 60;
+  if (hRevs) layer.helixRevolutions = parseFloat(hRevs.value) || 3;
+  if (hDir && hDir.value) layer.helixDirection = hDir.value;
+  if (hClimbDir && hClimbDir.value) layer.helixClimbDirection = hClimbDir.value;
+  if (hPStart) layer.helixPitchStart = parseFloat(hPStart.value) || -25;
+  if (hPEnd) layer.helixPitchEnd = parseFloat(hPEnd.value) || -65;
+  if (hHeadMode && hHeadMode.value) layer.helixHeadingMode = hHeadMode.value;
+
   if (globalDetourModeEl && globalDetourModeEl.value) {
     globalExclusionDetourMode = globalDetourModeEl.value;
   }
@@ -1076,6 +1130,64 @@ function syncUiWithActiveLayer() {
   if (typeof updateLightArtUiFields === 'function') {
     updateLightArtUiFields(layer);
   }
+
+  // Sync Vertical Facade Controls
+  const fWidth = document.getElementById('facade-width');
+  const fWidthVal = document.getElementById('facade-width-val');
+  const fMinAlt = document.getElementById('facade-min-alt');
+  const fMinAltVal = document.getElementById('facade-min-alt-val');
+  const fMaxAlt = document.getElementById('facade-max-alt');
+  const fMaxAltVal = document.getElementById('facade-max-alt-val');
+  const fStandoff = document.getElementById('facade-standoff');
+  const fStandoffVal = document.getElementById('facade-standoff-val');
+  const fScanMode = document.getElementById('facade-scan-mode');
+  const fHeadingMode = document.getElementById('facade-heading-mode');
+  if (fWidth) fWidth.value = layer.facadeWidth !== undefined ? layer.facadeWidth : 60;
+  if (fWidthVal) fWidthVal.textContent = `${layer.facadeWidth !== undefined ? layer.facadeWidth : 60}m`;
+  if (fMinAlt) fMinAlt.value = layer.facadeMinAlt !== undefined ? layer.facadeMinAlt : 10;
+  if (fMinAltVal) fMinAltVal.textContent = `${layer.facadeMinAlt !== undefined ? layer.facadeMinAlt : 10}m`;
+  if (fMaxAlt) fMaxAlt.value = layer.facadeMaxAlt !== undefined ? layer.facadeMaxAlt : 40;
+  if (fMaxAltVal) fMaxAltVal.textContent = `${layer.facadeMaxAlt !== undefined ? layer.facadeMaxAlt : 40}m`;
+  if (fStandoff) fStandoff.value = layer.facadeStandoff !== undefined ? layer.facadeStandoff : 15;
+  if (fStandoffVal) fStandoffVal.textContent = `${layer.facadeStandoff !== undefined ? layer.facadeStandoff : 15}m`;
+  if (fScanMode) fScanMode.value = layer.facadeScanMode || 'horizontal';
+  if (fHeadingMode) fHeadingMode.value = layer.facadeHeadingMode || 'perpendicular';
+
+  // Sync Continuous Helix Controls
+  const hRStart = document.getElementById('helix-radius-start');
+  const hRStartVal = document.getElementById('helix-radius-start-val');
+  const hREnd = document.getElementById('helix-radius-end');
+  const hREndVal = document.getElementById('helix-radius-end-val');
+  const hAltStart = document.getElementById('helix-alt-start');
+  const hAltStartVal = document.getElementById('helix-alt-start-val');
+  const hAltEnd = document.getElementById('helix-alt-end');
+  const hAltEndVal = document.getElementById('helix-alt-end-val');
+  const hRevs = document.getElementById('helix-revolutions');
+  const hRevsVal = document.getElementById('helix-revolutions-val');
+  const hDir = document.getElementById('helix-direction');
+  const hClimbDir = document.getElementById('helix-climb-direction');
+  const hPStart = document.getElementById('helix-pitch-start');
+  const hPStartVal = document.getElementById('helix-pitch-start-val');
+  const hPEnd = document.getElementById('helix-pitch-end');
+  const hPEndVal = document.getElementById('helix-pitch-end-val');
+  const hHeadMode = document.getElementById('helix-heading-mode');
+  if (hRStart) hRStart.value = layer.helixRadiusStart !== undefined ? layer.helixRadiusStart : 25;
+  if (hRStartVal) hRStartVal.textContent = `${layer.helixRadiusStart !== undefined ? layer.helixRadiusStart : 25}m`;
+  if (hREnd) hREnd.value = layer.helixRadiusEnd !== undefined ? layer.helixRadiusEnd : 25;
+  if (hREndVal) hREndVal.textContent = `${layer.helixRadiusEnd !== undefined ? layer.helixRadiusEnd : 25}m`;
+  if (hAltStart) hAltStart.value = layer.helixAltStart !== undefined ? layer.helixAltStart : 20;
+  if (hAltStartVal) hAltStartVal.textContent = `${layer.helixAltStart !== undefined ? layer.helixAltStart : 20}m`;
+  if (hAltEnd) hAltEnd.value = layer.helixAltEnd !== undefined ? layer.helixAltEnd : 60;
+  if (hAltEndVal) hAltEndVal.textContent = `${layer.helixAltEnd !== undefined ? layer.helixAltEnd : 60}m`;
+  if (hRevs) hRevs.value = layer.helixRevolutions !== undefined ? layer.helixRevolutions : 3;
+  if (hRevsVal) hRevsVal.textContent = `${layer.helixRevolutions !== undefined ? layer.helixRevolutions : 3}`;
+  if (hDir) hDir.value = layer.helixDirection || 'cw';
+  if (hClimbDir) hClimbDir.value = layer.helixClimbDirection || 'ascent';
+  if (hPStart) hPStart.value = layer.helixPitchStart !== undefined ? layer.helixPitchStart : -25;
+  if (hPStartVal) hPStartVal.textContent = `${layer.helixPitchStart !== undefined ? layer.helixPitchStart : -25}°`;
+  if (hPEnd) hPEnd.value = layer.helixPitchEnd !== undefined ? layer.helixPitchEnd : -65;
+  if (hPEndVal) hPEndVal.textContent = `${layer.helixPitchEnd !== undefined ? layer.helixPitchEnd : -65}°`;
+  if (hHeadMode) hHeadMode.value = layer.helixHeadingMode || 'towardCenter';
 
   if (typeof syncDisplayValues === 'function') {
     try { syncDisplayValues(); } catch (e) {}
@@ -2186,14 +2298,16 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
       const towerRad = layer ? (layer.towerRadius !== undefined ? Math.max(1, layer.towerRadius) : 30) : 30;
       const guyBuf = layer ? (layer.towerGuyWireBuffer !== undefined ? Math.max(0, layer.towerGuyWireBuffer) : 15) : 15;
       targetDist = Math.max(1, towerRad + guyBuf);
+    } else if (gridType === 'vertical-facade') {
+      targetDist = layer ? (layer.facadeStandoff !== undefined ? Math.max(1, layer.facadeStandoff) : 15) : 15;
     }
 
     const wFoot = 2.0 * targetDist * Math.tan((hfov / 2.0) * Math.PI / 180.0);
     const lFoot = 2.0 * targetDist * Math.tan((vfov / 2.0) * Math.PI / 180.0);
-    sLine = (gridType === 'tower') ? lFoot * (1.0 - overlapFront) : wFoot * (1.0 - overlapSide);
-    sPhoto = (gridType === 'tower') ? wFoot * (1.0 - overlapSide) : lFoot * (1.0 - overlapFront);
+    sLine = (gridType === 'tower' || gridType === 'vertical-facade') ? lFoot * (1.0 - overlapFront) : wFoot * (1.0 - overlapSide);
+    sPhoto = (gridType === 'tower' || gridType === 'vertical-facade') ? wFoot * (1.0 - overlapSide) : lFoot * (1.0 - overlapFront);
 
-    actualRotation = (gridType === 'orbit' || gridType === 'multi-orbit' || gridType === 'tower' || gridType === 'photo-sphere') ? 0 : rotation;
+    actualRotation = (gridType === 'orbit' || gridType === 'multi-orbit' || gridType === 'tower' || gridType === 'photo-sphere' || gridType === 'continuous-helix') ? 0 : rotation;
 
     let gridData;
     if (gridType === 'light-art') {
@@ -2201,6 +2315,10 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
       if (typeof updateLightArtBadge === 'function') {
         updateLightArtBadge(gridData);
       }
+    } else if (gridType === 'vertical-facade') {
+      gridData = generateVerticalFacadeCoordinates(layer, sLine, sPhoto, altitude, defaultGimbalPitch);
+    } else if (gridType === 'continuous-helix') {
+      gridData = generateHelixCoordinates(layer, sPhoto, altitude, defaultGimbalPitch);
     } else if (gridType === 'tower') {
       gridData = generateTowerCoordinates(layer, sLine, sPhoto, altitude, defaultGimbalPitch);
     } else if (gridType === 'orbit') {

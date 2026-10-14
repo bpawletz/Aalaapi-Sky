@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.152.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.153.0</span></h1>
 
 
 
@@ -280,6 +280,8 @@
               <option value="orbit">3D Object (Circular Orbit)</option>
               <option value="multi-orbit">3D Object (Multi-Tiered Orbit)</option>
               <option value="tower">3D Structure (Tower Audit)</option>
+              <option value="vertical-facade">🏢 Vertical Facade (Planar Infrastructure)</option>
+              <option value="continuous-helix">🌀 Continuous Helix (Corkscrew Orbit)</option>
               <option value="photo-sphere">360° Pano (Photo Sphere)</option>
               <option value="hyperlapse">🎞️ Hyperlapse (Interval Time-Lapse)</option>
               <option value="light-art">🎨 Light Art (Sky Painting / Long Exposure)</option>
@@ -343,6 +345,25 @@
                   <circle cx="12" cy="2" r="1.5" fill="currentColor"/>
                 </svg>
                 <span>Tower</span>
+              </div>
+              <div class="pattern-card" data-value="vertical-facade" title="Vertical Facade Grid (Dams, Bridge Pylons, Building Facades)">
+                <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="3" width="16" height="18" rx="1"/>
+                  <line x1="4" y1="8" x2="20" y2="8"/>
+                  <line x1="4" y1="13" x2="20" y2="13"/>
+                  <line x1="4" y1="18" x2="20" y2="18"/>
+                  <path d="M12 3v18" stroke-dasharray="2,2"/>
+                </svg>
+                <span style="color: #34d399;">Vertical Facade</span>
+              </div>
+              <div class="pattern-card" data-value="continuous-helix" title="Continuous Helix (Corkscrew Orbit Ascent/Descent)">
+                <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 19c2-8 14-8 16 0"/>
+                  <path d="M5 13c2-6 12-6 14 0"/>
+                  <path d="M7 7c2-4 8-4 10 0"/>
+                  <path d="M12 2v20" stroke-dasharray="2,2"/>
+                </svg>
+                <span style="color: #a78bfa;">Continuous Helix</span>
               </div>
               <div class="pattern-card" data-value="photo-sphere" title="360° Photo Sphere (Equirectangular Panorama)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1097,6 +1118,122 @@
             <div style="display: flex; align-items: center; gap: 6px; background: rgba(236, 72, 153, 0.08); border: 1px solid rgba(236, 72, 153, 0.25); border-radius: 6px; padding: 6px 8px; font-size: 0.72rem; color: #f472b6;">
               <span style="font-size: 0.9rem;">📸</span>
               <span><strong>Shutter Sync:</strong> Continuous curved flight mode prevents waypoint pause hotspots. Ground camera shutter opens at drone start and closes at stroke finish.</span>
+            </div>
+          </div>
+
+          <!-- Vertical Facade Controls (Issue #132) -->
+          <div id="vertical-facade-container" class="control-group hidden" style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 8px; padding: 12px; margin-top: 10px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 0.76rem; font-weight: 700; color: #10b981;">🏢 Planar Facade Grid Controls</span>
+              <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981; font-size: 0.68rem; padding: 2px 7px; border-radius: 4px; font-weight: 700;">Constant Standoff</span>
+            </div>
+            <div class="control-group" style="margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                <label for="facade-width" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; margin: 0;">Facade Width (Span)</label>
+                <span id="facade-width-val" style="font-size: 0.72rem; color: #10b981; font-weight: 700;">60m</span>
+              </div>
+              <input type="range" id="facade-width" class="form-range" min="5" max="300" step="1" value="60" style="accent-color: #10b981;">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+              <div>
+                <label for="facade-min-alt" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">Bottom Alt (<span id="facade-min-alt-val" style="color: #10b981;">10m</span>)</label>
+                <input type="range" id="facade-min-alt" class="form-range" min="2" max="150" step="1" value="10" style="accent-color: #10b981;">
+              </div>
+              <div>
+                <label for="facade-max-alt" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">Top Alt (<span id="facade-max-alt-val" style="color: #10b981;">40m</span>)</label>
+                <input type="range" id="facade-max-alt" class="form-range" min="5" max="300" step="1" value="40" style="accent-color: #10b981;">
+              </div>
+            </div>
+            <div class="control-group" style="margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                <label for="facade-standoff" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; margin: 0;">Standoff Distance</label>
+                <span id="facade-standoff-val" style="font-size: 0.72rem; color: #10b981; font-weight: 700;">15m</span>
+              </div>
+              <input type="range" id="facade-standoff" class="form-range" min="2" max="60" step="1" value="15" style="accent-color: #10b981;">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div>
+                <label for="facade-scan-mode" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 3px;">Scan Trajectory</label>
+                <select id="facade-scan-mode" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 3px 6px;">
+                  <option value="horizontal" selected>Horizontal Zig-Zag</option>
+                  <option value="vertical">Vertical Columns</option>
+                </select>
+              </div>
+              <div>
+                <label for="facade-heading-mode" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 3px;">Camera Lock</label>
+                <select id="facade-heading-mode" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 3px 6px;">
+                  <option value="perpendicular" selected>Perpendicular to Facade</option>
+                  <option value="flightPath">Along Flight Line</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Continuous Helix Controls (Issue #133) -->
+          <div id="continuous-helix-container" class="control-group hidden" style="background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.25); border-radius: 8px; padding: 12px; margin-top: 10px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 0.76rem; font-weight: 700; color: #a78bfa;">🌀 Continuous Helix Orbit Controls</span>
+              <span class="badge" style="background: rgba(139, 92, 246, 0.2); color: #a78bfa; font-size: 0.68rem; padding: 2px 7px; border-radius: 4px; font-weight: 700;">Fluid Corkscrew</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+              <div>
+                <label for="helix-radius-start" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">Base Radius (<span id="helix-radius-start-val" style="color: #a78bfa;">25m</span>)</label>
+                <input type="range" id="helix-radius-start" class="form-range" min="5" max="150" step="1" value="25" style="accent-color: #8b5cf6;">
+              </div>
+              <div>
+                <label for="helix-radius-end" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">Top Radius (<span id="helix-radius-end-val" style="color: #a78bfa;">25m</span>)</label>
+                <input type="range" id="helix-radius-end" class="form-range" min="5" max="150" step="1" value="25" style="accent-color: #8b5cf6;">
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+              <div>
+                <label for="helix-alt-start" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">Start Alt (<span id="helix-alt-start-val" style="color: #a78bfa;">20m</span>)</label>
+                <input type="range" id="helix-alt-start" class="form-range" min="5" max="200" step="1" value="20" style="accent-color: #8b5cf6;">
+              </div>
+              <div>
+                <label for="helix-alt-end" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">End Alt (<span id="helix-alt-end-val" style="color: #a78bfa;">60m</span>)</label>
+                <input type="range" id="helix-alt-end" class="form-range" min="10" max="300" step="1" value="60" style="accent-color: #8b5cf6;">
+              </div>
+            </div>
+            <div class="control-group" style="margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                <label for="helix-revolutions" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; margin: 0;">Revolutions (Turns)</label>
+                <span id="helix-revolutions-val" style="font-size: 0.72rem; color: #a78bfa; font-weight: 700;">3</span>
+              </div>
+              <input type="range" id="helix-revolutions" class="form-range" min="1" max="10" step="0.5" value="3" style="accent-color: #8b5cf6;">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+              <div>
+                <label for="helix-direction" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 3px;">Orbit Direction</label>
+                <select id="helix-direction" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 3px 6px;">
+                  <option value="cw" selected>Clockwise (CW)</option>
+                  <option value="ccw">Counter-Clockwise (CCW)</option>
+                </select>
+              </div>
+              <div>
+                <label for="helix-climb-direction" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 3px;">Climb Profile</label>
+                <select id="helix-climb-direction" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 3px 6px;">
+                  <option value="ascent" selected>Ascent (Upward)</option>
+                  <option value="descent">Descent (Downward)</option>
+                </select>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+              <div>
+                <label for="helix-pitch-start" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">Start Pitch (<span id="helix-pitch-start-val" style="color: #a78bfa;">-25°</span>)</label>
+                <input type="range" id="helix-pitch-start" class="form-range" min="-90" max="20" step="1" value="-25" style="accent-color: #8b5cf6;">
+              </div>
+              <div>
+                <label for="helix-pitch-end" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">End Pitch (<span id="helix-pitch-end-val" style="color: #a78bfa;">-65°</span>)</label>
+                <input type="range" id="helix-pitch-end" class="form-range" min="-90" max="20" step="1" value="-65" style="accent-color: #8b5cf6;">
+              </div>
+            </div>
+            <div>
+              <label for="helix-heading-mode" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 3px;">Camera Lock</label>
+              <select id="helix-heading-mode" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 3px 6px;">
+                <option value="towardCenter" selected>Lock toward Center Axis (POI)</option>
+                <option value="tangent">Follow Path Tangent (Cinematic Fly-By)</option>
+              </select>
             </div>
           </div>
 
@@ -3267,6 +3404,22 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🏢 Vertical Facade Grid for Planar Infrastructure Inspection (v1.153.0) (Closes #132)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Inspect vertical surfaces like dams, bridges, and commercial building facades with precision! The new <strong>Vertical Facade Grid</strong> flies a planar boustrophedon lawnmower pattern offset by an exact standoff distance. Supports both <strong>Horizontal Rows (Zig-Zag)</strong> and <strong>Vertical Columns</strong> scanning, perpendicular face-locked or flight-path headings, 0° to +60° gimbal pitch, and Emerald 3D flight trajectory visualization.
+            </p>
+          </div>
+          <div style="background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #a78bfa; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🌀 Continuous Helix / Spiral Corkscrew Orbit Inspection (v1.153.0) (Closes #133)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Eliminate discrete stepped rings when inspecting towers and vertical assets! The new <strong>Continuous Helix / Spiral</strong> pattern generates fluid corkscrew ascents or descents around a Point of Interest with uniform vertical overlap. Features <strong>Cylindrical</strong> and <strong>Conical Spiral</strong> profiles, dynamic start-to-end gimbal pitch interpolation, curved turn path modes, and Violet 3D trajectory ribbons.
+            </p>
+          </div>
           <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               📸 Photo Coverage Footprints 2D Map Overlay Control (v1.152.0)
@@ -4494,7 +4647,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.152.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.153.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -4555,6 +4708,13 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.153.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Vertical Facade Grid for Planar Infrastructure:</strong> Autonomous planar boustrophedon lawnmower pattern offset by an exact standoff distance for dam, bridge pylon, and building facade inspections. Supports horizontal row zig-zag or vertical column scans, perpendicular face-locked heading, and emerald 3D trajectory ribbons. (Closes #132)</li>
+              <li><strong>Continuous Helix / Spiral Corkscrew Orbit:</strong> Upgrades discrete stepped rings into a fluid, continuous ascent/descent corkscrew around a central Point of Interest. Supports cylindrical or conical tapering, dynamic start-to-end gimbal pitch sweep, curved turn path modes, and violet 3D trajectory visualization. (Closes #133)</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.152.2):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">

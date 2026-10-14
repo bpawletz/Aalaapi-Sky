@@ -1,3 +1,37 @@
+## [1.153.0] - 2026-10-14
+
+Introduces dedicated Vertical Facade Grid for planar infrastructure inspections and Continuous Helix / Spiral Corkscrew Orbits for fluid vertical asset photogrammetry, complete with 3-tier parameter cascading, dynamic pitch interpolation, and distinct 3D trajectory ribbons.
+
+### Added
+
+#### Pilot & Operational Features
+- **Vertical Facade Grid for Planar Infrastructure Inspection (Closes #132)**:
+  - Added dedicated autonomous planar inspection generator for flat surfaces such as dam faces, bridge pylons, retaining walls, and commercial building facades.
+  - Supports both **Horizontal Rows (Zig-Zag)** and **Vertical Columns** scanning boustrophedon patterns offset by an exact standoff distance from the target surface.
+  - Heading lock modes: **Perpendicular to Facade** (locked facing directly at the structure) or **Along Flight Path**.
+  - Integrated with the 3-tier parameter hierarchy (Global -> Layer -> Waypoint) with 0° default gimbal pitch (adjustable up to +60° for upward inspection) and Emerald green 3D flight trajectory visualization.
+- **Continuous Helix / Spiral Corkscrew Orbit Inspection (Closes #133)**:
+  - Upgraded discrete stepped altitude rings into a continuous, fluid corkscrew ascent or descent around a central Point of Interest (POI).
+  - Supports **Cylindrical** (constant radius) and **Conical Spiral** (tapering radius with pitch angle) geometric profiles.
+  - Dynamic Start-to-End Gimbal Pitch Sweep smoothly interpolates camera angles from the base to the summit of the asset.
+  - Automatic `curved` turn path mode with smooth transition heading interpolation to prevent stuttering in DJI Fly, and Violet 3D flight trajectory visualization.
+
+#### Under the Hood & Technical Details
+- **Pattern Generation Algorithms (`src/patterns/PatternGenerators.js`)**:
+  - Implemented `generateVerticalFacadeCoordinates()` calculating standoff-offset boustrophedon planes, optical footprint spacing, and metric line spacing.
+  - Implemented `generateHelixCoordinates()` calculating continuous parametric corkscrew revolutions, spiral radius tapering, and linear pitch interpolation.
+- **Tool Registry & Layer Integration (`src/core/ToolRegistry.js`, `src/layers/LayerManager.js`)**:
+  - Registered `vertical-facade` (hotkey `V`) and `continuous-helix` (hotkey `X`) tools and property schemas.
+  - Added layer property synchronization and defaults (`facadeWidth`, `facadeHeight`, `facadeStandoff`, `facadeDirection`, `facadeScanMode`, `facadeHeadingMode`, `helixRadiusStart`, `helixRadiusEnd`, `helixAltStart`, `helixAltEnd`, `helixTurns`, `helixPitchStart`, `helixPitchEnd`, `helixHeadingMode`).
+- **WPML Compiler Altitude & Pitch Sweep Protection (`src/export/WpmlCompiler.js`)**:
+  - Added `isVariableAltPattern` exemption in `validateAndFixWpml()` ensuring multi-tier facade elevations and continuous helix climbs are preserved without flat layer altitude overwriting.
+  - Added `hasHlSweep` exemption preserving dynamic start-to-end gimbal pitch transitions across all waypoints.
+  - Exempted vertical facade and continuous helix nodes from micro-orbital 1.25m cluster scattering.
+- **3D Trajectory Ribbon Rendering (`src/3d/FlightSimulation.js`)**:
+  - Added dedicated theme colors for 3D flight paths: Emerald (`0x10b981`) for vertical facade and Violet (`0x8b5cf6`) for continuous helix.
+- **UI & Event Management (`src/ui/SidebarManager.js`, `src/ui/EventBindings.js`)**:
+  - Added responsive parameter drawers for Section 2, updating layer properties, redrawing 2D Leaflet grids, and syncing to `localStorage`.
+
 ## [1.152.2] - 2026-10-12
 
 Eliminates the start-point coordinate giggle / micro-orbital distortion at the center of Archimedean spirals and continuous curves in Light Art missions, ensuring mathematically pure trajectories from origin without sub-meter node crowding.
