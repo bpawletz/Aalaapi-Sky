@@ -8022,5 +8022,53 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.strictEqual(res.aebEnabled, true, 'AEB exposure bracketing must be enabled');
       assert.strictEqual(res.hasHlBadge, true, '#hyperlapse-duration-badge must exist in DOM');
     });
+
+    test('E2E: Flight Diagnostics initial entry displays 3D drone model within viewport without slider interaction', async () => {
+      const res = await page.evaluate(async () => {
+        const altInput = document.getElementById('altitude');
+        if (altInput) {
+          altInput.value = '60';
+          altInput.dispatchEvent(new Event('input'));
+        }
+
+        if (typeof FlightDiagnostics !== 'undefined' && FlightDiagnostics.open) {
+          await FlightDiagnostics.open();
+        }
+
+        const modal = document.getElementById('flight-diagnostics-modal');
+        const container = document.getElementById('diag-3d-canvas-container');
+        const drone = FlightDiagnostics.droneMesh;
+        const camera = FlightDiagnostics.threeCamera;
+
+        if (!drone || !camera || !container) {
+          return { error: 'Missing 3D diagnostics elements' };
+        }
+
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+        const v = drone.position.clone().project(camera);
+        const screenX = (v.x * 0.5 + 0.5) * width;
+        const screenY = (-(v.y * 0.5) + 0.5) * height;
+
+        return {
+          modalOpen: !modal.classList.contains('hidden'),
+          droneVisible: drone.visible,
+          screenX,
+          screenY,
+          width,
+          height,
+          inViewport: screenX >= 20 && screenX <= width - 20 && screenY >= 20 && screenY <= height - 50
+        };
+      });
+
+      assert.strictEqual(res.modalOpen, true, 'Diagnostics modal must be open');
+      assert.strictEqual(res.droneVisible, true, 'Drone model must be visible');
+      assert.strictEqual(res.inViewport, true, `Drone model must be within visible viewport immediately on entry (got screenY: ${res.screenY}, canvas height: ${res.height})`);
+
+      await page.evaluate(() => {
+        if (typeof FlightDiagnostics !== 'undefined') FlightDiagnostics.close();
+      });
+    });
   });
 });
+
