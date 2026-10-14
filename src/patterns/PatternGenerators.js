@@ -906,6 +906,214 @@ function generateLightArtCoordinates(layer, baseAltitude, defaultGimbalPitch, sp
   };
 }
 
+// ============================================================================
+// Vertical Facade Grid Pattern Generator (v1.153.0 - Issue #132)
+// ============================================================================
+function generateVerticalFacadeCoordinates(layer, sLine, sPhoto, baseAltitude, defaultGimbalPitch) {
+  const waypoints = [];
+  const photos = [];
+
+  const rawMin = (layer && layer.facadeMinAlt !== undefined) ? Number(layer.facadeMinAlt) : 10;
+  const rawMax = (layer && layer.facadeMaxAlt !== undefined) ? Number(layer.facadeMaxAlt) : 40;
+  const minH = Math.min(rawMin, rawMax);
+  const maxH = Math.max(rawMin, rawMax);
+  const hDiff = Math.max(1, maxH - minH);
+
+  const standoff = (layer && layer.facadeStandoff !== undefined) ? Math.max(1, Number(layer.facadeStandoff)) : 15;
+  const width = (layer && layer.facadeWidth !== undefined) ? Math.max(5, Number(layer.facadeWidth)) : 60;
+  const scanMode = (layer && layer.facadeScanMode) ? layer.facadeScanMode : 'horizontal';
+  const headingMode = (layer && layer.facadeHeadingMode) ? layer.facadeHeadingMode : 'perpendicular';
+
+  const resolvedPitch = (defaultGimbalPitch !== undefined && defaultGimbalPitch !== null && !isNaN(defaultGimbalPitch))
+    ? defaultGimbalPitch
+    : ((layer && layer.gimbalPitch !== undefined && layer.gimbalPitch !== null && !isNaN(layer.gimbalPitch))
+      ? Number(layer.gimbalPitch)
+      : 0);
+
+  const effSLine = Math.max(1, sLine || 5);
+  const effSPhoto = Math.max(1, sPhoto || 5);
+
+  if (scanMode === 'horizontal') {
+    const nTiers = Math.max(2, Math.round(hDiff / effSLine) + 1);
+    const nPhotos = Math.max(2, Math.round(width / effSPhoto) + 1);
+    const dyAlt = hDiff / (nTiers - 1);
+    const dx = width / (nPhotos - 1);
+
+    for (let tierIdx = 0; tierIdx < nTiers; tierIdx++) {
+      const alt = maxH - tierIdx * dyAlt;
+      const leftToRight = (tierIdx % 2 === 0);
+
+      for (let pIdx = 0; pIdx < nPhotos; pIdx++) {
+        const xStep = leftToRight ? pIdx : (nPhotos - 1 - pIdx);
+        const x = -width / 2.0 + xStep * dx;
+        const y = -standoff; // drone flies parallel to facade wall at y = 0
+
+        let heading = 0; // Perpendicular facing North toward facade
+        if (headingMode === 'flightPath') {
+          heading = leftToRight ? 90 : 270;
+        }
+
+        const pt = {
+          x: Math.round(x * 100) / 100,
+          y: Math.round(y * 100) / 100,
+          alt: Math.round(alt * 10) / 10,
+          pitch: Math.round(resolvedPitch),
+          heading: heading,
+          headingMode: 'smoothTransition',
+          gridType: 'vertical-facade',
+          layerPattern: 'vertical-facade',
+          isVerticalFacade: true,
+          isRingStart: (pIdx === 0),
+          ringIndex: tierIdx % 4,
+          tierIndex: tierIdx
+        };
+
+        photos.push(pt);
+        waypoints.push(pt);
+      }
+    }
+  } else {
+    // Vertical columns mode
+    const nCols = Math.max(2, Math.round(width / effSLine) + 1);
+    const nPhotosPerCol = Math.max(2, Math.round(hDiff / effSPhoto) + 1);
+    const dx = width / (nCols - 1);
+    const dyAlt = hDiff / (nPhotosPerCol - 1);
+
+    for (let colIdx = 0; colIdx < nCols; colIdx++) {
+      const x = -width / 2.0 + colIdx * dx;
+      const y = -standoff;
+      const topToBottom = (colIdx % 2 === 0);
+
+      for (let pIdx = 0; pIdx < nPhotosPerCol; pIdx++) {
+        const aStep = topToBottom ? pIdx : (nPhotosPerCol - 1 - pIdx);
+        const alt = maxH - aStep * dyAlt;
+
+        let heading = 0; // Perpendicular facing North toward facade
+        if (headingMode === 'flightPath') {
+          heading = 0;
+        }
+
+        const pt = {
+          x: Math.round(x * 100) / 100,
+          y: Math.round(y * 100) / 100,
+          alt: Math.round(alt * 10) / 10,
+          pitch: Math.round(resolvedPitch),
+          heading: heading,
+          headingMode: 'smoothTransition',
+          gridType: 'vertical-facade',
+          layerPattern: 'vertical-facade',
+          isVerticalFacade: true,
+          isRingStart: (pIdx === 0),
+          ringIndex: colIdx % 4,
+          tierIndex: colIdx
+        };
+
+        photos.push(pt);
+        waypoints.push(pt);
+      }
+    }
+  }
+
+  return { waypoints, photos };
+}
+
+// ============================================================================
+// Continuous Helix / Spiral Corkscrew Pattern Generator (v1.153.0 - Issue #133)
+// ============================================================================
+function generateHelixCoordinates(layer, sPhoto, baseAltitude, defaultGimbalPitch) {
+  const waypoints = [];
+  const photos = [];
+
+  const rawRStart = (layer && layer.helixRadiusStart !== undefined) ? Number(layer.helixRadiusStart) : 25;
+  const rawREnd = (layer && layer.helixRadiusEnd !== undefined) ? Number(layer.helixRadiusEnd) : 25;
+  const rStart = Math.max(2, rawRStart);
+  const rEnd = Math.max(2, rawREnd);
+
+  const rawAltStart = (layer && layer.helixAltStart !== undefined) ? Number(layer.helixAltStart) : 20;
+  const rawAltEnd = (layer && layer.helixAltEnd !== undefined) ? Number(layer.helixAltEnd) : 60;
+  const altStart = Math.max(2, rawAltStart);
+  const altEnd = Math.max(2, rawAltEnd);
+
+  const revolutions = (layer && layer.helixRevolutions !== undefined) ? Math.max(1, Math.min(10, Number(layer.helixRevolutions))) : 3;
+  const direction = (layer && layer.helixDirection === 'ccw') ? 'ccw' : 'cw';
+  const climbDirection = (layer && layer.helixClimbDirection === 'descent') ? 'descent' : 'ascent';
+
+  const pitchStart = (layer && layer.helixPitchStart !== undefined && !isNaN(layer.helixPitchStart)) ? Number(layer.helixPitchStart) : -25;
+  const pitchEnd = (layer && layer.helixPitchEnd !== undefined && !isNaN(layer.helixPitchEnd)) ? Number(layer.helixPitchEnd) : -65;
+  const headingMode = (layer && layer.helixHeadingMode) ? layer.helixHeadingMode : 'towardCenter';
+
+  // Compute 3D helical arc length
+  const rAvg = (rStart + rEnd) / 2.0;
+  const circPerRev = 2 * Math.PI * rAvg;
+  const totalClimb = Math.abs(altEnd - altStart);
+  const totalArcLength = revolutions * Math.sqrt(circPerRev * circPerRev + Math.pow(totalClimb / revolutions, 2));
+
+  // Safe progressive node spacing >= 0.65m
+  const stepDist = Math.max(0.65, Math.min(10.0, sPhoto || 5.0));
+  const numSteps = Math.max(revolutions * 12, Math.round(totalArcLength / stepDist));
+
+  for (let i = 0; i <= numSteps; i++) {
+    const t = i / numSteps;
+    const theta = t * revolutions * 2 * Math.PI;
+    const currentRadius = rStart + t * (rEnd - rStart);
+    const angle = (direction === 'ccw') ? theta : -theta;
+
+    // Local coordinates (centered around 0,0)
+    const x = currentRadius * Math.sin(angle);
+    const y = currentRadius * Math.cos(angle);
+
+    let alt, pitch;
+    if (climbDirection === 'descent') {
+      alt = altEnd - t * (altEnd - altStart);
+      pitch = pitchEnd - t * (pitchEnd - pitchStart);
+    } else {
+      alt = altStart + t * (altEnd - altStart);
+      pitch = pitchStart + t * (pitchEnd - pitchStart);
+    }
+
+    let heading;
+    if (headingMode === 'tangent') {
+      // Tangent to path
+      const dTheta = 0.001;
+      const nextAngle = (direction === 'ccw') ? (angle + dTheta) : (angle - dTheta);
+      const nextR = rStart + (t + dTheta / (revolutions * 2 * Math.PI)) * (rEnd - rStart);
+      const nx = nextR * Math.sin(nextAngle);
+      const ny = nextR * Math.cos(nextAngle);
+      let brg = Math.atan2(nx - x, ny - y) * (180.0 / Math.PI);
+      if (brg < 0) brg += 360;
+      heading = brg;
+    } else {
+      // Inward facing toward central POI / vertical structure axis (0,0)
+      let brg = Math.atan2(-x, -y) * (180.0 / Math.PI);
+      if (brg < 0) brg += 360;
+      heading = brg;
+    }
+
+    const pt = {
+      x: Math.round(x * 100) / 100,
+      y: Math.round(y * 100) / 100,
+      alt: Math.round(alt * 10) / 10,
+      pitch: Math.round(pitch),
+      heading: Math.round(heading * 10) / 10,
+      headingMode: 'smoothTransition',
+      turnMode: 'curved',
+      pathMode: 'curved',
+      gridType: 'continuous-helix',
+      layerPattern: 'continuous-helix',
+      isContinuousHelix: true,
+      ringIndex: Math.floor(t * revolutions) % 4,
+      isRingStart: (i === 0)
+    };
+
+    photos.push(pt);
+    waypoints.push(pt);
+  }
+
+  return { waypoints, photos };
+}
+
 if (typeof window !== 'undefined') {
   window.generateLightArtCoordinates = generateLightArtCoordinates;
+  window.generateVerticalFacadeCoordinates = generateVerticalFacadeCoordinates;
+  window.generateHelixCoordinates = generateHelixCoordinates;
 }

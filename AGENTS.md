@@ -78,7 +78,9 @@ npm test
 - **Unit Tests (`index.test.js`)**: Add unit tests for core logic, calculations, WPML parsing/exporting, schema tags, non-NaN validations, and UI helper functions.
 - **E2E UI Tests (`index.e2e.test.js`)**: Add Playwright E2E UI tests for any new interactive features, modals, pattern generators, or editor popup behaviors.
 
-All unit and E2E tests must pass before the task can be marked complete.
+- **Scope of Testing**: Unit and E2E regression testing is mandatory only when making functional, behavioral, or structural changes to the codebase (e.g. edits to `src/`, `index.css`, templates, build scripts, or tests). Pure tracking, administrative, or planning actions—such as filing or commenting on GitHub issues, triaging tasks, or reviewing specifications without editing workspace code—do NOT require running tests or build scripts.
+
+All unit and E2E tests must pass before a functional code change task can be marked complete.
 
 ## 5. In-App Intro Guide & Feature Highlights Maintenance
 Aalaapi Sky includes an interactive **Intro Guide Hub (`#quickstart-modal`)** with a dedicated **"What's New & Feature Highlights"** tab (`#intro-tab-features` / `#intro-pane-features`).
