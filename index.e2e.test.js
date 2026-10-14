@@ -8131,6 +8131,82 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.ok(res.corridorWaypoints > 0, `Must generate corridor waypoints (got ${res.corridorWaypoints})`);
       assert.strictEqual(res.ptsAfterReset, 3, 'Reset button must restore default 3-node corridor centerline');
     });
+
+    test('E2E: Corridor Centerline Edit Mode and Sidebar Node Coordinate Table', async () => {
+      const res = await page.evaluate(() => {
+        const gridTypeSelect = document.getElementById('grid-type');
+        const editToggleBtn = document.getElementById('corridor-edit-toggle-btn');
+        const addVertexBtn = document.getElementById('corridor-add-vertex-btn');
+        const statusEl = document.getElementById('corridor-edit-status');
+        const tableContainer = document.getElementById('corridor-node-table-container');
+        const nodeList = document.getElementById('corridor-node-list');
+        const badge = document.getElementById('corridor-vertex-badge');
+
+        if (!gridTypeSelect || !editToggleBtn || !addVertexBtn || !nodeList) {
+          return { error: 'Missing corridor edit mode UI elements' };
+        }
+
+        // 1. Switch to corridor
+        gridTypeSelect.value = 'corridor';
+        gridTypeSelect.dispatchEvent(new Event('change'));
+        if (typeof togglePatternParameters === 'function') togglePatternParameters();
+
+        const initialRows = nodeList.querySelectorAll('.corridor-node-row');
+        const initialCount = initialRows.length;
+
+        // 2. Toggle Edit Mode ON
+        editToggleBtn.click();
+        const isEditActive = typeof isCorridorEditActive !== 'undefined' ? isCorridorEditActive : false;
+        const editBtnText = editToggleBtn.textContent.trim();
+
+        // 3. Add a node via [➕ Add Node] button
+        addVertexBtn.click();
+        const rowsAfterAdd = nodeList.querySelectorAll('.corridor-node-row');
+        const countAfterAdd = rowsAfterAdd.length;
+
+        // 4. Edit coordinates in row 1
+        const latInput = rowsAfterAdd[0].querySelector('[data-field="lat"]');
+        const lonInput = rowsAfterAdd[0].querySelector('[data-field="lon"]');
+        if (latInput) {
+          latInput.value = '41.321800';
+          latInput.dispatchEvent(new Event('change'));
+        }
+
+        const activeLayer = typeof getActiveLayer === 'function' ? getActiveLayer() : null;
+        const updatedLat = activeLayer && activeLayer.corridorCenterline && activeLayer.corridorCenterline[0]
+          ? activeLayer.corridorCenterline[0].lat
+          : null;
+
+        // 5. Delete the newly added 4th node
+        const delBtn = rowsAfterAdd[3] ? rowsAfterAdd[3].querySelector('.corridor-node-del-btn') : null;
+        if (delBtn) delBtn.click();
+
+        const rowsAfterDel = nodeList.querySelectorAll('.corridor-node-row');
+        const countAfterDel = rowsAfterDel.length;
+
+        // 6. Toggle Edit Mode OFF
+        editToggleBtn.click();
+        const isEditActiveAfter = typeof isCorridorEditActive !== 'undefined' ? isCorridorEditActive : false;
+
+        return {
+          initialCount,
+          isEditActive,
+          editBtnText,
+          countAfterAdd,
+          updatedLat,
+          countAfterDel,
+          isEditActiveAfter
+        };
+      });
+
+      assert.strictEqual(res.initialCount, 3, 'Corridor should start with 3 nodes');
+      assert.strictEqual(res.isEditActive, true, 'Clicking edit button should activate isCorridorEditActive');
+      assert.ok(res.editBtnText.includes('Done Editing'), 'Edit button should say Done Editing');
+      assert.strictEqual(res.countAfterAdd, 4, 'Clicking add node should increase count to 4');
+      assert.strictEqual(res.updatedLat, 41.3218, 'Editing lat input should update layer node lat');
+      assert.strictEqual(res.countAfterDel, 3, 'Deleting node should return count to 3');
+      assert.strictEqual(res.isEditActiveAfter, false, 'Clicking done should deactivate isCorridorEditActive');
+    });
   });
 });
 

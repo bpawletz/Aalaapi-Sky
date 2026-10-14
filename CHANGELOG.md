@@ -1,3 +1,37 @@
+## [1.156.0] - 2026-10-14
+
+Introduces a dedicated Corridor Centerline Edit Mode with flight pass isolation and an interactive sidebar node coordinate table with live 60fps bidirectional drag sync.
+
+### Added
+
+#### Pilot & Operational Features
+- **Dedicated Corridor Centerline Edit Mode**:
+  - Added an interactive **"✏️ Edit Centerline"** toggle button in the Section 2 Corridor Mapping panel.
+  - When edit mode is active, survey flight passes and intermediate photo waypoints are temporarily isolated and hidden, giving pilots an unobstructed canvas to inspect and reshape the route.
+  - Enhanced centerline node handles (`C1, C2...`) with an enlarged 26px grab target, glowing Indigo halo, and elevated visual layering (`zIndexOffset: 20000`) so clicking/dragging handles is completely frictionless and never intercepted by underlying waypoints.
+  - Dragging or clicking handles stops event propagation so waypoint popup modals are never inadvertently triggered.
+- **Sidebar Centerline Node Coordinate Table**:
+  - Added an interactive coordinate table directly in Section 2 displaying all vertices (`C1, C2...`) with live editable Latitude and Longitude fields.
+  - Full real-time 60fps synchronization: dragging a node on the 2D map updates the sidebar coordinate inputs live without losing focus.
+  - Typing exact numeric coordinates into the table immediately updates the map polyline and recalculates parallel flight swaths.
+  - Added individual per-node delete buttons (`[✕]`) to easily remove intermediate bends (protected when length <= 2).
+  - Added a one-click **"➕ Add Node"** button that automatically extrapolates the centerline along its heading.
+
+#### Under the Hood & Technical Details
+- **`src/state/MissionStore.js`**:
+  - Implemented `isCorridorEditActive` state and `setCorridorEditMode(active)` helper with crosshair cursor toggling and button state management.
+- **`src/geo/MathUtils.js`**:
+  - Upgraded corridor marker rendering with `zIndexOffset: 20000`, 26px radius, glowing outer halo, click/drag propagation isolation, and live DOM input updates during `marker.on('drag')`.
+  - Added conditional suppression of flight waypoints and continuous photo markers for the active corridor layer when `isCorridorEditActive` is enabled.
+  - Faded flight path lines to faint dashed preview guides (`opacity: 0.25, dashArray: '3, 6'`) during centerline editing.
+- **`src/ui/SidebarManager.js`**:
+  - Added `renderCorridorNodeTable()` and `addCorridorNodeAction()` managing dynamic DOM node rows, input bindings, coordinate parsing, local tangent offset recalculations, and vertex additions.
+  - Hooked table rendering to pattern parameter toggles and layer switching.
+- **`src/map/MapEngine.js`**:
+  - Updated map click handler to only append corridor points when in edit mode or when centerline has fewer than 2 points, preventing accidental point additions during general map exploration.
+- **`src/ui/EventBindings.js`**:
+  - Bound event listeners for `corridor-edit-toggle-btn` and `corridor-add-vertex-btn`.
+
 ## [1.155.0] - 2026-10-14
 
 Introduces Multi-Pass Corridor Mapping along arbitrary multi-vertex polylines for infrastructure inspections (roads, pipelines, transmission lines, and rivers) with miter angle bisectors, clamped corner smoothing, turnaround extensions, and 3 distinct turn styles (closes #130).
