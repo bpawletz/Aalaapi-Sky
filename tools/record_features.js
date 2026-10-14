@@ -1735,6 +1735,54 @@ const scenarios = [
       await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
       await page.waitForTimeout(1500);
     }
+  },
+  {
+    id: 'feature_corridor_mapping',
+    name: 'Multi-Pass Corridor Mapping along Complex Linear Features',
+    issueRef: 'Issue #130',
+    description: 'Demonstrates multi-pass linear corridor generator with miter angle clamping, symmetric parallel offset swaths, turnaround overshoot loops, and interactive centerline editing.',
+    run: async (page) => {
+      // 1. Initial setup squarely on default rural coordinates
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1000);
+
+      // 2. Select Corridor Mapping pattern
+      await selectPattern(page, 'corridor');
+      await page.waitForTimeout(1500);
+
+      // 3. Configure Corridor Width, Passes, and Overshoot
+      await fillInput(page, '#corridor-width', '80');
+      await page.waitForTimeout(600);
+      await fillInput(page, '#corridor-passes', '3');
+      await page.waitForTimeout(600);
+      await fillInput(page, '#corridor-overshoot', '25');
+      await page.waitForTimeout(800);
+
+      // 4. Switch turnaround style between bulb, arc, and direct
+      const turnSelect = await page.$('#corridor-turn-type');
+      if (turnSelect) {
+        await turnSelect.selectOption('arc');
+        await page.waitForTimeout(700);
+        await turnSelect.selectOption('direct');
+        await page.waitForTimeout(700);
+        await turnSelect.selectOption('bulb');
+        await page.waitForTimeout(700);
+      }
+
+      // 5. Add custom centerline points
+      await page.evaluate(() => {
+        if (typeof addCorridorPoint === 'function') {
+          addCorridorPoint(41.3215, -88.9950);
+          addCorridorPoint(41.3230, -88.9920);
+          addCorridorPoint(41.3245, -88.9900);
+        }
+      });
+      await page.waitForTimeout(1500);
+
+      // 6. Ensure squarely centered
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1500);
+    }
   }
 ];
 

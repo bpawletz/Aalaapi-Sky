@@ -381,6 +381,7 @@ let activeSplitStartIndices = new Set();
 let generatedWaypoints = null;
 let generatedPhotos = null;
 let roadWaypoints = [];
+let corridorCenterline = [];
 let roadPathGroup = null;
 let isRouting = false;
 let isChangingPattern = false;

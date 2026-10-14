@@ -655,8 +655,8 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
         fillOpacity: 0.10
       }).addTo(map);
     }
-  } else if (waypoints.length === 0 || gridType === 'road-following' || gridType === 'freeform' || gridType === 'hyperlapse' || gridType === 'exclusion-box' || gridType === 'exclusion-freeform') {
-    // No boundary overlay when no waypoints are active or for road-following/freeform/exclusion
+  } else if (waypoints.length === 0 || gridType === 'road-following' || gridType === 'corridor' || gridType === 'freeform' || gridType === 'hyperlapse' || gridType === 'exclusion-box' || gridType === 'exclusion-freeform') {
+    // No boundary overlay when no waypoints are active or for road-following/corridor/freeform/exclusion
   } else if (gridType === 'photo-sphere') {
     const sphereRadius = Math.max(8, (waypoints[0]?.alt || 30) * 0.4);
     if (typeof L !== 'undefined' && typeof L.circle === 'function' && typeof map !== 'undefined' && map) {
@@ -808,6 +808,87 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
                 maxWidth: 320,
                 minWidth: 310,
                 offset: [0, -20]
+              });
+            }
+
+            marker.addTo(roadPathGroup);
+          });
+        }
+      }
+    });
+  }
+
+  // 4b. Draw Corridor Centerline & Nodes for all enabled corridor layers (v1.155.0 - Issue #130)
+  if (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) {
+    flightLayers.forEach(l => {
+      if (l.enabled && l.pattern === 'corridor') {
+        const corrNodes = (l.corridorCenterline && Array.isArray(l.corridorCenterline) && l.corridorCenterline.length > 0)
+          ? l.corridorCenterline
+          : (l.id === activeLayerId && Array.isArray(corridorCenterline) ? corridorCenterline : []);
+        if (corrNodes && corrNodes.length > 0) {
+          const isActive = (l.id === activeLayerId);
+          const corrColor = l.color || '#6366f1';
+          const corrLatLngs = corrNodes.map(wp => [wp.lat, wp.lon]);
+          L.polyline(corrLatLngs, {
+            color: corrColor,
+            weight: 3.5,
+            dashArray: '8, 6',
+            opacity: isActive ? 0.95 : 0.65,
+            interactive: false
+          }).addTo(roadPathGroup);
+
+          corrNodes.forEach((wp, idx) => {
+            const corrIcon = L.divIcon({
+              className: 'corridor-centerline-icon',
+              html: `<div style="background-color: ${corrColor}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid #ffffff; box-shadow: 0 0 8px rgba(99, 102, 241, 0.7); display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; font-weight: bold; cursor: ${isActive ? 'pointer' : 'default'};">C${idx + 1}</div>`,
+              iconSize: [24, 24],
+              iconAnchor: [12, 12]
+            });
+
+            const marker = L.marker([wp.lat, wp.lon], {
+              icon: corrIcon,
+              draggable: isActive
+            });
+
+            wp.corridorMarker = marker;
+            marker.bindTooltip(`${l.name} Centerline Node ${idx + 1}`, { direction: 'top', offset: [0, -10] });
+
+            if (isActive) {
+              marker.on('dragstart', () => {
+                if (typeof map !== 'undefined' && map && map.closePopup) map.closePopup();
+                if (wp.origLat === undefined || wp.origLat === null) {
+                  wp.origLat = wp.lat;
+                  wp.origLon = wp.lon;
+                  wp.origX = wp.x;
+                  wp.origY = wp.y;
+                }
+                wp.isModified = true;
+              });
+
+              marker.on('drag', (e) => {
+                const newLatLng = e.target.getLatLng();
+                const layerCenterLat = (l.centerLat !== undefined && l.centerLat !== null) ? l.centerLat : centerLat;
+                const layerCenterLon = (l.centerLon !== undefined && l.centerLon !== null) ? l.centerLon : centerLon;
+                const offsets = (typeof geodeticToLocal === 'function')
+                  ? geodeticToLocal(newLatLng.lat, newLatLng.lng, layerCenterLat, layerCenterLon)
+                  : { x: 0, y: 0 };
+                wp.lat = newLatLng.lat;
+                wp.lon = newLatLng.lng;
+                wp.x = offsets.x;
+                wp.y = offsets.y;
+                wp.isModified = true;
+                if (roadPathGroup && l.corridorCenterline && l.corridorCenterline.length > 0) {
+                  const updatedLatLngs = l.corridorCenterline.map(n => [n.lat, n.lon]);
+                  roadPathGroup.eachLayer(layer => {
+                    if (typeof layer.setLatLngs === 'function' && layer.getLatLngs) {
+                      layer.setLatLngs(updatedLatLngs);
+                    }
+                  });
+                }
+              });
+
+              marker.on('dragend', () => {
+                updateGrid();
               });
             }
 
@@ -2162,4 +2243,42 @@ function addRoadWaypoint(lat, lng) {
   }
 }
 
-// Calculate flight stats
+function addCorridorPoint(lat, lng) {
+  if (typeof centerMarker === 'undefined' || !centerMarker) {
+    if (typeof setGridCenter === 'function') setGridCenter(lat, lng);
+    return;
+  }
+
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const centerLatLng = centerMarker.getLatLng();
+  const layerCenterLat = (activeLayer && activeLayer.centerLat !== null && activeLayer.centerLat !== undefined) ? activeLayer.centerLat : centerLatLng.lat;
+  const layerCenterLon = (activeLayer && activeLayer.centerLon !== null && activeLayer.centerLon !== undefined) ? activeLayer.centerLon : centerLatLng.lng;
+  const offsets = (typeof geodeticToLocal === 'function')
+    ? geodeticToLocal(lat, lng, layerCenterLat, layerCenterLon)
+    : { x: 0, y: 0 };
+
+  let corrList;
+  if (activeLayer) {
+    if (!activeLayer.corridorCenterline) activeLayer.corridorCenterline = [];
+    corrList = activeLayer.corridorCenterline;
+  } else {
+    if (typeof corridorCenterline === 'undefined' || !corridorCenterline) corridorCenterline = [];
+    corrList = corridorCenterline;
+  }
+
+  const pt = {
+    lat: lat,
+    lon: lng,
+    x: offsets.x,
+    y: offsets.y,
+    idx: corrList.length
+  };
+  corrList.push(pt);
+  if (typeof corridorCenterline !== 'undefined') corridorCenterline = corrList;
+  if (activeLayer) activeLayer.corridorCenterline = corrList;
+  if (typeof updateGrid === 'function') updateGrid();
+}
+
+if (typeof window !== 'undefined') {
+  window.addCorridorPoint = addCorridorPoint;
+}

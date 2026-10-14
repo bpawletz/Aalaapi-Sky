@@ -37,7 +37,9 @@ function initClickToTypeInputs() {
     { valId: 'helix-alt-start-val', inputId: 'helix-alt-start', type: 'distance', min: 2, max: 200, step: 1 },
     { valId: 'helix-alt-end-val', inputId: 'helix-alt-end', type: 'distance', min: 5, max: 300, step: 1 },
     { valId: 'light-art-radius-val', inputId: 'light-art-radius', type: 'distance', min: 5, max: 150, step: 1 },
-    { valId: 'light-art-climb-val', inputId: 'light-art-climb', type: 'distance', min: 0, max: 100, step: 1 }
+    { valId: 'light-art-climb-val', inputId: 'light-art-climb', type: 'distance', min: 0, max: 100, step: 1 },
+    { valId: 'corridor-width-val', inputId: 'corridor-width', type: 'distance', min: 10, max: 500, step: 5 },
+    { valId: 'corridor-overshoot-val', inputId: 'corridor-overshoot', type: 'distance', min: 0, max: 100, step: 5 }
   ];
 
   clickToTypeConfigs.forEach(cfg => {
@@ -484,7 +486,8 @@ function togglePatternParameters() {
     'light-art': '🎨 Light Art (Sky Painting)',
     'vertical-facade': '🏢 Vertical Facade Grid',
     'continuous-helix': '🌀 Continuous Helix / Spiral',
-    'star-pass': '⭐ Star Pass (Cross-Hatch)'
+    'star-pass': '⭐ Star Pass (Cross-Hatch)',
+    'corridor': '🛣️ Multi-Pass Corridor'
   };
 
   const targetSplatContainer = document.getElementById('target-splat-container');
@@ -495,6 +498,7 @@ function togglePatternParameters() {
   const verticalFacadeContainer = document.getElementById('vertical-facade-container');
   const continuousHelixContainer = document.getElementById('continuous-helix-container');
   const starPassContainer = document.getElementById('star-pass-container');
+  const corridorContainer = document.getElementById('corridor-container');
 
   const activePatternBadge = document.getElementById('active-layer-pattern-badge');
   if (activePatternBadge) {
@@ -551,6 +555,14 @@ function togglePatternParameters() {
       starPassContainer.classList.remove('hidden');
     } else {
       starPassContainer.classList.add('hidden');
+    }
+  }
+
+  if (corridorContainer) {
+    if (gridType === 'corridor') {
+      corridorContainer.classList.remove('hidden');
+    } else {
+      corridorContainer.classList.add('hidden');
     }
   }
 
@@ -1174,11 +1186,57 @@ function togglePatternParameters() {
     if (exclusionAltContainer) exclusionAltContainer.classList.add('hidden');
     if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
     if (freeformInstructions) freeformInstructions.classList.add('hidden');
+    if (corridorContainer) corridorContainer.classList.add('hidden');
     if (altitudeControlGroup) altitudeControlGroup.style.display = 'block';
     if (widthContainer) widthContainer.style.display = 'none';
     if (heightContainer) heightContainer.style.display = 'none';
     if (rotationContainer) rotationContainer.style.display = 'block';
     if (frontOverlapContainer) frontOverlapContainer.style.display = 'none';
+    if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
+
+  } else if (gridType === 'corridor') {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
+    if (gridGeometrySection) {
+      gridGeometrySection.style.display = 'block';
+      gridGeometrySection.classList.remove('collapsed');
+    }
+    if (layerCardGeometry) layerCardGeometry.style.display = 'block';
+    if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "🛣️ Corridor Mapping Geometry";
+    if (layerCardFlight) layerCardFlight.style.display = 'block';
+    if (layerCardOptics) layerCardOptics.style.display = 'block';
+    if (layerCardModes) layerCardModes.style.display = 'block';
+    if (layerCardBoundary) {
+      layerCardBoundary.classList.add('hidden');
+      layerCardBoundary.style.display = 'none';
+    }
+    if (layerCardFiducial) {
+      layerCardFiducial.classList.add('hidden');
+      layerCardFiducial.style.display = 'none';
+    }
+    if (corridorContainer) corridorContainer.classList.remove('hidden');
+    if (starPassContainer) starPassContainer.classList.add('hidden');
+    if (continuousHelixContainer) continuousHelixContainer.classList.add('hidden');
+    if (verticalFacadeContainer) verticalFacadeContainer.classList.add('hidden');
+    if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
+    if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
+    if (photoSphereContainer) photoSphereContainer.classList.add('hidden');
+    if (hyperlapseContainer) hyperlapseContainer.classList.add('hidden');
+    if (lightArtContainer) lightArtContainer.classList.add('hidden');
+    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
+    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
+    if (exclusionAltContainer) exclusionAltContainer.classList.add('hidden');
+    if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
+    if (freeformInstructions) {
+      const span = freeformInstructions.querySelector('span');
+      if (span) span.textContent = "ℹ️ Click map to append centerline nodes. Drag nodes to reshape corridor. Parallel swaths update automatically.";
+      freeformInstructions.classList.remove('hidden');
+    }
+    if (altitudeControlGroup) altitudeControlGroup.style.display = 'block';
+    if (widthContainer) widthContainer.style.display = 'none';
+    if (heightContainer) heightContainer.style.display = 'none';
+    if (rotationContainer) rotationContainer.style.display = 'none';
+    if (frontOverlapContainer) frontOverlapContainer.style.display = 'block';
     if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
 
   } else {
@@ -1196,6 +1254,7 @@ function togglePatternParameters() {
       layerCardFiducial.classList.add('hidden');
       layerCardFiducial.style.display = 'none';
     }
+    if (corridorContainer) corridorContainer.classList.add('hidden');
     if (starPassContainer) starPassContainer.classList.add('hidden');
     if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
     if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
@@ -1895,6 +1954,33 @@ function syncDisplayValues() {
   if (spRadiusSlider && spRadiusValEl) {
     const val = parseFloat(spRadiusSlider.value) || 35;
     spRadiusValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+
+  // Sync Corridor Mapping Geometry (v1.155.0 - Issue #130)
+  const corrWidthSlider = document.getElementById('corridor-width');
+  const corrWidthValEl = document.getElementById('corridor-width-val');
+  if (corrWidthSlider && corrWidthValEl) {
+    const val = parseFloat(corrWidthSlider.value) || 60;
+    corrWidthValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+
+  const corrPassesSlider = document.getElementById('corridor-passes');
+  const corrPassesValEl = document.getElementById('corridor-passes-val');
+  if (corrPassesSlider && corrPassesValEl) {
+    corrPassesValEl.textContent = corrPassesSlider.value;
+  }
+
+  const corrOvershootSlider = document.getElementById('corridor-overshoot');
+  const corrOvershootValEl = document.getElementById('corridor-overshoot-val');
+  if (corrOvershootSlider && corrOvershootValEl) {
+    const val = parseFloat(corrOvershootSlider.value) || 0;
+    corrOvershootValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+
+  const corrSideOverlapSlider = document.getElementById('corridor-side-overlap');
+  const corrSideOverlapValEl = document.getElementById('corridor-side-overlap-val');
+  if (corrSideOverlapSlider && corrSideOverlapValEl) {
+    corrSideOverlapValEl.textContent = `${corrSideOverlapSlider.value}%`;
   }
 
   // Sync Vertical Facade Grid Geometry (v1.153.0 - Issue #132)

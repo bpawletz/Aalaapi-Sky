@@ -5992,7 +5992,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.154.2</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.155.0</span></h1>
 
 
 
@@ -6216,6 +6216,7 @@ html, body {
               <option value="grid-multi-orbit-combo">2D + 3D Hybrid (Grid + Multi-Orbit)</option>
               <option value="freeform">Freeform Flight Plan (Manual Waypoints)</option>
               <option value="road-following">Road Following (Offset Path)</option>
+              <option value="corridor">🛣️ Corridor Mapping (Multi-Pass Polyline)</option>
               <option value="exclusion-box">🚫 Exclusion Zone (Box)</option>
               <option value="exclusion-freeform">🚫 Exclusion Zone (Freeform)</option>
               <option value="boundary-polygon">🗺️ Boundary / Parcel (Drawing)</option>
@@ -6347,6 +6348,14 @@ html, body {
                   <path d="M8 22V17C8 14 11 13 14 13C17 13 24 11 24 5V2" opacity="0.5"/>
                 </svg>
                 <span>Road Follow</span>
+              </div>
+              <div class="pattern-card" data-value="corridor" title="Multi-Pass Corridor Mapping (Linear Features, Transmission Lines, Roads, Rivers)">
+                <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 22L8 2M20 22L16 2" stroke="#6366f1" stroke-width="2"/>
+                  <line x1="12" y1="2" x2="12" y2="22" stroke="#818cf8" stroke-dasharray="2,2"/>
+                  <path d="M7 16l5-4 5-4" stroke="#c7d2fe" stroke-width="1.5"/>
+                </svg>
+                <span style="color: #818cf8;">Corridor</span>
               </div>
               <div class="pattern-card" data-value="freeform" title="Freeform Flight Plan (Manual Waypoints)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -7245,6 +7254,56 @@ html, body {
                 <input type="checkbox" id="star-pass-apex-nadir" checked style="accent-color: #f59e0b; width: 14px; height: 14px;">
                 <span style="font-weight: 600;">Apex Nadir Catch (-90° Ground Lock on Center Intersection)</span>
               </label>
+            </div>
+          </div>
+
+          <!-- Multi-Pass Corridor Mapping Controls (v1.155.0 - Issue #130) -->
+          <div id="corridor-container" class="control-group hidden" style="background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 8px; padding: 12px; margin-top: 10px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 0.76rem; font-weight: 700; color: #818cf8;">🛣️ Multi-Pass Linear Corridor Controls</span>
+              <span class="badge" style="background: rgba(99, 102, 241, 0.2); color: #818cf8; font-size: 0.68rem; padding: 2px 7px; border-radius: 4px; font-weight: 700;">Linear Polyline</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+              <div>
+                <label for="corridor-width" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">Corridor Width (<span id="corridor-width-val" style="color: #818cf8;">60m</span>)</label>
+                <input type="range" id="corridor-width" class="form-range" min="10" max="500" step="5" value="60" style="accent-color: #6366f1;">
+              </div>
+              <div>
+                <label for="corridor-passes" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">Parallel Passes (<span id="corridor-passes-val" style="color: #818cf8;">3</span>)</label>
+                <input type="range" id="corridor-passes" class="form-range" min="1" max="9" step="1" value="3" style="accent-color: #6366f1;">
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+              <div>
+                <label for="corridor-overshoot" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">Turn Overshoot (<span id="corridor-overshoot-val" style="color: #818cf8;">20m</span>)</label>
+                <input type="range" id="corridor-overshoot" class="form-range" min="0" max="100" step="5" value="20" style="accent-color: #6366f1;">
+              </div>
+              <div>
+                <label for="corridor-side-overlap" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">Swath Side Overlap (<span id="corridor-side-overlap-val" style="color: #818cf8;">65%</span>)</label>
+                <input type="range" id="corridor-side-overlap" class="form-range" min="20" max="90" step="5" value="65" style="accent-color: #6366f1;">
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+              <div>
+                <label for="corridor-turn-type" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 3px;">Turn Style</label>
+                <select id="corridor-turn-type" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 3px 6px;">
+                  <option value="bulb" selected>Teardrop / Bulb Turn</option>
+                  <option value="arc">Smooth Banking Arc</option>
+                  <option value="direct">Direct Stop-and-Hop</option>
+                </select>
+              </div>
+              <div>
+                <label for="corridor-heading-mode" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 3px;">Heading Orientation</label>
+                <select id="corridor-heading-mode" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 3px 6px;">
+                  <option value="path" selected>Follow Flight Path</option>
+                  <option value="centerline">Lock to Centerline</option>
+                  <option value="fixed">Fixed Orientation</option>
+                </select>
+              </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(99, 102, 241, 0.2);">
+              <span style="font-size: 0.7rem; color: var(--text-muted);">Click map to add nodes. Drag to reshape.</span>
+              <button id="corridor-clear-btn" type="button" class="btn btn-xs btn-outline-danger" style="font-size: 0.68rem; padding: 2px 8px;">Reset Centerline</button>
             </div>
           </div>
 
@@ -9415,6 +9474,14 @@ html, body {
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #818cf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🛣️ Multi-Pass Corridor Mapping along Complex Linear Features (v1.155.0) (Closes #130)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Efficiently map roads, rivers, pipelines, and transmission line corridors with automated multi-swath parallel offset flight lines! Generates symmetric and asymmetric swaths with <strong>miter angle bisectors and clamped corner smoothing (&le; 2.5)</strong> to eliminate flight path spikes on sharp bends. Includes customizable <strong>overshoot extensions</strong> and 3 turnaround styles (<strong>Teardrop Bulb Turn</strong>, <strong>Smooth Banking Arc</strong>, and <strong>Direct Stop-and-Hop</strong>), interactive draggable centerline editing, and Electric Indigo 3D trajectory ribbons.
+            </p>
+          </div>
           <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #f59e0b; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               ⭐ Star Pass / Cross-Hatch Convergent POI Inspection (v1.154.0) (Closes #131)
@@ -10682,7 +10749,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.154.2</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.155.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -10743,6 +10810,12 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.155.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Multi-Pass Corridor Mapping along Complex Linear Features:</strong> Automated parallel offset swaths along arbitrary multi-vertex polylines with miter angle bisectors, clamped corner smoothing (&le; 2.5), turnaround overshoot extensions, 3 turnaround styles (Teardrop Bulb, Smooth Banking Arc, Direct Stop-and-Hop), interactive draggable centerline editing, and Electric Indigo 3D trajectory visualization. (Closes #130)</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.154.2):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -15626,6 +15699,15 @@ const FLIGHT_TOOLS = {
     description: 'Road following with offset flight paths',
     propertyGroups: ['road-geometry', 'altitude', 'speed', 'camera']
   },
+  'corridor': {
+    id: 'corridor',
+    label: 'Corridor Mapping',
+    category: 'corridor',
+    icon: 'road-following',
+    shortcut: 'C',
+    description: 'Multi-pass corridor mapping along complex linear features with overshoot turns and miter smoothing',
+    propertyGroups: ['corridor-geometry', 'altitude', 'speed', 'camera']
+  },
   'freeform': {
     id: 'freeform',
     label: 'Freeform',
@@ -18906,6 +18988,7 @@ let activeSplitStartIndices = new Set();
 let generatedWaypoints = null;
 let generatedPhotos = null;
 let roadWaypoints = [];
+let corridorCenterline = [];
 let roadPathGroup = null;
 let isRouting = false;
 let isChangingPattern = false;
@@ -18960,7 +19043,8 @@ function getPatternDisplayName(pattern) {
     'light-art': '🎨 Light Art (Sky Painting)',
     'vertical-facade': '🏢 Vertical Facade Grid',
     'continuous-helix': '🌀 Continuous Helix / Spiral',
-    'star-pass': '⭐ Star Pass (Cross-Hatch)'
+    'star-pass': '⭐ Star Pass (Cross-Hatch)',
+    'corridor': '🛣️ Multi-Pass Corridor'
   };
   return map[pattern] || pattern || 'Double Grid';
 }
@@ -19099,6 +19183,13 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     starPassHeadingMode: 'convergent', // 'convergent', 'flightDirection', 'towardPOI'
     starPassTransitMode: 'perimeterHop', // 'perimeterHop', 'directAcross'
     starPassApexNadir: true,
+    corridorWidth: 60,
+    corridorPasses: 3,
+    corridorOvershoot: 20,
+    corridorTurnType: 'bulb', // 'bulb', 'arc', 'direct'
+    corridorHeadingMode: 'path', // 'path', 'centerline', 'fixed'
+    corridorSideOverlap: 65,
+    corridorCenterline: [],
     photoSphereMode: 'discreteNodes', // 'actionGroup', 'discreteNodes'
     photoSphereShotsPerRing: 12,
     photoSphereSettlingTime: 2.0,
@@ -19119,6 +19210,13 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
 
   if (pattern === 'road-following') {
     layer.gimbalPitch = 'auto';
+  } else if (pattern === 'corridor') {
+    layer.corridorWidth = 60;
+    layer.corridorPasses = 3;
+    layer.corridorOvershoot = 20;
+    layer.corridorTurnType = 'bulb';
+    layer.corridorHeadingMode = 'path';
+    layer.corridorSideOverlap = 65;
   } else if (pattern === 'light-art') {
     layer.speed = 3.0; // Optimal smooth stroke velocity
     layer.pathMode = 'curved';
@@ -19737,6 +19835,19 @@ function saveActiveLayerFromUi() {
   if (spTransit && spTransit.value) layer.starPassTransitMode = spTransit.value;
   if (spApex) layer.starPassApexNadir = spApex.checked;
 
+  const corrWidth = document.getElementById('corridor-width');
+  const corrPasses = document.getElementById('corridor-passes');
+  const corrOvershoot = document.getElementById('corridor-overshoot');
+  const corrTurnType = document.getElementById('corridor-turn-type');
+  const corrHeadingMode = document.getElementById('corridor-heading-mode');
+  const corrSideOverlap = document.getElementById('corridor-side-overlap');
+  if (corrWidth) layer.corridorWidth = parseFloat(corrWidth.value) || 60;
+  if (corrPasses) layer.corridorPasses = parseInt(corrPasses.value, 10) || 3;
+  if (corrOvershoot) layer.corridorOvershoot = parseFloat(corrOvershoot.value) || 0;
+  if (corrTurnType && corrTurnType.value) layer.corridorTurnType = corrTurnType.value;
+  if (corrHeadingMode && corrHeadingMode.value) layer.corridorHeadingMode = corrHeadingMode.value;
+  if (corrSideOverlap) layer.corridorSideOverlap = parseFloat(corrSideOverlap.value) || 65;
+
   const hlInterval = document.getElementById('hyperlapse-interval');
   const hlStartPitch = document.getElementById('hyperlapse-start-pitch');
   const hlEndPitch = document.getElementById('hyperlapse-end-pitch');
@@ -20167,6 +20278,29 @@ function syncUiWithActiveLayer() {
   if (spHeadMode) spHeadMode.value = layer.starPassHeadingMode || 'convergent';
   if (spTransit) spTransit.value = layer.starPassTransitMode || 'perimeterHop';
   if (spApex) spApex.checked = layer.starPassApexNadir !== false;
+
+  // Sync Corridor Mapping Controls (v1.155.0 - Issue #130)
+  const corrWidth = document.getElementById('corridor-width');
+  const corrWidthVal = document.getElementById('corridor-width-val');
+  const corrPasses = document.getElementById('corridor-passes');
+  const corrPassesVal = document.getElementById('corridor-passes-val');
+  const corrOvershoot = document.getElementById('corridor-overshoot');
+  const corrOvershootVal = document.getElementById('corridor-overshoot-val');
+  const corrTurnType = document.getElementById('corridor-turn-type');
+  const corrHeadingMode = document.getElementById('corridor-heading-mode');
+  const corrSideOverlap = document.getElementById('corridor-side-overlap');
+  const corrSideOverlapVal = document.getElementById('corridor-side-overlap-val');
+
+  if (corrWidth) corrWidth.value = layer.corridorWidth !== undefined ? layer.corridorWidth : 60;
+  if (corrWidthVal) corrWidthVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.corridorWidth !== undefined ? layer.corridorWidth : 60) : `${layer.corridorWidth !== undefined ? layer.corridorWidth : 60}m`;
+  if (corrPasses) corrPasses.value = layer.corridorPasses !== undefined ? layer.corridorPasses : 3;
+  if (corrPassesVal) corrPassesVal.textContent = `${layer.corridorPasses !== undefined ? layer.corridorPasses : 3}`;
+  if (corrOvershoot) corrOvershoot.value = layer.corridorOvershoot !== undefined ? layer.corridorOvershoot : 20;
+  if (corrOvershootVal) corrOvershootVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(layer.corridorOvershoot !== undefined ? layer.corridorOvershoot : 20) : `${layer.corridorOvershoot !== undefined ? layer.corridorOvershoot : 20}m`;
+  if (corrTurnType && layer.corridorTurnType) corrTurnType.value = layer.corridorTurnType;
+  if (corrHeadingMode && layer.corridorHeadingMode) corrHeadingMode.value = layer.corridorHeadingMode;
+  if (corrSideOverlap) corrSideOverlap.value = layer.corridorSideOverlap !== undefined ? layer.corridorSideOverlap : 65;
+  if (corrSideOverlapVal) corrSideOverlapVal.textContent = `${layer.corridorSideOverlap !== undefined ? layer.corridorSideOverlap : 65}%`;
 
   if (typeof syncDisplayValues === 'function') {
     try { syncDisplayValues(); } catch (e) {}
@@ -21286,7 +21420,7 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
     sLine = (gridType === 'tower' || gridType === 'vertical-facade') ? lFoot * (1.0 - overlapFront) : wFoot * (1.0 - overlapSide);
     sPhoto = (gridType === 'tower' || gridType === 'vertical-facade') ? wFoot * (1.0 - overlapSide) : lFoot * (1.0 - overlapFront);
 
-    actualRotation = (gridType === 'orbit' || gridType === 'multi-orbit' || gridType === 'tower' || gridType === 'photo-sphere' || gridType === 'continuous-helix') ? 0 : rotation;
+    actualRotation = (gridType === 'orbit' || gridType === 'multi-orbit' || gridType === 'tower' || gridType === 'photo-sphere' || gridType === 'continuous-helix' || gridType === 'corridor') ? 0 : rotation;
 
     let gridData;
     if (gridType === 'light-art') {
@@ -21300,6 +21434,25 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
       gridData = generateHelixCoordinates(layer, sPhoto, altitude, defaultGimbalPitch);
     } else if (gridType === 'star-pass') {
       gridData = generateStarPassCoordinates(layer, sPhoto, altitude, defaultGimbalPitch);
+    } else if (gridType === 'corridor') {
+      const rawCenterline = (layer.corridorCenterline && Array.isArray(layer.corridorCenterline) && layer.corridorCenterline.length > 0)
+        ? layer.corridorCenterline
+        : (layer.id === activeLayerId && Array.isArray(corridorCenterline) && corridorCenterline.length > 0 ? corridorCenterline : null);
+
+      let effectiveCenterline = rawCenterline;
+      if (!effectiveCenterline || effectiveCenterline.length < 2) {
+        const p1 = (typeof localToGeodetic === 'function') ? localToGeodetic(-60, -35, centerLat, centerLon, 0) : { lat: centerLat, lon: centerLon };
+        const p2 = (typeof localToGeodetic === 'function') ? localToGeodetic(0, 0, centerLat, centerLon, 0) : { lat: centerLat, lon: centerLon };
+        const p3 = (typeof localToGeodetic === 'function') ? localToGeodetic(60, 45, centerLat, centerLon, 0) : { lat: centerLat, lon: centerLon };
+        effectiveCenterline = [
+          { lat: p1.lat, lon: p1.lon, x: -60, y: -35 },
+          { lat: p2.lat, lon: p2.lon, x: 0, y: 0 },
+          { lat: p3.lat, lon: p3.lon, x: 60, y: 45 }
+        ];
+        layer.corridorCenterline = effectiveCenterline;
+        if (layer.id === activeLayerId) corridorCenterline = effectiveCenterline;
+      }
+      gridData = generateCorridorCoordinates(layer, effectiveCenterline, sPhoto, altitude, defaultGimbalPitch, speed, centerLat, centerLon);
     } else if (gridType === 'tower') {
       gridData = generateTowerCoordinates(layer, sLine, sPhoto, altitude, defaultGimbalPitch);
     } else if (gridType === 'orbit') {
@@ -21357,7 +21510,10 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
         isApexNadir: pt.isApexNadir || false,
         spokeIndex: pt.spokeIndex !== undefined ? pt.spokeIndex : null,
         isLightArtPoint: pt.isLightArtPoint || (gridType === 'light-art'),
-        gridType: pt.gridType || (gridType === 'star-pass' ? 'star-pass' : (gridType === 'target-splat' ? 'target-splat' : (gridType === 'photo-sphere' ? 'photo-sphere' : (gridType === 'light-art' ? 'light-art' : undefined)))),
+        isCorridor: pt.isCorridor || (gridType === 'corridor'),
+        passIndex: pt.passIndex !== undefined ? pt.passIndex : null,
+        isTransition: pt.isTransition || false,
+        gridType: pt.gridType || (gridType === 'corridor' ? 'corridor' : (gridType === 'star-pass' ? 'star-pass' : (gridType === 'target-splat' ? 'target-splat' : (gridType === 'photo-sphere' ? 'photo-sphere' : (gridType === 'light-art' ? 'light-art' : undefined))))),
         origLat: geo.lat,
         origLon: geo.lon,
         origX: pt.x,
@@ -22795,6 +22951,8 @@ function initMap() {
       addFiducialMarkerPoint(e.latlng.lat, e.latlng.lng);
     } else if (currentPattern === 'road-following') {
       addRoadWaypoint(e.latlng.lat, e.latlng.lng);
+    } else if (currentPattern === 'corridor') {
+      addCorridorPoint(e.latlng.lat, e.latlng.lng);
     } else if (isTargetSplatPoly) {
       addTargetPolygonPoint(e.latlng.lat, e.latlng.lng);
     } else {
@@ -24939,6 +25097,76 @@ function initUIEventListeners() {
   };
   setupStarPassListeners();
 
+  // Multi-Pass Corridor Mapping Polyline Listeners (v1.155.0 - Issue #130)
+  const setupCorridorListeners = () => {
+    const corrWidth = document.getElementById('corridor-width');
+    const corrWidthVal = document.getElementById('corridor-width-val');
+    const corrPasses = document.getElementById('corridor-passes');
+    const corrPassesVal = document.getElementById('corridor-passes-val');
+    const corrOvershoot = document.getElementById('corridor-overshoot');
+    const corrOvershootVal = document.getElementById('corridor-overshoot-val');
+    const corrSideOverlap = document.getElementById('corridor-side-overlap');
+    const corrSideOverlapVal = document.getElementById('corridor-side-overlap-val');
+    const corrTurnType = document.getElementById('corridor-turn-type');
+    const corrHeadingMode = document.getElementById('corridor-heading-mode');
+    const corrClearBtn = document.getElementById('corridor-clear-btn');
+
+    const updateCorridor = () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (!activeLayer) return;
+
+      if (corrWidth) {
+        const val = parseFloat(corrWidth.value) || 60;
+        activeLayer.corridorWidth = val;
+        if (corrWidthVal) corrWidthVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
+      }
+      if (corrPasses) {
+        const val = parseInt(corrPasses.value, 10) || 3;
+        activeLayer.corridorPasses = val;
+        if (corrPassesVal) corrPassesVal.textContent = `${val}`;
+      }
+      if (corrOvershoot) {
+        const val = parseFloat(corrOvershoot.value) || 0;
+        activeLayer.corridorOvershoot = val;
+        if (corrOvershootVal) corrOvershootVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
+      }
+      if (corrSideOverlap) {
+        const val = parseFloat(corrSideOverlap.value) || 65;
+        activeLayer.corridorSideOverlap = val;
+        if (corrSideOverlapVal) corrSideOverlapVal.textContent = `${val}%`;
+      }
+      if (corrTurnType && corrTurnType.value) activeLayer.corridorTurnType = corrTurnType.value;
+      if (corrHeadingMode && corrHeadingMode.value) activeLayer.corridorHeadingMode = corrHeadingMode.value;
+
+      updateGrid();
+      updateMapLegend();
+      saveAllSettingsToLocalStorage();
+    };
+
+    [corrWidth, corrPasses, corrOvershoot, corrSideOverlap].forEach(el => {
+      if (el) {
+        el.addEventListener('input', updateCorridor);
+        el.addEventListener('change', updateCorridor);
+      }
+    });
+    [corrTurnType, corrHeadingMode].forEach(el => {
+      if (el) {
+        el.addEventListener('change', updateCorridor);
+      }
+    });
+    if (corrClearBtn) {
+      corrClearBtn.addEventListener('click', () => {
+        const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+        if (activeLayer) {
+          activeLayer.corridorCenterline = [];
+          if (typeof corridorCenterline !== 'undefined') corridorCenterline = [];
+          updateGrid();
+        }
+      });
+    }
+  };
+  setupCorridorListeners();
+
   // Hyperlapse Moving Time-Lapse Control Listeners (v1.146.0 - Closes #102)
   const setupHyperlapseListeners = () => {
     const hlInterval = document.getElementById('hyperlapse-interval');
@@ -26740,7 +26968,9 @@ function initClickToTypeInputs() {
     { valId: 'helix-alt-start-val', inputId: 'helix-alt-start', type: 'distance', min: 2, max: 200, step: 1 },
     { valId: 'helix-alt-end-val', inputId: 'helix-alt-end', type: 'distance', min: 5, max: 300, step: 1 },
     { valId: 'light-art-radius-val', inputId: 'light-art-radius', type: 'distance', min: 5, max: 150, step: 1 },
-    { valId: 'light-art-climb-val', inputId: 'light-art-climb', type: 'distance', min: 0, max: 100, step: 1 }
+    { valId: 'light-art-climb-val', inputId: 'light-art-climb', type: 'distance', min: 0, max: 100, step: 1 },
+    { valId: 'corridor-width-val', inputId: 'corridor-width', type: 'distance', min: 10, max: 500, step: 5 },
+    { valId: 'corridor-overshoot-val', inputId: 'corridor-overshoot', type: 'distance', min: 0, max: 100, step: 5 }
   ];
 
   clickToTypeConfigs.forEach(cfg => {
@@ -27187,7 +27417,8 @@ function togglePatternParameters() {
     'light-art': '🎨 Light Art (Sky Painting)',
     'vertical-facade': '🏢 Vertical Facade Grid',
     'continuous-helix': '🌀 Continuous Helix / Spiral',
-    'star-pass': '⭐ Star Pass (Cross-Hatch)'
+    'star-pass': '⭐ Star Pass (Cross-Hatch)',
+    'corridor': '🛣️ Multi-Pass Corridor'
   };
 
   const targetSplatContainer = document.getElementById('target-splat-container');
@@ -27198,6 +27429,7 @@ function togglePatternParameters() {
   const verticalFacadeContainer = document.getElementById('vertical-facade-container');
   const continuousHelixContainer = document.getElementById('continuous-helix-container');
   const starPassContainer = document.getElementById('star-pass-container');
+  const corridorContainer = document.getElementById('corridor-container');
 
   const activePatternBadge = document.getElementById('active-layer-pattern-badge');
   if (activePatternBadge) {
@@ -27254,6 +27486,14 @@ function togglePatternParameters() {
       starPassContainer.classList.remove('hidden');
     } else {
       starPassContainer.classList.add('hidden');
+    }
+  }
+
+  if (corridorContainer) {
+    if (gridType === 'corridor') {
+      corridorContainer.classList.remove('hidden');
+    } else {
+      corridorContainer.classList.add('hidden');
     }
   }
 
@@ -27877,11 +28117,57 @@ function togglePatternParameters() {
     if (exclusionAltContainer) exclusionAltContainer.classList.add('hidden');
     if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
     if (freeformInstructions) freeformInstructions.classList.add('hidden');
+    if (corridorContainer) corridorContainer.classList.add('hidden');
     if (altitudeControlGroup) altitudeControlGroup.style.display = 'block';
     if (widthContainer) widthContainer.style.display = 'none';
     if (heightContainer) heightContainer.style.display = 'none';
     if (rotationContainer) rotationContainer.style.display = 'block';
     if (frontOverlapContainer) frontOverlapContainer.style.display = 'none';
+    if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
+
+  } else if (gridType === 'corridor') {
+    const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+    if (activeLayer && activeLayer.pattern !== 'road-following') roadWaypoints = [];
+    if (gridGeometrySection) {
+      gridGeometrySection.style.display = 'block';
+      gridGeometrySection.classList.remove('collapsed');
+    }
+    if (layerCardGeometry) layerCardGeometry.style.display = 'block';
+    if (layerCardGeometryTitle) layerCardGeometryTitle.textContent = "🛣️ Corridor Mapping Geometry";
+    if (layerCardFlight) layerCardFlight.style.display = 'block';
+    if (layerCardOptics) layerCardOptics.style.display = 'block';
+    if (layerCardModes) layerCardModes.style.display = 'block';
+    if (layerCardBoundary) {
+      layerCardBoundary.classList.add('hidden');
+      layerCardBoundary.style.display = 'none';
+    }
+    if (layerCardFiducial) {
+      layerCardFiducial.classList.add('hidden');
+      layerCardFiducial.style.display = 'none';
+    }
+    if (corridorContainer) corridorContainer.classList.remove('hidden');
+    if (starPassContainer) starPassContainer.classList.add('hidden');
+    if (continuousHelixContainer) continuousHelixContainer.classList.add('hidden');
+    if (verticalFacadeContainer) verticalFacadeContainer.classList.add('hidden');
+    if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
+    if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
+    if (photoSphereContainer) photoSphereContainer.classList.add('hidden');
+    if (hyperlapseContainer) hyperlapseContainer.classList.add('hidden');
+    if (lightArtContainer) lightArtContainer.classList.add('hidden');
+    if (roadOffsetContainer) roadOffsetContainer.classList.add('hidden');
+    if (roadSnapContainer) roadSnapContainer.classList.add('hidden');
+    if (exclusionAltContainer) exclusionAltContainer.classList.add('hidden');
+    if (exclusionFreeformNote) exclusionFreeformNote.classList.add('hidden');
+    if (freeformInstructions) {
+      const span = freeformInstructions.querySelector('span');
+      if (span) span.textContent = "ℹ️ Click map to append centerline nodes. Drag nodes to reshape corridor. Parallel swaths update automatically.";
+      freeformInstructions.classList.remove('hidden');
+    }
+    if (altitudeControlGroup) altitudeControlGroup.style.display = 'block';
+    if (widthContainer) widthContainer.style.display = 'none';
+    if (heightContainer) heightContainer.style.display = 'none';
+    if (rotationContainer) rotationContainer.style.display = 'none';
+    if (frontOverlapContainer) frontOverlapContainer.style.display = 'block';
     if (sideOverlapContainer) sideOverlapContainer.style.display = 'none';
 
   } else {
@@ -27899,6 +28185,7 @@ function togglePatternParameters() {
       layerCardFiducial.classList.add('hidden');
       layerCardFiducial.style.display = 'none';
     }
+    if (corridorContainer) corridorContainer.classList.add('hidden');
     if (starPassContainer) starPassContainer.classList.add('hidden');
     if (towerGeometryContainer) towerGeometryContainer.classList.add('hidden');
     if (targetSplatContainer) targetSplatContainer.classList.add('hidden');
@@ -28598,6 +28885,33 @@ function syncDisplayValues() {
   if (spRadiusSlider && spRadiusValEl) {
     const val = parseFloat(spRadiusSlider.value) || 35;
     spRadiusValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+
+  // Sync Corridor Mapping Geometry (v1.155.0 - Issue #130)
+  const corrWidthSlider = document.getElementById('corridor-width');
+  const corrWidthValEl = document.getElementById('corridor-width-val');
+  if (corrWidthSlider && corrWidthValEl) {
+    const val = parseFloat(corrWidthSlider.value) || 60;
+    corrWidthValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+
+  const corrPassesSlider = document.getElementById('corridor-passes');
+  const corrPassesValEl = document.getElementById('corridor-passes-val');
+  if (corrPassesSlider && corrPassesValEl) {
+    corrPassesValEl.textContent = corrPassesSlider.value;
+  }
+
+  const corrOvershootSlider = document.getElementById('corridor-overshoot');
+  const corrOvershootValEl = document.getElementById('corridor-overshoot-val');
+  if (corrOvershootSlider && corrOvershootValEl) {
+    const val = parseFloat(corrOvershootSlider.value) || 0;
+    corrOvershootValEl.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : (unit === 'imperial' ? `${Math.round(val * M_TO_FT)}ft` : `${val}m`);
+  }
+
+  const corrSideOverlapSlider = document.getElementById('corridor-side-overlap');
+  const corrSideOverlapValEl = document.getElementById('corridor-side-overlap-val');
+  if (corrSideOverlapSlider && corrSideOverlapValEl) {
+    corrSideOverlapValEl.textContent = `${corrSideOverlapSlider.value}%`;
   }
 
   // Sync Vertical Facade Grid Geometry (v1.153.0 - Issue #132)
@@ -31472,11 +31786,451 @@ function generateStarPassCoordinates(layer, sPhoto, baseAltitude, defaultGimbalP
   return { waypoints, photos, spokes, radius, apexNadir };
 }
 
+/**
+ * Multi-Pass Corridor Mapping along Complex Linear Features (Issue #130)
+ * Generates symmetric/asymmetric parallel offset swaths along an arbitrary multi-vertex polyline
+ * with miter angle bisectors, clamped corner smoothing, turnaround extensions, and 3 turnaround styles.
+ *
+ * @param {Object} layer - Layer configuration
+ * @param {Array} centerline - Centerline points [{lat, lon, x, y}, ...]
+ * @param {number} sPhoto - Photo trigger interval spacing (meters)
+ * @param {number} altitude - Flight altitude (meters)
+ * @param {number} defaultGimbalPitch - Default camera pitch (degrees)
+ * @param {number} speed - Flight speed (m/s)
+ * @param {number} centerLat - Geodetic reference center latitude
+ * @param {number} centerLon - Geodetic reference center longitude
+ * @returns {Object} { waypoints, photos, passes, width, overshoot }
+ */
+function generateCorridorCoordinates(layer, centerline, sPhoto = 20, altitude = 50, defaultGimbalPitch = -60, speed = 5.0, centerLat = 0, centerLon = 0) {
+  const waypoints = [];
+  const photos = [];
+
+  const rawWidth = layer ? (layer.corridorWidth !== undefined ? layer.corridorWidth : 60) : 60;
+  const width = Math.max(0, parseFloat(rawWidth) || 60);
+
+  const rawPasses = layer ? (layer.corridorPasses !== undefined ? layer.corridorPasses : 3) : 3;
+  const numPasses = Math.max(1, parseInt(rawPasses, 10) || 3);
+
+  const rawOvershoot = layer ? (layer.corridorOvershoot !== undefined ? layer.corridorOvershoot : 20) : 20;
+  const overshoot = Math.max(0, parseFloat(rawOvershoot) || 0);
+
+  const turnType = (layer && layer.corridorTurnType) ? layer.corridorTurnType : 'bulb'; // 'bulb', 'arc', 'direct'
+  const headingMode = (layer && layer.corridorHeadingMode) ? layer.corridorHeadingMode : 'path'; // 'path', 'centerline', 'fixed'
+
+  const resolvedPitch = (defaultGimbalPitch !== undefined && defaultGimbalPitch !== null && !isNaN(defaultGimbalPitch))
+    ? defaultGimbalPitch
+    : (layer && layer.gimbalPitch !== undefined && layer.gimbalPitch !== null && !isNaN(layer.gimbalPitch))
+      ? layer.gimbalPitch
+      : -60;
+  const pitch = Math.max(-90, Math.min(60, resolvedPitch));
+
+  // Validate or fallback centerline points
+  let poly = [];
+  if (Array.isArray(centerline) && centerline.length >= 2) {
+    poly = centerline.map((pt, idx) => {
+      let x = pt.x;
+      let y = pt.y;
+      if (x === undefined || y === undefined || isNaN(x) || isNaN(y)) {
+        if (typeof geodeticToLocal === 'function' && pt.lat != null && pt.lon != null) {
+          const off = geodeticToLocal(pt.lat, pt.lon, centerLat, centerLon);
+          x = off.x;
+          y = off.y;
+        } else {
+          x = idx * 50;
+          y = 0;
+        }
+      }
+      return { x, y, lat: pt.lat, lon: pt.lon };
+    });
+  } else {
+    // Default 3-node polyline
+    poly = [
+      { x: -60, y: -35 },
+      { x: 0, y: 0 },
+      { x: 60, y: 45 }
+    ];
+  }
+
+  // Deduplicate consecutive identical vertices
+  const cleanPoly = [];
+  for (let i = 0; i < poly.length; i++) {
+    if (i === 0) {
+      cleanPoly.push(poly[i]);
+    } else {
+      const prev = cleanPoly[cleanPoly.length - 1];
+      const d = Math.hypot(poly[i].x - prev.x, poly[i].y - prev.y);
+      if (d > 0.001) {
+        cleanPoly.push(poly[i]);
+      }
+    }
+  }
+  if (cleanPoly.length < 2) {
+    cleanPoly.push({ x: cleanPoly[0].x + 50, y: cleanPoly[0].y + 50 });
+  }
+
+  const M = cleanPoly.length;
+
+  // Compute segment direction vectors segV and segment normals segN
+  const segV = []; // unit direction vectors
+  const segN = []; // unit left normal vectors (-vy, vx)
+  for (let i = 0; i < M - 1; i++) {
+    const dx = cleanPoly[i + 1].x - cleanPoly[i].x;
+    const dy = cleanPoly[i + 1].y - cleanPoly[i].y;
+    const len = Math.hypot(dx, dy);
+    const vx = len > 0 ? dx / len : 1;
+    const vy = len > 0 ? dy / len : 0;
+    segV.push({ vx, vy, len });
+    segN.push({ nx: -vy, ny: vx });
+  }
+
+  // Compute vertex bisector normal vectors and clamped miter factors (max 2.5)
+  const vNormals = [];
+  for (let i = 0; i < M; i++) {
+    if (i === 0) {
+      vNormals.push({ mx: segN[0].nx, my: segN[0].ny, miter: 1.0 });
+    } else if (i === M - 1) {
+      vNormals.push({ mx: segN[M - 2].nx, my: segN[M - 2].ny, miter: 1.0 });
+    } else {
+      const nPrev = segN[i - 1];
+      const nCurr = segN[i];
+      const bx = nPrev.nx + nCurr.nx;
+      const by = nPrev.ny + nCurr.ny;
+      const bLen = Math.hypot(bx, by);
+      if (bLen < 1e-4) {
+        // Nearly 180° hairpin bend fallback
+        vNormals.push({ mx: nPrev.nx, my: nPrev.ny, miter: 1.0 });
+      } else {
+        const mx = bx / bLen;
+        const my = by / bLen;
+        const dot = mx * nCurr.nx + my * nCurr.ny;
+        let miter = (dot > 0.05) ? (1.0 / dot) : 2.5;
+        if (miter > 2.5) miter = 2.5;
+        if (miter < 0.5) miter = 0.5;
+        vNormals.push({ mx, my, miter });
+      }
+    }
+  }
+
+  // Calculate parallel swath offsets
+  // Offset_k = (k - (N - 1) / 2) * S_line
+  const swathSpacing = (numPasses > 1) ? (width / (numPasses - 1)) : 0;
+  const swathOffsets = [];
+  for (let k = 0; k < numPasses; k++) {
+    const off = (k - (numPasses - 1) / 2.0) * swathSpacing;
+    swathOffsets.push(off);
+  }
+
+  // Helper to calculate heading angle from (dx, dy)
+  const calcHeading = (dx, dy) => {
+    return Math.round(((Math.atan2(dx, dy) * 180.0 / Math.PI) + 360.0) % 360.0 * 10) / 10;
+  };
+
+  // Helper to compute overall centerline heading
+  const overallCenterlineHeading = calcHeading(cleanPoly[M - 1].x - cleanPoly[0].x, cleanPoly[M - 1].y - cleanPoly[0].y);
+
+  // Generate each pass
+  const passSwaths = [];
+
+  for (let k = 0; k < numPasses; k++) {
+    const offDist = swathOffsets[k];
+    const isForward = (k % 2 === 0);
+
+    // Build the list of survey points for this swath
+    const swathVerts = [];
+    for (let i = 0; i < M; i++) {
+      const vn = vNormals[i];
+      const px = cleanPoly[i].x + offDist * vn.miter * vn.mx;
+      const py = cleanPoly[i].y + offDist * vn.miter * vn.my;
+      swathVerts.push({ x: px, y: py, vertIdx: i });
+    }
+
+    const vStart = segV[0];
+    const nStart = segN[0];
+    const vEnd = segV[M - 2];
+    const nEnd = segN[M - 2];
+
+    const startOvershootPt = {
+      x: cleanPoly[0].x - overshoot * vStart.vx + offDist * nStart.nx,
+      y: cleanPoly[0].y - overshoot * vStart.vy + offDist * nStart.ny,
+      isTurnaroundPoint: true,
+      skipPhoto: true,
+      isTransition: true,
+      turnMode: 'curved',
+      pathMode: 'curved'
+    };
+
+    const endOvershootPt = {
+      x: cleanPoly[M - 1].x + overshoot * vEnd.vx + offDist * nEnd.nx,
+      y: cleanPoly[M - 1].y + overshoot * vEnd.vy + offDist * nEnd.ny,
+      isTurnaroundPoint: true,
+      skipPhoto: true,
+      isTransition: true,
+      turnMode: 'curved',
+      pathMode: 'curved'
+    };
+
+    const passPoints = [];
+
+    if (isForward) {
+      if (overshoot > 0) {
+        passPoints.push(startOvershootPt);
+      }
+      for (let i = 0; i < M; i++) {
+        const curV = swathVerts[i];
+        passPoints.push({
+          x: curV.x,
+          y: curV.y,
+          isSurvey: true,
+          vertIdx: i
+        });
+
+        if (i < M - 1 && sPhoto > 0) {
+          const nextV = swathVerts[i + 1];
+          const segDist = Math.hypot(nextV.x - curV.x, nextV.y - curV.y);
+          if (segDist > sPhoto * 1.25) {
+            const steps = Math.floor(segDist / sPhoto);
+            for (let s = 1; s <= steps; s++) {
+              const frac = (s * sPhoto) / segDist;
+              if (frac < 0.95) {
+                passPoints.push({
+                  x: curV.x + frac * (nextV.x - curV.x),
+                  y: curV.y + frac * (nextV.y - curV.y),
+                  isSurvey: true,
+                  isIntermediate: true
+                });
+              }
+            }
+          }
+        }
+      }
+      if (overshoot > 0) {
+        passPoints.push(endOvershootPt);
+      }
+    } else {
+      if (overshoot > 0) {
+        passPoints.push(endOvershootPt);
+      }
+      for (let i = M - 1; i >= 0; i--) {
+        const curV = swathVerts[i];
+        passPoints.push({
+          x: curV.x,
+          y: curV.y,
+          isSurvey: true,
+          vertIdx: i
+        });
+
+        if (i > 0 && sPhoto > 0) {
+          const prevV = swathVerts[i - 1];
+          const segDist = Math.hypot(prevV.x - curV.x, prevV.y - curV.y);
+          if (segDist > sPhoto * 1.25) {
+            const steps = Math.floor(segDist / sPhoto);
+            for (let s = 1; s <= steps; s++) {
+              const frac = (s * sPhoto) / segDist;
+              if (frac < 0.95) {
+                passPoints.push({
+                  x: curV.x + frac * (prevV.x - curV.x),
+                  y: curV.y + frac * (prevV.y - curV.y),
+                  isSurvey: true,
+                  isIntermediate: true
+                });
+              }
+            }
+          }
+        }
+      }
+      if (overshoot > 0) {
+        passPoints.push(startOvershootPt);
+      }
+    }
+
+    passSwaths.push({
+      k,
+      isForward,
+      offDist,
+      points: passPoints,
+      startOvershootPt,
+      endOvershootPt
+    });
+  }
+
+  // Connect passes with turnaround transitions
+  for (let k = 0; k < numPasses; k++) {
+    const currentPass = passSwaths[k];
+    const pts = currentPass.points;
+
+    for (let pIdx = 0; pIdx < pts.length; pIdx++) {
+      const cur = pts[pIdx];
+
+      let hAngle = 0;
+      if (headingMode === 'fixed') {
+        hAngle = (layer && layer.customHeading !== undefined) ? parseInt(layer.customHeading, 10) || 0 : 0;
+      } else if (headingMode === 'centerline') {
+        hAngle = currentPass.isForward ? overallCenterlineHeading : (overallCenterlineHeading + 180) % 360;
+      } else {
+        if (pIdx < pts.length - 1) {
+          hAngle = calcHeading(pts[pIdx + 1].x - cur.x, pts[pIdx + 1].y - cur.y);
+        } else if (pIdx > 0) {
+          hAngle = calcHeading(cur.x - pts[pIdx - 1].x, cur.y - pts[pIdx - 1].y);
+        } else {
+          hAngle = currentPass.isForward ? overallCenterlineHeading : (overallCenterlineHeading + 180) % 360;
+        }
+      }
+
+      const wp = {
+        x: Math.round(cur.x * 100) / 100,
+        y: Math.round(cur.y * 100) / 100,
+        alt: Math.round(altitude * 10) / 10,
+        pitch: pitch,
+        heading: hAngle,
+        headingMode: 'smoothTransition',
+        turnMode: cur.turnMode || 'toPointAndStopWithContinuityCurvature',
+        pathMode: cur.pathMode,
+        speed: speed,
+        gridType: 'corridor',
+        layerPattern: 'corridor',
+        isCorridor: true,
+        passIndex: k,
+        skipPhoto: !!cur.skipPhoto,
+        isTurnaroundPoint: !!cur.isTurnaroundPoint,
+        isTransition: !!cur.isTransition,
+        vertIdx: cur.vertIdx
+      };
+
+      waypoints.push(wp);
+
+      if (cur.isSurvey && !cur.skipPhoto) {
+        photos.push({
+          x: wp.x,
+          y: wp.y,
+          alt: wp.alt,
+          pitch: wp.pitch,
+          heading: wp.heading,
+          gridType: 'corridor',
+          passIndex: k
+        });
+      }
+    }
+
+    // Turnaround transition to next pass
+    if (k < numPasses - 1) {
+      const nextPass = passSwaths[k + 1];
+      const exitPt = pts[pts.length - 1];
+      const entryPt = nextPass.points[0];
+
+      const dx = entryPt.x - exitPt.x;
+      const dy = entryPt.y - exitPt.y;
+      const dSep = Math.hypot(dx, dy);
+
+      const exitTangent = currentPass.isForward
+        ? { tx: segV[M - 2].vx, ty: segV[M - 2].vy }
+        : { tx: -segV[0].vx, ty: -segV[0].vy };
+
+      const latVec = dSep > 0.001 ? { lx: dx / dSep, ly: dy / dSep } : { lx: 1, ly: 0 };
+
+      if (turnType === 'direct') {
+        const midPt = {
+          x: Math.round(((exitPt.x + entryPt.x) / 2.0) * 100) / 100,
+          y: Math.round(((exitPt.y + entryPt.y) / 2.0) * 100) / 100,
+          alt: Math.round(altitude * 10) / 10,
+          pitch: pitch,
+          heading: calcHeading(dx, dy),
+          headingMode: 'smoothTransition',
+          turnMode: 'curved',
+          pathMode: 'curved',
+          speed: speed,
+          gridType: 'corridor',
+          layerPattern: 'corridor',
+          isCorridor: true,
+          isTransition: true,
+          skipPhoto: true
+        };
+        waypoints.push(midPt);
+      } else if (turnType === 'arc') {
+        const mx = (exitPt.x + entryPt.x) / 2.0;
+        const my = (exitPt.y + entryPt.y) / 2.0;
+        const radius = Math.max(8, dSep / 2.0);
+        const arcSteps = 3;
+        for (let s = 1; s <= arcSteps; s++) {
+          const angle = (Math.PI / (arcSteps + 1)) * s;
+          const px = mx - (dSep / 2.0) * Math.cos(angle) * latVec.lx + radius * Math.sin(angle) * exitTangent.tx;
+          const py = my - (dSep / 2.0) * Math.cos(angle) * latVec.ly + radius * Math.sin(angle) * exitTangent.ty;
+
+          const arcPt = {
+            x: Math.round(px * 100) / 100,
+            y: Math.round(py * 100) / 100,
+            alt: Math.round(altitude * 10) / 10,
+            pitch: pitch,
+            heading: calcHeading(exitTangent.tx, exitTangent.ty),
+            headingMode: 'smoothTransition',
+            turnMode: 'curved',
+            pathMode: 'curved',
+            speed: speed,
+            gridType: 'corridor',
+            layerPattern: 'corridor',
+            isCorridor: true,
+            isTransition: true,
+            skipPhoto: true
+          };
+          waypoints.push(arcPt);
+        }
+      } else {
+        // 'bulb' teardrop turnaround loop
+        const extDist = Math.max(15, dSep * 0.7);
+        const p1x = exitPt.x + extDist * 0.5 * exitTangent.tx - 0.25 * dSep * latVec.lx;
+        const p1y = exitPt.y + extDist * 0.5 * exitTangent.ty - 0.25 * dSep * latVec.ly;
+
+        const mx = (exitPt.x + entryPt.x) / 2.0;
+        const my = (exitPt.y + entryPt.y) / 2.0;
+        const p2x = mx + extDist * 1.1 * exitTangent.tx;
+        const p2y = my + extDist * 1.1 * exitTangent.ty;
+
+        const p3x = entryPt.x + extDist * 0.5 * exitTangent.tx + 0.25 * dSep * latVec.lx;
+        const p3y = entryPt.y + extDist * 0.5 * exitTangent.ty + 0.25 * dSep * latVec.ly;
+
+        const loopPoints = [
+          { x: p1x, y: p1y },
+          { x: p2x, y: p2y },
+          { x: p3x, y: p3y }
+        ];
+
+        loopPoints.forEach((lp, lIdx) => {
+          let nextLp = (lIdx < loopPoints.length - 1) ? loopPoints[lIdx + 1] : entryPt;
+          waypoints.push({
+            x: Math.round(lp.x * 100) / 100,
+            y: Math.round(lp.y * 100) / 100,
+            alt: Math.round(altitude * 10) / 10,
+            pitch: pitch,
+            heading: calcHeading(nextLp.x - lp.x, nextLp.y - lp.y),
+            headingMode: 'smoothTransition',
+            turnMode: 'curved',
+            pathMode: 'curved',
+            speed: speed,
+            gridType: 'corridor',
+            layerPattern: 'corridor',
+            isCorridor: true,
+            isTransition: true,
+            skipPhoto: true
+          });
+        });
+      }
+    }
+  }
+
+  return {
+    waypoints,
+    photos,
+    passes: numPasses,
+    width,
+    overshoot
+  };
+}
+
 if (typeof window !== 'undefined') {
   window.generateLightArtCoordinates = generateLightArtCoordinates;
   window.generateVerticalFacadeCoordinates = generateVerticalFacadeCoordinates;
   window.generateHelixCoordinates = generateHelixCoordinates;
   window.generateStarPassCoordinates = generateStarPassCoordinates;
+  window.generateCorridorCoordinates = generateCorridorCoordinates;
 }
 // -------------------- src/3d/GeometryBuilder.js --------------------
 function calculateCameraGroundFrustum(droneX, droneY, alt, headingDeg, pitchDeg, hfov, vfov, zPlane = 0, framingRatio = 0.55) {
@@ -33177,8 +33931,8 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
         fillOpacity: 0.10
       }).addTo(map);
     }
-  } else if (waypoints.length === 0 || gridType === 'road-following' || gridType === 'freeform' || gridType === 'hyperlapse' || gridType === 'exclusion-box' || gridType === 'exclusion-freeform') {
-    // No boundary overlay when no waypoints are active or for road-following/freeform/exclusion
+  } else if (waypoints.length === 0 || gridType === 'road-following' || gridType === 'corridor' || gridType === 'freeform' || gridType === 'hyperlapse' || gridType === 'exclusion-box' || gridType === 'exclusion-freeform') {
+    // No boundary overlay when no waypoints are active or for road-following/corridor/freeform/exclusion
   } else if (gridType === 'photo-sphere') {
     const sphereRadius = Math.max(8, (waypoints[0]?.alt || 30) * 0.4);
     if (typeof L !== 'undefined' && typeof L.circle === 'function' && typeof map !== 'undefined' && map) {
@@ -33330,6 +34084,87 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
                 maxWidth: 320,
                 minWidth: 310,
                 offset: [0, -20]
+              });
+            }
+
+            marker.addTo(roadPathGroup);
+          });
+        }
+      }
+    });
+  }
+
+  // 4b. Draw Corridor Centerline & Nodes for all enabled corridor layers (v1.155.0 - Issue #130)
+  if (typeof flightLayers !== 'undefined' && Array.isArray(flightLayers)) {
+    flightLayers.forEach(l => {
+      if (l.enabled && l.pattern === 'corridor') {
+        const corrNodes = (l.corridorCenterline && Array.isArray(l.corridorCenterline) && l.corridorCenterline.length > 0)
+          ? l.corridorCenterline
+          : (l.id === activeLayerId && Array.isArray(corridorCenterline) ? corridorCenterline : []);
+        if (corrNodes && corrNodes.length > 0) {
+          const isActive = (l.id === activeLayerId);
+          const corrColor = l.color || '#6366f1';
+          const corrLatLngs = corrNodes.map(wp => [wp.lat, wp.lon]);
+          L.polyline(corrLatLngs, {
+            color: corrColor,
+            weight: 3.5,
+            dashArray: '8, 6',
+            opacity: isActive ? 0.95 : 0.65,
+            interactive: false
+          }).addTo(roadPathGroup);
+
+          corrNodes.forEach((wp, idx) => {
+            const corrIcon = L.divIcon({
+              className: 'corridor-centerline-icon',
+              html: `<div style="background-color: ${corrColor}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid #ffffff; box-shadow: 0 0 8px rgba(99, 102, 241, 0.7); display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; font-weight: bold; cursor: ${isActive ? 'pointer' : 'default'};">C${idx + 1}</div>`,
+              iconSize: [24, 24],
+              iconAnchor: [12, 12]
+            });
+
+            const marker = L.marker([wp.lat, wp.lon], {
+              icon: corrIcon,
+              draggable: isActive
+            });
+
+            wp.corridorMarker = marker;
+            marker.bindTooltip(`${l.name} Centerline Node ${idx + 1}`, { direction: 'top', offset: [0, -10] });
+
+            if (isActive) {
+              marker.on('dragstart', () => {
+                if (typeof map !== 'undefined' && map && map.closePopup) map.closePopup();
+                if (wp.origLat === undefined || wp.origLat === null) {
+                  wp.origLat = wp.lat;
+                  wp.origLon = wp.lon;
+                  wp.origX = wp.x;
+                  wp.origY = wp.y;
+                }
+                wp.isModified = true;
+              });
+
+              marker.on('drag', (e) => {
+                const newLatLng = e.target.getLatLng();
+                const layerCenterLat = (l.centerLat !== undefined && l.centerLat !== null) ? l.centerLat : centerLat;
+                const layerCenterLon = (l.centerLon !== undefined && l.centerLon !== null) ? l.centerLon : centerLon;
+                const offsets = (typeof geodeticToLocal === 'function')
+                  ? geodeticToLocal(newLatLng.lat, newLatLng.lng, layerCenterLat, layerCenterLon)
+                  : { x: 0, y: 0 };
+                wp.lat = newLatLng.lat;
+                wp.lon = newLatLng.lng;
+                wp.x = offsets.x;
+                wp.y = offsets.y;
+                wp.isModified = true;
+                if (roadPathGroup && l.corridorCenterline && l.corridorCenterline.length > 0) {
+                  const updatedLatLngs = l.corridorCenterline.map(n => [n.lat, n.lon]);
+                  roadPathGroup.eachLayer(layer => {
+                    if (typeof layer.setLatLngs === 'function' && layer.getLatLngs) {
+                      layer.setLatLngs(updatedLatLngs);
+                    }
+                  });
+                }
+              });
+
+              marker.on('dragend', () => {
+                updateGrid();
               });
             }
 
@@ -34684,7 +35519,45 @@ function addRoadWaypoint(lat, lng) {
   }
 }
 
-// Calculate flight stats
+function addCorridorPoint(lat, lng) {
+  if (typeof centerMarker === 'undefined' || !centerMarker) {
+    if (typeof setGridCenter === 'function') setGridCenter(lat, lng);
+    return;
+  }
+
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const centerLatLng = centerMarker.getLatLng();
+  const layerCenterLat = (activeLayer && activeLayer.centerLat !== null && activeLayer.centerLat !== undefined) ? activeLayer.centerLat : centerLatLng.lat;
+  const layerCenterLon = (activeLayer && activeLayer.centerLon !== null && activeLayer.centerLon !== undefined) ? activeLayer.centerLon : centerLatLng.lng;
+  const offsets = (typeof geodeticToLocal === 'function')
+    ? geodeticToLocal(lat, lng, layerCenterLat, layerCenterLon)
+    : { x: 0, y: 0 };
+
+  let corrList;
+  if (activeLayer) {
+    if (!activeLayer.corridorCenterline) activeLayer.corridorCenterline = [];
+    corrList = activeLayer.corridorCenterline;
+  } else {
+    if (typeof corridorCenterline === 'undefined' || !corridorCenterline) corridorCenterline = [];
+    corrList = corridorCenterline;
+  }
+
+  const pt = {
+    lat: lat,
+    lon: lng,
+    x: offsets.x,
+    y: offsets.y,
+    idx: corrList.length
+  };
+  corrList.push(pt);
+  if (typeof corridorCenterline !== 'undefined') corridorCenterline = corrList;
+  if (activeLayer) activeLayer.corridorCenterline = corrList;
+  if (typeof updateGrid === 'function') updateGrid();
+}
+
+if (typeof window !== 'undefined') {
+  window.addCorridorPoint = addCorridorPoint;
+}
 // -------------------- src/ui/TelemetryHud.js --------------------
 function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, captureMode) {
   if (waypoints.length < 2) return null;
@@ -36001,7 +36874,7 @@ ${waypointActions.join('\n')}
         }
       }
     } else {
-      if ((gridType === 'hyperlapse' || gridType === 'freeform' || gridType === 'exclusion-freeform' || gridType === 'target-splat' || gridType === 'road-following' || gridType === 'photo-sphere' || gridType === 'vertical-facade' || gridType === 'continuous-helix' || gridType === 'star-pass' || wp.isHyperlapse || wp.isPhotoSphere || wp.isVerticalFacade || wp.isContinuousHelix || wp.isStarPass || wp.isRoadDroneWaypoint || wp.layerPattern === 'hyperlapse' || wp.layerPattern === 'freeform' || wp.layerPattern === 'exclusion-freeform' || wp.layerPattern === 'vertical-facade' || wp.layerPattern === 'continuous-helix' || wp.layerPattern === 'star-pass' || (wp.gridType && (wp.gridType === 'hyperlapse' || wp.gridType === 'freeform' || wp.gridType === 'exclusion-freeform' || wp.gridType === 'vertical-facade' || wp.gridType === 'continuous-helix' || wp.gridType === 'star-pass')) || (wpLayer && (wpLayer.pattern === 'hyperlapse' || wpLayer.pattern === 'freeform' || wpLayer.pattern === 'exclusion-freeform' || wpLayer.pattern === 'vertical-facade' || wpLayer.pattern === 'continuous-helix' || wpLayer.pattern === 'star-pass')))) {
+      if ((gridType === 'hyperlapse' || gridType === 'freeform' || gridType === 'exclusion-freeform' || gridType === 'target-splat' || gridType === 'road-following' || gridType === 'corridor' || gridType === 'photo-sphere' || gridType === 'vertical-facade' || gridType === 'continuous-helix' || gridType === 'star-pass' || wp.isHyperlapse || wp.isPhotoSphere || wp.isVerticalFacade || wp.isContinuousHelix || wp.isStarPass || wp.isCorridor || wp.isRoadDroneWaypoint || wp.layerPattern === 'hyperlapse' || wp.layerPattern === 'freeform' || wp.layerPattern === 'exclusion-freeform' || wp.layerPattern === 'vertical-facade' || wp.layerPattern === 'continuous-helix' || wp.layerPattern === 'star-pass' || wp.layerPattern === 'corridor' || (wp.gridType && (wp.gridType === 'hyperlapse' || wp.gridType === 'freeform' || wp.gridType === 'exclusion-freeform' || wp.gridType === 'vertical-facade' || wp.gridType === 'continuous-helix' || wp.gridType === 'star-pass' || wp.gridType === 'corridor')) || (wpLayer && (wpLayer.pattern === 'hyperlapse' || wpLayer.pattern === 'freeform' || wpLayer.pattern === 'exclusion-freeform' || wpLayer.pattern === 'vertical-facade' || wpLayer.pattern === 'continuous-helix' || wpLayer.pattern === 'star-pass' || wpLayer.pattern === 'corridor')))) {
         actualHeadingMode = 'smoothTransition';
         actualHeadingAngle = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
       } else if (effectiveHeadingMode === 'towardPOI') {
@@ -50775,6 +51648,8 @@ function recreate3DWaypointsAndPaths() {
       colorHex = 0xef4444; // Red
     } else if (wp.isModified) {
       colorHex = 0xec4899; // Pink
+    } else if (wp.gridType === 'corridor' || wp.isCorridor) {
+      colorHex = 0x6366f1; // Electric Indigo
     } else {
       const ring = wp.ringIndex;
       if (ring === 0) colorHex = 0xa855f7; // purple
@@ -50858,6 +51733,8 @@ function recreate3DWaypointsAndPaths() {
         segColor = 0x8b5cf6; // Violet/Indigo Ribbon for Continuous Corkscrew Spiral
       } else if (wp.gridType === 'star-pass' || wp.isStarPass || nextWp.gridType === 'star-pass' || nextWp.isStarPass) {
         segColor = 0xf59e0b; // Amber/Gold Ribbon for Star Pass Convergent Cross-Hatch
+      } else if (wp.gridType === 'corridor' || wp.isCorridor || nextWp.gridType === 'corridor' || nextWp.isCorridor) {
+        segColor = 0x6366f1; // Electric Indigo Ribbon for Corridor Mapping
       } else {
         const nextRing = nextWp.ringIndex;
         if (nextRing === 0) segColor = 0xa855f7;

@@ -369,6 +369,8 @@ function recreate3DWaypointsAndPaths() {
       colorHex = 0xef4444; // Red
     } else if (wp.isModified) {
       colorHex = 0xec4899; // Pink
+    } else if (wp.gridType === 'corridor' || wp.isCorridor) {
+      colorHex = 0x6366f1; // Electric Indigo
     } else {
       const ring = wp.ringIndex;
       if (ring === 0) colorHex = 0xa855f7; // purple
@@ -452,6 +454,8 @@ function recreate3DWaypointsAndPaths() {
         segColor = 0x8b5cf6; // Violet/Indigo Ribbon for Continuous Corkscrew Spiral
       } else if (wp.gridType === 'star-pass' || wp.isStarPass || nextWp.gridType === 'star-pass' || nextWp.isStarPass) {
         segColor = 0xf59e0b; // Amber/Gold Ribbon for Star Pass Convergent Cross-Hatch
+      } else if (wp.gridType === 'corridor' || wp.isCorridor || nextWp.gridType === 'corridor' || nextWp.isCorridor) {
+        segColor = 0x6366f1; // Electric Indigo Ribbon for Corridor Mapping
       } else {
         const nextRing = nextWp.ringIndex;
         if (nextRing === 0) segColor = 0xa855f7;

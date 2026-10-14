@@ -960,6 +960,76 @@ function initUIEventListeners() {
   };
   setupStarPassListeners();
 
+  // Multi-Pass Corridor Mapping Polyline Listeners (v1.155.0 - Issue #130)
+  const setupCorridorListeners = () => {
+    const corrWidth = document.getElementById('corridor-width');
+    const corrWidthVal = document.getElementById('corridor-width-val');
+    const corrPasses = document.getElementById('corridor-passes');
+    const corrPassesVal = document.getElementById('corridor-passes-val');
+    const corrOvershoot = document.getElementById('corridor-overshoot');
+    const corrOvershootVal = document.getElementById('corridor-overshoot-val');
+    const corrSideOverlap = document.getElementById('corridor-side-overlap');
+    const corrSideOverlapVal = document.getElementById('corridor-side-overlap-val');
+    const corrTurnType = document.getElementById('corridor-turn-type');
+    const corrHeadingMode = document.getElementById('corridor-heading-mode');
+    const corrClearBtn = document.getElementById('corridor-clear-btn');
+
+    const updateCorridor = () => {
+      const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+      if (!activeLayer) return;
+
+      if (corrWidth) {
+        const val = parseFloat(corrWidth.value) || 60;
+        activeLayer.corridorWidth = val;
+        if (corrWidthVal) corrWidthVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
+      }
+      if (corrPasses) {
+        const val = parseInt(corrPasses.value, 10) || 3;
+        activeLayer.corridorPasses = val;
+        if (corrPassesVal) corrPassesVal.textContent = `${val}`;
+      }
+      if (corrOvershoot) {
+        const val = parseFloat(corrOvershoot.value) || 0;
+        activeLayer.corridorOvershoot = val;
+        if (corrOvershootVal) corrOvershootVal.textContent = (typeof formatUnitDistance === 'function') ? formatUnitDistance(val) : `${val}m`;
+      }
+      if (corrSideOverlap) {
+        const val = parseFloat(corrSideOverlap.value) || 65;
+        activeLayer.corridorSideOverlap = val;
+        if (corrSideOverlapVal) corrSideOverlapVal.textContent = `${val}%`;
+      }
+      if (corrTurnType && corrTurnType.value) activeLayer.corridorTurnType = corrTurnType.value;
+      if (corrHeadingMode && corrHeadingMode.value) activeLayer.corridorHeadingMode = corrHeadingMode.value;
+
+      updateGrid();
+      updateMapLegend();
+      saveAllSettingsToLocalStorage();
+    };
+
+    [corrWidth, corrPasses, corrOvershoot, corrSideOverlap].forEach(el => {
+      if (el) {
+        el.addEventListener('input', updateCorridor);
+        el.addEventListener('change', updateCorridor);
+      }
+    });
+    [corrTurnType, corrHeadingMode].forEach(el => {
+      if (el) {
+        el.addEventListener('change', updateCorridor);
+      }
+    });
+    if (corrClearBtn) {
+      corrClearBtn.addEventListener('click', () => {
+        const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+        if (activeLayer) {
+          activeLayer.corridorCenterline = [];
+          if (typeof corridorCenterline !== 'undefined') corridorCenterline = [];
+          updateGrid();
+        }
+      });
+    }
+  };
+  setupCorridorListeners();
+
   // Hyperlapse Moving Time-Lapse Control Listeners (v1.146.0 - Closes #102)
   const setupHyperlapseListeners = () => {
     const hlInterval = document.getElementById('hyperlapse-interval');
