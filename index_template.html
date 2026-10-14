@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.153.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.154.0</span></h1>
 
 
 
@@ -282,6 +282,7 @@
               <option value="tower">3D Structure (Tower Audit)</option>
               <option value="vertical-facade">🏢 Vertical Facade (Planar Infrastructure)</option>
               <option value="continuous-helix">🌀 Continuous Helix (Corkscrew Orbit)</option>
+              <option value="star-pass">⭐ Star Pass (Cross-Hatch POI Inspection)</option>
               <option value="photo-sphere">360° Pano (Photo Sphere)</option>
               <option value="hyperlapse">🎞️ Hyperlapse (Interval Time-Lapse)</option>
               <option value="light-art">🎨 Light Art (Sky Painting / Long Exposure)</option>
@@ -364,6 +365,13 @@
                   <path d="M12 2v20" stroke-dasharray="2,2"/>
                 </svg>
                 <span style="color: #a78bfa;">Continuous Helix</span>
+              </div>
+              <div class="pattern-card" data-value="star-pass" title="Star Pass (Cross-Hatch Convergent POI Inspection)">
+                <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                  <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                </svg>
+                <span style="color: #f59e0b;">Star Pass</span>
               </div>
               <div class="pattern-card" data-value="photo-sphere" title="360° Photo Sphere (Equirectangular Panorama)">
                 <svg class="pattern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -944,6 +952,36 @@
                 </div>
               </label>
             </div>
+            <!-- Engine & Advanced Capture Controls (v1.154.0 - Issue #134) -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+              <div>
+                <label for="photo-sphere-mode" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">Execution Engine</label>
+                <select id="photo-sphere-mode" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 2px 6px;">
+                  <option value="discreteNodes" selected>Discrete Waypoints (Multi-Node)</option>
+                  <option value="actionGroup">Stationary Action Group (Single Point)</option>
+                </select>
+              </div>
+              <div>
+                <label for="photo-sphere-shots-per-ring" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">Ring Density</label>
+                <select id="photo-sphere-shots-per-ring" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 2px 6px;">
+                  <option value="8">8 Shots / Ring (45° Step)</option>
+                  <option value="10">10 Shots / Ring (36° Step)</option>
+                  <option value="12" selected>12 Shots / Ring (30° Step)</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                <label for="photo-sphere-settling-time" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; margin: 0;">Settling Delay (<span id="photo-sphere-settling-time-val" style="color: #38bdf8;">2.0s</span>)</label>
+              </div>
+              <input type="range" id="photo-sphere-settling-time" class="form-range" min="0.5" max="5.0" step="0.1" value="2.0" style="accent-color: #38bdf8;">
+            </div>
+            <div style="margin-bottom: 8px;">
+              <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--text-main); cursor: pointer; user-select: none;">
+                <input type="checkbox" id="photo-sphere-aeb" style="accent-color: #38bdf8; width: 14px; height: 14px;">
+                <span style="font-weight: 600;">AEB Exposure Bracketing (3-Shot HDR Stack)</span>
+              </label>
+            </div>
             <!-- Shutter Mode Notice -->
             <div style="display: flex; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 6px; padding: 6px 8px; font-size: 0.72rem; color: #34d399;">
               <span style="font-size: 0.9rem;">🛡️</span>
@@ -966,8 +1004,14 @@
               </strong>
               <span id="hyperlapse-frame-badge" class="badge" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; font-size: 0.68rem; padding: 2px 7px; border-radius: 4px; font-weight: 700;">0 Frames Total</span>
             </div>
-            <div style="font-size: 0.74rem; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4;">
+            <div style="font-size: 0.74rem; color: var(--text-muted); margin-bottom: 8px; line-height: 1.4;">
               Click on the map to place waypoints forming your hyperlapse transit route. The aircraft shoots interval photos continuously while flying smoothly between points.
+            </div>
+
+            <!-- Live Video Duration Calculator (Issue #135) -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 6px 8px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 6px;">
+              <span style="font-size: 0.72rem; color: #f59e0b; font-weight: 600;">⏱️ Projected Video Duration</span>
+              <span id="hyperlapse-duration-badge" style="font-size: 0.72rem; color: #f59e0b; font-weight: 700;">Clip: 0.0s (30fps) | 0.0s (24fps)</span>
             </div>
 
             <!-- Interval Capture Slider -->
@@ -1237,6 +1281,47 @@
             </div>
           </div>
 
+          <!-- Star Pass (Cross-Hatch) Controls (Issue #131) -->
+          <div id="star-pass-container" class="control-group hidden" style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 12px; margin-top: 10px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 0.76rem; font-weight: 700; color: #f59e0b;">⭐ Star Pass POI Cross-Hatch Controls</span>
+              <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; font-size: 0.68rem; padding: 2px 7px; border-radius: 4px; font-weight: 700;">Convergent Apex</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+              <div>
+                <label for="star-pass-spokes" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">Pass Spokes (<span id="star-pass-spokes-val" style="color: #f59e0b;">3</span>)</label>
+                <input type="range" id="star-pass-spokes" class="form-range" min="2" max="8" step="1" value="3" style="accent-color: #f59e0b;">
+              </div>
+              <div>
+                <label for="star-pass-radius" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 2px;">Spoke Radius (<span id="star-pass-radius-val" style="color: #f59e0b;">35m</span>)</label>
+                <input type="range" id="star-pass-radius" class="form-range" min="10" max="150" step="5" value="35" style="accent-color: #f59e0b;">
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+              <div>
+                <label for="star-pass-heading-mode" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 3px;">Camera Lock Mode</label>
+                <select id="star-pass-heading-mode" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 3px 6px;">
+                  <option value="convergent" selected>Convergent (Target &amp; Altitude Tracking)</option>
+                  <option value="towardPOI">Lock Directly to POI</option>
+                  <option value="flightDirection">Along Flight Vector</option>
+                </select>
+              </div>
+              <div>
+                <label for="star-pass-transit-mode" style="font-size: 0.72rem; color: var(--text-main); font-weight: 600; display: block; margin-bottom: 3px;">Transit Transition</label>
+                <select id="star-pass-transit-mode" class="form-select form-select-sm" style="font-size: 0.72rem; padding: 3px 6px;">
+                  <option value="perimeterHop" selected>Perimeter Arc Hop</option>
+                  <option value="directAcross">Direct Cut</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-top: 4px;">
+              <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--text-main); cursor: pointer; user-select: none;">
+                <input type="checkbox" id="star-pass-apex-nadir" checked style="accent-color: #f59e0b; width: 14px; height: 14px;">
+                <span style="font-weight: 600;">Apex Nadir Catch (-90° Ground Lock on Center Intersection)</span>
+              </label>
+            </div>
+          </div>
+
           <div id="exclusion-altitude-container" class="control-group hidden" style="background: rgba(239, 68, 68, 0.06); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 10px; margin-top: 10px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <span style="font-size: 0.8rem; font-weight: 700; color: #f87171; display: inline-flex; align-items: center; gap: 6px;">
@@ -1316,7 +1401,7 @@
               </span>
               <span class="value-display"><span id="speed-val">4</span> <span id="speed-unit">m/s</span></span>
             </div>
-            <input type="range" id="speed" min="0.2" max="15" step="0.1" value="4" class="slider" aria-label="Flight speed">
+            <input type="range" id="speed" min="0.1" max="15" step="0.1" value="4" class="slider" aria-label="Flight speed">
           </div>
 
           <div class="control-group">
@@ -3404,6 +3489,30 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #f59e0b; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              ⭐ Star Pass / Cross-Hatch Convergent POI Inspection (v1.154.0) (Closes #131)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Capture intricate, recessed 3D geometries on monuments, statues, and vertical towers without blind spots! The new <strong>Star Pass</strong> pattern generator flies repeated diametric crossings directly over a central Point of Interest from multiple intersecting angles (2 to 8 spokes). Features <strong>Convergent 3D Pitch/Heading Tracking</strong>, an automatic <strong>Apex Nadir Catch (-90°)</strong> at the center crossing, smooth <strong>Perimeter Arc Hops</strong> between spoke passes, and Amber 3D trajectory ribbons.
+            </p>
+          </div>
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #38bdf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              📸 Dedicated 360° Spherical Panorama Stationary Capture Engine (v1.154.0) (Closes #134)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Eliminate GPS micro-hunting and APAS drift during 360 photo spheres! The capture engine now compiles into a <strong>Single Stationary Waypoint Action Group</strong> in WPML, running all yaw, pitch, and shutter steps sequentially at a locked 3D position. Supports configurable shot density (8, 10, or 12 shots per ring), adjustable 0.5s–5.0s settling delay, optional <strong>AEB 3-Shot Exposure Bracketing</strong>, and Google Photo Sphere (GPano) XMP manifest metadata.
+            </p>
+          </div>
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #f59e0b; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              🎞️ Dedicated Waypoint Hyperlapse Ultra-Slow Continuous Interval Capture (v1.154.0) (Closes #135)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Achieve cinematic, ultra-smooth time compression with sub-meter frame accuracy! Supports ultra-slow flight speeds down to <strong>0.1 m/s</strong> (e.g., 0.1, 0.2, 0.5 m/s) with sub-meter frame spacing projection. Features a <strong>Live Video Clip Duration Calculator</strong> displaying projected output times at 24fps and 30fps directly within Section 2 and Topbar Telemetry HUD.
+            </p>
+          </div>
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #34d399; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🏢 Vertical Facade Grid for Planar Infrastructure Inspection (v1.153.0) (Closes #132)
@@ -4647,7 +4756,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.153.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.154.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -4708,6 +4817,14 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.154.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Star Pass Convergent Cross-Hatch Inspection:</strong> Repeated diametric crossings over central POIs with convergent gimbal/heading tracking, apex nadir catch, and perimeter transit hops. (Closes #131)</li>
+              <li><strong>Dedicated 360° Spherical Panorama Stationary Capture Engine:</strong> Eliminates GPS drift via single-waypoint sequential action group execution in WPML, configurable ring density, settling delay, AEB exposure bracketing, and GPano XMP manifest tags. (Closes #134)</li>
+              <li><strong>Dedicated Waypoint Hyperlapse Ultra-Slow Continuous Interval Capture:</strong> Sub-meter frame dot projection, granular flight speeds down to 0.1 m/s, and real-time video clip duration calculator at 24fps and 30fps. (Closes #135)</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.153.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">

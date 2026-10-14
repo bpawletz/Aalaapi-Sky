@@ -1631,6 +1631,110 @@ const scenarios = [
       await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
       await page.waitForTimeout(1500);
     }
+  },
+  {
+    id: 'feature_star_pass',
+    name: 'Cross-Hatch / Star Pass Convergent POI Inspection',
+    issueRef: 'Issue #131',
+    description: 'Demonstrates multi-axis radial spoke flights intersecting at central inspection target with convergent camera angles, apex nadir catch, and perimeter transit hops.',
+    run: async (page) => {
+      // 1. Initial setup squarely on default rural coordinates
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1000);
+
+      // 2. Select Star Pass pattern
+      await selectPattern(page, 'star-pass');
+      await page.waitForTimeout(1500);
+
+      // 3. Configure Spokes and Standoff Radius
+      await fillInput(page, '#star-pass-spokes', '4');
+      await page.waitForTimeout(600);
+      await fillInput(page, '#star-pass-radius', '40');
+      await page.waitForTimeout(600);
+
+      // 4. Toggle Apex Nadir Catch and Heading Mode
+      const apexCheck = await page.$('#star-pass-apex-nadir');
+      if (apexCheck) {
+        await apexCheck.click();
+        await page.waitForTimeout(500);
+        await apexCheck.click();
+        await page.waitForTimeout(500);
+      }
+
+      // 5. Ensure squarely centered
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1500);
+    }
+  },
+  {
+    id: 'feature_photo_sphere_stationary',
+    name: 'Dedicated 360° Spherical Panorama Stationary Capture Engine',
+    issueRef: 'Issue #134',
+    description: 'Demonstrates stationary action group execution at single waypoint with configurable ring densities (8/10/12), settling delay, and AEB exposure bracketing.',
+    run: async (page) => {
+      // 1. Initial setup squarely on default rural coordinates
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1000);
+
+      // 2. Select Photo Sphere pattern
+      await selectPattern(page, 'photo-sphere');
+      await page.waitForTimeout(1500);
+
+      // 3. Select Stationary Action Group execution mode
+      const modeSelect = await page.$('#photo-sphere-mode');
+      if (modeSelect) {
+        await modeSelect.selectOption('actionGroup');
+        await page.waitForTimeout(600);
+      }
+
+      // 4. Adjust density and settling time slider
+      const densitySelect = await page.$('#photo-sphere-shots-per-ring');
+      if (densitySelect) {
+        await densitySelect.selectOption('10');
+        await page.waitForTimeout(600);
+        await densitySelect.selectOption('12');
+        await page.waitForTimeout(600);
+      }
+
+      await fillInput(page, '#photo-sphere-settling-time', '2.5');
+      await page.waitForTimeout(600);
+
+      // 5. Toggle AEB Exposure Bracketing
+      const aebCheck = await page.$('#photo-sphere-aeb');
+      if (aebCheck) {
+        await aebCheck.click();
+        await page.waitForTimeout(1000);
+      }
+
+      // 6. Ensure squarely centered
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1500);
+    }
+  },
+  {
+    id: 'feature_hyperlapse_ultra_slow',
+    name: 'Dedicated Waypoint Hyperlapse Ultra-Slow Continuous Interval Capture',
+    issueRef: 'Issue #135',
+    description: 'Demonstrates granular sub-knot flight speeds down to 0.1 m/s with live sidebar duration/frame calculator badge and sub-meter photo projection.',
+    run: async (page) => {
+      // 1. Initial setup squarely on default rural coordinates
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1000);
+
+      // 2. Select Hyperlapse pattern
+      await selectPattern(page, 'hyperlapse');
+      await page.waitForTimeout(1500);
+
+      // 3. Set ultra-slow flight speed (0.2 m/s) and interval (2s)
+      await fillInput(page, '#speed', '0.2');
+      await page.waitForTimeout(600);
+      await fillInput(page, '#hyperlapse-interval', '2');
+      await page.waitForTimeout(1000);
+
+      // 4. Ensure squarely centered
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1500);
+    }
   }
 ];
 

@@ -7953,14 +7953,74 @@ describe('Aalaapi-Sky Playwright E2E UI Tests', () => {
       assert.strictEqual(res.isLightArt, true, 'All waypoints must be tagged as light-art');
     });
   });
+
+  describe('Issue #131, #134, #135 (v1.154.0) E2E Test Suite', () => {
+    test('E2E: Star Pass UI container reveals and generates convergent inspection spokes', async () => {
+      const res = await page.evaluate(() => {
+        while (flightLayers.length > 1) {
+          deleteFlightLayer(flightLayers[1].id);
+        }
+        const layer = flightLayers[0];
+        layer.pattern = 'star-pass';
+        layer.starPassSpokes = 4;
+        layer.starPassRadius = 30;
+        layer.starPassHeadingMode = 'convergent';
+        layer.starPassTransitMode = 'perimeterHop';
+        layer.starPassApexNadir = true;
+        layer.altitude = 40;
+
+        const mission = compileMultiLayerMission(41.3215, -88.9950);
+        const wps = mission.waypoints || [];
+
+        const starPassDrawer = document.getElementById('star-pass-container');
+        const isDrawerAvailable = Boolean(starPassDrawer);
+
+        return {
+          wpCount: wps.length,
+          isDrawerAvailable,
+          hasApexNadir: wps.some(w => w.isApexNadir && w.pitch === -90),
+          isStarPass: wps.every(w => w.gridType === 'star-pass' || w.isStarPass)
+        };
+      });
+
+      assert.strictEqual(res.isDrawerAvailable, true, '#star-pass-container must exist in DOM');
+      assert.ok(res.wpCount >= 8, 'Star pass with 4 spokes must generate multiple nodes');
+      assert.strictEqual(res.hasApexNadir, true, 'Star pass must include apex nadir shot');
+      assert.strictEqual(res.isStarPass, true, 'All waypoints must be tagged as star-pass');
+    });
+
+    test('E2E: 360 Photo Sphere stationary actionGroup mode and Hyperlapse live duration badge', async () => {
+      const res = await page.evaluate(() => {
+        while (flightLayers.length > 1) {
+          deleteFlightLayer(flightLayers[1].id);
+        }
+        const psLayer = flightLayers[0];
+        psLayer.pattern = 'photo-sphere';
+        psLayer.photoSphereMode = 'actionGroup';
+        psLayer.photoSphereShotsPerRing = 12;
+        psLayer.photoSphereSettlingTime = 2.0;
+        psLayer.photoSphereAebEnabled = true;
+
+        const psMission = compileMultiLayerMission(41.3215, -88.9950);
+        const psWps = psMission.waypoints || [];
+
+        // Hyperlapse calculator
+        const hlBadge = document.getElementById('hyperlapse-duration-badge');
+
+        return {
+          psCount: psWps.length,
+          isActionGroup: psWps[0] && psWps[0].isPhotoSphereActionGroup,
+          totalShots: psWps[0] ? psWps[0].totalShots : 0,
+          aebEnabled: psWps[0] ? psWps[0].aebEnabled : false,
+          hasHlBadge: Boolean(hlBadge)
+        };
+      });
+
+      assert.strictEqual(res.psCount, 1, 'Stationary photo-sphere should compile to exactly 1 waypoint');
+      assert.strictEqual(res.isActionGroup, true, 'Waypoint must be flagged isPhotoSphereActionGroup');
+      assert.strictEqual(res.totalShots, 37, 'Total actions must be 37 for 12 shots/ring with nadir');
+      assert.strictEqual(res.aebEnabled, true, 'AEB exposure bracketing must be enabled');
+      assert.strictEqual(res.hasHlBadge, true, '#hyperlapse-duration-badge must exist in DOM');
+    });
+  });
 });
-
-
-
-
-
-
-
-
-
-

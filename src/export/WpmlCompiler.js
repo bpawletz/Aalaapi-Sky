@@ -338,9 +338,78 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
       effectivePitch = parseGimbalPitch(rawWpPitch, -60);
     }
 
-    if (idx === 0 || wp.isRingStart || isRoadFollowing || reposInfo.isGimbalChanged) {
-      const currentPitch = effectivePitch;
-      waypointActions.push(`          <wpml:action>
+    if (wp.isPhotoSphereActionGroup && Array.isArray(wp.photoSphereActions) && wp.photoSphereActions.length > 0) {
+      wp.photoSphereActions.forEach(action => {
+        let actHeading = action.yaw;
+        actHeading = ((actHeading % 360) + 360) % 360;
+        if (actHeading > 180) actHeading -= 360;
+        if (actHeading === 0) actHeading = 0.1;
+
+        waypointActions.push(`          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>rotateYaw</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:aircraftHeading>${actHeading.toFixed(1)}</wpml:aircraftHeading>
+              <wpml:aircraftPathMode>clockwise</wpml:aircraftPathMode>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>`);
+
+        waypointActions.push(`          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:gimbalHeadingYawBase>aircraft</wpml:gimbalHeadingYawBase>
+              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
+              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
+              <wpml:gimbalPitchRotateAngle>${action.pitch}</wpml:gimbalPitchRotateAngle>
+              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
+              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
+              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
+              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
+              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
+              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>`);
+
+        const hTime = (action.hoverTime !== undefined && action.hoverTime > 0) ? action.hoverTime : 2.0;
+        waypointActions.push(`          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:hoverTime>${hTime}</wpml:hoverTime>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>`);
+
+        waypointActions.push(`          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>`);
+
+        if (action.aebEnabled) {
+          waypointActions.push(`          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>`);
+          waypointActions.push(`          <wpml:action>
+            <wpml:actionId>${actionId++}</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>`);
+        }
+      });
+    } else {
+      if (idx === 0 || wp.isRingStart || isRoadFollowing || reposInfo.isGimbalChanged) {
+        const currentPitch = effectivePitch;
+        waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
@@ -357,14 +426,14 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
             </wpml:actionActuatorFuncParam>
           </wpml:action>`);
-    }
+      }
 
-    if (isPhotoSphere && !isConsumer) {
-      let targetHeading = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
-      targetHeading = ((targetHeading % 360) + 360) % 360;
-      if (targetHeading > 180) targetHeading -= 360;
-      if (targetHeading === 0) targetHeading = 0.1;
-      waypointActions.push(`          <wpml:action>
+      if (isPhotoSphere && !isConsumer) {
+        let targetHeading = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
+        targetHeading = ((targetHeading % 360) + 360) % 360;
+        if (targetHeading > 180) targetHeading -= 360;
+        if (targetHeading === 0) targetHeading = 0.1;
+        waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>rotateYaw</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
@@ -372,17 +441,18 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
               <wpml:aircraftPathMode>clockwise</wpml:aircraftPathMode>
             </wpml:actionActuatorFuncParam>
           </wpml:action>`);
-    }
+      }
 
-    // 2. Hover duration action (MUST run to stabilize gimbal and yaw)
-    if (effectiveHover > 0) {
-      waypointActions.push(`          <wpml:action>
+      // 2. Hover duration action (MUST run to stabilize gimbal and yaw)
+      if (effectiveHover > 0) {
+        waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:hoverTime>${effectiveHover}</wpml:hoverTime>
             </wpml:actionActuatorFuncParam>
           </wpml:action>`);
+      }
     }
 
     // 3. Zoom action (only set once on the first waypoint to apply for the entire flight)
@@ -450,7 +520,7 @@ function buildWaylinesWpml(waypoints, altitude, speed, headingMode, finishAction
     }
 
     // 5. If Stop & Shoot is active, also add photo trigger at this waypoint (skipping transit turnaround overshoot waypoints and never in video mode)
-    if ((isStopAndShoot || isPhotoSphere) && wp.skipPhoto !== true && !isVideo) {
+    if (!wp.isPhotoSphereActionGroup && (isStopAndShoot || isPhotoSphere) && wp.skipPhoto !== true && !isVideo) {
       waypointActions.push(`          <wpml:action>
             <wpml:actionId>${actionId++}</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
@@ -660,7 +730,7 @@ ${waypointActions.join('\n')}
         }
       }
     } else {
-      if ((gridType === 'hyperlapse' || gridType === 'freeform' || gridType === 'exclusion-freeform' || gridType === 'target-splat' || gridType === 'road-following' || gridType === 'photo-sphere' || gridType === 'vertical-facade' || gridType === 'continuous-helix' || wp.isHyperlapse || wp.isPhotoSphere || wp.isVerticalFacade || wp.isContinuousHelix || wp.isRoadDroneWaypoint || wp.layerPattern === 'hyperlapse' || wp.layerPattern === 'freeform' || wp.layerPattern === 'exclusion-freeform' || wp.layerPattern === 'vertical-facade' || wp.layerPattern === 'continuous-helix' || (wp.gridType && (wp.gridType === 'hyperlapse' || wp.gridType === 'freeform' || wp.gridType === 'exclusion-freeform' || wp.gridType === 'vertical-facade' || wp.gridType === 'continuous-helix')) || (wpLayer && (wpLayer.pattern === 'hyperlapse' || wpLayer.pattern === 'freeform' || wpLayer.pattern === 'exclusion-freeform' || wpLayer.pattern === 'vertical-facade' || wpLayer.pattern === 'continuous-helix')))) {
+      if ((gridType === 'hyperlapse' || gridType === 'freeform' || gridType === 'exclusion-freeform' || gridType === 'target-splat' || gridType === 'road-following' || gridType === 'photo-sphere' || gridType === 'vertical-facade' || gridType === 'continuous-helix' || gridType === 'star-pass' || wp.isHyperlapse || wp.isPhotoSphere || wp.isVerticalFacade || wp.isContinuousHelix || wp.isStarPass || wp.isRoadDroneWaypoint || wp.layerPattern === 'hyperlapse' || wp.layerPattern === 'freeform' || wp.layerPattern === 'exclusion-freeform' || wp.layerPattern === 'vertical-facade' || wp.layerPattern === 'continuous-helix' || wp.layerPattern === 'star-pass' || (wp.gridType && (wp.gridType === 'hyperlapse' || wp.gridType === 'freeform' || wp.gridType === 'exclusion-freeform' || wp.gridType === 'vertical-facade' || wp.gridType === 'continuous-helix' || wp.gridType === 'star-pass')) || (wpLayer && (wpLayer.pattern === 'hyperlapse' || wpLayer.pattern === 'freeform' || wpLayer.pattern === 'exclusion-freeform' || wpLayer.pattern === 'vertical-facade' || wpLayer.pattern === 'continuous-helix' || wpLayer.pattern === 'star-pass')))) {
         actualHeadingMode = 'smoothTransition';
         actualHeadingAngle = (wp.heading !== null && wp.heading !== undefined && !isNaN(wp.heading)) ? wp.heading : 0;
       } else if (effectiveHeadingMode === 'towardPOI') {
@@ -1245,8 +1315,8 @@ function validateAndFixWpml(wpmlXml, templateXml = '', options = {}) {
           );
         }
 
-        const isMultiRing = (wpLayer && (wpLayer.pattern === 'multi-orbit' || wpLayer.pattern === 'photo-sphere' || wpLayer.pattern === 'continuous-helix')) ||
-          (wpObj.isMultiOrbit || wpObj.isPhotoSphere || wpObj.isContinuousHelix || wpObj.gridType === 'photo-sphere' || wpObj.gridType === 'continuous-helix' || (wpObj.ringIndex !== undefined && wpObj.ringIndex !== null));
+        const isMultiRing = (wpLayer && (wpLayer.pattern === 'multi-orbit' || wpLayer.pattern === 'photo-sphere' || wpLayer.pattern === 'continuous-helix' || wpLayer.pattern === 'star-pass')) ||
+          (wpObj.isMultiOrbit || wpObj.isPhotoSphere || wpObj.isContinuousHelix || wpObj.isStarPass || wpObj.gridType === 'photo-sphere' || wpObj.gridType === 'continuous-helix' || wpObj.gridType === 'star-pass' || (wpObj.ringIndex !== undefined && wpObj.ringIndex !== null));
         const hasHlSweep = (wpLayer && wpLayer.pattern === 'hyperlapse' && wpLayer.hyperlapseStartPitch !== undefined && wpLayer.hyperlapseEndPitch !== undefined && wpLayer.hyperlapseStartPitch !== wpLayer.hyperlapseEndPitch) ||
           (wpLayer && wpLayer.pattern === 'continuous-helix' && wpLayer.helixPitchStart !== undefined && wpLayer.helixPitchEnd !== undefined && wpLayer.helixPitchStart !== wpLayer.helixPitchEnd);
 
@@ -1585,4 +1655,42 @@ function formatISO8601ForFilename(date = new Date()) {
   }
 }
 
-// Generate the KMZ file and trigger browser download
+// Google Photo Sphere (GPano) XMP Metadata Generator (v1.154.0 - Issue #134)
+function generateGPanoXmpMetadata(options = {}) {
+  const poseHeading = options.poseHeading !== undefined ? options.poseHeading : 0.0;
+  const posePitch = options.posePitch !== undefined ? options.posePitch : 0.0;
+  const poseRoll = options.poseRoll !== undefined ? options.poseRoll : 0.0;
+  const fullPanoWidthPixels = options.width || 8192;
+  const fullPanoHeightPixels = options.height || 4096;
+  const croppedWidthPixels = options.croppedWidth || fullPanoWidthPixels;
+  const croppedHeightPixels = options.croppedHeight || fullPanoHeightPixels;
+
+  return `<?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+    <rdf:Description rdf:about=""
+      xmlns:GPano="http://ns.google.com/photos/1.0/panorama/">
+      <GPano:UsePanoramaViewer>True</GPano:UsePanoramaViewer>
+      <GPano:CaptureSoftware>Aalaapi Sky</GPano:CaptureSoftware>
+      <GPano:StitchingSoftware>Aalaapi Sky GPano Engine</GPano:StitchingSoftware>
+      <GPano:ProjectionType>equirectangular</GPano:ProjectionType>
+      <GPano:PoseHeadingDegrees>${Number(poseHeading).toFixed(1)}</GPano:PoseHeadingDegrees>
+      <GPano:PosePitchDegrees>${Number(posePitch).toFixed(1)}</GPano:PosePitchDegrees>
+      <GPano:PoseRollDegrees>${Number(poseRoll).toFixed(1)}</GPano:PoseRollDegrees>
+      <GPano:InitialViewHeadingDegrees>0.0</GPano:InitialViewHeadingDegrees>
+      <GPano:InitialViewPitchDegrees>0.0</GPano:InitialViewPitchDegrees>
+      <GPano:FullPanoWidthPixels>${fullPanoWidthPixels}</GPano:FullPanoWidthPixels>
+      <GPano:FullPanoHeightPixels>${fullPanoHeightPixels}</GPano:FullPanoHeightPixels>
+      <GPano:CroppedAreaImageWidthPixels>${croppedWidthPixels}</GPano:CroppedAreaImageWidthPixels>
+      <GPano:CroppedAreaImageHeightPixels>${croppedHeightPixels}</GPano:CroppedAreaImageHeightPixels>
+      <GPano:CroppedAreaLeftPixels>0</GPano:CroppedAreaLeftPixels>
+      <GPano:CroppedAreaTopPixels>0</GPano:CroppedAreaTopPixels>
+    </rdf:Description>
+  </rdf:RDF>
+</x:xmpmeta>
+<?xpacket end="w"?>`;
+}
+
+if (typeof window !== 'undefined') {
+  window.generateGPanoXmpMetadata = generateGPanoXmpMetadata;
+}

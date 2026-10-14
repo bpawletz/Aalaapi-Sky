@@ -71,6 +71,15 @@ const FLIGHT_TOOLS = {
     description: 'Continuous Helix / Spiral corkscrew ascent/descent for smooth cinematic inspection of vertical structures',
     propertyGroups: ['continuous-helix-geometry', 'altitude', 'speed', 'camera']
   },
+  'star-pass': {
+    id: 'star-pass',
+    label: 'Star Pass',
+    category: 'inspection',
+    icon: 'star-pass',
+    shortcut: 'K',
+    description: 'Cross-Hatch / Star Pass multi-angle diametrical passes over a central POI with convergent look-down tracking',
+    propertyGroups: ['star-pass-geometry', 'altitude', 'speed', 'camera']
+  },
   'photo-sphere': {
     id: 'photo-sphere',
     label: '360 Pano',

@@ -1,3 +1,40 @@
+## [1.154.0] - 2026-10-14
+
+Introduces Star Pass convergent cross-hatch inspections for recessed 3D assets, a dedicated stationary 360° photo sphere capture engine eliminating GPS drift via single-waypoint sequential action groups in WPML, and an ultra-slow waypoint hyperlapse capture suite with live video clip duration calculators.
+
+### Added
+
+#### Pilot & Operational Features
+- **Star Pass / Cross-Hatch Convergent POI Inspection (Closes #131)**:
+  - Added dedicated autonomous star-pass inspection generator crossing directly over a central Point of Interest from multiple intersecting diametric angles (2 to 8 spokes).
+  - Features 3D convergent pitch and heading tracking that dynamically calculates camera tilt down toward the POI ground plane as the drone approaches and passes overhead.
+  - Automatic **Apex Nadir Catch (-90°)** captures ground-lock nadir imagery at each center intersection.
+  - Smooth **Perimeter Arc Hops** transit along the outer circumference between spoke passes, avoiding jerky U-turns or empty re-crossings through the center.
+  - Amber/Gold (`0xf59e0b`) 3D trajectory ribbon visualization in Cesium and FPV HUD.
+- **Dedicated 360° Spherical Panorama Stationary Capture Engine (Closes #134)**:
+  - Upgraded 360 Photo Sphere generation to compile into a single stationary waypoint `<wpml:actionGroup>` in WPML, completely eliminating GPS hunting, APAS micro-movement, and position wander across multi-ring captures.
+  - Configurable ring density supporting 8, 10, or 12 shots per elevation ring (Row 1: -15°, Row 2: -45°, Row 3: -75°, Nadir: -90°).
+  - Granular settling delay slider from 0.5s to 5.0s per shot for gimbal stabilization.
+  - Optional **AEB 3-Shot Auto Exposure Bracketing** for high dynamic range (HDR) sky-ground stitching.
+  - Export engine generates Google Photo Sphere (GPano) XMP equirectangular metadata specification for post-processing stitchers.
+- **Dedicated Waypoint Hyperlapse Ultra-Slow Continuous Interval Capture (Closes #135)**:
+  - Enabled ultra-slow continuous flight speeds down to 0.1 m/s (supporting 0.1, 0.2, 0.5 m/s) with sub-meter frame spacing projection.
+  - Added live projected video clip duration calculator displaying output runtime at 24fps and 30fps directly within Section 2 and Topbar Telemetry HUD.
+
+#### Under the Hood & Technical Details
+- **Pattern Generators (`src/patterns/PatternGenerators.js`)**:
+  - Implemented `generateStarPassCoordinates()` computing spoke geometry, Hamiltonian alternating passes, perimeter circular arc interpolation, and distance-pitch trigonometry.
+  - Updated `generatePhotoSphereCoordinates()` supporting stationary action group emission, configurable shots per ring (8, 10, 12), and AEB payload steps.
+  - Updated `generateHyperlapseWaypoints()` to support flight speeds down to 0.1 m/s and return full duration and frame metrics.
+- **WPML Compiler (`src/export/WpmlCompiler.js`)**:
+  - Added sequential placemark action compilation for `isPhotoSphereActionGroup` containing full rotateYaw, gimbalRotate, hover, and takePhoto chains at a single coordinate.
+  - Added `generateGPanoXmpMetadata()` helper providing GPano XMP RDF schema metadata.
+  - Added `star-pass` protection in `validateAndFixWpml()` and heading mode assignments.
+- **Layer & UI Integration (`src/layers/LayerManager.js`, `src/ui/SidebarManager.js`, `src/ui/EventBindings.js`, `src/ui/TelemetryHud.js`)**:
+  - Registered `star-pass` with shortcut `K`, category `inspection`, and default layer configuration.
+  - Wired interactive UI controls for star-pass, photo-sphere engine options, and hyperlapse live duration calculations.
+  - Added Amber 3D flight path ribbon (`0xf59e0b`) in `src/3d/FlightSimulation.js`.
+
 ## [1.153.0] - 2026-10-14
 
 Introduces dedicated Vertical Facade Grid for planar infrastructure inspections and Continuous Helix / Spiral Corkscrew Orbits for fluid vertical asset photogrammetry, complete with 3-tier parameter cascading, dynamic pitch interpolation, and distinct 3D trajectory ribbons.

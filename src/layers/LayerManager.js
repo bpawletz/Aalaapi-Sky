@@ -38,7 +38,8 @@ function getPatternDisplayName(pattern) {
     'hyperlapse': 'Hyperlapse Time-Lapse',
     'light-art': '🎨 Light Art (Sky Painting)',
     'vertical-facade': '🏢 Vertical Facade Grid',
-    'continuous-helix': '🌀 Continuous Helix / Spiral'
+    'continuous-helix': '🌀 Continuous Helix / Spiral',
+    'star-pass': '⭐ Star Pass (Cross-Hatch)'
   };
   return map[pattern] || pattern || 'Double Grid';
 }
@@ -172,6 +173,15 @@ function createDefaultLayer(id, name, colorIndex = 0, pattern = 'double', center
     helixPitchStart: -25,
     helixPitchEnd: -65,
     helixHeadingMode: 'towardCenter', // 'towardCenter' or 'tangent'
+    starPassSpokes: 3,
+    starPassRadius: 35,
+    starPassHeadingMode: 'convergent', // 'convergent', 'flightDirection', 'towardPOI'
+    starPassTransitMode: 'perimeterHop', // 'perimeterHop', 'directAcross'
+    starPassApexNadir: true,
+    photoSphereMode: 'discreteNodes', // 'actionGroup', 'discreteNodes'
+    photoSphereShotsPerRing: 12,
+    photoSphereSettlingTime: 2.0,
+    photoSphereAebEnabled: false,
     freeformWaypoints: [],
     freeformPhotos: [],
     roadWaypoints: [],
@@ -786,6 +796,26 @@ function saveActiveLayerFromUi() {
     }
   }
 
+  const psMode = document.getElementById('photo-sphere-mode');
+  const psShots = document.getElementById('photo-sphere-shots-per-ring');
+  const psSettling = document.getElementById('photo-sphere-settling-time');
+  const psAeb = document.getElementById('photo-sphere-aeb');
+  if (psMode && psMode.value) layer.photoSphereMode = psMode.value;
+  if (psShots && psShots.value) layer.photoSphereShotsPerRing = parseInt(psShots.value, 10) || 12;
+  if (psSettling && psSettling.value) layer.photoSphereSettlingTime = parseFloat(psSettling.value) || 2.0;
+  if (psAeb) layer.photoSphereAebEnabled = psAeb.checked;
+
+  const spSpokes = document.getElementById('star-pass-spokes');
+  const spRadius = document.getElementById('star-pass-radius');
+  const spHeadMode = document.getElementById('star-pass-heading-mode');
+  const spTransit = document.getElementById('star-pass-transit-mode');
+  const spApex = document.getElementById('star-pass-apex-nadir');
+  if (spSpokes) layer.starPassSpokes = parseInt(spSpokes.value, 10) || 3;
+  if (spRadius) layer.starPassRadius = parseFloat(spRadius.value) || 35;
+  if (spHeadMode && spHeadMode.value) layer.starPassHeadingMode = spHeadMode.value;
+  if (spTransit && spTransit.value) layer.starPassTransitMode = spTransit.value;
+  if (spApex) layer.starPassApexNadir = spApex.checked;
+
   const hlInterval = document.getElementById('hyperlapse-interval');
   const hlStartPitch = document.getElementById('hyperlapse-start-pitch');
   const hlEndPitch = document.getElementById('hyperlapse-end-pitch');
@@ -1069,6 +1099,18 @@ function syncUiWithActiveLayer() {
   if (psR2) psR2.checked = (psRings.ring2 !== false);
   if (psR3) psR3.checked = (psRings.ring3 !== false);
   if (psNadir) psNadir.checked = (psRings.nadir !== false);
+
+  const psMode = document.getElementById('photo-sphere-mode');
+  const psShots = document.getElementById('photo-sphere-shots-per-ring');
+  const psSettling = document.getElementById('photo-sphere-settling-time');
+  const psSettlingVal = document.getElementById('photo-sphere-settling-time-val');
+  const psAeb = document.getElementById('photo-sphere-aeb');
+  if (psMode) psMode.value = layer.photoSphereMode || 'actionGroup';
+  if (psShots) psShots.value = layer.photoSphereShotsPerRing !== undefined ? layer.photoSphereShotsPerRing : 12;
+  if (psSettling) psSettling.value = layer.photoSphereSettlingTime !== undefined ? layer.photoSphereSettlingTime : 2.0;
+  if (psSettlingVal) psSettlingVal.textContent = `${layer.photoSphereSettlingTime !== undefined ? layer.photoSphereSettlingTime : 2.0}s`;
+  if (psAeb) psAeb.checked = Boolean(layer.photoSphereAebEnabled);
+
   if (typeof updatePhotoSphereBadge === 'function') {
     updatePhotoSphereBadge();
   }
@@ -1188,6 +1230,22 @@ function syncUiWithActiveLayer() {
   if (hPEnd) hPEnd.value = layer.helixPitchEnd !== undefined ? layer.helixPitchEnd : -65;
   if (hPEndVal) hPEndVal.textContent = `${layer.helixPitchEnd !== undefined ? layer.helixPitchEnd : -65}°`;
   if (hHeadMode) hHeadMode.value = layer.helixHeadingMode || 'towardCenter';
+
+  // Sync Star Pass Controls
+  const spSpokes = document.getElementById('star-pass-spokes');
+  const spSpokesVal = document.getElementById('star-pass-spokes-val');
+  const spRadius = document.getElementById('star-pass-radius');
+  const spRadiusVal = document.getElementById('star-pass-radius-val');
+  const spHeadMode = document.getElementById('star-pass-heading-mode');
+  const spTransit = document.getElementById('star-pass-transit-mode');
+  const spApex = document.getElementById('star-pass-apex-nadir');
+  if (spSpokes) spSpokes.value = layer.starPassSpokes !== undefined ? layer.starPassSpokes : 3;
+  if (spSpokesVal) spSpokesVal.textContent = `${layer.starPassSpokes !== undefined ? layer.starPassSpokes : 3}`;
+  if (spRadius) spRadius.value = layer.starPassRadius !== undefined ? layer.starPassRadius : 35;
+  if (spRadiusVal) spRadiusVal.textContent = `${layer.starPassRadius !== undefined ? layer.starPassRadius : 35}m`;
+  if (spHeadMode) spHeadMode.value = layer.starPassHeadingMode || 'convergent';
+  if (spTransit) spTransit.value = layer.starPassTransitMode || 'perimeterHop';
+  if (spApex) spApex.checked = layer.starPassApexNadir !== false;
 
   if (typeof syncDisplayValues === 'function') {
     try { syncDisplayValues(); } catch (e) {}
@@ -2319,6 +2377,8 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
       gridData = generateVerticalFacadeCoordinates(layer, sLine, sPhoto, altitude, defaultGimbalPitch);
     } else if (gridType === 'continuous-helix') {
       gridData = generateHelixCoordinates(layer, sPhoto, altitude, defaultGimbalPitch);
+    } else if (gridType === 'star-pass') {
+      gridData = generateStarPassCoordinates(layer, sPhoto, altitude, defaultGimbalPitch);
     } else if (gridType === 'tower') {
       gridData = generateTowerCoordinates(layer, sLine, sPhoto, altitude, defaultGimbalPitch);
     } else if (gridType === 'orbit') {
@@ -2366,8 +2426,17 @@ function generateLayerWaypoints(layer, globalCenterLat, globalCenterLon) {
         isPerimeterOrbit: pt.isPerimeterOrbit || false,
         isPhotoSpherePoint: pt.isPhotoSpherePoint || (gridType === 'photo-sphere'),
         isPhotoSphere: pt.isPhotoSphere || (gridType === 'photo-sphere'),
+        isPhotoSphereActionGroup: pt.isPhotoSphereActionGroup || false,
+        photoSphereActions: pt.photoSphereActions || null,
+        photoSphereMode: pt.photoSphereMode || undefined,
+        totalShots: pt.totalShots !== undefined ? pt.totalShots : undefined,
+        aebEnabled: pt.aebEnabled || false,
+        isStarPass: pt.isStarPass || (gridType === 'star-pass'),
+        isPerimeterTransit: pt.isPerimeterTransit || false,
+        isApexNadir: pt.isApexNadir || false,
+        spokeIndex: pt.spokeIndex !== undefined ? pt.spokeIndex : null,
         isLightArtPoint: pt.isLightArtPoint || (gridType === 'light-art'),
-        gridType: pt.gridType || (gridType === 'target-splat' ? 'target-splat' : (gridType === 'photo-sphere' ? 'photo-sphere' : (gridType === 'light-art' ? 'light-art' : undefined))),
+        gridType: pt.gridType || (gridType === 'star-pass' ? 'star-pass' : (gridType === 'target-splat' ? 'target-splat' : (gridType === 'photo-sphere' ? 'photo-sphere' : (gridType === 'light-art' ? 'light-art' : undefined)))),
         origLat: geo.lat,
         origLon: geo.lon,
         origX: pt.x,
