@@ -251,6 +251,11 @@ function extractDjiXmpMetadata(data) {
   const flightRollStr = getAttr('FlightRollDegree');
   const modelStr = getAttr('ProductName');
 
+  // UTC / Creation timestamp extraction (v1.157.0)
+  const createDateMatch = xmpStr.match(/(?:xmp:CreateDate|photoshop:DateCreated|drone-dji:DateTimeUTC)="([^"]+)"/i)
+    || xmpStr.match(/<(?:xmp:CreateDate|photoshop:DateCreated|drone-dji:DateTimeUTC)>([^<]+)<\//i);
+  const utcDateStr = createDateMatch ? createDateMatch[1].trim() : null;
+
   if (latStr !== null && !isNaN(parseFloat(latStr))) result.lat = parseFloat(latStr);
   if (lonStr !== null && !isNaN(parseFloat(lonStr))) result.lon = parseFloat(lonStr);
   if (relAltStr !== null && !isNaN(parseFloat(relAltStr))) {
@@ -264,6 +269,13 @@ function extractDjiXmpMetadata(data) {
   if (flightYawStr !== null && !isNaN(parseFloat(flightYawStr))) result.flightYaw = parseFloat(flightYawStr);
   if (flightRollStr !== null && !isNaN(parseFloat(flightRollStr))) result.flightRoll = parseFloat(flightRollStr);
   if (modelStr) result.droneModel = modelStr;
+  if (utcDateStr) {
+    result.timestamp = utcDateStr;
+    const parsedDate = new Date(utcDateStr);
+    if (!isNaN(parsedDate.getTime())) {
+      result.date = parsedDate;
+    }
+  }
 
   return Object.keys(result).length > 0 ? result : null;
 }

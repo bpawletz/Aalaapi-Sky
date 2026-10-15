@@ -13,6 +13,7 @@ let exclusionZonesGroup = null;
 let boundaryLayersGroup = null;
 let fiducialMarkersGroup = null;
 let targetPolygonGroup = null;
+let solarOverlaysGroup = null;
 let isTargetPolyEditActive = false;
 let isCorridorEditActive = false;
 let isAnyPopupOpen = false;

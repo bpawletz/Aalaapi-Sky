@@ -1180,6 +1180,11 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
 
   // 6. Update Map Legend
   updateMapLegend();
+
+  // 7. Render 2D Sun Vector and Predicted Shadow Casting Cones (v1.157.0 - Issue #141)
+  if (typeof renderSolarOverlay2D === 'function') {
+    renderSolarOverlay2D(activeCenterLat, activeCenterLon);
+  }
 }
 
 // Add Map Legend for Multi-Orbit altitudes
@@ -2319,4 +2324,122 @@ function addCorridorPoint(lat, lng) {
 
 if (typeof window !== 'undefined') {
   window.addCorridorPoint = addCorridorPoint;
+}
+
+/**
+ * Renders 2D Sun Vector and Predicted Shadow Casting Cones (v1.157.0 - Issue #141)
+ * Displays a dynamic sun ray vector on the Leaflet canvas pointing toward active solar azimuth,
+ * and casts predicted shadow polygons for POI structures and target splat footprints.
+ */
+function renderSolarOverlay2D(centerLat, centerLon) {
+  if (!solarOverlaysGroup || typeof L === 'undefined' || !map) return;
+  solarOverlaysGroup.clearLayers();
+
+  if (centerLat === undefined || centerLon === undefined || isNaN(centerLat) || isNaN(centerLon)) {
+    if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+      const ll = centerMarker.getLatLng();
+      centerLat = ll.lat;
+      centerLon = ll.lng;
+    } else {
+      return;
+    }
+  }
+
+  if (typeof SolarEphemeris === 'undefined' || typeof SolarEphemeris.getSunPosition !== 'function') return;
+
+  const now = (typeof currentSolarEphemeris !== 'undefined' && currentSolarEphemeris && currentSolarEphemeris.now)
+    ? currentSolarEphemeris.now
+    : new Date();
+
+  const sunPos = SolarEphemeris.getSunPosition(now, centerLat, centerLon);
+  if (!sunPos) return;
+
+  const { altitudeDeg, azimuthDeg, compassDirection } = sunPos;
+  const isDay = altitudeDeg > 0;
+
+  // 1. Draw Sun Ray / Bearing Vector originating from center
+  // Ray points in the direction of the sun azimuth (or from sun into scene)
+  const vectorLengthMeters = 80;
+  // Calculate endpoint of sun vector
+  const sunBearingRad = (azimuthDeg * Math.PI) / 180.0;
+  const dNorth = vectorLengthMeters * Math.cos(sunBearingRad);
+  const dEast = vectorLengthMeters * Math.sin(sunBearingRad);
+  const R = 6378137.0;
+  const dLat = (dNorth / R) * (180.0 / Math.PI);
+  const dLon = ((dEast / R) * (180.0 / Math.PI)) / Math.cos((centerLat * Math.PI) / 180.0);
+  const sunVectorEnd = [centerLat + dLat, centerLon + dLon];
+
+  // Draw dashed golden ray towards sun
+  const sunRayLine = L.polyline([[centerLat, centerLon], sunVectorEnd], {
+    color: isDay ? '#fbbf24' : '#64748b',
+    weight: 2.5,
+    dashArray: '6, 6',
+    opacity: isDay ? 0.85 : 0.4
+  }).addTo(solarOverlaysGroup);
+
+  // Add Sun Icon at vector tip
+  const sunIcon = L.divIcon({
+    className: 'solar-azimuth-tip-icon',
+    html: `
+      <div style="display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: rgba(15, 23, 42, 0.85); border: 2px solid ${isDay ? '#fbbf24' : '#64748b'}; box-shadow: 0 0 10px rgba(251, 191, 36, 0.5); font-size: 13px; cursor: help;" title="Sun Azimuth: ${azimuthDeg.toFixed(1)}° (${compassDirection}) • Elevation: ${altitudeDeg.toFixed(1)}°">
+        ${isDay ? '☀️' : '🌙'}
+      </div>
+    `,
+    iconSize: [26, 26],
+    iconAnchor: [13, 13]
+  });
+
+  const sunMarker = L.marker(sunVectorEnd, { icon: sunIcon, interactive: true }).addTo(solarOverlaysGroup);
+  sunMarker.bindTooltip(`☀️ Solar Vector: Azimuth ${azimuthDeg.toFixed(1)}° (${compassDirection}), Elev: ${altitudeDeg.toFixed(1)}°`, { direction: 'top' });
+
+  // 2. Cast Predicted Shadow Cones for POI Structures / Target Splats
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const structureHeight = (activeLayer && activeLayer.targetHeight !== undefined && activeLayer.targetHeight !== null)
+    ? activeLayer.targetHeight
+    : ((typeof document !== 'undefined' && document.getElementById('target-splat-height'))
+      ? (parseFloat(document.getElementById('target-splat-height').value) || 8)
+      : 8);
+
+  if (isDay && structureHeight > 0) {
+    const shadowInfo = SolarEphemeris.calculateShadow
+      ? SolarEphemeris.calculateShadow(structureHeight, altitudeDeg, azimuthDeg)
+      : { shadowLengthMeters: structureHeight / Math.tan(Math.max(1, altitudeDeg) * (Math.PI / 180)), shadowAzimuthDeg: (azimuthDeg + 180) % 360 };
+
+    const shadowLen = Math.min(300, shadowInfo.shadowLengthMeters);
+    const shadowAzRad = (shadowInfo.shadowAzimuthDeg * Math.PI) / 180.0;
+    const sNorth = shadowLen * Math.cos(shadowAzRad);
+    const sEast = shadowLen * Math.sin(shadowAzRad);
+    const sLat = (sNorth / R) * (180.0 / Math.PI);
+    const sLon = ((sEast / R) * (180.0 / Math.PI)) / Math.cos((centerLat * Math.PI) / 180.0);
+    const shadowTip = [centerLat + sLat, centerLon + sLon];
+
+    // Build shadow projection cone polygon: base radius around center expanding toward shadowTip
+    const baseRadius = (activeLayer && activeLayer.targetRadius > 0) ? activeLayer.targetRadius : 12;
+    const perpRad1 = shadowAzRad + Math.PI / 2;
+    const perpRad2 = shadowAzRad - Math.PI / 2;
+
+    const baseLat1 = centerLat + ((baseRadius * Math.cos(perpRad1)) / R) * (180.0 / Math.PI);
+    const baseLon1 = centerLon + (((baseRadius * Math.sin(perpRad1)) / R) * (180.0 / Math.PI)) / Math.cos((centerLat * Math.PI) / 180.0);
+
+    const baseLat2 = centerLat + ((baseRadius * Math.cos(perpRad2)) / R) * (180.0 / Math.PI);
+    const baseLon2 = centerLon + (((baseRadius * Math.sin(perpRad2)) / R) * (180.0 / Math.PI)) / Math.cos((centerLat * Math.PI) / 180.0);
+
+    const shadowPolygon = L.polygon([
+      [baseLat1, baseLon1],
+      shadowTip,
+      [baseLat2, baseLon2]
+    ], {
+      color: '#475569',
+      weight: 1.5,
+      dashArray: '4, 4',
+      fillColor: '#0f172a',
+      fillOpacity: 0.35
+    }).addTo(solarOverlaysGroup);
+
+    shadowPolygon.bindTooltip(`👥 Predicted Shadow Cast: ${shadowLen.toFixed(1)}m (Structure Height: ${structureHeight}m)`, { direction: 'center', permanent: false });
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.renderSolarOverlay2D = renderSolarOverlay2D;
 }

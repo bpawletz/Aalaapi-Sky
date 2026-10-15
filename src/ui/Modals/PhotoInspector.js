@@ -26,7 +26,8 @@ const PhotoInspector = {
     detectedTags: true, // Auto-detect & highlight optical tags (AprilTag / ArUco)!
     measure: true,
     pins: true,
-    reticle: true
+    reticle: true,
+    solarAngle: true // Toggleable solar azimuth & elevation angle vector overlay (v1.157.0)
   },
   projectGeoPointToPixel,
   projectGeoPolygonToPhoto,
@@ -227,6 +228,8 @@ const PhotoInspector = {
         if (xmp.altMsl !== undefined) act.altMsl = xmp.altMsl;
         if (xmp.gimbalPitch !== undefined) act.gimbalPitch = xmp.gimbalPitch;
         if (xmp.heading !== undefined) act.heading = xmp.heading;
+        if (xmp.timestamp && !this.activePhoto.timestamp) this.activePhoto.timestamp = xmp.timestamp;
+        if (xmp.date && !this.activePhoto.date) this.activePhoto.date = xmp.date;
       } else if (typeof this.activePhoto.lat === 'number' && typeof this.activePhoto.lon === 'number' && (this.activePhoto.lat !== 0 || this.activePhoto.lon !== 0)) {
         act.lat = this.activePhoto.lat;
         act.lon = this.activePhoto.lon;
@@ -359,6 +362,8 @@ const PhotoInspector = {
                 if (xmp.altMsl !== undefined) this.activePhoto.actual.altMsl = xmp.altMsl;
                 if (xmp.gimbalPitch !== undefined) this.activePhoto.actual.gimbalPitch = xmp.gimbalPitch;
                 if (xmp.heading !== undefined) this.activePhoto.actual.heading = xmp.heading;
+                if (xmp.timestamp && !this.activePhoto.timestamp) this.activePhoto.timestamp = xmp.timestamp;
+                if (xmp.date && !this.activePhoto.date) this.activePhoto.date = xmp.date;
                 this.updateHeaderUI();
                 this.renderCanvas();
               }
@@ -435,8 +440,27 @@ const PhotoInspector = {
     const pitch = (p.actual && p.actual.gimbalPitch !== undefined) ? p.actual.gimbalPitch : -90;
     const isOblique = Math.abs(pitch + 90) > 2;
     const modeTag = isOblique ? (this.calibrationMode === 'slant' ? ' • Slant Calibrated' : ' • Ground Corrected') : '';
+    // Compute Solar Ephemeris for Photo Exposure (v1.157.0 - Issue #141)
+    let solarText = '';
+    let photoSunPos = null;
+    if (typeof SolarEphemeris !== 'undefined' && typeof SolarEphemeris.getSunPosition === 'function' && p.actual && typeof p.actual.lat === 'number' && typeof p.actual.lon === 'number') {
+      const photoDate = p.date || (p.timestamp ? new Date(p.timestamp) : new Date());
+      photoSunPos = SolarEphemeris.getSunPosition(photoDate, p.actual.lat, p.actual.lon);
+      if (photoSunPos) {
+        const altSign = photoSunPos.altitudeDeg >= 0 ? '+' : '';
+        solarText = ` • ☀️ Sun Az: ${photoSunPos.azimuthDeg.toFixed(0)}° (${photoSunPos.compassDirection}) • Elev: ${altSign}${photoSunPos.altitudeDeg.toFixed(0)}°`;
+      }
+    }
+
     if (subEl) {
-      subEl.textContent = `Lat: ${p.actual.lat.toFixed(5)}° • Lon: ${p.actual.lon.toFixed(5)}° • Alt: ${altVal} AGL • Pitch: ${p.actual.gimbalPitch}° • GSD: ${gsdVal}${modeTag}`;
+      subEl.textContent = `Lat: ${p.actual.lat.toFixed(5)}° • Lon: ${p.actual.lon.toFixed(5)}° • Alt: ${altVal} AGL • Pitch: ${p.actual.gimbalPitch}° • GSD: ${gsdVal}${modeTag}${solarText}`;
+    }
+
+    const hudSolar = document.getElementById('hud-solar-angles');
+    if (hudSolar) {
+      hudSolar.textContent = photoSunPos
+        ? `Sun: Az ${photoSunPos.azimuthDeg.toFixed(0)}° (${photoSunPos.compassDirection}) • Alt ${photoSunPos.altitudeDeg >= 0 ? '+' : ''}${photoSunPos.altitudeDeg.toFixed(0)}°`
+        : '';
     }
 
     const tagPill = document.getElementById('photo-detect-status-pill');
@@ -1521,19 +1545,32 @@ const PhotoInspector = {
           ctx.arc(px, py, 3, 0, Math.PI * 2);
           ctx.fill();
 
+          // Check Specular Glare Risk on GCP (v1.157.0 - Issue #141)
+          let gcpGlareNotice = '';
+          if (typeof SolarEphemeris !== 'undefined' && typeof SolarEphemeris.calculateGlareRisk === 'function' && camPose) {
+            const photoDate = this.activePhoto.date || (this.activePhoto.timestamp ? new Date(this.activePhoto.timestamp) : new Date());
+            const sunPos = SolarEphemeris.getSunPosition(photoDate, camPose.lat, camPose.lon);
+            if (sunPos && sunPos.altitudeDeg > 15) {
+              const risk = SolarEphemeris.calculateGlareRisk(camPose.heading, camPose.gimbalPitch, sunPos.azimuthDeg, sunPos.altitudeDeg);
+              if (risk.isSpecularBounce) {
+                gcpGlareNotice = ' • ⚠️ Specular Glare Washout Risk';
+              }
+            }
+          }
+
           // Target Label Pill
           const distStr = this.unit === 'imperial' ? `${(depthM * 3.28084).toFixed(1)}ft` : `${depthM.toFixed(1)}m`;
           const sizeStr = this.unit === 'imperial' ? `${(sizeM * 39.37).toFixed(0)}in` : `${(sizeM * 100).toFixed(0)}cm`;
-          const labelText = `🎯 ${code} [${role}] • ${sizeStr} • ${distStr}`;
+          const labelText = `🎯 ${code} [${role}] • ${sizeStr} • ${distStr}${gcpGlareNotice}`;
 
           ctx.font = 'bold 11px sans-serif';
           const textW = ctx.measureText(labelText).width;
           const badgeX = Math.max(10, Math.min(canvas.width - textW - 24, px + 18));
           const badgeY = Math.max(25, Math.min(canvas.height - 15, py - 12));
 
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
+          ctx.fillStyle = gcpGlareNotice ? 'rgba(239, 68, 68, 0.92)' : 'rgba(15, 23, 42, 0.90)';
           ctx.fillRect(badgeX, badgeY - 14, textW + 16, 22);
-          ctx.strokeStyle = color;
+          ctx.strokeStyle = gcpGlareNotice ? '#ef4444' : color;
           ctx.lineWidth = 1.5;
           ctx.strokeRect(badgeX, badgeY - 14, textW + 16, 22);
 
@@ -1621,6 +1658,77 @@ const PhotoInspector = {
 
         ctx.restore();
       });
+    }
+
+    // 10. Solar Angle & Bearing Vector HUD Overlay (v1.157.0 - Issue #141)
+    if (this.layers.solarAngle && this.activePhoto) {
+      const act = this.activePhoto.actual;
+      if (act && typeof act.lat === 'number' && typeof act.lon === 'number' && typeof SolarEphemeris !== 'undefined') {
+        const photoDate = this.activePhoto.date || (this.activePhoto.timestamp ? new Date(this.activePhoto.timestamp) : new Date());
+        const sunPos = SolarEphemeris.getSunPosition(photoDate, act.lat, act.lon);
+        if (sunPos) {
+          ctx.save();
+          const camYaw = typeof act.heading === 'number' ? act.heading : 0;
+          // Relative sun azimuth with respect to camera heading (0° = straight ahead)
+          const relAzimuth = ((sunPos.azimuthDeg - camYaw) % 360 + 360) % 360;
+          const relRad = (relAzimuth - 90) * (Math.PI / 180); // 0° ahead = pointing up (-Y in canvas)
+
+          // Top-right corner HUD widget position
+          const widgetX = canvas.width - 70;
+          const widgetY = 70;
+          const radius = 32;
+
+          // Background dial
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+          ctx.beginPath();
+          ctx.arc(widgetX, widgetY, radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#f59e0b';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          // Center crosshair
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(widgetX - radius + 4, widgetY); ctx.lineTo(widgetX + radius - 4, widgetY);
+          ctx.moveTo(widgetX, widgetY - radius + 4); ctx.lineTo(widgetX, widgetY + radius - 4);
+          ctx.stroke();
+
+          // Sun bearing pointer arrow
+          const arrowLen = radius - 6;
+          const tipX = widgetX + arrowLen * Math.cos(relRad);
+          const tipY = widgetY + arrowLen * Math.sin(relRad);
+
+          ctx.strokeStyle = '#fbbf24';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(widgetX, widgetY);
+          ctx.lineTo(tipX, tipY);
+          ctx.stroke();
+
+          // Sun head circle
+          ctx.fillStyle = '#fbbf24';
+          ctx.beginPath();
+          ctx.arc(tipX, tipY, 4.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // Text label underneath widget
+          ctx.font = 'bold 10px monospace';
+          ctx.fillStyle = '#fbbf24';
+          ctx.textAlign = 'center';
+          const altSign = sunPos.altitudeDeg >= 0 ? '+' : '';
+          ctx.fillText(`☀️ ${altSign}${sunPos.altitudeDeg.toFixed(0)}°`, widgetX, widgetY + radius + 14);
+          ctx.font = '9px monospace';
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillText(`Az ${sunPos.azimuthDeg.toFixed(0)}°`, widgetX, widgetY + radius + 25);
+
+          ctx.restore();
+        }
+      }
     }
   },
 

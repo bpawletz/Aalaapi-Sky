@@ -1,3 +1,47 @@
+## [1.157.0] - 2026-10-15
+
+Introduces an offline Solar Ephemeris Engine, dynamic 2D Leaflet shadow projection vectors, 3D Three.js sunlight alignment, specular glare alerts for waypoints and optical GCP targets, and solar angle overlays in Photo Inspector (closes #141).
+
+### Added
+
+#### Pilot & Operational Features
+- **Sun & Lighting Advisor Card (Section 3)**:
+  - Added a collapsible advisor card under Mission Failsafes & Defaults displaying real-time Solar Azimuth, Solar Elevation, and Solar Noon.
+  - Added an Optimal Lighting Window badge categorizing sun conditions (Optimal Sun, Fair Lighting, Low Sun / Long Shadows, or Night Flight) to optimize 3D photogrammetry and Gaussian splat capture windows.
+- **Dynamic 2D Sun Vector & Shadow Casting Overlay**:
+  - Interactive Leaflet map layer rendering active sun ray bearing vectors with compass directional arrows.
+  - Automatically calculates and projects structure shadow cones and building footprint drop-shadows based on configured structure height / roof peak and sun elevation angle.
+  - Fully toggleable in the top-left Leaflet Map Overlays control menu.
+- **Real-Time Specular Glare Warnings**:
+  - Direct camera flare warnings when drone camera gimbal aligns into low-angle solar rays.
+  - Optical GCP washout warnings when solar specular reflection vectors reflect directly off flat survey ground markers into the drone lens.
+  - Integrated warnings into 2D waypoint editor popups and 3D FPV HUD.
+- **Photo Inspector Solar Exposure Metadata & Dial Overlay**:
+  - Automatically extracts UTC capture timestamps and drone coordinates from embedded DJI XMP metadata.
+  - Calculates exact solar azimuth and elevation at the exposure instant.
+  - Added a toggleable solar angle dial and pointer widget overlay on the photo canvas, with specular washout indicators on projected GCPs.
+
+#### Under the Hood & Technical Details
+- **`src/patterns/AutoPlan.js`**:
+  - Implemented `SolarEphemeris.calculateShadow(height, elevation, azimuth)` calculating projected shadow length, bearing, and 2D polygon offsets.
+  - Added `SolarEphemeris.getLightingQuality(elevation, date, solarNoon)` scoring solar elevation for aerial survey suitability.
+  - Implemented `SolarEphemeris.calculateGlareRisk(heading, pitch, azimuth, elevation)` calculating direct lens flare and ground specular bounce angles.
+  - Enhanced `renderSolarCardUI()` to update Section 3 advisor metrics (`#sun-advisor-azimuth`, `#sun-advisor-elevation`, `#sun-advisor-noon`, `#sun-advisor-quality-badge`, `#sun-advisor-warning`).
+- **`src/geo/Photogrammetry.js`**:
+  - Updated `extractDjiXmpMetadata` to parse UTC and ISO datetime tags (`xmp:CreateDate`, `photoshop:DateCreated`, `drone-dji:DateTimeUTC`).
+- **`src/geo/MathUtils.js`**:
+  - Added `renderSolarOverlay2D(centerLat, centerLon)` drawing the sun vector arrow and cast shadow polygons into `solarOverlaysGroup`.
+- **`src/state/MissionStore.js`**:
+  - Added `solarOverlaysGroup` layer state declaration.
+- **`src/map/MapEngine.js`**:
+  - Initialized `solarOverlaysGroup` and registered "Sun Vector & Shadow Casting (2D)" in Leaflet layer control.
+- **`src/3d/SceneManager.js`**:
+  - Captured `threeSunLight` and added `update3DSunPosition()` matching directional light azimuth and altitude to the calculated ephemeris.
+- **`src/import/KmzImporter.js`**:
+  - Added live glare risk evaluation and `#edit-wp-glare-warning` alert banner in 2D waypoint popup editor.
+- **`src/ui/Modals/PhotoInspector.js`**:
+  - Added solar angle toggle layer, XMP timestamp propagation to photos, and top-right solar dial overlay with GCP glare alerts.
+
 ## [1.156.0] - 2026-10-14
 
 Introduces a dedicated Corridor Centerline Edit Mode with flight pass isolation and an interactive sidebar node coordinate table with live 60fps bidirectional drag sync.

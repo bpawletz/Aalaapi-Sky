@@ -1374,6 +1374,11 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
               ${poiSelectOptions}
             </select>
             <input type="range" id="edit-wp-heading" min="0" max="359" value="${headingVal !== '' ? headingVal : 0}" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer; display: ${curMode === 'custom' ? 'block' : 'none'};">
+            
+            <!-- Solar Glare / Lens Flare Warning Banner (v1.157.0 - Issue #141) -->
+            <div id="edit-wp-glare-warning" style="display: none; padding: 4px 8px; border-radius: 6px; font-size: 0.68rem; line-height: 1.3; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #fca5a5; margin-top: 2px;">
+              ⚠️ Direct Solar Glare Risk
+            </div>
           </div>
         </div>
 
@@ -1763,6 +1768,35 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
       const displayTempPitch = (typeof tempPitch === 'number' && !isNaN(tempPitch)) ? Math.round(tempPitch) : tempPitch;
       const newTitle = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(tempAlt, 0)}<br>Yaw: ${yawDisplay}°<br>Pitch: ${displayTempPitch}°`;
       if (marker.getTooltip()) marker.getTooltip().setContent(newTitle);
+
+      // Check Solar Glare Risk against active Solar Ephemeris (v1.157.0 - Issue #141)
+      const glareWarningEl = popupContent.querySelector('#edit-wp-glare-warning');
+      if (glareWarningEl && typeof SolarEphemeris !== 'undefined' && typeof SolarEphemeris.calculateGlareRisk === 'function') {
+        const activeSunPos = (typeof currentSolarEphemeris !== 'undefined' && currentSolarEphemeris?.currentPosition)
+          ? currentSolarEphemeris.currentPosition
+          : SolarEphemeris.getSunPosition(new Date(), wp.lat, wp.lon);
+
+        if (activeSunPos && activeSunPos.altitudeDeg > 0) {
+          const risk = SolarEphemeris.calculateGlareRisk(tempHeading !== null ? tempHeading : 0, tempPitch, activeSunPos.azimuthDeg, activeSunPos.altitudeDeg);
+          if (risk.riskLevel === 'CRITICAL') {
+            glareWarningEl.style.display = 'block';
+            glareWarningEl.style.background = 'rgba(239, 68, 68, 0.2)';
+            glareWarningEl.style.borderColor = '#ef4444';
+            glareWarningEl.style.color = '#fca5a5';
+            glareWarningEl.innerHTML = `🚨 <b>Lens Flare Hazard:</b> Facing directly into sun (${risk.angularSeparationDeg.toFixed(0)}° separation). Target sensor blinding.`;
+          } else if (risk.riskLevel === 'WARNING') {
+            glareWarningEl.style.display = 'block';
+            glareWarningEl.style.background = 'rgba(245, 158, 11, 0.2)';
+            glareWarningEl.style.borderColor = '#f59e0b';
+            glareWarningEl.style.color = '#fde68a';
+            glareWarningEl.innerHTML = `⚠️ <b>Specular Glare Risk:</b> Pitch (${displayTempPitch}°) matches solar bounce angle (${activeSunPos.altitudeDeg.toFixed(0)}°). High glare on roof/targets.`;
+          } else {
+            glareWarningEl.style.display = 'none';
+          }
+        } else {
+          glareWarningEl.style.display = 'none';
+        }
+      }
     } else {
       // Keep simple tooltip for road nodes
       if (marker.getTooltip()) marker.getTooltip().setContent(`Road Node ${idx}`);
@@ -2445,11 +2479,17 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
     });
   }
 
+  // Initial evaluation of glare risk and values on popup load
+  if (typeof liveUpdate === 'function') {
+    liveUpdate();
+  }
+
   return popupContent;
 }
 
 // Three.js 3D Preview State Variables
 let threeScene, threeCamera, threeRenderer, threeControls, threeAnimationId;
+let threeSunLight = null;
 let showCones = true;
 let autoRotate3D = false;
 let coneGroups = [];

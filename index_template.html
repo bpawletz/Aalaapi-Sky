@@ -66,7 +66,7 @@
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.156.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.157.0</span></h1>
 
 
 
@@ -2493,6 +2493,34 @@
               <p class="help-text">RC2 path: Android/data/dji.go.v5/files/waypoint/<strong id="rc2-uuid-preview" style="color:var(--text-main);">[UUID]</strong></p>
             </div>
           </div> <!-- /drone-hardware-subcard -->
+
+          <!-- Card 4: Sun & Lighting Advisor (Optics & Glare) -->
+          <div id="sun-lighting-subcard" class="failsafes-subgroup-card">
+            <div class="failsafes-subgroup-header">
+              <div class="failsafes-subgroup-title">
+                <span>☀️ Sun &amp; Lighting Advisor</span>
+                <span id="sun-advisor-quality-badge" class="badge" style="font-size: 0.62rem; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); padding: 1px 5px; border-radius: 999px;">☀️ Optimal Sun</span>
+              </div>
+              <div class="failsafes-subgroup-desc">Solar ephemeris, shadow projections, and camera glare avoidance for photogrammetry.</div>
+            </div>
+
+            <div class="control-group" style="font-size: 0.76rem; display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--text-muted);"><span style="color: #fbbf24;">🧭</span> Solar Azimuth:</span>
+                <span id="sun-advisor-azimuth" style="font-weight: 600; color: var(--text-main); font-family: monospace;">--°</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--text-muted);"><span style="color: #38bdf8;">📐</span> Solar Elevation:</span>
+                <span id="sun-advisor-elevation" style="font-weight: 600; color: var(--text-main); font-family: monospace;">--°</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--text-muted);"><span style="color: #f59e0b;">🕛</span> Solar Noon:</span>
+                <span id="sun-advisor-noon" style="font-weight: 600; color: var(--text-main); font-family: monospace;">--:--</span>
+              </div>
+              <div id="sun-advisor-warning" class="legal-ceiling-notice" style="display: none; margin-top: 4px; padding: 6px 8px; border-radius: 6px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); font-size: 0.72rem; color: #fbbf24; line-height: 1.35;"></div>
+            </div>
+            <p class="help-text" style="margin-top: 4px; margin-bottom: 0;">2D map renders active sun ray bearing &amp; cast shadows. 3D viewport matches real-world sun angle.</p>
+          </div> <!-- /sun-lighting-subcard -->
         </section>
 
         <!-- Section 4: Actions & Live Sync -->
@@ -3569,6 +3597,14 @@
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #fbbf24; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              ☀️ Solar Ephemeris Engine, Shadow Vectors &amp; Glare-Aware Mission Planning (v1.157.0) (Closes #141)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Optimize photogrammetry and 3D Gaussian Splat captures with client-side solar positioning! Features a dedicated <strong>Sun &amp; Lighting Advisor</strong> in Section 3 with real-time azimuth, elevation, and optimal lighting badges. Includes <strong>Dynamic 2D Sun Vector &amp; Shadow Cone Projections</strong> on Leaflet, synchronized <strong>Three.js 3D Directional Sunlight</strong>, real-time <strong>Specular Glare Warnings</strong> for camera angles and optical GCPs, and embedded <strong>DJI XMP Solar Exposure Metrology</strong> with dial overlay in Photo Inspector.
+            </p>
+          </div>
           <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #818cf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🛣️ Multi-Pass Corridor Mapping along Complex Linear Features (v1.155.0) (Closes #130)
@@ -4844,7 +4880,7 @@
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.156.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.157.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -4905,6 +4941,12 @@
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.157.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Solar Ephemeris Engine, Shadow Vectors &amp; Glare-Aware Mission Planning:</strong> Integrated client-side solar positioning with Section 3 Sun &amp; Lighting Advisor, real-time 2D Leaflet shadow projection cones and sun ray bearing vectors, Three.js 3D directional sunlight synchronization, specular glare warnings for camera angles and optical GCPs, and embedded DJI XMP solar angle metrology with dial overlay in Photo Inspector. (Closes #141)</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.156.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
