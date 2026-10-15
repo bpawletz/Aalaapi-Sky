@@ -512,6 +512,11 @@ function applyCompanionStatusUI(data) {
     }
     if (sidebarQuickActions) sidebarQuickActions.style.display = 'none';
   }
+
+  const isDbOnline = (typeof getIsMissionDbOnline === 'function') ? getIsMissionDbOnline() : (typeof isMissionDbOnline !== 'undefined' ? isMissionDbOnline : false);
+  if (typeof refreshMissionDbList === 'function' && !isDbOnline) {
+    refreshMissionDbList();
+  }
 }
 
 function connectCompanionStatusStream() {
@@ -638,6 +643,7 @@ async function pollCompanionStatus() {
       throw new Error('Non-200 status');
     }
   } catch (e) {
+    const wasMissionDbOnline = (typeof getIsMissionDbOnline === 'function') ? getIsMissionDbOnline() : (typeof isMissionDbOnline !== 'undefined' ? isMissionDbOnline : false);
     consecutiveStatusFailures++;
     lastStatusCheckTime = Date.now();
     isCompanionOnline = false;
@@ -648,6 +654,9 @@ async function pollCompanionStatus() {
     }
     isCompanionStatusStreaming = false;
     updateCompanionTransportUI('offline');
+    if (wasMissionDbOnline && typeof refreshMissionDbList === 'function') {
+      refreshMissionDbList();
+    }
     if (typeof RemoteIdRadar !== 'undefined' && RemoteIdRadar.disconnectStream) {
       RemoteIdRadar.disconnectStream();
     }
