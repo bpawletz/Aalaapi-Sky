@@ -5992,7 +5992,7 @@ html, body {
             <polygon points="12,7 17,12 12,17 7,12" fill="#c2622d" stroke="#f5f0e8" stroke-width="0.75" />
             <polygon points="12,9.5 14.5,12 12,14.5 9.5,12" fill="#06b6d4" />
             <circle cx="12" cy="12" r="1" fill="#f5f0e8" />
-          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.156.0</span></h1>
+          <h1 style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1.05rem; white-space: nowrap;">Aalaapi Sky <span class="header-version-badge" style="font-size: 0.58rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 999px; padding: 1px 5px; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle;">v1.157.0</span></h1>
 
 
 
@@ -8419,6 +8419,34 @@ html, body {
               <p class="help-text">RC2 path: Android/data/dji.go.v5/files/waypoint/<strong id="rc2-uuid-preview" style="color:var(--text-main);">[UUID]</strong></p>
             </div>
           </div> <!-- /drone-hardware-subcard -->
+
+          <!-- Card 4: Sun & Lighting Advisor (Optics & Glare) -->
+          <div id="sun-lighting-subcard" class="failsafes-subgroup-card">
+            <div class="failsafes-subgroup-header">
+              <div class="failsafes-subgroup-title">
+                <span>☀️ Sun &amp; Lighting Advisor</span>
+                <span id="sun-advisor-quality-badge" class="badge" style="font-size: 0.62rem; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); padding: 1px 5px; border-radius: 999px;">☀️ Optimal Sun</span>
+              </div>
+              <div class="failsafes-subgroup-desc">Solar ephemeris, shadow projections, and camera glare avoidance for photogrammetry.</div>
+            </div>
+
+            <div class="control-group" style="font-size: 0.76rem; display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--text-muted);"><span style="color: #fbbf24;">🧭</span> Solar Azimuth:</span>
+                <span id="sun-advisor-azimuth" style="font-weight: 600; color: var(--text-main); font-family: monospace;">--°</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--text-muted);"><span style="color: #38bdf8;">📐</span> Solar Elevation:</span>
+                <span id="sun-advisor-elevation" style="font-weight: 600; color: var(--text-main); font-family: monospace;">--°</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: var(--text-muted);"><span style="color: #f59e0b;">🕛</span> Solar Noon:</span>
+                <span id="sun-advisor-noon" style="font-weight: 600; color: var(--text-main); font-family: monospace;">--:--</span>
+              </div>
+              <div id="sun-advisor-warning" class="legal-ceiling-notice" style="display: none; margin-top: 4px; padding: 6px 8px; border-radius: 6px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); font-size: 0.72rem; color: #fbbf24; line-height: 1.35;"></div>
+            </div>
+            <p class="help-text" style="margin-top: 4px; margin-bottom: 0;">2D map renders active sun ray bearing &amp; cast shadows. 3D viewport matches real-world sun angle.</p>
+          </div> <!-- /sun-lighting-subcard -->
         </section>
 
         <!-- Section 4: Actions & Live Sync -->
@@ -9495,6 +9523,14 @@ html, body {
 
         <!-- Pane 2: What's New & Feature Highlights (Hidden by default) -->
         <div id="intro-pane-features" class="intro-pane hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px;">
+            <strong style="color: #fbbf24; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+              ☀️ Solar Ephemeris Engine, Shadow Vectors &amp; Glare-Aware Mission Planning (v1.157.0) (Closes #141)
+            </strong>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0 0; line-height: 1.4;">
+              Optimize photogrammetry and 3D Gaussian Splat captures with client-side solar positioning! Features a dedicated <strong>Sun &amp; Lighting Advisor</strong> in Section 3 with real-time azimuth, elevation, and optimal lighting badges. Includes <strong>Dynamic 2D Sun Vector &amp; Shadow Cone Projections</strong> on Leaflet, synchronized <strong>Three.js 3D Directional Sunlight</strong>, real-time <strong>Specular Glare Warnings</strong> for camera angles and optical GCPs, and embedded <strong>DJI XMP Solar Exposure Metrology</strong> with dial overlay in Photo Inspector.
+            </p>
+          </div>
           <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.35); border-radius: 8px; padding: 12px;">
             <strong style="color: #818cf8; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
               🛣️ Multi-Pass Corridor Mapping along Complex Linear Features (v1.155.0) (Closes #130)
@@ -10770,7 +10806,7 @@ html, body {
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aalaapi Sky</h3>
             <div>
-              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.156.0</span>
+              <span class="version-tag" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;">Version 1.157.0</span>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
               Designed for DJI Fly, Mini 4 Pro, Air 3, and Enterprise Waypoint Operations
@@ -10831,6 +10867,12 @@ html, body {
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; font-size: 0.8rem; line-height: 1.4; margin-top: 8px; max-height: 180px; min-height: 100px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-main);">Changelog (v1.157.0):</strong>
+            <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
+              <li><strong>Solar Ephemeris Engine, Shadow Vectors &amp; Glare-Aware Mission Planning:</strong> Integrated client-side solar positioning with Section 3 Sun &amp; Lighting Advisor, real-time 2D Leaflet shadow projection cones and sun ray bearing vectors, Three.js 3D directional sunlight synchronization, specular glare warnings for camera angles and optical GCPs, and embedded DJI XMP solar angle metrology with dial overlay in Photo Inspector. (Closes #141)</li>
+            </ul>
+          </div>
           <div>
             <strong style="color: var(--text-main);">Changelog (v1.156.0):</strong>
             <ul style="padding-left: 16px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; color: var(--text-muted); list-style-type: disc;">
@@ -15799,6 +15841,7 @@ let exclusionZonesGroup = null;
 let boundaryLayersGroup = null;
 let fiducialMarkersGroup = null;
 let targetPolygonGroup = null;
+let solarOverlaysGroup = null;
 let isTargetPolyEditActive = false;
 let isCorridorEditActive = false;
 let isAnyPopupOpen = false;
@@ -22874,6 +22917,12 @@ function initMap() {
   overlays["Photo Coverage Footprints (2D)"] = photoFootprintsGroup;
   overlays["Photo Inspection Pins (2D)"] = photoInspectionGroup;
 
+  // Solar Ephemeris & Shadow Vector Overlay (2D) (v1.157.0 - Issue #141)
+  if (!solarOverlaysGroup) {
+    solarOverlaysGroup = L.layerGroup().addTo(map);
+  }
+  overlays["Sun Vector & Shadow Casting (2D)"] = solarOverlaysGroup;
+
   const layerControl = L.control.layers(baseMaps, overlays, { position: 'topleft' }).addTo(map);
 
   // If running on localhost or file://, disable the OpenStreetMap radio button with styled indicator & tooltip
@@ -22991,6 +23040,7 @@ function initMap() {
   photoMarkersGroup = L.layerGroup().addTo(map);
   roadPathGroup = L.layerGroup().addTo(map);
   targetPolygonGroup = L.layerGroup().addTo(map);
+  if (!solarOverlaysGroup) solarOverlaysGroup = L.layerGroup().addTo(map);
   if (!photoInspectionGroup) photoInspectionGroup = L.layerGroup().addTo(map);
   if (!photoFootprintsGroup) photoFootprintsGroup = L.layerGroup();
 
@@ -34718,6 +34768,11 @@ function drawFlightPath(waypoints, photoLocations, centerLat, centerLon, gridWid
 
   // 6. Update Map Legend
   updateMapLegend();
+
+  // 7. Render 2D Sun Vector and Predicted Shadow Casting Cones (v1.157.0 - Issue #141)
+  if (typeof renderSolarOverlay2D === 'function') {
+    renderSolarOverlay2D(activeCenterLat, activeCenterLon);
+  }
 }
 
 // Add Map Legend for Multi-Orbit altitudes
@@ -35857,6 +35912,124 @@ function addCorridorPoint(lat, lng) {
 
 if (typeof window !== 'undefined') {
   window.addCorridorPoint = addCorridorPoint;
+}
+
+/**
+ * Renders 2D Sun Vector and Predicted Shadow Casting Cones (v1.157.0 - Issue #141)
+ * Displays a dynamic sun ray vector on the Leaflet canvas pointing toward active solar azimuth,
+ * and casts predicted shadow polygons for POI structures and target splat footprints.
+ */
+function renderSolarOverlay2D(centerLat, centerLon) {
+  if (!solarOverlaysGroup || typeof L === 'undefined' || !map) return;
+  solarOverlaysGroup.clearLayers();
+
+  if (centerLat === undefined || centerLon === undefined || isNaN(centerLat) || isNaN(centerLon)) {
+    if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+      const ll = centerMarker.getLatLng();
+      centerLat = ll.lat;
+      centerLon = ll.lng;
+    } else {
+      return;
+    }
+  }
+
+  if (typeof SolarEphemeris === 'undefined' || typeof SolarEphemeris.getSunPosition !== 'function') return;
+
+  const now = (typeof currentSolarEphemeris !== 'undefined' && currentSolarEphemeris && currentSolarEphemeris.now)
+    ? currentSolarEphemeris.now
+    : new Date();
+
+  const sunPos = SolarEphemeris.getSunPosition(now, centerLat, centerLon);
+  if (!sunPos) return;
+
+  const { altitudeDeg, azimuthDeg, compassDirection } = sunPos;
+  const isDay = altitudeDeg > 0;
+
+  // 1. Draw Sun Ray / Bearing Vector originating from center
+  // Ray points in the direction of the sun azimuth (or from sun into scene)
+  const vectorLengthMeters = 80;
+  // Calculate endpoint of sun vector
+  const sunBearingRad = (azimuthDeg * Math.PI) / 180.0;
+  const dNorth = vectorLengthMeters * Math.cos(sunBearingRad);
+  const dEast = vectorLengthMeters * Math.sin(sunBearingRad);
+  const R = 6378137.0;
+  const dLat = (dNorth / R) * (180.0 / Math.PI);
+  const dLon = ((dEast / R) * (180.0 / Math.PI)) / Math.cos((centerLat * Math.PI) / 180.0);
+  const sunVectorEnd = [centerLat + dLat, centerLon + dLon];
+
+  // Draw dashed golden ray towards sun
+  const sunRayLine = L.polyline([[centerLat, centerLon], sunVectorEnd], {
+    color: isDay ? '#fbbf24' : '#64748b',
+    weight: 2.5,
+    dashArray: '6, 6',
+    opacity: isDay ? 0.85 : 0.4
+  }).addTo(solarOverlaysGroup);
+
+  // Add Sun Icon at vector tip
+  const sunIcon = L.divIcon({
+    className: 'solar-azimuth-tip-icon',
+    html: `
+      <div style="display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: rgba(15, 23, 42, 0.85); border: 2px solid ${isDay ? '#fbbf24' : '#64748b'}; box-shadow: 0 0 10px rgba(251, 191, 36, 0.5); font-size: 13px; cursor: help;" title="Sun Azimuth: ${azimuthDeg.toFixed(1)}° (${compassDirection}) • Elevation: ${altitudeDeg.toFixed(1)}°">
+        ${isDay ? '☀️' : '🌙'}
+      </div>
+    `,
+    iconSize: [26, 26],
+    iconAnchor: [13, 13]
+  });
+
+  const sunMarker = L.marker(sunVectorEnd, { icon: sunIcon, interactive: true }).addTo(solarOverlaysGroup);
+  sunMarker.bindTooltip(`☀️ Solar Vector: Azimuth ${azimuthDeg.toFixed(1)}° (${compassDirection}), Elev: ${altitudeDeg.toFixed(1)}°`, { direction: 'top' });
+
+  // 2. Cast Predicted Shadow Cones for POI Structures / Target Splats
+  const activeLayer = (typeof getActiveLayer === 'function') ? getActiveLayer() : null;
+  const structureHeight = (activeLayer && activeLayer.targetHeight !== undefined && activeLayer.targetHeight !== null)
+    ? activeLayer.targetHeight
+    : ((typeof document !== 'undefined' && document.getElementById('target-splat-height'))
+      ? (parseFloat(document.getElementById('target-splat-height').value) || 8)
+      : 8);
+
+  if (isDay && structureHeight > 0) {
+    const shadowInfo = SolarEphemeris.calculateShadow
+      ? SolarEphemeris.calculateShadow(structureHeight, altitudeDeg, azimuthDeg)
+      : { shadowLengthMeters: structureHeight / Math.tan(Math.max(1, altitudeDeg) * (Math.PI / 180)), shadowAzimuthDeg: (azimuthDeg + 180) % 360 };
+
+    const shadowLen = Math.min(300, shadowInfo.shadowLengthMeters);
+    const shadowAzRad = (shadowInfo.shadowAzimuthDeg * Math.PI) / 180.0;
+    const sNorth = shadowLen * Math.cos(shadowAzRad);
+    const sEast = shadowLen * Math.sin(shadowAzRad);
+    const sLat = (sNorth / R) * (180.0 / Math.PI);
+    const sLon = ((sEast / R) * (180.0 / Math.PI)) / Math.cos((centerLat * Math.PI) / 180.0);
+    const shadowTip = [centerLat + sLat, centerLon + sLon];
+
+    // Build shadow projection cone polygon: base radius around center expanding toward shadowTip
+    const baseRadius = (activeLayer && activeLayer.targetRadius > 0) ? activeLayer.targetRadius : 12;
+    const perpRad1 = shadowAzRad + Math.PI / 2;
+    const perpRad2 = shadowAzRad - Math.PI / 2;
+
+    const baseLat1 = centerLat + ((baseRadius * Math.cos(perpRad1)) / R) * (180.0 / Math.PI);
+    const baseLon1 = centerLon + (((baseRadius * Math.sin(perpRad1)) / R) * (180.0 / Math.PI)) / Math.cos((centerLat * Math.PI) / 180.0);
+
+    const baseLat2 = centerLat + ((baseRadius * Math.cos(perpRad2)) / R) * (180.0 / Math.PI);
+    const baseLon2 = centerLon + (((baseRadius * Math.sin(perpRad2)) / R) * (180.0 / Math.PI)) / Math.cos((centerLat * Math.PI) / 180.0);
+
+    const shadowPolygon = L.polygon([
+      [baseLat1, baseLon1],
+      shadowTip,
+      [baseLat2, baseLon2]
+    ], {
+      color: '#475569',
+      weight: 1.5,
+      dashArray: '4, 4',
+      fillColor: '#0f172a',
+      fillOpacity: 0.35
+    }).addTo(solarOverlaysGroup);
+
+    shadowPolygon.bindTooltip(`👥 Predicted Shadow Cast: ${shadowLen.toFixed(1)}m (Structure Height: ${structureHeight}m)`, { direction: 'center', permanent: false });
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.renderSolarOverlay2D = renderSolarOverlay2D;
 }
 // -------------------- src/ui/TelemetryHud.js --------------------
 function calculateStats(waypoints, photoLocations, speed, sLine, sPhoto, captureMode) {
@@ -50486,6 +50659,11 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
               ${poiSelectOptions}
             </select>
             <input type="range" id="edit-wp-heading" min="0" max="359" value="${headingVal !== '' ? headingVal : 0}" style="width: 100%; height: 4px; accent-color: #06b6d4; cursor: pointer; display: ${curMode === 'custom' ? 'block' : 'none'};">
+            
+            <!-- Solar Glare / Lens Flare Warning Banner (v1.157.0 - Issue #141) -->
+            <div id="edit-wp-glare-warning" style="display: none; padding: 4px 8px; border-radius: 6px; font-size: 0.68rem; line-height: 1.3; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #fca5a5; margin-top: 2px;">
+              ⚠️ Direct Solar Glare Risk
+            </div>
           </div>
         </div>
 
@@ -50875,6 +51053,35 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
       const displayTempPitch = (typeof tempPitch === 'number' && !isNaN(tempPitch)) ? Math.round(tempPitch) : tempPitch;
       const newTitle = `${isStart ? "Start Point" : (isEnd ? "End Point" : `Waypoint ${idx}`)}<br>Height: ${formatDistance(tempAlt, 0)}<br>Yaw: ${yawDisplay}°<br>Pitch: ${displayTempPitch}°`;
       if (marker.getTooltip()) marker.getTooltip().setContent(newTitle);
+
+      // Check Solar Glare Risk against active Solar Ephemeris (v1.157.0 - Issue #141)
+      const glareWarningEl = popupContent.querySelector('#edit-wp-glare-warning');
+      if (glareWarningEl && typeof SolarEphemeris !== 'undefined' && typeof SolarEphemeris.calculateGlareRisk === 'function') {
+        const activeSunPos = (typeof currentSolarEphemeris !== 'undefined' && currentSolarEphemeris?.currentPosition)
+          ? currentSolarEphemeris.currentPosition
+          : SolarEphemeris.getSunPosition(new Date(), wp.lat, wp.lon);
+
+        if (activeSunPos && activeSunPos.altitudeDeg > 0) {
+          const risk = SolarEphemeris.calculateGlareRisk(tempHeading !== null ? tempHeading : 0, tempPitch, activeSunPos.azimuthDeg, activeSunPos.altitudeDeg);
+          if (risk.riskLevel === 'CRITICAL') {
+            glareWarningEl.style.display = 'block';
+            glareWarningEl.style.background = 'rgba(239, 68, 68, 0.2)';
+            glareWarningEl.style.borderColor = '#ef4444';
+            glareWarningEl.style.color = '#fca5a5';
+            glareWarningEl.innerHTML = `🚨 <b>Lens Flare Hazard:</b> Facing directly into sun (${risk.angularSeparationDeg.toFixed(0)}° separation). Target sensor blinding.`;
+          } else if (risk.riskLevel === 'WARNING') {
+            glareWarningEl.style.display = 'block';
+            glareWarningEl.style.background = 'rgba(245, 158, 11, 0.2)';
+            glareWarningEl.style.borderColor = '#f59e0b';
+            glareWarningEl.style.color = '#fde68a';
+            glareWarningEl.innerHTML = `⚠️ <b>Specular Glare Risk:</b> Pitch (${displayTempPitch}°) matches solar bounce angle (${activeSunPos.altitudeDeg.toFixed(0)}°). High glare on roof/targets.`;
+          } else {
+            glareWarningEl.style.display = 'none';
+          }
+        } else {
+          glareWarningEl.style.display = 'none';
+        }
+      }
     } else {
       // Keep simple tooltip for road nodes
       if (marker.getTooltip()) marker.getTooltip().setContent(`Road Node ${idx}`);
@@ -51557,11 +51764,17 @@ function createWaypointEditorDOM(wp, idx, marker, popupMarker, customWaypointsLi
     });
   }
 
+  // Initial evaluation of glare risk and values on popup load
+  if (typeof liveUpdate === 'function') {
+    liveUpdate();
+  }
+
   return popupContent;
 }
 
 // Three.js 3D Preview State Variables
 let threeScene, threeCamera, threeRenderer, threeControls, threeAnimationId;
+let threeSunLight = null;
 let showCones = true;
 let autoRotate3D = false;
 let coneGroups = [];
@@ -52344,10 +52557,16 @@ function init3DPreview() {
   const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.2);
   dirLight1.position.set(200, 400, 200);
   threeScene.add(dirLight1);
+  threeSunLight = dirLight1;
 
   const dirLight2 = new THREE.DirectionalLight(0x06b6d4, 0.6); // Subtle cyan fill light
   dirLight2.position.set(-200, 200, -200);
   threeScene.add(dirLight2);
+
+  // Align directional light with active solar ephemeris if available
+  if (typeof update3DSunPosition === 'function') {
+    update3DSunPosition();
+  }
 
   // 6. Calculate Bounding Box of Waypoints to scale scene
   let minX = Infinity, maxX = -Infinity;
@@ -52621,6 +52840,58 @@ function reset3DCamera() {
   threeCamera.position.set(centerWpX + maxSpan * 1.2, maxAlt + maxSpan * 0.8, centerWpZ + maxSpan * 1.2);
   threeControls.target.set(centerWpX, maxAlt * 0.4, centerWpZ);
   threeControls.update();
+}
+
+/**
+ * Updates Three.js directional sunlight and shadow frustum orientation
+ * to match calculated solar azimuth and elevation.
+ * In Three.js coordinates:
+ * - X is East
+ * - Y is Altitude / Up
+ * - Z is South (so North is -Z)
+ */
+function update3DSunPosition() {
+  if (!threeSunLight || typeof SolarEphemeris === 'undefined') return;
+
+  let pos = null;
+  if (typeof currentSolarEphemeris !== 'undefined' && currentSolarEphemeris && currentSolarEphemeris.currentPosition) {
+    pos = currentSolarEphemeris.currentPosition;
+  } else if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+    const ll = centerMarker.getLatLng();
+    pos = SolarEphemeris.getSunPosition(new Date(), ll.lat, ll.lng);
+  } else {
+    pos = SolarEphemeris.getSunPosition(new Date(), 41.3215, -88.9950);
+  }
+
+  if (!pos) return;
+
+  const azRad = (pos.azimuthDeg || 180) * (Math.PI / 180);
+  const altRad = Math.max(0.05, (pos.altitudeDeg || 45)) * (Math.PI / 180);
+
+  const radius = 600;
+  // Sun position in sky:
+  // Azimuth 0 = North (-Z), 90 = East (+X), 180 = South (+Z), 270 = West (-X)
+  const sunX = radius * Math.cos(altRad) * Math.sin(azRad);
+  const sunY = Math.max(40, radius * Math.sin(altRad));
+  const sunZ = -radius * Math.cos(altRad) * Math.cos(azRad);
+
+  threeSunLight.position.set(sunX, sunY, sunZ);
+  if (threeSunLight.target && typeof threeScene !== 'undefined' && threeScene) {
+    threeSunLight.target.position.set(0, 0, 0);
+  }
+
+  // Modulate intensity based on sun elevation (dim at twilight/night)
+  if (pos.altitudeDeg <= 0) {
+    threeSunLight.intensity = 0.15;
+  } else if (pos.altitudeDeg < 15) {
+    threeSunLight.intensity = 0.5 + (pos.altitudeDeg / 15) * 0.5;
+  } else {
+    threeSunLight.intensity = 1.2;
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.update3DSunPosition = update3DSunPosition;
 }
 
 // ==========================================
@@ -55243,6 +55514,184 @@ const SolarEphemeris = {
     };
   },
 
+  /**
+   * Calculates horizontal shadow cast length and shadow direction vector.
+   * Shadows cast in the direction opposite to solar azimuth: (azimuth + 180) % 360.
+   * @param {number} objectHeightMeters Height of structure/pole
+   * @param {number} elevationDeg Sun elevation angle above horizon
+   * @param {number} azimuthDeg Sun azimuth angle (degrees from True North)
+   * @returns {{ shadowLengthMeters: number, shadowAzimuthDeg: number, isInfinite: boolean }}
+   */
+  calculateShadow(objectHeightMeters, elevationDeg, azimuthDeg) {
+    const h = Math.max(0, parseFloat(objectHeightMeters) || 0);
+    const el = parseFloat(elevationDeg) || 0;
+    const az = ((parseFloat(azimuthDeg) || 0) % 360 + 360) % 360;
+    const shadowAzimuthDeg = (az + 180) % 360;
+
+    if (el <= 0.5) {
+      return {
+        shadowLengthMeters: el <= 0 ? 0 : Math.min(500, h / Math.tan(Math.max(0.01, el) * this.RAD)),
+        shadowAzimuthDeg,
+        isInfinite: el <= 0
+      };
+    }
+
+    const shadowLengthMeters = h / Math.tan(el * this.RAD);
+    return {
+      shadowLengthMeters: Math.min(2000, shadowLengthMeters),
+      shadowAzimuthDeg,
+      isInfinite: false
+    };
+  },
+
+  /**
+   * Classifies lighting window quality for 3D photogrammetry & Gaussian splatting.
+   * Optimal: Sun elevation >= 40° (or within ±2h of solar noon) -> High Sun / Minimal Shadows
+   * Acceptable: Sun elevation 25° - 40° -> Moderate Shadows
+   * Low: Sun elevation 10° - 25° -> Low Sun / Long Facade Shadows
+   * Golden/Civil Twilight: Sun elevation 0° - 10° -> High Glare / Extreme Oblique Shadows
+   * Night: Sun elevation < 0° -> Night
+   * @param {number} elevationDeg
+   * @param {Date} date
+   * @param {Date} solarNoonDate
+   */
+  getLightingQuality(elevationDeg, date = null, solarNoonDate = null) {
+    const el = parseFloat(elevationDeg) || 0;
+    let isNearNoon = false;
+    if (date && solarNoonDate && date instanceof Date && solarNoonDate instanceof Date) {
+      const diffHours = Math.abs(date.getTime() - solarNoonDate.getTime()) / (1000 * 60 * 60);
+      if (diffHours <= 2.0) isNearNoon = true;
+    }
+
+    if (el < 0) {
+      return {
+        category: 'NIGHT',
+        label: 'Night Flight',
+        badge: '🌙 Night / Artificial Illumination Required',
+        color: '#ef4444',
+        warning: 'Zero ambient sunlight. Active strobes / artificial lighting required.'
+      };
+    } else if (el < 10) {
+      return {
+        category: 'TWILIGHT_OR_GOLDEN',
+        label: 'Golden Hour / Twilight',
+        badge: '⚠️ Deep Facade Shadows & High Glare',
+        color: '#f59e0b',
+        warning: 'Harsh horizontal shadows across facades. High risk of direct lens flare and target washout.'
+      };
+    } else if (el < 25) {
+      return {
+        category: 'LOW_SUN',
+        label: 'Low Sun (<25°)',
+        badge: '⚠️ Low Sun / Long Shadows',
+        color: '#f59e0b',
+        warning: 'Long shadows cast by structures. Oblique splat passes (-45°/-60°) may bake deep shadows into textures.'
+      };
+    } else if (el < 40 && !isNearNoon) {
+      return {
+        category: 'MODERATE_SUN',
+        label: 'Moderate Lighting (25°-40°)',
+        badge: '🌤️ Moderate Sun / Noticeable Shadows',
+        color: '#38bdf8',
+        warning: 'Acceptable capture window. Moderate shadows on vertical walls.'
+      };
+    } else {
+      return {
+        category: 'OPTIMAL',
+        label: 'Optimal High Sun (Minimal Shadows)',
+        badge: '☀️ High Sun / Minimal Shadows',
+        color: '#10b981',
+        warning: null
+      };
+    }
+  },
+
+  /**
+   * Correlates camera heading & gimbal pitch against solar position to detect direct flare / specular glare risks.
+   * When camera points directly toward sun azimuth (deltaAzimuth < 30°) and gimbal pitch aligns with sun elevation,
+   * lens flare and direct glare blind the sensor.
+   * Also computes ground specular bounce vector (flat plane): if camera looks down toward a ground point at angle theta,
+   * and the sun shines from opposite azimuth at angle theta, specular reflection from roofs/water/metal/targets bounces directly into lens.
+   * @param {number} cameraHeadingDeg
+   * @param {number} gimbalPitchDeg (e.g. -90 to 0)
+   * @param {number} sunAzimuthDeg
+   * @param {number} sunElevationDeg
+   */
+  calculateGlareRisk(cameraHeadingDeg, gimbalPitchDeg, sunAzimuthDeg, sunElevationDeg) {
+    const camH = ((parseFloat(cameraHeadingDeg) || 0) % 360 + 360) % 360;
+    const camP = parseFloat(gimbalPitchDeg) !== undefined ? parseFloat(gimbalPitchDeg) : -90;
+    const sunAz = ((parseFloat(sunAzimuthDeg) || 0) % 360 + 360) % 360;
+    const sunEl = parseFloat(sunElevationDeg) || 0;
+
+    if (sunEl <= 0) {
+      return { riskLevel: 'NONE', isDirectFlare: false, isSpecularBounce: false, angularSeparationDeg: 180, details: 'Sun below horizon.' };
+    }
+
+    // 1. Direct Sun in Lens (Looking up or level towards sun)
+    // Camera optical axis: azimuth camH, elevation camP (note pitch is negative downwards, so camera optical elevation = camP)
+    // Angular difference in azimuth:
+    let dAz = Math.abs(camH - sunAz);
+    if (dAz > 180) dAz = 360 - dAz;
+
+    // Camera pointing vector in ENU:
+    // pitch is typically -90 (nadir), 0 (horizontal), +30 (up)
+    const camPitchRad = camP * this.RAD;
+    const camYawRad = camH * this.RAD;
+    const camVec = {
+      x: Math.cos(camPitchRad) * Math.sin(camYawRad), // East
+      y: Math.cos(camPitchRad) * Math.cos(camYawRad), // North
+      z: Math.sin(camPitchRad)                        // Up
+    };
+
+    const sunElRad = sunEl * this.RAD;
+    const sunAzRad = sunAz * this.RAD;
+    const sunVec = {
+      x: Math.cos(sunElRad) * Math.sin(sunAzRad),
+      y: Math.cos(sunElRad) * Math.cos(sunAzRad),
+      z: Math.sin(sunElRad)
+    };
+
+    // Dot product between camera forward vector and sun vector:
+    const dotDirect = camVec.x * sunVec.x + camVec.y * sunVec.y + camVec.z * sunVec.z;
+    const angleDirectRad = Math.acos(Math.max(-1, Math.min(1, dotDirect)));
+    const angleDirectDeg = angleDirectRad * this.DEG;
+
+    const isDirectFlare = angleDirectDeg < 35;
+
+    // 2. Specular Ground Reflection into Camera (Flat horizontal ground/roof bounce):
+    // Sunlight hitting flat ground (normal = [0, 0, 1]) bounces upward with reflected vector:
+    // reflectedSunVec = [ sunVec.x, sunVec.y, -sunVec.z ] bounced upwards, so incoming ray into camera comes from ground
+    // The direction from ground target to drone matches -sun_reflected direction.
+    // Equivalent: camera pointing down at ground will catch mirror bounce when camera heading is opposite sun (dAz ≈ 180°)
+    // and camera depression angle (-camP) ≈ sun elevation angle (sunEl).
+    const depressionAngle = -camP; // e.g. -(-45) = 45°
+    const depressionDiff = Math.abs(depressionAngle - sunEl);
+    let specularAzDiff = Math.abs(dAz - 180); // 0 when camera faces directly away from sun (looking down towards shadow / bounce)
+    if (specularAzDiff > 180) specularAzDiff = 360 - specularAzDiff;
+
+    const isSpecularBounce = (depressionDiff < 18 && specularAzDiff < 25 && sunEl >= 15);
+
+    let riskLevel = 'LOW';
+    let details = 'Clear optics; solar position offset from optical axis.';
+    if (isDirectFlare) {
+      riskLevel = 'CRITICAL';
+      details = `Direct Solar Flare: Camera oriented within ${angleDirectDeg.toFixed(1)}° of sun line of sight. High risk of lens wash and optical sensor blinding.`;
+    } else if (isSpecularBounce) {
+      riskLevel = 'WARNING';
+      details = `Ground Specular Glare: Camera depression angle (-${camP.toFixed(0)}°) matches solar elevation (${sunEl.toFixed(0)}°) with opposite azimuth. High risk of target and roof glare.`;
+    }
+
+    return {
+      riskLevel,
+      isDirectFlare,
+      isSpecularBounce,
+      angularSeparationDeg: angleDirectDeg,
+      specularAzimuthDiffDeg: specularAzDiff,
+      specularElevationDiffDeg: depressionDiff,
+      details
+    };
+  },
+
   bearingToCompassDirection(bearing) {
     const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
     const idx = Math.round(((bearing % 360 + 360) % 360) / 22.5) % 16;
@@ -55394,6 +55843,7 @@ const SolarEphemeris = {
     }
 
     const pos = this.getSunPosition(now, lat, lon);
+    const lightingQuality = this.getLightingQuality(pos.altitudeDeg, now, timesToday.noon);
 
     return {
       now,
@@ -55406,6 +55856,7 @@ const SolarEphemeris = {
       faaBadgeText,
       faaBadgeColor,
       faaAdvisory,
+      lightingQuality,
       nextSunrise: nextSunriseEvent ? nextSunriseEvent.time : null,
       nextSunset: nextSunsetEvent ? nextSunsetEvent.time : null,
       currentPosition: pos,
@@ -55505,6 +55956,13 @@ function renderSolarCardUI(ephemeris) {
   const statAngles = document.getElementById('stat-solar-angles');
   const statTimeline = document.getElementById('stat-solar-timeline');
 
+  // Sun & Lighting Advisor elements (Section 3 card & HUD)
+  const advisorAzimuth = document.getElementById('sun-advisor-azimuth');
+  const advisorElevation = document.getElementById('sun-advisor-elevation');
+  const advisorNoon = document.getElementById('sun-advisor-noon');
+  const advisorQualityBadge = document.getElementById('sun-advisor-quality-badge');
+  const advisorWarning = document.getElementById('sun-advisor-warning');
+
   if (statSunrise) statSunrise.innerHTML = sunriseText;
   if (statSunset) statSunset.innerHTML = sunsetText;
   if (statRemaining) statRemaining.innerHTML = remainingText;
@@ -55517,6 +55975,35 @@ function renderSolarCardUI(ephemeris) {
   if (statAdvisory) statAdvisory.textContent = ephemeris.faaAdvisory;
   if (statAngles) statAngles.textContent = anglesText;
   if (statTimeline) statTimeline.innerHTML = buildTimelineHtml(ephemeris.timeline24h);
+
+  // Update Section 3 Sun & Lighting Advisor Card if present in DOM
+  const lq = ephemeris.lightingQuality || (SolarEphemeris.getLightingQuality ? SolarEphemeris.getLightingQuality(ephemeris.currentPosition.altitudeDeg) : null);
+  if (advisorAzimuth) {
+    advisorAzimuth.textContent = `${ephemeris.currentPosition.azimuthDeg.toFixed(1)}° (${ephemeris.currentPosition.compassDirection})`;
+  }
+  if (advisorElevation) {
+    const elSign = ephemeris.currentPosition.altitudeDeg >= 0 ? '+' : '';
+    advisorElevation.textContent = `${elSign}${ephemeris.currentPosition.altitudeDeg.toFixed(1)}°`;
+  }
+  if (advisorNoon) {
+    advisorNoon.textContent = ephemeris.twilights && ephemeris.twilights.solarNoon
+      ? SolarEphemeris.formatTime(ephemeris.twilights.solarNoon)
+      : '--:--';
+  }
+  if (advisorQualityBadge && lq) {
+    advisorQualityBadge.textContent = lq.badge;
+    advisorQualityBadge.style.color = lq.color;
+    advisorQualityBadge.style.borderColor = lq.color;
+    advisorQualityBadge.style.background = lq.color === '#10b981' ? 'rgba(16, 185, 129, 0.15)' : (lq.color === '#38bdf8' ? 'rgba(56, 189, 248, 0.15)' : (lq.color === '#f59e0b' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)'));
+  }
+  if (advisorWarning) {
+    if (lq && lq.warning) {
+      advisorWarning.textContent = lq.warning;
+      advisorWarning.style.display = 'block';
+    } else {
+      advisorWarning.style.display = 'none';
+    }
+  }
 
   // Hook toggle button listeners if not already bound
   initSolarEphemerisEventListeners();
@@ -57824,6 +58311,11 @@ function extractDjiXmpMetadata(data) {
   const flightRollStr = getAttr('FlightRollDegree');
   const modelStr = getAttr('ProductName');
 
+  // UTC / Creation timestamp extraction (v1.157.0)
+  const createDateMatch = xmpStr.match(/(?:xmp:CreateDate|photoshop:DateCreated|drone-dji:DateTimeUTC)="([^"]+)"/i)
+    || xmpStr.match(/<(?:xmp:CreateDate|photoshop:DateCreated|drone-dji:DateTimeUTC)>([^<]+)<\//i);
+  const utcDateStr = createDateMatch ? createDateMatch[1].trim() : null;
+
   if (latStr !== null && !isNaN(parseFloat(latStr))) result.lat = parseFloat(latStr);
   if (lonStr !== null && !isNaN(parseFloat(lonStr))) result.lon = parseFloat(lonStr);
   if (relAltStr !== null && !isNaN(parseFloat(relAltStr))) {
@@ -57837,6 +58329,13 @@ function extractDjiXmpMetadata(data) {
   if (flightYawStr !== null && !isNaN(parseFloat(flightYawStr))) result.flightYaw = parseFloat(flightYawStr);
   if (flightRollStr !== null && !isNaN(parseFloat(flightRollStr))) result.flightRoll = parseFloat(flightRollStr);
   if (modelStr) result.droneModel = modelStr;
+  if (utcDateStr) {
+    result.timestamp = utcDateStr;
+    const parsedDate = new Date(utcDateStr);
+    if (!isNaN(parsedDate.getTime())) {
+      result.date = parsedDate;
+    }
+  }
 
   return Object.keys(result).length > 0 ? result : null;
 }
@@ -58591,7 +59090,8 @@ const PhotoInspector = {
     detectedTags: true, // Auto-detect & highlight optical tags (AprilTag / ArUco)!
     measure: true,
     pins: true,
-    reticle: true
+    reticle: true,
+    solarAngle: true // Toggleable solar azimuth & elevation angle vector overlay (v1.157.0)
   },
   projectGeoPointToPixel,
   projectGeoPolygonToPhoto,
@@ -58792,6 +59292,8 @@ const PhotoInspector = {
         if (xmp.altMsl !== undefined) act.altMsl = xmp.altMsl;
         if (xmp.gimbalPitch !== undefined) act.gimbalPitch = xmp.gimbalPitch;
         if (xmp.heading !== undefined) act.heading = xmp.heading;
+        if (xmp.timestamp && !this.activePhoto.timestamp) this.activePhoto.timestamp = xmp.timestamp;
+        if (xmp.date && !this.activePhoto.date) this.activePhoto.date = xmp.date;
       } else if (typeof this.activePhoto.lat === 'number' && typeof this.activePhoto.lon === 'number' && (this.activePhoto.lat !== 0 || this.activePhoto.lon !== 0)) {
         act.lat = this.activePhoto.lat;
         act.lon = this.activePhoto.lon;
@@ -58924,6 +59426,8 @@ const PhotoInspector = {
                 if (xmp.altMsl !== undefined) this.activePhoto.actual.altMsl = xmp.altMsl;
                 if (xmp.gimbalPitch !== undefined) this.activePhoto.actual.gimbalPitch = xmp.gimbalPitch;
                 if (xmp.heading !== undefined) this.activePhoto.actual.heading = xmp.heading;
+                if (xmp.timestamp && !this.activePhoto.timestamp) this.activePhoto.timestamp = xmp.timestamp;
+                if (xmp.date && !this.activePhoto.date) this.activePhoto.date = xmp.date;
                 this.updateHeaderUI();
                 this.renderCanvas();
               }
@@ -59000,8 +59504,27 @@ const PhotoInspector = {
     const pitch = (p.actual && p.actual.gimbalPitch !== undefined) ? p.actual.gimbalPitch : -90;
     const isOblique = Math.abs(pitch + 90) > 2;
     const modeTag = isOblique ? (this.calibrationMode === 'slant' ? ' • Slant Calibrated' : ' • Ground Corrected') : '';
+    // Compute Solar Ephemeris for Photo Exposure (v1.157.0 - Issue #141)
+    let solarText = '';
+    let photoSunPos = null;
+    if (typeof SolarEphemeris !== 'undefined' && typeof SolarEphemeris.getSunPosition === 'function' && p.actual && typeof p.actual.lat === 'number' && typeof p.actual.lon === 'number') {
+      const photoDate = p.date || (p.timestamp ? new Date(p.timestamp) : new Date());
+      photoSunPos = SolarEphemeris.getSunPosition(photoDate, p.actual.lat, p.actual.lon);
+      if (photoSunPos) {
+        const altSign = photoSunPos.altitudeDeg >= 0 ? '+' : '';
+        solarText = ` • ☀️ Sun Az: ${photoSunPos.azimuthDeg.toFixed(0)}° (${photoSunPos.compassDirection}) • Elev: ${altSign}${photoSunPos.altitudeDeg.toFixed(0)}°`;
+      }
+    }
+
     if (subEl) {
-      subEl.textContent = `Lat: ${p.actual.lat.toFixed(5)}° • Lon: ${p.actual.lon.toFixed(5)}° • Alt: ${altVal} AGL • Pitch: ${p.actual.gimbalPitch}° • GSD: ${gsdVal}${modeTag}`;
+      subEl.textContent = `Lat: ${p.actual.lat.toFixed(5)}° • Lon: ${p.actual.lon.toFixed(5)}° • Alt: ${altVal} AGL • Pitch: ${p.actual.gimbalPitch}° • GSD: ${gsdVal}${modeTag}${solarText}`;
+    }
+
+    const hudSolar = document.getElementById('hud-solar-angles');
+    if (hudSolar) {
+      hudSolar.textContent = photoSunPos
+        ? `Sun: Az ${photoSunPos.azimuthDeg.toFixed(0)}° (${photoSunPos.compassDirection}) • Alt ${photoSunPos.altitudeDeg >= 0 ? '+' : ''}${photoSunPos.altitudeDeg.toFixed(0)}°`
+        : '';
     }
 
     const tagPill = document.getElementById('photo-detect-status-pill');
@@ -60086,19 +60609,32 @@ const PhotoInspector = {
           ctx.arc(px, py, 3, 0, Math.PI * 2);
           ctx.fill();
 
+          // Check Specular Glare Risk on GCP (v1.157.0 - Issue #141)
+          let gcpGlareNotice = '';
+          if (typeof SolarEphemeris !== 'undefined' && typeof SolarEphemeris.calculateGlareRisk === 'function' && camPose) {
+            const photoDate = this.activePhoto.date || (this.activePhoto.timestamp ? new Date(this.activePhoto.timestamp) : new Date());
+            const sunPos = SolarEphemeris.getSunPosition(photoDate, camPose.lat, camPose.lon);
+            if (sunPos && sunPos.altitudeDeg > 15) {
+              const risk = SolarEphemeris.calculateGlareRisk(camPose.heading, camPose.gimbalPitch, sunPos.azimuthDeg, sunPos.altitudeDeg);
+              if (risk.isSpecularBounce) {
+                gcpGlareNotice = ' • ⚠️ Specular Glare Washout Risk';
+              }
+            }
+          }
+
           // Target Label Pill
           const distStr = this.unit === 'imperial' ? `${(depthM * 3.28084).toFixed(1)}ft` : `${depthM.toFixed(1)}m`;
           const sizeStr = this.unit === 'imperial' ? `${(sizeM * 39.37).toFixed(0)}in` : `${(sizeM * 100).toFixed(0)}cm`;
-          const labelText = `🎯 ${code} [${role}] • ${sizeStr} • ${distStr}`;
+          const labelText = `🎯 ${code} [${role}] • ${sizeStr} • ${distStr}${gcpGlareNotice}`;
 
           ctx.font = 'bold 11px sans-serif';
           const textW = ctx.measureText(labelText).width;
           const badgeX = Math.max(10, Math.min(canvas.width - textW - 24, px + 18));
           const badgeY = Math.max(25, Math.min(canvas.height - 15, py - 12));
 
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.90)';
+          ctx.fillStyle = gcpGlareNotice ? 'rgba(239, 68, 68, 0.92)' : 'rgba(15, 23, 42, 0.90)';
           ctx.fillRect(badgeX, badgeY - 14, textW + 16, 22);
-          ctx.strokeStyle = color;
+          ctx.strokeStyle = gcpGlareNotice ? '#ef4444' : color;
           ctx.lineWidth = 1.5;
           ctx.strokeRect(badgeX, badgeY - 14, textW + 16, 22);
 
@@ -60186,6 +60722,77 @@ const PhotoInspector = {
 
         ctx.restore();
       });
+    }
+
+    // 10. Solar Angle & Bearing Vector HUD Overlay (v1.157.0 - Issue #141)
+    if (this.layers.solarAngle && this.activePhoto) {
+      const act = this.activePhoto.actual;
+      if (act && typeof act.lat === 'number' && typeof act.lon === 'number' && typeof SolarEphemeris !== 'undefined') {
+        const photoDate = this.activePhoto.date || (this.activePhoto.timestamp ? new Date(this.activePhoto.timestamp) : new Date());
+        const sunPos = SolarEphemeris.getSunPosition(photoDate, act.lat, act.lon);
+        if (sunPos) {
+          ctx.save();
+          const camYaw = typeof act.heading === 'number' ? act.heading : 0;
+          // Relative sun azimuth with respect to camera heading (0° = straight ahead)
+          const relAzimuth = ((sunPos.azimuthDeg - camYaw) % 360 + 360) % 360;
+          const relRad = (relAzimuth - 90) * (Math.PI / 180); // 0° ahead = pointing up (-Y in canvas)
+
+          // Top-right corner HUD widget position
+          const widgetX = canvas.width - 70;
+          const widgetY = 70;
+          const radius = 32;
+
+          // Background dial
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+          ctx.beginPath();
+          ctx.arc(widgetX, widgetY, radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#f59e0b';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          // Center crosshair
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(widgetX - radius + 4, widgetY); ctx.lineTo(widgetX + radius - 4, widgetY);
+          ctx.moveTo(widgetX, widgetY - radius + 4); ctx.lineTo(widgetX, widgetY + radius - 4);
+          ctx.stroke();
+
+          // Sun bearing pointer arrow
+          const arrowLen = radius - 6;
+          const tipX = widgetX + arrowLen * Math.cos(relRad);
+          const tipY = widgetY + arrowLen * Math.sin(relRad);
+
+          ctx.strokeStyle = '#fbbf24';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(widgetX, widgetY);
+          ctx.lineTo(tipX, tipY);
+          ctx.stroke();
+
+          // Sun head circle
+          ctx.fillStyle = '#fbbf24';
+          ctx.beginPath();
+          ctx.arc(tipX, tipY, 4.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // Text label underneath widget
+          ctx.font = 'bold 10px monospace';
+          ctx.fillStyle = '#fbbf24';
+          ctx.textAlign = 'center';
+          const altSign = sunPos.altitudeDeg >= 0 ? '+' : '';
+          ctx.fillText(`☀️ ${altSign}${sunPos.altitudeDeg.toFixed(0)}°`, widgetX, widgetY + radius + 14);
+          ctx.font = '9px monospace';
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillText(`Az ${sunPos.azimuthDeg.toFixed(0)}°`, widgetX, widgetY + radius + 25);
+
+          ctx.restore();
+        }
+      }
     }
   },
 

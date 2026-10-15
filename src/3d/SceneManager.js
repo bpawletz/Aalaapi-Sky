@@ -45,10 +45,16 @@ function init3DPreview() {
   const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.2);
   dirLight1.position.set(200, 400, 200);
   threeScene.add(dirLight1);
+  threeSunLight = dirLight1;
 
   const dirLight2 = new THREE.DirectionalLight(0x06b6d4, 0.6); // Subtle cyan fill light
   dirLight2.position.set(-200, 200, -200);
   threeScene.add(dirLight2);
+
+  // Align directional light with active solar ephemeris if available
+  if (typeof update3DSunPosition === 'function') {
+    update3DSunPosition();
+  }
 
   // 6. Calculate Bounding Box of Waypoints to scale scene
   let minX = Infinity, maxX = -Infinity;
@@ -322,6 +328,58 @@ function reset3DCamera() {
   threeCamera.position.set(centerWpX + maxSpan * 1.2, maxAlt + maxSpan * 0.8, centerWpZ + maxSpan * 1.2);
   threeControls.target.set(centerWpX, maxAlt * 0.4, centerWpZ);
   threeControls.update();
+}
+
+/**
+ * Updates Three.js directional sunlight and shadow frustum orientation
+ * to match calculated solar azimuth and elevation.
+ * In Three.js coordinates:
+ * - X is East
+ * - Y is Altitude / Up
+ * - Z is South (so North is -Z)
+ */
+function update3DSunPosition() {
+  if (!threeSunLight || typeof SolarEphemeris === 'undefined') return;
+
+  let pos = null;
+  if (typeof currentSolarEphemeris !== 'undefined' && currentSolarEphemeris && currentSolarEphemeris.currentPosition) {
+    pos = currentSolarEphemeris.currentPosition;
+  } else if (typeof centerMarker !== 'undefined' && centerMarker && typeof centerMarker.getLatLng === 'function') {
+    const ll = centerMarker.getLatLng();
+    pos = SolarEphemeris.getSunPosition(new Date(), ll.lat, ll.lng);
+  } else {
+    pos = SolarEphemeris.getSunPosition(new Date(), 41.3215, -88.9950);
+  }
+
+  if (!pos) return;
+
+  const azRad = (pos.azimuthDeg || 180) * (Math.PI / 180);
+  const altRad = Math.max(0.05, (pos.altitudeDeg || 45)) * (Math.PI / 180);
+
+  const radius = 600;
+  // Sun position in sky:
+  // Azimuth 0 = North (-Z), 90 = East (+X), 180 = South (+Z), 270 = West (-X)
+  const sunX = radius * Math.cos(altRad) * Math.sin(azRad);
+  const sunY = Math.max(40, radius * Math.sin(altRad));
+  const sunZ = -radius * Math.cos(altRad) * Math.cos(azRad);
+
+  threeSunLight.position.set(sunX, sunY, sunZ);
+  if (threeSunLight.target && typeof threeScene !== 'undefined' && threeScene) {
+    threeSunLight.target.position.set(0, 0, 0);
+  }
+
+  // Modulate intensity based on sun elevation (dim at twilight/night)
+  if (pos.altitudeDeg <= 0) {
+    threeSunLight.intensity = 0.15;
+  } else if (pos.altitudeDeg < 15) {
+    threeSunLight.intensity = 0.5 + (pos.altitudeDeg / 15) * 0.5;
+  } else {
+    threeSunLight.intensity = 1.2;
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.update3DSunPosition = update3DSunPosition;
 }
 
 // ==========================================

@@ -575,6 +575,12 @@ function initMap() {
   overlays["Photo Coverage Footprints (2D)"] = photoFootprintsGroup;
   overlays["Photo Inspection Pins (2D)"] = photoInspectionGroup;
 
+  // Solar Ephemeris & Shadow Vector Overlay (2D) (v1.157.0 - Issue #141)
+  if (!solarOverlaysGroup) {
+    solarOverlaysGroup = L.layerGroup().addTo(map);
+  }
+  overlays["Sun Vector & Shadow Casting (2D)"] = solarOverlaysGroup;
+
   const layerControl = L.control.layers(baseMaps, overlays, { position: 'topleft' }).addTo(map);
 
   // If running on localhost or file://, disable the OpenStreetMap radio button with styled indicator & tooltip
@@ -692,6 +698,7 @@ function initMap() {
   photoMarkersGroup = L.layerGroup().addTo(map);
   roadPathGroup = L.layerGroup().addTo(map);
   targetPolygonGroup = L.layerGroup().addTo(map);
+  if (!solarOverlaysGroup) solarOverlaysGroup = L.layerGroup().addTo(map);
   if (!photoInspectionGroup) photoInspectionGroup = L.layerGroup().addTo(map);
   if (!photoFootprintsGroup) photoFootprintsGroup = L.layerGroup();
 

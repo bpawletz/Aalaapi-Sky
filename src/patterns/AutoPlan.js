@@ -848,6 +848,184 @@ const SolarEphemeris = {
     };
   },
 
+  /**
+   * Calculates horizontal shadow cast length and shadow direction vector.
+   * Shadows cast in the direction opposite to solar azimuth: (azimuth + 180) % 360.
+   * @param {number} objectHeightMeters Height of structure/pole
+   * @param {number} elevationDeg Sun elevation angle above horizon
+   * @param {number} azimuthDeg Sun azimuth angle (degrees from True North)
+   * @returns {{ shadowLengthMeters: number, shadowAzimuthDeg: number, isInfinite: boolean }}
+   */
+  calculateShadow(objectHeightMeters, elevationDeg, azimuthDeg) {
+    const h = Math.max(0, parseFloat(objectHeightMeters) || 0);
+    const el = parseFloat(elevationDeg) || 0;
+    const az = ((parseFloat(azimuthDeg) || 0) % 360 + 360) % 360;
+    const shadowAzimuthDeg = (az + 180) % 360;
+
+    if (el <= 0.5) {
+      return {
+        shadowLengthMeters: el <= 0 ? 0 : Math.min(500, h / Math.tan(Math.max(0.01, el) * this.RAD)),
+        shadowAzimuthDeg,
+        isInfinite: el <= 0
+      };
+    }
+
+    const shadowLengthMeters = h / Math.tan(el * this.RAD);
+    return {
+      shadowLengthMeters: Math.min(2000, shadowLengthMeters),
+      shadowAzimuthDeg,
+      isInfinite: false
+    };
+  },
+
+  /**
+   * Classifies lighting window quality for 3D photogrammetry & Gaussian splatting.
+   * Optimal: Sun elevation >= 40° (or within ±2h of solar noon) -> High Sun / Minimal Shadows
+   * Acceptable: Sun elevation 25° - 40° -> Moderate Shadows
+   * Low: Sun elevation 10° - 25° -> Low Sun / Long Facade Shadows
+   * Golden/Civil Twilight: Sun elevation 0° - 10° -> High Glare / Extreme Oblique Shadows
+   * Night: Sun elevation < 0° -> Night
+   * @param {number} elevationDeg
+   * @param {Date} date
+   * @param {Date} solarNoonDate
+   */
+  getLightingQuality(elevationDeg, date = null, solarNoonDate = null) {
+    const el = parseFloat(elevationDeg) || 0;
+    let isNearNoon = false;
+    if (date && solarNoonDate && date instanceof Date && solarNoonDate instanceof Date) {
+      const diffHours = Math.abs(date.getTime() - solarNoonDate.getTime()) / (1000 * 60 * 60);
+      if (diffHours <= 2.0) isNearNoon = true;
+    }
+
+    if (el < 0) {
+      return {
+        category: 'NIGHT',
+        label: 'Night Flight',
+        badge: '🌙 Night / Artificial Illumination Required',
+        color: '#ef4444',
+        warning: 'Zero ambient sunlight. Active strobes / artificial lighting required.'
+      };
+    } else if (el < 10) {
+      return {
+        category: 'TWILIGHT_OR_GOLDEN',
+        label: 'Golden Hour / Twilight',
+        badge: '⚠️ Deep Facade Shadows & High Glare',
+        color: '#f59e0b',
+        warning: 'Harsh horizontal shadows across facades. High risk of direct lens flare and target washout.'
+      };
+    } else if (el < 25) {
+      return {
+        category: 'LOW_SUN',
+        label: 'Low Sun (<25°)',
+        badge: '⚠️ Low Sun / Long Shadows',
+        color: '#f59e0b',
+        warning: 'Long shadows cast by structures. Oblique splat passes (-45°/-60°) may bake deep shadows into textures.'
+      };
+    } else if (el < 40 && !isNearNoon) {
+      return {
+        category: 'MODERATE_SUN',
+        label: 'Moderate Lighting (25°-40°)',
+        badge: '🌤️ Moderate Sun / Noticeable Shadows',
+        color: '#38bdf8',
+        warning: 'Acceptable capture window. Moderate shadows on vertical walls.'
+      };
+    } else {
+      return {
+        category: 'OPTIMAL',
+        label: 'Optimal High Sun (Minimal Shadows)',
+        badge: '☀️ High Sun / Minimal Shadows',
+        color: '#10b981',
+        warning: null
+      };
+    }
+  },
+
+  /**
+   * Correlates camera heading & gimbal pitch against solar position to detect direct flare / specular glare risks.
+   * When camera points directly toward sun azimuth (deltaAzimuth < 30°) and gimbal pitch aligns with sun elevation,
+   * lens flare and direct glare blind the sensor.
+   * Also computes ground specular bounce vector (flat plane): if camera looks down toward a ground point at angle theta,
+   * and the sun shines from opposite azimuth at angle theta, specular reflection from roofs/water/metal/targets bounces directly into lens.
+   * @param {number} cameraHeadingDeg
+   * @param {number} gimbalPitchDeg (e.g. -90 to 0)
+   * @param {number} sunAzimuthDeg
+   * @param {number} sunElevationDeg
+   */
+  calculateGlareRisk(cameraHeadingDeg, gimbalPitchDeg, sunAzimuthDeg, sunElevationDeg) {
+    const camH = ((parseFloat(cameraHeadingDeg) || 0) % 360 + 360) % 360;
+    const camP = parseFloat(gimbalPitchDeg) !== undefined ? parseFloat(gimbalPitchDeg) : -90;
+    const sunAz = ((parseFloat(sunAzimuthDeg) || 0) % 360 + 360) % 360;
+    const sunEl = parseFloat(sunElevationDeg) || 0;
+
+    if (sunEl <= 0) {
+      return { riskLevel: 'NONE', isDirectFlare: false, isSpecularBounce: false, angularSeparationDeg: 180, details: 'Sun below horizon.' };
+    }
+
+    // 1. Direct Sun in Lens (Looking up or level towards sun)
+    // Camera optical axis: azimuth camH, elevation camP (note pitch is negative downwards, so camera optical elevation = camP)
+    // Angular difference in azimuth:
+    let dAz = Math.abs(camH - sunAz);
+    if (dAz > 180) dAz = 360 - dAz;
+
+    // Camera pointing vector in ENU:
+    // pitch is typically -90 (nadir), 0 (horizontal), +30 (up)
+    const camPitchRad = camP * this.RAD;
+    const camYawRad = camH * this.RAD;
+    const camVec = {
+      x: Math.cos(camPitchRad) * Math.sin(camYawRad), // East
+      y: Math.cos(camPitchRad) * Math.cos(camYawRad), // North
+      z: Math.sin(camPitchRad)                        // Up
+    };
+
+    const sunElRad = sunEl * this.RAD;
+    const sunAzRad = sunAz * this.RAD;
+    const sunVec = {
+      x: Math.cos(sunElRad) * Math.sin(sunAzRad),
+      y: Math.cos(sunElRad) * Math.cos(sunAzRad),
+      z: Math.sin(sunElRad)
+    };
+
+    // Dot product between camera forward vector and sun vector:
+    const dotDirect = camVec.x * sunVec.x + camVec.y * sunVec.y + camVec.z * sunVec.z;
+    const angleDirectRad = Math.acos(Math.max(-1, Math.min(1, dotDirect)));
+    const angleDirectDeg = angleDirectRad * this.DEG;
+
+    const isDirectFlare = angleDirectDeg < 35;
+
+    // 2. Specular Ground Reflection into Camera (Flat horizontal ground/roof bounce):
+    // Sunlight hitting flat ground (normal = [0, 0, 1]) bounces upward with reflected vector:
+    // reflectedSunVec = [ sunVec.x, sunVec.y, -sunVec.z ] bounced upwards, so incoming ray into camera comes from ground
+    // The direction from ground target to drone matches -sun_reflected direction.
+    // Equivalent: camera pointing down at ground will catch mirror bounce when camera heading is opposite sun (dAz ≈ 180°)
+    // and camera depression angle (-camP) ≈ sun elevation angle (sunEl).
+    const depressionAngle = -camP; // e.g. -(-45) = 45°
+    const depressionDiff = Math.abs(depressionAngle - sunEl);
+    let specularAzDiff = Math.abs(dAz - 180); // 0 when camera faces directly away from sun (looking down towards shadow / bounce)
+    if (specularAzDiff > 180) specularAzDiff = 360 - specularAzDiff;
+
+    const isSpecularBounce = (depressionDiff < 18 && specularAzDiff < 25 && sunEl >= 15);
+
+    let riskLevel = 'LOW';
+    let details = 'Clear optics; solar position offset from optical axis.';
+    if (isDirectFlare) {
+      riskLevel = 'CRITICAL';
+      details = `Direct Solar Flare: Camera oriented within ${angleDirectDeg.toFixed(1)}° of sun line of sight. High risk of lens wash and optical sensor blinding.`;
+    } else if (isSpecularBounce) {
+      riskLevel = 'WARNING';
+      details = `Ground Specular Glare: Camera depression angle (-${camP.toFixed(0)}°) matches solar elevation (${sunEl.toFixed(0)}°) with opposite azimuth. High risk of target and roof glare.`;
+    }
+
+    return {
+      riskLevel,
+      isDirectFlare,
+      isSpecularBounce,
+      angularSeparationDeg: angleDirectDeg,
+      specularAzimuthDiffDeg: specularAzDiff,
+      specularElevationDiffDeg: depressionDiff,
+      details
+    };
+  },
+
   bearingToCompassDirection(bearing) {
     const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
     const idx = Math.round(((bearing % 360 + 360) % 360) / 22.5) % 16;
@@ -999,6 +1177,7 @@ const SolarEphemeris = {
     }
 
     const pos = this.getSunPosition(now, lat, lon);
+    const lightingQuality = this.getLightingQuality(pos.altitudeDeg, now, timesToday.noon);
 
     return {
       now,
@@ -1011,6 +1190,7 @@ const SolarEphemeris = {
       faaBadgeText,
       faaBadgeColor,
       faaAdvisory,
+      lightingQuality,
       nextSunrise: nextSunriseEvent ? nextSunriseEvent.time : null,
       nextSunset: nextSunsetEvent ? nextSunsetEvent.time : null,
       currentPosition: pos,
@@ -1110,6 +1290,13 @@ function renderSolarCardUI(ephemeris) {
   const statAngles = document.getElementById('stat-solar-angles');
   const statTimeline = document.getElementById('stat-solar-timeline');
 
+  // Sun & Lighting Advisor elements (Section 3 card & HUD)
+  const advisorAzimuth = document.getElementById('sun-advisor-azimuth');
+  const advisorElevation = document.getElementById('sun-advisor-elevation');
+  const advisorNoon = document.getElementById('sun-advisor-noon');
+  const advisorQualityBadge = document.getElementById('sun-advisor-quality-badge');
+  const advisorWarning = document.getElementById('sun-advisor-warning');
+
   if (statSunrise) statSunrise.innerHTML = sunriseText;
   if (statSunset) statSunset.innerHTML = sunsetText;
   if (statRemaining) statRemaining.innerHTML = remainingText;
@@ -1122,6 +1309,35 @@ function renderSolarCardUI(ephemeris) {
   if (statAdvisory) statAdvisory.textContent = ephemeris.faaAdvisory;
   if (statAngles) statAngles.textContent = anglesText;
   if (statTimeline) statTimeline.innerHTML = buildTimelineHtml(ephemeris.timeline24h);
+
+  // Update Section 3 Sun & Lighting Advisor Card if present in DOM
+  const lq = ephemeris.lightingQuality || (SolarEphemeris.getLightingQuality ? SolarEphemeris.getLightingQuality(ephemeris.currentPosition.altitudeDeg) : null);
+  if (advisorAzimuth) {
+    advisorAzimuth.textContent = `${ephemeris.currentPosition.azimuthDeg.toFixed(1)}° (${ephemeris.currentPosition.compassDirection})`;
+  }
+  if (advisorElevation) {
+    const elSign = ephemeris.currentPosition.altitudeDeg >= 0 ? '+' : '';
+    advisorElevation.textContent = `${elSign}${ephemeris.currentPosition.altitudeDeg.toFixed(1)}°`;
+  }
+  if (advisorNoon) {
+    advisorNoon.textContent = ephemeris.twilights && ephemeris.twilights.solarNoon
+      ? SolarEphemeris.formatTime(ephemeris.twilights.solarNoon)
+      : '--:--';
+  }
+  if (advisorQualityBadge && lq) {
+    advisorQualityBadge.textContent = lq.badge;
+    advisorQualityBadge.style.color = lq.color;
+    advisorQualityBadge.style.borderColor = lq.color;
+    advisorQualityBadge.style.background = lq.color === '#10b981' ? 'rgba(16, 185, 129, 0.15)' : (lq.color === '#38bdf8' ? 'rgba(56, 189, 248, 0.15)' : (lq.color === '#f59e0b' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)'));
+  }
+  if (advisorWarning) {
+    if (lq && lq.warning) {
+      advisorWarning.textContent = lq.warning;
+      advisorWarning.style.display = 'block';
+    } else {
+      advisorWarning.style.display = 'none';
+    }
+  }
 
   // Hook toggle button listeners if not already bound
   initSolarEphemerisEventListeners();
