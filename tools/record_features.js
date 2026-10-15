@@ -1803,6 +1803,80 @@ const scenarios = [
       await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
       await page.waitForTimeout(1500);
     }
+  },
+  {
+    id: 'historical_flight_db_offline',
+    name: 'Historical Flight DB Offline Availability & Bridge Setup Guidance',
+    issueRef: 'v1.157.1',
+    run: async (page) => {
+      // 1. Ensure default rural location is squarely centered
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(600);
+
+      // 2. Expand Section 0 if collapsed
+      const section0Toggle = await page.$('#mission-db-section-header');
+      if (section0Toggle) {
+        const isCollapsed = await page.evaluate(() => {
+          const content = document.getElementById('mission-db-content');
+          return content && content.style.display === 'none';
+        });
+        if (isCollapsed) {
+          await section0Toggle.click();
+          await page.waitForTimeout(600);
+        }
+      }
+
+      // 3. Highlight the DB Offline badge and Section 0 header
+      await page.evaluate(() => {
+        const badge = document.getElementById('mission-db-count-badge');
+        if (badge) {
+          badge.style.outline = '2px solid #ef4444';
+          badge.style.boxShadow = '0 0 12px rgba(239, 68, 68, 0.6)';
+        }
+      });
+      await page.waitForTimeout(1000);
+
+      // 4. Scroll into view and highlight the Flight DB Unavailable card
+      await page.evaluate(() => {
+        const card = document.getElementById('mission-db-unavailable-card');
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+      await page.waitForTimeout(1200);
+
+      // 5. Click the copy command button to show interactive feedback
+      const copyBtn = await page.$('#mission-db-copy-cmd-btn');
+      if (copyBtn) {
+        await copyBtn.click();
+        await page.waitForTimeout(1000);
+      }
+
+      // 6. Click the Setup Guide button to display companion service setup instructions
+      const guideBtn = await page.$('#mission-db-guide-btn');
+      if (guideBtn) {
+        await guideBtn.click();
+        await page.waitForTimeout(1500);
+
+        // Close guide modal
+        const closeBtn = await page.$('#close-guide-btn');
+        if (closeBtn) {
+          await closeBtn.click();
+          await page.waitForTimeout(800);
+        }
+      }
+
+      // 7. Click Retry Connection button
+      const retryBtn = await page.$('#mission-db-retry-btn');
+      if (retryBtn) {
+        await retryBtn.click();
+        await page.waitForTimeout(1000);
+      }
+
+      // 8. Re-center map cleanly on default rural point
+      await centerMapOnPoint(page, DEFAULT_LAT, DEFAULT_LON);
+      await page.waitForTimeout(1000);
+    }
   }
 ];
 

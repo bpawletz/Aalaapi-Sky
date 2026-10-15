@@ -2078,6 +2078,7 @@ function syncDisplayValues() {
 // ============================================================================
 
 let cachedMissionDbItems = [];
+let isMissionDbOnline = false;
 
 async function initMissionDbUI() {
   if (typeof document === 'undefined') return;
@@ -2124,6 +2125,7 @@ async function refreshMissionDbList() {
   const listContainer = document.getElementById('mission-db-list');
   const badgeEl = document.getElementById('mission-db-count-badge');
   const refreshBtn = document.getElementById('mission-db-refresh-btn');
+  const searchInput = document.getElementById('mission-db-search');
 
   if (refreshBtn) {
     refreshBtn.textContent = '⏳';
@@ -2131,6 +2133,7 @@ async function refreshMissionDbList() {
   }
 
   const items = [];
+  let bridgeReachable = false;
 
   try {
     const apiBase = (typeof getCompanionApiBase === 'function') ? getCompanionApiBase() : 'http://127.0.0.1:8765';
@@ -2143,6 +2146,7 @@ async function refreshMissionDbList() {
       }
       const res = await fetch(`${apiBase}/api/flights`, fetchOpts);
       if (res.ok) {
+        bridgeReachable = true;
         const data = await res.json();
         if (data.success && Array.isArray(data.flights)) {
           data.flights.forEach(f => {
@@ -2171,6 +2175,7 @@ async function refreshMissionDbList() {
       }
       const resDiag = await fetch(`${apiBase}/api/diagnostics/history`, fetchOpts);
       if (resDiag.ok) {
+        bridgeReachable = true;
         const dataDiag = await resDiag.json();
         if (dataDiag.success && Array.isArray(dataDiag.missions)) {
           dataDiag.missions.forEach(m => {
@@ -2192,26 +2197,49 @@ async function refreshMissionDbList() {
       }
     } catch (_) {}
 
-    // 3. Fallback / Sample Demo Flights for offline verification
-    const demoFlights = [
-      { id: 'FlightRecord_2026-08-20_[19-42-28].txt', title: 'Flight 3 — Field Survey Alpha', date: 'Aug 20, 19:42', wpsText: '48 Photos • 4m 12s', statusText: 'Recorded Flown', badgeColor: '#34d399', badgeBg: 'rgba(16, 185, 129, 0.15)' },
-      { id: 'FlightRecord_2026-08-20_[19-47-15].txt', title: 'Flight 4 — Structure Inspection', date: 'Aug 20, 19:47', wpsText: '1m 15s Replay', statusText: 'Recorded Flown', badgeColor: '#34d399', badgeBg: 'rgba(16, 185, 129, 0.15)' },
-      { id: 'FlightRecord_2026-08-20_[19-41-15].txt', title: 'Flight 2 — Perimeter Calibration', date: 'Aug 20, 19:41', wpsText: '0m 52s Replay', statusText: 'Recorded Flown', badgeColor: '#34d399', badgeBg: 'rgba(16, 185, 129, 0.15)' }
-    ];
-
-    demoFlights.forEach(df => {
-      if (!items.some(it => it.id === df.id)) {
-        items.push({
-          ...df,
-          type: 'demo-sample',
-          filename: df.id
-        });
+    // 3. Fallback bridge ping if flights/diagnostics endpoints returned error
+    if (!bridgeReachable) {
+      if (typeof isCompanionOnline !== 'undefined' && isCompanionOnline) {
+        bridgeReachable = true;
+      } else {
+        try {
+          const fetchOpts = {};
+          if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+            fetchOpts.signal = AbortSignal.timeout(1500);
+          }
+          const resPing = await fetch(`${apiBase}/api/status`, fetchOpts);
+          if (resPing.ok) {
+            bridgeReachable = true;
+          }
+        } catch (_) {}
       }
-    });
+    }
 
+    isMissionDbOnline = bridgeReachable;
     cachedMissionDbItems = items;
+
     if (badgeEl) {
-      badgeEl.textContent = `${items.length} Flights`;
+      if (!isMissionDbOnline) {
+        badgeEl.textContent = 'DB Offline';
+        badgeEl.style.background = 'rgba(239, 68, 68, 0.15)';
+        badgeEl.style.color = '#f87171';
+        badgeEl.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+      } else {
+        badgeEl.textContent = `${items.length} Flights`;
+        badgeEl.style.background = 'rgba(6, 182, 212, 0.15)';
+        badgeEl.style.color = 'var(--accent-cyan)';
+        badgeEl.style.borderColor = 'rgba(6, 182, 212, 0.3)';
+      }
+    }
+
+    if (searchInput) {
+      if (!isMissionDbOnline) {
+        searchInput.disabled = true;
+        searchInput.placeholder = 'Flight DB offline (bridge service required)';
+      } else {
+        searchInput.disabled = false;
+        searchInput.placeholder = 'Search flights by name, date...';
+      }
     }
 
     filterAndRenderMissionDbList();
@@ -2229,7 +2257,87 @@ function filterAndRenderMissionDbList() {
   const searchInput = document.getElementById('mission-db-search');
   if (!listContainer) return;
 
+  if (!isMissionDbOnline) {
+    listContainer.innerHTML = `
+      <div class="mission-db-unavailable-card" style="padding: 12px 10px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; text-align: center;">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 6px; color: #f87171; font-weight: 700; font-size: 0.78rem; margin-bottom: 4px;">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span>Flight DB Unavailable</span>
+        </div>
+        <div style="color: var(--text-muted); font-size: 0.7rem; line-height: 1.35; margin-bottom: 8px;">
+          The companion bridge service (port 8765) is offline. Start the bridge with <code>start-bridge.bat</code> or <code>npm run bridge</code> to view and replay historical flight logs &amp; SQLite archives.
+        </div>
+        <div style="background: rgba(0, 0, 0, 0.35); border: 1px solid var(--border-color); border-radius: 6px; padding: 5px 8px; margin-bottom: 10px; font-family: var(--font-mono, monospace); font-size: 0.68rem; color: var(--accent-cyan); text-align: left; display: flex; align-items: center; justify-content: space-between;">
+          <span>npm run bridge</span>
+          <button id="mission-db-copy-cmd-btn" type="button" class="btn-secondary" style="padding: 1px 6px; height: 18px; font-size: 0.62rem; margin: 0; line-height: 1;" title="Copy start command">📋 Copy</button>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button id="mission-db-guide-btn" type="button" class="btn-primary" style="flex: 1; padding: 4px 8px; font-size: 0.7rem; height: 26px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+            <span>Setup Guide</span>
+          </button>
+          <button id="mission-db-retry-btn" type="button" class="btn-secondary" style="flex: 0.8; padding: 4px 8px; font-size: 0.7rem; height: 26px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+            <span>🔄 Retry</span>
+          </button>
+        </div>
+      </div>
+    `;
+
+    const copyBtn = listContainer.querySelector('#mission-db-copy-cmd-btn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const cmd = 'npm run bridge';
+        if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(cmd).then(() => {
+            copyBtn.textContent = '✓ Copied';
+            setTimeout(() => { copyBtn.textContent = '📋 Copy'; }, 2000);
+          }).catch(() => {
+            if (typeof prompt === 'function') prompt('Copy command:', cmd);
+          });
+        } else if (typeof prompt === 'function') {
+          prompt('Copy command:', cmd);
+        }
+      });
+    }
+
+    const guideBtn = listContainer.querySelector('#mission-db-guide-btn');
+    if (guideBtn) {
+      guideBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (typeof openRC2GuideModal === 'function') {
+          openRC2GuideModal('service');
+        }
+      });
+    }
+
+    const retryBtn = listContainer.querySelector('#mission-db-retry-btn');
+    if (retryBtn) {
+      retryBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        refreshMissionDbList();
+      });
+    }
+
+    return;
+  }
+
   const query = (searchInput && searchInput.value) ? searchInput.value.trim().toLowerCase() : '';
+
+  if (cachedMissionDbItems.length === 0) {
+    listContainer.innerHTML = `
+      <div style="padding: 16px 8px; text-align: center; color: var(--text-muted); font-size: 0.72rem;">
+        No historical flight records found in database or connected controller. Export or sync a flight to populate this list.
+      </div>
+    `;
+    return;
+  }
 
   const filtered = cachedMissionDbItems.filter(item => {
     if (!query) return true;
@@ -2570,6 +2678,26 @@ function addCorridorNodeAction() {
 
   if (typeof updateGrid === 'function') updateGrid();
   if (typeof renderCorridorNodeTable === 'function') renderCorridorNodeTable();
+}
+
+if (typeof window !== 'undefined') {
+  window.initMissionDbUI = initMissionDbUI;
+  window.refreshMissionDbList = refreshMissionDbList;
+  window.filterAndRenderMissionDbList = filterAndRenderMissionDbList;
+  window.getIsMissionDbOnline = () => isMissionDbOnline;
+  window.setIsMissionDbOnline = (v) => { isMissionDbOnline = v; };
+  window.getCachedMissionDbItems = () => cachedMissionDbItems;
+  window.setCachedMissionDbItems = (items) => { cachedMissionDbItems = items; };
+}
+
+if (typeof global !== 'undefined') {
+  global.initMissionDbUI = initMissionDbUI;
+  global.refreshMissionDbList = refreshMissionDbList;
+  global.filterAndRenderMissionDbList = filterAndRenderMissionDbList;
+  global.getIsMissionDbOnline = () => isMissionDbOnline;
+  global.setIsMissionDbOnline = (v) => { isMissionDbOnline = v; };
+  global.getCachedMissionDbItems = () => cachedMissionDbItems;
+  global.setCachedMissionDbItems = (items) => { cachedMissionDbItems = items; };
 }
 
 // Search Address via OpenStreetMap Nominatim API

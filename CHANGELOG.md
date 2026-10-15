@@ -1,3 +1,20 @@
+## [1.157.1] - 2026-10-15
+
+### Fixed
+
+#### Pilot & Operational Features
+- **Historical Flight Database Availability & Bridge Offline Guidance**:
+  - Removed placeholder mock flights previously shown when Aalaapi Bridge was offline.
+  - The Historical Flight DB in the sidebar now accurately detects when the bridge service is unavailable and presents an informative status card with clear instructions, a quick command copy button (`npm run bridge`), and a 1-click shortcut to the Bridge Setup Guide.
+  - When the bridge service starts or stops, Section 0 automatically synchronizes its status and flight list.
+
+#### Under the Hood & Technical Details
+- **SidebarManager & ApiClient Integration (`src/ui/SidebarManager.js`, `src/bridge/ApiClient.js`)**:
+  - Eliminated mock demo flight records (`FlightRecord_2026-08-20_[...]`) from `refreshMissionDbList()`.
+  - Added bridge reachability detection (`isMissionDbOnline`) and updated Section 0 count badge (`#mission-db-count-badge`) to show "DB Offline" when unavailable or the live count of real flights when connected.
+  - Rendered `#mission-db-unavailable-card` containing `npm run bridge` copy action, `#mission-db-guide-btn` (delegating to `openRC2GuideModal('service')`), and `#mission-db-retry-btn`.
+  - Integrated status event notifications between `ApiClient.js` and `SidebarManager.js`.
+
 ## [1.157.0] - 2026-10-15
 
 Introduces an offline Solar Ephemeris Engine, dynamic 2D Leaflet shadow projection vectors, 3D Three.js sunlight alignment, specular glare alerts for waypoints and optical GCP targets, and solar angle overlays in Photo Inspector (closes #141).
